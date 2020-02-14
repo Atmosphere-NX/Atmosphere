@@ -23,6 +23,7 @@ namespace ams::kern {
     enum KMemoryState : u32 {
         KMemoryState_None = 0,
         KMemoryState_Mask = 0xFF,
+        KMemoryState_All  = ~KMemoryState_None,
 
         KMemoryState_FlagCanReprotect           = (1 <<  8),
         KMemoryState_FlagCanDebug               = (1 <<  9),
@@ -133,24 +134,25 @@ namespace ams::kern {
 
     enum KMemoryPermission : u8 {
         KMemoryPermission_None              = 0,
-
-        KMemoryPermission_UserRead          = ams::svc::MemoryPermission_Read,
-        KMemoryPermission_UserWrite         = ams::svc::MemoryPermission_Write,
-        KMemoryPermission_UserExecute       = ams::svc::MemoryPermission_Execute,
-
-        KMemoryPermission_UserReadWrite     = ams::svc::MemoryPermission_ReadWrite,
-        KMemoryPermission_UserReadExecute   = ams::svc::MemoryPermission_ReadExecute,
-
-        KMemoryPermission_UserMask          = KMemoryPermission_UserRead | KMemoryPermission_UserWrite | KMemoryPermission_UserExecute,
+        KMemoryPermission_All               = static_cast<u8>(~KMemoryPermission_None),
 
         KMemoryPermission_KernelShift       = 3,
 
-        KMemoryPermission_KernelRead        = KMemoryPermission_UserRead    << KMemoryPermission_KernelShift,
-        KMemoryPermission_KernelWrite       = KMemoryPermission_UserWrite   << KMemoryPermission_KernelShift,
-        KMemoryPermission_KernelExecute     = KMemoryPermission_UserExecute << KMemoryPermission_KernelShift,
+        KMemoryPermission_KernelRead        = ams::svc::MemoryPermission_Read    << KMemoryPermission_KernelShift,
+        KMemoryPermission_KernelWrite       = ams::svc::MemoryPermission_Write   << KMemoryPermission_KernelShift,
+        KMemoryPermission_KernelExecute     = ams::svc::MemoryPermission_Execute << KMemoryPermission_KernelShift,
 
         KMemoryPermission_KernelReadWrite   = KMemoryPermission_KernelRead | KMemoryPermission_KernelWrite,
         KMemoryPermission_KernelReadExecute = KMemoryPermission_KernelRead | KMemoryPermission_KernelExecute,
+
+        KMemoryPermission_UserRead          = ams::svc::MemoryPermission_Read    | KMemoryPermission_KernelRead,
+        KMemoryPermission_UserWrite         = ams::svc::MemoryPermission_Write   | KMemoryPermission_KernelWrite,
+        KMemoryPermission_UserExecute       = ams::svc::MemoryPermission_Execute,
+
+        KMemoryPermission_UserReadWrite     = KMemoryPermission_UserRead | KMemoryPermission_UserWrite,
+        KMemoryPermission_UserReadExecute   = KMemoryPermission_UserRead | KMemoryPermission_UserExecute,
+
+        KMemoryPermission_UserMask          = ams::svc::MemoryPermission_Read | ams::svc::MemoryPermission_Write | ams::svc::MemoryPermission_Execute,
     };
 
     constexpr KMemoryPermission ConvertToKMemoryPermission(ams::svc::MemoryPermission perm) {
@@ -160,6 +162,7 @@ namespace ams::kern {
     enum KMemoryAttribute : u8 {
         KMemoryAttribute_None           = 0x00,
         KMemoryAttribute_Mask           = 0x7F,
+        KMemoryAttribute_All            = KMemoryAttribute_Mask,
         KMemoryAttribute_DontCareMask   = 0x80,
 
         KMemoryAttribute_Locked         = ams::svc::MemoryAttribute_Locked,
@@ -182,17 +185,15 @@ namespace ams::kern {
         u16 device_use_count;
 
         constexpr ams::svc::MemoryInfo GetSvcMemoryInfo() const {
-            ams::svc::MemoryInfo svc_info = {};
-
-            svc_info.addr             = this->address;
-            svc_info.size             = this->size;
-            svc_info.state            = static_cast<ams::svc::MemoryState>(this->state & KMemoryState_Mask);
-            svc_info.attr             = static_cast<ams::svc::MemoryAttribute>(this->attribute & KMemoryAttribute_Mask);
-            svc_info.perm             = static_cast<ams::svc::MemoryPermission>(this->perm & KMemoryPermission_UserMask);
-            svc_info.ipc_refcount     = this->ipc_lock_count;
-            svc_info.device_refcount  = this->device_use_count;
-
-            return svc_info;
+            return {
+                .addr             = this->address,
+                .size             = this->size,
+                .state            = static_cast<ams::svc::MemoryState>(this->state & KMemoryState_Mask),
+                .attr             = static_cast<ams::svc::MemoryAttribute>(this->attribute & KMemoryAttribute_Mask),
+                .perm             = static_cast<ams::svc::MemoryPermission>(this->perm & KMemoryPermission_UserMask),
+                .ipc_refcount     = this->ipc_lock_count,
+                .device_refcount  = this->device_use_count,
+            };
         }
 
         constexpr uintptr_t GetAddress() const {
@@ -258,18 +259,16 @@ namespace ams::kern {
             }
 
             constexpr KMemoryInfo GetMemoryInfo() const {
-                KMemoryInfo info = {};
-
-                info.address          = GetInteger(this->GetAddress());
-                info.size             = this->GetSize();
-                info.state            = this->memory_state;
-                info.perm             = this->perm;
-                info.attribute        = this->attribute;
-                info.original_perm    = this->original_perm;
-                info.ipc_lock_count   = this->ipc_lock_count;
-                info.device_use_count = this->device_use_count;
-
-                return info;
+                return {
+                    .address          = GetInteger(this->GetAddress()),
+                    .size             = this->GetSize(),
+                    .state            = this->memory_state,
+                    .perm             = this->perm,
+                    .attribute        = this->attribute,
+                    .original_perm    = this->original_perm,
+                    .ipc_lock_count   = this->ipc_lock_count,
+                    .device_use_count = this->device_use_count,
+                };
             }
         public:
             constexpr KMemoryBlock()

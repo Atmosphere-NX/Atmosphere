@@ -34,9 +34,9 @@ namespace ams::kern {
             }
 
             static constexpr s32 GetBlockIndex(size_t num_pages) {
-                for (size_t i = 0; i < NumMemoryBlockPageShifts; i++) {
+                for (s32 i = static_cast<s32>(NumMemoryBlockPageShifts) - 1; i >= 0; i--) {
                     if (num_pages >= (size_t(1) << MemoryBlockPageShifts[i]) / PageSize) {
-                        return static_cast<s32>(i);
+                        return i;
                     }
                 }
                 return -1;

@@ -27,7 +27,7 @@ namespace ams::kern {
             KVirtualAddress address;
             size_t num_pages;
         public:
-            constexpr KBlockInfo() : address(), num_pages() { /* ... */ }
+            constexpr KBlockInfo() : util::IntrusiveListBaseNode<KBlockInfo>(), address(), num_pages() { /* ... */ }
 
             constexpr void Initialize(KVirtualAddress addr, size_t np) {
                 this->address = addr;
@@ -82,9 +82,9 @@ namespace ams::kern {
             BlockInfoList block_list;
             KBlockInfoManager *manager;
         public:
-            KPageGroup() : block_list(), manager() { /* ... */ }
+            explicit KPageGroup(KBlockInfoManager *m) : block_list(), manager(m) { /* ... */ }
+            ~KPageGroup() { this->Finalize(); }
 
-            void Initialize(KBlockInfoManager *m);
             void Finalize();
 
             iterator begin() const { return this->block_list.begin(); }
@@ -105,6 +105,16 @@ namespace ams::kern {
             bool operator!=(const KPageGroup &rhs) const {
                 return !(*this == rhs);
             }
+    };
+
+    class KScopedPageGroup {
+        private:
+            KPageGroup *group;
+        public:
+            explicit ALWAYS_INLINE KScopedPageGroup(KPageGroup *gp) : group(gp) { group->Open(); }
+            explicit ALWAYS_INLINE KScopedPageGroup(KPageGroup &gp) : KScopedPageGroup(std::addressof(gp)) { /* ... */ }
+            ALWAYS_INLINE ~KScopedPageGroup() { group->Close(); }
+
     };
 
 }

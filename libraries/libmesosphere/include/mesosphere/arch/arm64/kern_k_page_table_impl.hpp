@@ -18,6 +18,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
+#include <mesosphere/arch/arm64/kern_k_page_table_entry.hpp>
 
 namespace ams::kern::arm64 {
 
@@ -28,15 +29,48 @@ namespace ams::kern::arm64 {
         NON_COPYABLE(KPageTableImpl);
         NON_MOVEABLE(KPageTableImpl);
         private:
-            u64 *table;
+            static constexpr size_t PageBits  = __builtin_ctzll(PageSize);
+            static constexpr size_t NumLevels = 3;
+            static constexpr size_t LevelBits = 9;
+            static_assert(NumLevels > 0);
+
+            static constexpr size_t AddressBits = (NumLevels - 1) * LevelBits + PageBits;
+            static_assert(AddressBits <= BITSIZEOF(u64));
+            static constexpr size_t AddressSpaceSize = (1ull << AddressBits);
+        private:
+            L1PageTableEntry *table;
             bool is_kernel;
             u32  num_entries;
+        public:
+            ALWAYS_INLINE KVirtualAddress GetTableEntry(KVirtualAddress table, size_t index) {
+                return table + index * sizeof(PageTableEntry);
+            }
+
+            ALWAYS_INLINE L1PageTableEntry *GetL1Entry(KProcessAddress address) {
+                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(this->table), (GetInteger(address) >> (PageBits + LevelBits * 2)) & (this->num_entries - 1)));
+            }
+
+            ALWAYS_INLINE L2PageTableEntry *GetL2EntryFromTable(KVirtualAddress table, KProcessAddress address) {
+                return GetPointer<L2PageTableEntry>(GetTableEntry(table, (GetInteger(address) >> (PageBits + LevelBits * 1)) & ((1ul << LevelBits) - 1)));
+            }
+
+            ALWAYS_INLINE L2PageTableEntry *GetL2Entry(const L1PageTableEntry *entry, KProcessAddress address) {
+                return GetL2EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
+            }
+
+            ALWAYS_INLINE L3PageTableEntry *GetL3EntryFromTable(KVirtualAddress table, KProcessAddress address) {
+                return GetPointer<L3PageTableEntry>(GetTableEntry(table, (GetInteger(address) >> (PageBits + LevelBits * 0)) & ((1ul << LevelBits) - 1)));
+            }
+
+            ALWAYS_INLINE L3PageTableEntry *GetL3Entry(const L2PageTableEntry *entry, KProcessAddress address) {
+                return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
+            }
         public:
             constexpr KPageTableImpl() : table(), is_kernel(), num_entries() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
 
-            u64 *Finalize();
+            L1PageTableEntry *Finalize();
     };
 
 }

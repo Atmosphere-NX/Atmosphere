@@ -17,26 +17,13 @@
 
 namespace ams::kern::arm64 {
 
-    namespace {
-
-        constexpr size_t PageBits  = __builtin_ctzll(PageSize);
-        constexpr size_t NumLevels = 3;
-        constexpr size_t LevelBits = 9;
-        static_assert(NumLevels > 0);
-
-        constexpr size_t AddressBits = (NumLevels - 1) * LevelBits + PageBits;
-        static_assert(AddressBits <= BITSIZEOF(u64));
-        constexpr size_t AddressSpaceSize = (1ull << AddressBits);
-
-    }
-
     void KPageTableImpl::InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end) {
-        this->table       = static_cast<u64 *>(tb);
+        this->table       = static_cast<L1PageTableEntry *>(tb);
         this->is_kernel   = true;
         this->num_entries = util::AlignUp(end - start, AddressSpaceSize) / AddressSpaceSize;
     }
 
-    u64 *KPageTableImpl::Finalize() {
+    L1PageTableEntry *KPageTableImpl::Finalize() {
         return this->table;
     }
 

@@ -14,9 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_common.hpp>
 
 #ifdef ATMOSPHERE_ARCH_ARM64
     #include <mesosphere/arch/arm64/init/kern_k_init_page_table.hpp>
+
+    namespace ams::kern::init {
+        using ams::kern::arm64::PageTableEntry;
+        using ams::kern::arm64::init::KInitialPageTable;
+        using ams::kern::arm64::init::KInitialPageAllocator;
+    }
 #else
     #error "Unknown architecture for KInitialPageTable"
 #endif

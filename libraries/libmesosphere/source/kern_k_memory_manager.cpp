@@ -103,19 +103,10 @@ namespace ams::kern {
         /* Loop, trying to iterate from each block. */
         Impl *chosen_manager = nullptr;
         KVirtualAddress allocated_block = Null<KVirtualAddress>;
-        if (dir == Direction_FromBack) {
-            for (chosen_manager = this->pool_managers_tail[pool]; chosen_manager != nullptr; chosen_manager = chosen_manager->GetPrev()) {
-                allocated_block = chosen_manager->AllocateBlock(heap_index);
-                if (allocated_block != Null<KVirtualAddress>) {
-                    break;
-                }
-            }
-        } else {
-            for (chosen_manager = this->pool_managers_head[pool]; chosen_manager != nullptr; chosen_manager = chosen_manager->GetNext()) {
-                allocated_block = chosen_manager->AllocateBlock(heap_index);
-                if (allocated_block != Null<KVirtualAddress>) {
-                    break;
-                }
+        for (chosen_manager = this->GetFirstManager(pool, dir); chosen_manager != nullptr; chosen_manager = this->GetNextManager(chosen_manager, dir)) {
+            allocated_block = chosen_manager->AllocateBlock(heap_index);
+            if (allocated_block != Null<KVirtualAddress>) {
+                break;
             }
         }
 
@@ -136,6 +127,70 @@ namespace ams::kern {
         }
 
         return allocated_block;
+    }
+
+    Result KMemoryManager::Allocate(KPageGroup *out, size_t num_pages, u32 option) {
+        MESOSPHERE_ASSERT(out != nullptr);
+        MESOSPHERE_ASSERT(out->GetNumPages() == 0);
+
+        /* Early return if we're allocating no pages. */
+        if (num_pages == 0) {
+            return ResultSuccess();
+        }
+
+        /* Lock the pool that we're allocating from. */
+        const auto [pool, dir] = DecodeOption(option);
+        KScopedLightLock lk(this->pool_locks[pool]);
+
+        /* Choose a heap based on our page size request. */
+        const s32 heap_index = KPageHeap::GetBlockIndex(num_pages);
+        R_UNLESS(0 <= heap_index, svc::ResultOutOfMemory());
+
+        /* Ensure that we don't leave anything un-freed. */
+        auto group_guard = SCOPE_GUARD {
+            for (const auto &it : *out) {
+                auto &manager = this->GetManager(it.GetAddress());
+                const size_t num_pages = std::min(it.GetNumPages(), (manager.GetEndAddress() - it.GetAddress()) / PageSize);
+                manager.Free(it.GetAddress(), num_pages);
+            }
+            out->Finalize();
+        };
+
+        /* Keep allocating until we've allocated all our pages. */
+        for (s32 index = heap_index; index >= 0 && num_pages > 0; index--) {
+            const size_t pages_per_alloc = KPageHeap::GetBlockNumPages(index);
+            for (Impl *cur_manager = this->GetFirstManager(pool, dir); cur_manager != nullptr; cur_manager = this->GetNextManager(cur_manager, dir)) {
+                while (num_pages >= pages_per_alloc) {
+                    /* Allocate a block. */
+                    KVirtualAddress allocated_block = cur_manager->AllocateBlock(index);
+                    if (allocated_block == Null<KVirtualAddress>) {
+                        break;
+                    }
+
+                    /* Safely add it to our group. */
+                    {
+                        auto block_guard = SCOPE_GUARD { cur_manager->Free(allocated_block, pages_per_alloc); };
+                        R_TRY(out->AddBlock(allocated_block, pages_per_alloc));
+                        block_guard.Cancel();
+                    }
+
+                    /* Maintain the optimized memory bitmap, if we should. */
+                    if (this->has_optimized_process[pool]) {
+                        cur_manager->TrackAllocationForOptimizedProcess(allocated_block, pages_per_alloc);
+                    }
+
+                    num_pages -= pages_per_alloc;
+                }
+            }
+        }
+
+        /* Only succeed if we allocated as many pages as we wanted. */
+        MESOSPHERE_ASSERT(num_pages >= 0);
+        R_UNLESS(num_pages == 0, svc::ResultOutOfMemory());
+
+        /* We succeeded! */
+        group_guard.Cancel();
+        return ResultSuccess();
     }
 
     size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress metadata, KVirtualAddress metadata_end) {

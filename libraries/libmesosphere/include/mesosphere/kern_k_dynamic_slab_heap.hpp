@@ -103,8 +103,11 @@ namespace ams::kern {
                     }
                 }
 
-                /* Update our tracking. */
                 if (AMS_LIKELY(allocated != nullptr)) {
+                    /* Construct the object. */
+                    new (allocated) T();
+
+                    /* Update our tracking. */
                     size_t used = ++this->used;
                     size_t peak = this->peak;
                     while (peak < used) {

@@ -104,7 +104,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(big_index >= 0);
 
         /* Free space before the big blocks. */
-        for (s32 i = big_index; i >= 0; i--) {
+        for (s32 i = big_index - 1; i >= 0; i--) {
             const size_t block_size = this->blocks[i].GetSize();
             while (before_start + block_size <= before_end) {
                 before_end -= block_size;
@@ -113,11 +113,11 @@ namespace ams::kern {
         }
 
         /* Free space after the big blocks. */
-        for (s32 i = big_index; i >= 0; i--) {
+        for (s32 i = big_index - 1; i >= 0; i--) {
             const size_t block_size = this->blocks[i].GetSize();
             while (after_start + block_size <= after_end) {
-                after_start += block_size;
                 this->FreeBlock(after_start, i);
+                after_start += block_size;
             }
         }
     }

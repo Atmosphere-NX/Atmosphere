@@ -93,6 +93,10 @@ namespace ams::kern {
                 *this->GetRefCountPointer(addr) -= count;
                 return this->GetRefCount(addr) == 0;
             }
+
+            constexpr bool IsInPageTableHeap(KVirtualAddress addr) const {
+                return this->IsInRange(addr);
+            }
     };
 
 }

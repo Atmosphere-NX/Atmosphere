@@ -51,7 +51,7 @@ namespace ams::kern {
         this->stack_fill_value          = MemoryFillValue_Zero;
 
         this->cached_physical_linear_region           = nullptr;
-        this->cached_physical_non_kernel_dram_region  = nullptr;
+        this->cached_physical_heap_region             = nullptr;
         this->cached_virtual_managed_pool_dram_region = nullptr;
 
         /* Initialize our implementation. */
@@ -66,5 +66,280 @@ namespace ams::kern {
     void KPageTableBase::Finalize() {
         this->memory_block_manager.Finalize(this->memory_block_slab_manager);
         MESOSPHERE_TODO("cpu::InvalidateEntireInstructionCache();");
+    }
+
+    KProcessAddress KPageTableBase::GetRegionAddress(KMemoryState state) const {
+        switch (state) {
+            case KMemoryState_Free:
+            case KMemoryState_Kernel:
+                return this->address_space_start;
+            case KMemoryState_Normal:
+                return this->heap_region_start;
+            case KMemoryState_Ipc:
+            case KMemoryState_NonSecureIpc:
+            case KMemoryState_NonDeviceIpc:
+                return this->alias_region_start;
+            case KMemoryState_Stack:
+                return this->stack_region_start;
+            case KMemoryState_Io:
+            case KMemoryState_Static:
+            case KMemoryState_ThreadLocal:
+                return this->kernel_map_region_start;
+            case KMemoryState_Shared:
+            case KMemoryState_AliasCode:
+            case KMemoryState_AliasCodeData:
+            case KMemoryState_Transfered:
+            case KMemoryState_SharedTransfered:
+            case KMemoryState_SharedCode:
+            case KMemoryState_GeneratedCode:
+            case KMemoryState_CodeOut:
+                return this->alias_code_region_start;
+            case KMemoryState_Code:
+            case KMemoryState_CodeData:
+                return this->code_region_start;
+            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    size_t KPageTableBase::GetRegionSize(KMemoryState state) const {
+        switch (state) {
+            case KMemoryState_Free:
+            case KMemoryState_Kernel:
+                return this->address_space_end - this->address_space_start;
+            case KMemoryState_Normal:
+                return this->heap_region_end - this->heap_region_start;
+            case KMemoryState_Ipc:
+            case KMemoryState_NonSecureIpc:
+            case KMemoryState_NonDeviceIpc:
+                return this->alias_region_end - this->alias_region_start;
+            case KMemoryState_Stack:
+                return this->stack_region_end - this->stack_region_start;
+            case KMemoryState_Io:
+            case KMemoryState_Static:
+            case KMemoryState_ThreadLocal:
+                return this->kernel_map_region_end - this->kernel_map_region_start;
+            case KMemoryState_Shared:
+            case KMemoryState_AliasCode:
+            case KMemoryState_AliasCodeData:
+            case KMemoryState_Transfered:
+            case KMemoryState_SharedTransfered:
+            case KMemoryState_SharedCode:
+            case KMemoryState_GeneratedCode:
+            case KMemoryState_CodeOut:
+                return this->alias_code_region_end - this->alias_code_region_start;
+            case KMemoryState_Code:
+            case KMemoryState_CodeData:
+                return this->code_region_end - this->code_region_start;
+            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    bool KPageTableBase::Contains(KProcessAddress addr, size_t size, KMemoryState state) const {
+        const KProcessAddress end = addr + size;
+        const KProcessAddress last = end - 1;
+
+        const KProcessAddress region_start = this->GetRegionAddress(state);
+        const size_t region_size           = this->GetRegionSize(state);
+
+        const bool is_in_region = region_start <= addr && addr < end && last <= region_start + region_size - 1;
+        const bool is_in_heap   = !(end <= this->heap_region_start || this->heap_region_end <= addr);
+        const bool is_in_alias  = !(end <= this->alias_region_start || this->alias_region_end <= addr);
+        switch (state) {
+            case KMemoryState_Free:
+            case KMemoryState_Kernel:
+                return is_in_region;
+            case KMemoryState_Io:
+            case KMemoryState_Static:
+            case KMemoryState_Code:
+            case KMemoryState_CodeData:
+            case KMemoryState_Shared:
+            case KMemoryState_AliasCode:
+            case KMemoryState_AliasCodeData:
+            case KMemoryState_Stack:
+            case KMemoryState_ThreadLocal:
+            case KMemoryState_Transfered:
+            case KMemoryState_SharedTransfered:
+            case KMemoryState_SharedCode:
+            case KMemoryState_GeneratedCode:
+            case KMemoryState_CodeOut:
+                return is_in_region && !is_in_heap && !is_in_alias;
+            case KMemoryState_Normal:
+                MESOSPHERE_ASSERT(is_in_heap);
+                return is_in_region && !is_in_alias;
+            case KMemoryState_Ipc:
+            case KMemoryState_NonSecureIpc:
+            case KMemoryState_NonDeviceIpc:
+                MESOSPHERE_ASSERT(is_in_alias);
+                return is_in_region && !is_in_heap;
+            default:
+                return false;
+        }
+    }
+
+    Result KPageTableBase::CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
+        /* Validate the states match expectation. */
+        R_UNLESS((info.state     & state_mask) == state, svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.perm      & perm_mask)  == perm, svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.attribute & attr_mask)  == attr, svc::ResultInvalidCurrentMemory());
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Get information about the first block. */
+        const KProcessAddress last_addr = addr + size - 1;
+        KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(addr);
+        KMemoryInfo info = it->GetMemoryInfo();
+
+        /* Validate all blocks in the range have correct state. */
+        const KMemoryState      first_state = info.state;
+        const KMemoryPermission first_perm  = info.perm;
+        const KMemoryAttribute  first_attr  = info.attribute;
+        while (true) {
+            /* Validate the current block. */
+            R_UNLESS(info.state == first_state,                                    svc::ResultInvalidCurrentMemory());
+            R_UNLESS(info.perm  == first_perm,                                     svc::ResultInvalidCurrentMemory());
+            R_UNLESS((info.attribute | ignore_attr) == (first_attr | ignore_attr), svc::ResultInvalidCurrentMemory());
+
+            /* Validate against the provided masks. */
+            R_TRY(this->CheckMemoryState(info, state_mask, state, perm_mask, perm, attr_mask, attr));
+
+            /* Break once we're done. */
+            if (last_addr <= info.GetLastAddress()) {
+                break;
+            }
+
+            /* Advance our iterator. */
+            it++;
+            MESOSPHERE_ASSERT(it != this->memory_block_manager.cend());
+            info = it->GetMemoryInfo();
+        }
+
+        /* Write output state. */
+        if (out_state) {
+            *out_state = first_state;
+        }
+        if (out_perm) {
+            *out_perm = first_perm;
+        }
+        if (out_attr) {
+            *out_attr = static_cast<KMemoryAttribute>(first_attr & ~ignore_attr);
+        }
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::QueryInfoImpl(KMemoryInfo *out_info, ams::svc::PageInfo *out_page, KProcessAddress address) const {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(out_info != nullptr);
+        MESOSPHERE_ASSERT(out_page != nullptr);
+
+        const KMemoryBlock *block = this->memory_block_manager.FindBlock(address);
+        R_UNLESS(block != nullptr, svc::ResultInvalidCurrentMemory());
+
+        *out_info = block->GetMemoryInfo();
+        out_page->flags = 0;
+        return ResultSuccess();
+    }
+
+    KProcessAddress KPageTableBase::FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const {
+        KProcessAddress address = Null<KProcessAddress>;
+
+        if (num_pages <= region_num_pages) {
+            if (this->IsAslrEnabled()) {
+                /* Try to directly find a free area up to 8 times. */
+                for (size_t i = 0; i < 8; i++) {
+                    const size_t random_offset = KSystemControl::GenerateRandomRange(0, (region_num_pages - num_pages - guard_pages) * PageSize / alignment) * alignment;
+                    const KProcessAddress candidate = util::AlignDown(GetInteger(region_start + random_offset), alignment) + offset;
+
+                    KMemoryInfo info;
+                    ams::svc::PageInfo page_info;
+                    MESOSPHERE_R_ABORT_UNLESS(this->QueryInfoImpl(&info, &page_info, candidate));
+
+                    if (info.state != KMemoryState_Free) { continue; }
+                    if (!(region_start <= candidate)) { continue; }
+                    if (!(info.GetAddress() + guard_pages * PageSize <= GetInteger(candidate))) { continue; }
+                    if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= info.GetLastAddress())) { continue; }
+                    if (!(candidate + (num_pages + guard_pages) * PageSize - 1 <= region_start + region_num_pages * PageSize - 1)) { continue; }
+
+                    address = candidate;
+                    break;
+                }
+                /* Fall back to finding the first free area with a random offset. */
+                if (address == Null<KProcessAddress>) {
+                    /* NOTE: Nintendo does not account for guard pages here. */
+                    /* This may theoretically cause an offset to be chosen that cannot be mapped. */
+                    /* TODO: Should we account for guard pages? */
+                    const size_t offset_pages = KSystemControl::GenerateRandomRange(0, region_num_pages - num_pages);
+                    address = this->memory_block_manager.FindFreeArea(region_start + offset_pages * PageSize, region_num_pages - offset_pages, num_pages, alignment, offset, guard_pages);
+                }
+            }
+            /* Find the first free area. */
+            if (address == Null<KProcessAddress>) {
+                address = this->memory_block_manager.FindFreeArea(region_start, region_num_pages, num_pages, alignment, offset, guard_pages);
+            }
+        }
+
+        return address;
+    }
+
+    Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties) {
+        /* Create a page group to hold the pages we allocate. */
+        KPageGroup pg(this->block_info_manager);
+
+        /* Allocate the pages. */
+        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(pg), num_pages, this->allocate_option));
+
+        /* Ensure that the page group is open while we work with it. */
+        KScopedPageGroup spg(pg);
+
+        /* Clear all pages. */
+        for (const auto &it : pg) {
+            std::memset(GetVoidPointer(it.GetAddress()), this->heap_fill_value, it.GetSize());
+        }
+
+        /* Map the pages. */
+        return this->Operate(page_list, address, num_pages, std::addressof(pg), properties, OperationType_MapGroup, false);
+    }
+
+    Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
+        MESOSPHERE_ASSERT(util::IsAligned(alignment, PageSize) && alignment >= PageSize);
+
+        /* Ensure this is a valid map request. */
+        R_UNLESS(this->Contains(region_start, region_num_pages * PageSize, state), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(num_pages < region_num_pages,                                     svc::ResultOutOfMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Find a random address to map at. */
+        KProcessAddress addr = this->FindFreeArea(region_start, region_num_pages, num_pages, alignment, 0, this->GetNumGuardPages());
+        R_UNLESS(addr != Null<KProcessAddress>, svc::ResultOutOfMemory());
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(addr), alignment));
+        MESOSPHERE_ASSERT(this->Contains(addr, num_pages * PageSize, state));
+        MESOSPHERE_R_ASSERT(this->CheckMemoryState(addr, num_pages * PageSize, KMemoryState_All, KMemoryState_Free, KMemoryPermission_All, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform mapping operation. */
+        const KPageProperties properties = { perm, false, false, false };
+        if (is_pa_valid) {
+            R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
+        } else {
+            R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), addr, num_pages, properties));
+        }
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None);
+
+        /* We successfully mapped the pages. */
+        *out_addr = addr;
+        return ResultSuccess();
     }
 }

@@ -23,13 +23,13 @@ namespace ams::kern {
         R_UNLESS(start_block != nullptr, svc::ResultOutOfResource());
 
         /* Set our start and end. */
-        this->start = st;
-        this->end   = nd;
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(this->start), PageSize));
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(this->end), PageSize));
+        this->start_address = st;
+        this->end_address   = nd;
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(this->start_address), PageSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(this->end_address), PageSize));
 
         /* Initialize and insert the block. */
-        start_block->Initialize(this->start, (this->end - this->start) / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+        start_block->Initialize(this->start_address, (this->end_address - this->start_address) / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
         this->memory_block_tree.insert(*start_block);
 
         return ResultSuccess();
@@ -45,6 +45,37 @@ namespace ams::kern {
         }
 
         MESOSPHERE_ASSERT(this->memory_block_tree.empty());
+    }
+
+    KProcessAddress KMemoryBlockManager::FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const {
+        if (num_pages > 0) {
+            const KProcessAddress region_end  = region_start + region_num_pages * PageSize;
+            const KProcessAddress region_last = region_end - 1;
+            for (const_iterator it = this->FindIterator(region_start); it != this->memory_block_tree.cend(); it++) {
+                const KMemoryInfo info = it->GetMemoryInfo();
+                if (region_last < info.GetAddress()) {
+                    break;
+                }
+                if (info.state != KMemoryState_Free) {
+                    continue;
+                }
+
+                KProcessAddress area = (info.GetAddress() <= GetInteger(region_start)) ? region_start : info.GetAddress();
+                area += guard_pages * PageSize;
+
+                const KProcessAddress offset_area = util::AlignDown(GetInteger(area), alignment) + offset;
+                area = (area <= offset_area) ? offset_area : offset_area + alignment;
+
+                const KProcessAddress area_end = area + num_pages * PageSize + guard_pages * PageSize;
+                const KProcessAddress area_last = area_end - 1;
+
+                if (info.GetAddress() <= GetInteger(area) && area < area_last && area_last <= region_last && GetInteger(area_last) <= info.GetLastAddress()) {
+                    return area;
+                }
+            }
+        }
+
+        return Null<KProcessAddress>;
     }
 
     void KMemoryBlockManager::Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr) {
@@ -101,7 +132,7 @@ namespace ams::kern {
 
         /* Find the iterator now that we've updated. */
         it = this->FindIterator(address);
-        if (address != this->start) {
+        if (address != this->start_address) {
             it--;
         }
 

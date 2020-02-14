@@ -90,7 +90,7 @@ namespace ams::kern::init {
         g_initial_page_allocator.Initialize(initial_page_allocator_state);
 
         /* Ensure that the T1SZ is correct (and what we expect). */
-        MESOSPHERE_INIT_ABORT_UNLESS((cpu::TranslationControlRegisterAccessor().GetT1Size() / L1BlockSize) == MaxPageTableEntries);
+        MESOSPHERE_INIT_ABORT_UNLESS((cpu::TranslationControlRegisterAccessor().GetT1Size() / arm64::L1BlockSize) == arm64::MaxPageTableEntries);
 
         /* Create page table object for use during initialization. */
         KInitialPageTable ttbr1_table(util::AlignDown(cpu::GetTtbr1El1(), PageSize), KInitialPageTable::NoClear{});

@@ -27,6 +27,10 @@ namespace ams::kern {
                 std::memset(buffer, 0, sizeof(buffer));
             }
 
+            ALWAYS_INLINE KPhysicalAddress GetPhysicalAddress() const {
+                return KMemoryLayout::GetLinearPhysicalAddress(KVirtualAddress(this));
+            }
+
             static ALWAYS_INLINE KPageBuffer *FromPhysicalAddress(KPhysicalAddress phys_addr) {
                 const KVirtualAddress virt_addr = KMemoryLayout::GetLinearVirtualAddress(phys_addr);
 

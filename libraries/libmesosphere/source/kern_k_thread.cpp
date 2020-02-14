@@ -200,14 +200,18 @@ namespace ams::kern {
         KPageBuffer *page = KPageBuffer::Allocate();
         R_UNLESS(page != nullptr, svc::ResultOutOfResource());
 
-
         /* Map the stack page. */
         KProcessAddress stack_top = Null<KProcessAddress>;
         {
+            KProcessAddress stack_bottom = Null<KProcessAddress>;
             auto page_guard = SCOPE_GUARD { KPageBuffer::Free(page); };
-            MESOSPHERE_TODO("R_TRY(Kernel::GetSupervisorPageTable().Map); ...");
-            (void)(stack_region);
+            R_TRY(Kernel::GetKernelPageTable().MapPages(std::addressof(stack_bottom), 1, PageSize, page->GetPhysicalAddress(), stack_region.GetAddress(),
+                                                        stack_region.GetSize() / PageSize, KMemoryState_Kernel, KMemoryPermission_KernelReadWrite));
             page_guard.Cancel();
+
+
+            /* Calculate top of the stack. */
+            stack_top = stack_bottom + PageSize;
         }
 
         /* Initialize the thread. */

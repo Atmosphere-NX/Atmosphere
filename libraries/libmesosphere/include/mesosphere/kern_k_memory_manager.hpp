@@ -21,6 +21,8 @@
 
 namespace ams::kern {
 
+    class KPageGroup;
+
     class KMemoryManager {
         public:
             enum Pool {
@@ -135,6 +137,18 @@ namespace ams::kern {
             Impl &GetManager(KVirtualAddress address) {
                 return this->managers[KMemoryLayout::GetVirtualLinearRegion(address).GetAttributes()];
             }
+
+            constexpr Impl *GetFirstManager(Pool pool, Direction dir) {
+                return dir == Direction_FromBack ? this->pool_managers_tail[pool] : this->pool_managers_head[pool];
+            }
+
+            constexpr Impl *GetNextManager(Impl *cur, Direction dir) {
+                if (dir == Direction_FromBack) {
+                    return cur->GetPrev();
+                } else {
+                    return cur->GetNext();
+                }
+            }
         public:
             constexpr KMemoryManager()
                 : pool_locks(), pool_managers_head(), pool_managers_tail(), managers(), num_managers(), optimized_process_ids(), has_optimized_process()
@@ -144,7 +158,8 @@ namespace ams::kern {
 
             NOINLINE void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
 
-            KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
+            NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
+            NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);
 
             void Open(KVirtualAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */

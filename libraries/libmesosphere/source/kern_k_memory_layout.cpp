@@ -135,7 +135,6 @@ namespace ams::kern {
 
         namespace {
 
-
             constexpr PageTableEntry KernelRwDataAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable);
 
             constexpr size_t CarveoutAlignment             = 0x20000;

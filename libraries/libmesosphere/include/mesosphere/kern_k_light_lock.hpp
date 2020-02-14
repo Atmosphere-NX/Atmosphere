@@ -59,6 +59,9 @@ namespace ams::kern {
 
             void LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
             void UnlockSlowPath(uintptr_t cur_thread);
+
+            bool IsLocked() const { return this->tag != 0; }
+            bool IsLockedByCurrentThread() const { return (this->tag | 0x1ul) == (reinterpret_cast<uintptr_t>(GetCurrentThreadPointer()) | 0x1ul); }
     };
 
     using KScopedLightLock = KScopedLock<KLightLock>;

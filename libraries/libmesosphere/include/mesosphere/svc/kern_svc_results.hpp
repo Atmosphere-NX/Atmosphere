@@ -35,7 +35,7 @@ namespace ams::kern::svc {
     /* 103 */ using ::ams::svc::ResultOutOfResource;
     /* 104 */ using ::ams::svc::ResultOutOfMemory;
     /* 105 */ using ::ams::svc::ResultOutOfHandles;
-    /* 106 */ using ::ams::svc::ResultInvalidCurrentMemoryState;
+    /* 106 */ using ::ams::svc::ResultInvalidCurrentMemory;
 
     /* 108 */ using ::ams::svc::ResultInvalidNewMemoryPermissions;
 

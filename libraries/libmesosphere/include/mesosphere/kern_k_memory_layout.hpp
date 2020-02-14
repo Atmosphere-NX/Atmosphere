@@ -131,10 +131,10 @@ namespace ams::kern {
             static constexpr ALWAYS_INLINE int Compare(const KMemoryRegion &lhs, const KMemoryRegion &rhs) {
                 if (lhs.GetAddress() < rhs.GetAddress()) {
                     return -1;
-                } else if (lhs.GetLastAddress() > rhs.GetLastAddress()) {
-                    return 1;
-                } else {
+                } else if (lhs.GetAddress() <= rhs.GetLastAddress()) {
                     return 0;
+                } else {
+                    return 1;
                 }
             }
         public:
@@ -246,11 +246,7 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE KMemoryRegionTree() : tree() { /* ... */ }
         public:
             iterator FindContainingRegion(uintptr_t address) {
-                auto it = this->find(KMemoryRegion(address, 1, 0, 0));
-                MESOSPHERE_INIT_ABORT_UNLESS(it != this->end());
-                MESOSPHERE_INIT_ABORT_UNLESS(it->Contains(address));
-
-                return it;
+                return this->find(KMemoryRegion(address, 1, 0, 0));
             }
 
             iterator FindFirstRegionByTypeAttr(u32 type_id, u32 attr = 0) {
@@ -481,6 +477,16 @@ namespace ams::kern {
 
             static NOINLINE KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) {
                 return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
+            }
+
+            static NOINLINE bool IsHeapPhysicalAddress(KMemoryRegion **out, KPhysicalAddress address) {
+                if (auto it = GetPhysicalLinearMemoryRegionTree().FindContainingRegion(GetInteger(address)); it != GetPhysicalLinearMemoryRegionTree().end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
+                    if (out) {
+                        *out = std::addressof(*it);
+                    }
+                    return true;
+                }
+                return false;
             }
 
             static NOINLINE std::tuple<size_t, size_t> GetTotalAndKernelMemorySizes() {

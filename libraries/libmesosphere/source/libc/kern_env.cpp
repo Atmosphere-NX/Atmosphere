@@ -22,3 +22,7 @@ void operator delete (void *deleted) throw() {
 void operator delete (void *deleted, size_t size) throw() {
     MESOSPHERE_PANIC("operator delete(void *, size_t) was called: %p %zu", deleted, size);
 }
+
+void abort() {
+    MESOSPHERE_PANIC("abort() was called");
+}

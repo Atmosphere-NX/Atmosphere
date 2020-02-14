@@ -17,10 +17,6 @@
 
 namespace ams::kern {
 
-    void KPageGroup::Initialize(KBlockInfoManager *m) {
-        this->manager = m;
-    }
-
     void KPageGroup::Finalize() {
         auto it = this->block_list.begin();
         while (it != this->block_list.end()) {

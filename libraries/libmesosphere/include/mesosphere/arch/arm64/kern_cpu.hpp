@@ -124,9 +124,26 @@ namespace ams::kern::arm64::cpu {
         ClearPageToZeroImpl(page);
     }
 
+    ALWAYS_INLINE void InvalidateTlbByAsid(u32 asid) {
+        const u64 value = (static_cast<u64>(asid) << 48);
+        __asm__ __volatile__("tlbi aside1is, %[value]" :: [value]"r"(static_cast<u64>(value) << 48) : "memory");
+        EnsureInstructionConsistency();
+    }
+
+    ALWAYS_INLINE void InvalidateTlbByAsidAndVa(u32 asid, KProcessAddress virt_addr) {
+        const u64 value = (static_cast<u64>(asid) << 48) | ((GetInteger(virt_addr) >> 12) & 0xFFFFFFFFFFFul);
+        __asm__ __volatile__("tlbi aside1is, %[value]" :: [value]"r"(value) : "memory");
+        EnsureInstructionConsistency();
+    }
+
     ALWAYS_INLINE void InvalidateEntireTlb() {
         __asm__ __volatile__("tlbi vmalle1is" ::: "memory");
         EnsureInstructionConsistency();
+    }
+
+    ALWAYS_INLINE void InvalidateEntireTlbDataOnly() {
+        __asm__ __volatile__("tlbi vmalle1is" ::: "memory");
+        DataSynchronizationBarrier();
     }
 
     ALWAYS_INLINE uintptr_t GetCoreLocalRegionAddress() {

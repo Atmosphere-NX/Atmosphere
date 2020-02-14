@@ -79,16 +79,21 @@ namespace ams::kern {
             using const_iterator = MemoryBlockTree::const_iterator;
         private:
             MemoryBlockTree memory_block_tree;
-            KProcessAddress start;
-            KProcessAddress end;
+            KProcessAddress start_address;
+            KProcessAddress end_address;
         public:
-            constexpr KMemoryBlockManager() : memory_block_tree(), start(), end() { /* ... */ }
+            constexpr KMemoryBlockManager() : memory_block_tree(), start_address(), end_address() { /* ... */ }
+
+            iterator end() { return this->memory_block_tree.end(); }
+            const_iterator end() const { return this->memory_block_tree.end(); }
+            const_iterator cend() const { return this->memory_block_tree.cend(); }
 
             Result Initialize(KProcessAddress st, KProcessAddress nd, KMemoryBlockSlabManager *slab_manager);
             void   Finalize(KMemoryBlockSlabManager *slab_manager);
 
-            void Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
+            KProcessAddress FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const;
 
+            void Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
 
             iterator FindIterator(KProcessAddress address) const {
                 return this->memory_block_tree.find(KMemoryBlock(address, 1, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None));
