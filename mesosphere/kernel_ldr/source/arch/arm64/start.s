@@ -96,7 +96,7 @@ _start:
     mov sp, x2
     br  x1
 
-
+.balign 8
 __external_references:
     .quad __bss_start__ - _start
     .quad __bss_end__   - _start
