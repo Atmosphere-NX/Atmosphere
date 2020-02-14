@@ -20,6 +20,7 @@
 #include <mesosphere/kern_k_memory_layout.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_core_local_region.hpp>
+#include <mesosphere/kern_k_worker_task_manager.hpp>
 
 namespace ams::kern {
 
@@ -69,6 +70,7 @@ namespace ams::kern {
             static KMemoryBlockSlabManager s_sys_memory_block_manager;
             static KBlockInfoManager s_block_info_manager;
             static KSupervisorPageTable s_supervisor_page_table;
+            static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -134,6 +136,11 @@ namespace ams::kern {
 
             static ALWAYS_INLINE KSupervisorPageTable &GetKernelPageTable() {
                 return s_supervisor_page_table;
+            }
+
+            static ALWAYS_INLINE KWorkerTaskManager &GetWorkerTaskManager(KWorkerTaskManager::WorkerType type) {
+                MESOSPHERE_ASSERT(type <= KWorkerTaskManager::WorkerType_Count);
+                return s_worker_task_managers[type];
             }
     };
 

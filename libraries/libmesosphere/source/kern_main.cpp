@@ -107,7 +107,7 @@ namespace ams::kern {
 
         /* Perform more core-0 specific initialization. */
         if (core_id == 0) {
-            MESOSPHERE_TODO("Initialize KWorkerThreadManager");
+            Kernel::GetWorkerTaskManager(KWorkerTaskManager::WorkerType_Exit).Initialize(KWorkerTaskManager::WorkerType_Exit, KWorkerTaskManager::ExitWorkerPriority);
 
             MESOSPHERE_TODO("KSystemControl::InitializeSleepManagerAndAppletSecureMemory();");
 
