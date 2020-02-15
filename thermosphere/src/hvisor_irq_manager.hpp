@@ -45,15 +45,15 @@ namespace ams::hvisor {
             static void ClearInterruptActive(u32 id)                    { gicd->icactiver[id / 32] = BIT(id % 32); }
             static void SetInterruptShiftedPriority(u32 id, u8 prio)    { gicd->ipriorityr[id] = prio; }
             static void SetInterruptTargets(u32 id, u8 targetList)      { gicd->itargetsr[id] = targetList; }
-            static bool IsInterruptLevelSensitive(u32 id)
+            static bool IsInterruptEdgeTriggered(u32 id)
             {
                 return ((gicd->icfgr[id / 16] >> GicV2Distributor::GetCfgrShift(id)) & 2) != 0;
             }
-            static void SetInterruptMode(u32 id, bool isLevelSensitive)
+            static void SetInterruptMode(u32 id, bool isEdgeTriggered)
             {
                 u32 cfgw = gicd->icfgr[id / 16];
                 cfgw &= ~(2 << GicV2Distributor::GetCfgrShift(id));
-                cfgw |= (!isLevelSensitive ? 2 : 0) << GicV2Distributor::GetCfgrShift(id);
+                cfgw |= (isEdgeTriggered ? 2 : 0) << GicV2Distributor::GetCfgrShift(id);
                 gicd->icfgr[id / 16] = cfgw;
             }
 
@@ -67,7 +67,6 @@ namespace ams::hvisor {
             u8 m_priorityShift = 0;
             u8 m_numPriorityLevels = 0;
             u8 m_numCpuInterfaces = 0;
-            u8 m_numListRegisters = 0;
 
         private:
             void SetInterruptPriority(u32 id, u8 prio) { SetInterruptShiftedPriority(id, prio << m_priorityShift); }

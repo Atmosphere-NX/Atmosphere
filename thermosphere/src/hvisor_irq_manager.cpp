@@ -91,7 +91,6 @@ namespace ams::hvisor {
             m_numPriorityLevels = static_cast<u8>(BIT(__builtin_popcount(gicd->ipriorityr[0])));
 
             m_numCpuInterfaces = static_cast<u8>(1 + ((gicd->typer >> 5) & 7));
-            m_numListRegisters = static_cast<u8>(1 + (gich->vtr & 0x3F));
         }
 
         // Only one core will reset the GIC state for the shared peripheral interrupts
@@ -149,7 +148,7 @@ namespace ams::hvisor {
         ClearInterruptEnabled(id);
         ClearInterruptPending(id);
         if (id >= 32) {
-            SetInterruptMode(id, isLevelSensitive);
+            SetInterruptMode(id, !isLevelSensitive);
             SetInterruptTargets(id, 0xFF); // all possible processors
         }
         SetInterruptPriority(id, prio);

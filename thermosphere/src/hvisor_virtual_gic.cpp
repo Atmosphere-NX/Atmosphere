@@ -16,6 +16,7 @@
 
 #include <mutex>
 #include "hvisor_virtual_gic.hpp"
+#include "cpu/hvisor_cpu_instructions.hpp"
 
 #define GICDOFF(field)          (offsetof(GicV2Distributor, field))
 
@@ -178,11 +179,11 @@ namespace ams::hvisor {
         VirqState &state = GetVirqState(id);
 
         // Expose bit(2n) as nonprogrammable to the guest no matter what the physical distributor actually behaves
-        bool newLvl = ((config & 2) << GicV2Distributor::GetCfgrShift(id)) == 0;
+        bool newEdgeTriggered = ((config & 2) << GicV2Distributor::GetCfgrShift(id)) != 0;
 
-        if (state.levelSensitive != newLvl) {
-            state.levelSensitive = newLvl;
-            IrqManager::SetInterruptMode(id, newLvl);
+        if (state.edgeTriggered != newEdgeTriggered) {
+            state.edgeTriggered = newEdgeTriggered;
+            IrqManager::SetInterruptMode(id, newEdgeTriggered);
         }
     }
 
@@ -427,7 +428,7 @@ namespace ams::hvisor {
             we're notified when they become pending again.
          */
 
-        if (!state.levelSensitive || !state.IsPending()) {
+        if (state.edgeTriggered || !state.IsPending()) {
             // Nothing to do for edge-triggered interrupts and non-pending interrupts
             return;
         }
@@ -479,7 +480,252 @@ namespace ams::hvisor {
 
         for (size_t i = 0; i < numChosen; i++) {
             chosen[i]->handled = true;
+            chosen[i]->coreId = currentCoreCtx->coreId;
             m_virqPendingQueue.erase(*chosen[i]);
         }
+    }
+
+    void VirtualGic::PushListRegisters(VirqState *chosen[], size_t num)
+    {
+        for (size_t i = 0; i < num; i++) {
+            VirqState &state = *chosen[i];
+            u32 irqId = state.irqId;
+
+            GicV2VirtualInterfaceController::ListRegister lr = {0};
+            lr.grp1 = false; // group0
+            lr.priority = state.priority;
+            lr.virtualId = irqId;
+
+            // We only add new pending interrupts here...
+            lr.pending = true;
+            lr.active = false;
+
+            // We don't support guests setting the pending latch, so the logic is probably simpler...
+
+            if (irqId < 16) {
+                // SGI
+                lr.physicalId = BIT(9) /* EOI notification bit */ | state.srcCoreId;
+                // ^ IDK how kvm gets away with not setting the EOI notif bits in some cases,
+                // what they do seems to be prone to drop interrupts, etc.
+
+                lr.hw = false; // software
+            } else {
+                // Actual physical interrupt
+                lr.hw = true;
+                lr.physicalId = irqId;
+            }
+
+            volatile auto *freeLr = AllocateListRegister();
+            ENSURE(freeLr != nullptr);
+            freeLr->raw = lr.raw;
+        }
+    }
+
+    bool VirtualGic::UpdateListRegister(volatile GicV2VirtualInterfaceController::ListRegister *lr)
+    {
+        GicV2VirtualInterfaceController::ListRegister lrCopy = { .raw = lr->raw };
+
+        u32 irqId = lrCopy.virtualId;
+
+        // Note: this give priority to multi-SGIs than can be immediately handled
+
+        // Update the state
+        VirqState &state = GetVirqState(irqId);
+        ENSURE(state.handled);
+
+        u32 srcCoreId = state.coreId;
+        u32 coreId = currentCoreCtx->coreId;
+
+        state.active = lrCopy.active;
+
+        if (lrCopy.active) {
+            // We don't dequeue active interrupts
+
+            if (irqId < 16) {
+                // We can allow SGIs to be marked active-pending if it's been made pending from the same source again
+                // For hw interrupts, the active-pending state is tracked in the real GICD
+                if (m_incomingSgiPendingSources[coreId][irqId] & BIT(srcCoreId)) {
+                    lrCopy.pending = true;
+                    m_incomingSgiPendingSources[coreId][irqId] &= ~BIT(srcCoreId);
+                }
+            }
+
+            // If the vIRQ goes from pending to active, it has been acknowledged: clear line level and pending latch
+            // SGIs are always edge-triggered, so line level doesn't matter & that's why we handle them above to simplify the code
+            if (!lrCopy.pending) {
+                state.ClearPendingOnAck();
+            }
+            lr->raw = lrCopy.raw;
+            return true;
+        } else if (lrCopy.pending) {
+            // New interrupts might have come, pending status might have been changed, etc.
+            // We need to put the interrupt back in the pending list (which we clean up afterwards)
+            state.handled = false;
+            m_virqPendingQueue.insert(state);
+            lr->raw = 0;
+            return false;
+        } else {
+            // Interrupt is inactive. This means it has been acked and handled.
+            // SGIs are always edge-triggered, so line level doesn't matter & that's why we handle them above to simplify the code
+
+            if (irqId < 16) {
+                // Special case for multi-SGIs if they can be immediately handled
+                if (m_incomingSgiPendingSources[coreId][irqId] != 0) {
+                    srcCoreId = __builtin_ctz(m_incomingSgiPendingSources[coreId][irqId]);
+                    state.srcCoreId = srcCoreId;
+                    m_incomingSgiPendingSources[coreId][irqId] &= ~BIT(srcCoreId);
+                    lrCopy.physicalId = BIT(9) /* EOI notification bit */ | srcCoreId;
+
+                    lrCopy.pending = true;
+                    lr->raw = lrCopy.raw;
+                }
+            }
+
+            if (!lrCopy.pending) {
+                // Inactive interrupt, cleanup
+                state.ClearPendingOnAck();
+                state.handled = false;
+                lr->raw = 0;
+                return false;
+            } else {
+                return true;
+            }
+        }
+    }
+
+    void VirtualGic::UpdateState()
+    {
+        GicV2VirtualInterfaceController::HypervisorControlRegister hcr = { .raw = gich->hcr.raw };
+        u32 coreId = currentCoreCtx->coreId;
+
+        // First, put back inactive interrupts into the queue, handle some SGI stuff
+        // Need to handle the LRs in reverse order to keep list stability
+        u64 usedMap = cpu::rbit(m_usedLrMap[coreId]);
+        for (auto pos: util::BitsOf{usedMap}) {
+            if (!UpdateListRegister(&gich->lr[63 - pos])) {
+                usedMap &= ~BITL(pos);
+            }
+        }
+        m_usedLrMap[coreId] = cpu::rbit(usedMap);
+
+        // Then, clean the list up
+        CleanupPendingQueue();
+
+        size_t numFreeLr = GetNumberOfFreeListRegisters();
+        VirqState *chosen[64];
+
+        // Choose interrupts...
+        size_t numChosen = ChoosePendingInterrupts(chosen, numFreeLr);
+
+        // ...and push them
+        PushListRegisters(chosen, numChosen);
+
+        // Enable underflow interrupt when appropriate to do so
+        hcr.uie = m_numListRegisters - GetNumberOfFreeListRegisters() > 1;
+        gich->hcr.raw = hcr.raw;
+    }
+
+    void VirtualGic::MaintenanceInterruptHandler()
+    {
+        GicV2VirtualInterfaceController::MaintenanceIntStatRegister misr = { .raw = gich->misr.raw };
+
+        // Force GICV_CTRL to behave like ns-GICC_CTLR, with group 1 being replaced by group 0
+        // Ensure we aren't spammed by maintenance interrupts, either.
+        if (misr.vgrp0e || misr.vgrp0d || misr.vgrp1e || misr.vgrp1d) {
+            GicV2VirtualInterfaceController::VmControlRegister vmcr = { .raw = gich->vmcr.raw };
+            vmcr.cbpr = 0;
+            vmcr.fiqEn = 0;
+            vmcr.ackCtl = 0;
+            vmcr.enableGrp1 = 0;
+            gich->vmcr.raw = vmcr.raw;
+        }
+
+        if (misr.vgrp0e) {
+            DEBUG("EL2 [core %d]: Group 0 enabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+            gich->hcr.vgrp0eie = false;
+            gich->hcr.vgrp0die = true;
+        } else if (misr.vgrp0d) {
+            DEBUG("EL2 [core %d]: Group 0 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+            gich->hcr.vgrp0eie = true;
+            gich->hcr.vgrp0die = false;
+        }
+
+        // Already handled the following 2 above:
+        if (misr.vgrp1e) {
+            DEBUG("EL2 [core %d]: Group 1 enabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+        }
+        if (misr.vgrp1d) {
+            DEBUG("EL2 [core %d]: Group 1 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+        }
+
+        if (misr.eoi) {
+            //DEBUG("EL2 [core %d]: SGI EOI maintenance interrupt\n", currentCoreCtx->coreId);
+        }
+
+        if (misr.u) {
+            //DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->coreId);
+        }
+
+        ENSURE2(!misr.lrenp, "List Register Entry Not Present maintenance interrupt!\n");
+
+        // The rest should be handled by the main loop...
+    }
+
+    void VirtualGic::EnqueuePhysicalIrq(u32 id)
+    {
+        VirqState &state = GetVirqState(id);
+        state.SetPending();
+        m_virqPendingQueue.insert(state);
+    }
+
+    void VirtualGic::Initialize()
+    {
+        if (currentCoreCtx->isBootCore) {
+            m_virqPendingQueue.Initialize(m_virqStates.data());
+            m_numListRegisters = static_cast<u8>(1 + (gich->vtr & 0x3F));
+
+            // All fields are reset to 0 on reset and deep sleep exit
+
+            for (VirqState &state: m_virqStates) {
+                state.listPrev = state.listNext = virqListInvalidIndex;
+                state.priority = lowestPriority;
+            }
+
+            // SPIs (+ reserved interrupts just in case)
+            for (u32 i = 32; i < 1024; i++) {
+                GetVirqState(0, i).irqId = i;
+            }
+
+            // SGIs, PPIs
+            for (u32 coreId = 0; coreId < MAX_CORE; coreId++) {
+                for (u32 i = 0; i < 32; i++) {
+                    VirqState &state = GetVirqState(coreId, i);
+                    state.coreId = coreId;
+                    state.irqId = i;
+                    if (i < 16) {
+                        state.edgeTriggered = true;
+                        state.enabled = true;
+                    } else {
+                        state.edgeTriggered = IrqManager::IsInterruptEdgeTriggered(i);
+                    }
+                }
+            }
+
+            // All guest interrupts are initially configured as disabled
+            // All guest SPIs are initially configured as level-sensitive with no targets
+        }
+
+        // Clear the list registers (they reset to 0, though)
+        for (u8 i = 0; i < m_numListRegisters; i++) {
+            gich->lr[i].raw = 0;
+        }
+
+        // Enable a few maintenance interrupts. Enable the virtual interface.
+        GicV2VirtualInterfaceController::HypervisorControlRegister hcr = {};
+        hcr.vgrp1eie = true, 
+        hcr.vgrp0eie = true,
+        hcr.lrenpie = true,
+        hcr.en = true,
+        gich->hcr.raw = hcr.raw;
     }
 }

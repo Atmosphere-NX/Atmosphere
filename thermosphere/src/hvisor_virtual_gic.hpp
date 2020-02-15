@@ -34,6 +34,8 @@ namespace ams::hvisor {
 
             // Architectural properties
             static constexpr u32 priorityShift = 3;
+            static constexpr u32 numPriorityLevels = BIT(8 - priorityShift);
+            static constexpr u32 lowestPriority = numPriorityLevels - 1;
 
             // List managament constants
             static constexpr u32 spiEndIndex = GicV2Distributor::maxIrqId + 1 - 32;
@@ -51,7 +53,7 @@ namespace ams::hvisor {
                 bool active         : 1;
                 bool handled        : 1;
                 bool pendingLatch   : 1;
-                bool levelSensitive : 1;
+                bool edgeTriggered  : 1;
                 u32 coreId          : 3;
                 u32 targetList      : 8;
                 u32 srcCoreId       : 3;
@@ -60,11 +62,11 @@ namespace ams::hvisor {
 
                 constexpr bool IsPending() const
                 {
-                    return pendingLatch || (levelSensitive && pending);
+                    return pendingLatch || (!edgeTriggered && pending);
                 }
                 constexpr void SetPending()
                 {
-                    if (levelSensitive) {
+                    if (!edgeTriggered) {
                         pending = true;
                     } else {
                         pendingLatch = true;
@@ -75,7 +77,7 @@ namespace ams::hvisor {
                     // Don't clear pending latch status
                     pending = false;
                 }
-                constexpr bool ClearPending()
+                constexpr bool ClearPendingOnAck()
                 {
                     // On ack, both pending line status and latch are cleared
                     pending = false;
@@ -220,6 +222,12 @@ namespace ams::hvisor {
                                 }
                             }
                         }
+
+                        constexpr void Initialize(VirqState *storage)
+                        {
+                            m_storage = storage;
+                            m_first = m_last = &(*end());
+                        }
             };
 
 
@@ -237,14 +245,25 @@ namespace ams::hvisor {
                     IrqManager::GenerateSgiForAllOthers(IrqManager::VgicUpdateSgi);
                 }
 
+                static u64 GetEmptyListStatusRegister()
+                {
+                    return static_cast<u64>(gich->elsr1) << 32 | static_cast<u64>(gich->elsr0);
+                }
+
+                static u64 GetNumberOfFreeListRegisters()
+                {
+                    return __builtin_popcountll(GetEmptyListStatusRegister());
+                }
 
             private:
                 std::array<VirqState, maxNumIntStates> m_virqStates{};
                 std::array<std::array<u8, 32>, MAX_CORE> m_incomingSgiPendingSources{};
+                std::array<u64, MAX_CORE> m_usedLrMap{};
 
                 VirqQueue m_virqPendingQueue{};
                 bool m_distributorEnabled = false;
 
+                u8 m_numListRegisters = 0;
             private:
                 constexpr VirqState &GetVirqState(u32 coreId, u32 id)
                 {
@@ -313,7 +332,7 @@ namespace ams::hvisor {
                 u32 GetInterruptConfigBits(u16 id)
                 {
                     u32 oneNModel = id < 32 || !IrqManager::IsGuestInterrupt(id) ? 0 : 1;
-                    return (IrqManager::IsGuestInterrupt(id) && !GetVirqState(id).levelSensitive) ? 2 | oneNModel : oneNModel;
+                    return (IrqManager::IsGuestInterrupt(id) && GetVirqState(id).edgeTriggered) ? 2 | oneNModel : oneNModel;
                 }
 
                 u32 GetPeripheralId2Register(void)
@@ -333,6 +352,20 @@ namespace ams::hvisor {
                 void CleanupPendingQueue();
                 size_t ChoosePendingInterrupts(VirqState *chosen[], size_t maxNum);
 
+                volatile GicV2VirtualInterfaceController::ListRegister *AllocateListRegister(void)
+                {
+                    u32 ff = __builtin_ffsll(GetEmptyListStatusRegister());
+                    if (ff == 0) {
+                        return nullptr;
+                    } else {
+                        m_usedLrMap[currentCoreCtx->coreId] |= BITL(ff - 1);
+                        return &gich->lr[ff - 1];
+                    }
+                }
+
+                void PushListRegisters(VirqState *chosen[], size_t num);
+                bool UpdateListRegister(volatile GicV2VirtualInterfaceController::ListRegister *lr);
+
                 void UpdateState();
 
             public:
@@ -341,6 +374,10 @@ namespace ams::hvisor {
                 void WriteGicdRegister(u32 val, size_t offset, size_t sz);
                 u32 ReadGicdRegister(size_t offset, size_t sz);
 
+                void MaintenanceInterruptHandler();
+                void EnqueuePhysicalIrq(u32 id);
+
+                void Initialize();
     };
 }
 
