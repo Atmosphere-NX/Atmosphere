@@ -116,7 +116,8 @@ namespace ams::kern {
             /* Initialize the SMMU. */
             KDeviceAddressSpace::Initialize();
 
-            MESOSPHERE_TODO("CreateAndRunInitialProcesses();");
+            /* Load the initial processes. */
+            CreateAndRunInitialProcesses();
 
             /* We're done initializing! */
             Kernel::SetState(Kernel::State::Initialized);

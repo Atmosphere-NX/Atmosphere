@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_initial_process_reader.hpp>
 
 namespace ams::kern {
 
@@ -29,6 +30,7 @@ namespace ams::kern {
     };
 
     NOINLINE void CopyInitialProcessBinaryToKernelMemory();
+    NOINLINE void CreateAndRunInitialProcesses();
 
     u64 GetInitialProcessIdMin();
     u64 GetInitialProcessIdMax();
