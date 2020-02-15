@@ -14,11 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ams::kern::arm64::SvcHandler64() */
-.section    .text._ZN3ams4kern5arm6412SvcHandler64Ev, "ax", %progbits
-.global     _ZN3ams4kern5arm6412SvcHandler64Ev
-.type       _ZN3ams4kern5arm6412SvcHandler64Ev, %function
-_ZN3ams4kern5arm6412SvcHandler64Ev:
+/* ams::kern::arch::arm64::SvcHandler64() */
+.section    .text._ZN3ams4kern4arch5arm6412SvcHandler64Ev, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6412SvcHandler64Ev
+.type       _ZN3ams4kern4arch5arm6412SvcHandler64Ev, %function
+_ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     /* Create a KExceptionContext for the exception. */
     sub     sp, sp, #0x120
 
@@ -126,10 +126,10 @@ _ZN3ams4kern5arm6412SvcHandler64Ev:
     stp     x26, x27, [sp, #(8 * 26)]
     stp     x28, x29, [sp, #(8 * 28)]
 
-    /* Call ams::kern::arm64::HandleException(ams::kern::arm64::KExceptionContext *) */
+    /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
     mrs     x18, tpidr_el1
     mov     x0,  sp
-    bl      _ZN3ams4kern5arm6415HandleExceptionEPNS1_17KExceptionContextE
+    bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
     /* Restore registers. */
     ldp     x30, x8,  [sp, #(8 * 30)]
@@ -189,11 +189,11 @@ _ZN3ams4kern5arm6412SvcHandler64Ev:
     add     sp, sp, #0x120
     eret
 
-/* ams::kern::arm64::SvcHandler32() */
-.section    .text._ZN3ams4kern5arm6412SvcHandler32Ev, "ax", %progbits
-.global     _ZN3ams4kern5arm6412SvcHandler32Ev
-.type       _ZN3ams4kern5arm6412SvcHandler32Ev, %function
-_ZN3ams4kern5arm6412SvcHandler32Ev:
+/* ams::kern::arch::arm64::SvcHandler32() */
+.section    .text._ZN3ams4kern4arch5arm6412SvcHandler32Ev, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6412SvcHandler32Ev
+.type       _ZN3ams4kern4arch5arm6412SvcHandler32Ev, %function
+_ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     /* Ensure that our registers are 32-bit. */
     mov     w0, w0
     mov     w1, w1
@@ -299,10 +299,10 @@ _ZN3ams4kern5arm6412SvcHandler32Ev:
     stp     xzr, xzr, [sp, #(8 * 28)]
     stp     xzr, xzr, [sp, #(8 * 30)]
 
-    /* Call ams::kern::arm64::HandleException(ams::kern::arm64::KExceptionContext *) */
+    /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
     mrs     x18, tpidr_el1
     mov     x0,  sp
-    bl      _ZN3ams4kern5arm6415HandleExceptionEPNS1_17KExceptionContextE
+    bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
     /* Restore registers. */
     ldp     x17, x20, [sp, #(8 * 32)]

@@ -21,7 +21,7 @@
 
     #include <mesosphere/arch/arm64/kern_k_interrupt_controller.hpp>
     namespace ams::kern {
-        using ams::kern::arm64::KInterruptController;
+        using ams::kern::arch::arm64::KInterruptController;
     }
 
 #else

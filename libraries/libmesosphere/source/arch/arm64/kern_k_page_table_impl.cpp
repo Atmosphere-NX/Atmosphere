@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     void KPageTableImpl::InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end) {
         this->table       = static_cast<L1PageTableEntry *>(tb);

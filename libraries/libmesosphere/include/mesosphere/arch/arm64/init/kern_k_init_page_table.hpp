@@ -20,7 +20,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/arch/arm64/kern_k_page_table_entry.hpp>
 
-namespace ams::kern::arm64::init {
+namespace ams::kern::arch::arm64::init {
 
     class KInitialPageTable {
         public:

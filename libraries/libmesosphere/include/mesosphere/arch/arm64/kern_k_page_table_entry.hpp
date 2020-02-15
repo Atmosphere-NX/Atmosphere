@@ -18,7 +18,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     constexpr size_t L1BlockSize           = 1_GB;
     constexpr size_t L2BlockSize           = 2_MB;

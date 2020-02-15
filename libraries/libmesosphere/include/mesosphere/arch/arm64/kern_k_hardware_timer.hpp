@@ -17,7 +17,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_hardware_timer_base.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     namespace impl {
 

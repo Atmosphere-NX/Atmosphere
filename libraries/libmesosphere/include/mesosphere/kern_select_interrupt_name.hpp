@@ -20,7 +20,7 @@
 
     #include <mesosphere/arch/arm64/kern_k_interrupt_name.hpp>
     namespace ams::kern {
-        using namespace ams::kern::arm64::interrupt_name;
+        using namespace ams::kern::arch::arm64::interrupt_name;
     }
 
 #else

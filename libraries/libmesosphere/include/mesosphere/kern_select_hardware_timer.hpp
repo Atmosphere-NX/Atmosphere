@@ -20,7 +20,7 @@
 
     #include <mesosphere/arch/arm64/kern_k_hardware_timer.hpp>
     namespace ams::kern {
-        using ams::kern::arm64::KHardwareTimer;
+        using ams::kern::arch::arm64::KHardwareTimer;
     }
 
 #else

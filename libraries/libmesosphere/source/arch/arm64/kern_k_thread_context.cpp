@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     /* These are implemented elsewhere (asm). */
     void UserModeThreadStarter();
@@ -96,7 +96,7 @@ namespace ams::kern::arm64 {
         /* Determine LR and SP. */
         if (is_user) {
             /* Usermode thread. */
-            this->lr = reinterpret_cast<uintptr_t>(::ams::kern::arm64::UserModeThreadStarter);
+            this->lr = reinterpret_cast<uintptr_t>(::ams::kern::arch::arm64::UserModeThreadStarter);
             this->sp = SetupStackForUserModeThreadStarter(u_pc, k_sp, u_sp, arg, is_64_bit);
         } else {
             /* Kernel thread. */
@@ -108,7 +108,7 @@ namespace ams::kern::arm64 {
                 this->sp = GetInteger(k_sp);
             } else {
                 /* Generic Kernel thread. */
-                this->lr = reinterpret_cast<uintptr_t>(::ams::kern::arm64::SupervisorModeThreadStarter);
+                this->lr = reinterpret_cast<uintptr_t>(::ams::kern::arch::arm64::SupervisorModeThreadStarter);
                 this->sp = SetupStackForSupervisorModeThreadStarter(u_pc, k_sp, arg);
             }
         }

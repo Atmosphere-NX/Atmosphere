@@ -22,9 +22,9 @@
     #include <mesosphere/arch/arm64/kern_k_supervisor_page_table.hpp>
     #include <mesosphere/arch/arm64/kern_k_process_page_table.hpp>
     namespace ams::kern {
-        using ams::kern::arm64::KPageTable;
-        using ams::kern::arm64::KSupervisorPageTable;
-        using ams::kern::arm64::KProcessPageTable;
+        using ams::kern::arch::arm64::KPageTable;
+        using ams::kern::arch::arm64::KSupervisorPageTable;
+        using ams::kern::arch::arm64::KProcessPageTable;
     }
 
 #else

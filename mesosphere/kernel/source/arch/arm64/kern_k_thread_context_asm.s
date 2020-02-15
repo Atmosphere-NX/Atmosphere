@@ -14,11 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ams::kern::arm64::UserModeThreadStarter() */
-.section    .text._ZN3ams4kern5arm6421UserModeThreadStarterEv, "ax", %progbits
-.global     _ZN3ams4kern5arm6421UserModeThreadStarterEv
-.type       _ZN3ams4kern5arm6421UserModeThreadStarterEv, %function
-_ZN3ams4kern5arm6421UserModeThreadStarterEv:
+/* ams::kern::arch::arm64::UserModeThreadStarter() */
+.section    .text._ZN3ams4kern4arch5arm6421UserModeThreadStarterEv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6421UserModeThreadStarterEv
+.type       _ZN3ams4kern4arch5arm6421UserModeThreadStarterEv, %function
+_ZN3ams4kern4arch5arm6421UserModeThreadStarterEv:
     /* NOTE: Stack layout on entry looks like following:                         */
     /* SP                                                                        */
     /* |                                                                         */
@@ -28,8 +28,8 @@ _ZN3ams4kern5arm6421UserModeThreadStarterEv:
     /* Clear the disable count for this thread's stack parameters. */
     str wzr, [sp, #(0x120 + 0x18)]
 
-    /* Call ams::kern::arm64::OnThreadStart() */
-    bl _ZN3ams4kern5arm6413OnThreadStartEv
+    /* Call ams::kern::arch::arm64::OnThreadStart() */
+    bl _ZN3ams4kern4arch5arm6413OnThreadStartEv
 
     /* Restore thread state from the KExceptionContext on stack  */
     ldp x30, x19, [sp, #(8 * 30)]       /* x30 = lr,   x19 = sp  */
@@ -63,11 +63,11 @@ _ZN3ams4kern5arm6421UserModeThreadStarterEv:
     /* Return to EL0 */
     eret
 
-/* ams::kern::arm64::SupervisorModeThreadStarter() */
-.section    .text._ZN3ams4kern5arm6427SupervisorModeThreadStarterEv, "ax", %progbits
-.global     _ZN3ams4kern5arm6427SupervisorModeThreadStarterEv
-.type       _ZN3ams4kern5arm6427SupervisorModeThreadStarterEv, %function
-_ZN3ams4kern5arm6427SupervisorModeThreadStarterEv:
+/* ams::kern::arch::arm64::SupervisorModeThreadStarter() */
+.section    .text._ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv
+.type       _ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv, %function
+_ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv:
     /* NOTE: Stack layout on entry looks like following:                        */
     /* SP                                                                       */
     /* |                                                                        */
@@ -88,11 +88,11 @@ _ZN3ams4kern5arm6427SupervisorModeThreadStarterEv:
     eret
 
 
-/* ams::kern::arm64::KThreadContext::RestoreFpuRegisters64(const KThreadContext &) */
-.section    .text._ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_, "ax", %progbits
-.global     _ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_
-.type       _ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_, %function
-_ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_:
+/* ams::kern::arch::arm64::KThreadContext::RestoreFpuRegisters64(const KThreadContext &) */
+.section    .text._ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_
+.type       _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_, %function
+_ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_:
     /* Load and restore FPCR and FPSR from the context. */
     ldr x1, [x0, #0x70]
     msr fpcr, x1
@@ -119,11 +119,11 @@ _ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_:
 
     ret
 
-/* ams::kern::arm64::KThreadContext::RestoreFpuRegisters32(const KThreadContext &) */
-.section    .text._ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_, "ax", %progbits
-.global     _ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_
-.type       _ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_, %function
-_ZN3ams4kern5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_:
+/* ams::kern::arch::arm64::KThreadContext::RestoreFpuRegisters32(const KThreadContext &) */
+.section    .text._ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_
+.type       _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_, %function
+_ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_:
     /* Load and restore FPCR and FPSR from the context. */
     ldr x1, [x0, #0x70]
     msr fpcr, x1

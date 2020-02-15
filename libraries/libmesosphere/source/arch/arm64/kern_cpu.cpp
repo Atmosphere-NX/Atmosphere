@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::arm64::cpu {
+namespace ams::kern::arch::arm64::cpu {
 
     /* Declare prototype to be implemented in asm. */
     void SynchronizeAllCoresImpl(s32 *sync_var, s32 num_cores);

@@ -20,9 +20,9 @@
     #include <mesosphere/arch/arm64/init/kern_k_init_page_table.hpp>
 
     namespace ams::kern::init {
-        using ams::kern::arm64::PageTableEntry;
-        using ams::kern::arm64::init::KInitialPageTable;
-        using ams::kern::arm64::init::KInitialPageAllocator;
+        using ams::kern::arch::arm64::PageTableEntry;
+        using ams::kern::arch::arm64::init::KInitialPageTable;
+        using ams::kern::arch::arm64::init::KInitialPageAllocator;
     }
 #else
     #error "Unknown architecture for KInitialPageTable"

@@ -17,7 +17,7 @@
 #include <vapours.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     class KNotAlignedSpinLock {
         private:

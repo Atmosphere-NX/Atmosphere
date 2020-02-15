@@ -23,7 +23,7 @@ namespace ams::kern {
 
 }
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     class KThreadContext {
         public:

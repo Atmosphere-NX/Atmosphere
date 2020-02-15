@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     void KSupervisorPageTable::Initialize(s32 core_id) {
         /* Get the identity mapping ttbr0. */

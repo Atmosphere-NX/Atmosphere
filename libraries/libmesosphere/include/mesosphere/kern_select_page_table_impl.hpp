@@ -20,7 +20,7 @@
 
     #include <mesosphere/arch/arm64/kern_k_page_table_impl.hpp>
     namespace ams::kern {
-        using ams::kern::arm64::KPageTableImpl;
+        using ams::kern::arch::arm64::KPageTableImpl;
     }
 
 #else

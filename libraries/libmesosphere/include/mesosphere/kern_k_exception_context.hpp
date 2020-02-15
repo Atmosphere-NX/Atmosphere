@@ -19,7 +19,7 @@
     #include <mesosphere/arch/arm64/kern_k_exception_context.hpp>
 
     namespace ams::kern {
-        using ams::kern::arm64::KExceptionContext;
+        using ams::kern::arch::arm64::KExceptionContext;
     }
 #else
     #error "Unknown board for KExceptionContext"

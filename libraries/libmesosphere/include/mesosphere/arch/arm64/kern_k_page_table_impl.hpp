@@ -20,7 +20,7 @@
 #include <mesosphere/kern_k_memory_layout.hpp>
 #include <mesosphere/arch/arm64/kern_k_page_table_entry.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     /* TODO: This seems worse than KInitialPageTable. Can we fulfill Nintendo's API using KInitialPageTable? */
     /* KInitialPageTable is significantly nicer, but doesn't have KPageTableImpl's traversal semantics. */

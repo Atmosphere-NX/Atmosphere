@@ -14,11 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* ams::kern::arm64::cpu::SynchronizeAllCoresImpl(int *sync_var, int num_cores) */
-.section    .text._ZN3ams4kern5arm643cpu23SynchronizeAllCoresImplEPii, "ax", %progbits
-.global     _ZN3ams4kern5arm643cpu23SynchronizeAllCoresImplEPii
-.type       _ZN3ams4kern5arm643cpu23SynchronizeAllCoresImplEPii, %function
-_ZN3ams4kern5arm643cpu23SynchronizeAllCoresImplEPii:
+/* ams::kern::arch::arm64::cpu::SynchronizeAllCoresImpl(int *sync_var, int num_cores) */
+.section    .text._ZN3ams4kern4arch5arm643cpu23SynchronizeAllCoresImplEPii, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm643cpu23SynchronizeAllCoresImplEPii
+.type       _ZN3ams4kern4arch5arm643cpu23SynchronizeAllCoresImplEPii, %function
+_ZN3ams4kern4arch5arm643cpu23SynchronizeAllCoresImplEPii:
     /* Loop until the sync var is less than num cores. */
     sevl
 1:
@@ -63,11 +63,11 @@ _ZN3ams4kern5arm643cpu23SynchronizeAllCoresImplEPii:
     ret
 
 
-/* ams::kern::arm64::cpu::ClearPageToZero(void *) */
-.section    .text._ZN3ams4kern5arm643cpu19ClearPageToZeroImplEPv, "ax", %progbits
-.global     _ZN3ams4kern5arm643cpu19ClearPageToZeroImplEPv
-.type       _ZN3ams4kern5arm643cpu19ClearPageToZeroImplEPv, %function
-_ZN3ams4kern5arm643cpu19ClearPageToZeroImplEPv:
+/* ams::kern::arch::arm64::cpu::ClearPageToZero(void *) */
+.section    .text._ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv
+.type       _ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv, %function
+_ZN3ams4kern4arch5arm643cpu19ClearPageToZeroImplEPv:
     /* Efficiently clear the page using dc zva. */
     dc      zva, x0
     add     x8, x0, #0x040

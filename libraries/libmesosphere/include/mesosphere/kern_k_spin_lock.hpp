@@ -21,9 +21,9 @@
 
     #include <mesosphere/arch/arm64/kern_k_spin_lock.hpp>
     namespace ams::kern {
-        using ams::kern::arm64::KAlignedSpinLock;
-        using ams::kern::arm64::KNotAlignedSpinLock;
-        using ams::kern::arm64::KSpinLock;
+        using ams::kern::arch::arm64::KAlignedSpinLock;
+        using ams::kern::arch::arm64::KNotAlignedSpinLock;
+        using ams::kern::arch::arm64::KSpinLock;
     }
 
 #else

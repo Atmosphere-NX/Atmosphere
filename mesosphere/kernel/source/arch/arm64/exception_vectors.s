@@ -98,11 +98,11 @@ vector_entry serror_sp0
 /* Current EL, SPx */
 vector_entry synch_spx
     clrex
-    b _ZN3ams4kern5arm6430EL1SynchronousExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv
     check_vector_size synch_spx
 
 vector_entry irq_spx
-    b _ZN3ams4kern5arm6422EL1IrqExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv
     check_vector_size irq_spx
 
 vector_entry fiq_spx
@@ -114,18 +114,18 @@ vector_entry fiq_spx
 vector_entry serror_spx
     clrex
     nop
-    b _ZN3ams4kern5arm6421EL1SystemErrorHandlerEv
+    b _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv
     check_vector_size serror_spx
 
 /* Lower EL, A64 */
 vector_entry synch_a64
     clrex
-    b _ZN3ams4kern5arm6430EL0SynchronousExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv
     check_vector_size synch_a64
 
 vector_entry irq_a64
     clrex
-    b _ZN3ams4kern5arm6422EL0IrqExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv
     check_vector_size irq_a64
 
 vector_entry fiq_a64
@@ -137,18 +137,18 @@ vector_entry fiq_a64
 vector_entry serror_a64
     clrex
     nop
-    b _ZN3ams4kern5arm6421EL0SystemErrorHandlerEv
+    b _ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv
     check_vector_size serror_a64
 
 /* Lower EL, A32 */
 vector_entry synch_a32
     clrex
-    b _ZN3ams4kern5arm6430EL0SynchronousExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv
     check_vector_size synch_a32
 
 vector_entry irq_a32
     clrex
-    b _ZN3ams4kern5arm6422EL0IrqExceptionHandlerEv
+    b _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv
     check_vector_size irq_a32
 
 vector_entry fiq_a32
@@ -160,5 +160,5 @@ vector_entry fiq_a32
 vector_entry serror_a32
     clrex
     nop
-    b _ZN3ams4kern5arm6421EL0SystemErrorHandlerEv
+    b _ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv
     check_vector_size serror_a32

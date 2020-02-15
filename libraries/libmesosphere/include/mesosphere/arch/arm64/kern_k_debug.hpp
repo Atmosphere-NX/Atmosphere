@@ -25,7 +25,7 @@ namespace ams::kern {
 
 }
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     class KDebug final : public KAutoObjectWithSlabHeapAndContainer<KDebug, KDebugBase> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDebug, KSynchronizationObject);

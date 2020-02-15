@@ -20,7 +20,7 @@
 #include <mesosphere/kern_k_interrupt_task.hpp>
 #include <mesosphere/kern_select_interrupt_controller.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     class KInterruptManager {
         NON_COPYABLE(KInterruptManager);

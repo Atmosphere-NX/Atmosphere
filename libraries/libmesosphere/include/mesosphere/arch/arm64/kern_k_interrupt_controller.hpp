@@ -18,7 +18,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     struct GicDistributor {
         u32 ctlr;

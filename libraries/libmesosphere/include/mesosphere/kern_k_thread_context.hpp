@@ -19,7 +19,7 @@
     #include <mesosphere/arch/arm64/kern_k_thread_context.hpp>
 
     namespace ams::kern {
-        using ams::kern::arm64::KThreadContext;
+        using ams::kern::arch::arm64::KThreadContext;
     }
 #else
     #error "Unknown board for KThreadContext"

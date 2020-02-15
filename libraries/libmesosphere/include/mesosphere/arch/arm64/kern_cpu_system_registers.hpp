@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::kern::arm64::cpu {
+namespace ams::kern::arch::arm64::cpu {
 
     #define MESOSPHERE_CPU_GET_SYSREG(name)                                            \
         ({                                                                             \

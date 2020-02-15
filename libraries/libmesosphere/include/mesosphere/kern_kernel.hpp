@@ -39,10 +39,10 @@ namespace ams::kern {
 
 #if defined(ATMOSPHERE_ARCH_ARM64)
 
-    namespace arm64 {
+    namespace arch::arm64 {
         class KSupervisorPageTable;
     }
-    using ams::kern::arm64::KSupervisorPageTable;
+    using ams::kern::arch::arm64::KSupervisorPageTable;
 
 #else
 

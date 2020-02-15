@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     void KPageTable::Initialize(s32 core_id) {
         /* Nothing actually needed here. */

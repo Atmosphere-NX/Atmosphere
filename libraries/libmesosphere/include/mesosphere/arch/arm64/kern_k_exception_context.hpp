@@ -16,7 +16,7 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     struct KExceptionContext {
         u64 x[(30 - 0) + 1];

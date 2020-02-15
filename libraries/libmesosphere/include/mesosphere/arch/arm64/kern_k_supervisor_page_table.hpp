@@ -18,7 +18,7 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/arch/arm64/kern_k_page_table.hpp>
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     class KSupervisorPageTable {
         private:

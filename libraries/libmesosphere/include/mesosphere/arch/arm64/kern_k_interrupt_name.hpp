@@ -15,7 +15,7 @@
  */
 #pragma once
 
-namespace ams::kern::arm64 {
+namespace ams::kern::arch::arm64 {
 
     namespace interrupt_name {
 

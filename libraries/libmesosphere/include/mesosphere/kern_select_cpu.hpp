@@ -21,7 +21,7 @@
 
     namespace ams::kern::cpu {
 
-        using namespace ams::kern::arm64::cpu;
+        using namespace ams::kern::arch::arm64::cpu;
 
     }
 

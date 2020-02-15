@@ -17,7 +17,7 @@
 #include <vapours.hpp>
 #include <mesosphere/arch/arm64/kern_cpu_system_registers.hpp>
 
-namespace ams::kern::arm64::cpu {
+namespace ams::kern::arch::arm64::cpu {
 
 #if defined(ATMOSPHERE_CPU_ARM_CORTEX_A57) || defined(ATMOSPHERE_CPU_ARM_CORTEX_A53)
     constexpr inline size_t InstructionCacheLineSize = 0x40;
