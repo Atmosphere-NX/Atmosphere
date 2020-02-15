@@ -34,6 +34,10 @@ namespace ams::kern::arch::arm64 {
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm);
             }
+
+            bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
+                return this->page_table.GetPhysicalAddress(out, address);
+            }
     };
 
 }

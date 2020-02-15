@@ -17,11 +17,11 @@
 #pragma once
 #include "svc_common.hpp"
 
-#if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include "board/nintendo/switch/svc_device_name.hpp"
+    #include "board/nintendo/nx/svc_device_name.hpp"
     namespace ams::svc {
-        using namespace ams::svc::board::nintendo_switch;
+        using namespace ams::svc::board::nintendo::nx;
     }
 
 #else

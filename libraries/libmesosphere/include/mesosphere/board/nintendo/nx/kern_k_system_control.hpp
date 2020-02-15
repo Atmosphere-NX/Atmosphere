@@ -16,7 +16,7 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 
-namespace ams::kern {
+namespace ams::kern::board::nintendo::nx {
 
     class KSystemControl {
         public:
@@ -37,14 +37,16 @@ namespace ams::kern {
             };
         public:
             /* Initialization. */
-            static NOINLINE void Initialize();
+            static NOINLINE void InitializePhase1();
+            static NOINLINE void InitializePhase2();
             static NOINLINE u32 GetInitialProcessBinaryPool();
 
             /* Randomness. */
             static void GenerateRandomBytes(void *dst, size_t size);
             static u64  GenerateRandomRange(u64 min, u64 max);
 
-            /* Panic. */
+            /* Power management. */
+            static void SleepSystem();
             static NORETURN void StopSystem();
     };
 

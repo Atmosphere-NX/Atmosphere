@@ -52,7 +52,7 @@
 
 #endif /* ATMOSPHERE_IS_STRATOSPHERE */
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
 
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 
@@ -70,7 +70,7 @@
 
 #error "Unsupported board"
 
-#endif /* ATMOSPHERE_BOARD_NINTENDO_SWITCH */
+#endif /* ATMOSPHERE_BOARD_NINTENDO_NX */
 
 /* Atmosphere meta. */
 #include "ams_version.h"

@@ -27,7 +27,7 @@ namespace ams::kern::arch::arm64::cpu {
     #error "Unknown CPU for cache line sizes"
 #endif
 
-#if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
     constexpr inline size_t NumCores = 4;
 #else
     #error "Unknown Board for cpu::NumCores"

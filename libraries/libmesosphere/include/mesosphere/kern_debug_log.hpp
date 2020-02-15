@@ -32,7 +32,7 @@ namespace ams::kern {
 
 #ifndef MESOSPHERE_DEBUG_LOG_SELECTED
 
-    #ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+    #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
         #define MESOSPHERE_DEBUG_LOG_USE_UART_C
     #else
         #error "Unknown board for Default Debug Log Source"

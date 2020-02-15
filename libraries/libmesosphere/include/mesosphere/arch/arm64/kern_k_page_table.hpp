@@ -35,7 +35,7 @@ namespace ams::kern::arch::arm64 {
                 BlockType_L3ContiguousBlock,
                 BlockType_L2Block,
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
                 BlockType_L2TegraSmmuBlock,
 #endif
 
@@ -48,14 +48,14 @@ namespace ams::kern::arch::arm64 {
             static_assert(L3BlockSize == PageSize);
             static constexpr size_t ContiguousPageSize = L3ContiguousBlockSize;
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
             static constexpr size_t L2TegraSmmuBlockSize = 2 * L2BlockSize;
 #endif
             static constexpr size_t BlockSizes[BlockType_Count] = {
                 [BlockType_L3Block]           = L3BlockSize,
                 [BlockType_L3ContiguousBlock] = L3ContiguousBlockSize,
                 [BlockType_L2Block]           = L2BlockSize,
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
                 [BlockType_L2TegraSmmuBlock]  = L2TegraSmmuBlockSize,
 #endif
                 [BlockType_L2ContiguousBlock] = L2ContiguousBlockSize,
@@ -71,7 +71,7 @@ namespace ams::kern::arch::arm64 {
                     case L3BlockSize:           return BlockType_L3Block;
                     case L3ContiguousBlockSize: return BlockType_L3ContiguousBlock;
                     case L2BlockSize:           return BlockType_L2Block;
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
                     case L2TegraSmmuBlockSize:  return BlockType_L2TegraSmmuBlock;
 #endif
                     case L2ContiguousBlockSize: return BlockType_L2ContiguousBlock;

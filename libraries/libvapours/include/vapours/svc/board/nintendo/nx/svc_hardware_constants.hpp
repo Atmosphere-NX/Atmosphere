@@ -2,7 +2,7 @@
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
+ * under the terms and conditions of the GNU General Public License
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
@@ -14,13 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours/svc/svc_types_common.hpp>
 
-#ifdef ATMOSPHERE_ARCH_ARM64
-    #include <mesosphere/arch/arm64/kern_k_thread_context.hpp>
+namespace ams::svc::board::nintendo::nx {
 
-    namespace ams::kern {
-        using ams::kern::arch::arm64::KThreadContext;
-    }
-#else
-    #error "Unknown architecture for KThreadContext"
-#endif
+    constexpr inline const s64 TicksPerSecond = 19'200'000;
+
+}

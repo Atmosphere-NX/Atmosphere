@@ -30,6 +30,7 @@
 /* Core pre-initialization includes. */
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_select_system_control.hpp>
+#include <mesosphere/kern_k_target_system.hpp>
 
 /* Initialization headers. */
 #include <mesosphere/init/kern_init_elf.hpp>

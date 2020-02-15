@@ -34,43 +34,62 @@ namespace ams::kern::arch::arm64 {
             static constexpr size_t LevelBits = 9;
             static_assert(NumLevels > 0);
 
-            static constexpr size_t AddressBits = (NumLevels - 1) * LevelBits + PageBits;
-            static_assert(AddressBits <= BITSIZEOF(u64));
-            static constexpr size_t AddressSpaceSize = (1ull << AddressBits);
+            template<size_t Offset, size_t Count>
+            static constexpr ALWAYS_INLINE u64 GetBits(u64 value) {
+                return (value >> Offset) & ((1ul << Count) - 1);
+            }
+
+            template<size_t Offset, size_t Count>
+            constexpr ALWAYS_INLINE u64 SelectBits(u64 value) {
+                return value & (((1ul << Count) - 1) << Offset);
+            }
+
+            static constexpr ALWAYS_INLINE uintptr_t GetL0Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 0), LevelBits>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetL1Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 1), LevelBits>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetL2Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 2), LevelBits>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetL3Index(KProcessAddress addr) { return GetBits<PageBits + LevelBits * (NumLevels - 3), LevelBits>(GetInteger(addr)); }
+
+            static constexpr ALWAYS_INLINE uintptr_t GetL1Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 1)>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetL2Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 2)>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetL3Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 3)>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetContiguousL1Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 1) + 4>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetContiguousL2Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 2) + 4>(GetInteger(addr)); }
+            static constexpr ALWAYS_INLINE uintptr_t GetContiguousL3Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 3) + 4>(GetInteger(addr)); }
         private:
             L1PageTableEntry *table;
             bool is_kernel;
             u32  num_entries;
         public:
-            ALWAYS_INLINE KVirtualAddress GetTableEntry(KVirtualAddress table, size_t index) {
+            ALWAYS_INLINE KVirtualAddress GetTableEntry(KVirtualAddress table, size_t index) const {
                 return table + index * sizeof(PageTableEntry);
             }
 
-            ALWAYS_INLINE L1PageTableEntry *GetL1Entry(KProcessAddress address) {
-                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(this->table), (GetInteger(address) >> (PageBits + LevelBits * 2)) & (this->num_entries - 1)));
+            ALWAYS_INLINE L1PageTableEntry *GetL1Entry(KProcessAddress address) const {
+                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(this->table), GetL1Index(address) & (this->num_entries - 1)));
             }
 
-            ALWAYS_INLINE L2PageTableEntry *GetL2EntryFromTable(KVirtualAddress table, KProcessAddress address) {
-                return GetPointer<L2PageTableEntry>(GetTableEntry(table, (GetInteger(address) >> (PageBits + LevelBits * 1)) & ((1ul << LevelBits) - 1)));
+            ALWAYS_INLINE L2PageTableEntry *GetL2EntryFromTable(KVirtualAddress table, KProcessAddress address) const {
+                return GetPointer<L2PageTableEntry>(GetTableEntry(table, GetL2Index(address)));
             }
 
-            ALWAYS_INLINE L2PageTableEntry *GetL2Entry(const L1PageTableEntry *entry, KProcessAddress address) {
+            ALWAYS_INLINE L2PageTableEntry *GetL2Entry(const L1PageTableEntry *entry, KProcessAddress address) const {
                 return GetL2EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
 
-            ALWAYS_INLINE L3PageTableEntry *GetL3EntryFromTable(KVirtualAddress table, KProcessAddress address) {
-                return GetPointer<L3PageTableEntry>(GetTableEntry(table, (GetInteger(address) >> (PageBits + LevelBits * 0)) & ((1ul << LevelBits) - 1)));
+            ALWAYS_INLINE L3PageTableEntry *GetL3EntryFromTable(KVirtualAddress table, KProcessAddress address) const {
+                return GetPointer<L3PageTableEntry>(GetTableEntry(table, GetL3Index(address)));
             }
 
-            ALWAYS_INLINE L3PageTableEntry *GetL3Entry(const L2PageTableEntry *entry, KProcessAddress address) {
+            ALWAYS_INLINE L3PageTableEntry *GetL3Entry(const L2PageTableEntry *entry, KProcessAddress address) const {
                 return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
         public:
             constexpr KPageTableImpl() : table(), is_kernel(), num_entries() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
-
             L1PageTableEntry *Finalize();
+
+            bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const;
     };
 
 }

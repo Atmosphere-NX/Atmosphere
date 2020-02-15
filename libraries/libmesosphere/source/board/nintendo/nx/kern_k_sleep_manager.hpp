@@ -14,13 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere.hpp>
 
-#ifdef ATMOSPHERE_ARCH_ARM64
-    #include <mesosphere/arch/arm64/kern_k_thread_context.hpp>
+namespace ams::kern::board::nintendo::nx {
 
-    namespace ams::kern {
-        using ams::kern::arch::arm64::KThreadContext;
-    }
-#else
-    #error "Unknown architecture for KThreadContext"
-#endif
+    class KSleepManager {
+        private:
+            static void CpuSleepHandler(uintptr_t arg, uintptr_t entry);
+            static void ResumeEntry(uintptr_t arg);
+
+            static void ProcessRequests(uintptr_t buffer);
+        public:
+            static void Initialize();
+            static void SleepSystem();
+    };
+
+
+}

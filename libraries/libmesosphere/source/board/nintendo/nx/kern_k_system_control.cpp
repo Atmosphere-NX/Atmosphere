@@ -15,13 +15,19 @@
  */
 #include <mesosphere.hpp>
 #include "kern_secure_monitor.hpp"
+#include "kern_k_sleep_manager.hpp"
 
-namespace ams::kern {
+namespace ams::kern::board::nintendo::nx {
 
     namespace {
 
         /* Global variables for panic. */
         bool g_call_smc_on_panic;
+
+        /* Global variables for secure memory. */
+        constexpr size_t SecureAppletReservedMemorySize = 4_MB;
+        KVirtualAddress g_secure_applet_memory_address;
+
 
         /* Global variables for randomness. */
         /* Nintendo uses std::mt19937_t for randomness. */
@@ -195,7 +201,7 @@ namespace ams::kern {
     }
 
     /* System Initialization. */
-    void KSystemControl::Initialize() {
+    void KSystemControl::InitializePhase1() {
         /* Set IsDebugMode. */
         {
             KTargetSystem::SetIsDebugMode(GetConfigBool(smc::ConfigItem::IsDebugMode));
@@ -250,6 +256,21 @@ namespace ams::kern {
         }
     }
 
+    void KSystemControl::InitializePhase2() {
+        /* Initialize the sleep manager. */
+        KSleepManager::Initialize();
+
+        /* Reserve secure applet memory. */
+        {
+            MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address == Null<KVirtualAddress>);
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletReservedMemorySize));
+
+            constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
+            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletReservedMemorySize / PageSize, 1, SecureAppletAllocateOption);
+            MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
+        }
+    }
+
     u32 KSystemControl::GetInitialProcessBinaryPool() {
         return KMemoryManager::Pool_Application;
     }
@@ -272,6 +293,11 @@ namespace ams::kern {
         }
 
         return GenerateUniformRange(min, max, GenerateRandomU64FromGenerator);
+    }
+
+    void KSystemControl::SleepSystem() {
+        MESOSPHERE_LOG("SleepSystem() was called\n");
+        KSleepManager::SleepSystem();
     }
 
     void KSystemControl::StopSystem() {

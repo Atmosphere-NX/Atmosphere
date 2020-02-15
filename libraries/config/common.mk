@@ -24,11 +24,11 @@ export ATMOSPHERE_ASFLAGS  :=
 
 ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 export ATMOSPHERE_ARCH_DIR   := arch/arm64
-export ATMOSPHERE_BOARD_DIR  := board/nintendo/switch
+export ATMOSPHERE_BOARD_DIR  := board/nintendo/nx
 export ATMOSPHERE_OS_DIR     := os/horizon
 
 export ATMOSPHERE_ARCH_NAME  := arm64
-export ATMOSPHERE_BOARD_NAME := nintendo_switch
+export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
 endif
 

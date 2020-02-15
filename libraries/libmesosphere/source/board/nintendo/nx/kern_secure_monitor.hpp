@@ -16,7 +16,7 @@
 #pragma once
 #include <mesosphere.hpp>
 
-namespace ams::kern::smc {
+namespace ams::kern::board::nintendo::nx::smc {
 
     /* Types. */
     enum MemorySize {

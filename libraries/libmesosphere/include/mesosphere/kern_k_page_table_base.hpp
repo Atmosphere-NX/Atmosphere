@@ -196,6 +196,10 @@ namespace ams::kern {
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
         public:
+            bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const {
+                return this->GetImpl().GetPhysicalAddress(out, virt_addr);
+            }
+
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 return this->MapPages(out_addr, num_pages, alignment, phys_addr, true, region_start, region_num_pages, state, perm);
             }

@@ -28,7 +28,7 @@ namespace ams::kern::arch::arm64 {
             KInterruptName_PerformanceCounter     = 8,
 
             /* PPIs */
-    #if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
             KInterruptName_VirtualMaintenance     = 25,
             KInterruptName_HypervisorTimer        = 26,
             KInterruptName_VirtualTimer           = 27,
@@ -38,7 +38,7 @@ namespace ams::kern::arch::arm64 {
             KInterruptName_LegacyNIrq             = 31,
     #endif
 
-    #if defined(ATMOSPHERE_BOARD_NINTENDO_SWITCH)
+    #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
             KInterruptName_MemoryController       = 109,
     #endif
         };

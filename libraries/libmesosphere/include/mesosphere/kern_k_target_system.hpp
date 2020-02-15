@@ -15,10 +15,9 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_select_system_control.hpp>
 
 namespace ams::kern {
-
-    class KSystemControl;
 
     class KTargetSystem {
         private:

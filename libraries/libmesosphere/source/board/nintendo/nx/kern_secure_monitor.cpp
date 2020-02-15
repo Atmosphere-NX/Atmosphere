@@ -16,7 +16,7 @@
 #include <mesosphere.hpp>
 #include "kern_secure_monitor.hpp"
 
-namespace ams::kern::smc {
+namespace ams::kern::board::nintendo::nx::smc {
 
     namespace {
 

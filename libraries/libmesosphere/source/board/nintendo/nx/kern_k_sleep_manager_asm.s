@@ -2,7 +2,7 @@
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License
+ * under the terms and conditions of the GNU General Public License,
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
@@ -13,11 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours/svc/svc_types_common.hpp>
 
-namespace ams::svc::board::nintendo_switch {
-
-    constexpr inline const s64 TicksPerSecond = 19'200'000;
-
-}
+/* ams::kern::board::nintendo::nx::KSleepManager::ResumeEntry(uintptr_t arg) */
+.section    .text._ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm, "ax", %progbits
+.global     _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm
+.type       _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm, %function
+_ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
+    /* TODO: Implement a real function here. */
+    brk 1000

@@ -46,8 +46,8 @@ namespace ams::kern {
         });
 
         if (core_id == 0) {
-            /* Initialize KSystemControl. */
-            KSystemControl::Initialize();
+            /* Initialize the carveout and the system resource limit. */
+            KSystemControl::InitializePhase1();
 
             /* Initialize the memory manager and the KPageBuffer slabheap. */
             {
@@ -107,9 +107,11 @@ namespace ams::kern {
 
         /* Perform more core-0 specific initialization. */
         if (core_id == 0) {
+            /* Initialize the exit worker manager, so that threads and processes may exit cleanly. */
             Kernel::GetWorkerTaskManager(KWorkerTaskManager::WorkerType_Exit).Initialize(KWorkerTaskManager::WorkerType_Exit, KWorkerTaskManager::ExitWorkerPriority);
 
-            MESOSPHERE_TODO("KSystemControl::InitializeSleepManagerAndAppletSecureMemory();");
+            /* Setup so that we may sleep later, and reserve memory for secure applets. */
+            KSystemControl::InitializePhase2();
 
             MESOSPHERE_TODO("KDeviceAddressSpace::Initialize();");
 

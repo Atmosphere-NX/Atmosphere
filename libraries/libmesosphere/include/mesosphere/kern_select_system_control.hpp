@@ -15,10 +15,14 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_k_target_system.hpp>
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
-    #include <mesosphere/board/nintendo/switch/kern_k_system_control.hpp>
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+    #include <mesosphere/board/nintendo/nx/kern_k_system_control.hpp>
+
+    namespace ams::kern {
+        using ams::kern::board::nintendo::nx::KSystemControl;
+    }
+
 #else
     #error "Unknown board for KSystemControl"
 #endif

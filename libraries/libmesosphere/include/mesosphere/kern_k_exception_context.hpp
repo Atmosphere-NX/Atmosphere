@@ -15,12 +15,12 @@
  */
 #pragma once
 
-#ifdef ATMOSPHERE_BOARD_NINTENDO_SWITCH
+#ifdef ATMOSPHERE_ARCH_ARM64
     #include <mesosphere/arch/arm64/kern_k_exception_context.hpp>
 
     namespace ams::kern {
         using ams::kern::arch::arm64::KExceptionContext;
     }
 #else
-    #error "Unknown board for KExceptionContext"
+    #error "Unknown architecture for KExceptionContext"
 #endif
