@@ -20,6 +20,11 @@ namespace ams::kern::arch::arm64 {
 
     void UserspaceMemoryAccessFunctionAreaBegin();
 
+    bool StoreDataCache(uintptr_t start, uintptr_t end);
+    bool FlushDataCache(uintptr_t start, uintptr_t end);
+    bool InvalidateDataCache(uintptr_t start, uintptr_t end);
+    bool InvalidateInstructionCache(uintptr_t start, uintptr_t end);
+
     void UserspaceMemoryAccessFunctionAreaEnd();
 
 }

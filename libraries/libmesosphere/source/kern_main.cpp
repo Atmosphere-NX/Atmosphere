@@ -113,7 +113,8 @@ namespace ams::kern {
             /* Setup so that we may sleep later, and reserve memory for secure applets. */
             KSystemControl::InitializePhase2();
 
-            MESOSPHERE_TODO("KDeviceAddressSpace::Initialize();");
+            /* Initialize the SMMU. */
+            KDeviceAddressSpace::Initialize();
 
             MESOSPHERE_TODO("CreateAndRunInitialProcesses();");
 

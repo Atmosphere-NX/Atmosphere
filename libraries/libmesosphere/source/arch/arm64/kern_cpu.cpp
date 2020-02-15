@@ -23,6 +23,13 @@ namespace ams::kern::arch::arm64::cpu {
 
     namespace {
 
+        class KScopedCoreMigrationDisable {
+            public:
+                ALWAYS_INLINE KScopedCoreMigrationDisable() { GetCurrentThread().DisableCoreMigration(); }
+
+                ALWAYS_INLINE ~KScopedCoreMigrationDisable() { GetCurrentThread().EnableCoreMigration(); }
+        };
+
         /* Nintendo registers a handler for a SGI on thread termination, but does not handle anything. */
         /* This is sufficient, because post-interrupt scheduling is all they really intend to occur. */
         class KThreadTerminationInterruptHandler : public KInterruptHandler {
@@ -284,6 +291,38 @@ namespace ams::kern::arch::arm64::cpu {
             __asm__ __volatile__("wfe" ::: "memory");
         }
 
+        ALWAYS_INLINE Result InvalidateDataCacheRange(uintptr_t start, uintptr_t end) {
+            MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
+            MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
+            R_UNLESS(arm64::InvalidateDataCache(start, end), svc::ResultInvalidCurrentMemory());
+            DataSynchronizationBarrier();
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result StoreDataCacheRange(uintptr_t start, uintptr_t end) {
+            MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
+            MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
+            R_UNLESS(arm64::StoreDataCache(start, end), svc::ResultInvalidCurrentMemory());
+            DataSynchronizationBarrier();
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result FlushDataCacheRange(uintptr_t start, uintptr_t end) {
+            MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
+            MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
+            R_UNLESS(arm64::FlushDataCache(start, end), svc::ResultInvalidCurrentMemory());
+            DataSynchronizationBarrier();
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result InvalidateInstructionCacheRange(uintptr_t start, uintptr_t end) {
+            MESOSPHERE_ASSERT(util::IsAligned(start, InstructionCacheLineSize));
+            MESOSPHERE_ASSERT(util::IsAligned(end,   InstructionCacheLineSize));
+            R_UNLESS(arm64::InvalidateInstructionCache(start, end), svc::ResultInvalidCurrentMemory());
+            EnsureInstructionConsistency();
+            return ResultSuccess();
+        }
+
     }
 
     void FlushEntireDataCacheSharedForInit() {
@@ -292,6 +331,59 @@ namespace ams::kern::arch::arm64::cpu {
 
     void FlushEntireDataCacheLocalForInit() {
         return PerformCacheOperationBySetWayLocal<true>(FlushDataCacheLineBySetWayImpl);
+    }
+
+    Result InvalidateDataCache(void *addr, size_t size) {
+        KScopedCoreMigrationDisable dm;
+        const uintptr_t start = reinterpret_cast<uintptr_t>(addr);
+        const uintptr_t end   = start + size;
+        uintptr_t aligned_start = util::AlignDown(start, DataCacheLineSize);
+        uintptr_t aligned_end   = util::AlignUp(end, DataCacheLineSize);
+
+        if (aligned_start != start) {
+            R_TRY(FlushDataCacheRange(aligned_start, aligned_start + DataCacheLineSize));
+            aligned_start += DataCacheLineSize;
+        }
+
+        if (aligned_start < aligned_end && (aligned_end != end)) {
+            aligned_end -= DataCacheLineSize;
+            R_TRY(FlushDataCacheRange(aligned_end, aligned_end + DataCacheLineSize));
+        }
+
+        if (aligned_start < aligned_end) {
+            R_TRY(InvalidateDataCacheRange(aligned_start, aligned_end));
+        }
+
+        return ResultSuccess();
+    }
+
+    Result StoreDataCache(const void *addr, size_t size) {
+        KScopedCoreMigrationDisable dm;
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+
+        return StoreDataCacheRange(start, end);
+    }
+
+    Result FlushDataCache(const void *addr, size_t size) {
+        KScopedCoreMigrationDisable dm;
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+
+        return FlushDataCacheRange(start, end);
+    }
+
+    Result InvalidateInstructionCache(void *addr, size_t size) {
+        KScopedCoreMigrationDisable dm;
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), InstructionCacheLineSize);
+        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr), InstructionCacheLineSize);
+
+        R_TRY(InvalidateInstructionCacheRange(start, end));
+
+        /* Request the interrupt helper to invalidate, too. */
+        g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InvalidateInstructionCache);
+
+        return ResultSuccess();
     }
 
     void InitializeInterruptThreads(s32 core_id) {

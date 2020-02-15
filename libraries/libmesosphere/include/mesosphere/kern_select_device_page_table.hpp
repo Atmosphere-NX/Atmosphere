@@ -15,18 +15,14 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_k_auto_object.hpp>
-#include <mesosphere/kern_slab_helpers.hpp>
-#include <mesosphere/kern_select_device_page_table.hpp>
 
-namespace ams::kern {
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+    #include <mesosphere/board/nintendo/nx/kern_k_device_page_table.hpp>
 
-    class KDeviceAddressSpace final : public KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList> {
-        MESOSPHERE_AUTOOBJECT_TRAITS(KDeviceAddressSpace, KAutoObject);
-        public:
-            static void Initialize();
+    namespace ams::kern {
+        using ams::kern::board::nintendo::nx::KDevicePageTable;
+    }
 
-            /* TODO: This is a placeholder definition. */
-    };
-
-}
+#else
+    #error "Unknown board for KDevicePageTable"
+#endif

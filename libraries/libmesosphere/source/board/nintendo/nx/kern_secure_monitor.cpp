@@ -152,6 +152,13 @@ namespace ams::kern::board::nintendo::nx::smc {
         }
     }
 
+    bool ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
+        SecureMonitorArguments args = { FunctionId_ReadWriteRegister, address, mask, value };
+        CallPrivilegedSecureMonitorFunction(args);
+        *out = static_cast<u32>(args.x[1]);
+        return static_cast<SmcResult>(args.x[0]) == SmcResult::Success;
+    }
+
     void ConfigureCarveout(size_t which, uintptr_t address, size_t size) {
         SecureMonitorArguments args = { FunctionId_ConfigureCarveout, static_cast<u64>(which), static_cast<u64>(address), static_cast<u64>(size) };
         CallPrivilegedSecureMonitorFunction(args);

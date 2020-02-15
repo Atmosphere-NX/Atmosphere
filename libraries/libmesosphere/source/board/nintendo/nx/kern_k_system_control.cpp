@@ -116,6 +116,14 @@ namespace ams::kern::board::nintendo::nx {
             return GetConfigU64(which) != 0;
         }
 
+        bool IsRegisterAccessibleToPrivileged(ams::svc::PhysicalAddress address) {
+            if (!KMemoryLayout::GetMemoryControllerRegion().Contains(address)) {
+                return false;
+            }
+            /* TODO: Validate specific offsets. */
+            return true;
+        }
+
     }
 
     /* Initialization. */
@@ -273,6 +281,17 @@ namespace ams::kern::board::nintendo::nx {
 
     u32 KSystemControl::GetInitialProcessBinaryPool() {
         return KMemoryManager::Pool_Application;
+    }
+
+    /* Privileged Access. */
+    void KSystemControl::ReadWriteRegisterPrivileged(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(address, sizeof(u32)));
+        MESOSPHERE_ABORT_UNLESS(IsRegisterAccessibleToPrivileged(address));
+        MESOSPHERE_ABORT_UNLESS(smc::ReadWriteRegister(out, address, mask, value));
+    }
+
+    void KSystemControl::ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
+        MESOSPHERE_TODO_IMPLEMENT();
     }
 
     /* Randomness. */

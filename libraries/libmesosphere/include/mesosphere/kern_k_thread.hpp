@@ -231,6 +231,9 @@ namespace ams::kern {
                 this->GetStackParameters().disable_count--;
             }
 
+            NOINLINE void DisableCoreMigration();
+            NOINLINE void EnableCoreMigration();
+
             ALWAYS_INLINE void SetInExceptionHandler() {
                 MESOSPHERE_ASSERT_THIS();
                 this->GetStackParameters().is_in_exception_handler = true;

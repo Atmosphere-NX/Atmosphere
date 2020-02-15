@@ -33,6 +33,8 @@ namespace ams::kern {
     class KPageTableManager : public KDynamicSlabHeap<impl::PageTablePage> {
         public:
             using RefCount = u16;
+            static constexpr size_t PageTableSize = sizeof(impl::PageTablePage);
+            static_assert(PageTableSize == PageSize);
         private:
             using BaseHeap = KDynamicSlabHeap<impl::PageTablePage>;
         private:

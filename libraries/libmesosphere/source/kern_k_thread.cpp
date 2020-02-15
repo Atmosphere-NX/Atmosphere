@@ -255,6 +255,56 @@ namespace ams::kern {
         MESOSPHERE_TODO_IMPLEMENT();
     }
 
+    void KThread::DisableCoreMigration() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
+
+        KScopedSchedulerLock sl;
+        MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
+        if ((this->num_core_migration_disables++) == 0) {
+            /* Save our ideal state to restore when we can migrate again. */
+            this->original_ideal_core_id = this->ideal_core_id;
+            this->original_affinity_mask = this->affinity_mask;
+
+            /* Bind outselves to this core. */
+            const s32 active_core = this->GetActiveCore();
+            this->ideal_core_id = active_core;
+            this->affinity_mask.SetAffinityMask(1ul << active_core);
+
+            if (this->affinity_mask.GetAffinityMask() != this->original_affinity_mask.GetAffinityMask()) {
+                KScheduler::OnThreadAffinityMaskChanged(this, this->original_affinity_mask, active_core);
+            }
+        }
+    }
+
+    void KThread::EnableCoreMigration() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
+
+        KScopedSchedulerLock sl;
+        MESOSPHERE_ASSERT(this->num_core_migration_disables > 0);
+        if ((--this->num_core_migration_disables) == 0) {
+            const KAffinityMask old_mask = this->affinity_mask;
+
+            /* Restore our ideals. */
+            this->ideal_core_id = this->original_ideal_core_id;
+            this->original_affinity_mask = this->affinity_mask;
+
+            if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+                const s32 active_core = this->GetActiveCore();
+
+                if (!this->affinity_mask.GetAffinity(active_core)) {
+                    if (this->ideal_core_id >= 0) {
+                        this->SetActiveCore(this->ideal_core_id);
+                    } else {
+                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->affinity_mask.GetAffinityMask()));
+                    }
+                }
+                KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
+            }
+        }
+    }
+
     Result KThread::SetPriorityToIdle() {
         MESOSPHERE_ASSERT_THIS();
 

@@ -13,20 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_k_auto_object.hpp>
-#include <mesosphere/kern_slab_helpers.hpp>
-#include <mesosphere/kern_select_device_page_table.hpp>
+#include <mesosphere.hpp>
 
 namespace ams::kern {
 
-    class KDeviceAddressSpace final : public KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList> {
-        MESOSPHERE_AUTOOBJECT_TRAITS(KDeviceAddressSpace, KAutoObject);
-        public:
-            static void Initialize();
-
-            /* TODO: This is a placeholder definition. */
-    };
+    void KDeviceAddressSpace::Initialize() {
+        /* This just forwards to the device page table manager. */
+        KDevicePageTable::Initialize();
+    }
 
 }

@@ -45,6 +45,21 @@ namespace ams::kern::board::nintendo::nx {
             static void GenerateRandomBytes(void *dst, size_t size);
             static u64  GenerateRandomRange(u64 min, u64 max);
 
+            /* Privileged Access. */
+            static void ReadWriteRegisterPrivileged(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
+            static void ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
+
+            static ALWAYS_INLINE u32 ReadRegisterPrivileged(ams::svc::PhysicalAddress address) {
+                u32 v;
+                ReadWriteRegisterPrivileged(std::addressof(v), address, 0x00000000u, 0);
+                return v;
+            }
+
+            static ALWAYS_INLINE void WriteRegisterPrivileged(ams::svc::PhysicalAddress address, u32 value) {
+                u32 v;
+                ReadWriteRegisterPrivileged(std::addressof(v), address, 0xFFFFFFFFu, value);
+            }
+
             /* Power management. */
             static void SleepSystem();
             static NORETURN void StopSystem();

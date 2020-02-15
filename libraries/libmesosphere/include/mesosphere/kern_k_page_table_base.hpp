@@ -216,6 +216,10 @@ namespace ams::kern {
                 return GetLinearVirtualAddress(addr);
             }
 
+            static ALWAYS_INLINE KPhysicalAddress GetHeapPhysicalAddress(KVirtualAddress addr) {
+                return GetLinearPhysicalAddress(addr);
+            }
+
             static ALWAYS_INLINE KVirtualAddress GetPageTableVirtualAddress(KPhysicalAddress addr) {
                 return GetLinearVirtualAddress(addr);
             }

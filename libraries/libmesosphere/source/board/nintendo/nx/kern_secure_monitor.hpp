@@ -86,7 +86,9 @@ namespace ams::kern::board::nintendo::nx::smc {
     /* TODO: Rest of Secure Monitor API. */
     void GenerateRandomBytes(void *dst, size_t size);
     void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
+    bool ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
     void ConfigureCarveout(size_t which, uintptr_t address, size_t size);
+
     void NORETURN Panic(u32 color);
 
     namespace init {

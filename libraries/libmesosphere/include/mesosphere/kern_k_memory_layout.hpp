@@ -463,6 +463,10 @@ namespace ams::kern {
                 return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_Uart)->GetPairAddress();
             }
 
+            static NOINLINE KMemoryRegion &GetMemoryControllerRegion() {
+                return *GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_MemoryController);
+            }
+
             static NOINLINE KMemoryRegion &GetMetadataPoolRegion() {
                 return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualDramMetadataPool);
             }
