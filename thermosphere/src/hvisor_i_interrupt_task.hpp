@@ -16,21 +16,19 @@
 
 #pragma once
 
-#include "hvisor_hw_stop_point_manager.hpp"
+#include "defines.hpp"
+#include <vapours/util/util_intrusive_list.hpp>
 
 namespace ams::hvisor {
 
-    class HwBreakpointManager final : public HwStopPointManager {
-        SINGLETON(HwBreakpointManager);
-        private:
-            bool FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t, cpu::DebugRegisterPair::LoadStoreControl) const final;
-            void Reload() const final;
-
+    class IInterruptTask : public util::IntrusiveListBaseNode<IInterruptTask> {
+        NON_COPYABLE(IInterruptTask);
+        NON_MOVEABLE(IInterruptTask);
+        protected:
+            constexpr IInterruptTask() = default;
         public:
-            int Add(uintptr_t addr);
-            int Remove(uintptr_t addr);
-
-        public:
-            constexpr HwBreakpointManager() : HwStopPointManager(MAX_BCR, IrqManager::ReloadHwBreakpointsSgi) {}
+            virtual std::optional<bool> InterruptTopHalfHandler(u32 irqId, u32 srcCore) = 0;
+            virtual void InterruptBottomHalfHandler(u32 irqId, u32 srcCore) {}
     };
+
 }

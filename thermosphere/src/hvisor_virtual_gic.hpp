@@ -24,7 +24,7 @@
 
 namespace ams::hvisor {
 
-    class VirtualGic final {
+    class VirtualGic final : public IInterruptTask {
         SINGLETON(VirtualGic);
 
         private:
@@ -366,29 +366,19 @@ namespace ams::hvisor {
                 void PushListRegisters(VirqState *chosen[], size_t num);
                 bool UpdateListRegister(volatile GicV2VirtualInterfaceController::ListRegister *lr);
 
-                void UpdateState();
-
             public:
                 static bool ValidateGicdRegisterAccess(size_t offset, size_t sz);
             public:
                 void WriteGicdRegister(u32 val, size_t offset, size_t sz);
                 u32 ReadGicdRegister(size_t offset, size_t sz);
 
-                void MaintenanceInterruptHandler();
-                void EnqueuePhysicalIrq(u32 id);
+                // Must be called by irqManager only...
+                // not sure if I should have made IrqManager a friend of this class
+                void UpdateState();
 
+                std::optional<bool> InterruptTopHalfHandler(u32 irqId, u32) final;
+
+                void EnqueuePhysicalIrq(u32 id);
                 void Initialize();
     };
 }
-
-
-/*bool vgicValidateGicdRegisterAccess(size_t offset, size_t sz);
-void vgicWriteGicdRegister(u32 val, size_t offset, size_t sz);
-u32 vgicReadGicdRegister(size_t offset, size_t sz);
-
-void handleVgicdMmio(ExceptionStackFrame *frame, cpu::DataAbortIss dabtIss, size_t offset);
-
-void vgicInit(void);
-void vgicUpdateState(void);
-void vgicMaintenanceInterruptHandler(void);
-void vgicEnqueuePhysicalIrq(u16 irqId);*/

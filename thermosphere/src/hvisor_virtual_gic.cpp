@@ -18,6 +18,8 @@
 #include "hvisor_virtual_gic.hpp"
 #include "cpu/hvisor_cpu_instructions.hpp"
 
+#include "platform/interrupt_config.h" // TODO remove
+
 #define GICDOFF(field)          (offsetof(GicV2Distributor, field))
 
 namespace ams::hvisor {
@@ -625,8 +627,16 @@ namespace ams::hvisor {
         gich->hcr.raw = hcr.raw;
     }
 
-    void VirtualGic::MaintenanceInterruptHandler()
+    std::optional<bool> VirtualGic::InterruptTopHalfHandler(u32 irqId, u32)
     {
+        if (irqId == IrqManager::VgicUpdateSgi) {
+            // This SGI is just there to trigger the state update
+            return false;
+        } else if (irqId != GIC_IRQID_MAINTENANCE) {
+            return {};
+        }
+
+        // Maintenance interrupt handler:
         GicV2VirtualInterfaceController::MaintenanceIntStatRegister misr = { .raw = gich->misr.raw };
 
         // Force GICV_CTRL to behave like ns-GICC_CTLR, with group 1 being replaced by group 0
@@ -669,6 +679,7 @@ namespace ams::hvisor {
         ENSURE2(!misr.lrenp, "List Register Entry Not Present maintenance interrupt!\n");
 
         // The rest should be handled by the main loop...
+        return false;
     }
 
     void VirtualGic::EnqueuePhysicalIrq(u32 id)
@@ -714,6 +725,11 @@ namespace ams::hvisor {
             // All guest interrupts are initially configured as disabled
             // All guest SPIs are initially configured as level-sensitive with no targets
         }
+
+        auto &mgr = IrqManager::GetInstance();
+
+        mgr.Register(*this, GIC_IRQID_MAINTENANCE, true);
+        mgr.Register(*this, IrqManager::VgicUpdateSgi, false);
 
         // Clear the list registers (they reset to 0, though)
         for (u8 i = 0; i < m_numListRegisters; i++) {

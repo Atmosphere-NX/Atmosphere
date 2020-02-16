@@ -24,14 +24,8 @@ namespace ams::hvisor {
 
     HwBreakpointManager HwBreakpointManager::instance{};
 
-    void HwBreakpointManager::ReloadOnAllCoresSgiHandler()
+    void HwBreakpointManager::Reload() const
     {
-        // TODO
-    }
-
-    void HwBreakpointManager::ReloadOnAllCores() const
-    {
-        cpu::dmb();
         // TODO
     }
 

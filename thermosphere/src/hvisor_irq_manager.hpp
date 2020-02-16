@@ -18,6 +18,8 @@
 
 #include "hvisor_gicv2.hpp"
 #include "hvisor_synchronization.hpp"
+#include "hvisor_i_interrupt_task.hpp"
+
 #include "memory_map.h"
 
 #include "exceptions.h" // TODO
@@ -62,7 +64,10 @@ namespace ams::hvisor {
             static void DeactivateCurrentInterrupt(u32 iar)     { gicc->dir = iar; }
 
         private:
+            using InterruptTaskList = util::IntrusiveListBaseTraits<IInterruptTask>::ListType;
+
             mutable RecursiveSpinlock m_lock{};
+            InterruptTaskList m_interruptTaskList{};
             u32 m_numSharedInterrupts = 0;
             u8 m_priorityShift = 0;
             u8 m_numPriorityLevels = 0;
@@ -76,8 +81,12 @@ namespace ams::hvisor {
 
         public:
             enum ThermosphereSgi : u32 {
-                ExecuteFunctionSgi = 0,
-                VgicUpdateSgi,
+                VgicUpdateSgi = 0,
+
+                ReloadHwBreakpointsSgi,
+                ReloadWatchpointsSgi,
+                ApplyRevertSwBreakpointSgi,
+
                 DebugPauseSgi,
                 ReportDebuggerBreakSgi,
                 DebuggerContinueSgi,
@@ -98,7 +107,7 @@ namespace ams::hvisor {
 
         public:
             void Initialize();
-            void ConfigureInterrupt(u32 id, u8 prio, bool isLevelSensitive);
+            void Register(IInterruptTask &task, u32 id, bool isLevelSensitive, u8 prio = IrqManager::hostPriority);
             void SetInterruptAffinity(u32 id, u8 affinityMask);
 
         public:

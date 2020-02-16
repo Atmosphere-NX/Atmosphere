@@ -15,12 +15,24 @@
  */
 
 #include "hvisor_hw_stop_point_manager.hpp"
+#include "cpu/hvisor_cpu_instructions.hpp"
+#include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 #include <mutex>
 
 #define _REENT_ONLY
 #include <cerrno>
 
 namespace ams::hvisor {
+
+    void HwStopPointManager::DoReloadOnAllCores() const
+    {
+        cpu::InterruptMaskGuard mg{};
+        cpu::dmb();
+        Reload();
+        m_reloadBarrier.Reset(getActiveCoreMask());
+        IrqManager::GenerateSgiForAllOthers(m_irqId);
+        m_reloadBarrier.Join();
+    }
 
     cpu::DebugRegisterPair *HwStopPointManager::Allocate()
     {
@@ -76,7 +88,7 @@ namespace ams::hvisor {
         regs->vr = preconfiguredPair.vr;
         regs->cr.enabled = true;
 
-        ReloadOnAllCores();
+        DoReloadOnAllCores();
         return 0;
     }
 
@@ -98,7 +110,16 @@ namespace ams::hvisor {
         m_freeBitmap |= m_usedBitmap;
         m_usedBitmap = 0;
         std::fill(m_stopPoints.begin(), m_stopPoints.end(), cpu::DebugRegisterPair{});
-        ReloadOnAllCores();
+        DoReloadOnAllCores();
     }
 
+    std::optional<bool> HwStopPointManager::InterruptTopHalfHandler(u32 irqId, u32)
+    {
+        if (irqId != m_irqId) {
+            return {};
+        }
+
+        Reload();
+        return false;
+    }
 }

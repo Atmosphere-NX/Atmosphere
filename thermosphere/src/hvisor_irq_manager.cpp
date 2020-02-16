@@ -17,6 +17,8 @@
 #include <mutex>
 
 #include "hvisor_irq_manager.hpp"
+#include "hvisor_virtual_gic.hpp"
+
 #include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 #include "platform/interrupt_config.h"
 #include "core_ctx.h"
@@ -24,7 +26,6 @@
 #include "transport_interface.h"
 #include "timer.h"
 
-#include "vgic.h"
 //#include "debug_manager.h"
 
 namespace {
@@ -161,21 +162,20 @@ namespace ams::hvisor {
         std::scoped_lock lk{m_lock};
 
         InitializeGic();
-        for (u32 i = 0; i < MaxSgi; i++) {
-            DoConfigureInterrupt(i, hostPriority, false);
-        }
-
         DoConfigureInterrupt(GIC_IRQID_MAINTENANCE, hostPriority, true);
 
-        vgicInit();
+        VirtualGic::GetInstance().Initialize();
     }
 
-    void IrqManager::ConfigureInterrupt(u32 id, u8 prio, bool isLevelSensitive)
+    void IrqManager::Register(IInterruptTask &task, u32 id, bool isLevelSensitive, u8 prio)
     {
         cpu::InterruptMaskGuard mg{};
         std::scoped_lock lk{m_lock};
 
         DoConfigureInterrupt(id, prio, isLevelSensitive);
+        if (!task.IsLinked()) {
+            m_interruptTaskList.push_back(task);
+        }
     }
 
     void IrqManager::SetInterruptAffinity(u32 id, u8 affinity)
@@ -188,96 +188,53 @@ namespace ams::hvisor {
 
     void IrqManager::HandleInterrupt(ExceptionStackFrame *frame)
     {
-        // TODO refactor c parts
-
         // Acknowledge the interrupt. Interrupt goes from pending to active.
         u32 iar = AcknowledgeIrq();
         u32 irqId = iar & 0x3FF;
         u32 srcCore = (iar >> 10) & 7;
+        IInterruptTask *taskForBottomHalf;
 
         //DEBUG("EL2 [core %d]: Received irq %x\n", (int)currentCoreCtx->coreId, irqId);
-
         if (irqId == GicV2Distributor::spuriousIrqId) {
             // Spurious interrupt received
             return;
         } else if (!checkGuestTimerInterrupts(frame, irqId)) {
-            // Deactivate the interrupt, return early
+            // Deactivate the interrupt, return ASAP
             DropCurrentInterruptPriority(iar);
             DeactivateCurrentInterrupt(iar);
             return;
-        }
-
-        bool isGuestInterrupt = false;
-        bool isMaintenanceInterrupt = false;
-        bool isPaused = false;
-        bool hasDebugEvent = false;
-
-        switch (irqId) {
-            case ExecuteFunctionSgi:
-                executeFunctionInterruptHandler(srcCore);
-                break;
-            case VgicUpdateSgi:
-                // Nothing in particular to do here
-                break;
-            case DebugPauseSgi:
-                // TODO debugManagerPauseSgiHandler();
-                break;
-            case ReportDebuggerBreakSgi:
-            case DebuggerContinueSgi:
-                // See bottom halves
-                // Because exceptions (other debug events) are handling w/ interrupts off, if
-                // we get there, there's no race condition possible with debugManagerReportEvent
-                break;
-            case GIC_IRQID_MAINTENANCE:
-                isMaintenanceInterrupt = true;
-                break;
-            case TIMER_IRQID(CURRENT_TIMER):
-                timerInterruptHandler();
-                break;
-            default:
-                isGuestInterrupt = irqId >= 16;
-                break;
-        }
-
-        TransportInterface *transportIface = irqId >= 32 ? transportInterfaceIrqHandlerTopHalf(irqId) : NULL;
-
-        // Priority drop
-        DropCurrentInterruptPriority(iar);
-
-        isGuestInterrupt = isGuestInterrupt && transportIface == NULL && IsGuestInterrupt(irqId);
-
-        instance.m_lock.lock();
-
-        if (!isGuestInterrupt) {
-            if (isMaintenanceInterrupt) {
-                vgicMaintenanceInterruptHandler();
-            }
-            // Deactivate the interrupt
-            DeactivateCurrentInterrupt(iar);
         } else {
-            vgicEnqueuePhysicalIrq(irqId);
+            // Everything else
+            std::scoped_lock lk{instance.m_lock};
+            VirtualGic &vgic = VirtualGic::GetInstance();
+
+            if (irqId >= 16 && IsGuestInterrupt(irqId)) {
+                // Guest interrupts
+                taskForBottomHalf = nullptr;
+                DropCurrentInterruptPriority(iar);
+                vgic.EnqueuePhysicalIrq(irqId);
+            } else {
+                // Host interrupts
+                // Try all handlers and see which one fits
+                for (IInterruptTask &task: instance.m_interruptTaskList) {
+                    auto b = task.InterruptTopHalfHandler(irqId, srcCore);
+                    if (b) {
+                        taskForBottomHalf = *b ? &task : nullptr;
+                        break;
+                    }
+                }
+                DropCurrentInterruptPriority(iar);
+                DeactivateCurrentInterrupt(iar);
+            }
+
+            vgic.UpdateState();
         }
 
-        // Update vgic state
-        vgicUpdateState();
 
-        instance.m_lock.unlock();
-
-        // TODO
-
-        /*isPaused = debugManagerIsCorePaused(currentCoreCtx->coreId);
-        hasDebugEvent = debugManagerHasDebugEvent(currentCoreCtx->coreId);
-        if (irqId == ThermosphereSgi_ReportDebuggerBreak) DEBUG("debug event=%d\n", (int)debugManagerGetDebugEvent(currentCoreCtx->coreId)->type);
-        // Bottom half part
-        if (transportIface != NULL) {
+        if (taskForBottomHalf != nullptr) {
+            // Unmasking the irq signal is left at the discretion of the bottom half handler
             exceptionEnterInterruptibleHypervisorCode();
-            unmaskIrq();
-            transportInterfaceIrqHandlerBottomHalf(transportIface);
-        } else if (irqId == ThermosphereSgi_ReportDebuggerBreak && !hasDebugEvent) {
-            debugManagerReportEvent(DBGEVENT_DEBUGGER_BREAK);
-        } else if (irqId == DebuggerContinueSgi && isPaused) {
-            debugManagerUnpauseCores(BIT(currentCoreCtx->coreId));
-        }*/
-
+            taskForBottomHalf->InterruptBottomHalfHandler(irqId, srcCore);
+        }
     }
 }

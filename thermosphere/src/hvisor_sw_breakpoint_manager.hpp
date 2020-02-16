@@ -17,13 +17,13 @@
 #pragma once
 
 #include "defines.hpp"
-#include "hvisor_synchronization.hpp"
+#include "hvisor_irq_manager.hpp"
 
 #define MAX_SW_BREAKPOINTS  16
 
 namespace ams::hvisor {
 
-    class SwBreakpointManager {
+    class SwBreakpointManager : public IInterruptTask {
         SINGLETON(SwBreakpointManager);
         private:
             struct Breakpoint {
@@ -36,7 +36,7 @@ namespace ams::hvisor {
 
         private:
             mutable RecursiveSpinlock m_lock{};
-            std::atomic<bool> m_triedToApplyOrRevertBreakpoint{};
+            mutable Barrier m_applyBarrier{};
 
             u32 m_bpUniqueCounter = 0;
             size_t m_numBreakpoints = 0;
@@ -48,15 +48,18 @@ namespace ams::hvisor {
             bool DoApply(size_t id);
             bool DoRevert(size_t id);
 
-            // TODO apply, revert handler
-            bool Apply(size_t id);
-            bool Revert(size_t id);
+            bool ApplyOrRevert(size_t id, bool apply);
 
         public:
             int Add(uintptr_t addr, bool persistent);
             int Remove(uintptr_t addr, bool keepPersistent);
             int RemoveAll(bool keepPersistent);
 
+            std::optional<bool> InterruptTopHalfHandler(u32 irqId, u32) final;
+            void Initialize()
+            {
+                IrqManager::GetInstance().Register(*this, IrqManager::ApplyRevertSwBreakpointSgi, false);
+            }
         public: 
             constexpr SwBreakpointManager() = default;
     };

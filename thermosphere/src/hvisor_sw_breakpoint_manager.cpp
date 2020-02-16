@@ -16,6 +16,7 @@
 
 #include "hvisor_sw_breakpoint_manager.hpp"
 #include "cpu/hvisor_cpu_instructions.hpp"
+#include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 
 #include <mutex>
 
@@ -59,7 +60,6 @@ namespace ams::hvisor {
 
         size_t sz = guestReadWriteMemory(bp.address, 4, &bp.savedInstruction, &brkInst);
         bp.applied = sz == 4;
-        m_triedToApplyOrRevertBreakpoint.store(true);
         return sz == 4;
     }
 
@@ -68,8 +68,31 @@ namespace ams::hvisor {
         Breakpoint &bp = m_breakpoints[id];
         size_t sz = guestWriteMemory(bp.address, 4, &bp.savedInstruction);
         bp.applied = sz != 4;
-        m_triedToApplyOrRevertBreakpoint.store(true);
         return sz == 4;
+    }
+
+    std::optional<bool> SwBreakpointManager::InterruptTopHalfHandler(u32 irqId, u32)
+    {
+        if (irqId != IrqManager::ApplyRevertSwBreakpointSgi) {
+            return {};
+        }
+
+        m_applyBarrier.Join();
+        return false;
+    }
+
+    bool SwBreakpointManager::ApplyOrRevert(size_t id, bool apply)
+    {
+        cpu::InterruptMaskGuard mg{};
+        m_applyBarrier.Reset(getActiveCoreMask());
+        IrqManager::GenerateSgiForAllOthers(IrqManager::ApplyRevertSwBreakpointSgi);
+        if (apply) {
+            DoApply(id);
+        } else {
+            DoRevert(id);
+        }
+
+        m_applyBarrier.Join();
     }
 
     // TODO apply revert handlers
@@ -103,7 +126,7 @@ namespace ams::hvisor {
         bp.applied = false;
         bp.uid = static_cast<u16>(0x2000 + m_bpUniqueCounter++);
 
-        return Apply(id) ? 0 : -EFAULT;
+        return ApplyOrRevert(id, true) ? 0 : -EFAULT;
     }
 
     int SwBreakpointManager::Remove(uintptr_t addr, bool keepPersistent)
@@ -126,7 +149,7 @@ namespace ams::hvisor {
         Breakpoint &bp = m_breakpoints[id];
         bool ok = true;
         if (!keepPersistent || !bp.persistent) {
-            ok = Revert(id);
+            ok = ApplyOrRevert(id, false);
         }
 
         for(size_t i = id; i < m_numBreakpoints - 1; i++) {
@@ -146,7 +169,7 @@ namespace ams::hvisor {
         for (size_t id = 0; id < m_numBreakpoints; id++) {
             Breakpoint &bp = m_breakpoints[id];
             if (!keepPersistent || !bp.persistent) {
-                ok = ok && Revert(id);
+                ok = ok && ApplyOrRevert(id, false);
             }
         }
 
@@ -156,6 +179,4 @@ namespace ams::hvisor {
 
         return ok ? 0 : -EFAULT;
     }
-
-
 }

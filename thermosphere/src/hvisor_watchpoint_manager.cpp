@@ -47,14 +47,8 @@ namespace ams::hvisor {
 
     WatchpointManager WatchpointManager::instance{};
 
-    void WatchpointManager::ReloadOnAllCoresSgiHandler()
+    void WatchpointManager::Reload() const
     {
-        // TODO
-    }
-
-    void WatchpointManager::ReloadOnAllCores() const
-    {
-        cpu::dmb();
         // TODO
     }
 

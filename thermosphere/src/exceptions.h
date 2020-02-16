@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#include <assert.h>
 #include "utils.h"
 #include "core_ctx.h"
 
@@ -86,8 +85,8 @@ typedef struct ExceptionStackFrame {
     u64 cntv_ctl_el0;
 } ExceptionStackFrame;
 
-static_assert(offsetof(ExceptionStackFrame, far_el2) == 0x120, "Wrong definition for ExceptionStackFrame");
-static_assert(sizeof(ExceptionStackFrame) == 0x140, "Wrong size for ExceptionStackFrame");
+//static_assert(offsetof(ExceptionStackFrame, far_el2) == 0x120, "Wrong definition for ExceptionStackFrame");
+//static_assert(sizeof(ExceptionStackFrame) == 0x140, "Wrong size for ExceptionStackFrame");
 
 static inline bool spsrIsA32(u64 spsr)
 {
