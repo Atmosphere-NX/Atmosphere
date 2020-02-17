@@ -190,7 +190,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Map the pages, using a guard to ensure we don't leak. */
         {
-            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, nullptr, page_list, true, true)); };
+            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 R_TRY(this->Map(virt_addr, phys_addr, num_pages, entry_template, L3BlockSize, page_list, reuse_ll));

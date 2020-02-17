@@ -49,13 +49,14 @@ namespace ams::kern {
                     if (control & 0x80) {
                         /* NOTE: Nintendo does not check if it's possible to decompress. */
                         /* As such, we will leave the following as a debug assertion, and not a release assertion. */
-                        MESOSPHERE_ASSERT(cmp_ofs >= sizeof(u16));
+                        MESOSPHERE_AUDIT(cmp_ofs >= sizeof(u16));
                         cmp_ofs -= sizeof(u16);
 
                         /* Extract segment bounds. */
                         const util::BitPack16 seg_flags{static_cast<u16>((cmp_start[cmp_ofs] << 0) | (cmp_start[cmp_ofs + 1] << 8))};
                         const u32 seg_ofs  = seg_flags.Get<BlzSegmentFlags::Offset>() + 3;
-                        const u32 seg_size = std::min(seg_flags.Get<BlzSegmentFlags::Size>(), out_ofs) + 3;
+                        const u32 seg_size = std::min(seg_flags.Get<BlzSegmentFlags::Size>() + 3, out_ofs);
+                        MESOSPHERE_AUDIT(out_ofs + seg_ofs <= total_size + additional_size);
 
                         /* Copy the data. */
                         out_ofs -= seg_size;
@@ -65,7 +66,7 @@ namespace ams::kern {
                     } else {
                         /* NOTE: Nintendo does not check if it's possible to copy. */
                         /* As such, we will leave the following as a debug assertion, and not a release assertion. */
-                        MESOSPHERE_ASSERT(cmp_ofs >= sizeof(u8));
+                        MESOSPHERE_AUDIT(cmp_ofs >= sizeof(u8));
                         cmp_start[--out_ofs] = cmp_start[--cmp_ofs];
                     }
                 }

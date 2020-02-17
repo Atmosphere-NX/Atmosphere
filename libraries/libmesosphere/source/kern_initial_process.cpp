@@ -52,7 +52,6 @@ namespace ams::kern {
                 /* Parse process parameters and reserve memory. */
                 ams::svc::CreateProcessParameter params;
                 MESOSPHERE_R_ABORT_UNLESS(reader.MakeCreateProcessParameter(std::addressof(params), true));
-                MESOSPHERE_LOG("Reserving %zx for process %zu\n", params.code_num_pages * PageSize, i);
                 MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, params.code_num_pages * PageSize));
 
                 /* Create the process. */
