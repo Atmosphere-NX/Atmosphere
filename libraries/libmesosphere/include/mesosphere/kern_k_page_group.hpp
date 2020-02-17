@@ -38,6 +38,7 @@ namespace ams::kern {
             constexpr size_t GetNumPages() const { return this->num_pages; }
             constexpr size_t GetSize() const { return this->GetNumPages() * PageSize; }
             constexpr KVirtualAddress GetEndAddress() const { return this->GetAddress() + this->GetSize(); }
+            constexpr KVirtualAddress GetLastAddress() const { return this->GetEndAddress() - 1; }
 
             constexpr bool IsEquivalentTo(const KBlockInfo &rhs) const {
                 return this->address == rhs.address && this->num_pages == rhs.num_pages;

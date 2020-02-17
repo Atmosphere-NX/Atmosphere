@@ -157,6 +157,8 @@ namespace ams::kern::arch::arm64::cpu {
     void FlushEntireDataCacheSharedForInit();
     void FlushEntireDataCacheLocalForInit();
 
+    void FlushEntireDataCache();
+
     Result InvalidateDataCache(void *addr, size_t size);
     Result StoreDataCache(const void *addr, size_t size);
     Result FlushDataCache(const void *addr, size_t size);

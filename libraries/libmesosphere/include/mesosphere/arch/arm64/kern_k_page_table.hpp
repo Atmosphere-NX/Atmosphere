@@ -44,7 +44,6 @@ namespace ams::kern::arch::arm64 {
 
                 BlockType_Count,
             };
-
             static_assert(L3BlockSize == PageSize);
             static constexpr size_t ContiguousPageSize = L3ContiguousBlockSize;
 
@@ -78,6 +77,16 @@ namespace ams::kern::arch::arm64 {
                     case L1BlockSize:           return BlockType_L1Block;
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
+            }
+
+            static constexpr size_t GetSmallerAlignment(size_t alignment) {
+                MESOSPHERE_ASSERT(alignment > L3BlockSize);
+                return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) - 1));
+            }
+
+            static constexpr size_t GetLargerAlignment(size_t alignment) {
+                MESOSPHERE_ASSERT(alignment < L1BlockSize);
+                return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) + 1));
             }
         protected:
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
@@ -164,7 +173,25 @@ namespace ams::kern::arch::arm64 {
             Result Finalize();
         private:
             Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
-            Result Unmap(KProcessAddress virt_addr, size_t num_pages, KPageGroup *pg, PageLinkedList *page_list, bool force, bool reuse_ll);
+            Result Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll);
+
+            Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
+                switch (page_size) {
+                    case L1BlockSize:
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+                    case L2TegraSmmuBlockSize:
+#endif
+                    case L2BlockSize:
+                    case L3BlockSize:
+                        break;
+                    case L2ContiguousBlockSize:
+                    case L3ContiguousBlockSize:
+                        entry_template.SetContiguous(true);
+                        break;
+                    MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                }
+                return this->Map(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+            }
 
             Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
 

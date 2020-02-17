@@ -124,9 +124,9 @@ namespace ams::kern {
             bool enable_aslr;
             KMemoryBlockSlabManager *memory_block_slab_manager;
             KBlockInfoManager *block_info_manager;
-            KMemoryRegion *cached_physical_linear_region;
-            KMemoryRegion *cached_physical_heap_region;
-            KMemoryRegion *cached_virtual_managed_pool_dram_region;
+            const KMemoryRegion *cached_physical_linear_region;
+            const KMemoryRegion *cached_physical_heap_region;
+            const KMemoryRegion *cached_virtual_heap_region;
             MemoryFillValue heap_fill_value;
             MemoryFillValue ipc_fill_value;
             MemoryFillValue stack_fill_value;
@@ -137,7 +137,7 @@ namespace ams::kern {
                 kernel_map_region_end(), alias_code_region_start(), alias_code_region_end(), code_region_start(), code_region_end(),
                 max_heap_size(), max_physical_memory_size(), general_lock(), map_physical_memory_lock(), impl(), memory_block_manager(),
                 allocate_option(), address_space_size(), is_kernel(), enable_aslr(), memory_block_slab_manager(), block_info_manager(),
-                cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_managed_pool_dram_region(),
+                cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_heap_region(),
                 heap_fill_value(), ipc_fill_value(), stack_fill_value()
             {
                 /* ... */
@@ -172,10 +172,27 @@ namespace ams::kern {
             bool IsLockedByCurrentThread() const { return this->general_lock.IsLockedByCurrentThread(); }
 
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
-                if (this->cached_physical_heap_region && this->cached_physical_heap_region->Contains(GetInteger(phys_addr))) {
-                    return true;
-                }
-                return KMemoryLayout::IsHeapPhysicalAddress(&this->cached_physical_heap_region, phys_addr);
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, this->cached_physical_heap_region);
+            }
+
+            bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, size, this->cached_physical_heap_region);
+            }
+
+            bool IsHeapVirtualAddress(KVirtualAddress virt_addr) {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsHeapVirtualAddress(std::addressof(this->cached_virtual_heap_region), virt_addr, this->cached_virtual_heap_region);
+            }
+
+            bool IsHeapVirtualAddress(KVirtualAddress virt_addr, size_t size) {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsHeapVirtualAddress(std::addressof(this->cached_virtual_heap_region), virt_addr, size, this->cached_virtual_heap_region);
             }
 
             bool ContainsPages(KProcessAddress addr, size_t num_pages) const {
@@ -193,6 +210,7 @@ namespace ams::kern {
 
             Result QueryInfoImpl(KMemoryInfo *out_info, ams::svc::PageInfo *out_page, KProcessAddress address) const;
             Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties);
+            Result MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll);
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
         public:
@@ -203,6 +221,10 @@ namespace ams::kern {
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 return this->MapPages(out_addr, num_pages, alignment, phys_addr, true, region_start, region_num_pages, state, perm);
             }
+
+            Result UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state);
+            Result MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
+            Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state);
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);

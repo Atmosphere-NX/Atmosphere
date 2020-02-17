@@ -180,7 +180,7 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE bool Contains(uintptr_t address) const {
-                return this->GetAddress() <= address && address < this->GetLastAddress();
+                return this->GetAddress() <= address && address <= this->GetLastAddress();
             }
 
             constexpr ALWAYS_INLINE bool IsDerivedFrom(u32 type) const {
@@ -231,6 +231,7 @@ namespace ams::kern {
             };
         private:
             using TreeType = util::IntrusiveRedBlackTreeBaseTraits<KMemoryRegion>::TreeType<KMemoryRegion>;
+        public:
             using value_type        = TreeType::value_type;
             using size_type         = TreeType::size_type;
             using difference_type   = TreeType::difference_type;
@@ -276,7 +277,7 @@ namespace ams::kern {
                 MESOSPHERE_INIT_ABORT();
             }
 
-            DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) {
+            DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) const {
                 DerivedRegionExtents extents;
 
                 MESOSPHERE_INIT_ABORT_UNLESS(extents.first_region == nullptr);
@@ -479,16 +480,94 @@ namespace ams::kern {
                 return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelStack);
             }
 
+            static NOINLINE KMemoryRegion &GetTempRegion() {
+                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelTemp);
+            }
+
             static NOINLINE KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) {
                 return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
             }
 
-            static NOINLINE bool IsHeapPhysicalAddress(KMemoryRegion **out, KPhysicalAddress address) {
-                if (auto it = GetPhysicalLinearMemoryRegionTree().FindContainingRegion(GetInteger(address)); it != GetPhysicalLinearMemoryRegionTree().end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
+            static NOINLINE bool IsHeapPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, const KMemoryRegion *hint = nullptr) {
+                auto &tree = GetPhysicalLinearMemoryRegionTree();
+                KMemoryRegionTree::const_iterator it = tree.end();
+                if (hint != nullptr) {
+                    it = tree.iterator_to(*hint);
+                }
+                if (it == tree.end() || !it->Contains(GetInteger(address))) {
+                    it = tree.FindContainingRegion(GetInteger(address));
+                }
+                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
                     if (out) {
                         *out = std::addressof(*it);
                     }
                     return true;
+                }
+                return false;
+            }
+
+            static NOINLINE bool IsHeapPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, size_t size, const KMemoryRegion *hint = nullptr) {
+                auto &tree = GetPhysicalLinearMemoryRegionTree();
+                KMemoryRegionTree::const_iterator it = tree.end();
+                if (hint != nullptr) {
+                    it = tree.iterator_to(*hint);
+                }
+                if (it == tree.end() || !it->Contains(GetInteger(address))) {
+                    it = tree.FindContainingRegion(GetInteger(address));
+                }
+                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
+                    const uintptr_t last_address = GetInteger(address) + size - 1;
+                    do {
+                        if (last_address <= it->GetLastAddress()) {
+                            if (out) {
+                                *out = std::addressof(*it);
+                            }
+                            return true;
+                        }
+                        it++;
+                    } while (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel));
+                }
+                return false;
+            }
+
+            static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion **out, KVirtualAddress address, const KMemoryRegion *hint = nullptr) {
+                auto &tree = GetVirtualLinearMemoryRegionTree();
+                KMemoryRegionTree::const_iterator it = tree.end();
+                if (hint != nullptr) {
+                    it = tree.iterator_to(*hint);
+                }
+                if (it == tree.end() || !it->Contains(GetInteger(address))) {
+                    it = tree.FindContainingRegion(GetInteger(address));
+                }
+                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool)) {
+                    if (out) {
+                        *out = std::addressof(*it);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion **out, KVirtualAddress address, size_t size, const KMemoryRegion *hint = nullptr) {
+                auto &tree = GetVirtualLinearMemoryRegionTree();
+                KMemoryRegionTree::const_iterator it = tree.end();
+                if (hint != nullptr) {
+                    it = tree.iterator_to(*hint);
+                }
+                if (it == tree.end() || !it->Contains(GetInteger(address))) {
+                    it = tree.FindContainingRegion(GetInteger(address));
+                }
+                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool)) {
+                    const uintptr_t last_address = GetInteger(address) + size - 1;
+                    do {
+                        if (last_address <= it->GetLastAddress()) {
+                            if (out) {
+                                *out = std::addressof(*it);
+                            }
+                            return true;
+                        }
+                        it++;
+                    } while (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool));
                 }
                 return false;
             }

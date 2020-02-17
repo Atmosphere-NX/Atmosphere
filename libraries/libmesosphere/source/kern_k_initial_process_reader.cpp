@@ -17,6 +17,63 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        struct BlzSegmentFlags {
+            using Offset = util::BitPack16::Field<0,            12, u32>;
+            using Size   = util::BitPack16::Field<Offset::Next,  4, u32>;
+        };
+
+        NOINLINE void BlzUncompress(void *_end) {
+            /* Parse the footer, endian agnostic. */
+            static_assert(sizeof(u32) == 4);
+            static_assert(sizeof(u16) == 2);
+            static_assert(sizeof(u8)  == 1);
+
+            u8 *end = static_cast<u8 *>(_end);
+            const u32 total_size      = (end[-12] << 0) | (end[-11] << 8) | (end[-10] << 16) | (end[- 9] << 24);
+            const u32 footer_size     = (end[- 8] << 0) | (end[- 7] << 8) | (end[- 6] << 16) | (end[- 5] << 24);
+            const u32 additional_size = (end[- 4] << 0) | (end[- 3] << 8) | (end[- 2] << 16) | (end[- 1] << 24);
+
+            /* Prepare to decompress. */
+            u8 *cmp_start = end - total_size;
+            u32 cmp_ofs = total_size - footer_size;
+            u32 out_ofs = total_size + additional_size;
+
+            /* Decompress. */
+            while (out_ofs) {
+                u8 control = cmp_start[--cmp_ofs];
+
+                /* Each bit in the control byte is a flag indicating compressed or not compressed. */
+                for (size_t i = 0; i < 8 && out_ofs; ++i, control <<= 1) {
+                    if (control & 0x80) {
+                        /* NOTE: Nintendo does not check if it's possible to decompress. */
+                        /* As such, we will leave the following as a debug assertion, and not a release assertion. */
+                        MESOSPHERE_ASSERT(cmp_ofs >= sizeof(u16));
+                        cmp_ofs -= sizeof(u16);
+
+                        /* Extract segment bounds. */
+                        const util::BitPack16 seg_flags{static_cast<u16>((cmp_start[cmp_ofs] << 0) | (cmp_start[cmp_ofs + 1] << 8))};
+                        const u32 seg_ofs  = seg_flags.Get<BlzSegmentFlags::Offset>() + 3;
+                        const u32 seg_size = std::min(seg_flags.Get<BlzSegmentFlags::Size>(), out_ofs) + 3;
+
+                        /* Copy the data. */
+                        out_ofs -= seg_size;
+                        for (size_t j = 0; j < seg_size; j++) {
+                            cmp_start[out_ofs + j] = cmp_start[out_ofs + seg_ofs + j];
+                        }
+                    } else {
+                        /* NOTE: Nintendo does not check if it's possible to copy. */
+                        /* As such, we will leave the following as a debug assertion, and not a release assertion. */
+                        MESOSPHERE_ASSERT(cmp_ofs >= sizeof(u8));
+                        cmp_start[--out_ofs] = cmp_start[--cmp_ofs];
+                    }
+                }
+            }
+        }
+
+    }
+
     Result KInitialProcessReader::MakeCreateProcessParameter(ams::svc::CreateProcessParameter *out, bool enable_aslr) const {
         /* Get and validate addresses/sizes. */
         const uintptr_t rx_address  = this->kip_header->GetRxAddress();
@@ -56,7 +113,7 @@ namespace ams::kern {
 
         /* Set fields in parameter. */
         out->code_address   = map_start + start_address;
-        out->code_num_pages = util::AlignUp(end_address - start_address, PageSize);
+        out->code_num_pages = util::AlignUp(end_address - start_address, PageSize) / PageSize;
         out->program_id     = this->kip_header->GetProgramId();
         out->version        = this->kip_header->GetVersion();
         out->flags          = 0;
@@ -81,6 +138,51 @@ namespace ams::kern {
         } else {
             out->flags |= ams::svc::CreateProcessFlag_AddressSpace32Bit;
         }
+
+        return ResultSuccess();
+    }
+
+    Result KInitialProcessReader::Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params) const {
+        /* Clear memory at the address. */
+        std::memset(GetVoidPointer(address), 0, params.code_num_pages);
+
+        /* Prepare to layout the data. */
+        const KProcessAddress rx_address = address + this->kip_header->GetRxAddress();
+        const KProcessAddress ro_address = address + this->kip_header->GetRoAddress();
+        const KProcessAddress rw_address = address + this->kip_header->GetRwAddress();
+        const u8 *rx_binary = reinterpret_cast<const u8 *>(this->kip_header + 1);
+        const u8 *ro_binary = rx_binary + this->kip_header->GetRxCompressedSize();
+        const u8 *rw_binary = ro_binary + this->kip_header->GetRoCompressedSize();
+
+        /* Copy text. */
+        if (util::AlignUp(this->kip_header->GetRxSize(), PageSize)) {
+            std::memcpy(GetVoidPointer(rx_address), rx_binary, this->kip_header->GetRxCompressedSize());
+            if (this->kip_header->IsRxCompressed()) {
+                BlzUncompress(GetVoidPointer(rx_address + this->kip_header->GetRxCompressedSize()));
+            }
+        }
+
+        /* Copy rodata. */
+        if (util::AlignUp(this->kip_header->GetRoSize(), PageSize)) {
+            std::memcpy(GetVoidPointer(ro_address), ro_binary, this->kip_header->GetRoCompressedSize());
+            if (this->kip_header->IsRoCompressed()) {
+                BlzUncompress(GetVoidPointer(ro_address + this->kip_header->GetRoCompressedSize()));
+            }
+        }
+
+        /* Copy rwdata. */
+        if (util::AlignUp(this->kip_header->GetRwSize(), PageSize)) {
+            std::memcpy(GetVoidPointer(rw_address), rw_binary, this->kip_header->GetRwCompressedSize());
+            if (this->kip_header->IsRwCompressed()) {
+                BlzUncompress(GetVoidPointer(rw_address + this->kip_header->GetRwCompressedSize()));
+            }
+        }
+
+        /* Flush caches. */
+        /* NOTE: official kernel does an entire cache flush by set/way here, which is incorrect as other cores are online. */
+        /* We will simply flush by virtual address, since that's what ARM says is correct to do. */
+        MESOSPHERE_R_ABORT_UNLESS(cpu::FlushDataCache(GetVoidPointer(address), params.code_num_pages * PageSize));
+        cpu::InvalidateEntireInstructionCache();
 
         return ResultSuccess();
     }

@@ -52,27 +52,41 @@ namespace ams::kern {
                 /* Parse process parameters and reserve memory. */
                 ams::svc::CreateProcessParameter params;
                 MESOSPHERE_R_ABORT_UNLESS(reader.MakeCreateProcessParameter(std::addressof(params), true));
-                MESOSPHERE_TODO("Reserve memory");
+                MESOSPHERE_LOG("Reserving %zx for process %zu\n", params.code_num_pages * PageSize, i);
+                MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, params.code_num_pages * PageSize));
 
-                /* Create the process, and ensure we don't leak pages. */
+                /* Create the process. */
+                KProcess *new_process = nullptr;
                 {
+                    /* Declare page group to use for process memory. */
+                    KPageGroup pg(std::addressof(Kernel::GetBlockInfoManager()));
+
                     /* Allocate memory for the process. */
-                    MESOSPHERE_TODO("Allocate memory for the process");
+                    auto &mm = Kernel::GetMemoryManager();
+                    const auto pool = static_cast<KMemoryManager::Pool>(reader.UsesSecureMemory() ? KMemoryManager::Pool_System : KSystemControl::GetInitialProcessBinaryPool());
+                    MESOSPHERE_R_ABORT_UNLESS(mm.Allocate(std::addressof(pg), params.code_num_pages, KMemoryManager::EncodeOption(pool, KMemoryManager::Direction_FromFront)));
 
-                    /* Map the process's memory into the temporary region. */
-                    MESOSPHERE_TODO("Map the process's page group");
+                    {
+                        /* Ensure that we do not leak pages. */
+                        KScopedPageGroup spg(pg);
 
-                    /* Load the process. */
-                    MESOSPHERE_TODO("Load the process");
+                        /* Map the process's memory into the temporary region. */
+                        const auto &temp_region = KMemoryLayout::GetTempRegion();
+                        KProcessAddress temp_address = Null<KProcessAddress>;
+                        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().MapPageGroup(std::addressof(temp_address), pg, temp_region.GetAddress(), temp_region.GetSize() / PageSize, KMemoryState_Kernel, KMemoryPermission_KernelReadWrite));
 
-                    /* Unmap the temporary mapping. */
-                    MESOSPHERE_TODO("Unmap the process's page group");
+                        /* Load the process. */
+                        MESOSPHERE_R_ABORT_UNLESS(reader.Load(temp_address, params));
 
-                    /* Create a KProcess object. */
-                    MESOSPHERE_TODO("Create a KProcess");
+                        /* Unmap the temporary mapping. */
+                        MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPageGroup(temp_address, pg, KMemoryState_Kernel));
 
-                    /* Initialize the process. */
-                    MESOSPHERE_TODO("Initialize the process");
+                        /* Create a KProcess object. */
+                        MESOSPHERE_TODO("Create a KProcess");
+
+                        /* Initialize the process. */
+                        MESOSPHERE_TODO("Initialize the process");
+                    }
                 }
 
                 /* Set the process's memory permissions. */
@@ -82,7 +96,7 @@ namespace ams::kern {
                 MESOSPHERE_TODO("Register the process");
 
                 /* Save the process info. */
-                infos[i].process    = /* TODO */ nullptr;
+                infos[i].process    = new_process;
                 infos[i].stack_size = reader.GetStackSize();
                 infos[i].priority   = reader.GetPriority();
 

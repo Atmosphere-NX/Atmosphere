@@ -58,7 +58,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         if (operation == OperationType_Unmap) {
-            MESOSPHERE_TODO("operation == OperationType_Unmap");
+            return this->Unmap(virt_addr, num_pages, page_list, false, reuse_ll);
         } else {
             auto entry_template = this->GetEntryTemplate(properties);
 
@@ -175,7 +175,7 @@ namespace ams::kern::arch::arm64 {
         return ResultSuccess();
     }
 
-    Result KPageTable::Unmap(KProcessAddress virt_addr, size_t num_pages, KPageGroup *pg, PageLinkedList *page_list, bool force, bool reuse_ll) {
+    Result KPageTable::Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll) {
         MESOSPHERE_TODO_IMPLEMENT();
     }
 
@@ -188,13 +188,57 @@ namespace ams::kern::arch::arm64 {
 
         size_t remaining_pages = num_pages;
 
-        if (num_pages < ContiguousPageSize / PageSize) {
-            auto guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, nullptr, page_list, true, true)); };
-            R_TRY(this->Map(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll));
-            guard.Cancel();
-        } else {
-            MESOSPHERE_TODO("Contiguous mapping");
-            (void)remaining_pages;
+        /* Map the pages, using a guard to ensure we don't leak. */
+        {
+            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, nullptr, page_list, true, true)); };
+
+            if (num_pages < ContiguousPageSize / PageSize) {
+                R_TRY(this->Map(virt_addr, phys_addr, num_pages, entry_template, L3BlockSize, page_list, reuse_ll));
+                remaining_pages -= num_pages;
+                virt_addr += num_pages * PageSize;
+                phys_addr += num_pages * PageSize;
+            } else {
+                /* Map the fractional part of the pages. */
+                size_t alignment;
+                for (alignment = ContiguousPageSize; (virt_addr & (alignment - 1)) == (phys_addr & (alignment - 1)); alignment = GetLargerAlignment(alignment)) {
+                    /* Check if this would be our last map. */
+                    const size_t pages_to_map = (alignment - (virt_addr & (alignment - 1))) & (alignment - 1);
+                    if (pages_to_map + (alignment / PageSize) > remaining_pages) {
+                        break;
+                    }
+
+                    /* Map pages, if we should. */
+                    if (pages_to_map > 0) {
+                        R_TRY(this->Map(virt_addr, phys_addr, pages_to_map, entry_template, GetSmallerAlignment(alignment), page_list, reuse_ll));
+                        remaining_pages -= pages_to_map;
+                        virt_addr += pages_to_map * PageSize;
+                        phys_addr += pages_to_map * PageSize;
+                    }
+
+                    /* Don't go further than L1 block. */
+                    if (alignment == L1BlockSize) {
+                        break;
+                    }
+                }
+
+                while (remaining_pages > 0) {
+                    /* Select the next smallest alignment. */
+                    alignment = GetSmallerAlignment(alignment);
+                    MESOSPHERE_ASSERT((virt_addr & (alignment - 1)) == 0);
+                    MESOSPHERE_ASSERT((phys_addr & (alignment - 1)) == 0);
+
+                    /* Map pages, if we should. */
+                    const size_t pages_to_map = util::AlignDown(remaining_pages, alignment / PageSize);
+                    if (pages_to_map > 0) {
+                        R_TRY(this->Map(virt_addr, phys_addr, pages_to_map, entry_template, alignment, page_list, reuse_ll));
+                        remaining_pages -= pages_to_map;
+                        virt_addr += pages_to_map * PageSize;
+                        phys_addr += pages_to_map * PageSize;
+                    }
+                }
+            }
+
+            map_guard.Cancel();
         }
 
         /* Perform what coalescing we can. */

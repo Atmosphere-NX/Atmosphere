@@ -333,6 +333,10 @@ namespace ams::kern::arch::arm64::cpu {
         return PerformCacheOperationBySetWayLocal<true>(FlushDataCacheLineBySetWayImpl);
     }
 
+    void FlushEntireDataCache() {
+        return PerformCacheOperationBySetWayShared<false>(FlushDataCacheLineBySetWayImpl);
+    }
+
     Result InvalidateDataCache(void *addr, size_t size) {
         KScopedCoreMigrationDisable dm;
         const uintptr_t start = reinterpret_cast<uintptr_t>(addr);

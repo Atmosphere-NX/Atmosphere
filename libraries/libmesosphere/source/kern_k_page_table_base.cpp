@@ -50,9 +50,9 @@ namespace ams::kern {
         this->ipc_fill_value            = MemoryFillValue_Zero;
         this->stack_fill_value          = MemoryFillValue_Zero;
 
-        this->cached_physical_linear_region           = nullptr;
-        this->cached_physical_heap_region             = nullptr;
-        this->cached_virtual_managed_pool_dram_region = nullptr;
+        this->cached_physical_linear_region = nullptr;
+        this->cached_physical_heap_region   = nullptr;
+        this->cached_virtual_heap_region    = nullptr;
 
         /* Initialize our implementation. */
         this->impl.InitializeForKernel(table, start, end);
@@ -285,6 +285,8 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
         /* Create a page group to hold the pages we allocate. */
         KPageGroup pg(this->block_info_manager);
 
@@ -303,6 +305,38 @@ namespace ams::kern {
         return this->Operate(page_list, address, num_pages, std::addressof(pg), properties, OperationType_MapGroup, false);
     }
 
+    Result KPageTableBase::MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Note the current address, so that we can iterate. */
+        const KProcessAddress start_address = address;
+        KProcessAddress cur_address = address;
+
+        /* Ensure that we clean up on failure. */
+        auto mapping_guard = SCOPE_GUARD {
+            MESOSPHERE_ABORT_UNLESS(!reuse_ll);
+            if (cur_address != start_address) {
+                const KPageProperties unmap_properties = {};
+                MESOSPHERE_R_ABORT_UNLESS(this->Operate(page_list, start_address, (cur_address - start_address) / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, true));
+            }
+        };
+
+        /* Iterate, mapping all pages in the group. */
+        for (const auto &block : pg) {
+            /* We only allow mapping pages in the heap, and we require we're mapping non-empty blocks. */
+            MESOSPHERE_ABORT_UNLESS(block.GetAddress() < block.GetLastAddress());
+            MESOSPHERE_ABORT_UNLESS(IsHeapVirtualAddress(block.GetAddress(), block.GetSize()));
+
+            /* Map and advance. */
+            R_TRY(this->Operate(page_list, cur_address, block.GetNumPages(), GetHeapPhysicalAddress(block.GetAddress()), true, properties, OperationType_Map, reuse_ll));
+            cur_address += block.GetSize();
+        }
+
+        /* We succeeded! */
+        mapping_guard.Cancel();
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
         MESOSPHERE_ASSERT(util::IsAligned(alignment, PageSize) && alignment >= PageSize);
 
@@ -318,7 +352,7 @@ namespace ams::kern {
         R_UNLESS(addr != Null<KProcessAddress>, svc::ResultOutOfMemory());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(addr), alignment));
         MESOSPHERE_ASSERT(this->Contains(addr, num_pages * PageSize, state));
-        MESOSPHERE_R_ASSERT(this->CheckMemoryState(addr, num_pages * PageSize, KMemoryState_All, KMemoryState_Free, KMemoryPermission_All, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        MESOSPHERE_R_ASSERT(this->CheckMemoryState(addr, num_pages * PageSize, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
@@ -342,4 +376,47 @@ namespace ams::kern {
         *out_addr = addr;
         return ResultSuccess();
     }
+
+    Result KPageTableBase::UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+    Result KPageTableBase::MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
+        /* Ensure this is a valid map request. */
+        const size_t num_pages = pg.GetNumPages();
+        R_UNLESS(this->Contains(region_start, region_num_pages * PageSize, state), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(num_pages < region_num_pages,                                     svc::ResultOutOfMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Find a random address to map at. */
+        KProcessAddress addr = this->FindFreeArea(region_start, region_num_pages, num_pages, PageSize, 0, this->GetNumGuardPages());
+        R_UNLESS(addr != Null<KProcessAddress>, svc::ResultOutOfMemory());
+        MESOSPHERE_ASSERT(this->Contains(addr, num_pages * PageSize, state));
+        MESOSPHERE_R_ASSERT(this->CheckMemoryState(addr, num_pages * PageSize, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform mapping operation. */
+        const KPageProperties properties = { perm, state == KMemoryState_Io, false, false };
+        R_TRY(this->MapPageGroupImpl(updater.GetPageList(), addr, pg, properties, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None);
+
+        /* We successfully mapped the pages. */
+        *out_addr = addr;
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
 }
