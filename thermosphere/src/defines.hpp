@@ -35,6 +35,14 @@
     public:\
         static cl &GetInstance() { return instance; }
 
+#define SINGLETON_WITH_ATTRS(cl, attrs) \
+    NON_COPYABLE(cl);\
+    NON_MOVEABLE(cl);\
+    private:\
+        attrs static cl instance;\
+    public:\
+        static cl &GetInstance() { return instance; }
+
 //FIXME
 #ifndef ENSURE
 #define ENSURE(...)

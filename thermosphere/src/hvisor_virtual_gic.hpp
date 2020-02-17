@@ -25,7 +25,7 @@
 namespace ams::hvisor {
 
     class VirtualGic final : public IInterruptTask {
-        SINGLETON(VirtualGic);
+        SINGLETON_WITH_ATTRS(VirtualGic, TEMPORARY);
 
         private:
             // For convenience, although they're already defined in irq manager header:

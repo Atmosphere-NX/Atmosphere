@@ -18,8 +18,6 @@
 #include <stdatomic.h>
 #include <assert.h>
 #include "utils.h"
-#include "barrier.h"
-#include "execute_function.h"
 
 struct ExceptionStackFrame;
 typedef struct ALIGN(64) CoreCtx {
@@ -47,21 +45,14 @@ typedef struct ALIGN(64) CoreCtx {
     u64 totalTimeInHypervisor;                              // @0x50. cntvoff_el2 is updated to that value.
     u64 emulPtimerCval;                                     // @0x58. When setting cntp_cval_el0 and on interrupt
 
-    // "Execute function"
-    ExecutedFunction executedFunction;                      // @0x60
-    void *executedFunctionArgs;                             // @0x68
-    Barrier executedFunctionBarrier;                        // @0x70
-    u32 executedFunctionSrcCore;                            // @0x74
-    bool executedFunctionSync;                              // @0x78. Receiver fills it
-
     // Cache stuff
     u32 setWayCounter;                                      // @0x7C
 } CoreCtx;
 
-static_assert(offsetof(CoreCtx, warmboot) == 0x1E, "Wrong definition for CoreCtx");
+/*static_assert(offsetof(CoreCtx, warmboot) == 0x1E, "Wrong definition for CoreCtx");
 static_assert(offsetof(CoreCtx, emulPtimerCval) == 0x58, "Wrong definition for CoreCtx");
 static_assert(offsetof(CoreCtx, executedFunctionSync) == 0x78, "Wrong definition for CoreCtx");
-static_assert(offsetof(CoreCtx, setWayCounter) == 0x7C, "Wrong definition for CoreCtx");
+static_assert(offsetof(CoreCtx, setWayCounter) == 0x7C, "Wrong definition for CoreCtx");*/
 
 extern CoreCtx g_coreCtxs[4];
 register CoreCtx *currentCoreCtx asm("x18");

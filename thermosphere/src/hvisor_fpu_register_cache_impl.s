@@ -35,7 +35,7 @@
     \op     q30, q31, [x0], 0x20
 .endm
 
-FUNCTION fpuLoadRegistersFromCache
+FUNCTION _ZN3ams3hyp16FpuRegisterCache15ReloadRegistersEPKNS1_7StorageE
     dmb     ish
     LDSTORE_QREGS ldp
     ldp     x1, x2, [x0]
@@ -46,7 +46,7 @@ FUNCTION fpuLoadRegistersFromCache
     ret
 END_FUNCTION
 
-FUNCTION fpuStoreRegistersToCache
+FUNCTION _ZN3ams3hyp16FpuRegisterCache13DumpRegistersEPNS1_7StorageE
     dsb     ish
     isb
     LDSTORE_QREGS stp
