@@ -25,6 +25,9 @@ namespace ams::kern::arch::arm64 {
     class KPageTable : public KPageTableBase {
         NON_COPYABLE(KPageTable);
         NON_MOVEABLE(KPageTable);
+        public:
+            using TraversalEntry   = KPageTableImpl::TraversalEntry;
+            using TraversalContext = KPageTableImpl::TraversalContext;
         private:
             KPageTableManager *manager;
             u64 ttbr;
@@ -93,8 +96,7 @@ namespace ams::kern::arch::arm64 {
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup *page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
             virtual void   FinalizeUpdate(PageLinkedList *page_list) override;
 
-            KPageTableManager &GetPageTableManager() { return *this->manager; }
-            const KPageTableManager &GetPageTableManager() const { return *this->manager; }
+            KPageTableManager &GetPageTableManager() const { return *this->manager; }
         private:
             constexpr PageTableEntry GetEntryTemplate(const KPageProperties properties) const {
                 /* Set basic attributes. */
@@ -197,6 +199,9 @@ namespace ams::kern::arch::arm64 {
 
             bool MergePages(KProcessAddress virt_addr, PageLinkedList *page_list);
 
+            ALWAYS_INLINE Result SeparatePagesImpl(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
+            Result SeparatePages(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
+
             static void PteDataSynchronizationBarrier() {
                 cpu::DataSynchronizationBarrierInnerShareable();
             }
@@ -213,6 +218,10 @@ namespace ams::kern::arch::arm64 {
                 cpu::InvalidateEntireTlbDataOnly();
             }
 
+            void OnKernelTableSinglePageUpdated(KProcessAddress virt_addr) const {
+                cpu::InvalidateTlbByVaDataOnly(virt_addr);
+            }
+
             void NoteUpdated() const {
                 cpu::DataSynchronizationBarrier();
 
@@ -223,7 +232,14 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
-            KVirtualAddress AllocatePageTable(PageLinkedList *page_list, bool reuse_ll) {
+            void NoteSingleKernelPageUpdated(KProcessAddress virt_addr) const {
+                MESOSPHERE_ASSERT(this->IsKernel());
+
+                cpu::DataSynchronizationBarrier();
+                this->OnKernelTableSinglePageUpdated(virt_addr);
+            }
+
+            KVirtualAddress AllocatePageTable(PageLinkedList *page_list, bool reuse_ll) const {
                 KVirtualAddress table = this->GetPageTableManager().Allocate();
 
                 if (table == Null<KVirtualAddress>) {

@@ -169,6 +169,8 @@ namespace ams::kern {
             KPageTableImpl &GetImpl() { return this->impl; }
             const KPageTableImpl &GetImpl() const { return this->impl; }
 
+            KBlockInfoManager *GetBlockInfoManager() const { return this->block_info_manager; }
+
             bool IsLockedByCurrentThread() const { return this->general_lock.IsLockedByCurrentThread(); }
 
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
@@ -211,6 +213,8 @@ namespace ams::kern {
             Result QueryInfoImpl(KMemoryInfo *out_info, ams::svc::PageInfo *out_page, KProcessAddress address) const;
             Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties);
             Result MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll);
+
+            bool IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) const;
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
         public:

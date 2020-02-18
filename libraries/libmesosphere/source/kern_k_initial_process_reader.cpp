@@ -145,7 +145,7 @@ namespace ams::kern {
 
     Result KInitialProcessReader::Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params) const {
         /* Clear memory at the address. */
-        std::memset(GetVoidPointer(address), 0, params.code_num_pages);
+        std::memset(GetVoidPointer(address), 0, params.code_num_pages * PageSize);
 
         /* Prepare to layout the data. */
         const KProcessAddress rx_address = address + this->kip_header->GetRxAddress();

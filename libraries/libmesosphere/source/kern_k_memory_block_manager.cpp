@@ -17,6 +17,75 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        constexpr std::tuple<KMemoryState, const char *> MemoryStateNames[] = {
+            {KMemoryState_Free               , "----- Free -----"},
+            {KMemoryState_Io                 , "Io              "},
+            {KMemoryState_Static             , "Static          "},
+            {KMemoryState_Code               , "Code            "},
+            {KMemoryState_CodeData           , "CodeData        "},
+            {KMemoryState_Normal             , "Normal          "},
+            {KMemoryState_Shared             , "Shared          "},
+            {KMemoryState_AliasCode          , "AliasCode       "},
+            {KMemoryState_AliasCodeData      , "AliasCodeData   "},
+            {KMemoryState_Ipc                , "Ipc             "},
+            {KMemoryState_Stack              , "Stack           "},
+            {KMemoryState_ThreadLocal        , "ThreadLocal     "},
+            {KMemoryState_Transfered         , "Transfered      "},
+            {KMemoryState_SharedTransfered   , "SharedTransfered"},
+            {KMemoryState_SharedCode         , "SharedCode      "},
+            {KMemoryState_Inaccessible       , "Inaccessible    "},
+            {KMemoryState_NonSecureIpc       , "NonSecureIpc    "},
+            {KMemoryState_NonDeviceIpc       , "NonDeviceIpc    "},
+            {KMemoryState_Kernel             , "Kernel          "},
+            {KMemoryState_GeneratedCode      , "GeneratedCode   "},
+            {KMemoryState_CodeOut            , "CodeOut         "},
+        };
+
+        constexpr const char *GetMemoryStateName(KMemoryState state) {
+            for (size_t i = 0; i < util::size(MemoryStateNames); i++) {
+                if (std::get<0>(MemoryStateNames[i]) == state) {
+                    return std::get<1>(MemoryStateNames[i]);
+                }
+            }
+            return "Unknown         ";
+        }
+
+        constexpr const char *GetMemoryPermissionString(const KMemoryInfo &info) {
+            if (info.state == KMemoryState_Free) {
+                return "   ";
+            } else {
+                switch (info.perm) {
+                    case KMemoryPermission_UserReadExecute:
+                        return "r-x";
+                    case KMemoryPermission_UserRead:
+                        return "r--";
+                    case KMemoryPermission_UserReadWrite:
+                        return "rw-";
+                    default:
+                        return "---";
+                }
+            }
+        }
+
+        void DumpMemoryInfo(const KMemoryInfo &info) {
+            const char *state = GetMemoryStateName(info.state);
+            const char *perm  = GetMemoryPermissionString(info);
+            const void *start = reinterpret_cast<void *>(info.GetAddress());
+            const void *end   = reinterpret_cast<void *>(info.GetLastAddress());
+            const size_t kb   = info.GetSize() / 1_KB;
+
+            const char l = (info.attribute & KMemoryAttribute_Locked)       ? 'L' : '-';
+            const char i = (info.attribute & KMemoryAttribute_IpcLocked)    ? 'I' : '-';
+            const char d = (info.attribute & KMemoryAttribute_DeviceShared) ? 'D' : '-';
+            const char u = (info.attribute & KMemoryAttribute_Uncached)     ? 'U' : '-';
+
+            MESOSPHERE_LOG("%p - %p (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.ipc_lock_count, info.device_use_count);
+        }
+
+    }
+
     Result KMemoryBlockManager::Initialize(KProcessAddress st, KProcessAddress nd, KMemoryBlockSlabManager *slab_manager) {
         /* Allocate a block to encapsulate the address space, insert it into the tree. */
         KMemoryBlock *start_block = slab_manager->Allocate();
@@ -214,6 +283,9 @@ namespace ams::kern {
     }
 
     void KMemoryBlockManager::DumpBlocks() const {
-        MESOSPHERE_TODO("Dump useful debugging information");
+        /* Dump each block. */
+        for (const auto &block : this->memory_block_tree) {
+            DumpMemoryInfo(block.GetMemoryInfo());
+        }
     }
 }

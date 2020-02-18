@@ -337,6 +337,11 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    bool KPageTableBase::IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) const {
+        /* TODO */
+        return true;
+    }
+
     Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
         MESOSPHERE_ASSERT(util::IsAligned(alignment, PageSize) && alignment >= PageSize);
 
@@ -382,6 +387,8 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
+        MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
+
         /* Ensure this is a valid map request. */
         const size_t num_pages = pg.GetNumPages();
         R_UNLESS(this->Contains(region_start, region_num_pages * PageSize, state), svc::ResultInvalidCurrentMemory());
@@ -416,7 +423,37 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
+
+        /* Ensure this is a valid unmap request. */
+        const size_t num_pages = pg.GetNumPages();
+        const size_t size = num_pages * PageSize;
+        R_UNLESS(this->Contains(address, size, state), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check if state allows us to unmap. */
+        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Check that the page group is valid. */
+        R_UNLESS(this->IsValidPageGroup(pg, address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform unmapping operation. */
+        const KPageProperties properties = { KMemoryPermission_None, false, false, false };
+        R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_Unmap, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+
+        return ResultSuccess();
     }
 
 }

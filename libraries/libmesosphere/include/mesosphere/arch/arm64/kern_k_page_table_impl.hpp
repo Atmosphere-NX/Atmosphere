@@ -22,12 +22,20 @@
 
 namespace ams::kern::arch::arm64 {
 
-    /* TODO: This seems worse than KInitialPageTable. Can we fulfill Nintendo's API using KInitialPageTable? */
-    /* KInitialPageTable is significantly nicer, but doesn't have KPageTableImpl's traversal semantics. */
-    /* Perhaps we could implement those on top of it? */
     class KPageTableImpl {
         NON_COPYABLE(KPageTableImpl);
         NON_MOVEABLE(KPageTableImpl);
+        public:
+            struct TraversalEntry {
+                KPhysicalAddress phys_addr;
+                size_t block_size;
+            };
+
+            struct TraversalContext {
+                const L1PageTableEntry *l1_entry;
+                const L2PageTableEntry *l2_entry;
+                const L3PageTableEntry *l3_entry;
+            };
         private:
             static constexpr size_t PageBits  = __builtin_ctzll(PageSize);
             static constexpr size_t NumLevels = 3;
@@ -55,6 +63,14 @@ namespace ams::kern::arch::arm64 {
             static constexpr ALWAYS_INLINE uintptr_t GetContiguousL1Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 1) + 4>(GetInteger(addr)); }
             static constexpr ALWAYS_INLINE uintptr_t GetContiguousL2Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 2) + 4>(GetInteger(addr)); }
             static constexpr ALWAYS_INLINE uintptr_t GetContiguousL3Offset(KProcessAddress addr) { return GetBits<0, PageBits + LevelBits * (NumLevels - 3) + 4>(GetInteger(addr)); }
+
+            static ALWAYS_INLINE KVirtualAddress GetPageTableVirtualAddress(KPhysicalAddress addr) {
+                return KMemoryLayout::GetLinearVirtualAddress(addr);
+            }
+
+            ALWAYS_INLINE bool ExtractL1Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L1PageTableEntry *l1_entry, KProcessAddress virt_addr) const;
+            ALWAYS_INLINE bool ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const;
+            ALWAYS_INLINE bool ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const;
         private:
             L1PageTableEntry *table;
             bool is_kernel;
@@ -88,6 +104,9 @@ namespace ams::kern::arch::arm64 {
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
             L1PageTableEntry *Finalize();
+
+            bool BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const;
+            bool ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const;
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const;
     };

@@ -125,7 +125,7 @@ namespace ams::util {
             }
 
             static constexpr inline IntrusiveRedBlackTreeNode *GetPrev(IntrusiveRedBlackTreeNode *node) {
-                return RB_NEXT(IntrusiveRedBlackTreeRoot, nullptr, node);
+                return RB_PREV(IntrusiveRedBlackTreeRoot, nullptr, node);
             }
 
             static constexpr inline IntrusiveRedBlackTreeNode const *GetPrev(IntrusiveRedBlackTreeNode const *node) {
@@ -146,7 +146,7 @@ namespace ams::util {
             }
 
             IntrusiveRedBlackTreeNode *GetMaxImpl() const {
-                return RB_MIN(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root));
+                return RB_MAX(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root));
             }
 
             IntrusiveRedBlackTreeNode *InsertImpl(IntrusiveRedBlackTreeNode *node) {

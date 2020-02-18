@@ -192,6 +192,12 @@ namespace ams::kern::arch::arm64::cpu {
         DataSynchronizationBarrier();
     }
 
+    ALWAYS_INLINE void InvalidateTlbByVaDataOnly(KProcessAddress virt_addr) {
+        const u64 value = ((GetInteger(virt_addr) >> 12) & 0xFFFFFFFFFFFul);
+        __asm__ __volatile__("tlbi vaae1is, %[value]" :: [value]"r"(value) : "memory");
+        DataSynchronizationBarrier();
+    }
+
     ALWAYS_INLINE uintptr_t GetCoreLocalRegionAddress() {
         register uintptr_t x18 asm("x18");
         __asm__ __volatile__("" : [x18]"=r"(x18));

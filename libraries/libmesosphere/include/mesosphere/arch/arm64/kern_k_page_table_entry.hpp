@@ -21,6 +21,7 @@
 namespace ams::kern::arch::arm64 {
 
     constexpr size_t L1BlockSize           = 1_GB;
+    constexpr size_t L1ContiguousBlockSize = 0x10 * L1BlockSize;
     constexpr size_t L2BlockSize           = 2_MB;
     constexpr size_t L2ContiguousBlockSize = 0x10 * L2BlockSize;
     constexpr size_t L3BlockSize           = PageSize;
