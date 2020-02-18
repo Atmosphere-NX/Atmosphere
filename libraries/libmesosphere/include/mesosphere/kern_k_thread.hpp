@@ -25,11 +25,18 @@
 namespace ams::kern {
 
     class KThreadQueue;
+    class KProcess;
+    class KConditionVariable;
+    class KAddressArbiter;
 
     using KThreadFunction = void (*)(uintptr_t);
 
     class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>, public KTimerTask, public KWorkerTask {
         MESOSPHERE_AUTOOBJECT_TRAITS(KThread, KSynchronizationObject);
+        private:
+            friend class KProcess;
+            friend class KConditionVariable;
+            friend class KAddressArbiter;
         public:
             static constexpr s32 MainThreadPriority = 1;
             static constexpr s32 IdleThreadPriority = 64;
@@ -115,79 +122,66 @@ namespace ams::kern {
         private:
             static inline std::atomic<u64> s_next_thread_id = 0;
         private:
-            alignas(16) KThreadContext      thread_context;
-            KAffinityMask                   affinity_mask;
-            u64                             thread_id;
-            std::atomic<s64>                cpu_time;
-            KSynchronizationObject         *synced_object;
-            KLightLock                     *waiting_lock;
-            uintptr_t                       condvar_key;
-            uintptr_t                       entrypoint;
-            KProcessAddress                 arbiter_key;
-            KProcess                       *parent;
-            void                           *kernel_stack_top;
-            u32                            *light_ipc_data;
-            KProcessAddress                 tls_address;
-            void                           *tls_heap_address;
-            KLightLock                      activity_pause_lock;
-            SyncObjectBuffer                sync_object_buffer;
-            s64                             schedule_count;
-            s64                             last_scheduled_tick;
-            QueueEntry                      per_core_priority_queue_entry[cpu::NumCores];
-            QueueEntry                      sleeping_queue_entry;
-            KThreadQueue                   *sleeping_queue;
-            util::IntrusiveListNode         waiter_list_node;
-            util::IntrusiveRedBlackTreeNode condvar_arbiter_tree_node;
-            util::IntrusiveListNode         process_list_node;
+            alignas(16) KThreadContext      thread_context{};
+            KAffinityMask                   affinity_mask{};
+            u64                             thread_id{};
+            std::atomic<s64>                cpu_time{};
+            KSynchronizationObject         *synced_object{};
+            KLightLock                     *waiting_lock{};
+            uintptr_t                       condvar_key{};
+            uintptr_t                       entrypoint{};
+            KProcessAddress                 arbiter_key{};
+            KProcess                       *parent{};
+            void                           *kernel_stack_top{};
+            u32                            *light_ipc_data{};
+            KProcessAddress                 tls_address{};
+            void                           *tls_heap_address{};
+            KLightLock                      activity_pause_lock{};
+            SyncObjectBuffer                sync_object_buffer{};
+            s64                             schedule_count{};
+            s64                             last_scheduled_tick{};
+            QueueEntry                      per_core_priority_queue_entry[cpu::NumCores]{};
+            QueueEntry                      sleeping_queue_entry{};
+            KThreadQueue                   *sleeping_queue{};
+            util::IntrusiveListNode         waiter_list_node{};
+            util::IntrusiveRedBlackTreeNode condvar_arbiter_tree_node{};
+            util::IntrusiveListNode         process_list_node{};
 
             using WaiterListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&KThread::waiter_list_node>;
             using WaiterList       = WaiterListTraits::ListType;
 
-            WaiterList                      waiter_list;
-            WaiterList                      paused_waiter_list;
-            KThread                        *lock_owner;
-            void /* TODO KCondVar*/        *cond_var_tree;
-            uintptr_t                       debug_params[3];
-            u32                             arbiter_value;
-            u32                             suspend_request_flags;
-            u32                             suspend_allowed_flags;
+            WaiterList                      waiter_list{};
+            WaiterList                      paused_waiter_list{};
+            KThread                        *lock_owner{};
+            KConditionVariable             *cond_var{};
+            uintptr_t                       debug_params[3]{};
+            u32                             arbiter_value{};
+            u32                             suspend_request_flags{};
+            u32                             suspend_allowed_flags{};
             Result                          wait_result;
             Result                          debug_exception_result;
-            s32                             priority;
-            s32                             core_id;
-            s32                             base_priority;
-            s32                             ideal_core_id;
-            s32                             num_kernel_waiters;
-            KAffinityMask                   original_affinity_mask;
-            s32                             original_ideal_core_id;
-            s32                             num_core_migration_disables;
-            ThreadState                     thread_state;
-            std::atomic<bool>               termination_requested;
-            bool                            ipc_cancelled;
-            bool                            wait_cancelled;
-            bool                            cancellable;
-            bool                            registered;
-            bool                            signaled;
-            bool                            initialized;
-            bool                            debug_attached;
-            s8                              priority_inheritance_count;
-            bool                            resource_limit_release_hint;
+            s32                             priority{};
+            s32                             core_id{};
+            s32                             base_priority{};
+            s32                             ideal_core_id{};
+            s32                             num_kernel_waiters{};
+            KAffinityMask                   original_affinity_mask{};
+            s32                             original_ideal_core_id{};
+            s32                             num_core_migration_disables{};
+            ThreadState                     thread_state{};
+            std::atomic<bool>               termination_requested{};
+            bool                            ipc_cancelled{};
+            bool                            wait_cancelled{};
+            bool                            cancellable{};
+            bool                            registered{};
+            bool                            signaled{};
+            bool                            initialized{};
+            bool                            debug_attached{};
+            s8                              priority_inheritance_count{};
+            bool                            resource_limit_release_hint{};
         public:
-            constexpr KThread() :
-                thread_context(), affinity_mask(), thread_id(), cpu_time(), synced_object(), waiting_lock(),
-                condvar_key(), entrypoint(), arbiter_key(), parent(), kernel_stack_top(), light_ipc_data(),
-                tls_address(), tls_heap_address(), activity_pause_lock(), sync_object_buffer(), schedule_count(),
-                last_scheduled_tick(), per_core_priority_queue_entry(), sleeping_queue_entry(), sleeping_queue(), waiter_list_node(),
-                condvar_arbiter_tree_node(), process_list_node(), waiter_list(), paused_waiter_list(), lock_owner(),
-                cond_var_tree(), debug_params(), arbiter_value(), suspend_request_flags(), suspend_allowed_flags(),
-                wait_result(ResultSuccess()), debug_exception_result(ResultSuccess()), priority(), core_id(), base_priority(),
-                ideal_core_id(), num_kernel_waiters(), original_affinity_mask(), original_ideal_core_id(), num_core_migration_disables(),
-                thread_state(), termination_requested(), ipc_cancelled(), wait_cancelled(), cancellable(),
-                registered(), signaled(), initialized(), debug_attached(), priority_inheritance_count(),
-                resource_limit_release_hint()
-            {
-                /* ... */
-            }
+            constexpr KThread() : wait_result(svc::ResultNoSynchronizationObject()), debug_exception_result(ResultSuccess()) { /* ... */ }
+
             virtual ~KThread() { /* ... */ }
             /* TODO: Is a constexpr KThread() possible? */
 
@@ -271,7 +265,7 @@ namespace ams::kern {
             ALWAYS_INLINE void RemoveWaiterImpl(KThread *thread);
             ALWAYS_INLINE static void RestorePriority(KThread *thread);
         public:
-            constexpr u64 GetId() const { return this->thread_id; }
+            constexpr u64 GetThreadId() const { return this->thread_id; }
 
             constexpr KThreadContext *GetContext() { return std::addressof(this->thread_context); }
             constexpr const KThreadContext *GetContext() const { return std::addressof(this->thread_context); }
@@ -281,6 +275,8 @@ namespace ams::kern {
             NOINLINE void SetState(ThreadState state);
 
             NOINLINE KThreadContext *GetContextForSchedulerLoop();
+
+            constexpr uintptr_t GetConditionVariableKey() const { return this->condvar_key; }
 
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }
@@ -295,7 +291,7 @@ namespace ams::kern {
             constexpr const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
             constexpr void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
 
-            constexpr void /* TODO */ *GetConditionVariable() const { return this->cond_var_tree; }
+            constexpr KConditionVariable *GetConditionVariable() const { return this->cond_var; }
 
             constexpr s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
 
@@ -354,6 +350,8 @@ namespace ams::kern {
 
         public:
             /* Overridden parent functions. */
+            virtual u64 GetId() const override { return this->GetThreadId(); }
+
             virtual bool IsInitialized() const override { return this->initialized; }
             virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->parent) | (this->resource_limit_release_hint ? 1 : 0); }
 

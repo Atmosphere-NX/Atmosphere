@@ -13,20 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
+#pragma once
+#include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_timer_task.hpp>
+#include <mesosphere/kern_k_thread.hpp>
 
-void operator delete (void *deleted) throw() {
-    MESOSPHERE_PANIC("operator delete(void *) was called: %p", deleted);
-}
+namespace ams::kern {
 
-void operator delete (void *deleted, size_t size) throw() {
-    MESOSPHERE_PANIC("operator delete(void *, size_t) was called: %p %zu", deleted, size);
-}
+    class KWaitObject : public KTimerTask {
+        private:
+            using Entry = KThread::QueueEntry;
+        private:
+            Entry root;
+            bool  uses_timer;
+        public:
+            constexpr KWaitObject() : root(), uses_timer() { /* ... */ }
 
-void operator delete (void *deleted, size_t size, std::align_val_t align) throw() {
-    MESOSPHERE_PANIC("operator delete(void *, size_t, std::align_val_t) was called: %p %zu, %zu", deleted, size, static_cast<size_t>(align));
-}
+            virtual void OnTimer() override;
 
-extern "C" void abort() {
-    MESOSPHERE_PANIC("abort() was called");
+            /* TODO: Member functions */
+    };
+
 }

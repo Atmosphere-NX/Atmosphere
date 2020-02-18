@@ -64,6 +64,7 @@ namespace ams::svc {
     template<typename T>
     static constexpr inline bool IsUserPointer = std::is_base_of<impl::UserPointerTag, T>::value;
 
+    using ProgramId       = u64;
     using PhysicalAddress = u64;
 
     /* Memory types. */
@@ -196,9 +197,9 @@ namespace ams::svc {
 
     /* Synchronization types. */
     enum SignalType : u32 {
-        SignalType_Signal                                          = 0,
-        SignalType_SignalAndIfEqual                                = 1,
-        SignalType_SignalAndModifyBasedOnWaitingThreadCountIfEqual = 2,
+        SignalType_Signal                               = 0,
+        SignalType_SignalAndIncrementIfEqual            = 1,
+        SignalType_SignalAndModifyByWaitingCountIfEqual = 2,
     };
 
     enum ArbitrationType : u32 {
@@ -291,9 +292,9 @@ namespace ams::svc {
         ProcessState_Running         = 2,
         ProcessState_Crashed         = 3,
         ProcessState_RunningAttached = 4,
-        ProcessState_Exiting         = 5,
-        ProcessState_Exited          = 6,
-        ProcessState_DebugSuspended  = 7,
+        ProcessState_Terminating     = 5,
+        ProcessState_Terminated      = 6,
+        ProcessState_DebugBreak      = 7,
     };
 
     enum ProcessExitReason : u32 {

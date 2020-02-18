@@ -17,6 +17,14 @@
 
 namespace ams::kern {
 
+    void KProcess::Finalize() {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+    void KProcess::DoWorkerTask() {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
     void KProcess::SetPreemptionState() {
         MESOSPHERE_TODO_IMPLEMENT();
     }

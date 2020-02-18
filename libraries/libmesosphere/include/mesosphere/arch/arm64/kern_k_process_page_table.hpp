@@ -20,7 +20,10 @@
 namespace ams::kern::arch::arm64 {
 
     class KProcessPageTable {
-
+        private:
+            KPageTable page_table;
+        public:
+            constexpr KProcessPageTable() : page_table() { /* ... */ }
     };
 
 }

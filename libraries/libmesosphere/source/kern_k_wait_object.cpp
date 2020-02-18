@@ -15,18 +15,10 @@
  */
 #include <mesosphere.hpp>
 
-void operator delete (void *deleted) throw() {
-    MESOSPHERE_PANIC("operator delete(void *) was called: %p", deleted);
-}
+namespace ams::kern {
 
-void operator delete (void *deleted, size_t size) throw() {
-    MESOSPHERE_PANIC("operator delete(void *, size_t) was called: %p %zu", deleted, size);
-}
+    void KWaitObject::OnTimer() {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
 
-void operator delete (void *deleted, size_t size, std::align_val_t align) throw() {
-    MESOSPHERE_PANIC("operator delete(void *, size_t, std::align_val_t) was called: %p %zu, %zu", deleted, size, static_cast<size_t>(align));
-}
-
-extern "C" void abort() {
-    MESOSPHERE_PANIC("abort() was called");
 }

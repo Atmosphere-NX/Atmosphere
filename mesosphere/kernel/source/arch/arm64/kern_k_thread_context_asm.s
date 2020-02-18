@@ -89,10 +89,10 @@ _ZN3ams4kern4arch5arm6427SupervisorModeThreadStarterEv:
 
 
 /* ams::kern::arch::arm64::KThreadContext::RestoreFpuRegisters64(const KThreadContext &) */
-.section    .text._ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_
-.type       _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_, %function
-_ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_:
+.section    .text._ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS3_, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS3_
+.type       _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS3_, %function
+_ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS3_:
     /* Load and restore FPCR and FPSR from the context. */
     ldr x1, [x0, #0x70]
     msr fpcr, x1
@@ -120,10 +120,10 @@ _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS2_:
     ret
 
 /* ams::kern::arch::arm64::KThreadContext::RestoreFpuRegisters32(const KThreadContext &) */
-.section    .text._ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_, "ax", %progbits
-.global     _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_
-.type       _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_, %function
-_ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS2_:
+.section    .text._ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS3_, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS3_
+.type       _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS3_, %function
+_ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS3_:
     /* Load and restore FPCR and FPSR from the context. */
     ldr x1, [x0, #0x70]
     msr fpcr, x1

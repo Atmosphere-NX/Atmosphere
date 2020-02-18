@@ -81,7 +81,8 @@ namespace ams::kern {
                         MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPageGroup(temp_address, pg, KMemoryState_Kernel));
 
                         /* Create a KProcess object. */
-                        MESOSPHERE_TODO("Create a KProcess");
+                        new_process = KProcess::Create();
+                        MESOSPHERE_ABORT_UNLESS(new_process != nullptr);
 
                         /* Initialize the process. */
                         MESOSPHERE_TODO("Initialize the process");
