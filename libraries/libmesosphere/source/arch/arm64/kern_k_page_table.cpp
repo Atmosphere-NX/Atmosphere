@@ -224,7 +224,6 @@ namespace ams::kern::arch::arm64 {
                 next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
                 MESOSPHERE_ASSERT(next_valid);
             }
-            //MESOSPHERE_LOG("Unmap: Acting on %08zx %08zx (%p %p %p)\n", GetInteger(next_entry.phys_addr), next_entry.block_size, context.l1_entry, context.l2_entry, context.l3_entry);
 
             /* Check that our state is coherent. */
             MESOSPHERE_ASSERT((next_entry.block_size / PageSize) <= remaining_pages);

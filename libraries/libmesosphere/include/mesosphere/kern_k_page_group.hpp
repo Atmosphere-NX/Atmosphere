@@ -90,6 +90,7 @@ namespace ams::kern {
 
             iterator begin() const { return this->block_list.begin(); }
             iterator end() const { return this->block_list.end(); }
+            bool empty() const { return this->block_list.empty(); }
 
             Result AddBlock(KVirtualAddress addr, size_t num_pages);
             void Open() const;

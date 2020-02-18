@@ -337,9 +337,89 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    bool KPageTableBase::IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) const {
-        /* TODO */
-        return true;
+    bool KPageTableBase::IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) {
+        /* Empty groups are necessarily invalid. */
+        if (pg.empty()) {
+            return false;
+        }
+
+        auto &impl = this->GetImpl();
+
+        /* We're going to validate that the group we'd expect is the group we see. */
+        auto cur_it = pg.begin();
+        KVirtualAddress cur_block_address = cur_it->GetAddress();
+        size_t cur_block_pages = cur_it->GetNumPages();
+
+        auto UpdateCurrentIterator = [&]() ALWAYS_INLINE_LAMBDA {
+            if (cur_block_pages == 0) {
+                if ((++cur_it) == pg.end()) {
+                    return false;
+                }
+
+                cur_block_address = cur_it->GetAddress();
+                cur_block_pages   = cur_it->GetNumPages();
+            }
+            return true;
+        };
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        if (!impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), addr)) {
+            return false;
+        }
+
+        /* Prepare tracking variables. */
+        KPhysicalAddress cur_addr = next_entry.phys_addr;
+        size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+        size_t tot_size = cur_size;
+
+        /* Iterate, comparing expected to actual. */
+        while (tot_size < num_pages * PageSize) {
+            if (!impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context))) {
+                return false;
+            }
+
+            if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                const size_t cur_pages = cur_size / PageSize;
+
+                if (!IsHeapPhysicalAddress(cur_addr)) {
+                    return false;
+                }
+
+                if (!UpdateCurrentIterator()) {
+                    return false;
+                }
+
+                if (cur_block_address != GetHeapVirtualAddress(cur_addr) || cur_block_pages < cur_pages) {
+                    return false;
+                }
+
+                cur_block_address += cur_size;
+                cur_block_pages   -= cur_pages;
+                cur_addr           = next_entry.phys_addr;
+                cur_size           = next_entry.block_size;
+            } else {
+                cur_size += next_entry.block_size;
+            }
+
+            tot_size += next_entry.block_size;
+        }
+
+        /* Ensure we compare the right amount for the last block. */
+        if (tot_size > num_pages * PageSize) {
+            cur_size -= (tot_size - num_pages * PageSize);
+        }
+
+        if (!IsHeapPhysicalAddress(cur_addr)) {
+            return false;
+        }
+
+        if (!UpdateCurrentIterator()) {
+            return false;
+        }
+
+        return cur_block_address == GetHeapVirtualAddress(cur_addr) && cur_block_pages == (cur_size / PageSize);
     }
 
     Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
@@ -437,7 +517,7 @@ namespace ams::kern {
         R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Check that the page group is valid. */
-        R_UNLESS(this->IsValidPageGroup(pg, address, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(this->IsValidPageGroup(pg, address, num_pages), svc::ResultInvalidCurrentMemory());
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);

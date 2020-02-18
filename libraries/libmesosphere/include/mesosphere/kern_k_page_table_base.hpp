@@ -35,6 +35,9 @@ namespace ams::kern {
     class KPageTableBase {
         NON_COPYABLE(KPageTableBase);
         NON_MOVEABLE(KPageTableBase);
+        public:
+            using TraversalEntry   = KPageTableImpl::TraversalEntry;
+            using TraversalContext = KPageTableImpl::TraversalContext;
         protected:
             enum MemoryFillValue {
                 MemoryFillValue_Zero  = 0,
@@ -214,7 +217,7 @@ namespace ams::kern {
             Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties);
             Result MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll);
 
-            bool IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) const;
+            bool IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages);
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
         public:
