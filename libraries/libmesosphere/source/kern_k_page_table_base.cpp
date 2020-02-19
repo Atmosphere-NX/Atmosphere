@@ -134,7 +134,7 @@ namespace ams::kern {
         size_t alloc_size;
         if ((GetInteger(process_code_start) - GetInteger(this->code_region_start)) >= (GetInteger(end) - GetInteger(process_code_end))) {
             alloc_start = this->code_region_start;
-            alloc_size  = this->code_region_end - alloc_start;
+            alloc_size  = GetInteger(process_code_start) - GetInteger(this->code_region_start);
         } else {
             alloc_start = process_code_end;
             alloc_size  = GetInteger(end) - GetInteger(process_code_end);
