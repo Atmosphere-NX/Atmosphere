@@ -250,10 +250,26 @@ namespace ams::kern {
                 return this->MapPages(out_addr, num_pages, alignment, phys_addr, true, region_start, region_num_pages, state, perm);
             }
 
+            Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KMemoryState state, KMemoryPermission perm) {
+                return this->MapPages(out_addr, num_pages, alignment, phys_addr, true, this->GetRegionAddress(state), this->GetRegionSize(state) / PageSize, state, perm);
+            }
+
             Result UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state);
             Result MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
             Result MapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm);
             Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state);
+        public:
+            KProcessAddress GetAddressSpaceStart()    const { return this->address_space_start; }
+            KProcessAddress GetHeapRegionStart()      const { return this->heap_region_start; }
+            KProcessAddress GetAliasRegionStart()     const { return this->alias_region_start; }
+            KProcessAddress GetStackRegionStart()     const { return this->stack_region_start; }
+            KProcessAddress GetKernelMapRegionStart() const { return this->kernel_map_region_start; }
+
+            size_t GetAddressSpaceSize()    const { return this->address_space_end     - this->address_space_start; }
+            size_t GetHeapRegionSize()      const { return this->heap_region_end       - this->heap_region_start; }
+            size_t GetAliasRegionSize()     const { return this->alias_region_end      - this->alias_region_start; }
+            size_t GetStackRegionSize()     const { return this->stack_region_end      - this->stack_region_start; }
+            size_t GetKernelMapRegionSize() const { return this->kernel_map_region_end - this->kernel_map_region_start; }
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);

@@ -47,8 +47,32 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MapPageGroup(addr, pg, state, perm);
             }
 
+            Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KMemoryState state, KMemoryPermission perm) {
+                return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, state, perm);
+            }
+
+            Result UnmapPages(KProcessAddress addr, size_t num_pages, KMemoryState state) {
+                return this->page_table.UnmapPages(addr, num_pages, state);
+            }
+
+            bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
+                return this->page_table.GetPhysicalAddress(out, address);
+            }
+
             bool CanContain(KProcessAddress addr, size_t size) const { return this->page_table.CanContain(addr, size); }
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return this->page_table.CanContain(addr, size, state); }
+
+            KProcessAddress GetAddressSpaceStart()    const { return this->page_table.GetAddressSpaceStart(); }
+            KProcessAddress GetHeapRegionStart()      const { return this->page_table.GetHeapRegionStart(); }
+            KProcessAddress GetAliasRegionStart()     const { return this->page_table.GetAliasRegionStart(); }
+            KProcessAddress GetStackRegionStart()     const { return this->page_table.GetStackRegionStart(); }
+            KProcessAddress GetKernelMapRegionStart() const { return this->page_table.GetKernelMapRegionStart(); }
+
+            size_t GetAddressSpaceSize()    const { return this->page_table.GetAddressSpaceSize(); }
+            size_t GetHeapRegionSize()      const { return this->page_table.GetHeapRegionSize(); }
+            size_t GetAliasRegionSize()     const { return this->page_table.GetAliasRegionSize(); }
+            size_t GetStackRegionSize()     const { return this->page_table.GetStackRegionSize(); }
+            size_t GetKernelMapRegionSize() const { return this->page_table.GetKernelMapRegionSize(); }
     };
 
 }

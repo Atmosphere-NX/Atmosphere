@@ -29,7 +29,7 @@ namespace ams::kern {
         auto page_buf_guard = SCOPE_GUARD { KPageBuffer::Free(page_buf); };
 
         /* Map the address in. */
-        MESOSPHERE_TODO("R_TRY(this->owner->GetPageTable().Map(...));");
+        R_TRY(this->owner->GetPageTable().MapPages(std::addressof(this->virt_addr), 1, PageSize, page_buf->GetPhysicalAddress(), KMemoryState_ThreadLocal, KMemoryPermission_UserReadWrite));
 
         /* We succeeded. */
         page_buf_guard.Cancel();
@@ -41,10 +41,10 @@ namespace ams::kern {
 
         /* Get the physical address of the page. */
         KPhysicalAddress phys_addr = Null<KPhysicalAddress>;
-        MESOSPHERE_TODO("MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress()));");
+        MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress()));
 
         /* Unmap the page. */
-        MESOSPHERE_TODO("R_TRY(this->owner->GetPageTable().Unmap(...);");
+        R_TRY(this->owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));
 
         /* Free the page. */
         KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(phys_addr));
@@ -68,6 +68,14 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         this->is_region_free[this->GetRegionIndex(addr)] = true;
+    }
+
+    void *KThreadLocalPage::GetPointer() const {
+        MESOSPHERE_ASSERT_THIS();
+
+        KPhysicalAddress phys_addr;
+        MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(std::addressof(phys_addr), this->GetAddress()));
+        return static_cast<void *>(KPageBuffer::FromPhysicalAddress(phys_addr));
     }
 
 }

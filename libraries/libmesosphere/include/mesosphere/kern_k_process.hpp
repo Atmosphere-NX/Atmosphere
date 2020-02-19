@@ -135,6 +135,12 @@ namespace ams::kern {
                 return this->pinned_threads[core_id];
             }
 
+            constexpr KProcessPageTable &GetPageTable() { return this->page_table; }
+            constexpr const KProcessPageTable &GetPageTable() const { return this->page_table; }
+
+            Result CreateThreadLocalRegion(KProcessAddress *out);
+            void *GetThreadLocalRegionPointer(KProcessAddress addr);
+
             void SetPreemptionState();
         public:
             /* Overridden parent functions. */

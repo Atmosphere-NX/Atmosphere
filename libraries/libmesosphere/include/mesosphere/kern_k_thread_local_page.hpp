@@ -42,6 +42,19 @@ namespace ams::kern {
             constexpr explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
 
             constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return this->virt_addr; }
+
+            static constexpr ALWAYS_INLINE int Compare(const KThreadLocalPage &lhs, const KThreadLocalPage &rhs) {
+                const KProcessAddress lval = lhs.GetAddress();
+                const KProcessAddress rval = rhs.GetAddress();
+
+                if (lval < rval) {
+                    return -1;
+                } else if (lval == rval) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+            }
         private:
             constexpr ALWAYS_INLINE KProcessAddress GetRegionAddress(size_t i) {
                 return this->GetAddress() + i * ams::svc::ThreadLocalRegionSize;
@@ -62,6 +75,8 @@ namespace ams::kern {
 
             KProcessAddress Reserve();
             void Release(KProcessAddress addr);
+
+            void *GetPointer() const;
 
             bool IsAllUsed() const {
                 for (size_t i = 0; i < RegionsPerPage; i++) {
