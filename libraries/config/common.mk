@@ -87,3 +87,11 @@ endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)/.*)),)
 SOURCES += source/$(ATMOSPHERE_OS_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
 endif
+
+#---------------------------------------------------------------------------------
+# Rules for compiling pre-compiled headers
+#---------------------------------------------------------------------------------
+%.gch: %.hpp
+	@echo $<
+	$(CXX) -w -x c++-header -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+	@cp $@ $(<).gch
