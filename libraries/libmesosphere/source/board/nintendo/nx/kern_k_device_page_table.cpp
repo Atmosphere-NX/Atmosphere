@@ -217,7 +217,7 @@ namespace ams::kern::board::nintendo::nx {
                 }
         };
 
-        class KAsidManager {
+        class KDeviceAsidManager {
             private:
                 using WordType = u32;
                 static constexpr u8 ReservedAsids[] = { 0, 1, 2, 3 };
@@ -241,7 +241,7 @@ namespace ams::kern::board::nintendo::nx {
                     return __builtin_clzll(value) - (BITSIZEOF(unsigned long long) - BITSIZEOF(WordType));
                 }
             public:
-                constexpr KAsidManager() : state(), lock() {
+                constexpr KDeviceAsidManager() : state(), lock() {
                     for (size_t i = 0; i < NumReservedAsids; i++) {
                         this->ReserveImpl(ReservedAsids[i]);
                     }
@@ -254,7 +254,7 @@ namespace ams::kern::board::nintendo::nx {
                     size_t num_reserved = 0;
                     for (size_t i = 0; i < NumWords; i++) {
                         while (this->state[i] != FullWord) {
-                            WordType clear_bit = (this->state[i] + 1) ^ (this->state[i]);
+                            const WordType clear_bit = (this->state[i] + 1) ^ (this->state[i]);
                             this->state[i] |= clear_bit;
                             out[num_reserved++] = static_cast<u8>(BitsPerWord * i + BitsPerWord - 1 - ClearLeadingZero(clear_bit));
                             R_UNLESS(num_reserved != num_desired, ResultSuccess());
@@ -277,9 +277,9 @@ namespace ams::kern::board::nintendo::nx {
         /* Globals. */
         KLightLock g_lock;
         u8 g_reserved_asid;
-        KPhysicalAddress g_memory_controller_address;
-        KPhysicalAddress g_reserved_table_phys_addr;
-        KAsidManager     g_asid_manager;
+        KPhysicalAddress   g_memory_controller_address;
+        KPhysicalAddress   g_reserved_table_phys_addr;
+        KDeviceAsidManager g_asid_manager;
 
         /* Memory controller access functionality. */
         void WriteMcRegister(size_t offset, u32 value) {

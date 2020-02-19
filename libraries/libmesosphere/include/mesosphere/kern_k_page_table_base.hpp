@@ -53,6 +53,7 @@ namespace ams::kern {
                 /* TODO: perm/attr operations */
             };
 
+            static constexpr size_t RegionAlignment = KernelAslrAlignment;
 
             struct PageLinkedList {
                 private:
@@ -87,6 +88,19 @@ namespace ams::kern {
             static_assert(std::is_trivially_destructible<PageLinkedList>::value);
 
             static constexpr u32 DefaultMemoryIgnoreAttr = KMemoryAttribute_DontCareMask | KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared;
+
+            static constexpr size_t GetAddressSpaceWidth(ams::svc::CreateProcessFlag as_type) {
+                switch (static_cast<ams::svc::CreateProcessFlag>(as_type & ams::svc::CreateProcessFlag_AddressSpaceMask)) {
+                    case ams::svc::CreateProcessFlag_AddressSpace64Bit:
+                        return 39;
+                    case ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                        return 36;
+                    case ams::svc::CreateProcessFlag_AddressSpace32Bit:
+                    case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
+                        return 32;
+                    MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
         private:
             class KScopedPageTableUpdater {
                 private:
@@ -122,7 +136,7 @@ namespace ams::kern {
             KPageTableImpl impl;
             KMemoryBlockManager memory_block_manager;
             u32 allocate_option;
-            u32 address_space_size;
+            u32 address_space_width;
             bool is_kernel;
             bool enable_aslr;
             KMemoryBlockSlabManager *memory_block_slab_manager;
@@ -139,7 +153,7 @@ namespace ams::kern {
                 alias_region_start(), alias_region_end(), stack_region_start(), stack_region_end(), kernel_map_region_start(),
                 kernel_map_region_end(), alias_code_region_start(), alias_code_region_end(), code_region_start(), code_region_end(),
                 max_heap_size(), max_physical_memory_size(), general_lock(), map_physical_memory_lock(), impl(), memory_block_manager(),
-                allocate_option(), address_space_size(), is_kernel(), enable_aslr(), memory_block_slab_manager(), block_info_manager(),
+                allocate_option(), address_space_width(), is_kernel(), enable_aslr(), memory_block_slab_manager(), block_info_manager(),
                 cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_heap_region(),
                 heap_fill_value(), ipc_fill_value(), stack_fill_value()
             {
@@ -147,23 +161,24 @@ namespace ams::kern {
             }
 
             NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager);
 
             void Finalize();
 
             constexpr bool IsKernel() const { return this->is_kernel; }
             constexpr bool IsAslrEnabled() const { return this->enable_aslr; }
 
-            constexpr bool Contains(KProcessAddress addr) const {
+            constexpr bool CanContain(KProcessAddress addr) const {
                 return this->address_space_start <= addr && addr <= this->address_space_end - 1;
             }
 
-            constexpr bool Contains(KProcessAddress addr, size_t size) const {
+            constexpr bool CanContain(KProcessAddress addr, size_t size) const {
                 return this->address_space_start <= addr && addr < addr + size && addr + size - 1 <= this->address_space_end - 1;
             }
 
             KProcessAddress GetRegionAddress(KMemoryState state) const;
             size_t GetRegionSize(KMemoryState state) const;
-            bool Contains(KProcessAddress addr, size_t size, KMemoryState state) const;
+            bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const;
         protected:
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup *page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
@@ -231,6 +246,7 @@ namespace ams::kern {
 
             Result UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state);
             Result MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
+            Result MapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm);
             Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state);
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress addr) {

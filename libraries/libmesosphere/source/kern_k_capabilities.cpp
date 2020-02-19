@@ -13,7 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <mesosphere/svc/kern_svc_results.hpp>
-#include <mesosphere/svc/kern_svc_k_user_pointer.hpp>
-#include <mesosphere/svc/kern_svc_prototypes.hpp>
+#include <mesosphere.hpp>
+
+namespace ams::kern {
+
+    Result KCapabilities::Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+}

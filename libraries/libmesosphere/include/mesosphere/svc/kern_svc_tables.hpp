@@ -19,7 +19,6 @@
 
 namespace ams::kern::svc {
 
-    static constexpr size_t NumSupervisorCalls = 0x80;
     using SvcTableEntry = void (*)();
 
     /* TODO: 32-bit ABI */

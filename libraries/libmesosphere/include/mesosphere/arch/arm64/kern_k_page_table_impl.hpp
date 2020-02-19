@@ -103,6 +103,7 @@ namespace ams::kern::arch::arm64 {
             constexpr KPageTableImpl() : table(), is_kernel(), num_entries() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
+            NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);
             L1PageTableEntry *Finalize();
 
             bool BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const;

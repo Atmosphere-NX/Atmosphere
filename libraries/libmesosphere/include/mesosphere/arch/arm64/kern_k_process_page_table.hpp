@@ -24,6 +24,19 @@ namespace ams::kern::arch::arm64 {
             KPageTable page_table;
         public:
             constexpr KProcessPageTable() : page_table() { /* ... */ }
+
+            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
+                return this->page_table.InitializeForProcess(id, as_type, enable_aslr, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager);
+            }
+
+            void Finalize() { this->page_table.Finalize(); }
+
+            Result MapPageGroup(KProcessAddress addr, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm) {
+                return this->page_table.MapPageGroup(addr, pg, state, perm);
+            }
+
+            bool CanContain(KProcessAddress addr, size_t size) const { return this->page_table.CanContain(addr, size); }
+            bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return this->page_table.CanContain(addr, size, state); }
     };
 
 }

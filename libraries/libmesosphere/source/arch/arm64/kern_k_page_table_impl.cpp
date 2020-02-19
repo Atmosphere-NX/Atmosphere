@@ -23,6 +23,12 @@ namespace ams::kern::arch::arm64 {
         this->num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
     }
 
+    void KPageTableImpl::InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end) {
+        this->table       = static_cast<L1PageTableEntry *>(tb);
+        this->is_kernel   = false;
+        this->num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+    }
+
     L1PageTableEntry *KPageTableImpl::Finalize() {
         return this->table;
     }

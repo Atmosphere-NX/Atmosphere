@@ -85,7 +85,7 @@ namespace ams::kern {
                         MESOSPHERE_ABORT_UNLESS(new_process != nullptr);
 
                         /* Initialize the process. */
-                        MESOSPHERE_TODO("Initialize the process");
+                        MESOSPHERE_R_ABORT_UNLESS(new_process->Initialize(params, pg, reader.GetCapabilities(), reader.GetNumCapabilities(), std::addressof(Kernel::GetSystemResourceLimit()), pool));
                     }
                 }
 
@@ -93,7 +93,7 @@ namespace ams::kern {
                 MESOSPHERE_TODO("Set process's memory permissions");
 
                 /* Register the process. */
-                MESOSPHERE_TODO("Register the process");
+                KProcess::Register(new_process);
 
                 /* Save the process info. */
                 infos[i].process    = new_process;

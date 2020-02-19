@@ -34,7 +34,9 @@ namespace ams::kern {
             util::BitPack32 intended_kernel_version;
             u32 program_type{};
         public:
-            constexpr KCapabilities() : svc_access_flags(), debug_capabilities(0), intended_kernel_version(0) { /* ... */ }
+            constexpr KCapabilities() : debug_capabilities(0), intended_kernel_version(0) { /* ... */ }
+
+            Result Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
 
             constexpr u64 GetCoreMask() const { return this->core_mask; }
             constexpr u64 GetPriorityMask() const { return this->priority_mask; }

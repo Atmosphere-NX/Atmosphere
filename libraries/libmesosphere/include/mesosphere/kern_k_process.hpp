@@ -115,9 +115,13 @@ namespace ams::kern {
             KMemoryBlockSlabManager     memory_block_slab_manager{};
             KBlockInfoManager           block_info_manager{};
             KPageTableManager           page_table_manager{};
+        private:
+            Result Initialize(const ams::svc::CreateProcessParameter &params);
         public:
             constexpr KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
+
+            Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
 
             constexpr u64 GetProcessId() const { return this->process_id; }
 

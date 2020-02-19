@@ -20,6 +20,8 @@
 
 namespace ams::kern::svc {
 
+    static constexpr size_t NumSupervisorCalls = 0x80;
+
     #define AMS_KERN_SVC_DECLARE_PROTOTYPE_64(ID, RETURN_TYPE, NAME, ...) \
         NOINLINE RETURN_TYPE NAME##64(__VA_ARGS__);
     #define AMS_KERN_SVC_DECLARE_PROTOTYPE_64_FROM_32(ID, RETURN_TYPE, NAME, ...) \
