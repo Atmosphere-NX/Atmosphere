@@ -424,6 +424,22 @@ namespace ams::kern {
             static ALWAYS_INLINE KMemoryRegionTree      &GetVirtualLinearMemoryRegionTree()  { return s_virtual_linear_tree; }
             static ALWAYS_INLINE KMemoryRegionTree      &GetPhysicalLinearMemoryRegionTree() { return s_physical_linear_tree; }
 
+            static ALWAYS_INLINE KMemoryRegionTree::iterator GetEnd(KVirtualAddress) {
+                return GetVirtualLinearMemoryRegionTree().end();
+            }
+
+            static ALWAYS_INLINE KMemoryRegionTree::iterator GetEnd(KPhysicalAddress) {
+                return GetPhysicalMemoryRegionTree().end();
+            }
+
+            static NOINLINE KMemoryRegionTree::iterator FindContainingRegion(KVirtualAddress address) {
+                return GetVirtualMemoryRegionTree().FindContainingRegion(GetInteger(address));
+            }
+
+            static NOINLINE KMemoryRegionTree::iterator FindContainingRegion(KPhysicalAddress address) {
+                return GetPhysicalMemoryRegionTree().FindContainingRegion(GetInteger(address));
+            }
+
             static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress address) {
                 return GetInteger(address) + s_linear_phys_to_virt_diff;
             }

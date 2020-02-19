@@ -28,11 +28,7 @@ namespace ams::kern::arch::arm64 {
         public:
             using TraversalEntry   = KPageTableImpl::TraversalEntry;
             using TraversalContext = KPageTableImpl::TraversalContext;
-        private:
-            KPageTableManager *manager;
-            u64 ttbr;
-            u8 asid;
-        private:
+
             enum BlockType {
                 BlockType_L3Block,
                 BlockType_L3ContiguousBlock,
@@ -64,6 +60,10 @@ namespace ams::kern::arch::arm64 {
                 [BlockType_L1Block]           = L1BlockSize,
             };
 
+            static constexpr BlockType GetMaxBlockType() {
+                return BlockType_L1Block;
+            }
+
             static constexpr size_t GetBlockSize(BlockType type) {
                 return BlockSizes[type];
             }
@@ -91,6 +91,10 @@ namespace ams::kern::arch::arm64 {
                 MESOSPHERE_ASSERT(alignment < L1BlockSize);
                 return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) + 1));
             }
+        private:
+            KPageTableManager *manager;
+            u64 ttbr;
+            u8 asid;
         protected:
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup *page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
@@ -111,7 +115,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Set page attribute. */
                 if (properties.io) {
-                    MESOSPHERE_ABORT_UNLESS(!properties.io);
+                    MESOSPHERE_ABORT_UNLESS(!properties.uncached);
                     MESOSPHERE_ABORT_UNLESS((properties.perm & (KMemoryPermission_KernelExecute | KMemoryPermission_UserExecute)) == 0);
 
                     entry.SetPageAttribute(PageTableEntry::PageAttribute_Device_nGnRnE)

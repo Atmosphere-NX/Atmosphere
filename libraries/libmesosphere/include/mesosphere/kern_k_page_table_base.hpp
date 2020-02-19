@@ -53,7 +53,9 @@ namespace ams::kern {
                 /* TODO: perm/attr operations */
             };
 
-            static constexpr size_t RegionAlignment = KernelAslrAlignment;
+            static constexpr size_t MaxPhysicalMapAlignment = 1_GB;
+            static constexpr size_t RegionAlignment         = 2_MB;
+            static_assert(RegionAlignment == KernelAslrAlignment);
 
             struct PageLinkedList {
                 private:

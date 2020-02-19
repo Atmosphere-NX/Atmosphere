@@ -630,7 +630,81 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
+        MESOSPHERE_ASSERT(util::IsAligned(size,                  PageSize));
+        MESOSPHERE_ASSERT(size > 0);
+        R_UNLESS(phys_addr < phys_addr + size, svc::ResultInvalidAddress());
+        const size_t num_pages = size / PageSize;
+        const KPhysicalAddress last = phys_addr + size - 1;
+
+        /* Get region extents. */
+        const KProcessAddress region_start     = this->GetRegionAddress(KMemoryState_Io);
+        const size_t          region_size      = this->GetRegionSize(KMemoryState_Io);
+        const size_t          region_num_pages = region_size / PageSize;
+
+        /* Locate the memory region. */
+        auto region_it    = KMemoryLayout::FindContainingRegion(phys_addr);
+        const auto end_it = KMemoryLayout::GetEnd(phys_addr);
+        R_UNLESS(region_it != end_it, svc::ResultInvalidAddress());
+
+        MESOSPHERE_ASSERT(region_it->Contains(GetInteger(phys_addr)));
+
+        /* Ensure that the region is mappable. */
+        const bool is_rw = perm == KMemoryPermission_UserReadWrite;
+        do {
+            /* Check the region attributes. */
+            R_UNLESS(!region_it->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
+            R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
+            R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
+
+            /* Check if we're done. */
+            if (GetInteger(last) <= region_it->GetLastAddress()) {
+                break;
+            }
+
+            /* Advance. */
+            region_it++;
+        } while (region_it != end_it);
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Select an address to map at. */
+        KProcessAddress addr = Null<KProcessAddress>;
+        const size_t phys_alignment = std::min(std::min(GetInteger(phys_addr) & -GetInteger(phys_addr), size & -size), MaxPhysicalMapAlignment);
+        for (s32 block_type = KPageTable::GetMaxBlockType(); block_type >= 0; block_type--) {
+            const size_t alignment = KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(block_type));
+            if (alignment > phys_alignment) {
+                continue;
+            }
+
+            addr = this->FindFreeArea(region_start, region_num_pages, num_pages, alignment, 0, this->GetNumGuardPages());
+            if (addr != Null<KProcessAddress>) {
+                break;
+            }
+        }
+        R_UNLESS(addr != Null<KProcessAddress>, svc::ResultOutOfMemory());
+
+        /* Check that we can map IO here. */
+        MESOSPHERE_ASSERT(this->CanContain(addr, size, KMemoryState_Io));
+        MESOSPHERE_R_ASSERT(this->CheckMemoryState(addr, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform mapping operation. */
+        const KPageProperties properties = { perm, true, false, false };
+        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, addr, num_pages, KMemoryState_Io, perm, KMemoryAttribute_None);
+
+        /* We successfully mapped the pages. */
+        return ResultSuccess();
     }
 
     Result KPageTableBase::MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
