@@ -16,6 +16,7 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_address_space_info.hpp>
+#include <mesosphere/kern_select_page_table.hpp>
 
 namespace ams::kern {
 
@@ -61,7 +62,7 @@ namespace ams::kern {
             constexpr u64 GetProgramId()            const { return this->program_id; }
             constexpr u32 GetVersion()              const { return this->version; }
             constexpr u8  GetPriority()             const { return this->priority; }
-            constexpr u8  GetIdealCore()            const { return this->ideal_core_id; }
+            constexpr u8  GetIdealCoreId()          const { return this->ideal_core_id; }
 
             constexpr bool IsRxCompressed()         const { return (this->flags & (1 << 0)); }
             constexpr bool IsRoCompressed()         const { return (this->flags & (1 << 1)); }
@@ -109,7 +110,7 @@ namespace ams::kern {
             }
 
             constexpr u8  GetPriority()             const { return this->kip_header->GetPriority(); }
-            constexpr u8  GetIdealCore()            const { return this->kip_header->GetIdealCore(); }
+            constexpr u8  GetIdealCoreId()          const { return this->kip_header->GetIdealCoreId(); }
             constexpr u32 GetAffinityMask()         const { return this->kip_header->GetAffinityMask(); }
             constexpr u32 GetStackSize()            const { return this->kip_header->GetStackSize(); }
 
@@ -128,6 +129,7 @@ namespace ams::kern {
 
             Result MakeCreateProcessParameter(ams::svc::CreateProcessParameter *out, bool enable_aslr) const;
             Result Load(KProcessAddress address, const ams::svc::CreateProcessParameter &params) const;
+            Result SetMemoryPermissions(KProcessPageTable &page_table, const ams::svc::CreateProcessParameter &params) const;
     };
 
 }

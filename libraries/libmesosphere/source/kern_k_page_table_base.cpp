@@ -544,7 +544,63 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::MakePageGroup(KPageGroup &pg, KProcessAddress addr, size_t num_pages) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        const size_t size = num_pages * PageSize;
+
+        /* We're making a new group, not adding to an existing one. */
+        R_UNLESS(pg.empty(), svc::ResultInvalidCurrentMemory());
+
+        auto &impl = this->GetImpl();
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        R_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), addr), svc::ResultInvalidCurrentMemory());
+
+        /* Prepare tracking variables. */
+        KPhysicalAddress cur_addr = next_entry.phys_addr;
+        size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+        size_t tot_size = cur_size;
+
+        /* Iterate, adding to group as we go. */
+        while (tot_size < size) {
+            R_UNLESS(impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context)), svc::ResultInvalidCurrentMemory());
+
+            if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                const size_t cur_pages = cur_size / PageSize;
+
+                R_UNLESS(IsHeapPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+                R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_addr), cur_pages));
+
+                cur_addr           = next_entry.phys_addr;
+                cur_size           = next_entry.block_size;
+            } else {
+                cur_size += next_entry.block_size;
+            }
+
+            tot_size += next_entry.block_size;
+        }
+
+        /* Ensure we add the right amount for the last block. */
+        if (tot_size > size) {
+            cur_size -= (tot_size - size);
+        }
+
+        /* add the last block. */
+        const size_t cur_pages = cur_size / PageSize;
+        R_UNLESS(IsHeapPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+        R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_addr), cur_pages));
+
+        return ResultSuccess();
+    }
+
     bool KPageTableBase::IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        const size_t size = num_pages * PageSize;
+
         /* Empty groups are necessarily invalid. */
         if (pg.empty()) {
             return false;
@@ -582,7 +638,7 @@ namespace ams::kern {
         size_t tot_size = cur_size;
 
         /* Iterate, comparing expected to actual. */
-        while (tot_size < num_pages * PageSize) {
+        while (tot_size < size) {
             if (!impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context))) {
                 return false;
             }
@@ -614,8 +670,8 @@ namespace ams::kern {
         }
 
         /* Ensure we compare the right amount for the last block. */
-        if (tot_size > num_pages * PageSize) {
-            cur_size -= (tot_size - num_pages * PageSize);
+        if (tot_size > size) {
+            cur_size -= (tot_size - size);
         }
 
         if (!IsHeapPhysicalAddress(cur_addr)) {
@@ -627,6 +683,70 @@ namespace ams::kern {
         }
 
         return cur_block_address == GetHeapVirtualAddress(cur_addr) && cur_block_pages == (cur_size / PageSize);
+    }
+
+    Result KPageTableBase::SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+    Result KPageTableBase::SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
+        const size_t num_pages = size / PageSize;
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Verify we can change the memory permission. */
+        KMemoryState old_state;
+        KMemoryPermission old_perm;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), nullptr, addr, size, KMemoryState_FlagCode, KMemoryState_FlagCode, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Make a new page group for the region. */
+        KPageGroup pg(this->block_info_manager);
+
+        /* Determine new perm/state. */
+        const KMemoryPermission new_perm = ConvertToKMemoryPermission(svc_perm);
+        KMemoryState new_state = old_state;
+        const bool is_w = (new_perm & KMemoryPermission_UserWrite)   == KMemoryPermission_UserWrite;
+        const bool is_x = (new_perm & KMemoryPermission_UserExecute) == KMemoryPermission_UserExecute;
+        MESOSPHERE_ASSERT(!(is_w && is_x));
+
+        if (is_w) {
+            switch (old_state) {
+                case KMemoryState_Code:      new_state = KMemoryState_CodeData;      break;
+                case KMemoryState_AliasCode: new_state = KMemoryState_AliasCodeData; break;
+                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
+        /* Create a page group, if we're setting execute permissions. */
+        if (is_x) {
+            R_TRY(this->MakePageGroup(pg, GetInteger(addr), num_pages));
+        }
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform mapping operation. */
+        const KPageProperties properties = { new_perm, false, false, false };
+        const auto operation = is_x ? OperationType_ChangePermissionsAndRefresh : OperationType_ChangePermissions;
+        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, operation, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, addr, num_pages, new_state, new_perm, KMemoryAttribute_None);
+
+        /* Ensure cache coherency, if we're setting pages as executable. */
+        if (is_x) {
+            for (const auto &block : pg) {
+                cpu::StoreDataCache(GetVoidPointer(block.GetAddress()), block.GetSize());
+            }
+            cpu::InvalidateEntireInstructionCache();
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {

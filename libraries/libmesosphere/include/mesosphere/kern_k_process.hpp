@@ -128,6 +128,8 @@ namespace ams::kern {
             constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }
             constexpr u64 GetPriorityMask() const { return this->capabilities.GetPriorityMask(); }
 
+            constexpr void SetIdealCoreId(s32 core_id) { this->ideal_core_id = core_id; }
+
             constexpr bool Is64Bit() const { return this->flags & ams::svc::CreateProcessFlag_Is64Bit; }
 
             KThread *GetPreemptionStatePinnedThread(s32 core_id) const {

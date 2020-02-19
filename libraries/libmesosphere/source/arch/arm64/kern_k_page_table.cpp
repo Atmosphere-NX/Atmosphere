@@ -175,6 +175,10 @@ namespace ams::kern::arch::arm64 {
             switch (operation) {
                 case OperationType_Map:
                     return this->MapContiguous(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+                case OperationType_ChangePermissions:
+                    return this->ChangePermissions(virt_addr, num_pages, entry_template, false, page_list, reuse_ll);
+                case OperationType_ChangePermissionsAndRefresh:
+                    return this->ChangePermissions(virt_addr, num_pages, entry_template, true, page_list, reuse_ll);
                 MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
         }
@@ -418,6 +422,7 @@ namespace ams::kern::arch::arm64 {
                         }
                     }
                     break;
+                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
             }
 
             /* Close the blocks. */
@@ -758,6 +763,139 @@ namespace ams::kern::arch::arm64 {
         auto guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
         R_TRY(this->SeparatePagesImpl(virt_addr, block_size, page_list, reuse_ll));
         guard.Cancel();
+
+        return ResultSuccess();
+    }
+
+    Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        auto &impl = this->GetImpl();
+
+        /* Separate pages before we change permissions. */
+        const size_t size = num_pages * PageSize;
+        R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
+        if (num_pages > 1) {
+            const auto end_page  = virt_addr + size;
+            const auto last_page = end_page - PageSize;
+
+            auto merge_guard = SCOPE_GUARD { this->MergePages(virt_addr, page_list); };
+            R_TRY(this->SeparatePages(last_page, std::min(GetInteger(end_page) & -GetInteger(end_page), size), page_list, reuse_ll));
+            merge_guard.Cancel();
+        }
+
+        /* Cache initial addresses for use on cleanup. */
+        const KProcessAddress orig_virt_addr = virt_addr;
+        size_t remaining_pages = num_pages;
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        MESOSPHERE_ABORT_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr));
+
+        /* Continue changing properties until we've changed them for all pages. */
+        while (remaining_pages > 0) {
+            MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(next_entry.phys_addr), next_entry.block_size));
+            MESOSPHERE_ABORT_UNLESS(next_entry.block_size <= remaining_pages * PageSize);
+
+            L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr);
+            switch (next_entry.block_size) {
+                case L1BlockSize:
+                    {
+                        /* Clear the entry, if we should. */
+                        if (refresh_mapping) {
+                            *l1_entry = InvalidL1PageTableEntry;
+                            this->NoteUpdated();
+                            if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
+                                cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), L1BlockSize);
+                            }
+                        }
+
+                        /* Write the updated entry. */
+                        *l1_entry = L1PageTableEntry(next_entry.phys_addr, entry_template, false);
+                    }
+                    break;
+                case L2ContiguousBlockSize:
+                case L2BlockSize:
+                    {
+                        /* Get the number of L2 blocks. */
+                        const size_t num_l2_blocks = next_entry.block_size / L2BlockSize;
+
+                        /* Get the L2 entry. */
+                        KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
+                        MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
+                        const KVirtualAddress  l2_virt = GetPageTableVirtualAddress(l2_phys);
+
+                        /* Clear the entry, if we should. */
+                        if (refresh_mapping) {
+                            for (size_t i = 0; i < num_l2_blocks; i++) {
+                                *impl.GetL2EntryFromTable(l2_virt, virt_addr + L2BlockSize * i) = InvalidL2PageTableEntry;
+                            }
+                            this->NoteUpdated();
+                            if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
+                                cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), next_entry.block_size);
+                            }
+                        }
+
+                        /* Write the updated entry. */
+                        const bool contig = next_entry.block_size == L2ContiguousBlockSize;
+                        for (size_t i = 0; i < num_l2_blocks; i++) {
+                            *impl.GetL2EntryFromTable(l2_virt, virt_addr + L2BlockSize * i) = L2PageTableEntry(next_entry.phys_addr + L2BlockSize * i, entry_template, contig);
+                        }
+                    }
+                    break;
+                case L3ContiguousBlockSize:
+                case L3BlockSize:
+                    {
+                        /* Get the number of L3 blocks. */
+                        const size_t num_l3_blocks = next_entry.block_size / L3BlockSize;
+
+                        /* Get the L2 entry. */
+                        KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
+                        MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
+                        const KVirtualAddress  l2_virt = GetPageTableVirtualAddress(l2_phys);
+                        L2PageTableEntry *l2_entry = impl.GetL2EntryFromTable(l2_virt, virt_addr);
+
+                        /* Get the L3 entry. */
+                        KPhysicalAddress l3_phys = Null<KPhysicalAddress>;
+                        MESOSPHERE_ABORT_UNLESS(l2_entry->GetTable(l3_phys));
+                        const KVirtualAddress  l3_virt = GetPageTableVirtualAddress(l3_phys);
+
+                        /* Clear the entry, if we should. */
+                        if (refresh_mapping) {
+                            for (size_t i = 0; i < num_l3_blocks; i++) {
+                                *impl.GetL3EntryFromTable(l3_virt, virt_addr + L3BlockSize * i) = InvalidL3PageTableEntry;
+                            }
+                            this->NoteUpdated();
+                            if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
+                                cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), next_entry.block_size);
+                            }
+                        }
+
+                        /* Write the updated entry. */
+                        const bool contig = next_entry.block_size == L3ContiguousBlockSize;
+                        for (size_t i = 0; i < num_l3_blocks; i++) {
+                            *impl.GetL3EntryFromTable(l3_virt, virt_addr + L3BlockSize * i) = L3PageTableEntry(next_entry.phys_addr + L3BlockSize * i, entry_template, contig);
+                        }
+                    }
+                    break;
+                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            /* Advance. */
+            virt_addr       += next_entry.block_size;
+            remaining_pages -= next_entry.block_size / PageSize;
+            if (remaining_pages == 0) {
+                break;
+            }
+            MESOSPHERE_ABORT_UNLESS(impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context)));
+        }
+
+        /* We've succeeded, now perform what coalescing we can. */
+        this->MergePages(orig_virt_addr, page_list);
+        if (num_pages > 1) {
+            this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
+        }
 
         return ResultSuccess();
     }

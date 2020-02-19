@@ -90,10 +90,13 @@ namespace ams::kern {
                 }
 
                 /* Set the process's memory permissions. */
-                MESOSPHERE_TODO("Set process's memory permissions");
+                MESOSPHERE_R_ABORT_UNLESS(reader.SetMemoryPermissions(new_process->GetPageTable(), params));
 
                 /* Register the process. */
                 KProcess::Register(new_process);
+
+                /* Set the ideal core id. */
+                new_process->SetIdealCoreId(reader.GetIdealCoreId());
 
                 /* Save the process info. */
                 infos[i].process    = new_process;

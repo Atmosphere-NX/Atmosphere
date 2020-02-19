@@ -31,6 +31,14 @@ namespace ams::kern::arch::arm64 {
 
             void Finalize() { this->page_table.Finalize(); }
 
+            Result SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm) {
+                return this->page_table.SetMemoryPermission(addr, size, perm);
+            }
+
+            Result SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm) {
+                return this->page_table.SetProcessMemoryPermission(addr, size, perm);
+            }
+
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
                 return this->page_table.MapIo(phys_addr, size, perm);
             }

@@ -47,9 +47,11 @@ namespace ams::kern {
             };
 
             enum OperationType {
-                OperationType_Map      = 0,
-                OperationType_MapGroup = 1,
-                OperationType_Unmap    = 2,
+                OperationType_Map                         = 0,
+                OperationType_MapGroup                    = 1,
+                OperationType_Unmap                       = 2,
+                OperationType_ChangePermissions           = 3,
+                OperationType_ChangePermissionsAndRefresh = 4,
                 /* TODO: perm/attr operations */
             };
 
@@ -234,6 +236,7 @@ namespace ams::kern {
             Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties);
             Result MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll);
 
+            Result MakePageGroup(KPageGroup &pg, KProcessAddress addr, size_t num_pages);
             bool IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages);
 
             NOINLINE Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
@@ -242,6 +245,8 @@ namespace ams::kern {
                 return this->GetImpl().GetPhysicalAddress(out, virt_addr);
             }
 
+            Result SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
+            Result SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);

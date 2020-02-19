@@ -207,6 +207,8 @@ namespace ams::kern::arch::arm64 {
             ALWAYS_INLINE Result SeparatePagesImpl(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
             Result SeparatePages(KProcessAddress virt_addr, size_t block_size, PageLinkedList *page_list, bool reuse_ll);
 
+            Result ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll);
+
             static void PteDataSynchronizationBarrier() {
                 cpu::DataSynchronizationBarrierInnerShareable();
             }

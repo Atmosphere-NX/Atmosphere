@@ -188,4 +188,32 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KInitialProcessReader::SetMemoryPermissions(KProcessPageTable &page_table, const ams::svc::CreateProcessParameter &params) const {
+        const size_t rx_size  = this->kip_header->GetRxSize();
+        const size_t ro_size  = this->kip_header->GetRoSize();
+        const size_t rw_size  = this->kip_header->GetRwSize();
+        const size_t bss_size = this->kip_header->GetBssSize();
+
+        /* Set R-X pages. */
+        if (rx_size) {
+            const uintptr_t start = this->kip_header->GetRxAddress() + params.code_address;
+            R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(rx_size, PageSize), ams::svc::MemoryPermission_ReadExecute));
+        }
+
+        /* Set R-- pages. */
+        if (ro_size) {
+            const uintptr_t start = this->kip_header->GetRoAddress() + params.code_address;
+            R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(ro_size, PageSize), ams::svc::MemoryPermission_Read));
+        }
+
+        /* Set RW- pages. */
+        if (rw_size || bss_size) {
+            const uintptr_t start = (rw_size ? this->kip_header->GetRwAddress() : this->kip_header->GetBssAddress()) + params.code_address;
+            const uintptr_t end  = (bss_size ? this->kip_header->GetBssAddress() + bss_size : this->kip_header->GetRwAddress() + rw_size) + params.code_address;
+            R_TRY(page_table.SetProcessMemoryPermission(start, util::AlignUp(end - start, PageSize), ams::svc::MemoryPermission_ReadWrite));
+        }
+
+        return ResultSuccess();
+    }
+
 }
