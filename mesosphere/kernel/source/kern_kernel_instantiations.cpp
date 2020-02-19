@@ -30,8 +30,8 @@ namespace ams::kern {
 
     namespace {
 
-        KThread g_main_threads[cpu::NumCores];
-        KThread g_idle_threads[cpu::NumCores];
+        /* TODO: C++20 constinit */ std::array<KThread, cpu::NumCores> g_main_threads;
+        /* TODO: C++20 constinit */ std::array<KThread, cpu::NumCores> g_idle_threads;
     }
 
     KThread &Kernel::GetMainThread(s32 core_id) { return g_main_threads[core_id]; }
