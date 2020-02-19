@@ -31,6 +31,18 @@ namespace ams::kern::arch::arm64 {
 
             void Finalize() { this->page_table.Finalize(); }
 
+            Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
+                return this->page_table.MapIo(phys_addr, size, perm);
+            }
+
+            Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
+                return this->page_table.MapStatic(phys_addr, size, perm);
+            }
+
+            Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm) {
+                return this->page_table.MapRegion(region_type, perm);
+            }
+
             Result MapPageGroup(KProcessAddress addr, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm) {
                 return this->page_table.MapPageGroup(addr, pg, state, perm);
             }

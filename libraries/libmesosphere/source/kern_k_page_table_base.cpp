@@ -629,6 +629,18 @@ namespace ams::kern {
         return cur_block_address == GetHeapVirtualAddress(cur_addr) && cur_block_pages == (cur_size / PageSize);
     }
 
+    Result KPageTableBase::MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+    Result KPageTableBase::MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+    Result KPageTableBase::MapRegion(KMemoryRegionType region_type, KMemoryPermission perm) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
     Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
         MESOSPHERE_ASSERT(util::IsAligned(alignment, PageSize) && alignment >= PageSize);
 

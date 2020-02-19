@@ -55,7 +55,7 @@ namespace ams::kern::svc {
     /* 123 */ using ::ams::svc::ResultSessionClosed;
     /* 124 */ using ::ams::svc::ResultNotHandled;
     /* 125 */ using ::ams::svc::ResultInvalidState;
-    /* 126 */ using ::ams::svc::ResultReservedValue;
+    /* 126 */ using ::ams::svc::ResultReservedUsed;
     /* 127 */ using ::ams::svc::ResultNotSupported;
     /* 128 */ using ::ams::svc::ResultDebug;
     /* 129 */ using ::ams::svc::ResultThreadNotOwned;

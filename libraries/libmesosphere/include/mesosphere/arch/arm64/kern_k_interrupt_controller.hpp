@@ -213,6 +213,11 @@ namespace ams::kern::arch::arm64 {
                 this->gicc->eoir = irq;
             }
 
+            bool IsInterruptDefined(s32 irq) {
+                const s32 num_interrupts = std::min(32 + 32 * (this->gicd->typer & 0x1F), static_cast<u32>(NumInterrupts));
+                return (0 <= irq && irq < num_interrupts);
+            }
+
             /* TODO: Implement more KInterruptController functionality. */
         public:
             static constexpr ALWAYS_INLINE bool IsSoftware(s32 id) {

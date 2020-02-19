@@ -58,7 +58,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(SessionClosed,                123);
     R_DEFINE_ERROR_RESULT(NotHandled,                   124);
     R_DEFINE_ERROR_RESULT(InvalidState,                 125);
-    R_DEFINE_ERROR_RESULT(ReservedValue,                126);
+    R_DEFINE_ERROR_RESULT(ReservedUsed,                 126);
     R_DEFINE_ERROR_RESULT(NotSupported,                 127);
     R_DEFINE_ERROR_RESULT(Debug,                        128);
     R_DEFINE_ERROR_RESULT(ThreadNotOwned,               129);

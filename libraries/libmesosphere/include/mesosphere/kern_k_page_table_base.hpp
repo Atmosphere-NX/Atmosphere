@@ -240,6 +240,10 @@ namespace ams::kern {
                 return this->GetImpl().GetPhysicalAddress(out, virt_addr);
             }
 
+            Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
+            Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
+            Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);
+
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 return this->MapPages(out_addr, num_pages, alignment, phys_addr, true, region_start, region_num_pages, state, perm);
             }
