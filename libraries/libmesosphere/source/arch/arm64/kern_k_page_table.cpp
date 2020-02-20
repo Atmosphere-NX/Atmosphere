@@ -19,6 +19,68 @@ namespace ams::kern::arch::arm64 {
 
     namespace {
 
+        class AlignedMemoryBlock {
+            private:
+                uintptr_t before_start;
+                uintptr_t before_end;
+                uintptr_t after_start;
+                uintptr_t after_end;
+                size_t current_alignment;
+            public:
+                constexpr AlignedMemoryBlock(uintptr_t start, size_t num_pages, size_t alignment) : before_start(0), before_end(0), after_start(0), after_end(0), current_alignment(0) {
+                    MESOSPHERE_ASSERT(util::IsAligned(start, PageSize));
+                    MESOSPHERE_ASSERT(num_pages > 0);
+
+                    /* Find an alignment that allows us to divide into at least two regions.*/
+                    uintptr_t start_page = start / PageSize;
+                    alignment /= PageSize;
+                    while (util::AlignUp(start_page, alignment) >= util::AlignDown(start_page + num_pages, alignment)) {
+                        alignment = KPageTable::GetSmallerAlignment(alignment * PageSize) / PageSize;
+                    }
+
+                    this->before_start      = start_page;
+                    this->before_end        = util::AlignUp(start_page, alignment);
+                    this->after_start       = this->before_end;
+                    this->after_end         = start_page + num_pages;
+                    this->current_alignment = alignment;
+                    MESOSPHERE_ASSERT(this->current_alignment > 0);
+                }
+
+                constexpr void SetAlignment(size_t alignment) {
+                    /* We can only ever decrease the granularity. */
+                    MESOSPHERE_ASSERT(this->current_alignment >= alignment / PageSize);
+                    this->current_alignment = alignment / PageSize;
+                }
+
+                constexpr size_t GetAlignment() const {
+                    return this->current_alignment * PageSize;
+                }
+
+                constexpr void FindBlock(uintptr_t &out, size_t &num_pages) {
+                    if ((this->after_end - this->after_start) >= this->current_alignment) {
+                        /* Select aligned memory from after block. */
+                        const size_t available_pages = util::AlignDown(this->after_end, this->current_alignment) - this->after_start;
+                        if (num_pages == 0 || available_pages < num_pages) {
+                            num_pages = available_pages;
+                        }
+                        out = this->after_start * PageSize;
+                        this->after_start += num_pages;
+                    } else if ((this->before_end - this->before_start) >= this->current_alignment) {
+                        /* Select aligned memory from before block. */
+                        const size_t available_pages = this->before_end - util::AlignUp(this->before_start, this->current_alignment);
+                        if (num_pages == 0 || available_pages < num_pages) {
+                            num_pages = available_pages;
+                        }
+                        this->before_end -= num_pages;
+                        out = this->before_end * PageSize;
+                    } else {
+                        /* Neither after or before can get an aligned bit of memory. */
+                        out = 0;
+                        num_pages = 0;
+                    }
+                }
+        };
+
         constexpr u64 EncodeTtbr(KPhysicalAddress table, u8 asid) {
             return (static_cast<u64>(asid) << 48) | (static_cast<u64>(GetInteger(table)));
         }
@@ -565,7 +627,58 @@ namespace ams::kern::arch::arm64 {
                     mapped_pages += cur_pages;
                 }
             } else {
-                MESOSPHERE_TODO("Large page group map");
+                /* Create a block representing our virtual space. */
+                AlignedMemoryBlock virt_block(GetInteger(virt_addr), num_pages, L1BlockSize);
+                for (const auto &block : pg) {
+                    /* Create a block representing this physical group, synchronize its alignment to our virtual block. */
+                    const KPhysicalAddress block_phys_addr = GetLinearPhysicalAddress(block.GetAddress());
+                    size_t cur_pages = block.GetNumPages();
+
+                    AlignedMemoryBlock phys_block(GetInteger(block_phys_addr), cur_pages, virt_block.GetAlignment());
+                    virt_block.SetAlignment(phys_block.GetAlignment());
+
+                    while (cur_pages > 0) {
+                        /* Find a physical region for us to map at. */
+                        uintptr_t phys_choice = 0;
+                        size_t phys_pages = 0;
+                        phys_block.FindBlock(phys_choice, phys_pages);
+
+                        /* If we didn't find a region, try decreasing our alignment. */
+                        if (phys_pages == 0) {
+                            const size_t next_alignment = KPageTable::GetSmallerAlignment(phys_block.GetAlignment());
+                            MESOSPHERE_ASSERT(next_alignment >= PageSize);
+                            phys_block.SetAlignment(next_alignment);
+                            virt_block.SetAlignment(next_alignment);
+                            continue;
+                        }
+
+                        /* Begin choosing virtual blocks to map at the region we chose. */
+                        while (phys_pages > 0) {
+                            /* Find a virtual region for us to map at. */
+                            uintptr_t virt_choice = 0;
+                            size_t virt_pages = phys_pages;
+                            virt_block.FindBlock(virt_choice, virt_pages);
+
+                            /* If we didn't find a region, try decreasing our alignment. */
+                            if (virt_pages == 0) {
+                                const size_t next_alignment = KPageTable::GetSmallerAlignment(virt_block.GetAlignment());
+                                MESOSPHERE_ASSERT(next_alignment >= PageSize);
+                                phys_block.SetAlignment(next_alignment);
+                                virt_block.SetAlignment(next_alignment);
+                                continue;
+                            }
+
+                            /* Map! */
+                            R_TRY(this->Map(virt_choice, phys_choice, virt_pages, entry_template, virt_block.GetAlignment(), page_list, reuse_ll));
+
+                            /* Advance. */
+                            phys_choice  += virt_pages * PageSize;
+                            phys_pages   -= virt_pages;
+                            cur_pages    -= virt_pages;
+                            mapped_pages += virt_pages;
+                        }
+                    }
+                }
             }
 
             /* We successfully mapped, so cancel our guard. */

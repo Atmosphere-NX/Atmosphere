@@ -185,7 +185,7 @@ namespace ams::kern {
             };
 
             struct DebugFlags {
-                using IdBits = Field<0, CapabilityId<CapabilityType::HandleTable> + 1>;
+                using IdBits = Field<0, CapabilityId<CapabilityType::DebugFlags> + 1>;
 
                 DEFINE_FIELD(AllowDebug, IdBits,      1, bool);
                 DEFINE_FIELD(ForceDebug, AllowDebug,  1, bool);
