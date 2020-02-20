@@ -123,6 +123,8 @@ namespace ams::kern {
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
 
+            constexpr const char *GetName() const { return this->name; }
+
             constexpr u64 GetProcessId() const { return this->process_id; }
 
             constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }

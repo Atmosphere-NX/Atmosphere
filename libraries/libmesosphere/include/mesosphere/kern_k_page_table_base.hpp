@@ -172,11 +172,11 @@ namespace ams::kern {
             constexpr bool IsKernel() const { return this->is_kernel; }
             constexpr bool IsAslrEnabled() const { return this->enable_aslr; }
 
-            constexpr bool CanContain(KProcessAddress addr) const {
+            constexpr bool Contains(KProcessAddress addr) const {
                 return this->address_space_start <= addr && addr <= this->address_space_end - 1;
             }
 
-            constexpr bool CanContain(KProcessAddress addr, size_t size) const {
+            constexpr bool Contains(KProcessAddress addr, size_t size) const {
                 return this->address_space_start <= addr && addr < addr + size && addr + size - 1 <= this->address_space_end - 1;
             }
 
@@ -249,6 +249,7 @@ namespace ams::kern {
             Result SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
             Result SetHeapSize(KProcessAddress *out, size_t size);
             Result SetMaxHeapSize(size_t size);
+            Result QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const;
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);

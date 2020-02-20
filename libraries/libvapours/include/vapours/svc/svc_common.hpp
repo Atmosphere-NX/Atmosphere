@@ -30,7 +30,7 @@ namespace ams::svc {
 
     static constexpr size_t MaxWaitSynchronizationHandleCount = 0x40;
 
-    enum class PseudoHandle : Handle {
+    enum PseudoHandle : Handle {
         CurrentThread  = 0xFFFF8000,
         CurrentProcess = 0xFFFF8001,
     };

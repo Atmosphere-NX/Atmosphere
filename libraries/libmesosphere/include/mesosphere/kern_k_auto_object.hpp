@@ -221,6 +221,9 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE void Reset(T *o) {
                 KScopedAutoObject(o).Swap(*this);
             }
+
+            constexpr ALWAYS_INLINE bool IsNull() const { return this->obj == nullptr; }
+            constexpr ALWAYS_INLINE bool IsNotNull() const { return this->obj != nullptr; }
     };
 
 

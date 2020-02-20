@@ -43,10 +43,6 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcUnmapMemory64 was called.");
     }
 
-    Result QueryMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryMemory64 was called.");
-    }
-
     /* ============================= 64From32 ABI ============================= */
 
     Result SetMemoryPermission64From32(ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
@@ -63,10 +59,6 @@ namespace ams::kern::svc {
 
     Result UnmapMemory64From32(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
         MESOSPHERE_PANIC("Stubbed SvcUnmapMemory64From32 was called.");
-    }
-
-    Result QueryMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryMemory64From32 was called.");
     }
 
 }

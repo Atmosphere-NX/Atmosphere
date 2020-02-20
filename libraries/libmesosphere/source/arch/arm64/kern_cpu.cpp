@@ -294,7 +294,7 @@ namespace ams::kern::arch::arm64::cpu {
         ALWAYS_INLINE Result InvalidateDataCacheRange(uintptr_t start, uintptr_t end) {
             MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
-            R_UNLESS(arm64::InvalidateDataCache(start, end), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(UserspaceAccess::InvalidateDataCache(start, end), svc::ResultInvalidCurrentMemory());
             DataSynchronizationBarrier();
             return ResultSuccess();
         }
@@ -302,7 +302,7 @@ namespace ams::kern::arch::arm64::cpu {
         ALWAYS_INLINE Result StoreDataCacheRange(uintptr_t start, uintptr_t end) {
             MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
-            R_UNLESS(arm64::StoreDataCache(start, end), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(UserspaceAccess::StoreDataCache(start, end), svc::ResultInvalidCurrentMemory());
             DataSynchronizationBarrier();
             return ResultSuccess();
         }
@@ -310,7 +310,7 @@ namespace ams::kern::arch::arm64::cpu {
         ALWAYS_INLINE Result FlushDataCacheRange(uintptr_t start, uintptr_t end) {
             MESOSPHERE_ASSERT(util::IsAligned(start, DataCacheLineSize));
             MESOSPHERE_ASSERT(util::IsAligned(end,   DataCacheLineSize));
-            R_UNLESS(arm64::FlushDataCache(start, end), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(UserspaceAccess::FlushDataCache(start, end), svc::ResultInvalidCurrentMemory());
             DataSynchronizationBarrier();
             return ResultSuccess();
         }
@@ -318,7 +318,7 @@ namespace ams::kern::arch::arm64::cpu {
         ALWAYS_INLINE Result InvalidateInstructionCacheRange(uintptr_t start, uintptr_t end) {
             MESOSPHERE_ASSERT(util::IsAligned(start, InstructionCacheLineSize));
             MESOSPHERE_ASSERT(util::IsAligned(end,   InstructionCacheLineSize));
-            R_UNLESS(arm64::InvalidateInstructionCache(start, end), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(UserspaceAccess::InvalidateInstructionCache(start, end), svc::ResultInvalidCurrentMemory());
             EnsureInstructionConsistency();
             return ResultSuccess();
         }

@@ -26,6 +26,9 @@ namespace ams::kern {
         return util::BitPack32{handle};
     }
 
+    class KProcess;
+    class KThread;
+
     class KHandleTable {
         NON_COPYABLE(KHandleTable);
         NON_MOVEABLE(KHandleTable);
@@ -125,6 +128,19 @@ namespace ams::kern {
             template<typename T = KAutoObject>
             ALWAYS_INLINE KScopedAutoObject<T> GetObject(ams::svc::Handle handle) const {
                 MESOSPHERE_ASSERT_THIS();
+
+                /* Handle pseudo-handles. */
+                if constexpr (std::is_same<T, KProcess>::value) {
+                    if (handle == ams::svc::PseudoHandle::CurrentProcess) {
+                        return GetCurrentProcessPointer();
+                    }
+                } else if constexpr (std::is_same<T, KThread>::value) {
+                    if (handle == ams::svc::PseudoHandle::CurrentThread) {
+                        return GetCurrentThreadPointer();
+                    }
+                }
+
+                /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
                 KScopedSpinLock lk(this->lock);
 
@@ -138,6 +154,21 @@ namespace ams::kern {
             template<typename T = KAutoObject>
             ALWAYS_INLINE KScopedAutoObject<T> GetObjectForIpc(ams::svc::Handle handle) const {
                 static_assert(!std::is_base_of<KInterruptEvent, T>::value);
+
+                /* Handle pseudo-handles. */
+                if constexpr (std::is_same<T, KProcess>::value) {
+                    if (handle == ams::svc::PseudoHandle::CurrentProcess) {
+                        return GetCurrentProcessPointer();
+                    }
+                } else if constexpr (std::is_same<T, KThread>::value) {
+                    if (handle == ams::svc::PseudoHandle::CurrentThread) {
+                        return GetCurrentThreadPointer();
+                    }
+                }
+
+                /* Lock and look up in table. */
+                KScopedDisableDispatch dd;
+                KScopedSpinLock lk(this->lock);
 
                 KAutoObject *obj = this->GetObjectImpl(handle);
                 if (obj->DynamicCast<KInterruptEvent *>() != nullptr) {

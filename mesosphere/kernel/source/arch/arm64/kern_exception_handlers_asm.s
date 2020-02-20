@@ -324,10 +324,10 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
 
     /* Data abort. Check if it was from trying to access userspace memory. */
     mrs     x1, elr_el1
-    adr     x0, _ZN3ams4kern4arch5arm6438UserspaceMemoryAccessFunctionAreaBeginEv
+    adr     x0, _ZN3ams4kern4arch5arm6432UserspaceAccessFunctionAreaBeginEv
     cmp     x1, x0
     b.lo    3f
-    adr     x0, _ZN3ams4kern4arch5arm6436UserspaceMemoryAccessFunctionAreaEndEv
+    adr     x0, _ZN3ams4kern4arch5arm6430UserspaceAccessFunctionAreaEndEv
     cmp     x1, x0
     b.hs    3f
 

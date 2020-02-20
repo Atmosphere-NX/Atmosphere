@@ -52,6 +52,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.SetMaxHeapSize(size);
             }
 
+            Result QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const {
+                return this->page_table.QueryInfo(out_info, out_page_info, addr);
+            }
+
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
                 return this->page_table.MapIo(phys_addr, size, perm);
             }
@@ -84,7 +88,7 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.GetPhysicalAddress(out, address);
             }
 
-            bool CanContain(KProcessAddress addr, size_t size) const { return this->page_table.CanContain(addr, size); }
+            bool Contains(KProcessAddress addr, size_t size) const { return this->page_table.Contains(addr, size); }
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return this->page_table.CanContain(addr, size, state); }
 
             KProcessAddress GetAddressSpaceStart()    const { return this->page_table.GetAddressSpaceStart(); }

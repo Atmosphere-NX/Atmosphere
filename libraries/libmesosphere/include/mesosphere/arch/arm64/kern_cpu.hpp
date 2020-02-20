@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <mesosphere/arch/arm64/kern_cpu_system_registers.hpp>
-#include <mesosphere/arch/arm64/kern_userspace_memory_access.hpp>
+#include <mesosphere/kern_select_userspace_memory_access.hpp>
 
 namespace ams::kern::arch::arm64::cpu {
 

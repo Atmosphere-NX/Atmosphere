@@ -765,6 +765,29 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const {
+        /* If the address is invalid, create a fake block. */
+        if (!this->Contains(addr, 1)) {
+            *out_info = {
+                .address          = GetInteger(this->address_space_end),
+                .size             = 0 - GetInteger(this->address_space_end),
+                .state            = static_cast<KMemoryState>(ams::svc::MemoryState_Inaccessible),
+                .perm             = KMemoryPermission_None,
+                .attribute        = KMemoryAttribute_None,
+                .original_perm    = KMemoryPermission_None,
+                .ipc_lock_count   = 0,
+                .device_use_count = 0,
+            };
+            out_page_info->flags = 0;
+
+            return ResultSuccess();
+        }
+
+        /* Otherwise, lock the table and query. */
+        KScopedLightLock lk(this->general_lock);
+        return this->QueryInfoImpl(out_info, out_page_info, addr);
+    }
+
     Result KPageTableBase::MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(size,                  PageSize));

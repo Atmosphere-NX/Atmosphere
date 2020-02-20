@@ -39,10 +39,6 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcUnmapProcessMemory64 was called.");
     }
 
-    Result QueryProcessMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uint64_t address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryProcessMemory64 was called.");
-    }
-
     Result MapProcessCodeMemory64(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
         MESOSPHERE_PANIC("Stubbed SvcMapProcessCodeMemory64 was called.");
     }
@@ -63,10 +59,6 @@ namespace ams::kern::svc {
 
     Result UnmapProcessMemory64From32(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {
         MESOSPHERE_PANIC("Stubbed SvcUnmapProcessMemory64From32 was called.");
-    }
-
-    Result QueryProcessMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uint64_t address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryProcessMemory64From32 was called.");
     }
 
     Result MapProcessCodeMemory64From32(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
