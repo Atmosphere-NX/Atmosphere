@@ -80,7 +80,7 @@ namespace ams::kern {
 
         /* Activate the supervisor page table for each core. */
         DoOnEachCoreInOrder(core_id, [=]() ALWAYS_INLINE_LAMBDA {
-            Kernel::GetKernelPageTable().Activate();
+            Kernel::GetKernelPageTable().ActivateForInit();
         });
 
         /* NOTE: Kernel calls on each core a nullsub here on retail kernel. */
