@@ -78,14 +78,16 @@
 .endm
 
 .macro PIVOT_STACK_FOR_CRASH
-    // Note: x18 assumed uncorrupted
-    // Note: replace sp_el0 with crashing sp
-    str     x16, [x18, #CORECTX_SCRATCH_OFFSET]
-    mov     x16, sp
-    msr     sp_el0, x16
-    ldr     x16, [x18, #CORECTX_CRASH_STACK_OFFSET]
-    mov     sp, x16
-    ldr     x16, [x18, #CORECTX_SCRATCH_OFFSET]
+    // Note: replace sp_el1 with crashing sp (for convenience)
+    // The way we do things means that exception stack ptr won't be reset on double fault
+    // (sp_el2 is not accessible at el2)
+    msr     spsel, #0
+    str     x0, [sp, #-0x10]
+    msr     spsel, #1
+    mov     x0, sp
+    msr     sp_el1, x0
+    msr     spsel, #0
+    ldr     x0, [sp, #-0x10]
 .endm
 
 #define     EXCEPTION_TYPE_HOST            0
@@ -103,10 +105,10 @@ vector_entry \name
     mov         x0, sp
 
     .if \type == EXCEPTION_TYPE_GUEST
-        ldp     x18, xzr, [sp, #EXCEP_STACK_FRAME_SIZE]
-        prfm    pldl1keep, [x18]
-        prfm    pstl1keep, [x18, #0x40]
-        str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
+        ldp     x18, x19, [sp, #EXCEP_STACK_FRAME_SIZE]
+        msr     sp_el0, x19
+        prfm    pstl1keep, [x18]
+        //todo str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
         mov     w1, #1
     .else
         mov     w1, #0
@@ -148,7 +150,7 @@ vector_entry        _synchSp0
 check_vector_size   _synchSp0
 
 _unknownException:
-    pivot_stack_for_crash
+    PIVOT_STACK_FOR_CRASH
     mov     x0, x30
     adr     x1, g_thermosphereVectors + 4
     sub     x0, x0, x1

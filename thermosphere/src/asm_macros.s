@@ -16,11 +16,6 @@
 
 #define EXCEP_STACK_FRAME_SIZE      0x140
 
-#define CORECTX_CRASH_STACK_OFFSET  0x000
-#define CORECTX_GUEST_FRAME_OFFSET  0x040
-#define CORECTX_SCRATCH_OFFSET      0x048
-
-
 .macro FUNCTION name
     .section        .text.\name, "ax", %progbits
     .global         \name

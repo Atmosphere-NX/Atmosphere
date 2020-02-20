@@ -94,16 +94,16 @@ _postMmuEnableReturnAddr:
     bl      initSystem
 
     // Save x18, reserve space for exception frame
+    // TODO: save exception stack too
     stp     x18, xzr, [sp, #-0x10]!
     sub     sp, sp, #EXCEP_STACK_FRAME_SIZE
 
     mov     x0, sp
     mov     x1, x20
-    str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
+    //str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
     bl      thermosphereMain
 
-    prfm    pldl1keep, [x18]
-    prfm    pstl1keep, [x18, #0x40]
+    prfm    pstl1keep, [x18]
 
     dsb     sy
     isb
