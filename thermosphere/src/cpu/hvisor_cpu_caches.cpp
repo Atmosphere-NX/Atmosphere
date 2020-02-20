@@ -129,35 +129,24 @@ namespace ams::hvisor::cpu {
             These clearly break coherency and should only be done once, on power on/off/suspend/resume only. And we already
             do it ourselves...
             - allow ops after the LoUIS, but do it ourselves and ignore the next (numSets*numWay - 1) requests. This is because
-            we have to handle Nintendo's dodgy code
+            we have to handle Nintendo's dodgy code (check if SetWay == 0)
             - transform all s/w cache ops into clean and invalidate
      */
-    void HandleTrappedSetWayOperation()
+    void HandleTrappedSetWayOperation(u32 val)
     {
         u32 clidr = static_cast<u32>(THERMOSPHERE_GET_SYSREG(clidr_el1));
         u32 louis = (clidr >> 21) & 7;
 
-        u32 csselr = static_cast<u32>(THERMOSPHERE_GET_SYSREG(csselr_el1));
-        u32 level = (csselr >> 1) & 7;
-        if (csselr & BIT(0)) {
-            // Icache, ignore
-            return;
-        } else if (level < louis) {
+        u32 level = val >> 1 & 7;
+        u32 setway = val >> 3; 
+        if (level < louis) {
             return;
         }
 
-
-        u32 ccsidr = static_cast<u32>(THERMOSPHERE_GET_SYSREG(ccsidr_el1));
-        u32 numWays = 1 + ((ccsidr >> 3) & 0x3FF);
-        u32 numSets = 1 + ((ccsidr >> 13) & 0x7FFF);
-        if (currentCoreCtx->setWayCounter++ == 0) {
+        if (setway == 0) {
             CleanInvalidateDataCacheLevel(level);
-            ams::hvisor::cpu::dsbSy();
-            ams::hvisor::cpu::isb();
-        }
-
-        if (currentCoreCtx->setWayCounter >= numSets * numWays) {
-            currentCoreCtx->setWayCounter = 0;
+            dsbSy();
+            isb();
         }
     }
 

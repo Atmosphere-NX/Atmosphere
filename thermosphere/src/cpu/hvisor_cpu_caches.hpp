@@ -66,6 +66,6 @@ namespace ams::hvisor::cpu {
     void ClearLocalDataCacheOnBoot(void);
 
     // Dunno where else to put that
-    void HandleTrappedSetWayOperation();
+    void HandleTrappedSetWayOperation(u32 val);
 
 }
