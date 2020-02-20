@@ -39,7 +39,7 @@ _ZN3ams4kern4arch5arm6421UserModeThreadStarterEv:
     msr sp_el0,    x19
     msr elr_el1,   x20
     msr spsr_el1,  x21
-    msr tpidr_el1, x22
+    msr tpidr_el0, x22
 
     ldp x0,  x1,  [sp, #(8 *  0)]
     ldp x2,  x3,  [sp, #(8 *  2)]

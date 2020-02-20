@@ -222,7 +222,6 @@ namespace ams::kern {
             }
 
             bool SetSvcAllowed(u32 id) {
-                constexpr size_t BitsPerWord = BITSIZEOF(this->svc_access_flags[0]);
                 if (id < BITSIZEOF(this->svc_access_flags)) {
                     SetSvcAllowedImpl(this->svc_access_flags, id);
                     return true;

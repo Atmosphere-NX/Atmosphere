@@ -22,7 +22,20 @@ namespace ams::kern::arch::arm64 {
     void SupervisorModeThreadStarter();
 
     void OnThreadStart() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
+        /* Send KDebug event for this thread's creation. */
+        {
+            KScopedInterruptEnable ei;
+            /* TODO */
+        }
+
+        /* Handle any pending dpc. */
+        while (GetCurrentThread().HasDpc()) {
+            KDpcManager::HandleDpc();
+        }
+
+        /* Clear our status as in an exception handler */
+        GetCurrentThread().ClearInExceptionHandler();
     }
 
     namespace {

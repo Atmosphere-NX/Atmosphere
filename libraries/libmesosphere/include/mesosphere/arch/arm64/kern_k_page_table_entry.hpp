@@ -145,7 +145,7 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE decltype(auto) SetAccessFlag(AccessFlag f)        { this->SetBitsDirect(10, 1, f); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetShareable(Shareable s)          { this->SetBitsDirect(8, 2, s); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetReadOnly(bool en)               { this->SetBit(7, en); return *this; }
-            constexpr ALWAYS_INLINE decltype(auto) SetUserAccessible(bool en)         { this->SetBit(7, en); return *this; }
+            constexpr ALWAYS_INLINE decltype(auto) SetUserAccessible(bool en)         { this->SetBit(6, en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetPageAttribute(PageAttribute a)  { this->SetBitsDirect(2, 3, a); return *this; }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplate() const {
