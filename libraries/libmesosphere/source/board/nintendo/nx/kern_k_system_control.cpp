@@ -322,7 +322,7 @@ namespace ams::kern::board::nintendo::nx {
     void KSystemControl::StopSystem() {
         if (g_call_smc_on_panic) {
             /* Display a panic screen via secure monitor. */
-            /* TODO: Enable in release: smc::Panic(0xF00); */
+            smc::Panic(0xF00);
         }
         while (true) { /* ... */ }
     }

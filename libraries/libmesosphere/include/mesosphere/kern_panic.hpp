@@ -19,15 +19,22 @@
 
 namespace ams::kern {
 
-    NORETURN void Panic(const char *file, int line, const char *format, ...) __attribute__((format(printf, 3, 4)));
-    NORETURN void Panic();
+    template<typename... ArgTypes>
+    ALWAYS_INLINE void UnusedImpl(ArgTypes... args) {
+        (static_cast<void>(args), ...);
+    }
+
+    NORETURN NOINLINE void Panic(const char *file, int line, const char *format, ...) __attribute__((format(printf, 3, 4)));
+    NORETURN NOINLINE void Panic();
 
 }
 
+#define MESOSPHERE_UNUSED(...) ::ams::kern::UnusedImpl(__VA_ARGS__)
+
 #ifdef MESOSPHERE_ENABLE_DEBUG_PRINT
-#define MESOSPHERE_PANIC(...) ::ams::kern::Panic(__FILE__, __LINE__, __VA_ARGS__)
+#define MESOSPHERE_PANIC(...) do { ::ams::kern::Panic(__FILE__, __LINE__, __VA_ARGS__); } while(0)
 #else
-#define MESOSPHERE_PANIC(...) ::ams::kern::Panic()
+#define MESOSPHERE_PANIC(...) do { MESOSPHERE_UNUSED(__VA_ARGS__); ::ams::kern::Panic(); } while(0)
 #endif
 
 #ifdef MESOSPHERE_ENABLE_ASSERTIONS
@@ -58,7 +65,7 @@ namespace ams::kern {
 #define MESOSPHERE_AUDIT(expr) do { static_cast<void>(expr); } while (0)
 #endif
 
-#define MESOSPHERE_TODO(arg) ({ constexpr const char *__mesosphere_todo = arg; MESOSPHERE_PANIC("TODO (%s): %s\n", __PRETTY_FUNCTION__, __mesosphere_todo); })
+#define MESOSPHERE_TODO(arg) ({ constexpr const char *__mesosphere_todo = arg; static_cast<void>(__mesosphere_todo); MESOSPHERE_PANIC("TODO (%s): %s\n", __PRETTY_FUNCTION__, __mesosphere_todo); })
 #define MESOSPHERE_TODO_IMPLEMENT() MESOSPHERE_TODO("Implement")
 
 #define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()\n");

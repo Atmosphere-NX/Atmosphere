@@ -49,6 +49,6 @@ namespace ams::kern {
 #define MESOSPHERE_LOG(fmt, ...) MESOSPHERE_RELEASE_LOG((fmt), ## __VA_ARGS__)
 #define MESOSPHERE_VLOG(fmt, vl) MESOSPHERE_RELEASE_VLOG((fmt), (vl))
 #else
-#define MESOSPHERE_LOG(fmt, ...)
-#define MESOSPHERE_VLOG(fmt, vl)
+#define MESOSPHERE_LOG(fmt, ...) do { MESOSPHERE_UNUSED(fmt); MESOSPHERE_UNUSED(__VA_ARGS__); } while (0)
+#define MESOSPHERE_VLOG(fmt, vl) do { MESOSPHERE_UNUSED(fmt); MESOSPHERE_UNUSED(vl); } while (0)
 #endif
