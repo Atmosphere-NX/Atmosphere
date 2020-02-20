@@ -62,6 +62,8 @@ namespace ams::kern::arch::arm64 {
             Result Initialize(KVirtualAddress u_pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_user, bool is_64_bit, bool is_main);
             Result Finalize();
 
+            void SetArguments(uintptr_t arg0, uintptr_t arg1);
+
             static void FpuContextSwitchHandler(KThread *thread);
 
             /* TODO: More methods (especially FPU management) */

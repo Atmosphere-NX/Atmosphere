@@ -509,7 +509,7 @@ namespace ams::kern {
         }
 
         /* Map the pages. */
-        return this->Operate(page_list, address, num_pages, std::addressof(pg), properties, OperationType_MapGroup, false);
+        return this->Operate(page_list, address, num_pages, pg, properties, OperationType_MapGroup, false);
     }
 
     Result KPageTableBase::MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll) {
@@ -745,6 +745,22 @@ namespace ams::kern {
             }
             cpu::InvalidateEntireInstructionCache();
         }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::SetHeapSize(KProcessAddress *out, size_t size) {
+        MESOSPHERE_TODO_IMPLEMENT();
+    }
+
+    Result KPageTableBase::SetMaxHeapSize(size_t size) {
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Only process page tables are allowed to set heap size. */
+        MESOSPHERE_ASSERT(!this->IsKernel());
+
+        this->max_heap_size = size;
 
         return ResultSuccess();
     }

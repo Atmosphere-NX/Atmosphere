@@ -75,9 +75,11 @@
 #include <mesosphere/kern_select_debug.hpp>
 #include <mesosphere/kern_k_process.hpp>
 #include <mesosphere/kern_k_resource_limit.hpp>
+#include <mesosphere/kern_k_synchronization.hpp>
 
 /* More Miscellaneous objects. */
 #include <mesosphere/kern_k_object_name.hpp>
+#include <mesosphere/kern_k_scoped_resource_reservation.hpp>
 
 /* Supervisor Calls. */
 #include <mesosphere/kern_svc.hpp>

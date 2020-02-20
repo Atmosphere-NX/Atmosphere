@@ -17,16 +17,16 @@
 
 namespace ams::kern {
 
-    void NotifyAvailable() {
+    void KSynchronizationObject::NotifyAvailable() {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_TODO_IMPLEMENT();
+        Kernel::GetSynchronization().OnAvailable(this);
     }
 
-    void NotifyAbort(Result abort_reason) {
+    void KSynchronizationObject::NotifyAbort(Result abort_reason) {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_TODO_IMPLEMENT();
+        Kernel::GetSynchronization().OnAbort(this, abort_reason);
     }
 
     void KSynchronizationObject::Finalize() {

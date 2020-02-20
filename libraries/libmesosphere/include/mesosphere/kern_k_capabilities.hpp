@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_k_thread.hpp>
 #include <mesosphere/kern_select_page_table.hpp>
 #include <mesosphere/kern_svc.hpp>
 
@@ -208,10 +209,22 @@ namespace ams::kern {
             util::BitPack32 intended_kernel_version;
             u32 program_type{};
         private:
+            static constexpr ALWAYS_INLINE void SetSvcAllowedImpl(u8 *data, u32 id) {
+                constexpr size_t BitsPerWord = BITSIZEOF(*data);
+                MESOSPHERE_ASSERT(id < svc::SvcId_Count);
+                data[id / BitsPerWord] |= (1ul << (id % BitsPerWord));
+            }
+
+            static constexpr ALWAYS_INLINE void ClearSvcAllowedImpl(u8 *data, u32 id) {
+                constexpr size_t BitsPerWord = BITSIZEOF(*data);
+                MESOSPHERE_ASSERT(id < svc::SvcId_Count);
+                data[id / BitsPerWord] &= ~(1ul << (id % BitsPerWord));
+            }
+
             bool SetSvcAllowed(u32 id) {
                 constexpr size_t BitsPerWord = BITSIZEOF(this->svc_access_flags[0]);
                 if (id < BITSIZEOF(this->svc_access_flags)) {
-                    this->svc_access_flags[id / BitsPerWord] = (1ul << (id % BitsPerWord));
+                    SetSvcAllowedImpl(this->svc_access_flags, id);
                     return true;
                 } else {
                     return false;
@@ -248,6 +261,19 @@ namespace ams::kern {
 
             constexpr u64 GetCoreMask() const { return this->core_mask; }
             constexpr u64 GetPriorityMask() const { return this->priority_mask; }
+            constexpr s32 GetHandleTableSize() const { return this->handle_table_size; }
+
+            ALWAYS_INLINE void CopySvcPermissionsTo(KThread::StackParameters &sp) const {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                std::memcpy(sp.svc_permission, this->svc_access_flags, sizeof(this->svc_access_flags));
+
+                /* Clear specific SVCs based on our state. */
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
+                if (sp.is_preemption_state_pinned) {
+                    ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
 
             /* TODO: Member functions. */
     };

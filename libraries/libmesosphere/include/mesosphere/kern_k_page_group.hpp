@@ -111,12 +111,15 @@ namespace ams::kern {
 
     class KScopedPageGroup {
         private:
-            KPageGroup *group;
+            const KPageGroup *group;
         public:
-            explicit ALWAYS_INLINE KScopedPageGroup(KPageGroup *gp) : group(gp) { group->Open(); }
-            explicit ALWAYS_INLINE KScopedPageGroup(KPageGroup &gp) : KScopedPageGroup(std::addressof(gp)) { /* ... */ }
-            ALWAYS_INLINE ~KScopedPageGroup() { group->Close(); }
+            explicit ALWAYS_INLINE KScopedPageGroup(const KPageGroup *gp) : group(gp) { if (this->group) { this->group->Open(); } }
+            explicit ALWAYS_INLINE KScopedPageGroup(const KPageGroup &gp) : KScopedPageGroup(std::addressof(gp)) { /* ... */ }
+            ALWAYS_INLINE ~KScopedPageGroup() { if (this->group) { this->group->Close(); } }
 
+            ALWAYS_INLINE void CancelClose() {
+                this->group = nullptr;
+            }
     };
 
 }

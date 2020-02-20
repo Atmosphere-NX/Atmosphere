@@ -197,6 +197,7 @@ namespace ams::kern {
                     this->obj->Open();
                 }
             }
+
             ALWAYS_INLINE ~KScopedAutoObject() {
                 if (this->obj != nullptr) {
                     this->obj->Close();

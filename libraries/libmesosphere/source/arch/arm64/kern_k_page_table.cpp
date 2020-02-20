@@ -184,8 +184,20 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
-    Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup *page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
-        MESOSPHERE_TODO_IMPLEMENT();
+    Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) {
+        /* Check validity of parameters. */
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
+        MESOSPHERE_ASSERT(num_pages > 0);
+        MESOSPHERE_ASSERT(num_pages == page_group.GetNumPages());
+
+        /* Map the page group. */
+        auto entry_template = this->GetEntryTemplate(properties);
+        switch (operation) {
+            case OperationType_MapGroup:
+                return this->MapGroup(virt_addr, page_group, num_pages, entry_template, page_list, reuse_ll);
+            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+        }
     }
 
     Result KPageTable::Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
@@ -510,6 +522,7 @@ namespace ams::kern::arch::arm64 {
                 }
             }
 
+            /* We successfully mapped, so cancel our guard. */
             map_guard.Cancel();
         }
 
@@ -524,6 +537,50 @@ namespace ams::kern::arch::arm64 {
             Kernel::GetMemoryManager().Open(GetHeapVirtualAddress(orig_phys_addr), num_pages);
         }
 
+        return ResultSuccess();
+    }
+
+    Result KPageTable::MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* We want to maintain a new reference to every page in the group. */
+        KScopedPageGroup spg(pg);
+
+        /* Cache initial address for use on cleanup. */
+        const KProcessAddress  orig_virt_addr = virt_addr;
+
+        size_t mapped_pages = 0;
+
+        /* Map the pages, using a guard to ensure we don't leak. */
+        {
+            auto map_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(this->Unmap(orig_virt_addr, num_pages, page_list, true, true)); };
+
+            if (num_pages < ContiguousPageSize / PageSize) {
+                for (const auto &block : pg) {
+                    const KPhysicalAddress block_phys_addr = GetLinearPhysicalAddress(block.GetAddress());
+                    const size_t cur_pages = block.GetNumPages();
+                    R_TRY(this->Map(virt_addr, block_phys_addr, cur_pages, entry_template, L3BlockSize, page_list, reuse_ll));
+
+                    virt_addr    += cur_pages * PageSize;
+                    mapped_pages += cur_pages;
+                }
+            } else {
+                MESOSPHERE_TODO("Large page group map");
+            }
+
+            /* We successfully mapped, so cancel our guard. */
+            map_guard.Cancel();
+        }
+        MESOSPHERE_ASSERT(mapped_pages == num_pages);
+
+        /* Perform what coalescing we can. */
+        this->MergePages(orig_virt_addr, page_list);
+        if (num_pages > 1) {
+            this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
+        }
+
+        /* We succeeded! We want to persist the reference to the pages. */
+        spg.CancelClose();
         return ResultSuccess();
     }
 

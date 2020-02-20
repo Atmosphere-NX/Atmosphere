@@ -97,7 +97,7 @@ namespace ams::kern::arch::arm64 {
             u8 asid;
         protected:
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup *page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
+            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
             virtual void   FinalizeUpdate(PageLinkedList *page_list) override;
 
             KPageTableManager &GetPageTableManager() const { return *this->manager; }
@@ -201,6 +201,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+            Result MapGroup(KProcessAddress virt_addr, const KPageGroup &pg, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
 
             bool MergePages(KProcessAddress virt_addr, PageLinkedList *page_list);
 

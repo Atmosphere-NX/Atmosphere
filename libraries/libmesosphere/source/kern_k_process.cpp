@@ -222,6 +222,122 @@ namespace ams::kern {
         return static_cast<u8 *>(tlp->GetPointer()) + (GetInteger(addr) & (PageSize - 1));
     }
 
+    void KProcess::IncrementThreadCount() {
+        MESOSPHERE_ASSERT(this->num_threads >= 0);
+        ++this->num_created_threads;
+
+        if (const auto count = ++this->num_threads; count > this->peak_num_threads) {
+            this->peak_num_threads = count;
+        }
+    }
+
+    void KProcess::DecrementThreadCount() {
+        MESOSPHERE_ASSERT(this->num_threads > 0);
+
+        if (const auto count = --this->num_threads; count == 0) {
+            MESOSPHERE_TODO("this->Terminate();");
+        }
+    }
+
+    void KProcess::RegisterThread(KThread *thread) {
+        KScopedLightLock lk(this->list_lock);
+
+        this->thread_list.push_back(*thread);
+    }
+
+    void KProcess::UnregisterThread(KThread *thread) {
+        KScopedLightLock lk(this->list_lock);
+
+        this->thread_list.erase(this->thread_list.iterator_to(*thread));
+    }
+
+    Result KProcess::Run(s32 priority, size_t stack_size) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Lock ourselves, to prevent concurrent access. */
+        KScopedLightLock lk(this->lock);
+
+        /* Validate that we're in a state where we can initialize. */
+        const auto state = this->state;
+        R_UNLESS(state == State_Created || state == State_CreatedAttached, svc::ResultInvalidState());
+
+        /* Place a tentative reservation of a thread for this process. */
+        KScopedResourceReservation thread_reservation(this, ams::svc::LimitableResource_ThreadCountMax);
+        R_UNLESS(thread_reservation.Succeeded(), svc::ResultLimitReached());
+
+        /* Ensure that we haven't already allocated stack. */
+        MESOSPHERE_ABORT_UNLESS(this->main_thread_stack_size == 0);
+
+        /* Ensure that we're allocating a valid stack. */
+        stack_size = util::AlignUp(stack_size, PageSize);
+        R_UNLESS(stack_size + this->code_size <= this->max_process_memory, svc::ResultOutOfMemory());
+        R_UNLESS(stack_size + this->code_size >= this->code_size,          svc::ResultOutOfMemory());
+
+        /* Place a tentative reservation of memory for our new stack. */
+        KScopedResourceReservation mem_reservation(this, ams::svc::LimitableResource_PhysicalMemoryMax);
+        R_UNLESS(mem_reservation.Succeeded(), svc::ResultLimitReached());
+
+        /* Allocate and map our stack. */
+        KProcessAddress stack_top = Null<KProcessAddress>;
+        if (stack_size) {
+            KProcessAddress stack_bottom;
+            R_TRY(this->page_table.MapPages(std::addressof(stack_bottom), stack_size / PageSize, KMemoryState_Stack, KMemoryPermission_UserReadWrite));
+
+            stack_top = stack_bottom + stack_size;
+            this->main_thread_stack_size = stack_size;
+        }
+
+        /* Ensure our stack is safe to clean up on exit. */
+        auto stack_guard = SCOPE_GUARD {
+            if (this->main_thread_stack_size) {
+                MESOSPHERE_R_ABORT_UNLESS(this->page_table.UnmapPages(stack_top - this->main_thread_stack_size, this->main_thread_stack_size / PageSize, KMemoryState_Stack));
+                this->main_thread_stack_size = 0;
+            }
+        };
+
+        /* Set our maximum heap size. */
+        R_TRY(this->page_table.SetMaxHeapSize(this->max_process_memory - (this->main_thread_stack_size + this->code_size)));
+
+        /* Initialize our handle table. */
+        R_TRY(this->handle_table.Initialize(this->capabilities.GetHandleTableSize()));
+        auto ht_guard = SCOPE_GUARD { this->handle_table.Finalize(); };
+
+        /* Create a new thread for the process. */
+        KThread *main_thread = KThread::Create();
+        R_UNLESS(main_thread != nullptr, svc::ResultOutOfResource());
+        auto thread_guard = SCOPE_GUARD { main_thread->Close(); };
+
+        /* Initialize the thread. */
+        R_TRY(KThread::InitializeUserThread(main_thread, reinterpret_cast<KThreadFunction>(GetVoidPointer(this->GetEntryPoint())), 0, stack_top, priority, this->ideal_core_id, this));
+
+        /* Register the thread, and commit our reservation. */
+        KThread::Register(main_thread);
+        thread_reservation.Commit();
+
+        /* Add the thread to our handle table. */
+        ams::svc::Handle thread_handle;
+        R_TRY(this->handle_table.Add(std::addressof(thread_handle), main_thread));
+
+        /* Set the thread arguments. */
+        main_thread->GetContext().SetArguments(0, thread_handle);
+
+        /* Update our state. */
+        this->ChangeState((state == State_Created) ? State_Running : State_RunningAttached);
+        auto state_guard = SCOPE_GUARD { this->ChangeState(state); };
+
+        /* Run our thread. */
+        R_TRY(main_thread->Run());
+
+        /* We succeeded! Cancel our guards. */
+        state_guard.Cancel();
+        thread_guard.Cancel();
+        ht_guard.Cancel();
+        stack_guard.Cancel();
+        mem_reservation.Commit();
+
+        return ResultSuccess();
+    }
+
     void KProcess::SetPreemptionState() {
         MESOSPHERE_TODO_IMPLEMENT();
     }

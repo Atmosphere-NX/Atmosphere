@@ -73,8 +73,8 @@ namespace ams::kern {
                 public:
                     explicit Iterator(BaseIterator it) : base_it(it) { /* ... */ }
 
-                    T *GetItem() const {
-                        static_cast<pointer>(this->base_it->GetItem());
+                    pointer GetItem() const {
+                        return static_cast<pointer>(this->base_it->GetItem());
                     }
 
                     bool operator==(const Iterator &rhs) const {

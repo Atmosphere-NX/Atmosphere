@@ -132,16 +132,39 @@ namespace ams::kern {
 
             constexpr bool Is64Bit() const { return this->flags & ams::svc::CreateProcessFlag_Is64Bit; }
 
+            constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
+
+            constexpr bool IsSuspended() const {
+                return this->is_suspended;
+            }
+
             KThread *GetPreemptionStatePinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 return this->pinned_threads[core_id];
             }
 
+            void CopySvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopySvcPermissionsTo(sp);
+            }
+
+            constexpr KResourceLimit *GetResourceLimit() const { return this->resource_limit; }
+
             constexpr KProcessPageTable &GetPageTable() { return this->page_table; }
             constexpr const KProcessPageTable &GetPageTable() const { return this->page_table; }
 
+            constexpr KHandleTable &GetHandleTable() { return this->handle_table; }
+            constexpr const KHandleTable &GetHandleTable() const { return this->handle_table; }
+
             Result CreateThreadLocalRegion(KProcessAddress *out);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
+
+            void IncrementThreadCount();
+            void DecrementThreadCount();
+
+            void RegisterThread(KThread *thread);
+            void UnregisterThread(KThread *thread);
+
+            Result Run(s32 priority, size_t stack_size);
 
             void SetPreemptionState();
         public:
@@ -161,6 +184,14 @@ namespace ams::kern {
             }
 
             virtual void DoWorkerTask() override;
+        private:
+            void ChangeState(State new_state) {
+                if (this->state != new_state) {
+                    this->state = new_state;
+                    this->is_signaled = true;
+                    this->NotifyAvailable();
+                }
+            }
     };
 
 }

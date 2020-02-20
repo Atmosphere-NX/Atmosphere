@@ -87,7 +87,7 @@ namespace ams::kern {
                 u8 current_svc_id;
                 bool is_calling_svc;
                 bool is_in_exception_handler;
-                bool has_exception_svc_perms;
+                bool is_preemption_state_pinned;
                 s32 disable_count;
                 KThreadContext *context;
             };
@@ -198,7 +198,9 @@ namespace ams::kern {
                 return InitializeThread(thread, func, arg, Null<KProcessAddress>, 0, GetCurrentCoreId(), nullptr, ThreadType_HighPriority);
             }
 
-            /* TODO: static Result InitializeUserThread */
+            static Result InitializeUserThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner) {
+                return InitializeThread(thread, func, arg, user_stack_top, prio, core, owner, ThreadType_User);
+            }
         private:
             StackParameters &GetStackParameters() {
                 return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
@@ -267,8 +269,8 @@ namespace ams::kern {
         public:
             constexpr u64 GetThreadId() const { return this->thread_id; }
 
-            constexpr KThreadContext *GetContext() { return std::addressof(this->thread_context); }
-            constexpr const KThreadContext *GetContext() const { return std::addressof(this->thread_context); }
+            constexpr KThreadContext &GetContext() { return this->thread_context; }
+            constexpr const KThreadContext &GetContext() const { return this->thread_context; }
             constexpr const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return this->thread_state; }
@@ -303,6 +305,11 @@ namespace ams::kern {
             constexpr void SetAddressKey(KProcessAddress key) { this->arbiter_key = key; }
             constexpr void SetLockOwner(KThread *owner) { this->lock_owner = owner; }
             constexpr KThread *GetLockOwner() const { return this->lock_owner; }
+
+            constexpr void SetSyncedObject(KSynchronizationObject *obj, Result wait_res) {
+                this->synced_object = obj;
+                this->wait_result = wait_res;
+            }
 
             bool HasWaiters() const { return !this->waiter_list.empty(); }
 

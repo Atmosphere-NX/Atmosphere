@@ -26,6 +26,7 @@ namespace ams::kern {
     KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
     KBlockInfoManager       Kernel::s_block_info_manager;
     KSupervisorPageTable    Kernel::s_supervisor_page_table;
+    KSynchronization        Kernel::s_synchronization;
     KWorkerTaskManager      Kernel::s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
 
     namespace {

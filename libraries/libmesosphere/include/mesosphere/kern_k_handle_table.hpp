@@ -18,6 +18,7 @@
 #include <mesosphere/kern_k_auto_object.hpp>
 #include <mesosphere/kern_k_spin_lock.hpp>
 #include <mesosphere/kern_k_thread.hpp>
+#include <mesosphere/kern_k_interrupt_event.hpp>
 
 namespace ams::kern {
 
@@ -98,7 +99,7 @@ namespace ams::kern {
 
                 /* Initialize all fields. */
                 this->table = this->entries;
-                this->table_size = (size <= 0) ? MaxTableSize : table_size;
+                this->table_size = (size <= 0) ? MaxTableSize : size;
                 this->next_linear_id = MinLinearId;
                 this->count = 0;
                 this->max_count = 0;
@@ -136,10 +137,10 @@ namespace ams::kern {
 
             template<typename T = KAutoObject>
             ALWAYS_INLINE KScopedAutoObject<T> GetObjectForIpc(ams::svc::Handle handle) const {
-                /* TODO: static_assert(!std::is_base_of<KInterruptEvent, T>::value); */
+                static_assert(!std::is_base_of<KInterruptEvent, T>::value);
 
                 KAutoObject *obj = this->GetObjectImpl(handle);
-                if (false /* TODO: obj->DynamicCast<KInterruptEvent *>() != nullptr */) {
+                if (obj->DynamicCast<KInterruptEvent *>() != nullptr) {
                     return nullptr;
                 }
                 if constexpr (std::is_same<T, KAutoObject>::value) {

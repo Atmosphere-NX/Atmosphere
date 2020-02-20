@@ -185,7 +185,7 @@ namespace ams::kern {
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const;
         protected:
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
-            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup *page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
+            virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
             virtual void   FinalizeUpdate(PageLinkedList *page_list) = 0;
 
             KPageTableImpl &GetImpl() { return this->impl; }
@@ -247,6 +247,8 @@ namespace ams::kern {
 
             Result SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
             Result SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
+            Result SetHeapSize(KProcessAddress *out, size_t size);
+            Result SetMaxHeapSize(size_t size);
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);
@@ -257,6 +259,10 @@ namespace ams::kern {
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KMemoryState state, KMemoryPermission perm) {
                 return this->MapPages(out_addr, num_pages, alignment, phys_addr, true, this->GetRegionAddress(state), this->GetRegionSize(state) / PageSize, state, perm);
+            }
+
+            Result MapPages(KProcessAddress *out_addr, size_t num_pages, KMemoryState state, KMemoryPermission perm) {
+                return this->MapPages(out_addr, num_pages, PageSize, Null<KPhysicalAddress>, false, this->GetRegionAddress(state), this->GetRegionSize(state) / PageSize, state, perm);
             }
 
             Result UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state);

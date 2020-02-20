@@ -137,6 +137,12 @@ namespace ams::kern::arch::arm64 {
         return ResultSuccess();
     }
 
+    void KThreadContext::SetArguments(uintptr_t arg0, uintptr_t arg1) {
+        u64 *stack = reinterpret_cast<u64 *>(this->sp);
+        stack[0] = arg0;
+        stack[1] = arg1;
+    }
+
     void KThreadContext::FpuContextSwitchHandler(KThread *thread) {
         MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
         MESOSPHERE_ASSERT(!IsFpuEnabled());
@@ -148,9 +154,9 @@ namespace ams::kern::arch::arm64 {
         KProcess *process = thread->GetOwnerProcess();
         MESOSPHERE_ASSERT(process != nullptr);
         if (process->Is64Bit()) {
-            RestoreFpuRegisters64(*thread->GetContext());
+            RestoreFpuRegisters64(thread->GetContext());
         } else {
-            RestoreFpuRegisters32(*thread->GetContext());
+            RestoreFpuRegisters32(thread->GetContext());
         }
     }
 

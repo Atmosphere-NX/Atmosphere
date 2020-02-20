@@ -154,8 +154,8 @@ namespace ams::kern {
 
         /* Setup the TLS, if needed. */
         if (type == ThreadType_User) {
-            MESOSPHERE_TODO("R_TRY(owner->CreateThreadLocalRegion(&this->tls_address));");
-            MESOSPHERE_TODO("this->tls_heap_address = owner->GetThreadLocalRegionAddress(this->tls_address);");
+            R_TRY(owner->CreateThreadLocalRegion(std::addressof(this->tls_address)));
+            this->tls_heap_address = owner->GetThreadLocalRegionPointer(this->tls_address);
             std::memset(this->tls_heap_address, 0, ams::svc::ThreadLocalRegionSize);
         }
 
@@ -163,7 +163,7 @@ namespace ams::kern {
         if (owner != nullptr) {
             this->parent = owner;
             this->parent->Open();
-            MESOSPHERE_TODO("this->parent->IncrementThreadCount();");
+            this->parent->IncrementThreadCount();
         }
 
         /* Initialize thread context. */
@@ -176,7 +176,7 @@ namespace ams::kern {
         /* Setup the stack parameters. */
         StackParameters &sp = this->GetStackParameters();
         if (this->parent != nullptr) {
-            MESOSPHERE_TODO("this->parent->CopySvcPermissionTo(sp.svc_permission);");
+            this->parent->CopySvcPermissionsTo(sp);
         }
         sp.context = std::addressof(this->thread_context);
         sp.disable_count = 1;
@@ -190,8 +190,10 @@ namespace ams::kern {
 
         /* Register ourselves with our parent process. */
         if (this->parent != nullptr) {
-            MESOSPHERE_TODO("this->parent->RegisterThread(this);");
-            MESOSPHERE_TODO("if (this->parent->IsSuspended()) { this->RequestSuspend(SuspendType_Process);");
+            this->parent->RegisterThread(this);
+            if (this->parent->IsSuspended()) {
+                this->RequestSuspend(SuspendType_Process);
+            }
         }
 
         return ResultSuccess();
@@ -559,7 +561,7 @@ namespace ams::kern {
     }
 
     KThreadContext *KThread::GetContextForSchedulerLoop() {
-        return std::addressof(this->thread_context);
+        return std::addressof(this->GetContext());
     }
 
 }

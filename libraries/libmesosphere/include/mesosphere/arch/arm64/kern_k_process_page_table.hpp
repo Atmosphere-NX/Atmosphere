@@ -39,6 +39,14 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.SetProcessMemoryPermission(addr, size, perm);
             }
 
+            Result SetHeapSize(KProcessAddress *out, size_t size) {
+                return this->page_table.SetHeapSize(out, size);
+            }
+
+            Result SetMaxHeapSize(size_t size) {
+                return this->page_table.SetMaxHeapSize(size);
+            }
+
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
                 return this->page_table.MapIo(phys_addr, size, perm);
             }
@@ -57,6 +65,10 @@ namespace ams::kern::arch::arm64 {
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KMemoryState state, KMemoryPermission perm) {
                 return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, state, perm);
+            }
+
+            Result MapPages(KProcessAddress *out_addr, size_t num_pages, KMemoryState state, KMemoryPermission perm) {
+                return this->page_table.MapPages(out_addr, num_pages, state, perm);
             }
 
             Result UnmapPages(KProcessAddress addr, size_t num_pages, KMemoryState state) {

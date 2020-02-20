@@ -34,6 +34,7 @@ namespace ams::kern {
     class KPageTableManager;
     class KMemoryBlockSlabManager;
     class KBlockInfoManager;
+    class KSynchronization;
 
 
 
@@ -70,6 +71,7 @@ namespace ams::kern {
             static KMemoryBlockSlabManager s_sys_memory_block_manager;
             static KBlockInfoManager s_block_info_manager;
             static KSupervisorPageTable s_supervisor_page_table;
+            static KSynchronization s_synchronization;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
@@ -136,6 +138,10 @@ namespace ams::kern {
 
             static ALWAYS_INLINE KSupervisorPageTable &GetKernelPageTable() {
                 return s_supervisor_page_table;
+            }
+
+            static ALWAYS_INLINE KSynchronization &GetSynchronization() {
+                return s_synchronization;
             }
 
             static ALWAYS_INLINE KWorkerTaskManager &GetWorkerTaskManager(KWorkerTaskManager::WorkerType type) {
