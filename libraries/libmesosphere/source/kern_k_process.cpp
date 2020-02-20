@@ -222,6 +222,34 @@ namespace ams::kern {
         return static_cast<u8 *>(tlp->GetPointer()) + (GetInteger(addr) & (PageSize - 1));
     }
 
+    bool KProcess::ReserveResource(ams::svc::LimitableResource which, s64 value) {
+        if (KResourceLimit *rl = this->GetResourceLimit(); rl != nullptr) {
+            return rl->Reserve(which, value);
+        } else {
+            return true;
+        }
+    }
+
+    bool KProcess::ReserveResource(ams::svc::LimitableResource which, s64 value, s64 timeout) {
+        if (KResourceLimit *rl = this->GetResourceLimit(); rl != nullptr) {
+            return rl->Reserve(which, value, timeout);
+        } else {
+            return true;
+        }
+    }
+
+    void KProcess::ReleaseResource(ams::svc::LimitableResource which, s64 value) {
+        if (KResourceLimit *rl = this->GetResourceLimit(); rl != nullptr) {
+            rl->Release(which, value);
+        }
+    }
+
+    void KProcess::ReleaseResource(ams::svc::LimitableResource which, s64 value, s64 hint) {
+        if (KResourceLimit *rl = this->GetResourceLimit(); rl != nullptr) {
+            rl->Release(which, value, hint);
+        }
+    }
+
     void KProcess::IncrementThreadCount() {
         MESOSPHERE_ASSERT(this->num_threads >= 0);
         ++this->num_created_threads;
@@ -334,6 +362,9 @@ namespace ams::kern {
         ht_guard.Cancel();
         stack_guard.Cancel();
         mem_reservation.Commit();
+
+        /* Note for debug that we're running a new process. */
+        MESOSPHERE_LOG("KProcess::Run() pid=%ld name=%-12s thread=%ld affinity=0x%lx ideal_core=%d active_core=%d\n", this->process_id, this->name, main_thread->GetId(), main_thread->GetAffinityMask().GetAffinityMask(), main_thread->GetIdealCore(), main_thread->GetActiveCore());
 
         return ResultSuccess();
     }

@@ -149,6 +149,11 @@ namespace ams::kern {
 
             constexpr KResourceLimit *GetResourceLimit() const { return this->resource_limit; }
 
+            bool ReserveResource(ams::svc::LimitableResource which, s64 value);
+            bool ReserveResource(ams::svc::LimitableResource which, s64 value, s64 timeout);
+            void ReleaseResource(ams::svc::LimitableResource which, s64 value);
+            void ReleaseResource(ams::svc::LimitableResource which, s64 value, s64 hint);
+
             constexpr KProcessPageTable &GetPageTable() { return this->page_table; }
             constexpr const KProcessPageTable &GetPageTable() const { return this->page_table; }
 
@@ -157,6 +162,9 @@ namespace ams::kern {
 
             Result CreateThreadLocalRegion(KProcessAddress *out);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
+
+            void AddCpuTime(s64 diff) { this->cpu_time += diff; }
+            void IncrementScheduledCount() { ++this->schedule_count; }
 
             void IncrementThreadCount();
             void DecrementThreadCount();
@@ -167,6 +175,18 @@ namespace ams::kern {
             Result Run(s32 priority, size_t stack_size);
 
             void SetPreemptionState();
+
+            static void Switch(KProcess *cur_process, KProcess *next_process) {
+                /* Set the current process pointer. */
+                SetCurrentProcess(next_process);
+
+                /* Update the current page table. */
+                if (next_process) {
+                    next_process->GetPageTable().Activate(next_process->GetProcessId());
+                } else {
+                    Kernel::GetKernelPageTable().Activate();
+                }
+            }
         public:
             /* Overridden parent functions. */
             virtual bool IsInitialized() const override { return this->is_initialized; }

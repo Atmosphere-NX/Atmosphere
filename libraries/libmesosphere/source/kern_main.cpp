@@ -122,7 +122,8 @@ namespace ams::kern {
             /* We're done initializing! */
             Kernel::SetState(Kernel::State::Initialized);
 
-            MESOSPHERE_TODO("KThread::ResumeThreadsSuspendedForInit();");
+            /* Resume all threads suspended while we initialized. */
+            KThread::ResumeThreadsSuspendedForInit();
         }
         cpu::SynchronizeAllCores();
 

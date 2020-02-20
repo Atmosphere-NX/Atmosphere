@@ -201,6 +201,8 @@ namespace ams::kern {
             static Result InitializeUserThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner) {
                 return InitializeThread(thread, func, arg, user_stack_top, prio, core, owner, ThreadType_User);
             }
+
+            static void ResumeThreadsSuspendedForInit();
         private:
             StackParameters &GetStackParameters() {
                 return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
@@ -280,6 +282,7 @@ namespace ams::kern {
 
             constexpr uintptr_t GetConditionVariableKey() const { return this->condvar_key; }
 
+            constexpr s32 GetIdealCore() const { return this->ideal_core_id; }
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }
             constexpr s32 GetPriority() const { return this->priority; }
@@ -332,6 +335,7 @@ namespace ams::kern {
             constexpr u32 GetSuspendFlags() const { return this->suspend_allowed_flags & this->suspend_request_flags; }
             constexpr bool IsSuspended() const { return this->GetSuspendFlags() != 0; }
             void RequestSuspend(SuspendType type);
+            void Resume(SuspendType type);
             void TrySuspend();
             void Continue();
 

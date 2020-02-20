@@ -232,12 +232,23 @@ namespace ams::kern {
     void KThread::PostDestroy(uintptr_t arg) {
         KProcess *owner = reinterpret_cast<KProcess *>(arg & ~1ul);
         const bool resource_limit_release_hint = (arg & 1);
+        const s64 hint_value = (resource_limit_release_hint ? 0 : 1);
         if (owner != nullptr) {
-            MESOSPHERE_TODO("Release from owner resource limit.");
-            (void)(resource_limit_release_hint);
+            owner->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 1, hint_value);
             owner->Close();
         } else {
-            MESOSPHERE_TODO("Release from system resource limit.");
+            Kernel::GetSystemResourceLimit().Release(ams::svc::LimitableResource_ThreadCountMax, 1, hint_value);
+        }
+    }
+
+    void KThread::ResumeThreadsSuspendedForInit() {
+        KThread::ListAccessor list_accessor;
+        {
+            KScopedSchedulerLock sl;
+
+            for (auto &thread : list_accessor) {
+                static_cast<KThread &>(thread).Resume(SuspendType_Init);
+            }
         }
     }
 
@@ -310,6 +321,8 @@ namespace ams::kern {
     Result KThread::SetPriorityToIdle() {
         MESOSPHERE_ASSERT_THIS();
 
+        KScopedSchedulerLock sl;
+
         /* Change both our priorities to the idle thread priority. */
         const s32 old_priority = this->priority;
         this->priority      = IdleThreadPriority;
@@ -325,10 +338,26 @@ namespace ams::kern {
         KScopedSchedulerLock lk;
 
         /* Note the request in our flags. */
-        this->suspend_request_flags |= (1 << (ThreadState_SuspendShift + type));
+        this->suspend_request_flags |= (1u << (ThreadState_SuspendShift + type));
 
         /* Try to perform the suspend. */
         this->TrySuspend();
+    }
+
+    void KThread::Resume(SuspendType type) {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock sl;
+
+        /* Clear the request in our flags. */
+        this->suspend_request_flags &= ~(1u << (ThreadState_SuspendShift + type));
+
+        /* Update our state. */
+        const ThreadState old_state = this->thread_state;
+        this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        if (this->thread_state != old_state) {
+            KScheduler::OnThreadStateChanged(this, old_state);
+        }
     }
 
     void KThread::TrySuspend() {

@@ -28,7 +28,19 @@ namespace ams::kern::arch::arm64 {
             constexpr KSupervisorPageTable() : page_table(), ttbr0() { /* ... */ }
 
             NOINLINE void Initialize(s32 core_id);
-            NOINLINE void Activate();
+
+            void Activate() {
+                /* Activate, using process id = 0xFFFFFFFF */
+                this->page_table.Activate(0xFFFFFFFF);
+            }
+
+            void ActivateForInit() {
+                this->Activate();
+
+                /* Invalidate entire TLB. */
+                cpu::InvalidateEntireTlb();
+            }
+
             void Finalize(s32 core_id);
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {

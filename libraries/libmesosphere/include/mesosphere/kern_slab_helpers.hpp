@@ -65,6 +65,12 @@ namespace ams::kern {
                 s_slab_heap.Free(obj);
             }
         public:
+            class ListAccessor : public KAutoObjectWithListContainer::ListAccessor {
+                public:
+                    ALWAYS_INLINE ListAccessor() : KAutoObjectWithListContainer::ListAccessor(s_container) { /* ... */ }
+                    ALWAYS_INLINE ~ListAccessor() { /* ... */ }
+            };
+        public:
             constexpr KAutoObjectWithSlabHeapAndContainer() : Base() { /* ... */ }
             virtual ~KAutoObjectWithSlabHeapAndContainer() { /* ... */ }
 

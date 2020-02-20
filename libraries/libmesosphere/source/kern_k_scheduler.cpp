@@ -38,7 +38,7 @@ namespace ams::kern {
 
         ALWAYS_INLINE void IncrementScheduledCount(KThread *thread) {
             if (KProcess *parent = thread->GetOwnerProcess(); parent != nullptr) {
-                MESOSPHERE_TODO("parent->IncrementScheduledCount();");
+                parent->IncrementScheduledCount();
             }
         }
 
@@ -234,7 +234,7 @@ namespace ams::kern {
         const s64 tick_diff = cur_tick - prev_tick;
         cur_thread->AddCpuTime(tick_diff);
         if (cur_process != nullptr) {
-            MESOSPHERE_TODO("cur_process->AddCpuTime(tick_diff);");
+            cur_process->AddCpuTime(tick_diff);
         }
         this->last_context_switch_time = cur_tick;
 
@@ -252,7 +252,7 @@ namespace ams::kern {
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
-            MESOSPHERE_TODO("KProcess::Switch");
+            KProcess::Switch(cur_process, next_process);
         }
 
         /* Set the new thread. */
