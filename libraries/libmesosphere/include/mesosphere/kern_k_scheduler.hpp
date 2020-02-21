@@ -88,13 +88,14 @@ namespace ams::kern {
             static ALWAYS_INLINE void SetSchedulerUpdateNeeded() { s_scheduler_update_needed = true; }
             static ALWAYS_INLINE void ClearSchedulerUpdateNeeded() { s_scheduler_update_needed = false; }
             static ALWAYS_INLINE KSchedulerPriorityQueue &GetPriorityQueue() { return s_priority_queue; }
-            static NOINLINE void SetInterruptTaskThreadRunnable();
 
             static NOINLINE u64 UpdateHighestPriorityThreadsImpl();
         public:
             /* Static public API. */
             static ALWAYS_INLINE bool CanSchedule() { return GetCurrentThread().GetDisableDispatchCount() == 0; }
             static ALWAYS_INLINE bool IsSchedulerLockedByCurrentThread() { return s_scheduler_lock.IsLockedByCurrentThread(); }
+
+            static NOINLINE void SetInterruptTaskThreadRunnable();
 
             static ALWAYS_INLINE void DisableScheduling() {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 0);

@@ -306,7 +306,7 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE Member *GetScheduledFront(s32 core, s32 priority) const {
-                return this->scheduled_queue.GetFront(core, priority);
+                return this->scheduled_queue.GetFront(priority, core);
             }
 
             constexpr ALWAYS_INLINE Member *GetSuggestedFront(s32 core) const {
@@ -314,7 +314,7 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE Member *GetSuggestedFront(s32 core, s32 priority) const {
-                return this->suggested_queue.GetFront(core, priority);
+                return this->suggested_queue.GetFront(priority, core);
             }
 
             constexpr ALWAYS_INLINE Member *GetScheduledNext(s32 core, const Member *member) const {

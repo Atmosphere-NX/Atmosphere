@@ -345,6 +345,8 @@ namespace ams::kern {
                 }
             }
 
+            void Wakeup();
+
             Result SetPriorityToIdle();
 
             Result Run();

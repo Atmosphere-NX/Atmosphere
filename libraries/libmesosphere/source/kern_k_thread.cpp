@@ -260,8 +260,24 @@ namespace ams::kern {
         return this->signaled;
     }
 
+    void KThread::Wakeup() {
+        MESOSPHERE_ASSERT_THIS();
+        KScopedSchedulerLock sl;
+
+        if (this->GetState() == ThreadState_Waiting) {
+            if (this->sleeping_queue != nullptr) {
+                this->sleeping_queue->WakeupThread(this);
+            } else {
+                this->SetState(ThreadState_Runnable);
+            }
+        }
+    }
+
     void KThread::OnTimer() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        this->Wakeup();
     }
 
     void KThread::DoWorkerTask() {

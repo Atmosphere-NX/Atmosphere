@@ -89,7 +89,9 @@ namespace ams::kern {
     void KInterruptTaskManager::EnqueueTask(KInterruptTask *task) {
         MESOSPHERE_ASSERT(!KInterruptManager::AreInterruptsEnabled());
 
-        MESOSPHERE_TODO_IMPLEMENT();
+        /* Enqueue the task and signal the scheduler. */
+        this->task_queue.Enqueue(task);
+        Kernel::GetScheduler().SetInterruptTaskThreadRunnable();
     }
 
 }
