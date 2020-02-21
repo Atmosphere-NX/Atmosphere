@@ -50,6 +50,9 @@ namespace ams::hvisor {
 
             bool ApplyOrRevert(size_t id, bool apply);
 
+        private:
+            constexpr SwBreakpointManager() = default;
+
         public:
             int Add(uintptr_t addr, bool persistent);
             int Remove(uintptr_t addr, bool keepPersistent);
@@ -60,7 +63,5 @@ namespace ams::hvisor {
             {
                 IrqManager::GetInstance().Register(*this, IrqManager::ApplyRevertSwBreakpointSgi, false);
             }
-        public: 
-            constexpr SwBreakpointManager() = default;
     };
 }

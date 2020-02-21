@@ -26,11 +26,11 @@ namespace ams::hvisor {
             bool FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t, cpu::DebugRegisterPair::LoadStoreControl) const final;
             void Reload() const final;
 
+        private:
+            constexpr HwBreakpointManager() : HwStopPointManager(MAX_BCR, IrqManager::ReloadHwBreakpointsSgi) {}
+
         public:
             int Add(uintptr_t addr);
             int Remove(uintptr_t addr);
-
-        public:
-            constexpr HwBreakpointManager() : HwStopPointManager(MAX_BCR, IrqManager::ReloadHwBreakpointsSgi) {}
     };
 }

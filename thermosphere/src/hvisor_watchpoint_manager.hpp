@@ -26,6 +26,9 @@ namespace ams::hvisor {
             bool FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction) const final;
             void Reload() const final;
 
+        private:
+            constexpr WatchpointManager() : HwStopPointManager(MAX_WCR, IrqManager::ReloadWatchpointsSgi) {}
+
         public:
             virtual void ReloadOnAllCores() const;
             static void ReloadOnAllCoresSgiHandler();
@@ -33,8 +36,5 @@ namespace ams::hvisor {
             cpu::DebugRegisterPair RetrieveWatchpointConfig(uintptr_t addr, cpu::DebugRegisterPair::LoadStoreControl direction) const;
             int Add(uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction);
             int Remove(uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction);
-
-        public:
-            constexpr WatchpointManager() : HwStopPointManager(MAX_WCR, IrqManager::ReloadWatchpointsSgi) {}
     };
 }

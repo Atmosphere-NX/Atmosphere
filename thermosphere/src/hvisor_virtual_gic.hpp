@@ -366,6 +366,9 @@ namespace ams::hvisor {
                 void PushListRegisters(VirqState *chosen[], size_t num);
                 bool UpdateListRegister(volatile GicV2VirtualInterfaceController::ListRegister *lr);
 
+            private:
+                constexpr VirtualGic() = default;
+
             public:
                 static bool ValidateGicdRegisterAccess(size_t offset, size_t sz);
             public:

@@ -79,6 +79,9 @@ namespace ams::hvisor {
             void InitializeGic();
             void DoConfigureInterrupt(u32 id, u8 prio, bool isLevelSensitive);
 
+        private:
+            constexpr IrqManager() = default;
+
         public:
             enum ThermosphereSgi : u32 {
                 VgicUpdateSgi = 0,
@@ -109,9 +112,6 @@ namespace ams::hvisor {
             void Initialize();
             void Register(IInterruptTask &task, u32 id, bool isLevelSensitive, u8 prio = IrqManager::hostPriority);
             void SetInterruptAffinity(u32 id, u8 affinityMask);
-
-        public:
-            constexpr IrqManager() = default;
     };
 
 }
