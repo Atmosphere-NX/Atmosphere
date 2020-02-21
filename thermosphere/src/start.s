@@ -25,8 +25,8 @@ _start:
     b       start
     b       start2
 
-.global g_initialKernelEntrypoint
-g_initialKernelEntrypoint:
+.global _ZN3ams6hvisor11CoreContext23initialKernelEntrypointE
+_ZN3ams6hvisor11CoreContext23initialKernelEntrypointE:
     .quad   0
 
 start:
