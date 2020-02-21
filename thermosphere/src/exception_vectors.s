@@ -79,15 +79,15 @@
 
 .macro PIVOT_STACK_FOR_CRASH
     // Note: replace sp_el1 with crashing sp (for convenience)
-    // The way we do things means that exception stack ptr won't be reset on double fault
     // (sp_el2 is not accessible at el2)
     msr     spsel, #0
-    str     x0, [sp, #-0x10]
-    msr     spsel, #1
+    stp     x0, x1, [sp, #-0x10]
     mov     x0, sp
-    msr     sp_el1, x0
-    msr     spsel, #0
-    ldr     x0, [sp, #-0x10]
+    msr     spsel, #1
+    mov     x1, sp
+    mov     sp, x0
+    msr     sp_el1, x1
+    ldp     x0, x1, [sp, #-0x10]
 .endm
 
 #define     EXCEPTION_TYPE_HOST            0
