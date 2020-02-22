@@ -116,9 +116,10 @@ namespace ams::kern::svc {
             private:
                 using Traits = KUserPointerImplTraits<_T>;
             protected:
-                using T = typename std::remove_const<typename std::remove_pointer<_T>::type>::type;
+                using CT = typename std::remove_pointer<_T>::type;
+                using T  = typename std::remove_const<CT>::type;
             private:
-                _T *ptr;
+                CT *ptr;
             private:
                 Result CopyToImpl(void *p, size_t size) const {
                     return Traits::CopyFromUserspace(p, this->ptr, size);
@@ -138,6 +139,8 @@ namespace ams::kern::svc {
                 Result CopyArrayFrom(const T *arr, size_t count) const { return this->CopyFromImpl(arr, sizeof(*arr) * count); }
 
                 constexpr bool IsNull() const { return this->ptr == nullptr; }
+
+                constexpr CT *GetUnsafePointer() const { return this->ptr; }
         };
 
         template<>
@@ -145,7 +148,8 @@ namespace ams::kern::svc {
             private:
                 using Traits = KUserPointerImplTraits<const char *>;
             protected:
-                using T = char;
+                using CT = const char;
+                using T  = char;
             private:
                 const char *ptr;
             protected:
@@ -160,6 +164,8 @@ namespace ams::kern::svc {
                 }
 
                 constexpr bool IsNull() const { return this->ptr == nullptr; }
+
+                constexpr const char *GetUnsafePointer() const { return this->ptr; }
         };
 
     }
@@ -176,6 +182,8 @@ namespace ams::kern::svc {
             using impl::KUserPointerImpl<T>::CopyArrayElementTo;
             using impl::KUserPointerImpl<T>::CopyArrayTo;
             using impl::KUserPointerImpl<T>::IsNull;
+
+            using impl::KUserPointerImpl<T>::GetUnsafePointer;
     };
 
     template<typename T> /* requires impl::NonConstPointer<T> */
@@ -187,6 +195,8 @@ namespace ams::kern::svc {
             using impl::KUserPointerImpl<T>::CopyArrayElementFrom;
             using impl::KUserPointerImpl<T>::CopyArrayFrom;
             using impl::KUserPointerImpl<T>::IsNull;
+
+            using impl::KUserPointerImpl<T>::GetUnsafePointer;
     };
 
     template<>
@@ -197,6 +207,8 @@ namespace ams::kern::svc {
             using impl::KUserPointerImpl<const char *>::CopyStringTo;
             using impl::KUserPointerImpl<const char *>::CopyArrayElementTo;
             using impl::KUserPointerImpl<const char *>::IsNull;
+
+            using impl::KUserPointerImpl<const char *>::GetUnsafePointer;
     };
 
 }
