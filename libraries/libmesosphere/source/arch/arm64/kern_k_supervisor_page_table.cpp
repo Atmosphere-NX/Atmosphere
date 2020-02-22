@@ -40,6 +40,6 @@ namespace ams::kern::arch::arm64 {
     }
 
     void KSupervisorPageTable::Finalize(s32 core_id) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 }

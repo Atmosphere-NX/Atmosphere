@@ -26,7 +26,7 @@ namespace ams::kern {
     }
 
     void KProcess::Finalize() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params) {
@@ -153,7 +153,7 @@ namespace ams::kern {
     }
 
     void KProcess::DoWorkerTask() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KProcess::CreateThreadLocalRegion(KProcessAddress *out) {
@@ -370,7 +370,7 @@ namespace ams::kern {
     }
 
     void KProcess::SetPreemptionState() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
 }

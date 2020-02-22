@@ -291,7 +291,7 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     void KSystemControl::ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     /* Randomness. */

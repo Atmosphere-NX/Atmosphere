@@ -18,7 +18,7 @@
 namespace ams::kern {
 
     void KWaitObject::OnTimer() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
 }

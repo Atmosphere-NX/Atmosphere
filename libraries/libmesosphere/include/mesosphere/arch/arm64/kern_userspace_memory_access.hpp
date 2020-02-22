@@ -36,6 +36,7 @@ namespace ams::kern::arch::arm64 {
 
             static bool ClearMemory(void *dst, size_t size);
             static bool ClearMemoryAligned32Bit(void *dst, size_t size);
+            static bool ClearMemoryAligned64Bit(void *dst, size_t size);
             static bool ClearMemorySize32Bit(void *dst);
 
             static bool StoreDataCache(uintptr_t start, uintptr_t end);

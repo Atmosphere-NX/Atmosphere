@@ -212,7 +212,7 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KPageTable::Finalize() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {

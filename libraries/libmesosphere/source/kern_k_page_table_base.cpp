@@ -686,7 +686,7 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KPageTableBase::SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
@@ -750,7 +750,7 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::SetHeapSize(KProcessAddress *out, size_t size) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KPageTableBase::SetMaxHeapSize(size_t size) {
@@ -867,11 +867,11 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KPageTableBase::MapRegion(KMemoryRegionType region_type, KMemoryPermission perm) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KPageTableBase::MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, bool is_pa_valid, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
@@ -915,7 +915,7 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state) {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KPageTableBase::MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {

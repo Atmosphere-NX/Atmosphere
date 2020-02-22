@@ -28,11 +28,9 @@ namespace ams::kern {
             const uintptr_t stack_bottom = stack_top - PageSize;
 
             KPhysicalAddress stack_paddr = Null<KPhysicalAddress>;
-            MESOSPHERE_TODO("MESOSPHERE_ABORT_UNLESS(Kernel::GetSupervisorPageTable().GetPhysicalAddress(&stack_paddr, stack_bottom));");
-            (void)stack_bottom;
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetKernelPageTable().GetPhysicalAddress(&stack_paddr, stack_bottom));
 
-            MESOSPHERE_TODO("MESOSPHERE_R_ABORT_UNLESS(Kernel::GetSupervisorPageTable().Unmap(...);");
-            (void)stack_paddr;
+            MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().UnmapPages(stack_bottom, 1, KMemoryState_Kernel));
 
             /* Free the stack page. */
             KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(stack_paddr));
@@ -253,7 +251,7 @@ namespace ams::kern {
     }
 
     void KThread::Finalize() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     bool KThread::IsSignaled() const {
@@ -281,7 +279,7 @@ namespace ams::kern {
     }
 
     void KThread::DoWorkerTask() {
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     void KThread::DisableCoreMigration() {
@@ -588,7 +586,7 @@ namespace ams::kern {
     void KThread::Exit() {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
 
         MESOSPHERE_PANIC("KThread::Exit() would return");
     }

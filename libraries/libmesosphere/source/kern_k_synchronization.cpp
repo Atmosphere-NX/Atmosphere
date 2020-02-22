@@ -20,7 +20,7 @@ namespace ams::kern {
     Result KSynchronization::Wait(s32 *out_index, KSynchronizationObject **objects, const s32 num_objects, s64 timeout) {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_TODO_IMPLEMENT();
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     void KSynchronization::OnAvailable(KSynchronizationObject *object) {

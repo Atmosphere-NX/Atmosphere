@@ -66,7 +66,7 @@ namespace ams::kern {
 #endif
 
 #define MESOSPHERE_TODO(arg) ({ constexpr const char *__mesosphere_todo = arg; static_cast<void>(__mesosphere_todo); MESOSPHERE_PANIC("TODO (%s): %s\n", __PRETTY_FUNCTION__, __mesosphere_todo); })
-#define MESOSPHERE_TODO_IMPLEMENT() MESOSPHERE_TODO("Implement")
+#define MESOSPHERE_UNIMPLEMENTED() MESOSPHERE_PANIC("%s: Unimplemented\n", __PRETTY_FUNCTION__)
 
 #define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()\n");
 #define MESOSPHERE_INIT_ABORT() do { /* ... */ } while (true)
