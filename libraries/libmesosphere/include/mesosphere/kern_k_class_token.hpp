@@ -64,10 +64,10 @@ namespace ams::kern {
             static constexpr inline TokenBaseType GetClassToken() {
                 static_assert(std::is_base_of<KAutoObject, T>::value);
                 if constexpr (std::is_same<T, KAutoObject>::value) {
-                    static_assert(T::ObjectType == ObjectType::BaseClassesStart);
-                    return BaseClassToken<0>;
+                    static_assert(T::ObjectType == ObjectType::KAutoObject);
+                    return 0;
                 } else if constexpr (!std::is_final<T>::value) {
-                    static_assert(ObjectType::BaseClassesStart < T::ObjectType && T::ObjectType < ObjectType::BaseClassesEnd);
+                    static_assert(ObjectType::BaseClassesStart <= T::ObjectType && T::ObjectType < ObjectType::BaseClassesEnd);
                     constexpr auto ClassIndex = static_cast<TokenBaseType>(T::ObjectType) - static_cast<TokenBaseType>(ObjectType::BaseClassesStart);
                     return BaseClassToken<ClassIndex> | GetClassToken<typename T::BaseClass>();
                 } else if constexpr (ObjectType::FinalClassesStart <= T::ObjectType && T::ObjectType < ObjectType::FinalClassesEnd) {
@@ -79,10 +79,11 @@ namespace ams::kern {
             };
         public:
             enum class ObjectType {
-                BaseClassesStart = 0,
+                KAutoObject,
 
-                KAutoObject = BaseClassesStart,
-                KSynchronizationObject,
+                BaseClassesStart,
+
+                KSynchronizationObject = BaseClassesStart,
                 KReadableEvent,
 
                 BaseClassesEnd,
