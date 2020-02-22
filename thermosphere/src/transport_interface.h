@@ -17,7 +17,7 @@
 #pragma once
 
 #include "utils.h"
-#include "spinlock.h"
+//#include "spinlock.h"
 
 #define MAX_TRANSPORT_INTERFACES    4
 
