@@ -19,7 +19,7 @@
 namespace ams::impl {
 
     template<typename... ArgTypes>
-    ALWAYS_INLINE void UnusedImpl(ArgTypes... args) {
+    constexpr ALWAYS_INLINE void UnusedImpl(ArgTypes... args) {
         (static_cast<void>(args), ...);
     }
 

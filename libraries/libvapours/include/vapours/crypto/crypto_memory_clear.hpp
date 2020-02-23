@@ -21,6 +21,6 @@
 
 namespace ams::crypto {
 
-    bool IsSameBytes(const void *lhs, const void *rhs, size_t size);
+    void ClearMemory(void *mem, size_t size);
 
 }

@@ -14,6 +14,8 @@ CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit -flto
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
 
+SOURCES     += $(call ALL_SOURCE_DIRS,../libvapours/source)
+
 LIBS        :=
 
 #---------------------------------------------------------------------------------

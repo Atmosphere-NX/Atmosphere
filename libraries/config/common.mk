@@ -76,17 +76,12 @@ TARGET       := $(notdir $(CURDIR))
 BUILD        := build
 DATA         := data
 INCLUDES     := include
-SOURCES      ?= source $(foreach d,$(filter-out source/arch source/board source,$(wildcard source/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
 
-ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
-SOURCES += source/$(ATMOSPHERE_ARCH_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_ARCH_DIR))
-endif
-ifneq ($(strip $(wildcard source/$(ATMOSPHERE_BOARD_DIR)/.*)),)
-SOURCES += source/$(ATMOSPHERE_BOARD_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_BOARD_DIR))
-endif
-ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)/.*)),)
-SOURCES += source/$(ATMOSPHERE_OS_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
-endif
+GENERAL_SOURCE_DIRS=$1 $(foreach d,$(filter-out $1/arch $1/board $1,$(wildcard $1/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
+SPECIFIC_SOURCE_DIRS=$(if $(wildcard $1/$2/.*),$1/$2 $(call DIR_WILDCARD,$1/$2),)
+ALL_SOURCE_DIRS=$(call GENERAL_SOURCE_DIRS,$1) $(call SPECIFIC_SOURCE_DIRS,$1,$(ATMOSPHERE_ARCH_DIR)) $(call SPECIFIC_SOURCE_DIRS,$1,$(ATMOSPHERE_BOARD_DIR)) $(call SPECIFIC_SOURCE_DIRS,$1,$(ATMOSPHERE_OS_DIR))
+
+SOURCES      ?= $(call ALL_SOURCE_DIRS,source)
 
 #---------------------------------------------------------------------------------
 # Rules for compiling pre-compiled headers

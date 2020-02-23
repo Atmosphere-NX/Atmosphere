@@ -24,10 +24,8 @@ namespace ams::svc {
     /* TODO: C++ style handle? */
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
     using Handle = ::Handle;
-#elif defined ATMOSPHERE_IS_MESOSPHERE
-    using Handle = u32;
 #else
-    #error "Unknown target for svc::Handle"
+    using Handle = u32;
 #endif
 
     static constexpr size_t MaxWaitSynchronizationHandleCount = 0x40;

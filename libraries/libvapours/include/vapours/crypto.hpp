@@ -18,3 +18,5 @@
 #include <vapours/defines.hpp>
 
 #include <vapours/crypto/crypto_memory_compare.hpp>
+#include <vapours/crypto/crypto_memory_clear.hpp>
+#include <vapours/crypto/impl/crypto_bignum.hpp>

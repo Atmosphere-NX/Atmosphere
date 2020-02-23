@@ -13,14 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/util.hpp>
+#include <vapours.hpp>
 
 namespace ams::crypto {
 
-    bool IsSameBytes(const void *lhs, const void *rhs, size_t size);
+    void ClearMemory(void *_mem, size_t size) {
+        volatile u8 *mem = reinterpret_cast<volatile u8 *>(_mem);
+
+        for (size_t i = 0; i < size; i++) {
+            mem[i] = 0;
+        }
+    }
 
 }

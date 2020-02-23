@@ -13,14 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <vapours.hpp>
 
-#pragma once
-#include <vapours/defines.hpp>
-#include <vapours/util.hpp>
+namespace ams::crypto {
 
-namespace ams::crypto::impl {
-
-    inline bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
+    bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
         bool result;
         u8 xor_acc, ltmp, rtmp;
         size_t index;
