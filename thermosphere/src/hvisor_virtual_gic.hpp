@@ -17,7 +17,6 @@
 #pragma once
 
 #include "defines.hpp"
-#include "exceptions.h"
 #include "cpu/hvisor_cpu_exception_sysregs.hpp"
 #include "hvisor_irq_manager.hpp"
 #include "memory_map.h"

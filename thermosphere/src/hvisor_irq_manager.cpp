@@ -233,7 +233,7 @@ namespace ams::hvisor {
 
         if (taskForBottomHalf != nullptr) {
             // Unmasking the irq signal is left at the discretion of the bottom half handler
-            exceptionEnterInterruptibleHypervisorCode();
+            EnterInterruptibleHypervisorCode();
             taskForBottomHalf->InterruptBottomHalfHandler(irqId, srcCore);
         }
     }

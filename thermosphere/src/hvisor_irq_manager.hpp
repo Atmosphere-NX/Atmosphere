@@ -19,10 +19,10 @@
 #include "hvisor_gicv2.hpp"
 #include "hvisor_synchronization.hpp"
 #include "hvisor_i_interrupt_task.hpp"
+#include "hvisor_exception_stack_frame.hpp"
+#include "cpu/hvisor_cpu_sysreg_general.hpp"
 
 #include "memory_map.h"
-
-#include "exceptions.h" // TODO
 
 namespace ams::hvisor {
 
@@ -104,6 +104,13 @@ namespace ams::hvisor {
             static void GenerateSgiForAllOthers(ThermosphereSgi id)
             {
                 gicd->sgir = GicV2Distributor::ForwardToAllOthers << 24 | id;
+            }
+
+            static void EnterInterruptibleHypervisorCode()
+            {
+                // We don't want the guest to spam us with its timer interrupts. Disable the timers.
+                THERMOSPHERE_SET_SYSREG(cntp_ctl_el0, 0);
+                THERMOSPHERE_SET_SYSREG(cntv_ctl_el0, 0);
             }
 
             static void HandleInterrupt(ExceptionStackFrame *frame);
