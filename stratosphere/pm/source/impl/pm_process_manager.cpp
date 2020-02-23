@@ -196,6 +196,7 @@ namespace ams::pm::impl {
         os::SystemEvent g_boot_finished_event;
 
         /* Process Launch synchronization globals. */
+        os::Mutex g_launch_program_lock;
         os::Event g_process_launch_start_event;
         os::Event g_process_launch_finish_event;
         Result g_process_launch_result = ResultSuccess();
@@ -469,8 +470,7 @@ namespace ams::pm::impl {
     /* Process Management. */
     Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 flags) {
         /* Ensure we only try to launch one program at a time. */
-        static os::Mutex s_lock;
-        std::scoped_lock lk(s_lock);
+        std::scoped_lock lk(g_launch_program_lock);
 
         /* Set global arguments, signal, wait. */
         g_process_launch_args = {
