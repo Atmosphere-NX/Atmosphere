@@ -15,7 +15,6 @@
  */
 
 #include "hvisor_cpu_caches.hpp"
-#include "../core_ctx.h"
 
 #define DEFINE_CACHE_RANGE_FUNC(isn, name, cache, post)\
 void name(const void *addr, size_t size)\

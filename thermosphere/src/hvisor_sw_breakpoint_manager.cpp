@@ -15,6 +15,7 @@
  */
 
 #include "hvisor_sw_breakpoint_manager.hpp"
+#include "hvisor_core_context.hpp"
 #include "cpu/hvisor_cpu_instructions.hpp"
 #include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 
@@ -84,7 +85,7 @@ namespace ams::hvisor {
     bool SwBreakpointManager::ApplyOrRevert(size_t id, bool apply)
     {
         cpu::InterruptMaskGuard mg{};
-        m_applyBarrier.Reset(getActiveCoreMask());
+        m_applyBarrier.Reset(CoreContext::GetActiveCoreMask());
         IrqManager::GenerateSgiForAllOthers(IrqManager::ApplyRevertSwBreakpointSgi);
         if (apply) {
             DoApply(id);

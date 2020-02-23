@@ -17,13 +17,13 @@
 #pragma once
 
 #include "defines.hpp"
-#include "core_ctx.h"
+#include "hvisor_core_context.hpp"
 
 namespace ams::hvisor {
 
     class FpuRegisterCache final {
         SINGLETON_WITH_ATTRS(FpuRegisterCache, TEMPORARY);
-        private:
+        public:
             struct Storage {
                 u128 q[32];
                 u64 fpsr;
@@ -44,19 +44,25 @@ namespace ams::hvisor {
         public:
             constexpr void TakeOwnership()
             {
-                if (m_coreId != currentCoreCtx->coreId) {
+                if (m_coreId != currentCoreCtx->GetCoreId()) {
                     m_valid = false;
                     m_dirty = false;
                 }
-                m_coreId = currentCoreCtx->coreId;
+                m_coreId = currentCoreCtx->GetCoreId();
             }
 
-            void ReadRegisters()
+            Storage &GetStorageRef()
+            {
+                return m_storage;
+            }
+
+            Storage &ReadRegisters()
             {
                 if (!m_valid) {
                     DumpRegisters(&m_storage);
                     m_valid = true;
                 }
+                return m_storage;
             }
 
             constexpr void CommitRegisters()
@@ -68,7 +74,7 @@ namespace ams::hvisor {
 
             void CleanInvalidate()
             {
-                if (m_dirty && m_coreId == currentCoreCtx->coreId) {
+                if (m_dirty && m_coreId == currentCoreCtx->GetCoreId()) {
                     ReloadRegisters(&m_storage);
                     m_dirty = false;
                 }

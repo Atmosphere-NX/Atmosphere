@@ -24,7 +24,6 @@
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
-#include "../core_ctx.h"
 #include "../guest_memory.h"
 
 namespace ams::hvisor::gdb {

@@ -15,7 +15,7 @@
  */
 
 #include "hvisor_synchronization.hpp"
-#include "core_ctx.h"
+#include "hvisor_core_context.hpp"
 
 namespace ams::hvisor {
 
@@ -46,7 +46,7 @@ namespace ams::hvisor {
 
     void Barrier::Join()
     {
-        const u32 mask = BIT(currentCoreCtx->coreId);
+        const u32 mask = BIT(currentCoreCtx->GetCoreId());
         u32 newval, tmp;
         __asm__ __volatile__(
             "prfm   pstl1keep, %[val]                   \n"
@@ -75,7 +75,7 @@ namespace ams::hvisor {
 
     void RecursiveSpinlock::lock()
     {
-        u32 tag = currentCoreCtx->coreId + 1;
+        u32 tag = currentCoreCtx->GetCoreId() + 1;
         if (AMS_LIKELY(tag != m_tag)) {
             m_spinlock.lock();
             m_tag = tag;

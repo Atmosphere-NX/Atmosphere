@@ -28,7 +28,7 @@
 #define ENSURE2(expr, msg, ...)\
 do {\
     if (UNLIKELY(!(expr))) {\
-        PANIC("EL2 [core %u]: " __FILE__ ":" STRINGIZE(__LINE__) ": " msg, currentCoreCtx->coreId, ##__VA_ARGS__);\
+        PANIC("EL2 [core %u]: " __FILE__ ":" STRINGIZE(__LINE__) ": " msg, currentCoreCtx->GetCoreId(), ##__VA_ARGS__);\
     }\
 } while (false)
 

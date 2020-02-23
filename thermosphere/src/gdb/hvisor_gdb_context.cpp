@@ -25,10 +25,12 @@
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
-#include "../breakpoints.h"
-#include "../software_breakpoints.h"
-#include "../watchpoints.h"
-#include "../fpu.h"
+#include "../hvisor_hw_breakpoint_manager.hpp"
+#include "../hvisor_sw_breakpoint_manager.hpp"
+#include "../hvisor_watchpoint_manager.hpp"
+
+#include "../hvisor_fpu_register_cache.hpp"
+
 #include "../debug_manager.h"
 
 namespace {
@@ -67,7 +69,7 @@ namespace ams::hvisor::gdb {
     {
         // TODO: move the debug traps enable here?
 
-        m_attachedCoreList = getActiveCoreMask();
+        m_attachedCoreList = CoreContext::GetActiveCoreMask();
 
         // We're in full-stop mode at this point
         // Break cores, but don't send the debug event (it will be fetched with '?')
@@ -78,7 +80,7 @@ namespace ams::hvisor::gdb {
 
         BreakAllCores();
 
-        DebugEventInfo *info = debugManagerGetDebugEvent(currentCoreCtx->coreId);
+        DebugEventInfo *info = debugManagerGetDebugEvent(currentCoreCtx->GetCoreId());
         info->preprocessed = true;
         info->handled = true;
         m_lastDebugEvent = info;
@@ -90,9 +92,9 @@ namespace ams::hvisor::gdb {
 
     void Context::Detach()
     {
-        removeAllWatchpoints();
-        removeAllBreakpoints();
-        removeAllSoftwareBreakpoints(true);
+        WatchpointManager::GetInstance().RemoveAll();
+        HwBreakpointManager::GetInstance().RemoveAll();
+        SwBreakpointManager::GetInstance().RemoveAll(true);
 
         // Reports to gdb are prevented because of "detaching" state?
 
@@ -102,12 +104,12 @@ namespace ams::hvisor::gdb {
         memset(&m_currentHioRequest, 0, sizeof(PackedGdbHioRequest));
 
         debugManagerSetReportingEnabled(false);
-        debugManagerContinueCores(getActiveCoreMask());
+        debugManagerContinueCores(CoreContext::GetActiveCoreMask());
     }
 
     void Context::MigrateRxIrq(u32 coreId) const
     {
-        fpuCleanInvalidateRegisterCache();
+        FpuRegisterCache::GetInstance().CleanInvalidate();
         //transportInterfaceSetInterruptAffinity(ctx->transportInterface, BIT(coreId));
     }
 

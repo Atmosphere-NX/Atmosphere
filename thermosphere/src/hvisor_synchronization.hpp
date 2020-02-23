@@ -18,7 +18,6 @@
 
 #include "defines.hpp"
 
-
 namespace ams::hvisor {
 
     class Spinlock final {

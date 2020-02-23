@@ -17,6 +17,7 @@
 #pragma once
 
 #include "defines.hpp"
+#include "hvisor_core_context.hpp"
 #include "cpu/hvisor_cpu_exception_sysregs.hpp"
 #include "hvisor_irq_manager.hpp"
 #include "memory_map.h"
@@ -233,7 +234,7 @@ namespace ams::hvisor {
             private:
                 static void NotifyOtherCoreList(u32 coreList)
                 {
-                    coreList &= ~BIT(currentCoreCtx->coreId);
+                    coreList &= ~BIT(currentCoreCtx->GetCoreId());
                     if (coreList != 0) {
                         IrqManager::GenerateSgiForList(IrqManager::VgicUpdateSgi, coreList);
                     }
@@ -273,7 +274,7 @@ namespace ams::hvisor {
                     }
                 }
 
-                VirqState &GetVirqState(u32 id) { return GetVirqState(currentCoreCtx->coreId, id); }
+                VirqState &GetVirqState(u32 id) { return GetVirqState(currentCoreCtx->GetCoreId(), id); }
 
                 void SetDistributorControlRegister(u32 value)
                 {
@@ -315,17 +316,17 @@ namespace ams::hvisor {
                 bool GetInterruptEnabledState(u32 id)
                 {
                     // SGIs are always enabled
-                    return id < 16 || (IrqManager::IsGuestInterrupt(id) && GetVirqState(currentCoreCtx->coreId, id).enabled);
+                    return id < 16 || (IrqManager::IsGuestInterrupt(id) && GetVirqState(currentCoreCtx->GetCoreId(), id).enabled);
                 }
 
                 u8 GetInterruptPriorityByte(u32 id)
                 {
-                    return IrqManager::IsGuestInterrupt(id) ? GetVirqState(currentCoreCtx->coreId, id).priority << priorityShift : 0;
+                    return IrqManager::IsGuestInterrupt(id) ? GetVirqState(currentCoreCtx->GetCoreId(), id).priority << priorityShift : 0;
                 }
 
                 u8 GetInterruptTargets(u16 id)
                 {
-                    return id < 32 || (IrqManager::IsGuestInterrupt(id) && GetVirqState(currentCoreCtx->coreId, id).targetList);
+                    return id < 32 || (IrqManager::IsGuestInterrupt(id) && GetVirqState(currentCoreCtx->GetCoreId(), id).targetList);
                 }
 
                 u32 GetInterruptConfigBits(u16 id)
@@ -357,7 +358,7 @@ namespace ams::hvisor {
                     if (ff == 0) {
                         return nullptr;
                     } else {
-                        m_usedLrMap[currentCoreCtx->coreId] |= BITL(ff - 1);
+                        m_usedLrMap[currentCoreCtx->GetCoreId()] |= BITL(ff - 1);
                         return &gich->lr[ff - 1];
                     }
                 }

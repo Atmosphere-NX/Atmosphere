@@ -161,7 +161,7 @@ namespace ams::hvisor {
         VirqState &state = GetVirqState(id);
         if (state.IsPending()) {
             u8 oldList = state.targetList;
-            u8 diffList = (oldList ^ coreList) & getActiveCoreMask();
+            u8 diffList = (oldList ^ coreList) & CoreContext::GetActiveCoreMask();
             if (diffList != 0) {
                 NotifyOtherCoreList(diffList);
             }
@@ -211,20 +211,20 @@ namespace ams::hvisor {
                 break;
             case GicV2Distributor::ForwardToAllOthers:
                 // Forward to all but current core
-                coreList = ~BIT(currentCoreCtx->coreId);
+                coreList = ~BIT(currentCoreCtx->GetCoreId());
                 break;
             case GicV2Distributor::ForwardToSelf:
                 // Forward to current core only
-                coreList = BIT(currentCoreCtx->coreId);
+                coreList = BIT(currentCoreCtx->GetCoreId());
                 break;
             default:
                 DEBUG("Emulated GCID_SGIR: invalid TargetListFilter value!\n");
                 return;
         }
 
-        coreList &= getActiveCoreMask();
+        coreList &= CoreContext::GetActiveCoreMask();
         for (u32 dstCore: util::BitsOf{coreList}) {
-            SetSgiPendingState(id, dstCore, currentCoreCtx->coreId);
+            SetSgiPendingState(id, dstCore, currentCoreCtx->GetCoreId());
         }
     }
 
@@ -466,12 +466,12 @@ namespace ams::hvisor {
     {
         size_t numChosen = 0;
         auto pred = [](const VirqState &state) {
-            if (state.irqId < 32 && state.coreId != currentCoreCtx->coreId) {
+            if (state.irqId < 32 && state.coreId != currentCoreCtx->GetCoreId()) {
                 // We can't handle SGIs/PPIs of other cores.
                 return false;
             }
 
-            return state.enabled  && (state.irqId < 32 || (state.targetList & BIT(currentCoreCtx->coreId)) != 0);
+            return state.enabled  && (state.irqId < 32 || (state.targetList & BIT(currentCoreCtx->GetCoreId())) != 0);
         };
 
         for (VirqState &state: m_virqPendingQueue) {
@@ -482,7 +482,7 @@ namespace ams::hvisor {
 
         for (size_t i = 0; i < numChosen; i++) {
             chosen[i]->handled = true;
-            chosen[i]->coreId = currentCoreCtx->coreId;
+            chosen[i]->coreId = currentCoreCtx->GetCoreId();
             m_virqPendingQueue.erase(*chosen[i]);
         }
     }
@@ -536,7 +536,7 @@ namespace ams::hvisor {
         ENSURE(state.handled);
 
         u32 srcCoreId = state.coreId;
-        u32 coreId = currentCoreCtx->coreId;
+        u32 coreId = currentCoreCtx->GetCoreId();
 
         state.active = lrCopy.active;
 
@@ -598,7 +598,7 @@ namespace ams::hvisor {
     void VirtualGic::UpdateState()
     {
         GicV2VirtualInterfaceController::HypervisorControlRegister hcr = { .raw = gich->hcr.raw };
-        u32 coreId = currentCoreCtx->coreId;
+        u32 coreId = currentCoreCtx->GetCoreId();
 
         // First, put back inactive interrupts into the queue, handle some SGI stuff
         // Need to handle the LRs in reverse order to keep list stability
@@ -651,29 +651,29 @@ namespace ams::hvisor {
         }
 
         if (misr.vgrp0e) {
-            DEBUG("EL2 [core %d]: Group 0 enabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+            DEBUG("EL2 [core %d]: Group 0 enabled maintenance interrupt\n", (int)currentCoreCtx->GetCoreId());
             gich->hcr.vgrp0eie = false;
             gich->hcr.vgrp0die = true;
         } else if (misr.vgrp0d) {
-            DEBUG("EL2 [core %d]: Group 0 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+            DEBUG("EL2 [core %d]: Group 0 disabled maintenance interrupt\n", (int)currentCoreCtx->GetCoreId());
             gich->hcr.vgrp0eie = true;
             gich->hcr.vgrp0die = false;
         }
 
         // Already handled the following 2 above:
         if (misr.vgrp1e) {
-            DEBUG("EL2 [core %d]: Group 1 enabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+            DEBUG("EL2 [core %d]: Group 1 enabled maintenance interrupt\n", (int)currentCoreCtx->GetCoreId());
         }
         if (misr.vgrp1d) {
-            DEBUG("EL2 [core %d]: Group 1 disabled maintenance interrupt\n", (int)currentCoreCtx->coreId);
+            DEBUG("EL2 [core %d]: Group 1 disabled maintenance interrupt\n", (int)currentCoreCtx->GetCoreId());
         }
 
         if (misr.eoi) {
-            //DEBUG("EL2 [core %d]: SGI EOI maintenance interrupt\n", currentCoreCtx->coreId);
+            //DEBUG("EL2 [core %d]: SGI EOI maintenance interrupt\n", currentCoreCtx->GetCoreId());
         }
 
         if (misr.u) {
-            //DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->coreId);
+            //DEBUG("EL2 [core %d]: Underflow maintenance interrupt\n", currentCoreCtx->GetCoreId());
         }
 
         ENSURE2(!misr.lrenp, "List Register Entry Not Present maintenance interrupt!\n");
@@ -691,7 +691,7 @@ namespace ams::hvisor {
 
     void VirtualGic::Initialize()
     {
-        if (currentCoreCtx->isBootCore) {
+        if (currentCoreCtx->IsBootCore()) {
             m_virqPendingQueue.Initialize(m_virqStates.data());
             m_numListRegisters = static_cast<u8>(1 + (gich->vtr & 0x3F));
 

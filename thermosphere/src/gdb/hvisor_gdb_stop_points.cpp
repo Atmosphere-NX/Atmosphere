@@ -24,9 +24,10 @@
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
-#include "../breakpoints.h"
-#include "../software_breakpoints.h"
-#include "../watchpoints.h"
+#include "../hvisor_hw_breakpoint_manager.hpp"
+#include "../hvisor_sw_breakpoint_manager.hpp"
+#include "../hvisor_watchpoint_manager.hpp"
+
 
 namespace ams::hvisor::gdb {
 
@@ -46,11 +47,15 @@ namespace ams::hvisor::gdb {
         // In theory we should reject leading zeroes in "kind". Oh well...
 
         int res;
-        static const WatchpointLoadStoreControl kinds[3] = {
-            WatchpointLoadStoreControl_Store,
-            WatchpointLoadStoreControl_Load,
-            WatchpointLoadStoreControl_LoadStore,
+        static const cpu::DebugRegisterPair::LoadStoreControl kinds[3] = {
+            cpu::DebugRegisterPair::Store,
+            cpu::DebugRegisterPair::Load,
+            cpu::DebugRegisterPair::LoadStore,
         };
+
+        auto &hwBpMgr = HwBreakpointManager::GetInstance();
+        auto &swBpMgr = SwBreakpointManager::GetInstance();
+        auto &wpMgr = WatchpointManager::GetInstance();
 
         switch(kind) {
             // Software breakpoint
@@ -58,7 +63,7 @@ namespace ams::hvisor::gdb {
                 if(size != 4) {
                     return ReplyErrno(EINVAL);
                 }
-                res = add ? addSoftwareBreakpoint(addr, persist) : removeSoftwareBreakpoint(addr, false);
+                res = add ? swBpMgr.Add(addr, persist) : swBpMgr.Remove(addr, false);
                 return res == 0 ? ReplyOk() : ReplyErrno(-res);
             }
 
@@ -67,7 +72,7 @@ namespace ams::hvisor::gdb {
                 if(size != 4) {
                     return ReplyErrno(EINVAL);
                 }
-                res = add ? addBreakpoint(addr) : removeBreakpoint(addr);
+                res = add ? hwBpMgr.Add(addr) : hwBpMgr.Remove(addr);
                 return res == 0 ? ReplyOk() : ReplyErrno(-res);
             }
 
@@ -75,7 +80,7 @@ namespace ams::hvisor::gdb {
             case 2:
             case 3:
             case 4: {
-                res = add ? addWatchpoint(addr, size, kinds[kind - 2]) : removeWatchpoint(addr, size, kinds[kind - 2]);
+                res = add ? wpMgr.Add(addr, size, kinds[kind - 2]) : wpMgr.Remove(addr, size, kinds[kind - 2]);
                 return res == 0 ? ReplyOk() : ReplyErrno(-res);
             }
             default: {

@@ -18,10 +18,10 @@
 
 #include "hvisor_irq_manager.hpp"
 #include "hvisor_virtual_gic.hpp"
+#include "hvisor_core_context.hpp"
 
 #include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 #include "platform/interrupt_config.h"
-#include "core_ctx.h"
 #include "guest_timers.h"
 #include "transport_interface.h"
 #include "timer.h"
@@ -79,7 +79,7 @@ namespace ams::hvisor {
     void IrqManager::InitializeGic()
     {
         // Reinits the GICD and GICC (for non-secure mode, obviously)
-        if (currentCoreCtx->isBootCore && !currentCoreCtx->warmboot) {
+        if (currentCoreCtx->IsBootCore() && currentCoreCtx->IsColdboot()) {
             // Disable interrupt handling & global interrupt distribution
             gicd->ctlr = 0;
 
@@ -97,7 +97,7 @@ namespace ams::hvisor {
         // Only one core will reset the GIC state for the shared peripheral interrupts
 
         u32 numInterrupts = 32;
-        if (currentCoreCtx->isBootCore) {
+        if (currentCoreCtx->IsBootCore()) {
             numInterrupts += m_numSharedInterrupts;
         }
 
@@ -133,7 +133,7 @@ namespace ams::hvisor {
         // Now, reenable interrupts
 
         // Enable the distributor
-        if (currentCoreCtx->isBootCore) {
+        if (currentCoreCtx->IsBootCore()) {
             gicd->ctlr = 1;
         }
 

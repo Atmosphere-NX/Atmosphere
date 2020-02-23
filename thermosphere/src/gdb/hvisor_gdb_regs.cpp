@@ -24,12 +24,12 @@
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
-#include "../exceptions.h"
-#include "../fpu.h"
+#include "../hvisor_exception_stack_frame.hpp"
+#include "../hvisor_fpu_register_cache.hpp"
 
 namespace {
 
-    auto GetRegisterPointerAndSize(unsigned long id, ExceptionStackFrame *frame, FpuRegisterCache *fpuRegCache)
+    auto GetRegisterPointerAndSize(unsigned long id, ams::hvisor::ExceptionStackFrame *frame, ams::hvisor::FpuRegisterCache::Storage &fpuRegStorage)
     {
         void *outPtr = nullptr;
         size_t outSz = 0;
@@ -40,7 +40,7 @@ namespace {
                 outSz = 8;
                 break;
             case 31:
-                outPtr = exceptionGetSpPtr(frame);
+                outPtr = &frame->GetSpRef();
                 outSz = 8;
                 break;
             case 32:
@@ -48,15 +48,15 @@ namespace {
                 outSz = 4;
                 break;
             case 33 ... 64:
-                outPtr = &fpuRegCache->q[id - 33];
+                outPtr = &fpuRegStorage.q[id - 33];
                 outSz = 16;
                 break;
             case 65:
-                outPtr = &fpuRegCache->fpsr;
+                outPtr = &fpuRegStorage.fpsr;
                 outSz = 4;
                 break;
             case 66:
-                outPtr = &fpuRegCache->fpcr;
+                outPtr = &fpuRegStorage.fpcr;
                 outSz = 4;
                 break;
             default:
@@ -74,11 +74,11 @@ namespace ams::hvisor::gdb {
     // Note: GDB treats cpsr, fpsr, fpcr as 32-bit integers...
     GDB_DEFINE_HANDLER(ReadRegisters)
     {
-        ENSURE(m_selectedCoreId == currentCoreCtx->coreId);
+        ENSURE(m_selectedCoreId == currentCoreCtx->GetCoreId());
         GDB_CHECK_NO_CMD_DATA();
 
-        ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
-        FpuRegisterCache *fpuRegCache = fpuReadRegisters();
+        ExceptionStackFrame *frame = currentCoreCtx->GetGuestFrame();
+        auto &fpuRegStorage = FpuRegisterCache::GetInstance().ReadRegisters();
 
         char *buf = GetInPlaceOutputBuffer();
 
@@ -89,19 +89,19 @@ namespace ams::hvisor::gdb {
             u64 pc;
             u32 cpsr;
         } cpuSprs = {
-            .sp = *exceptionGetSpPtr(frame),
+            .sp = frame->GetSpRef(),
             .pc = frame->elr_el2,
             .cpsr = static_cast<u32>(frame->spsr_el2),
         };
 
         u32 fpuSprs[2] = {
-            static_cast<u32>(fpuRegCache->fpsr),
-            static_cast<u32>(fpuRegCache->fpcr),
+            static_cast<u32>(fpuRegStorage.fpsr),
+            static_cast<u32>(fpuRegStorage.fpcr),
         };
 
         n += EncodeHex(buf + n, frame->x, sizeof(frame->x));
         n += EncodeHex(buf + n, &cpuSprs, 8+8+4);
-        n += EncodeHex(buf + n, fpuRegCache->q, sizeof(fpuRegCache->q));
+        n += EncodeHex(buf + n, fpuRegStorage.q, sizeof(fpuRegStorage.q));
         n += EncodeHex(buf + n, fpuSprs, sizeof(fpuSprs));
 
         return SendPacket(std::string_view{buf, n});
@@ -109,10 +109,10 @@ namespace ams::hvisor::gdb {
 
     GDB_DEFINE_HANDLER(WriteRegisters)
     {
-        ENSURE(m_selectedCoreId == currentCoreCtx->coreId);
+        ENSURE(m_selectedCoreId == currentCoreCtx->GetCoreId());
 
-        ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
-        FpuRegisterCache *fpuRegCache = fpuGetRegisterCache();
+        ExceptionStackFrame *frame = currentCoreCtx->GetGuestFrame();
+        auto &fpuRegStorage = FpuRegisterCache::GetInstance().ReadRegisters();
 
         char *tmp = GetWorkBuffer();
 
@@ -132,7 +132,7 @@ namespace ams::hvisor::gdb {
         } infos[4] = {
             { frame->x,         sizeof(frame->x)        },
             { &cpuSprs,         8+8+4                   },
-            { fpuRegCache->q,   sizeof(fpuRegCache->q)  },
+            { fpuRegStorage.q,  sizeof(fpuRegStorage.q)  },
             { fpuSprs,          sizeof(fpuSprs)         },
         };
 
@@ -153,22 +153,22 @@ namespace ams::hvisor::gdb {
             n += info.sz;
         }
 
-        *exceptionGetSpPtr(frame) = cpuSprs.sp;
+        frame->GetSpRef() = cpuSprs.sp;
         frame->elr_el2 = cpuSprs.pc;
         frame->spsr_el2 = cpuSprs.cpsr;
-        fpuRegCache->fpsr = fpuSprs[0];
-        fpuRegCache->fpcr = fpuSprs[1];
-        fpuCommitRegisters();
+        fpuRegStorage.fpsr = fpuSprs[0];
+        fpuRegStorage.fpcr = fpuSprs[1];
+        FpuRegisterCache::GetInstance().CommitRegisters();
 
         return ReplyOk();
     }
 
     GDB_DEFINE_HANDLER(ReadRegister)
     {
-        ENSURE(m_selectedCoreId == currentCoreCtx->coreId);
+        ENSURE(m_selectedCoreId == currentCoreCtx->GetCoreId());
 
-        ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
-        FpuRegisterCache *fpuRegCache = nullptr;
+        ExceptionStackFrame *frame = currentCoreCtx->GetGuestFrame();
+        FpuRegisterCache::Storage *fpuRegStorage = nullptr;
 
         auto [nread, gdbRegNum] = ParseHexIntegerList<1>(m_commandData);
         if (nread == 0) {
@@ -182,19 +182,19 @@ namespace ams::hvisor::gdb {
 
         if (gdbRegNum > 31 + 3) {
             // FPU register -- must read the FPU registers first
-            fpuRegCache = fpuReadRegisters();
+            fpuRegStorage = &FpuRegisterCache::GetInstance().ReadRegisters();
         }
 
-        return std::apply(SendHexPacket, GetRegisterPointerAndSize(gdbRegNum, frame, fpuRegCache));
+        return std::apply(SendHexPacket, GetRegisterPointerAndSize(gdbRegNum, frame, *fpuRegStorage));
     }
 
     GDB_DEFINE_HANDLER(WriteRegister)
     {
-        ENSURE(m_selectedCoreId == currentCoreCtx->coreId);
+        ENSURE(m_selectedCoreId == currentCoreCtx->GetCoreId());
 
         char *tmp = GetWorkBuffer();
-        ExceptionStackFrame *frame = currentCoreCtx->guestFrame;
-        FpuRegisterCache *fpuRegCache = fpuGetRegisterCache();
+        ExceptionStackFrame *frame = currentCoreCtx->GetGuestFrame();
+        auto &fpuRegStorage = FpuRegisterCache::GetInstance().GetStorageRef();
 
         auto [nread, gdbRegNum] = ParseHexIntegerList<1>(m_commandData, '=');
         if (nread == 0) {
@@ -207,7 +207,7 @@ namespace ams::hvisor::gdb {
             return ReplyErrno(EINVAL);
         }
 
-        auto [regPtr, sz] = GetRegisterPointerAndSize(gdbRegNum, frame, fpuRegCache);
+        auto [regPtr, sz] = GetRegisterPointerAndSize(gdbRegNum, frame, fpuRegStorage);
 
         // Decode, check for errors
         if (m_commandData.size() != 2 * sz || DecodeHex(tmp, m_commandData) != sz) {
@@ -218,7 +218,7 @@ namespace ams::hvisor::gdb {
 
         if (gdbRegNum > 31 + 3) {
             // FPU register -- must commit the FPU registers
-            fpuCommitRegisters();
+            FpuRegisterCache::GetInstance().CommitRegisters();
         }
 
         return ReplyOk();

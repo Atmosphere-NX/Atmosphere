@@ -77,6 +77,7 @@ namespace ams::hvisor {
             constexpr u64 GetKernelEntrypoint() const                       { return m_kernelEntrypoint; }
 
             constexpr u32 GetCoreId() const                                 { return m_coreId; }
+            constexpr bool IsBootCore() const                               { return m_bootCore; }
 
             constexpr u64 SetWarmboot(uintptr_t ep)
             {

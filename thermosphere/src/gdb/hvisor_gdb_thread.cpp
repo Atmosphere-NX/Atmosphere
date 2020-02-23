@@ -20,7 +20,7 @@
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
-#include "../core_ctx.h"
+#include "../hvisor_core_context.hpp"
 
 namespace ams::hvisor::gdb {
 
@@ -30,9 +30,9 @@ namespace ams::hvisor::gdb {
             case ULONG_MAX:
                 return -1;
             case 0:
-                return currentCoreCtx->coreId;
+                return currentCoreCtx->GetCoreId();
             default:
-                return currentCoreCtx->coreId - 1;
+                return currentCoreCtx->GetCoreId() - 1;
         }
     }
 
@@ -97,7 +97,7 @@ namespace ams::hvisor::gdb {
     GDB_DEFINE_QUERY_HANDLER(CurrentThreadId)
     {
         GDB_CHECK_NO_CMD_DATA();
-        return SendFormattedPacket("QC%x", 1 + currentCoreCtx->coreId);
+        return SendFormattedPacket("QC%x", 1 + currentCoreCtx->GetCoreId());
     }
 
     GDB_DEFINE_QUERY_HANDLER(fThreadInfo)

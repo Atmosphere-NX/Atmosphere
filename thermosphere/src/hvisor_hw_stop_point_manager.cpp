@@ -14,7 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "hvisor_hw_stop_point_manager.hpp"
+#include "hvisor_core_context.hpp"
 #include "cpu/hvisor_cpu_instructions.hpp"
 #include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 #include <mutex>
@@ -29,7 +31,7 @@ namespace ams::hvisor {
         cpu::InterruptMaskGuard mg{};
         cpu::dmb();
         Reload();
-        m_reloadBarrier.Reset(getActiveCoreMask());
+        m_reloadBarrier.Reset(CoreContext::GetActiveCoreMask());
         IrqManager::GenerateSgiForAllOthers(m_irqId);
         m_reloadBarrier.Join();
     }
