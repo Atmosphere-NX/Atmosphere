@@ -15,9 +15,7 @@
  */
 
 #pragma once
-
 #include "../defines.hpp"
-#include "../types.hpp"
 
 namespace ams::util {
 
