@@ -28,3 +28,4 @@
 #include "util/util_intrusive_list.hpp"
 #include "util/util_intrusive_red_black_tree.hpp"
 #include "util/util_tinymt.hpp"
+#include "util/util_bitutil.hpp"

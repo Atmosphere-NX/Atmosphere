@@ -615,7 +615,7 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
     while ((sdmmc->regs->auto_cal_status & SDMMC_AUTOCAL_ACTIVE)) {
         /* Ensure we haven't timed out. */
         if (get_time_since(timebase) > SDMMC_AUTOCAL_TIMEOUT) {
-            sdmmc_error(sdmmc, "Auto-calibration timed out!");
+            sdmmc_warn(sdmmc, "Auto-calibration timed out!");
             
             /* Force a register read to refresh the clock control value. */
             sdmmc_get_sd_clock_control(sdmmc);
@@ -1314,9 +1314,9 @@ static int sdmmc_wait_busy(sdmmc_t *sdmmc)
 
 static void sdmmc_intr_enable(sdmmc_t *sdmmc)
 {
-    /* Set all error bits and enable the relevant interrupts. */
-    sdmmc->regs->int_enable |= 0x017F0000;
+    /* Enable the relevant interrupts and set all error bits. */
     sdmmc->regs->int_enable |= (TEGRA_MMC_NORINTSTSEN_CMD_COMPLETE | TEGRA_MMC_NORINTSTSEN_XFER_COMPLETE | TEGRA_MMC_NORINTSTSEN_DMA_INTERRUPT);
+    sdmmc->regs->int_enable |= 0x017F0000;
     
     /* Refresh status. */
     sdmmc->regs->int_status = sdmmc->regs->int_status;
@@ -1324,34 +1324,35 @@ static void sdmmc_intr_enable(sdmmc_t *sdmmc)
 
 static void sdmmc_intr_disable(sdmmc_t *sdmmc)
 {
-    /* Clear all error bits and the interrupts. */
+    /* Clear all error bits and disable the relevant interrupts. */
     sdmmc->regs->int_enable &= ~(0x017F0000);
     sdmmc->regs->int_enable &= ~(TEGRA_MMC_NORINTSTSEN_CMD_COMPLETE | TEGRA_MMC_NORINTSTSEN_XFER_COMPLETE | TEGRA_MMC_NORINTSTSEN_DMA_INTERRUPT);
-    
-    /* Refresh status. */
-    sdmmc->regs->int_status = sdmmc->regs->int_status;
 }
 
-static bool sdmmc_intr_check_status(sdmmc_t *sdmmc, uint16_t status_mask)
+static int sdmmc_intr_check(sdmmc_t *sdmmc, uint16_t *status_out, uint16_t status_mask)
 {
-    bool is_masked = (sdmmc->regs->int_status & status_mask);
+    uint32_t int_status = sdmmc->regs->int_status;
     
-    /* Mask status. */
-    if (is_masked)
-        sdmmc->regs->int_status &= status_mask;
+    sdmmc_debug(sdmmc, "INTSTS: %08X", int_status);
     
-    return is_masked;
-}
-   
-static bool sdmmc_intr_check_error(sdmmc_t *sdmmc)
-{
-    bool is_error = (sdmmc->regs->int_status & TEGRA_MMC_NORINTSTS_ERR_INTERRUPT);
+    /* Return the status, if necessary. */
+    if (status_out)
+        *status_out = (int_status & 0xFFFF);
     
-    /* Refresh status. */
-    if (is_error)
-        sdmmc->regs->int_status = sdmmc->regs->int_status;
+    if (int_status & TEGRA_MMC_NORINTSTS_ERR_INTERRUPT)
+    {
+        /* Acknowledge error by refreshing status. */
+        sdmmc->regs->int_status = int_status;
+        return -1;
+    }
+    else if (int_status & status_mask)
+    {
+        /* Mask the status. */
+        sdmmc->regs->int_status = (int_status & status_mask);
+        return 1;
+    }
     
-    return is_error;
+    return 0;
 }
 
 static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
@@ -1442,15 +1443,23 @@ static int sdmmc_dma_update(sdmmc_t *sdmmc)
         /* Watch over the DMA transfer. */
         while (!is_timeout) 
         {
+            /* Check interrupts. */
+            uint16_t intr_status = 0;
+            int intr_res = sdmmc_intr_check(sdmmc, &intr_status, TEGRA_MMC_NORINTSTS_XFER_COMPLETE | TEGRA_MMC_NORINTSTS_DMA_INTERRUPT);
+            
             /* An error has been raised. Reset. */
-            if (sdmmc_intr_check_error(sdmmc))
+            if (intr_res < 0)
             {
                 sdmmc_do_sw_reset(sdmmc);
                 return 0;
             }
             
+            /* Transfer is over. */
+            if (intr_status & TEGRA_MMC_NORINTSTS_XFER_COMPLETE)
+                return 1;
+            
             /* We have a DMA interrupt. Restart the transfer where it was interrupted. */
-            if (sdmmc_intr_check_status(sdmmc, TEGRA_MMC_NORINTSTS_DMA_INTERRUPT))
+            if (intr_status & TEGRA_MMC_NORINTSTS_DMA_INTERRUPT)
             {
                 if (sdmmc->use_adma)
                 {
@@ -1466,10 +1475,6 @@ static int sdmmc_dma_update(sdmmc_t *sdmmc)
                 
                 sdmmc->next_dma_addr += 0x80000;
             }
-            
-            /* Transfer is over. */
-            if (sdmmc_intr_check_status(sdmmc, TEGRA_MMC_NORINTSTS_XFER_COMPLETE))
-                return 1;
             
             /* Keep checking if timeout expired. */
             is_timeout = (get_time_since(timebase) > 2000000);            
@@ -1526,12 +1531,15 @@ static int sdmmc_wait_for_cmd(sdmmc_t *sdmmc)
 
     /* Wait for CMD to finish. */
     while (!is_err && !is_timeout) {
+        /* Check interrupts. */
+        int intr_res = sdmmc_intr_check(sdmmc, 0, TEGRA_MMC_NORINTSTS_CMD_COMPLETE);
+        
         /* Command is done. */
-        if (sdmmc_intr_check_status(sdmmc, TEGRA_MMC_NORINTSTS_CMD_COMPLETE))
+        if (intr_res > 0)
             return 1;
         
         /* Check for any raised errors. */
-        is_err = sdmmc_intr_check_error(sdmmc);
+        is_err = (intr_res < 0);
         
         /* Keep checking if timeout expired. */
         is_timeout = (get_time_since(timebase) > 2000000);
@@ -1642,6 +1650,7 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
         is_dma = true;
         dma_blkcnt = sdmmc_dma_init(sdmmc, req);
         
+        /* Abort in case initialization failed. */
         if (!dma_blkcnt)
         {
             sdmmc_error(sdmmc, "Failed to initialize the DMA transfer!");
@@ -1669,12 +1678,14 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
         /* Save response, if necessary. */
         sdmmc_save_response(sdmmc, cmd->flags);
         
-        /* Process the DMA request. */
+        /* Update the DMA request. */
         if (req)
         {
+            /* Disable interrupts and abort in case updating failed. */
             if (!sdmmc_dma_update(sdmmc))
             {
-                sdmmc_error(sdmmc, "Failed to process the DMA transfer!");
+                sdmmc_warn(sdmmc, "Failed to update the DMA transfer!");
+                sdmmc_intr_disable(sdmmc);
                 return 0;
             }
             
@@ -1840,7 +1851,7 @@ static int sdmmc_send_tuning(sdmmc_t *sdmmc, uint32_t opcode)
     while (!is_timeout)
     {
         /* Buffer Read Ready was asserted. */
-        if (sdmmc_intr_check_status(sdmmc, TEGRA_MMC_NORINTSTSEN_BUFFER_READ_READY))
+        if (sdmmc_intr_check(sdmmc, 0, TEGRA_MMC_NORINTSTSEN_BUFFER_READ_READY) > 0)
         {
             /* Manually disable the Buffer Read Ready interrupt. */
             sdmmc->regs->int_enable &= ~(TEGRA_MMC_NORINTSTSEN_BUFFER_READ_READY);

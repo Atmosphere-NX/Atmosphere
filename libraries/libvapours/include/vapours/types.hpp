@@ -52,6 +52,31 @@ typedef u32 Result;          ///< Function error code result type.
 #define BIT(n) (1U<<(n))
 #endif
 
+/// Creates a bitmask from a bit number (long).
+#ifndef BITL
+#define BITL(n) (1UL<<(n))
+#endif
+
+/// Creates a bitmask representing the n least significant bits.
+#ifndef MASK
+#define MASK(n) (BIT(n) - 1U)
+#endif
+
+/// Creates a bitmask representing the n least significant bits (long).
+#ifndef MASKL
+#define MASKL(n) (BITL(n) - 1UL)
+#endif
+
+/// Creates a bitmask for bit range extraction.
+#ifndef MASK2
+#define MASK2(a,b) (MASK(a) & ~MASK(b))
+#endif
+
+/// Creates a bitmask for bit range extraction (long).
+#ifndef MASK2L
+#define MASK2L(a,b) (MASKL(a) & ~MASKL(b))
+#endif
+
 /// Marks a function as not returning, for the purposes of compiler optimization.
 #ifndef NORETURN
 #define NORETURN   __attribute__((noreturn))
