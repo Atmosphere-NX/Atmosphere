@@ -87,12 +87,12 @@ namespace {
 
         /* Get a debug handle. */
         os::ManagedHandle debug_handle;
-        R_ASSERT(svcDebugActiveProcess(debug_handle.GetPointer(), static_cast<u64>(process_id)));
+        R_ABORT_UNLESS(svcDebugActiveProcess(debug_handle.GetPointer(), static_cast<u64>(process_id)));
 
         /* Loop until we get the event that tells us about the process. */
         svc::DebugEventInfo d;
         while (true) {
-            R_ASSERT(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
+            R_ABORT_UNLESS(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
             if (d.type == svc::DebugEvent_AttachProcess) {
                 return ncm::ProgramId{d.info.attach_process.program_id};
             }
@@ -117,7 +117,7 @@ namespace {
         /* Get list of processes, register all privileged ones. */
         u32 num_pids;
         os::ProcessId pids[ProcessCountMax];
-        R_ASSERT(svcGetProcessList(&num_pids, reinterpret_cast<u64 *>(pids), ProcessCountMax));
+        R_ABORT_UNLESS(svcGetProcessList(&num_pids, reinterpret_cast<u64 *>(pids), ProcessCountMax));
         for (size_t i = 0; i < num_pids; i++) {
             if (min_priv_process_id <= pids[i] && pids[i] <= max_priv_process_id) {
                 RegisterPrivilegedProcess(pids[i]);
@@ -131,19 +131,19 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     sm::DoWithSession([&]() {
-        R_ASSERT(fsprInitialize());
-        R_ASSERT(smManagerInitialize());
+        R_ABORT_UNLESS(fsprInitialize());
+        R_ABORT_UNLESS(smManagerInitialize());
 
         /* This works around a bug with process permissions on < 4.0.0. */
         /* It also informs SM of privileged process information. */
         RegisterPrivilegedProcesses();
 
         /* Use AMS manager extension to tell SM that FS has been worked around. */
-        R_ASSERT(sm::manager::EndInitialDefers());
+        R_ABORT_UNLESS(sm::manager::EndInitialDefers());
 
-        R_ASSERT(lrInitialize());
-        R_ASSERT(ldrPmInitialize());
-        R_ASSERT(splInitialize());
+        R_ABORT_UNLESS(lrInitialize());
+        R_ABORT_UNLESS(ldrPmInitialize());
+        R_ABORT_UNLESS(splInitialize());
     });
 
     ams::CheckApiVersion();
@@ -187,20 +187,20 @@ namespace {
 int main(int argc, char **argv)
 {
     /* Initialize process manager implementation. */
-    R_ASSERT(pm::impl::InitializeProcessManager());
+    R_ABORT_UNLESS(pm::impl::InitializeProcessManager());
 
     /* Create Services. */
     /* NOTE: Extra sessions have been added to pm:bm and pm:info to facilitate access by the rest of stratosphere. */
     /* Also Note: PM was rewritten in 5.0.0, so the shell and dmnt services are different before/after. */
     if (hos::GetVersion() >= hos::Version_500) {
-        R_ASSERT((g_server_manager.RegisterServer<pm::shell::ShellService>(ShellServiceName, ShellMaxSessions)));
-        R_ASSERT((g_server_manager.RegisterServer<pm::dmnt::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::shell::ShellService>(ShellServiceName, ShellMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::dmnt::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
     } else {
-        R_ASSERT((g_server_manager.RegisterServer<pm::shell::ShellServiceDeprecated>(ShellServiceName, ShellMaxSessions)));
-        R_ASSERT((g_server_manager.RegisterServer<pm::dmnt::DebugMonitorServiceDeprecated>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::shell::ShellServiceDeprecated>(ShellServiceName, ShellMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::dmnt::DebugMonitorServiceDeprecated>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
     }
-    R_ASSERT((g_server_manager.RegisterServer<pm::bm::BootModeService>(BootModeServiceName, BootModeMaxSessions)));
-    R_ASSERT((g_server_manager.RegisterServer<pm::info::InformationService>(InformationServiceName, InformationMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::bm::BootModeService>(BootModeServiceName, BootModeMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::info::InformationService>(InformationServiceName, InformationMaxSessions)));
 
     /* Loop forever, servicing our services. */
     g_server_manager.LoopProcess();

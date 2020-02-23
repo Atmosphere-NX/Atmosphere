@@ -140,9 +140,9 @@ namespace ams::boot2 {
             /* Launch, lightly validate result. */
             {
                 const auto launch_result = pm::shell::LaunchProgram(&process_id, loc, launch_flags);
-                AMS_ASSERT(!(svc::ResultOutOfResource::Includes(launch_result)));
-                AMS_ASSERT(!(svc::ResultOutOfMemory::Includes(launch_result)));
-                AMS_ASSERT(!(svc::ResultLimitReached::Includes(launch_result)));
+                AMS_ABORT_UNLESS(!(svc::ResultOutOfResource::Includes(launch_result)));
+                AMS_ABORT_UNLESS(!(svc::ResultOutOfMemory::Includes(launch_result)));
+                AMS_ABORT_UNLESS(!(svc::ResultLimitReached::Includes(launch_result)));
             }
 
             if (out_process_id) {
@@ -265,10 +265,10 @@ namespace ams::boot2 {
                     }
 
                     /* Don't allow invalid lines. */
-                    AMS_ASSERT(name_len <= sizeof(sm::ServiceName));
+                    AMS_ABORT_UNLESS(name_len <= sizeof(sm::ServiceName));
 
                     /* Declare the service. */
-                    R_ASSERT(sm::mitm::DeclareFutureMitm(sm::ServiceName::Encode(mitm_list + offset, name_len)));
+                    R_ABORT_UNLESS(sm::mitm::DeclareFutureMitm(sm::ServiceName::Encode(mitm_list + offset, name_len)));
 
                     /* Advance to the next line. */
                     offset += name_len;
@@ -296,7 +296,7 @@ namespace ams::boot2 {
         /* This code is normally run by PM. */
 
         /* Wait until fs.mitm has installed itself. We want this to happen as early as possible. */
-        R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("fsp-srv")));
+        R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("fsp-srv")));
 
         /* Launch programs required to mount the SD card. */
         LaunchList(PreSdCardLaunchPrograms, NumPreSdCardLaunchPrograms);
@@ -305,11 +305,11 @@ namespace ams::boot2 {
         cfg::WaitSdCardRequiredServicesReady();
 
         /* Wait for other atmosphere mitm modules to initialize. */
-        R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
+        R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
         if (hos::GetVersion() >= hos::Version_200) {
-            R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
+            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
         } else {
-            R_ASSERT(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
         }
 
         /* Launch Atmosphere boot2, using NcmStorageId_None to force SD card boot. */

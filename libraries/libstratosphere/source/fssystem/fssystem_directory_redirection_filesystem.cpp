@@ -22,7 +22,7 @@ namespace ams::fssystem {
     {
         this->before_dir = nullptr;
         this->after_dir = nullptr;
-        R_ASSERT(this->Initialize(before, after));
+        R_ABORT_UNLESS(this->Initialize(before, after));
     }
 
     DirectoryRedirectionFileSystem::DirectoryRedirectionFileSystem(std::unique_ptr<fs::fsa::IFileSystem> fs, const char *before, const char *after, bool unc)
@@ -30,7 +30,7 @@ namespace ams::fssystem {
     {
         this->before_dir = nullptr;
         this->after_dir = nullptr;
-        R_ASSERT(this->Initialize(before, after));
+        R_ABORT_UNLESS(this->Initialize(before, after));
     }
 
     DirectoryRedirectionFileSystem::~DirectoryRedirectionFileSystem() {
@@ -57,7 +57,7 @@ namespace ams::fssystem {
 
         /* Ensure terminating '/' */
         if (!PathTool::IsSeparator(normalized_path[normalized_path_len - 1])) {
-            AMS_ASSERT(normalized_path_len + 2 <= sizeof(normalized_path));
+            AMS_ABORT_UNLESS(normalized_path_len + 2 <= sizeof(normalized_path));
             normalized_path[normalized_path_len]     = StringTraits::DirectorySeparator;
             normalized_path[normalized_path_len + 1] = StringTraits::NullTerminator;
 
@@ -67,7 +67,7 @@ namespace ams::fssystem {
         /* Allocate new path. */
         const size_t size = normalized_path_len + 1;
         char *new_dir = static_cast<char *>(std::malloc(size));
-        AMS_ASSERT(new_dir != nullptr);
+        AMS_ABORT_UNLESS(new_dir != nullptr);
         /* TODO: custom ResultAllocationFailure? */
 
         /* Copy path in. */

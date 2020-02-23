@@ -20,7 +20,7 @@ namespace ams::os {
 
     WaitableHolder::WaitableHolder(Handle handle) {
         /* Don't allow invalid handles. */
-        AMS_ASSERT(handle != INVALID_HANDLE);
+        AMS_ABORT_UNLESS(handle != INVALID_HANDLE);
 
         /* Initialize appropriate holder. */
         new (GetPointer(this->impl_storage)) impl::WaitableHolderOfHandle(handle);
@@ -98,7 +98,7 @@ namespace ams::os {
         auto holder_base = reinterpret_cast<impl::WaitableHolderBase *>(GetPointer(this->impl_storage));
 
         /* Don't allow destruction of a linked waitable holder. */
-        AMS_ASSERT(!holder_base->IsLinkedToManager());
+        AMS_ABORT_UNLESS(!holder_base->IsLinkedToManager());
 
         holder_base->~WaitableHolderBase();
     }
@@ -107,7 +107,7 @@ namespace ams::os {
         auto holder_base = reinterpret_cast<impl::WaitableHolderBase *>(GetPointer(this->impl_storage));
 
         /* Don't allow unlinking of an unlinked holder. */
-        AMS_ASSERT(holder_base->IsLinkedToManager());
+        AMS_ABORT_UNLESS(holder_base->IsLinkedToManager());
 
         holder_base->GetManager()->UnlinkWaitableHolder(*holder_base);
         holder_base->SetManager(nullptr);

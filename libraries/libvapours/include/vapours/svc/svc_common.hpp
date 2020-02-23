@@ -15,6 +15,8 @@
  */
 
 #pragma once
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 #include <vapours/results.hpp>
 
 namespace ams::svc {

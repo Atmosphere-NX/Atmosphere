@@ -19,11 +19,11 @@
 namespace ams::boot {
 
     void PmicDriver::ShutdownSystem() {
-        R_ASSERT(this->ShutdownSystem(false));
+        R_ABORT_UNLESS(this->ShutdownSystem(false));
     }
 
     void PmicDriver::RebootSystem() {
-        R_ASSERT(this->ShutdownSystem(true));
+        R_ABORT_UNLESS(this->ShutdownSystem(true));
     }
 
     Result PmicDriver::GetAcOk(bool *out) {
@@ -61,17 +61,17 @@ namespace ams::boot {
 
         /* Get value, set or clear software reset mask. */
         u8 on_off_2_val = 0;
-        R_ASSERT(ReadI2cRegister(this->i2c_session, &on_off_2_val, sizeof(on_off_2_val), &on_off_2_addr, sizeof(on_off_2_addr)));
+        R_ABORT_UNLESS(ReadI2cRegister(this->i2c_session, &on_off_2_val, sizeof(on_off_2_val), &on_off_2_addr, sizeof(on_off_2_addr)));
         if (reboot) {
             on_off_2_val |= 0x80;
         } else {
             on_off_2_val &= ~0x80;
         }
-        R_ASSERT(WriteI2cRegister(this->i2c_session, &on_off_2_val, sizeof(on_off_2_val), &on_off_2_addr, sizeof(on_off_2_addr)));
+        R_ABORT_UNLESS(WriteI2cRegister(this->i2c_session, &on_off_2_val, sizeof(on_off_2_val), &on_off_2_addr, sizeof(on_off_2_addr)));
 
         /* Get value, set software reset mask. */
         u8 on_off_1_val = 0;
-        R_ASSERT(ReadI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)));
+        R_ABORT_UNLESS(ReadI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)));
         on_off_1_val |= 0x80;
 
         /* Finalize the battery. */
@@ -81,11 +81,11 @@ namespace ams::boot {
         }
 
         /* Actually write the value to trigger shutdown/reset. */
-        R_ASSERT(WriteI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)));
+        R_ABORT_UNLESS(WriteI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)));
 
         /* Allow up to 5 seconds for shutdown/reboot to take place. */
         svcSleepThread(5'000'000'000ul);
-        AMS_ASSERT(false);
+        AMS_ABORT_UNLESS(false);
     }
 
     void PmicDriver::FinalizeBattery(BatteryDriver *battery_driver) {

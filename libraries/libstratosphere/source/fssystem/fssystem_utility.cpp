@@ -40,7 +40,7 @@ namespace ams::fssystem {
             char dst_path[fs::EntryNameLengthMax + 1];
             const size_t original_size = static_cast<size_t>(std::snprintf(dst_path, sizeof(dst_path), "%s%s", dst_parent_path, entry->name));
             /* TODO: Error code? N aborts here. */
-            AMS_ASSERT(original_size < sizeof(dst_path));
+            AMS_ABORT_UNLESS(original_size < sizeof(dst_path));
 
             R_TRY(dst_fs->CreateFile(dst_path, entry->file_size));
             R_TRY(dst_fs->OpenFile(&dst_file, dst_path, fs::OpenMode_Write));
@@ -64,7 +64,7 @@ namespace ams::fssystem {
     Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size) {
         char dst_path_buf[fs::EntryNameLengthMax + 1];
         const size_t original_size = static_cast<size_t>(std::snprintf(dst_path_buf, sizeof(dst_path_buf), "%s", dst_path));
-        AMS_ASSERT(original_size < sizeof(dst_path_buf));
+        AMS_ABORT_UNLESS(original_size < sizeof(dst_path_buf));
 
         return IterateDirectoryRecursively(src_fs, src_path,
             [&](const char *path, const fs::DirectoryEntry &entry) -> Result { /* On Enter Directory */

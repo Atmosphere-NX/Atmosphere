@@ -147,7 +147,7 @@ namespace ams::pm::resource {
 
                 u64 value = 0;
                 while (true) {
-                    R_ASSERT(svcGetResourceLimitCurrentValue(&value, reslimit_hnd, resource));
+                    R_ABORT_UNLESS(svcGetResourceLimitCurrentValue(&value, reslimit_hnd, resource));
                     if (value == 0) {
                         break;
                     }
@@ -159,7 +159,7 @@ namespace ams::pm::resource {
         void WaitApplicationMemoryAvailable() {
             u64 value = 0;
             while (true) {
-                R_ASSERT(svcGetSystemInfo(&value, SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, PhysicalMemoryInfo_Application));
+                R_ABORT_UNLESS(svcGetSystemInfo(&value, SystemInfoType_UsedPhysicalMemorySize, INVALID_HANDLE, PhysicalMemoryInfo_Application));
                 if (value == 0) {
                     break;
                 }
@@ -175,10 +175,10 @@ namespace ams::pm::resource {
         for (size_t i = 0; i < ResourceLimitGroup_Count; i++) {
             if (i == ResourceLimitGroup_System) {
                 u64 value = 0;
-                R_ASSERT(svcGetInfo(&value, InfoType_ResourceLimit, INVALID_HANDLE, 0));
+                R_ABORT_UNLESS(svcGetInfo(&value, InfoType_ResourceLimit, INVALID_HANDLE, 0));
                 g_resource_limit_handles[i] = static_cast<Handle>(value);
             } else {
-                R_ASSERT(svcCreateResourceLimit(&g_resource_limit_handles[i]));
+                R_ABORT_UNLESS(svcCreateResourceLimit(&g_resource_limit_handles[i]));
             }
         }
 
@@ -210,7 +210,7 @@ namespace ams::pm::resource {
         if (hos::GetVersion() >= hos::Version_700) {
             /* See how many threads we have available. */
             u64 total_threads_available = 0;
-            R_ASSERT(svcGetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), LimitableResource_Threads));
+            R_ABORT_UNLESS(svcGetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), LimitableResource_Threads));
 
             /* See how many threads we're expecting. */
             const size_t total_threads_allocated = g_resource_limits[ResourceLimitGroup_System][LimitableResource_Threads] -
@@ -218,7 +218,7 @@ namespace ams::pm::resource {
                                                        g_resource_limits[ResourceLimitGroup_Applet][LimitableResource_Threads];
 
             /* Ensure we don't over-commit threads. */
-            AMS_ASSERT(total_threads_allocated <= total_threads_available);
+            AMS_ABORT_UNLESS(total_threads_allocated <= total_threads_available);
 
             /* Set number of extra threads. */
             g_extra_application_threads_available = total_threads_available - total_threads_allocated;
@@ -231,18 +231,18 @@ namespace ams::pm::resource {
 
             /* Get total memory available. */
             u64 total_memory = 0;
-            R_ASSERT(svcGetResourceLimitLimitValue(&total_memory, GetResourceLimitHandle(ResourceLimitGroup_System), LimitableResource_Memory));
+            R_ABORT_UNLESS(svcGetResourceLimitLimitValue(&total_memory, GetResourceLimitHandle(ResourceLimitGroup_System), LimitableResource_Memory));
 
             /* Get and save application + applet memory. */
-            R_ASSERT(svcGetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application], SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemoryInfo_Application));
-            R_ASSERT(svcGetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet],      SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemoryInfo_Applet));
+            R_ABORT_UNLESS(svcGetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application], SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemoryInfo_Application));
+            R_ABORT_UNLESS(svcGetSystemInfo(&g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet],      SystemInfoType_TotalPhysicalMemorySize, INVALID_HANDLE, PhysicalMemoryInfo_Applet));
 
             const u64 application_size         = g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Application];
             const u64 applet_size              = g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_Applet];
             const u64 reserved_non_system_size = (application_size + applet_size + ReservedMemorySize600);
 
             /* Ensure there's enough memory for the system region. */
-            AMS_ASSERT(reserved_non_system_size < total_memory);
+            AMS_ABORT_UNLESS(reserved_non_system_size < total_memory);
 
             g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_System] = total_memory - reserved_non_system_size;
         } else {
@@ -267,7 +267,7 @@ namespace ams::pm::resource {
             std::scoped_lock lk(g_resource_limit_lock);
 
             for (size_t group = 0; group < ResourceLimitGroup_Count; group++) {
-                R_ASSERT(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(group), g_memory_resource_limits[g_memory_arrangement][group]));
+                R_ABORT_UNLESS(SetResourceLimitLimitValues(static_cast<ResourceLimitGroup>(group), g_memory_resource_limits[g_memory_arrangement][group]));
             }
         }
 
@@ -286,10 +286,10 @@ namespace ams::pm::resource {
                 /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
                 if (boost_size < g_system_memory_boost_size) {
                     R_TRY(svcSetUnsafeLimit(boost_size));
-                    R_ASSERT(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
+                    R_ABORT_UNLESS(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
                 } else {
                     R_TRY(SetMemoryResourceLimitLimitValue(ResourceLimitGroup_Application, new_app_size));
-                    R_ASSERT(svcSetUnsafeLimit(boost_size));
+                    R_ABORT_UNLESS(svcSetUnsafeLimit(boost_size));
                 }
             } else {
                 const u64 new_sys_size = g_memory_resource_limits[g_memory_arrangement][ResourceLimitGroup_System] + boost_size;
@@ -340,8 +340,8 @@ namespace ams::pm::resource {
 
     Result GetResourceLimitValues(u64 *out_cur, u64 *out_lim, ResourceLimitGroup group, LimitableResource resource) {
         /* Do not allow out of bounds access. */
-        AMS_ASSERT(group < ResourceLimitGroup_Count);
-        AMS_ASSERT(resource < LimitableResource_Count);
+        AMS_ABORT_UNLESS(group < ResourceLimitGroup_Count);
+        AMS_ABORT_UNLESS(resource < LimitableResource_Count);
 
         const Handle reslimit_hnd = GetResourceLimitHandle(group);
         R_TRY(svcGetResourceLimitCurrentValue(out_cur, reslimit_hnd, resource));

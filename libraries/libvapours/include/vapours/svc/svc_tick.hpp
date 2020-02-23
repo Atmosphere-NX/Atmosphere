@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "svc_common.hpp"
-#include "svc_select_hardware_constants.hpp"
+#include <vapours/svc/svc_common.hpp>
+#include <vapours/svc/svc_select_hardware_constants.hpp>
 
 namespace ams::svc {
 

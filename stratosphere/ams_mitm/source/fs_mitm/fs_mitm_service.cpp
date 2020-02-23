@@ -60,7 +60,7 @@ namespace ams::mitm::fs {
 
         bool GetSettingsItemBooleanValue(const char *name, const char *key) {
             u8 tmp = 0;
-            AMS_ASSERT(settings::fwdbg::GetSettingsItemValue(&tmp, sizeof(tmp), name, key) == sizeof(tmp));
+            AMS_ABORT_UNLESS(settings::fwdbg::GetSettingsItemValue(&tmp, sizeof(tmp), name, key) == sizeof(tmp));
             return (tmp != 0);
         }
 

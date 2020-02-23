@@ -23,22 +23,22 @@ namespace ams::exosphere {
     ApiInfo GetApiInfo() {
         u64 exosphere_cfg;
         if (spl::smc::GetConfig(&exosphere_cfg, 1, SplConfigItem_ExosphereApiVersion) != spl::smc::Result::Success) {
-            R_ASSERT(ResultNotPresent());
+            R_ABORT_UNLESS(ResultNotPresent());
         }
 
         return ApiInfo{ util::BitPack64(exosphere_cfg) };
     }
 
     void ForceRebootToRcm() {
-        R_ASSERT(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsReboot, 1)));
+        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsReboot, 1)));
     }
 
     void ForceRebootToIramPayload() {
-        R_ASSERT(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsReboot, 2)));
+        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsReboot, 2)));
     }
 
     void ForceShutdown() {
-        R_ASSERT(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsShutdown, 1)));
+        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsShutdown, 1)));
     }
 
     void CopyToIram(uintptr_t iram_dst, const void *dram_src, size_t size) {
@@ -62,7 +62,7 @@ namespace ams::exosphere {
 
     bool IsRcmBugPatched() {
         bool rcm_bug_patched;
-        R_ASSERT(GetRcmBugPatched(&rcm_bug_patched));
+        R_ABORT_UNLESS(GetRcmBugPatched(&rcm_bug_patched));
         return rcm_bug_patched;
     }
 

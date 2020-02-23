@@ -42,21 +42,21 @@ namespace ams::boot {
     }
 
     Result ReadI2cRegister(i2c::driver::Session &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size) {
-        AMS_ASSERT(dst != nullptr && dst_size > 0);
-        AMS_ASSERT(cmd != nullptr && cmd_size > 0);
+        AMS_ABORT_UNLESS(dst != nullptr && dst_size > 0);
+        AMS_ABORT_UNLESS(cmd != nullptr && cmd_size > 0);
 
         u8 cmd_list[i2c::CommandListFormatter::MaxCommandListSize];
 
         i2c::CommandListFormatter formatter(cmd_list, sizeof(cmd_list));
-        R_ASSERT(formatter.EnqueueSendCommand(I2cTransactionOption_Start, cmd, cmd_size));
-        R_ASSERT(formatter.EnqueueReceiveCommand(static_cast<I2cTransactionOption>(I2cTransactionOption_Start | I2cTransactionOption_Stop), dst_size));
+        R_ABORT_UNLESS(formatter.EnqueueSendCommand(I2cTransactionOption_Start, cmd, cmd_size));
+        R_ABORT_UNLESS(formatter.EnqueueReceiveCommand(static_cast<I2cTransactionOption>(I2cTransactionOption_Start | I2cTransactionOption_Stop), dst_size));
 
         return RetryUntilSuccess([&]() { return i2c::driver::ExecuteCommandList(session, dst, dst_size, cmd_list, formatter.GetCurrentSize()); });
     }
 
     Result WriteI2cRegister(i2c::driver::Session &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size) {
-        AMS_ASSERT(src != nullptr && src_size > 0);
-        AMS_ASSERT(cmd != nullptr && cmd_size > 0);
+        AMS_ABORT_UNLESS(src != nullptr && src_size > 0);
+        AMS_ABORT_UNLESS(cmd != nullptr && cmd_size > 0);
 
         u8 cmd_list[0x20];
 

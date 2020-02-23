@@ -15,7 +15,9 @@
  */
 
 #pragma once
-#include "util_parent_of_member.hpp"
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/util/util_parent_of_member.hpp>
 
 namespace ams::util {
 

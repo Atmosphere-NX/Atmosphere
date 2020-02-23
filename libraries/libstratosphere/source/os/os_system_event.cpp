@@ -20,9 +20,9 @@ namespace ams::os {
 
     SystemEvent::SystemEvent(bool inter_process, bool autoclear) : state(SystemEventState::Uninitialized) {
         if (inter_process) {
-            R_ASSERT(this->InitializeAsInterProcessEvent(autoclear));
+            R_ABORT_UNLESS(this->InitializeAsInterProcessEvent(autoclear));
         } else {
-            R_ASSERT(this->InitializeAsEvent(autoclear));
+            R_ABORT_UNLESS(this->InitializeAsEvent(autoclear));
         }
     }
 
@@ -35,34 +35,34 @@ namespace ams::os {
     }
 
     Event &SystemEvent::GetEvent() {
-        AMS_ASSERT(this->state == SystemEventState::Event);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::Event);
         return GetReference(this->storage_for_event);
     }
 
     const Event &SystemEvent::GetEvent() const {
-        AMS_ASSERT(this->state == SystemEventState::Event);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::Event);
         return GetReference(this->storage_for_event);
     }
 
     impl::InterProcessEvent &SystemEvent::GetInterProcessEvent() {
-        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
         return GetReference(this->storage_for_inter_process_event);
     }
 
     const impl::InterProcessEvent &SystemEvent::GetInterProcessEvent() const {
-        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
         return GetReference(this->storage_for_inter_process_event);
     }
 
     Result SystemEvent::InitializeAsEvent(bool autoclear) {
-        AMS_ASSERT(this->state == SystemEventState::Uninitialized);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_event)) Event(autoclear);
         this->state = SystemEventState::Event;
         return ResultSuccess();
     }
 
     Result SystemEvent::InitializeAsInterProcessEvent(bool autoclear) {
-        AMS_ASSERT(this->state == SystemEventState::Uninitialized);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
         this->state = SystemEventState::InterProcessEvent;
 
@@ -77,7 +77,7 @@ namespace ams::os {
     }
 
     void SystemEvent::AttachHandles(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) {
-        AMS_ASSERT(this->state == SystemEventState::Uninitialized);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::Uninitialized);
         new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
         this->state = SystemEventState::InterProcessEvent;
         this->GetInterProcessEvent().Initialize(read_handle, manage_read_handle, write_handle, manage_write_handle, autoclear);
@@ -92,22 +92,22 @@ namespace ams::os {
     }
 
     Handle SystemEvent::DetachReadableHandle() {
-        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().DetachReadableHandle();
     }
 
     Handle SystemEvent::DetachWritableHandle() {
-        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().DetachWritableHandle();
     }
 
     Handle SystemEvent::GetReadableHandle() const {
-        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().GetReadableHandle();
     }
 
     Handle SystemEvent::GetWritableHandle() const {
-        AMS_ASSERT(this->state == SystemEventState::InterProcessEvent);
+        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
         return this->GetInterProcessEvent().GetWritableHandle();
     }
 

@@ -18,7 +18,7 @@
 namespace ams::os {
 
     Result InterruptEvent::Initialize(u32 interrupt_id, bool autoclear) {
-        AMS_ASSERT(!this->is_initialized);
+        AMS_ABORT_UNLESS(!this->is_initialized);
         this->auto_clear = autoclear;
 
         const auto type = this->auto_clear ? svc::InterruptType_Edge : svc::InterruptType_Level;
@@ -29,23 +29,23 @@ namespace ams::os {
     }
 
     void InterruptEvent::Finalize() {
-        AMS_ASSERT(this->is_initialized);
-        R_ASSERT(svcCloseHandle(this->handle.Move()));
+        AMS_ABORT_UNLESS(this->is_initialized);
+        R_ABORT_UNLESS(svcCloseHandle(this->handle.Move()));
         this->auto_clear = true;
         this->is_initialized = false;
     }
 
     InterruptEvent::InterruptEvent(u32 interrupt_id, bool autoclear) {
         this->is_initialized = false;
-        R_ASSERT(this->Initialize(interrupt_id, autoclear));
+        R_ABORT_UNLESS(this->Initialize(interrupt_id, autoclear));
     }
 
     void InterruptEvent::Reset() {
-        R_ASSERT(svcClearEvent(this->handle.Get()));
+        R_ABORT_UNLESS(svcClearEvent(this->handle.Get()));
     }
 
     void InterruptEvent::Wait() {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
 
         while (true) {
             /* Continuously wait, until success. */
@@ -65,7 +65,7 @@ namespace ams::os {
     }
 
     bool InterruptEvent::TryWait() {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
 
         if (this->auto_clear) {
             /* Auto-clear. Just try to reset. */
@@ -86,7 +86,7 @@ namespace ams::os {
     }
 
     bool InterruptEvent::TimedWait(u64 ns) {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
 
         TimeoutHelper timeout_helper(ns);
         while (true) {

@@ -15,7 +15,8 @@
  */
 
 #pragma once
-#include <vapours/defines.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
 namespace ams {
 
@@ -31,7 +32,7 @@ namespace ams {
                 static constexpr BaseType ReservedBits = 10;
                 static_assert(ModuleBits + DescriptionBits + ReservedBits == sizeof(BaseType) * CHAR_BIT, "ModuleBits + DescriptionBits + ReservedBits == sizeof(BaseType) * CHAR_BIT");
             public:
-                NX_CONSTEXPR BaseType MakeValue(BaseType module, BaseType description) {
+                static constexpr ALWAYS_INLINE BaseType MakeValue(BaseType module, BaseType description) {
                     return (module) | (description << ModuleBits);
                 }
 
@@ -41,11 +42,11 @@ namespace ams {
                     static_assert(description < (1 << DescriptionBits), "Invalid Description");
                 };
 
-                NX_CONSTEXPR BaseType GetModuleFromValue(BaseType value) {
+                static constexpr ALWAYS_INLINE BaseType GetModuleFromValue(BaseType value) {
                     return value & ~(~BaseType() << ModuleBits);
                 }
 
-                NX_CONSTEXPR BaseType GetDescriptionFromValue(BaseType value) {
+                static constexpr ALWAYS_INLINE BaseType GetDescriptionFromValue(BaseType value) {
                     return ((value >> ModuleBits) & ~(~BaseType() << DescriptionBits));
                 }
         };
@@ -126,13 +127,16 @@ namespace ams {
 
     namespace result::impl {
 
-        NORETURN void OnResultAssertion(Result result);
+        NORETURN NOINLINE void OnResultAssertion(const char *file, int line, const char *func, const char *expr, Result result);
+        NORETURN NOINLINE void OnResultAssertion(Result result);
+        NORETURN NOINLINE void OnResultAbort(const char *file, int line, const char *func, const char *expr, Result result);
+        NORETURN NOINLINE void OnResultAbort(Result result);
 
     }
 
     constexpr ALWAYS_INLINE Result::operator ResultSuccess() const {
         if (!ResultSuccess::CanAccept(*this)) {
-            result::impl::OnResultAssertion(*this);
+            result::impl::OnResultAbort(*this);
         }
         return ResultSuccess();
     }
@@ -149,7 +153,7 @@ namespace ams {
                 static_assert(Value != Base::SuccessValue, "Value != Base::SuccessValue");
             public:
                 constexpr operator Result() const { return MakeResult(Value); }
-                constexpr operator ResultSuccess() const { OnResultAssertion(Value); }
+                constexpr operator ResultSuccess() const { OnResultAbort(Value); }
 
                 constexpr ALWAYS_INLINE bool IsSuccess() const { return false; }
                 constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
@@ -216,18 +220,39 @@ namespace ams {
 /// Evaluates an expression that returns a result, and returns the result if it would fail.
 #define R_TRY(res_expr) \
     ({ \
-        const auto _tmp_r_try_rc = res_expr; \
+        const auto _tmp_r_try_rc = (res_expr); \
         if (R_FAILED(_tmp_r_try_rc)) { \
             return _tmp_r_try_rc; \
         } \
     })
 
-/// Evaluates an expression that returns a result, and fatals the result if it would fail.
+#ifdef AMS_ENABLE_DEBUG_PRINT
+#define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
+#define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, val)
+#else
+#define AMS_CALL_ON_RESULT_ASSERTION_IMPL(cond, val) ::ams::result::impl::OnResultAssertion("", 0, "", "", val)
+#define AMS_CALL_ON_RESULT_ABORT_IMPL(cond, val)  ::ams::result::impl::OnResultAbort("", 0, "", "", val)
+#endif
+
+/// Evaluates an expression that returns a result, and asserts the result if it would fail.
+#ifdef AMS_ENABLE_ASSERTIONS
 #define R_ASSERT(res_expr) \
     ({ \
-        const auto _tmp_r_assert_rc = res_expr; \
-        if (R_FAILED(_tmp_r_assert_rc)) {  \
-            ::ams::result::impl::OnResultAssertion(_tmp_r_assert_rc); \
+        const auto _tmp_r_assert_rc = (res_expr); \
+        if (AMS_UNLIKELY(R_FAILED(_tmp_r_assert_rc))) {  \
+            AMS_CALL_ON_RESULT_ASSERTION_IMPL(#res_expr, _tmp_r_assert_rc); \
+        } \
+    })
+#else
+#define R_ASSERT(res_expr) AMS_UNUSED((res_expr));
+#endif
+
+/// Evaluates an expression that returns a result, and aborts if the result would fail.
+#define R_ABORT_UNLESS(res_expr) \
+    ({ \
+        const auto _tmp_r_abort_rc = (res_expr); \
+        if (AMS_UNLIKELY(R_FAILED(_tmp_r_abort_rc))) {  \
+            AMS_CALL_ON_RESULT_ABORT_IMPL(#res_expr, _tmp_r_abort_rc); \
         } \
     })
 
@@ -244,14 +269,14 @@ namespace ams {
 
 #define R_TRY_CATCH(res_expr) \
     ({ \
-        const auto R_CURRENT_RESULT = res_expr; \
+        const auto R_CURRENT_RESULT = (res_expr); \
         if (R_FAILED(R_CURRENT_RESULT)) { \
             if (false)
 
 namespace ams::result::impl {
 
     template<typename... Rs>
-    NX_CONSTEXPR bool AnyIncludes(Result result) {
+    constexpr ALWAYS_INLINE bool AnyIncludes(Result result) {
         return (Rs::Includes(result) || ...);
     }
 
@@ -284,6 +309,14 @@ namespace ams::result::impl {
 #define R_END_TRY_CATCH_WITH_ASSERT \
             else { \
                 R_ASSERT(R_CURRENT_RESULT); \
+            } \
+        } \
+    })
+
+
+#define R_END_TRY_CATCH_WITH_ABORT_UNLESS \
+            else { \
+                R_ABORT_UNLESS(R_CURRENT_RESULT); \
             } \
         } \
     })

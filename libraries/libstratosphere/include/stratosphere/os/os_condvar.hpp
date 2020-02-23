@@ -47,7 +47,7 @@ namespace ams::os {
             }
 
             void Wait(::Mutex *m) {
-                R_ASSERT(condvarWait(&this->cv, m));
+                R_ABORT_UNLESS(condvarWait(&this->cv, m));
             }
 
             ConditionVariableStatus TimedWait(os::Mutex *m, u64 timeout) {

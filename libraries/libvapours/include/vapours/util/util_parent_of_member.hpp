@@ -15,8 +15,9 @@
  */
 
 #pragma once
-#include "../defines.hpp"
-#include "util_typed_storage.hpp"
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/util/util_typed_storage.hpp>
 
 namespace ams::util {
 

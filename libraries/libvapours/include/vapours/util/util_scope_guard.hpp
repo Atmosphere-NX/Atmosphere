@@ -16,7 +16,8 @@
 
  /* Scope guard logic lovingly taken from Andrei Alexandrescu's "Systemic Error Handling in C++" */
 #pragma once
-#include "../defines.hpp"
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
 namespace ams::util {
 
@@ -54,5 +55,5 @@ namespace ams::util {
 
 }
 
-#define SCOPE_GUARD ::ams::util::impl::ScopeGuardOnExit() + [&]() ALWAYS_INLINE_LAMBDA
+#define SCOPE_GUARD   ::ams::util::impl::ScopeGuardOnExit() + [&]() ALWAYS_INLINE_LAMBDA
 #define ON_SCOPE_EXIT auto ANONYMOUS_VARIABLE(SCOPE_EXIT_STATE_) = SCOPE_GUARD

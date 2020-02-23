@@ -31,7 +31,7 @@ namespace ams::os::impl {
             }
 
             virtual Handle GetHandle() const override {
-                AMS_ASSERT(this->event->is_initialized);
+                AMS_ABORT_UNLESS(this->event->is_initialized);
                 return this->event->GetReadableHandle();
             }
     };

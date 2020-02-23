@@ -126,12 +126,12 @@ namespace ams::boot {
                 armDCacheFlush(g_frame_buffer, FrameBufferSize);
 
                 /* Create Address Space. */
-                R_ASSERT(svcCreateDeviceAddressSpace(&g_dc_das_hnd, 0, (1ul << 32)));
+                R_ABORT_UNLESS(svcCreateDeviceAddressSpace(&g_dc_das_hnd, 0, (1ul << 32)));
                 /* Attach it to the DC. */
-                R_ASSERT(svcAttachDeviceAddressSpace(svc::DeviceName_Dc, g_dc_das_hnd));
+                R_ABORT_UNLESS(svcAttachDeviceAddressSpace(svc::DeviceName_Dc, g_dc_das_hnd));
 
                 /* Map the framebuffer for the DC as read-only. */
-                R_ASSERT(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1));
+                R_ABORT_UNLESS(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1));
             }
         }
 
@@ -140,11 +140,11 @@ namespace ams::boot {
                 const uintptr_t frame_buffer_aligned = reinterpret_cast<uintptr_t>(g_frame_buffer);
 
                 /* Unmap the framebuffer from the DC. */
-                R_ASSERT(svcUnmapDeviceAddressSpace(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr));
+                R_ABORT_UNLESS(svcUnmapDeviceAddressSpace(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr));
                 /* Detach address space from the DC. */
-                R_ASSERT(svcDetachDeviceAddressSpace(svc::DeviceName_Dc, g_dc_das_hnd));
+                R_ABORT_UNLESS(svcDetachDeviceAddressSpace(svc::DeviceName_Dc, g_dc_das_hnd));
                 /* Close the address space. */
-                R_ASSERT(svcCloseHandle(g_dc_das_hnd));
+                R_ABORT_UNLESS(svcCloseHandle(g_dc_das_hnd));
                 g_dc_das_hnd = INVALID_HANDLE;
                 g_frame_buffer = nullptr;
             }

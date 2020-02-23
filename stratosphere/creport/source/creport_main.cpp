@@ -72,10 +72,10 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     sm::DoWithSession([&]() {
-        R_ASSERT(fsInitialize());
+        R_ABORT_UNLESS(fsInitialize());
     });
 
-    R_ASSERT(fsdevMountSdmc());
+    R_ABORT_UNLESS(fsdevMountSdmc());
 }
 
 void __appExit(void) {

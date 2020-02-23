@@ -83,7 +83,7 @@ namespace ams::i2c::driver {
         }
 
         inline void CheckInitialized() {
-            AMS_ASSERT(GetResourceManager().IsInitialized());
+            AMS_ABORT_UNLESS(GetResourceManager().IsInitialized());
         }
 
     }
@@ -100,7 +100,7 @@ namespace ams::i2c::driver {
     /* Session management. */
     void OpenSession(Session *out_session, I2cDevice device) {
         CheckInitialized();
-        AMS_ASSERT(impl::IsDeviceSupported(device));
+        AMS_ABORT_UNLESS(impl::IsDeviceSupported(device));
 
         const auto bus = impl::GetDeviceBus(device);
         const auto slave_address = impl::GetDeviceSlaveAddress(device);
@@ -119,8 +119,8 @@ namespace ams::i2c::driver {
     /* Communication. */
     Result Send(Session &session, const void *src, size_t size, I2cTransactionOption option) {
         CheckInitialized();
-        AMS_ASSERT(src != nullptr);
-        AMS_ASSERT(size > 0);
+        AMS_ABORT_UNLESS(src != nullptr);
+        AMS_ABORT_UNLESS(size > 0);
 
         std::scoped_lock<os::Mutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
         return GetResourceManager().GetSession(session.session_id).DoTransactionWithRetry(nullptr, src, size, option, impl::Command::Send);
@@ -128,8 +128,8 @@ namespace ams::i2c::driver {
 
     Result Receive(Session &session, void *dst, size_t size, I2cTransactionOption option) {
         CheckInitialized();
-        AMS_ASSERT(dst != nullptr);
-        AMS_ASSERT(size > 0);
+        AMS_ABORT_UNLESS(dst != nullptr);
+        AMS_ABORT_UNLESS(size > 0);
 
         std::scoped_lock<os::Mutex &> lk(GetResourceManager().GetTransactionMutex(impl::ConvertFromIndex(session.bus_idx)));
         return GetResourceManager().GetSession(session.session_id).DoTransactionWithRetry(dst, nullptr, size, option, impl::Command::Receive);
@@ -137,8 +137,8 @@ namespace ams::i2c::driver {
 
     Result ExecuteCommandList(Session &session, void *dst, size_t size, const void *cmd_list, size_t cmd_list_size) {
         CheckInitialized();
-        AMS_ASSERT(dst != nullptr && size > 0);
-        AMS_ASSERT(cmd_list != nullptr && cmd_list_size > 0);
+        AMS_ABORT_UNLESS(dst != nullptr && size > 0);
+        AMS_ABORT_UNLESS(cmd_list != nullptr && cmd_list_size > 0);
 
         u8 *cur_dst = static_cast<u8 *>(dst);
         const u8 *cur_cmd = static_cast<const u8 *>(cmd_list);
@@ -146,7 +146,7 @@ namespace ams::i2c::driver {
 
         while (cur_cmd < cmd_list_end) {
             Command cmd = static_cast<Command>((*cur_cmd) & 3);
-            AMS_ASSERT(cmd < Command::Count);
+            AMS_ABORT_UNLESS(cmd < Command::Count);
 
             R_TRY(g_cmd_handlers[static_cast<size_t>(cmd)](&cur_cmd, &cur_dst, session));
         }

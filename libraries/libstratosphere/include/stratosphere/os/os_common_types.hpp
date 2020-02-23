@@ -50,7 +50,7 @@ namespace ams::os {
 
     NX_INLINE os::ProcessId GetProcessId(::Handle process_handle) {
         os::ProcessId process_id;
-        R_ASSERT(TryGetProcessId(&process_id, process_handle));
+        R_ABORT_UNLESS(TryGetProcessId(&process_id, process_handle));
         return process_id;
     }
 

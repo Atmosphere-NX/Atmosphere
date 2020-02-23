@@ -52,8 +52,8 @@ namespace ams::settings::fwdbg {
         }
 
         inline bool operator<(const SdKeyValueStoreEntry &lhs, const SdKeyValueStoreEntry &rhs) {
-            AMS_ASSERT(lhs.HasValue());
-            AMS_ASSERT(rhs.HasValue());
+            AMS_ABORT_UNLESS(lhs.HasValue());
+            AMS_ABORT_UNLESS(rhs.HasValue());
 
             char lhs_name_key[SettingsNameLengthMax + 1 + SettingsItemKeyLengthMax + 1];
             char rhs_name_key[SettingsNameLengthMax + 1 + SettingsItemKeyLengthMax + 1];
@@ -76,7 +76,7 @@ namespace ams::settings::fwdbg {
         size_t g_num_entries;
 
         constexpr bool IsValidSettingsFormat(const char *str, size_t len) {
-            AMS_ASSERT(str != nullptr);
+            AMS_ABORT_UNLESS(str != nullptr);
 
             if (len > 0 && str[len - 1] == '.') {
                 return false;
@@ -306,63 +306,63 @@ namespace ams::settings::fwdbg {
 
         void LoadDefaultCustomSettings() {
             /* Disable uploading error reports to Nintendo. */
-            R_ASSERT(ParseSettingsItemValue("eupld", "upload_enabled", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("eupld", "upload_enabled", "u8!0x0"));
 
             /* Control whether RO should ease its validation of NROs. */
             /* (note: this is normally not necessary, and ips patches can be used.) */
-            R_ASSERT(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x0"));
 
             /* Atmosphere custom settings. */
 
             /* Reboot from fatal automatically after some number of milliseconds. */
             /* If field is not present or 0, fatal will wait indefinitely for user input. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", "u64!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "fatal_auto_reboot_interval", "u64!0x0"));
 
             /* Make the power menu's "reboot" button reboot to payload. */
             /* Set to "normal" for normal reboot, "rcm" for rcm reboot. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "power_menu_reboot_function", "str!payload"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "power_menu_reboot_function", "str!payload"));
 
             /* Enable writing to BIS partitions for HBL. */
             /* This is probably undesirable for normal usage. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "enable_hbl_bis_write", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_hbl_bis_write", "u8!0x0"));
 
             /* Enable HBL to read the CAL0 partition. */
             /* This is probably undesirable for normal usage. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "enable_hbl_cal_read", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_hbl_cal_read", "u8!0x0"));
 
             /* Controls whether dmnt cheats should be toggled on or off by */
             /* default. 1 = toggled on by default, 0 = toggled off by default. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", "u8!0x1"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "dmnt_cheats_enabled_by_default", "u8!0x1"));
 
             /* Controls whether dmnt should always save cheat toggle state */
             /* for restoration on new game launch. 1 = always save toggles, */
             /* 0 = only save toggles if toggle file exists. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "dmnt_always_save_cheat_toggles", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "dmnt_always_save_cheat_toggles", "u8!0x0"));
 
             /* Controls whether fs.mitm should redirect save files */
             /* to directories on the sd card. */
             /* 0 = Do not redirect, 1 = Redirect. */
             /* NOTE: EXPERIMENTAL */
             /* If you do not know what you are doing, do not touch this yet. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "fsmitm_redirect_saves_to_sd", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "fsmitm_redirect_saves_to_sd", "u8!0x0"));
 
             /* Controls whether to enable the deprecated hid mitm */
             /* to fix compatibility with old homebrew. */
             /* 0 = Do not enable, 1 = Enable. */
             /* Please note this setting may be removed in a future release of Atmosphere. */
-            R_ASSERT(ParseSettingsItemValue("atmosphere", "enable_deprecated_hid_mitm", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_deprecated_hid_mitm", "u8!0x0"));
 
             /* Hbloader custom settings. */
 
             /* Controls the size of the homebrew heap when running as applet. */
             /* If set to zero, all available applet memory is used as heap. */
             /* The default is zero. */
-            R_ASSERT(ParseSettingsItemValue("hbloader", "applet_heap_size", "u64!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("hbloader", "applet_heap_size", "u64!0x0"));
 
             /* Controls the amount of memory to reserve when running as applet */
             /* for usage by other applets. This setting has no effect if */
             /* applet_heap_size is non-zero. The default is 0x8600000. */
-            R_ASSERT(ParseSettingsItemValue("hbloader", "applet_heap_reservation_size", "u64!0x8600000"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("hbloader", "applet_heap_reservation_size", "u64!0x8600000"));
         }
 
     }

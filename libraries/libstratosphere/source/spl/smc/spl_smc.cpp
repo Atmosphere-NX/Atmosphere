@@ -349,7 +349,7 @@ namespace ams::spl::smc {
     }
 
     Result AtmosphereWriteAddress(void *dst, const void *src, size_t size) {
-        AMS_ASSERT(size <= sizeof(u64));
+        AMS_ABORT_UNLESS(size <= sizeof(u64));
 
         SecmonArgs args;
         args.X[0] = static_cast<u64>(FunctionId::AtmosphereWriteAddress);
@@ -363,7 +363,7 @@ namespace ams::spl::smc {
 
     Result AtmosphereGetEmummcConfig(void *out_config, void *out_paths, u32 storage_id) {
         const u64 paths = reinterpret_cast<u64>(out_paths);
-        AMS_ASSERT(util::IsAligned(paths, os::MemoryPageSize));
+        AMS_ABORT_UNLESS(util::IsAligned(paths, os::MemoryPageSize));
 
         SecmonArgs args = {};
         args.X[0] = static_cast<u64>(FunctionId::AtmosphereGetEmummcConfig);

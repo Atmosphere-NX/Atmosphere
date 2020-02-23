@@ -27,7 +27,7 @@ namespace ams::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow destruction of a non-empty waitable holder. */
-        AMS_ASSERT(impl.IsEmpty());
+        AMS_ABORT_UNLESS(impl.IsEmpty());
 
         impl.~WaitableManagerImpl();
     }
@@ -38,7 +38,7 @@ namespace ams::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow waiting on empty list. */
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ABORT_UNLESS(!impl.IsEmpty());
 
         return reinterpret_cast<WaitableHolder *>(impl.WaitAny());
     }
@@ -47,7 +47,7 @@ namespace ams::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow waiting on empty list. */
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ABORT_UNLESS(!impl.IsEmpty());
 
         return reinterpret_cast<WaitableHolder *>(impl.TryWaitAny());
     }
@@ -56,7 +56,7 @@ namespace ams::os {
         auto &impl = GetReference(this->impl_storage);
 
         /* Don't allow waiting on empty list. */
-        AMS_ASSERT(!impl.IsEmpty());
+        AMS_ABORT_UNLESS(!impl.IsEmpty());
 
         return reinterpret_cast<WaitableHolder *>(impl.TimedWaitAny(timeout));
     }
@@ -67,7 +67,7 @@ namespace ams::os {
         auto holder_base = reinterpret_cast<impl::WaitableHolderBase *>(GetPointer(holder->impl_storage));
 
         /* Don't allow double-linking a holder. */
-        AMS_ASSERT(!holder_base->IsLinkedToManager());
+        AMS_ABORT_UNLESS(!holder_base->IsLinkedToManager());
 
         impl.LinkWaitableHolder(*holder_base);
         holder_base->SetManager(&impl);

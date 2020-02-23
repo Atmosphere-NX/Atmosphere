@@ -37,8 +37,8 @@ namespace ams {
     extern ncm::ProgramId CurrentProgramId;
 
     void WEAK_SYMBOL ExceptionHandler(FatalErrorContext *ctx) {
-        R_ASSERT(amsBpcInitialize());
-        R_ASSERT(amsBpcRebootToFatalError(ctx));
+        R_ABORT_UNLESS(amsBpcInitialize());
+        R_ABORT_UNLESS(amsBpcRebootToFatalError(ctx));
         while (1) { /* ... */ }
     }
 

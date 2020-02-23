@@ -48,7 +48,7 @@ namespace ams::mitm {
 
         g_throw_result = res;
         g_threw = true;
-        R_ASSERT(g_debug_throw_thread.Start());
+        R_ABORT_UNLESS(g_debug_throw_thread.Start());
     }
 
 }

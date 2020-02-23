@@ -84,8 +84,6 @@ namespace ams::cfg {
             .override_any_app = true,
         };
 
-        bool g_loaded_override_config = false;
-
         char g_hbl_sd_path[0x100] = "/atmosphere/hbl.nsp";
 
         /* Helpers. */

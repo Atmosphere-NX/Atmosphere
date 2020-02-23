@@ -95,14 +95,14 @@ int main(int argc, char **argv)
     /* Create sm:, (and thus allow things to register to it). */
     {
         Handle sm_h;
-        R_ASSERT(svcManageNamedPort(&sm_h, "sm:", 0x40));
+        R_ABORT_UNLESS(svcManageNamedPort(&sm_h, "sm:", 0x40));
         g_server_manager.RegisterServer<sm::UserService>(sm_h);
     }
 
     /* Create sm:m manually. */
     {
         Handle smm_h;
-        R_ASSERT(sm::impl::RegisterServiceForSelf(&smm_h, sm::ServiceName::Encode("sm:m"), 1));
+        R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smm_h, sm::ServiceName::Encode("sm:m"), 1));
         g_server_manager.RegisterServer<sm::ManagerService>(smm_h);
     }
 
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     /* Create sm:dmnt manually. */
     {
         Handle smdmnt_h;
-        R_ASSERT(sm::impl::RegisterServiceForSelf(&smdmnt_h, sm::ServiceName::Encode("sm:dmnt"), 1));
+        R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smdmnt_h, sm::ServiceName::Encode("sm:dmnt"), 1));
         g_server_manager.RegisterServer<sm::DmntService>(smdmnt_h);
     }
 

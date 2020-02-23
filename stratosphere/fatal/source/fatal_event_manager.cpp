@@ -20,7 +20,7 @@ namespace ams::fatal::srv {
     FatalEventManager::FatalEventManager() {
         /* Just create all the events. */
         for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-            R_ASSERT(eventCreate(&this->events[i], true));
+            R_ABORT_UNLESS(eventCreate(&this->events[i], true));
         }
     }
 

@@ -39,7 +39,7 @@ namespace ams::i2c::driver::impl {
     }
 
     constexpr inline Bus ConvertFromIndex(size_t idx) {
-        AMS_ASSERT(idx < static_cast<size_t>(Bus::Count));
+        AMS_ABORT_UNLESS(idx < static_cast<size_t>(Bus::Count));
         return static_cast<Bus>(idx);
     }
 

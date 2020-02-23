@@ -133,7 +133,7 @@ namespace ams::updater {
         Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
             /* Ensure we can read content metas. */
             constexpr size_t MaxContentMetas = 0x40;
-            AMS_ASSERT(work_buffer_size >= sizeof(NcmContentMetaKey) * MaxContentMetas);
+            AMS_ABORT_UNLESS(work_buffer_size >= sizeof(NcmContentMetaKey) * MaxContentMetas);
 
             /* Open NAND System meta database, list contents. */
             NcmContentMetaDatabase meta_db;
@@ -150,7 +150,7 @@ namespace ams::updater {
                 return ResultBootImagePackageNotFound();
             }
 
-            AMS_ASSERT(total_entries == written_entries);
+            AMS_ABORT_UNLESS(total_entries == written_entries);
 
             /* Output is sorted, return the lowest valid exfat entry. */
             if (total_entries > 1) {
@@ -187,7 +187,7 @@ namespace ams::updater {
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
 
             /* Read and validate hashes of boot images. */
             {
@@ -240,7 +240,7 @@ namespace ams::updater {
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
 
             /* Read and validate hashes of boot images. */
             {
@@ -308,7 +308,7 @@ namespace ams::updater {
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
 
             {
                 Boot0Accessor boot0_accessor;
@@ -363,7 +363,7 @@ namespace ams::updater {
             R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ASSERT(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
 
             {
                 Boot0Accessor boot0_accessor;
@@ -509,7 +509,7 @@ namespace ams::updater {
 
         /* Get a session to ncm. */
         sm::ScopedServiceHolder<ncmInitialize, ncmExit> ncm_holder;
-        R_ASSERT(ncm_holder.GetResult());
+        R_ABORT_UNLESS(ncm_holder.GetResult());
 
         /* Verify normal, verify safe as needed. */
         if (verification_state.needs_verify_normal) {

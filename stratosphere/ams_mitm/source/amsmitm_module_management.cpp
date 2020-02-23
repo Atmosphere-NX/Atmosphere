@@ -72,12 +72,12 @@ namespace ams::mitm {
         /* Create thread for each module. */
         for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
             const ModuleDefinition &cur_module = g_module_definitions[i];
-            R_ASSERT(g_module_threads[i].Initialize(cur_module.main, nullptr, cur_module.stack_mem, cur_module.stack_size, cur_module.priority));
+            R_ABORT_UNLESS(g_module_threads[i].Initialize(cur_module.main, nullptr, cur_module.stack_mem, cur_module.stack_size, cur_module.priority));
         }
 
         /* Start thread for each module. */
         for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
-            R_ASSERT(g_module_threads[i].Start());
+            R_ABORT_UNLESS(g_module_threads[i].Start());
         }
     }
 

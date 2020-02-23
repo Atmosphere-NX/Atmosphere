@@ -14,7 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours/defines.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
 namespace ams { inline namespace literals {
 

@@ -134,7 +134,7 @@ namespace ams::fssystem {
 
         /* TODO: Return a result here? Nintendo does not, but they have other allocation failed results. */
         /* Consider returning ResultFsAllocationFailureInDirectorySaveDataFileSystem? */
-        AMS_ASSERT(false);
+        AMS_ABORT_UNLESS(false);
     }
 
     Result DirectorySaveDataFileSystem::SynchronizeDirectory(const char *dst, const char *src) {
@@ -173,7 +173,7 @@ namespace ams::fssystem {
         this->open_writable_files--;
 
         /* Nintendo does not check this, but I think it's sensible to do so. */
-        AMS_ASSERT(this->open_writable_files >= 0);
+        AMS_ABORT_UNLESS(this->open_writable_files >= 0);
     }
 
     Result DirectorySaveDataFileSystem::CopySaveFromFileSystem(fs::fsa::IFileSystem *save_fs) {

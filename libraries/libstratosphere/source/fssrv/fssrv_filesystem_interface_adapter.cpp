@@ -29,7 +29,7 @@ namespace ams::fssrv::impl {
     }
 
     void FileInterfaceAdapter::InvalidateCache() {
-        AMS_ASSERT(this->parent_filesystem->IsDeepRetryEnabled());
+        AMS_ABORT_UNLESS(this->parent_filesystem->IsDeepRetryEnabled());
         std::scoped_lock<os::ReadWriteLock> scoped_write_lock(this->parent_filesystem->GetReadWriteLockForCacheInvalidation());
         this->base_file->OperateRange(nullptr, 0, fs::OperationId::InvalidateCache, 0, std::numeric_limits<s64>::max(), nullptr, 0);
     }
@@ -129,7 +129,7 @@ namespace ams::fssrv::impl {
 
     bool FileSystemInterfaceAdapter::IsAccessFailureDetectionObserved() const {
         /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
-        AMS_ASSERT(false);
+        AMS_ABORT_UNLESS(false);
     }
 
     std::optional<std::shared_lock<os::ReadWriteLock>> FileSystemInterfaceAdapter::AcquireCacheInvalidationReadLock() {
@@ -238,7 +238,7 @@ namespace ams::fssrv::impl {
         std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         if (this->open_count_limited) {
             /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
-            AMS_ASSERT(false);
+            AMS_ABORT_UNLESS(false);
         }
 
         PathNormalizer normalizer(path.str);
@@ -267,7 +267,7 @@ namespace ams::fssrv::impl {
         std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         if (this->open_count_limited) {
             /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
-            AMS_ASSERT(false);
+            AMS_ABORT_UNLESS(false);
         }
 
         PathNormalizer normalizer(path.str);

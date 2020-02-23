@@ -29,7 +29,7 @@ namespace ams::os {
 
     void MessageQueue::SendInternal(uintptr_t data) {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ASSERT(this->count < this->capacity);
+        AMS_ABORT_UNLESS(this->count < this->capacity);
 
         /* Write data to tail of queue. */
         this->buffer[(this->count++ + this->offset) % this->capacity] = data;
@@ -37,7 +37,7 @@ namespace ams::os {
 
     void MessageQueue::SendNextInternal(uintptr_t data) {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ASSERT(this->count < this->capacity);
+        AMS_ABORT_UNLESS(this->count < this->capacity);
 
         /* Write data to head of queue. */
         this->offset = (this->offset + this->capacity - 1) % this->capacity;
@@ -47,7 +47,7 @@ namespace ams::os {
 
     uintptr_t MessageQueue::ReceiveInternal() {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ASSERT(this->count > 0);
+        AMS_ABORT_UNLESS(this->count > 0);
 
         uintptr_t data = this->buffer[this->offset];
         this->offset = (this->offset + 1) % this->capacity;
@@ -57,7 +57,7 @@ namespace ams::os {
 
     inline uintptr_t MessageQueue::PeekInternal() {
         /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ASSERT(this->count > 0);
+        AMS_ABORT_UNLESS(this->count > 0);
 
         return this->buffer[this->offset];
     }

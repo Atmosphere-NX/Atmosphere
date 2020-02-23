@@ -51,14 +51,14 @@ namespace ams::mitm::fs {
             if constexpr (NumExtraThreads > 0) {
                 const u32 priority = os::GetCurrentThreadPriority();
                 for (size_t i = 0; i < NumExtraThreads; i++) {
-                    R_ASSERT(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
+                    R_ABORT_UNLESS(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
                 }
             }
 
             /* Start extra threads. */
             if constexpr (NumExtraThreads > 0) {
                 for (size_t i = 0; i < NumExtraThreads; i++) {
-                    R_ASSERT(g_extra_threads[i].Start());
+                    R_ABORT_UNLESS(g_extra_threads[i].Start());
                 }
             }
 
@@ -68,7 +68,7 @@ namespace ams::mitm::fs {
             /* Wait for extra threads to finish. */
             if constexpr (NumExtraThreads > 0) {
                 for (size_t i = 0; i < NumExtraThreads; i++) {
-                    R_ASSERT(g_extra_threads[i].Join());
+                    R_ABORT_UNLESS(g_extra_threads[i].Join());
                 }
             }
         }
@@ -77,7 +77,7 @@ namespace ams::mitm::fs {
 
     void MitmModule::ThreadFunction(void *arg) {
         /* Create fs mitm. */
-        R_ASSERT(g_server_manager.RegisterMitmServer<FsMitmService>(MitmServiceName));
+        R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<FsMitmService>(MitmServiceName));
 
         /* Process for the server. */
         ProcessForServerOnAllThreads();

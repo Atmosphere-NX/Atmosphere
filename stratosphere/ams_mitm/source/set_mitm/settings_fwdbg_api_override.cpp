@@ -25,7 +25,7 @@ namespace ams::settings::fwdbg {
             return size;
         }
 
-        R_ASSERT(setsysGetSettingsItemValueSize(name, key, &size));
+        R_ABORT_UNLESS(setsysGetSettingsItemValueSize(name, key, &size));
         return size;
     }
 
@@ -36,7 +36,7 @@ namespace ams::settings::fwdbg {
             return size;
         }
 
-        R_ASSERT(setsysGetSettingsItemValue(name, key, dst, dst_size, &size));
+        R_ABORT_UNLESS(setsysGetSettingsItemValue(name, key, dst, dst_size, &size));
         return size;
     }
 

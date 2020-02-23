@@ -45,7 +45,7 @@ namespace ams::kvdb {
                     Value *GetValuePointer() {
                         /* Size check. Note: Nintendo does not size check. */
                         if constexpr (!std::is_same<Value, void>::value) {
-                            AMS_ASSERT(sizeof(Value) <= this->value_size);
+                            AMS_ABORT_UNLESS(sizeof(Value) <= this->value_size);
                             /* Ensure we only get pod. */
                             static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }
@@ -56,7 +56,7 @@ namespace ams::kvdb {
                     const Value *GetValuePointer() const {
                         /* Size check. Note: Nintendo does not size check. */
                         if constexpr (!std::is_same<Value, void>::value) {
-                            AMS_ASSERT(sizeof(Value) <= this->value_size);
+                            AMS_ABORT_UNLESS(sizeof(Value) <= this->value_size);
                             /* Ensure we only get pod. */
                             static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }

@@ -30,12 +30,12 @@ namespace ams::pinmux {
 
         /* Helpers. */
         inline const Definition *GetDefinition(u32 pinmux_name) {
-            AMS_ASSERT(pinmux_name < PadNameMax);
+            AMS_ABORT_UNLESS(pinmux_name < PadNameMax);
             return &Map[pinmux_name];
         }
 
         inline const DrivePadDefinition *GetDrivePadDefinition(u32 drivepad_name) {
-            AMS_ASSERT(drivepad_name < DrivePadNameMax);
+            AMS_ABORT_UNLESS(drivepad_name < DrivePadNameMax);
             return &DrivePadMap[drivepad_name];
         }
 
@@ -101,7 +101,7 @@ namespace ams::pinmux {
         u32 pinmux_val = reg::Read(pinmux_reg);
 
         /* This PINMUX register is locked */
-        AMS_ASSERT((pinmux_val & 0x80) == 0);
+        AMS_ABORT_UNLESS((pinmux_val & 0x80) == 0);
 
         u32 pm_val = (pinmux_config_val & 0x07);
 

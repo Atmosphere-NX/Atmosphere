@@ -22,7 +22,7 @@ namespace ams::sf::cmif {
             Entry *entry = &this->entries.front();
             {
                 std::scoped_lock lk(this->manager->entry_owner_lock);
-                AMS_ASSERT(entry->owner == this);
+                AMS_ABORT_UNLESS(entry->owner == this);
                 entry->owner = nullptr;
             }
             entry->object.Reset();
@@ -41,7 +41,7 @@ namespace ams::sf::cmif {
         for (size_t i = 0; i < count; i++) {
             Entry *entry = this->manager->entry_manager.AllocateEntry();
             R_UNLESS(entry != nullptr, sf::cmif::ResultOutOfDomainEntries());
-            AMS_ASSERT(entry->owner == nullptr);
+            AMS_ABORT_UNLESS(entry->owner == nullptr);
             out_ids[i] = this->manager->entry_manager.GetId(entry);
         }
         return ResultSuccess();
@@ -54,18 +54,18 @@ namespace ams::sf::cmif {
     void ServerDomainManager::Domain::UnreserveIds(const DomainObjectId *ids, size_t count) {
         for (size_t i = 0; i < count; i++) {
             Entry *entry = this->manager->entry_manager.GetEntry(ids[i]);
-            AMS_ASSERT(entry != nullptr);
-            AMS_ASSERT(entry->owner == nullptr);
+            AMS_ABORT_UNLESS(entry != nullptr);
+            AMS_ABORT_UNLESS(entry->owner == nullptr);
             this->manager->entry_manager.FreeEntry(entry);
         }
     }
 
     void ServerDomainManager::Domain::RegisterObject(DomainObjectId id, ServiceObjectHolder &&obj) {
         Entry *entry = this->manager->entry_manager.GetEntry(id);
-        AMS_ASSERT(entry != nullptr);
+        AMS_ABORT_UNLESS(entry != nullptr);
         {
             std::scoped_lock lk(this->manager->entry_owner_lock);
-            AMS_ASSERT(entry->owner == nullptr);
+            AMS_ABORT_UNLESS(entry->owner == nullptr);
             entry->owner = this;
             this->entries.push_back(*entry);
         }
@@ -135,8 +135,8 @@ namespace ams::sf::cmif {
 
     void ServerDomainManager::EntryManager::FreeEntry(Entry *entry) {
         std::scoped_lock lk(this->lock);
-        AMS_ASSERT(entry->owner == nullptr);
-        AMS_ASSERT(!entry->object);
+        AMS_ABORT_UNLESS(entry->owner == nullptr);
+        AMS_ABORT_UNLESS(!entry->object);
         this->free_list.push_front(*entry);
     }
 
@@ -148,8 +148,8 @@ namespace ams::sf::cmif {
             const auto id = ids[i];
             Entry *entry = this->GetEntry(id);
             if (id != InvalidDomainObjectId) {
-                AMS_ASSERT(entry != nullptr);
-                AMS_ASSERT(entry->owner == nullptr);
+                AMS_ABORT_UNLESS(entry != nullptr);
+                AMS_ABORT_UNLESS(entry->owner == nullptr);
                 this->free_list.erase(this->free_list.iterator_to(*entry));
             }
         }

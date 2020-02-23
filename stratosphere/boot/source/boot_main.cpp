@@ -90,9 +90,9 @@ void __appInit(void) {
 
     /* Initialize services we need (TODO: NCM) */
     sm::DoWithSession([&]() {
-        R_ASSERT(fsInitialize());
-        R_ASSERT(splInitialize());
-        R_ASSERT(pmshellInitialize());
+        R_ABORT_UNLESS(fsInitialize());
+        R_ABORT_UNLESS(splInitialize());
+        R_ABORT_UNLESS(pmshellInitialize());
     });
 
     ams::CheckApiVersion();
@@ -147,7 +147,7 @@ int main(int argc, char **argv)
     boot::CheckAndRepairBootImages();
 
     /* Tell PM to start boot2. */
-    R_ASSERT(pmshellNotifyBootFinished());
+    R_ABORT_UNLESS(pmshellNotifyBootFinished());
 
     return 0;
 }

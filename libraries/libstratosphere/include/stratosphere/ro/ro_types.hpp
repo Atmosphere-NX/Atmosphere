@@ -61,7 +61,7 @@ namespace ams::ro {
 
             ModuleType GetType() const {
                 const ModuleType type = static_cast<ModuleType>(this->type);
-                AMS_ASSERT(type < ModuleType::Count);
+                AMS_ABORT_UNLESS(type < ModuleType::Count);
                 return type;
             }
 

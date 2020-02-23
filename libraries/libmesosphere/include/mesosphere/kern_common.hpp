@@ -22,11 +22,11 @@ namespace ams::kern {
 
 }
 
-#if 1
+#if 1 || defined(AMS_BUILD_FOR_AUDITING)
 #define MESOSPHERE_BUILD_FOR_AUDITING
 #endif
 
-#ifdef  MESOSPHERE_BUILD_FOR_AUDITING
+#if defined(MESOSPHERE_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
 #define MESOSPHERE_BUILD_FOR_DEBUGGING
 #endif
 

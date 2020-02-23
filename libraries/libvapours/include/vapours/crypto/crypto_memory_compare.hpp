@@ -15,7 +15,8 @@
  */
 
 #pragma once
-#include <vapours/defines.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 #include <vapours/util.hpp>
 
 #ifdef ATMOSPHERE_ARCH_ARM64
@@ -30,7 +31,7 @@
 
 namespace ams::crypto {
 
-    bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
+    inline bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
         return impl::IsSameBytes(lhs, rhs, size);
     }
 

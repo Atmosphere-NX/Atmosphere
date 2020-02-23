@@ -14,6 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/svc/svc_types.hpp>
 
 namespace ams::svc::codegen::impl {
 

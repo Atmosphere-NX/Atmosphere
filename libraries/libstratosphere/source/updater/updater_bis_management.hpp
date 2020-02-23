@@ -136,13 +136,13 @@ namespace ams::updater {
                     }
                 }
 
-                AMS_ASSERT(entry != nullptr);
+                AMS_ABORT_UNLESS(entry != nullptr);
                 return entry;
             }
         public:
             Result Read(size_t *out_size, void *dst, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
-                AMS_ASSERT(size >= entry->size);
+                AMS_ABORT_UNLESS(size >= entry->size);
 
                 R_TRY(BisAccessor::Read(dst, entry->size, entry->offset));
 
@@ -152,8 +152,8 @@ namespace ams::updater {
 
             Result Write(const void *src, size_t size, EnumType which) {
                 const auto entry = FindEntry(which);
-                AMS_ASSERT(size <= entry->size);
-                AMS_ASSERT((size % BisAccessor::SectorAlignment) == 0);
+                AMS_ABORT_UNLESS(size <= entry->size);
+                AMS_ABORT_UNLESS((size % BisAccessor::SectorAlignment) == 0);
                 return BisAccessor::Write(entry->offset, src, size);
             }
 

@@ -48,7 +48,7 @@ namespace ams::ldr {
         };
 
         constexpr const char *GetNsoName(size_t idx) {
-            AMS_ASSERT(idx < Nso_Count);
+            AMS_ABORT_UNLESS(idx < Nso_Count);
 
             constexpr const char *NsoNames[Nso_Count] = {
                 "rtld",
@@ -606,7 +606,7 @@ namespace ams::ldr {
             }
 
             /* Clear the ECS entry for the program. */
-            R_ASSERT(ecs::Clear(loc.program_id));
+            R_ABORT_UNLESS(ecs::Clear(loc.program_id));
 
             /* Note that we've created the program. */
             SetLaunchedProgram(loc.program_id);

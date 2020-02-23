@@ -83,11 +83,11 @@ namespace ams::sf::hipc {
                     virtual ~Server() override {
                         if (this->service_managed) {
                             if constexpr (IsMitmServer) {
-                                R_ASSERT(sm::mitm::UninstallMitm(this->service_name));
+                                R_ABORT_UNLESS(sm::mitm::UninstallMitm(this->service_name));
                             } else {
-                                R_ASSERT(sm::UnregisterService(this->service_name));
+                                R_ABORT_UNLESS(sm::UnregisterService(this->service_name));
                             }
-                            R_ASSERT(svcCloseHandle(this->port_handle));
+                            R_ABORT_UNLESS(svcCloseHandle(this->port_handle));
                         }
                     }
 
@@ -106,7 +106,7 @@ namespace ams::sf::hipc {
 
                             /* Get mitm forward session. */
                             sm::MitmProcessInfo client_info;
-                            R_ASSERT(sm::mitm::AcknowledgeSession(forward_service.get(), &client_info, this->service_name));
+                            R_ABORT_UNLESS(sm::mitm::AcknowledgeSession(forward_service.get(), &client_info, this->service_name));
 
                             *out_obj = std::move(cmif::ServiceObjectHolder(std::move(MakeShared(std::shared_ptr<::Service>(forward_service), client_info))));
                             *out_fsrv = std::move(forward_service);
@@ -149,7 +149,7 @@ namespace ams::sf::hipc {
             void RegisterServerImpl(Handle port_handle, sm::ServiceName service_name, bool managed, cmif::ServiceObjectHolder &&static_holder) {
                 /* Allocate server memory. */
                 auto *server = this->AllocateServer();
-                AMS_ASSERT(server != nullptr);
+                AMS_ABORT_UNLESS(server != nullptr);
                 new (server) Server<ServiceImpl, MakeShared>(port_handle, service_name, managed, std::forward<cmif::ServiceObjectHolder>(static_holder));
 
                 if constexpr (!ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject) {
@@ -273,13 +273,13 @@ namespace ams::sf::hipc {
         private:
             constexpr inline size_t GetServerIndex(const ServerBase *server) const {
                 const size_t i = server - GetPointer(this->server_storages[0]);
-                AMS_ASSERT(i < MaxServers);
+                AMS_ABORT_UNLESS(i < MaxServers);
                 return i;
             }
 
             constexpr inline size_t GetSessionIndex(const ServerSession *session) const {
                 const size_t i = session - GetPointer(this->session_storages[0]);
-                AMS_ASSERT(i < MaxSessions);
+                AMS_ABORT_UNLESS(i < MaxSessions);
                 return i;
             }
 
@@ -301,7 +301,7 @@ namespace ams::sf::hipc {
             virtual void FreeSession(ServerSession *session) override final {
                 std::scoped_lock lk(this->resource_mutex);
                 const size_t index = this->GetSessionIndex(session);
-                AMS_ASSERT(this->session_allocated[index]);
+                AMS_ABORT_UNLESS(this->session_allocated[index]);
                 this->session_allocated[index] = false;
             }
 
@@ -319,7 +319,7 @@ namespace ams::sf::hipc {
             virtual void DestroyServer(ServerBase *server) override final {
                 std::scoped_lock lk(this->resource_mutex);
                 const size_t index = this->GetServerIndex(server);
-                AMS_ASSERT(this->server_allocated[index]);
+                AMS_ABORT_UNLESS(this->server_allocated[index]);
                 server->~ServerBase();
                 this->server_allocated[index] = false;
             }
@@ -339,8 +339,8 @@ namespace ams::sf::hipc {
                 std::scoped_lock lk(this->resource_mutex);
                 DomainStorage *ptr = static_cast<DomainStorage *>(domain);
                 const size_t index = ptr - this->domain_storages;
-                AMS_ASSERT(index < ManagerOptions::MaxDomains);
-                AMS_ASSERT(this->domain_allocated[index]);
+                AMS_ABORT_UNLESS(index < ManagerOptions::MaxDomains);
+                AMS_ABORT_UNLESS(this->domain_allocated[index]);
                 this->domain_allocated[index] = false;
             }
 

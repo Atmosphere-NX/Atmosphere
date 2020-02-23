@@ -39,7 +39,7 @@ namespace ams::i2c {
             size_t cur_index = 0;
         public:
             CommandListFormatter(void *cmd_list, size_t cmd_list_size) : cmd_list(static_cast<u8 *>(cmd_list)), cmd_list_size(cmd_list_size) {
-                AMS_ASSERT(cmd_list_size <= MaxCommandListSize);
+                AMS_ABORT_UNLESS(cmd_list_size <= MaxCommandListSize);
             }
             ~CommandListFormatter() {
                 this->cmd_list = nullptr;

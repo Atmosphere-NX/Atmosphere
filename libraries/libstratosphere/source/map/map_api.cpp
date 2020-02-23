@@ -73,7 +73,7 @@ namespace ams::map {
                     R_UNLESS(cur_base != address_space.alias_end, svc::ResultOutOfMemory());
                     cur_base = address_space.alias_end;
                 } else {
-                    R_ASSERT(svcQueryMemory(&mem_info, &page_info, cur_base));
+                    R_ABORT_UNLESS(svcQueryMemory(&mem_info, &page_info, cur_base));
                     if (mem_info.type == 0 && mem_info.addr - cur_base + mem_info.size >= size) {
                         *out_address = cur_base;
                         return ResultSuccess();
@@ -205,9 +205,9 @@ namespace ams::map {
 
         /* Nintendo doesn't validate SVC return values at all. */
         /* TODO: Should we allow these to fail? */
-        R_ASSERT(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address - 1));
+        R_ABORT_UNLESS(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address - 1));
         if (mem_info.type == MemType_Unmapped && address - GuardRegionSize >= mem_info.addr) {
-            R_ASSERT(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address + size));
+            R_ABORT_UNLESS(svcQueryProcessMemory(&mem_info, &page_info, process_handle, address + size));
             return mem_info.type == MemType_Unmapped && address + size + GuardRegionSize <= mem_info.addr + mem_info.size;
         }
 

@@ -40,8 +40,8 @@ namespace ams::boot::bq24193 {
     constexpr u32 ChargeVoltageLimitMax = 4208;
 
     inline u8 EncodeChargeVoltageLimit(u32 voltage) {
-        AMS_ASSERT(voltage >= ChargeVoltageLimitMin);
-        AMS_ASSERT(voltage <= ChargeVoltageLimitMax);
+        AMS_ABORT_UNLESS(voltage >= ChargeVoltageLimitMin);
+        AMS_ABORT_UNLESS(voltage <= ChargeVoltageLimitMax);
 
         voltage -= ChargeVoltageLimitMin;
         voltage >>= 4;
@@ -56,8 +56,8 @@ namespace ams::boot::bq24193 {
     constexpr u32 FastChargeCurrentLimitMax = 4544;
 
     inline u8 EncodeFastChargeCurrentLimit(u32 current) {
-        AMS_ASSERT(current >= FastChargeCurrentLimitMin);
-        AMS_ASSERT(current <= FastChargeCurrentLimitMax);
+        AMS_ABORT_UNLESS(current >= FastChargeCurrentLimitMin);
+        AMS_ABORT_UNLESS(current <= FastChargeCurrentLimitMax);
 
         current -= FastChargeCurrentLimitMin;
         current >>= 6;
@@ -83,8 +83,8 @@ namespace ams::boot::bq24193 {
     constexpr u32 PreChargeCurrentLimitMax = 2048;
 
     inline u8 EncodePreChargeCurrentLimit(u32 current) {
-        AMS_ASSERT(current >= PreChargeCurrentLimitMin);
-        AMS_ASSERT(current <= PreChargeCurrentLimitMax);
+        AMS_ABORT_UNLESS(current >= PreChargeCurrentLimitMin);
+        AMS_ABORT_UNLESS(current <= PreChargeCurrentLimitMax);
 
         current -= PreChargeCurrentLimitMin;
         current >>= 7;
@@ -99,8 +99,8 @@ namespace ams::boot::bq24193 {
     constexpr u32 TerminationCurrentLimitMax = 2048;
 
     inline u8 EncodeTerminationCurrentLimit(u32 current) {
-        AMS_ASSERT(current >= TerminationCurrentLimitMin);
-        AMS_ASSERT(current <= TerminationCurrentLimitMax);
+        AMS_ABORT_UNLESS(current >= TerminationCurrentLimitMin);
+        AMS_ABORT_UNLESS(current <= TerminationCurrentLimitMax);
 
         current -= TerminationCurrentLimitMin;
         current >>= 7;
@@ -115,8 +115,8 @@ namespace ams::boot::bq24193 {
     constexpr u32 MinimumSystemVoltageLimitMax = 3700;
 
     inline u8 EncodeMinimumSystemVoltageLimit(u32 voltage) {
-        AMS_ASSERT(voltage >= MinimumSystemVoltageLimitMin);
-        AMS_ASSERT(voltage <= MinimumSystemVoltageLimitMax);
+        AMS_ABORT_UNLESS(voltage >= MinimumSystemVoltageLimitMin);
+        AMS_ABORT_UNLESS(voltage <= MinimumSystemVoltageLimitMax);
 
         voltage -= MinimumSystemVoltageLimitMin;
         voltage /= 100;

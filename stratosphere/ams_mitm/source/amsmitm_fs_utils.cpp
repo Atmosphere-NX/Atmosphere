@@ -71,7 +71,7 @@ namespace ams::mitm::fs {
     }
 
     void OpenGlobalSdCardFileSystem() {
-        R_ASSERT(fsOpenSdCardFileSystem(&g_sd_filesystem));
+        R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_filesystem));
     }
 
     Result CreateSdFile(const char *path, s64 size, s32 option) {

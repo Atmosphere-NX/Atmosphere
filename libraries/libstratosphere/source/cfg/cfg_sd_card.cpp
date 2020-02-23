@@ -49,20 +49,20 @@ namespace ams::cfg {
 
         void WaitSdCardServicesReadyImpl() {
             for (size_t i = 0; i < NumRequiredServicesForSdCardAccess; i++) {
-                R_ASSERT(sm::WaitService(RequiredServicesForSdCardAccess[i]));
+                R_ABORT_UNLESS(sm::WaitService(RequiredServicesForSdCardAccess[i]));
             }
         }
 
         Result TryInitializeSdCard() {
             R_TRY(CheckSdCardServicesReady());
-            R_ASSERT(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
             return ResultSuccess();
         }
 
         void InitializeSdCard() {
             WaitSdCardServicesReadyImpl();
-            R_ASSERT(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
+            R_ABORT_UNLESS(fsOpenSdCardFileSystem(&g_sd_card_filesystem));
             g_sd_card_initialized = true;
         }
 

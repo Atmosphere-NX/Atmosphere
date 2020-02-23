@@ -72,9 +72,9 @@ void __appInit(void) {
 
     /* Initialize services we need. */
     sm::DoWithSession([&]() {
-        R_ASSERT(fsInitialize());
-        R_ASSERT(lrInitialize());
-        R_ASSERT(fsldrInitialize());
+        R_ABORT_UNLESS(fsInitialize());
+        R_ABORT_UNLESS(lrInitialize());
+        R_ABORT_UNLESS(fsldrInitialize());
     });
 
     ams::CheckApiVersion();
@@ -115,9 +115,9 @@ namespace {
 int main(int argc, char **argv)
 {
     /* Add services to manager. */
-    R_ASSERT((g_server_manager.RegisterServer<ldr::pm::ProcessManagerInterface>(ProcessManagerServiceName, ProcessManagerMaxSessions)));
-    R_ASSERT((g_server_manager.RegisterServer<ldr::shell::ShellInterface>(ShellServiceName, ShellMaxSessions)));
-    R_ASSERT((g_server_manager.RegisterServer<ldr::dmnt::DebugMonitorInterface>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::pm::ProcessManagerInterface>(ProcessManagerServiceName, ProcessManagerMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::shell::ShellInterface>(ShellServiceName, ShellMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::dmnt::DebugMonitorInterface>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
     /* Loop forever, servicing our services. */
     g_server_manager.LoopProcess();

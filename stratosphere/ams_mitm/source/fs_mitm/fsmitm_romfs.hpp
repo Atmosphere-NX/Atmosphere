@@ -78,7 +78,7 @@ namespace ams::mitm::fs::romfs {
         }
 
         void Cleanup() {
-            AMS_ASSERT(!this->cleaned_up);
+            AMS_ABORT_UNLESS(!this->cleaned_up);
             this->cleaned_up = true;
 
             switch (this->source_type) {

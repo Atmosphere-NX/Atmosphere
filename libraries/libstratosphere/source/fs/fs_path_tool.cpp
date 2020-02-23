@@ -71,8 +71,8 @@ namespace ams::fs {
             if (IsCurrentDirectory(&src[i])) {
                 skip_next_sep = true;
             } else if (IsParentDirectory(&src[i])) {
-                AMS_ASSERT(IsSeparator(out[0]));
-                AMS_ASSERT(IsSeparator(out[len - 1]));
+                AMS_ABORT_UNLESS(IsSeparator(out[0]));
+                AMS_ABORT_UNLESS(IsSeparator(out[len - 1]));
                 R_UNLESS(len != 1, fs::ResultDirectoryUnobtainable());
 
                 /* Walk up a directory. */
@@ -120,7 +120,7 @@ namespace ams::fs {
 
         /* Assert normalized. */
         bool normalized = false;
-        AMS_ASSERT(unc_preserved || (R_SUCCEEDED(IsNormalized(&normalized, out)) && normalized));
+        AMS_ABORT_UNLESS(unc_preserved || (R_SUCCEEDED(IsNormalized(&normalized, out)) && normalized));
 
         return ResultSuccess();
     }
@@ -216,8 +216,8 @@ namespace ams::fs {
     }
 
     bool PathTool::IsSubPath(const char *lhs, const char *rhs) {
-        AMS_ASSERT(lhs != nullptr);
-        AMS_ASSERT(rhs != nullptr);
+        AMS_ABORT_UNLESS(lhs != nullptr);
+        AMS_ABORT_UNLESS(rhs != nullptr);
 
         /* Special case certain paths. */
         if (IsSeparator(lhs[0]) && !IsSeparator(lhs[1]) && IsSeparator(rhs[0]) && IsSeparator(rhs[1])) {

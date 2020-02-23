@@ -45,14 +45,14 @@ namespace ams::mitm::fs {
             std::scoped_lock lk(g_mq_lock);
 
             if (!g_started_req_thread) {
-                R_ASSERT(g_romfs_initializer_thread.Start());
+                R_ABORT_UNLESS(g_romfs_initializer_thread.Start());
                 g_started_req_thread = true;
             }
 
             g_req_mq.Send(storage_uptr);
             uintptr_t ack = 0;
             g_ack_mq.Receive(&ack);
-            AMS_ASSERT(ack == storage_uptr);
+            AMS_ABORT_UNLESS(ack == storage_uptr);
         }
 
     }
@@ -70,7 +70,7 @@ namespace ams::mitm::fs {
     }
 
     void LayeredRomfsStorage::BeginInitialize() {
-        AMS_ASSERT(!this->started_initialize);
+        AMS_ABORT_UNLESS(!this->started_initialize);
         RequestInitializeStorage(reinterpret_cast<uintptr_t>(this));
         this->started_initialize = true;
     }
@@ -123,27 +123,27 @@ namespace ams::mitm::fs {
         size_t read_so_far = 0;
         while (read_so_far < size) {
             const auto &cur_source = *it;
-            AMS_ASSERT(offset >= cur_source.virtual_offset);
+            AMS_ABORT_UNLESS(offset >= cur_source.virtual_offset);
 
             if (offset < cur_source.virtual_offset + cur_source.size) {
                 const s64 offset_within_source = offset - cur_source.virtual_offset;
                 const size_t cur_read_size = std::min(size - read_so_far, size_t(cur_source.size - offset_within_source));
                 switch (cur_source.source_type) {
                     case romfs::DataSourceType::Storage:
-                        R_ASSERT(this->storage_romfs->Read(cur_source.storage_source_info.offset + offset_within_source, cur_dst, cur_read_size));
+                        R_ABORT_UNLESS(this->storage_romfs->Read(cur_source.storage_source_info.offset + offset_within_source, cur_dst, cur_read_size));
                         break;
                     case romfs::DataSourceType::File:
-                        R_ASSERT(this->file_romfs->Read(cur_source.file_source_info.offset + offset_within_source, cur_dst, cur_read_size));
+                        R_ABORT_UNLESS(this->file_romfs->Read(cur_source.file_source_info.offset + offset_within_source, cur_dst, cur_read_size));
                         break;
                     case romfs::DataSourceType::LooseSdFile:
                         {
                             FsFile file;
-                            R_ASSERT(mitm::fs::OpenAtmosphereSdRomfsFile(&file, this->program_id, cur_source.loose_source_info.path, OpenMode_Read));
+                            R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdRomfsFile(&file, this->program_id, cur_source.loose_source_info.path, OpenMode_Read));
                             ON_SCOPE_EXIT { fsFileClose(&file); };
 
                             u64 out_read = 0;
-                            R_ASSERT(fsFileRead(&file, offset_within_source, cur_dst, cur_read_size, FsReadOption_None, &out_read));
-                            AMS_ASSERT(out_read == cur_read_size);
+                            R_ABORT_UNLESS(fsFileRead(&file, offset_within_source, cur_dst, cur_read_size, FsReadOption_None, &out_read));
+                            AMS_ABORT_UNLESS(out_read == cur_read_size);
                         }
                         break;
                     case romfs::DataSourceType::Memory:
@@ -152,8 +152,8 @@ namespace ams::mitm::fs {
                     case romfs::DataSourceType::Metadata:
                         {
                             size_t out_read = 0;
-                            R_ASSERT(cur_source.metadata_source_info.file->Read(&out_read, offset_within_source, cur_dst, cur_read_size));
-                            AMS_ASSERT(out_read == cur_read_size);
+                            R_ABORT_UNLESS(cur_source.metadata_source_info.file->Read(&out_read, offset_within_source, cur_dst, cur_read_size));
+                            AMS_ABORT_UNLESS(out_read == cur_read_size);
                         }
                         break;
                     AMS_UNREACHABLE_DEFAULT_CASE();

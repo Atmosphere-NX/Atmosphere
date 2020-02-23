@@ -797,8 +797,8 @@ namespace ams::sf::impl {
                     return;
                 }
                 Handle server_handle, client_handle;
-                R_ASSERT(sf::hipc::CreateSession(&server_handle, &client_handle));
-                R_ASSERT(manager->RegisterSession(server_handle, std::move(object)));
+                R_ABORT_UNLESS(sf::hipc::CreateSession(&server_handle, &client_handle));
+                R_ABORT_UNLESS(manager->RegisterSession(server_handle, std::move(object)));
                 response.move_handles[Index] = client_handle;
             }
 
@@ -1013,7 +1013,7 @@ namespace ams::sf::impl {
                         /* Fake buffer. This is either InData or OutData, but serializing over buffers. */
                         constexpr auto Attributes = CommandMeta::BufferAttributes[Info.buffer_index];
                         if constexpr (Attributes & SfBufferAttr_In) {
-                            /* TODO: AMS_ASSERT()? N does not bother. */
+                            /* TODO: AMS_ABORT_UNLESS()? N does not bother. */
                             return *reinterpret_cast<const T *>(buffers[Info.buffer_index].GetAddress());
                         } else if constexpr (Attributes & SfBufferAttr_Out) {
                             return T(buffers[Info.buffer_index]);

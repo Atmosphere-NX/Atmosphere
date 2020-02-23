@@ -53,7 +53,7 @@ namespace ams::kvdb {
         this->backing_buffer_free_offset = 0;
         this->count = 0;
         this->entries = static_cast<decltype(this->entries)>(this->Allocate(sizeof(*this->entries) * this->capacity));
-        AMS_ASSERT(this->entries != nullptr);
+        AMS_ABORT_UNLESS(this->entries != nullptr);
     }
 
     std::optional<size_t> FileKeyValueStore::Cache::TryGet(void *out_value, size_t max_out_size, const void *key, size_t key_size) {
@@ -100,7 +100,7 @@ namespace ams::kvdb {
         }
 
         /* Ensure key size is small enough. */
-        AMS_ASSERT(key_size <= MaxKeySize);
+        AMS_ABORT_UNLESS(key_size <= MaxKeySize);
 
         /* If we're at capacity, invalidate the cache. */
         if (this->count == this->capacity) {

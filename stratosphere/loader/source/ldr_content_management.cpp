@@ -56,7 +56,7 @@ namespace ams::ldr {
         Result MountNspFileSystem(const char *device_name, const char *path) {
             FsFileSystem fs;
             R_TRY(fsOpenFileSystemWithId(&fs, 0, FsFileSystemType_ApplicationPackage, path));
-            AMS_ASSERT(fsdevMountDevice(device_name, fs) >= 0);
+            AMS_ABORT_UNLESS(fsdevMountDevice(device_name, fs) >= 0);
             return ResultSuccess();
         }
 
@@ -150,7 +150,7 @@ namespace ams::ldr {
         /* Try to mount the content path. */
         FsFileSystem fs;
         R_TRY(fsldrOpenCodeFileSystem(static_cast<u64>(loc.program_id), path, &fs));
-        AMS_ASSERT(fsdevMountDevice(CodeFileSystemDeviceName, fs) != -1);
+        AMS_ABORT_UNLESS(fsdevMountDevice(CodeFileSystemDeviceName, fs) != -1);
 
         /* Note that we mounted code. */
         this->is_code_mounted = true;
@@ -190,7 +190,7 @@ namespace ams::ldr {
         /* Check if we're ready to mount the SD card. */
         if (!g_has_mounted_sd_card) {
             if (is_sd_initialized) {
-                R_ASSERT(MountSdCardFileSystem());
+                R_ABORT_UNLESS(MountSdCardFileSystem());
                 g_has_mounted_sd_card = true;
             }
         }
@@ -219,7 +219,7 @@ namespace ams::ldr {
     }
 
     void ScopedCodeMount::InitializeOverrideStatus(const ncm::ProgramLocation &loc) {
-        AMS_ASSERT(!this->has_status);
+        AMS_ABORT_UNLESS(!this->has_status);
         this->override_status = cfg::CaptureOverrideStatus(loc.program_id);
         this->has_status = true;
     }

@@ -42,7 +42,7 @@ namespace ams::dmnt::cheat::impl {
                         Handle debug_handle = this_ptr->WaitReceiveHandle(current_core);
 
                         /* Continue events on the correct core. */
-                        R_ASSERT(this_ptr->ContinueDebugEvent(debug_handle));
+                        R_ABORT_UNLESS(this_ptr->ContinueDebugEvent(debug_handle));
 
                         /* Signal that we've continued. */
                         this_ptr->SignalContinued();
@@ -57,7 +57,7 @@ namespace ams::dmnt::cheat::impl {
                     if (dbg_event.type == svc::DebugEvent_AttachThread) {
                         u64 out64 = 0;
                         u32 out32 = 0;
-                        R_ASSERT(svcGetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.attach_thread.thread_id, DebugThreadParam_CurrentCore));
+                        R_ABORT_UNLESS(svcGetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.attach_thread.thread_id, DebugThreadParam_CurrentCore));
                         target_core = out32;
                     }
 
@@ -94,13 +94,13 @@ namespace ams::dmnt::cheat::impl {
                 DebugEventsManager() : message_queues{os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1), os::MessageQueue(1)}, thread_stacks{} {
                     for (size_t i = 0; i < NumCores; i++) {
                         /* Create thread. */
-                        R_ASSERT(this->threads[i].Initialize(&DebugEventsManager::PerCoreThreadFunction, reinterpret_cast<void *>(this), this->thread_stacks[i], ThreadStackSize, ThreadPriority, i));
+                        R_ABORT_UNLESS(this->threads[i].Initialize(&DebugEventsManager::PerCoreThreadFunction, reinterpret_cast<void *>(this), this->thread_stacks[i], ThreadStackSize, ThreadPriority, i));
 
                         /* Set core mask. */
-                        R_ASSERT(svcSetThreadCoreMask(this->threads[i].GetHandle(), i, (1u << i)));
+                        R_ABORT_UNLESS(svcSetThreadCoreMask(this->threads[i].GetHandle(), i, (1u << i)));
 
                         /* Start thread. */
-                        R_ASSERT(this->threads[i].Start());
+                        R_ABORT_UNLESS(this->threads[i].Start());
                     }
                 }
 

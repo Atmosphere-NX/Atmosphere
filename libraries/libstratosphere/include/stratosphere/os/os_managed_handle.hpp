@@ -28,7 +28,7 @@ namespace ams::os {
             ManagedHandle(Handle h) : hnd(h) { /* ... */ }
             ~ManagedHandle() {
                 if (this->hnd != INVALID_HANDLE) {
-                    R_ASSERT(svcCloseHandle(this->hnd));
+                    R_ABORT_UNLESS(svcCloseHandle(this->hnd));
                     this->hnd = INVALID_HANDLE;
                 }
             }

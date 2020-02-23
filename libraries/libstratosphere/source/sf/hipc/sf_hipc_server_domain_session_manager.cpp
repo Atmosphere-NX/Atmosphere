@@ -40,16 +40,16 @@ namespace ams::sf::hipc {
 
                     /* Create new session handles. */
                     Handle server_handle;
-                    R_ASSERT(hipc::CreateSession(&server_handle, out_client_handle));
+                    R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out_client_handle));
 
                     /* Register with manager. */
                     if (!is_mitm_session) {
-                        R_ASSERT(tagged_manager->RegisterSession(server_handle, std::move(clone)));
+                        R_ABORT_UNLESS(tagged_manager->RegisterSession(server_handle, std::move(clone)));
                     } else {
                         /* Clone the forward service. */
                         std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
-                        R_ASSERT(serviceClone(this->session->forward_service.get(), new_forward_service.get()));
-                        R_ASSERT(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
+                        R_ABORT_UNLESS(serviceClone(this->session->forward_service.get(), new_forward_service.get()));
+                        R_ABORT_UNLESS(tagged_manager->RegisterMitmSession(server_handle, std::move(clone), std::move(new_forward_service)));
                     }
 
                     return ResultSuccess();
@@ -71,7 +71,7 @@ namespace ams::sf::hipc {
 
                     if (this->is_mitm_session) {
                         /* If we're a mitm session, we need to convert the remote session to domain. */
-                        AMS_ASSERT(session->forward_service->own_handle);
+                        AMS_ABORT_UNLESS(session->forward_service->own_handle);
                         R_TRY(serviceConvertToDomain(session->forward_service.get()));
 
                         /* The object ID reservation cannot fail here, as that would cause desynchronization from target domain. */
@@ -90,8 +90,8 @@ namespace ams::sf::hipc {
                         new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, cmif::ServerDomainManager::DestroyDomainServiceObject)));
                     }
 
-                    AMS_ASSERT(object_id != cmif::InvalidDomainObjectId);
-                    AMS_ASSERT(static_cast<bool>(new_holder));
+                    AMS_ABORT_UNLESS(object_id != cmif::InvalidDomainObjectId);
+                    AMS_ABORT_UNLESS(static_cast<bool>(new_holder));
 
                     /* We succeeded! */
                     domain_guard.Cancel();
@@ -117,10 +117,10 @@ namespace ams::sf::hipc {
                     if (!this->is_mitm_session || object_id.value != serviceGetObjectId(this->session->forward_service.get())) {
                         /* Create new session handles. */
                         Handle server_handle;
-                        R_ASSERT(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
+                        R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
 
                         /* Register. */
-                        R_ASSERT(this->manager->RegisterSession(server_handle, std::move(object)));
+                        R_ABORT_UNLESS(this->manager->RegisterSession(server_handle, std::move(object)));
                     } else {
                         /* Copy from the target domain. */
                         Handle new_forward_target;
@@ -128,12 +128,12 @@ namespace ams::sf::hipc {
 
                         /* Create new session handles. */
                         Handle server_handle;
-                        R_ASSERT(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
+                        R_ABORT_UNLESS(hipc::CreateSession(&server_handle, out.GetHandlePointer()));
 
                         /* Register. */
                         std::shared_ptr<::Service> new_forward_service = std::move(ServerSession::CreateForwardService());
                         serviceCreate(new_forward_service.get(), new_forward_target);
-                        R_ASSERT(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
+                        R_ABORT_UNLESS(this->manager->RegisterMitmSession(server_handle, std::move(object), std::move(new_forward_service)));
                     }
 
                     return ResultSuccess();

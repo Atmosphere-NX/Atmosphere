@@ -71,7 +71,7 @@ namespace ams::os {
             constexpr StaticThread() : stack_mem{}, thr{} { /* ... */ }
 
             constexpr StaticThread(ThreadFunc entry, void *arg, int prio, int cpuid = -2) : StaticThread() {
-                R_ASSERT(this->Initialize(entry, arg, prio, cpuid));
+                R_ABORT_UNLESS(this->Initialize(entry, arg, prio, cpuid));
             }
 
             Result Initialize(ThreadFunc entry, void *arg, int prio, int cpuid = -2) {
@@ -103,7 +103,7 @@ namespace ams::os {
 
     NX_INLINE u32 GetCurrentThreadPriority() {
         u32 prio;
-        R_ASSERT(svcGetThreadPriority(&prio, CUR_THREAD_HANDLE));
+        R_ABORT_UNLESS(svcGetThreadPriority(&prio, CUR_THREAD_HANDLE));
         return prio;
     }
 

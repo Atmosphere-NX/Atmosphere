@@ -37,11 +37,11 @@ namespace ams::pm::shell {
     }
 
     void ShellServiceBase::GetProcessEventHandle(sf::OutCopyHandle out) {
-        R_ASSERT(impl::GetProcessEventHandle(out.GetHandlePointer()));
+        R_ABORT_UNLESS(impl::GetProcessEventHandle(out.GetHandlePointer()));
     }
 
     void ShellServiceBase::GetProcessEventInfo(sf::Out<ProcessEventInfo> out) {
-        R_ASSERT(impl::GetProcessEventInfo(out.GetPointer()));
+        R_ABORT_UNLESS(impl::GetProcessEventInfo(out.GetPointer()));
     }
 
     Result ShellServiceBase::CleanupProcess(os::ProcessId process_id) {
@@ -53,7 +53,7 @@ namespace ams::pm::shell {
     }
 
     void ShellServiceBase::NotifyBootFinished() {
-        R_ASSERT(impl::NotifyBootFinished());
+        R_ABORT_UNLESS(impl::NotifyBootFinished());
     }
 
     Result ShellServiceBase::GetApplicationProcessIdForShell(sf::Out<os::ProcessId> out) {
@@ -69,7 +69,7 @@ namespace ams::pm::shell {
     }
 
     void ShellServiceBase::GetBootFinishedEventHandle(sf::OutCopyHandle out) {
-        R_ASSERT(impl::GetBootFinishedEventHandle(out.GetHandlePointer()));
+        R_ABORT_UNLESS(impl::GetBootFinishedEventHandle(out.GetHandlePointer()));
     }
 
 }

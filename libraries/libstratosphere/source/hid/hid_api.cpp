@@ -25,10 +25,10 @@ namespace ams::hid {
 
         /* Helper. */
         void InitializeHid() {
-            R_ASSERT(smInitialize());
+            R_ABORT_UNLESS(smInitialize());
             ON_SCOPE_EXIT { smExit(); };
             {
-                R_ASSERT(hidInitialize());
+                R_ABORT_UNLESS(hidInitialize());
             }
         }
 

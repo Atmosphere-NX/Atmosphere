@@ -58,14 +58,14 @@ namespace ams::sf::hipc {
                 this->is_closed = false;
                 this->has_received = false;
                 this->forward_service = nullptr;
-                AMS_ASSERT(!this->IsMitmSession());
+                AMS_ABORT_UNLESS(!this->IsMitmSession());
             }
 
             ServerSession(Handle h, cmif::ServiceObjectHolder &&obj, std::shared_ptr<::Service> &&fsrv) : WaitableHolder(h), srv_obj_holder(std::move(obj)), session_handle(h) {
                 this->is_closed = false;
                 this->has_received = false;
                 this->forward_service = std::move(fsrv);
-                AMS_ASSERT(this->IsMitmSession());
+                AMS_ABORT_UNLESS(this->IsMitmSession());
             }
 
             bool IsMitmSession() const {

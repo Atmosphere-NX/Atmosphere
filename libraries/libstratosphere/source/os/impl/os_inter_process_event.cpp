@@ -31,7 +31,7 @@ namespace ams::os::impl {
     }
 
     InterProcessEvent::InterProcessEvent(bool autoclear) : is_initialized(false) {
-        R_ASSERT(this->Initialize(autoclear));
+        R_ABORT_UNLESS(this->Initialize(autoclear));
     }
 
     InterProcessEvent::~InterProcessEvent() {
@@ -39,7 +39,7 @@ namespace ams::os::impl {
     }
 
     Result InterProcessEvent::Initialize(bool autoclear) {
-        AMS_ASSERT(!this->is_initialized);
+        AMS_ABORT_UNLESS(!this->is_initialized);
         Handle rh, wh;
         R_TRY(CreateEventHandles(&rh, &wh));
         this->Initialize(rh, true, wh, true, autoclear);
@@ -47,8 +47,8 @@ namespace ams::os::impl {
     }
 
     void InterProcessEvent::Initialize(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) {
-        AMS_ASSERT(!this->is_initialized);
-        AMS_ASSERT(read_handle != INVALID_HANDLE || write_handle != INVALID_HANDLE);
+        AMS_ABORT_UNLESS(!this->is_initialized);
+        AMS_ABORT_UNLESS(read_handle != INVALID_HANDLE || write_handle != INVALID_HANDLE);
         this->read_handle = read_handle;
         this->manage_read_handle = manage_read_handle;
         this->write_handle = write_handle;
@@ -58,40 +58,40 @@ namespace ams::os::impl {
     }
 
     Handle InterProcessEvent::DetachReadableHandle() {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
         const Handle handle = this->read_handle;
-        AMS_ASSERT(handle != INVALID_HANDLE);
+        AMS_ABORT_UNLESS(handle != INVALID_HANDLE);
         this->read_handle = INVALID_HANDLE;
         this->manage_read_handle = false;
         return handle;
     }
 
     Handle InterProcessEvent::DetachWritableHandle() {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
         const Handle handle = this->write_handle;
-        AMS_ASSERT(handle != INVALID_HANDLE);
+        AMS_ABORT_UNLESS(handle != INVALID_HANDLE);
         this->write_handle = INVALID_HANDLE;
         this->manage_write_handle = false;
         return handle;
     }
 
     Handle InterProcessEvent::GetReadableHandle() const {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
         return this->read_handle;
     }
 
     Handle InterProcessEvent::GetWritableHandle() const {
-        AMS_ASSERT(this->is_initialized);
+        AMS_ABORT_UNLESS(this->is_initialized);
         return this->write_handle;
     }
 
     void InterProcessEvent::Finalize() {
         if (this->is_initialized) {
             if (this->manage_read_handle && this->read_handle != INVALID_HANDLE) {
-                R_ASSERT(svcCloseHandle(this->read_handle));
+                R_ABORT_UNLESS(svcCloseHandle(this->read_handle));
             }
             if (this->manage_write_handle && this->write_handle != INVALID_HANDLE) {
-                R_ASSERT(svcCloseHandle(this->write_handle));
+                R_ABORT_UNLESS(svcCloseHandle(this->write_handle));
             }
         }
         this->read_handle  = INVALID_HANDLE;
@@ -102,7 +102,7 @@ namespace ams::os::impl {
     }
 
     void InterProcessEvent::Signal() {
-        R_ASSERT(svcSignalEvent(this->GetWritableHandle()));
+        R_ABORT_UNLESS(svcSignalEvent(this->GetWritableHandle()));
     }
 
     void InterProcessEvent::Reset() {
@@ -110,7 +110,7 @@ namespace ams::os::impl {
         if (handle == INVALID_HANDLE) {
             handle = this->GetWritableHandle();
         }
-        R_ASSERT(svcClearEvent(handle));
+        R_ABORT_UNLESS(svcClearEvent(handle));
     }
 
     void InterProcessEvent::Wait() {

@@ -35,12 +35,12 @@ namespace ams::cfg {
             os::ProcessId min = os::InvalidProcessId, max = os::InvalidProcessId;
             if (hos::GetVersion() >= hos::Version_500) {
                 /* On 5.0.0+, we can get precise limits from svcGetSystemInfo. */
-                R_ASSERT(svcGetSystemInfo(reinterpret_cast<u64 *>(&min), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
-                R_ASSERT(svcGetSystemInfo(reinterpret_cast<u64 *>(&max), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
+                R_ABORT_UNLESS(svcGetSystemInfo(reinterpret_cast<u64 *>(&min), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
+                R_ABORT_UNLESS(svcGetSystemInfo(reinterpret_cast<u64 *>(&max), SystemInfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
             } else if (hos::GetVersion() >= hos::Version_400) {
                 /* On 4.0.0-4.1.0, we can get the precise limits from normal svcGetInfo. */
-                R_ASSERT(svcGetInfo(reinterpret_cast<u64 *>(&min), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
-                R_ASSERT(svcGetInfo(reinterpret_cast<u64 *>(&max), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
+                R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&min), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Minimum));
+                R_ABORT_UNLESS(svcGetInfo(reinterpret_cast<u64 *>(&max), InfoType_InitialProcessIdRange, INVALID_HANDLE, InitialProcessIdRangeInfo_Maximum));
             } else {
                 /* On < 4.0.0, we just use hardcoded extents. */
                 min = InitialProcessIdMinDeprecated;

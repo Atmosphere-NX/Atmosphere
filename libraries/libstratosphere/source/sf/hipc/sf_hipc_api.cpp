@@ -22,7 +22,7 @@ namespace ams::sf::hipc {
         NX_INLINE Result ReceiveImpl(Handle session_handle, void *message_buf, size_t message_buf_size) {
             s32 unused_index;
             if (message_buf == armGetTls()) {
-                /* Consider: AMS_ASSERT(message_buf_size == TlsMessageBufferSize); */
+                /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
                 return svcReplyAndReceive(&unused_index, &session_handle, 1, INVALID_HANDLE, U64_MAX);
             } else {
                 return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 1, INVALID_HANDLE, U64_MAX);
@@ -32,7 +32,7 @@ namespace ams::sf::hipc {
         NX_INLINE Result ReplyImpl(Handle session_handle, void *message_buf, size_t message_buf_size) {
             s32 unused_index;
             if (message_buf == armGetTls()) {
-                /* Consider: AMS_ASSERT(message_buf_size == TlsMessageBufferSize); */
+                /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
                 return svcReplyAndReceive(&unused_index, &session_handle, 0, session_handle, 0);
             } else {
                 return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 0, session_handle, 0);
@@ -73,7 +73,7 @@ namespace ams::sf::hipc {
             R_CONVERT(svc::ResultSessionClosed, ResultSuccess())
         } R_END_TRY_CATCH;
         /* ReplyImpl should *always* return an error. */
-        AMS_ASSERT(false);
+        AMS_ABORT_UNLESS(false);
     }
 
     Result CreateSession(Handle *out_server_handle, Handle *out_client_handle) {

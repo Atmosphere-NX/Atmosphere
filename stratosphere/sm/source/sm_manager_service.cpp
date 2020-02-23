@@ -27,11 +27,11 @@ namespace ams::sm {
     }
 
     void ManagerService::AtmosphereEndInitDefers() {
-        R_ASSERT(impl::EndInitialDefers());
+        R_ABORT_UNLESS(impl::EndInitialDefers());
     }
 
     void ManagerService::AtmosphereHasMitm(sf::Out<bool> out, ServiceName service) {
-        R_ASSERT(impl::HasMitm(out.GetPointer(), service));
+        R_ABORT_UNLESS(impl::HasMitm(out.GetPointer(), service));
     }
 
     Result ManagerService::AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {

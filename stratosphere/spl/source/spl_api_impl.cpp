@@ -88,10 +88,10 @@ namespace ams::spl::impl {
                 u32 perm;
             public:
                 DeviceAddressSpaceMapHelper(Handle h, u64 dst, u64 src, size_t sz, u32 p) : das_hnd(h), dst_addr(dst), src_addr(src), size(sz), perm(p) {
-                    R_ASSERT(svcMapDeviceAddressSpaceAligned(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr, this->perm));
+                    R_ABORT_UNLESS(svcMapDeviceAddressSpaceAligned(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr, this->perm));
                 }
                 ~DeviceAddressSpaceMapHelper() {
-                    R_ASSERT(svcUnmapDeviceAddressSpace(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr));
+                    R_ABORT_UNLESS(svcUnmapDeviceAddressSpace(this->das_hnd, dd::GetCurrentProcessHandle(), this->src_addr, this->size, this->dst_addr));
                 }
         };
 
@@ -122,33 +122,33 @@ namespace ams::spl::impl {
         /* Initialization functionality. */
         void InitializeCtrDrbg() {
             u8 seed[CtrDrbg::SeedSize];
-            AMS_ASSERT(smc::GenerateRandomBytes(seed, sizeof(seed)) == smc::Result::Success);
+            AMS_ABORT_UNLESS(smc::GenerateRandomBytes(seed, sizeof(seed)) == smc::Result::Success);
 
             g_drbg.Initialize(seed);
         }
 
         void InitializeSeEvents() {
             u64 irq_num;
-            AMS_ASSERT(smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber) == smc::Result::Success);
-            R_ASSERT(g_se_event.Initialize(irq_num));
+            AMS_ABORT_UNLESS(smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber) == smc::Result::Success);
+            R_ABORT_UNLESS(g_se_event.Initialize(irq_num));
 
-            R_ASSERT(g_se_keyslot_available_event.InitializeAsInterProcessEvent());
+            R_ABORT_UNLESS(g_se_keyslot_available_event.InitializeAsInterProcessEvent());
             g_se_keyslot_available_event.Signal();
         }
 
         void InitializeDeviceAddressSpace() {
 
             /* Create Address Space. */
-            R_ASSERT(svcCreateDeviceAddressSpace(&g_se_das_hnd, 0, (1ul << 32)));
+            R_ABORT_UNLESS(svcCreateDeviceAddressSpace(&g_se_das_hnd, 0, (1ul << 32)));
 
             /* Attach it to the SE. */
-            R_ASSERT(svcAttachDeviceAddressSpace(svc::DeviceName_Se, g_se_das_hnd));
+            R_ABORT_UNLESS(svcAttachDeviceAddressSpace(svc::DeviceName_Se, g_se_das_hnd));
 
             const u64 work_buffer_addr = reinterpret_cast<u64>(g_work_buffer);
             g_se_mapped_work_buffer_addr = WorkBufferMapBase + (work_buffer_addr % DeviceAddressSpaceAlign);
 
             /* Map the work buffer for the SE. */
-            R_ASSERT(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, dd::GetCurrentProcessHandle(), work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3));
+            R_ABORT_UNLESS(svcMapDeviceAddressSpaceAligned(g_se_das_hnd, dd::GetCurrentProcessHandle(), work_buffer_addr, sizeof(g_work_buffer), g_se_mapped_work_buffer_addr, 3));
         }
 
         /* RSA OAEP implementation helpers. */

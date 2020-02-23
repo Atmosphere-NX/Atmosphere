@@ -102,7 +102,7 @@ namespace ams::ldr {
     }
 
     void LoaderService::AtmosphereClearExternalContentSource(ncm::ProgramId program_id) {
-        R_ASSERT(ecs::Clear(program_id));
+        R_ABORT_UNLESS(ecs::Clear(program_id));
     }
 
     void LoaderService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {

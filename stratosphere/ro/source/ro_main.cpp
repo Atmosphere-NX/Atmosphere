@@ -62,15 +62,15 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     sm::DoWithSession([&]() {
-        R_ASSERT(setsysInitialize());
-        R_ASSERT(fsInitialize());
-        R_ASSERT(splInitialize());
+        R_ABORT_UNLESS(setsysInitialize());
+        R_ABORT_UNLESS(fsInitialize());
+        R_ABORT_UNLESS(splInitialize());
         if (hos::GetVersion() < hos::Version_300) {
-            R_ASSERT(pminfoInitialize());
+            R_ABORT_UNLESS(pminfoInitialize());
         }
     });
 
-    R_ASSERT(fsdevMountSdmc());
+    R_ABORT_UNLESS(fsdevMountSdmc());
 
     ams::CheckApiVersion();
 }
@@ -118,11 +118,11 @@ int main(int argc, char **argv)
     }
 
     /* Create services. */
-    R_ASSERT((g_server_manager.RegisterServer<ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
-    R_ASSERT((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
     if (hos::GetVersion() >= hos::Version_700) {
-        R_ASSERT((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
     }
 
     /* Loop forever, servicing our services. */

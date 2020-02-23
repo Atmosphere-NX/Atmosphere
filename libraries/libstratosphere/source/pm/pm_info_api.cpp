@@ -69,7 +69,7 @@ namespace ams::pm::info {
 
     bool HasLaunchedProgram(ncm::ProgramId program_id) {
         bool has_launched = false;
-        R_ASSERT(HasLaunchedProgram(&has_launched, program_id));
+        R_ABORT_UNLESS(HasLaunchedProgram(&has_launched, program_id));
         return has_launched;
     }
 

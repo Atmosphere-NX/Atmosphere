@@ -23,7 +23,7 @@ namespace ams::sm {
     }
 
     void DmntService::AtmosphereListRecords(const sf::OutArray<ServiceRecord> &records, sf::Out<u64> out_count, u64 offset) {
-        R_ASSERT(impl::ListServiceRecords(records.GetPointer(), out_count.GetPointer(), offset, records.GetSize()));
+        R_ABORT_UNLESS(impl::ListServiceRecords(records.GetPointer(), out_count.GetPointer(), offset, records.GetSize()));
     }
 
     void DmntService::AtmosphereGetRecordSize(sf::Out<u64> record_size) {

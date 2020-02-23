@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include <vapours/includes.hpp>
-#include <vapours/defines.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 #include <vapours/literals.hpp>
 
 #include <vapours/timespan.hpp>

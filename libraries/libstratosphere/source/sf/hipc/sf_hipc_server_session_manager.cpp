@@ -40,10 +40,10 @@ namespace ams::sf::hipc {
     }
 
     Result ServerSession::ForwardRequest(const cmif::ServiceDispatchContext &ctx) const {
-        AMS_ASSERT(this->IsMitmSession());
+        AMS_ABORT_UNLESS(this->IsMitmSession());
         /* TODO: Support non-TLS messages? */
-        AMS_ASSERT(this->saved_message.GetPointer() != nullptr);
-        AMS_ASSERT(this->saved_message.GetSize() == TlsMessageBufferSize);
+        AMS_ABORT_UNLESS(this->saved_message.GetPointer() != nullptr);
+        AMS_ABORT_UNLESS(this->saved_message.GetSize() == TlsMessageBufferSize);
 
         /* Copy saved TLS in. */
         std::memcpy(armGetTls(), this->saved_message.GetPointer(), this->saved_message.GetSize());
@@ -78,7 +78,7 @@ namespace ams::sf::hipc {
     void ServerSessionManager::CloseSessionImpl(ServerSession *session) {
         const Handle session_handle = session->session_handle;
         this->DestroySession(session);
-        R_ASSERT(svcCloseHandle(session_handle));
+        R_ABORT_UNLESS(svcCloseHandle(session_handle));
     }
 
     Result ServerSessionManager::RegisterSessionImpl(ServerSession *session_memory, Handle session_handle, cmif::ServiceObjectHolder &&obj) {
@@ -99,7 +99,7 @@ namespace ams::sf::hipc {
         bool succeeded = false;
         ON_SCOPE_EXIT {
             if (!succeeded) {
-                R_ASSERT(svcCloseHandle(session_handle));
+                R_ABORT_UNLESS(svcCloseHandle(session_handle));
             }
         };
         /* Register session. */
@@ -115,7 +115,7 @@ namespace ams::sf::hipc {
         session_memory->pointer_buffer = this->GetSessionPointerBuffer(session_memory);
         session_memory->saved_message  = this->GetSessionSavedMessageBuffer(session_memory);
         /* Validate session pointer buffer. */
-        AMS_ASSERT(session_memory->pointer_buffer.GetSize() >= session_memory->forward_service->pointer_buffer_size);
+        AMS_ABORT_UNLESS(session_memory->pointer_buffer.GetSize() >= session_memory->forward_service->pointer_buffer_size);
         session_memory->pointer_buffer = cmif::PointerAndSize(session_memory->pointer_buffer.GetAddress(), session_memory->forward_service->pointer_buffer_size);
         /* Register to wait list. */
         this->RegisterSessionToWaitList(session_memory);
@@ -129,7 +129,7 @@ namespace ams::sf::hipc {
         bool succeeded = false;
         ON_SCOPE_EXIT {
             if (!succeeded) {
-                R_ASSERT(svcCloseHandle(mitm_session_handle));
+                R_ABORT_UNLESS(svcCloseHandle(mitm_session_handle));
             }
         };
         /* Register session. */
@@ -291,7 +291,7 @@ namespace ams::sf::hipc {
         {
             ON_SCOPE_EXIT {
                 for (size_t i = 0; i < handles_to_close.num_handles; i++) {
-                    R_ASSERT(svcCloseHandle(handles_to_close.handles[i]));
+                    R_ABORT_UNLESS(svcCloseHandle(handles_to_close.handles[i]));
                 }
             };
             R_TRY(hipc::Reply(session->session_handle, out_message));

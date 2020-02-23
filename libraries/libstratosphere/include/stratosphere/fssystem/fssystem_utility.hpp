@@ -83,7 +83,7 @@ namespace ams::fssystem {
     /* Iteration API */
     template<typename OnEnterDir, typename OnExitDir, typename OnFile>
     Result IterateDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *root_path, char *work_path, size_t work_path_size, fs::DirectoryEntry *dir_ent_buf, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
-        AMS_ASSERT(work_path_size >= fs::EntryNameLengthMax + 1);
+        AMS_ABORT_UNLESS(work_path_size >= fs::EntryNameLengthMax + 1);
 
         /* Get size of the root path. */
         size_t root_path_len = strnlen(root_path, fs::EntryNameLengthMax + 1);

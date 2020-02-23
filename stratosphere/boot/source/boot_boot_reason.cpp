@@ -72,16 +72,16 @@ namespace ams::boot {
         /* Get values from PMIC. */
         {
             PmicDriver pmic_driver;
-            R_ASSERT(pmic_driver.GetPowerIntr(&power_intr));
-            R_ASSERT(pmic_driver.GetNvErc(&nv_erc));
-            R_ASSERT(pmic_driver.GetAcOk(&ac_ok));
+            R_ABORT_UNLESS(pmic_driver.GetPowerIntr(&power_intr));
+            R_ABORT_UNLESS(pmic_driver.GetNvErc(&nv_erc));
+            R_ABORT_UNLESS(pmic_driver.GetAcOk(&ac_ok));
         }
 
         /* Get values from RTC. */
         {
             RtcDriver rtc_driver;
-            R_ASSERT(rtc_driver.GetRtcIntr(&rtc_intr));
-            R_ASSERT(rtc_driver.GetRtcIntrM(&rtc_intr_m));
+            R_ABORT_UNLESS(rtc_driver.GetRtcIntr(&rtc_intr));
+            R_ABORT_UNLESS(rtc_driver.GetRtcIntrM(&rtc_intr_m));
         }
 
         /* Set global derived boot reason. */
@@ -94,14 +94,14 @@ namespace ams::boot {
             boot_reason_value.rtc_intr = rtc_intr & ~rtc_intr_m;
             boot_reason_value.nv_erc = nv_erc;
             boot_reason_value.boot_reason = g_boot_reason;
-            R_ASSERT(splSetBootReason(boot_reason_value.value));
+            R_ABORT_UNLESS(splSetBootReason(boot_reason_value.value));
         }
 
         g_detected_boot_reason = true;
     }
 
     u32 GetBootReason() {
-        AMS_ASSERT(g_detected_boot_reason);
+        AMS_ABORT_UNLESS(g_detected_boot_reason);
         return g_boot_reason;
     }
 

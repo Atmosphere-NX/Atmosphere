@@ -33,7 +33,7 @@ namespace ams::gpio {
 
         /* Helpers. */
         inline u32 GetPadDescriptor(u32 gpio_pad_name) {
-            AMS_ASSERT(gpio_pad_name < PadNameMax);
+            AMS_ABORT_UNLESS(gpio_pad_name < PadNameMax);
             return Map[gpio_pad_name];
         }
 

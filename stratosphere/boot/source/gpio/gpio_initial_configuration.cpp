@@ -79,7 +79,7 @@ namespace ams::gpio {
         }
 
         /* Ensure we found an appropriate config. */
-        AMS_ASSERT(configs != nullptr);
+        AMS_ABORT_UNLESS(configs != nullptr);
 
         for (size_t i = 0; i < num_configs; i++) {
             /* Configure the GPIO. */

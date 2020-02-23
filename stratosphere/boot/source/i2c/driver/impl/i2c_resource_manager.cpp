@@ -25,7 +25,7 @@ namespace ams::i2c::driver::impl {
 
     void ResourceManager::Finalize() {
         std::scoped_lock lk(this->initialize_mutex);
-        AMS_ASSERT(this->ref_cnt > 0);
+        AMS_ABORT_UNLESS(this->ref_cnt > 0);
         this->ref_cnt--;
         if (this->ref_cnt > 0) {
             return;
@@ -55,11 +55,11 @@ namespace ams::i2c::driver::impl {
         /* Get, open session. */
         {
             std::scoped_lock lk(this->session_open_mutex);
-            AMS_ASSERT(out_session != nullptr);
-            AMS_ASSERT(bus < Bus::Count);
+            AMS_ABORT_UNLESS(out_session != nullptr);
+            AMS_ABORT_UNLESS(bus < Bus::Count);
 
             session_id = GetFreeSessionId();
-            AMS_ASSERT(session_id != InvalidSessionId);
+            AMS_ABORT_UNLESS(session_id != InvalidSessionId);
 
 
             if ((bus == Bus::I2C2 || bus == Bus::I2C3) && (this->bus_accessors[ConvertToIndex(Bus::I2C2)].GetOpenSessions() == 0 && this->bus_accessors[ConvertToIndex(Bus::I2C3)].GetOpenSessions() == 0)) {
@@ -74,8 +74,8 @@ namespace ams::i2c::driver::impl {
         this->sessions[session_id].Start();
         if (need_enable_ldo6) {
             pcv::Initialize();
-            R_ASSERT(pcv::SetVoltageValue(10, 2'900'000));
-            R_ASSERT(pcv::SetVoltageEnabled(10, true));
+            R_ABORT_UNLESS(pcv::SetVoltageValue(10, 2'900'000));
+            R_ABORT_UNLESS(pcv::SetVoltageEnabled(10, true));
             pcv::Finalize();
             svcSleepThread(560'000ul);
         }
@@ -86,7 +86,7 @@ namespace ams::i2c::driver::impl {
         /* Get, open session. */
         {
             std::scoped_lock lk(this->session_open_mutex);
-            AMS_ASSERT(this->sessions[session.session_id].IsOpen());
+            AMS_ABORT_UNLESS(this->sessions[session.session_id].IsOpen());
 
             this->sessions[session.session_id].Close();
 
@@ -98,14 +98,14 @@ namespace ams::i2c::driver::impl {
 
         if (need_disable_ldo6) {
             pcv::Initialize();
-            R_ASSERT(pcv::SetVoltageEnabled(10, false));
+            R_ABORT_UNLESS(pcv::SetVoltageEnabled(10, false));
             pcv::Finalize();
         }
 
     }
 
     void ResourceManager::SuspendBuses() {
-        AMS_ASSERT(this->ref_cnt > 0);
+        AMS_ABORT_UNLESS(this->ref_cnt > 0);
 
         if (!this->suspended) {
             {
@@ -118,19 +118,19 @@ namespace ams::i2c::driver::impl {
                 }
             }
             pcv::Initialize();
-            R_ASSERT(pcv::SetVoltageEnabled(10, false));
+            R_ABORT_UNLESS(pcv::SetVoltageEnabled(10, false));
             pcv::Finalize();
         }
     }
 
     void ResourceManager::ResumeBuses() {
-        AMS_ASSERT(this->ref_cnt > 0);
+        AMS_ABORT_UNLESS(this->ref_cnt > 0);
 
         if (this->suspended) {
             if (this->bus_accessors[ConvertToIndex(Bus::I2C2)].GetOpenSessions() > 0 || this->bus_accessors[ConvertToIndex(Bus::I2C3)].GetOpenSessions() > 0) {
                 pcv::Initialize();
-                R_ASSERT(pcv::SetVoltageValue(10, 2'900'000));
-                R_ASSERT(pcv::SetVoltageEnabled(10, true));
+                R_ABORT_UNLESS(pcv::SetVoltageValue(10, 2'900'000));
+                R_ABORT_UNLESS(pcv::SetVoltageEnabled(10, true));
                 pcv::Finalize();
                 svcSleepThread(1'560'000ul);
             }
@@ -147,7 +147,7 @@ namespace ams::i2c::driver::impl {
     }
 
     void ResourceManager::SuspendPowerBus() {
-        AMS_ASSERT(this->ref_cnt > 0);
+        AMS_ABORT_UNLESS(this->ref_cnt > 0);
         std::scoped_lock lk(this->session_open_mutex);
 
         if (!this->power_bus_suspended) {
@@ -159,7 +159,7 @@ namespace ams::i2c::driver::impl {
     }
 
     void ResourceManager::ResumePowerBus() {
-        AMS_ASSERT(this->ref_cnt > 0);
+        AMS_ABORT_UNLESS(this->ref_cnt > 0);
         std::scoped_lock lk(this->session_open_mutex);
 
         if (this->power_bus_suspended) {

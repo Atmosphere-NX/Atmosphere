@@ -54,7 +54,7 @@ namespace ams::kvdb {
                 }
             private:
                 void RemoveIndex(size_t i) {
-                    AMS_ASSERT(i < this->GetCount());
+                    AMS_ABORT_UNLESS(i < this->GetCount());
                     std::memmove(this->keys + i, this->keys + i + 1, sizeof(*this->keys) * (this->GetCount() - (i + 1)));
                     this->DecrementCount();
                 }
@@ -71,8 +71,8 @@ namespace ams::kvdb {
 
                 Result Initialize(const char *path, void *buf, size_t size) {
                     /* Only initialize once, and ensure we have sufficient memory. */
-                    AMS_ASSERT(this->keys == nullptr);
-                    AMS_ASSERT(size >= BufferSize);
+                    AMS_ABORT_UNLESS(this->keys == nullptr);
+                    AMS_ABORT_UNLESS(size >= BufferSize);
 
                     /* Setup member variables. */
                     this->keys = static_cast<Key *>(buf);
@@ -127,23 +127,23 @@ namespace ams::kvdb {
                 }
 
                 Key Get(size_t i) const {
-                    AMS_ASSERT(i < this->GetCount());
+                    AMS_ABORT_UNLESS(i < this->GetCount());
                     return this->keys[i];
                 }
 
                 Key Peek() const {
-                    AMS_ASSERT(!this->IsEmpty());
+                    AMS_ABORT_UNLESS(!this->IsEmpty());
                     return this->Get(0);
                 }
 
                 void Push(const Key &key) {
-                    AMS_ASSERT(!this->IsFull());
+                    AMS_ABORT_UNLESS(!this->IsFull());
                     this->keys[this->GetCount()] = key;
                     this->IncrementCount();
                 }
 
                 Key Pop() {
-                    AMS_ASSERT(!this->IsEmpty());
+                    AMS_ABORT_UNLESS(!this->IsEmpty());
                     this->RemoveIndex(0);
                 }
 

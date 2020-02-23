@@ -13,20 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
+#pragma once
+#include <vapours/includes.hpp>
+#include <vapours/defines.hpp>
 
-namespace ams::pm::bm {
+#if 0
+#define AMS_BUILD_FOR_AUDITING
+#endif
 
-    /* Boot Mode API. */
-    /* Both functions should be weakly linked, so that they can be overridden by ams::boot2 as needed. */
-    BootMode WEAK_SYMBOL GetBootMode() {
-        PmBootMode boot_mode = PmBootMode_Normal;
-        R_ABORT_UNLESS(pmbmGetBootMode(&boot_mode));
-        return static_cast<BootMode>(boot_mode);
-    }
+#ifdef  AMS_BUILD_FOR_AUDITING
+#define AMS_BUILD_FOR_DEBUGGING
+#endif
 
-    void WEAK_SYMBOL SetMaintenanceBoot() {
-        R_ABORT_UNLESS(pmbmSetMaintenanceBoot());
-    }
-
-}
+#ifdef  AMS_BUILD_FOR_DEBUGGING
+#define AMS_ENABLE_ASSERTIONS
+#define AMS_ENABLE_DEBUG_PRINT
+#endif

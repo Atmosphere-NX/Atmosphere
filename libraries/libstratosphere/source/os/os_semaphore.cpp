@@ -65,7 +65,7 @@ namespace ams::os {
     void Semaphore::Release() {
         std::scoped_lock lk(this->mutex);
 
-        AMS_ASSERT(this->count + 1 <= this->max_count);
+        AMS_ABORT_UNLESS(this->count + 1 <= this->max_count);
         this->count++;
 
         this->condvar.Signal();
@@ -75,7 +75,7 @@ namespace ams::os {
     void Semaphore::Release(int count) {
         std::scoped_lock lk(this->mutex);
 
-        AMS_ASSERT(this->count + count <= this->max_count);
+        AMS_ABORT_UNLESS(this->count + count <= this->max_count);
         this->count += count;
 
         this->condvar.Broadcast();

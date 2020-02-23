@@ -76,27 +76,27 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     sm::DoWithSession([&]() {
-        R_ASSERT(setInitialize());
-        R_ASSERT(setsysInitialize());
-        R_ASSERT(pminfoInitialize());
-        R_ASSERT(i2cInitialize());
-        R_ASSERT(bpcInitialize());
+        R_ABORT_UNLESS(setInitialize());
+        R_ABORT_UNLESS(setsysInitialize());
+        R_ABORT_UNLESS(pminfoInitialize());
+        R_ABORT_UNLESS(i2cInitialize());
+        R_ABORT_UNLESS(bpcInitialize());
 
         if (hos::GetVersion() >= hos::Version_800) {
-            R_ASSERT(clkrstInitialize());
+            R_ABORT_UNLESS(clkrstInitialize());
         } else {
-            R_ASSERT(pcvInitialize());
+            R_ABORT_UNLESS(pcvInitialize());
         }
 
-        R_ASSERT(lblInitialize());
-        R_ASSERT(psmInitialize());
-        R_ASSERT(spsmInitialize());
-        R_ASSERT(plInitialize());
-        R_ASSERT(gpioInitialize());
-        R_ASSERT(fsInitialize());
+        R_ABORT_UNLESS(lblInitialize());
+        R_ABORT_UNLESS(psmInitialize());
+        R_ABORT_UNLESS(spsmInitialize());
+        R_ABORT_UNLESS(plInitialize());
+        R_ABORT_UNLESS(gpioInitialize());
+        R_ABORT_UNLESS(fsInitialize());
     });
 
-    R_ASSERT(fsdevMountSdmc());
+    R_ABORT_UNLESS(fsdevMountSdmc());
 
     /* fatal cannot throw fatal, so don't do: ams::CheckApiVersion(); */
 }
@@ -144,14 +144,14 @@ namespace {
 int main(int argc, char **argv)
 {
     /* Load shared font. */
-    R_ASSERT(fatal::srv::font::InitializeSharedFont());
+    R_ABORT_UNLESS(fatal::srv::font::InitializeSharedFont());
 
     /* Check whether we should throw fatal due to repair process. */
     fatal::srv::CheckRepairStatus();
 
     /* Create services. */
-    R_ASSERT((g_server_manager.RegisterServer<fatal::srv::PrivateService>(PrivateServiceName, PrivateMaxSessions)));
-    R_ASSERT((g_server_manager.RegisterServer<fatal::srv::UserService>(UserServiceName, UserMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<fatal::srv::PrivateService>(PrivateServiceName, PrivateMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<fatal::srv::UserService>(UserServiceName, UserMaxSessions)));
 
     /* Add dirty event holder. */
     /* TODO: s_server_manager.AddWaitable(ams::fatal::srv::GetFatalDirtyEvent()); */
@@ -167,7 +167,7 @@ int main(int argc, char **argv)
             g_server_manager.AddUserWaitableHolder(signaled_holder);
         } else {
             /* A server/session was signaled. Have the manager handle it. */
-            R_ASSERT(g_server_manager.Process(signaled_holder));
+            R_ABORT_UNLESS(g_server_manager.Process(signaled_holder));
         }
     }
 

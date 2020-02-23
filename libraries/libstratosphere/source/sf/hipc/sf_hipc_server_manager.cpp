@@ -76,14 +76,14 @@ namespace ams::sf::hipc {
 
     void ServerManagerBase::AddUserWaitableHolder(os::WaitableHolder *waitable) {
         const auto user_data_tag = static_cast<UserDataTag>(waitable->GetUserData());
-        AMS_ASSERT(user_data_tag != UserDataTag::Server);
-        AMS_ASSERT(user_data_tag != UserDataTag::MitmServer);
-        AMS_ASSERT(user_data_tag != UserDataTag::Session);
+        AMS_ABORT_UNLESS(user_data_tag != UserDataTag::Server);
+        AMS_ABORT_UNLESS(user_data_tag != UserDataTag::MitmServer);
+        AMS_ABORT_UNLESS(user_data_tag != UserDataTag::Session);
         this->RegisterToWaitList(waitable);
     }
 
     Result ServerManagerBase::ProcessForServer(os::WaitableHolder *holder) {
-        AMS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Server);
+        AMS_ABORT_UNLESS(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Server);
 
         ServerBase *server = static_cast<ServerBase *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
@@ -94,14 +94,14 @@ namespace ams::sf::hipc {
         server->CreateSessionObjectHolder(&obj, &fsrv);
 
         /* Not a mitm server, so we must have no forward service. */
-        AMS_ASSERT(fsrv == nullptr);
+        AMS_ABORT_UNLESS(fsrv == nullptr);
 
         /* Try to accept. */
         return this->AcceptSession(server->port_handle, std::move(obj));
     }
 
     Result ServerManagerBase::ProcessForMitmServer(os::WaitableHolder *holder) {
-        AMS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::MitmServer);
+        AMS_ABORT_UNLESS(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::MitmServer);
 
         ServerBase *server = static_cast<ServerBase *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
@@ -112,20 +112,20 @@ namespace ams::sf::hipc {
         server->CreateSessionObjectHolder(&obj, &fsrv);
 
         /* Mitm server, so we must have forward service. */
-        AMS_ASSERT(fsrv != nullptr);
+        AMS_ABORT_UNLESS(fsrv != nullptr);
 
         /* Try to accept. */
         return this->AcceptMitmSession(server->port_handle, std::move(obj), std::move(fsrv));
     }
 
     Result ServerManagerBase::ProcessForSession(os::WaitableHolder *holder) {
-        AMS_ASSERT(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Session);
+        AMS_ABORT_UNLESS(static_cast<UserDataTag>(holder->GetUserData()) == UserDataTag::Session);
 
         ServerSession *session = static_cast<ServerSession *>(holder);
 
         cmif::PointerAndSize tls_message(armGetTls(), hipc::TlsMessageBufferSize);
         const cmif::PointerAndSize &saved_message = session->saved_message;
-        AMS_ASSERT(tls_message.GetSize() == saved_message.GetSize());
+        AMS_ABORT_UNLESS(tls_message.GetSize() == saved_message.GetSize());
         if (!session->has_received) {
             R_TRY(this->ReceiveRequest(session, tls_message));
             session->has_received = true;
@@ -208,7 +208,7 @@ namespace ams::sf::hipc {
         if (!waitable) {
             return false;
         }
-        R_ASSERT(this->Process(waitable));
+        R_ABORT_UNLESS(this->Process(waitable));
         return true;
     }
 

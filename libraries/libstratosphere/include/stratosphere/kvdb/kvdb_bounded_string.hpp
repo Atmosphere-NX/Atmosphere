@@ -28,7 +28,7 @@ namespace ams::kvdb {
         private:
             /* Utility. */
             static inline void CheckLength(size_t len) {
-                AMS_ASSERT(len < N);
+                AMS_ABORT_UNLESS(len < N);
             }
         public:
             /* Constructors. */
@@ -109,8 +109,8 @@ namespace ams::kvdb {
             /* Substring utilities. */
             void GetSubstring(char *dst, size_t dst_size, size_t offset, size_t length) const {
                 /* Make sure output buffer can hold the substring. */
-                AMS_ASSERT(offset + length <= GetLength());
-                AMS_ASSERT(dst_size > length);
+                AMS_ABORT_UNLESS(offset + length <= GetLength());
+                AMS_ABORT_UNLESS(dst_size > length);
                 /* Copy substring to dst. */
                 std::strncpy(dst, this->buffer + offset, length);
                 dst[length] = 0;

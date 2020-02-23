@@ -31,7 +31,7 @@ namespace ams::util::ini {
 
             explicit FsFileContext(FsFile *f) : f(f), offset(0) {
                 s64 size;
-                R_ASSERT(fsFileGetSize(this->f, &size));
+                R_ABORT_UNLESS(fsFileGetSize(this->f, &size));
                 this->num_left = size_t(size);
             }
         };
@@ -46,8 +46,8 @@ namespace ams::util::ini {
             /* Read as many bytes as we can. */
             size_t try_read = std::min(size_t(num - 1), ctx->num_left);
             size_t actually_read;
-            R_ASSERT(fsFileRead(ctx->f, ctx->offset, str, try_read, FsReadOption_None, &actually_read));
-            AMS_ASSERT(actually_read == try_read);
+            R_ABORT_UNLESS(fsFileRead(ctx->f, ctx->offset, str, try_read, FsReadOption_None, &actually_read));
+            AMS_ABORT_UNLESS(actually_read == try_read);
 
             /* Only "read" up to the first \n. */
             size_t offset = actually_read;

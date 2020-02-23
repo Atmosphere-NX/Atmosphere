@@ -40,7 +40,7 @@ namespace ams {
         const u32 build_version   = exosphere::GetVersion(ATMOSPHERE_RELEASE_VERSION);
 
         if (runtime_version < build_version) {
-            R_ASSERT(exosphere::ResultVersionMismatch());
+            R_ABORT_UNLESS(exosphere::ResultVersionMismatch());
         }
     }
 

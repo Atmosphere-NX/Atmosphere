@@ -66,11 +66,11 @@ namespace ams::sf::hipc::impl {
             g_constructed_server = true;
         }
 
-        R_ASSERT(GetPointer(g_query_server_storage)->RegisterSession(query_handle, cmif::ServiceObjectHolder(std::make_shared<MitmQueryService>(query_func))));
+        R_ABORT_UNLESS(GetPointer(g_query_server_storage)->RegisterSession(query_handle, cmif::ServiceObjectHolder(std::make_shared<MitmQueryService>(query_func))));
 
         if (!g_registered_any) {
-            R_ASSERT(g_query_server_process_thread.Initialize(&QueryServerProcessThreadMain, GetPointer(g_query_server_storage), QueryServerProcessThreadPriority));
-            R_ASSERT(g_query_server_process_thread.Start());
+            R_ABORT_UNLESS(g_query_server_process_thread.Initialize(&QueryServerProcessThreadMain, GetPointer(g_query_server_storage), QueryServerProcessThreadPriority));
+            R_ABORT_UNLESS(g_query_server_process_thread.Start());
             g_registered_any = true;
         }
     }

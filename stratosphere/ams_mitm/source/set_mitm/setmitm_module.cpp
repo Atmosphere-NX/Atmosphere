@@ -42,8 +42,8 @@ namespace ams::mitm::settings {
         mitm::WaitInitialized();
 
         /* Create mitm servers. */
-        R_ASSERT(g_server_manager.RegisterMitmServer<SetMitmService>(SetMitmServiceName));
-        R_ASSERT(g_server_manager.RegisterMitmServer<SetSysMitmService>(SetSysMitmServiceName));
+        R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<SetMitmService>(SetMitmServiceName));
+        R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<SetSysMitmService>(SetSysMitmServiceName));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

@@ -62,7 +62,7 @@ namespace ams::sm {
             }
 
             Result Initialize() {
-                AMS_ASSERT(!this->has_initialized);
+                AMS_ABORT_UNLESS(!this->has_initialized);
 
                 sm::DoWithSession([&]() {
                     this->result = Initializer();
@@ -73,7 +73,7 @@ namespace ams::sm {
             }
 
             void Finalize() {
-                AMS_ASSERT(this->has_initialized);
+                AMS_ABORT_UNLESS(this->has_initialized);
                 Finalizer();
                 this->has_initialized = false;
             }

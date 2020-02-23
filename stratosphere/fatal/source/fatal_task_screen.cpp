@@ -182,7 +182,7 @@ namespace ams::fatal::srv {
 
             /* Prepare screen for drawing. */
             sm::DoWithSession([&]() {
-                R_ASSERT(PrepareScreenForDrawing());
+                R_ABORT_UNLESS(PrepareScreenForDrawing());
             });
 
             /* Dequeue a buffer. */

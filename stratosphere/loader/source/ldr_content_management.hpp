@@ -45,7 +45,7 @@ namespace ams::ldr {
             }
 
             const cfg::OverrideStatus &GetOverrideStatus() const {
-                AMS_ASSERT(this->has_status);
+                AMS_ABORT_UNLESS(this->has_status);
                 return this->override_status;
             }
 

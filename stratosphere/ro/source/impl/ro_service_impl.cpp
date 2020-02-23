@@ -83,10 +83,10 @@ namespace ams::ro::impl {
                 ncm::ProgramId program_id = ncm::ProgramId::Invalid;
                 if (hos::GetVersion() >= hos::Version_300) {
                     /* 3.0.0+: Use svcGetInfo. */
-                    R_ASSERT(svcGetInfo(&program_id.value, InfoType_ProgramId, process_h, 0));
+                    R_ABORT_UNLESS(svcGetInfo(&program_id.value, InfoType_ProgramId, process_h, 0));
                 } else {
                     /* 1.0.0-2.3.0: We're not inside loader, so ask pm. */
-                    R_ASSERT(pm::info::GetProgramId(&program_id, os::GetProcessId(process_h)));
+                    R_ABORT_UNLESS(pm::info::GetProgramId(&program_id, os::GetProcessId(process_h)));
                 }
                 return program_id;
             }
@@ -240,7 +240,7 @@ namespace ams::ro::impl {
                 return nullptr;
             }
 
-            AMS_ASSERT(context_id < MaxSessions);
+            AMS_ABORT_UNLESS(context_id < MaxSessions);
             return &g_process_contexts[context_id];
         }
 
@@ -267,7 +267,7 @@ namespace ams::ro::impl {
                 }
             }
             /* Failure to find a free context is actually an abort condition. */
-            AMS_ASSERT(false);
+            AMS_ABORT_UNLESS(false);
         }
 
         void FreeContext(size_t context_id) {
@@ -367,7 +367,7 @@ namespace ams::ro::impl {
     Result LoadNrr(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        AMS_ASSERT(context != nullptr);
+        AMS_ABORT_UNLESS(context != nullptr);
 
         /* Get program id. */
         const ncm::ProgramId program_id = context->GetProgramId(process_h);
@@ -397,7 +397,7 @@ namespace ams::ro::impl {
     Result UnloadNrr(size_t context_id, u64 nrr_address) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        AMS_ASSERT(context != nullptr);
+        AMS_ABORT_UNLESS(context != nullptr);
 
         /* Validate address. */
         R_UNLESS(util::IsAligned(nrr_address, os::MemoryPageSize), ResultInvalidAddress());
@@ -419,7 +419,7 @@ namespace ams::ro::impl {
     Result LoadNro(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        AMS_ASSERT(context != nullptr);
+        AMS_ABORT_UNLESS(context != nullptr);
 
         /* Validate address/size. */
         R_TRY(ValidateAddressAndNonZeroSize(nro_address, nro_size));
@@ -465,7 +465,7 @@ namespace ams::ro::impl {
     Result UnloadNro(size_t context_id, u64 nro_address) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
-        AMS_ASSERT(context != nullptr);
+        AMS_ABORT_UNLESS(context != nullptr);
 
         /* Validate address. */
         R_UNLESS(util::IsAligned(nro_address, os::MemoryPageSize), ResultInvalidAddress());

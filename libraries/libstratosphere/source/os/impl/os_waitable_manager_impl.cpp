@@ -64,7 +64,7 @@ namespace ams::os::impl{
                 index = WaitTimedOut;
             } else {
                 index = this->WaitSynchronization(object_handles, count, min_timeout);
-                AMS_ASSERT(index != WaitInvalid);
+                AMS_ABORT_UNLESS(index != WaitInvalid);
             }
 
             switch (index) {
@@ -115,7 +115,7 @@ namespace ams::os::impl{
 
         for (WaitableHolderBase &holder_base : this->waitable_list) {
             if (Handle handle = holder_base.GetHandle(); handle != INVALID_HANDLE) {
-                AMS_ASSERT(count < MaximumHandleCount);
+                AMS_ABORT_UNLESS(count < MaximumHandleCount);
 
                 out_handles[count] = handle;
                 out_objects[count] = &holder_base;
@@ -170,7 +170,7 @@ namespace ams::os::impl{
 
         if (this->signaled_holder == nullptr) {
             this->signaled_holder = holder_base;
-            R_ASSERT(svcCancelSynchronization(this->waiting_thread_handle));
+            R_ABORT_UNLESS(svcCancelSynchronization(this->waiting_thread_handle));
         }
     }
 

@@ -71,15 +71,15 @@ void __appInit(void) {
 
     /* Initialize services we need. */
     sm::DoWithSession([&]() {
-        R_ASSERT(fsInitialize());
-        R_ASSERT(pmbmInitialize());
-        R_ASSERT(pminfoInitialize());
-        R_ASSERT(pmshellInitialize());
-        R_ASSERT(setsysInitialize());
-        R_ASSERT(gpioInitialize());
+        R_ABORT_UNLESS(fsInitialize());
+        R_ABORT_UNLESS(pmbmInitialize());
+        R_ABORT_UNLESS(pminfoInitialize());
+        R_ABORT_UNLESS(pmshellInitialize());
+        R_ABORT_UNLESS(setsysInitialize());
+        R_ABORT_UNLESS(gpioInitialize());
     });
 
-    R_ASSERT(fsdevMountSdmc());
+    R_ABORT_UNLESS(fsdevMountSdmc());
 
     ams::CheckApiVersion();
 }

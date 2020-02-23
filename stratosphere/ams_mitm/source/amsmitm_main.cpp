@@ -78,10 +78,10 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     sm::DoWithSession([&]() {
-        R_ASSERT(fsInitialize());
-        R_ASSERT(pmdmntInitialize());
-        R_ASSERT(pminfoInitialize());
-        R_ASSERT(splFsInitialize());
+        R_ABORT_UNLESS(fsInitialize());
+        R_ABORT_UNLESS(pmdmntInitialize());
+        R_ABORT_UNLESS(pminfoInitialize());
+        R_ABORT_UNLESS(splFsInitialize());
     });
 
     ams::CheckApiVersion();

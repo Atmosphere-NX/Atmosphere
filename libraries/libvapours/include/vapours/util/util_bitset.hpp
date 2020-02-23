@@ -15,7 +15,8 @@
  */
 
 #pragma once
-#include "../defines.hpp"
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
 namespace ams::util {
 

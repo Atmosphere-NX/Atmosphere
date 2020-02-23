@@ -20,7 +20,7 @@
 
 namespace ams::crypto::impl {
 
-    bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
+    inline bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
         bool result;
         u8 xor_acc, ltmp, rtmp;
         size_t index;

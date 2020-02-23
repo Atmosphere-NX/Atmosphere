@@ -29,7 +29,7 @@ namespace ams::dd {
 
     inline uintptr_t GetIoMapping(uintptr_t phys_addr, size_t size) {
         const uintptr_t io_mapping = QueryIoMapping(phys_addr, size);
-        AMS_ASSERT(io_mapping);
+        AMS_ABORT_UNLESS(io_mapping);
         return io_mapping;
     }
 

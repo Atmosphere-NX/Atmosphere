@@ -19,13 +19,13 @@ namespace ams::spl {
 
     HardwareType GetHardwareType() {
         u64 out_val = 0;
-        R_ASSERT(splGetConfig(SplConfigItem_HardwareType, &out_val));
+        R_ABORT_UNLESS(splGetConfig(SplConfigItem_HardwareType, &out_val));
         return static_cast<HardwareType>(out_val);
     }
 
     MemoryArrangement GetMemoryArrangement() {
         u64 arrange = 0;
-        R_ASSERT(splGetConfig(SplConfigItem_MemoryArrange, &arrange));
+        R_ABORT_UNLESS(splGetConfig(SplConfigItem_MemoryArrange, &arrange));
         arrange &= 0x3F;
         switch (arrange) {
             case 2:
@@ -43,19 +43,19 @@ namespace ams::spl {
 
     bool IsDevelopmentHardware() {
         bool is_dev_hardware;
-        R_ASSERT(splIsDevelopment(&is_dev_hardware));
+        R_ABORT_UNLESS(splIsDevelopment(&is_dev_hardware));
         return is_dev_hardware;
     }
 
     bool IsDevelopmentFunctionEnabled() {
         u64 val = 0;
-        R_ASSERT(splGetConfig(SplConfigItem_IsDebugMode, &val));
+        R_ABORT_UNLESS(splGetConfig(SplConfigItem_IsDebugMode, &val));
         return val != 0;
     }
 
     bool IsRecoveryBoot() {
         u64 val = 0;
-        R_ASSERT(splGetConfig(SplConfigItem_IsRecoveryBoot, &val));
+        R_ABORT_UNLESS(splGetConfig(SplConfigItem_IsRecoveryBoot, &val));
         return val != 0;
     }
 

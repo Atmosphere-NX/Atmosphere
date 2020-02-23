@@ -35,17 +35,17 @@ namespace ams::mitm::settings {
             }
 
             /* Mount firmware version data archive. */
-            R_ASSERT(romfsMountFromDataArchive(static_cast<u64>(ncm::ProgramId::ArchiveSystemVersion), NcmStorageId_BuiltInSystem, "sysver"));
+            R_ABORT_UNLESS(romfsMountFromDataArchive(static_cast<u64>(ncm::ProgramId::ArchiveSystemVersion), NcmStorageId_BuiltInSystem, "sysver"));
             {
                 ON_SCOPE_EXIT { romfsUnmount("sysver"); };
 
                 /* Firmware version file must exist. */
                 FILE *fp = fopen("sysver:/file", "rb");
-                AMS_ASSERT(fp != nullptr);
+                AMS_ABORT_UNLESS(fp != nullptr);
                 ON_SCOPE_EXIT { fclose(fp); };
 
                 /* Must be possible to read firmware version from file. */
-                AMS_ASSERT(fread(&g_firmware_version, sizeof(g_firmware_version), 1, fp) == 1);
+                AMS_ABORT_UNLESS(fread(&g_firmware_version, sizeof(g_firmware_version), 1, fp) == 1);
 
                 g_ams_firmware_version = g_firmware_version;
             }

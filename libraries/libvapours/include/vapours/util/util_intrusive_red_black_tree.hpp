@@ -16,7 +16,9 @@
 
 #pragma once
 #include <freebsd/sys/tree.h>
-#include "util_parent_of_member.hpp"
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/util/util_parent_of_member.hpp>
 
 namespace ams::util {
 

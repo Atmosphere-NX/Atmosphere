@@ -42,8 +42,8 @@ namespace ams::fatal::srv {
             public:
                 TaskThread() { /* ... */ }
                 void StartTask(ITask *task) {
-                    R_ASSERT(this->thread.Initialize(&RunTaskImpl, task, task->GetStack(), task->GetStackSize(), TaskThreadPriority));
-                    R_ASSERT(this->thread.Start());
+                    R_ABORT_UNLESS(this->thread.Initialize(&RunTaskImpl, task, task->GetStack(), task->GetStackSize(), TaskThreadPriority));
+                    R_ABORT_UNLESS(this->thread.Start());
                 }
         };
 
@@ -57,7 +57,7 @@ namespace ams::fatal::srv {
             public:
                 TaskManager() { /* ... */ }
                 void StartTask(ITask *task) {
-                    AMS_ASSERT(this->task_count < MaxTasks);
+                    AMS_ABORT_UNLESS(this->task_count < MaxTasks);
                     this->task_threads[this->task_count++].StartTask(task);
                 }
         };

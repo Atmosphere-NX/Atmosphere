@@ -92,7 +92,7 @@ namespace ams::ldr::ecs {
         R_UNLESS(g_map.size() < MaxExternalContentSourceCount, ldr::ResultTooManyArguments());
 
         /* Clear any sources. */
-        R_ASSERT(Clear(program_id));
+        R_ABORT_UNLESS(Clear(program_id));
 
         /* Generate mountpoint. */
         char device_name[DeviceNameSizeMax];

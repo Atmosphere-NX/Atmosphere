@@ -132,7 +132,7 @@ namespace ams::sf::cmif {
         /* Write out header. */
         constexpr size_t out_header_size = sizeof(CmifDomainOutHeader);
         const size_t impl_out_data_total_size = this->GetImplOutDataTotalSize();
-        AMS_ASSERT(out_header_size + impl_out_data_total_size + sizeof(DomainObjectId) * this->GetOutObjectCount() <= raw_data.GetSize());
+        AMS_ABORT_UNLESS(out_header_size + impl_out_data_total_size + sizeof(DomainObjectId) * this->GetOutObjectCount() <= raw_data.GetSize());
         *reinterpret_cast<CmifDomainOutHeader *>(raw_data.GetPointer()) = CmifDomainOutHeader{ .num_out_objects = static_cast<u32>(this->GetOutObjectCount()), };
 
         /* Set output raw data. */
@@ -150,7 +150,7 @@ namespace ams::sf::cmif {
         /* Write out header. */
         constexpr size_t out_header_size = sizeof(CmifDomainOutHeader);
         const size_t impl_out_headers_size = this->GetImplOutHeadersSize();
-        AMS_ASSERT(out_header_size + impl_out_headers_size <= raw_data.GetSize());
+        AMS_ABORT_UNLESS(out_header_size + impl_out_headers_size <= raw_data.GetSize());
         *reinterpret_cast<CmifDomainOutHeader *>(raw_data.GetPointer()) = CmifDomainOutHeader{ .num_out_objects = 0, };
 
         /* Set output raw data. */
@@ -186,7 +186,7 @@ namespace ams::sf::cmif {
                     }
                 }
                 /* TODO: Can we make this error non-fatal? It isn't for N, since they can reserve IDs earlier due to not having to worry about mitm. */
-                R_ASSERT(this->domain->ReserveIds(reservations, num_unreserved_ids));
+                R_ABORT_UNLESS(this->domain->ReserveIds(reservations, num_unreserved_ids));
                 this->domain->ReserveSpecificIds(specific_ids, num_specific_ids);
             }
 

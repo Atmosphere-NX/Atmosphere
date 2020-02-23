@@ -34,7 +34,7 @@ namespace ams::dd {
 
         inline u32 ReadWriteRegisterImpl(uintptr_t phys_addr, u32 value, u32 mask) {
             u32 out_value;
-            R_ASSERT(svcReadWriteRegister(&out_value, phys_addr, mask, value));
+            R_ABORT_UNLESS(svcReadWriteRegister(&out_value, phys_addr, mask, value));
             return out_value;
         }
 

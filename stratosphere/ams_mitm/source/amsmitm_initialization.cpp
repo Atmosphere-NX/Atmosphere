@@ -92,10 +92,10 @@ namespace ams::mitm {
             /* Read the calibration binary. */
             {
                 FsStorage calibration_binary_storage;
-                R_ASSERT(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
+                R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
                 ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
 
-                R_ASSERT(fsStorageRead(&calibration_binary_storage, 0, g_calibration_binary_storage_backup, CalibrationBinarySize));
+                R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, 0, g_calibration_binary_storage_backup, CalibrationBinarySize));
             }
 
             /* Copy serial number from partition. */
@@ -109,16 +109,16 @@ namespace ams::mitm {
                 GetBackupFileName(calibration_binary_backup_name, sizeof(calibration_binary_backup_name), serial_number, "PRODINFO.bin");
 
                 mitm::fs::CreateAtmosphereSdFile(calibration_binary_backup_name, CalibrationBinarySize, ams::fs::CreateOption_None);
-                R_ASSERT(mitm::fs::OpenAtmosphereSdFile(&g_calibration_binary_file, calibration_binary_backup_name, ams::fs::OpenMode_ReadWrite));
+                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(&g_calibration_binary_file, calibration_binary_backup_name, ams::fs::OpenMode_ReadWrite));
 
                 s64 file_size = 0;
-                R_ASSERT(fsFileGetSize(&g_calibration_binary_file, &file_size));
+                R_ABORT_UNLESS(fsFileGetSize(&g_calibration_binary_file, &file_size));
 
                 bool is_file_backup_valid = file_size == CalibrationBinarySize;
                 if (is_file_backup_valid) {
                     u64 read_size = 0;
-                    R_ASSERT(fsFileRead(&g_calibration_binary_file, 0, g_calibration_binary_file_backup, CalibrationBinarySize, FsReadOption_None, &read_size));
-                    AMS_ASSERT(read_size == CalibrationBinarySize);
+                    R_ABORT_UNLESS(fsFileRead(&g_calibration_binary_file, 0, g_calibration_binary_file_backup, CalibrationBinarySize, FsReadOption_None, &read_size));
+                    AMS_ABORT_UNLESS(read_size == CalibrationBinarySize);
                     is_file_backup_valid &= std::memcmp(g_calibration_binary_file_backup, "CAL0", 4) == 0;
                     is_file_backup_valid &= std::memcmp(g_calibration_binary_file_backup + 0x250, serial_number, 0x18) == 0;
                     const u32 cal_bin_size = *reinterpret_cast<const u32 *>(g_calibration_binary_file_backup + 0x8);
@@ -132,8 +132,8 @@ namespace ams::mitm {
                 }
 
                 if (!is_file_backup_valid) {
-                    R_ASSERT(fsFileSetSize(&g_calibration_binary_file, CalibrationBinarySize));
-                    R_ASSERT(fsFileWrite(&g_calibration_binary_file, 0, g_calibration_binary_storage_backup, CalibrationBinarySize, FsWriteOption_Flush));
+                    R_ABORT_UNLESS(fsFileSetSize(&g_calibration_binary_file, CalibrationBinarySize));
+                    R_ABORT_UNLESS(fsFileWrite(&g_calibration_binary_file, 0, g_calibration_binary_storage_backup, CalibrationBinarySize, FsWriteOption_Flush));
                 }
 
                 /* Note: g_calibration_binary_file is intentionally not closed here. This prevents any other process from opening it. */
@@ -145,7 +145,7 @@ namespace ams::mitm {
             {
                 u64 key_generation = 0;
                 if (hos::GetVersion() >= hos::Version_500) {
-                    R_ASSERT(splGetConfig(SplConfigItem_NewKeyGeneration, &key_generation));
+                    R_ABORT_UNLESS(splGetConfig(SplConfigItem_NewKeyGeneration, &key_generation));
                 }
 
                 u8 bis_keys[4][2][0x10];
@@ -155,15 +155,15 @@ namespace ams::mitm {
                 for (size_t partition = 0; partition < 4; partition++) {
                     if (partition == 0) {
                         for (size_t i = 0; i < 2; i++) {
-                            R_ASSERT(splFsGenerateSpecificAesKey(BisKeySources[partition][i], key_generation, i, bis_keys[partition][i]));
+                            R_ABORT_UNLESS(splFsGenerateSpecificAesKey(BisKeySources[partition][i], key_generation, i, bis_keys[partition][i]));
                         }
                     } else {
                         const u32 option = (partition == 3 && spl::IsRecoveryBoot()) ? 0x4 : 0x1;
 
                         u8 access_key[0x10];
-                        R_ASSERT(splCryptoGenerateAesKek(BisKekSource, key_generation, option, access_key));
+                        R_ABORT_UNLESS(splCryptoGenerateAesKek(BisKekSource, key_generation, option, access_key));
                         for (size_t i = 0; i < 2; i++) {
-                            R_ASSERT(splCryptoGenerateAesKey(access_key, BisKeySources[partition][i], bis_keys[partition][i]));
+                            R_ABORT_UNLESS(splCryptoGenerateAesKey(access_key, BisKeySources[partition][i], bis_keys[partition][i]));
                         }
                     }
                 }
@@ -172,9 +172,9 @@ namespace ams::mitm {
                 GetBackupFileName(bis_keys_backup_name, sizeof(bis_keys_backup_name), serial_number, "BISKEYS.bin");
 
                 mitm::fs::CreateAtmosphereSdFile(bis_keys_backup_name, sizeof(bis_keys), ams::fs::CreateOption_None);
-                R_ASSERT(mitm::fs::OpenAtmosphereSdFile(&g_bis_key_file, bis_keys_backup_name, ams::fs::OpenMode_ReadWrite));
-                R_ASSERT(fsFileSetSize(&g_bis_key_file, sizeof(bis_keys)));
-                R_ASSERT(fsFileWrite(&g_bis_key_file, 0, bis_keys, sizeof(bis_keys), FsWriteOption_Flush));
+                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(&g_bis_key_file, bis_keys_backup_name, ams::fs::OpenMode_ReadWrite));
+                R_ABORT_UNLESS(fsFileSetSize(&g_bis_key_file, sizeof(bis_keys)));
+                R_ABORT_UNLESS(fsFileWrite(&g_bis_key_file, 0, bis_keys, sizeof(bis_keys), FsWriteOption_Flush));
                 /* NOTE: g_bis_key_file is intentionally not closed here.  This prevents any other process from opening it. */
             }
         }
@@ -226,14 +226,14 @@ namespace ams::mitm {
 
             /* Connect to set:sys. */
             sm::DoWithSession([]() {
-                R_ASSERT(setsysInitialize());
+                R_ABORT_UNLESS(setsysInitialize());
             });
 
             /* Load settings off the SD card. */
             settings::fwdbg::InitializeSdCardKeyValueStore();
 
             /* Ensure that we reboot using the user's preferred method. */
-            R_ASSERT(mitm::bpc::DetectPreferredRebootFunctionality());
+            R_ABORT_UNLESS(mitm::bpc::DetectPreferredRebootFunctionality());
 
             /* Signal to waiters that we are ready. */
             g_init_event.Signal();
@@ -242,7 +242,7 @@ namespace ams::mitm {
     }
 
     void StartInitialize() {
-        R_ASSERT(g_initialize_thread.Start());
+        R_ABORT_UNLESS(g_initialize_thread.Start());
     }
 
     bool IsInitialized() {

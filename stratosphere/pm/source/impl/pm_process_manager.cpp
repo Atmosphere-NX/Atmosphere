@@ -165,8 +165,8 @@ namespace ams::pm::impl {
                     std::scoped_lock lk(this->lock);
 
                     const size_t index = this->GetProcessInfoIndex(process_info);
-                    AMS_ASSERT(index < MaxProcessInfos);
-                    AMS_ASSERT(this->process_info_allocated[index]);
+                    AMS_ABORT_UNLESS(index < MaxProcessInfos);
+                    AMS_ABORT_UNLESS(this->process_info_allocated[index]);
 
                     process_info->~ProcessInfo();
                     this->process_info_allocated[index] = false;
@@ -308,7 +308,7 @@ namespace ams::pm::impl {
 
             /* Make new process info. */
             void *process_info_storage = g_process_info_allocator.AllocateProcessInfoStorage();
-            AMS_ASSERT(process_info_storage != nullptr);
+            AMS_ABORT_UNLESS(process_info_storage != nullptr);
             ProcessInfo *process_info = new (process_info_storage) ProcessInfo(process_handle, process_id, pin_id, location, override_status);
 
             /* Link new process info. */
@@ -374,7 +374,7 @@ namespace ams::pm::impl {
             const ProcessState old_state = process_info->GetState();
             {
                 u64 tmp = 0;
-                R_ASSERT(svcGetProcessInfo(&tmp, process_info->GetHandle(), ProcessInfoType_ProcessState));
+                R_ABORT_UNLESS(svcGetProcessInfo(&tmp, process_info->GetHandle(), ProcessInfoType_ProcessState));
                 process_info->SetState(static_cast<ProcessState>(tmp));
             }
             const ProcessState new_state = process_info->GetState();
@@ -452,16 +452,16 @@ namespace ams::pm::impl {
     /* Initialization. */
     Result InitializeProcessManager() {
         /* Create events. */
-        R_ASSERT(g_process_event.InitializeAsInterProcessEvent());
-        R_ASSERT(g_hook_to_create_process_event.InitializeAsInterProcessEvent());
-        R_ASSERT(g_hook_to_create_application_process_event.InitializeAsInterProcessEvent());
-        R_ASSERT(g_boot_finished_event.InitializeAsInterProcessEvent());
+        R_ABORT_UNLESS(g_process_event.InitializeAsInterProcessEvent());
+        R_ABORT_UNLESS(g_hook_to_create_process_event.InitializeAsInterProcessEvent());
+        R_ABORT_UNLESS(g_hook_to_create_application_process_event.InitializeAsInterProcessEvent());
+        R_ABORT_UNLESS(g_boot_finished_event.InitializeAsInterProcessEvent());
 
         /* Initialize resource limits. */
         R_TRY(resource::InitializeResourceManager());
 
         /* Start thread. */
-        R_ASSERT(g_process_track_thread.Start());
+        R_ABORT_UNLESS(g_process_track_thread.Start());
 
         return ResultSuccess();
     }
@@ -711,7 +711,7 @@ namespace ams::pm::impl {
         /* In 8.0.0, Nintendo added this command, which signals that the boot sysmodule has finished. */
         /* Nintendo only signals it in safe mode FIRM, and this function aborts on normal FIRM. */
         /* We will signal it always, but only allow this function to succeed on safe mode. */
-        AMS_ASSERT(spl::IsRecoveryBoot());
+        AMS_ABORT_UNLESS(spl::IsRecoveryBoot());
         *out = g_boot_finished_event.GetReadableHandle();
         return ResultSuccess();
     }

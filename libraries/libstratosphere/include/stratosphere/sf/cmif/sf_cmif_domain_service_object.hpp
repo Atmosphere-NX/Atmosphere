@@ -41,8 +41,8 @@ namespace ams::sf::cmif {
             ServerMessageRuntimeMetadata impl_metadata;
         public:
             DomainServiceObjectProcessor(ServerDomainBase *d, DomainObjectId *in_obj_ids, size_t num_in_objs) : domain(d), in_object_ids(in_obj_ids), num_in_objects(num_in_objs) {
-                AMS_ASSERT(this->domain != nullptr);
-                AMS_ASSERT(this->in_object_ids != nullptr);
+                AMS_ABORT_UNLESS(this->domain != nullptr);
+                AMS_ABORT_UNLESS(this->in_object_ids != nullptr);
                 this->impl_processor = nullptr;
                 this->out_object_ids = nullptr;
                 this->impl_metadata = {};

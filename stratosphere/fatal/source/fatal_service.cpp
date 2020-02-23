@@ -39,8 +39,8 @@ namespace ams::fatal::srv {
             public:
                 ServiceContext() {
                     this->context.ClearState();
-                    R_ASSERT(eventCreate(&this->context.erpt_event, false));
-                    R_ASSERT(eventCreate(&this->context.battery_event, false));
+                    R_ABORT_UNLESS(eventCreate(&this->context.erpt_event, false));
+                    R_ABORT_UNLESS(eventCreate(&this->context.battery_event, false));
                     this->has_thrown = false;
                 }
 
