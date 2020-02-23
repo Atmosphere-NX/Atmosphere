@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <mesosphere/kern_common.hpp>
 
 namespace ams::kern {
 
@@ -50,6 +50,10 @@ namespace ams::kern {
                 return this->address - rhs;
             }
 
+            constexpr ALWAYS_INLINE ptrdiff_t operator-(KTypedAddress rhs) const {
+                return this->address - rhs.address;
+            }
+
             template<typename I>
             constexpr ALWAYS_INLINE KTypedAddress operator+=(I rhs) {
                 static_assert(std::is_integral<I>::value);
@@ -80,6 +84,11 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE uintptr_t operator>>(int shift) const {
                 return this->address >> shift;
             }
+
+            template<typename U>
+            constexpr ALWAYS_INLINE size_t operator/(U size) const { return this->address / size; }
+
+            /* constexpr ALWAYS_INLINE uintptr_t operator%(U align) const { return this->address % align; } */
 
             /* Comparison operators. */
             constexpr ALWAYS_INLINE bool operator==(KTypedAddress rhs) const {

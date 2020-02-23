@@ -34,33 +34,6 @@ namespace ams::kern::init::loader {
 
         constexpr size_t InitialPageTableRegionSize = 0x200000;
 
-        class KInitialPageAllocator : public KInitialPageTable::IPageAllocator {
-            private:
-                uintptr_t next_address;
-            public:
-                constexpr ALWAYS_INLINE KInitialPageAllocator() : next_address(Null<uintptr_t>) { /* ... */ }
-
-                ALWAYS_INLINE void Initialize(uintptr_t address) {
-                    this->next_address = address;
-                }
-
-                ALWAYS_INLINE uintptr_t Finalize() {
-                    const uintptr_t final_address = this->next_address;
-                    this->next_address = Null<uintptr_t>;
-                    return final_address;
-                }
-            public:
-                virtual KPhysicalAddress Allocate() override {
-                    MESOSPHERE_ABORT_UNLESS(this->next_address != Null<uintptr_t>);
-                    const uintptr_t allocated = this->next_address;
-                    this->next_address += PageSize;
-                    std::memset(reinterpret_cast<void *>(allocated), 0, PageSize);
-                    return allocated;
-                }
-
-                /* No need to override free. The default does nothing, and so would we. */
-        };
-
         /* Global Allocator. */
         KInitialPageAllocator g_initial_page_allocator;
 
@@ -80,15 +53,15 @@ namespace ams::kern::init::loader {
 
         void EnsureEntireDataCacheFlushed() {
             /* Flush shared cache. */
-            cpu::FlushEntireDataCacheShared();
+            cpu::FlushEntireDataCacheSharedForInit();
             cpu::DataSynchronizationBarrier();
 
             /* Flush local cache. */
-            cpu::FlushEntireDataCacheLocal();
+            cpu::FlushEntireDataCacheLocalForInit();
             cpu::DataSynchronizationBarrier();
 
             /* Flush shared cache. */
-            cpu::FlushEntireDataCacheShared();
+            cpu::FlushEntireDataCacheSharedForInit();
             cpu::DataSynchronizationBarrier();
 
             /* Invalidate entire instruction cache. */
@@ -124,8 +97,8 @@ namespace ams::kern::init::loader {
             /* TODO: Define these bits properly elsewhere, document exactly what each bit set is doing .*/
             constexpr u64 MairValue = 0x0000000044FF0400ul;
             constexpr u64 TcrValue  = 0x00000011B5193519ul;
-            cpu::SetMairEl1(MairValue);
-            cpu::SetTcrEl1(TcrValue);
+            cpu::MemoryAccessIndirectionRegisterAccessor(MairValue).Store();
+            cpu::TranslationControlRegisterAccessor(TcrValue).Store();
 
             /* Perform cpu-specific setup. */
             {
@@ -245,7 +218,6 @@ namespace ams::kern::init::loader {
 
     }
 
-
     uintptr_t Main(uintptr_t base_address, KernelLayout *layout, uintptr_t ini_base_address) {
         /* Relocate the kernel to the correct physical base address. */
         /* Base address and layout are passed by reference and modified. */
@@ -262,14 +234,14 @@ namespace ams::kern::init::loader {
         const uintptr_t rw_offset      = layout->rw_offset;
         /* UNUSED: const uintptr_t rw_end_offset  = layout->rw_end_offset; */
         const uintptr_t bss_end_offset = layout->bss_end_offset;
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(ro_offset,      0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(ro_end_offset,  0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_offset,      0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_end_offset,  0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
         const uintptr_t bss_offset            = layout->bss_offset;
-        const uintptr_t ini_end_offset        = layout->ini_end_offset;
+        const uintptr_t ini_load_offset       = layout->ini_load_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
         const uintptr_t init_array_offset     = layout->init_array_offset;
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
@@ -277,9 +249,11 @@ namespace ams::kern::init::loader {
         /* Decide if Kernel should have enlarged resource region. */
         const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
         const size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
+        static_assert(KernelResourceRegionSize > InitialProcessBinarySizeMax);
+        static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
 
         /* Setup the INI1 header in memory for the kernel. */
-        const uintptr_t ini_end_address  = base_address + ini_end_offset + resource_region_size;
+        const uintptr_t ini_end_address  = base_address + ini_load_offset + resource_region_size;
         const uintptr_t ini_load_address = ini_end_address - InitialProcessBinarySizeMax;
         if (ini_base_address != ini_load_address) {
             /* The INI is not at the correct address, so we need to relocate it. */
@@ -333,8 +307,12 @@ namespace ams::kern::init::loader {
         return GetInteger(virtual_base_address) - base_address;
     }
 
-    uintptr_t Finalize() {
-        return g_initial_page_allocator.Finalize();
+    KPhysicalAddress AllocateKernelInitStack() {
+        return g_initial_page_allocator.Allocate() + PageSize;
+    }
+
+    uintptr_t GetFinalPageAllocatorState() {
+        return g_initial_page_allocator.GetFinalState();
     }
 
 }

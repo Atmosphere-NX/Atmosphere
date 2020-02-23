@@ -100,7 +100,7 @@ namespace ams::map {
 
                 MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
                 R_TRY_CATCH(tmp_mcm.GetResult()) {
-                    R_CATCH(svc::ResultInvalidCurrentMemoryState) { continue; }
+                    R_CATCH(svc::ResultInvalidCurrentMemory) { continue; }
                 } R_END_TRY_CATCH;
 
                 if (!CanAddGuardRegionsInProcess(process_handle, try_address, size)) {
@@ -136,7 +136,7 @@ namespace ams::map {
 
                 MappedCodeMemory tmp_mcm(process_handle, try_address, base_address, size);
                 R_TRY_CATCH(tmp_mcm.GetResult()) {
-                    R_CATCH(svc::ResultInvalidCurrentMemoryState) { continue; }
+                    R_CATCH(svc::ResultInvalidCurrentMemory) { continue; }
                 } R_END_TRY_CATCH;
 
                 if (!CanAddGuardRegionsInProcess(process_handle, try_address, size)) {

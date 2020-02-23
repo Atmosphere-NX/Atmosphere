@@ -183,7 +183,7 @@ namespace ams::util {
                         }
                 };
             public:
-                IntrusiveListImpl() : root_node() { /* ... */ }
+                constexpr IntrusiveListImpl() : root_node() { /* ... */ }
 
                 /* Iterator accessors. */
                 iterator begin() {
@@ -405,7 +405,7 @@ namespace ams::util {
                 return Traits::GetParent(node);
             }
         public:
-            IntrusiveList() : impl() { /* ... */ }
+            constexpr IntrusiveList() : impl() { /* ... */ }
 
             /* Iterator accessors. */
             iterator begin() {
@@ -564,6 +564,38 @@ namespace ams::util {
         private:
             static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
             static_assert(std::addressof(GetParent(GetNode(GetReference(DerivedStorage)))) == GetPointer(DerivedStorage));
+    };
+
+    template<auto T, class Derived = util::impl::GetParentType<T>>
+    class IntrusiveListMemberTraitsDeferredAssert;
+
+    template<class Parent, IntrusiveListNode Parent::*Member, class Derived>
+    class IntrusiveListMemberTraitsDeferredAssert<Member, Derived> {
+        public:
+            using ListType = IntrusiveList<Derived, IntrusiveListMemberTraitsDeferredAssert>;
+
+            static constexpr bool IsValid() {
+                TYPED_STORAGE(Derived) DerivedStorage = {};
+                return std::addressof(GetParent(GetNode(GetReference(DerivedStorage)))) == GetPointer(DerivedStorage);
+            }
+        private:
+            friend class IntrusiveList<Derived, IntrusiveListMemberTraitsDeferredAssert>;
+
+            static constexpr IntrusiveListNode &GetNode(Derived &parent) {
+                return parent.*Member;
+            }
+
+            static constexpr IntrusiveListNode const &GetNode(Derived const &parent) {
+                return parent.*Member;
+            }
+
+            static constexpr Derived &GetParent(IntrusiveListNode &node) {
+                return util::GetParentReference<Member, Derived>(&node);
+            }
+
+            static constexpr Derived const &GetParent(IntrusiveListNode const &node) {
+                return util::GetParentReference<Member, Derived>(&node);
+            }
     };
 
     template<class Derived>

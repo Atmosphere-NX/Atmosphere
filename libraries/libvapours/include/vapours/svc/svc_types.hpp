@@ -16,6 +16,7 @@
 #pragma once
 
 #include "svc_common.hpp"
+#include "svc_tick.hpp"
 #include "svc_types_common.hpp"
 #include "svc_types_base.hpp"
 #include "svc_types_dd.hpp"

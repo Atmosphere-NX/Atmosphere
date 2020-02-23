@@ -38,7 +38,7 @@ namespace ams::ro::impl {
             if (bss_heap_size > 0) {
                 map::MappedCodeMemory tmp_bss_mcm(process_handle, base_address + nro_heap_size, bss_heap_address, bss_heap_size);
                 R_TRY_CATCH(tmp_bss_mcm.GetResult()) {
-                    R_CATCH(svc::ResultInvalidCurrentMemoryState) {
+                    R_CATCH(svc::ResultInvalidCurrentMemory) {
                         continue;
                     }
                 } R_END_TRY_CATCH;

@@ -125,7 +125,7 @@ namespace ams::util {
             }
 
             static constexpr inline IntrusiveRedBlackTreeNode *GetPrev(IntrusiveRedBlackTreeNode *node) {
-                return RB_NEXT(IntrusiveRedBlackTreeRoot, nullptr, node);
+                return RB_PREV(IntrusiveRedBlackTreeRoot, nullptr, node);
             }
 
             static constexpr inline IntrusiveRedBlackTreeNode const *GetPrev(IntrusiveRedBlackTreeNode const *node) {
@@ -133,7 +133,7 @@ namespace ams::util {
             }
 
             /* Define accessors using RB_* functions. */
-            void InitializeImpl() {
+            constexpr ALWAYS_INLINE void InitializeImpl() {
                 RB_INIT(&this->root);
             }
 
@@ -146,7 +146,7 @@ namespace ams::util {
             }
 
             IntrusiveRedBlackTreeNode *GetMaxImpl() const {
-                return RB_MIN(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root));
+                return RB_MAX(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root));
             }
 
             IntrusiveRedBlackTreeNode *InsertImpl(IntrusiveRedBlackTreeNode *node) {
@@ -166,7 +166,7 @@ namespace ams::util {
             }
 
         public:
-            IntrusiveRedBlackTree() {
+            constexpr ALWAYS_INLINE IntrusiveRedBlackTree() : root() {
                 this->InitializeImpl();
             }
 
@@ -187,6 +187,14 @@ namespace ams::util {
                 return const_iterator(Traits::GetParent(static_cast<IntrusiveRedBlackTreeNode *>(nullptr)));
             }
 
+            const_iterator cbegin() const {
+                return this->begin();
+            }
+
+            const_iterator cend() const {
+                return this->end();
+            }
+
             iterator iterator_to(reference ref) {
                 return iterator(&ref);
             }
@@ -201,19 +209,19 @@ namespace ams::util {
             }
 
             reference back() {
-                return Traits::GetParent(this->GetMaxImpl());
+                return *Traits::GetParent(this->GetMaxImpl());
             }
 
             const_reference back() const {
-                return Traits::GetParent(this->GetMaxImpl());
+                return *Traits::GetParent(this->GetMaxImpl());
             }
 
             reference front() {
-                return Traits::GetParent(this->GetMinImpl());
+                return *Traits::GetParent(this->GetMinImpl());
             }
 
             const_reference front() const {
-                return Traits::GetParent(this->GetMinImpl());
+                return *Traits::GetParent(this->GetMinImpl());
             }
 
             iterator insert(reference ref) {
@@ -244,7 +252,7 @@ namespace ams::util {
     class IntrusiveRedBlackTreeMemberTraits<Member, Derived> {
         public:
             template<class Comparator>
-            using ListType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraits, Comparator>;
+            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraits, Comparator>;
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
@@ -266,7 +274,7 @@ namespace ams::util {
             }
         private:
             static constexpr TYPED_STORAGE(Derived) DerivedStorage = {};
-            static_assert(std::addressof(GetParent(GetNode(GetPointer(DerivedStorage)))) == GetPointer(DerivedStorage));
+            static_assert(GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage));
     };
 
     template<class Derived>
@@ -276,7 +284,7 @@ namespace ams::util {
     class IntrusiveRedBlackTreeBaseTraits {
         public:
             template<class Comparator>
-            using ListType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeBaseTraits, Comparator>;
+            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeBaseTraits, Comparator>;
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;

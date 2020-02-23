@@ -15,173 +15,12 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <mesosphere/kern_panic.hpp>
+#include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
-#include "../kern_cpu.hpp"
+#include <mesosphere/kern_select_cpu.hpp>
+#include <mesosphere/arch/arm64/kern_k_page_table_entry.hpp>
 
-namespace ams::kern::init {
-
-    constexpr size_t PageSize              = 0x1000;
-    constexpr size_t L1BlockSize           = 0x40000000;
-    constexpr size_t L2BlockSize           = 0x200000;
-    constexpr size_t L2ContiguousBlockSize = 0x10 * L2BlockSize;
-    constexpr size_t L3BlockSize           = 0x1000;
-    constexpr size_t L3ContiguousBlockSize = 0x10 * L3BlockSize;
-
-    class PageTableEntry {
-        public:
-            enum Permission : u64 {
-                Permission_KernelRWX = ((0ul << 53) | (1ul << 54) | (0ul << 6)),
-                Permission_KernelRX  = ((0ul << 53) | (1ul << 54) | (2ul << 6)),
-                Permission_KernelR   = ((1ul << 53) | (1ul << 54) | (2ul << 6)),
-                Permission_KernelRW  = ((1ul << 53) | (1ul << 54) | (0ul << 6)),
-
-                Permission_UserRX    = ((1ul << 53) | (0ul << 54) | (3ul << 6)),
-                Permission_UserR     = ((1ul << 53) | (1ul << 54) | (3ul << 6)),
-                Permission_UserRW    = ((1ul << 53) | (1ul << 54) | (1ul << 6)),
-            };
-
-            enum Shareable : u64 {
-                Shareable_NonShareable   = (0 << 8),
-                Shareable_OuterShareable = (2 << 8),
-                Shareable_InnerShareable = (3 << 8),
-            };
-
-            /* Official attributes are: */
-            /*    0x00, 0x04, 0xFF, 0x44. 4-7 are unused. */
-            enum PageAttribute : u64 {
-                PageAttribute_Device_nGnRnE            = (0 << 2),
-                PageAttribute_Device_nGnRE             = (1 << 2),
-                PageAttribute_NormalMemory             = (2 << 2),
-                PageAttribute_NormalMemoryNotCacheable = (3 << 2),
-            };
-
-            enum AccessFlag : u64 {
-                AccessFlag_NotAccessed = (0 << 10),
-                AccessFlag_Accessed    = (1 << 10),
-            };
-        protected:
-            u64 attributes;
-        public:
-            /* Take in a raw attribute. */
-            constexpr ALWAYS_INLINE PageTableEntry(u64 attr) : attributes(attr) { /* ... */ }
-
-            /* Extend a previous attribute. */
-            constexpr ALWAYS_INLINE PageTableEntry(const PageTableEntry &rhs, u64 new_attr) : attributes(rhs.attributes | new_attr) { /* ... */ }
-
-            /* Construct a new attribute. */
-            constexpr ALWAYS_INLINE PageTableEntry(Permission perm, PageAttribute p_a, Shareable share)
-                : attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share))
-            {
-                /* ... */
-            }
-        protected:
-            constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
-                return (this->attributes >> offset) & ((1ul << count) - 1);
-            }
-
-            constexpr ALWAYS_INLINE u64 SelectBits(size_t offset, size_t count) const {
-                return this->attributes & (((1ul << count) - 1) << offset);
-            }
-        public:
-            constexpr ALWAYS_INLINE bool IsUserExecuteNever()        const { return this->GetBits(54, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsPrivilegedExecuteNever()  const { return this->GetBits(53, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsContiguous()              const { return this->GetBits(52, 1) != 0; }
-            constexpr ALWAYS_INLINE AccessFlag GetAccessFlag()       const { return static_cast<AccessFlag>(this->GetBits(10, 1)); }
-            constexpr ALWAYS_INLINE Shareable GetShareable()         const { return static_cast<Shareable>(this->GetBits(8, 2)); }
-            constexpr ALWAYS_INLINE PageAttribute GetPageAttribute() const { return static_cast<PageAttribute>(this->GetBits(2, 3)); }
-            constexpr ALWAYS_INLINE bool IsNonSecure()               const { return this->GetBits(5, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsBlock()                   const { return this->GetBits(0, 2) == 0x1; }
-            constexpr ALWAYS_INLINE bool IsTable()                   const { return this->GetBits(0, 2) == 0x3; }
-
-            /* Should not be called except by derived classes. */
-            constexpr ALWAYS_INLINE u64 GetRawAttributes() const {
-                return this->attributes;
-            }
-    };
-
-    static_assert(sizeof(PageTableEntry) == sizeof(u64));
-
-    constexpr PageTableEntry InvalidPageTableEntry = PageTableEntry(0);
-
-    constexpr size_t MaxPageTableEntries = PageSize / sizeof(PageTableEntry);
-
-    class L1PageTableEntry : public PageTableEntry {
-        public:
-            constexpr ALWAYS_INLINE L1PageTableEntry(KPhysicalAddress phys_addr, bool pxn)
-                : PageTableEntry((0x3ul << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | 0x3)
-            {
-                /* ... */
-            }
-
-            constexpr ALWAYS_INLINE L1PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x1)
-            {
-                /* ... */
-            }
-
-            constexpr ALWAYS_INLINE KPhysicalAddress GetBlock() const {
-                return this->SelectBits(30, 18);
-            }
-
-            constexpr ALWAYS_INLINE KPhysicalAddress GetTable() const {
-                return this->SelectBits(12, 36);
-            }
-
-            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
-                /* Check whether this has the same permission/etc as the desired attributes. */
-                return L1PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
-            }
-    };
-
-    class L2PageTableEntry : public PageTableEntry {
-        public:
-            constexpr ALWAYS_INLINE L2PageTableEntry(KPhysicalAddress phys_addr, bool pxn)
-                : PageTableEntry((0x3ul << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | 0x3)
-            {
-                /* ... */
-            }
-
-            constexpr ALWAYS_INLINE L2PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x1)
-            {
-                /* ... */
-            }
-
-            constexpr ALWAYS_INLINE KPhysicalAddress GetBlock() const {
-                return this->SelectBits(21, 27);
-            }
-
-            constexpr ALWAYS_INLINE KPhysicalAddress GetTable() const {
-                return this->SelectBits(12, 36);
-            }
-
-            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
-                /* Check whether this has the same permission/etc as the desired attributes. */
-                return L2PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
-            }
-    };
-
-    class L3PageTableEntry : public PageTableEntry {
-        public:
-            constexpr ALWAYS_INLINE L3PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x3)
-            {
-                /* ... */
-            }
-
-            constexpr ALWAYS_INLINE bool IsBlock() const { return this->GetBits(0, 2) == 0x3; }
-
-            constexpr ALWAYS_INLINE KPhysicalAddress GetBlock() const {
-                return this->SelectBits(12, 36);
-            }
-
-            constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
-                /* Check whether this has the same permission/etc as the desired attributes. */
-                return L3PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
-            }
-    };
-
+namespace ams::kern::arch::arm64::init {
 
     class KInitialPageTable {
         public:
@@ -190,10 +29,14 @@ namespace ams::kern::init {
                     virtual KPhysicalAddress Allocate()           { return Null<KPhysicalAddress>; }
                     virtual void Free(KPhysicalAddress phys_addr) { /* Nothing to do here. */ (void)(phys_addr); }
             };
+
+            struct NoClear{};
         private:
             KPhysicalAddress l1_table;
         public:
-            constexpr ALWAYS_INLINE KInitialPageTable(KPhysicalAddress l1) : l1_table(l1) {
+            constexpr ALWAYS_INLINE KInitialPageTable(KPhysicalAddress l1, NoClear) : l1_table(l1) { /* ... */ }
+
+            constexpr ALWAYS_INLINE KInitialPageTable(KPhysicalAddress l1) : KInitialPageTable(l1, NoClear{}) {
                 ClearNewPageTable(this->l1_table);
             }
 
@@ -224,9 +67,9 @@ namespace ams::kern::init {
         public:
             void NOINLINE Map(KVirtualAddress virt_addr, size_t size, KPhysicalAddress phys_addr, const PageTableEntry &attr, IPageAllocator &allocator) {
                 /* Ensure that addresses and sizes are page aligned. */
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(phys_addr),    PageSize));
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(phys_addr),    PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
 
                 /* Iteratively map pages until the requested region is mapped. */
                 while (size > 0) {
@@ -309,10 +152,37 @@ namespace ams::kern::init {
                 }
             }
 
+            KPhysicalAddress GetPhysicalAddress(KVirtualAddress virt_addr) const {
+                /* Get the L1 entry. */
+                const L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+
+                if (l1_entry->IsBlock()) {
+                    return l1_entry->GetBlock() + (GetInteger(virt_addr) & (L1BlockSize - 1));
+                }
+
+                MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsTable());
+
+                /* Get the L2 entry. */
+                const L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
+
+                if (l2_entry->IsBlock()) {
+                    return l2_entry->GetBlock() + (GetInteger(virt_addr) & (L2BlockSize - 1));
+                }
+
+                MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsTable());
+
+                /* Get the L3 entry. */
+                const L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
+
+                MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsBlock());
+
+                return l3_entry->GetBlock() + (GetInteger(virt_addr) & (L3BlockSize - 1));
+            }
+
             bool IsFree(KVirtualAddress virt_addr, size_t size) {
                 /* Ensure that addresses and sizes are page aligned. */
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
 
                 const KVirtualAddress end_virt_addr = virt_addr + size;
                 while (virt_addr < end_virt_addr) {
@@ -360,8 +230,8 @@ namespace ams::kern::init {
                 cpu::DataSynchronizationBarrierInnerShareable();
 
                 /* Ensure that addresses and sizes are page aligned. */
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
-                MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));
+                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                     PageSize));
 
                 /* Iteratively reprotect pages until the requested region is reprotected. */
                 while (size > 0) {
@@ -371,9 +241,9 @@ namespace ams::kern::init {
                     if (l1_entry->IsBlock()) {
                         /* Ensure that we are allowed to have an L1 block here. */
                         const KPhysicalAddress block = l1_entry->GetBlock();
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, L1BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(l1_entry->IsCompatibleWithAttribute(attr_before, false));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size, L1BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsCompatibleWithAttribute(attr_before, false));
 
                         /* Invalidate the existing L1 block. */
                         *static_cast<PageTableEntry *>(l1_entry) = InvalidPageTableEntry;
@@ -389,7 +259,7 @@ namespace ams::kern::init {
                     }
 
                     /* Not a block, so we must be a table. */
-                    MESOSPHERE_ABORT_UNLESS(l1_entry->IsTable());
+                    MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsTable());
 
                     L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
                     if (l2_entry->IsBlock()) {
@@ -397,14 +267,14 @@ namespace ams::kern::init {
 
                         if (l2_entry->IsContiguous()) {
                             /* Ensure that we are allowed to have a contiguous L2 block here. */
-                            MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2ContiguousBlockSize));
-                            MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2ContiguousBlockSize));
-                            MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                  L2ContiguousBlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2ContiguousBlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2ContiguousBlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L2ContiguousBlockSize));
 
                             /* Invalidate the existing contiguous L2 block. */
                             for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
                                 /* Ensure that the entry is valid. */
-                                MESOSPHERE_ABORT_UNLESS(l2_entry[i].IsCompatibleWithAttribute(attr_before, true));
+                                MESOSPHERE_INIT_ABORT_UNLESS(l2_entry[i].IsCompatibleWithAttribute(attr_before, true));
                                 static_cast<PageTableEntry *>(l2_entry)[i] = InvalidPageTableEntry;
                             }
                             cpu::DataSynchronizationBarrierInnerShareable();
@@ -419,10 +289,10 @@ namespace ams::kern::init {
                             size      -= L2ContiguousBlockSize;
                         } else {
                             /* Ensure that we are allowed to have an L2 block here. */
-                            MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
-                            MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2BlockSize));
-                            MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                  L2BlockSize));
-                            MESOSPHERE_ABORT_UNLESS(l2_entry->IsCompatibleWithAttribute(attr_before, false));
+                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2BlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L2BlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsCompatibleWithAttribute(attr_before, false));
 
                             /* Invalidate the existing L2 block. */
                             *static_cast<PageTableEntry *>(l2_entry) = InvalidPageTableEntry;
@@ -440,23 +310,23 @@ namespace ams::kern::init {
                     }
 
                     /* Not a block, so we must be a table. */
-                    MESOSPHERE_ABORT_UNLESS(l2_entry->IsTable());
+                    MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsTable());
 
                     /* We must have a mapped l3 entry to reprotect. */
                     L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
-                    MESOSPHERE_ABORT_UNLESS(l3_entry->IsBlock());
+                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsBlock());
                     const KPhysicalAddress block = l3_entry->GetBlock();
 
                     if (l3_entry->IsContiguous()) {
                         /* Ensure that we are allowed to have a contiguous L3 block here. */
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3ContiguousBlockSize));
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3ContiguousBlockSize));
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                  L3ContiguousBlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3ContiguousBlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3ContiguousBlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L3ContiguousBlockSize));
 
                         /* Invalidate the existing contiguous L3 block. */
                         for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
                             /* Ensure that the entry is valid. */
-                            MESOSPHERE_ABORT_UNLESS(l3_entry[i].IsCompatibleWithAttribute(attr_before, true));
+                            MESOSPHERE_INIT_ABORT_UNLESS(l3_entry[i].IsCompatibleWithAttribute(attr_before, true));
                             static_cast<PageTableEntry *>(l3_entry)[i] = InvalidPageTableEntry;
                         }
                         cpu::DataSynchronizationBarrierInnerShareable();
@@ -471,10 +341,10 @@ namespace ams::kern::init {
                         size      -= L3ContiguousBlockSize;
                     } else {
                         /* Ensure that we are allowed to have an L3 block here. */
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(util::IsAligned(size,                  L3BlockSize));
-                        MESOSPHERE_ABORT_UNLESS(l3_entry->IsCompatibleWithAttribute(attr_before, false));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L3BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsCompatibleWithAttribute(attr_before, false));
 
                         /* Invalidate the existing L3 block. */
                         *static_cast<PageTableEntry *>(l3_entry) = InvalidPageTableEntry;
@@ -493,6 +363,37 @@ namespace ams::kern::init {
                 cpu::DataSynchronizationBarrierInnerShareable();
             }
 
+    };
+
+    class KInitialPageAllocator : public KInitialPageTable::IPageAllocator {
+        private:
+            uintptr_t next_address;
+        public:
+            constexpr ALWAYS_INLINE KInitialPageAllocator() : next_address(Null<uintptr_t>) { /* ... */ }
+
+            ALWAYS_INLINE void Initialize(uintptr_t address) {
+                this->next_address = address;
+            }
+
+            ALWAYS_INLINE uintptr_t GetFinalNextAddress() {
+                const uintptr_t final_address = this->next_address;
+                this->next_address = Null<uintptr_t>;
+                return final_address;
+            }
+
+            ALWAYS_INLINE uintptr_t GetFinalState() {
+                return this->GetFinalNextAddress();
+            }
+        public:
+            virtual KPhysicalAddress Allocate() override {
+                MESOSPHERE_INIT_ABORT_UNLESS(this->next_address != Null<uintptr_t>);
+                const uintptr_t allocated = this->next_address;
+                this->next_address += PageSize;
+                std::memset(reinterpret_cast<void *>(allocated), 0, PageSize);
+                return allocated;
+            }
+
+            /* No need to override free. The default does nothing, and so would we. */
     };
 
 }

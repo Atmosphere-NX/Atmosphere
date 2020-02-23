@@ -24,11 +24,11 @@ export ATMOSPHERE_ASFLAGS  :=
 
 ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 export ATMOSPHERE_ARCH_DIR   := arch/arm64
-export ATMOSPHERE_BOARD_DIR  := board/nintendo/switch
+export ATMOSPHERE_BOARD_DIR  := board/nintendo/nx
 export ATMOSPHERE_OS_DIR     := os/horizon
 
 export ATMOSPHERE_ARCH_NAME  := arm64
-export ATMOSPHERE_BOARD_NAME := nintendo_switch
+export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
 endif
 
@@ -76,14 +76,22 @@ TARGET       := $(notdir $(CURDIR))
 BUILD        := build
 DATA         := data
 INCLUDES     := include
-SOURCES      ?= $(foreach d,$(filter-out source/arch source/board,$(wildcard source)),$(call DIR_WILDCARD,$d) $d)
+SOURCES      ?= source $(foreach d,$(filter-out source/arch source/board source,$(wildcard source/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
 
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_ARCH_DIR)/.*)),)
-SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_ARCH_DIR))
+SOURCES += source/$(ATMOSPHERE_ARCH_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_ARCH_DIR))
 endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_BOARD_DIR)/.*)),)
-SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_BOARD_DIR))
+SOURCES += source/$(ATMOSPHERE_BOARD_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_BOARD_DIR))
 endif
 ifneq ($(strip $(wildcard source/$(ATMOSPHERE_OS_DIR)/.*)),)
-SOURCES += $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
+SOURCES += source/$(ATMOSPHERE_OS_DIR) $(call DIR_WILDCARD,source/$(ATMOSPHERE_OS_DIR))
 endif
+
+#---------------------------------------------------------------------------------
+# Rules for compiling pre-compiled headers
+#---------------------------------------------------------------------------------
+%.gch: %.hpp
+	@echo $<
+	$(CXX) -w -x c++-header -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+	@cp $@ $(<).gch

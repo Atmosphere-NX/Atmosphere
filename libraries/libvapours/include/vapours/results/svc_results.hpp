@@ -27,7 +27,9 @@ namespace ams::svc {
 
     R_DEFINE_ERROR_RESULT(NotImplemented,               33);
 
-    R_DEFINE_ERROR_RESULT(ThreadTerminating,            59);
+    R_DEFINE_ERROR_RESULT(NoSynchronizationObject,      57);
+
+    R_DEFINE_ERROR_RESULT(TerminationRequested,         59);
 
     R_DEFINE_ERROR_RESULT(NoEvent,                      70);
 
@@ -36,7 +38,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(OutOfResource,                103);
     R_DEFINE_ERROR_RESULT(OutOfMemory,                  104);
     R_DEFINE_ERROR_RESULT(OutOfHandles,                 105);
-    R_DEFINE_ERROR_RESULT(InvalidCurrentMemoryState,    106);
+    R_DEFINE_ERROR_RESULT(InvalidCurrentMemory,         106);
 
     R_DEFINE_ERROR_RESULT(InvalidNewMemoryPermissions,  108);
 
@@ -56,7 +58,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(SessionClosed,                123);
     R_DEFINE_ERROR_RESULT(NotHandled,                   124);
     R_DEFINE_ERROR_RESULT(InvalidState,                 125);
-    R_DEFINE_ERROR_RESULT(ReservedValue,                126);
+    R_DEFINE_ERROR_RESULT(ReservedUsed,                 126);
     R_DEFINE_ERROR_RESULT(NotSupported,                 127);
     R_DEFINE_ERROR_RESULT(Debug,                        128);
     R_DEFINE_ERROR_RESULT(ThreadNotOwned,               129);

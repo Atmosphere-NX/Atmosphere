@@ -20,13 +20,13 @@
 
 #define AMS_SVC_KERN_INPUT_HANDLER(TYPE, NAME)  TYPE NAME
 #define AMS_SVC_KERN_OUTPUT_HANDLER(TYPE, NAME) TYPE *NAME
-#define AMS_SVC_KERN_INPTR_HANDLER(TYPE, NAME)  ::ams::kern::KUserPointer<const TYPE *> NAME
-#define AMS_SVC_KERN_OUTPTR_HANDLER(TYPE, NAME) ::ams::kern::KUserPointer<TYPE *> NAME
+#define AMS_SVC_KERN_INPTR_HANDLER(TYPE, NAME)  ::ams::kern::svc::KUserPointer<const TYPE *> NAME
+#define AMS_SVC_KERN_OUTPTR_HANDLER(TYPE, NAME) ::ams::kern::svc::KUserPointer<TYPE *> NAME
 
 #define AMS_SVC_USER_INPUT_HANDLER(TYPE, NAME)  TYPE NAME
 #define AMS_SVC_USER_OUTPUT_HANDLER(TYPE, NAME) TYPE *NAME
-#define AMS_SVC_USER_INPTR_HANDLER(TYPE, NAME)  const TYPE *NAME
-#define AMS_SVC_USER_OUTPTR_HANDLER(TYPE, NAME) TYPE *NAME
+#define AMS_SVC_USER_INPTR_HANDLER(TYPE, NAME)  ::ams::svc::UserPointer<const TYPE *> NAME
+#define AMS_SVC_USER_OUTPTR_HANDLER(TYPE, NAME) ::ams::svc::UserPointer<TYPE *> NAME
 
 #define AMS_SVC_FOREACH_DEFINITION_IMPL(HANDLER, NAMESPACE, INPUT, OUTPUT, INPTR, OUTPTR)                                                                                                                                                                                                                                                   \
     HANDLER(0x01, Result,  SetHeapSize,                    OUTPUT(::ams::svc::Address, out_address), INPUT(::ams::svc::Size, size))                                                                                                                                                                                                         \
@@ -181,5 +181,49 @@ namespace ams::svc {
 
 }
 
+/* NOTE: Change this to 1 to test the SVC definitions for user-pointer validity. */
+#if 0
+namespace ams::svc::test {
+
+    namespace impl {
+
+        template<typename... Ts>
+        struct Validator {
+            private:
+                std::array<bool, sizeof...(Ts)> valid;
+            public:
+                constexpr Validator(Ts... args) : valid{static_cast<bool>(args)...} { /* ... */ }
+
+                constexpr bool IsValid() const {
+                    for (size_t i = 0; i < sizeof...(Ts); i++) {
+                        if (!this->valid[i]) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+        };
+
+    }
+
+
+    #define AMS_SVC_TEST_EMPTY_HANDLER(TYPE, NAME)  true
+    #define AMS_SVC_TEST_INPTR_HANDLER(TYPE, NAME)  (sizeof(::ams::svc::UserPointer<const TYPE *>) == sizeof(uintptr_t) && std::is_trivially_destructible<::ams::svc::UserPointer<const TYPE *>>::value)
+    #define AMS_SVC_TEST_OUTPTR_HANDLER(TYPE, NAME) (sizeof(::ams::svc::UserPointer<TYPE *>) == sizeof(uintptr_t) && std::is_trivially_destructible<::ams::svc::UserPointer<TYPE *>>::value)
+
+    #define AMS_SVC_TEST_VERIFY_USER_POINTERS(ID, RETURN_TYPE, NAME, ...) \
+        static_assert(impl::Validator(__VA_ARGS__).IsValid(), "Invalid User Pointer in svc::" #NAME);
+
+    AMS_SVC_FOREACH_DEFINITION_IMPL(AMS_SVC_TEST_VERIFY_USER_POINTERS, lp64,  AMS_SVC_TEST_EMPTY_HANDLER, AMS_SVC_TEST_EMPTY_HANDLER, AMS_SVC_TEST_INPTR_HANDLER, AMS_SVC_TEST_OUTPTR_HANDLER);
+    AMS_SVC_FOREACH_DEFINITION_IMPL(AMS_SVC_TEST_VERIFY_USER_POINTERS, ilp32, AMS_SVC_TEST_EMPTY_HANDLER, AMS_SVC_TEST_EMPTY_HANDLER, AMS_SVC_TEST_INPTR_HANDLER, AMS_SVC_TEST_OUTPTR_HANDLER);
+
+    #undef  AMS_SVC_TEST_VERIFY_USER_POINTERS
+    #undef  AMS_SVC_TEST_INPTR_HANDLER
+    #undef  AMS_SVC_TEST_OUTPTR_HANDLER
+    #undef  AMS_SVC_TEST_EMPTY_HANDLER
+
+}
 #endif
+
+#endif /* ATMOSPHERE_IS_STRATOSPHERE */
 

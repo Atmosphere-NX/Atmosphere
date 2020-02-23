@@ -34,9 +34,9 @@ namespace ams::ncm {
 
     /* Program IDs (Formerly: Title IDs). */
     struct ProgramId {
-        u64 value;
+        svc::ProgramId value;
 
-        inline explicit operator u64() const {
+        inline explicit operator svc::ProgramId() const {
             return this->value;
         }
 

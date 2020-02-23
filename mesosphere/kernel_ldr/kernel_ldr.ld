@@ -77,7 +77,6 @@ SECTIONS
 	.dynsym            : { *(.dynsym) } :krnlldr
 	.dynstr            : { *(.dynstr) } :krnlldr
 	.rela.dyn          : { *(.rela.*) } :krnlldr
-	.interp            : { *(.interp) } :krnlldr
 	.hash              : { *(.hash) } :krnlldr
 	.gnu.hash          : { *(.gnu.hash) } :krnlldr
 	.gnu.version       : { *(.gnu.version) } :krnlldr
@@ -167,7 +166,7 @@ SECTIONS
 	   ================== */
 
 	/* Discard sections that difficult post-processing */
-	/DISCARD/ : { *(.group .comment .note) }
+	/DISCARD/ : { *(.group .comment .note .interp) }
 
 	/* Stabs debugging sections. */
 	.stab          0 : { *(.stab) }

@@ -57,8 +57,8 @@ namespace ams {
                 using BaseType = typename ResultTraits::BaseType;
                 static constexpr BaseType SuccessValue = ResultTraits::SuccessValue;
             public:
-                constexpr inline BaseType GetModule() const { return ResultTraits::GetModuleFromValue(static_cast<const Self *>(this)->GetValue()); }
-                constexpr inline BaseType GetDescription() const { return ResultTraits::GetDescriptionFromValue(static_cast<const Self *>(this)->GetValue()); }
+                constexpr ALWAYS_INLINE BaseType GetModule() const { return ResultTraits::GetModuleFromValue(static_cast<const Self *>(this)->GetValue()); }
+                constexpr ALWAYS_INLINE BaseType GetDescription() const { return ResultTraits::GetDescriptionFromValue(static_cast<const Self *>(this)->GetValue()); }
         };
 
         class ResultConstructor;
@@ -81,15 +81,15 @@ namespace ams {
             /* TODO: It sure would be nice to make this private. */
             constexpr Result(typename Base::BaseType v) : value(v) { static_assert(std::is_same<typename Base::BaseType, ::Result>::value); }
 
-            constexpr inline operator ResultSuccess() const;
+            constexpr ALWAYS_INLINE operator ResultSuccess() const;
             NX_CONSTEXPR bool CanAccept(Result result) { return true; }
 
-            constexpr inline bool IsSuccess() const { return this->GetValue() == Base::SuccessValue; }
-            constexpr inline bool IsFailure() const { return !this->IsSuccess(); }
-            constexpr inline typename Base::BaseType GetModule() const { return Base::GetModule(); }
-            constexpr inline typename Base::BaseType GetDescription() const { return Base::GetDescription(); }
+            constexpr ALWAYS_INLINE bool IsSuccess() const { return this->GetValue() == Base::SuccessValue; }
+            constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetModule() const { return Base::GetModule(); }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetDescription() const { return Base::GetDescription(); }
 
-            constexpr inline typename Base::BaseType GetValue() const { return this->value; }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetValue() const { return this->value; }
     };
     static_assert(sizeof(Result) == sizeof(Result::Base::BaseType), "sizeof(Result) == sizeof(Result::Base::BaseType)");
     static_assert(std::is_trivially_destructible<Result>::value, "std::is_trivially_destructible<Result>::value");
@@ -98,12 +98,12 @@ namespace ams {
 
         class ResultConstructor {
             public:
-                static constexpr inline Result MakeResult(ResultTraits::BaseType value) {
+                static constexpr ALWAYS_INLINE Result MakeResult(ResultTraits::BaseType value) {
                     return Result(value);
                 }
         };
 
-        constexpr inline Result MakeResult(ResultTraits::BaseType value) {
+        constexpr ALWAYS_INLINE Result MakeResult(ResultTraits::BaseType value) {
             return ResultConstructor::MakeResult(value);
         }
 
@@ -116,12 +116,12 @@ namespace ams {
             constexpr operator Result() const { return result::impl::MakeResult(Base::SuccessValue); }
             NX_CONSTEXPR bool CanAccept(Result result) { return result.IsSuccess(); }
 
-            constexpr inline bool IsSuccess() const { return true; }
-            constexpr inline bool IsFailure() const { return !this->IsSuccess(); }
-            constexpr inline typename Base::BaseType GetModule() const { return Base::GetModule(); }
-            constexpr inline typename Base::BaseType GetDescription() const { return Base::GetDescription(); }
+            constexpr ALWAYS_INLINE bool IsSuccess() const { return true; }
+            constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetModule() const { return Base::GetModule(); }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetDescription() const { return Base::GetDescription(); }
 
-            constexpr inline typename Base::BaseType GetValue() const { return Base::SuccessValue; }
+            constexpr ALWAYS_INLINE typename Base::BaseType GetValue() const { return Base::SuccessValue; }
     };
 
     namespace result::impl {
@@ -130,7 +130,7 @@ namespace ams {
 
     }
 
-    constexpr inline Result::operator ResultSuccess() const {
+    constexpr ALWAYS_INLINE Result::operator ResultSuccess() const {
         if (!ResultSuccess::CanAccept(*this)) {
             result::impl::OnResultAssertion(*this);
         }
@@ -151,10 +151,10 @@ namespace ams {
                 constexpr operator Result() const { return MakeResult(Value); }
                 constexpr operator ResultSuccess() const { OnResultAssertion(Value); }
 
-                constexpr inline bool IsSuccess() const { return false; }
-                constexpr inline bool IsFailure() const { return !this->IsSuccess(); }
+                constexpr ALWAYS_INLINE bool IsSuccess() const { return false; }
+                constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }
 
-                constexpr inline typename Base::BaseType GetValue() const { return Value; }
+                constexpr ALWAYS_INLINE typename Base::BaseType GetValue() const { return Value; }
         };
 
         template<ResultTraits::BaseType _Module, ResultTraits::BaseType DescStart, ResultTraits::BaseType DescEnd>
