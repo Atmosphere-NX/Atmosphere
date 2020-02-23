@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "results_common.hpp"
+#include <vapours/results/results_common.hpp>
 
 namespace ams::updater {
 

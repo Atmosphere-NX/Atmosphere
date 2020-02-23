@@ -15,17 +15,17 @@
  */
 
 #pragma once
-#include "defines.hpp"
+#include <vapours/defines.hpp>
 
-#include "util/util_alignment.hpp"
-#include "util/util_size.hpp"
-#include "util/util_fourcc.hpp"
-#include "util/util_bitpack.hpp"
-#include "util/util_bitset.hpp"
-#include "util/util_scope_guard.hpp"
-#include "util/util_specialization_of.hpp"
-#include "util/util_typed_storage.hpp"
-#include "util/util_intrusive_list.hpp"
-#include "util/util_intrusive_red_black_tree.hpp"
-#include "util/util_tinymt.hpp"
-#include "util/util_bitutil.hpp"
+#include <vapours/util/util_alignment.hpp>
+#include <vapours/util/util_size.hpp>
+#include <vapours/util/util_fourcc.hpp>
+#include <vapours/util/util_bitpack.hpp>
+#include <vapours/util/util_bitset.hpp>
+#include <vapours/util/util_scope_guard.hpp>
+#include <vapours/util/util_specialization_of.hpp>
+#include <vapours/util/util_typed_storage.hpp>
+#include <vapours/util/util_intrusive_list.hpp>
+#include <vapours/util/util_intrusive_red_black_tree.hpp>
+#include <vapours/util/util_tinymt.hpp>
+#include <vapours/util/util_bitutil.hpp>

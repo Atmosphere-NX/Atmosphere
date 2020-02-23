@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "defines.hpp"
-#include "results.hpp"
+#include <vapours/defines.hpp>
+#include <vapours/results.hpp>
 
-#include "svc/svc_types.hpp"
-#include "svc/svc_definitions.hpp"
+#include <vapours/svc/svc_types.hpp>
+#include <vapours/svc/svc_definitions.hpp>

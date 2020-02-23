@@ -15,17 +15,6 @@
  */
 
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <vapours/defines.hpp>
 
-namespace ams::fatal {
-
-    R_DEFINE_NAMESPACE_RESULT_MODULE(163);
-
-    R_DEFINE_ERROR_RESULT(AllocationFailed,                    1);
-    R_DEFINE_ERROR_RESULT(NullGraphicsBuffer,                  2);
-    R_DEFINE_ERROR_RESULT(AlreadyThrown,                       3);
-    R_DEFINE_ERROR_RESULT(TooManyEvents,                       4);
-    R_DEFINE_ERROR_RESULT(InRepairWithoutVolHeld,              5);
-    R_DEFINE_ERROR_RESULT(InRepairWithoutTimeReviserCartridge, 6);
-
-}
+#include <vapours/crypto/crypto_memory_compare.hpp>

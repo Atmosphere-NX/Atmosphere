@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "defines.hpp"
+#include <vapours/defines.hpp>
 #include <chrono>
 
 namespace ams {

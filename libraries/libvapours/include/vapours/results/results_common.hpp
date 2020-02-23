@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "../defines.hpp"
+#include <vapours/defines.hpp>
 
 namespace ams {
 

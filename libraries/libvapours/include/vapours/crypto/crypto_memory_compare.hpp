@@ -15,17 +15,23 @@
  */
 
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <vapours/defines.hpp>
+#include <vapours/util.hpp>
 
-namespace ams::fatal {
+#ifdef ATMOSPHERE_ARCH_ARM64
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(163);
+#include <vapours/crypto/impl/crypto_memory_compare.arch.arm64.hpp>
 
-    R_DEFINE_ERROR_RESULT(AllocationFailed,                    1);
-    R_DEFINE_ERROR_RESULT(NullGraphicsBuffer,                  2);
-    R_DEFINE_ERROR_RESULT(AlreadyThrown,                       3);
-    R_DEFINE_ERROR_RESULT(TooManyEvents,                       4);
-    R_DEFINE_ERROR_RESULT(InRepairWithoutVolHeld,              5);
-    R_DEFINE_ERROR_RESULT(InRepairWithoutTimeReviserCartridge, 6);
+#else
+
+#error "Unknown architecture for crypto::IsSameBytes"
+
+#endif
+
+namespace ams::crypto {
+
+    bool IsSameBytes(const void *lhs, const void *rhs, size_t size) {
+        return impl::IsSameBytes(lhs, rhs, size);
+    }
 
 }

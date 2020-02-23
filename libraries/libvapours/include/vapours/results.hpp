@@ -15,36 +15,36 @@
  */
 
 #pragma once
-#include "defines.hpp"
-#include "util.hpp"
+#include <vapours/defines.hpp>
+#include <vapours/util.hpp>
 
 /* Utilities. */
-#include "results/results_common.hpp"
+#include <vapours/results/results_common.hpp>
 
 /* Official. */
-#include "results/cal_results.hpp"
-#include "results/creport_results.hpp"
-#include "results/debug_results.hpp"
-#include "results/dmnt_results.hpp"
-#include "results/err_results.hpp"
-#include "results/fatal_results.hpp"
-#include "results/fs_results.hpp"
-#include "results/hipc_results.hpp"
-#include "results/i2c_results.hpp"
-#include "results/kvdb_results.hpp"
-#include "results/loader_results.hpp"
-#include "results/lr_results.hpp"
-#include "results/os_results.hpp"
-#include "results/ncm_results.hpp"
-#include "results/pm_results.hpp"
-#include "results/ro_results.hpp"
-#include "results/settings_results.hpp"
-#include "results/sf_results.hpp"
-#include "results/sm_results.hpp"
-#include "results/spl_results.hpp"
-#include "results/svc_results.hpp"
-#include "results/updater_results.hpp"
-#include "results/vi_results.hpp"
+#include <vapours/results/cal_results.hpp>
+#include <vapours/results/creport_results.hpp>
+#include <vapours/results/debug_results.hpp>
+#include <vapours/results/dmnt_results.hpp>
+#include <vapours/results/err_results.hpp>
+#include <vapours/results/fatal_results.hpp>
+#include <vapours/results/fs_results.hpp>
+#include <vapours/results/hipc_results.hpp>
+#include <vapours/results/i2c_results.hpp>
+#include <vapours/results/kvdb_results.hpp>
+#include <vapours/results/loader_results.hpp>
+#include <vapours/results/lr_results.hpp>
+#include <vapours/results/os_results.hpp>
+#include <vapours/results/ncm_results.hpp>
+#include <vapours/results/pm_results.hpp>
+#include <vapours/results/ro_results.hpp>
+#include <vapours/results/settings_results.hpp>
+#include <vapours/results/sf_results.hpp>
+#include <vapours/results/sm_results.hpp>
+#include <vapours/results/spl_results.hpp>
+#include <vapours/results/svc_results.hpp>
+#include <vapours/results/updater_results.hpp>
+#include <vapours/results/vi_results.hpp>
 
 /* Unofficial. */
-#include "results/exosphere_results.hpp"
+#include <vapours/results/exosphere_results.hpp>

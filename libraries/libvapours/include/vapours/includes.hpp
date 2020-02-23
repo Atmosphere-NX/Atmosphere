@@ -60,4 +60,4 @@
 #endif /* ATMOSPHERE_IS_STRATOSPHERE */
 
 /* Atmosphere meta. */
-#include "ams_version.h"
+#include <vapours/ams_version.h>
