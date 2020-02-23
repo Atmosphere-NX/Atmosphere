@@ -19,10 +19,10 @@
 #include "hvisor_irq_manager.hpp"
 #include "hvisor_virtual_gic.hpp"
 #include "hvisor_core_context.hpp"
+#include "hvisor_guest_timers.hpp"
 
 #include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 #include "platform/interrupt_config.h"
-#include "guest_timers.h"
 #include "transport_interface.h"
 #include "timer.h"
 
@@ -30,32 +30,15 @@
 
 namespace {
 
-    inline bool checkRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
-    {
-        // Evaluate if the timer has really expired in the PoV of the guest kernel.
-        // If not, reschedule (add missed time delta) it & exit early
-        u64 cval = currentCoreCtx->emulPtimerCval;
-        u64 vct  = computeCntvct(frame);
-
-        if (cval > vct) {
-            // It has not: reschedule the timer
-            // Note: this isn't 100% precise esp. on QEMU so it may take a few tries...
-            writeEmulatedPhysicalCompareValue(frame, cval);
-            return false;
-        }
-
-        return true;
-    }
-
-    inline bool checkGuestTimerInterrupts(ExceptionStackFrame *frame, u32 irqId)
+    inline bool CheckGuestTimerInterrupts(ams::hvisor::ExceptionStackFrame *frame, u32 irqId)
     {
         // A thing that might have happened is losing the race vs disabling the guest interrupts
         // Another thing is that the virtual timer might have fired before us updating voff when executing a top half?
         if (irqId == TIMER_IRQID(NS_VIRT_TIMER)) {
             u64 cval = THERMOSPHERE_GET_SYSREG(cntp_cval_el0);
-            return cval <= computeCntvct(frame);
+            return cval <= ams::hvisor::ComputeCntvct(frame);
         } else if (irqId == TIMER_IRQID(NS_PHYS_TIMER)) {
-            return checkRescheduleEmulatedPtimer(frame);
+            return ams::hvisor::CheckRescheduleEmulatedPtimer(frame);
         } else {
             return true;
         }
@@ -198,7 +181,7 @@ namespace ams::hvisor {
         if (irqId == GicV2Distributor::spuriousIrqId) {
             // Spurious interrupt received
             return;
-        } else if (!checkGuestTimerInterrupts(frame, irqId)) {
+        } else if (!CheckGuestTimerInterrupts(frame, irqId)) {
             // Deactivate the interrupt, return ASAP
             DropCurrentInterruptPriority(iar);
             DeactivateCurrentInterrupt(iar);
