@@ -39,6 +39,9 @@ namespace ams::creport {
         };
         static_assert(sizeof(RoDataStart) == sizeof(ModulePath), "RoDataStart definition!");
 
+        /* Globals. */
+        u8 g_last_rodata_pages[2 * os::MemoryPageSize];
+
     }
 
     void ModuleList::SaveToFile(FILE *f_report) {
@@ -229,16 +232,15 @@ namespace ams::creport {
         }
 
         /* We want to read the last two pages of .rodata. */
-        static u8 s_last_rodata_pages[2 * os::MemoryPageSize];
-        const size_t read_size = mi.size >= sizeof(s_last_rodata_pages) ? sizeof(s_last_rodata_pages) : (sizeof(s_last_rodata_pages) / 2);
-        if (R_FAILED(svcReadDebugProcessMemory(s_last_rodata_pages, this->debug_handle, mi.addr + mi.size - read_size, read_size))) {
+        const size_t read_size = mi.size >= sizeof(g_last_rodata_pages) ? sizeof(g_last_rodata_pages) : (sizeof(g_last_rodata_pages) / 2);
+        if (R_FAILED(svcReadDebugProcessMemory(g_last_rodata_pages, this->debug_handle, mi.addr + mi.size - read_size, read_size))) {
             return;
         }
 
         /* Find GNU\x00 to locate start of build id. */
         for (int ofs = read_size - sizeof(GnuSignature) - ModuleBuildIdLength; ofs >= 0; ofs--) {
-            if (std::memcmp(s_last_rodata_pages + ofs, GnuSignature, sizeof(GnuSignature)) == 0) {
-                std::memcpy(out_build_id, s_last_rodata_pages + ofs + sizeof(GnuSignature), ModuleBuildIdLength);
+            if (std::memcmp(g_last_rodata_pages + ofs, GnuSignature, sizeof(GnuSignature)) == 0) {
+                std::memcpy(out_build_id, g_last_rodata_pages + ofs + sizeof(GnuSignature), ModuleBuildIdLength);
                 break;
             }
         }

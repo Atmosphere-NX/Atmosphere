@@ -42,6 +42,7 @@ namespace ams::ldr::ro {
 
         /* Globals. */
         ProcessInfo g_process_infos[ProcessCountMax];
+        u64 g_cur_pin_id = 1;
 
         /* Helpers. */
         ProcessInfo *GetProcessInfo(PinId pin_id) {
@@ -82,10 +83,8 @@ namespace ams::ldr::ro {
         ProcessInfo *info = GetFreeProcessInfo();
         R_UNLESS(info != nullptr, ldr::ResultTooManyProcesses());
 
-        static u64 s_cur_pin_id = 1;
-
         std::memset(info, 0, sizeof(*info));
-        info->pin_id = { s_cur_pin_id++ };
+        info->pin_id = { g_cur_pin_id++ };
         info->loc = loc;
         info->override_status = status;
         info->in_use = true;

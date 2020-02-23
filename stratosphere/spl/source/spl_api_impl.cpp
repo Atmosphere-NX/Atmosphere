@@ -555,7 +555,7 @@ namespace ams::spl::impl {
     Result GenerateAesKey(AesKey *out_key, const AccessKey &access_key, const KeySource &key_source) {
         smc::Result smc_rc;
 
-        static const KeySource s_generate_aes_key_source = {
+        static constexpr KeySource s_generate_aes_key_source = {
             .data = {0x89, 0x61, 0x5E, 0xE0, 0x5C, 0x31, 0xB6, 0x80, 0x5F, 0xE5, 0x8F, 0x3D, 0xA2, 0x4F, 0x7A, 0xA8}
         };
 
@@ -571,7 +571,7 @@ namespace ams::spl::impl {
     }
 
     Result DecryptAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 option) {
-        static const KeySource s_decrypt_aes_key_source = {
+        static constexpr KeySource s_decrypt_aes_key_source = {
             .data = {0x11, 0x70, 0x24, 0x2B, 0x48, 0x69, 0x11, 0xF1, 0x11, 0xB0, 0x0C, 0x47, 0x7C, 0xC3, 0xEF, 0x7E}
         };
 
