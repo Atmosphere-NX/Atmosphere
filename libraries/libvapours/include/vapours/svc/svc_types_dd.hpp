@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "svc_types_common.hpp"
-#include "svc_select_hardware_constants.hpp"
-#include "svc_select_device_name.hpp"
+#include <vapours/svc/svc_types_common.hpp>
+#include <vapours/svc/svc_select_hardware_constants.hpp>
+#include <vapours/svc/svc_select_device_name.hpp>
 
 namespace ams::svc {
 

@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "svc_common.hpp"
-#include "svc_types.hpp"
+#include <vapours/svc/svc_common.hpp>
+#include <vapours/svc/svc_types.hpp>
 
 #define AMS_SVC_KERN_INPUT_HANDLER(TYPE, NAME)  TYPE NAME
 #define AMS_SVC_KERN_OUTPUT_HANDLER(TYPE, NAME) TYPE *NAME

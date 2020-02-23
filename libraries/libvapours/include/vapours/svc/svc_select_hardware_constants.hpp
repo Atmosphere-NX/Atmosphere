@@ -15,11 +15,11 @@
  */
 
 #pragma once
-#include "svc_common.hpp"
+#include <vapours/svc/svc_common.hpp>
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include "board/nintendo/nx/svc_hardware_constants.hpp"
+    #include <vapours/svc/board/nintendo/nx/svc_hardware_constants.hpp>
     namespace ams::svc {
         using namespace ams::svc::board::nintendo::nx;
     }

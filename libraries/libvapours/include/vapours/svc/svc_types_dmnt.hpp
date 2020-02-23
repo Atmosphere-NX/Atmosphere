@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "svc_types_common.hpp"
+#include <vapours/svc/svc_types_common.hpp>
 
 namespace ams::svc {
 

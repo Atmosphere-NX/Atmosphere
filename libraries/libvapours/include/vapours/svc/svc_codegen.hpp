@@ -16,8 +16,8 @@
 #pragma once
 
 /* NOTE: This header must not be included by svc.hpp. */
-#include "svc_common.hpp"
-#include "svc_types.hpp"
-#include "svc_definitions.hpp"
+#include <vapours/svc/svc_common.hpp>
+#include <vapours/svc/svc_types.hpp>
+#include <vapours/svc/svc_definitions.hpp>
 
-#include "codegen/svc_codegen_kernel_svc_wrapper.hpp"
+#include <vapours/svc/codegen/svc_codegen_kernel_svc_wrapper.hpp>

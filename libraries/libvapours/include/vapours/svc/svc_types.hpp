@@ -15,10 +15,10 @@
  */
 #pragma once
 
-#include "svc_common.hpp"
-#include "svc_tick.hpp"
-#include "svc_types_common.hpp"
-#include "svc_types_base.hpp"
-#include "svc_types_dd.hpp"
-#include "svc_types_dmnt.hpp"
-#include "svc_types_priv.hpp"
+#include <vapours/svc/svc_common.hpp>
+#include <vapours/svc/svc_tick.hpp>
+#include <vapours/svc/svc_types_common.hpp>
+#include <vapours/svc/svc_types_base.hpp>
+#include <vapours/svc/svc_types_dd.hpp>
+#include <vapours/svc/svc_types_dmnt.hpp>
+#include <vapours/svc/svc_types_priv.hpp>

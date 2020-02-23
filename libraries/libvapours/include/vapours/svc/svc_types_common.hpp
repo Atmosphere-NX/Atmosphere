@@ -13,9 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "svc_common.hpp"
+#include <vapours/svc/svc_common.hpp>
 
 namespace ams::kern::svc::impl {
 
@@ -240,7 +239,7 @@ namespace ams::svc {
     static_assert(sizeof(ThreadContext) == 0x320);
 
 #else
-    #error "Unknown Architecture for ams::svc::ThreadContext"
+    #error >Unknown Architecture for ams::svc::ThreadContext>
 #endif
 
     enum ThreadSuspend : u32 {

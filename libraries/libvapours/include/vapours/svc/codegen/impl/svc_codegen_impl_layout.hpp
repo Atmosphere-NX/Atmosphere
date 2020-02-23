@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "svc_codegen_impl_common.hpp"
-#include "svc_codegen_impl_parameter.hpp"
+#include <vapours/svc/codegen/impl/svc_codegen_impl_common.hpp>
+#include <vapours/svc/codegen/impl/svc_codegen_impl_parameter.hpp>
 
 namespace ams::svc::codegen::impl {
 

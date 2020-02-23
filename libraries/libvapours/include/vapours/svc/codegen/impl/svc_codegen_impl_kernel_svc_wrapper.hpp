@@ -14,12 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "svc_codegen_impl_common.hpp"
-#include "svc_codegen_impl_parameter.hpp"
-#include "svc_codegen_impl_layout.hpp"
-#include "svc_codegen_impl_meta_code.hpp"
-#include "svc_codegen_impl_layout_conversion.hpp"
-#include "svc_codegen_impl_code_generator.hpp"
+#include <vapours/svc/codegen/impl/svc_codegen_impl_common.hpp>
+#include <vapours/svc/codegen/impl/svc_codegen_impl_parameter.hpp>
+#include <vapours/svc/codegen/impl/svc_codegen_impl_layout.hpp>
+#include <vapours/svc/codegen/impl/svc_codegen_impl_meta_code.hpp>
+#include <vapours/svc/codegen/impl/svc_codegen_impl_layout_conversion.hpp>
+#include <vapours/svc/codegen/impl/svc_codegen_impl_code_generator.hpp>
 
 namespace ams::svc::codegen::impl {
 
