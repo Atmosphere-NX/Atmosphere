@@ -31,18 +31,27 @@ namespace ams::ro {
     };
     static_assert(sizeof(ModuleId) == sizeof(LoaderModuleInfo::build_id), "ModuleId definition!");
 
+    struct NrrCertification {
+        static constexpr size_t RsaKeySize = 0x100;
+        static constexpr size_t SignedSize = 0x120;
+
+        u64 program_id_mask;
+        u64 program_id_pattern;
+        u8  reserved_10[0x10];
+        u8  modulus[RsaKeySize];
+        u8  signature[RsaKeySize];
+    };
+    static_assert(sizeof(NrrCertification) == NrrCertification::RsaKeySize + NrrCertification::SignedSize);
+
     class NrrHeader {
         public:
             static constexpr u32 Magic = util::FourCC<'N','R','R','0'>::Code;
         private:
             u32 magic;
-            u8  reserved_04[0xC];
-            u64 program_id_mask;
-            u64 program_id_pattern;
-            u8  reserved_20[0x10];
-            u8  modulus[0x100];
-            u8  fixed_key_signature[0x100];
-            u8  nrr_signature[0x100];
+            u32 key_generation;
+            u8  reserved_08[0x08];
+            NrrCertification certification;
+            u8  signature[0x100];
             ncm::ProgramId program_id;
             u32 size;
             u8  type; /* 7.0.0+ */
@@ -56,7 +65,7 @@ namespace ams::ro {
             }
 
             bool IsProgramIdValid() const {
-                return (static_cast<u64>(this->program_id) & this->program_id_mask) == this->program_id_pattern;
+                return (static_cast<u64>(this->program_id) & this->certification.program_id_mask) == this->certification.program_id_pattern;
             }
 
             ModuleType GetType() const {
@@ -80,8 +89,38 @@ namespace ams::ro {
             uintptr_t GetHashes() const {
                 return reinterpret_cast<uintptr_t>(this) + this->hashes_offset;
             }
+
+            u32 GetKeyGeneration() const {
+                return this->key_generation;
+            }
+
+            const u8 *GetCertificationSignature() const {
+                return this->certification.signature;
+            }
+
+            const u8 *GetCertificationSignedArea() const {
+                return reinterpret_cast<const u8 *>(std::addressof(this->certification));
+            }
+
+            const u8 *GetCertificationModulus() const {
+                return this->certification.modulus;
+            }
+
+            const u8 *GetSignature() const {
+                return this->signature;
+            }
+
+            const u8 *GetSignedArea() const {
+                return reinterpret_cast<const u8 *>(std::addressof(this->program_id));
+            }
+
+            size_t GetSignedAreaSize() const;
     };
     static_assert(sizeof(NrrHeader) == 0x350, "NrrHeader definition!");
+
+    inline size_t NrrHeader::GetSignedAreaSize() const {
+        return this->size - OFFSETOF(NrrHeader, program_id);
+    }
 
     class NroHeader {
         public:
