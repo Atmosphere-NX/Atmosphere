@@ -123,7 +123,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
+        R_UNLESS(offset<= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         R_TRY(this->placeholder_accessor.Write(placeholder_id, offset, data.GetPointer(), data.GetSize()));
         return ResultSuccess();
@@ -265,7 +265,7 @@ namespace ams::ncm {
     }
 
     Result ContentStorageInterface::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
-        R_UNLESS(start_offset >> 0x1f == 0, ncm::ResultInvalidOffset());
+        R_UNLESS(start_offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         char content_root_path[FS_MAX_PATH] = {0};
@@ -365,7 +365,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
+        R_UNLESS(offset<= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -452,7 +452,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
+        R_UNLESS(offset<= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         bool is_development = false;

@@ -184,7 +184,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseInterface::ListContentInfo(sf::Out<u32> out_count, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 offset) {
-        R_UNLESS(offset >> 0x1f == 0, ncm::ResultInvalidOffset());
+        R_UNLESS(offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         const void *value = nullptr;
@@ -470,7 +470,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseInterface::ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, ContentMetaKey key, u32 start_index) {
-        R_UNLESS(start_index >> 0x1f == 0, ncm::ResultInvalidOffset());
+        R_UNLESS(start_index <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         
         const void* value = nullptr;
