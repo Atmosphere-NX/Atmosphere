@@ -52,9 +52,7 @@ namespace ams::ncm {
             bool disabled;
         protected:
             Result EnsureEnabled() {
-                if (this->disabled) {
-                    return ResultInvalidContentMetaDatabase();
-                }
+                R_UNLESS(!this->disabled, ResultInvalidContentMetaDatabase());
                 return ResultSuccess();
             }
         public:

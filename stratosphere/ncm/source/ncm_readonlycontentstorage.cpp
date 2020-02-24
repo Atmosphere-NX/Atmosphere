@@ -134,10 +134,7 @@ namespace ams::ncm {
         }
 
         struct stat st;
-        if (stat(content_path, &st) == -1) {
-            return fsdevGetLastResult();
-        }
-
+        R_UNLESS(stat(content_path, &st) != -1, fsdevGetLastResult());
         out_size.SetValue(st.st_size);
         return ResultSuccess();
     }
@@ -157,10 +154,7 @@ namespace ams::ncm {
 
     Result ReadOnlyContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
-        if (offset >> 0x3f != 0) {
-            return ResultInvalidOffset();
-        }
-
+        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -181,7 +175,6 @@ namespace ams::ncm {
         };
    
         R_TRY(fs::ReadFile(f, offset, buf.GetPointer(), buf.GetSize()));
-
         return ResultSuccess();
     }
 

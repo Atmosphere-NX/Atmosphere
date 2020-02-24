@@ -54,17 +54,13 @@ namespace ams::ncm::fs {
     Result TraverseDirectory(bool* out_should_continue, const char* root_path, int max_level, F f) {
         DIR *dir;
         struct dirent* dir_entry = nullptr;
-        if (max_level < 1) {
-            return ResultSuccess();
-        }
+        R_UNLESS(max_level >= 1, ResultSuccess());
         
         bool retry_dir_read = true;
         while (retry_dir_read) {
             retry_dir_read = false;
 
-            if ((dir = opendir(root_path)) == nullptr) {
-                return fsdevGetLastResult();
-            }
+            R_UNLESS((dir = opendir(root_path)) != nullptr, fsdevGetLastResult());
             ON_SCOPE_EXIT { closedir(dir); };
 
             while ((dir_entry = readdir(dir)) != nullptr) {

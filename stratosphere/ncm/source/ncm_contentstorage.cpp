@@ -68,18 +68,14 @@ namespace ams::ncm {
     }
 
     Result ContentStorageInterface::OpenCachedContentFile(ContentId content_id) {
-        if (this->cached_content_id == content_id) {
-            return ResultSuccess();
-        }
+        R_UNLESS(this->cached_content_id != content_id, ResultSuccess());
 
         this->ClearContentCache();
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
 
         R_TRY_CATCH(fs::OpenFile(&this->content_cache_file_handle, content_path, FsOpenMode_Read)) {
-            R_CATCH(ams::fs::ResultPathNotFound) {
-                return ResultContentNotFound();
-            }
+            R_CONVERT(ams::fs::ResultPathNotFound, ResultContentNotFound())
         } R_END_TRY_CATCH;
 
         this->cached_content_id = content_id;
@@ -127,10 +123,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        if (offset >> 0x3f != 0) {
-            return ResultInvalidOffset();
-        }
-
+        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         R_TRY(this->placeholder_accessor.Write(placeholder_id, offset, data.GetPointer(), data.GetSize()));
         return ResultSuccess();
@@ -148,12 +141,8 @@ namespace ams::ncm {
 
         if (rename(placeholder_path, content_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ams::fs::ResultPathNotFound) {
-                    return ResultPlaceHolderNotFound();
-                }
-                R_CATCH(ams::fs::ResultPathAlreadyExists) {
-                    return ResultContentAlreadyExists();
-                }
+                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
+                R_CONVERT(ams::fs::ResultPathAlreadyExists, ResultContentAlreadyExists())
             } R_END_TRY_CATCH;
         }
 
@@ -169,9 +158,7 @@ namespace ams::ncm {
 
         if (std::remove(content_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ams::fs::ResultPathNotFound) {
-                    return ResultContentNotFound();
-                }
+                R_CONVERT(ams::fs::ResultPathNotFound, ResultContentNotFound())
             } R_END_TRY_CATCH;
         }
 
@@ -223,11 +210,7 @@ namespace ams::ncm {
         /* Nintendo uses CleanDirectoryRecursively which is 3.0.0+. 
            We'll just delete the directory and recreate it to support all firmwares. */
         R_TRY(fsdevDeleteDirectoryRecursively(placeholder_root_path));
-
-        if (mkdir(placeholder_root_path, S_IRWXU) == -1) {
-            return fsdevGetLastResult();
-        }
-
+        R_UNLESS(mkdir(placeholder_root_path, S_IRWXU) != -1, fsdevGetLastResult());
         return ResultSuccess();
     }
 
@@ -244,9 +227,7 @@ namespace ams::ncm {
             *should_retry_dir_read = false;
             
             if (dir_entry->d_type == DT_REG) {
-                if (entry_count > out_buf.GetSize()) {
-                    return ResultBufferInsufficient();
-                }
+                R_UNLESS(entry_count <= out_buf.GetSize(), ResultBufferInsufficient());
                 
                 PlaceHolderId cur_entry_placeholder_id = {0};
                 R_TRY(GetPlaceHolderIdFromDirEntry(&cur_entry_placeholder_id, dir_entry));
@@ -283,11 +264,8 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {    
-        if (start_offset >> 0x1f != 0) {
-            return ResultInvalidOffset();
-        }
-
+    Result ContentStorageInterface::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
+        R_UNLESS(start_offset >> 0x1f == 0, ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         char content_root_path[FS_MAX_PATH] = {0};
@@ -342,10 +320,7 @@ namespace ams::ncm {
         this->GetContentPath(content_path, content_id);
         struct stat st;
 
-        if (stat(content_path, &st) == -1) {
-            return fsdevGetLastResult();
-        }
-
+        R_UNLESS(stat(content_path, &st) != -1, fsdevGetLastResult());
         out_size.SetValue(st.st_size);
         return ResultSuccess();
     }
@@ -374,12 +349,8 @@ namespace ams::ncm {
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         if (rename(old_content_path, placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ams::fs::ResultPathNotFound) {
-                    return ResultPlaceHolderNotFound();
-                }
-                R_CATCH(ams::fs::ResultPathAlreadyExists) {
-                    return ResultPlaceHolderAlreadyExists();
-                }
+                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
+                R_CONVERT(ams::fs::ResultPathAlreadyExists, ResultPlaceHolderAlreadyExists())
             } R_END_TRY_CATCH;
         }
 
@@ -394,10 +365,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
-        if (offset >> 0x3f != 0) {
-            return ResultInvalidOffset();
-        }
-
+        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -484,10 +452,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        if (offset >> 0x3f != 0) {
-            return ResultInvalidOffset();
-        }
-
+        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         bool is_development = false;
@@ -515,20 +480,14 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::GetFreeSpaceSize(sf::Out<u64> out_size) {
         struct statvfs st = {0};
-        if (statvfs(this->root_path, &st) == -1) {
-            return fsdevGetLastResult();
-        }
-
+        R_UNLESS(statvfs(this->root_path, &st) != -1, fsdevGetLastResult());
         out_size.SetValue(st.f_bfree);
         return ResultSuccess();
     }
 
     Result ContentStorageInterface::GetTotalSpaceSize(sf::Out<u64> out_size) {
         struct statvfs st = {0};
-        if (statvfs(this->root_path, &st) == -1) {
-            return fsdevGetLastResult();
-        }
-
+        R_UNLESS(statvfs(this->root_path, &st) != -1, fsdevGetLastResult());
         out_size.SetValue(st.f_blocks);
         return ResultSuccess();
     }
@@ -555,9 +514,7 @@ namespace ams::ncm {
         struct stat st;
 
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        if (stat(placeholder_path, &st) == -1) {
-            return fsdevGetLastResult();
-        }
+        R_UNLESS(stat(placeholder_path, &st) != -1, fsdevGetLastResult());
 
         out_size.SetValue(st.st_size);
         return ResultSuccess();

@@ -21,13 +21,9 @@ namespace ams::lr {
 
     Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) {
         ncm::StorageId storage_id = ncm::StorageId::None;
-
-        if (!this->registered_storages.Find(&storage_id, id)) {
-            return ResultAddOnContentNotFound();
-        }
+        R_UNLESS(this->registered_storages.Find(&storage_id, id), ResultAddOnContentNotFound());
 
         std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-    
         ncm::ContentId data_content_id;
         R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, storage_id));
         R_TRY(content_meta_database->GetLatestData(&data_content_id, id));
@@ -40,18 +36,12 @@ namespace ams::lr {
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) {
-        if (!this->registered_storages.Register(id, storage_id, ncm::ProgramId::Invalid)) {
-            return ResultTooManyRegisteredPaths();
-        }
-
+        R_UNLESS(this->registered_storages.Register(id, storage_id, ncm::ProgramId::Invalid), ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
-        if (!this->registered_storages.Register(id, storage_id, application_id)) {
-            return ResultTooManyRegisteredPaths();
-        }
-
+        R_UNLESS(this->registered_storages.Register(id, storage_id, application_id), ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 
@@ -63,10 +53,10 @@ namespace ams::lr {
     Result AddOnContentLocationResolverInterface::RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids) {
         if (ids.GetSize() == 0) {
             this->registered_storages.Clear();
-            return ResultSuccess();
+        } else {
+            this->registered_storages.ClearExcluding(ids.GetPointer(), ids.GetSize());
         }
 
-        this->registered_storages.ClearExcluding(ids.GetPointer(), ids.GetSize());
         return ResultSuccess();
     }
 

@@ -58,9 +58,7 @@ namespace ams::ncm {
             bool disabled;
         protected:
             Result EnsureEnabled() {
-                if (this->disabled) {
-                    return ResultInvalidContentStorage();
-                }
+                R_UNLESS(!this->disabled, ResultInvalidContentStorage());
                 return ResultSuccess();
             }
         public:

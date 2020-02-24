@@ -23,9 +23,7 @@
 namespace ams::ncm::impl {
 
     Result PlaceHolderAccessor::Open(FILE** out_handle, PlaceHolderId placeholder_id) {
-        if (this->LoadFromCache(out_handle, placeholder_id)) {
-            return ResultSuccess();
-        }
+        R_UNLESS(!this->LoadFromCache(out_handle, placeholder_id), ResultSuccess());
         char placeholder_path[FS_MAX_PATH] = {0};
         this->MakePath(placeholder_path, placeholder_id);
 
@@ -127,9 +125,7 @@ namespace ams::ncm::impl {
         this->GetPath(placeholder_path, placeholder_id);
 
         R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FsCreateOption_BigFile)) {
-            R_CATCH(ams::fs::ResultPathAlreadyExists) {
-                return ResultPlaceHolderAlreadyExists();
-            }
+            R_CONVERT(ams::fs::ResultPathAlreadyExists, ResultPlaceHolderAlreadyExists())
         } R_END_TRY_CATCH;
 
         return ResultSuccess();
@@ -142,9 +138,7 @@ namespace ams::ncm::impl {
 
         if (std::remove(placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ams::fs::ResultPathNotFound) {
-                    return ResultPlaceHolderNotFound();
-                }
+                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
             } R_END_TRY_CATCH;
         }
 
@@ -155,9 +149,7 @@ namespace ams::ncm::impl {
         FILE* f = nullptr;
 
         R_TRY_CATCH(this->Open(&f, placeholder_id)) {
-            R_CATCH(ams::fs::ResultPathNotFound) {
-                return ResultPlaceHolderNotFound();
-            }
+            R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
         } R_END_TRY_CATCH;
 
         ON_SCOPE_EXIT {
@@ -173,9 +165,7 @@ namespace ams::ncm::impl {
         this->MakePath(placeholder_path, placeholder_id);
         if (truncate(placeholder_path, size) == -1) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CATCH(ams::fs::ResultPathNotFound) {
-                    return ResultPlaceHolderNotFound();
-                }
+                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
             } R_END_TRY_CATCH;
         }
 
@@ -207,13 +197,9 @@ namespace ams::ncm::impl {
 
         this->StoreToCache(f, placeholder_id);
         
-        if (fseek(f, 0L, SEEK_END) != 0) {
-            return fsdevGetLastResult();
-        }
+        R_UNLESS(fseek(f, 0L, SEEK_END) == 0, fsdevGetLastResult());
         size_t size = ftell(f);
-        if (fseek(f, 0L, SEEK_SET) != 0) {
-            return fsdevGetLastResult();
-        }
+        R_UNLESS(fseek(f, 0L, SEEK_SET) == 0, fsdevGetLastResult());
 
         *found_in_cache = true;
         *out_size = size;

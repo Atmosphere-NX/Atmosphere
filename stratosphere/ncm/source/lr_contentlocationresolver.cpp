@@ -28,16 +28,11 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-        if (this->GetRedirectedPath(out.GetPointer(), &this->program_redirector, id)) {
-            return ResultSuccess();
-        }
-
+        R_UNLESS(!this->GetRedirectedPath(out.GetPointer(), &this->program_redirector, id), ResultSuccess());
         ncm::ContentId program_content_id;
 
         R_TRY_CATCH(this->content_meta_database->GetLatestProgram(&program_content_id, id)) {
-            R_CATCH(ncm::ResultContentMetaNotFound) {
-                return ResultProgramNotFound();
-            }
+            R_CONVERT(ncm::ResultContentMetaNotFound, ResultProgramNotFound())
         } R_END_TRY_CATCH;
         
         this->GetContentStoragePath(out.GetPointer(), program_content_id);
@@ -50,19 +45,13 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) {
-        if (this->GetRedirectedPath(out.GetPointer(), &this->app_control_redirector, id)) {
-            return ResultSuccess();
-        }
-
-        return ResultControlNotFound();
+        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->app_control_redirector, id), ResultControlNotFound());
+        return ResultSuccess();
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-        if (this->GetRedirectedPath(out.GetPointer(), &this->html_docs_redirector, id)) {
-            return ResultSuccess();
-        }
-
-        return ResultHtmlDocumentNotFound();
+        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->html_docs_redirector, id), ResultHtmlDocumentNotFound());
+        return ResultSuccess();
     }
 
     Result ContentLocationResolverInterface::ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) {
@@ -94,11 +83,8 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) {
-        if (this->GetRedirectedPath(out.GetPointer(), &this->legal_info_redirector, id)) {
-            return ResultSuccess();
-        }
-
-        return ResultLegalInformationNotFound();
+        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->legal_info_redirector, id), ResultLegalInformationNotFound());
+        return ResultSuccess();
     }
 
     Result ContentLocationResolverInterface::RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) {
@@ -120,7 +106,6 @@ namespace ams::lr {
         this->content_meta_database = std::move(content_meta_database);
         this->content_storage = std::move(content_storage);
         this->ClearRedirections();
-
         return ResultSuccess();
     }
 
@@ -165,14 +150,10 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
-        if (this->GetRedirectedPath(out.GetPointer(), &this->debug_program_redirector, id)) {
-            return ResultSuccess();
-        }
+        R_UNLESS(!this->GetRedirectedPath(out.GetPointer(), &this->debug_program_redirector, id), ResultSuccess());
 
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
-            R_CATCH(ResultProgramNotFound) {
-                return ResultDebugProgramNotFound();
-            }
+            R_CONVERT(ResultProgramNotFound, ResultDebugProgramNotFound())
         } R_END_TRY_CATCH;
         
         return ResultSuccess();

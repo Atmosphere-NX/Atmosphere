@@ -28,9 +28,7 @@ namespace ams::ncm::fs {
 
         /* Manually check if the file already exists, so it doesn't get created automatically. */
         R_TRY(HasFile(&has, path));
-        if (!has) {
-            return ams::fs::ResultPathNotFound();
-        }
+        R_UNLESS(has, ams::fs::ResultPathNotFound());
 
         const char* fopen_mode = "";
 
@@ -40,32 +38,19 @@ namespace ams::ncm::fs {
             fopen_mode = "rb";
         } 
         FILE* f = fopen(path, fopen_mode);
-
-        if (f == nullptr) {
-            return fsdevGetLastResult();
-        }
+        R_UNLESS(f != nullptr, fsdevGetLastResult());
 
         *out = f;
         return ResultSuccess();
     }
 
     Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option) {
-        if (fseek(f, 0, SEEK_END) != 0) {
-            return fsdevGetLastResult();
-        }
+        R_UNLESS(fseek(f, 0, SEEK_END) == 0, fsdevGetLastResult());
         size_t existing_size = ftell(f);
 
-        if (offset + size > existing_size) {
-            return ams::fs::ResultFileExtensionWithoutOpenModeAllowAppend();
-        }
-
-        if (fseek(f, offset, SEEK_SET) != 0) {
-            return fsdevGetLastResult();
-        }
-
-        if (fwrite(buffer, 1, size, f) != size) {
-            return fsdevGetLastResult();
-        }
+        R_UNLESS(offset + size <= existing_size, ams::fs::ResultFileExtensionWithoutOpenModeAllowAppend());
+        R_UNLESS(fseek(f, offset, SEEK_SET) == 0, fsdevGetLastResult());
+        R_UNLESS(fwrite(buffer, 1, size, f) == size, fsdevGetLastResult());
 
         if (option & FsWriteOption_Flush) {
             fflush(f);
@@ -75,14 +60,8 @@ namespace ams::ncm::fs {
     }
 
     Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
-        if (fseek(f, offset, SEEK_SET) != 0) {
-            return fsdevGetLastResult();
-        }
-
-        if (fread(buffer, 1, size, f) != size && ferror(f)) {
-            return fsdevGetLastResult();
-        }
-
+        R_UNLESS(fseek(f, offset, SEEK_SET) == 0, fsdevGetLastResult());
+        R_UNLESS(fread(buffer, 1, size, f) == size || !ferror(f), fsdevGetLastResult());
         return ResultSuccess();
     }
 
@@ -124,25 +103,17 @@ namespace ams::ncm::fs {
 
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
-        if (!has_root) {
-            return ResultStorageRootNotFound();
-        }
+        R_UNLESS(has_root, ResultStorageRootNotFound());
         
         path::GetContentRootPath(content_root, root_path);
-
         bool has_content_root = false;
         R_TRY(HasDirectory(&has_content_root, content_root));
-        if (!has_content_root) {
-            return ResultStoragePathNotFound();
-        }
+        R_UNLESS(has_content_root, ResultStoragePathNotFound());
 
         path::GetPlaceHolderRootPath(placeholder_root, root_path);
-
         bool has_placeholder_root = false;
         R_TRY(HasDirectory(&has_placeholder_root, placeholder_root));
-        if (!has_placeholder_root) {
-            return ResultStoragePathNotFound();
-        }
+        R_UNLESS(has_placeholder_root, ResultStoragePathNotFound());
 
         return ResultSuccess();
     }
@@ -172,36 +143,31 @@ namespace ams::ncm::fs {
     }
 
     Result EnsureRecursively(const char* path) {
-        if (!path) {
-            return ams::fs::ResultNullptrArgument();
-        }
+        R_UNLESS(path, ams::fs::ResultNullptrArgument());
 
         size_t path_len = strlen(path);
         char working_path_buf[FS_MAX_PATH] = {0};
 
-        if (path_len + 1 < FS_MAX_PATH) {
-            strncpy(working_path_buf + 1, path, FS_MAX_PATH-1);
+        R_UNLESS(path_len + 1 < FS_MAX_PATH, ResultAllocationFailed());
+        strncpy(working_path_buf + 1, path, FS_MAX_PATH-1);
 
-            if (path_len != 0) {
-                for (size_t i = 0; i < path_len; i++) {
-                    if (i != 0 && working_path_buf[i + 1] == '/' && working_path_buf[i] != ':') {
-                        /* Temporarily make the path terminate before the '/' */
-                        working_path_buf[i + 1] = 0;
-                        if (mkdir(working_path_buf + 1, S_IRWXU) == -1) {
-                            R_TRY_CATCH(fsdevGetLastResult()) {
-                                R_CATCH(ams::fs::ResultPathAlreadyExists) {
-                                    /* If the path already exists, that's okay. Anything else is an error. */
-                                }
-                            } R_END_TRY_CATCH;
-                        }
-
-                        /* Restore the path to its former state */
-                        working_path_buf[i + 1] = '/';
+        if (path_len != 0) {
+            for (size_t i = 0; i < path_len; i++) {
+                if (i != 0 && working_path_buf[i + 1] == '/' && working_path_buf[i] != ':') {
+                    /* Temporarily make the path terminate before the '/' */
+                    working_path_buf[i + 1] = 0;
+                    if (mkdir(working_path_buf + 1, S_IRWXU) == -1) {
+                        R_TRY_CATCH(fsdevGetLastResult()) {
+                            R_CATCH(ams::fs::ResultPathAlreadyExists) {
+                                /* If the path already exists, that's okay. Anything else is an error. */
+                            }
+                        } R_END_TRY_CATCH;
                     }
+
+                    /* Restore the path to its former state */
+                    working_path_buf[i + 1] = '/';
                 }
             }
-        } else {
-            return ResultAllocationFailed();
         }
 
         return ResultSuccess();
@@ -237,18 +203,15 @@ namespace ams::ncm::fs {
         const char* unqual_path = strchr(path, ':');
 
         /* We should be given a qualified path. */
-        if (!unqual_path || unqual_path > path + 0xf) {
-            return ams::fs::ResultInvalidMountName();
-        }
+        R_UNLESS(unqual_path, ams::fs::ResultInvalidMountName());
+        R_UNLESS(unqual_path <= path + 0xf, ams::fs::ResultInvalidMountName());
 
         strncpy(mount_name->name, path, unqual_path - path);
         return ResultSuccess();
     }
 
     Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id) {
-        if (!mount_point) {
-            return ams::fs::ResultNullptrArgument();
-        }
+        R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
         
         FsSaveDataAttribute save = {
             .system_save_data_id = save_id,
@@ -276,9 +239,7 @@ namespace ams::ncm::fs {
     std::map<std::string, std::string> g_mount_content_storage;
 
     Result MountContentStorage(const char* mount_point, FsContentStorageId id) {
-        if (!mount_point) {
-            return ams::fs::ResultNullptrArgument();
-        }
+        R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
 
         FsFileSystem fs;
         R_TRY(fsOpenContentStorageFileSystem(&fs, id));
@@ -325,9 +286,7 @@ namespace ams::ncm::fs {
     }
 
     Result Unmount(const char* mount_point) {
-        if (!mount_point) {
-            return ams::fs::ResultNullptrArgument();
-        }
+        R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
 
         /* Erase any content storage mappings which may potentially exist. */
         g_mount_content_storage.erase(mount_point);
@@ -340,16 +299,13 @@ namespace ams::ncm::fs {
     }
 
     Result ConvertToFsCommonPath(char* out_common_path, size_t out_len, const char* path) {
-        if (!out_common_path || !path) {
-            return ams::fs::ResultNullptrArgument();
-        }
+        R_UNLESS(out_common_path, ams::fs::ResultNullptrArgument());
+        R_UNLESS(path, ams::fs::ResultNullptrArgument());
 
         MountName mount_name = {0};
         R_TRY(GetMountNameFromPath(&mount_name, path));
-    
-        if (!fsdevGetDeviceFileSystem(mount_name.name) || g_mount_content_storage.find(mount_name.name) == g_mount_content_storage.end()) {
-            return ams::fs::ResultNotMounted();
-        }
+        R_UNLESS(fsdevGetDeviceFileSystem(mount_name.name), ams::fs::ResultNotMounted());
+        R_UNLESS(g_mount_content_storage.find(mount_name.name) != g_mount_content_storage.end(), ams::fs::ResultNotMounted());
 
         char translated_path[FS_MAX_PATH] = {0};
         std::string common_mount_name = g_mount_content_storage[mount_name.name];
