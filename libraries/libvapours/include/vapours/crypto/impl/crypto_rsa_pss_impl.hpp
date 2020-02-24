@@ -73,9 +73,7 @@ namespace ams::crypto::impl {
 
             bool Verify(u8 *buf, size_t size, Hash *hash) {
                 /* Validate sanity byte. */
-                if (buf[size - 1] != TailMagic) {
-                    return false;
-                }
+                bool is_valid = buf[size - 1] == TailMagic;
 
                 /* Decrypt maskedDB */
                 const size_t db_len = size - HashSize - 1;
@@ -87,33 +85,37 @@ namespace ams::crypto::impl {
                 db[0] &= 0x7F;
 
                 /* Verify that DB is of the form 0000...0001 */
-                s32 salt_ofs = -1;
-                for (size_t i = 0; i < db_len; i++) {
-                    if (db[i] != 0) {
-                        salt_ofs = static_cast<s32>(i) + 1;
-                        break;
+                s32 salt_ofs = 0;
+                {
+                    int looking_for_one = 1;
+                    int invalid_db_padding = 0;
+                    int is_zero;
+                    int is_one;
+                    for (size_t i = 0; i < db_len; /* ... */) {
+                        is_zero = (db[i] == 0);
+                        is_one  = (db[i] == 1);
+                        salt_ofs += (looking_for_one & is_one) * (static_cast<s32>(++i));
+                        looking_for_one &= ~is_one;
+                        invalid_db_padding |= (looking_for_one & ~is_zero);
                     }
-                }
-                if (salt_ofs == -1) {
-                    return false;
-                }
-                if (db[salt_ofs - 1] != 1) {
-                    return false;
+
+                    is_valid &= (invalid_db_padding == 0);
                 }
 
                 /* Verify salt. */
                 const u8 *salt = db + salt_ofs;
                 const size_t salt_size = db_len - salt_ofs;
-                if (salt_size == 0) {
-                    return false;
-                }
+                is_valid &= (salt_size != 0);
 
                 /* Verify hash. */
                 u8 cmp_hash[HashSize];
                 ON_SCOPE_EXIT { ClearMemory(cmp_hash, sizeof(cmp_hash)); };
 
                 ComputeHashWithPadding(cmp_hash, hash, salt, salt_size);
-                return IsSameBytes(cmp_hash, h, HashSize);
+                is_valid &= IsSameBytes(cmp_hash, h, HashSize);
+
+                /* Succeed if all our checks succeeded. */
+                return is_valid;
             }
     };
 
