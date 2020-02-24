@@ -31,3 +31,4 @@
 #include <vapours/util/util_intrusive_red_black_tree.hpp>
 #include <vapours/util/util_tinymt.hpp>
 #include <vapours/util/util_bitutil.hpp>
+#include <vapours/util/util_uuid.hpp>
