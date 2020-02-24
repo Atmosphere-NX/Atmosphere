@@ -23,7 +23,7 @@ namespace ams::os::impl {
             /* Create the event handles. */
             R_TRY_CATCH(svcCreateEvent(out_writable, out_readable)) {
                 R_CONVERT(svc::ResultOutOfResource, ResultOutOfResource());
-            } R_END_TRY_CATCH_WITH_ASSERT;
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             return ResultSuccess();
         }
@@ -120,14 +120,14 @@ namespace ams::os::impl {
             /* Continuously wait, until success. */
             R_TRY_CATCH(svcWaitSynchronizationSingle(handle, U64_MAX)) {
                 R_CATCH(svc::ResultCancelled) { continue; }
-            } R_END_TRY_CATCH_WITH_ASSERT;
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             /* Clear, if we must. */
             if (this->auto_clear) {
                 R_TRY_CATCH(svcResetSignal(handle)) {
                     /* Some other thread might have caught this before we did. */
                     R_CATCH(svc::ResultInvalidState) { continue; }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
             }
             return;
         }
@@ -146,7 +146,7 @@ namespace ams::os::impl {
                 R_TRY_CATCH(svcWaitSynchronizationSingle(handle, 0)) {
                     R_CATCH(svc::ResultTimedOut) { return false; }
                     R_CATCH(svc::ResultCancelled) { continue; }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
                 /* We succeeded, so we're signaled. */
                 return true;
@@ -163,14 +163,14 @@ namespace ams::os::impl {
             R_TRY_CATCH(svcWaitSynchronizationSingle(handle, timeout_helper.NsUntilTimeout())) {
                 R_CATCH(svc::ResultTimedOut) { return false; }
                 R_CATCH(svc::ResultCancelled) { continue; }
-            } R_END_TRY_CATCH_WITH_ASSERT;
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             /* Clear, if we must. */
             if (this->auto_clear) {
                 R_TRY_CATCH(svcResetSignal(handle)) {
                     /* Some other thread might have caught this before we did. */
                     R_CATCH(svc::ResultInvalidState) { continue; }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
             }
 
             return true;

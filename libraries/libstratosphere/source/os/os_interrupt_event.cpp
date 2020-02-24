@@ -51,14 +51,14 @@ namespace ams::os {
             /* Continuously wait, until success. */
             R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), U64_MAX)) {
                 R_CATCH(svc::ResultCancelled) { continue; }
-            } R_END_TRY_CATCH_WITH_ASSERT;
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             /* Clear, if we must. */
             if (this->auto_clear) {
                 R_TRY_CATCH(svcResetSignal(this->handle.Get())) {
                     /* Some other thread might have caught this before we did. */
                     R_CATCH(svc::ResultInvalidState) { continue; }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
             }
             return;
         }
@@ -77,7 +77,7 @@ namespace ams::os {
                 R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), 0)) {
                     R_CATCH(svc::ResultTimedOut) { return false; }
                     R_CATCH(svc::ResultCancelled) { continue; }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
                 /* We succeeded, so we're signaled. */
                 return true;
@@ -94,14 +94,14 @@ namespace ams::os {
             R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), timeout_helper.NsUntilTimeout())) {
                 R_CATCH(svc::ResultTimedOut) { return false; }
                 R_CATCH(svc::ResultCancelled) { continue; }
-            } R_END_TRY_CATCH_WITH_ASSERT;
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
             /* Clear, if we must. */
             if (this->auto_clear) {
                 R_TRY_CATCH(svcResetSignal(this->handle.Get())) {
                     /* Some other thread might have caught this before we did. */
                     R_CATCH(svc::ResultInvalidState) { continue; }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
             }
 
             return true;

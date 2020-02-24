@@ -167,7 +167,7 @@ namespace ams::sf::hipc {
                         needs_undefer_all = true;
                         continue;
                     }
-                } R_END_TRY_CATCH_WITH_ASSERT;
+                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
                 /* We succeeded! Remove from deferred list. */
                 it = this->deferred_session_list.erase(it);

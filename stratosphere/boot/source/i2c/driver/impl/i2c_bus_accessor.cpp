@@ -413,7 +413,7 @@ namespace ams::i2c::driver::impl {
                 this->SetPacketMode();
                 this->FlushFifos();
             }
-        } R_END_TRY_CATCH_WITH_ASSERT;
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
     }
 
     Result BusAccessor::GetAndHandleTransactionResult() {

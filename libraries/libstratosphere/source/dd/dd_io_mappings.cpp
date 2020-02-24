@@ -25,7 +25,7 @@ namespace ams::dd {
         R_TRY_CATCH(svcQueryIoMapping(&virtual_addr, aligned_addr, aligned_size)) {
             /* Official software handles this by returning 0. */
             R_CATCH(svc::ResultNotFound) { return 0; }
-        } R_END_TRY_CATCH_WITH_ASSERT;
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         return static_cast<uintptr_t>(virtual_addr + offset);
     }
