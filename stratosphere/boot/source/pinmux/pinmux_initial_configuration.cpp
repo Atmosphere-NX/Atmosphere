@@ -59,6 +59,7 @@ namespace ams::pinmux {
                 case spl::HardwareType::Iowa:
                     configs     = InitialConfigsIowa;
                     num_configs = NumInitialConfigsIowa;
+                    break;
                 case spl::HardwareType::Calcio:
                     configs     = InitialConfigsCalcio;
                     num_configs = NumInitialConfigsCalcio;
@@ -97,6 +98,7 @@ namespace ams::pinmux {
                 case spl::HardwareType::Calcio:
                     configs     = InitialDrivePadConfigs;
                     num_configs = NumInitialDrivePadConfigs;
+                    break;
                 case spl::HardwareType::Hoag:
                     configs     = InitialDrivePadConfigsHoag;
                     num_configs = NumInitialDrivePadConfigsHoag;

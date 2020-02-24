@@ -69,6 +69,7 @@ namespace ams::gpio {
                 case spl::HardwareType::Iowa:
                     configs     = InitialConfigsIowa;
                     num_configs = NumInitialConfigsIowa;
+                    break;
                 case spl::HardwareType::Calcio:
                     configs     = InitialConfigsCalcio;
                     num_configs = NumInitialConfigsCalcio;
