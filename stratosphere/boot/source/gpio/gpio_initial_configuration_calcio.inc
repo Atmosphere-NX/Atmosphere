@@ -48,4 +48,4 @@ constexpr InitialConfig InitialConfigsCalcio[] = {
     {0x4E, GpioDirection_Input,  GpioValue_Low},
 };
 
-constexpr u32 NumInitialConfigsCopper = (sizeof(InitialConfigsCalcio) / sizeof(InitialConfigsCalcio[0]));
+constexpr u32 NumInitialConfigsCalcio = util::size(InitialConfigsCalcio);

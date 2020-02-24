@@ -66,4 +66,4 @@ static constexpr WakePinConfig WakePinConfigsCalcio[] = {
     {0x3F, false, 0x02},
 };
 
-static constexpr size_t WakePinConfigsCalcio = util::size(WakePinConfigsCalcio);
+static constexpr size_t NumWakePinConfigsCalcio = util::size(WakePinConfigsCalcio);

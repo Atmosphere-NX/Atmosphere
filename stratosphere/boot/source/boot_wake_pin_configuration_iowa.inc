@@ -66,4 +66,4 @@ static constexpr WakePinConfig WakePinConfigsIowa[] = {
     {0x3F, false, 0x02},
 };
 
-static constexpr size_t WakePinConfigsIowa = util::size(WakePinConfigsIowa);
+static constexpr size_t NumWakePinConfigsIowa = util::size(WakePinConfigsIowa);

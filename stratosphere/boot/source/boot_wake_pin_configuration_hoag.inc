@@ -67,4 +67,4 @@ static constexpr WakePinConfig WakePinConfigsHoag[] = {
     {0x3F, false, 0x02},
 };
 
-static constexpr size_t WakePinConfigsHoag = util::size(WakePinConfigsHoag);
+static constexpr size_t NumWakePinConfigsHoag = util::size(WakePinConfigsHoag);

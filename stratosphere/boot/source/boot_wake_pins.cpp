@@ -99,23 +99,23 @@ namespace ams::boot {
 
         switch (spl::GetHardwareType()) {
             case spl::HardwareType::Icosa:
-                configs     = WakePinsIcosa;
-                num_configs = NumWakePinsIcosa;
+                configs     = WakePinConfigsIcosa;
+                num_configs = NumWakePinConfigsIcosa;
                 break;
             case spl::HardwareType::Copper:
-                configs     = WakePinsCopper;
-                num_configs = NumWakePinsCopper;
+                configs     = WakePinConfigsCopper;
+                num_configs = NumWakePinConfigsCopper;
                 break;
             case spl::HardwareType::Hoag:
-                configs     = WakePinsHoag;
-                num_configs = NumWakePinsHoag;
+                configs     = WakePinConfigsHoag;
+                num_configs = NumWakePinConfigsHoag;
                 break;
             case spl::HardwareType::Iowa:
-                configs     = WakePinsIowa;
-                num_configs = NumWakePinsIowa;
+                configs     = WakePinConfigsIowa;
+                num_configs = NumWakePinConfigsIowa;
             case spl::HardwareType::Calcio:
-                configs     = WakePinsCalcio;
-                num_configs = NumWakePinsCalcio;
+                configs     = WakePinConfigsCalcio;
+                num_configs = NumWakePinConfigsCalcio;
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
