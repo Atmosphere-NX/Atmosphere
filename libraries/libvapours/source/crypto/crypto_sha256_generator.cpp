@@ -13,11 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <vapours.hpp>
 
-#pragma once
-#include <vapours/defines.hpp>
+namespace ams::crypto {
 
-#include <vapours/crypto/crypto_memory_compare.hpp>
-#include <vapours/crypto/crypto_memory_clear.hpp>
-#include <vapours/crypto/crypto_sha256_generator.hpp>
-#include <vapours/crypto/crypto_rsa_pss_sha256_verifier.hpp>
+    void GenerateSha256Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
+        Sha256Generator gen;
+
+        gen.Initialize();
+        gen.Update(src, src_size);
+        gen.GetHash(dst, dst_size);
+    }
+
+}

@@ -147,7 +147,7 @@ namespace ams::crypto::impl {
     };
 
     template<size_t Bits>
-    class StackBigNum : public BigNum {
+    class StaticBigNum : public BigNum {
         public:
             static constexpr size_t NumBits  = Bits;
             static constexpr size_t NumWords = util::AlignUp(NumBits, BitsPerWord) / BitsPerWord;
@@ -155,7 +155,7 @@ namespace ams::crypto::impl {
         private:
             Word word_buf[NumWords];
         public:
-            constexpr StackBigNum() : word_buf() {
+            constexpr StaticBigNum() : word_buf() {
                 this->ReserveStatic(word_buf, NumWords);
             }
     };

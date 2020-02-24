@@ -15,9 +15,23 @@
  */
 
 #pragma once
-#include <vapours/defines.hpp>
-
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/util.hpp>
 #include <vapours/crypto/crypto_memory_compare.hpp>
 #include <vapours/crypto/crypto_memory_clear.hpp>
-#include <vapours/crypto/crypto_sha256_generator.hpp>
-#include <vapours/crypto/crypto_rsa_pss_sha256_verifier.hpp>
+
+namespace ams::crypto::impl {
+
+    /* TODO: C++20
+        template<typename T>
+        concept HashFunction = requires(T &t, const void *cv, void *v, size_t sz) {
+            { T::HashSize      } -> std::same_as<size_t>;
+            { T::BlockSize     } -> std::same_as<size_t>;
+            { t.Initialize()   } -> std::same_as<void>;
+            { t.Update(cv, sz) } -> std::same_as<void>;
+            { t.GetHash(v, sz) } -> std::same_as<void>;
+        };
+    */
+
+}

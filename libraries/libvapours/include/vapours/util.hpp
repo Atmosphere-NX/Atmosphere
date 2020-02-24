@@ -20,6 +20,7 @@
 
 #include <vapours/util/util_alignment.hpp>
 #include <vapours/util/util_size.hpp>
+#include <vapours/util/util_endian.hpp>
 #include <vapours/util/util_fourcc.hpp>
 #include <vapours/util/util_bitpack.hpp>
 #include <vapours/util/util_bitset.hpp>
