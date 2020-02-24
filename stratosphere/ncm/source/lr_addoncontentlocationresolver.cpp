@@ -21,7 +21,7 @@ namespace ams::lr {
 
     Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) {
         ncm::StorageId storage_id = ncm::StorageId::None;
-        R_UNLESS(this->registered_storages.Find(&storage_id, id), ResultAddOnContentNotFound());
+        R_UNLESS(this->registered_storages.Find(&storage_id, id), lr::ResultAddOnContentNotFound());
 
         std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
         ncm::ContentId data_content_id;
@@ -36,12 +36,12 @@ namespace ams::lr {
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) {
-        R_UNLESS(this->registered_storages.Register(id, storage_id, ncm::ProgramId::Invalid), ResultTooManyRegisteredPaths());
+        R_UNLESS(this->registered_storages.Register(id, storage_id, ncm::ProgramId::Invalid), lr::ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
-        R_UNLESS(this->registered_storages.Register(id, storage_id, application_id), ResultTooManyRegisteredPaths());
+        R_UNLESS(this->registered_storages.Register(id, storage_id, application_id), lr::ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 

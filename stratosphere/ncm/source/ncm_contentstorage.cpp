@@ -75,7 +75,7 @@ namespace ams::ncm {
         this->GetContentPath(content_path, content_id);
 
         R_TRY_CATCH(fs::OpenFile(&this->content_cache_file_handle, content_path, FsOpenMode_Read)) {
-            R_CONVERT(ams::fs::ResultPathNotFound, ResultContentNotFound())
+            R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultContentNotFound())
         } R_END_TRY_CATCH;
 
         this->cached_content_id = content_id;
@@ -123,7 +123,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
+        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         R_TRY(this->placeholder_accessor.Write(placeholder_id, offset, data.GetPointer(), data.GetSize()));
         return ResultSuccess();
@@ -141,8 +141,8 @@ namespace ams::ncm {
 
         if (rename(placeholder_path, content_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
-                R_CONVERT(ams::fs::ResultPathAlreadyExists, ResultContentAlreadyExists())
+                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
+                R_CONVERT(ams::fs::ResultPathAlreadyExists, ncm::ResultContentAlreadyExists())
             } R_END_TRY_CATCH;
         }
 
@@ -158,7 +158,7 @@ namespace ams::ncm {
 
         if (std::remove(content_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ResultContentNotFound())
+                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultContentNotFound())
             } R_END_TRY_CATCH;
         }
 
@@ -227,7 +227,7 @@ namespace ams::ncm {
             *should_retry_dir_read = false;
             
             if (dir_entry->d_type == DT_REG) {
-                R_UNLESS(entry_count <= out_buf.GetSize(), ResultBufferInsufficient());
+                R_UNLESS(entry_count <= out_buf.GetSize(), ncm::ResultBufferInsufficient());
                 
                 PlaceHolderId cur_entry_placeholder_id = {0};
                 R_TRY(GetPlaceHolderIdFromDirEntry(&cur_entry_placeholder_id, dir_entry));
@@ -265,7 +265,7 @@ namespace ams::ncm {
     }
 
     Result ContentStorageInterface::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
-        R_UNLESS(start_offset >> 0x1f == 0, ResultInvalidOffset());
+        R_UNLESS(start_offset >> 0x1f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         char content_root_path[FS_MAX_PATH] = {0};
@@ -349,8 +349,8 @@ namespace ams::ncm {
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         if (rename(old_content_path, placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
-                R_CONVERT(ams::fs::ResultPathAlreadyExists, ResultPlaceHolderAlreadyExists())
+                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
+                R_CONVERT(ams::fs::ResultPathAlreadyExists, ncm::ResultPlaceHolderAlreadyExists())
             } R_END_TRY_CATCH;
         }
 
@@ -365,7 +365,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
+        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -452,7 +452,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
+        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         bool is_development = false;

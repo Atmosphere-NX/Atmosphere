@@ -74,7 +74,7 @@ namespace ams::ncm {
 
         Result GetContentMetaSize(size_t *out, const ContentMetaKey &key, const kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) {
             R_TRY_CATCH(kvs->GetValueSize(out, key)) {
-                R_CONVERT(kvdb::ResultKeyNotFound, ResultContentMetaNotFound())
+                R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
             } R_END_TRY_CATCH;
             
             return ResultSuccess();
@@ -92,8 +92,8 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         const auto it = this->kvs->lower_bound(key);
-        R_UNLESS(it != this->kvs->end(), ResultContentMetaNotFound());
-        R_UNLESS(it->GetKey().id == key.id, ResultContentMetaNotFound());
+        R_UNLESS(it != this->kvs->end(), ncm::ResultContentMetaNotFound());
+        R_UNLESS(it->GetKey().id == key.id, ncm::ResultContentMetaNotFound());
 
         const auto stored_key = it->GetKey();
         const void* value = nullptr;
@@ -102,7 +102,7 @@ namespace ams::ncm {
         R_TRY(GetContentMetaValuePointer(&value, &value_size, stored_key, this->kvs));
         const auto header = GetValueHeader(value);
 
-        R_UNLESS(header->content_count != 0, ResultContentNotFound());
+        R_UNLESS(header->content_count != 0, ncm::ResultContentNotFound());
 
         const ContentInfo* content_infos = GetValueContentInfos(value);
         const ContentInfo* found_content_info = nullptr;
@@ -130,7 +130,7 @@ namespace ams::ncm {
             found_content_info = lowest_id_offset_info;
         }
 
-        R_UNLESS(found_content_info, ResultContentNotFound());
+        R_UNLESS(found_content_info, ncm::ResultContentNotFound());
         *out = found_content_info->content_id;
         return ResultSuccess();
     }
@@ -153,7 +153,7 @@ namespace ams::ncm {
             }
         }
 
-        R_UNLESS(found_key, ResultContentMetaNotFound());
+        R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
         *out_key = key;
         return ResultSuccess();
     }
@@ -184,7 +184,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseInterface::ListContentInfo(sf::Out<u32> out_count, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 offset) {
-        R_UNLESS(offset >> 0x1f == 0, ResultInvalidOffset());
+        R_UNLESS(offset >> 0x1f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         const void *value = nullptr;
@@ -354,11 +354,11 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseInterface::GetSize(sf::Out<u64> out_size, ContentMetaKey key) {
         R_TRY(this->EnsureEnabled());
-        R_UNLESS(this->kvs->GetCount() != 0, ResultContentMetaNotFound());
+        R_UNLESS(this->kvs->GetCount() != 0, ncm::ResultContentMetaNotFound());
 
         const auto it = this->kvs->lower_bound(key);
-        R_UNLESS(it != this->kvs->end(), ResultContentMetaNotFound());
-        R_UNLESS(it->GetKey() == key, ResultContentMetaNotFound());
+        R_UNLESS(it != this->kvs->end(), ncm::ResultContentMetaNotFound());
+        R_UNLESS(it->GetKey() == key, ncm::ResultContentMetaNotFound());
 
         out_size.SetValue(it->GetValueSize());
         return ResultSuccess();
@@ -366,7 +366,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseInterface::GetRequiredSystemVersion(sf::Out<u32> out_version, ContentMetaKey key) {
         R_TRY(this->EnsureEnabled());
-        R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch, ResultInvalidContentMetaKey());
+        R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch, ncm::ResultInvalidContentMetaKey());
 
         const void* value = nullptr;
         size_t value_size = 0;
@@ -381,7 +381,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseInterface::GetPatchId(sf::Out<ProgramId> out_patch_id, ContentMetaKey key) {
         R_TRY(this->EnsureEnabled());
-        R_UNLESS(key.type != ContentMetaType::Application, ResultInvalidContentMetaKey());
+        R_UNLESS(key.type != ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
 
         const void* value = nullptr;
         size_t value_size = 0;
@@ -399,7 +399,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseInterface::LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) {
         R_TRY(this->EnsureEnabled());
-        R_UNLESS(out_orphaned.GetSize() >= content_ids.GetSize(), ResultBufferInsufficient());
+        R_UNLESS(out_orphaned.GetSize() >= content_ids.GetSize(), ncm::ResultBufferInsufficient());
 
         /* Default to orphaned for all content ids. */
         if (out_orphaned.GetSize() > 0) {
@@ -470,7 +470,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseInterface::ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, ContentMetaKey key, u32 start_index) {
-        R_UNLESS(start_index >> 0x1f == 0, ResultInvalidOffset());
+        R_UNLESS(start_index >> 0x1f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         
         const void* value = nullptr;
@@ -524,7 +524,7 @@ namespace ams::ncm {
             return ResultSuccess();
         }
 
-        R_UNLESS(key.type == ContentMetaType::AddOnContent, ResultInvalidContentMetaKey());
+        R_UNLESS(key.type == ContentMetaType::AddOnContent, ncm::ResultInvalidContentMetaKey());
         const auto ext_header = GetValueExtendedHeader<AddOnContentMetaExtendedHeader>(value);
         out_version.SetValue(ext_header->required_application_version);
         return ResultSuccess();
@@ -567,7 +567,7 @@ namespace ams::ncm {
             found_key = entry->GetKey();
         }
 
-        R_UNLESS(found_key, ResultContentMetaNotFound());
+        R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
         *out_key = *found_key;
         return ResultSuccess();
     }

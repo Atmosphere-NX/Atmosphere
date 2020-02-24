@@ -125,7 +125,7 @@ namespace ams::ncm::impl {
         this->GetPath(placeholder_path, placeholder_id);
 
         R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FsCreateOption_BigFile)) {
-            R_CONVERT(ams::fs::ResultPathAlreadyExists, ResultPlaceHolderAlreadyExists())
+            R_CONVERT(ams::fs::ResultPathAlreadyExists, ncm::ResultPlaceHolderAlreadyExists())
         } R_END_TRY_CATCH;
 
         return ResultSuccess();
@@ -138,7 +138,7 @@ namespace ams::ncm::impl {
 
         if (std::remove(placeholder_path) != 0) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
+                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
             } R_END_TRY_CATCH;
         }
 
@@ -149,7 +149,7 @@ namespace ams::ncm::impl {
         FILE* f = nullptr;
 
         R_TRY_CATCH(this->Open(&f, placeholder_id)) {
-            R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
+            R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
         } R_END_TRY_CATCH;
 
         ON_SCOPE_EXIT {
@@ -165,7 +165,7 @@ namespace ams::ncm::impl {
         this->MakePath(placeholder_path, placeholder_id);
         if (truncate(placeholder_path, size) == -1) {
             R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ResultPlaceHolderNotFound())
+                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
             } R_END_TRY_CATCH;
         }
 

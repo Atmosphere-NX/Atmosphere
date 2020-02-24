@@ -66,7 +66,7 @@ namespace ams::lr::impl {
         std::scoped_lock lk(g_mutex);
         auto resolver = g_location_resolvers.Find(storage_id);
 
-        R_UNLESS(resolver, ResultUnknownStorageId());
+        R_UNLESS(resolver, lr::ResultUnknownStorageId());
 
         if (storage_id != ncm::StorageId::Host) {
             (*resolver)->Refresh();

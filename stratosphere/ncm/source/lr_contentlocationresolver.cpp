@@ -32,7 +32,7 @@ namespace ams::lr {
         ncm::ContentId program_content_id;
 
         R_TRY_CATCH(this->content_meta_database->GetLatestProgram(&program_content_id, id)) {
-            R_CONVERT(ncm::ResultContentMetaNotFound, ResultProgramNotFound())
+            R_CONVERT(ncm::ResultContentMetaNotFound, lr::ResultProgramNotFound())
         } R_END_TRY_CATCH;
         
         this->GetContentStoragePath(out.GetPointer(), program_content_id);
@@ -45,12 +45,12 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->app_control_redirector, id), ResultControlNotFound());
+        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->app_control_redirector, id), lr::ResultControlNotFound());
         return ResultSuccess();
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->html_docs_redirector, id), ResultHtmlDocumentNotFound());
+        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->html_docs_redirector, id), lr::ResultHtmlDocumentNotFound());
         return ResultSuccess();
     }
 
@@ -83,7 +83,7 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->legal_info_redirector, id), ResultLegalInformationNotFound());
+        R_UNLESS(this->GetRedirectedPath(out.GetPointer(), &this->legal_info_redirector, id), lr::ResultLegalInformationNotFound());
         return ResultSuccess();
     }
 
@@ -153,7 +153,7 @@ namespace ams::lr {
         R_UNLESS(!this->GetRedirectedPath(out.GetPointer(), &this->debug_program_redirector, id), ResultSuccess());
 
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
-            R_CONVERT(ResultProgramNotFound, ResultDebugProgramNotFound())
+            R_CONVERT(ResultProgramNotFound, lr::ResultDebugProgramNotFound())
         } R_END_TRY_CATCH;
         
         return ResultSuccess();

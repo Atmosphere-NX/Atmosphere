@@ -154,7 +154,7 @@ namespace ams::ncm {
 
     Result ReadOnlyContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
-        R_UNLESS(offset >> 0x3f == 0, ResultInvalidOffset());
+        R_UNLESS(offset >> 0x3f == 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};

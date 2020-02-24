@@ -63,7 +63,7 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->ResolvePath(out.GetPointer(), &this->program_redirector, &this->registered_program_locations, id), ResultProgramNotFound());
+        R_UNLESS(this->ResolvePath(out.GetPointer(), &this->program_redirector, &this->registered_program_locations, id), lr::ResultProgramNotFound());
         return ResultSuccess();
     }
 
@@ -93,7 +93,7 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->ResolvePath(out.GetPointer(), &this->html_docs_redirector, &this->registered_html_docs_locations, id), ResultHtmlDocumentNotFound());
+        R_UNLESS(this->ResolvePath(out.GetPointer(), &this->html_docs_redirector, &this->registered_html_docs_locations, id), lr::ResultHtmlDocumentNotFound());
         return ResultSuccess();
     }
 

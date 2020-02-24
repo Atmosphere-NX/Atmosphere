@@ -103,17 +103,17 @@ namespace ams::ncm::fs {
 
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
-        R_UNLESS(has_root, ResultStorageRootNotFound());
+        R_UNLESS(has_root, ncm::ResultStorageRootNotFound());
         
         path::GetContentRootPath(content_root, root_path);
         bool has_content_root = false;
         R_TRY(HasDirectory(&has_content_root, content_root));
-        R_UNLESS(has_content_root, ResultStoragePathNotFound());
+        R_UNLESS(has_content_root, ncm::ResultStoragePathNotFound());
 
         path::GetPlaceHolderRootPath(placeholder_root, root_path);
         bool has_placeholder_root = false;
         R_TRY(HasDirectory(&has_placeholder_root, placeholder_root));
-        R_UNLESS(has_placeholder_root, ResultStoragePathNotFound());
+        R_UNLESS(has_placeholder_root, ncm::ResultStoragePathNotFound());
 
         return ResultSuccess();
     }
@@ -148,7 +148,7 @@ namespace ams::ncm::fs {
         size_t path_len = strlen(path);
         char working_path_buf[FS_MAX_PATH] = {0};
 
-        R_UNLESS(path_len + 1 < FS_MAX_PATH, ResultAllocationFailed());
+        R_UNLESS(path_len + 1 < FS_MAX_PATH, ncm::ResultAllocationFailed());
         strncpy(working_path_buf + 1, path, FS_MAX_PATH-1);
 
         if (path_len != 0) {

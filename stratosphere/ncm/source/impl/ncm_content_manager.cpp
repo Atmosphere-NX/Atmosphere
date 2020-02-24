@@ -281,11 +281,11 @@ namespace ams::ncm::impl {
     Result CreateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         R_TRY(fs::MountContentStorage(entry->mount_point, entry->content_storage_id));
 
         ON_SCOPE_EXIT {
@@ -301,11 +301,11 @@ namespace ams::ncm::impl {
     Result VerifyContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         MountName mount_name = fs::CreateUniqueMountName();
         char mount_root[128] = {0};
@@ -325,11 +325,11 @@ namespace ams::ncm::impl {
     Result OpenContentStorage(std::shared_ptr<IContentStorage>* out, StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         
         auto content_storage = entry->content_storage;
 
@@ -365,10 +365,10 @@ namespace ams::ncm::impl {
     Result CloseContentStorageForcibly(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         R_UNLESS(entry->content_storage, ResultSuccess());
 
         /* N doesn't bother checking the result of this */
@@ -381,11 +381,11 @@ namespace ams::ncm::impl {
     Result ActivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         /* Already activated. */
         R_UNLESS(entry->content_storage == nullptr, ResultSuccess());
 
@@ -432,11 +432,11 @@ namespace ams::ncm::impl {
     Result InactivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         /* Already inactivated. */
         R_UNLESS(entry->content_storage != nullptr, ResultSuccess());
 
@@ -449,12 +449,12 @@ namespace ams::ncm::impl {
     Result CreateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(storage_id != StorageId::GameCard, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::GameCard, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
 
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         /* N doesn't bother checking the result of this. */
         fsDisableAutoSaveDataCreation();
@@ -480,11 +480,11 @@ namespace ams::ncm::impl {
         std::scoped_lock lk(g_mutex);
 
         R_UNLESS(storage_id != StorageId::GameCard, ResultSuccess());
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
 
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         bool mounted_save_data = false;
         if (!entry->content_meta_database) {
@@ -500,7 +500,7 @@ namespace ams::ncm::impl {
 
         bool has_meta_path = false;
         R_TRY(fs::HasDirectory(&has_meta_path, entry->meta_path));
-        R_UNLESS(has_meta_path, ResultInvalidContentMetaDatabase());
+        R_UNLESS(has_meta_path, ncm::ResultInvalidContentMetaDatabase());
 
         return ResultSuccess();
     }
@@ -508,11 +508,11 @@ namespace ams::ncm::impl {
     Result OpenContentMetaDatabase(std::shared_ptr<IContentMetaDatabase>* out, StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
 
@@ -548,10 +548,10 @@ namespace ams::ncm::impl {
     Result CloseContentMetaDatabaseForcibly(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
         R_UNLESS(content_meta_db, ResultSuccess());
@@ -571,11 +571,11 @@ namespace ams::ncm::impl {
     Result CleanupContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         R_TRY(fsDeleteSaveDataFileSystemBySaveDataSpaceId(entry->save_meta.space_id, entry->save_meta.id));
         return ResultSuccess();
@@ -584,11 +584,11 @@ namespace ams::ncm::impl {
     Result ActivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         /* Already activated. */
         R_UNLESS(entry->content_meta_database == nullptr, ResultSuccess());
 
@@ -617,11 +617,11 @@ namespace ams::ncm::impl {
     Result InactivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ResultUnknownStorage());
+        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
         ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
-        R_UNLESS(entry, ResultUnknownStorage());
+        R_UNLESS(entry, ncm::ResultUnknownStorage());
         /* Already inactivated. */
         R_UNLESS(entry->content_meta_database != nullptr, ResultSuccess());
 
