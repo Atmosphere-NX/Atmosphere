@@ -121,7 +121,7 @@ int main(int argc, char **argv)
     boot::DetectBootReason();
 
     const auto hw_type = spl::GetHardwareType();
-    if (hw_type != spl::HardwareType::Copper) {
+    if (hw_type != spl::HardwareType::Copper && hw_type != spl::HardwareType::Calcio) {
         /* Display splash screen for two seconds. */
         boot::ShowSplashScreen();
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
     boot::SetInitialWakePinConfiguration();
 
     /* Configure output clock. */
-    if (hw_type != spl::HardwareType::Copper) {
+    if (hw_type != spl::HardwareType::Copper && hw_type != spl::HardwareType::Calcio) {
         boot::SetInitialClockConfiguration();
     }
 

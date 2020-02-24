@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-constexpr InitialConfig InitialDrivePadConfigs[] = {
+constexpr InitialConfig InitialDrivePadConfigsHoag[] = {
     {0x04, 0x01010000, 0x01F1F000},
     {0x0D, 0x01010000, 0x01F1F000},
     {0x10, 0x01010000, 0x01F1F000},
@@ -36,8 +36,8 @@ constexpr InitialConfig InitialDrivePadConfigs[] = {
     {0x30, 0x01404000, 0x01F1F000},
     {0x31, 0x0001F000, 0x01F1F000},
     {0x32, 0x0001F000, 0x01F1F000},
-    {0x33, 0x0001F000, 0x01F1F000},
-    {0x34, 0x0001F000, 0x01F1F000},
+    {0x33, 0x00004000, 0x01F1F000},
+    {0x34, 0x00004000, 0x01F1F000},
     {0x35, 0x00007000, 0x01F1F000},
     {0x36, 0x00007000, 0x01F1F000},
     {0x46, 0x01010000, 0x01F1F000},
@@ -64,4 +64,4 @@ constexpr InitialConfig InitialDrivePadConfigs[] = {
     {0x69, 0x51212000, 0xF1F1F000},
 };
 
-constexpr u32 NumInitialDrivePadConfigs = util::size(InitialDrivePadConfigs);
+constexpr u32 NumInitialDrivePadConfigsHoag = util::size(InitialDrivePadConfigsHoag);

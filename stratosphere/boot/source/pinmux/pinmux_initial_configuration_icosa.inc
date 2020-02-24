@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -98,7 +98,7 @@ constexpr InitialConfig InitialConfigsIcosa[] = {
     {0x86, 0x2C, 0x7F},
     {0x82, 0x24, 0x7F},
     {0x85, 0x34, 0x7F},
-    {0x89, 0x24, 0x7F},
+    {0x89, 0x34, 0x7F},
     {0x8A, 0x34, 0x7F},
     {0x8B, 0x34, 0x7F},
     {0x8C, 0x34, 0x7F},
@@ -178,4 +178,4 @@ constexpr InitialConfig InitialConfigsIcosa[] = {
     {0x63, 0x05, 0x07},
 };
 
-constexpr u32 NumInitialConfigsIcosa = (sizeof(InitialConfigsIcosa) / sizeof(InitialConfigsIcosa[0]));
+constexpr u32 NumInitialConfigsIcosa = util::size(InitialConfigsIcosa);

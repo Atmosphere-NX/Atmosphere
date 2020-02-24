@@ -30,8 +30,11 @@ namespace ams::boot {
         };
 
 #include "boot_wake_control_configs.inc"
-#include "boot_wake_pin_configuration.inc"
+#include "boot_wake_pin_configuration_icosa.inc"
 #include "boot_wake_pin_configuration_copper.inc"
+#include "boot_wake_pin_configuration_hoag.inc"
+#include "boot_wake_pin_configuration_iowa.inc"
+#include "boot_wake_pin_configuration_calcio.inc"
 
     }
 
@@ -91,15 +94,33 @@ namespace ams::boot {
         InitializePmcWakeConfiguration(false);
 
         /* Set wake event levels, wake event enables. */
-        const WakePinConfig *configs;
-        size_t num_configs;
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            configs = WakePinConfigsCopper;
-            num_configs = NumWakePinConfigsCopper;
-        } else {
-            configs = WakePinConfigs;
-            num_configs = NumWakePinConfigs;
+        const WakePinConfig *configs = nullptr;
+        size_t num_configs = 0;
+
+        switch (spl::GetHardwareType()) {
+            case spl::HardwareType::Icosa:
+                configs     = WakePinsIcosa;
+                num_configs = NumWakePinsIcosa;
+                break;
+            case spl::HardwareType::Copper:
+                configs     = WakePinsCopper;
+                num_configs = NumWakePinsCopper;
+                break;
+            case spl::HardwareType::Hoag:
+                configs     = WakePinsHoag;
+                num_configs = NumWakePinsHoag;
+                break;
+            case spl::HardwareType::Iowa:
+                configs     = WakePinsIowa;
+                num_configs = NumWakePinsIowa;
+            case spl::HardwareType::Calcio:
+                configs     = WakePinsCalcio;
+                num_configs = NumWakePinsCalcio;
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
+
+        AMS_ABORT_UNLESS(configs != nullptr);
 
         for (size_t i = 0; i < num_configs; i++) {
             SetWakeEventLevel(configs[i].index, configs[i].level);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -103,6 +103,30 @@ constexpr u32 Map[] = {
 
     /* 5.0.0+ Copper only (unused) */
     0x00000056,   /* Port K, Pin 6 */
+
+    /* 6.0.0+ */
+    0x00000020,   /* Port E,  Pin 0 */
+    0x00000021,   /* Port E,  Pin 1 */
+    0x00000022,   /* Port E,  Pin 2 */
+    0x00000023,   /* Port E,  Pin 3 */
+    0x0000004C,   /* Port J,  Pin 4 */
+    0x00000057,   /* Port K,  Pin 7 */
+    0x00000027,   /* Port S,  Pin 4 */
+    0x00000098,   /* Port T,  Pin 0 */
+    0x00000099,   /* Port T,  Pin 1 */
+    0x000000BB,   /* Port X,  Pin 3 */
+    0x000000E5,   /* Port CC, Pin 5 */
+    0x000000AB,   /* Port V,  Pin 3 */
+    0x0000004E,   /* Port J,  Pin 6 */
+
+    /* 7.0.0+ */
+    0x00000032,   /* Port G,  Pin 2 */
+    0x0000001B,   /* Port D,  Pin 3 */
+    0x00000017,   /* Port C,  Pin 7 */
+    0x00000018,   /* Port D,  Pin 0 */
+    0x00000015,   /* Port C,  Pin 5 */
+    0x00000016,   /* Port C,  Pin 6 */
+
 };
 
-static constexpr u32 PadNameMax = (sizeof(Map) / sizeof(Map[0]));
+static constexpr u32 PadNameMax = util::size(Map);

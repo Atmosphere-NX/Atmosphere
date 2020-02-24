@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -178,4 +178,4 @@ constexpr InitialConfig InitialConfigsCopper[] = {
     {0x68, 0x05, 0x07},
 };
 
-constexpr u32 NumInitialConfigsCopper = (sizeof(InitialConfigsCopper) / sizeof(InitialConfigsCopper[0]));
+constexpr u32 NumInitialConfigsCopper = util::size(InitialConfigsCopper);

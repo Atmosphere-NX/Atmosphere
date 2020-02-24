@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -205,7 +205,7 @@ constexpr Definition Map[] = {
     {0x000032C4, 0x1F2FF, 0x00},   /* Sdmmc2Dqsb */
 };
 
-constexpr u32 PadNameMax = (sizeof(Map) / sizeof(Map[0]));
+constexpr u32 PadNameMax = util::size(Map);
 
 constexpr DrivePadDefinition DrivePadMap[] = {
     {0x000008E4, 0x01F1F000},   /* AlsProxInt */
@@ -358,4 +358,4 @@ constexpr DrivePadDefinition DrivePadMap[] = {
     {0x00000B6C, 0x01F1F000},   /* WifiWakeAp */
 };
 
-constexpr u32 DrivePadNameMax = (sizeof(DrivePadMap) / sizeof(DrivePadMap[0]));
+constexpr u32 DrivePadNameMax = util::size(DrivePadMap);

@@ -74,8 +74,8 @@ namespace ams::boot {
         R_ABORT_UNLESS(ReadI2cRegister(this->i2c_session, &on_off_1_val, sizeof(on_off_1_val), &on_off_1_addr, sizeof(on_off_1_addr)));
         on_off_1_val |= 0x80;
 
-        /* Finalize the battery. */
-        {
+        /* Finalize the battery on non-Calcio. */
+        if (spl::GetHardwareType() != spl::HardwareType::Calcio) {
             BatteryDriver battery_driver;
             this->FinalizeBattery(&battery_driver);
         }
@@ -98,6 +98,15 @@ namespace ams::boot {
             return;
         }
 
+        /* On Hoag, we don't want to use the desired shutdown value when battery charged. */
+        bool use_desired_shutdown = true;
+        if (spl::GetHardwareType() == spl::HardwareType::Hoag) {
+            double battery_charge;
+            if (R_FAILED(battery_driver->GetSocRep(&battery_charge)) || battery_charge >= 80.0) {
+                use_desired_shutdown = false;
+            }
+        }
+
         bool ac_ok;
         bool desired_shutdown_enabled;
         if (R_FAILED(this->GetAcOk(&ac_ok)) || ac_ok) {
@@ -105,6 +114,8 @@ namespace ams::boot {
         } else {
             desired_shutdown_enabled = true;
         }
+
+        desired_shutdown_enabled &= use_desired_shutdown;
 
         if (shutdown_enabled != desired_shutdown_enabled) {
             battery_driver->SetShutdownEnabled(desired_shutdown_enabled);

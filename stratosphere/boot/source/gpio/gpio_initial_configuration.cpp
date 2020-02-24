@@ -34,6 +34,7 @@ namespace ams::gpio {
 #include "gpio_initial_configuration_copper.inc"
 #include "gpio_initial_configuration_hoag.inc"
 #include "gpio_initial_configuration_iowa.inc"
+#include "gpio_initial_configuration_calcio.inc"
 
     }
 
@@ -49,32 +50,35 @@ namespace ams::gpio {
                 case spl::HardwareType::Icosa:
                     {
                         if (hos_ver >= hos::Version_400) {
-                            configs = InitialConfigsIcosa4x;
+                            configs     = InitialConfigsIcosa4x;
                             num_configs = NumInitialConfigsIcosa4x;
                         } else {
-                            configs = InitialConfigsIcosa;
+                            configs     = InitialConfigsIcosa;
                             num_configs = NumInitialConfigsIcosa;
                         }
                     }
                     break;
                 case spl::HardwareType::Copper:
-                    configs = InitialConfigsCopper;
+                    configs     = InitialConfigsCopper;
                     num_configs = NumInitialConfigsCopper;
                     break;
                 case spl::HardwareType::Hoag:
-                    configs = InitialConfigsHoag;
+                    configs     = InitialConfigsHoag;
                     num_configs = NumInitialConfigsHoag;
                     break;
                 case spl::HardwareType::Iowa:
-                    configs = InitialConfigsIowa;
+                    configs     = InitialConfigsIowa;
                     num_configs = NumInitialConfigsIowa;
+                case spl::HardwareType::Calcio:
+                    configs     = InitialConfigsCalcio;
+                    num_configs = NumInitialConfigsCalcio;
                     break;
                 /* Unknown hardware type, we can't proceed. */
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         } else {
             /* Until 2.0.0, the GPIO map for Icosa was used for all hardware types. */
-            configs = InitialConfigsIcosa;
+            configs     = InitialConfigsIcosa;
             num_configs = NumInitialConfigsIcosa;
         }
 
