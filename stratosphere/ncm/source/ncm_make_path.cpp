@@ -38,9 +38,7 @@ namespace ams::ncm::path {
     void MakeContentPathFlat(char* path_out, ContentId content_id, const char* root) {
         char content_name[FS_MAX_PATH] = {0};
         GetContentFileName(content_name, content_id);
-        if (snprintf(path_out, FS_MAX_PATH-1, "%s/%s", root, content_name) < 0) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(snprintf(path_out, FS_MAX_PATH-1, "%s/%s", root, content_name) >= 0);
     }
 
     void MakeContentPathDualLayered(char* path_out, ContentId content_id, const char* root) {
@@ -50,44 +48,34 @@ namespace ams::ncm::path {
         const u32 hash_upper = (hash >> 10) & 0x3f;
 
         GetContentFileName(content_name, content_id);
-        if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%08X/%s", root, hash_upper, hash_lower, content_name) < 0) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%08X/%s", root, hash_upper, hash_lower, content_name) >= 0);
     }
 
     void MakeContentPath10BitLayered(char* path_out, ContentId content_id, const char* root) {
         char content_name[FS_MAX_PATH] = {0};
         const u32 hash = (Get16BitSha256HashPrefix(content_id.uuid) >> 6) & 0x3FF;
         GetContentFileName(content_name, content_id);
-        if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash, content_name) < 0) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash, content_name) >= 0);
     }
 
     void MakeContentPathHashByteLayered(char* path_out, ContentId content_id, const char* root) {
         char content_name[FS_MAX_PATH] = {0};
         const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id.uuid));
         GetContentFileName(content_name, content_id);
-        if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash_byte, content_name) < 0) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash_byte, content_name) >= 0);
     }
 
     void MakePlaceHolderPathFlat(char* path_out, PlaceHolderId placeholder_id, const char* root) {
         char placeholder_name[FS_MAX_PATH] = {0};
         GetPlaceHolderFileName(placeholder_name, placeholder_id);
-        if (snprintf(path_out, FS_MAX_PATH-1, "%s/%s", root, placeholder_name) < 0) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(snprintf(path_out, FS_MAX_PATH-1, "%s/%s", root, placeholder_name) >= 0);
     }
 
     void MakePlaceHolderPathHashByteLayered(char* path_out, PlaceHolderId placeholder_id, const char* root) {
         char placeholder_name[FS_MAX_PATH] = {0};
         const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id.uuid));
         GetPlaceHolderFileName(placeholder_name, placeholder_id);
-        if (snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash_byte, placeholder_name) < 0) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(snprintf(path_out, FS_MAX_PATH-1, "%s/%08X/%s", root, hash_byte, placeholder_name) >= 0);
     }
 
 }

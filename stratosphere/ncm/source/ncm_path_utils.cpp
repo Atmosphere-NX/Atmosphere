@@ -26,18 +26,14 @@ namespace ams::ncm::path {
         const size_t len = strnlen(content_path, FS_MAX_PATH-1);
         const size_t len_no_extension = len - 4;
 
-        if (len_no_extension > len || len_no_extension >= FS_MAX_PATH-1) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(len_no_extension <= len);
+        AMS_ABORT_UNLESS(len_no_extension < FS_MAX_PATH-1);
 
         strncpy(tmp_path, content_path, len_no_extension);
         memcpy(out, tmp_path, FS_MAX_PATH-1);
         const size_t out_len = strnlen(out, FS_MAX_PATH-1);
 
-        if (out_len + 9 >= FS_MAX_PATH-1) {
-            std::abort();
-        }
-
+        AMS_ABORT_UNLESS(out_len + 9 < FS_MAX_PATH-1);
         strncat(out, ".cnmt.nca", 0x2ff - out_len);
     }
 

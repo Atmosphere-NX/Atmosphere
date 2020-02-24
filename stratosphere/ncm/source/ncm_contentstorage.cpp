@@ -30,9 +30,7 @@ namespace ams::ncm {
         R_TRY(fs::CheckContentStorageDirectoriesExist(root_path));
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
 
-        if (root_path_len >= FS_MAX_PATH-1) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(root_path_len < FS_MAX_PATH-1);
 
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
@@ -457,9 +455,8 @@ namespace ams::ncm {
 
         bool is_development = false;
 
-        if (R_FAILED(splIsDevelopment(&is_development)) || !is_development) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(R_SUCCEEDED(splIsDevelopment(&is_development)));
+        AMS_ABORT_UNLESS(is_development);
 
         this->ClearContentCache();
 

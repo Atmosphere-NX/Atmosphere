@@ -221,10 +221,7 @@ namespace ams::ncm::fs {
 
         FsFileSystem fs;
         R_TRY(fsOpenSaveDataFileSystemBySystemSaveDataId(&fs, space_id, &save));
-
-        if (fsdevMountDevice(mount_point, fs) == -1) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(fsdevMountDevice(mount_point, fs) != -1);
 
         return ResultSuccess();
     }
@@ -244,10 +241,7 @@ namespace ams::ncm::fs {
 
         FsFileSystem fs;
         R_TRY(fsOpenContentStorageFileSystem(&fs, id));
-
-        if (fsdevMountDevice(mount_point, fs) == -1) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(fsdevMountDevice(mount_point, fs) != -1);
 
         switch (id) {
             case FsContentStorageId_System:
@@ -269,16 +263,11 @@ namespace ams::ncm::fs {
     }
 
     Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartition partition) {
-        if (partition > 2) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(partition <= 2);
         
         FsFileSystem fs;
         R_TRY(fsOpenGameCardFileSystem(&fs, &handle, partition));
-
-        if (fsdevMountDevice(mount_point, fs) == -1) {
-            std::abort();
-        }
+        AMS_ABORT_UNLESS(fsdevMountDevice(mount_point, fs) != -1);
 
         MountName mount = {0};
         snprintf(mount.name, sizeof(MountName), "%s%s%08x", GameCardMountNameBase, GameCardPartitionLetters[partition], handle.value);
@@ -288,14 +277,9 @@ namespace ams::ncm::fs {
 
     Result Unmount(const char* mount_point) {
         R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
-
         /* Erase any content storage mappings which may potentially exist. */
         g_mount_content_storage.erase(mount_point);
-
-        if (fsdevUnmountDevice(mount_point) == -1) {
-            std::abort();
-        }
-
+        AMS_ABORT_UNLESS(fsdevUnmountDevice(mount_point) != -1);
         return ResultSuccess();
     }
 
@@ -311,10 +295,7 @@ namespace ams::ncm::fs {
         char translated_path[FS_MAX_PATH] = {0};
         std::string common_mount_name = g_mount_content_storage[mount_name.name];
 
-        if (fsdevTranslatePath(path, NULL, translated_path) == -1) {
-            std::abort();
-        }
-
+        AMS_ABORT_UNLESS(fsdevTranslatePath(path, NULL, translated_path) != -1);
         snprintf(out_common_path, out_len, "%s:%s", common_mount_name.c_str(), translated_path);
         return ResultSuccess();
     }

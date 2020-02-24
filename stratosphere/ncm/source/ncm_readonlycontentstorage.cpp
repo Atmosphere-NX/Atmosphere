@@ -24,11 +24,7 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
-
-        if (root_path_len >= FS_MAX_PATH-1) {
-            std::abort();
-        }
-
+        AMS_ABORT_UNLESS(root_path_len < FS_MAX_PATH-1);
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
         return ResultSuccess();
