@@ -106,6 +106,7 @@ namespace ams::crypto::impl {
                 const u8 *salt = db + salt_ofs;
                 const size_t salt_size = db_len - salt_ofs;
                 is_valid &= (salt_size != 0);
+                is_valid &= (salt_size != db_len);
 
                 /* Verify hash. */
                 u8 cmp_hash[HashSize];
