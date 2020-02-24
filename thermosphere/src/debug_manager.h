@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include "exceptions.h"
+//#include "exceptions.h"
+struct ExceptionStackFrame;
 //#include "gdb/hvisor_context.h"
 #include "transport_interface.h"
 
@@ -42,7 +43,7 @@ typedef struct DebugEventInfo {
     bool preprocessed;
     bool handled;
     u32 coreId;
-    ExceptionStackFrame *frame;
+    struct ExceptionStackFrame *frame;
     union {
         OutputStringDebugEventInfo outputString;
     };

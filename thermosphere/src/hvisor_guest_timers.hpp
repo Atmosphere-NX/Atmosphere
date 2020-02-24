@@ -60,4 +60,8 @@ namespace ams::hvisor {
         THERMOSPHERE_SET_SYSREG(cnthctl_el2, cnthctl);
     }
 
+    static inline void UpdateVirtualOffsetSysreg(void)
+    {
+        THERMOSPHERE_SET_SYSREG(cntvoff_el2, currentCoreCtx->GetTotalTimeInHypervisor());
+    }
 }
