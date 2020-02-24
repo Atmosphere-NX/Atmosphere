@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
-#include "exceptions.h"
+#include "hvisor_traps_hvc.hpp"
+#include "../hvisor_exception_dispatcher.hpp"
 
-void handleHypercall(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+namespace ams::hvisor::traps {
+
+    void HandleHypercall(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr)
+    {
+        u32 id = esr.iss;
+        switch (id) {
+            default:
+                DEBUG("Unhandled hypercall: 0x%x.\n");
+                DumpStackFrame(frame, false);
+                break;
+        }
+    }
+
+}

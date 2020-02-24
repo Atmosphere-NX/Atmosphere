@@ -101,7 +101,7 @@ namespace ams::hvisor::cpu {
 
         constexpr bool HasValidFar()
         {
-            return isv && fnv;
+            return isv && !fnv;
         }
         constexpr size_t GetAccessSize()
         {

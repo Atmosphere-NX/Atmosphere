@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,16 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "hvc.h"
-#include "debug_log.h"
+#pragma once
 
-void handleHypercall(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr)
-{
-    u32 id = esr.iss;
-    switch (id) {
-        default:
-            DEBUG("Unhandled hypercall: 0x%x.\n");
-            dumpStackFrame(frame, false);
-            break;
-    }
+#include "../hvisor_exception_stack_frame.hpp"
+
+namespace ams::hvisor::traps {
+
+    void DumpUnhandledDataAbort(cpu::DataAbortIss dabtIss, u64 far, const char *msg);
+    void HandleLowerElDataAbort(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+
 }

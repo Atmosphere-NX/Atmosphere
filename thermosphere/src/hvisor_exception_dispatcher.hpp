@@ -23,6 +23,8 @@ namespace ams::hvisor {
 
     void EnableGeneralTraps(void);
 
+    void DumpStackFrame(const ExceptionStackFrame *frame, bool sameEl);
+
     // Called on exception entry (avoids overflowing a vector section)
     void ExceptionEntryPostprocess(ExceptionStackFrame *frame, bool isLowerEl);
 

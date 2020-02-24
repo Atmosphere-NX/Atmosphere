@@ -21,51 +21,6 @@
 
 #include "debug_manager.h"
 
-namespace {
-
-    void DumpStackFrame(const ams::hvisor::ExceptionStackFrame *frame, bool sameEl)
-    {
-#ifndef NDEBUG
-        uintptr_t stackTop = memoryMapGetStackTop(ams::hvisor::currentCoreCtx->GetCoreId());
-
-        for (u32 i = 0; i < 30; i += 2) {
-            DEBUG("x%u\t\t%016llx\t\tx%u\t\t%016llx\n", i, frame->x[i], i + 1, frame->x[i + 1]);
-        }
-
-        DEBUG("x30\t\t%016llx\n\n", frame->x[30]);
-        DEBUG("elr_el2\t\t%016llx\n", frame->elr_el2);
-        DEBUG("spsr_el2\t%016llx\n", frame->spsr_el2);
-        DEBUG("far_el2\t\t%016llx\n", frame->far_el2);
-        if (sameEl) {
-            DEBUG("sp_el2\t\t%016llx\n", frame->sp_el2);
-        } else {
-            DEBUG("sp_el1\t\t%016llx\n", frame->sp_el1);
-        }
-        DEBUG("sp_el0\t\t%016llx\n", frame->sp_el0);
-        DEBUG("cntpct_el0\t%016llx\n", frame->cntpct_el0);
-        if (frame == ams::hvisor::currentCoreCtx->GetGuestFrame()) {
-            DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
-            DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
-        } else if ((frame->sp_el2 & ~0xFFFul) + 0x1000 == stackTop) {
-            // Try to dump the stack (comment if this crashes)
-            u64 *sp = (u64 *)frame->sp_el2;
-            u64 *spEnd = sp + 0x20;
-            u64 *spMax = reinterpret_cast<u64 *>((frame->sp_el2 + 0xFFF) & ~0xFFFul);
-            DEBUG("Stack trace:\n");
-            while (sp < spEnd && sp < spMax) {
-                DEBUG("\t%016lx\n", *sp++);
-            }
-        } else {
-            DEBUG("Stack overflow/double fault detected!\n");
-        }
-#else
-        (void)frame;
-        (void)sameEl;
-#endif
-    }
-
-}
-
 namespace ams::hvisor {
 
     void EnableGeneralTraps(void)
@@ -87,6 +42,47 @@ namespace ams::hvisor {
         THERMOSPHERE_SET_SYSREG(hcr_el2, hcr);
 
         EnableGuestTimerTraps();
+    }
+
+void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
+    {
+#ifndef NDEBUG
+        uintptr_t stackTop = memoryMapGetStackTop(currentCoreCtx->GetCoreId());
+
+        for (u32 i = 0; i < 30; i += 2) {
+            DEBUG("x%u\t\t%016llx\t\tx%u\t\t%016llx\n", i, frame->x[i], i + 1, frame->x[i + 1]);
+        }
+
+        DEBUG("x30\t\t%016llx\n\n", frame->x[30]);
+        DEBUG("elr_el2\t\t%016llx\n", frame->elr_el2);
+        DEBUG("spsr_el2\t%016llx\n", frame->spsr_el2);
+        DEBUG("far_el2\t\t%016llx\n", frame->far_el2);
+        if (sameEl) {
+            DEBUG("sp_el2\t\t%016llx\n", frame->sp_el2);
+        } else {
+            DEBUG("sp_el1\t\t%016llx\n", frame->sp_el1);
+        }
+        DEBUG("sp_el0\t\t%016llx\n", frame->sp_el0);
+        DEBUG("cntpct_el0\t%016llx\n", frame->cntpct_el0);
+        if (frame == currentCoreCtx->GetGuestFrame()) {
+            DEBUG("cntp_ctl_el0\t%016llx\n", frame->cntp_ctl_el0);
+            DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
+        } else if ((frame->sp_el2 & ~0xFFFul) + 0x1000 == stackTop) {
+            // Try to dump the stack (comment if this crashes)
+            u64 *sp = (u64 *)frame->sp_el2;
+            u64 *spEnd = sp + 0x20;
+            u64 *spMax = reinterpret_cast<u64 *>((frame->sp_el2 + 0xFFF) & ~0xFFFul);
+            DEBUG("Stack trace:\n");
+            while (sp < spEnd && sp < spMax) {
+                DEBUG("\t%016lx\n", *sp++);
+            }
+        } else {
+            DEBUG("Stack overflow/double fault detected!\n");
+        }
+#else
+        (void)frame;
+        (void)sameEl;
+#endif
     }
 
     void ExceptionEntryPostprocess(ExceptionStackFrame *frame, bool isLowerEl)

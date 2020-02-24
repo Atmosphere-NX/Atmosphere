@@ -370,6 +370,9 @@ namespace ams::hvisor {
                 constexpr VirtualGic() = default;
 
             public:
+                // For convenience (when trapping lower-el data aborts):
+                static constexpr uintptr_t gicdPhysicalAddress = 0; // fixme pls MEMORY_MAP_PA_GICD;
+            public:
                 static bool ValidateGicdRegisterAccess(size_t offset, size_t sz);
             public:
                 void WriteGicdRegister(u32 val, size_t offset, size_t sz);
