@@ -429,7 +429,7 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
         
         {
-            std::scoped_lock<os::Mutex> lk(this->rights_id_cache->mutex);
+            std::scoped_lock lk(this->rights_id_cache->mutex);
 
             /* Attempt to locate the content id in the cache. */
             for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
@@ -454,7 +454,7 @@ namespace ams::ncm {
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         {
-            std::scoped_lock<os::Mutex> lk(this->rights_id_cache->mutex);
+            std::scoped_lock lk(this->rights_id_cache->mutex);
             impl::RightsIdCache::Entry* eviction_candidate = &this->rights_id_cache->entries[0];
 
             /* Find a suitable existing entry to store our new one at. */
@@ -598,7 +598,7 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
         
         {
-            std::scoped_lock<os::Mutex> lk(this->rights_id_cache->mutex);
+            std::scoped_lock lk(this->rights_id_cache->mutex);
 
             /* Attempt to locate the content id in the cache. */
             for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
@@ -623,7 +623,7 @@ namespace ams::ncm {
         R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
         {
-            std::scoped_lock<os::Mutex> lk(this->rights_id_cache->mutex);
+            std::scoped_lock lk(this->rights_id_cache->mutex);
             impl::RightsIdCache::Entry* eviction_candidate = &this->rights_id_cache->entries[0];
 
             /* Find a suitable existing entry to store our new one at. */

@@ -145,7 +145,7 @@ namespace ams::ncm::impl {
     }
 
     Result InitializeContentManager() {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         /* Already initialized. */
         if (g_initialized) {
@@ -256,7 +256,7 @@ namespace ams::ncm::impl {
 
     void FinalizeContentManager() {
         {
-            std::scoped_lock<os::Mutex> lk(g_mutex);
+            std::scoped_lock lk(g_mutex);
 
             for (size_t i = 0; i < MaxContentStorageEntries; i++) {
                 ContentStorageEntry* entry = &g_content_storage_entries[i];
@@ -281,7 +281,7 @@ namespace ams::ncm::impl {
     }
 
     Result CreateContentStorage(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -306,7 +306,7 @@ namespace ams::ncm::impl {
     }
 
     Result VerifyContentStorage(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -334,7 +334,7 @@ namespace ams::ncm::impl {
     }
 
     Result OpenContentStorage(std::shared_ptr<IContentStorage>* out, StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -378,7 +378,7 @@ namespace ams::ncm::impl {
     }
 
     Result CloseContentStorageForcibly(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None) {
             return ResultUnknownStorage();
@@ -402,7 +402,7 @@ namespace ams::ncm::impl {
     }
 
     Result ActivateContentStorage(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -460,7 +460,7 @@ namespace ams::ncm::impl {
     }
 
     Result InactivateContentStorage(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -484,7 +484,7 @@ namespace ams::ncm::impl {
     }
 
     Result CreateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || storage_id == StorageId::GameCard || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -517,7 +517,7 @@ namespace ams::ncm::impl {
     }
 
     Result VerifyContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::GameCard) {
             return ResultSuccess();
@@ -556,7 +556,7 @@ namespace ams::ncm::impl {
     }
 
     Result OpenContentMetaDatabase(std::shared_ptr<IContentMetaDatabase>* out, StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -600,7 +600,7 @@ namespace ams::ncm::impl {
     }
 
     Result CloseContentMetaDatabaseForcibly(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None) {
             return ResultUnknownStorage();
@@ -631,7 +631,7 @@ namespace ams::ncm::impl {
     }
 
     Result CleanupContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -648,7 +648,7 @@ namespace ams::ncm::impl {
     }
 
     Result ActivateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();
@@ -684,7 +684,7 @@ namespace ams::ncm::impl {
     }
 
     Result InactivateContentMetaDatabase(StorageId storage_id) {
-        std::scoped_lock<os::Mutex> lk(g_mutex);
+        std::scoped_lock lk(g_mutex);
 
         if (storage_id == StorageId::None || static_cast<u8>(storage_id) == 6) {
             return ResultUnknownStorage();

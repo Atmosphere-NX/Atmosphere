@@ -226,7 +226,7 @@ namespace ams::ncm::fs {
     static os::Mutex g_mount_index_lock;
 
     MountName CreateUniqueMountName() {
-        std::scoped_lock<os::Mutex> lk(g_mount_index_lock);
+        std::scoped_lock lk(g_mount_index_lock);
         MountName mount_name;
         g_mount_index++;
         snprintf(mount_name.name, sizeof(MountName), "@ncm%08x", g_mount_index);
