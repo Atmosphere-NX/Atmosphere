@@ -61,7 +61,8 @@ namespace ams::ncm::fs {
 
     Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
         R_UNLESS(fseek(f, offset, SEEK_SET) == 0, fsdevGetLastResult());
-        R_UNLESS(fread(buffer, 1, size, f) == size || !ferror(f), fsdevGetLastResult());
+        R_UNLESS(fread(buffer, 1, size, f) == size, fsdevGetLastResult());
+        R_UNLESS(!ferror(f), fsdevGetLastResult());
         return ResultSuccess();
     }
 
