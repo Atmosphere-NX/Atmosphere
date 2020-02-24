@@ -24,7 +24,7 @@ namespace ams::lr {
     }
 
     void ContentLocationResolverInterface::GetContentStoragePath(Path* out, ncm::ContentId content_id) {
-        R_ASSERT(this->content_storage->GetPath(out, content_id));
+        R_ABORT_UNLESS(this->content_storage->GetPath(out, content_id));
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {

@@ -89,7 +89,7 @@ namespace ams::ncm {
     Result ContentStorageInterface::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
         R_TRY(this->EnsureEnabled());
 
-        ams::rnd::GenerateRandomBytes(out.GetPointer(), sizeof(PlaceHolderId));
+        ams::os::GenerateRandomBytes(out.GetPointer(), sizeof(PlaceHolderId));
         char placeholder_str[FS_MAX_PATH] = {0};
         GetStringFromPlaceHolderId(placeholder_str, *out.GetPointer());
         return ResultSuccess();

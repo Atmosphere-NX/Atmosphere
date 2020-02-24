@@ -34,7 +34,7 @@ namespace ams::lr {
 
         std::shared_ptr<ncm::IContentStorage> content_storage;
         R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
-        R_ASSERT(content_storage->GetPath(out.GetPointer(), data_content_id));
+        R_ABORT_UNLESS(content_storage->GetPath(out.GetPointer(), data_content_id));
         
         return ResultSuccess();
     }

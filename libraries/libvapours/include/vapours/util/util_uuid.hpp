@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include <cstring>
-#include <switch.h>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
 namespace ams::util {
 

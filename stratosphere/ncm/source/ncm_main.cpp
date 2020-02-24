@@ -73,7 +73,7 @@ void __appInit(void) {
     hos::SetVersionForLibnx();
 
     sm::DoWithSession([&]() {
-        R_ASSERT(fsInitialize());
+        R_ABORT_UNLESS(fsInitialize());
     });
 
     ams::CheckApiVersion();
@@ -107,7 +107,7 @@ namespace {
 
 void ContentManagerServerMain(void* arg) {
     /* Create services. */
-    R_ASSERT(g_ncm_server_manager.RegisterServer<ncm::ContentManagerService>(NcmServiceName, NcmMaxSessions));
+    R_ABORT_UNLESS(g_ncm_server_manager.RegisterServer<ncm::ContentManagerService>(NcmServiceName, NcmMaxSessions));
 
     /* Loop forever, servicing our services. */
     g_ncm_server_manager.LoopProcess();
@@ -115,7 +115,7 @@ void ContentManagerServerMain(void* arg) {
 
 void LocationResolverServerMain(void* arg) {
     /* Create services. */
-    R_ASSERT(g_lr_server_manager.RegisterServer<lr::LocationResolverManagerService>(LrServiceName, LrMaxSessions));
+    R_ABORT_UNLESS(g_lr_server_manager.RegisterServer<lr::LocationResolverManagerService>(LrServiceName, LrMaxSessions));
 
     /* Loop forever, servicing our services. */
     g_lr_server_manager.LoopProcess();
@@ -124,16 +124,16 @@ void LocationResolverServerMain(void* arg) {
 int main(int argc, char **argv)
 {
     /* Initialize content manager implementation. */
-    R_ASSERT(ams::ncm::impl::InitializeContentManager());
+    R_ABORT_UNLESS(ams::ncm::impl::InitializeContentManager());
 
     static os::Thread s_content_manager_thread;
     static os::Thread s_location_resolver_thread;
 
-    R_ASSERT(s_content_manager_thread.Initialize(&ContentManagerServerMain, nullptr, 0x4000, 0x15));
-    R_ASSERT(s_content_manager_thread.Start());
+    R_ABORT_UNLESS(s_content_manager_thread.Initialize(&ContentManagerServerMain, nullptr, 0x4000, 0x15));
+    R_ABORT_UNLESS(s_content_manager_thread.Start());
 
-    R_ASSERT(s_location_resolver_thread.Initialize(&LocationResolverServerMain, nullptr, 0x4000, 0x15));
-    R_ASSERT(s_location_resolver_thread.Start());
+    R_ABORT_UNLESS(s_location_resolver_thread.Initialize(&LocationResolverServerMain, nullptr, 0x4000, 0x15));
+    R_ABORT_UNLESS(s_location_resolver_thread.Start());
 
     s_content_manager_thread.Join();
     s_location_resolver_thread.Join();
