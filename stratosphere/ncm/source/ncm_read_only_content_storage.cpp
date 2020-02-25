@@ -16,7 +16,7 @@
 
 #include "ncm_fs.hpp"
 #include "ncm_path_utils.hpp"
-#include "ncm_readonlycontentstorage.hpp"
+#include "ncm_read_only_content_storage.hpp"
 
 namespace ams::ncm {
 

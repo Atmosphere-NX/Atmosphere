@@ -25,12 +25,12 @@ namespace ams::lr {
     class AddOnContentLocationResolverInterface : public sf::IServiceObject {
         protected:
             enum class CommandId {
-                ResolveAddOnContentPath = 0,
-                RegisterAddOnContentStorageDeprecated = 1,
-                RegisterAddOnContentStorage = 1,
-                UnregisterAllAddOnContentPath = 2,
-                RefreshApplicationAddOnContent = 3,
-                UnregisterApplicationAddOnContent = 4,
+                ResolveAddOnContentPath                  = 0,
+                RegisterAddOnContentStorageDeprecated    = 1,
+                RegisterAddOnContentStorage              = 1,
+                UnregisterAllAddOnContentPath            = 2,
+                RefreshApplicationAddOnContent           = 3,
+                UnregisterApplicationAddOnContent        = 4,
             };
         private:
             impl::RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;

@@ -19,11 +19,11 @@
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 #include <optional>
 
-#include "../ncm_contentmetadatabase.hpp"
-#include "../ncm_contentstorage.hpp"
+#include "../ncm_content_meta_database.hpp"
+#include "../ncm_content_storage.hpp"
 #include "../ncm_fs.hpp"
 #include "../ncm_make_path.hpp"
-#include "../ncm_readonlycontentstorage.hpp"
+#include "../ncm_read_only_content_storage.hpp"
 #include "ncm_content_manager.hpp"
 #include "ncm_rights_cache.hpp"
 

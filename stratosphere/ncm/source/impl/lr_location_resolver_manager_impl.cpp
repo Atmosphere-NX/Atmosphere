@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../lr_contentlocationresolver.hpp"
-#include "../lr_redirectonlylocationresolver.hpp"
+#include "../lr_content_location_resolver.hpp"
+#include "../lr_redirect_only_location_resolver.hpp"
 #include "lr_location_resolver_manager_impl.hpp"
 
 namespace ams::lr::impl {

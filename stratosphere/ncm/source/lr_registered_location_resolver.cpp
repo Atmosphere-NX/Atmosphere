@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "lr_registeredlocationresolver.hpp"
+#include "lr_registered_location_resolver.hpp"
 
 namespace ams::lr {
 
@@ -46,7 +46,7 @@ namespace ams::lr {
 
     Result RegisteredLocationResolverInterface::RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids) {
         /* On < 9.0.0, exclusion lists were not supported yet, so simply clear and return. */
-        if (hos::GetVersion < hos::Version_900) {
+        if (hos::GetVersion() < hos::Version_900) {
             this->ClearRedirections();
             return ResultSuccess();
         }

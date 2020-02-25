@@ -15,7 +15,7 @@
  */
 
 #include "impl/ncm_content_manager.hpp"
-#include "lr_contentlocationresolver.hpp"
+#include "lr_content_location_resolver.hpp"
 
 namespace ams::lr {
 

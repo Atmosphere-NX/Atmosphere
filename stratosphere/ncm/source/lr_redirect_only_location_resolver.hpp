@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "lr_contentlocationresolver.hpp"
+#include "lr_content_location_resolver.hpp"
 
 namespace ams::lr {
 

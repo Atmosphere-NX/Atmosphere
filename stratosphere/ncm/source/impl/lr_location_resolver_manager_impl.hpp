@@ -18,10 +18,10 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "../lr_addoncontentlocationresolver.hpp"
-#include "../lr_ilocationresolver.hpp"
+#include "../lr_add_on_content_location_resolver.hpp"
+#include "../lr_i_location_resolver.hpp"
 #include "../lr_i_location_resolver_manager.hpp"
-#include "../lr_registeredlocationresolver.hpp"
+#include "../lr_registered_location_resolver.hpp"
 #include "ncm_bounded_map.hpp"
 
 namespace ams::lr::impl {

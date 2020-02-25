@@ -21,8 +21,8 @@
 namespace ams::lr::impl {
 
     enum RedirectionFlags {
-        RedirectionFlags_None        = (0 << 0),
-        RedirectionFlags_Application = (1 << 0),
+        RedirectionFlags_None           = (0 << 0),
+        RedirectionFlags_Application    = (1 << 0),
     };
 
     class LocationRedirector {

@@ -18,9 +18,9 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "lr_ilocationresolver.hpp"
-#include "ncm_icontentmetadatabase.hpp"
-#include "ncm_icontentstorage.hpp"
+#include "lr_i_location_resolver.hpp"
+#include "ncm_i_content_meta_database.hpp"
+#include "ncm_i_content_storage.hpp"
 
 namespace ams::lr {
 

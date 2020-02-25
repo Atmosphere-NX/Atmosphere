@@ -15,16 +15,12 @@
  */
 
 #include "impl/ncm_content_manager.hpp"
-#include "lr_redirectonlylocationresolver.hpp"
+#include "lr_redirect_only_location_resolver.hpp"
 
 namespace ams::lr {
 
     RedirectOnlyLocationResolverInterface::~RedirectOnlyLocationResolverInterface() {
-        this->program_redirector.ClearRedirections();
-        this->debug_program_redirector.ClearRedirections();
-        this->app_control_redirector.ClearRedirections();
-        this->html_docs_redirector.ClearRedirections();
-        this->legal_info_redirector.ClearRedirections();
+        this->ClearRedirections();
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
@@ -87,11 +83,7 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::Refresh() {
-        this->program_redirector.ClearRedirections();
-        this->debug_program_redirector.ClearRedirections();
-        this->app_control_redirector.ClearRedirections();
-        this->html_docs_redirector.ClearRedirections();
-        this->legal_info_redirector.ClearRedirections();
+        this->ClearRedirections();
         return ResultSuccess();
     }
 
@@ -106,11 +98,7 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ClearApplicationRedirectionDeprecated() {
-        this->program_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->debug_program_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->app_control_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->html_docs_redirector.ClearRedirections(impl::RedirectionFlags_Application);
-        this->legal_info_redirector.ClearRedirections(impl::RedirectionFlags_Application);
+        this->ClearRedirections(impl::RedirectionFlags_Application);
         return ResultSuccess();
     }
 
