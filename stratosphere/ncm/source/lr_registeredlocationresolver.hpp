@@ -28,20 +28,20 @@ namespace ams::lr {
             static constexpr size_t MaxRegisteredLocations = 0x20;
         protected:
             enum class CommandId {
-                ResolveProgramPath = 0,
-                RegisterProgramPathDeprecated = 1,
-                RegisterProgramPath = 1,
-                UnregisterProgramPath = 2,
-                RedirectProgramPathDeprecated = 3,
-                RedirectProgramPath = 3,
-                ResolveHtmlDocumentPath = 4,
-                RegisterHtmlDocumentPathDeprecated = 5,
-                RegisterHtmlDocumentPath = 5,
-                UnregisterHtmlDocumentPath = 6,
-                RedirectHtmlDocumentPathDeprecated = 7,
-                RedirectHtmlDocumentPath = 7,
-                Refresh = 8,
-                RefreshExcluding = 9,
+                ResolveProgramPath                    = 0,
+                RegisterProgramPathDeprecated         = 1,
+                RegisterProgramPath                   = 1,
+                UnregisterProgramPath                 = 2,
+                RedirectProgramPathDeprecated         = 3,
+                RedirectProgramPath                   = 3,
+                ResolveHtmlDocumentPath               = 4,
+                RegisterHtmlDocumentPathDeprecated    = 5,
+                RegisterHtmlDocumentPath              = 5,
+                UnregisterHtmlDocumentPath            = 6,
+                RedirectHtmlDocumentPathDeprecated    = 7,
+                RedirectHtmlDocumentPath              = 7,
+                Refresh                               = 8,
+                RefreshExcluding                      = 9,
             };
         private:
             impl::LocationRedirector program_redirector;

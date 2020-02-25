@@ -24,8 +24,8 @@ namespace ams::lr {
     }
 
     void RegisteredLocationResolverInterface::ClearRedirections(u32 flags) {
-        this->html_docs_redirector.ClearRedirections();
-        this->program_redirector.ClearRedirections();
+        this->html_docs_redirector.ClearRedirections(flags);
+        this->program_redirector.ClearRedirections(flags);
     }
 
     void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId id, ncm::ProgramId owner_id) {
@@ -45,18 +45,22 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverInterface::RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids) {
-        if (hos::GetVersion() < hos::Version_900) {
+        /* On < 9.0.0, exclusion lists were not supported yet, so simply clear and return. */
+        if (hos::GetVersion < hos::Version_900) {
             this->ClearRedirections();
             return ResultSuccess();
         }
 
-        if (num_ids == 0) {
-            this->ClearRedirections();
-        } else {
+        if (num_ids) {
+            /* If we have exclusion lists, explicitly clear our locations. */
             this->registered_program_locations.ClearExcluding(excluding_ids, num_ids);
             this->registered_html_docs_locations.ClearExcluding(excluding_ids, num_ids);
+        } else {
+            /* If we don't, just perform a general clear (as pre 9.0.0 did). */
+            this->ClearRedirections();
         }
-
+            
+        /* Clear redirectors using exclusion lists. */
         this->program_redirector.ClearRedirections(excluding_ids, num_ids);
         this->html_docs_redirector.ClearRedirections(excluding_ids, num_ids);
         return ResultSuccess();
