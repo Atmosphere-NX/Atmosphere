@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Adubbz
+ * Copyright (c) 2019-2020 Adubbz, Atmosphere-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,7 +24,7 @@ namespace ams::lr::impl {
         RedirectionFlags_None        = (0 << 0),
         RedirectionFlags_Application = (1 << 0),
     };
-
+ 
     class LocationRedirection;
 
     class LocationRedirector {
