@@ -26,6 +26,7 @@
 #include "stratosphere/ams.hpp"
 #include "stratosphere/os.hpp"
 #include "stratosphere/dd.hpp"
+#include "stratosphere/lmem.hpp"
 
 /* Lots of things depend on NCM, for Program IDs. */
 #include "stratosphere/ncm.hpp"

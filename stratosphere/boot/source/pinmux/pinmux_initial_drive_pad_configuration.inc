@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -64,4 +64,4 @@ constexpr InitialConfig InitialDrivePadConfigs[] = {
     {0x69, 0x51212000, 0xF1F1F000},
 };
 
-constexpr u32 NumInitialDrivePadConfigs = (sizeof(InitialDrivePadConfigs) / sizeof(InitialDrivePadConfigs[0]));
+constexpr u32 NumInitialDrivePadConfigs = util::size(InitialDrivePadConfigs);

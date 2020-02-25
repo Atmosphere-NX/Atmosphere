@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -66,4 +66,4 @@ static constexpr WakePinConfig WakePinConfigsCopper[] = {
     {0x3F, false, 0x02},
 };
 
-static constexpr size_t NumWakePinConfigsCopper = sizeof(WakePinConfigsCopper) / sizeof(WakePinConfigsCopper[0]);
+static constexpr size_t NumWakePinConfigsCopper = util::size(WakePinConfigsCopper);

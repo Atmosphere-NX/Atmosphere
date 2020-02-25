@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -98,6 +98,7 @@ constexpr InitialConfig InitialConfigsIowa[] = {
     {0x09, 0x24, 0x7F},
     {0x0A, 0x24, 0x7F},
     {0x0B, 0x24, 0x7F},
+    {0x87, 0x04, 0x67},
     {0x88, 0x34, 0x7F},
     {0x86, 0x2C, 0x7F},
     {0x82, 0x24, 0x7F},
@@ -162,7 +163,6 @@ constexpr InitialConfig InitialConfigsIowa[] = {
     {0xAD, 0x05, 0x07},
     {0xAE, 0x05, 0x07},
     {0x07, 0x05, 0x07},
-    {0x87, 0x05, 0x07},
     {0x83, 0x05, 0x07},
     {0x84, 0x05, 0x07},
     {0x7B, 0x05, 0x07},
@@ -191,4 +191,4 @@ constexpr InitialConfig InitialConfigsIowa[] = {
     {0x63, 0x05, 0x07},
 };
 
-constexpr u32 NumInitialConfigsIowa = (sizeof(InitialConfigsIowa) / sizeof(InitialConfigsIowa[0]));
+constexpr u32 NumInitialConfigsIowa = util::size(InitialConfigsIowa);

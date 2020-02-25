@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,23 +21,21 @@
 namespace ams::util {
 
     struct Uuid {
-        u8 uuid[0x10];
+        static constexpr size_t Size = 0x10;
 
-        bool operator==(const Uuid& other) const {
-            return memcmp(this->uuid, other.uuid, sizeof(Uuid)) == 0;
+        u8 data[Size];
+
+        bool operator==(const Uuid &rhs) const {
+            return std::memcmp(this->data, rhs.data, Size) == 0;
         }
 
-        bool operator!=(const Uuid& other) const {
-            return !(*this == other);
+        bool operator!=(const Uuid &rhs) const {
+            return !(*this == rhs);
         }
 
-        u8& operator[](size_t i) { 
-            return uuid[i]; 
+        u8 operator[](size_t i) const {
+            return this->data[i];
         }
     };
-
-    static_assert(sizeof(Uuid) == 0x10, "Uuid definition!");
-    
-    static constexpr Uuid InvalidUuid = { { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } };
 
 }

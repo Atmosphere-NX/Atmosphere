@@ -58,6 +58,8 @@ namespace ams::svc {
             static constexpr bool IsInput = std::is_const<typename std::remove_pointer<T>::type>::value;
         private:
             T pointer;
+        public:
+            constexpr ALWAYS_INLINE UserPointer(T p) : pointer(p) { /* ... */ }
     };
 
     template<typename T>

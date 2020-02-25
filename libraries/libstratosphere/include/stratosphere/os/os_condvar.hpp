@@ -39,7 +39,7 @@ namespace ams::os {
                     /* Abort on any error other than timed out/success. */
                     R_TRY_CATCH(condvarWaitTimeout(&this->cv, m, timeout)) {
                         R_CATCH(svc::ResultTimedOut) { return ConditionVariableStatus::TimedOut; }
-                    } R_END_TRY_CATCH_WITH_ASSERT;
+                    } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
                     return ConditionVariableStatus::Success;
                 }

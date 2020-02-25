@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-static constexpr WakePinConfig WakePinConfigs[] = {
+static constexpr WakePinConfig WakePinConfigsIowa[] = {
     {0x00, false, 0x02},
     {0x01, false, 0x02},
     {0x02, false, 0x02},
@@ -23,7 +23,7 @@ static constexpr WakePinConfig WakePinConfigs[] = {
     {0x05, false, 0x02},
     {0x06, true,  0x02},
     {0x07, true,  0x02},
-    {0x08, false, 0x01},
+    {0x08, true,  0x01},
     {0x0A, true,  0x02},
     {0x0B, false, 0x02},
     {0x0C, false, 0x02},
@@ -66,4 +66,4 @@ static constexpr WakePinConfig WakePinConfigs[] = {
     {0x3F, false, 0x02},
 };
 
-static constexpr size_t NumWakePinConfigs = sizeof(WakePinConfigs) / sizeof(WakePinConfigs[0]);
+static constexpr size_t NumWakePinConfigsIowa = util::size(WakePinConfigsIowa);

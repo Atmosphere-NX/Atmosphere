@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -77,7 +77,7 @@ constexpr InitialConfig InitialConfigsIcosa[] = {
     {0x36, GpioDirection_Output, GpioValue_Low},
 };
 
-constexpr u32 NumInitialConfigsIcosa = (sizeof(InitialConfigsIcosa) / sizeof(InitialConfigsIcosa[0]));
+constexpr u32 NumInitialConfigsIcosa = util::size(InitialConfigsIcosa);
 
 constexpr InitialConfig InitialConfigsIcosa4x[] = {
     {0x04, GpioDirection_Input, GpioValue_High},
@@ -142,4 +142,4 @@ constexpr InitialConfig InitialConfigsIcosa4x[] = {
     {0x36, GpioDirection_Output, GpioValue_Low},
 };
 
-constexpr u32 NumInitialConfigsIcosa4x = (sizeof(InitialConfigsIcosa4x) / sizeof(InitialConfigsIcosa4x[0]));
+constexpr u32 NumInitialConfigsIcosa4x = util::size(InitialConfigsIcosa4x);

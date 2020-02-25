@@ -105,7 +105,7 @@ namespace ams::os::impl{
             /* svc::ResultInvalidHandle. */
             /* svc::ResultInvalidPointer */
             /* svc::ResultOutOfRange */
-        } R_END_TRY_CATCH_WITH_ASSERT;
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
         return index;
     }

@@ -193,7 +193,7 @@ namespace ams::ro::impl {
     }
 
     /* Utilities for working with NRRs. */
-    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
+    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, void *out_hash, size_t out_hash_size, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
         map::MappedCodeMemory nrr_mcm(ResultInternalError{});
 
         /* First, map the NRR. */
@@ -214,6 +214,9 @@ namespace ams::ro::impl {
         nrr_map.Invalidate();
         nrr_mcm.Invalidate();
 
+        /* Save a copy of the hash that we verified. */
+        crypto::GenerateSha256Hash(out_hash, out_hash_size, nrr_header->GetSignedArea(), nrr_header->GetSignedAreaSize());
+
         *out_header = nrr_header;
         *out_mapped_code_address = code_address;
         return ResultSuccess();
@@ -223,6 +226,55 @@ namespace ams::ro::impl {
         R_TRY(svcUnmapProcessMemory(reinterpret_cast<void *>(const_cast<NrrHeader *>(header)), process_handle, mapped_code_address, nrr_heap_size));
         R_TRY(svcUnmapProcessCodeMemory(process_handle, mapped_code_address, nrr_heap_address, nrr_heap_size));
         return ResultSuccess();
+    }
+
+    bool ValidateNrrHashTableEntry(const void *signed_area, size_t signed_area_size, size_t hashes_offset, size_t num_hashes, const void *nrr_hash, const u8 *hash_table, const void *desired_hash) {
+        crypto::Sha256Generator sha256;
+        sha256.Initialize();
+
+
+        /* Hash data before the hash table. */
+        const size_t pre_hash_table_size = hashes_offset - NrrHeader::GetSignedAreaOffset();
+        sha256.Update(signed_area, pre_hash_table_size);
+
+        /* Hash the hash table, checking if the desired hash exists inside it. */
+        size_t remaining_size = signed_area_size - pre_hash_table_size;
+        bool found_hash = false;
+        for (size_t i = 0; i < num_hashes; i++) {
+            /* Get the current hash. */
+            u8 cur_hash[crypto::Sha256Generator::HashSize];
+            std::memcpy(cur_hash, hash_table, sizeof(cur_hash));
+
+            /* Hash the current hash. */
+            sha256.Update(cur_hash, sizeof(cur_hash));
+
+            /* Check if the current hash is our target. */
+            found_hash |= std::memcmp(cur_hash, desired_hash, sizeof(cur_hash)) == 0;
+
+            /* Advance our pointers. */
+            hash_table     += sizeof(cur_hash);
+            remaining_size -= sizeof(cur_hash);
+        }
+
+        /* Data after the hash table should be all zeroes. */
+        u8 work_buf[crypto::Sha256Generator::HashSize];
+        {
+            crypto::ClearMemory(work_buf, sizeof(work_buf));
+            while (remaining_size > 0) {
+                const size_t cur_size = std::min(remaining_size, sizeof(work_buf));
+                sha256.Update(work_buf, cur_size);
+                remaining_size -= cur_size;
+            }
+        }
+
+        /* Validate the final hash. */
+        sha256.GetHash(work_buf, sizeof(work_buf));
+
+        /* Use & operator to avoid short circuiting. */
+        const bool is_valid = found_hash & (std::memcmp(work_buf, nrr_hash, sizeof(work_buf)) == 0);
+
+        /* Return result. */
+        return is_valid;
     }
 
 }
