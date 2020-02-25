@@ -82,10 +82,9 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
         R_TRY(this->EnsureEnabled());
-
-        ams::os::GenerateRandomBytes(out.GetPointer(), sizeof(PlaceHolderId));
-        char placeholder_str[FS_MAX_PATH] = {0};
-        GetStringFromPlaceHolderId(placeholder_str, *out.GetPointer());
+        PlaceHolderId placeholder_id;
+        placeholder_id.uuid = util::GenerateUuid();
+        out.SetValue(placeholder_id);
         return ResultSuccess();
     }
 
@@ -121,7 +120,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        R_UNLESS(offset<= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         R_TRY(this->placeholder_accessor.Write(placeholder_id, offset, data.GetPointer(), data.GetSize()));
         return ResultSuccess();
@@ -363,7 +362,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
-        R_UNLESS(offset<= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
@@ -450,7 +449,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
-        R_UNLESS(offset<= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         bool is_development = false;

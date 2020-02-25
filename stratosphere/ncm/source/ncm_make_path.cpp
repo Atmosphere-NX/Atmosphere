@@ -23,13 +23,13 @@ namespace ams::ncm::path {
 
         u16 Get16BitSha256HashPrefix(util::Uuid uuid) {
             u8 hash[SHA256_HASH_SIZE];
-            sha256CalculateHash(hash, uuid.uuid, sizeof(util::Uuid));
+            sha256CalculateHash(hash, uuid.data, sizeof(util::Uuid));
             return static_cast<u16>(hash[0]) | (static_cast<u16>(hash[1]) << 8);
         }
 
         u8 Get8BitSha256HashPrefix(util::Uuid uuid) {
             u8 hash[SHA256_HASH_SIZE];
-            sha256CalculateHash(hash, uuid.uuid, sizeof(util::Uuid));
+            sha256CalculateHash(hash, uuid.data, sizeof(util::Uuid));
             return hash[0];
         }
 

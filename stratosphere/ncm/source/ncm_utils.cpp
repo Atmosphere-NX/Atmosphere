@@ -34,7 +34,7 @@ namespace ams::ncm {
         R_UNLESS(strnlen(dir_entry->d_name, 0x30) == 0x24, ncm::ResultInvalidPlaceHolderDirectoryEntry());
         R_UNLESS(strncmp(dir_entry->d_name + 0x20, ".nca", 4) == 0, ncm::ResultInvalidPlaceHolderDirectoryEntry());
 
-        PlaceHolderId placeholder_id = {0};
+        u8 tmp[sizeof(PlaceHolderId)] = {};
         char byte_string[2];
         char* end_ptr;
         u64 converted_val;
@@ -46,20 +46,21 @@ namespace ams::ncm {
             byte_string[1] = name_char_pair[1];
 
             converted_val = strtoull(byte_string, &end_ptr, 0x10);
-            placeholder_id.uuid[i] = (u8)converted_val;
+            tmp[i] = (u8)converted_val;
         }
 
+        PlaceHolderId placeholder_id;
+        std::memcpy(placeholder_id.uuid.data, tmp, sizeof(PlaceHolderId));
         *out = placeholder_id;
         return ResultSuccess();
     }
 
     std::optional<ContentId> GetContentIdFromString(const char* str, size_t len) {
-        ContentId content_id = {0};
-
         if (len < 0x20) {
             return std::nullopt;
         }
 
+        u8 tmp[sizeof(ContentId)] = {};
         char byte_string[2];
         char* end_ptr;
         u64 converted_val;
@@ -71,9 +72,11 @@ namespace ams::ncm {
             byte_string[1] = char_par[1];
 
             converted_val = strtoull(byte_string, &end_ptr, 0x10);
-            content_id.uuid[i] = (u8)converted_val;
+            tmp[i] = (u8)converted_val;
         }
 
+        ContentId content_id;
+        std::memcpy(content_id.uuid.data, tmp, sizeof(ContentId));
         return std::optional<ContentId>(content_id);
     }
 
