@@ -86,8 +86,12 @@ namespace ams::ro {
                 return this->num_hashes;
             }
 
+            size_t GetHashesOffset() const {
+                return this->hashes_offset;
+            }
+
             uintptr_t GetHashes() const {
-                return reinterpret_cast<uintptr_t>(this) + this->hashes_offset;
+                return reinterpret_cast<uintptr_t>(this) + this->GetHashesOffset();
             }
 
             u32 GetKeyGeneration() const {
@@ -114,12 +118,16 @@ namespace ams::ro {
                 return reinterpret_cast<const u8 *>(std::addressof(this->program_id));
             }
 
-            size_t GetSignedAreaSize() const;
+            size_t GetSignedAreaSize() const {
+                return this->size - this->GetSignedAreaOffset();
+            }
+
+            size_t GetSignedAreaOffset() const;
     };
     static_assert(sizeof(NrrHeader) == 0x350, "NrrHeader definition!");
 
-    inline size_t NrrHeader::GetSignedAreaSize() const {
-        return this->size - OFFSETOF(NrrHeader, program_id);
+    inline size_t NrrHeader::GetSignedAreaOffset() const {
+        return OFFSETOF(NrrHeader, program_id);
     }
 
     class NroHeader {

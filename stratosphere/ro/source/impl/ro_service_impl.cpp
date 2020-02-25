@@ -23,28 +23,28 @@ namespace ams::ro::impl {
     namespace {
 
         /* Convenience definitions. */
-        constexpr size_t MaxSessions = 0x4;
+        constexpr size_t MaxSessions = 0x3;  /* 2 official sessions (applet + application, 1 homebrew session). */
         constexpr size_t MaxNrrInfos = 0x40;
         constexpr size_t MaxNroInfos = 0x40;
 
         /* Types. */
         struct Sha256Hash {
-            u8 hash[SHA256_HASH_SIZE];
+            u8 hash[crypto::Sha256Generator::HashSize];
 
             bool operator==(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) == 0;
+                return std::memcmp(this, std::addressof(o), sizeof(*this)) == 0;
             }
             bool operator!=(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) != 0;
+                return std::memcmp(this, std::addressof(o), sizeof(*this)) != 0;
             }
             bool operator<(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) < 0;
+                return std::memcmp(this, std::addressof(o), sizeof(*this)) < 0;
             }
             bool operator>(const Sha256Hash &o) const {
-                return std::memcmp(this, &o, sizeof(*this)) > 0;
+                return std::memcmp(this, std::addressof(o), sizeof(*this)) > 0;
             }
         };
-        static_assert(sizeof(Sha256Hash) == sizeof(Sha256Hash::hash), "Sha256Hash definition!");
+        static_assert(sizeof(Sha256Hash) == sizeof(Sha256Hash::hash));
 
         struct NroInfo {
             u64 base_address;
@@ -58,10 +58,12 @@ namespace ams::ro::impl {
         };
 
         struct NrrInfo {
-            const NrrHeader *header;
+            const NrrHeader *mapped_header;
             u64 nrr_heap_address;
             u64 nrr_heap_size;
             u64 mapped_code_address;
+            NrrHeader cached_header;
+            Sha256Hash signed_area_hash;
         };
 
         struct ProcessContext {
@@ -154,14 +156,40 @@ namespace ams::ro::impl {
             Result ValidateHasNroHash(const NroHeader *nro_header) const {
                 /* Calculate hash. */
                 Sha256Hash hash;
-                sha256CalculateHash(&hash, nro_header, nro_header->GetSize());
+                crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), nro_header, nro_header->GetSize());
 
                 for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    if (this->nrr_in_use[i]) {
-                        const NrrHeader *nrr_header = this->nrr_infos[i].header;
-                        const Sha256Hash *nro_hashes = reinterpret_cast<const Sha256Hash *>(nrr_header->GetHashes());
-                        R_UNLESS(!std::binary_search(nro_hashes, nro_hashes + nrr_header->GetNumHashes(), hash), ResultSuccess());
+                    /* Ensure we only check NRRs that are used. */
+                    if (!this->nrr_in_use[i]) {
+                        continue;
                     }
+
+                    /* Get the mapped header, ensure that it has hashes. */
+                    const NrrHeader *cached_nrr_header = std::addressof(this->nrr_infos[i].cached_header);
+                    const NrrHeader *mapped_nrr_header = this->nrr_infos[i].mapped_header;
+                    const size_t mapped_num_hashes = mapped_nrr_header->GetNumHashes();
+                    if (mapped_num_hashes == 0) {
+                        continue;
+                    }
+
+                    /* Locate the hash within the mapped array. */
+                    const Sha256Hash *mapped_nro_hashes_start = reinterpret_cast<const Sha256Hash *>(mapped_nrr_header->GetHashes());
+                    const Sha256Hash *mapped_nro_hashes_end   = mapped_nro_hashes_start + mapped_nrr_header->GetNumHashes();
+
+                    const Sha256Hash *mapped_lower_bound = std::lower_bound(mapped_nro_hashes_start, mapped_nro_hashes_end, hash);
+                    if (mapped_lower_bound == mapped_nro_hashes_end || (*mapped_lower_bound != hash)) {
+                        continue;
+                    }
+
+                    /* Check that the hash entry is valid, since our heuristic passed. */
+                    const void *nrr_hash = std::addressof(this->nrr_infos[i].signed_area_hash);
+                    const u8 *hash_table = reinterpret_cast<const u8 *>(mapped_nro_hashes_start);
+                    if (!ValidateNrrHashTableEntry(nrr_hash, cached_nrr_header, hash_table, std::addressof(hash))) {
+                        continue;
+                    }
+
+                    /* The hash is valid! */
+                    return ResultSuccess();
                 }
 
                 return ResultNotAuthorized();
@@ -288,7 +316,7 @@ namespace ams::ro::impl {
                 if (context->process_handle != INVALID_HANDLE) {
                     for (size_t i = 0; i < MaxNrrInfos; i++) {
                         if (context->nrr_in_use[i]) {
-                            UnmapNrr(context->process_handle, context->nrr_infos[i].header, context->nrr_infos[i].nrr_heap_address, context->nrr_infos[i].nrr_heap_size, context->nrr_infos[i].mapped_code_address);
+                            UnmapNrr(context->process_handle, context->nrr_infos[i].mapped_header, context->nrr_infos[i].nrr_heap_address, context->nrr_infos[i].nrr_heap_size, context->nrr_infos[i].mapped_code_address);
                         }
                     }
                     svcCloseHandle(context->process_handle);
@@ -391,17 +419,23 @@ namespace ams::ro::impl {
         NrrInfo *nrr_info = nullptr;
         R_TRY(context->GetFreeNrrInfo(&nrr_info));
 
+        /* Prepare to cache the NRR's signature hash. */
+        Sha256Hash signed_area_hash;
+        ON_SCOPE_EXIT { crypto::ClearMemory(std::addressof(signed_area_hash), sizeof(signed_area_hash)); };
+
         /* Map. */
         NrrHeader *header = nullptr;
         u64 mapped_code_address = 0;
-        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, program_id, nrr_address, nrr_size, expected_type, enforce_type));
+        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, expected_type, enforce_type));
 
         /* Set NRR info. */
         context->SetNrrInfoInUse(nrr_info, true);
-        nrr_info->header = header;
+        nrr_info->mapped_header = header;
         nrr_info->nrr_heap_address = nrr_address;
         nrr_info->nrr_heap_size = nrr_size;
         nrr_info->mapped_code_address = mapped_code_address;
+        nrr_info->cached_header = *header;
+        std::memcpy(std::addressof(nrr_info->signed_area_hash), std::addressof(signed_area_hash), sizeof(signed_area_hash));
 
         return ResultSuccess();
     }
@@ -425,7 +459,7 @@ namespace ams::ro::impl {
             context->SetNrrInfoInUse(nrr_info, false);
             std::memset(nrr_info, 0, sizeof(*nrr_info));
         }
-        return UnmapNrr(context->process_handle, nrr_backup.header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address);
+        return UnmapNrr(context->process_handle, nrr_backup.mapped_header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address);
     }
 
     Result LoadNro(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size) {
