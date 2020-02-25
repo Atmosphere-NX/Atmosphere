@@ -228,19 +228,17 @@ namespace ams::ro::impl {
         return ResultSuccess();
     }
 
-    bool ValidateNrrHashTableEntry(const void *nrr_hash, const NrrHeader *header, const u8 *hash_table, const void *desired_hash) {
+    bool ValidateNrrHashTableEntry(const void *signed_area, size_t signed_area_size, size_t hashes_offset, size_t num_hashes, const void *nrr_hash, const u8 *hash_table, const void *desired_hash) {
         crypto::Sha256Generator sha256;
         sha256.Initialize();
 
-        const size_t size = header->GetSignedAreaSize();
-        const size_t pre_hash_table_size = header->GetHashesOffset() - header->GetSignedAreaOffset();
-        const size_t num_hashes = header->GetNumHashes();
 
         /* Hash data before the hash table. */
-        sha256.Update(header->GetSignedArea(), pre_hash_table_size);
+        const size_t pre_hash_table_size = hashes_offset - NrrHeader::GetSignedAreaOffset();
+        sha256.Update(signed_area, pre_hash_table_size);
 
         /* Hash the hash table, checking if the desired hash exists inside it. */
-        size_t remaining_size = size - pre_hash_table_size;
+        size_t remaining_size = signed_area_size - pre_hash_table_size;
         bool found_hash = false;
         for (size_t i = 0; i < num_hashes; i++) {
             /* Get the current hash. */

@@ -119,14 +119,14 @@ namespace ams::ro {
             }
 
             size_t GetSignedAreaSize() const {
-                return this->size - this->GetSignedAreaOffset();
+                return this->size - GetSignedAreaOffset();
             }
 
-            size_t GetSignedAreaOffset() const;
+            static constexpr size_t GetSignedAreaOffset();
     };
     static_assert(sizeof(NrrHeader) == 0x350, "NrrHeader definition!");
 
-    inline size_t NrrHeader::GetSignedAreaOffset() const {
+    constexpr size_t NrrHeader::GetSignedAreaOffset() {
         return OFFSETOF(NrrHeader, program_id);
     }
 

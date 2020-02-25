@@ -62,7 +62,12 @@ namespace ams::ro::impl {
             u64 nrr_heap_address;
             u64 nrr_heap_size;
             u64 mapped_code_address;
-            NrrHeader cached_header;
+
+            /* Verification. */
+            u32 cached_signed_area_size;
+            u32 cached_hashes_offset;
+            u32 cached_num_hashes;
+            u8  cached_signed_area[sizeof(NrrHeader) - NrrHeader::GetSignedAreaOffset()];
             Sha256Hash signed_area_hash;
         };
 
@@ -165,7 +170,6 @@ namespace ams::ro::impl {
                     }
 
                     /* Get the mapped header, ensure that it has hashes. */
-                    const NrrHeader *cached_nrr_header = std::addressof(this->nrr_infos[i].cached_header);
                     const NrrHeader *mapped_nrr_header = this->nrr_infos[i].mapped_header;
                     const size_t mapped_num_hashes = mapped_nrr_header->GetNumHashes();
                     if (mapped_num_hashes == 0) {
@@ -182,9 +186,13 @@ namespace ams::ro::impl {
                     }
 
                     /* Check that the hash entry is valid, since our heuristic passed. */
-                    const void *nrr_hash = std::addressof(this->nrr_infos[i].signed_area_hash);
-                    const u8 *hash_table = reinterpret_cast<const u8 *>(mapped_nro_hashes_start);
-                    if (!ValidateNrrHashTableEntry(nrr_hash, cached_nrr_header, hash_table, std::addressof(hash))) {
+                    const void *nrr_hash          = std::addressof(this->nrr_infos[i].signed_area_hash);
+                    const void *signed_area       = this->nrr_infos[i].cached_signed_area;
+                    const size_t signed_area_size = this->nrr_infos[i].cached_signed_area_size;
+                    const size_t hashes_offset    = this->nrr_infos[i].cached_hashes_offset;
+                    const size_t num_hashes       = this->nrr_infos[i].cached_num_hashes;
+                    const u8 *hash_table          = reinterpret_cast<const u8 *>(mapped_nro_hashes_start);
+                    if (!ValidateNrrHashTableEntry(signed_area, signed_area_size, hashes_offset, num_hashes, nrr_hash, hash_table, std::addressof(hash))) {
                         continue;
                     }
 
@@ -434,7 +442,12 @@ namespace ams::ro::impl {
         nrr_info->nrr_heap_address = nrr_address;
         nrr_info->nrr_heap_size = nrr_size;
         nrr_info->mapped_code_address = mapped_code_address;
-        nrr_info->cached_header = *header;
+
+        nrr_info->cached_signed_area_size = header->GetSignedAreaSize();
+        nrr_info->cached_hashes_offset    = header->GetHashesOffset();
+        nrr_info->cached_num_hashes       = header->GetNumHashes();
+
+        std::memcpy(nrr_info->cached_signed_area, header->GetSignedArea(), std::min(sizeof(nrr_info->cached_signed_area), header->GetHashesOffset() - header->GetSignedAreaOffset()));
         std::memcpy(std::addressof(nrr_info->signed_area_hash), std::addressof(signed_area_hash), sizeof(signed_area_hash));
 
         return ResultSuccess();
