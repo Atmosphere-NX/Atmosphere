@@ -65,6 +65,7 @@ namespace ams::util {
                     ((u & (ByteMask << 0)) << 8);
 
         } else if constexpr (std::is_same<U, u8>::value) {
+            AMS_UNUSED(ByteMask);
             return u;
         } else {
             static_assert(!std::is_same<U, U>::value);

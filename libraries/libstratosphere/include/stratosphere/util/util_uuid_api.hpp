@@ -15,7 +15,14 @@
  */
 
 #pragma once
+#include <vapours.hpp>
 
-#include "util/util_uuid_api.hpp"
-#include "util/util_compression.hpp"
-#include "util/util_ini.hpp"
+namespace ams::util {
+
+    /* Nintendo provides UUID generation following RFC 4122.  */
+    /* By default, UUIDs are generated as version 4 (random). */
+
+    Uuid GenerateUuid();
+    Uuid GenerateUuidVersion5(const void *sha1_hash);
+
+}
