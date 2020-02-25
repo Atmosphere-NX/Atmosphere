@@ -82,9 +82,7 @@ namespace ams::ncm {
 
     Result ContentStorageInterface::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
         R_TRY(this->EnsureEnabled());
-        PlaceHolderId placeholder_id;
-        placeholder_id.uuid = util::GenerateUuid();
-        out.SetValue(placeholder_id);
+        out.SetValue({util::GenerateUuid()});
         return ResultSuccess();
     }
 
