@@ -31,8 +31,8 @@ namespace ams::ncm {
     }
 
     Result GetPlaceHolderIdFromDirEntry(PlaceHolderId* out, struct dirent* dir_entry) {
-        R_UNLESS(strnlen(dir_entry->d_name, 0x30) == 0x24, ncm::ResultInvalidPlaceHolderDirectoryEntry());
-        R_UNLESS(strncmp(dir_entry->d_name + 0x20, ".nca", 4) == 0, ncm::ResultInvalidPlaceHolderDirectoryEntry());
+        R_UNLESS(strnlen(dir_entry->d_name, 0x30) == 0x24, ncm::ResultInvalidPlaceHolderFile());
+        R_UNLESS(strncmp(dir_entry->d_name + 0x20, ".nca", 4) == 0, ncm::ResultInvalidPlaceHolderFile());
 
         u8 tmp[sizeof(PlaceHolderId)] = {};
         char byte_string[2];

@@ -42,6 +42,16 @@ namespace ams::lr::impl {
             void EraseRedirection(ncm::ProgramId program_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
             void ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids);
+        private:
+            inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId* excluding_ids, size_t num_ids) const {
+                for (size_t i = 0; i < num_ids; i++) {
+                    if (id == excluding_ids[i]) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
     };
 
 }

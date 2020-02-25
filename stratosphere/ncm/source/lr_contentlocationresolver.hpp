@@ -18,7 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "impl/lr_manager.hpp"
 #include "lr_ilocationresolver.hpp"
 #include "ncm_icontentmetadatabase.hpp"
 #include "ncm_icontentstorage.hpp"

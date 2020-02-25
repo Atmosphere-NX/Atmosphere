@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 
 #include "impl/ncm_content_manager.hpp"
-#include "lr_manager_service.hpp"
+#include "impl/lr_location_resolver_manager_impl.hpp"
 #include "ncm_content_manager_service.hpp"
 
 extern "C" {
@@ -115,7 +115,7 @@ void ContentManagerServerMain(void* arg) {
 
 void LocationResolverServerMain(void* arg) {
     /* Create services. */
-    R_ABORT_UNLESS(g_lr_server_manager.RegisterServer<lr::LocationResolverManagerService>(LrServiceName, LrMaxSessions));
+    R_ABORT_UNLESS(g_lr_server_manager.RegisterServer<lr::impl::LocationResolverManagerImpl>(LrServiceName, LrMaxSessions));
 
     /* Loop forever, servicing our services. */
     g_lr_server_manager.LoopProcess();

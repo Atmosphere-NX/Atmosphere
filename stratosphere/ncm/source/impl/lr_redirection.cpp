@@ -107,24 +107,14 @@ namespace ams::lr::impl {
 
     void LocationRedirector::ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids) {
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
-            bool skip = false;
-            for (size_t i = 0; i < num_ids; i++) {
-                ncm::ProgramId id = excluding_ids[i];
-
-                if (it->GetOwnerProgramId() == id) {
-                    skip = true;
-                    break;
-                }
-            }
-
-            if (skip) {
+            if (this->IsExcluded(it->GetOwnerProgramId(), excluding_ids, num_ids)) {
+                it++;
                 continue;
             }
 
             auto old = it;
             it = this->redirection_list.erase(it);
             delete &(*old);
-            it++;
         }
     }
 

@@ -21,7 +21,7 @@ namespace ams::ncm {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(5);
 
-    R_DEFINE_ERROR_RESULT(StoragePathNotFound,                      1);
+    R_DEFINE_ERROR_RESULT(InvalidContentStorageBase,                1);
     R_DEFINE_ERROR_RESULT(PlaceHolderAlreadyExists,                 2);
     R_DEFINE_ERROR_RESULT(PlaceHolderNotFound,                      3);
     R_DEFINE_ERROR_RESULT(ContentAlreadyExists,                     4);
@@ -33,12 +33,12 @@ namespace ams::ncm {
     R_DEFINE_ERROR_RESULT(InvalidContentStorage,                    100);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaDatabase,               110);
 
-    R_DEFINE_ERROR_RESULT(InvalidPlaceHolderDirectoryEntry,         170);
+    R_DEFINE_ERROR_RESULT(InvalidPlaceHolderFile,                   170);
     R_DEFINE_ERROR_RESULT(BufferInsufficient,                       180);
     R_DEFINE_ERROR_RESULT(InvalidContentStorageOperation,           190);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaKey,                    240);
 
-    R_DEFINE_ERROR_RESULT(StorageRootNotFound,                      310);
+    R_DEFINE_ERROR_RESULT(ContentStorageBaseNotFound,               310);
 
     R_DEFINE_ERROR_RANGE(ContentStorageNotActive, 250, 258);
         R_DEFINE_ERROR_RESULT(GameCardContentStorageNotActive,          251);

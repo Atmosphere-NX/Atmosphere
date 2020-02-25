@@ -16,21 +16,11 @@
 
 #include "../lr_contentlocationresolver.hpp"
 #include "../lr_redirectonlylocationresolver.hpp"
-#include "lr_manager.hpp"
-#include "ncm_bounded_map.hpp"
+#include "lr_location_resolver_manager_impl.hpp"
 
 namespace ams::lr::impl {
 
-    namespace {
-
-        ncm::impl::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> g_location_resolvers;
-        std::shared_ptr<RegisteredLocationResolverInterface> g_registered_location_resolver = nullptr;
-        std::shared_ptr<AddOnContentLocationResolverInterface> g_add_on_content_location_resolver = nullptr;
-        os::Mutex g_mutex;
-
-    }
-
-    Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
+    Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
         auto resolver = g_location_resolvers.Find(storage_id);
 
@@ -50,7 +40,7 @@ namespace ams::lr::impl {
         return ResultSuccess();
     }
 
-    Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
+    Result LocationResolverManagerImpl::OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
         std::scoped_lock lk(g_mutex);
 
         if (!g_registered_location_resolver) {
@@ -62,7 +52,7 @@ namespace ams::lr::impl {
         return ResultSuccess();
     }
     
-    Result RefreshLocationResolver(ncm::StorageId storage_id) {
+    Result LocationResolverManagerImpl::RefreshLocationResolver(ncm::StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
         auto resolver = g_location_resolvers.Find(storage_id);
 
@@ -75,7 +65,7 @@ namespace ams::lr::impl {
         return ResultSuccess();
     }
 
-    Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
+    Result LocationResolverManagerImpl::OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
         std::scoped_lock lk(g_mutex);
 
         if (!g_add_on_content_location_resolver) {

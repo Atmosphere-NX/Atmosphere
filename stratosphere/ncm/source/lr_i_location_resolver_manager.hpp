@@ -24,7 +24,7 @@
 
 namespace ams::lr {
 
-    class LocationResolverManagerService final : public sf::IServiceObject {
+    class ILocationResolverManager : public sf::IServiceObject {
         protected:
             enum class CommandId {
                 OpenLocationResolver = 0,
@@ -34,10 +34,10 @@ namespace ams::lr {
             };
         public:
             /* Actual commands. */
-            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
-            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out);
-            virtual Result RefreshLocationResolver(ncm::StorageId storage_id);
-            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out);
+            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) = 0;
+            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) = 0;
+            virtual Result RefreshLocationResolver(ncm::StorageId storage_id) = 0;
+            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(OpenLocationResolver),

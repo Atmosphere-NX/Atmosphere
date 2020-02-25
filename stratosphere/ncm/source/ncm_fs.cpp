@@ -104,17 +104,17 @@ namespace ams::ncm::fs {
 
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
-        R_UNLESS(has_root, ncm::ResultStorageRootNotFound());
+        R_UNLESS(has_root, ncm::ResultContentStorageBaseNotFound());
         
         path::GetContentRootPath(content_root, root_path);
         bool has_content_root = false;
         R_TRY(HasDirectory(&has_content_root, content_root));
-        R_UNLESS(has_content_root, ncm::ResultStoragePathNotFound());
+        R_UNLESS(has_content_root, ncm::ResultInvalidContentStorageBase());
 
         path::GetPlaceHolderRootPath(placeholder_root, root_path);
         bool has_placeholder_root = false;
         R_TRY(HasDirectory(&has_placeholder_root, placeholder_root));
-        R_UNLESS(has_placeholder_root, ncm::ResultStoragePathNotFound());
+        R_UNLESS(has_placeholder_root, ncm::ResultInvalidContentStorageBase());
 
         return ResultSuccess();
     }

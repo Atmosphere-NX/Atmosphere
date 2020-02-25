@@ -58,7 +58,7 @@ namespace ams::ncm {
         char name[0x10];
     };
 
-    alignas(8) struct PlaceHolderId {
+    struct alignas(8) PlaceHolderId {
         util::Uuid uuid;
 
         bool operator==(const PlaceHolderId& other) const {
@@ -80,7 +80,7 @@ namespace ams::ncm {
 
     static_assert(alignof(PlaceHolderId) == 8, "PlaceHolderId definition!");
 
-    alignas(4) struct ContentId {
+    struct alignas(4) ContentId {
         util::Uuid uuid;
 
         bool operator==(const ContentId& other) const {
