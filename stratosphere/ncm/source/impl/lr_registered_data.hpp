@@ -34,6 +34,24 @@ namespace ams::lr::impl {
         private:
             Entry entries[NumEntries];
             size_t capacity;
+        private:
+            inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId* excluding_ids, size_t num_ids) const {
+                for (size_t i = 0; i < num_ids; i++) {
+                    if (id == excluding_ids[i]) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            inline void RegisterImpl(size_t i, const Key &key, const Value &value, const ncm::ProgramId owner_id) {
+                Entry& entry = this->entries[i];
+                entry.key = key;
+                entry.value = value;
+                entry.owner_id = owner_id;
+                entry.is_valid = true;
+            }
         public:
             RegisteredData(size_t capacity = NumEntries) : capacity(capacity) {
                 this->Clear();
@@ -44,18 +62,16 @@ namespace ams::lr::impl {
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
-                        entry.value = value;
+                        this->RegisterImpl(i, key, value, owner_id);
                         return true;
                     }
                 }
 
+                /* We didn't find an existing entry, so try to create a new one. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (!entry.is_valid) {
-                        entry.key = key;
-                        entry.value = value;
-                        entry.owner_id = owner_id;
-                        entry.is_valid = true;
+                        this->RegisterImpl(i, key, value, owner_id);
                         return true;
                     }
                 }
@@ -102,18 +118,8 @@ namespace ams::lr::impl {
             void ClearExcluding(const ncm::ProgramId* ids, size_t num_ids) {
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
-                    bool found = false;
 
-                    for (size_t j = 0; j < num_ids; j++) {
-                        ncm::ProgramId id = ids[j];
-
-                        if (entry.owner_id == id) {
-                            found = true;
-                            break;
-                        }
-                    }
-
-                    if (!found) {
+                    if (!this->IsExcluded(entry.owner_id, ids, num_ids)) {
                         entry.is_valid = false;
                     }
                 }
