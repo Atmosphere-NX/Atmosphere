@@ -71,6 +71,19 @@ namespace ams::util {
         }
     }
 
+    constexpr ALWAYS_INLINE u64 SwapBytes48(const u64 u) {
+        using U = u64;
+        static_assert(BITSIZEOF(u8) == 8);
+        constexpr U ByteMask = 0xFFu;
+        AMS_ASSERT((u & UINT64_C(0xFFFF000000000000)) == 0);
+        return  ((u & (ByteMask << 40)) >> 40) |
+                ((u & (ByteMask << 32)) >> 24) |
+                ((u & (ByteMask << 24)) >>  8) |
+                ((u & (ByteMask << 16)) <<  8) |
+                ((u & (ByteMask <<  8)) << 24) |
+                ((u & (ByteMask <<  0)) << 40);
+    }
+
     template<typename T> /* requires integral<T> */
     constexpr ALWAYS_INLINE void SwapBytes(T *ptr) {
         using U = typename std::make_unsigned<T>::type;
@@ -78,23 +91,55 @@ namespace ams::util {
         *ptr = static_cast<T>(SwapBytes(static_cast<U>(*ptr)));
     }
 
-    template<typename T>
+    template<typename T> /* requires integral<T> */
     constexpr ALWAYS_INLINE T ConvertToBigEndian(const T val) {
+        using U = typename std::make_unsigned<T>::type;
+
         if constexpr (IsBigEndian()) {
-            return val;
+            return static_cast<T>(static_cast<U>(val));
         } else {
             static_assert(IsLittleEndian());
-            return SwapBytes(val);
+            return static_cast<T>(SwapBytes(static_cast<U>(val)));
         }
     }
 
-    template<typename T>
+    template<typename T> /* requires integral<T> */
     constexpr ALWAYS_INLINE T ConvertToLittleEndian(const T val) {
+        using U = typename std::make_unsigned<T>::type;
+
         if constexpr (IsBigEndian()) {
-            return SwapBytes(val);
+            return static_cast<T>(SwapBytes(static_cast<U>(val)));
         } else {
             static_assert(IsLittleEndian());
-            return val;
+            return static_cast<T>(static_cast<U>(val));
+        }
+    }
+
+    template<typename T> /* requires integral<T> */
+    constexpr ALWAYS_INLINE T ConvertToBigEndian48(const T val) {
+        using U = typename std::make_unsigned<T>::type;
+        static_assert(sizeof(T) == sizeof(u64));
+
+        if constexpr (IsBigEndian()) {
+            AMS_ASSERT((static_cast<U>(val) & UINT64_C(0xFFFF000000000000)) == 0);
+            return static_cast<T>(static_cast<U>(val));
+        } else {
+            static_assert(IsLittleEndian());
+            return static_cast<T>(SwapBytes48(static_cast<U>(val)));
+        }
+    }
+
+    template<typename T> /* requires integral<T> */
+    constexpr ALWAYS_INLINE T ConvertToLittleEndian48(const T val) {
+        using U = typename std::make_unsigned<T>::type;
+        static_assert(sizeof(T) == sizeof(u64));
+
+        if constexpr (IsBigEndian()) {
+            return static_cast<T>(SwapBytes48(static_cast<U>(val)));
+        } else {
+            static_assert(IsLittleEndian());
+            AMS_ASSERT((static_cast<U>(val) & UINT64_C(0xFFFF000000000000)) == 0);
+            return static_cast<T>(static_cast<U>(val));
         }
     }
 
