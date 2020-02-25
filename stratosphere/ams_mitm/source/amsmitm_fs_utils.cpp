@@ -32,38 +32,6 @@ namespace ams::mitm::fs {
             return ResultSuccess();
         }
 
-        void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *src_path) {
-            if (src_path[0] == '/') {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere%s", src_path);
-            } else {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/%s", src_path);
-            }
-        }
-
-        void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *subdir, const char *src_path) {
-            if (src_path[0] == '/') {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/%s%s", subdir, src_path);
-            } else {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/%s/%s", subdir, src_path);
-            }
-        }
-
-        void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path) {
-            if (src_path[0] == '/') {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx%s", static_cast<u64>(program_id), src_path);
-            } else {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx/%s", static_cast<u64>(program_id), src_path);
-            }
-        }
-
-        void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *subdir, const char *src_path) {
-            if (src_path[0] == '/') {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx/%s%s", static_cast<u64>(program_id), subdir, src_path);
-            } else {
-                std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx/%s/%s", static_cast<u64>(program_id), subdir, src_path);
-            }
-        }
-
         void FormatAtmosphereRomfsPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path) {
             return FormatAtmosphereSdPath(dst_path, dst_path_size, program_id, "romfs", src_path);
         }
@@ -152,6 +120,38 @@ namespace ams::mitm::fs {
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereRomfsPath(fixed_path, sizeof(fixed_path), program_id, path);
         return fsFsOpenDirectory(fs, fixed_path, mode, out);
+    }
+
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *src_path) {
+        if (src_path[0] == '/') {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere%s", src_path);
+        } else {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/%s", src_path);
+        }
+    }
+
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *subdir, const char *src_path) {
+        if (src_path[0] == '/') {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/%s%s", subdir, src_path);
+        } else {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/%s/%s", subdir, src_path);
+        }
+    }
+
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path) {
+        if (src_path[0] == '/') {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx%s", static_cast<u64>(program_id), src_path);
+        } else {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx/%s", static_cast<u64>(program_id), src_path);
+        }
+    }
+
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *subdir, const char *src_path) {
+        if (src_path[0] == '/') {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx/%s%s", static_cast<u64>(program_id), subdir, src_path);
+        } else {
+            std::snprintf(dst_path, dst_path_size, "/atmosphere/contents/%016lx/%s/%s", static_cast<u64>(program_id), subdir, src_path);
+        }
     }
 
     /* TODO: Remove this in Atmosphere 0.10.2. */

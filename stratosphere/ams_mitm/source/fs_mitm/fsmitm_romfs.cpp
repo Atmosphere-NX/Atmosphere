@@ -114,7 +114,7 @@ namespace ams::mitm::fs {
             os::Mutex g_fs_romfs_path_lock;
             char g_fs_romfs_path_buffer[fs::EntryNameLengthMax + 1];
 
-            __attribute__((noinline)) void OpenFileSystemRomfsDirectory(FsDir *out, ncm::ProgramId program_id, BuildDirectoryContext *parent, fs::OpenDirectoryMode mode, FsFileSystem *fs) {
+            NOINLINE void OpenFileSystemRomfsDirectory(FsDir *out, ncm::ProgramId program_id, BuildDirectoryContext *parent, fs::OpenDirectoryMode mode, FsFileSystem *fs) {
                 std::scoped_lock lk(g_fs_romfs_path_lock);
                 parent->GetPath(g_fs_romfs_path_buffer);
                 R_ABORT_UNLESS(mitm::fs::OpenAtmosphereRomfsDirectory(out, program_id, g_fs_romfs_path_buffer, mode, fs));
