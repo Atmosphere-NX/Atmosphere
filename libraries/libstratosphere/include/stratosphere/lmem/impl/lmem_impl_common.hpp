@@ -78,7 +78,11 @@ namespace ams::lmem::impl {
     struct HeapHead {
         u32 magic;
         util::IntrusiveListNode list_node;
-        typename util::IntrusiveListMemberTraits<&HeapHead::list_node>::ListType child_list;
+
+        using ChildListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&HeapHead::list_node>;
+        using ChildList       = ChildListTraits::ListType;
+        ChildList child_list;
+
         void *heap_start;
         void *heap_end;
         os::Mutex mutex;
@@ -86,5 +90,6 @@ namespace ams::lmem::impl {
         ImplementationHeapHead impl_head;
     };
     static_assert(std::is_trivially_destructible<HeapHead>::value);
+    static_assert(HeapHead::ChildListTraits::IsValid());
 
 }
