@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphere-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -24,16 +24,19 @@ namespace ams::lr::impl {
         RedirectionFlags_None        = (0 << 0),
         RedirectionFlags_Application = (1 << 0),
     };
- 
-    class LocationRedirection;
 
     class LocationRedirector {
         NON_COPYABLE(LocationRedirector);
         NON_MOVEABLE(LocationRedirector);
         private:
-            ams::util::IntrusiveListBaseTraits<LocationRedirection>::ListType redirection_list;
+            class Redirection;
+        private:
+            using RedirectionList = ams::util::IntrusiveListBaseTraits<Redirection>::ListType;
+        private:
+            RedirectionList redirection_list;
         public:
             LocationRedirector() { /* ... */ }
+            ~LocationRedirector() { this->ClearRedirections(); }
 
             bool FindRedirection(Path *out, ncm::ProgramId program_id);
             void SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags = RedirectionFlags_None);

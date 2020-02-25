@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphere-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,16 +18,16 @@
 
 namespace ams::lr::impl {
 
-    class LocationRedirection  : public util::IntrusiveListBaseNode<LocationRedirection> {
-        NON_COPYABLE(LocationRedirection);
-        NON_MOVEABLE(LocationRedirection);
+    class LocationRedirector::Redirection : public util::IntrusiveListBaseNode<Redirection> {
+        NON_COPYABLE(Redirection);
+        NON_MOVEABLE(Redirection);
         private:
             ncm::ProgramId program_id;
             ncm::ProgramId owner_id;
             Path path;
             u32 flags;
         public:
-            LocationRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path& path, u32 flags) :
+            Redirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path& path, u32 flags) :
                 program_id(program_id), owner_id(owner_id), path(path), flags(flags) { /* ... */ }
 
             ncm::ProgramId GetProgramId() const {
@@ -52,10 +52,6 @@ namespace ams::lr::impl {
     };
 
     bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) {
-        if (this->redirection_list.empty()) {
-            return false;
-        }
-
         for (const auto &redirection : this->redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.GetPath(out);
@@ -71,7 +67,7 @@ namespace ams::lr::impl {
 
     void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) {
         this->EraseRedirection(program_id);
-        this->redirection_list.push_back(*(new LocationRedirection(program_id, owner_id, path, flags)));
+        this->redirection_list.push_back(*(new Redirection(program_id, owner_id, path, flags)));
     }
 
     void LocationRedirector::SetRedirectionFlags(ncm::ProgramId program_id, u32 flags) {
@@ -98,7 +94,7 @@ namespace ams::lr::impl {
             if ((it->GetFlags() & flags) == flags) {
                 auto old = it;
                 it = this->redirection_list.erase(it);
-                delete &(*old);
+                delete std::addressof(*old);
             } else {
                 it++;
             }
@@ -114,7 +110,7 @@ namespace ams::lr::impl {
 
             auto old = it;
             it = this->redirection_list.erase(it);
-            delete &(*old);
+            delete std::addressof(*old);
         }
     }
 

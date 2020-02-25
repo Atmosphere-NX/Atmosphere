@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphere-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -33,15 +33,15 @@ namespace ams::lr::impl {
             };
         private:
             Entry entries[NumEntries];
-            size_t soft_entry_limit;
+            size_t capacity;
         public:
-            RegisteredData(size_t soft_entry_limit = NumEntries) : soft_entry_limit(soft_entry_limit) {
+            RegisteredData(size_t capacity = NumEntries) : capacity(capacity) {
                 this->Clear();
             }
 
             bool Register(const Key &key, const Value &value, const ncm::ProgramId owner_id) {
                 /* Try to find an existing value. */
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         entry.value = value;
@@ -49,7 +49,7 @@ namespace ams::lr::impl {
                     }
                 }
 
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (!entry.is_valid) {
                         entry.key = key;
@@ -64,7 +64,7 @@ namespace ams::lr::impl {
             }
 
             void Unregister(const Key &key) {
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         entry.is_valid = false;
@@ -73,7 +73,7 @@ namespace ams::lr::impl {
             }
 
             void UnregisterOwnerProgram(ncm::ProgramId owner_id) {
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.owner_id == owner_id) {
                         entry.is_valid = false;
@@ -82,7 +82,7 @@ namespace ams::lr::impl {
             }
 
             bool Find(Value *out, const Key &key) {
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         *out = entry.value;
@@ -94,13 +94,13 @@ namespace ams::lr::impl {
             }
 
             void Clear() {
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     this->entries[i].is_valid = false;
                 }
             }
 
             void ClearExcluding(const ncm::ProgramId* ids, size_t num_ids) {
-                for (size_t i = 0; i < this->GetSoftEntryLimit(); i++) {
+                for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];
                     bool found = false;
 
@@ -119,8 +119,8 @@ namespace ams::lr::impl {
                 }
             }
 
-            size_t GetSoftEntryLimit() const {
-                return this->soft_entry_limit;
+            size_t GetCapacity() const {
+                return this->capacity;
             }
     };
 
