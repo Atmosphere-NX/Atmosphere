@@ -20,7 +20,7 @@
 
 namespace ams::lr::impl {
 
-    Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
+    Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
         auto resolver = g_location_resolvers.Find(storage_id);
 
@@ -35,7 +35,7 @@ namespace ams::lr::impl {
             resolver = g_location_resolvers.Find(storage_id);
         }
 
-        std::shared_ptr<ILocationResolver> new_intf = *resolver;
+        std::shared_ptr<ILocationResolverInterface> new_intf = *resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }

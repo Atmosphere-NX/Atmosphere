@@ -22,7 +22,7 @@
 
 namespace ams::lr {
 
-    class RedirectOnlyLocationResolverInterface : public ILocationResolver {
+    class RedirectOnlyLocationResolverInterface : public ILocationResolverInterface {
         public:
             ~RedirectOnlyLocationResolverInterface();
         public:

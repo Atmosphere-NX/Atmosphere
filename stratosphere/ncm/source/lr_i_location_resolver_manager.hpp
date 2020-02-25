@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "lr_add_on_content_location_resolver.hpp"
-#include "lr_i_location_resolver.hpp"
+#include "lr_i_location_resolver_interface.hpp"
 #include "lr_registered_location_resolver.hpp"
 
 namespace ams::lr {
@@ -34,17 +34,10 @@ namespace ams::lr {
             };
         public:
             /* Actual commands. */
-            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) = 0;
+            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) = 0;
             virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) = 0;
             virtual Result RefreshLocationResolver(ncm::StorageId storage_id) = 0;
             virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(OpenLocationResolver),
-                MAKE_SERVICE_COMMAND_META(OpenRegisteredLocationResolver),
-                MAKE_SERVICE_COMMAND_META(RefreshLocationResolver),
-                MAKE_SERVICE_COMMAND_META(OpenAddOnContentLocationResolver, hos::Version_200),
-            };
     };
 
 }

@@ -19,7 +19,7 @@
 #include <stratosphere.hpp>
 
 #include "../lr_add_on_content_location_resolver.hpp"
-#include "../lr_i_location_resolver.hpp"
+#include "../lr_i_location_resolver_interface.hpp"
 #include "../lr_i_location_resolver_manager.hpp"
 #include "../lr_registered_location_resolver.hpp"
 #include "ncm_bounded_map.hpp"
@@ -28,16 +28,23 @@ namespace ams::lr::impl {
 
     class LocationResolverManagerImpl final : public ILocationResolverManager {
         private:
-            ncm::impl::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> g_location_resolvers;
+            ncm::impl::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolverInterface>, 5> g_location_resolvers;
             std::shared_ptr<RegisteredLocationResolverInterface> g_registered_location_resolver = nullptr;
             std::shared_ptr<AddOnContentLocationResolverInterface> g_add_on_content_location_resolver = nullptr;
             os::Mutex g_mutex;
         public:
             /* Actual commands. */
-            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) override;
+            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) override;
             virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) override;
             virtual Result RefreshLocationResolver(ncm::StorageId storage_id) override;
             virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) override;
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MAKE_SERVICE_COMMAND_META(OpenLocationResolver),
+                MAKE_SERVICE_COMMAND_META(OpenRegisteredLocationResolver),
+                MAKE_SERVICE_COMMAND_META(RefreshLocationResolver),
+                MAKE_SERVICE_COMMAND_META(OpenAddOnContentLocationResolver, hos::Version_200),
+            };
     };
 
 }

@@ -18,50 +18,38 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "lr_i_location_resolver_interface.hpp"
-#include "ncm_i_content_meta_database.hpp"
-#include "ncm_i_content_storage.hpp"
+#include "lr_i_location_resolver.hpp"
 
 namespace ams::lr {
 
-    class ContentLocationResolverInterface : public ILocationResolverInterface {
-        private:
-            ncm::StorageId storage_id;
-            std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-            std::shared_ptr<ncm::IContentStorage> content_storage;
+    class ILocationResolverInterface : public ILocationResolver {
         public:
-            ContentLocationResolverInterface(ncm::StorageId storage_id) : storage_id(storage_id) { /* ... */ }
-
-            ~ContentLocationResolverInterface();
-        private:
-            void GetContentStoragePath(Path* out, ncm::ContentId content_id);
-        public:
-            virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) override;
-            virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result Refresh() override;
-            virtual Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result ClearApplicationRedirectionDeprecated() override;
-            virtual Result ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) override;
-            virtual Result EraseProgramRedirection(ncm::ProgramId id) override;
-            virtual Result EraseApplicationControlRedirection(ncm::ProgramId id) override;
-            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) override;
-            virtual Result EraseApplicationLegalInformationRedirection(ncm::ProgramId id) override;
-            virtual Result ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result EraseProgramRedirectionForDebug(ncm::ProgramId id) override;
+            virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) = 0;
+            virtual Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) = 0;
+            virtual Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) = 0;
+            virtual Result Refresh() = 0;
+            virtual Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) = 0;
+            virtual Result ClearApplicationRedirectionDeprecated() = 0;
+            virtual Result ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) = 0;
+            virtual Result EraseProgramRedirection(ncm::ProgramId id) = 0;
+            virtual Result EraseApplicationControlRedirection(ncm::ProgramId id) = 0;
+            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) = 0;
+            virtual Result EraseApplicationLegalInformationRedirection(ncm::ProgramId id) = 0;
+            virtual Result ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) = 0;
+            virtual Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) = 0;
+            virtual Result EraseProgramRedirectionForDebug(ncm::ProgramId id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ResolveProgramPath),
