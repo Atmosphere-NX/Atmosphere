@@ -15,8 +15,7 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <stratosphere/ncm/ncm_types.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
 namespace ams::ncm {
@@ -56,12 +55,12 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
         public:
-            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : 
+            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) :
                 kvs(kvs), disabled(false)
             {
             }
 
-            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) : 
+            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) :
                 IContentMetaDatabase(kvs)
             {
                 strcpy(this->mount_name, mount_name);

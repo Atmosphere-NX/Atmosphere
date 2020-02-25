@@ -13,10 +13,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "lr_registered_location_resolver.hpp"
+#include <stratosphere.hpp>
 
 namespace ams::lr {
+
+    namespace {
+
+        template<size_t N>
+        bool ResolvePath(Path *out, const LocationRedirector &redirector, const RegisteredLocations<ncm::ProgramId, N> &locations, ncm::ProgramId id) {
+            if (!redirector.FindRedirection(out, id)) {
+                if (!locations.Find(out, id)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        template<size_t N>
+        void RegisterPath(RegisteredLocations<ncm::ProgramId, N> &locations, ncm::ProgramId id, const Path& path, ncm::ProgramId owner_id) {
+            /* If we register successfully, we're good. */
+            if (locations.Register(id, path, owner_id)) {
+                return;
+            }
+
+            /* Otherwise, clear and register (this should always succeed). */
+            locations.Clear();
+            locations.Register(id, path, owner_id);
+        }
+
+    }
 
     RegisteredLocationResolverInterface::~RegisteredLocationResolverInterface() {
         /* Ensure entries are deallocated */
@@ -26,22 +51,6 @@ namespace ams::lr {
     void RegisteredLocationResolverInterface::ClearRedirections(u32 flags) {
         this->html_docs_redirector.ClearRedirections(flags);
         this->program_redirector.ClearRedirections(flags);
-    }
-
-    void RegisteredLocationResolverInterface::RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        if (!locations->Register(id, path, owner_id)) {
-            locations->Clear();
-            locations->Register(id, path, owner_id);
-        }
-    }
-
-    bool RegisteredLocationResolverInterface::ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, RegisteredLocationResolverInterface::MaxRegisteredLocations>* locations, ncm::ProgramId id) {
-        if (!redirector->FindRedirection(out, id)) {
-            if (!locations->Find(out, id)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     Result RegisteredLocationResolverInterface::RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids) {
@@ -59,7 +68,7 @@ namespace ams::lr {
             /* If we don't, just perform a general clear (as pre 9.0.0 did). */
             this->ClearRedirections();
         }
-            
+
         /* Clear redirectors using exclusion lists. */
         this->program_redirector.ClearRedirections(excluding_ids, num_ids);
         this->html_docs_redirector.ClearRedirections(excluding_ids, num_ids);
@@ -67,17 +76,17 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->ResolvePath(out.GetPointer(), &this->program_redirector, &this->registered_program_locations, id), lr::ResultProgramNotFound());
+        R_UNLESS(ResolvePath(out.GetPointer(), this->program_redirector, this->registered_program_locations, id), lr::ResultProgramNotFound());
         return ResultSuccess();
     }
 
     Result RegisteredLocationResolverInterface::RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->RegisterPath(path, &this->registered_program_locations, id, ncm::ProgramId::Invalid);
+        RegisterPath(this->registered_program_locations, id, path, ncm::ProgramId::Invalid);
         return ResultSuccess();
     }
 
     Result RegisteredLocationResolverInterface::RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->RegisterPath(path, &this->registered_program_locations, id, owner_id);
+        RegisterPath(this->registered_program_locations, id, path, owner_id);
         return ResultSuccess();
     }
 
@@ -97,17 +106,17 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverInterface::ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
-        R_UNLESS(this->ResolvePath(out.GetPointer(), &this->html_docs_redirector, &this->registered_html_docs_locations, id), lr::ResultHtmlDocumentNotFound());
+        R_UNLESS(ResolvePath(out.GetPointer(), this->html_docs_redirector, this->registered_html_docs_locations, id), lr::ResultHtmlDocumentNotFound());
         return ResultSuccess();
     }
 
     Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
-        this->RegisterPath(path, &this->registered_html_docs_locations, id, ncm::ProgramId::Invalid);
+        RegisterPath(this->registered_html_docs_locations, id, path, ncm::ProgramId::Invalid);
         return ResultSuccess();
     }
 
     Result RegisteredLocationResolverInterface::RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
-        this->RegisterPath(path, &this->registered_html_docs_locations, id, owner_id);
+        RegisterPath(this->registered_html_docs_locations, id, path, owner_id);
         return ResultSuccess();
     }
 

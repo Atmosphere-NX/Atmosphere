@@ -15,12 +15,10 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-
-#include "lr_add_on_content_location_resolver.hpp"
-#include "lr_i_location_resolver_interface.hpp"
-#include "lr_registered_location_resolver.hpp"
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_i_location_resolver_interface.hpp>
+#include <stratosphere/lr/lr_add_on_content_location_resolver.hpp>
+#include <stratosphere/lr/lr_registered_location_resolver.hpp>
 
 namespace ams::lr {
 

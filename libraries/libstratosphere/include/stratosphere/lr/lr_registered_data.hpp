@@ -15,10 +15,9 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <stratosphere/lr/lr_types.hpp>
 
-namespace ams::lr::impl {
+namespace ams::lr {
 
     template<typename Key, typename Value, size_t NumEntries>
     class RegisteredData {
@@ -97,9 +96,9 @@ namespace ams::lr::impl {
                 }
             }
 
-            bool Find(Value *out, const Key &key) {
+            bool Find(Value *out, const Key &key) const {
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry& entry = this->entries[i];
+                    const Entry& entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         *out = entry.value;
                         return true;

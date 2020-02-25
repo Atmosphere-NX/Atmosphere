@@ -20,7 +20,6 @@
 
 #include "impl/ncm_placeholder_accessor.hpp"
 #include "impl/ncm_rights_cache.hpp"
-#include "ncm_i_content_storage.hpp"
 #include "ncm_path_utils.hpp"
 
 namespace ams::ncm {

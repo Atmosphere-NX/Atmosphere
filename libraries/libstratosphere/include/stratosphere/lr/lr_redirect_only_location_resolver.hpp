@@ -15,26 +15,14 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-
-#include "lr_i_location_resolver_interface.hpp"
-#include "ncm_i_content_meta_database.hpp"
-#include "ncm_i_content_storage.hpp"
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_i_location_resolver_interface.hpp>
 
 namespace ams::lr {
 
-    class ContentLocationResolverInterface : public ILocationResolverInterface {
-        private:
-            ncm::StorageId storage_id;
-            std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-            std::shared_ptr<ncm::IContentStorage> content_storage;
+    class RedirectOnlyLocationResolverInterface : public ILocationResolverInterface {
         public:
-            ContentLocationResolverInterface(ncm::StorageId storage_id) : storage_id(storage_id) { /* ... */ }
-
-            ~ContentLocationResolverInterface();
-        private:
-            void GetContentStoragePath(Path* out, ncm::ContentId content_id);
+            ~RedirectOnlyLocationResolverInterface();
         public:
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) override;
@@ -62,35 +50,6 @@ namespace ams::lr {
             virtual Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) override;
             virtual Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
             virtual Result EraseProgramRedirectionForDebug(ncm::ProgramId id) override;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ResolveProgramPath),
-                MAKE_SERVICE_COMMAND_META(RedirectProgramPath),
-                MAKE_SERVICE_COMMAND_META(ResolveApplicationControlPath),
-                MAKE_SERVICE_COMMAND_META(ResolveApplicationHtmlDocumentPath),
-                MAKE_SERVICE_COMMAND_META(ResolveDataPath),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationControlPathDeprecated,          hos::Version_100, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationControlPath,                    hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationHtmlDocumentPathDeprecated,     hos::Version_100, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationHtmlDocumentPath,               hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(ResolveApplicationLegalInformationPath),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationLegalInformationPathDeprecated, hos::Version_100, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationLegalInformationPath,           hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(Refresh),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPathDeprecated,          hos::Version_500, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPath,                    hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(ClearApplicationRedirectionDeprecated,             hos::Version_500, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(ClearApplicationRedirection,                       hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(EraseProgramRedirection,                           hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(EraseApplicationControlRedirection,                hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(EraseApplicationHtmlDocumentRedirection,           hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(EraseApplicationLegalInformationRedirection,       hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(ResolveProgramPathForDebug,                        hos::Version_700),
-                MAKE_SERVICE_COMMAND_META(RedirectProgramPathForDebug,                       hos::Version_700),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPathForDebugDeprecated,  hos::Version_700, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectApplicationProgramPathForDebug,            hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(EraseProgramRedirectionForDebug,                   hos::Version_700),
-            };
     };
 
 }

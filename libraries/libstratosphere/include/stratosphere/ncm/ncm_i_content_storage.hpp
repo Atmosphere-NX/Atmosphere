@@ -15,11 +15,10 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <stratosphere/ncm/ncm_types.hpp>
 
 namespace ams::ncm {
-    
+
     class IContentStorage : public sf::IServiceObject {
         protected:
             enum class CommandId {

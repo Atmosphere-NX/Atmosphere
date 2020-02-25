@@ -15,10 +15,8 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-
-#include "impl/lr_registered_data.hpp"
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_registered_data.hpp>
 
 namespace ams::lr {
 
@@ -33,7 +31,7 @@ namespace ams::lr {
                 UnregisterApplicationAddOnContent        = 4,
             };
         private:
-            impl::RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;
+            RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;
         public:
             AddOnContentLocationResolverInterface() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
 

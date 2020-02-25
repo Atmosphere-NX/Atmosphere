@@ -15,6 +15,14 @@
  */
 
 #pragma once
-#include <switch.h>
-
-#include "lr/lr_types.hpp"
+#include <vapours.hpp>
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_location_redirector.hpp>
+#include <stratosphere/lr/lr_registered_data.hpp>
+#include <stratosphere/lr/lr_i_location_resolver.hpp>
+#include <stratosphere/lr/lr_i_location_resolver_interface.hpp>
+#include <stratosphere/lr/lr_content_location_resolver.hpp>
+#include <stratosphere/lr/lr_redirect_only_location_resolver.hpp>
+#include <stratosphere/lr/lr_registered_location_resolver.hpp>
+#include <stratosphere/lr/lr_i_location_resolver_manager.hpp>
+#include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>

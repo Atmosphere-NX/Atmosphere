@@ -13,12 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#include "../lr_content_location_resolver.hpp"
-#include "../lr_redirect_only_location_resolver.hpp"
-#include "lr_location_resolver_manager_impl.hpp"
-
-namespace ams::lr::impl {
+namespace ams::lr {
 
     Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
@@ -51,7 +48,7 @@ namespace ams::lr::impl {
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }
-    
+
     Result LocationResolverManagerImpl::RefreshLocationResolver(ncm::StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
         auto resolver = g_location_resolvers.Find(storage_id);
@@ -71,7 +68,7 @@ namespace ams::lr::impl {
         if (!g_add_on_content_location_resolver) {
             g_add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverInterface>();
         }
-        
+
         std::shared_ptr<AddOnContentLocationResolverInterface> new_intf = g_add_on_content_location_resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();

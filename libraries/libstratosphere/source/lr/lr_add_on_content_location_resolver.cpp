@@ -13,9 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#include "impl/ncm_content_manager.hpp"
-#include "lr_add_on_content_location_resolver.hpp"
+/* TODO: Properly integrate NCM api into libstratosphere to avoid linker hack. */
+namespace ams::ncm::impl {
+
+    Result OpenContentMetaDatabase(std::shared_ptr<ncm::IContentMetaDatabase> *, ncm::StorageId);
+    Result OpenContentStorage(std::shared_ptr<ncm::IContentStorage> *, ncm::StorageId);
+
+}
 
 namespace ams::lr {
 
@@ -31,7 +37,7 @@ namespace ams::lr {
         std::shared_ptr<ncm::IContentStorage> content_storage;
         R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
         R_ABORT_UNLESS(content_storage->GetPath(out.GetPointer(), data_content_id));
-        
+
         return ResultSuccess();
     }
 

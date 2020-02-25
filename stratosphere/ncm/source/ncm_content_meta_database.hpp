@@ -18,8 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "ncm_i_content_meta_database.hpp"
-
 namespace ams::ncm {
 
     class ContentMetaDatabaseInterface : public IContentMetaDatabase {
@@ -53,7 +51,7 @@ namespace ams::ncm {
             virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, ContentMetaKey key) override;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, ContentMetaKey key) override;
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) override;
-        
+
             /* APIs. */
             virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId program_id) override;
             virtual Result GetLatestData(ContentId* out_content_id, ProgramId program_id) override;

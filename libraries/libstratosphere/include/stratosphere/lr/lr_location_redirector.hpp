@@ -15,10 +15,9 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <stratosphere/lr/lr_types.hpp>
 
-namespace ams::lr::impl {
+namespace ams::lr {
 
     enum RedirectionFlags {
         RedirectionFlags_None           = (0 << 0),
@@ -38,7 +37,7 @@ namespace ams::lr::impl {
             LocationRedirector() { /* ... */ }
             ~LocationRedirector() { this->ClearRedirections(); }
 
-            bool FindRedirection(Path *out, ncm::ProgramId program_id);
+            bool FindRedirection(Path *out, ncm::ProgramId program_id) const;
             void SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags = RedirectionFlags_None);
             void SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags = RedirectionFlags_None);
             void SetRedirectionFlags(ncm::ProgramId program_id, u32 flags);

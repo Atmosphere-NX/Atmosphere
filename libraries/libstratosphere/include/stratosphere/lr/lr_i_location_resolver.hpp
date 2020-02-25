@@ -15,10 +15,8 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-
-#include "impl/lr_redirection.hpp"
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_location_redirector.hpp>
 
 namespace ams::lr {
 
@@ -53,17 +51,13 @@ namespace ams::lr {
                 EraseProgramRedirectionForDebug                      = 19,
             };
         protected:
-            impl::LocationRedirector program_redirector;
-            impl::LocationRedirector debug_program_redirector;
-            impl::LocationRedirector app_control_redirector;
-            impl::LocationRedirector html_docs_redirector;
-            impl::LocationRedirector legal_info_redirector;
+            LocationRedirector program_redirector;
+            LocationRedirector debug_program_redirector;
+            LocationRedirector app_control_redirector;
+            LocationRedirector html_docs_redirector;
+            LocationRedirector legal_info_redirector;
         protected:
-            bool GetRedirectedPath(Path* out, impl::LocationRedirector* redirector, ncm::ProgramId id) {
-                return redirector->FindRedirection(out, id);
-            }
-
-            void ClearRedirections(u32 flags = impl::RedirectionFlags_None) {
+            void ClearRedirections(u32 flags = RedirectionFlags_None) {
                 this->program_redirector.ClearRedirections(flags);
                 this->debug_program_redirector.ClearRedirections(flags);
                 this->app_control_redirector.ClearRedirections(flags);

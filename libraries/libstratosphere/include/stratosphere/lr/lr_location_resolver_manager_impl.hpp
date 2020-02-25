@@ -15,20 +15,15 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_i_location_resolver_manager.hpp>
+#include <stratosphere/ncm/ncm_bounded_map.hpp>
 
-#include "../lr_add_on_content_location_resolver.hpp"
-#include "../lr_i_location_resolver_interface.hpp"
-#include "../lr_i_location_resolver_manager.hpp"
-#include "../lr_registered_location_resolver.hpp"
-#include "ncm_bounded_map.hpp"
-
-namespace ams::lr::impl {
+namespace ams::lr {
 
     class LocationResolverManagerImpl final : public ILocationResolverManager {
         private:
-            ncm::impl::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolverInterface>, 5> g_location_resolvers;
+            ncm::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolverInterface>, 5> g_location_resolvers;
             std::shared_ptr<RegisteredLocationResolverInterface> g_registered_location_resolver = nullptr;
             std::shared_ptr<AddOnContentLocationResolverInterface> g_add_on_content_location_resolver = nullptr;
             os::Mutex g_mutex;

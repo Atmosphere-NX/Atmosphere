@@ -18,9 +18,6 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "../ncm_i_content_meta_database.hpp"
-#include "../ncm_i_content_storage.hpp"
-
 namespace ams::ncm::impl {
 
     /* Initialization/Finalization. */

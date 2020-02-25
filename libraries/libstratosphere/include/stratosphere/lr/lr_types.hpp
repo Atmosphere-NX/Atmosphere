@@ -16,8 +16,9 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../fs/fs_directory.hpp"
-#include "../sf/sf_buffer_tags.hpp"
+#include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/fs/fs_directory.hpp>
+#include <stratosphere/sf/sf_buffer_tags.hpp>
 
 namespace ams::lr {
 
@@ -48,7 +49,7 @@ namespace ams::lr {
                 if (this->str[i] == '\x00') {
                     return true;
                 }
-            } 
+            }
             return false;
         }
     };

@@ -13,10 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#include "lr_redirection.hpp"
-
-namespace ams::lr::impl {
+namespace ams::lr {
 
     class LocationRedirector::Redirection : public util::IntrusiveListBaseNode<Redirection> {
         NON_COPYABLE(Redirection);
@@ -51,7 +50,7 @@ namespace ams::lr::impl {
             }
     };
 
-    bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) {
+    bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) const {
         for (const auto &redirection : this->redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.GetPath(out);

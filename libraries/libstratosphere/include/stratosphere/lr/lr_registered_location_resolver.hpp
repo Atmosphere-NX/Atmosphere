@@ -15,11 +15,9 @@
  */
 
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-
-#include "impl/lr_redirection.hpp"
-#include "impl/lr_registered_data.hpp"
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/lr/lr_location_redirector.hpp>
+#include <stratosphere/lr/lr_registered_data.hpp>
 
 namespace ams::lr {
 
@@ -44,14 +42,12 @@ namespace ams::lr {
                 RefreshExcluding                      = 9,
             };
         private:
-            impl::LocationRedirector program_redirector;
-            impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_program_locations;
-            impl::LocationRedirector html_docs_redirector;
-            impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_html_docs_locations;
+            LocationRedirector program_redirector;
+            RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_program_locations;
+            LocationRedirector html_docs_redirector;
+            RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_html_docs_locations;
         private:
-            void ClearRedirections(u32 flags = impl::RedirectionFlags_None);
-            void RegisterPath(const Path& path, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId id, ncm::ProgramId owner_id);
-            bool ResolvePath(Path* out, impl::LocationRedirector* redirector, impl::RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations>* locations, ncm::ProgramId id);
+            void ClearRedirections(u32 flags = RedirectionFlags_None);
             Result RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids);
         public:
             RegisteredLocationResolverInterface() : registered_program_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations), registered_html_docs_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations) { /* ... */ }

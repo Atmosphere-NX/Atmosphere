@@ -13,13 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/ncm/ncm_types.hpp>
 
-namespace ams::ncm::impl {
-    
+namespace ams::ncm {
+
     template<class Key, class Value, size_t N>
     class BoundedMap {
         private:
