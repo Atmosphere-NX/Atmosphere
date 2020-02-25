@@ -381,7 +381,7 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseInterface::GetPatchId(sf::Out<ProgramId> out_patch_id, ContentMetaKey key) {
         R_TRY(this->EnsureEnabled());
-        R_UNLESS(key.type != ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
+        R_UNLESS(key.type == ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
 
         const void* value = nullptr;
         size_t value_size = 0;
