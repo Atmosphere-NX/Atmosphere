@@ -38,4 +38,6 @@ namespace ams::util {
         }
     };
 
+    constexpr inline Uuid InvalidUuid = {};
+
 }
