@@ -68,11 +68,11 @@ namespace ams::hvisor::traps {
             if (VirtualGic::ValidateGicdRegisterAccess(off, sz)) {
                 if (dabtIss.wnr) {
                     // Register write
-                    u32 reg = frame->ReadFrameRegister<u32>(dabtIss.srt);
+                    u32 reg = frame->ReadRegister<u32>(dabtIss.srt);
                     VirtualGic::GetInstance().WriteGicdRegister(reg, off, sz);
                 } else {
                     // Reigster read
-                    frame->WriteFrameRegister(dabtIss.srt, VirtualGic::GetInstance().ReadGicdRegister(off, sz));
+                    frame->WriteRegister(dabtIss.srt, VirtualGic::GetInstance().ReadGicdRegister(off, sz));
                 }
             } else {
                 // Invalid GICD access

@@ -47,3 +47,8 @@
 #ifndef ENSURE
 #define ENSURE(...)
 #endif
+
+//FIXME
+#ifndef ENSURE2
+#define ENSURE2(...)
+#endif

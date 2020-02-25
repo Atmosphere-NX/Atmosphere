@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,11 +16,14 @@
 
 #pragma once
 
-#include "traps.h"
+#include "../hvisor_exception_stack_frame.hpp"
 
-void handleMsrMrsTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
-void handleMcrMrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
-void handleMcrrMrrcCP15Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
-void handleA32CP14Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+namespace ams::hvisor::traps {
 
-void handleA32CP14Trap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+    void HandleMsrMrsTrap(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+    void HandleMcrMrcCP15Trap(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+    void HandleMcrrMrrcCP15Trap(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+    void HandleA32CP14Trap(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+    void HandleA32CP14Trap(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+
+}

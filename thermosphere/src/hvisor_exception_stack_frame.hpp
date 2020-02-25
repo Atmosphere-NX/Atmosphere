@@ -101,12 +101,12 @@ namespace ams::hvisor {
         }
 
         template<typename T = u64>
-        constexpr T ReadFrameRegister(u32 id) const
+        constexpr T ReadRegister(u32 id) const
         {
             static_assert(std::is_integral_v<T> && std::is_unsigned_v<T>);
             return id == 31 ? static_cast<T>(0u) /* xzr */ : static_cast<T>(x[id]);
         }
-        constexpr void WriteFrameRegister(u32 id, u64 val)
+        constexpr void WriteRegister(u32 id, u64 val)
         {
             if (id != 31) {
                 // If not xzr

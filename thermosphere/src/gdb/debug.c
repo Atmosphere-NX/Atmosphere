@@ -76,7 +76,7 @@ static int GDB_ParseExceptionFrame(char *out, const DebugEventInfo *info, int si
     // Dump the GPRs & sp & pc & cpsr (cpsr is 32-bit in the xml desc)
     // For performance reasons, we don't include the FPU registers here
     for (u32 i = 0; i < 31; i++) {
-        n += sprintf(out + n, "%x:%016lx;", i, __builtin_bswap64(readFrameRegister(frame, i)));
+        n += sprintf(out + n, "%x:%016lx;", i, __builtin_bswap64(ReadRegister(frame, i)));
     }
 
     n += sprintf(
