@@ -55,7 +55,6 @@ namespace ams::ro::impl {
             u64 code_size;
             u64 rw_size;
             ModuleId module_id;
-            bool in_use;
         };
 
         struct NrrInfo {
@@ -63,10 +62,11 @@ namespace ams::ro::impl {
             u64 nrr_heap_address;
             u64 nrr_heap_size;
             u64 mapped_code_address;
-            bool in_use;
         };
 
         struct ProcessContext {
+            bool nro_in_use[MaxNroInfos];
+            bool nrr_in_use[MaxNrrInfos];
             NroInfo nro_infos[MaxNroInfos];
             NrrInfo nrr_infos[MaxNrrInfos];
             Handle process_handle;
@@ -93,7 +93,7 @@ namespace ams::ro::impl {
 
             Result GetNrrInfoByAddress(NrrInfo **out, u64 nrr_heap_address) {
                 for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    if (this->nrr_infos[i].in_use && this->nrr_infos[i].nrr_heap_address == nrr_heap_address) {
+                    if (this->nrr_in_use[i] && this->nrr_infos[i].nrr_heap_address == nrr_heap_address) {
                         if (out != nullptr) {
                             *out = &this->nrr_infos[i];
                         }
@@ -105,7 +105,7 @@ namespace ams::ro::impl {
 
             Result GetFreeNrrInfo(NrrInfo **out) {
                 for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    if (!this->nrr_infos[i].in_use) {
+                    if (!this->nrr_in_use[i]) {
                         if (out != nullptr) {
                             *out = &this->nrr_infos[i];
                         }
@@ -117,7 +117,7 @@ namespace ams::ro::impl {
 
             Result GetNroInfoByAddress(NroInfo **out, u64 nro_address) {
                 for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (this->nro_infos[i].in_use && this->nro_infos[i].base_address == nro_address) {
+                    if (this->nro_in_use[i] && this->nro_infos[i].base_address == nro_address) {
                         if (out != nullptr) {
                             *out = &this->nro_infos[i];
                         }
@@ -129,7 +129,7 @@ namespace ams::ro::impl {
 
             Result GetNroInfoByModuleId(NroInfo **out, const ModuleId *module_id) {
                 for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (this->nro_infos[i].in_use && std::memcmp(&this->nro_infos[i].module_id, module_id, sizeof(*module_id)) == 0) {
+                    if (this->nro_in_use[i] && std::memcmp(&this->nro_infos[i].module_id, module_id, sizeof(*module_id)) == 0) {
                         if (out != nullptr) {
                             *out = &this->nro_infos[i];
                         }
@@ -141,7 +141,7 @@ namespace ams::ro::impl {
 
             Result GetFreeNroInfo(NroInfo **out) {
                 for (size_t i = 0; i < MaxNroInfos; i++) {
-                    if (!this->nro_infos[i].in_use) {
+                    if (!this->nro_in_use[i]) {
                         if (out != nullptr) {
                             *out = &this->nro_infos[i];
                         }
@@ -157,7 +157,7 @@ namespace ams::ro::impl {
                 sha256CalculateHash(&hash, nro_header, nro_header->GetSize());
 
                 for (size_t i = 0; i < MaxNrrInfos; i++) {
-                    if (this->nrr_infos[i].in_use) {
+                    if (this->nrr_in_use[i]) {
                         const NrrHeader *nrr_header = this->nrr_infos[i].header;
                         const Sha256Hash *nro_hashes = reinterpret_cast<const Sha256Hash *>(nrr_header->GetHashes());
                         R_UNLESS(!std::binary_search(nro_hashes, nro_hashes + nrr_header->GetNumHashes(), hash), ResultSuccess());
@@ -227,6 +227,18 @@ namespace ams::ro::impl {
                 *out_rw_size = rw_size;
                 return ResultSuccess();
             }
+
+            void SetNrrInfoInUse(const NrrInfo *info, bool in_use) {
+                AMS_ASSERT(std::addressof(this->nrr_infos[0]) <= info && info <= std::addressof(this->nrr_infos[MaxNrrInfos - 1]));
+                const size_t index = info - std::addressof(this->nrr_infos[0]);
+                this->nrr_in_use[index] = in_use;
+            }
+
+            void SetNroInfoInUse(const NroInfo *info, bool in_use) {
+                AMS_ASSERT(std::addressof(this->nro_infos[0]) <= info && info <= std::addressof(this->nro_infos[MaxNroInfos - 1]));
+                const size_t index = info - std::addressof(this->nro_infos[0]);
+                this->nro_in_use[index] = in_use;
+            }
         };
 
         /* Globals. */
@@ -275,7 +287,7 @@ namespace ams::ro::impl {
             if (context != nullptr) {
                 if (context->process_handle != INVALID_HANDLE) {
                     for (size_t i = 0; i < MaxNrrInfos; i++) {
-                        if (context->nrr_infos[i].in_use) {
+                        if (context->nrr_in_use[i]) {
                             UnmapNrr(context->process_handle, context->nrr_infos[i].header, context->nrr_infos[i].nrr_heap_address, context->nrr_infos[i].nrr_heap_size, context->nrr_infos[i].mapped_code_address);
                         }
                     }
@@ -385,7 +397,7 @@ namespace ams::ro::impl {
         R_TRY(MapAndValidateNrr(&header, &mapped_code_address, context->process_handle, program_id, nrr_address, nrr_size, expected_type, enforce_type));
 
         /* Set NRR info. */
-        nrr_info->in_use = true;
+        context->SetNrrInfoInUse(nrr_info, true);
         nrr_info->header = header;
         nrr_info->nrr_heap_address = nrr_address;
         nrr_info->nrr_heap_size = nrr_size;
@@ -410,7 +422,7 @@ namespace ams::ro::impl {
         const NrrInfo nrr_backup = *nrr_info;
         {
             /* Nintendo does this unconditionally, whether or not the actual unmap succeeds. */
-            nrr_info->in_use = false;
+            context->SetNrrInfoInUse(nrr_info, false);
             std::memset(nrr_info, 0, sizeof(*nrr_info));
         }
         return UnmapNrr(context->process_handle, nrr_backup.header, nrr_backup.nrr_heap_address, nrr_backup.nrr_heap_size, nrr_backup.mapped_code_address);
@@ -455,9 +467,9 @@ namespace ams::ro::impl {
             unmap_guard.Cancel();
         }
 
+        context->SetNroInfoInUse(nro_info, true);
         nro_info->code_size = rx_size + ro_size;
         nro_info->rw_size = rw_size;
-        nro_info->in_use = true;
         *out_address = nro_info->base_address;
         return ResultSuccess();
     }
@@ -478,7 +490,7 @@ namespace ams::ro::impl {
         const NroInfo nro_backup = *nro_info;
         {
             /* Nintendo does this unconditionally, whether or not the actual unmap succeeds. */
-            nro_info->in_use = false;
+            context->SetNroInfoInUse(nro_info, false);
             std::memset(nro_info, 0, sizeof(*nro_info));
         }
         return UnmapNro(context->process_handle, nro_backup.base_address, nro_backup.nro_heap_address, nro_backup.bss_heap_address, nro_backup.bss_heap_size, nro_backup.code_size, nro_backup.rw_size);
@@ -490,10 +502,11 @@ namespace ams::ro::impl {
         const ProcessContext *context = GetContextByProcessId(process_id);
         if (context != nullptr) {
             for (size_t i = 0; i < MaxNroInfos && count < max_out_count; i++) {
-                const NroInfo *nro_info = &context->nro_infos[i];
-                if (!nro_info->in_use) {
+                if (!context->nro_in_use[i]) {
                     continue;
                 }
+
+                const NroInfo *nro_info = &context->nro_infos[i];
 
                 /* Just copy out the info. */
                 LoaderModuleInfo *out_info = &out_infos[count++];
