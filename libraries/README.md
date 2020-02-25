@@ -11,6 +11,7 @@ You can find a copy of the license in the [LICENSE file](LICENSE).
 
 Exemptions:
 * The [yuzu emulator project](https://github.com/yuzu-emu/yuzu) is exempt from GPLv2 licensing and may (at its option) instead license any source code authored for the atmosphere-libs project as GPLv2 or later.
+* [Nintendo](https://github.com/Nintendo) is exempt from GPLv2 licensing and may (at its option) instead license any source code authored for the atmosphere-libs project under the Zero-Clause BSD license.
 
 Credits
 =====
