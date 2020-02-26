@@ -41,7 +41,7 @@ namespace ams::lr {
                         return true;
                     }
                 }
-                
+
                 return false;
             }
 
