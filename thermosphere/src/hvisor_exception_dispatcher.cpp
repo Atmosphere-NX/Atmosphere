@@ -19,6 +19,12 @@
 #include "hvisor_fpu_register_cache.hpp"
 #include "hvisor_guest_timers.hpp"
 
+#include "traps/hvisor_traps_data_abort.hpp"
+#include "traps/hvisor_traps_hvc.hpp"
+#include "traps/hvisor_traps_single_step.hpp"
+#include "traps/hvisor_traps_smc.hpp"
+#include "traps/hvisor_traps_sysreg.hpp"
+
 #include "debug_manager.h"
 
 namespace ams::hvisor {
@@ -69,7 +75,7 @@ void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
             DEBUG("cntv_ctl_el0\t%016llx\n", frame->cntv_ctl_el0);
         } else if ((frame->sp_el2 & ~0xFFFul) + 0x1000 == stackTop) {
             // Try to dump the stack (comment if this crashes)
-            u64 *sp = (u64 *)frame->sp_el2;
+            u64 *sp = reinterpret_cast<u64 *>(frame->sp_el2);
             u64 *spEnd = sp + 0x20;
             u64 *spMax = reinterpret_cast<u64 *>((frame->sp_el2 + 0xFFF) & ~0xFFFul);
             DEBUG("Stack trace:\n");
@@ -119,32 +125,32 @@ void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
         auto esr = frame->esr_el2;
         switch (esr.ec) {
             case cpu::ExceptionSyndromeRegister::CP15RTTrap:
-                handleMcrMrcCP15Trap(frame, esr);
+                traps::HandleMcrMrcCP15Trap(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::CP15RRTTrap:
-                handleMcrrMrrcCP15Trap(frame, esr);
+                traps::HandleMcrrMrrcCP15Trap(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::CP14RTTrap:
             case cpu::ExceptionSyndromeRegister::CP14DTTrap:
             case cpu::ExceptionSyndromeRegister::CP14RRTTrap:
                 // A32 stub: Skip instruction, read 0 if necessary (there are debug regs at EL0)
-                handleA32CP14Trap(frame, esr);
+                traps::HandleA32CP14Trap(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::HypervisorCallA64:
-                handleHypercall(frame, esr);
+                traps::HandleHvc(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::MonitorCallA64:
-                handleSmcTrap(frame, esr);
+                traps::HandleSmc(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::SystemRegisterTrap:
-                handleMsrMrsTrap(frame, esr);
+                traps::HandleMsrMrsTrap(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::DataAbortLowerEl:
                 // Basically, stage2 translation faults
-                handleLowerElDataAbortException(frame, esr);
+                traps::HandleLowerElDataAbort(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::SoftwareStepLowerEl:
-                handleSingleStep(frame, esr);
+                traps::HandleSingleStep(frame, esr);
                 break;
             case cpu::ExceptionSyndromeRegister::BreakpointLowerEl:
             case cpu::ExceptionSyndromeRegister::WatchpointLowerEl:

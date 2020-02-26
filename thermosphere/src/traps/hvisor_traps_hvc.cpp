@@ -19,7 +19,7 @@
 
 namespace ams::hvisor::traps {
 
-    void HandleHypercall(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr)
+    void HandleHvc(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr)
     {
         u32 id = esr.iss;
         switch (id) {
