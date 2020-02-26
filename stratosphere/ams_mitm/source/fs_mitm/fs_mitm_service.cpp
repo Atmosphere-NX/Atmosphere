@@ -19,6 +19,7 @@
 #include "fsmitm_boot0storage.hpp"
 #include "fsmitm_layered_romfs_storage.hpp"
 #include "fsmitm_save_utils.hpp"
+#include "fsmitm_readonly_layered_filesystem.hpp"
 
 namespace ams::mitm::fs {
 
@@ -84,11 +85,11 @@ namespace ams::mitm::fs {
             const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&sd_fs.s)};
             std::unique_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_unique<fs::RemoteFileSystem>(sd_fs);
 
-            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir), false), target_object_id);
+            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fs::ReadOnlyFileSystemAdapter>(std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir)), false), target_object_id);
             return ResultSuccess();
         }
 
-        Result OpenProgramSpecificWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type) {
+        Result OpenProgramSpecificWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
             /* Directory must exist. */
             {
                 FsDir d;
@@ -106,12 +107,35 @@ namespace ams::mitm::fs {
             char program_web_content_path[fs::EntryNameLengthMax + 1];
             FormatAtmosphereSdPath(program_web_content_path, sizeof(program_web_content_path), program_id, ProgramWebContentDir);
 
-            /* Set the output directory. */
-            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), program_web_content_path), false), target_object_id);
+            /* Make a new filesystem. */
+            {
+                std::unique_ptr<fs::fsa::IFileSystem> subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), program_web_content_path);
+                std::shared_ptr<fs::fsa::IFileSystem> new_fs = nullptr;
+
+                /* Try to open the existing fs. */
+                FsFileSystem base_fs;
+                bool opened_base_fs = false;
+                if (with_id) {
+                    opened_base_fs = R_SUCCEEDED(fsOpenFileSystemWithIdFwd(fwd, std::addressof(base_fs), static_cast<u64>(program_id), filesystem_type, path->str));
+                } else {
+                    opened_base_fs = R_SUCCEEDED(fsOpenFileSystemWithPatchFwd(fwd, std::addressof(base_fs), static_cast<u64>(program_id), filesystem_type));
+                }
+
+                if (opened_base_fs) {
+                    /* Create a layered adapter. */
+                    new_fs = std::make_shared<ReadOnlyLayeredFileSystem>(std::move(subdir_fs), std::make_unique<fs::RemoteFileSystem>(base_fs));
+                } else {
+                    /* Without an existing FS, just make a read only adapter to the subdirectory. */
+                    new_fs = std::make_shared<fs::ReadOnlyFileSystemAdapter>(std::move(subdir_fs));
+                }
+
+                out.SetValue(std::make_shared<IFileSystemInterface>(std::move(new_fs), false), target_object_id);
+            }
+
             return ResultSuccess();
         }
 
-        Result OpenWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type) {
+        Result OpenWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
             /* Check first that we're a web applet opening web content. */
             R_UNLESS(ncm::IsWebAppletProgramId(client_program_id),      sm::mitm::ResultShouldForwardToSession());
             R_UNLESS(filesystem_type == FsFileSystemType_ContentManual, sm::mitm::ResultShouldForwardToSession());
@@ -119,18 +143,21 @@ namespace ams::mitm::fs {
             /* Try to mount the HBL web filesystem. If this succeeds then we're done. */
             R_UNLESS(R_FAILED(OpenHblWebContentFileSystem(out, client_program_id, program_id, filesystem_type)), ResultSuccess());
 
+            /* If program specific override shouldn't be attempted, fall back. */
+            R_UNLESS(try_program_specific, sm::mitm::ResultShouldForwardToSession());
+
             /* If we're not opening a HBL filesystem, just try to open a generic one. */
-            return OpenProgramSpecificWebContentFileSystem(out, client_program_id, program_id, filesystem_type);
+            return OpenProgramSpecificWebContentFileSystem(out, client_program_id, program_id, filesystem_type, fwd, path, with_id);
         }
 
     }
 
     Result FsMitmService::OpenFileSystemWithPatch(sf::Out<std::shared_ptr<IFileSystemInterface>> out, ncm::ProgramId program_id, u32 _filesystem_type) {
-        return OpenWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type));
+        return OpenWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), this->forward_service.get(), nullptr, false, this->client_info.override_status.IsProgramSpecific());
     }
 
     Result FsMitmService::OpenFileSystemWithId(sf::Out<std::shared_ptr<IFileSystemInterface>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type) {
-        return OpenWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type));
+        return OpenWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), this->forward_service.get(), std::addressof(path), true, this->client_info.override_status.IsProgramSpecific());
     }
 
     Result FsMitmService::OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out) {

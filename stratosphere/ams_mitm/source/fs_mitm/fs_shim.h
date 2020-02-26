@@ -19,6 +19,9 @@ Result fsOpenDataStorageByDataIdFwd(Service* s, FsStorage* out, u64 data_id, Ncm
 
 Result fsOpenSaveDataFileSystemFwd(Service* s, FsFileSystem* out, FsSaveDataSpaceId save_data_space_id, const FsSaveDataAttribute *attr);
 
+Result fsOpenFileSystemWithPatchFwd(Service* s, FsFileSystem* out, u64 id, FsFileSystemType fsType);
+Result fsOpenFileSystemWithIdFwd(Service* s, FsFileSystem* out, u64 id, FsFileSystemType fsType, const char* contentPath);
+
 
 #ifdef __cplusplus
 }

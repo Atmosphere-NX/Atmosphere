@@ -16,6 +16,7 @@
 #pragma once
 #include "../fs_common.hpp"
 #include "../fs_file.hpp"
+#include "../fs_filesystem.hpp"
 #include "../fs_operate_range.hpp"
 
 namespace ams::fs::fsa {
@@ -82,7 +83,25 @@ namespace ams::fs::fsa {
             /* TODO: This is a hack to allow the mitm API to work. Find a better way? */
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const = 0;
         protected:
-            /* ...? */
+            Result DryRead(size_t *out, s64 offset, size_t size, const fs::ReadOption &option, OpenMode open_mode) {
+                /* Check that we can read. */
+                R_UNLESS((open_mode & OpenMode_Read) != 0, fs::ResultInvalidOperationForOpenMode());
+
+                /* Get the file size, and validate our offset. */
+                s64 file_size = 0;
+                R_TRY(this->GetSize(&file_size));
+                R_UNLESS(offset <= file_size, fs::ResultOutOfRange());
+
+                *out = static_cast<size_t>(std::min(file_size - offset, static_cast<s64>(size)));
+                return ResultSuccess();
+            }
+
+            Result DrySetSize(s64 size, OpenMode open_mode) {
+                /* Check that we can write. */
+                R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultInvalidOperationForOpenMode());
+
+                return ResultSuccess();
+            }
         private:
             virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) = 0;
             virtual Result GetSizeImpl(s64 *out) = 0;

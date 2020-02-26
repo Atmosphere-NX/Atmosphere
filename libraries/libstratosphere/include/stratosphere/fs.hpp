@@ -15,14 +15,15 @@
  */
 
 #pragma once
-#include "fs/fs_common.hpp"
-#include "fs/fsa/fs_ifile.hpp"
-#include "fs/fsa/fs_idirectory.hpp"
-#include "fs/fsa/fs_ifilesystem.hpp"
-#include "fs/fs_remote_filesystem.hpp"
-#include "fs/fs_istorage.hpp"
-#include "fs/fs_remote_storage.hpp"
-#include "fs/fs_file_storage.hpp"
-#include "fs/fs_query_range.hpp"
-#include "fs/fs_path_tool.hpp"
-#include "fs/fs_path_utils.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fsa/fs_ifile.hpp>
+#include <stratosphere/fs/fsa/fs_idirectory.hpp>
+#include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
+#include <stratosphere/fs/fs_remote_filesystem.hpp>
+#include <stratosphere/fs/fs_readonly_filesystem_adapter.hpp>
+#include <stratosphere/fs/fs_istorage.hpp>
+#include <stratosphere/fs/fs_remote_storage.hpp>
+#include <stratosphere/fs/fs_file_storage.hpp>
+#include <stratosphere/fs/fs_query_range.hpp>
+#include <stratosphere/fs/fs_path_tool.hpp>
+#include <stratosphere/fs/fs_path_utils.hpp>
