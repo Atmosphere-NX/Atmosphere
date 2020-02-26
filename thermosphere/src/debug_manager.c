@@ -250,3 +250,14 @@ void debugManagerContinueCores(u32 coreList)
         __wfe();
     } while ((atomic_load(&g_debugManager.pausedCoreList) & coreList) != 0);
 }
+
+/*     u64 mdcr = GET_SYSREG(mdcr_el2);
+
+    // Trap Debug Exceptions, and accesses to debug registers.
+    mdcr |= MDCR_EL2_TDE;
+
+    // Implied from TDE
+    mdcr |= MDCR_EL2_TDRA | MDCR_EL2_TDOSA | MDCR_EL2_TDA;
+
+    SET_SYSREG(mdcr_el2, mdcr);
+*/
