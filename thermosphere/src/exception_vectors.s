@@ -234,19 +234,30 @@ _restoreAllRegisters:
 
 UNKNOWN_EXCEPTION       _serrorSp0
 
-/* To save space, insert in an unused vector segment. */
+// To save space, insert in an unused vector segment.
 .global semihosting_call
 .type   semihosting_call, %function
 .func   semihosting_call
 .cfi_startproc
+.cfi_sections   .debug_frame
 semihosting_call:
     hlt     #0xF000
     ret
 .cfi_endproc
 .endfunc
 
-.global doSmcIndirectCallImpl
-doSmcIndirectCallImpl:
+// To save space, insert in an unused vector segment.
+
+// ams::hvisor::traps::CallSmc0(ams::hvisor::ExceptionStackFrame*):
+.global _ZN3ams6hvisor5traps8CallSmc0EPNS0_19ExceptionStackFrameE
+.type   _ZN3ams6hvisor5traps8CallSmc0EPNS0_19ExceptionStackFrameE, %function
+.func   _ZN3ams6hvisor5traps8CallSmc0EPNS0_19ExceptionStackFrameE
+.cfi_startproc
+.cfi_sections   .debug_frame
+// ams::hvisor::callSmcTemplate[]
+.global _ZN3ams6hvisor5traps15callSmcTemplateE
+_ZN3ams6hvisor5traps15callSmcTemplateE:
+_ZN3ams6hvisor5traps8CallSmc0EPNS0_19ExceptionStackFrameE:
     stp     x19, x20, [sp, #-0x10]!
     mov     x19, x0
 
@@ -255,9 +266,10 @@ doSmcIndirectCallImpl:
     ldp     x4, x5, [x19, #0x20]
     ldp     x6, x7, [x19, #0x30]
 
-    _doSmcIndirectCallImplSmcInstruction:
+    _callSmcTemplateSmcInstruction:
     smc     #0
 
+    // Note that NN's secure monitor can return results in x4-x7, this differs from Arm's spec.
     stp     x0, x1, [x19, #0x00]
     stp     x2, x3, [x19, #0x10]
     stp     x4, x5, [x19, #0x20]
@@ -266,13 +278,44 @@ doSmcIndirectCallImpl:
     ldp     x19, x20, [sp], #0x10
     ret
 
-_doSmcIndirectCallImplEnd:
-.global doSmcIndirectCallImplSmcInstructionOffset
-doSmcIndirectCallImplSmcInstructionOffset:
-    .word _doSmcIndirectCallImplSmcInstruction - doSmcIndirectCallImpl
-.global doSmcIndirectCallImplSize
-doSmcIndirectCallImplSize:
-    .word _doSmcIndirectCallImplEnd - doSmcIndirectCallImpl
+_callSmcTemplateEnd:
+.endfunc
+
+// ams::hvisor::traps::callSmcTemplateInstructionOffset
+.global _ZN3ams6hvisor5traps32callSmcTemplateInstructionOffsetE
+_ZN3ams6hvisor5traps32callSmcTemplateInstructionOffsetE:
+    .word _callSmcTemplateSmcInstruction - _ZN3ams6hvisor5traps15callSmcTemplateE
+// ams::hvisor::traps::callSmcTemplateSize
+.global _ZN3ams6hvisor5traps19callSmcTemplateSizeE
+_ZN3ams6hvisor5traps19callSmcTemplateSizeE:
+    .word _callSmcTemplateEnd - _ZN3ams6hvisor5traps15callSmcTemplateE
+
+// ams::hvisor::traps::CallSmc1(ams::hvisor::ExceptionStackFrame*):
+.global _ZN3ams6hvisor5traps8CallSmc1EPNS0_19ExceptionStackFrameE
+.type   _ZN3ams6hvisor5traps8CallSmc1EPNS0_19ExceptionStackFrameE, %function
+.func   _ZN3ams6hvisor5traps8CallSmc1EPNS0_19ExceptionStackFrameE
+.cfi_startproc
+.cfi_sections   .debug_frame
+_ZN3ams6hvisor5traps8CallSmc1EPNS0_19ExceptionStackFrameE:
+    stp     x19, x20, [sp, #-0x10]!
+    mov     x19, x0
+
+    ldp     x0, x1, [x19, #0x00]
+    ldp     x2, x3, [x19, #0x10]
+    ldp     x4, x5, [x19, #0x20]
+    ldp     x6, x7, [x19, #0x30]
+
+    smc     #1
+
+    // Note that NN's secure monitor can return results in x4-x7, this differs from Arm's spec.
+    stp     x0, x1, [x19, #0x00]
+    stp     x2, x3, [x19, #0x10]
+    stp     x4, x5, [x19, #0x20]
+    stp     x6, x7, [x19, #0x30]
+
+    ldp     x19, x20, [sp], #0x10
+    ret
+.endfunc
 
 /* Current EL, SPx */
 

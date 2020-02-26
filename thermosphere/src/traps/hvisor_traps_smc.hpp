@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,8 +16,18 @@
 
 #pragma once
 
-#include "traps.h"
+#include "../hvisor_exception_stack_frame.hpp"
 
-void doSmcIndirectCall(ExceptionStackFrame *frame, u32 smcId);
+namespace ams::hvisor::traps {
 
-void handleSmcTrap(ExceptionStackFrame *frame, ExceptionSyndromeRegister esr);
+    // In exception_vectors.s:
+    extern const u32 callSmcTemplate[];
+    extern const u32 callSmcTemplateInstructionOffset;
+    extern const u32 callSmcTemplateInstructionSize;
+    void CallSmc0(ExceptionStackFrame *frame);
+    void CallSmc1(ExceptionStackFrame *frame);
+
+    void CallSmcIndirect(ExceptionStackFrame *frame, u32 smcId);
+    void HandleSmc(ExceptionStackFrame *frame, cpu::ExceptionSyndromeRegister esr);
+
+}

@@ -79,11 +79,13 @@ namespace ams::hvisor {
             constexpr u32 GetCoreId() const                                 { return m_coreId; }
             constexpr bool IsBootCore() const                               { return m_bootCore; }
 
-            constexpr u64 SetWarmboot(uintptr_t ep)
+            constexpr u64 SetKernelEntrypoint(uintptr_t ep, bool warmboot = false)
             {
-                // No race possible, only possible transition is 1->0 and we only really check IsColdboot() at init time
-                // And CPU_SUSPEND should only be called with only one core left.
-                coldboot = false;
+                if (warmboot) {
+                    // No race possible, only possible transition is 1->0 and we only really check IsColdboot() at init time
+                    // And CPU_SUSPEND should only be called with only one core left.
+                    coldboot = false;
+                }
                 m_kernelEntrypoint = ep;
             }
 

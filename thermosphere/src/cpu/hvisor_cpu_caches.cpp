@@ -102,6 +102,10 @@ namespace ams::hvisor::cpu {
         }
         if (!(ctr & BIT(29))) {
             InvalidateInstructionCacheRangePoU(addr, size);
+        } else {
+            // Make sure we have at least a dsb/isb
+            dsb();
+            isb();
         }
     }
 
