@@ -25,6 +25,8 @@ namespace ams::lr {
     class ContentLocationResolverInterface : public ILocationResolverInterface {
         private:
             ncm::StorageId storage_id;
+
+            /* Objects for this storage type. */
             std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
             std::shared_ptr<ncm::IContentStorage> content_storage;
         public:
@@ -32,8 +34,10 @@ namespace ams::lr {
 
             ~ContentLocationResolverInterface();
         private:
+            /* Helper functions. */
             void GetContentStoragePath(Path* out, ncm::ContentId content_id);
         public:
+            /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) override;
             virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) override;

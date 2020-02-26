@@ -21,7 +21,9 @@ namespace ams::lr {
 
         template<size_t N>
         bool ResolvePath(Path *out, const LocationRedirector &redirector, const RegisteredLocations<ncm::ProgramId, N> &locations, ncm::ProgramId id) {
+            /* Attempt to use a redirection if present. */
             if (!redirector.FindRedirection(out, id)) {
+                /* Otherwise try and use a registered location. */
                 if (!locations.Find(out, id)) {
                     return false;
                 }
@@ -48,6 +50,7 @@ namespace ams::lr {
         this->ClearRedirections();
     }
 
+    /* Helper function. */
     void RegisteredLocationResolverInterface::ClearRedirections(u32 flags) {
         this->html_docs_redirector.ClearRedirections(flags);
         this->program_redirector.ClearRedirections(flags);
@@ -70,8 +73,8 @@ namespace ams::lr {
         }
 
         /* Clear redirectors using exclusion lists. */
-        this->program_redirector.ClearRedirections(excluding_ids, num_ids);
-        this->html_docs_redirector.ClearRedirections(excluding_ids, num_ids);
+        this->program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+        this->html_docs_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
         return ResultSuccess();
     }
 

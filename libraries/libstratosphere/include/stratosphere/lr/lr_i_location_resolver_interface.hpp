@@ -22,6 +22,7 @@ namespace ams::lr {
 
     class ILocationResolverInterface : public ILocationResolver {
         public:
+            /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) = 0;
             virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) = 0;

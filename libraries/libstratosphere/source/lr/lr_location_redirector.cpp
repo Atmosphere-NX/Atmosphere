@@ -51,6 +51,7 @@ namespace ams::lr {
     };
 
     bool LocationRedirector::FindRedirection(Path *out, ncm::ProgramId program_id) const {
+        /* Obtain the path of a matching redirection. */
         for (const auto &redirection : this->redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.GetPath(out);
@@ -65,11 +66,15 @@ namespace ams::lr {
     }
 
     void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) {
+        /* Remove any existing redirections for this program id. */
         this->EraseRedirection(program_id);
+        
+        /* Insert a new redirection into the list. */
         this->redirection_list.push_back(*(new Redirection(program_id, owner_id, path, flags)));
     }
 
     void LocationRedirector::SetRedirectionFlags(ncm::ProgramId program_id, u32 flags) {
+        /* Set the flags of a redirection with a matching program id. */
         for (auto &redirection : this->redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 redirection.SetFlags(flags);
@@ -78,7 +83,9 @@ namespace ams::lr {
         }
     }
 
-    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) {
+    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) 
+    {
+        /* Remove any redirections with a matching program id. */
         for (auto &redirection : this->redirection_list) {
             if (redirection.GetProgramId() == program_id) {
                 this->redirection_list.erase(this->redirection_list.iterator_to(redirection));
@@ -89,6 +96,7 @@ namespace ams::lr {
     }
 
     void LocationRedirector::ClearRedirections(u32 flags) {
+        /* Remove anyredirections with matching flags. */
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
             if ((it->GetFlags() & flags) == flags) {
                 auto old = it;
@@ -100,13 +108,15 @@ namespace ams::lr {
         }
     }
 
-    void LocationRedirector::ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids) {
+    void LocationRedirector::ClearRedirectionsExcludingOwners(const ncm::ProgramId* excluding_ids, size_t num_ids) {
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
+            /* Skip removal if the redirection has an excluded owner program id. */
             if (this->IsExcluded(it->GetOwnerProgramId(), excluding_ids, num_ids)) {
                 it++;
                 continue;
             }
 
+            /* Remove the redirection. */
             auto old = it;
             it = this->redirection_list.erase(it);
             delete std::addressof(*old);

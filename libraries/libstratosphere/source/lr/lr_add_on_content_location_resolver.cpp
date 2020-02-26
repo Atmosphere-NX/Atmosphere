@@ -26,27 +26,36 @@ namespace ams::ncm::impl {
 namespace ams::lr {
 
     Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) {
+        /* Find a storage that contains the given program id. */
         ncm::StorageId storage_id = ncm::StorageId::None;
         R_UNLESS(this->registered_storages.Find(&storage_id, id), lr::ResultAddOnContentNotFound());
 
+        /* Obtain a Content Meta Database for the storage id. */
         std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-        ncm::ContentId data_content_id;
         R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, storage_id));
+
+        /* Find the latest data content id for the given program id. */
+        ncm::ContentId data_content_id;
         R_TRY(content_meta_database->GetLatestData(&data_content_id, id));
 
+        /* Obtain a Content Storage for the storage id. */
         std::shared_ptr<ncm::IContentStorage> content_storage;
         R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
+
+        /* Get the path of the data content. */
         R_ABORT_UNLESS(content_storage->GetPath(out.GetPointer(), data_content_id));
 
         return ResultSuccess();
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) {
+        /* Register storage for the given program id. 2.0.0-8.1.0 did not require an owner application id. */
         R_UNLESS(this->registered_storages.Register(id, storage_id, ncm::ProgramId::Invalid), lr::ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 
     Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
+        /* Register storage for the given program id and owner application. */
         R_UNLESS(this->registered_storages.Register(id, storage_id, application_id), lr::ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
@@ -58,8 +67,10 @@ namespace ams::lr {
 
     Result AddOnContentLocationResolverInterface::RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids) {
         if (ids.GetSize() == 0) {
+            /* Clear all registered storages. */
             this->registered_storages.Clear();
         } else {
+            /* Clear all registered storages excluding the provided program ids. */
             this->registered_storages.ClearExcluding(ids.GetPointer(), ids.GetSize());
         }
 
@@ -67,6 +78,7 @@ namespace ams::lr {
     }
 
     Result AddOnContentLocationResolverInterface::UnregisterApplicationAddOnContent(ncm::ProgramId id) {
+        /* Remove entries belonging to the provided application. */
         this->registered_storages.UnregisterOwnerProgram(id);
         return ResultSuccess();
     }

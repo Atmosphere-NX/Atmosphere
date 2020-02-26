@@ -51,12 +51,14 @@ namespace ams::lr {
                 EraseProgramRedirectionForDebug                      = 19,
             };
         protected:
+            /* Location redirectors. */
             LocationRedirector program_redirector;
             LocationRedirector debug_program_redirector;
             LocationRedirector app_control_redirector;
             LocationRedirector html_docs_redirector;
             LocationRedirector legal_info_redirector;
         protected:
+            /* Helper functions. */
             void ClearRedirections(u32 flags = RedirectionFlags_None) {
                 this->program_redirector.ClearRedirections(flags);
                 this->debug_program_redirector.ClearRedirections(flags);
@@ -66,13 +68,14 @@ namespace ams::lr {
             }
 
             void ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids) {
-                this->program_redirector.ClearRedirections(excluding_ids, num_ids);
-                this->debug_program_redirector.ClearRedirections(excluding_ids, num_ids);
-                this->app_control_redirector.ClearRedirections(excluding_ids, num_ids);
-                this->html_docs_redirector.ClearRedirections(excluding_ids, num_ids);
-                this->legal_info_redirector.ClearRedirections(excluding_ids, num_ids);
+                this->program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                this->debug_program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                this->app_control_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                this->html_docs_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
+                this->legal_info_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
             }
         public:
+            /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) = 0;
             virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) = 0;

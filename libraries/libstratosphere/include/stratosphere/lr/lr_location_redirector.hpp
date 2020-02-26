@@ -37,13 +37,14 @@ namespace ams::lr {
             LocationRedirector() { /* ... */ }
             ~LocationRedirector() { this->ClearRedirections(); }
 
+            /* API. */
             bool FindRedirection(Path *out, ncm::ProgramId program_id) const;
             void SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags = RedirectionFlags_None);
             void SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags = RedirectionFlags_None);
             void SetRedirectionFlags(ncm::ProgramId program_id, u32 flags);
             void EraseRedirection(ncm::ProgramId program_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
-            void ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids);
+            void ClearRedirectionsExcludingOwners(const ncm::ProgramId* excluding_ids, size_t num_ids);
         private:
             inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId* excluding_ids, size_t num_ids) const {
                 for (size_t i = 0; i < num_ids; i++) {

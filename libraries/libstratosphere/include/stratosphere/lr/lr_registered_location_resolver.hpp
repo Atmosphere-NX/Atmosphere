@@ -42,17 +42,20 @@ namespace ams::lr {
                 RefreshExcluding                      = 9,
             };
         private:
+            /* Redirection and registered location storage. */
             LocationRedirector program_redirector;
             RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_program_locations;
             LocationRedirector html_docs_redirector;
             RegisteredLocations<ncm::ProgramId, MaxRegisteredLocations> registered_html_docs_locations;
         private:
+            /* Helper functions. */
             void ClearRedirections(u32 flags = RedirectionFlags_None);
             Result RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids);
         public:
             RegisteredLocationResolverInterface() : registered_program_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations), registered_html_docs_locations(hos::GetVersion() < hos::Version_900 ? 0x10 : MaxRegisteredLocations) { /* ... */ }
             ~RegisteredLocationResolverInterface();
 
+            /* Actual commands. */
             Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id);
             Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id);
             Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);

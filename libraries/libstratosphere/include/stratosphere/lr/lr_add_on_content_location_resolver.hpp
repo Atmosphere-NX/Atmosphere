@@ -31,10 +31,12 @@ namespace ams::lr {
                 UnregisterApplicationAddOnContent        = 4,
             };
         private:
+            /* Storage for RegisteredData entries by program id. */
             RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;
         public:
             AddOnContentLocationResolverInterface() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
 
+            /* Actual commands. */
             virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id);
             virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id);
             virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id);

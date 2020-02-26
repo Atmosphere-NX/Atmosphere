@@ -29,19 +29,24 @@ namespace ams::lr {
         this->ClearRedirections();
     }
 
+    /* Helper function. */
     void ContentLocationResolverInterface::GetContentStoragePath(Path* out, ncm::ContentId content_id) {
         R_ABORT_UNLESS(this->content_storage->GetPath(out, content_id));
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
+        /* Use a redirection if present. */
         R_UNLESS(!this->program_redirector.FindRedirection(out.GetPointer(), id), ResultSuccess());
-        ncm::ContentId program_content_id;
 
+        /* Find the latest program content for the program id. */
+        ncm::ContentId program_content_id;
         R_TRY_CATCH(this->content_meta_database->GetLatestProgram(&program_content_id, id)) {
             R_CONVERT(ncm::ResultContentMetaNotFound, lr::ResultProgramNotFound())
         } R_END_TRY_CATCH;
 
+        /* Obtain the content path. */
         this->GetContentStoragePath(out.GetPointer(), program_content_id);
+
         return ResultSuccess();
     }
 
@@ -61,10 +66,13 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) {
+        /* Find the latest data content for the program id. */
         ncm::ContentId data_content_id;
-
         R_TRY(this->content_meta_database->GetLatestData(&data_content_id, id));
+
+        /* Obtain the content path. */
         this->GetContentStoragePath(out.GetPointer(), data_content_id);
+
         return ResultSuccess();
     }
 
@@ -104,14 +112,19 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::Refresh() {
+        /* Obtain Content Meta Database and Content Storage objects for this resolver's storage. */
         std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
         std::shared_ptr<ncm::IContentStorage> content_storage;
-
         R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, this->storage_id));
         R_TRY(ncm::impl::OpenContentStorage(&content_storage, this->storage_id));
+
+        /* Store the acquired objects. */
         this->content_meta_database = std::move(content_meta_database);
         this->content_storage = std::move(content_storage);
+
+        /* Remove any existing redirections. */
         this->ClearRedirections();
+
         return ResultSuccess();
     }
 
@@ -131,7 +144,7 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) {
-        this->ClearRedirections(excluding_ids.GetPointer(), excluding_ids.GetSize());
+        this->ClearRedirectionsExcludingOwners(excluding_ids.GetPointer(), excluding_ids.GetSize());
         return ResultSuccess();
     }
 
@@ -156,8 +169,10 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverInterface::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
+        /* Use a redirection if present. */
         R_UNLESS(!this->debug_program_redirector.FindRedirection(out.GetPointer(), id), ResultSuccess());
 
+        /* Otherwise find the path for the program id. */
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
             R_CONVERT(ResultProgramNotFound, lr::ResultDebugProgramNotFound())
         } R_END_TRY_CATCH;

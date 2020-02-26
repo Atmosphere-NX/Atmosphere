@@ -23,10 +23,12 @@ namespace ams::lr {
 
     class LocationResolverManagerImpl final : public ILocationResolverManager {
         private:
-            ncm::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolverInterface>, 5> g_location_resolvers;
-            std::shared_ptr<RegisteredLocationResolverInterface> g_registered_location_resolver = nullptr;
-            std::shared_ptr<AddOnContentLocationResolverInterface> g_add_on_content_location_resolver = nullptr;
-            os::Mutex g_mutex;
+            /* Resolver storage. */
+            ncm::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolverInterface>, 5> location_resolvers;
+            std::shared_ptr<RegisteredLocationResolverInterface> registered_location_resolver = nullptr;
+            std::shared_ptr<AddOnContentLocationResolverInterface> add_on_content_location_resolver = nullptr;
+
+            os::Mutex mutex;
         public:
             /* Actual commands. */
             virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) override;

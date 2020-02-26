@@ -27,6 +27,7 @@ namespace ams::lr {
 
         static constexpr Path Encode(const char *p) {
             Path path = {};
+            /* Copy C string to path, terminating when a null byte is found. */
             for (size_t i = 0; i < sizeof(path) - 1; i++) {
                 path.str[i] = p[i];
                 if (p[i] == '\x00') {
@@ -37,6 +38,7 @@ namespace ams::lr {
         }
 
         constexpr inline size_t GetLength() const {
+            /* Determine length from the first null byte occurence. */
             size_t len = 0;
             for (size_t i = 0; i < sizeof(this->str) - 1 && this->str[i] != '\x00'; i++) {
                 len++;
@@ -45,6 +47,7 @@ namespace ams::lr {
         }
 
         constexpr inline bool IsValid() const {
+            /* Determine validity by presence of a terminating null byte. */
             for (size_t i = 0; i < sizeof(this->str); i++) {
                 if (this->str[i] == '\x00') {
                     return true;

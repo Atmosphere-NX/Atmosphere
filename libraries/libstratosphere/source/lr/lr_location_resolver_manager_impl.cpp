@@ -18,43 +18,52 @@
 namespace ams::lr {
 
     Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) {
-        std::scoped_lock lk(g_mutex);
-        auto resolver = g_location_resolvers.Find(storage_id);
+        std::scoped_lock lk(this->mutex);
+        /* Find an existing resolver. */
+        auto resolver = this->location_resolvers.Find(storage_id);
 
+        /* No existing resolver is present, create one. */
         if (!resolver) {
             if (storage_id == ncm::StorageId::Host) {
-                g_location_resolvers[storage_id] = std::make_shared<RedirectOnlyLocationResolverInterface>();
+                this->location_resolvers[storage_id] = std::make_shared<RedirectOnlyLocationResolverInterface>();
             } else {
                 auto content_resolver = std::make_shared<ContentLocationResolverInterface>(storage_id);
                 R_TRY(content_resolver->Refresh());
-                g_location_resolvers[storage_id] = std::move(content_resolver);
+                this->location_resolvers[storage_id] = std::move(content_resolver);
             }
-            resolver = g_location_resolvers.Find(storage_id);
+
+            /* Acquire the newly-created resolver. */
+            resolver = this->location_resolvers.Find(storage_id);
         }
 
+        /* Copy the output interface. */
         std::shared_ptr<ILocationResolverInterface> new_intf = *resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }
 
     Result LocationResolverManagerImpl::OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
-        std::scoped_lock lk(g_mutex);
+        std::scoped_lock lk(this->mutex);
 
-        if (!g_registered_location_resolver) {
-            g_registered_location_resolver = std::make_shared<RegisteredLocationResolverInterface>();
+        /* No existing resolver is present, create one. */
+        if (!this->registered_location_resolver) {
+            this->registered_location_resolver = std::make_shared<RegisteredLocationResolverInterface>();
         }
 
-        std::shared_ptr<RegisteredLocationResolverInterface> new_intf = g_registered_location_resolver;
+        /* Copy the output interface. */
+        std::shared_ptr<RegisteredLocationResolverInterface> new_intf = this->registered_location_resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }
 
     Result LocationResolverManagerImpl::RefreshLocationResolver(ncm::StorageId storage_id) {
-        std::scoped_lock lk(g_mutex);
-        auto resolver = g_location_resolvers.Find(storage_id);
+        std::scoped_lock lk(this->mutex);
 
+        /* Attempt to find an existing resolver. */
+        auto resolver = this->location_resolvers.Find(storage_id);
         R_UNLESS(resolver, lr::ResultUnknownStorageId());
 
+        /* Refresh the resolver. */
         if (storage_id != ncm::StorageId::Host) {
             (*resolver)->Refresh();
         }
@@ -63,13 +72,15 @@ namespace ams::lr {
     }
 
     Result LocationResolverManagerImpl::OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
-        std::scoped_lock lk(g_mutex);
+        std::scoped_lock lk(this->mutex);
 
-        if (!g_add_on_content_location_resolver) {
-            g_add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverInterface>();
+        /* No existing resolver is present, create one. */
+        if (!this->add_on_content_location_resolver) {
+            this->add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverInterface>();
         }
 
-        std::shared_ptr<AddOnContentLocationResolverInterface> new_intf = g_add_on_content_location_resolver;
+        /* Copy the output interface. */
+        std::shared_ptr<AddOnContentLocationResolverInterface> new_intf = this->add_on_content_location_resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }

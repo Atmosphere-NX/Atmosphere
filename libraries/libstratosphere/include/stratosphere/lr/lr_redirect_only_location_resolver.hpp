@@ -24,6 +24,7 @@ namespace ams::lr {
         public:
             ~RedirectOnlyLocationResolverInterface();
         public:
+            /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) override;
             virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) override;

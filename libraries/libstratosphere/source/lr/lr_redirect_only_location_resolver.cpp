@@ -18,6 +18,7 @@
 namespace ams::lr {
 
     RedirectOnlyLocationResolverInterface::~RedirectOnlyLocationResolverInterface() {
+        /* Ensure entries are deallocated */
         this->ClearRedirections();
     }
 
@@ -101,7 +102,7 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) {
-        this->ClearRedirections(excluding_ids.GetPointer(), excluding_ids.GetSize());
+        this->ClearRedirectionsExcludingOwners(excluding_ids.GetPointer(), excluding_ids.GetSize());
         return ResultSuccess();
     }
 
@@ -126,8 +127,10 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverInterface::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
+        /* Use a redirection if present. */
         R_UNLESS(!this->debug_program_redirector.FindRedirection(out.GetPointer(), id), ResultSuccess());
 
+        /* Otherwise find the path for the program id. */
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
             R_CONVERT(ResultProgramNotFound, lr::ResultDebugProgramNotFound())
         } R_END_TRY_CATCH;
