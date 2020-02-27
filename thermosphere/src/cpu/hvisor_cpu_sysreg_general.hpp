@@ -438,4 +438,11 @@ namespace ams::hvisor::cpu {
         PSR_SP_ELX          = BITL(0),
     };
 
-}
+    // cnt*_ctl flags
+    enum CntCtlFlags {
+        CNTCTL_ISTATUS      = BITL(2),
+        CNTCTL_IMASK        = BITL(1),
+        CNTCTL_ENABLE       = BITL(0),
+    };
+
+ }
