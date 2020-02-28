@@ -15,14 +15,24 @@
  */
 
 #pragma once
-#include <stratosphere/lr/lr_types.hpp>
-#include <stratosphere/lr/lr_i_location_resolver_interface.hpp>
+#include "lr_location_resolver_impl_base.hpp"
 
 namespace ams::lr {
 
-    class RedirectOnlyLocationResolverInterface : public ILocationResolverInterface {
+    class ContentLocationResolverImpl : public LocationResolverImplBase {
+        private:
+            ncm::StorageId storage_id;
+
+            /* Objects for this storage type. */
+            std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
+            std::shared_ptr<ncm::IContentStorage> content_storage;
         public:
-            ~RedirectOnlyLocationResolverInterface();
+            ContentLocationResolverImpl(ncm::StorageId storage_id) : storage_id(storage_id) { /* ... */ }
+
+            ~ContentLocationResolverImpl();
+        private:
+            /* Helper functions. */
+            void GetContentStoragePath(Path* out, ncm::ContentId content_id);
         public:
             /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;

@@ -16,6 +16,8 @@
 
 #pragma once
 #include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere/sf.hpp>
 
 namespace ams::ncm {
 

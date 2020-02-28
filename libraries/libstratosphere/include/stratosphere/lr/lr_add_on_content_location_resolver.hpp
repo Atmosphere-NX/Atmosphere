@@ -16,42 +16,60 @@
 
 #pragma once
 #include <stratosphere/lr/lr_types.hpp>
-#include <stratosphere/lr/lr_registered_data.hpp>
+#include <stratosphere/lr/lr_i_add_on_content_location_resolver.hpp>
 
 namespace ams::lr {
 
-    class AddOnContentLocationResolverInterface : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                ResolveAddOnContentPath                  = 0,
-                RegisterAddOnContentStorageDeprecated    = 1,
-                RegisterAddOnContentStorage              = 1,
-                UnregisterAllAddOnContentPath            = 2,
-                RefreshApplicationAddOnContent           = 3,
-                UnregisterApplicationAddOnContent        = 4,
-            };
+    class AddOnContentLocationResolver {
+        NON_COPYABLE(AddOnContentLocationResolver);
         private:
-            /* Storage for RegisteredData entries by program id. */
-            RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;
+            std::shared_ptr<IAddOnContentLocationResolver> interface;
         public:
-            AddOnContentLocationResolverInterface() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
+            AddOnContentLocationResolver() { /* ... */ }
+            explicit AddOnContentLocationResolver(std::shared_ptr<IAddOnContentLocationResolver> intf) : interface(std::move(intf)) { /* ... */ }
 
-            /* Actual commands. */
-            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id);
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id);
-            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id);
-            virtual Result UnregisterAllAddOnContentPath();
-            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids);
-            virtual Result UnregisterApplicationAddOnContent(ncm::ProgramId id);
+            AddOnContentLocationResolver(AddOnContentLocationResolver &&rhs) {
+                this->interface = std::move(rhs.interface);
+            }
+
+            AddOnContentLocationResolver &operator=(AddOnContentLocationResolver &&rhs) {
+                AddOnContentLocationResolver(std::move(rhs)).Swap(*this);
+                return *this;
+            }
+
+            void Swap(AddOnContentLocationResolver &rhs) {
+                std::swap(this->interface, rhs.interface);
+            }
         public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorageDeprecated, hos::Version_200, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorage,           hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(UnregisterAllAddOnContentPath,         hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(RefreshApplicationAddOnContent,        hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(UnregisterApplicationAddOnContent,     hos::Version_900),
-            };
+            /* Actual commands. */
+            Result ResolveAddOnContentPath(Path *out, ncm::ProgramId id) {
+                AMS_ASSERT(this->interface);
+                return this->interface->ResolveAddOnContentPath(out, id);
+            }
+
+            Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
+                AMS_ASSERT(this->interface);
+                if (hos::GetVersion() >= hos::Version_900) {
+                    return this->interface->RegisterAddOnContentStorage(storage_id, id, application_id);
+                } else {
+                    return this->interface->RegisterAddOnContentStorageDeprecated(storage_id, id);
+                }
+            }
+
+            Result UnregisterAllAddOnContentPath() {
+                AMS_ASSERT(this->interface);
+                return this->interface->UnregisterAllAddOnContentPath();
+            }
+
+            Result RefreshApplicationAddOnContent(const ncm::ProgramId *ids, size_t num_ids) {
+                AMS_ASSERT(this->interface);
+                return this->interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ProgramId>(ids, num_ids));
+            }
+
+            Result UnregisterApplicationAddOnContent(ncm::ProgramId id) {
+                AMS_ASSERT(this->interface);
+                return this->interface->UnregisterApplicationAddOnContent(id);
+            }
     };
 
 }

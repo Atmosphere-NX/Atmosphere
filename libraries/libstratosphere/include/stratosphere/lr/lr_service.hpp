@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,6 +15,21 @@
  */
 
 #pragma once
-#include <vapours.hpp>
 #include <stratosphere/lr/lr_types.hpp>
-#include <stratosphere/lr/lr_service.hpp>
+#include <stratosphere/lr/lr_location_resolver.hpp>
+#include <stratosphere/lr/lr_add_on_content_location_resolver.hpp>
+#include <stratosphere/lr/lr_registered_location_resolver.hpp>
+
+namespace ams::lr {
+
+    /* Management. */
+    void Initialize();
+    void Finalize();
+
+    /* Service API. */
+    Result OpenLocationResolver(LocationResolver *out, ncm::StorageId storage_id);
+    Result OpenRegisteredLocationResolver(RegisteredLocationResolver *out);
+    Result OpenAddOnContentLocationResolver(AddOnContentLocationResolver *out);
+    Result RefreshLocationResolver(ncm::StorageId storage_id);
+
+}

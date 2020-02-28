@@ -15,6 +15,7 @@
  */
 
 #include <stratosphere.hpp>
+#include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>
 
 #include "impl/ncm_content_manager.hpp"
 #include "ncm_content_manager_service.hpp"

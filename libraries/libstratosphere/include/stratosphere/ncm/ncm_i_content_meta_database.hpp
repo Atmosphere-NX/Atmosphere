@@ -16,7 +16,8 @@
 
 #pragma once
 #include <stratosphere/ncm/ncm_types.hpp>
-#include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
+#include <stratosphere/sf.hpp>
+#include <stratosphere/kvdb.hpp>
 
 namespace ams::ncm {
 

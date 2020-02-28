@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "lr_add_on_content_location_resolver_impl.hpp"
 
 /* TODO: Properly integrate NCM api into libstratosphere to avoid linker hack. */
 namespace ams::ncm::impl {
@@ -25,7 +26,7 @@ namespace ams::ncm::impl {
 
 namespace ams::lr {
 
-    Result AddOnContentLocationResolverInterface::ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) {
+    Result AddOnContentLocationResolverImpl::ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) {
         /* Find a storage that contains the given program id. */
         ncm::StorageId storage_id = ncm::StorageId::None;
         R_UNLESS(this->registered_storages.Find(&storage_id, id), lr::ResultAddOnContentNotFound());
@@ -48,24 +49,24 @@ namespace ams::lr {
         return ResultSuccess();
     }
 
-    Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) {
+    Result AddOnContentLocationResolverImpl::RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) {
         /* Register storage for the given program id. 2.0.0-8.1.0 did not require an owner application id. */
         R_UNLESS(this->registered_storages.Register(id, storage_id, ncm::ProgramId::Invalid), lr::ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 
-    Result AddOnContentLocationResolverInterface::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
+    Result AddOnContentLocationResolverImpl::RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
         /* Register storage for the given program id and owner application. */
         R_UNLESS(this->registered_storages.Register(id, storage_id, application_id), lr::ResultTooManyRegisteredPaths());
         return ResultSuccess();
     }
 
-    Result AddOnContentLocationResolverInterface::UnregisterAllAddOnContentPath() {
+    Result AddOnContentLocationResolverImpl::UnregisterAllAddOnContentPath() {
         this->registered_storages.Clear();
         return ResultSuccess();
     }
 
-    Result AddOnContentLocationResolverInterface::RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids) {
+    Result AddOnContentLocationResolverImpl::RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids) {
         if (ids.GetSize() == 0) {
             /* Clear all registered storages. */
             this->registered_storages.Clear();
@@ -77,7 +78,7 @@ namespace ams::lr {
         return ResultSuccess();
     }
 
-    Result AddOnContentLocationResolverInterface::UnregisterApplicationAddOnContent(ncm::ProgramId id) {
+    Result AddOnContentLocationResolverImpl::UnregisterApplicationAddOnContent(ncm::ProgramId id) {
         /* Remove entries belonging to the provided application. */
         this->registered_storages.UnregisterOwnerProgram(id);
         return ResultSuccess();

@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include <stratosphere/lr/lr_types.hpp>
+#include <stratosphere.hpp>
 
 namespace ams::lr {
 

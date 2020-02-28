@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "lr_location_redirector.hpp"
 
 namespace ams::lr {
 
@@ -68,7 +69,7 @@ namespace ams::lr {
     void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) {
         /* Remove any existing redirections for this program id. */
         this->EraseRedirection(program_id);
-        
+
         /* Insert a new redirection into the list. */
         this->redirection_list.push_back(*(new Redirection(program_id, owner_id, path, flags)));
     }
@@ -83,7 +84,7 @@ namespace ams::lr {
         }
     }
 
-    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id) 
+    void LocationRedirector::EraseRedirection(ncm::ProgramId program_id)
     {
         /* Remove any redirections with a matching program id. */
         for (auto &redirection : this->redirection_list) {

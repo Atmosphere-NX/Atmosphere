@@ -16,9 +16,9 @@
 
 #pragma once
 #include <stratosphere/lr/lr_types.hpp>
-#include <stratosphere/lr/lr_i_location_resolver_interface.hpp>
-#include <stratosphere/lr/lr_add_on_content_location_resolver.hpp>
-#include <stratosphere/lr/lr_registered_location_resolver.hpp>
+#include <stratosphere/lr/lr_i_location_resolver.hpp>
+#include <stratosphere/lr/lr_i_add_on_content_location_resolver.hpp>
+#include <stratosphere/lr/lr_i_registered_location_resolver.hpp>
 
 namespace ams::lr {
 
@@ -32,10 +32,10 @@ namespace ams::lr {
             };
         public:
             /* Actual commands. */
-            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) = 0;
-            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) = 0;
+            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) = 0;
+            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out) = 0;
             virtual Result RefreshLocationResolver(ncm::StorageId storage_id) = 0;
-            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) = 0;
+            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out) = 0;
     };
 
 }

@@ -14,10 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>
+#include "lr_content_location_resolver_impl.hpp"
+#include "lr_redirect_only_location_resolver_impl.hpp"
+#include "lr_add_on_content_location_resolver_impl.hpp"
+#include "lr_registered_location_resolver_impl.hpp"
 
 namespace ams::lr {
 
-    Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolverInterface>> out, ncm::StorageId storage_id) {
+    Result LocationResolverManagerImpl::OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
         /* Find an existing resolver. */
         auto resolver = this->location_resolvers.Find(storage_id);
@@ -25,9 +30,9 @@ namespace ams::lr {
         /* No existing resolver is present, create one. */
         if (!resolver) {
             if (storage_id == ncm::StorageId::Host) {
-                this->location_resolvers[storage_id] = std::make_shared<RedirectOnlyLocationResolverInterface>();
+                this->location_resolvers[storage_id] = std::make_shared<RedirectOnlyLocationResolverImpl>();
             } else {
-                auto content_resolver = std::make_shared<ContentLocationResolverInterface>(storage_id);
+                auto content_resolver = std::make_shared<ContentLocationResolverImpl>(storage_id);
                 R_TRY(content_resolver->Refresh());
                 this->location_resolvers[storage_id] = std::move(content_resolver);
             }
@@ -37,21 +42,21 @@ namespace ams::lr {
         }
 
         /* Copy the output interface. */
-        std::shared_ptr<ILocationResolverInterface> new_intf = *resolver;
+        std::shared_ptr<ILocationResolver> new_intf = *resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }
 
-    Result LocationResolverManagerImpl::OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<RegisteredLocationResolverInterface>> out) {
+    Result LocationResolverManagerImpl::OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out) {
         std::scoped_lock lk(this->mutex);
 
         /* No existing resolver is present, create one. */
         if (!this->registered_location_resolver) {
-            this->registered_location_resolver = std::make_shared<RegisteredLocationResolverInterface>();
+            this->registered_location_resolver = std::make_shared<RegisteredLocationResolverImpl>();
         }
 
         /* Copy the output interface. */
-        std::shared_ptr<RegisteredLocationResolverInterface> new_intf = this->registered_location_resolver;
+        std::shared_ptr<IRegisteredLocationResolver> new_intf = this->registered_location_resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }
@@ -71,16 +76,16 @@ namespace ams::lr {
         return ResultSuccess();
     }
 
-    Result LocationResolverManagerImpl::OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<AddOnContentLocationResolverInterface>> out) {
+    Result LocationResolverManagerImpl::OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out) {
         std::scoped_lock lk(this->mutex);
 
         /* No existing resolver is present, create one. */
         if (!this->add_on_content_location_resolver) {
-            this->add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverInterface>();
+            this->add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverImpl>();
         }
 
         /* Copy the output interface. */
-        std::shared_ptr<AddOnContentLocationResolverInterface> new_intf = this->add_on_content_location_resolver;
+        std::shared_ptr<IAddOnContentLocationResolver> new_intf = this->add_on_content_location_resolver;
         out.SetValue(std::move(new_intf));
         return ResultSuccess();
     }
