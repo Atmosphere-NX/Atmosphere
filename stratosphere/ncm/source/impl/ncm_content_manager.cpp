@@ -165,7 +165,7 @@ namespace ams::ncm::impl {
             return id != StorageId::None && id != StorageId::Any;
         }
 
-        inline Result FindContentStorageRoot(ContentStorageRoot **out, StorageId storage_id) {
+        Result FindContentStorageRoot(ContentStorageRoot **out, StorageId storage_id) {
             for (size_t i = 0; i < MaxContentStorageEntries; i++) {
                 ContentStorageRoot* root = &g_content_storage_roots[i];
 
@@ -183,7 +183,7 @@ namespace ams::ncm::impl {
             return FindContentStorageRoot(out, storage_id);
         }
 
-        inline Result FindContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
+        Result FindContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
             for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
                 ContentMetaDatabaseEntry* entry = &g_content_meta_entries[i];
 
@@ -199,6 +199,46 @@ namespace ams::ncm::impl {
         Result GetUniqueContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
             R_UNLESS(IsUniqueStorage(storage_id), ncm::ResultUnknownStorage());
             return FindContentMetaDatabaseEntry(out, storage_id);
+        }
+
+        inline Result GetContentStorageNotActiveResult(StorageId storage_id) {
+            switch (storage_id) {
+                case StorageId::GameCard:
+                    return ResultGameCardContentStorageNotActive();
+                case StorageId::BuiltInSystem:
+                    return ResultNandSystemContentStorageNotActive();
+                case StorageId::BuiltInUser:
+                    return ResultNandUserContentStorageNotActive();
+                case StorageId::SdCard:
+                    return ResultSdCardContentStorageNotActive();
+                default:
+                    return ResultUnknownContentStorageNotActive();
+            }
+        }
+
+        inline Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
+            switch (storage_id) {
+                case StorageId::GameCard:
+                    return ResultGameCardContentMetaDatabaseNotActive();
+                case StorageId::BuiltInSystem:
+                    return ResultNandSystemContentMetaDatabaseNotActive();
+                case StorageId::BuiltInUser:
+                    return ResultNandUserContentMetaDatabaseNotActive();
+                case StorageId::SdCard:
+                    return ResultSdCardContentMetaDatabaseNotActive();
+                default:
+                    return ResultUnknownContentMetaDatabaseNotActive();
+            }
+        }
+
+        Result EnsureAndMountSystemSaveData(const char *mount_name, const SaveDataMeta &save_meta) {
+            R_TRY_CATCH(fs::MountSystemSaveData(mount_name, save_meta.space_id, save_meta.id)) {
+                R_CATCH(ams::fs::ResultTargetNotFound) {
+                    R_TRY(fsCreate_SystemSaveData(save_meta.space_id, save_meta.id, save_meta.size, save_meta.journal_size, save_meta.flags));
+                    R_TRY(fs::MountSystemSaveData(mount_name, save_meta.space_id, save_meta.id));
+                }
+            } R_END_TRY_CATCH;
+            return ResultSuccess();
         }
 
     }
@@ -315,11 +355,9 @@ namespace ams::ncm::impl {
         char mount_root[128] = {0};
         strcpy(mount_root, mount_name.name);
         strcat(mount_root, strchr(root->root_path, ':'));
-        R_TRY(fs::MountContentStorage(mount_name.name, root->content_storage_id));
 
-        ON_SCOPE_EXIT {
-            fs::Unmount(mount_name.name);
-        };
+        R_TRY(fs::MountContentStorage(mount_name.name, root->content_storage_id));
+        ON_SCOPE_EXIT { fs::Unmount(mount_name.name); };
 
         R_TRY(fs::CheckContentStorageDirectoriesExist(mount_root));
 
@@ -334,30 +372,15 @@ namespace ams::ncm::impl {
         
         auto content_storage = root->content_storage;
 
-        if (!content_storage) {
+        if (hos::GetVersion() >= hos::Version_200) {
+            R_UNLESS(content_storage, GetContentStorageNotActiveResult(storage_id));
+        } else {
             /* 1.0.0 activates content storages as soon as they are opened. */
-            if (hos::GetVersion() == hos::Version_100) {
+            if (!content_storage) {
                 R_TRY(ActivateContentStorage(storage_id));
                 content_storage = root->content_storage;
-            } else {
-                switch (storage_id) {
-                    case StorageId::GameCard:
-                        return ResultGameCardContentStorageNotActive();
-
-                    case StorageId::BuiltInSystem:
-                        return ResultNandSystemContentStorageNotActive();
-
-                    case StorageId::BuiltInUser:
-                        return ResultNandUserContentStorageNotActive();
-
-                    case StorageId::SdCard:
-                        return ResultSdCardContentStorageNotActive();
-
-                    default:
-                        return ResultUnknownContentStorageNotActive();
-                }
             }
-        } 
+        }
 
         *out = std::move(content_storage);
         return ResultSuccess();
@@ -369,12 +392,14 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         ContentStorageRoot* root;
         R_TRY(FindContentStorageRoot(std::addressof(root), storage_id));
-        R_UNLESS(root->content_storage, ResultSuccess());
 
-        /* N doesn't bother checking the result of this */
-        root->content_storage->DisableForcibly();
-        fs::Unmount(root->mount_point);
-        root->content_storage = nullptr;
+        if (root->content_storage) {
+            /* N doesn't bother checking the result of this */
+            root->content_storage->DisableForcibly();
+            fs::Unmount(root->mount_point);
+            root->content_storage = nullptr;
+        }
+
         return ResultSuccess();
     }
 
@@ -391,15 +416,17 @@ namespace ams::ncm::impl {
             FsGameCardHandle gc_hnd;
             R_TRY(fs::GetGameCardHandle(&gc_hnd));
             R_TRY(fs::MountGameCardPartition(root->mount_point, gc_hnd, FsGameCardPartition_Secure));
-            auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_point); };
-            auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
-            
-            R_TRY(content_storage->Initialize(root->root_path, path::MakeContentPathFlat));
-            root->content_storage = std::move(content_storage);
-            mount_guard.Cancel();
         } else {
             R_TRY(fs::MountContentStorage(root->mount_point, root->content_storage_id));
-            auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_point); };
+        }
+
+        auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_point); };
+
+        if (storage_id == StorageId::GameCard) {
+            auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
+            R_TRY(content_storage->Initialize(root->root_path, path::MakeContentPathFlat));
+            root->content_storage = std::move(content_storage);
+        } else {
             MakeContentPathFunc content_path_func = nullptr;
             MakePlaceHolderPathFunc placeholder_path_func = nullptr;
             bool delay_flush = false;
@@ -410,7 +437,6 @@ namespace ams::ncm::impl {
                     content_path_func = path::MakeContentPathFlat;
                     placeholder_path_func = path::MakePlaceHolderPathFlat;
                     break;
-
                 case StorageId::SdCard:
                     delay_flush = true;
                 default:
@@ -421,9 +447,9 @@ namespace ams::ncm::impl {
 
             R_TRY(content_storage->Initialize(root->root_path, content_path_func, placeholder_path_func, delay_flush, &g_rights_id_cache));
             root->content_storage = std::move(content_storage);
-            mount_guard.Cancel();
         }
 
+        mount_guard.Cancel();
         return ResultSuccess();
     }
 
@@ -452,16 +478,8 @@ namespace ams::ncm::impl {
         /* N doesn't bother checking the result of this. */
         fsDisableAutoSaveDataCreation();
 
-        R_TRY_CATCH(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id)) {
-            R_CATCH(ams::fs::ResultTargetNotFound) {
-                R_TRY(fsCreate_SystemSaveData(entry->save_meta.space_id, entry->save_meta.id, entry->save_meta.size, entry->save_meta.journal_size, entry->save_meta.flags));
-                R_TRY(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
-            }
-        } R_END_TRY_CATCH;
-
-        ON_SCOPE_EXIT {
-            fs::Unmount(entry->mount_point);
-        };
+        R_TRY(EnsureAndMountSystemSaveData(entry->mount_point, entry->save_meta));
+        ON_SCOPE_EXIT { fs::Unmount(entry->mount_point); };
 
         R_TRY(fs::EnsureDirectoryRecursively(entry->meta_path));
         R_TRY(fsdevCommitDevice(entry->mount_point));
@@ -476,17 +494,12 @@ namespace ams::ncm::impl {
         ContentMetaDatabaseEntry* entry;
         R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
 
-        bool mounted_save_data = false;
+        auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
         if (!entry->content_meta_database) {
             R_TRY(fs::MountSystemSaveData(entry->mount_point, entry->save_meta.space_id, entry->save_meta.id));
-            mounted_save_data = true;
+        } else {
+            mount_guard.Cancel();
         }
-
-        ON_SCOPE_EXIT {
-            if (mounted_save_data) {
-                fs::Unmount(entry->mount_point);
-            }
-        };
 
         bool has_meta_path = false;
         R_TRY(fs::HasDirectory(&has_meta_path, entry->meta_path));
@@ -503,30 +516,15 @@ namespace ams::ncm::impl {
         
         auto content_meta_db = entry->content_meta_database;
 
-        if (!content_meta_db) {
-            /* 1.0.0 activates content meta dbs as soon as they are opened. */
-            if (hos::GetVersion() == hos::Version_100) {
+        if (hos::GetVersion() >= hos::Version_200) {
+            R_UNLESS(content_meta_db, GetContentMetaDatabaseNotActiveResult(storage_id));
+        } else {
+            /* 1.0.0 activates content meta databases as soon as they are opened. */
+            if (!content_meta_db) {
                 R_TRY(ActivateContentMetaDatabase(storage_id));
                 content_meta_db = entry->content_meta_database;
-            } else {
-                switch (storage_id) {
-                    case StorageId::GameCard:
-                        return ResultGameCardContentMetaDatabaseNotActive();
-
-                    case StorageId::BuiltInSystem:
-                        return ResultNandSystemContentMetaDatabaseNotActive();
-
-                    case StorageId::BuiltInUser:
-                        return ResultNandUserContentMetaDatabaseNotActive();
-
-                    case StorageId::SdCard:
-                        return ResultSdCardContentMetaDatabaseNotActive();
-
-                    default:
-                        return ResultUnknownContentMetaDatabaseNotActive();
-                }
             }
-        } 
+        }
 
         *out = std::move(content_meta_db);
         return ResultSuccess();
@@ -540,17 +538,19 @@ namespace ams::ncm::impl {
         R_TRY(FindContentMetaDatabaseEntry(&entry, storage_id));
         
         auto content_meta_db = entry->content_meta_database;
-        R_UNLESS(content_meta_db, ResultSuccess());
 
-        /* N doesn't bother checking the result of this */
-        content_meta_db->DisableForcibly();
+        if (content_meta_db) {
+            /* N doesn't bother checking the result of this */
+            content_meta_db->DisableForcibly();
 
-        if (storage_id != StorageId::GameCard) {
-            fs::Unmount(entry->mount_point);
+            if (storage_id != StorageId::GameCard) {
+                fs::Unmount(entry->mount_point);
+            }
+
+            entry->content_meta_database = nullptr;
+            entry->kvs = std::nullopt;
         }
 
-        entry->content_meta_database = nullptr;
-        entry->kvs.reset();
         return ResultSuccess();
     }
 
@@ -581,15 +581,12 @@ namespace ams::ncm::impl {
             auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
             R_TRY(entry->kvs->Initialize(entry->meta_path, entry->max_content_metas));
             R_TRY(entry->kvs->Load());
-
-            auto content_meta_database = std::make_shared<ContentMetaDatabaseInterface>(&*entry->kvs, entry->mount_point);
-            entry->content_meta_database = std::move(content_meta_database);
+            entry->content_meta_database = std::make_shared<ContentMetaDatabaseInterface>(std::addressof(*entry->kvs), entry->mount_point);
             mount_guard.Cancel();
         } else {
             R_TRY(entry->kvs->Initialize(entry->max_content_metas));
             R_TRY(entry->kvs->Load());
-            auto content_meta_database = std::make_shared<OnMemoryContentMetaDatabaseInterface>(&*entry->kvs);
-            entry->content_meta_database = std::move(content_meta_database);
+            entry->content_meta_database = std::make_shared<OnMemoryContentMetaDatabaseInterface>(std::addressof(*entry->kvs));
         }
 
         return ResultSuccess();
@@ -602,15 +599,15 @@ namespace ams::ncm::impl {
         R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
 
         /* Already inactivated. */
-        R_UNLESS(entry->content_meta_database != nullptr, ResultSuccess());
+        if (entry->content_meta_database != nullptr) {
+            entry->content_meta_database->DisableForcibly();
+            entry->content_meta_database = nullptr;
+            /* This should lead to Index's destructor performing cleanup for us. */
+            entry->kvs = std::nullopt;
 
-        entry->content_meta_database->DisableForcibly();
-        entry->content_meta_database = nullptr;
-        /* This should lead to Index's destructor performing cleanup for us. */
-        entry->kvs.reset();
-
-        if (storage_id != StorageId::GameCard) {
-            fs::Unmount(entry->mount_point);
+            if (storage_id != StorageId::GameCard) {
+                fs::Unmount(entry->mount_point);
+            }
         }
 
         return ResultSuccess();
