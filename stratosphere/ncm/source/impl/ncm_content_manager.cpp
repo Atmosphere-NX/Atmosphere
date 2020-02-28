@@ -52,7 +52,7 @@ namespace ams::ncm::impl {
                 this->content_storage_id = content_storage_id;
                 this->content_storage = nullptr;
                 MountName mount_name = fs::CreateUniqueMountName();
-                strcpy(this->mount_point, mount_name.name);
+                std::strcpy(this->mount_point, mount_name.name);
                 snprintf(this->root_path, 0x80, "%s:/", this->mount_point);
             }
         };
@@ -67,9 +67,9 @@ namespace ams::ncm::impl {
 
         static_assert(sizeof(SaveDataMeta) == 0x20, "SaveDataMeta definition!");
 
-        struct ContentMetaDBEntry {
-            NON_COPYABLE(ContentMetaDBEntry);
-            NON_MOVEABLE(ContentMetaDBEntry);
+        struct ContentMetaDatabaseEntry {
+            NON_COPYABLE(ContentMetaDatabaseEntry);
+            NON_MOVEABLE(ContentMetaDatabaseEntry);
 
             char mount_point[16];
             char meta_path[128];
@@ -79,7 +79,7 @@ namespace ams::ncm::impl {
             std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
             u32 max_content_metas;
 
-            inline ContentMetaDBEntry() : storage_id(StorageId::None), save_meta({0}), 
+            inline ContentMetaDatabaseEntry() : storage_id(StorageId::None), save_meta({0}), 
                 content_meta_database(nullptr), kvs(std::nullopt), max_content_metas(0) {
                 mount_point[0] = '\0';
                 meta_path[0] = '\0';
@@ -90,7 +90,7 @@ namespace ams::ncm::impl {
                 this->max_content_metas = max_content_metas;
                 this->save_meta = save_meta;
                 this->content_meta_database = nullptr;
-                this->kvs.reset();
+                this->kvs = std::nullopt;
                 MountName mount_name = fs::CreateUniqueMountName();
                 strcpy(this->mount_point, mount_name.name);
                 this->mount_point[0] = '#';
@@ -102,18 +102,18 @@ namespace ams::ncm::impl {
                 this->storage_id = StorageId::GameCard;
                 this->max_content_metas = max_content_metas;
                 this->content_meta_database = nullptr;
-                this->kvs.reset();
+                this->kvs = std::nullopt;
                 return ResultSuccess();
             }
         };
 
         constexpr size_t MaxContentStorageEntries = 8;
-        constexpr size_t MaxContentMetaDBEntries = 8;
+        constexpr size_t MaxContentMetaDatabaseEntries = 8;
 
         os::Mutex g_mutex;
         bool g_initialized = false;
         ContentStorageEntry g_content_storage_entries[MaxContentStorageEntries];
-        ContentMetaDBEntry g_content_meta_entries[MaxContentMetaDBEntries];
+        ContentMetaDatabaseEntry g_content_meta_entries[MaxContentMetaDatabaseEntries];
         u32 g_num_content_storage_entries;
         u32 g_num_content_meta_entries;
         RightsIdCache g_rights_id_cache;
@@ -130,9 +130,9 @@ namespace ams::ncm::impl {
             return nullptr;
         }
 
-        ContentMetaDBEntry* FindContentMetaDBEntry(StorageId storage_id) {
-            for (size_t i = 0; i < MaxContentMetaDBEntries; i++) {
-                ContentMetaDBEntry* entry = &g_content_meta_entries[i];
+        ContentMetaDatabaseEntry* FindContentMetaDatabaseEntry(StorageId storage_id) {
+            for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
+                ContentMetaDatabaseEntry* entry = &g_content_meta_entries[i];
 
                 if (entry->storage_id == storage_id) {
                     return entry;
@@ -157,8 +157,8 @@ namespace ams::ncm::impl {
             entry->storage_id = StorageId::None;
         }
 
-        for (size_t i = 0; i < MaxContentMetaDBEntries; i++) {
-            ContentMetaDBEntry* entry = &g_content_meta_entries[i];
+        for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
+            ContentMetaDatabaseEntry* entry = &g_content_meta_entries[i];
             entry->storage_id = StorageId::None;
         }
 
@@ -261,14 +261,14 @@ namespace ams::ncm::impl {
                 InactivateContentStorage(entry->storage_id);
             }
 
-            for (size_t i = 0; i < MaxContentMetaDBEntries; i++) {
-                ContentMetaDBEntry* entry = &g_content_meta_entries[i];
+            for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
+                ContentMetaDatabaseEntry* entry = &g_content_meta_entries[i];
                 InactivateContentMetaDatabase(entry->storage_id);
             }
         }
 
-        for (size_t i = 0; i < MaxContentMetaDBEntries; i++) {
-            ContentMetaDBEntry* entry = &g_content_meta_entries[i];
+        for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
+            ContentMetaDatabaseEntry* entry = &g_content_meta_entries[i];
             entry->kvs.reset();
         }
 
@@ -453,7 +453,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::GameCard, ncm::ResultUnknownStorage());
         R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
 
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         /* N doesn't bother checking the result of this. */
@@ -483,7 +483,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
 
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         bool mounted_save_data = false;
@@ -511,7 +511,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
         
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
@@ -550,7 +550,7 @@ namespace ams::ncm::impl {
 
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
         
         std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
@@ -574,7 +574,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
 
         R_TRY(fsDeleteSaveDataFileSystemBySaveDataSpaceId(entry->save_meta.space_id, entry->save_meta.id));
@@ -587,7 +587,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
         /* Already activated. */
         R_UNLESS(entry->content_meta_database == nullptr, ResultSuccess());
@@ -620,7 +620,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
         
-        ContentMetaDBEntry* entry = FindContentMetaDBEntry(storage_id);
+        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
         R_UNLESS(entry, ncm::ResultUnknownStorage());
         /* Already inactivated. */
         R_UNLESS(entry->content_meta_database != nullptr, ResultSuccess());

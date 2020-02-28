@@ -60,11 +60,8 @@ namespace ams::ncm {
 
             Value &operator[](const Key &key) {
                 /* Try to find an existing value. */
-                {
-                    Value *value = this->Find(key);
-                    if (value) {
-                        return *value;
-                    }
+                if (Value *value = this->Find(key); value != nullptr) { 
+                    return *value;
                 }
 
                 /* Reference a new value. */

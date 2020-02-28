@@ -58,12 +58,13 @@ namespace ams::ncm {
             IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) :
                 kvs(kvs), disabled(false)
             {
+                /* ... */
             }
 
             IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) :
                 IContentMetaDatabase(kvs)
             {
-                strcpy(this->mount_name, mount_name);
+                std::strcpy(this->mount_name, mount_name);
             }
         public:
             /* Actual commands. */
