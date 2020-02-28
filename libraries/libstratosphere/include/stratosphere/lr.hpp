@@ -17,4 +17,4 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/lr/lr_types.hpp>
-#include <stratosphere/lr/lr_service.hpp>
+#include <stratosphere/lr/lr_api.hpp>
