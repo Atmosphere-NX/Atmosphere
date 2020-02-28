@@ -31,9 +31,9 @@ namespace ams::ncm::impl {
 
     namespace {
 
-        struct ContentStorageEntry {
-            NON_COPYABLE(ContentStorageEntry);
-            NON_MOVEABLE(ContentStorageEntry);
+        struct ContentStorageRoot {
+            NON_COPYABLE(ContentStorageRoot);
+            NON_MOVEABLE(ContentStorageRoot);
 
             char mount_point[16];
             char root_path[128];
@@ -41,7 +41,7 @@ namespace ams::ncm::impl {
             FsContentStorageId content_storage_id;
             std::shared_ptr<IContentStorage> content_storage;
 
-            inline ContentStorageEntry() : storage_id(StorageId::None),
+            inline ContentStorageRoot() : storage_id(StorageId::None),
                 content_storage_id(FsContentStorageId_System), content_storage(nullptr) {
                 mount_point[0] = '\0';
                 root_path[0] = '\0';
@@ -155,34 +155,50 @@ namespace ams::ncm::impl {
 
         os::Mutex g_mutex;
         bool g_initialized = false;
-        ContentStorageEntry g_content_storage_entries[MaxContentStorageEntries];
+        ContentStorageRoot g_content_storage_roots[MaxContentStorageEntries];
         ContentMetaDatabaseEntry g_content_meta_entries[MaxContentMetaDatabaseEntries];
         u32 g_num_content_storage_entries;
         u32 g_num_content_meta_entries;
         RightsIdCache g_rights_id_cache;
 
-        ContentStorageEntry* FindContentStorageEntry(StorageId storage_id) {
-            for (size_t i = 0; i < MaxContentStorageEntries; i++) {
-                ContentStorageEntry* entry = &g_content_storage_entries[i];
+        constexpr inline bool IsUniqueStorage(StorageId id) {
+            return id != StorageId::None && id != StorageId::Any;
+        }
 
-                if (entry->storage_id == storage_id) {
-                    return entry;
+        inline Result FindContentStorageRoot(ContentStorageRoot **out, StorageId storage_id) {
+            for (size_t i = 0; i < MaxContentStorageEntries; i++) {
+                ContentStorageRoot* root = &g_content_storage_roots[i];
+
+                if (root->storage_id == storage_id) {
+                    *out = root;
+                    return ResultSuccess();
                 }
             }
 
-            return nullptr;
+            return ncm::ResultUnknownStorage();
         }
 
-        ContentMetaDatabaseEntry* FindContentMetaDatabaseEntry(StorageId storage_id) {
+        Result GetUniqueContentStorageRoot(ContentStorageRoot **out, StorageId storage_id) {
+            R_UNLESS(IsUniqueStorage(storage_id), ncm::ResultUnknownStorage());
+            return FindContentStorageRoot(out, storage_id);
+        }
+
+        inline Result FindContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
             for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
                 ContentMetaDatabaseEntry* entry = &g_content_meta_entries[i];
 
                 if (entry->storage_id == storage_id) {
-                    return entry;
+                    *out = entry;
+                    return ResultSuccess();
                 }
             }
 
-            return nullptr;
+            return ncm::ResultUnknownStorage();
+        }
+
+        Result GetUniqueContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
+            R_UNLESS(IsUniqueStorage(storage_id), ncm::ResultUnknownStorage());
+            return FindContentMetaDatabaseEntry(out, storage_id);
         }
 
     }
@@ -194,7 +210,7 @@ namespace ams::ncm::impl {
         R_UNLESS(!g_initialized, ResultSuccess());
 
         for (size_t i = 0; i < MaxContentStorageEntries; i++) {
-            ContentStorageEntry* entry = &g_content_storage_entries[i];
+            ContentStorageRoot* entry = &g_content_storage_roots[i];
             entry->storage_id = StorageId::None;
         }
 
@@ -204,7 +220,7 @@ namespace ams::ncm::impl {
         }
 
         /* First, setup the BuiltInSystem storage entry. */
-        g_content_storage_entries[g_num_content_storage_entries++].Initialize(StorageId::BuiltInSystem, FsContentStorageId_System);
+        g_content_storage_roots[g_num_content_storage_entries++].Initialize(StorageId::BuiltInSystem, FsContentStorageId_System);
 
         if (R_FAILED(VerifyContentStorage(StorageId::BuiltInSystem))) {
             R_TRY(CreateContentStorage(StorageId::BuiltInSystem));
@@ -229,19 +245,19 @@ namespace ams::ncm::impl {
         R_TRY(ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
         /* Now for BuiltInUser's content storage and content meta entries. */
-        g_content_storage_entries[g_num_content_storage_entries++].Initialize(StorageId::BuiltInUser, FsContentStorageId_User);
+        g_content_storage_roots[g_num_content_storage_entries++].Initialize(StorageId::BuiltInUser, FsContentStorageId_User);
         R_TRY(g_content_meta_entries[g_num_content_meta_entries++].Initialize(StorageId::BuiltInUser, BuiltInUserSaveDataMeta, MaxBuiltInUserContentMetaCount));
 
         /* Beyond this point N no longer appears to bother */
         /* incrementing the count for content storage entries or content meta entries. */
 
         /* Next SdCard's content storage and content meta entries. */
-        g_content_storage_entries[2].Initialize(StorageId::SdCard, FsContentStorageId_SdCard);
+        g_content_storage_roots[2].Initialize(StorageId::SdCard, FsContentStorageId_SdCard);
         R_TRY(g_content_meta_entries[2].Initialize(StorageId::SdCard, SdCardSaveDataMeta, MaxSdCardContentMetaCount));
 
         /* GameCard's content storage and content meta entries. */
         /* N doesn't set a content storage id for game cards, so we'll just use 0 (System). */
-        g_content_storage_entries[3].Initialize(StorageId::GameCard, FsContentStorageId_System);
+        g_content_storage_roots[3].Initialize(StorageId::GameCard, FsContentStorageId_System);
         R_TRY(g_content_meta_entries[3].InitializeGameCard(0x800));
 
         g_initialized = true;
@@ -253,7 +269,7 @@ namespace ams::ncm::impl {
             std::scoped_lock lk(g_mutex);
 
             for (size_t i = 0; i < MaxContentStorageEntries; i++) {
-                ContentStorageEntry* entry = &g_content_storage_entries[i];
+                ContentStorageRoot* entry = &g_content_storage_roots[i];
                 InactivateContentStorage(entry->storage_id);
             }
 
@@ -269,7 +285,7 @@ namespace ams::ncm::impl {
         }
 
         for (size_t i = 0; i < MaxContentStorageEntries; i++) {
-            ContentStorageEntry* entry = &g_content_storage_entries[i];
+            ContentStorageRoot* entry = &g_content_storage_roots[i];
             entry->content_storage = nullptr;
         }
     }
@@ -277,19 +293,14 @@ namespace ams::ncm::impl {
     Result CreateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
-        R_TRY(fs::MountContentStorage(entry->mount_point, entry->content_storage_id));
+        ContentStorageRoot* root;
+        R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
 
-        ON_SCOPE_EXIT {
-            fs::Unmount(entry->mount_point);
-        };
+        R_TRY(fs::MountContentStorage(root->mount_point, root->content_storage_id));
+        ON_SCOPE_EXIT { fs::Unmount(root->mount_point); };
 
-        R_TRY(fs::EnsureDirectoryRecursively(entry->root_path));
-        R_TRY(fs::EnsureContentAndPlaceHolderRoot(entry->root_path));
+        R_TRY(fs::EnsureDirectoryRecursively(root->root_path));
+        R_TRY(fs::EnsureContentAndPlaceHolderRoot(root->root_path));
 
         return ResultSuccess();
     }
@@ -297,17 +308,14 @@ namespace ams::ncm::impl {
     Result VerifyContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentStorageRoot* root;
+        R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
 
         MountName mount_name = fs::CreateUniqueMountName();
         char mount_root[128] = {0};
         strcpy(mount_root, mount_name.name);
-        strcat(mount_root, strchr(entry->root_path, ':'));
-        R_TRY(fs::MountContentStorage(mount_name.name, entry->content_storage_id));
+        strcat(mount_root, strchr(root->root_path, ':'));
+        R_TRY(fs::MountContentStorage(mount_name.name, root->content_storage_id));
 
         ON_SCOPE_EXIT {
             fs::Unmount(mount_name.name);
@@ -321,19 +329,16 @@ namespace ams::ncm::impl {
     Result OpenContentStorage(std::shared_ptr<IContentStorage>* out, StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
+        ContentStorageRoot* root;
+        R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
         
-        ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
-        
-        auto content_storage = entry->content_storage;
+        auto content_storage = root->content_storage;
 
         if (!content_storage) {
             /* 1.0.0 activates content storages as soon as they are opened. */
             if (hos::GetVersion() == hos::Version_100) {
                 R_TRY(ActivateContentStorage(storage_id));
-                content_storage = entry->content_storage;
+                content_storage = root->content_storage;
             } else {
                 switch (storage_id) {
                     case StorageId::GameCard:
@@ -362,42 +367,39 @@ namespace ams::ncm::impl {
         std::scoped_lock lk(g_mutex);
 
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        
-        ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
-        R_UNLESS(entry->content_storage, ResultSuccess());
+        ContentStorageRoot* root;
+        R_TRY(FindContentStorageRoot(std::addressof(root), storage_id));
+        R_UNLESS(root->content_storage, ResultSuccess());
 
         /* N doesn't bother checking the result of this */
-        entry->content_storage->DisableForcibly();
-        fs::Unmount(entry->mount_point);
-        entry->content_storage = nullptr;
+        root->content_storage->DisableForcibly();
+        fs::Unmount(root->mount_point);
+        root->content_storage = nullptr;
         return ResultSuccess();
     }
 
     Result ActivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentStorageRoot* root;
+        R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
+
         /* Already activated. */
-        R_UNLESS(entry->content_storage == nullptr, ResultSuccess());
+        R_UNLESS(root->content_storage == nullptr, ResultSuccess());
 
         if (storage_id == StorageId::GameCard) {
             FsGameCardHandle gc_hnd;
             R_TRY(fs::GetGameCardHandle(&gc_hnd));
-            R_TRY(fs::MountGameCardPartition(entry->mount_point, gc_hnd, FsGameCardPartition_Secure));
-            auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
+            R_TRY(fs::MountGameCardPartition(root->mount_point, gc_hnd, FsGameCardPartition_Secure));
+            auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_point); };
             auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
             
-            R_TRY(content_storage->Initialize(entry->root_path, path::MakeContentPathFlat));
-            entry->content_storage = std::move(content_storage);
+            R_TRY(content_storage->Initialize(root->root_path, path::MakeContentPathFlat));
+            root->content_storage = std::move(content_storage);
             mount_guard.Cancel();
         } else {
-            R_TRY(fs::MountContentStorage(entry->mount_point, entry->content_storage_id));
-            auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
+            R_TRY(fs::MountContentStorage(root->mount_point, root->content_storage_id));
+            auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_point); };
             MakeContentPathFunc content_path_func = nullptr;
             MakePlaceHolderPathFunc placeholder_path_func = nullptr;
             bool delay_flush = false;
@@ -417,8 +419,8 @@ namespace ams::ncm::impl {
                     break;
             }
 
-            R_TRY(content_storage->Initialize(entry->root_path, content_path_func, placeholder_path_func, delay_flush, &g_rights_id_cache));
-            entry->content_storage = std::move(content_storage);
+            R_TRY(content_storage->Initialize(root->root_path, content_path_func, placeholder_path_func, delay_flush, &g_rights_id_cache));
+            root->content_storage = std::move(content_storage);
             mount_guard.Cancel();
         }
 
@@ -428,29 +430,24 @@ namespace ams::ncm::impl {
     Result InactivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentStorageEntry* entry = FindContentStorageEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
-        /* Already inactivated. */
-        R_UNLESS(entry->content_storage != nullptr, ResultSuccess());
+        ContentStorageRoot* root;
+        R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
 
-        entry->content_storage->DisableForcibly();
-        entry->content_storage = nullptr;
-        fs::Unmount(entry->mount_point);
+        /* Already inactivated. */
+        R_UNLESS(root->content_storage != nullptr, ResultSuccess());
+
+        root->content_storage->DisableForcibly();
+        root->content_storage = nullptr;
+        fs::Unmount(root->mount_point);
         return ResultSuccess();
     }
 
     Result CreateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         R_UNLESS(storage_id != StorageId::GameCard, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
 
         /* N doesn't bother checking the result of this. */
         fsDisableAutoSaveDataCreation();
@@ -476,11 +473,8 @@ namespace ams::ncm::impl {
         std::scoped_lock lk(g_mutex);
 
         R_UNLESS(storage_id != StorageId::GameCard, ResultSuccess());
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
 
         bool mounted_save_data = false;
         if (!entry->content_meta_database) {
@@ -504,13 +498,10 @@ namespace ams::ncm::impl {
     Result OpenContentMetaDatabase(std::shared_ptr<IContentMetaDatabase>* out, StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
         
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
-        
-        std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
+        auto content_meta_db = entry->content_meta_database;
 
         if (!content_meta_db) {
             /* 1.0.0 activates content meta dbs as soon as they are opened. */
@@ -545,11 +536,10 @@ namespace ams::ncm::impl {
         std::scoped_lock lk(g_mutex);
 
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(FindContentMetaDatabaseEntry(&entry, storage_id));
         
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
-        
-        std::shared_ptr<IContentMetaDatabase> content_meta_db = entry->content_meta_database;
+        auto content_meta_db = entry->content_meta_database;
         R_UNLESS(content_meta_db, ResultSuccess());
 
         /* N doesn't bother checking the result of this */
@@ -567,11 +557,8 @@ namespace ams::ncm::impl {
     Result CleanupContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
 
         R_TRY(fsDeleteSaveDataFileSystemBySaveDataSpaceId(entry->save_meta.space_id, entry->save_meta.id));
         return ResultSuccess();
@@ -580,11 +567,9 @@ namespace ams::ncm::impl {
     Result ActivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
+
         /* Already activated. */
         R_UNLESS(entry->content_meta_database == nullptr, ResultSuccess());
 
@@ -613,11 +598,9 @@ namespace ams::ncm::impl {
     Result InactivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(g_mutex);
 
-        R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
-        R_UNLESS(static_cast<u8>(storage_id) != 6, ncm::ResultUnknownStorage());
-        
-        ContentMetaDatabaseEntry* entry = FindContentMetaDatabaseEntry(storage_id);
-        R_UNLESS(entry, ncm::ResultUnknownStorage());
+        ContentMetaDatabaseEntry* entry;
+        R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
+
         /* Already inactivated. */
         R_UNLESS(entry->content_meta_database != nullptr, ResultSuccess());
 
