@@ -67,6 +67,45 @@ namespace ams::ncm::impl {
 
         static_assert(sizeof(SaveDataMeta) == 0x20, "SaveDataMeta definition!");
 
+        constexpr u64 BuiltInSystemSaveDataId             = 0x8000000000000120;
+        constexpr u64 BuiltInSystemSaveDataSize           = 0x6c000;
+        constexpr u64 BuiltInSystemSaveDataJournalSize    = 0x6c000;
+        constexpr u32 BuiltInSystemSaveDataFlags          = FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment;
+        
+        constexpr SaveDataMeta BuiltInSystemSaveDataMeta = {
+            .id              = BuiltInSystemSaveDataId,
+            .size            = BuiltInSystemSaveDataSize,
+            .journal_size    = BuiltInSystemSaveDataJournalSize,
+            .flags           = BuiltInSystemSaveDataFlags,
+            .space_id        = FsSaveDataSpaceId_System
+        };
+
+        constexpr u64 BuiltInUserSaveDataId             = 0x8000000000000121;
+        constexpr u64 BuiltInUserSaveDataSize           = 0x29e000;
+        constexpr u64 BuiltInUserSaveDataJournalSize    = 0x29e000;
+        constexpr u32 BuiltInUserSaveDataFlags          = 0;
+
+        constexpr SaveDataMeta BuiltInUserSaveDataMeta = {
+            .id              = BuiltInUserSaveDataId,
+            .size            = BuiltInUserSaveDataSize,
+            .journal_size    = BuiltInUserSaveDataJournalSize,
+            .flags           = BuiltInUserSaveDataFlags,
+            .space_id        = FsSaveDataSpaceId_System
+        };
+
+        constexpr u64 SdCardSaveDataId             = 0x8000000000000124;
+        constexpr u64 SdCardSaveDataSize           = 0xa08000;
+        constexpr u64 SdCardSaveDataJournalSize    = 0xa08000;
+        constexpr u32 SdCardSaveDataFlags          = 0;
+
+        constexpr SaveDataMeta SdCardSaveDataMeta = {
+            .id              = SdCardSaveDataId,
+            .size            = SdCardSaveDataSize,
+            .journal_size    = SdCardSaveDataJournalSize,
+            .flags           = SdCardSaveDataFlags,
+            .space_id        = FsSaveDataSpaceId_SdSystem,
+        };
+
         struct ContentMetaDatabaseEntry {
             NON_COPYABLE(ContentMetaDatabaseEntry);
             NON_MOVEABLE(ContentMetaDatabaseEntry);
@@ -85,7 +124,7 @@ namespace ams::ncm::impl {
                 meta_path[0] = '\0';
             }
 
-            Result Initialize(StorageId storage_id, SaveDataMeta& save_meta, size_t max_content_metas) {
+            Result Initialize(StorageId storage_id, const SaveDataMeta& save_meta, size_t max_content_metas) {
                 this->storage_id = storage_id;
                 this->max_content_metas = max_content_metas;
                 this->save_meta = save_meta;
@@ -107,7 +146,11 @@ namespace ams::ncm::impl {
             }
         };
 
-        constexpr size_t MaxContentStorageEntries = 8;
+        constexpr size_t MaxBuiltInSystemContentMetaCount = 0x800;
+        constexpr size_t MaxBuiltInUserContentMetaCount   = 0x2000;
+        constexpr size_t MaxSdCardContentMetaCount        = 0x2000;
+
+        constexpr size_t MaxContentStorageEntries      = 8;
         constexpr size_t MaxContentMetaDatabaseEntries = 8;
 
         os::Mutex g_mutex;
@@ -150,8 +193,6 @@ namespace ams::ncm::impl {
         /* Already initialized. */
         R_UNLESS(!g_initialized, ResultSuccess());
 
-        size_t cur_storage_index = g_num_content_storage_entries;
-
         for (size_t i = 0; i < MaxContentStorageEntries; i++) {
             ContentStorageEntry* entry = &g_content_storage_entries[i];
             entry->storage_id = StorageId::None;
@@ -162,11 +203,8 @@ namespace ams::ncm::impl {
             entry->storage_id = StorageId::None;
         }
 
-        g_num_content_storage_entries++;
-        auto storage_entry = &g_content_storage_entries[cur_storage_index];
-
-        /* First, setup the NandSystem storage entry. */
-        storage_entry->Initialize(StorageId::BuiltInSystem, FsContentStorageId_System);
+        /* First, setup the BuiltInSystem storage entry. */
+        g_content_storage_entries[g_num_content_storage_entries++].Initialize(StorageId::BuiltInSystem, FsContentStorageId_System);
 
         if (R_FAILED(VerifyContentStorage(StorageId::BuiltInSystem))) {
             R_TRY(CreateContentStorage(StorageId::BuiltInSystem));
@@ -174,19 +212,8 @@ namespace ams::ncm::impl {
 
         R_TRY(ActivateContentStorage(StorageId::BuiltInSystem));
 
-        /* Next, the NandSystem content meta entry. */
-        SaveDataMeta nand_system_save_meta;
-        nand_system_save_meta.id = 0x8000000000000120;
-        nand_system_save_meta.size = 0x6c000;
-        nand_system_save_meta.journal_size = 0x6c000;
-        nand_system_save_meta.flags = FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment;
-        nand_system_save_meta.space_id = FsSaveDataSpaceId_System;
-
-        size_t cur_meta_index = g_num_content_meta_entries;
-        g_num_content_meta_entries++;
-        auto content_meta_entry = &g_content_meta_entries[cur_meta_index];
-
-        R_TRY(content_meta_entry->Initialize(StorageId::BuiltInSystem, nand_system_save_meta, 0x800));
+        /* Next, the BuiltInSystem content meta entry. */
+        R_TRY(g_content_meta_entries[g_num_content_meta_entries++].Initialize(StorageId::BuiltInSystem, BuiltInSystemSaveDataMeta, MaxBuiltInSystemContentMetaCount));
 
         if (R_FAILED(VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(CreateContentMetaDatabase(StorageId::BuiltInSystem));
@@ -195,58 +222,27 @@ namespace ams::ncm::impl {
         }
 
         u32 current_flags = 0;
-        if (hos::GetVersion() >= hos::Version_200 && R_SUCCEEDED(fs::GetSaveDataFlags(&current_flags, 0x8000000000000120)) && current_flags != (FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment)) {
-            fs::SetSaveDataFlags(0x8000000000000120, FsSaveDataSpaceId_System, FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment);
+        if (hos::GetVersion() >= hos::Version_200 && R_SUCCEEDED(fs::GetSaveDataFlags(&current_flags, BuiltInSystemSaveDataId)) && current_flags != (FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment)) {
+            fs::SetSaveDataFlags(BuiltInSystemSaveDataId, FsSaveDataSpaceId_System, FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment);
         }
         
         R_TRY(ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
-        /* Now for NandUser's content storage entry. */
-        cur_storage_index = g_num_content_storage_entries;
-        g_num_content_storage_entries++;
-        storage_entry = &g_content_storage_entries[cur_storage_index];
-        storage_entry->Initialize(StorageId::BuiltInUser, FsContentStorageId_User);
+        /* Now for BuiltInUser's content storage and content meta entries. */
+        g_content_storage_entries[g_num_content_storage_entries++].Initialize(StorageId::BuiltInUser, FsContentStorageId_User);
+        R_TRY(g_content_meta_entries[g_num_content_meta_entries++].Initialize(StorageId::BuiltInUser, BuiltInUserSaveDataMeta, MaxBuiltInUserContentMetaCount));
 
-        /* And NandUser's content meta entry. */
-        SaveDataMeta nand_user_save_meta;
-        nand_user_save_meta.id = 0x8000000000000121;
-        nand_user_save_meta.size = 0x29e000;
-        nand_user_save_meta.journal_size = 0x29e000;
-        nand_user_save_meta.flags = 0;
-        nand_user_save_meta.space_id = FsSaveDataSpaceId_System;
+        /* Beyond this point N no longer appears to bother */
+        /* incrementing the count for content storage entries or content meta entries. */
 
-        cur_meta_index = g_num_content_meta_entries;
-        g_num_content_meta_entries++;
-        content_meta_entry = &g_content_meta_entries[cur_meta_index];
-
-        R_TRY(content_meta_entry->Initialize(StorageId::BuiltInUser, nand_user_save_meta, 0x2000));
-
-        /* 
-           Beyond this point N no longer appears to bother
-           incrementing the count for content storage entries or content meta entries. 
-        */
-
-        /* Next SdCard's content storage entry. */
+        /* Next SdCard's content storage and content meta entries. */
         g_content_storage_entries[2].Initialize(StorageId::SdCard, FsContentStorageId_SdCard);
+        R_TRY(g_content_meta_entries[2].Initialize(StorageId::SdCard, SdCardSaveDataMeta, MaxSdCardContentMetaCount));
 
-        /* And SdCard's content meta entry. */
-        SaveDataMeta sd_card_save_meta;
-        sd_card_save_meta.id = 0x8000000000000124;
-        sd_card_save_meta.size = 0xa08000;
-        sd_card_save_meta.journal_size = 0xa08000;
-        sd_card_save_meta.flags = 0;
-        sd_card_save_meta.space_id = FsSaveDataSpaceId_SdSystem;
-
-        content_meta_entry = &g_content_meta_entries[2];
-        R_TRY(content_meta_entry->Initialize(StorageId::SdCard, sd_card_save_meta, 0x2000));
-
-        /* GameCard's content storage entry. */
-        /* N doesn't set a content storage id for game cards, so we'll just use 0 (NandSystem). */
+        /* GameCard's content storage and content meta entries. */
+        /* N doesn't set a content storage id for game cards, so we'll just use 0 (System). */
         g_content_storage_entries[3].Initialize(StorageId::GameCard, FsContentStorageId_System);
-
-        /* Lasty, GameCard's content meta entry. */
-        content_meta_entry = &g_content_meta_entries[3];
-        R_TRY(content_meta_entry->InitializeGameCard(0x800));
+        R_TRY(g_content_meta_entries[3].InitializeGameCard(0x800));
 
         g_initialized = true;
         return ResultSuccess();
