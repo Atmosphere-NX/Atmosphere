@@ -274,13 +274,13 @@ namespace ams::ldr {
             R_CATCH(lr::ResultProgramNotFound) {
                 /* Program wasn't found via registered resolver, fall back to the normal resolver. */
                 lr::LocationResolver lr;
-                R_TRY(lr::OpenLocationResolver(std::addressof(lr), loc.storage_id));
+                R_TRY(lr::OpenLocationResolver(std::addressof(lr), static_cast<ncm::StorageId>(loc.storage_id)));
                 R_TRY(lr.ResolveProgramPath(std::addressof(path), loc.program_id));
             }
         } R_END_TRY_CATCH;
 
-        std::strncpy(out_path, path.str, sizeof(path.str));
-        out_path[sizeof(path.str) - 1] = '\0';
+        std::strncpy(out_path, path.str, fs::EntryNameLengthMax);
+        out_path[fs::EntryNameLengthMax - 1] = '\0';
         FixFileSystemPath(out_path);
         return ResultSuccess();
     }
@@ -291,9 +291,12 @@ namespace ams::ldr {
         std::strncpy(lr_path.str, path, sizeof(lr_path.str));
         lr_path.str[sizeof(lr_path.str) - 1] = '\0';
 
+        /* Redirect the path. */
         lr::LocationResolver lr;
-        R_TRY(lr::OpenLocationResolver(std::addressof(lr), loc.storage_id));
-        return lr.RedirectProgramPath(lr_path, loc.program_id);
+        R_TRY(lr::OpenLocationResolver(std::addressof(lr),  static_cast<ncm::StorageId>(loc.storage_id)));
+        lr.RedirectProgramPath(lr_path, loc.program_id);
+
+        return ResultSuccess();
     }
 
     Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc) {
@@ -301,14 +304,14 @@ namespace ams::ldr {
 
         /* Open a location resolver. */
         lr::LocationResolver lr;
-        R_TRY(lr::OpenLocationResolver(std::addressof(lr), loc.storage_id));
+        R_TRY(lr::OpenLocationResolver(std::addressof(lr),  static_cast<ncm::StorageId>(loc.storage_id)));
 
         /* If there's already a Html Document path, we don't need to set one. */
         R_UNLESS(R_FAILED(lr.ResolveApplicationHtmlDocumentPath(std::addressof(path), loc.program_id)), ResultSuccess());
 
         /* We just need to set this to any valid NCA path. Let's use the executable path. */
         R_TRY(lr.ResolveProgramPath(std::addressof(path), loc.program_id));
-        R_TRY(lr.RedirectApplicationHtmlDocumentPath(path, loc.program_id, loc.program_id));
+        lr.RedirectApplicationHtmlDocumentPath(path, loc.program_id, loc.program_id);
 
         return ResultSuccess();
     }
