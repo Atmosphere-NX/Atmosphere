@@ -36,7 +36,7 @@ namespace ams::ncm::impl {
             NON_MOVEABLE(ContentStorageRoot);
 
             char mount_point[16];
-            char root_path[128];
+            char path[128];
             StorageId storage_id;
             FsContentStorageId content_storage_id;
             std::shared_ptr<IContentStorage> content_storage;
@@ -44,7 +44,7 @@ namespace ams::ncm::impl {
             inline ContentStorageRoot() : storage_id(StorageId::None),
                 content_storage_id(FsContentStorageId_System), content_storage(nullptr) {
                 mount_point[0] = '\0';
-                root_path[0] = '\0';
+                path[0] = '\0';
             }
 
             inline void Initialize(StorageId storage_id, FsContentStorageId content_storage_id) {
@@ -53,7 +53,7 @@ namespace ams::ncm::impl {
                 this->content_storage = nullptr;
                 MountName mount_name = fs::CreateUniqueMountName();
                 std::strcpy(this->mount_point, mount_name.name);
-                snprintf(this->root_path, 0x80, "%s:/", this->mount_point);
+                snprintf(this->path, 0x80, "%s:/", this->mount_point);
             }
         };
 
@@ -241,6 +241,11 @@ namespace ams::ncm::impl {
             return ResultSuccess();
         }
 
+        void ReplaceMountName(char *out_path, const char *mount_name, const char *root_path) {
+            strcpy(out_path, mount_name);
+            strcat(out_path, strchr(root_path, ':'));
+        }
+
     }
 
     Result InitializeContentManager() {
@@ -339,8 +344,8 @@ namespace ams::ncm::impl {
         R_TRY(fs::MountContentStorage(root->mount_point, root->content_storage_id));
         ON_SCOPE_EXIT { fs::Unmount(root->mount_point); };
 
-        R_TRY(fs::EnsureDirectoryRecursively(root->root_path));
-        R_TRY(fs::EnsureContentAndPlaceHolderRoot(root->root_path));
+        R_TRY(fs::EnsureDirectoryRecursively(root->path));
+        R_TRY(fs::EnsureContentAndPlaceHolderRoot(root->path));
 
         return ResultSuccess();
     }
@@ -351,10 +356,9 @@ namespace ams::ncm::impl {
         ContentStorageRoot* root;
         R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
 
-        MountName mount_name = fs::CreateUniqueMountName();
-        char mount_root[128] = {0};
-        strcpy(mount_root, mount_name.name);
-        strcat(mount_root, strchr(root->root_path, ':'));
+        char mount_root[0x80] = {};
+        auto mount_name = fs::CreateUniqueMountName();  /* should this be fs::? should it be ncm::? ncm::impl? */
+        ReplaceMountName(mount_root, mount_name.name, root->path);
 
         R_TRY(fs::MountContentStorage(mount_name.name, root->content_storage_id));
         ON_SCOPE_EXIT { fs::Unmount(mount_name.name); };
@@ -424,7 +428,7 @@ namespace ams::ncm::impl {
 
         if (storage_id == StorageId::GameCard) {
             auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
-            R_TRY(content_storage->Initialize(root->root_path, path::MakeContentPathFlat));
+            R_TRY(content_storage->Initialize(root->path, path::MakeContentPathFlat));
             root->content_storage = std::move(content_storage);
         } else {
             MakeContentPathFunc content_path_func = nullptr;
@@ -445,7 +449,7 @@ namespace ams::ncm::impl {
                     break;
             }
 
-            R_TRY(content_storage->Initialize(root->root_path, content_path_func, placeholder_path_func, delay_flush, &g_rights_id_cache));
+            R_TRY(content_storage->Initialize(root->path, content_path_func, placeholder_path_func, delay_flush, &g_rights_id_cache));
             root->content_storage = std::move(content_storage);
         }
 
