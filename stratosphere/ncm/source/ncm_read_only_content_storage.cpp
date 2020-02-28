@@ -20,7 +20,7 @@
 
 namespace ams::ncm {
 
-    Result ReadOnlyContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func) {
+    Result ReadOnlyContentStorageInterface::Initialize(const char *root_path, MakeContentPathFunc content_path_func) {
         R_TRY(this->EnsureEnabled());
 
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
@@ -163,7 +163,7 @@ namespace ams::ncm {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         }
    
-        FILE* f = nullptr;
+        FILE *f = nullptr;
         R_TRY(fs::OpenFile(&f, content_path, FsOpenMode_Read));
         
         ON_SCOPE_EXIT {

@@ -28,23 +28,23 @@ namespace ams::ncm {
         protected:
             impl::PlaceHolderAccessor placeholder_accessor;
             ContentId cached_content_id;
-            FILE* content_cache_file_handle;
-            impl::RightsIdCache* rights_id_cache;
+            FILE *content_cache_file_handle;
+            impl::RightsIdCache *rights_id_cache;
         public:
             ~ContentStorageInterface();
 
-            Result Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache* rights_id_cache);
+            Result Initialize(const char *root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache);
             void Finalize();
         private:
             void ClearContentCache();
             unsigned int GetContentDirectoryDepth();
             Result OpenCachedContentFile(ContentId content_id);
 
-            inline void GetContentRootPath(char* out_content_root) {
+            inline void GetContentRootPath(char *out_content_root) {
                 path::GetContentRootPath(out_content_root, this->root_path);
             }
 
-            inline void GetContentPath(char* out_content_path, ContentId content_id) {
+            inline void GetContentPath(char *out_content_path, ContentId content_id) {
                 char content_root_path[FS_MAX_PATH] = {0};
 
                 this->GetContentRootPath(content_root_path);

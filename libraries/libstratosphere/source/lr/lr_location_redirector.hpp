@@ -44,9 +44,9 @@ namespace ams::lr {
             void SetRedirectionFlags(ncm::ProgramId program_id, u32 flags);
             void EraseRedirection(ncm::ProgramId program_id);
             void ClearRedirections(u32 flags = RedirectionFlags_None);
-            void ClearRedirectionsExcludingOwners(const ncm::ProgramId* excluding_ids, size_t num_ids);
+            void ClearRedirectionsExcludingOwners(const ncm::ProgramId *excluding_ids, size_t num_ids);
         private:
-            inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId* excluding_ids, size_t num_ids) const {
+            inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId *excluding_ids, size_t num_ids) const {
                 for (size_t i = 0; i < num_ids; i++) {
                     if (id == excluding_ids[i]) {
                         return true;

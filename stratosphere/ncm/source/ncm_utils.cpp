@@ -18,29 +18,29 @@
 
 namespace ams::ncm {
 
-    void GetStringFromContentId(char* out, ContentId content_id) {
+    void GetStringFromContentId(char *out, ContentId content_id) {
         for (size_t i = 0; i < sizeof(ContentId); i++) {
             snprintf(out+i*2, 3, "%02x", content_id.uuid[i]);
         }
     }
 
-    void GetStringFromPlaceHolderId(char* out, PlaceHolderId placeholder_id) {
+    void GetStringFromPlaceHolderId(char *out, PlaceHolderId placeholder_id) {
         for (size_t i = 0; i < sizeof(PlaceHolderId); i++) {
             snprintf(out+i*2, 3, "%02x", placeholder_id.uuid[i]);
         }
     }
 
-    Result GetPlaceHolderIdFromDirEntry(PlaceHolderId* out, struct dirent* dir_entry) {
+    Result GetPlaceHolderIdFromDirEntry(PlaceHolderId *out, struct dirent *dir_entry) {
         R_UNLESS(strnlen(dir_entry->d_name, 0x30) == 0x24, ncm::ResultInvalidPlaceHolderFile());
         R_UNLESS(strncmp(dir_entry->d_name + 0x20, ".nca", 4) == 0, ncm::ResultInvalidPlaceHolderFile());
 
         u8 tmp[sizeof(PlaceHolderId)] = {};
         char byte_string[2];
-        char* end_ptr;
+        char *end_ptr;
         u64 converted_val;
 
         for (size_t i = 0; i < sizeof(PlaceHolderId); i++) {
-            char* name_char_pair = dir_entry->d_name + i * 2;         
+            char *name_char_pair = dir_entry->d_name + i * 2;         
         
             byte_string[0] = name_char_pair[0];
             byte_string[1] = name_char_pair[1];
@@ -55,18 +55,18 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    std::optional<ContentId> GetContentIdFromString(const char* str, size_t len) {
+    std::optional<ContentId> GetContentIdFromString(const char *str, size_t len) {
         if (len < 0x20) {
             return std::nullopt;
         }
 
         u8 tmp[sizeof(ContentId)] = {};
         char byte_string[2];
-        char* end_ptr;
+        char *end_ptr;
         u64 converted_val;
 
         for (size_t i = 0; i < sizeof(ContentId); i++) {
-            const char* char_par = str + i * 2;         
+            const char *char_par = str + i * 2;         
         
             byte_string[0] = char_par[0];
             byte_string[1] = char_par[1];

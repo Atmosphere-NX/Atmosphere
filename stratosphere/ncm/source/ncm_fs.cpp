@@ -23,28 +23,28 @@
 
 namespace ams::ncm::fs {
 
-    Result OpenFile(FILE** out, const char* path, u32 mode) {
+    Result OpenFile(FILE** out, const char *path, u32 mode) {
         bool has = false;
 
         /* Manually check if the file already exists, so it doesn't get created automatically. */
         R_TRY(HasFile(&has, path));
         R_UNLESS(has, ams::fs::ResultPathNotFound());
 
-        const char* fopen_mode = "";
+        const char *fopen_mode = "";
 
         if (mode & FsOpenMode_Write) {
             fopen_mode = "r+b";
         } else if (mode & FsOpenMode_Read) {
             fopen_mode = "rb";
         } 
-        FILE* f = fopen(path, fopen_mode);
+        FILE *f = fopen(path, fopen_mode);
         R_UNLESS(f != nullptr, fsdevGetLastResult());
 
         *out = f;
         return ResultSuccess();
     }
 
-    Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option) {
+    Result WriteFile(FILE *f, size_t offset, const void *buffer, size_t size, u32 option) {
         R_UNLESS(fseek(f, 0, SEEK_END) == 0, fsdevGetLastResult());
         size_t existing_size = ftell(f);
 
@@ -59,14 +59,14 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size) {
+    Result ReadFile(FILE *f, size_t offset, void *buffer, size_t size) {
         R_UNLESS(fseek(f, offset, SEEK_SET) == 0, fsdevGetLastResult());
         R_UNLESS(fread(buffer, 1, size, f) == size, fsdevGetLastResult());
         R_UNLESS(!ferror(f), fsdevGetLastResult());
         return ResultSuccess();
     }
 
-    Result HasFile(bool* out, const char* path) {
+    Result HasFile(bool *out, const char *path) {
         struct stat st;
 
         if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
@@ -82,7 +82,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result HasDirectory(bool* out, const char* path) {
+    Result HasDirectory(bool *out, const char *path) {
         struct stat st;
 
         if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
@@ -98,7 +98,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result CheckContentStorageDirectoriesExist(const char* root_path) {
+    Result CheckContentStorageDirectoriesExist(const char *root_path) {
         char content_root[FS_MAX_PATH] = {0};
         char placeholder_root[FS_MAX_PATH] = {0};
 
@@ -119,7 +119,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result EnsureContentAndPlaceHolderRoot(const char* root_path) {
+    Result EnsureContentAndPlaceHolderRoot(const char *root_path) {
         char content_root[FS_MAX_PATH] = {0};
         char placeholder_root[FS_MAX_PATH] = {0};
 
@@ -131,7 +131,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result EnsureDirectoryRecursively(const char* dir_path) {
+    Result EnsureDirectoryRecursively(const char *dir_path) {
         R_TRY(EnsureRecursively(dir_path));
         if (mkdir(dir_path, S_IRWXU) == -1) {
             R_TRY_CATCH(fsdevGetLastResult()) {
@@ -143,7 +143,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result EnsureRecursively(const char* path) {
+    Result EnsureRecursively(const char *path) {
         R_UNLESS(path, ams::fs::ResultNullptrArgument());
 
         size_t path_len = strlen(path);
@@ -174,11 +174,11 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result EnsureParentDirectoryRecursively(const char* path) {
+    Result EnsureParentDirectoryRecursively(const char *path) {
         return EnsureRecursively(path);
     }
 
-    Result GetGameCardHandle(FsGameCardHandle* out_handle) {
+    Result GetGameCardHandle(FsGameCardHandle *out_handle) {
         FsDeviceOperator devop;
         R_TRY(fsOpenDeviceOperator(&devop));
 
@@ -200,8 +200,8 @@ namespace ams::ncm::fs {
         return mount_name;
     }
 
-    Result GetMountNameFromPath(MountName* mount_name, const char* path) {
-        const char* unqual_path = strchr(path, ':');
+    Result GetMountNameFromPath(MountName *mount_name, const char *path) {
+        const char *unqual_path = strchr(path, ':');
 
         /* We should be given a qualified path. */
         R_UNLESS(unqual_path, ams::fs::ResultInvalidMountName());
@@ -211,7 +211,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id) {
+    Result MountSystemSaveData(const char *mount_point, FsSaveDataSpaceId space_id, u64 save_id) {
         R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
         
         FsSaveDataAttribute save = {
@@ -226,17 +226,17 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    constexpr const char* SystemContentMountName = "@SystemContent";
-    constexpr const char* UserContentMountName = "@UserContent";
-    constexpr const char* SdCardContentMountName = "@SdCardContent";
-    constexpr const char* GameCardMountNameBase = "@Gc";
+    constexpr const char *SystemContentMountName = "@SystemContent";
+    constexpr const char *UserContentMountName = "@UserContent";
+    constexpr const char *SdCardContentMountName = "@SdCardContent";
+    constexpr const char *GameCardMountNameBase = "@Gc";
 
-    constexpr const char* GameCardPartitionLetters[3] = { "U", "N", "S" };
+    constexpr const char *GameCardPartitionLetters[3] = { "U", "N", "S" };
 
     /* Maps mount names to their common mount names. */
     std::map<std::string, std::string> g_mount_content_storage;
 
-    Result MountContentStorage(const char* mount_point, FsContentStorageId id) {
+    Result MountContentStorage(const char *mount_point, FsContentStorageId id) {
         R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
 
         FsFileSystem fs;
@@ -262,7 +262,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartition partition) {
+    Result MountGameCardPartition(const char *mount_point, const FsGameCardHandle handle, FsGameCardPartition partition) {
         AMS_ABORT_UNLESS(partition <= 2);
         
         FsFileSystem fs;
@@ -275,7 +275,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result Unmount(const char* mount_point) {
+    Result Unmount(const char *mount_point) {
         R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
         /* Erase any content storage mappings which may potentially exist. */
         g_mount_content_storage.erase(mount_point);
@@ -283,7 +283,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result ConvertToFsCommonPath(char* out_common_path, size_t out_len, const char* path) {
+    Result ConvertToFsCommonPath(char *out_common_path, size_t out_len, const char *path) {
         R_UNLESS(out_common_path, ams::fs::ResultNullptrArgument());
         R_UNLESS(path, ams::fs::ResultNullptrArgument());
 
@@ -300,7 +300,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result GetSaveDataFlags(u32* out_flags, u64 save_id) {
+    Result GetSaveDataFlags(u32 *out_flags, u64 save_id) {
         FsSaveDataExtraData extra_data;
         
         R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));

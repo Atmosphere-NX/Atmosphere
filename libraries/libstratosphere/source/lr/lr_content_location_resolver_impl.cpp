@@ -31,7 +31,7 @@ namespace ams::lr {
     }
 
     /* Helper function. */
-    void ContentLocationResolverImpl::GetContentStoragePath(Path* out, ncm::ContentId content_id) {
+    void ContentLocationResolverImpl::GetContentStoragePath(Path *out, ncm::ContentId content_id) {
         R_ABORT_UNLESS(this->content_storage->GetPath(out, content_id));
     }
 

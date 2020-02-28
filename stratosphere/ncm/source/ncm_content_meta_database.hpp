@@ -22,13 +22,13 @@ namespace ams::ncm {
 
     class ContentMetaDatabaseInterface : public IContentMetaDatabase {
         public:
-            ContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) : IContentMetaDatabase(kvs, mount_name) {
+            ContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) : IContentMetaDatabase(kvs, mount_name) {
             }
-            ContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : IContentMetaDatabase(kvs) {
+            ContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : IContentMetaDatabase(kvs) {
             }
         private:
-            Result GetContentIdByTypeImpl(ContentId* out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
-            Result GetLatestContentMetaKeyImpl(ContentMetaKey* out_key, ProgramId id);
+            Result GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
+            Result GetLatestContentMetaKeyImpl(ContentMetaKey *out_key, ProgramId id);
         public:
             virtual Result Set(ContentMetaKey key, sf::InBuffer value) override;
             virtual Result Get(sf::Out<u64> out_size, ContentMetaKey key, sf::OutBuffer out_value) override;
@@ -53,13 +53,13 @@ namespace ams::ncm {
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) override;
 
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId program_id) override;
-            virtual Result GetLatestData(ContentId* out_content_id, ProgramId program_id) override;
+            virtual Result GetLatestProgram(ContentId *out_content_id, ProgramId program_id) override;
+            virtual Result GetLatestData(ContentId *out_content_id, ProgramId program_id) override;
     };
 
     class OnMemoryContentMetaDatabaseInterface : public ContentMetaDatabaseInterface {
         public:
-            OnMemoryContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) : ContentMetaDatabaseInterface(kvs) {
+            OnMemoryContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : ContentMetaDatabaseInterface(kvs) {
             }
         public:
             virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;

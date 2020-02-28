@@ -21,39 +21,39 @@
 
 namespace ams::ncm::fs {
 
-    Result OpenFile(FILE** out, const char* path, u32 mode);
-    Result WriteFile(FILE* f, size_t offset, const void* buffer, size_t size, u32 option);
-    Result ReadFile(FILE* f, size_t offset, void* buffer, size_t size);
+    Result OpenFile(FILE** out, const char *path, u32 mode);
+    Result WriteFile(FILE *f, size_t offset, const void *buffer, size_t size, u32 option);
+    Result ReadFile(FILE *f, size_t offset, void *buffer, size_t size);
 
-    Result HasFile(bool* out, const char* path);
-    Result HasDirectory(bool* out, const char* path);
+    Result HasFile(bool *out, const char *path);
+    Result HasDirectory(bool *out, const char *path);
 
-    Result CheckContentStorageDirectoriesExist(const char* root_path);
-    Result EnsureContentAndPlaceHolderRoot(const char* root_path);
+    Result CheckContentStorageDirectoriesExist(const char *root_path);
+    Result EnsureContentAndPlaceHolderRoot(const char *root_path);
 
-    Result EnsureDirectoryRecursively(const char* dir_path);
-    Result EnsureRecursively(const char* path);
+    Result EnsureDirectoryRecursively(const char *dir_path);
+    Result EnsureRecursively(const char *path);
     /* Create all parent directories for a file path */
-    Result EnsureParentDirectoryRecursively(const char* path);
+    Result EnsureParentDirectoryRecursively(const char *path);
 
-    Result GetGameCardHandle(FsGameCardHandle* out_handle);
+    Result GetGameCardHandle(FsGameCardHandle *out_handle);
 
     MountName CreateUniqueMountName();
-    Result GetMountNameFromPath(MountName* mount_name, const char* path);
+    Result GetMountNameFromPath(MountName *mount_name, const char *path);
 
-    Result MountSystemSaveData(const char* mount_point, FsSaveDataSpaceId space_id, u64 save_id);
-    Result MountContentStorage(const char* mount_point, FsContentStorageId id);
-    Result MountGameCardPartition(const char* mount_point, const FsGameCardHandle handle, FsGameCardPartition partition);
-    Result Unmount(const char* mount_point);
-    Result ConvertToFsCommonPath(char* out_common_path, size_t len, const char* path);
+    Result MountSystemSaveData(const char *mount_point, FsSaveDataSpaceId space_id, u64 save_id);
+    Result MountContentStorage(const char *mount_point, FsContentStorageId id);
+    Result MountGameCardPartition(const char *mount_point, const FsGameCardHandle handle, FsGameCardPartition partition);
+    Result Unmount(const char *mount_point);
+    Result ConvertToFsCommonPath(char *out_common_path, size_t len, const char *path);
 
-    Result GetSaveDataFlags(u32* out_flags, u64 save_id);
+    Result GetSaveDataFlags(u32 *out_flags, u64 save_id);
     Result SetSaveDataFlags(u64 save_id, FsSaveDataSpaceId space_id, u32 flags);
 
     template<typename F>
-    Result TraverseDirectory(bool* out_should_continue, const char* root_path, int max_level, F f) {
+    Result TraverseDirectory(bool *out_should_continue, const char *root_path, int max_level, F f) {
         DIR *dir;
-        struct dirent* dir_entry = nullptr;
+        struct dirent *dir_entry = nullptr;
         R_UNLESS(max_level >= 1, ResultSuccess());
         
         bool retry_dir_read = true;
@@ -100,7 +100,7 @@ namespace ams::ncm::fs {
     };
 
     template<typename F>
-    Result TraverseDirectory(const char* root_path, int max_level, F f) {
+    Result TraverseDirectory(const char *root_path, int max_level, F f) {
         bool should_continue = false;
         return TraverseDirectory(&should_continue, root_path, max_level, f);
     }

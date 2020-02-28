@@ -32,7 +32,7 @@ namespace ams::lr {
             ~ContentLocationResolverImpl();
         private:
             /* Helper functions. */
-            void GetContentStoragePath(Path* out, ncm::ContentId content_id);
+            void GetContentStoragePath(Path *out, ncm::ContentId content_id);
         public:
             /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;

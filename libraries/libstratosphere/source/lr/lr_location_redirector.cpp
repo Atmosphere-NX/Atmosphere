@@ -109,7 +109,7 @@ namespace ams::lr {
         }
     }
 
-    void LocationRedirector::ClearRedirectionsExcludingOwners(const ncm::ProgramId* excluding_ids, size_t num_ids) {
+    void LocationRedirector::ClearRedirectionsExcludingOwners(const ncm::ProgramId *excluding_ids, size_t num_ids) {
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
             /* Skip removal if the redirection has an excluded owner program id. */
             if (this->IsExcluded(it->GetOwnerProgramId(), excluding_ids, num_ids)) {

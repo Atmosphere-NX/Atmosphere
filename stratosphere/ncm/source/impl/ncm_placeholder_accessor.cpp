@@ -27,7 +27,7 @@ namespace ams::ncm::impl {
         char placeholder_path[FS_MAX_PATH] = {0};
         this->MakePath(placeholder_path, placeholder_id);
 
-        FILE* f = nullptr;
+        FILE *f = nullptr;
         R_TRY(fs::OpenFile(&f, placeholder_path, FsOpenMode_Write));
 
         *out_handle = f;
@@ -57,7 +57,7 @@ namespace ams::ncm::impl {
 
     PlaceHolderAccessor::CacheEntry *PlaceHolderAccessor::GetFreeEntry() {
         /* Try to find an already free entry. */
-        CacheEntry* entry = this->FindInCache(InvalidPlaceHolderId);
+        CacheEntry *entry = this->FindInCache(InvalidPlaceHolderId);
         
         if (entry) {
             return entry;
@@ -76,7 +76,7 @@ namespace ams::ncm::impl {
         }
     }
 
-    void PlaceHolderAccessor::StoreToCache(FILE* handle, PlaceHolderId placeholder_id) {
+    void PlaceHolderAccessor::StoreToCache(FILE *handle, PlaceHolderId placeholder_id) {
         std::scoped_lock lk(this->cache_mutex);
         CacheEntry *entry = this->GetFreeEntry();
         entry->id = placeholder_id;
@@ -95,7 +95,7 @@ namespace ams::ncm::impl {
         }
     }
 
-    void PlaceHolderAccessor::Initialize(char* root, MakePlaceHolderPathFunc path_func, bool delay_flush) {
+    void PlaceHolderAccessor::Initialize(char *root, MakePlaceHolderPathFunc path_func, bool delay_flush) {
         this->root_path = root;
         this->make_placeholder_path_func = path_func;
         this->delay_flush = delay_flush;
@@ -111,9 +111,9 @@ namespace ams::ncm::impl {
         AMS_ABORT();
     }
 
-    void PlaceHolderAccessor::GetPath(char* placeholder_path_out, PlaceHolderId placeholder_id) {
+    void PlaceHolderAccessor::GetPath(char *placeholder_path_out, PlaceHolderId placeholder_id) {
         std::scoped_lock lock(this->cache_mutex);
-        CacheEntry* entry = this->FindInCache(placeholder_id);
+        CacheEntry *entry = this->FindInCache(placeholder_id);
         this->Invalidate(entry);
         this->MakePath(placeholder_path_out, placeholder_id);
     }
@@ -145,8 +145,8 @@ namespace ams::ncm::impl {
         return ResultSuccess();
     }
 
-    Result PlaceHolderAccessor::Write(PlaceHolderId placeholder_id, size_t offset, const void* buffer, size_t size) {
-        FILE* f = nullptr;
+    Result PlaceHolderAccessor::Write(PlaceHolderId placeholder_id, size_t offset, const void *buffer, size_t size) {
+        FILE *f = nullptr;
 
         R_TRY_CATCH(this->Open(&f, placeholder_id)) {
             R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
@@ -172,8 +172,8 @@ namespace ams::ncm::impl {
         return ResultSuccess();
     }
 
-    Result PlaceHolderAccessor::GetSize(bool* found_in_cache, size_t* out_size, PlaceHolderId placeholder_id) {
-        FILE* f = NULL;
+    Result PlaceHolderAccessor::GetSize(bool *found_in_cache, size_t *out_size, PlaceHolderId placeholder_id) {
+        FILE *f = NULL;
         
         /* Set the scope for the scoped_lock. */
         {
@@ -184,7 +184,7 @@ namespace ams::ncm::impl {
                 return ResultSuccess();
             }
 
-            CacheEntry* cache_entry = this->FindInCache(placeholder_id);
+            CacheEntry *cache_entry = this->FindInCache(placeholder_id);
 
             if (cache_entry == nullptr) {
                 *found_in_cache = false;

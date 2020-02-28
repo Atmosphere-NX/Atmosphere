@@ -47,7 +47,7 @@ namespace ams::ncm {
                 GetContentIdByTypeAndIdOffset    = 20,
             };
         protected:
-            ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs;
+            ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs;
             char mount_name[16];
             bool disabled;
         protected:
@@ -56,13 +56,13 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
         public:
-            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs) :
+            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) :
                 kvs(kvs), disabled(false)
             {
                 /* ... */
             }
 
-            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey>* kvs, const char* mount_name) :
+            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) :
                 IContentMetaDatabase(kvs)
             {
                 std::strcpy(this->mount_name, mount_name);
@@ -92,8 +92,8 @@ namespace ams::ncm {
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) = 0;
 
             /* APIs. */
-            virtual Result GetLatestProgram(ContentId* out_content_id, ProgramId program_id) = 0;
-            virtual Result GetLatestData(ContentId* out_content_id, ProgramId program_id) = 0;
+            virtual Result GetLatestProgram(ContentId *out_content_id, ProgramId program_id) = 0;
+            virtual Result GetLatestData(ContentId *out_content_id, ProgramId program_id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(Set),

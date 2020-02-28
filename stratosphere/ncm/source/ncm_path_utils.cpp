@@ -19,7 +19,7 @@
 
 namespace ams::ncm::path {
 
-    void GetContentMetaPath(char* out, ContentId content_id, MakeContentPathFunc path_func, const char* root_path) {
+    void GetContentMetaPath(char *out, ContentId content_id, MakeContentPathFunc path_func, const char *root_path) {
         char tmp_path[FS_MAX_PATH-1] = {0};
         char content_path[FS_MAX_PATH-1] = {0};
         path_func(content_path, content_id, root_path);
@@ -37,19 +37,19 @@ namespace ams::ncm::path {
         strncat(out, ".cnmt.nca", 0x2ff - out_len);
     }
 
-    void GetContentFileName(char* out, ContentId content_id) {
+    void GetContentFileName(char *out, ContentId content_id) {
         char content_name[sizeof(ContentId)*2+1] = {0};
         GetStringFromContentId(content_name, content_id);
         snprintf(out, FS_MAX_PATH-1, "%s%s", content_name, ".nca");
     }
 
-    void GetPlaceHolderFileName(char* out, PlaceHolderId placeholder_id) {
+    void GetPlaceHolderFileName(char *out, PlaceHolderId placeholder_id) {
         char placeholder_name[sizeof(PlaceHolderId)*2+1] = {0};
         GetStringFromPlaceHolderId(placeholder_name, placeholder_id);
         snprintf(out, FS_MAX_PATH-1, "%s%s", placeholder_name, ".nca");
     }
 
-    bool IsNcaPath(const char* path) {
+    bool IsNcaPath(const char *path) {
         PathView path_view(path);
 
         if (!path_view.HasSuffix(".nca")) {

@@ -114,8 +114,8 @@ namespace ams::ncm {
 
     static_assert(sizeof(ContentInfo) == 0x18, "ContentInfo definition!");
 
-    using MakeContentPathFunc        = void (*)(char* out, ContentId content_id, const char* root);
-    using MakePlaceHolderPathFunc    = void (*)(char* out, PlaceHolderId placeholder_id, const char* root);
+    using MakeContentPathFunc        = void (*)(char *out, ContentId content_id, const char *root);
+    using MakePlaceHolderPathFunc    = void (*)(char *out, PlaceHolderId placeholder_id, const char *root);
 
     /* Storage IDs. */
     enum class StorageId : u8 {

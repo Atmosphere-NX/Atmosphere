@@ -25,7 +25,7 @@ namespace ams::ncm {
         this->Finalize();
     }
 
-    Result ContentStorageInterface::Initialize(const char* root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache* rights_id_cache) {
+    Result ContentStorageInterface::Initialize(const char *root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache) {
         R_TRY(this->EnsureEnabled());
         R_TRY(fs::CheckContentStorageDirectoriesExist(root_path));
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
@@ -217,7 +217,7 @@ namespace ams::ncm {
         const unsigned int dir_depth = this->placeholder_accessor.GetDirectoryDepth();
         size_t entry_count = 0;
 
-        R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) -> Result {
+        R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) -> Result {
             *should_continue = true;
             *should_retry_dir_read = false;
             
@@ -244,7 +244,7 @@ namespace ams::ncm {
         const unsigned int dir_depth = this->GetContentDirectoryDepth();
         u32 content_count = 0;
 
-        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) -> Result {
+        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) -> Result {
             *should_continue = true;
             *should_retry_dir_read = false;
 
@@ -268,7 +268,7 @@ namespace ams::ncm {
         const unsigned int dir_depth = this->GetContentDirectoryDepth();
         size_t entry_count = 0;
 
-        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool* should_continue,  bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
+        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool *should_continue,  bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) {
             *should_retry_dir_read = false;
             *should_continue = true;
 
@@ -396,7 +396,7 @@ namespace ams::ncm {
 
             /* Attempt to locate the content id in the cache. */
             for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
 
                 if (entry->last_accessed != 1 && content_id == entry->uuid) {
                     entry->last_accessed = this->rights_id_cache->counter;
@@ -418,11 +418,11 @@ namespace ams::ncm {
 
         {
             std::scoped_lock lk(this->rights_id_cache->mutex);
-            impl::RightsIdCache::Entry* eviction_candidate = &this->rights_id_cache->entries[0];
+            impl::RightsIdCache::Entry *eviction_candidate = &this->rights_id_cache->entries[0];
 
             /* Find a suitable existing entry to store our new one at. */
             for (size_t i = 1; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
 
                 /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
                 if (content_id == entry->uuid || (content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {
@@ -460,7 +460,7 @@ namespace ams::ncm {
         char content_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
 
-        FILE* f = nullptr;
+        FILE *f = nullptr;
         R_TRY(fs::OpenFile(&f, content_path, FsOpenMode_Write));
         
         ON_SCOPE_EXIT {
@@ -518,7 +518,7 @@ namespace ams::ncm {
         char content_root_path[FS_MAX_PATH] = {0};
         this->GetContentRootPath(content_root_path);
         unsigned int dir_depth = this->GetContentDirectoryDepth();
-        auto fix_file_attributes = [&](bool* should_continue, bool* should_retry_dir_read, const char* current_path, struct dirent* dir_entry) {
+        auto fix_file_attributes = [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) {
             *should_retry_dir_read = false;
             *should_continue = true;
 
@@ -553,7 +553,7 @@ namespace ams::ncm {
 
             /* Attempt to locate the content id in the cache. */
             for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
 
                 if (entry->last_accessed != 1 && cache_content_id == entry->uuid) {
                     entry->last_accessed = this->rights_id_cache->counter;
@@ -575,11 +575,11 @@ namespace ams::ncm {
 
         {
             std::scoped_lock lk(this->rights_id_cache->mutex);
-            impl::RightsIdCache::Entry* eviction_candidate = &this->rights_id_cache->entries[0];
+            impl::RightsIdCache::Entry *eviction_candidate = &this->rights_id_cache->entries[0];
 
             /* Find a suitable existing entry to store our new one at. */
             for (size_t i = 1; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry* entry = &this->rights_id_cache->entries[i];
+                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
 
                 /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
                 if (cache_content_id == entry->uuid || (cache_content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {

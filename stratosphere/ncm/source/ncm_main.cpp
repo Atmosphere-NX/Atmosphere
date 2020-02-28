@@ -58,12 +58,12 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
 }
 
 void __libnx_initheap(void) {
-    void*  addr = nx_inner_heap;
+    void * addr = nx_inner_heap;
     size_t size = nx_inner_heap_size;
 
     /* Newlib */
-    extern char* fake_heap_start;
-    extern char* fake_heap_end;
+    extern char *fake_heap_start;
+    extern char *fake_heap_end;
 
     fake_heap_start = (char*)addr;
     fake_heap_end   = (char*)addr + size;
@@ -153,7 +153,7 @@ namespace {
 
 }
 
-void ContentManagerServerMain(void* arg) {
+void ContentManagerServerMain(void *arg) {
     /* Create services. */
     R_ABORT_UNLESS(g_ncm_server_manager.RegisterServer<ncm::ContentManagerService>(ContentManagerServiceName, ContentManagerManagerSessions));
 

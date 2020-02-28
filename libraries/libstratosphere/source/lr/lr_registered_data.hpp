@@ -34,7 +34,7 @@ namespace ams::lr {
             Entry entries[NumEntries];
             size_t capacity;
         private:
-            inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId* excluding_ids, size_t num_ids) const {
+            inline bool IsExcluded(const ncm::ProgramId id, const ncm::ProgramId *excluding_ids, size_t num_ids) const {
                 /* Try to find program id in exclusions. */
                 for (size_t i = 0; i < num_ids; i++) {
                     if (id == excluding_ids[i]) {
@@ -120,7 +120,7 @@ namespace ams::lr {
                 }
             }
 
-            void ClearExcluding(const ncm::ProgramId* ids, size_t num_ids) {
+            void ClearExcluding(const ncm::ProgramId *ids, size_t num_ids) {
                 /* Invalidate all entries unless excluded. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
                     Entry& entry = this->entries[i];

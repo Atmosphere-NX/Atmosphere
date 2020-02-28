@@ -42,7 +42,7 @@ namespace ams::lr {
                 this->legal_info_redirector.ClearRedirections(flags);
             }
 
-            void ClearRedirections(const ncm::ProgramId* excluding_ids, size_t num_ids) {
+            void ClearRedirections(const ncm::ProgramId *excluding_ids, size_t num_ids) {
                 this->program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
                 this->debug_program_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);
                 this->app_control_redirector.ClearRedirectionsExcludingOwners(excluding_ids, num_ids);

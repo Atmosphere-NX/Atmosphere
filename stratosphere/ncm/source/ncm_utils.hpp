@@ -21,10 +21,10 @@
 
 namespace ams::ncm {
 
-    void GetStringFromContentId(char* out, ContentId content_id);
-    void GetStringFromPlaceHolderId(char* out, PlaceHolderId placeholder_id);
+    void GetStringFromContentId(char *out, ContentId content_id);
+    void GetStringFromPlaceHolderId(char *out, PlaceHolderId placeholder_id);
 
-    Result GetPlaceHolderIdFromDirEntry(PlaceHolderId* out, struct dirent* dir_entry);
-    std::optional<ContentId> GetContentIdFromString(const char* str, size_t len);
+    Result GetPlaceHolderIdFromDirEntry(PlaceHolderId *out, struct dirent *dir_entry);
+    std::optional<ContentId> GetContentIdFromString(const char *str, size_t len);
     
 };

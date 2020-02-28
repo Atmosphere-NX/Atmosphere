@@ -43,7 +43,7 @@ namespace ams::lr {
         private:
             /* Helper functions. */
             void ClearRedirections(u32 flags = RedirectionFlags_None);
-            Result RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids);
+            Result RefreshImpl(const ncm::ProgramId *excluding_ids, size_t num_ids);
         public:
             RegisteredLocationResolverImpl() : registered_program_locations(GetMaxRegisteredLocations()), registered_html_docs_locations(GetMaxRegisteredLocations()) { /* ... */ }
             ~RegisteredLocationResolverImpl();

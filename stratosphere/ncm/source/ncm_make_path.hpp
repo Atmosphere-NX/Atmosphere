@@ -20,12 +20,12 @@
 
 namespace ams::ncm::path {
 
-    void MakeContentPathFlat(char* out_path, ContentId content_id, const char* root);
-    void MakeContentPathHashByteLayered(char* out_path, ContentId content_id, const char* root);
-    void MakeContentPath10BitLayered(char* out_path, ContentId content_id, const char* root);
-    void MakeContentPathDualLayered(char* out_path, ContentId content_id, const char* root);
+    void MakeContentPathFlat(char *out_path, ContentId content_id, const char *root);
+    void MakeContentPathHashByteLayered(char *out_path, ContentId content_id, const char *root);
+    void MakeContentPath10BitLayered(char *out_path, ContentId content_id, const char *root);
+    void MakeContentPathDualLayered(char *out_path, ContentId content_id, const char *root);
 
-    void MakePlaceHolderPathFlat(char* out_path, PlaceHolderId placeholder_id, const char* root);
-    void MakePlaceHolderPathHashByteLayered(char* out_path, PlaceHolderId placeholder_id, const char* root);
+    void MakePlaceHolderPathFlat(char *out_path, PlaceHolderId placeholder_id, const char *root);
+    void MakePlaceHolderPathHashByteLayered(char *out_path, PlaceHolderId placeholder_id, const char *root);
 
 }

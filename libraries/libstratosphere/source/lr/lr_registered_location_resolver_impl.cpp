@@ -57,7 +57,7 @@ namespace ams::lr {
         this->program_redirector.ClearRedirections(flags);
     }
 
-    Result RegisteredLocationResolverImpl::RefreshImpl(const ncm::ProgramId* excluding_ids, size_t num_ids) {
+    Result RegisteredLocationResolverImpl::RefreshImpl(const ncm::ProgramId *excluding_ids, size_t num_ids) {
         /* On < 9.0.0, exclusion lists were not supported yet, so simply clear and return. */
         if (hos::GetVersion() < hos::Version_900) {
             this->ClearRedirections();

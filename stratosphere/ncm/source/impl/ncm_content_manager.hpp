@@ -27,7 +27,7 @@ namespace ams::ncm::impl {
     /* Content Storage Management. */
     Result CreateContentStorage(StorageId storage_id);
     Result VerifyContentStorage(StorageId storage_id);
-    Result OpenContentStorage(std::shared_ptr<IContentStorage>* out, StorageId storage_id);
+    Result OpenContentStorage(std::shared_ptr<IContentStorage> *out, StorageId storage_id);
     Result CloseContentStorageForcibly(StorageId storage_id);
     Result ActivateContentStorage(StorageId storage_id);
     Result InactivateContentStorage(StorageId storage_id);
@@ -35,7 +35,7 @@ namespace ams::ncm::impl {
     /* Content Meta Database Management. */
     Result CreateContentMetaDatabase(StorageId storage_id);
     Result VerifyContentMetaDatabase(StorageId storage_id);
-    Result OpenContentMetaDatabase(std::shared_ptr<IContentMetaDatabase>* out, StorageId storage_id);
+    Result OpenContentMetaDatabase(std::shared_ptr<IContentMetaDatabase> *out, StorageId storage_id);
     Result CloseContentMetaDatabaseForcibly(StorageId storage_id);
     Result CleanupContentMetaDatabase(StorageId storage_id);
     Result ActivateContentMetaDatabase(StorageId storage_id);
