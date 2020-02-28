@@ -73,7 +73,7 @@ void __appInit(void) {
     /* Initialize services we need. */
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(lrInitialize());
+        lr::Initialize();
         R_ABORT_UNLESS(fsldrInitialize());
     });
 
@@ -84,7 +84,7 @@ void __appExit(void) {
     /* Cleanup services. */
     fsdevUnmountAll();
     fsldrExit();
-    lrExit();
+    lr::Finalize();
     fsExit();
 }
 
