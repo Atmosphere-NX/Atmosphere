@@ -153,7 +153,7 @@ namespace ams::ncm::impl {
         R_TRY(ConvertNotFoundResult(this->Open(&f, placeholder_id)));
         ON_SCOPE_EXIT { this->StoreToCache(f, placeholder_id); };
 
-        R_TRY(fs::WriteFile(f, offset, buffer, size, !this->delay_flush));
+        R_TRY(fs::WriteFile(f, offset, buffer, size, this->delay_flush ? ams::fs::WriteOption::Flush : ams::fs::WriteOption::None));
         return ResultSuccess();
     }
 
@@ -167,22 +167,20 @@ namespace ams::ncm::impl {
 
     Result PlaceHolderAccessor::GetSize(bool *found_in_cache, size_t *out_size, PlaceHolderId placeholder_id) {
         FILE *f = NULL;
-        
+
+        *found_in_cache = false;
+
         /* Set the scope for the scoped_lock. */
         {
             std::scoped_lock lock(this->cache_mutex);
             
-            if (placeholder_id == InvalidPlaceHolderId) {
-                *found_in_cache = false;
-                return ResultSuccess();
-            }
+            /* If the placeholder id is invalid, return success early. */
+            R_UNLESS(placeholder_id != InvalidPlaceHolderId, ResultSuccess());
 
             CacheEntry *cache_entry = this->FindInCache(placeholder_id);
 
-            if (cache_entry == nullptr) {
-                *found_in_cache = false;
-                return ResultSuccess();
-            }
+            /* If there is no entry in the cache, return success early. */
+            R_UNLESS(cache_entry != nullptr, ResultSuccess());
 
             cache_entry->id = InvalidPlaceHolderId;
             f = cache_entry->handle;

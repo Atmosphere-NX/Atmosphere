@@ -467,7 +467,7 @@ namespace ams::ncm {
             fclose(f);
         };
 
-        R_TRY(fs::WriteFile(f, offset, data.GetPointer(), data.GetSize(), FsWriteOption_Flush));
+        R_TRY(fs::WriteFile(f, offset, data.GetPointer(), data.GetSize(), ams::fs::WriteOption::Flush));
 
         return ResultSuccess();
     }
