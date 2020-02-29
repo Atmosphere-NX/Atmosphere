@@ -17,10 +17,11 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "ncm_content_storage_impl_base.hpp"
 
 namespace ams::ncm {
 
-    class ReadOnlyContentStorageInterface : public IContentStorage {
+    class ReadOnlyContentStorageImpl : public ContentStorageImplBase {
         public:
             Result Initialize(const char *root_path, MakeContentPathFunc content_path_func);
         public:
@@ -43,15 +44,15 @@ namespace ams::ncm {
             virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) override;
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) override;
             virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) override;
-            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id) override;
-            virtual Result GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id) override;
+            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) override;
+            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) override;
             virtual Result WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) override;
             virtual Result GetFreeSpaceSize(sf::Out<u64> out_size) override;
             virtual Result GetTotalSpaceSize(sf::Out<u64> out_size) override;
             virtual Result FlushPlaceHolder() override;
             virtual Result GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id) override;
             virtual Result RepairInvalidFileAttribute() override;
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) override;
+            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) override;
     };
 
 }

@@ -20,10 +20,10 @@
 #include <optional>
 
 #include "../ncm_content_meta_database.hpp"
-#include "../ncm_content_storage.hpp"
+#include "../ncm_content_storage_impl.hpp"
 #include "../ncm_fs.hpp"
 #include "../ncm_make_path.hpp"
-#include "../ncm_read_only_content_storage.hpp"
+#include "../ncm_read_only_content_storage_impl.hpp"
 #include "ncm_content_manager.hpp"
 #include "ncm_rights_cache.hpp"
 
@@ -427,14 +427,14 @@ namespace ams::ncm::impl {
         auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_point); };
 
         if (storage_id == StorageId::GameCard) {
-            auto content_storage = std::make_shared<ReadOnlyContentStorageInterface>();
+            auto content_storage = std::make_shared<ReadOnlyContentStorageImpl>();
             R_TRY(content_storage->Initialize(root->path, path::MakeContentPathFlat));
             root->content_storage = std::move(content_storage);
         } else {
             MakeContentPathFunc content_path_func = nullptr;
             MakePlaceHolderPathFunc placeholder_path_func = nullptr;
             bool delay_flush = false;
-            auto content_storage = std::make_shared<ContentStorageInterface>();
+            auto content_storage = std::make_shared<ContentStorageImpl>();
 
             switch (storage_id) {
                 case StorageId::BuiltInSystem:

@@ -14,18 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "ncm_content_storage.hpp"
+#include "ncm_content_storage_impl.hpp"
 #include "ncm_fs.hpp"
 #include "ncm_make_path.hpp"
 #include "ncm_utils.hpp"
 
 namespace ams::ncm {
 
-    ContentStorageInterface::~ContentStorageInterface() {
+    ContentStorageImpl::~ContentStorageImpl() {
         this->Finalize();
     }
 
-    Result ContentStorageInterface::Initialize(const char *root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache) {
+    Result ContentStorageImpl::Initialize(const char *root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache) {
         R_TRY(this->EnsureEnabled());
         R_TRY(fs::CheckContentStorageDirectoriesExist(root_path));
         const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
@@ -39,19 +39,19 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    void ContentStorageInterface::Finalize() {
+    void ContentStorageImpl::Finalize() {
         this->ClearContentCache();
         this->placeholder_accessor.InvalidateAll();
     }
 
-    void ContentStorageInterface::ClearContentCache() {
+    void ContentStorageImpl::ClearContentCache() {
         if (this->cached_content_id != InvalidContentId) {
             fclose(this->content_cache_file_handle);
             this->cached_content_id = InvalidContentId;
         }
     }
 
-    unsigned int ContentStorageInterface::GetContentDirectoryDepth() {
+    unsigned int ContentStorageImpl::GetContentDirectoryDepth() {
         if (this->make_content_path_func == static_cast<MakeContentPathFunc>(path::MakeContentPathFlat)) {
             return 1;
         } else if (this->make_content_path_func == static_cast<MakeContentPathFunc>(path::MakeContentPathHashByteLayered)) {
@@ -65,7 +65,7 @@ namespace ams::ncm {
         AMS_ABORT();
     }
 
-    Result ContentStorageInterface::OpenCachedContentFile(ContentId content_id) {
+    Result ContentStorageImpl::OpenCachedContentFile(ContentId content_id) {
         R_UNLESS(this->cached_content_id != content_id, ResultSuccess());
 
         this->ClearContentCache();
@@ -80,13 +80,13 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
+    Result ContentStorageImpl::GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
         R_TRY(this->EnsureEnabled());
         out.SetValue({util::GenerateUuid()});
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
+    Result ContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -98,12 +98,12 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::DeletePlaceHolder(PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::DeletePlaceHolder(PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
         return this->placeholder_accessor.Delete(placeholder_id);
     }
 
-    Result ContentStorageInterface::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
@@ -116,7 +116,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
+    Result ContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
         R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
@@ -124,7 +124,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::Register(PlaceHolderId placeholder_id, ContentId content_id) {
+    Result ContentStorageImpl::Register(PlaceHolderId placeholder_id, ContentId content_id) {
         this->ClearContentCache();
         R_TRY(this->EnsureEnabled());
 
@@ -144,7 +144,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::Delete(ContentId content_id) {
+    Result ContentStorageImpl::Delete(ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         this->ClearContentCache();
@@ -160,7 +160,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::Has(sf::Out<bool> out, ContentId content_id) {
+    Result ContentStorageImpl::Has(sf::Out<bool> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -173,7 +173,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetPath(sf::Out<lr::Path> out, ContentId content_id) {
+    Result ContentStorageImpl::GetPath(sf::Out<lr::Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -184,7 +184,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
@@ -195,7 +195,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::CleanupAllPlaceHolder() {
+    Result ContentStorageImpl::CleanupAllPlaceHolder() {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
@@ -209,7 +209,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
+    Result ContentStorageImpl::ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_root_path[FS_MAX_PATH] = {0};
@@ -236,7 +236,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetContentCount(sf::Out<u32> out_count) {
+    Result ContentStorageImpl::GetContentCount(sf::Out<u32> out_count) {
         R_TRY(this->EnsureEnabled());
 
         char content_root_path[FS_MAX_PATH] = {0};
@@ -259,7 +259,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
+    Result ContentStorageImpl::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
         R_UNLESS(start_offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
@@ -308,7 +308,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) {
+    Result ContentStorageImpl::GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -320,14 +320,14 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::DisableForcibly() {
+    Result ContentStorageImpl::DisableForcibly() {
         this->disabled = true;
         this->ClearContentCache();
         this->placeholder_accessor.InvalidateAll();
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
+    Result ContentStorageImpl::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
         R_TRY(this->EnsureEnabled());
         
         char old_content_path[FS_MAX_PATH] = {0};
@@ -352,13 +352,13 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
+    Result ContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
         R_TRY(this->EnsureEnabled());
         R_TRY(this->placeholder_accessor.SetSize(placeholder_id, size));
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
+    Result ContentStorageImpl::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
         /* Offset is too large */
         R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
@@ -370,82 +370,43 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetRightsIdFromPlaceHolderId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
-
-        FsRightsId rights_id = {0};
-        u8 key_generation = 0;
 
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
-        R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
+        ncm::RightsId rights_id;
+        R_TRY(GetRightsId(&rights_id, common_path));
         out_rights_id.SetValue(rights_id);
-        out_key_generation.SetValue(static_cast<u64>(key_generation));
 
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetRightsIdFromContentId(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, ContentId content_id) {
+    Result ContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
         
-        {
-            std::scoped_lock lk(this->rights_id_cache->mutex);
-
-            /* Attempt to locate the content id in the cache. */
-            for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
-
-                if (entry->last_accessed != 1 && content_id == entry->uuid) {
-                    entry->last_accessed = this->rights_id_cache->counter;
-                    this->rights_id_cache->counter++;
-                    out_rights_id.SetValue(entry->rights_id);
-                    out_key_generation.SetValue(entry->key_generation);
-                    return ResultSuccess();
-                }
-            }
+        if (this->rights_id_cache->Find(out_rights_id.GetPointer(), content_id)) {
+            return ResultSuccess();
         }
 
-        FsRightsId rights_id = {0};
-        u8 key_generation = 0;
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
-        R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
-        {
-            std::scoped_lock lk(this->rights_id_cache->mutex);
-            impl::RightsIdCache::Entry *eviction_candidate = &this->rights_id_cache->entries[0];
+        ncm::RightsId rights_id;
+        R_TRY(GetRightsId(&rights_id, common_path));
+        this->rights_id_cache->Store(content_id, rights_id);
 
-            /* Find a suitable existing entry to store our new one at. */
-            for (size_t i = 1; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
-
-                /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
-                if (content_id == entry->uuid || (content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {
-                    eviction_candidate = entry;
-                }
-            }
-
-            /* Update the cache. */
-            eviction_candidate->uuid = content_id.uuid;
-            eviction_candidate->rights_id = rights_id;
-            eviction_candidate->key_generation = key_generation;
-            eviction_candidate->last_accessed = this->rights_id_cache->counter;
-            this->rights_id_cache->counter++;
-
-            /* Set output. */
-            out_rights_id.SetValue(rights_id);
-            out_key_generation.SetValue(key_generation);
-        }
-
+        /* Set output. */
+        out_rights_id.SetValue(rights_id);
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
+    Result ContentStorageImpl::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
         /* Offset is too large */
         R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
@@ -472,26 +433,26 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetFreeSpaceSize(sf::Out<u64> out_size) {
+    Result ContentStorageImpl::GetFreeSpaceSize(sf::Out<u64> out_size) {
         struct statvfs st = {0};
         R_UNLESS(statvfs(this->root_path, &st) != -1, fsdevGetLastResult());
         out_size.SetValue(st.f_bfree);
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetTotalSpaceSize(sf::Out<u64> out_size) {
+    Result ContentStorageImpl::GetTotalSpaceSize(sf::Out<u64> out_size) {
         struct statvfs st = {0};
         R_UNLESS(statvfs(this->root_path, &st) != -1, fsdevGetLastResult());
         out_size.SetValue(st.f_blocks);
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::FlushPlaceHolder() {
+    Result ContentStorageImpl::FlushPlaceHolder() {
         this->placeholder_accessor.InvalidateAll();
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetSizeFromPlaceHolderId(sf::Out<u64> out_size, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<u64> out_size, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
         bool found_in_cache = false;
@@ -514,7 +475,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::RepairInvalidFileAttribute() {
+    Result ContentStorageImpl::RepairInvalidFileAttribute() {
         char content_root_path[FS_MAX_PATH] = {0};
         this->GetContentRootPath(content_root_path);
         unsigned int dir_depth = this->GetContentDirectoryDepth();
@@ -545,59 +506,25 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageInterface::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<FsRightsId> out_rights_id, sf::Out<u64> out_key_generation, PlaceHolderId placeholder_id, ContentId cache_content_id) {
+    Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
         R_TRY(this->EnsureEnabled());
         
-        {
-            std::scoped_lock lk(this->rights_id_cache->mutex);
-
-            /* Attempt to locate the content id in the cache. */
-            for (size_t i = 0; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
-
-                if (entry->last_accessed != 1 && cache_content_id == entry->uuid) {
-                    entry->last_accessed = this->rights_id_cache->counter;
-                    this->rights_id_cache->counter++;
-                    out_rights_id.SetValue(entry->rights_id);
-                    out_key_generation.SetValue(entry->key_generation);
-                    return ResultSuccess();
-                }
-            }
+        if (this->rights_id_cache->Find(out_rights_id.GetPointer(), cache_content_id)) {
+            return ResultSuccess();
         }
 
-        FsRightsId rights_id = {0};
-        u8 key_generation = 0;
-        char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
+        char placeholder_path[FS_MAX_PATH] = {0};
+
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
-        R_TRY(fsGetRightsIdAndKeyGenerationByPath(common_path, &key_generation, &rights_id));
 
-        {
-            std::scoped_lock lk(this->rights_id_cache->mutex);
-            impl::RightsIdCache::Entry *eviction_candidate = &this->rights_id_cache->entries[0];
+        ncm::RightsId rights_id;
+        R_TRY(GetRightsId(&rights_id, common_path));
+        this->rights_id_cache->Store(cache_content_id, rights_id);
 
-            /* Find a suitable existing entry to store our new one at. */
-            for (size_t i = 1; i < impl::RightsIdCache::MaxEntries; i++) {
-                impl::RightsIdCache::Entry *entry = &this->rights_id_cache->entries[i];
-
-                /* Change eviction candidates if the uuid already matches ours, or if the uuid doesn't already match and the last_accessed count is lower */
-                if (cache_content_id == entry->uuid || (cache_content_id != eviction_candidate->uuid && entry->last_accessed < eviction_candidate->last_accessed)) {
-                    eviction_candidate = entry;
-                }
-            }
-
-            /* Update the cache. */
-            eviction_candidate->uuid = cache_content_id.uuid;
-            eviction_candidate->rights_id = rights_id;
-            eviction_candidate->key_generation = key_generation;
-            eviction_candidate->last_accessed = this->rights_id_cache->counter;
-            this->rights_id_cache->counter++;
-
-            /* Set output. */
-            out_rights_id.SetValue(rights_id);
-            out_key_generation.SetValue(key_generation);
-        }
+        /* Set output. */
+        out_rights_id.SetValue(rights_id);
 
         return ResultSuccess();
     }

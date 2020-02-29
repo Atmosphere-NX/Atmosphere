@@ -16,6 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/fs/fs_rights_id.hpp>
 
 namespace ams::ncm {
 
@@ -541,6 +542,14 @@ namespace ams::ncm {
 
     static_assert(sizeof(ProgramLocation) == 0x10 && std::is_pod<ProgramLocation>::value, "ProgramLocation definition!");
     static_assert(sizeof(ProgramLocation) == sizeof(::NcmProgramLocation) && alignof(ProgramLocation) == alignof(::NcmProgramLocation), "ProgramLocation Libnx Compatibility");
+
+    struct RightsId {
+        fs::RightsId id;
+        u8 key_generation;
+        u8 reserved[7];
+    };
+    static_assert(sizeof(RightsId) == 0x18);
+    static_assert(std::is_pod<RightsId>::value);
 
     struct ContentMetaKey {
         ProgramId id;

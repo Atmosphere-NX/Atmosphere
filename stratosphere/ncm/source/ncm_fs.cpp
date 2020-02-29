@@ -44,7 +44,7 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result WriteFile(FILE *f, size_t offset, const void *buffer, size_t size, u32 option) {
+    Result WriteFile(FILE *f, size_t offset, const void *buffer, size_t size, ams::fs::WriteOption option) {
         R_UNLESS(fseek(f, 0, SEEK_END) == 0, fsdevGetLastResult());
         size_t existing_size = ftell(f);
 
@@ -52,7 +52,7 @@ namespace ams::ncm::fs {
         R_UNLESS(fseek(f, offset, SEEK_SET) == 0, fsdevGetLastResult());
         R_UNLESS(fwrite(buffer, 1, size, f) == size, fsdevGetLastResult());
 
-        if (option & FsWriteOption_Flush) {
+        if (option.HasFlushFlag()) {
             fflush(f);
         }
 
