@@ -22,7 +22,7 @@
 namespace ams::ncm::fs {
 
     Result OpenFile(FILE** out, const char *path, u32 mode);
-    Result WriteFile(FILE *f, size_t offset, const void *buffer, size_t size, u32 option);
+    Result WriteFile(FILE *f, size_t offset, const void *buffer, size_t size, ams::fs::WriteOption option);
     Result ReadFile(FILE *f, size_t offset, void *buffer, size_t size);
 
     Result HasFile(bool *out, const char *path);

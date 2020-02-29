@@ -201,7 +201,7 @@ namespace ams::ncm::impl {
             return FindContentMetaDatabaseEntry(out, storage_id);
         }
 
-        inline Result GetContentStorageNotActiveResult(StorageId storage_id) {
+        ALWAYS_INLINE Result GetContentStorageNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
                 case StorageId::GameCard:
                     return ResultGameCardContentStorageNotActive();
@@ -216,7 +216,7 @@ namespace ams::ncm::impl {
             }
         }
 
-        inline Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
+        ALWAYS_INLINE Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
                 case StorageId::GameCard:
                     return ResultGameCardContentMetaDatabaseNotActive();
@@ -241,7 +241,7 @@ namespace ams::ncm::impl {
             return ResultSuccess();
         }
 
-        void ReplaceMountName(char *out_path, const char *mount_name, const char *root_path) {
+        inline void ReplaceMountName(char *out_path, const char *mount_name, const char *root_path) {
             strcpy(out_path, mount_name);
             strcat(out_path, strchr(root_path, ':'));
         }
