@@ -21,13 +21,13 @@
 
 namespace ams::hvisor::cpu {
 
-    static inline u32 GetInstructionCachePolicy(void)
+    inline u32 GetInstructionCachePolicy(void)
     {
         u32 ctr = static_cast<u32>(THERMOSPHERE_GET_SYSREG(ctr_el0));
         return (ctr >> 14) & 3;
     }
 
-    static inline u32 GetSmallestInstructionCacheLineSize(void)
+    inline u32 GetSmallestInstructionCacheLineSize(void)
     {
         u32 ctr = static_cast<u32>(THERMOSPHERE_GET_SYSREG(ctr_el0));
         u32 shift = ctr & 0xF;
@@ -35,7 +35,7 @@ namespace ams::hvisor::cpu {
         return 4 << shift;
     }
 
-    static inline u32 GetSmallestDataCacheLineSize(void)
+    inline u32 GetSmallestDataCacheLineSize(void)
     {
         u32 ctr = static_cast<u32>(THERMOSPHERE_GET_SYSREG(ctr_el0));
         u32 shift = (ctr >> 16) & 0xF;
@@ -43,13 +43,13 @@ namespace ams::hvisor::cpu {
         return 4 << shift;
     }
 
-    static inline void InvalidateInstructionCache(void)
+    ALWAYS_INLINE void InvalidateInstructionCache(void)
     {
         __asm__ __volatile__ ("ic ialluis" ::: "memory");
         cpu::isb();
     }
 
-    static inline void InvalidateInstructionCacheLocal(void)
+    ALWAYS_INLINE void InvalidateInstructionCacheLocal(void)
     {
         __asm__ __volatile__ ("ic iallu" ::: "memory");
         cpu::isb();

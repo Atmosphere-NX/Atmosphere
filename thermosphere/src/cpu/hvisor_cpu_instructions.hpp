@@ -24,8 +24,8 @@
     res;\
 })
 
-#define DECLARE_SINGLE_ASM_INSN2(name, what) static inline void name() { __asm__ __volatile__ (what ::: "memory"); }
-#define DECLARE_SINGLE_ASM_INSN(name) static inline void name() { __asm__ __volatile__ (STRINGIZE(name) ::: "memory"); }
+#define DECLARE_SINGLE_ASM_INSN2(name, what) ALWAYS_INLINE void name() { __asm__ __volatile__ (what ::: "memory"); }
+#define DECLARE_SINGLE_ASM_INSN(name) ALWAYS_INLINE void name() { __asm__ __volatile__ (STRINGIZE(name) ::: "memory"); }
 
 namespace ams::hvisor::cpu {
 
@@ -55,7 +55,7 @@ namespace ams::hvisor::cpu {
     DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl1, "tlbi vmalle1is")
     DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl1Stage12, "tlbi alle1is")
 
-    ALWAYS_INLINE static void TlbInvalidateEl2Page(uintptr_t addr)
+    ALWAYS_INLINE void TlbInvalidateEl2Page(uintptr_t addr)
     {
         __asm__ __volatile__ ("tlbi vae2is, %0" :: "r"(addr) : "memory");
     }

@@ -22,12 +22,12 @@
 
 namespace ams::hvisor {
 
-    static inline u64 ComputeCntvct(const ExceptionStackFrame *frame)
+    inline u64 ComputeCntvct(const ExceptionStackFrame *frame)
     {
         return frame->cntpct_el0 - currentCoreCtx->GetTotalTimeInHypervisor();
     }
 
-    static inline void WriteEmulatedPhysicalCompareValue(ExceptionStackFrame *frame, u64 val)
+    inline void WriteEmulatedPhysicalCompareValue(ExceptionStackFrame *frame, u64 val)
     {
         // We lied about the value of cntpct, so we need to compute the time delta
         // the guest actually intended to use...
@@ -36,7 +36,7 @@ namespace ams::hvisor {
         THERMOSPHERE_SET_SYSREG(cntp_cval_el0, frame->cntpct_el0 + (val - vct));
     }
 
-    static inline bool CheckRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
+    inline bool CheckRescheduleEmulatedPtimer(ExceptionStackFrame *frame)
     {
         // Evaluate if the timer has really expired in the PoV of the guest kernel.
         // If not, reschedule (add missed time delta) it & exit early
@@ -53,14 +53,14 @@ namespace ams::hvisor {
         return true;
     }
 
-    static inline void EnableGuestTimerTraps(void)
+    ALWAYS_INLINE void EnableGuestTimerTraps(void)
     {
         // Disable event streams, trap everything
         u64 cnthctl = 0;
         THERMOSPHERE_SET_SYSREG(cnthctl_el2, cnthctl);
     }
 
-    static inline void UpdateVirtualOffsetSysreg(void)
+    ALWAYS_INLINE void UpdateVirtualOffsetSysreg(void)
     {
         THERMOSPHERE_SET_SYSREG(cntvoff_el2, currentCoreCtx->GetTotalTimeInHypervisor());
     }

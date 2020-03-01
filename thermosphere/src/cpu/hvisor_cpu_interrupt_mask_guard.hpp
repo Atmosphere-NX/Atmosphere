@@ -20,21 +20,21 @@
 
 namespace ams::hvisor::cpu {
 
-    static inline u64 MaskIrq()
+    ALWAYS_INLINE u64 MaskIrq()
     {
         u64 daif = THERMOSPHERE_GET_SYSREG(daif);
         THERMOSPHERE_SET_SYSREG_IMM(daifset, BIT(1));
         return daif;
     }
 
-    static inline u64 UnmaskIrq()
+    ALWAYS_INLINE u64 UnmaskIrq()
     {
         u64 daif = THERMOSPHERE_GET_SYSREG(daif);
         THERMOSPHERE_SET_SYSREG_IMM(daifclr, BIT(1));
         return daif;
     }
 
-    static inline void RestoreInterruptFlags(u64 flags)
+    ALWAYS_INLINE void RestoreInterruptFlags(u64 flags)
     {
         THERMOSPHERE_SET_SYSREG(daif, flags);
     }
