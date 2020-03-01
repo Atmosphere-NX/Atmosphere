@@ -38,7 +38,7 @@ namespace ams::ncm {
             virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) override;
             virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;
             virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType type) override;
-            virtual Result Has(sf::Out<bool> out, ContentMetaKey key) override;
+            virtual Result Has(sf::Out<bool> out, const ContentMetaKey &key) override;
             virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) override;
             virtual Result GetSize(sf::Out<u64> out_size, ContentMetaKey key) override;
             virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, ContentMetaKey key) override;

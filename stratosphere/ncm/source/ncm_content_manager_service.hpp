@@ -23,36 +23,36 @@ namespace ams::ncm {
     class ContentManagerService final : public sf::IServiceObject {
         protected:
             enum class CommandId {
-                CreateContentStorage = 0,
-                CreateContentMetaDatabase = 1,
-                VerifyContentStorage = 2,
-                VerifyContentMetaDatabase = 3,
-                OpenContentStorage = 4,
-                OpenContentMetaDatabase = 5,
-                CloseContentStorageForcibly = 6,
-                CloseContentMetaDatabaseForcibly = 7,
-                CleanupContentMetaDatabase = 8,
-                ActivateContentStorage = 9,
-                InactivateContentStorage = 10,
-                ActivateContentMetaDatabase = 11,
-                InactivateContentMetaDatabase = 12,
-                InvalidateRightsIdCache = 13,
+                CreateContentStorage                = 0,
+                CreateContentMetaDatabase           = 1,
+                VerifyContentStorage                = 2,
+                VerifyContentMetaDatabase           = 3,
+                OpenContentStorage                  = 4,
+                OpenContentMetaDatabase             = 5,
+                CloseContentStorageForcibly         = 6,
+                CloseContentMetaDatabaseForcibly    = 7,
+                CleanupContentMetaDatabase          = 8,
+                ActivateContentStorage              = 9,
+                InactivateContentStorage            = 10,
+                ActivateContentMetaDatabase         = 11,
+                InactivateContentMetaDatabase       = 12,
+                InvalidateRightsIdCache             = 13,
             };
         public:
-            virtual Result CreateContentStorage(StorageId storage_id);
-            virtual Result CreateContentMetaDatabase(StorageId storage_id);
-            virtual Result VerifyContentStorage(StorageId storage_id);
-            virtual Result VerifyContentMetaDatabase(StorageId storage_id);
-            virtual Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id);
-            virtual Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id);
-            virtual Result CloseContentStorageForcibly(StorageId storage_id);
-            virtual Result CloseContentMetaDatabaseForcibly(StorageId storage_id);
-            virtual Result CleanupContentMetaDatabase(StorageId storage_id);
-            virtual Result ActivateContentStorage(StorageId storage_id);
-            virtual Result InactivateContentStorage(StorageId storage_id);
-            virtual Result ActivateContentMetaDatabase(StorageId storage_id);
-            virtual Result InactivateContentMetaDatabase(StorageId storage_id);
-            virtual Result InvalidateRightsIdCache();
+            Result CreateContentStorage(StorageId storage_id);
+            Result CreateContentMetaDatabase(StorageId storage_id);
+            Result VerifyContentStorage(StorageId storage_id);
+            Result VerifyContentMetaDatabase(StorageId storage_id);
+            Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id);
+            Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id);
+            Result CloseContentStorageForcibly(StorageId storage_id);
+            Result CloseContentMetaDatabaseForcibly(StorageId storage_id);
+            Result CleanupContentMetaDatabase(StorageId storage_id);
+            Result ActivateContentStorage(StorageId storage_id);
+            Result InactivateContentStorage(StorageId storage_id);
+            Result ActivateContentMetaDatabase(StorageId storage_id);
+            Result InactivateContentMetaDatabase(StorageId storage_id);
+            Result InvalidateRightsIdCache();
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(CreateContentStorage),
