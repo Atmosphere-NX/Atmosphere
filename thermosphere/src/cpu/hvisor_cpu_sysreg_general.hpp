@@ -445,4 +445,47 @@ namespace ams::hvisor::cpu {
         CNTCTL_ENABLE       = BITL(0),
     };
 
+    // TCR_ELx flags
+    enum TcrFlags {
+        TCR_IRGN_NC         = (0 << 8),
+        TCR_IRGN_WBWA       = (1 << 8),
+        TCR_IRGN_WT         = (2 << 8),
+        TCR_IRGN_WBNWA      = (3 << 8),
+        TCR_IRGN_MASK       = (3 << 8),
+        TCR_ORGN_NC         = (0 << 10),
+        TCR_ORGN_WBWA       = (1 << 10),
+        TCR_ORGN_WT         = (2 << 10),
+        TCR_ORGN_WBNWA      = (3 << 10),
+        TCR_ORGN_MASK       = (3 << 10),
+        TCR_NOT_SHARED      = (0 << 12),
+        TCR_SHARED_OUTER    = (2 << 12),
+        TCR_SHARED_INNER    = (3 << 12),
+        TCR_EPD1_DISABLE    = BITL(23),
+
+        TCR_EL1_RSVD        = BITL(31),
+        TCR_EL2_RSVD        = (BITL(31) | BITL(23)),
+        VTCR_EL2_RSVD       = BITL(31),
+        TCR_EL3_RSVD        = (BITL(31) | BITL(23)),
+    };
+
+    // Could have used enum class here, but can't start identifiers with a digit...
+    enum TranslationGranuleSize {
+        TranslationGranule_4K   = 0,
+        TranslationGranule_64K  = 1,
+        TranslationGranule_16K  = 2,
+    };
+
+    constexpr size_t GetTranslationGranuleBitSize(TranslationGranuleSize granuleSize)
+    {
+        switch (granuleSize) {
+            case TranslationGranule_4K:     return 12;
+            case TranslationGranule_64K:    return 16;
+            case TranslationGranule_16K:    return 14;
+            default:                        return 0;
+        }
+    }
+
+    constexpr u64 TCR_T0SZ(size_t addressSpaceSize) { return (64ul - (addressSpaceSize & 0x3F)) << 0; }
+    constexpr u64 TCR_PS(u64 n)                     { return (n & 7) << 16; }
+    constexpr u64 VTCR_SL0(u64 n)                   { return (n & 3) << 6; }
  }
