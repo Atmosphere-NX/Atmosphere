@@ -38,8 +38,9 @@ namespace ams::hvisor::cpu {
     };
 
     // Multi-byte attributes...
-    constexpr u64 MMU_ATTRINDEX(u64 idx) { return (idx & 8) << 2; }
-    constexpr u64 MMU_MEMATTR(u64 attr) { return (attr & 0xF) << 2; }
+    constexpr u64 MMU_ATTRINDX(u64 idx)     { return (idx & 8) << 2; }
+    constexpr u64 MMU_MEMATTR(u64 attr)     { return (attr & 0xF) << 2; }
+    constexpr u64 MMU_SH(u64 sh)            { return (sh & 3) << 8; }
 
     // Attributes. They are defined in a way that allows recursive page tables (assuming PBHA isn't used)
     enum MmuPteAttributes : u64 {
@@ -66,9 +67,9 @@ namespace ams::hvisor::cpu {
         MMU_AF              = BITL(10),
 
         // SH[1:0]
-        MMU_NON_SHAREABLE   = 0 << 8,
-        MMU_OUTER_SHAREABLE = 2 << 8,
-        MMU_INNER_SHAREABLE = 2 << 8,
+        MMU_NON_SHAREABLE   = MMU_SH(0),
+        MMU_OUTER_SHAREABLE = MMU_SH(2),
+        MMU_INNER_SHAREABLE = MMU_SH(3),
 
         // AP[2:1], stage 1 only. AP[0] does not exist.
         MMU_AP_PRIV_RW      = 0 << 6,
