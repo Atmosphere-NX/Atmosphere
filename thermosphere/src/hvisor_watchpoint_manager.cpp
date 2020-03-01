@@ -105,7 +105,7 @@ namespace ams::hvisor {
         } else {
             size_t off = addr & 7ull;
             wp.vr = addr & ~7ul;
-            wp.cr.bas = MASK2(off + size, off);
+            wp.cr.bas = MASK2(off + size - 1, off);
         }
 
         return AddImpl(addr, size, wp);
