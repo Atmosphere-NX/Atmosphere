@@ -469,7 +469,7 @@ namespace ams::hvisor::cpu {
     };
 
     // Could have used enum class here, but can't start identifiers with a digit...
-    enum TranslationGranuleSize {
+    enum TranslationGranuleSize : u64 {
         TranslationGranule_4K   = 0,
         TranslationGranule_64K  = 1,
         TranslationGranule_16K  = 2,
@@ -485,6 +485,10 @@ namespace ams::hvisor::cpu {
         }
     }
 
+    constexpr u64 TCR_TG0(TranslationGranuleSize granuleSize)
+    {
+        return (granuleSize & 3) << 14;
+    }
     constexpr u64 TCR_T0SZ(size_t addressSpaceSize) { return (64ul - (addressSpaceSize & 0x3F)) << 0; }
     constexpr u64 TCR_PS(u64 n)                     { return (n & 7) << 16; }
     constexpr u64 VTCR_SL0(u64 n)                   { return (n & 3) << 6; }
