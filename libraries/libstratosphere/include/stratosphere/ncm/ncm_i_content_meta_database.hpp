@@ -46,27 +46,6 @@ namespace ams::ncm {
                 GetRequiredApplicationVersion    = 19,
                 GetContentIdByTypeAndIdOffset    = 20,
             };
-        protected:
-            ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs;
-            char mount_name[16];
-            bool disabled;
-        protected:
-            Result EnsureEnabled() {
-                R_UNLESS(!this->disabled, ncm::ResultInvalidContentMetaDatabase());
-                return ResultSuccess();
-            }
-        public:
-            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) :
-                kvs(kvs), disabled(false)
-            {
-                /* ... */
-            }
-
-            IContentMetaDatabase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) :
-                IContentMetaDatabase(kvs)
-            {
-                std::strcpy(this->mount_name, mount_name);
-            }
         public:
             /* Actual commands. */
             virtual Result Set(ContentMetaKey key, sf::InBuffer value) = 0;

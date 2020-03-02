@@ -19,7 +19,8 @@
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 #include <optional>
 
-#include "../ncm_content_meta_database.hpp"
+#include "../ncm_content_meta_database_impl.hpp"
+#include "../ncm_on_memory_content_meta_database_impl.hpp"
 #include "../ncm_content_storage_impl.hpp"
 #include "../ncm_fs.hpp"
 #include "../ncm_make_path.hpp"
@@ -585,12 +586,12 @@ namespace ams::ncm::impl {
             auto mount_guard = SCOPE_GUARD { fs::Unmount(entry->mount_point); };
             R_TRY(entry->kvs->Initialize(entry->meta_path, entry->max_content_metas));
             R_TRY(entry->kvs->Load());
-            entry->content_meta_database = std::make_shared<ContentMetaDatabaseInterface>(std::addressof(*entry->kvs), entry->mount_point);
+            entry->content_meta_database = std::make_shared<ContentMetaDatabaseImpl>(std::addressof(*entry->kvs), entry->mount_point);
             mount_guard.Cancel();
         } else {
             R_TRY(entry->kvs->Initialize(entry->max_content_metas));
             R_TRY(entry->kvs->Load());
-            entry->content_meta_database = std::make_shared<OnMemoryContentMetaDatabaseInterface>(std::addressof(*entry->kvs));
+            entry->content_meta_database = std::make_shared<OnMemoryContentMetaDatabaseImpl>(std::addressof(*entry->kvs));
         }
 
         return ResultSuccess();

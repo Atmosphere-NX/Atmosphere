@@ -17,14 +17,15 @@
 #pragma once
 #include <switch.h>
 #include <stratosphere.hpp>
+#include "ncm_content_meta_database_impl_base.hpp"
 
 namespace ams::ncm {
 
-    class ContentMetaDatabaseInterface : public IContentMetaDatabase {
+    class ContentMetaDatabaseImpl : public ContentMetaDatabaseImplBase {
         public:
-            ContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) : IContentMetaDatabase(kvs, mount_name) {
+            ContentMetaDatabaseImpl(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) : ContentMetaDatabaseImplBase(kvs, mount_name) {
             }
-            ContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : IContentMetaDatabase(kvs) {
+            ContentMetaDatabaseImpl(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : ContentMetaDatabaseImplBase(kvs) {
             }
         private:
             Result GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
@@ -55,16 +56,6 @@ namespace ams::ncm {
             /* APIs. */
             virtual Result GetLatestProgram(ContentId *out_content_id, ProgramId program_id) override;
             virtual Result GetLatestData(ContentId *out_content_id, ProgramId program_id) override;
-    };
-
-    class OnMemoryContentMetaDatabaseInterface : public ContentMetaDatabaseInterface {
-        public:
-            OnMemoryContentMetaDatabaseInterface(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : ContentMetaDatabaseInterface(kvs) {
-            }
-        public:
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;
-            virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
-            virtual Result Commit() override;
     };
 
 }
