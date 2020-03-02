@@ -148,7 +148,7 @@ namespace ams::ncm {
         return ncm::ResultContentMetaNotFound();
     }
 
-    Result ContentMetaDatabaseImpl::Set(ContentMetaKey key, sf::InBuffer value) {
+    Result ContentMetaDatabaseImpl::Set(const ContentMetaKey &key, sf::InBuffer value) {
         R_TRY(this->EnsureEnabled());
         return this->kvs->Set(key, value.GetPointer(), value.GetSize());
     }
@@ -158,7 +158,7 @@ namespace ams::ncm {
         return this->kvs->Get(out_size.GetPointer(), out_value.GetPointer(), out_value.GetSize(), key);
     }
 
-    Result ContentMetaDatabaseImpl::Remove(ContentMetaKey key) {
+    Result ContentMetaDatabaseImpl::Remove(const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
         return this->kvs->Remove(key);
     }

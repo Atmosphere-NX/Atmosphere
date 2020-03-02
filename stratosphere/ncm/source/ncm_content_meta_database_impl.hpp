@@ -31,9 +31,9 @@ namespace ams::ncm {
             Result GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
             Result GetLatestContentMetaKeyImpl(ContentMetaKey *out_key, ProgramId id);
         public:
-            virtual Result Set(ContentMetaKey key, sf::InBuffer value) override;
+            virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;
             virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) override;
-            virtual Result Remove(ContentMetaKey key) override;
+            virtual Result Remove(const ContentMetaKey &key) override;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) override;
             virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, u32 start_index) override;
             virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) override;

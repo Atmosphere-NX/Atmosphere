@@ -48,9 +48,9 @@ namespace ams::ncm {
             };
         public:
             /* Actual commands. */
-            virtual Result Set(ContentMetaKey key, sf::InBuffer value) = 0;
+            virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) = 0;
             virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) = 0;
-            virtual Result Remove(ContentMetaKey key) = 0;
+            virtual Result Remove(const ContentMetaKey &key) = 0;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) = 0;
             virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, u32 start_index) = 0;
             virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) = 0;
