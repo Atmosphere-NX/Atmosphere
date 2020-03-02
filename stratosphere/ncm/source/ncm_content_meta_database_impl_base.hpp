@@ -23,24 +23,28 @@ namespace ams::ncm {
         NON_COPYABLE(ContentMetaDatabaseImplBase);
         NON_MOVEABLE(ContentMetaDatabaseImplBase);
         protected:
-            ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs;
+            using ContentMetaKeyValueStore = ams::kvdb::MemoryKeyValueStore<ContentMetaKey>;
+        protected:
+            ContentMetaKeyValueStore *kvs;
             char mount_name[16];
             bool disabled;
         protected:
-            ContentMetaDatabaseImplBase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) :
-                kvs(kvs), disabled(false)
-            {
-                /* ... */
-            }
+            ContentMetaDatabaseImplBase(ContentMetaKeyValueStore *kvs) : kvs(kvs), disabled(false) { /* ... */ }
 
-            ContentMetaDatabaseImplBase(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) :
-                ContentMetaDatabaseImplBase(kvs)
-            {
+            ContentMetaDatabaseImplBase(ContentMetaKeyValueStore *kvs, const char *mount_name) : ContentMetaDatabaseImplBase(kvs) {
                 std::strcpy(this->mount_name, mount_name);
             }
         protected:
             Result EnsureEnabled() {
                 R_UNLESS(!this->disabled, ncm::ResultInvalidContentMetaDatabase());
+                return ResultSuccess();
+            }
+
+            Result FindContentMetaKeyValue(ContentMetaKeyValueStore::Entry **out_entry, const ContentMetaKey &key) {
+                const auto it = this->kvs->lower_bound(key);
+                R_UNLESS(it != this->kvs->end(), ncm::ResultContentMetaNotFound());
+                R_UNLESS(it->GetKey().id == key.id, ncm::ResultContentMetaNotFound());
+                *out_entry = it;
                 return ResultSuccess();
             }
     };

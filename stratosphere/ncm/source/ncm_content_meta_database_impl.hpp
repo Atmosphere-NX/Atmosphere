@@ -23,10 +23,8 @@ namespace ams::ncm {
 
     class ContentMetaDatabaseImpl : public ContentMetaDatabaseImplBase {
         public:
-            ContentMetaDatabaseImpl(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs, const char *mount_name) : ContentMetaDatabaseImplBase(kvs, mount_name) {
-            }
-            ContentMetaDatabaseImpl(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : ContentMetaDatabaseImplBase(kvs) {
-            }
+            ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs, const char *mount_name) : ContentMetaDatabaseImplBase(kvs, mount_name) { /* ... */ }
+            ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs) : ContentMetaDatabaseImplBase(kvs) { /* ... */ }
         private:
             Result GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
             Result GetLatestContentMetaKeyImpl(ContentMetaKey *out_key, ProgramId id);
