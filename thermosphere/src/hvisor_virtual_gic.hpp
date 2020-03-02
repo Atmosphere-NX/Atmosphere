@@ -20,7 +20,6 @@
 #include "hvisor_core_context.hpp"
 #include "cpu/hvisor_cpu_exception_sysregs.hpp"
 #include "hvisor_irq_manager.hpp"
-#include "memory_map.h"
 
 namespace ams::hvisor {
 

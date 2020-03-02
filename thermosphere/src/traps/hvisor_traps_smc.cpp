@@ -16,10 +16,10 @@
 
 #include "hvisor_traps_smc.hpp"
 #include "../hvisor_core_context.hpp"
+#include "../hvisor_memory_map.hpp"
 #include "../cpu/hvisor_cpu_caches.hpp"
 
 #include "../debug_manager.h"
-#include "../memory_map.h"
 
 namespace {
 
@@ -36,7 +36,7 @@ namespace {
         if (cpuId < MAX_CORE) {
             auto &ctx = ams::hvisor::CoreContext::GetInstanceFor(cpuId);
             ctx.SetKernelEntrypoint(ep);
-            frame->WriteRegister(2, g_loadImageLayout.startPa + 4); //FIXME
+            frame->WriteRegister(2, ams::hvisor::MemoryMap::GetStartPa() + 4); //FIXME
         }
         ams::hvisor::cpu::dmb();
     }
@@ -52,7 +52,7 @@ namespace {
         // We may trigger warmboot, depending on powerState (x1 or default value)
         uintptr_t ep = frame->ReadRegister(epIdx);
         ams::hvisor::currentCoreCtx->SetKernelEntrypoint(ep, true);
-        frame->WriteRegister(epIdx, g_loadImageLayout.startPa + 4); //FIXME
+        frame->WriteRegister(epIdx, ams::hvisor::MemoryMap::GetStartPa() + 4); //FIXME
 
         ams::hvisor::cpu::dmb();
     }

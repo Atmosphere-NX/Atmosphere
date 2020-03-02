@@ -20,9 +20,8 @@
 #include "hvisor_synchronization.hpp"
 #include "hvisor_i_interrupt_task.hpp"
 #include "hvisor_exception_stack_frame.hpp"
+#include "hvisor_memory_map.hpp"
 #include "cpu/hvisor_cpu_sysreg_general.hpp"
-
-#include "memory_map.h"
 
 namespace ams::hvisor {
 
@@ -33,9 +32,9 @@ namespace ams::hvisor {
             static constexpr u8 hostPriority = 0;
             static constexpr u8 guestPriority = 1;
 
-            static inline volatile auto *const gicd = (volatile GicV2Distributor *)MEMORY_MAP_VA_GICD; 
-            static inline volatile auto *const gicc = (volatile GicV2Controller *)MEMORY_MAP_VA_GICC; 
-            static inline volatile auto *const gich = (volatile GicV2VirtualInterfaceController *)MEMORY_MAP_VA_GICH;
+            static inline volatile auto *const gicd = reinterpret_cast<volatile GicV2Distributor *>(MemoryMap::gicdVa); 
+            static inline volatile auto *const gicc = reinterpret_cast<volatile GicV2Controller *>(MemoryMap::giccVa); 
+            static inline volatile auto *const gich = reinterpret_cast<volatile GicV2VirtualInterfaceController *>(MemoryMap::gichVa);
 
             static bool IsGuestInterrupt(u32 id);
 

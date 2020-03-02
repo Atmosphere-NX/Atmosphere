@@ -51,9 +51,11 @@ namespace ams::hvisor::cpu {
     DECLARE_SINGLE_ASM_INSN2(dsbSy, "dsb sy")
     DECLARE_SINGLE_ASM_INSN(isb)
 
+    DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl2Local, "tlbi alle2")
     DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl2, "tlbi alle2is")
     DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl1, "tlbi vmalle1is")
     DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl1Stage12, "tlbi alle1is")
+    DECLARE_SINGLE_ASM_INSN2(TlbInvalidateEl1Stage12Local, "tlbi alle1")
 
     ALWAYS_INLINE void TlbInvalidateEl2Page(uintptr_t addr)
     {
