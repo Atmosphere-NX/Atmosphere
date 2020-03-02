@@ -26,34 +26,36 @@ namespace ams::ncm {
         NON_MOVEABLE(IContentStorage);
         protected:
             enum class CommandId {
-                GeneratePlaceHolderId                    = 0,
-                CreatePlaceHolder                        = 1,
-                DeletePlaceHolder                        = 2,
-                HasPlaceHolder                           = 3,
-                WritePlaceHolder                         = 4,
-                Register                                 = 5,
-                Delete                                   = 6,
-                Has                                      = 7,
-                GetPath                                  = 8,
-                GetPlaceHolderPath                       = 9,
-                CleanupAllPlaceHolder                    = 10,
-                ListPlaceHolder                          = 11,
-                GetContentCount                          = 12,
-                ListContentId                            = 13,
-                GetSizeFromContentId                     = 14,
-                DisableForcibly                          = 15,
-                RevertToPlaceHolder                      = 16,
-                SetPlaceHolderSize                       = 17,
-                ReadContentIdFile                        = 18,
-                GetRightsIdFromPlaceHolderId             = 19,
-                GetRightsIdFromContentId                 = 20,
-                WriteContentForDebug                     = 21,
-                GetFreeSpaceSize                         = 22,
-                GetTotalSpaceSize                        = 23,
-                FlushPlaceHolder                         = 24,
-                GetSizeFromPlaceHolderId                 = 25,
-                RepairInvalidFileAttribute               = 26,
-                GetRightsIdFromPlaceHolderIdWithCache    = 27,
+                GeneratePlaceHolderId                     = 0,
+                CreatePlaceHolder                         = 1,
+                DeletePlaceHolder                         = 2,
+                HasPlaceHolder                            = 3,
+                WritePlaceHolder                          = 4,
+                Register                                  = 5,
+                Delete                                    = 6,
+                Has                                       = 7,
+                GetPath                                   = 8,
+                GetPlaceHolderPath                        = 9,
+                CleanupAllPlaceHolder                     = 10,
+                ListPlaceHolder                           = 11,
+                GetContentCount                           = 12,
+                ListContentId                             = 13,
+                GetSizeFromContentId                      = 14,
+                DisableForcibly                           = 15,
+                RevertToPlaceHolder                       = 16,
+                SetPlaceHolderSize                        = 17,
+                ReadContentIdFile                         = 18,
+                GetRightsIdFromPlaceHolderIdDeprecated    = 19,
+                GetRightsIdFromPlaceHolderId              = 19,
+                GetRightsIdFromContentIdDeprecated        = 20,
+                GetRightsIdFromContentId                  = 20,
+                WriteContentForDebug                      = 21,
+                GetFreeSpaceSize                          = 22,
+                GetTotalSpaceSize                         = 23,
+                FlushPlaceHolder                          = 24,
+                GetSizeFromPlaceHolderId                  = 25,
+                RepairInvalidFileAttribute                = 26,
+                GetRightsIdFromPlaceHolderIdWithCache     = 27,
             };
         public:
             IContentStorage() { /* ... */ }
@@ -77,7 +79,9 @@ namespace ams::ncm {
             virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) = 0;
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) = 0;
             virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
             virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) = 0;
             virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) = 0;
             virtual Result WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) = 0;
             virtual Result GetFreeSpaceSize(sf::Out<u64> out_size) = 0;
@@ -105,18 +109,20 @@ namespace ams::ncm {
                 MAKE_SERVICE_COMMAND_META(ListContentId),
                 MAKE_SERVICE_COMMAND_META(GetSizeFromContentId),
                 MAKE_SERVICE_COMMAND_META(DisableForcibly),
-                MAKE_SERVICE_COMMAND_META(RevertToPlaceHolder,                   hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(SetPlaceHolderSize,                    hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(ReadContentIdFile,                     hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderId,          hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromContentId,              hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(WriteContentForDebug,                  hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetFreeSpaceSize,                      hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetTotalSpaceSize,                     hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(FlushPlaceHolder,                      hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(GetSizeFromPlaceHolderId,              hos::Version_400),
-                MAKE_SERVICE_COMMAND_META(RepairInvalidFileAttribute,            hos::Version_400),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderIdWithCache, hos::Version_800),
+                MAKE_SERVICE_COMMAND_META(RevertToPlaceHolder,                       hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(SetPlaceHolderSize,                        hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(ReadContentIdFile,                         hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderIdDeprecated,    hos::Version_200, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderId,              hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromContentIdDeprecated,        hos::Version_200, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromContentId,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(WriteContentForDebug,                      hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetFreeSpaceSize,                          hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(GetTotalSpaceSize,                         hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(FlushPlaceHolder,                          hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(GetSizeFromPlaceHolderId,                  hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(RepairInvalidFileAttribute,                hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderIdWithCache,     hos::Version_800),
             };
     };
 

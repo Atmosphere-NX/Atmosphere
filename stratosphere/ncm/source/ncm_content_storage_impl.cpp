@@ -370,6 +370,13 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
+    Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+        ncm::RightsId rights_id;
+        R_TRY(this->GetRightsIdFromPlaceHolderId(&rights_id, placeholder_id));
+        out_rights_id.SetValue(rights_id.id);
+        return ResultSuccess();
+    }
+
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
@@ -382,6 +389,13 @@ namespace ams::ncm {
         R_TRY(GetRightsId(&rights_id, common_path));
         out_rights_id.SetValue(rights_id);
 
+        return ResultSuccess();
+    }
+
+    Result ContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
+        ncm::RightsId rights_id;
+        R_TRY(this->GetRightsIdFromContentId(&rights_id, content_id));
+        out_rights_id.SetValue(rights_id.id);
         return ResultSuccess();
     }
 

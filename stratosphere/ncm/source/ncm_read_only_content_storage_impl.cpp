@@ -174,8 +174,19 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
+    Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
+        return ResultInvalidContentStorageOperation();
+    }
+
     Result ReadOnlyContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         return ResultInvalidContentStorageOperation();
+    }
+
+    Result ReadOnlyContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
+        ncm::RightsId rights_id;
+        R_TRY(this->GetRightsIdFromContentId(&rights_id, content_id));
+        out_rights_id.SetValue(rights_id.id);
+        return ResultSuccess();
     }
 
     Result ReadOnlyContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
