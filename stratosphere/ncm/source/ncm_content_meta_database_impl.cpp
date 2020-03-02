@@ -153,7 +153,7 @@ namespace ams::ncm {
         return this->kvs->Set(key, value.GetPointer(), value.GetSize());
     }
 
-    Result ContentMetaDatabaseImpl::Get(sf::Out<u64> out_size, ContentMetaKey key, sf::OutBuffer out_value) {
+    Result ContentMetaDatabaseImpl::Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) {
         R_TRY(this->EnsureEnabled());
         return this->kvs->Get(out_size.GetPointer(), out_value.GetPointer(), out_value.GetSize(), key);
     }
@@ -163,11 +163,11 @@ namespace ams::ncm {
         return this->kvs->Remove(key);
     }
 
-    Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type) {
+    Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
         return this->GetContentIdByTypeImpl(out_content_id.GetPointer(), key, type, std::nullopt);
     }
 
-    Result ContentMetaDatabaseImpl::ListContentInfo(sf::Out<u32> out_count, const sf::OutArray<ContentInfo> &out_info, ContentMetaKey key, u32 offset) {
+    Result ContentMetaDatabaseImpl::ListContentInfo(sf::Out<u32> out_count, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, u32 offset) {
         R_UNLESS(offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
@@ -330,7 +330,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetSize(sf::Out<u64> out_size, ContentMetaKey key) {
+    Result ContentMetaDatabaseImpl::GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
         R_UNLESS(this->kvs->GetCount() != 0, ncm::ResultContentMetaNotFound());
 
@@ -342,7 +342,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetRequiredSystemVersion(sf::Out<u32> out_version, ContentMetaKey key) {
+    Result ContentMetaDatabaseImpl::GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
         R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch, ncm::ResultInvalidContentMetaKey());
 
@@ -357,7 +357,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<ProgramId> out_patch_id, ContentMetaKey key) {
+    Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<ProgramId> out_patch_id, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
         R_UNLESS(key.type == ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
 
@@ -424,7 +424,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, ContentMetaKey key, ContentId content_id) {
+    Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, ContentId content_id) {
         const ContentMetaHeader *header = nullptr;
         size_t value_size = 0;
         R_TRY(GetContentMetaValuePointer(&header, &value_size, key, this->kvs));
@@ -445,7 +445,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, ContentMetaKey key, u32 start_index) {
+    Result ContentMetaDatabaseImpl::ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, u32 start_index) {
         R_UNLESS(start_index <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         
@@ -474,7 +474,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, ContentMetaKey key) {
+    Result ContentMetaDatabaseImpl::GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
         const ContentMetaHeader *header = nullptr;
@@ -484,7 +484,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetRequiredApplicationVersion(sf::Out<u32> out_version, ContentMetaKey key) {
+    Result ContentMetaDatabaseImpl::GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
         const ContentMetaHeader *value = nullptr;
@@ -504,7 +504,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, ContentMetaKey key, ContentType type, u8 id_offset) {
+    Result ContentMetaDatabaseImpl::GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
         ContentId content_id;
         R_TRY(this->GetContentIdByTypeImpl(&content_id, key, type, std::optional(id_offset)));
         out_content_id.SetValue(content_id);
