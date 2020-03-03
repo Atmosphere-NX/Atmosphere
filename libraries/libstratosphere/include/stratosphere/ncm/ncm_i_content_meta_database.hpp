@@ -69,10 +69,6 @@ namespace ams::ncm {
             virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) = 0;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) = 0;
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) = 0;
-
-            /* APIs. */
-            virtual Result GetLatestProgram(ContentId *out_content_id, ProgramId program_id) = 0;
-            virtual Result GetLatestData(ContentId *out_content_id, ProgramId program_id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(Set),

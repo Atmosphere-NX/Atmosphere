@@ -22,7 +22,7 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         const ContentMetaKey key = ContentMetaKey::Make(program_id, 0, ContentMetaType::Unknown);
-        
+
         std::optional<ContentMetaKey> found_key;
         for (auto entry = this->kvs->lower_bound(key); entry != this->kvs->end(); entry++) {
             if (entry->GetKey().id != program_id) {
@@ -31,8 +31,8 @@ namespace ams::ncm {
 
             found_key = entry->GetKey();
         }
-
         R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
+
         *out_key = *found_key;
         return ResultSuccess();
     }

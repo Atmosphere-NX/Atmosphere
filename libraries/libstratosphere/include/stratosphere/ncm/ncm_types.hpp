@@ -108,12 +108,42 @@ namespace ams::ncm {
 
     struct ContentInfo {
         ContentId content_id;
-        u8 size[6];
+        u32 size_low;
+        u16 size_high;
         ContentType content_type;
         u8 id_offset;
+
+        constexpr const ContentId &GetId() const {
+            return this->content_id;
+        }
+
+        constexpr u64 GetSize() const {
+            return (static_cast<u64>(this->size_high) << 32) | static_cast<u64>(this->size_low);
+        }
+
+        constexpr ContentType GetType() const {
+            return this->content_type;
+        }
+
+        constexpr u8 GetIdOffset() const {
+            return this->id_offset;
+        }
+
+        static constexpr ContentInfo Make(ContentId id, u64 size, ContentType type, u8 id_ofs) {
+            const u32 size_low  = size & 0xFFFFFFFFu;
+            const u16 size_high = static_cast<u16>(size >> 32);
+            return {
+                .content_id   = id,
+                .size_low     = size_low,
+                .size_high    = size_high,
+                .content_type = type,
+                .id_offset    = id_ofs,
+            };
+        }
     };
 
-    static_assert(sizeof(ContentInfo) == 0x18, "ContentInfo definition!");
+    static_assert(sizeof(std::is_pod<ContentInfo>::value));
+    static_assert(sizeof(ContentInfo)  == 0x18);
 
     using MakeContentPathFunc        = void (*)(char *out, ContentId content_id, const char *root);
     using MakePlaceHolderPathFunc    = void (*)(char *out, PlaceHolderId placeholder_id, const char *root);
@@ -564,19 +594,19 @@ namespace ams::ncm {
             } else if (this->id != other.id) {
                 return false;
             }
-            
+
             if (this->version < other.version) {
                 return true;
             } else if (this->version != other.version) {
                 return false;
             }
-            
+
             if (this->type < other.type) {
                 return true;
             } else if (this->type != other.type) {
                 return false;
             }
-            
+
             return this->install_type < other.install_type;
         }
 
@@ -602,8 +632,29 @@ namespace ams::ncm {
 
     static_assert(sizeof(ContentMetaKey) == 0x10, "ContentMetaKey definition!");
 
-    /* Used by system updates. They share the exact same struct as ContentMetaKey */
-    using ContentMetaInfo = ContentMetaKey;
+    /* Used by system updates. */
+    struct ContentMetaInfo {
+        ProgramId id;
+        u32 version;
+        ContentMetaType type;
+        u8 attributes;
+        u8 padding[2];
+
+        static constexpr ContentMetaInfo Make(ProgramId program_id, u32 version, ContentMetaType type, u8 attributes) {
+            return {
+                .id         = program_id,
+                .version    = version,
+                .type       = type,
+                .attributes = attributes,
+            };
+        }
+
+        constexpr ContentMetaKey ToKey() {
+            return ContentMetaKey::Make(this->id, this->version, this->type);
+        }
+    };
+
+    static_assert(sizeof(ContentMetaInfo) == 0x10);
 
     struct ApplicationContentMetaKey {
         ContentMetaKey key;
@@ -611,5 +662,9 @@ namespace ams::ncm {
     };
 
     static_assert(sizeof(ApplicationContentMetaKey) == 0x18, "ApplicationContentMetaKey definition!");
+
+    struct Digest {
+        u8 data[crypto::Sha256Generator::HashSize];
+    };
 
 }

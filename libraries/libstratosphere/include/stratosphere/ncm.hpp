@@ -17,5 +17,6 @@
 #pragma once
 
 #include "ncm/ncm_types.hpp"
+#include "ncm/ncm_content_meta.hpp"
 #include "ncm/ncm_i_content_meta_database.hpp"
 #include "ncm/ncm_i_content_storage.hpp"

@@ -50,10 +50,6 @@ namespace ams::ncm {
             virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) override;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) override;
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) override;
-
-            /* APIs. */
-            virtual Result GetLatestProgram(ContentId *out_content_id, ProgramId program_id) override;
-            virtual Result GetLatestData(ContentId *out_content_id, ProgramId program_id) override;
     };
 
 }

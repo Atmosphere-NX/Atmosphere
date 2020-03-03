@@ -35,17 +35,30 @@ namespace ams::ncm {
                 std::strcpy(this->mount_name, mount_name);
             }
         protected:
-            Result EnsureEnabled() {
+            Result EnsureEnabled() const {
                 R_UNLESS(!this->disabled, ncm::ResultInvalidContentMetaDatabase());
                 return ResultSuccess();
             }
 
-            Result FindContentMetaKeyValue(ContentMetaKeyValueStore::Entry **out_entry, const ContentMetaKey &key) {
+            Result FindContentMetaKeyValue(ContentMetaKeyValueStore::Entry **out_entry, const ContentMetaKey &key) const {
                 const auto it = this->kvs->lower_bound(key);
                 R_UNLESS(it != this->kvs->end(), ncm::ResultContentMetaNotFound());
                 R_UNLESS(it->GetKey().id == key.id, ncm::ResultContentMetaNotFound());
                 *out_entry = it;
                 return ResultSuccess();
+            }
+
+            Result GetContentMetaSize(size_t *out, const ContentMetaKey &key) const {
+                R_TRY_CATCH(this->kvs->GetValueSize(out, key)) {
+                    R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
+                } R_END_TRY_CATCH;
+
+                return ResultSuccess();
+            }
+
+            Result GetContentMetaPointer(const void **out_value_ptr, size_t *out_size, const ContentMetaKey &key) const {
+                R_TRY(this->GetContentMetaSize(out_size, key));
+                return this->kvs->GetValuePointer(reinterpret_cast<const ContentMetaHeader **>(out_value_ptr), key);
             }
     };
 
