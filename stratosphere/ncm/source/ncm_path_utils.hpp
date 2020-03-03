@@ -22,7 +22,7 @@ namespace ams::ncm::path {
 
     inline void GetContentRootPath(char *out_content_root, const char *root_path) {
         /* TODO: Replace with BoundedString? */
-        AMS_ABORT_UNLESS(snprintf(out_content_root, FS_MAX_PATH-1, "%s%s", root_path, "/registered") >= 0);
+        AMS_ABORT_UNLESS(snprintf(out_content_root, ams::fs::EntryNameLengthMax, "%s%s", root_path, "/registered") >= 0);
     }
 
     inline void GetPlaceHolderRootPath(char *out_placeholder_root, const char *root_path) {

@@ -23,8 +23,8 @@ namespace ams::ncm {
     Result ReadOnlyContentStorageImpl::Initialize(const char *root_path, MakeContentPathFunc content_path_func) {
         R_TRY(this->EnsureEnabled());
 
-        const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
-        AMS_ABORT_UNLESS(root_path_len < FS_MAX_PATH-1);
+        const size_t root_path_len = strnlen(root_path, ams::fs::EntryNameLengthMax);
+        AMS_ABORT_UNLESS(root_path_len < ams::fs::EntryNameLengthMax);
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
         return ResultSuccess();
@@ -90,7 +90,7 @@ namespace ams::ncm {
             this->make_content_path_func(content_path, content_id, this->root_path);
         }
 
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, content_path));
         out.SetValue(Path::Encode(common_path));
 
         return ResultSuccess();
@@ -203,7 +203,7 @@ namespace ams::ncm {
             this->make_content_path_func(content_path, content_id, this->root_path);
         }
 
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, content_path));
 
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));

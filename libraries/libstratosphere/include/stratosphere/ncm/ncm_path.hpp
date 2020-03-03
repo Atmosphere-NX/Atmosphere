@@ -37,4 +37,6 @@ namespace ams::ncm {
         }
     };
 
+    using PathString = kvdb::BoundedString<fs::EntryNameLengthMax>;
+
 }

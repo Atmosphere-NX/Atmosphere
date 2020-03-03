@@ -28,9 +28,9 @@ namespace ams::ncm {
     Result ContentStorageImpl::Initialize(const char *root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache) {
         R_TRY(this->EnsureEnabled());
         R_TRY(fs::CheckContentStorageDirectoriesExist(root_path));
-        const size_t root_path_len = strnlen(root_path, FS_MAX_PATH-1);
+        const size_t root_path_len = strnlen(root_path, ams::fs::EntryNameLengthMax);
 
-        AMS_ABORT_UNLESS(root_path_len < FS_MAX_PATH-1);
+        AMS_ABORT_UNLESS(root_path_len < ams::fs::EntryNameLengthMax);
 
         strncpy(this->root_path, root_path, FS_MAX_PATH-2);
         this->make_content_path_func = *content_path_func;
@@ -179,7 +179,7 @@ namespace ams::ncm {
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, content_path));
         out.SetValue(Path::Encode(common_path));
         return ResultSuccess();
     }
@@ -190,7 +190,7 @@ namespace ams::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, placeholder_path));
         out.SetValue(Path::Encode(common_path));
         return ResultSuccess();
     }
@@ -383,7 +383,7 @@ namespace ams::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, placeholder_path));
 
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));
@@ -409,7 +409,7 @@ namespace ams::ncm {
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, content_path));
 
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));
@@ -531,7 +531,7 @@ namespace ams::ncm {
         char placeholder_path[FS_MAX_PATH] = {0};
 
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
-        R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, placeholder_path));
 
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));

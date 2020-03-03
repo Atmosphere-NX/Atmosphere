@@ -23,7 +23,7 @@ namespace ams::ncm {
         NON_COPYABLE(ContentStorageImplBase);
         NON_MOVEABLE(ContentStorageImplBase);
         protected:
-            char root_path[FS_MAX_PATH-1];
+            char root_path[ams::fs::EntryNameLengthMax];
             MakeContentPathFunc make_content_path_func;
             bool disabled;
         protected:

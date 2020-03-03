@@ -69,7 +69,7 @@ namespace ams::ncm::fs {
                 }
 
                 char current_path[FS_MAX_PATH];
-                AMS_ABORT_UNLESS(snprintf(current_path, FS_MAX_PATH-1, "%s/%s", root_path, dir_entry->d_name) >= 0);
+                AMS_ABORT_UNLESS(snprintf(current_path, ams::fs::EntryNameLengthMax, "%s/%s", root_path, dir_entry->d_name) >= 0);
 
                 bool should_continue = true;
                 bool should_retry_dir_read = false;

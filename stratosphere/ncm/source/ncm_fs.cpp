@@ -150,7 +150,7 @@ namespace ams::ncm::fs {
         char working_path_buf[FS_MAX_PATH] = {0};
 
         R_UNLESS(path_len + 1 < FS_MAX_PATH, ncm::ResultAllocationFailed());
-        strncpy(working_path_buf + 1, path, FS_MAX_PATH-1);
+        strncpy(working_path_buf + 1, path, ams::fs::EntryNameLengthMax);
 
         if (path_len != 0) {
             for (size_t i = 0; i < path_len; i++) {
