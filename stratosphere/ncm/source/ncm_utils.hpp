@@ -26,5 +26,5 @@ namespace ams::ncm {
 
     Result GetPlaceHolderIdFromDirEntry(PlaceHolderId *out, struct dirent *dir_entry);
     std::optional<ContentId> GetContentIdFromString(const char *str, size_t len);
-    
+
 };

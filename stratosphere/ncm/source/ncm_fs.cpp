@@ -36,7 +36,7 @@ namespace ams::ncm::fs {
             fopen_mode = "r+b";
         } else if (mode & FsOpenMode_Read) {
             fopen_mode = "rb";
-        } 
+        }
         FILE *f = fopen(path, fopen_mode);
         R_UNLESS(f != nullptr, fsdevGetLastResult());
 
@@ -78,7 +78,7 @@ namespace ams::ncm::fs {
                 }
             } R_END_TRY_CATCH;
         }
-    
+
         return ResultSuccess();
     }
 
@@ -94,7 +94,7 @@ namespace ams::ncm::fs {
                 }
             } R_END_TRY_CATCH;
         }
-    
+
         return ResultSuccess();
     }
 
@@ -105,7 +105,7 @@ namespace ams::ncm::fs {
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
         R_UNLESS(has_root, ncm::ResultContentStorageBaseNotFound());
-        
+
         path::GetContentRootPath(content_root, root_path);
         bool has_content_root = false;
         R_TRY(HasDirectory(&has_content_root, content_root));
@@ -213,7 +213,7 @@ namespace ams::ncm::fs {
 
     Result MountSystemSaveData(const char *mount_point, FsSaveDataSpaceId space_id, u64 save_id) {
         R_UNLESS(mount_point, ams::fs::ResultNullptrArgument());
-        
+
         FsSaveDataAttribute save = {
             .system_save_data_id = save_id,
             .save_data_type = FsSaveDataType_System,
@@ -247,7 +247,7 @@ namespace ams::ncm::fs {
             case FsContentStorageId_System:
                 g_mount_content_storage[mount_point] = SystemContentMountName;
                 break;
-            
+
             case FsContentStorageId_User:
                 g_mount_content_storage[mount_point] = UserContentMountName;
                 break;
@@ -264,7 +264,7 @@ namespace ams::ncm::fs {
 
     Result MountGameCardPartition(const char *mount_point, const FsGameCardHandle handle, FsGameCardPartition partition) {
         AMS_ABORT_UNLESS(partition <= 2);
-        
+
         FsFileSystem fs;
         R_TRY(fsOpenGameCardFileSystem(&fs, &handle, partition));
         AMS_ABORT_UNLESS(fsdevMountDevice(mount_point, fs) != -1);
@@ -302,7 +302,7 @@ namespace ams::ncm::fs {
 
     Result GetSaveDataFlags(u32 *out_flags, u64 save_id) {
         FsSaveDataExtraData extra_data;
-        
+
         R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));
         *out_flags = extra_data.flags;
         return ResultSuccess();
@@ -310,7 +310,7 @@ namespace ams::ncm::fs {
 
     Result SetSaveDataFlags(u64 save_id, FsSaveDataSpaceId space_id, u32 flags) {
         FsSaveDataExtraData extra_data;
-        
+
         R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));
         extra_data.flags = flags;
         R_TRY(fsWriteSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), space_id, save_id));

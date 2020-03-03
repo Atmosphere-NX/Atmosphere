@@ -173,7 +173,7 @@ namespace ams::ncm::impl {
         /* Set the scope for the scoped_lock. */
         {
             std::scoped_lock lock(this->cache_mutex);
-            
+
             /* If the placeholder id is invalid, return success early. */
             R_UNLESS(placeholder_id != InvalidPlaceHolderId, ResultSuccess());
 
@@ -187,7 +187,7 @@ namespace ams::ncm::impl {
         }
 
         this->StoreToCache(f, placeholder_id);
-        
+
         R_UNLESS(fseek(f, 0L, SEEK_END) == 0, fsdevGetLastResult());
         size_t size = ftell(f);
         R_UNLESS(fseek(f, 0L, SEEK_SET) == 0, fsdevGetLastResult());

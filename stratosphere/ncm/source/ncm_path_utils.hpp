@@ -37,7 +37,7 @@ namespace ams::ncm::path {
 
     class PathView {
         private:
-            std::string_view path; /* Nintendo uses nn::util::string_view here. */    
+            std::string_view path; /* Nintendo uses nn::util::string_view here. */
         public:
             PathView(std::string_view p) : path(p) { /* ...*/ }
             bool HasPrefix(std::string_view prefix) const;

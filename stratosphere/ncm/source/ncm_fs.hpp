@@ -55,7 +55,7 @@ namespace ams::ncm::fs {
         DIR *dir;
         struct dirent *dir_entry = nullptr;
         R_UNLESS(max_level >= 1, ResultSuccess());
-        
+
         bool retry_dir_read = true;
         while (retry_dir_read) {
             retry_dir_read = false;
@@ -70,7 +70,7 @@ namespace ams::ncm::fs {
 
                 char current_path[FS_MAX_PATH];
                 AMS_ABORT_UNLESS(snprintf(current_path, FS_MAX_PATH-1, "%s/%s", root_path, dir_entry->d_name) >= 0);
-                
+
                 bool should_continue = true;
                 bool should_retry_dir_read = false;
                 R_TRY(f(&should_continue, &should_retry_dir_read, current_path, dir_entry));

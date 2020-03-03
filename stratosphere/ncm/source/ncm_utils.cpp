@@ -40,8 +40,8 @@ namespace ams::ncm {
         u64 converted_val;
 
         for (size_t i = 0; i < sizeof(PlaceHolderId); i++) {
-            char *name_char_pair = dir_entry->d_name + i * 2;         
-        
+            char *name_char_pair = dir_entry->d_name + i * 2;
+
             byte_string[0] = name_char_pair[0];
             byte_string[1] = name_char_pair[1];
 
@@ -66,8 +66,8 @@ namespace ams::ncm {
         u64 converted_val;
 
         for (size_t i = 0; i < sizeof(ContentId); i++) {
-            const char *char_par = str + i * 2;         
-        
+            const char *char_par = str + i * 2;
+
             byte_string[0] = char_par[0];
             byte_string[1] = char_par[1];
 
