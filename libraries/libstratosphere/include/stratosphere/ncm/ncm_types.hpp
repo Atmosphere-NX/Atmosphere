@@ -621,6 +621,10 @@ namespace ams::ncm {
             return !(*this == other);
         }
 
+        static constexpr ContentMetaKey MakeUnknownType(ProgramId program_id, u32 version) {
+            return { .id = program_id, .version = version, .type = ContentMetaType::Unknown };
+        }
+
         static constexpr ContentMetaKey Make(ProgramId program_id, u32 version, ContentMetaType type) {
             return { .id = program_id, .version = version, .type = type };
         }

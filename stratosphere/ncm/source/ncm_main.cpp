@@ -18,7 +18,7 @@
 #include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>
 
 #include "impl/ncm_content_manager.hpp"
-#include "ncm_content_manager_service.hpp"
+#include "ncm_content_manager_impl.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -100,6 +100,39 @@ namespace {
 
     constexpr inline sm::ServiceName ContentManagerServiceName = sm::ServiceName::Encode("ncm");
 
+    class ContentManagerServerManager : public sf::hipc::ServerManager<ContentManagerNumServers, ContentManagerServerOptions, ContentManagerMaxSessions> {
+        private:
+            static constexpr size_t ThreadStackSize = 0x4000;
+            static constexpr int    ThreadPriority  = 0x15;
+
+            using ServiceType = ncm::ContentManagerImpl;
+        private:
+            os::StaticThread<ThreadStackSize> thread;
+            std::shared_ptr<ServiceType> ncm_manager;
+        private:
+            static void ThreadFunction(void *_this) {
+                reinterpret_cast<ContentManagerServerManager *>(_this)->LoopProcess();
+            }
+        public:
+            ContentManagerServerManager(ServiceType *m)
+                : thread(ThreadFunction, this, ThreadPriority), ncm_manager(sf::ServiceObjectTraits<ServiceType>::SharedPointerHelper::GetEmptyDeleteSharedPointer(m))
+            {
+                /* ... */
+            }
+
+            ams::Result Initialize() {
+                return this->RegisterServer<ServiceType>(ContentManagerServiceName, ContentManagerManagerSessions, this->ncm_manager);
+            }
+
+            ams::Result StartThreads() {
+                return this->thread.Start();
+            }
+
+            void Wait() {
+                this->thread.Join();
+            }
+    };
+
     struct LocationResolverServerOptions {
         static constexpr size_t PointerBufferSize = 0x400;
         static constexpr size_t MaxDomains = 0;
@@ -146,7 +179,8 @@ namespace {
             }
     };
 
-    sf::hipc::ServerManager<ContentManagerNumServers, ContentManagerServerOptions, ContentManagerMaxSessions> g_ncm_server_manager;
+    ncm::ContentManagerImpl g_ncm_manager_service_object;
+    ContentManagerServerManager g_ncm_server_manager(std::addressof(g_ncm_manager_service_object));
 
     lr::LocationResolverManagerImpl g_lr_manager_service_object;
     LocationResolverServerManager g_lr_server_manager(std::addressof(g_lr_manager_service_object));
@@ -155,7 +189,7 @@ namespace {
 
 void ContentManagerServerMain(void *arg) {
     /* Create services. */
-    R_ABORT_UNLESS(g_ncm_server_manager.RegisterServer<ncm::ContentManagerService>(ContentManagerServiceName, ContentManagerManagerSessions));
+    R_ABORT_UNLESS(g_ncm_server_manager.RegisterServer<ncm::ContentManagerImpl>(ContentManagerServiceName, ContentManagerManagerSessions));
 
     /* Loop forever, servicing our services. */
     g_ncm_server_manager.LoopProcess();
@@ -164,19 +198,19 @@ void ContentManagerServerMain(void *arg) {
 int main(int argc, char **argv)
 {
     /* Initialize content manager implementation. */
+    /* TODO: Move Initialize/Finalize into ContentManagerImpl ctor/dtor, initialize client library with static object. */
     R_ABORT_UNLESS(ams::ncm::impl::InitializeContentManager());
 
-    static os::Thread s_content_manager_thread;
-
-    R_ABORT_UNLESS(s_content_manager_thread.Initialize(&ContentManagerServerMain, nullptr, 0x4000, 0x15));
-    R_ABORT_UNLESS(s_content_manager_thread.Start());
+    R_ABORT_UNLESS(g_ncm_server_manager.Initialize());
+    R_ABORT_UNLESS(g_ncm_server_manager.StartThreads());
 
     R_ABORT_UNLESS(g_lr_server_manager.Initialize());
     R_ABORT_UNLESS(g_lr_server_manager.StartThreads());
 
-    s_content_manager_thread.Join();
+    g_ncm_server_manager.Wait();
     g_lr_server_manager.Wait();
 
+    /* TODO: This call is eventually automatic at scope exit. */
     ams::ncm::impl::FinalizeContentManager();
 
     return 0;

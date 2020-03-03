@@ -66,7 +66,7 @@ namespace ams::ncm {
 
         bool has = false;
         R_TRY(fs::HasFile(&has, content_path));
-        
+
         if (!has) {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
             R_TRY(fs::HasFile(&has, content_path));
@@ -76,7 +76,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageImpl::GetPath(sf::Out<lr::Path> out, ContentId content_id) {
+    Result ReadOnlyContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
@@ -85,18 +85,18 @@ namespace ams::ncm {
 
         path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         R_TRY(fs::HasFile(&is_content_meta_file, content_path));
-        
+
         if (!is_content_meta_file) {
             this->make_content_path_func(content_path, content_id, this->root_path);
         }
-        
+
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
-        out.SetValue(lr::Path::Encode(common_path));
+        out.SetValue(Path::Encode(common_path));
 
         return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageImpl::GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) {
+    Result ReadOnlyContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
         return ResultInvalidContentStorageOperation();
     }
 
@@ -124,7 +124,7 @@ namespace ams::ncm {
 
         this->make_content_path_func(content_path, content_id, this->root_path);
         R_TRY(fs::HasFile(&is_content_file, content_path));
-        
+
         if (!is_content_file) {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         }
@@ -158,18 +158,18 @@ namespace ams::ncm {
 
         this->make_content_path_func(content_path, content_id, this->root_path);
         R_TRY(fs::HasFile(&is_content_file, content_path));
-        
+
         if (!is_content_file) {
             path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         }
-   
+
         FILE *f = nullptr;
         R_TRY(fs::OpenFile(&f, content_path, FsOpenMode_Read));
-        
+
         ON_SCOPE_EXIT {
             fclose(f);
         };
-   
+
         R_TRY(fs::ReadFile(f, offset, buf.GetPointer(), buf.GetSize()));
         return ResultSuccess();
     }
@@ -198,13 +198,13 @@ namespace ams::ncm {
 
         path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         R_TRY(fs::HasFile(&is_content_meta_file, content_path));
-        
+
         if (!is_content_meta_file) {
             this->make_content_path_func(content_path, content_id, this->root_path);
         }
 
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
-        
+
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));
         out_rights_id.SetValue(rights_id);

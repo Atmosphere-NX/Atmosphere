@@ -24,8 +24,8 @@ namespace ams::lr {
             ncm::StorageId storage_id;
 
             /* Objects for this storage type. */
-            std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-            std::shared_ptr<ncm::IContentStorage> content_storage;
+            ncm::ContentMetaDatabase content_meta_database;
+            ncm::ContentStorage content_storage;
         public:
             ContentLocationResolverImpl(ncm::StorageId storage_id) : storage_id(storage_id) { /* ... */ }
 

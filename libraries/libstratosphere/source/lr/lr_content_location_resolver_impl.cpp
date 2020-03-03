@@ -16,14 +16,6 @@
 #include <stratosphere.hpp>
 #include "lr_content_location_resolver_impl.hpp"
 
-/* TODO: Properly integrate NCM api into libstratosphere to avoid linker hack. */
-namespace ams::ncm::impl {
-
-    Result OpenContentMetaDatabase(std::shared_ptr<ncm::IContentMetaDatabase> *, ncm::StorageId);
-    Result OpenContentStorage(std::shared_ptr<ncm::IContentStorage> *, ncm::StorageId);
-
-}
-
 namespace ams::lr {
 
     ContentLocationResolverImpl::~ContentLocationResolverImpl() {
@@ -32,7 +24,8 @@ namespace ams::lr {
 
     /* Helper function. */
     void ContentLocationResolverImpl::GetContentStoragePath(Path *out, ncm::ContentId content_id) {
-        R_ABORT_UNLESS(this->content_storage->GetPath(out, content_id));
+        static_assert(sizeof(lr::Path) == sizeof(ncm::Path));
+        this->content_storage.GetPath(reinterpret_cast<ncm::Path *>(out), content_id);
     }
 
     Result ContentLocationResolverImpl::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
@@ -41,7 +34,7 @@ namespace ams::lr {
 
         /* Find the latest program content for the program id. */
         ncm::ContentId program_content_id;
-        R_TRY_CATCH(this->content_meta_database->GetLatestProgram(&program_content_id, id)) {
+        R_TRY_CATCH(this->content_meta_database.GetLatestProgram(&program_content_id, id)) {
             R_CONVERT(ncm::ResultContentMetaNotFound, lr::ResultProgramNotFound())
         } R_END_TRY_CATCH;
 
@@ -69,7 +62,7 @@ namespace ams::lr {
     Result ContentLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) {
         /* Find the latest data content for the program id. */
         ncm::ContentId data_content_id;
-        R_TRY(this->content_meta_database->GetLatestData(&data_content_id, id));
+        R_TRY(this->content_meta_database.GetLatestData(&data_content_id, id));
 
         /* Obtain the content path. */
         this->GetContentStoragePath(out.GetPointer(), data_content_id);
@@ -114,14 +107,14 @@ namespace ams::lr {
 
     Result ContentLocationResolverImpl::Refresh() {
         /* Obtain Content Meta Database and Content Storage objects for this resolver's storage. */
-        std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-        std::shared_ptr<ncm::IContentStorage> content_storage;
-        R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, this->storage_id));
-        R_TRY(ncm::impl::OpenContentStorage(&content_storage, this->storage_id));
+        ncm::ContentMetaDatabase meta_db;
+        ncm::ContentStorage storage;
+        R_TRY(ncm::OpenContentMetaDatabase(&meta_db, this->storage_id));
+        R_TRY(ncm::OpenContentStorage(&storage, this->storage_id));
 
         /* Store the acquired objects. */
-        this->content_meta_database = std::move(content_meta_database);
-        this->content_storage = std::move(content_storage);
+        this->content_meta_database = std::move(meta_db);
+        this->content_storage       = std::move(storage);
 
         /* Remove any existing redirections. */
         this->ClearRedirections();

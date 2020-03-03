@@ -60,8 +60,8 @@ namespace ams::ncm {
             virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) override;
             virtual Result Delete(ContentId content_id) override;
             virtual Result Has(sf::Out<bool> out, ContentId content_id) override;
-            virtual Result GetPath(sf::Out<lr::Path> out, ContentId content_id) override;
-            virtual Result GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) override;
+            virtual Result GetPath(sf::Out<Path> out, ContentId content_id) override;
+            virtual Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) override;
             virtual Result CleanupAllPlaceHolder() override;
             virtual Result ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) override;
             virtual Result GetContentCount(sf::Out<u32> out_count) override;

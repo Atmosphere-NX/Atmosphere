@@ -16,6 +16,7 @@
 
 #pragma once
 #include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/ncm/ncm_path.hpp>
 #include <stratosphere/lr/lr_types.hpp>
 #include <stratosphere/sf.hpp>
 
@@ -68,8 +69,8 @@ namespace ams::ncm {
             virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) = 0;
             virtual Result Delete(ContentId content_id) = 0;
             virtual Result Has(sf::Out<bool> out, ContentId content_id) = 0;
-            virtual Result GetPath(sf::Out<lr::Path> out, ContentId content_id) = 0;
-            virtual Result GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetPath(sf::Out<Path> out, ContentId content_id) = 0;
+            virtual Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) = 0;
             virtual Result CleanupAllPlaceHolder() = 0;
             virtual Result ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) = 0;
             virtual Result GetContentCount(sf::Out<u32> out_count) = 0;

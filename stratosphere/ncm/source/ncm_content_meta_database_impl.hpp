@@ -45,7 +45,7 @@ namespace ams::ncm {
             virtual Result DisableForcibly() override;
             virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
             virtual Result Commit() override;
-            virtual Result HasContent(sf::Out<bool> out, const ContentMetaKey &key, ContentId content_id) override;
+            virtual Result HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) override;
             virtual Result ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, u32 start_index) override;
             virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) override;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) override;

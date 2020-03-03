@@ -108,7 +108,7 @@ namespace ams::ncm {
 
         char placeholder_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.MakePath(placeholder_path, placeholder_id);
-        
+
         bool has = false;
         R_TRY(fs::HasFile(&has, placeholder_path));
         out.SetValue(has);
@@ -173,25 +173,25 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetPath(sf::Out<lr::Path> out, ContentId content_id) {
+    Result ContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         char content_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->GetContentPath(content_path, content_id);
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, content_path));
-        out.SetValue(lr::Path::Encode(common_path));
+        out.SetValue(Path::Encode(common_path));
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetPlaceHolderPath(sf::Out<lr::Path> out, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
         char placeholder_path[FS_MAX_PATH] = {0};
         char common_path[FS_MAX_PATH] = {0};
         this->placeholder_accessor.GetPath(placeholder_path, placeholder_id);
         R_TRY(fs::ConvertToFsCommonPath(common_path, FS_MAX_PATH-1, placeholder_path));
-        out.SetValue(lr::Path::Encode(common_path));
+        out.SetValue(Path::Encode(common_path));
         return ResultSuccess();
     }
 
@@ -202,7 +202,7 @@ namespace ams::ncm {
         this->placeholder_accessor.InvalidateAll();
         this->placeholder_accessor.MakeRootPath(placeholder_root_path);
 
-        /* Nintendo uses CleanDirectoryRecursively which is 3.0.0+. 
+        /* Nintendo uses CleanDirectoryRecursively which is 3.0.0+.
            We'll just delete the directory and recreate it to support all firmwares. */
         R_TRY(fsdevDeleteDirectoryRecursively(placeholder_root_path));
         R_UNLESS(mkdir(placeholder_root_path, S_IRWXU) != -1, fsdevGetLastResult());
@@ -220,15 +220,15 @@ namespace ams::ncm {
         R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) -> Result {
             *should_continue = true;
             *should_retry_dir_read = false;
-            
+
             if (dir_entry->d_type == DT_REG) {
                 R_UNLESS(entry_count <= out_buf.GetSize(), ncm::ResultBufferInsufficient());
-                
+
                 PlaceHolderId cur_entry_placeholder_id = {0};
                 R_TRY(GetPlaceHolderIdFromDirEntry(&cur_entry_placeholder_id, dir_entry));
                 out_buf[entry_count++] = cur_entry_placeholder_id;
             }
-            
+
             return ResultSuccess();
         }));
 
@@ -329,7 +329,7 @@ namespace ams::ncm {
 
     Result ContentStorageImpl::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
         R_TRY(this->EnsureEnabled());
-        
+
         char old_content_path[FS_MAX_PATH] = {0};
         char new_content_path[FS_MAX_PATH] = {0};
         char placeholder_path[FS_MAX_PATH] = {0};
@@ -401,7 +401,7 @@ namespace ams::ncm {
 
     Result ContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
-        
+
         if (this->rights_id_cache->Find(out_rights_id.GetPointer(), content_id)) {
             return ResultSuccess();
         }
@@ -437,7 +437,7 @@ namespace ams::ncm {
 
         FILE *f = nullptr;
         R_TRY(fs::OpenFile(&f, content_path, FsOpenMode_Write));
-        
+
         ON_SCOPE_EXIT {
             fclose(f);
         };
@@ -522,7 +522,7 @@ namespace ams::ncm {
 
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
         R_TRY(this->EnsureEnabled());
-        
+
         if (this->rights_id_cache->Find(out_rights_id.GetPointer(), cache_content_id)) {
             return ResultSuccess();
         }

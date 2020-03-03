@@ -72,7 +72,7 @@ namespace ams::ncm::impl {
         constexpr u64 BuiltInSystemSaveDataSize           = 0x6c000;
         constexpr u64 BuiltInSystemSaveDataJournalSize    = 0x6c000;
         constexpr u32 BuiltInSystemSaveDataFlags          = FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment;
-        
+
         constexpr SaveDataMeta BuiltInSystemSaveDataMeta = {
             .id              = BuiltInSystemSaveDataId,
             .size            = BuiltInSystemSaveDataSize,
@@ -119,7 +119,7 @@ namespace ams::ncm::impl {
             std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
             u32 max_content_metas;
 
-            inline ContentMetaDatabaseEntry() : storage_id(StorageId::None), save_meta({0}), 
+            inline ContentMetaDatabaseEntry() : storage_id(StorageId::None), save_meta({0}),
                 content_meta_database(nullptr), kvs(std::nullopt), max_content_metas(0) {
                 mount_point[0] = '\0';
                 meta_path[0] = '\0';
@@ -268,17 +268,17 @@ namespace ams::ncm::impl {
         /* First, setup the BuiltInSystem storage entry. */
         g_content_storage_roots[g_num_content_storage_entries++].Initialize(StorageId::BuiltInSystem, FsContentStorageId_System);
 
-        if (R_FAILED(VerifyContentStorage(StorageId::BuiltInSystem))) {
-            R_TRY(CreateContentStorage(StorageId::BuiltInSystem));
+        if (R_FAILED(impl::VerifyContentStorage(StorageId::BuiltInSystem))) {
+            R_TRY(impl::CreateContentStorage(StorageId::BuiltInSystem));
         }
 
-        R_TRY(ActivateContentStorage(StorageId::BuiltInSystem));
+        R_TRY(impl::ActivateContentStorage(StorageId::BuiltInSystem));
 
         /* Next, the BuiltInSystem content meta entry. */
         R_TRY(g_content_meta_entries[g_num_content_meta_entries++].Initialize(StorageId::BuiltInSystem, BuiltInSystemSaveDataMeta, MaxBuiltInSystemContentMetaCount));
 
-        if (R_FAILED(VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
-            R_TRY(CreateContentMetaDatabase(StorageId::BuiltInSystem));
+        if (R_FAILED(impl::VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
+            R_TRY(impl::CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
             /* TODO: N supports a number of unused modes here, we don't bother implementing them currently. */
         }
@@ -287,8 +287,8 @@ namespace ams::ncm::impl {
         if (hos::GetVersion() >= hos::Version_200 && R_SUCCEEDED(fs::GetSaveDataFlags(&current_flags, BuiltInSystemSaveDataId)) && current_flags != (FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment)) {
             fs::SetSaveDataFlags(BuiltInSystemSaveDataId, FsSaveDataSpaceId_System, FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment);
         }
-        
-        R_TRY(ActivateContentMetaDatabase(StorageId::BuiltInSystem));
+
+        R_TRY(impl::ActivateContentMetaDatabase(StorageId::BuiltInSystem));
 
         /* Now for BuiltInUser's content storage and content meta entries. */
         g_content_storage_roots[g_num_content_storage_entries++].Initialize(StorageId::BuiltInUser, FsContentStorageId_User);
@@ -316,12 +316,12 @@ namespace ams::ncm::impl {
 
             for (size_t i = 0; i < MaxContentStorageEntries; i++) {
                 ContentStorageRoot *entry = &g_content_storage_roots[i];
-                InactivateContentStorage(entry->storage_id);
+                impl::InactivateContentStorage(entry->storage_id);
             }
 
             for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
                 ContentMetaDatabaseEntry *entry = &g_content_meta_entries[i];
-                InactivateContentMetaDatabase(entry->storage_id);
+                impl::InactivateContentMetaDatabase(entry->storage_id);
             }
         }
 
@@ -374,7 +374,7 @@ namespace ams::ncm::impl {
 
         ContentStorageRoot *root;
         R_TRY(GetUniqueContentStorageRoot(std::addressof(root), storage_id));
-        
+
         auto content_storage = root->content_storage;
 
         if (hos::GetVersion() >= hos::Version_200) {
@@ -382,7 +382,7 @@ namespace ams::ncm::impl {
         } else {
             /* 1.0.0 activates content storages as soon as they are opened. */
             if (!content_storage) {
-                R_TRY(ActivateContentStorage(storage_id));
+                R_TRY(impl::ActivateContentStorage(storage_id));
                 content_storage = root->content_storage;
             }
         }
@@ -518,7 +518,7 @@ namespace ams::ncm::impl {
 
         ContentMetaDatabaseEntry *entry;
         R_TRY(GetUniqueContentMetaDatabaseEntry(&entry, storage_id));
-        
+
         auto content_meta_db = entry->content_meta_database;
 
         if (hos::GetVersion() >= hos::Version_200) {
@@ -526,7 +526,7 @@ namespace ams::ncm::impl {
         } else {
             /* 1.0.0 activates content meta databases as soon as they are opened. */
             if (!content_meta_db) {
-                R_TRY(ActivateContentMetaDatabase(storage_id));
+                R_TRY(impl::ActivateContentMetaDatabase(storage_id));
                 content_meta_db = entry->content_meta_database;
             }
         }
@@ -541,7 +541,7 @@ namespace ams::ncm::impl {
         R_UNLESS(storage_id != StorageId::None, ncm::ResultUnknownStorage());
         ContentMetaDatabaseEntry *entry;
         R_TRY(FindContentMetaDatabaseEntry(&entry, storage_id));
-        
+
         auto content_meta_db = entry->content_meta_database;
 
         if (content_meta_db) {

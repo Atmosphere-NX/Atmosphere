@@ -297,7 +297,7 @@ namespace ams::ncm {
         return fsdevCommitDevice(this->mount_name);
     }
 
-    Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, ContentId content_id) {
+    Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) {
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));

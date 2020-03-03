@@ -16,14 +16,6 @@
 #include <stratosphere.hpp>
 #include "lr_add_on_content_location_resolver_impl.hpp"
 
-/* TODO: Properly integrate NCM api into libstratosphere to avoid linker hack. */
-namespace ams::ncm::impl {
-
-    Result OpenContentMetaDatabase(std::shared_ptr<ncm::IContentMetaDatabase> *, ncm::StorageId);
-    Result OpenContentStorage(std::shared_ptr<ncm::IContentStorage> *, ncm::StorageId);
-
-}
-
 namespace ams::lr {
 
     Result AddOnContentLocationResolverImpl::ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) {
@@ -32,19 +24,20 @@ namespace ams::lr {
         R_UNLESS(this->registered_storages.Find(&storage_id, id), lr::ResultAddOnContentNotFound());
 
         /* Obtain a Content Meta Database for the storage id. */
-        std::shared_ptr<ncm::IContentMetaDatabase> content_meta_database;
-        R_TRY(ncm::impl::OpenContentMetaDatabase(&content_meta_database, storage_id));
+        ncm::ContentMetaDatabase content_meta_database;
+        R_TRY(ncm::OpenContentMetaDatabase(&content_meta_database, storage_id));
 
         /* Find the latest data content id for the given program id. */
         ncm::ContentId data_content_id;
-        R_TRY(content_meta_database->GetLatestData(&data_content_id, id));
+        R_TRY(content_meta_database.GetLatestData(&data_content_id, id));
 
         /* Obtain a Content Storage for the storage id. */
-        std::shared_ptr<ncm::IContentStorage> content_storage;
-        R_TRY(ncm::impl::OpenContentStorage(&content_storage, storage_id));
+        ncm::ContentStorage content_storage;
+        R_TRY(ncm::OpenContentStorage(&content_storage, storage_id));
 
         /* Get the path of the data content. */
-        R_ABORT_UNLESS(content_storage->GetPath(out.GetPointer(), data_content_id));
+        static_assert(sizeof(lr::Path) == sizeof(ncm::Path));
+        content_storage.GetPath(reinterpret_cast<ncm::Path *>(out.GetPointer()), data_content_id);
 
         return ResultSuccess();
     }
