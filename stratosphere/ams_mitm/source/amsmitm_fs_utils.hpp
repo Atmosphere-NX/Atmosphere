@@ -43,9 +43,6 @@ namespace ams::mitm::fs {
     void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path);
     void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *subdir, const char *src_path);
 
-    /* TODO: Remove this in Atmosphere 0.10.2. */
-    Result RenameProgramDirectoryForCompatibility(const char *dir_name);
-
     bool HasSdRomfsContent(ncm::ProgramId program_id);
 
     Result SaveAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, void *data, size_t size);

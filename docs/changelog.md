@@ -1,4 +1,18 @@
 # Changelog
+## 0.10.3
++ Support was added for 9.2.0.
++ Support was added for redirecting manual html content for games.
+  + This works like normal layeredfs, replacing content placed in `/atmosphere/contents/<program id>/manual_html/`.
+  + This allows for game mods/translations to provide custom manual content, if they so choose.
++ A number of improvements were made to Atmosphere's memory usage, including:
+  + `fatal` now uses STB instead of freetype for rendering.
+    + This saves around 1 MB of memory, and makes our fatal substantially leaner than Nintendo's.
+  + `sm` no longer wastes 2 MiB unnecessarily.
++ fusee/sept's sdmmc access now better matches official behavior.
+  + This improves compatibility with some SD cards.
++ `ro` has been updated to reflect changes made in 9.1.0.
++ The temporary auto-migration added in 0.10.0 has been removed, since the transitionary period is well over.
++ General system stability improvements to enhance the user's experience.
 ## 0.10.2
 + hbl configuration was made more flexible.
   + Up to eight specific program ids can now be specified to have their own override keys.
