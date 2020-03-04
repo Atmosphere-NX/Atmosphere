@@ -34,7 +34,7 @@ namespace ams::ncm::impl {
             static constexpr size_t MaxCaches = 0x2;
 
             std::array<CacheEntry, MaxCaches> caches;
-            char *root_path;
+            PathString root_path;
             u64 cur_counter;
             os::Mutex cache_mutex;
             MakePlaceHolderPathFunc make_placeholder_path_func;
@@ -53,19 +53,19 @@ namespace ams::ncm::impl {
                 }
             }
 
-            inline void MakeRootPath(char *out_placeholder_root) {
-                path::GetPlaceHolderRootPath(out_placeholder_root, this->root_path);
+            inline void MakeRootPath(PathString *placeholder_root) {
+                path::GetPlaceHolderRootPath(placeholder_root, this->root_path);
             }
 
-            inline void MakePath(char *out_placeholder_path, PlaceHolderId placeholder_id) {
-                char placeholder_root_path[FS_MAX_PATH] = {0};
-                this->MakeRootPath(placeholder_root_path);
-                this->make_placeholder_path_func(out_placeholder_path, placeholder_id, placeholder_root_path);
+            inline void MakePath(PathString *placeholder_path, PlaceHolderId placeholder_id) {
+                PathString root_path;
+                this->MakeRootPath(std::addressof(root_path));
+                this->make_placeholder_path_func(placeholder_path, placeholder_id, root_path);
             }
 
-            void Initialize(char *root, MakePlaceHolderPathFunc path_func, bool delay_flush);
+            void Initialize(const char *root, MakePlaceHolderPathFunc path_func, bool delay_flush);
             unsigned int GetDirectoryDepth();
-            void GetPath(char *out_placeholder_path, PlaceHolderId placeholder_id);
+            void GetPath(PathString *out_placeholder_path, PlaceHolderId placeholder_id);
             Result Create(PlaceHolderId placeholder_id, size_t size);
             Result Delete(PlaceHolderId placeholder_id);
             Result Write(PlaceHolderId placeholder_id, size_t offset, const void *buffer, size_t size);

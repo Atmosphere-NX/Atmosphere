@@ -41,15 +41,14 @@ namespace ams::ncm {
             unsigned int GetContentDirectoryDepth();
             Result OpenCachedContentFile(ContentId content_id);
 
-            inline void GetContentRootPath(char *out_content_root) {
-                path::GetContentRootPath(out_content_root, this->root_path);
+            inline void GetContentRootPath(PathString *content_root) {
+                path::GetContentRootPath(content_root, this->root_path);
             }
 
-            inline void GetContentPath(char *out_content_path, ContentId content_id) {
-                char content_root_path[FS_MAX_PATH] = {0};
-
-                this->GetContentRootPath(content_root_path);
-                this->make_content_path_func(out_content_path, content_id, content_root_path);
+            inline void GetContentPath(PathString *content_path, ContentId content_id) {
+                PathString root_path;
+                this->GetContentRootPath(std::addressof(root_path));
+                this->make_content_path_func(content_path, content_id, root_path);
             }
         public:
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override;

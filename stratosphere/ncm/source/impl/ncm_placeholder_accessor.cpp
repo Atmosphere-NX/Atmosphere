@@ -35,8 +35,8 @@ namespace ams::ncm::impl {
 
     Result PlaceHolderAccessor::Open(FILE** out_handle, PlaceHolderId placeholder_id) {
         R_UNLESS(!this->LoadFromCache(out_handle, placeholder_id), ResultSuccess());
-        char placeholder_path[FS_MAX_PATH] = {0};
-        this->MakePath(placeholder_path, placeholder_id);
+        PathString placeholder_path;
+        this->MakePath(std::addressof(placeholder_path), placeholder_id);
 
         FILE *f = nullptr;
         R_TRY(fs::OpenFile(&f, placeholder_path, FsOpenMode_Write));
@@ -102,8 +102,8 @@ namespace ams::ncm::impl {
         }
     }
 
-    void PlaceHolderAccessor::Initialize(char *root, MakePlaceHolderPathFunc path_func, bool delay_flush) {
-        this->root_path = root;
+    void PlaceHolderAccessor::Initialize(const char *root, MakePlaceHolderPathFunc path_func, bool delay_flush) {
+        this->root_path = PathString(root);
         this->make_placeholder_path_func = path_func;
         this->delay_flush = delay_flush;
     }
@@ -116,20 +116,22 @@ namespace ams::ncm::impl {
         } else {
             AMS_ABORT();
         }
+
+        __builtin_unreachable();
     }
 
-    void PlaceHolderAccessor::GetPath(char *placeholder_path_out, PlaceHolderId placeholder_id) {
+    void PlaceHolderAccessor::GetPath(PathString *placeholder_path, PlaceHolderId placeholder_id) {
         std::scoped_lock lock(this->cache_mutex);
         CacheEntry *entry = this->FindInCache(placeholder_id);
         this->Invalidate(entry);
-        this->MakePath(placeholder_path_out, placeholder_id);
+        this->MakePath(placeholder_path, placeholder_id);
     }
 
     Result PlaceHolderAccessor::Create(PlaceHolderId placeholder_id, size_t size) {
-        char placeholder_path[FS_MAX_PATH] = {0};
-
         this->EnsureRecursively(placeholder_id);
-        this->GetPath(placeholder_path, placeholder_id);
+
+        PathString placeholder_path;
+        this->GetPath(std::addressof(placeholder_path), placeholder_id);
 
         R_TRY_CATCH(fsdevCreateFile(placeholder_path, size, FsCreateOption_BigFile)) {
             R_CONVERT(ams::fs::ResultPathAlreadyExists, ncm::ResultPlaceHolderAlreadyExists())
@@ -139,11 +141,10 @@ namespace ams::ncm::impl {
     }
 
     Result PlaceHolderAccessor::Delete(PlaceHolderId placeholder_id) {
-        char placeholder_path[FS_MAX_PATH] = {0};
+        PathString placeholder_path;
+        this->GetPath(std::addressof(placeholder_path), placeholder_id);
 
-        this->GetPath(placeholder_path, placeholder_id);
         R_UNLESS(std::remove(placeholder_path) == 0, ConvertNotFoundResult(fsdevGetLastResult()));
-
         return ResultSuccess();
     }
 
@@ -158,10 +159,10 @@ namespace ams::ncm::impl {
     }
 
     Result PlaceHolderAccessor::SetSize(PlaceHolderId placeholder_id, size_t size) {
-        char placeholder_path[FS_MAX_PATH] = {0};
-        this->MakePath(placeholder_path, placeholder_id);
-        R_UNLESS(truncate(placeholder_path, size) != -1, ConvertNotFoundResult(fsdevGetLastResult()));
+        PathString placeholder_path;
+        this->MakePath(std::addressof(placeholder_path), placeholder_id);
 
+        R_UNLESS(truncate(placeholder_path, size) != -1, ConvertNotFoundResult(fsdevGetLastResult()));
         return ResultSuccess();
     }
 
@@ -198,8 +199,8 @@ namespace ams::ncm::impl {
     }
 
     Result PlaceHolderAccessor::EnsureRecursively(PlaceHolderId placeholder_id) {
-        char placeholder_path[FS_MAX_PATH] = {0};
-        this->MakePath(placeholder_path, placeholder_id);
+        PathString placeholder_path;
+        this->MakePath(std::addressof(placeholder_path), placeholder_id);
         R_TRY(fs::EnsureParentDirectoryRecursively(placeholder_path));
         return ResultSuccess();
     }

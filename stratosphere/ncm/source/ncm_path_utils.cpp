@@ -19,22 +19,12 @@
 
 namespace ams::ncm::path {
 
-    void GetContentMetaPath(char *out, ContentId content_id, MakeContentPathFunc path_func, const char *root_path) {
-        char tmp_path[ams::fs::EntryNameLengthMax] = {0};
-        char content_path[ams::fs::EntryNameLengthMax] = {0};
-        path_func(content_path, content_id, root_path);
-        const size_t len = strnlen(content_path, ams::fs::EntryNameLengthMax);
-        const size_t len_no_extension = len - 4;
+    void GetContentMetaPath(PathString *out, ContentId content_id, MakeContentPathFunc path_func, const PathString &root_path) {
+        PathString content_path;
+        path_func(std::addressof(content_path), content_id, root_path);
 
-        AMS_ABORT_UNLESS(len_no_extension <= len);
-        AMS_ABORT_UNLESS(len_no_extension < ams::fs::EntryNameLengthMax);
-
-        strncpy(tmp_path, content_path, len_no_extension);
-        memcpy(out, tmp_path, ams::fs::EntryNameLengthMax);
-        const size_t out_len = strnlen(out, ams::fs::EntryNameLengthMax);
-
-        AMS_ABORT_UNLESS(out_len + 9 < ams::fs::EntryNameLengthMax);
-        strncat(out, ".cnmt.nca", 0x2ff - out_len);
+        out->Set(content_path.GetSubstring(0, content_path.GetLength() - 4));
+        out->Append(".cnmt.nca");
     }
 
     void GetContentFileName(char *out, ContentId content_id) {

@@ -39,4 +39,7 @@ namespace ams::ncm {
 
     using PathString = kvdb::BoundedString<fs::EntryNameLengthMax>;
 
+    using MakeContentPathFunc        = void (*)(PathString *out, ContentId content_id, const PathString &root);
+    using MakePlaceHolderPathFunc    = void (*)(PathString *out, PlaceHolderId placeholder_id, const PathString &root);
+
 }

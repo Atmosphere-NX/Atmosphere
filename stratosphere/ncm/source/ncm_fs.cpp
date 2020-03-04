@@ -98,20 +98,21 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result CheckContentStorageDirectoriesExist(const char *root_path) {
-        char content_root[FS_MAX_PATH] = {0};
-        char placeholder_root[FS_MAX_PATH] = {0};
+    Result CheckContentStorageDirectoriesExist(const char *path) {
+        const PathString root_path(path);
 
         bool has_root = false;
         R_TRY(HasDirectory(&has_root, root_path));
         R_UNLESS(has_root, ncm::ResultContentStorageBaseNotFound());
 
-        path::GetContentRootPath(content_root, root_path);
+        PathString content_root;
+        path::GetContentRootPath(std::addressof(content_root), root_path);
         bool has_content_root = false;
         R_TRY(HasDirectory(&has_content_root, content_root));
         R_UNLESS(has_content_root, ncm::ResultInvalidContentStorageBase());
 
-        path::GetPlaceHolderRootPath(placeholder_root, root_path);
+        PathString placeholder_root;
+        path::GetPlaceHolderRootPath(std::addressof(placeholder_root), root_path);
         bool has_placeholder_root = false;
         R_TRY(HasDirectory(&has_placeholder_root, placeholder_root));
         R_UNLESS(has_placeholder_root, ncm::ResultInvalidContentStorageBase());
@@ -119,13 +120,15 @@ namespace ams::ncm::fs {
         return ResultSuccess();
     }
 
-    Result EnsureContentAndPlaceHolderRoot(const char *root_path) {
-        char content_root[FS_MAX_PATH] = {0};
-        char placeholder_root[FS_MAX_PATH] = {0};
+    Result EnsureContentAndPlaceHolderRoot(const char *path) {
+        const PathString root_path(path);
 
-        path::GetContentRootPath(content_root, root_path);
+        PathString content_root;
+        path::GetContentRootPath(std::addressof(content_root), root_path);
         R_TRY(EnsureDirectoryRecursively(content_root));
-        path::GetPlaceHolderRootPath(placeholder_root, root_path);
+
+        PathString placeholder_root;
+        path::GetPlaceHolderRootPath(std::addressof(placeholder_root), root_path);
         R_TRY(EnsureDirectoryRecursively(placeholder_root));
 
         return ResultSuccess();

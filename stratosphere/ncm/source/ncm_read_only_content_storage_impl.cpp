@@ -20,12 +20,10 @@
 
 namespace ams::ncm {
 
-    Result ReadOnlyContentStorageImpl::Initialize(const char *root_path, MakeContentPathFunc content_path_func) {
+    Result ReadOnlyContentStorageImpl::Initialize(const char *path, MakeContentPathFunc content_path_func) {
         R_TRY(this->EnsureEnabled());
 
-        const size_t root_path_len = strnlen(root_path, ams::fs::EntryNameLengthMax);
-        AMS_ABORT_UNLESS(root_path_len < ams::fs::EntryNameLengthMax);
-        strncpy(this->root_path, root_path, FS_MAX_PATH-2);
+        this->root_path = PathString(path);
         this->make_content_path_func = *content_path_func;
         return ResultSuccess();
     }
@@ -61,14 +59,14 @@ namespace ams::ncm {
     Result ReadOnlyContentStorageImpl::Has(sf::Out<bool> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
-        char content_path[FS_MAX_PATH] = {0};
-        this->make_content_path_func(content_path, content_id, this->root_path);
+        PathString content_path;
+        this->make_content_path_func(std::addressof(content_path), content_id, this->root_path);
 
         bool has = false;
         R_TRY(fs::HasFile(&has, content_path));
 
         if (!has) {
-            path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
+            path::GetContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
             R_TRY(fs::HasFile(&has, content_path));
         }
 
@@ -79,19 +77,19 @@ namespace ams::ncm {
     Result ReadOnlyContentStorageImpl::GetPath(sf::Out<Path> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
-        char content_path[FS_MAX_PATH] = {0};
-        char common_path[FS_MAX_PATH] = {0};
+        PathString content_path;
+        path::GetContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
+        
         bool is_content_meta_file = false;
-
-        path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
         R_TRY(fs::HasFile(&is_content_meta_file, content_path));
 
         if (!is_content_meta_file) {
-            this->make_content_path_func(content_path, content_id, this->root_path);
+            this->make_content_path_func(std::addressof(content_path), content_id, this->root_path);
         }
 
-        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, content_path));
-        out.SetValue(Path::Encode(common_path));
+        Path common_path;
+        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, content_path));
+        out.SetValue(Path::Encode(common_path.str));
 
         return ResultSuccess();
     }
@@ -119,14 +117,14 @@ namespace ams::ncm {
     Result ReadOnlyContentStorageImpl::GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
-        char content_path[FS_MAX_PATH] = {0};
-        bool is_content_file = false;
+        PathString content_path;
+        this->make_content_path_func(std::addressof(content_path), content_id, this->root_path);
 
-        this->make_content_path_func(content_path, content_id, this->root_path);
+        bool is_content_file = false;
         R_TRY(fs::HasFile(&is_content_file, content_path));
 
         if (!is_content_file) {
-            path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
+            path::GetContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
         }
 
         struct stat st;
@@ -153,14 +151,14 @@ namespace ams::ncm {
         R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
-        char content_path[FS_MAX_PATH] = {0};
-        bool is_content_file = false;
+        PathString content_path;
+        this->make_content_path_func(std::addressof(content_path), content_id, this->root_path);
 
-        this->make_content_path_func(content_path, content_id, this->root_path);
+        bool is_content_file = false;
         R_TRY(fs::HasFile(&is_content_file, content_path));
 
         if (!is_content_file) {
-            path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
+            path::GetContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
         }
 
         FILE *f = nullptr;
@@ -192,18 +190,18 @@ namespace ams::ncm {
     Result ReadOnlyContentStorageImpl::GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
-        char content_path[FS_MAX_PATH] = {0};
-        char common_path[FS_MAX_PATH] = {0};
-        bool is_content_meta_file = false;
+        PathString content_path;
+        path::GetContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
 
-        path::GetContentMetaPath(content_path, content_id, this->make_content_path_func, this->root_path);
+        bool is_content_meta_file = false;
         R_TRY(fs::HasFile(&is_content_meta_file, content_path));
 
         if (!is_content_meta_file) {
-            this->make_content_path_func(content_path, content_id, this->root_path);
+            this->make_content_path_func(std::addressof(content_path), content_id, this->root_path);
         }
 
-        R_TRY(fs::ConvertToFsCommonPath(common_path, ams::fs::EntryNameLengthMax, content_path));
+        Path common_path;
+        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, content_path));
 
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));

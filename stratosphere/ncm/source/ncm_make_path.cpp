@@ -35,47 +35,50 @@ namespace ams::ncm::path {
 
     }
 
-    void MakeContentPathFlat(char *path_out, ContentId content_id, const char *root) {
-        char content_name[FS_MAX_PATH] = {0};
-        GetContentFileName(content_name, content_id);
-        AMS_ABORT_UNLESS(snprintf(path_out, ams::fs::EntryNameLengthMax, "%s/%s", root, content_name) >= 0);
+    void MakeContentPathFlat(PathString *out, ContentId content_id, const PathString &root) {
+        Path content_name;
+        GetContentFileName(content_name.str, content_id);
+        out->SetFormat("%s/%s", root.Get(), content_name.str);
     }
 
-    void MakeContentPathDualLayered(char *path_out, ContentId content_id, const char *root) {
-        char content_name[FS_MAX_PATH] = {0};
+    void MakeContentPathDualLayered(PathString *out, ContentId content_id, const PathString &root) {
         const u16 hash = Get16BitSha256HashPrefix(content_id.uuid);
         const u32 hash_lower = (hash >> 4) & 0x3f;
         const u32 hash_upper = (hash >> 10) & 0x3f;
 
-        GetContentFileName(content_name, content_id);
-        AMS_ABORT_UNLESS(snprintf(path_out, ams::fs::EntryNameLengthMax, "%s/%08X/%08X/%s", root, hash_upper, hash_lower, content_name) >= 0);
+        Path content_name;
+        GetContentFileName(content_name.str, content_id);
+        out->SetFormat("%s/%08X/%08X/%s", root.Get(), hash_upper, hash_lower, content_name.str);
     }
 
-    void MakeContentPath10BitLayered(char *path_out, ContentId content_id, const char *root) {
-        char content_name[FS_MAX_PATH] = {0};
+    void MakeContentPath10BitLayered(PathString *out, ContentId content_id, const PathString &root) {
         const u32 hash = (Get16BitSha256HashPrefix(content_id.uuid) >> 6) & 0x3FF;
-        GetContentFileName(content_name, content_id);
-        AMS_ABORT_UNLESS(snprintf(path_out, ams::fs::EntryNameLengthMax, "%s/%08X/%s", root, hash, content_name) >= 0);
+
+        Path content_name;
+        GetContentFileName(content_name.str, content_id);
+        out->SetFormat("%s/%08X/%s", root.Get(), hash, content_name.str);
     }
 
-    void MakeContentPathHashByteLayered(char *path_out, ContentId content_id, const char *root) {
-        char content_name[FS_MAX_PATH] = {0};
+    void MakeContentPathHashByteLayered(PathString *out, ContentId content_id, const PathString &root) {
         const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id.uuid));
-        GetContentFileName(content_name, content_id);
-        AMS_ABORT_UNLESS(snprintf(path_out, ams::fs::EntryNameLengthMax, "%s/%08X/%s", root, hash_byte, content_name) >= 0);
+
+        Path content_name;
+        GetContentFileName(content_name.str, content_id);
+        out->SetFormat("%s/%08X/%s", root.Get(), hash_byte, content_name.str);
     }
 
-    void MakePlaceHolderPathFlat(char *path_out, PlaceHolderId placeholder_id, const char *root) {
-        char placeholder_name[FS_MAX_PATH] = {0};
-        GetPlaceHolderFileName(placeholder_name, placeholder_id);
-        AMS_ABORT_UNLESS(snprintf(path_out, ams::fs::EntryNameLengthMax, "%s/%s", root, placeholder_name) >= 0);
+    void MakePlaceHolderPathFlat(PathString *out, PlaceHolderId placeholder_id, const PathString &root) {
+        Path placeholder_name;
+        GetPlaceHolderFileName(placeholder_name.str, placeholder_id);
+        out->SetFormat("%s/%s", root.Get(), placeholder_name.str);
     }
 
-    void MakePlaceHolderPathHashByteLayered(char *path_out, PlaceHolderId placeholder_id, const char *root) {
-        char placeholder_name[FS_MAX_PATH] = {0};
+    void MakePlaceHolderPathHashByteLayered(PathString *out, PlaceHolderId placeholder_id, const PathString &root) {
         const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id.uuid));
-        GetPlaceHolderFileName(placeholder_name, placeholder_id);
-        AMS_ABORT_UNLESS(snprintf(path_out, ams::fs::EntryNameLengthMax, "%s/%08X/%s", root, hash_byte, placeholder_name) >= 0);
+
+        Path placeholder_name;
+        GetPlaceHolderFileName(placeholder_name.str, placeholder_id);
+        out->SetFormat("%s/%08X/%s", root.Get(), hash_byte, placeholder_name.str);
     }
 
 }

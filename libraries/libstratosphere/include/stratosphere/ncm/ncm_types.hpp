@@ -145,9 +145,6 @@ namespace ams::ncm {
     static_assert(sizeof(std::is_pod<ContentInfo>::value));
     static_assert(sizeof(ContentInfo)  == 0x18);
 
-    using MakeContentPathFunc        = void (*)(char *out, ContentId content_id, const char *root);
-    using MakePlaceHolderPathFunc    = void (*)(char *out, PlaceHolderId placeholder_id, const char *root);
-
     /* Storage IDs. */
     enum class StorageId : u8 {
         #define DEFINE_ENUM_MEMBER(nm) nm = NcmStorageId_##nm

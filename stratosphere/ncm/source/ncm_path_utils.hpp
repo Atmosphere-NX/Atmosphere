@@ -20,17 +20,15 @@
 
 namespace ams::ncm::path {
 
-    inline void GetContentRootPath(char *out_content_root, const char *root_path) {
-        /* TODO: Replace with BoundedString? */
-        AMS_ABORT_UNLESS(snprintf(out_content_root, ams::fs::EntryNameLengthMax, "%s%s", root_path, "/registered") >= 0);
+    inline void GetContentRootPath(PathString *content_root, const PathString &root_path) {
+        content_root->SetFormat("%s%s", root_path.Get(), "/registered");
     }
 
-    inline void GetPlaceHolderRootPath(char *out_placeholder_root, const char *root_path) {
-        /* TODO: Replace with BoundedString? */
-        AMS_ABORT_UNLESS(snprintf(out_placeholder_root, FS_MAX_PATH, "%s%s", root_path, "/placehld") >= 0);
+    inline void GetPlaceHolderRootPath(PathString *placeholder_root, const PathString &root_path) {
+        placeholder_root->SetFormat("%s%s", root_path.Get(), "/placehld");
     }
 
-    void GetContentMetaPath(char *out, ContentId content_id, MakeContentPathFunc path_func, const char *root_path);
+    void GetContentMetaPath(PathString *out, ContentId content_id, MakeContentPathFunc path_func, const PathString &root_path);
     void GetContentFileName(char *out, ContentId content_id);
     void GetPlaceHolderFileName(char *out, PlaceHolderId placeholder_id);
     bool IsNcaPath(const char *path);

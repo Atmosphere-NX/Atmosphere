@@ -23,7 +23,7 @@ namespace ams::ncm {
         NON_COPYABLE(ContentStorageImplBase);
         NON_MOVEABLE(ContentStorageImplBase);
         protected:
-            char root_path[ams::fs::EntryNameLengthMax];
+            PathString root_path;
             MakeContentPathFunc make_content_path_func;
             bool disabled;
         protected:
@@ -34,11 +34,11 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            static Result GetRightsId(ncm::RightsId *out_rights_id, const char *path) {
+            static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path) {
                 if (hos::GetVersion() >= hos::Version_300) {
-                    R_TRY(ams::fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path));
+                    R_TRY(ams::fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str));
                 } else {
-                    R_TRY(ams::fs::GetRightsId(std::addressof(out_rights_id->id), path));
+                    R_TRY(ams::fs::GetRightsId(std::addressof(out_rights_id->id), path.str));
                     out_rights_id->key_generation = 0;
                 }
                 return ResultSuccess();
