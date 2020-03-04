@@ -113,12 +113,13 @@ namespace {
             }
         public:
             ContentManagerServerManager(ServiceType *m)
-                : thread(ThreadFunction, this, ThreadPriority), ncm_manager(sf::ServiceObjectTraits<ServiceType>::SharedPointerHelper::GetEmptyDeleteSharedPointer(m))
+                : thread(ThreadFunction, this, ThreadPriority), ncm_manager()
             {
                 /* ... */
             }
 
-            ams::Result Initialize() {
+            ams::Result Initialize(std::shared_ptr<ServiceType> manager_obj) {
+                this->ncm_manager = manager_obj;
                 return this->RegisterServer<ServiceType>(ContentManagerServiceName, ContentManagerManagerSessions, this->ncm_manager);
             }
 
@@ -183,22 +184,21 @@ namespace {
     lr::LocationResolverManagerImpl g_lr_manager_service_object;
     LocationResolverServerManager g_lr_server_manager(std::addressof(g_lr_manager_service_object));
 
-}
+    ALWAYS_INLINE std::shared_ptr<ncm::ContentManagerImpl> GetSharedPointerToContentManager() {
+        return sf::ServiceObjectTraits<ncm::ContentManagerImpl>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_ncm_manager_service_object));
+    }
 
-void ContentManagerServerMain(void *arg) {
-    /* Create services. */
-    R_ABORT_UNLESS(g_ncm_server_manager.RegisterServer<ncm::ContentManagerImpl>(ContentManagerServiceName, ContentManagerManagerSessions));
-
-    /* Loop forever, servicing our services. */
-    g_ncm_server_manager.LoopProcess();
 }
 
 int main(int argc, char **argv)
 {
-    /* TODO: Initialize content manager implementation. */
+    auto content_manager = GetSharedPointerToContentManager();
+    R_ABORT_UNLESS(content_manager->Initialize());
 
-    R_ABORT_UNLESS(g_ncm_server_manager.Initialize());
+    R_ABORT_UNLESS(g_ncm_server_manager.Initialize(content_manager));
     R_ABORT_UNLESS(g_ncm_server_manager.StartThreads());
+
+    ncm::InitializeWithObject(content_manager);
 
     R_ABORT_UNLESS(g_lr_server_manager.Initialize());
     R_ABORT_UNLESS(g_lr_server_manager.StartThreads());

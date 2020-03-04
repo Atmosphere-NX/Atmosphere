@@ -70,7 +70,7 @@ namespace ams::ncm {
 
     }
 
-    Result ContentManagerImpl::~ContentManagerImpl() {
+    ContentManagerImpl::~ContentManagerImpl() {
         {
             std::scoped_lock lk(this->mutex);
 
