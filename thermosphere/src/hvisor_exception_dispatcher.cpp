@@ -93,7 +93,8 @@ void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
 
     void ExceptionEntryPostprocess(ExceptionStackFrame *frame, bool isLowerEl)
     {
-        if (frame == currentCoreCtx->GetGuestFrame()) {
+        if (isLowerEl) {
+            currentCoreCtx->SetGuestFrame(frame);
             frame->cntp_ctl_el0 = THERMOSPHERE_GET_SYSREG(cntp_ctl_el0);
             frame->cntv_ctl_el0 = THERMOSPHERE_GET_SYSREG(cntv_ctl_el0);
         }

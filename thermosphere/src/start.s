@@ -22,17 +22,17 @@
 .type       _start, %function
 
 _start:
-    b       start
-    b       start2
+    b       _start1
+    b       _start2
 
 .global _ZN3ams6hvisor11CoreContext23initialKernelEntrypointE
 _ZN3ams6hvisor11CoreContext23initialKernelEntrypointE:
     .quad   0
 
-start:
+_start1:
     mov     x19, #1
     b       _startCommon
-start2:
+_start2:
     mov     x19, xzr
 _startCommon:
     // Disable interrupts, select sp_el0 before mmu is enabled
@@ -50,73 +50,80 @@ _startCommon:
     // Save x0
     mov     x21, x0
 
-    bl      cacheClearLocalDataCacheOnBoot
+    // Get core ID
+    mrs     x22, mpidr_el1
+    and     x22, x22, #0xFF
+
+    // ams::hvisor::cpu::ClearLocalDataCacheOnBoot
+    bl      _ZN3ams6hvisor3cpu25ClearLocalDataCacheOnBootEv
     cbz     x19, 1f
 
     // "Boot core only" stuff:
-    bl      cacheClearSharedDataCachesOnBoot
+    // ams::hvisor::cpu::ClearSharedDataCachesOnBoot
+    bl      _ZN3ams6hvisor3cpu27ClearSharedDataCachesOnBootEv
     ic      iallu
-    dsb     nsh
+    dsb     sy
     isb
 
     // Temporarily use temp end region as stack, then create the translation table
     // The stack top is also equal to the mmu table address...
-    adr     x0, g_loadImageLayout
-    ldp     x2, x3, [x0, #0x10]
-    add     x1, x2, x3
+    adr     x0, _ZN3ams6hvisor9MemoryMap11imageLayoutE
     mov     sp, x1
-    bl      memoryMapSetupMmu
+    // ams::hvisor::MemoryMap::SetupMmu(ams::hvisor::MemoryMap::LoadImageLayout const*)
+    bl      _ZN3ams6hvisor9MemoryMap8SetupMmuEPKNS1_15LoadImageLayoutE
 
 1:
     // Enable MMU, note that the function is not allowed to use any stack
-    adr     x0, g_loadImageLayout
+    adr     x0, _ZN3ams6hvisor9MemoryMap11imageLayoutE
+    mov     w1, w22
     ldr     x18, =_postMmuEnableReturnAddr
-    bl      memoryMapEnableMmu
+    // ams::hvisor::MemoryMap::EnableMmuGetStacks(ams::hvisor::MemoryMap::LoadImageLayout const*, unsigned int)
+    bl      _ZN3ams6hvisor9MemoryMap18EnableMmuGetStacksEPKNS1_15LoadImageLayoutEj
 
     // This is where we will land on exception return after enabling the MMU:
 _postMmuEnableReturnAddr:
+    // x0 = sp, x1 = crash sp
+
+    mov     x23, x1
+
     // Select sp_el2
     msr     spsel, #1
 
-    // Get core ID
-    mrs     x8, mpidr_el1
-    and     x8, x8, #0xFF
-
-    mov     w0, w8
-    bl      memoryMapGetStackTop
     mov     sp, x0
+    msr     sp_el0, x23
 
     // Set up x18, other sysregs, BSS, etc.
     // Don't call init array to save space?
-    mov     w0, w8
+    mov     w0, w22
     mov     w1, w19
     mov     x2, x21
     bl      initSystem
 
     // Save x18, reserve space for exception frame
-    // TODO: save exception stack too
-    stp     x18, xzr, [sp, #-0x10]!
+    stp     x18, x23, [sp, #-0x10]!
     sub     sp, sp, #EXCEP_STACK_FRAME_SIZE
+
+    prfm    pstl1keep, [x18]
 
     mov     x0, sp
     mov     x1, x20
     //str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
     bl      thermosphereMain
 
-    prfm    pstl1keep, [x18]
-
     dsb     sy
     isb
 
     // Jump to kernel
     mov     x0, sp
-    bl      exceptionReturnPreprocess
+    // ams::hvisor::ExceptionEntryPostprocess(ams::hvisor::ExceptionStackFrame*, bool)
+    bl      _ZN3ams6hvisor25ExceptionEntryPostprocessEPNS0_19ExceptionStackFrameEb
     b       _restoreAllRegisters
 
 .pool
 
-.global     g_loadImageLayout
-g_loadImageLayout:
+// ams::hvisor::MemoryMap::imageLayout
+.global     _ZN3ams6hvisor9MemoryMap11imageLayoutE
+_ZN3ams6hvisor9MemoryMap11imageLayoutE:
     .quad       __start_pa__
     .quad       __image_size__
     .quad       __temp_pa__

@@ -108,19 +108,19 @@ vector_entry \name
         ldp     x18, x19, [sp, #EXCEP_STACK_FRAME_SIZE]
         msr     sp_el0, x19
         prfm    pstl1keep, [x18]
-        //todo str     x0, [x18, #CORECTX_GUEST_FRAME_OFFSET]
         mov     w1, #1
     .else
         mov     w1, #0
     .endif
-
-    bl          exceptionEntryPostprocess
+    // ams::hvisor::ExceptionEntryPostprocess(ams::hvisor::ExceptionStackFrame*, bool)
+    bl          _ZN3ams6hvisor25ExceptionEntryPostprocessEPNS0_19ExceptionStackFrameEb
 .endm
 
 .macro EXCEPTION_HANDLER_END name, type
     .if \type != EXCEPTION_TYPE_HOST_CRASH
         mov     x0, sp
-        bl      exceptionReturnPreprocess
+        // ams::hvisor::ExceptionReturnPreprocess(ams::hvisor::ExceptionStackFrame*)
+        bl      _ZN3ams6hvisor25ExceptionReturnPreprocessEPNS0_19ExceptionStackFrameE
         b       _restoreAllRegisters
     .else
         b       .
@@ -140,13 +140,25 @@ vector_base g_thermosphereVectors
 
 /* Current EL, SP0 */
 vector_entry        _synchSp0
+    // Safecpy
+    cbz     x18, _handleSafecpy
+
     // Used when we enable the MMU
     msr     elr_el2, x18
     // Note: non-broadcasting TLB maintenance op
     tlbi    alle2
-    dsb     nsh
+    dsb     ish
     isb
     eret
+
+    _handleSafecpy:
+    // Set Z flag
+    mrs     x18, spsr_el2
+    orr     x18, x18, #(1 << 30)
+    msr     spsr_el2, x18
+    mov     x18, #0
+    eret
+
 check_vector_size   _synchSp0
 
 _unknownException:
@@ -154,7 +166,8 @@ _unknownException:
     mov     x0, x30
     adr     x1, g_thermosphereVectors + 4
     sub     x0, x0, x1
-    bl      handleUnknownException
+    // ams::hvisor::HandleUnknownException(unsigned int)
+    bl      _ZN3ams6hvisor22HandleUnknownExceptionEj
     b       .
 
 UNKNOWN_EXCEPTION       _irqSp0
@@ -235,18 +248,6 @@ _restoreAllRegisters:
 UNKNOWN_EXCEPTION       _serrorSp0
 
 // To save space, insert in an unused vector segment.
-.global semihosting_call
-.type   semihosting_call, %function
-.func   semihosting_call
-.cfi_startproc
-.cfi_sections   .debug_frame
-semihosting_call:
-    hlt     #0xF000
-    ret
-.cfi_endproc
-.endfunc
-
-// To save space, insert in an unused vector segment.
 
 // ams::hvisor::traps::CallSmc0(ams::hvisor::ExceptionStackFrame*):
 .global _ZN3ams6hvisor5traps8CallSmc0EPNS0_19ExceptionStackFrameE
@@ -279,6 +280,7 @@ _ZN3ams6hvisor5traps8CallSmc0EPNS0_19ExceptionStackFrameE:
     ret
 
 _callSmcTemplateEnd:
+.cfi_endproc
 .endfunc
 
 // ams::hvisor::traps::callSmcTemplateInstructionOffset
@@ -315,40 +317,23 @@ _ZN3ams6hvisor5traps8CallSmc1EPNS0_19ExceptionStackFrameE:
 
     ldp     x19, x20, [sp], #0x10
     ret
+.cfi_endproc
 .endfunc
 
 /* Current EL, SPx */
 
-vector_entry                _synchSpx
-    // Ignore crash if x18 is 0, when we're copying memory from the guest (w/ irq masked)
-    cbz     x18, _synchSpxIgnoreCrash
-
-    PIVOT_STACK_FOR_CRASH
-    SAVE_MOST_REGISTERS
-
+EXCEPTION_HANDLER_START     _synchSpx, EXCEPTION_TYPE_HOST
     mov     x0, sp
-    mov     w1, #0
-
-    bl      exceptionEntryPostprocess
-
-    mov     x0, sp
-    mrs     x1, esr_el2
-    bl      handleSameElSyncException
-
-    b       .
-
-_synchSpxIgnoreCrash:
-    mrs     x18, elr_el2
-    add     x18, x18, #4
-    msr     elr_el2, x18
-    eret
-check_vector_size           _synchSpx
+    // ams::hvisor::HandleSameElSyncException(ams::hvisor::ExceptionStackFrame*):
+    bl      _ZN3ams6hvisor25HandleSameElSyncExceptionEPNS0_19ExceptionStackFrameE
+EXCEPTION_HANDLER_END     _synchSpx
 
 EXCEPTION_HANDLER_START     _irqSpx, EXCEPTION_TYPE_HOST
     mov     x0, sp
-    mov     w1, wzr
-    mov     w2, wzr
-    bl      handleIrqException
+    mov     w1, #0
+    mov     w2, #0
+    // ams::hvisor::IrqManager::HandleInterrupt(ams::hvisor::ExceptionStackFrame*):
+    bl      _ZN3ams6hvisor10IrqManager15HandleInterruptEPNS0_19ExceptionStackFrameE
 EXCEPTION_HANDLER_END       _irqSpx, EXCEPTION_TYPE_HOST
 
 UNKNOWN_EXCEPTION           _fiqSpx
@@ -358,14 +343,16 @@ UNKNOWN_EXCEPTION           _serrorSpx
 
 EXCEPTION_HANDLER_START     _synchA64, EXCEPTION_TYPE_GUEST
     mov     x0, sp
-    bl      handleLowerElSyncException
+    // ams::hvisor::HandleLowerElSyncException(ams::hvisor::ExceptionStackFrame*)
+    bl      _ZN3ams6hvisor26HandleLowerElSyncExceptionEPNS0_19ExceptionStackFrameE
 EXCEPTION_HANDLER_END       _synchA64, EXCEPTION_TYPE_GUEST
 
 EXCEPTION_HANDLER_START     _irqA64, EXCEPTION_TYPE_GUEST
     mov     x0, sp
     mov     w1, #1
     mov     w2, #0
-    bl      handleIrqException
+    // ams::hvisor::IrqManager::HandleInterrupt(ams::hvisor::ExceptionStackFrame*):
+    bl      _ZN3ams6hvisor10IrqManager15HandleInterruptEPNS0_19ExceptionStackFrameE
 EXCEPTION_HANDLER_END        _irqA64, EXCEPTION_TYPE_GUEST
 
 UNKNOWN_EXCEPTION           _fiqA64
@@ -375,14 +362,16 @@ UNKNOWN_EXCEPTION           _serrorA64
 
 EXCEPTION_HANDLER_START     _synchA32, EXCEPTION_TYPE_GUEST
     mov     x0, sp
-    bl      handleLowerElSyncException
+    // ams::hvisor::HandleLowerElSyncException(ams::hvisor::ExceptionStackFrame*)
+    bl      _ZN3ams6hvisor26HandleLowerElSyncExceptionEPNS0_19ExceptionStackFrameE
 EXCEPTION_HANDLER_END       _synchA32, EXCEPTION_TYPE_GUEST
 
 EXCEPTION_HANDLER_START     _irqA32, EXCEPTION_TYPE_GUEST
     mov     x0, sp
     mov     w1, #1
     mov     w2, #1
-    bl      handleIrqException
+    // ams::hvisor::IrqManager::HandleInterrupt(ams::hvisor::ExceptionStackFrame*):
+    bl      _ZN3ams6hvisor10IrqManager15HandleInterruptEPNS0_19ExceptionStackFrameE
 EXCEPTION_HANDLER_END        _irqA32, EXCEPTION_TYPE_GUEST
 
 UNKNOWN_EXCEPTION           _fiqA32
