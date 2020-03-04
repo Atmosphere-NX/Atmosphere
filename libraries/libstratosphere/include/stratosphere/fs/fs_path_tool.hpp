@@ -26,12 +26,17 @@ namespace ams::fs {
         constexpr inline char Dot                = '.';
         constexpr inline char NullTerminator     = '\x00';
 
+        constexpr inline char UnsupportedDirectorySeparator = '/';
     }
 
     class PathTool {
         public:
             static constexpr const char RootPath[] = "/";
         public:
+            static constexpr inline bool IsUnsupportedSeparator(char c) {
+                return c == StringTraits::UnsupportedDirectorySeparator;
+            }
+
             static constexpr inline bool IsSeparator(char c) {
                 return c == StringTraits::DirectorySeparator;
             }

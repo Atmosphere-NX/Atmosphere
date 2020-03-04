@@ -56,6 +56,7 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterB,                   3366);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPathNormalizer,              3367);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemInterfaceAdapter,  3407);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInUserFileSystem,              3420);
 
     R_DEFINE_ERROR_RANGE(MmcAccessFailed, 3500, 3999);
 

@@ -15,6 +15,7 @@
  */
 #pragma once
 #include "fs_common.hpp"
+#include "fs_file.hpp"
 
 namespace ams::fs {
 
@@ -41,5 +42,7 @@ namespace ams::fs {
 
     using FileQueryRangeInfo    = QueryRangeInfo;
     using StorageQueryRangeInfo = QueryRangeInfo;
+
+    Result QueryRange(QueryRangeInfo *out, FileHandle handle, s64 offset, s64 size);
 
 }

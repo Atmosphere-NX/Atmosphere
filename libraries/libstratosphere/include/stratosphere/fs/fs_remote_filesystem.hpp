@@ -87,7 +87,7 @@ namespace ams::fs {
             }
     };
 
-    class RemoteFileSystem : public fsa::IFileSystem {
+    class RemoteFileSystem : public fsa::IFileSystem, public impl::Newable {
         private:
             std::unique_ptr<::FsFileSystem, impl::Deleter> base_fs;
         public:
