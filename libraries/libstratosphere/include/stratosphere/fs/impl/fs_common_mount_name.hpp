@@ -18,26 +18,33 @@
 namespace ams::fs::impl {
 
     /* Delimiting of mount names. */
-    constexpr inline const char ReservedMountNamePrefixCharacter         = '@';
-    constexpr inline const char *MountNameDelimiter                      = ":/";
+    constexpr inline const char ReservedMountNamePrefixCharacter                = '@';
+    constexpr inline const char * const MountNameDelimiter                      = ":/";
 
     /* Filesystem names. */
-    constexpr inline const char *HostRootFileSystemMountName             = "@Host";
-    constexpr inline const char *SdCardFileSystemMountName               = "@Sdcard";
-    constexpr inline const char *GameCardFileSystemMountName             = "@Gc";
+    constexpr inline const char * const HostRootFileSystemMountName             = "@Host";
+    constexpr inline const char * const SdCardFileSystemMountName               = "@Sdcard";
+    constexpr inline const char * const GameCardFileSystemMountName             = "@Gc";
 
-    constexpr inline size_t GameCardFileSystemMountNameSuffixLength      = 1;
-    constexpr inline const char *GameCardFileSystemMountNameUpdateSuffix = "U";
-    constexpr inline const char *GameCardFileSystemMountNameNormalSuffix = "N";
-    constexpr inline const char *GameCardFileSystemMountNameSecureSuffix = "S";
+    constexpr inline size_t GameCardFileSystemMountNameSuffixLength             = 1;
+
+    constexpr inline const char * const GameCardFileSystemMountNameUpdateSuffix = "U";
+    constexpr inline const char * const GameCardFileSystemMountNameNormalSuffix = "N";
+    constexpr inline const char * const GameCardFileSystemMountNameSecureSuffix = "S";
 
     /* Built-in storage names. */
-    constexpr inline const char *BisCalibrationFilePartitionMountName    = "@CalibFile";
-    constexpr inline const char *BisSafeModePartitionMountName           = "@Safe";
-    constexpr inline const char *BisUserPartitionMountName               = "@User";
-    constexpr inline const char *BisSystemPartitionMountName             = "@System";
+    constexpr inline const char * const BisCalibrationFilePartitionMountName    = "@CalibFile";
+    constexpr inline const char * const BisSafeModePartitionMountName           = "@Safe";
+    constexpr inline const char * const BisUserPartitionMountName               = "@User";
+    constexpr inline const char * const BisSystemPartitionMountName             = "@System";
+
+    /* Content storage names. */
+    constexpr inline const char * const ContentStorageSystemMountName           = "@SystemContent";
+    constexpr inline const char * const ContentStorageUserMountName             = "@UserContent";
+    constexpr inline const char * const ContentStorageSdCardMountName           = "@SdCardContent";
+
 
     /* Registered update partition. */
-    constexpr inline const char *RegisteredUpdatePartitionMountName      = "@RegUpdate";
+    constexpr inline const char * const RegisteredUpdatePartitionMountName      = "@RegUpdate";
 
 }

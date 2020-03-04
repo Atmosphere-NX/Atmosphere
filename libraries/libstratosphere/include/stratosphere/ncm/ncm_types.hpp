@@ -55,10 +55,6 @@ namespace ams::ncm {
         Unknown         = 7,
     };
 
-    struct MountName {
-        char name[0x10];
-    };
-
     struct alignas(8) PlaceHolderId {
         util::Uuid uuid;
 

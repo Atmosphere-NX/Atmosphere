@@ -13,12 +13,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include "fs_common.hpp"
 
-#include "ncm/ncm_types.hpp"
-#include "ncm/ncm_auto_buffer.hpp"
-#include "ncm/ncm_content_meta.hpp"
-#include "ncm/ncm_content_meta_database.hpp"
-#include "ncm/ncm_content_storage.hpp"
-#include "ncm/ncm_api.hpp"
+namespace ams::fs {
+
+    enum class ContentStorageId : u32 {
+        System = 0,
+        User   = 1,
+        SdCard = 2,
+    };
+
+    constexpr inline const char * const ContentStorageDirectoryName = "Contents";
+
+    const char *GetContentStorageMountName(ContentStorageId id);
+
+    Result MountContentStorage(ContentStorageId id);
+    Result MountContentStorage(const char *name, ContentStorageId id);
+
+}

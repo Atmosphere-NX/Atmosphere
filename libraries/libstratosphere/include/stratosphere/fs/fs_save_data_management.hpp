@@ -13,12 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include "fs_common.hpp"
+#include "fs_save_data_types.hpp"
 
-#include "ncm/ncm_types.hpp"
-#include "ncm/ncm_auto_buffer.hpp"
-#include "ncm/ncm_content_meta.hpp"
-#include "ncm/ncm_content_meta_database.hpp"
-#include "ncm/ncm_content_storage.hpp"
-#include "ncm/ncm_api.hpp"
+namespace ams::fs {
+
+    Result GetSaveDataFlags(u32 *out, SaveDataId id);
+    Result GetSaveDataFlags(u32 *out, SaveDataSpaceId space_id, SaveDataId id);
+    Result SetSaveDataFlags(SaveDataId id, SaveDataSpaceId space_id, u32 flags);
+
+}

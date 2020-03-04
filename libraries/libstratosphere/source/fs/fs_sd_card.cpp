@@ -14,10 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "fsa/fs_mount_utils.hpp"
 
 namespace ams::fs {
 
     Result MountSdCard(const char *name) {
+        /* Validate the mount name. */
+        R_TRY(impl::CheckMountName(name));
+
         /* Open the SD card. This uses libnx bindings. */
         FsFileSystem fs;
         R_TRY(fsOpenSdCardFileSystem(std::addressof(fs)));

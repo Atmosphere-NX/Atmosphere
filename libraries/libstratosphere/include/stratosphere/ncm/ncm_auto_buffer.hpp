@@ -17,7 +17,7 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::kvdb {
+namespace ams::ncm {
 
     class AutoBuffer {
         NON_COPYABLE(AutoBuffer);

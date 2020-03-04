@@ -47,11 +47,20 @@ namespace ams::fs {
     R_DEFINE_ERROR_RESULT(NotImplemented, 3001);
     R_DEFINE_ERROR_RESULT(OutOfRange,     3005);
 
+    R_DEFINE_ERROR_RESULT(SystemPartitionNotReady, 3100);
+
     R_DEFINE_ERROR_RANGE(AllocationFailure, 3200, 3499);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorA,         3211);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorB,         3212);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageA,             3220);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,             3221);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardA,                   3225);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardB,                   3226);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardC,                   3227);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardD,                   3228);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardA,                     3244);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardB,                     3245);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSystemSaveDataA,             3246);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSubDirectoryFileSystem,      3355);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterA,                   3365);
