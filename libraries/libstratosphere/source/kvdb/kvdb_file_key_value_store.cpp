@@ -180,11 +180,9 @@ namespace ams::kvdb {
 
     Result FileKeyValueStore::InitializeWithCache(const char *dir, void *cache_buffer, size_t cache_buffer_size, size_t cache_capacity) {
         /* Ensure that the passed path is a directory. */
-        {
-            struct stat st;
-            R_UNLESS(stat(dir, &st) == 0,   fs::ResultPathNotFound());
-            R_UNLESS((S_ISDIR(st.st_mode)), fs::ResultPathNotFound());
-        }
+        fs::DirectoryEntryType entry_type;
+        R_TRY(fs::GetEntryType(std::addressof(entry_type), dir));
+        R_UNLESS(entry_type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
 
         /* Set path. */
         this->dir_path.Set(dir);
@@ -210,24 +208,22 @@ namespace ams::kvdb {
         }
 
         /* Open the value file. */
-        FILE *fp = fopen(this->GetPath(key, key_size), "rb");
-        if (fp == nullptr) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound())
-            } R_END_TRY_CATCH;
-        }
-        ON_SCOPE_EXIT { fclose(fp); };
+        fs::FileHandle file;
+        R_TRY_CATCH(fs::OpenFile(std::addressof(file), this->GetPath(key, key_size), fs::OpenMode_Read)) {
+            R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound());
+        } R_END_TRY_CATCH;
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         /* Get the value size. */
-        fseek(fp, 0, SEEK_END);
-        const size_t value_size = ftell(fp);
-        fseek(fp, 0, SEEK_SET);
+        s64 file_size;
+        R_TRY(fs::GetFileSize(std::addressof(file_size), file));
 
         /* Ensure there's enough space for the value. */
-        R_UNLESS(value_size <= max_out_size, ResultBufferInsufficient());
+        R_UNLESS(file_size <= static_cast<s64>(max_out_size), ResultBufferInsufficient());
 
         /* Read the value. */
-        R_UNLESS(fread(out_value, value_size, 1, fp) == 1, fsdevGetLastResult());
+        const size_t value_size = static_cast<size_t>(value_size);
+        R_TRY(fs::ReadFile(file, 0, out_value, value_size));
         *out_size = value_size;
 
         /* Cache the newly read value. */
@@ -251,17 +247,17 @@ namespace ams::kvdb {
         }
 
         /* Open the value file. */
-        FILE *fp = fopen(this->GetPath(key, key_size), "rb");
-        if (fp == nullptr) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound())
-            } R_END_TRY_CATCH;
-        }
-        ON_SCOPE_EXIT { fclose(fp); };
+        fs::FileHandle file;
+        R_TRY_CATCH(fs::OpenFile(std::addressof(file), this->GetPath(key, key_size), fs::OpenMode_Read)) {
+            R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound());
+        } R_END_TRY_CATCH;
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         /* Get the value size. */
-        fseek(fp, 0, SEEK_END);
-        *out_size = ftell(fp);
+        s64 file_size;
+        R_TRY(fs::GetFileSize(std::addressof(file_size), file));
+
+        *out_size = static_cast<size_t>(file_size);
         return ResultSuccess();
     }
 
@@ -278,18 +274,18 @@ namespace ams::kvdb {
 
         /* Delete the file, if it exists. Don't check result, since it's okay if it's already deleted. */
         auto key_path = this->GetPath(key, key_size);
-        std::remove(key_path);
+        fs::DeleteFile(key_path);
+
+        /* Create the new value file. */
+        R_TRY(fs::CreateFile(key_path, value_size));
 
         /* Open the value file. */
-        FILE *fp = fopen(key_path, "wb");
-        R_UNLESS(fp != nullptr, fsdevGetLastResult());
-        ON_SCOPE_EXIT { fclose(fp); };
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), key_path, fs::OpenMode_Write));
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-        /* Write the value file. */
-        R_UNLESS(fwrite(value, value_size, 1, fp) == 1, fsdevGetLastResult());
-
-        /* Flush the value file. */
-        fflush(fp);
+        /* Write the value file and flush. */
+        R_TRY(fs::WriteFile(file, 0, value, value_size, fs::WriteOption::Flush));
 
         return ResultSuccess();
     }
@@ -306,11 +302,9 @@ namespace ams::kvdb {
         }
 
         /* Remove the file. */
-        if (std::remove(this->GetPath(key, key_size)) != 0) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound())
-            } R_END_TRY_CATCH;
-        }
+        R_TRY_CATCH(fs::DeleteFile(this->GetPath(key, key_size))) {
+            R_CONVERT(fs::ResultPathNotFound, ResultKeyNotFound())
+        } R_END_TRY_CATCH;
 
         return ResultSuccess();
     }
