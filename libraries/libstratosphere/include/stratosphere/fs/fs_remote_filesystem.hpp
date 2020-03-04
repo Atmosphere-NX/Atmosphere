@@ -15,20 +15,20 @@
  */
 #pragma once
 #include "fs_common.hpp"
+#include "impl/fs_newable.hpp"
 #include "fsa/fs_ifile.hpp"
 #include "fsa/fs_idirectory.hpp"
 #include "fsa/fs_ifilesystem.hpp"
 
 namespace ams::fs {
 
-    class RemoteFile : public fsa::IFile {
+    class RemoteFile : public fsa::IFile, public impl::Newable {
         private:
-            std::unique_ptr<::FsFile> base_file;
+            std::unique_ptr<::FsFile, impl::Deleter> base_file;
         public:
-            RemoteFile(::FsFile *f) : base_file(f) { /* ... */ }
-            RemoteFile(std::unique_ptr<::FsFile> f) : base_file(std::move(f)) { /* ... */ }
-            RemoteFile(::FsFile f) {
-                this->base_file = std::make_unique<::FsFile>(f);
+            RemoteFile(::FsFile &f) {
+                this->base_file = impl::MakeUnique<::FsFile>();
+                *this->base_file = f;
             }
 
             virtual ~RemoteFile() { fsFileClose(this->base_file.get()); }
@@ -63,14 +63,13 @@ namespace ams::fs {
             }
     };
 
-    class RemoteDirectory : public fsa::IDirectory {
+    class RemoteDirectory : public fsa::IDirectory, public impl::Newable {
         private:
-            std::unique_ptr<::FsDir> base_dir;
+            std::unique_ptr<::FsDir, impl::Deleter> base_dir;
         public:
-            RemoteDirectory(::FsDir *d) : base_dir(d) { /* ... */ }
-            RemoteDirectory(std::unique_ptr<::FsDir> d) : base_dir(std::move(d)) { /* ... */ }
-            RemoteDirectory(::FsDir d) {
-                this->base_dir = std::make_unique<::FsDir>(d);
+            RemoteDirectory(::FsDir &d) {
+                this->base_dir = impl::MakeUnique<::FsDir>();
+                *this->base_dir = d;
             }
 
             virtual ~RemoteDirectory() { fsDirClose(this->base_dir.get()); }
@@ -90,12 +89,11 @@ namespace ams::fs {
 
     class RemoteFileSystem : public fsa::IFileSystem {
         private:
-            std::unique_ptr<::FsFileSystem> base_fs;
+            std::unique_ptr<::FsFileSystem, impl::Deleter> base_fs;
         public:
-            RemoteFileSystem(::FsFileSystem *fs) : base_fs(fs) { /* ... */ }
-            RemoteFileSystem(std::unique_ptr<::FsFileSystem> fs) : base_fs(std::move(fs)) { /* ... */ }
-            RemoteFileSystem(::FsFileSystem fs) {
-                this->base_fs = std::make_unique<::FsFileSystem>(fs);
+            RemoteFileSystem(::FsFileSystem &fs) {
+                this->base_fs = impl::MakeUnique<::FsFileSystem>();
+                *this->base_fs = fs;
             }
 
             virtual ~RemoteFileSystem() { fsFsClose(this->base_fs.get()); }

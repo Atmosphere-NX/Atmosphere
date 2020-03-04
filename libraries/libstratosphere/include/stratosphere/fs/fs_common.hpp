@@ -19,9 +19,3 @@
 #include "../ncm.hpp"
 #include "../sf.hpp"
 
-namespace ams::fs {
-
-    /* TODO: Better place for this? */
-    constexpr inline size_t MountNameLengthMax = 15;
-
-}

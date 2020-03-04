@@ -13,18 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "fs/fs_common.hpp"
-#include "fs/fsa/fs_ifile.hpp"
-#include "fs/fsa/fs_idirectory.hpp"
-#include "fs/fsa/fs_ifilesystem.hpp"
-#include "fs/fsa/fs_registrar.hpp"
-#include "fs/fs_remote_filesystem.hpp"
-#include "fs/fs_istorage.hpp"
-#include "fs/fs_remote_storage.hpp"
-#include "fs/fs_file_storage.hpp"
-#include "fs/fs_query_range.hpp"
-#include "fs/fs_mount.hpp"
-#include "fs/fs_path_tool.hpp"
-#include "fs/fs_path_utils.hpp"
+#include <stratosphere.hpp>
+
+namespace ams::fs::impl {
+
+    class FileSystemAccessor;
+
+    Result Register(std::unique_ptr<FileSystemAccessor> &&fs);
+    Result Find(FileSystemAccessor **out, const char *name);
+    void Unregister(const char *name);
+
+}

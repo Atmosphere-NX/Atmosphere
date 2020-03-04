@@ -276,7 +276,7 @@ namespace ams::util {
                     splice_impl(pos, first, last);
                 }
 
-                iterator erase(const iterator pos) {
+                iterator erase(const_iterator pos) {
                     if (pos == this->end()) {
                         return this->end();
                     }
@@ -529,7 +529,7 @@ namespace ams::util {
                 this->impl.splice(pos.GetImplIterator(), o.impl, first.GetImplIterator(), last.GetImplIterator());
             }
 
-            iterator erase(const iterator pos) {
+            iterator erase(const_iterator pos) {
                 return iterator(this->impl.erase(pos.GetImplIterator()));
             }
 

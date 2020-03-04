@@ -21,12 +21,11 @@ namespace ams::fs {
 
     class RemoteStorage : public IStorage {
         private:
-            std::unique_ptr<::FsStorage> base_storage;
+            std::unique_ptr<::FsStorage, impl::Deleter> base_storage;
         public:
-            RemoteStorage(::FsStorage *s) : base_storage(s) { /* ... */ }
-            RemoteStorage(std::unique_ptr<::FsStorage> s) : base_storage(std::move(s)) { /* ... */ }
-            RemoteStorage(::FsStorage s) {
-                this->base_storage = std::make_unique<::FsStorage>(s);
+            RemoteStorage(::FsStorage &s) {
+                this->base_storage = impl::MakeUnique<::FsStorage>();
+                *this->base_storage = s;
             }
 
             virtual ~RemoteStorage() { fsStorageClose(this->base_storage.get()); }

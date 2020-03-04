@@ -13,18 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "fs_user_mount_table.hpp"
+#include "fs_mount_table.hpp"
+#include "fs_filesystem_accessor.hpp"
 
-#pragma once
-#include "fs/fs_common.hpp"
-#include "fs/fsa/fs_ifile.hpp"
-#include "fs/fsa/fs_idirectory.hpp"
-#include "fs/fsa/fs_ifilesystem.hpp"
-#include "fs/fsa/fs_registrar.hpp"
-#include "fs/fs_remote_filesystem.hpp"
-#include "fs/fs_istorage.hpp"
-#include "fs/fs_remote_storage.hpp"
-#include "fs/fs_file_storage.hpp"
-#include "fs/fs_query_range.hpp"
-#include "fs/fs_mount.hpp"
-#include "fs/fs_path_tool.hpp"
-#include "fs/fs_path_utils.hpp"
+namespace ams::fs::impl {
+
+    namespace {
+
+        MountTable g_mount_table;
+
+    }
+
+    Result Register(std::unique_ptr<FileSystemAccessor> &&fs) {
+        return g_mount_table.Mount(std::move(fs));
+    }
+
+    Result Find(FileSystemAccessor **out, const char *name) {
+        return g_mount_table.Find(out,  name);
+    }
+
+    void Unregister(const char *name) {
+        g_mount_table.Unmount(name);
+    }
+
+}
