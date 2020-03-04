@@ -191,19 +191,20 @@ namespace ams::boot2 {
         template<typename F>
         void IterateOverFlaggedProgramsOnSdCard(F f) {
             /* Validate that the contents directory exists. */
-            DIR *contents_dir = opendir("sdmc:/atmosphere/contents");
-            if (contents_dir == nullptr) {
+            fs::DirectoryHandle contents_dir;
+            if (R_FAILED(fs::OpenDirectory(&contents_dir, "sdmc:/atmosphere/contents", fs::OpenDirectoryMode_Directory))) {
                 return;
             }
-            ON_SCOPE_EXIT { closedir(contents_dir); };
+            ON_SCOPE_EXIT { fs::CloseDirectory(contents_dir); };
 
             /* Iterate over entries in the contents directory */
-            struct dirent *ent;
-            while ((ent = readdir(contents_dir)) != nullptr) {
+            fs::DirectoryEntry entry;
+            s64 count;
+            while (R_SUCCEEDED(fs::ReadDirectory(&count, &entry, contents_dir, 1)) && count == 1) {
                 /* Check that the subdirectory can be converted to a program id. */
-                if (std::strlen(ent->d_name) == 2 * sizeof(ncm::ProgramId) && IsHexadecimal(ent->d_name)) {
+                if (std::strlen(entry.name) == 2 * sizeof(ncm::ProgramId) && IsHexadecimal(entry.name)) {
                     /* Check if we've already launched the program. */
-                    ncm::ProgramId program_id{std::strtoul(ent->d_name, nullptr, 16)};
+                    ncm::ProgramId program_id{std::strtoul(entry.name, nullptr, 16)};
 
                     /* Check if the program is flagged. */
                     if (!cfg::HasContentSpecificFlag(program_id, "boot2")) {
@@ -224,14 +225,16 @@ namespace ams::boot2 {
 
                 /* Read the mitm list off the SD card. */
                 {
-                    char path[FS_MAX_PATH];
-                    std::snprintf(mitm_list, sizeof(mitm_list), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
-                    FILE *f = fopen(path, "rb");
-                    if (f == nullptr) {
+                    char path[fs::EntryNameLengthMax];
+                    std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
+
+                    fs::FileHandle f;
+                    if (R_FAILED(fs::OpenFile(&f, path, fs::OpenMode_Read))) {
                         return;
                     }
-                    mitm_list_size = static_cast<size_t>(fread(mitm_list, 1, sizeof(mitm_list), f));
-                    fclose(f);
+                    ON_SCOPE_EXIT { fs::CloseFile(f); };
+
+                    R_ABORT_UNLESS(fs::ReadFile(&mitm_list_size, f, 0, mitm_list, sizeof(mitm_list)));
                 }
 
                 /* Validate read size. */

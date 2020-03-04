@@ -50,6 +50,8 @@ namespace ams::fs {
     R_DEFINE_ERROR_RANGE(AllocationFailure, 3200, 3499);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorA,         3211);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorB,         3212);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardA,                     3244);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardB,                     3245);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSubDirectoryFileSystem,      3355);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterA,                   3365);

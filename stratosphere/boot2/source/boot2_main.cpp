@@ -79,13 +79,10 @@ void __appInit(void) {
         R_ABORT_UNLESS(gpioInitialize());
     });
 
-    R_ABORT_UNLESS(fsdevMountSdmc());
-
     ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    fsdevUnmountAll();
     gpioExit();
     setsysExit();
     pmshellExit();
@@ -96,6 +93,11 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    /* Mount the SD card. */
+    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
+    ON_SCOPE_EXIT { fs::Unmount("sdmc"); };
+
+    /* Launch all programs off of SYSTEM/the SD. */
     boot2::LaunchPostSdCardBootPrograms();
 }
 

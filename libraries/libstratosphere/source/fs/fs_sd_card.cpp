@@ -13,20 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#pragma once
-#include "fs/fs_common.hpp"
-#include "fs/fsa/fs_ifile.hpp"
-#include "fs/fsa/fs_idirectory.hpp"
-#include "fs/fsa/fs_ifilesystem.hpp"
-#include "fs/fsa/fs_registrar.hpp"
-#include "fs/fs_remote_filesystem.hpp"
-#include "fs/fs_istorage.hpp"
-#include "fs/fs_remote_storage.hpp"
-#include "fs/fs_file_storage.hpp"
-#include "fs/fs_query_range.hpp"
-#include "fs/impl/fs_common_mount_name.hpp"
-#include "fs/fs_mount.hpp"
-#include "fs/fs_path_tool.hpp"
-#include "fs/fs_path_utils.hpp"
-#include "fs/fs_sd_card.hpp"
+namespace ams::fs {
+
+    Result MountSdCard(const char *name) {
+        /* Open the SD card. This uses libnx bindings. */
+        FsFileSystem fs;
+        R_TRY(fsOpenSdCardFileSystem(std::addressof(fs)));
+
+        /* Allocate a new filesystem wrapper. */
+        std::unique_ptr<fsa::IFileSystem> fsa(new RemoteFileSystem(fs));
+        R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
+
+        /* Register. */
+        return fsa::Register(name, std::move(fsa));
+    }
+
+}
