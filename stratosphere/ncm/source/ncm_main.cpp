@@ -16,8 +16,6 @@
 
 #include <stratosphere.hpp>
 #include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>
-
-#include "impl/ncm_content_manager.hpp"
 #include "ncm_content_manager_impl.hpp"
 
 extern "C" {
@@ -197,9 +195,7 @@ void ContentManagerServerMain(void *arg) {
 
 int main(int argc, char **argv)
 {
-    /* Initialize content manager implementation. */
-    /* TODO: Move Initialize/Finalize into ContentManagerImpl ctor/dtor, initialize client library with static object. */
-    R_ABORT_UNLESS(ams::ncm::impl::InitializeContentManager());
+    /* TODO: Initialize content manager implementation. */
 
     R_ABORT_UNLESS(g_ncm_server_manager.Initialize());
     R_ABORT_UNLESS(g_ncm_server_manager.StartThreads());
@@ -209,9 +205,6 @@ int main(int argc, char **argv)
 
     g_ncm_server_manager.Wait();
     g_lr_server_manager.Wait();
-
-    /* TODO: This call is eventually automatic at scope exit. */
-    ams::ncm::impl::FinalizeContentManager();
 
     return 0;
 }
