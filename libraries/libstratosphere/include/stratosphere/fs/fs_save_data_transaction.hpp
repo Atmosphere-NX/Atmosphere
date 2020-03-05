@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,18 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
-#include <sys/dirent.h>
+#include "fs_common.hpp"
+#include "fs_save_data_types.hpp"
 
-namespace ams::ncm {
+namespace ams::fs {
 
-    void GetStringFromContentId(char *out, ContentId content_id);
-    void GetStringFromPlaceHolderId(char *out, PlaceHolderId placeholder_id);
+    Result CommitSaveData(const char *path);
 
-    Result GetPlaceHolderIdFromDirEntry(PlaceHolderId *out, struct dirent *dir_entry);
-    std::optional<ContentId> GetContentIdFromString(const char *str, size_t len);
-
-};
+}

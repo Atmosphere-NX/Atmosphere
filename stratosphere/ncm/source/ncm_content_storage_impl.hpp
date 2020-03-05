@@ -18,38 +18,30 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-#include "impl/ncm_placeholder_accessor.hpp"
-#include "impl/ncm_rights_cache.hpp"
+#include "ncm_placeholder_accessor.hpp"
+#include "ncm_rights_cache.hpp"
 #include "ncm_content_storage_impl_base.hpp"
-#include "ncm_path_utils.hpp"
+#include "ncm_fs_utils.hpp"
 
 namespace ams::ncm {
 
     class ContentStorageImpl : public ContentStorageImplBase {
         protected:
-            impl::PlaceHolderAccessor placeholder_accessor;
+            PlaceHolderAccessor placeholder_accessor;
             ContentId cached_content_id;
-            FILE *content_cache_file_handle;
-            impl::RightsIdCache *rights_id_cache;
+            fs::FileHandle cached_file_handle;
+            RightsIdCache *rights_id_cache;
+        public:
+            static Result InitializeBase(const char *root_path);
+            static Result CleanupBase(const char *root_path);
+            static Result VerifyBase(const char *root_path);
         public:
             ~ContentStorageImpl();
 
-            Result Initialize(const char *root_path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache);
-            void Finalize();
+            Result Initialize(const char *root_path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache);
         private:
-            void ClearContentCache();
-            unsigned int GetContentDirectoryDepth();
-            Result OpenCachedContentFile(ContentId content_id);
-
-            inline void GetContentRootPath(PathString *content_root) {
-                path::GetContentRootPath(content_root, this->root_path);
-            }
-
-            inline void GetContentPath(PathString *content_path, ContentId content_id) {
-                PathString root_path;
-                this->GetContentRootPath(std::addressof(root_path));
-                this->make_content_path_func(content_path, content_id, root_path);
-            }
+            Result OpenContentIdFile(ContentId content_id);
+            void InvalidateFileCache();
         public:
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override;
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) override;

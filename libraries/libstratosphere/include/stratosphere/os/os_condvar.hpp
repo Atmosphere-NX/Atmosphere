@@ -30,9 +30,7 @@ namespace ams::os {
         private:
             CondVar cv;
         public:
-            ConditionVariable() {
-                condvarInit(&cv);
-            }
+            constexpr ConditionVariable() : cv() { /* ... */ }
 
             ConditionVariableStatus TimedWait(::Mutex *m, u64 timeout) {
                 if (timeout > 0) {

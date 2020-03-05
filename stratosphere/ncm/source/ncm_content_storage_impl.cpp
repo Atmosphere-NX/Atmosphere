@@ -15,66 +15,224 @@
  */
 
 #include "ncm_content_storage_impl.hpp"
-#include "ncm_fs.hpp"
+#include "ncm_fs_utils.hpp"
 #include "ncm_make_path.hpp"
-#include "ncm_utils.hpp"
+#include "ncm_content_id_utils.hpp"
 
 namespace ams::ncm {
 
-    ContentStorageImpl::~ContentStorageImpl() {
-        this->Finalize();
+    namespace {
+
+        constexpr inline const char * const BaseContentDirectory = "/registered";
+
+        void MakeBaseContentDirectoryPath(PathString *out, const char *root_path) {
+            out->SetFormat("%s%s", root_path, BaseContentDirectory);
+        }
+
+        void MakeContentPath(PathString *out, ContentId id, MakeContentPathFunction func, const char *root_path) {
+            PathString path;
+            MakeBaseContentDirectoryPath(std::addressof(path), root_path);
+            func(out, id, path);
+        }
+
+        Result EnsureContentDirectory(ContentId id, MakeContentPathFunction func, const char *root_path) {
+            PathString path;
+            MakeContentPath(std::addressof(path), id, func, root_path);
+            return impl::EnsureParentDirectoryRecursively(path);
+        }
+
+        Result DeleteContentFile(ContentId id, MakeContentPathFunction func, const char *root_path) {
+            PathString path;
+            MakeContentPath(std::addressof(path), id, func, root_path);
+
+            R_TRY_CATCH(fs::DeleteFile(path)) {
+                R_CONVERT(fs::ResultPathNotFound, ncm::ResultContentNotFound())
+            } R_END_TRY_CATCH;
+
+            return ResultSuccess();
+        }
+
+        template<typename F>
+        Result TraverseDirectory(bool *out_should_continue, const char *root_path, int max_level, F f) {
+            R_UNLESS(max_level > 0, ResultSuccess());
+
+            bool retry_dir_read = true;
+            while (retry_dir_read) {
+                retry_dir_read = false;
+
+                fs::DirectoryHandle dir;
+                R_TRY(fs::OpenDirectory(std::addressof(dir), root_path, fs::OpenDirectoryMode_All | fs::OpenDirectoryMode_NotRequireFileSize));
+                ON_SCOPE_EXIT { fs::CloseDirectory(dir); };
+
+                while (true) {
+                    fs::DirectoryEntry entry;
+                    s64 entry_count;
+                    R_TRY(fs::ReadDirectory(std::addressof(entry_count), std::addressof(entry), dir, 1));
+                    if (entry_count == 0) {
+                        break;
+                    }
+
+                    PathString current_path;
+                    current_path.SetFormat("%s/%s", root_path, entry.name);
+
+                    bool should_continue = true;
+                    bool should_retry_dir_read = false;
+                    R_TRY(f(&should_continue, &should_retry_dir_read, current_path, entry));
+
+                    /* If the provided function wishes to terminate immediately, we should respect it. */
+                    if (!should_continue) {
+                        *out_should_continue = false;
+                        return ResultSuccess();
+                    }
+
+                    if (should_retry_dir_read) {
+                        retry_dir_read = true;
+                        break;
+                    }
+
+                    /* If the entry is a directory, recurse. */
+                    if (entry.type == fs::DirectoryEntryType_Directory) {
+                        R_TRY(TraverseDirectory(std::addressof(should_continue), current_path, max_level - 1, f));
+
+                        if (!should_continue) {
+                            *out_should_continue = false;
+                            return ResultSuccess();
+                        }
+                    }
+                }
+            }
+
+            return ResultSuccess();
+        }
+
+
+        template<typename F>
+        Result TraverseDirectory(const char *root_path, int max_level, F f) {
+            bool should_continue = false;
+            return TraverseDirectory(std::addressof(should_continue), root_path, max_level, f);
+        }
+
+        bool IsContentPath(const char *path) {
+            impl::PathView view(path);
+            if (!view.HasSuffix(".nca")) {
+                return false;
+            }
+
+            auto file_name = view.GetFileName();
+            if (file_name.length() != ContentIdStringLength + 4) {
+                return false;
+            }
+
+            for (size_t i = 0; i < ContentIdStringLength; i++) {
+                if (!std::isxdigit(static_cast<unsigned char>(file_name[i]))) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        bool IsPlaceHolderPath(const char *path) {
+            return IsContentPath(path);
+        }
+
+        Result CleanDirectoryRecursively(const PathString &path) {
+            if (hos::GetVersion() >= hos::Version_300) {
+                R_TRY(fs::CleanDirectoryRecursively(path));
+            } else {
+                /* CleanDirectoryRecursively didn't exist on < 3.0.0, so we will polyfill it. */
+                /* We'll delete the directory, then recreate it. */
+                R_TRY(fs::DeleteDirectoryRecursively(path));
+                R_TRY(fs::CreateDirectory(path));
+            }
+            return ResultSuccess();
+        }
+
     }
 
-    Result ContentStorageImpl::Initialize(const char *path, MakeContentPathFunc content_path_func, MakePlaceHolderPathFunc placeholder_path_func, bool delay_flush, impl::RightsIdCache *rights_id_cache) {
-        R_TRY(this->EnsureEnabled());
-        R_TRY(fs::CheckContentStorageDirectoriesExist(path));
+    ContentStorageImpl::~ContentStorageImpl() {
+        this->InvalidateFileCache();
+    }
 
-        this->root_path = PathString(path);
-        this->make_content_path_func = *content_path_func;
-        this->placeholder_accessor.Initialize(this->root_path, *placeholder_path_func, delay_flush);
-        this->rights_id_cache = rights_id_cache;
+    Result ContentStorageImpl::InitializeBase(const char *root_path) {
+        PathString path;
+
+        MakeBaseContentDirectoryPath(std::addressof(path), root_path);
+        R_TRY(impl::EnsureDirectoryRecursively(path));
+
+        PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
+        R_TRY(impl::EnsureDirectoryRecursively(path));
+
         return ResultSuccess();
     }
 
-    void ContentStorageImpl::Finalize() {
-        this->ClearContentCache();
-        this->placeholder_accessor.InvalidateAll();
+    Result ContentStorageImpl::CleanupBase(const char *root_path) {
+        PathString path;
+
+        MakeBaseContentDirectoryPath(std::addressof(path), root_path);
+        R_TRY(CleanDirectoryRecursively(path));
+
+        PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
+        R_TRY(CleanDirectoryRecursively(path));
+
+        return ResultSuccess();
     }
 
-    void ContentStorageImpl::ClearContentCache() {
+    Result ContentStorageImpl::VerifyBase(const char *root_path) {
+        PathString path;
+
+        bool has_dir;
+        R_TRY(impl::HasDirectory(std::addressof(has_dir), root_path));
+        R_UNLESS(has_dir, ncm::ResultContentStorageBaseNotFound());
+
+        bool has_registered;
+        MakeBaseContentDirectoryPath(std::addressof(path), root_path);
+        R_TRY(impl::HasDirectory(std::addressof(has_registered), path));
+
+        bool has_placeholder;
+        PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
+        R_TRY(impl::HasDirectory(std::addressof(has_placeholder), path));
+
+        R_UNLESS(has_registered || has_placeholder, ncm::ResultContentStorageBaseNotFound());
+        R_UNLESS(has_registered,                    ncm::ResultInvalidContentStorageBase());
+        R_UNLESS(has_placeholder,                   ncm::ResultInvalidContentStorageBase());
+
+        return ResultSuccess();
+    }
+
+    void ContentStorageImpl::InvalidateFileCache() {
         if (this->cached_content_id != InvalidContentId) {
-            fclose(this->content_cache_file_handle);
+            fs::CloseFile(this->cached_file_handle);
             this->cached_content_id = InvalidContentId;
         }
     }
 
-    unsigned int ContentStorageImpl::GetContentDirectoryDepth() {
-        if (this->make_content_path_func == static_cast<MakeContentPathFunc>(path::MakeContentPathFlat)) {
-            return 1;
-        } else if (this->make_content_path_func == static_cast<MakeContentPathFunc>(path::MakeContentPathHashByteLayered)) {
-            return 2;
-        } else if (this->make_content_path_func == static_cast<MakeContentPathFunc>(path::MakeContentPath10BitLayered)) {
-            return 2;
-        } else if (this->make_content_path_func == static_cast<MakeContentPathFunc>(path::MakeContentPathDualLayered)) {
-            return 3;
-        }
-
-        AMS_ABORT();
-    }
-
-    Result ContentStorageImpl::OpenCachedContentFile(ContentId content_id) {
+    Result ContentStorageImpl::OpenContentIdFile(ContentId content_id) {
         R_UNLESS(this->cached_content_id != content_id, ResultSuccess());
 
-        this->ClearContentCache();
+        this->InvalidateFileCache();
 
-        PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
+        PathString path;
+        MakeContentPath(std::addressof(path), content_id, this->make_content_path_func, this->root_path);
 
-        R_TRY_CATCH(fs::OpenFile(&this->content_cache_file_handle, content_path, FsOpenMode_Read)) {
+        R_TRY_CATCH(fs::OpenFile(&this->cached_file_handle, path, fs::OpenMode_Read)) {
             R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultContentNotFound())
         } R_END_TRY_CATCH;
 
         this->cached_content_id = content_id;
+        return ResultSuccess();
+    }
+
+    Result ContentStorageImpl::Initialize(const char *path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache) {
+        R_TRY(this->EnsureEnabled());
+
+        R_TRY(VerifyBase(path));
+
+        this->root_path = PathString(path);
+        this->make_content_path_func = content_path_func;
+        this->placeholder_accessor.Initialize(std::addressof(this->root_path), placeholder_path_func, delay_flush);
+        this->rights_id_cache = rights_id_cache;
+
         return ResultSuccess();
     }
 
@@ -87,18 +245,15 @@ namespace ams::ncm {
     Result ContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
         R_TRY(this->EnsureEnabled());
 
-        PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
-
-        R_TRY(fs::EnsureParentDirectoryRecursively(content_path));
-        R_TRY(this->placeholder_accessor.Create(placeholder_id, size));
+        R_TRY(EnsureContentDirectory(content_id, this->make_content_path_func, this->root_path));
+        R_TRY(this->placeholder_accessor.CreatePlaceHolderFile(placeholder_id, size));
 
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::DeletePlaceHolder(PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
-        return this->placeholder_accessor.Delete(placeholder_id);
+        return this->placeholder_accessor.DeletePlaceHolderFile(placeholder_id);
     }
 
     Result ContentStorageImpl::HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
@@ -108,7 +263,7 @@ namespace ams::ncm {
         this->placeholder_accessor.MakePath(std::addressof(placeholder_path), placeholder_id);
 
         bool has = false;
-        R_TRY(fs::HasFile(&has, placeholder_path));
+        R_TRY(impl::HasFile(&has, placeholder_path));
         out.SetValue(has);
 
         return ResultSuccess();
@@ -118,25 +273,23 @@ namespace ams::ncm {
         /* Offset is too large */
         R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
-        R_TRY(this->placeholder_accessor.Write(placeholder_id, offset, data.GetPointer(), data.GetSize()));
+        return this->placeholder_accessor.WritePlaceHolderFile(placeholder_id, offset, data.GetPointer(), data.GetSize());
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::Register(PlaceHolderId placeholder_id, ContentId content_id) {
-        this->ClearContentCache();
+        this->InvalidateFileCache();
         R_TRY(this->EnsureEnabled());
 
         PathString placeholder_path;
         PathString content_path;
         this->placeholder_accessor.GetPath(std::addressof(placeholder_path), placeholder_id);
-        this->GetContentPath(std::addressof(content_path), content_id);
+        MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
 
-        if (rename(placeholder_path, content_path) != 0) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
-                R_CONVERT(ams::fs::ResultPathAlreadyExists, ncm::ResultContentAlreadyExists())
-            } R_END_TRY_CATCH;
-        }
+        R_TRY_CATCH(fs::RenameFile(placeholder_path, content_path)) {
+            R_CONVERT(fs::ResultPathNotFound,      ncm::ResultPlaceHolderNotFound())
+            R_CONVERT(fs::ResultPathAlreadyExists, ncm::ResultContentAlreadyExists())
+        } R_END_TRY_CATCH;
 
         return ResultSuccess();
     }
@@ -144,28 +297,19 @@ namespace ams::ncm {
     Result ContentStorageImpl::Delete(ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
-        this->ClearContentCache();
+        this->InvalidateFileCache();
 
-        PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
-
-        if (std::remove(content_path) != 0) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultContentNotFound())
-            } R_END_TRY_CATCH;
-        }
-
-        return ResultSuccess();
+        return DeleteContentFile(content_id, this->make_content_path_func, this->root_path);
     }
 
     Result ContentStorageImpl::Has(sf::Out<bool> out, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
+        MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
 
         bool has = false;
-        R_TRY(fs::HasFile(&has, content_path));
+        R_TRY(impl::HasFile(&has, content_path));
         out.SetValue(has);
 
         return ResultSuccess();
@@ -175,11 +319,12 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
+        MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
 
         Path common_path;
-        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, content_path));
-        out.SetValue(Path::Encode(common_path.str));
+        R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), content_path));
+
+        out.SetValue(common_path);
         return ResultSuccess();
     }
 
@@ -190,43 +335,44 @@ namespace ams::ncm {
         this->placeholder_accessor.GetPath(std::addressof(placeholder_path), placeholder_id);
 
         Path common_path;
-        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, placeholder_path));
-        out.SetValue(Path::Encode(common_path.str));
+        R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), placeholder_path));
+
+        out.SetValue(common_path);
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::CleanupAllPlaceHolder() {
         R_TRY(this->EnsureEnabled());
 
-        PathString placeholder_root_path;
         this->placeholder_accessor.InvalidateAll();
-        this->placeholder_accessor.MakeRootPath(std::addressof(placeholder_root_path));
 
-        /* Nintendo uses CleanDirectoryRecursively which is 3.0.0+.
-           We'll just delete the directory and recreate it to support all firmwares. */
-        R_TRY(fsdevDeleteDirectoryRecursively(placeholder_root_path));
-        R_UNLESS(mkdir(placeholder_root_path, S_IRWXU) != -1, fsdevGetLastResult());
+        PathString placeholder_dir;
+        PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(placeholder_dir), this->root_path);
+
+        CleanDirectoryRecursively(placeholder_dir);
+
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
         R_TRY(this->EnsureEnabled());
 
-        PathString placeholder_root_path;
-        this->placeholder_accessor.MakeRootPath(std::addressof(placeholder_root_path));
-        const unsigned int dir_depth = this->placeholder_accessor.GetDirectoryDepth();
+        PathString placeholder_dir;
+        PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(placeholder_dir), this->root_path);
+        const size_t max_entries = out_buf.GetSize();
         size_t entry_count = 0;
 
-        R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) -> Result {
+        R_TRY(TraverseDirectory(placeholder_dir, placeholder_accessor.GetHierarchicalDirectoryDepth(), [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) -> Result {
             *should_continue = true;
             *should_retry_dir_read = false;
 
-            if (dir_entry->d_type == DT_REG) {
-                R_UNLESS(entry_count <= out_buf.GetSize(), ncm::ResultBufferInsufficient());
+            if (entry.type == fs::DirectoryEntryType_File) {
+                R_UNLESS(entry_count <= max_entries, ncm::ResultBufferInsufficient());
 
-                PlaceHolderId cur_entry_placeholder_id = {0};
-                R_TRY(GetPlaceHolderIdFromDirEntry(&cur_entry_placeholder_id, dir_entry));
-                out_buf[entry_count++] = cur_entry_placeholder_id;
+                PlaceHolderId placeholder_id;
+                R_TRY(PlaceHolderAccessor::GetPlaceHolderIdFromFileName(std::addressof(placeholder_id), entry.name));
+
+                out_buf[entry_count++] = placeholder_id;
             }
 
             return ResultSuccess();
@@ -239,71 +385,63 @@ namespace ams::ncm {
     Result ContentStorageImpl::GetContentCount(sf::Out<u32> out_count) {
         R_TRY(this->EnsureEnabled());
 
-        PathString content_root_path;
-        this->GetContentRootPath(std::addressof(content_root_path));
-        const unsigned int dir_depth = this->GetContentDirectoryDepth();
-        u32 content_count = 0;
+        PathString path;
+        MakeBaseContentDirectoryPath(std::addressof(path), this->root_path);
+        const auto depth = GetHierarchicalContentDirectoryDepth(this->make_content_path_func);
+        size_t count = 0;
 
-        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) -> Result {
+        R_TRY(TraverseDirectory(path, depth, [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) -> Result {
             *should_continue = true;
             *should_retry_dir_read = false;
 
-            if (dir_entry->d_type == DT_REG) {
-                content_count++;
+            if (entry.type == fs::DirectoryEntryType_File) {
+                count++;
             }
 
             return ResultSuccess();
         }));
 
-        out_count.SetValue(content_count);
+        out_count.SetValue(static_cast<u32>(count));
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
-        R_UNLESS(start_offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
+    Result ContentStorageImpl::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 offset) {
+        R_UNLESS(offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
-        PathString content_root_path;
-        this->GetContentRootPath(std::addressof(content_root_path));
-
-        const unsigned int dir_depth = this->GetContentDirectoryDepth();
+        PathString path;
+        MakeBaseContentDirectoryPath(std::addressof(path), this->root_path);
+        const auto depth = GetHierarchicalContentDirectoryDepth(this->make_content_path_func);
         size_t entry_count = 0;
 
-        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, [&](bool *should_continue,  bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) {
+        R_TRY(TraverseDirectory(path, depth, [&](bool *should_continue,  bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) {
             *should_retry_dir_read = false;
             *should_continue = true;
 
-            if (dir_entry->d_type == DT_REG) {
-                /* Skip entries until we reach the start offset. */
-                if (start_offset > 0) {
-                    start_offset--;
-                    return ResultSuccess();
-                }
+            /* We have nothing to do if not working with a file. */
+            if (entry.type != fs::DirectoryEntryType_File) {
+                return ResultSuccess();
+            }
 
-                /* We don't necessarily expect to be able to completely fill the output buffer. */
-                if (entry_count > out_buf.GetSize()) {
-                    *should_continue = false;
-                    return ResultSuccess();
-                }
+            /* Skip entries until we reach the start offset. */
+            if (offset > 0) {
+                --offset;
+                return ResultSuccess();
+            }
 
-                size_t name_len = strlen(dir_entry->d_name);
-                std::optional<ContentId> content_id = GetContentIdFromString(dir_entry->d_name, name_len);
+            /* We don't necessarily expect to be able to completely fill the output buffer. */
+            if (entry_count >= out_buf.GetSize()) {
+                *should_continue = false;
+                return ResultSuccess();
+            }
 
-                /* Skip to the next entry if the id was invalid. */
-                if (!content_id) {
-                    return ResultSuccess();
-                }
-
+            auto content_id = GetContentIdFromString(entry.name, std::strlen(entry.name));
+            if (content_id) {
                 out_buf[entry_count++] = *content_id;
             }
 
             return ResultSuccess();
         }));
-
-        for (size_t i = 0; i < entry_count; i++) {
-            char content_name[sizeof(ContentId)*2+1] = {0};
-            GetStringFromContentId(content_name, out_buf[i]);
-        }
 
         out_count.SetValue(static_cast<u32>(entry_count));
         return ResultSuccess();
@@ -313,17 +451,22 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
-        struct stat st;
+        MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
 
-        R_UNLESS(stat(content_path, &st) != -1, fsdevGetLastResult());
-        out_size.SetValue(st.st_size);
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), content_path, fs::OpenMode_Read));
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+        s64 file_size;
+        R_TRY(fs::GetFileSize(std::addressof(file_size), file));
+
+        out_size.SetValue(file_size);
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::DisableForcibly() {
         this->disabled = true;
-        this->ClearContentCache();
+        this->InvalidateFileCache();
         this->placeholder_accessor.InvalidateAll();
         return ResultSuccess();
     }
@@ -331,31 +474,27 @@ namespace ams::ncm {
     Result ContentStorageImpl::RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
         R_TRY(this->EnsureEnabled());
 
-        PathString old_content_path;
-        PathString new_content_path;
+        this->InvalidateFileCache();
+
+        R_TRY(EnsureContentDirectory(new_content_id, this->make_content_path_func, this->root_path));
+        R_TRY(this->placeholder_accessor.EnsurePlaceHolderDirectory(placeholder_id));
+
         PathString placeholder_path;
-
-        this->ClearContentCache();
-
-        /* Ensure the new content path is ready. */
-        this->GetContentPath(std::addressof(new_content_path), new_content_id);
-        R_TRY(fs::EnsureParentDirectoryRecursively(new_content_path));
-
-        R_TRY(this->placeholder_accessor.EnsureRecursively(placeholder_id));
+        PathString content_path;
         this->placeholder_accessor.GetPath(std::addressof(placeholder_path), placeholder_id);
-        if (rename(old_content_path, placeholder_path) != 0) {
-            R_TRY_CATCH(fsdevGetLastResult()) {
-                R_CONVERT(ams::fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
-                R_CONVERT(ams::fs::ResultPathAlreadyExists, ncm::ResultPlaceHolderAlreadyExists())
-            } R_END_TRY_CATCH;
-        }
+        MakeContentPath(std::addressof(content_path), old_content_id, this->make_content_path_func, this->root_path);
+
+        R_TRY_CATCH(fs::RenameFile(content_path, placeholder_path)) {
+            R_CONVERT(fs::ResultPathNotFound,      ncm::ResultPlaceHolderNotFound())
+            R_CONVERT(fs::ResultPathAlreadyExists, ncm::ResultContentAlreadyExists())
+        } R_END_TRY_CATCH;
 
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
         R_TRY(this->EnsureEnabled());
-        R_TRY(this->placeholder_accessor.SetSize(placeholder_id, size));
+        R_TRY(this->placeholder_accessor.SetPlaceHolderFileSize(placeholder_id, size));
         return ResultSuccess();
     }
 
@@ -365,10 +504,11 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
+        MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
 
-        R_TRY(this->OpenCachedContentFile(content_id));
-        R_TRY(fs::ReadFile(this->content_cache_file_handle, offset, buf.GetPointer(), buf.GetSize()));
+        R_TRY(this->OpenContentIdFile(content_id));
+
+        R_TRY(fs::ReadFile(this->cached_file_handle, offset, buf.GetPointer(), buf.GetSize()));
 
         return ResultSuccess();
     }
@@ -383,17 +523,10 @@ namespace ams::ncm {
     Result ContentStorageImpl::GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
-        PathString placeholder_path;
-        this->placeholder_accessor.GetPath(std::addressof(placeholder_path), placeholder_id);
+        Path path;
+        R_TRY(this->GetPlaceHolderPath(std::addressof(path), placeholder_id));
 
-        Path common_path;
-        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, placeholder_path));
-
-        ncm::RightsId rights_id;
-        R_TRY(GetRightsId(&rights_id, common_path));
-        out_rights_id.SetValue(rights_id);
-
-        return ResultSuccess();
+        return GetRightsId(out_rights_id.GetPointer(), path);
     }
 
     Result ContentStorageImpl::GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
@@ -410,17 +543,13 @@ namespace ams::ncm {
             return ResultSuccess();
         }
 
-        PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
-
-        Path common_path;
-        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, content_path));
+        Path path;
+        R_TRY(this->GetPath(std::addressof(path), content_id));
 
         ncm::RightsId rights_id;
-        R_TRY(GetRightsId(&rights_id, common_path));
+        R_TRY(GetRightsId(std::addressof(rights_id), path));
         this->rights_id_cache->Store(content_id, rights_id);
 
-        /* Set output. */
         out_rights_id.SetValue(rights_id);
         return ResultSuccess();
     }
@@ -430,39 +559,33 @@ namespace ams::ncm {
         R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
-        bool is_development = false;
+        AMS_ABORT_UNLESS(spl::IsDevelopmentHardware());
 
-        AMS_ABORT_UNLESS(R_SUCCEEDED(splIsDevelopment(&is_development)));
-        AMS_ABORT_UNLESS(is_development);
+        this->InvalidateFileCache();
 
-        this->ClearContentCache();
+        PathString path;
+        MakeContentPath(std::addressof(path), content_id, this->make_content_path_func, this->root_path);
 
-        PathString content_path;
-        this->GetContentPath(std::addressof(content_path), content_id);
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), path.Get(), fs::OpenMode_Write));
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-        FILE *f = nullptr;
-        R_TRY(fs::OpenFile(&f, content_path, FsOpenMode_Write));
-
-        ON_SCOPE_EXIT {
-            fclose(f);
-        };
-
-        R_TRY(fs::WriteFile(f, offset, data.GetPointer(), data.GetSize(), ams::fs::WriteOption::Flush));
+        R_TRY(fs::WriteFile(file, offset, data.GetPointer(), data.GetSize(), fs::WriteOption::Flush));
 
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::GetFreeSpaceSize(sf::Out<u64> out_size) {
-        struct statvfs st = {0};
-        R_UNLESS(statvfs(this->root_path, &st) != -1, fsdevGetLastResult());
-        out_size.SetValue(st.f_bfree);
+        s64 size;
+        R_TRY(fs::GetFreeSpaceSize(std::addressof(size), this->root_path));
+        out_size.SetValue(size);
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::GetTotalSpaceSize(sf::Out<u64> out_size) {
-        struct statvfs st = {0};
-        R_UNLESS(statvfs(this->root_path, &st) != -1, fsdevGetLastResult());
-        out_size.SetValue(st.f_blocks);
+        s64 size;
+        R_TRY(fs::GetTotalSpaceSize(std::addressof(size), this->root_path));
+        out_size.SetValue(size);
         return ResultSuccess();
     }
 
@@ -474,37 +597,39 @@ namespace ams::ncm {
     Result ContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<u64> out_size, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
-        bool found_in_cache = false;
-        size_t size = 0;
-
-        R_TRY(this->placeholder_accessor.GetSize(&found_in_cache, &size, placeholder_id));
-
-        if (found_in_cache) {
-            out_size.SetValue(size);
+        bool found = false;
+        s64 file_size = 0;
+        R_TRY(this->placeholder_accessor.TryGetPlaceHolderFileSize(std::addressof(found), std::addressof(file_size), placeholder_id));
+        if (found) {
+            out_size.SetValue(file_size);
             return ResultSuccess();
         }
 
         PathString placeholder_path;
-        struct stat st;
-
         this->placeholder_accessor.GetPath(std::addressof(placeholder_path), placeholder_id);
-        R_UNLESS(stat(placeholder_path, &st) != -1, fsdevGetLastResult());
 
-        out_size.SetValue(st.st_size);
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), placeholder_path, fs::OpenMode_Read));
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+        R_TRY(fs::GetFileSize(std::addressof(file_size), file));
+
+        out_size.SetValue(file_size);
         return ResultSuccess();
     }
 
     Result ContentStorageImpl::RepairInvalidFileAttribute() {
-        PathString content_root_path;
-        this->GetContentRootPath(std::addressof(content_root_path));
-        unsigned int dir_depth = this->GetContentDirectoryDepth();
-        auto fix_file_attributes = [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, struct dirent *dir_entry) {
+        /* Callback for TraverseDirectory */
+        using PathChecker = bool (*)(const char *);
+        PathChecker path_checker = nullptr;
+
+        auto fix_file_attributes = [&](bool *should_continue, bool *should_retry_dir_read, const char *current_path, const fs::DirectoryEntry &entry) {
             *should_retry_dir_read = false;
             *should_continue = true;
 
-            if (dir_entry->d_type == DT_DIR) {
-                if (path::IsNcaPath(current_path)) {
-                    if (R_SUCCEEDED(fsdevSetConcatenationFileAttribute(current_path))) {
+            if (entry.type == fs::DirectoryEntryType_Directory) {
+                if (path_checker(current_path)) {
+                    if (R_SUCCEEDED(fs::SetConcatenationFileAttribute(current_path))) {
                         *should_retry_dir_read = true;
                     }
                 }
@@ -513,14 +638,24 @@ namespace ams::ncm {
             return ResultSuccess();
         };
 
-        R_TRY(fs::TraverseDirectory(content_root_path, dir_depth, fix_file_attributes));
+        /* Fix Content */
+        {
+            path_checker = IsContentPath;
+            PathString path;
+            MakeBaseContentDirectoryPath(std::addressof(path), this->root_path);
 
-        PathString placeholder_root_path;
+            R_TRY(TraverseDirectory(path, GetHierarchicalContentDirectoryDepth(this->make_content_path_func), fix_file_attributes));
+        }
+
+        /* Fix placeholder. */
         this->placeholder_accessor.InvalidateAll();
-        this->placeholder_accessor.MakeRootPath(std::addressof(placeholder_root_path));
-        dir_depth = this->placeholder_accessor.GetDirectoryDepth();
+        {
+            path_checker = IsPlaceHolderPath;
+            PathString path;
+            PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), this->root_path);
 
-        R_TRY(fs::TraverseDirectory(placeholder_root_path, dir_depth, fix_file_attributes));
+            R_TRY(TraverseDirectory(path, GetHierarchicalContentDirectoryDepth(this->make_content_path_func), fix_file_attributes));
+        }
 
         return ResultSuccess();
     }
@@ -536,7 +671,7 @@ namespace ams::ncm {
         this->placeholder_accessor.GetPath(std::addressof(placeholder_path), placeholder_id);
 
         Path common_path;
-        R_TRY(fs::ConvertToFsCommonPath(common_path.str, ams::fs::EntryNameLengthMax, placeholder_path));
+        R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), placeholder_path));
 
         ncm::RightsId rights_id;
         R_TRY(GetRightsId(&rights_id, common_path));
@@ -544,7 +679,6 @@ namespace ams::ncm {
 
         /* Set output. */
         out_rights_id.SetValue(rights_id);
-
         return ResultSuccess();
     }
 

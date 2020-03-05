@@ -15,7 +15,7 @@
  */
 
 #include "ncm_content_meta_database_impl.hpp"
-#include "ncm_utils.hpp"
+#include "ncm_content_id_utils.hpp"
 
 namespace ams::ncm {
 

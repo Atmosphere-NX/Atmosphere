@@ -16,8 +16,8 @@
 
 #pragma once
 #include <stratosphere.hpp>
-#include "impl/ncm_rights_cache.hpp"
-#include "ncm_fs.hpp"
+#include "ncm_rights_cache.hpp"
+#include "ncm_fs_utils.hpp"
 
 namespace ams::ncm {
 
@@ -26,177 +26,67 @@ namespace ams::ncm {
         u64 size;
         u64 journal_size;
         u32 flags;
-        FsSaveDataSpaceId space_id;
+        fs::SaveDataSpaceId space_id;
     };
-
-    static_assert(sizeof(SystemSaveDataInfo) == 0x20, "SystemSaveDataInfo definition!");
+    static_assert(std::is_pod<SystemSaveDataInfo>::value);
 
     class ContentManagerImpl final : public IContentManager {
         private:
-            constexpr static size_t MaxContentStorageEntries         = 8;
-            constexpr static size_t MaxContentMetaDatabaseEntries    = 8;
+            constexpr static size_t MaxContentStorageRoots         = 8;
+            constexpr static size_t MaxContentMetaDatabaseRoots    = 8;
         private:
             struct ContentStorageRoot {
                 NON_COPYABLE(ContentStorageRoot);
                 NON_MOVEABLE(ContentStorageRoot);
 
-                char mount_point[16];
+                char mount_name[fs::MountNameLengthMax + 1];
                 char path[128];
                 StorageId storage_id;
-                FsContentStorageId content_storage_id;
+                fs::ContentStorageId content_storage_id;
                 std::shared_ptr<IContentStorage> content_storage;
 
-                inline ContentStorageRoot() : storage_id(StorageId::None),
-                    content_storage_id(FsContentStorageId_System), content_storage(nullptr) {
-                    mount_point[0] = '\0';
-                    path[0] = '\0';
-                }
-
-                inline void Initialize(StorageId storage_id, FsContentStorageId content_storage_id) {
-                    this->storage_id = storage_id;
-                    this->content_storage_id = content_storage_id;
-                    this->content_storage = nullptr;
-                    MountName mount_name = ncm::fs::CreateUniqueMountName();
-                    std::strcpy(this->mount_point, mount_name.name);
-                    snprintf(this->path, 0x80, "%s:/", this->mount_point);
-                }
+                ContentStorageRoot() { /* ... */ }
             };
 
-            struct ContentMetaDatabaseEntry {
-                NON_COPYABLE(ContentMetaDatabaseEntry);
-                NON_MOVEABLE(ContentMetaDatabaseEntry);
+            struct ContentMetaDatabaseRoot {
+                NON_COPYABLE(ContentMetaDatabaseRoot);
+                NON_MOVEABLE(ContentMetaDatabaseRoot);
 
-                char mount_point[16];
-                char meta_path[128];
+                char mount_name[fs::MountNameLengthMax + 1];
+                char path[128];
                 StorageId storage_id;
-                SystemSaveDataInfo save_meta;
+                SystemSaveDataInfo info;
                 std::shared_ptr<IContentMetaDatabase> content_meta_database;
                 std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
                 u32 max_content_metas;
 
-                inline ContentMetaDatabaseEntry() : storage_id(StorageId::None), save_meta({0}),
-                    content_meta_database(nullptr), kvs(std::nullopt), max_content_metas(0) {
-                    mount_point[0] = '\0';
-                    meta_path[0] = '\0';
-                }
-
-                Result Initialize(StorageId storage_id, const SystemSaveDataInfo& save_meta, size_t max_content_metas) {
-                    this->storage_id = storage_id;
-                    this->max_content_metas = max_content_metas;
-                    this->save_meta = save_meta;
-                    this->content_meta_database = nullptr;
-                    this->kvs = std::nullopt;
-                    MountName mount_name = ncm::fs::CreateUniqueMountName();
-                    strcpy(this->mount_point, mount_name.name);
-                    this->mount_point[0] = '#';
-                    snprintf(this->meta_path, 0x80, "%s:/meta", this->mount_point);
-                    return ResultSuccess();
-                }
-
-                Result InitializeGameCard(size_t max_content_metas) {
-                    this->storage_id = StorageId::GameCard;
-                    this->max_content_metas = max_content_metas;
-                    this->content_meta_database = nullptr;
-                    this->kvs = std::nullopt;
-                    return ResultSuccess();
-                }
+                ContentMetaDatabaseRoot() { /* ... */ }
             };
         private:
             os::Mutex mutex;
             bool initialized = false;
-            ContentStorageRoot content_storage_roots[MaxContentStorageEntries];
-            ContentMetaDatabaseEntry content_meta_entries[MaxContentMetaDatabaseEntries];
+            ContentStorageRoot content_storage_roots[MaxContentStorageRoots];
+            ContentMetaDatabaseRoot content_meta_database_roots[MaxContentMetaDatabaseRoots];
             u32 num_content_storage_entries;
             u32 num_content_meta_entries;
-            impl::RightsIdCache rights_id_cache;
+            RightsIdCache rights_id_cache;
         public:
             ContentManagerImpl() { /* ... */ };
             ~ContentManagerImpl();
         public:
             Result Initialize();
         private:
-            constexpr inline bool IsUniqueStorage(StorageId id) {
-                return id != StorageId::None && id != StorageId::Any;
-            }
+            Result GetContentStorageRoot(ContentStorageRoot **out, StorageId id);
+            Result GetContentMetaDatabaseRoot(ContentMetaDatabaseRoot **out, StorageId id);
 
-            Result FindContentStorageRoot(ContentStorageRoot **out, StorageId storage_id) {
-                for (size_t i = 0; i < MaxContentStorageEntries; i++) {
-                    ContentStorageRoot *root = &this->content_storage_roots[i];
+            Result InitializeContentStorageRoot(ContentStorageRoot *out, StorageId storage_id, fs::ContentStorageId content_storage_id);
+            Result InitializeGameCardContentStorageRoot(ContentStorageRoot *out);
 
-                    if (root->storage_id == storage_id) {
-                        *out = root;
-                        return ResultSuccess();
-                    }
-                }
-                return ncm::ResultUnknownStorage();
-            }
+            Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas);
+            Result InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas);
 
-            Result GetUniqueContentStorageRoot(ContentStorageRoot **out, StorageId storage_id) {
-                R_UNLESS(IsUniqueStorage(storage_id), ncm::ResultUnknownStorage());
-                return FindContentStorageRoot(out, storage_id);
-            }
+            Result EnsureAndMountSystemSaveData(const char *mount, const SystemSaveDataInfo &info) const;
 
-            Result FindContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
-                for (size_t i = 0; i < MaxContentMetaDatabaseEntries; i++) {
-                    ContentMetaDatabaseEntry *entry = &this->content_meta_entries[i];
-
-                    if (entry->storage_id == storage_id) {
-                        *out = entry;
-                        return ResultSuccess();
-                    }
-                }
-                return ncm::ResultUnknownStorage();
-            }
-
-            Result GetUniqueContentMetaDatabaseEntry(ContentMetaDatabaseEntry **out, StorageId storage_id) {
-                R_UNLESS(IsUniqueStorage(storage_id), ncm::ResultUnknownStorage());
-                return FindContentMetaDatabaseEntry(out, storage_id);
-            }
-
-            ALWAYS_INLINE Result GetContentStorageNotActiveResult(StorageId storage_id) {
-                switch (storage_id) {
-                    case StorageId::GameCard:
-                        return ResultGameCardContentStorageNotActive();
-                    case StorageId::BuiltInSystem:
-                        return ResultNandSystemContentStorageNotActive();
-                    case StorageId::BuiltInUser:
-                        return ResultNandUserContentStorageNotActive();
-                    case StorageId::SdCard:
-                        return ResultSdCardContentStorageNotActive();
-                    default:
-                        return ResultUnknownContentStorageNotActive();
-                }
-            }
-
-            ALWAYS_INLINE Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
-                switch (storage_id) {
-                    case StorageId::GameCard:
-                        return ResultGameCardContentMetaDatabaseNotActive();
-                    case StorageId::BuiltInSystem:
-                        return ResultNandSystemContentMetaDatabaseNotActive();
-                    case StorageId::BuiltInUser:
-                        return ResultNandUserContentMetaDatabaseNotActive();
-                    case StorageId::SdCard:
-                        return ResultSdCardContentMetaDatabaseNotActive();
-                    default:
-                        return ResultUnknownContentMetaDatabaseNotActive();
-                }
-            }
-
-            Result EnsureAndMountSystemSaveData(const char *mount_name, const SystemSaveDataInfo &save_meta) {
-                R_TRY_CATCH(fs::MountSystemSaveData(mount_name, save_meta.space_id, save_meta.id)) {
-                    R_CATCH(ams::fs::ResultTargetNotFound) {
-                        R_TRY(fsCreate_SystemSaveData(save_meta.space_id, save_meta.id, save_meta.size, save_meta.journal_size, save_meta.flags));
-                        R_TRY(fs::MountSystemSaveData(mount_name, save_meta.space_id, save_meta.id));
-                    }
-                } R_END_TRY_CATCH;
-                return ResultSuccess();
-            }
-
-            inline void ReplaceMountName(char *out_path, const char *mount_name, const char *root_path) {
-                strcpy(out_path, mount_name);
-                strcat(out_path, strchr(root_path, ':'));
-            }
         public:
             virtual Result CreateContentStorage(StorageId storage_id) override;
             virtual Result CreateContentMetaDatabase(StorageId storage_id) override;

@@ -76,6 +76,15 @@ namespace ams::fs {
         return CreateSystemSaveData(SaveDataSpaceId::System, save_id, user_id, owner_id, size, journal_size, flags);
     }
 
+    Result DeleteSaveData(SaveDataId id) {
+        /* TODO: Libnx binding for DeleteSaveDataFileSystem */
+        AMS_ABORT();
+    }
+
+    Result DeleteSaveData(SaveDataSpaceId space_id, SaveDataId id) {
+        return fsDeleteSaveDataFileSystemBySaveDataSpaceId(static_cast<::FsSaveDataSpaceId>(space_id), id);
+    }
+
     Result DeleteSystemSaveData(SaveDataSpaceId space_id, SystemSaveDataId id, UserId user_id) {
         const auto attribute = SaveDataAttribute::Make(ncm::InvalidProgramId, SaveDataType::System, user_id, id);
 

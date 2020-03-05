@@ -35,7 +35,7 @@ namespace ams::ncm {
 
     R_DEFINE_ERROR_RESULT(InvalidPlaceHolderFile,                   170);
     R_DEFINE_ERROR_RESULT(BufferInsufficient,                       180);
-    R_DEFINE_ERROR_RESULT(InvalidContentStorageOperation,           190);
+    R_DEFINE_ERROR_RESULT(WriteToReadOnlyContentStorage,            190);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaKey,                    240);
 
     R_DEFINE_ERROR_RESULT(ContentStorageBaseNotFound,               310);

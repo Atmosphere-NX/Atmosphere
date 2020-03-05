@@ -154,6 +154,10 @@ namespace ams::ncm {
         #undef DEFINE_ENUM_MEMBER
     };
 
+    constexpr inline bool IsUniqueStorage(StorageId id) {
+        return id != StorageId::None && id != StorageId::Any;
+    }
+
     /* Program IDs (Formerly: Title IDs). */
     struct ProgramId {
         svc::ProgramId value;

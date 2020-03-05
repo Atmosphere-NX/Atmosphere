@@ -28,13 +28,11 @@ namespace ams::os {
         private:
             ::Mutex m;
         private:
-            ::Mutex *GetMutex() {
+            constexpr ::Mutex *GetMutex() {
                 return &this->m;
             }
         public:
-            Mutex() {
-                mutexInit(GetMutex());
-            }
+            constexpr Mutex() : m() { /* ... */ }
 
             void lock() {
                 mutexLock(GetMutex());
@@ -65,13 +63,11 @@ namespace ams::os {
         private:
             ::RMutex m;
         private:
-            ::RMutex *GetMutex() {
+            constexpr ::RMutex *GetMutex() {
                 return &this->m;
             }
         public:
-            RecursiveMutex() {
-                rmutexInit(GetMutex());
-            }
+            constexpr RecursiveMutex() : m() { /* ... */ }
 
             void lock() {
                 rmutexLock(GetMutex());

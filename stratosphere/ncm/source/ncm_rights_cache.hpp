@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace ams::ncm::impl {
+namespace ams::ncm {
 
     class RightsIdCache {
         NON_COPYABLE(RightsIdCache);

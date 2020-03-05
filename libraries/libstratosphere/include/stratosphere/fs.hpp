@@ -34,4 +34,5 @@
 #include "fs/fs_sd_card.hpp"
 #include "fs/fs_save_data_types.hpp"
 #include "fs/fs_save_data_management.hpp"
+#include "fs/fs_save_data_transaction.hpp"
 #include "fs/fs_system_save_data.hpp"

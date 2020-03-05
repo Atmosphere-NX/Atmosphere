@@ -24,21 +24,21 @@ namespace ams::ncm {
         NON_MOVEABLE(ContentStorageImplBase);
         protected:
             PathString root_path;
-            MakeContentPathFunc make_content_path_func;
+            MakeContentPathFunction make_content_path_func;
             bool disabled;
         protected:
             ContentStorageImplBase() { /* ... */ }
         protected:
-            Result EnsureEnabled() {
+            Result EnsureEnabled() const {
                 R_UNLESS(!this->disabled, ncm::ResultInvalidContentStorage());
                 return ResultSuccess();
             }
 
             static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path) {
                 if (hos::GetVersion() >= hos::Version_300) {
-                    R_TRY(ams::fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str));
+                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str));
                 } else {
-                    R_TRY(ams::fs::GetRightsId(std::addressof(out_rights_id->id), path.str));
+                    R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str));
                     out_rights_id->key_generation = 0;
                 }
                 return ResultSuccess();

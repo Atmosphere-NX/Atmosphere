@@ -23,7 +23,7 @@ namespace ams::ncm {
 
     class ReadOnlyContentStorageImpl : public ContentStorageImplBase {
         public:
-            Result Initialize(const char *root_path, MakeContentPathFunc content_path_func);
+            Result Initialize(const char *root_path, MakeContentPathFunction content_path_func);
         public:
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override;
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) override;

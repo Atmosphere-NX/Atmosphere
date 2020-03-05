@@ -166,5 +166,24 @@ namespace ams::fs {
         return ResultSuccess();
     }
 
+    namespace {
+
+        Result CommitImpl(const char *path) {
+            impl::FileSystemAccessor *accessor;
+            R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+
+            return accessor->Commit();
+        }
+
+    }
+
+    Result Commit(const char *path) {
+        return CommitImpl(path);
+    }
+
+    Result CommitSaveData(const char *path) {
+        return CommitImpl(path);
+    }
+
 
 }

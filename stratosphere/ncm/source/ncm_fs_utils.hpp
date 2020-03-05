@@ -18,29 +18,35 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace ams::ncm::path {
+namespace ams::ncm::impl {
 
-    inline void GetContentRootPath(PathString *content_root, const PathString &root_path) {
-        content_root->SetFormat("%s%s", root_path.Get(), "/registered");
-    }
+    Result HasFile(bool *out, const char *path);
+    Result HasDirectory(bool *out, const char *path);
 
-    inline void GetPlaceHolderRootPath(PathString *placeholder_root, const PathString &root_path) {
-        placeholder_root->SetFormat("%s%s", root_path.Get(), "/placehld");
-    }
+    Result EnsureDirectoryRecursively(const char *path);
+    Result EnsureParentDirectoryRecursively(const char *path);
 
-    void GetContentMetaPath(PathString *out, ContentId content_id, MakeContentPathFunc path_func, const PathString &root_path);
-    void GetContentFileName(char *out, ContentId content_id);
-    void GetPlaceHolderFileName(char *out, PlaceHolderId placeholder_id);
-    bool IsNcaPath(const char *path);
+    Result CopyFile(const char *dst_path, const char *src_path);
 
     class PathView {
         private:
-            std::string_view path; /* Nintendo uses nn::util::string_view here. */
+            std::string_view path; /* Nintendo uses util::string_view here. */
         public:
             PathView(std::string_view p) : path(p) { /* ...*/ }
             bool HasPrefix(std::string_view prefix) const;
             bool HasSuffix(std::string_view suffix) const;
             std::string_view GetFileName() const;
     };
+
+    struct MountName {
+        char str[fs::MountNameLengthMax + 1];
+    };
+
+    struct RootDirectoryPath {
+        char str[fs::MountNameLengthMax + 3]; /* mount name + :/ */
+    };
+
+    MountName CreateUniqueMountName();
+    RootDirectoryPath GetRootDirectoryPath(const MountName &mount_name);
 
 }

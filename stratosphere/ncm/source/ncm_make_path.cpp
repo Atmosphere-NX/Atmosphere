@@ -15,70 +15,113 @@
  */
 
 #include "ncm_make_path.hpp"
-#include "ncm_path_utils.hpp"
+#include "ncm_content_id_utils.hpp"
 
-namespace ams::ncm::path {
+namespace ams::ncm {
 
     namespace {
 
-        u16 Get16BitSha256HashPrefix(util::Uuid uuid) {
-            u8 hash[SHA256_HASH_SIZE];
-            sha256CalculateHash(hash, uuid.data, sizeof(util::Uuid));
+        void MakeContentName(PathString *out, ContentId id) {
+            out->SetFormat("%s.nca", GetContentIdString(id).data);
+        }
+
+        void MakePlaceHolderName(PathString *out, PlaceHolderId id) {
+            auto &bytes = id.uuid.data;
+            char tmp[3];
+            for (size_t i = 0; i < sizeof(bytes); i++) {
+                std::snprintf(tmp, util::size(tmp), "%02x", bytes[i]);
+                out->Append(tmp);
+            }
+            out->Append(".nca");
+        }
+
+        u16 Get16BitSha256HashPrefix(ContentId id) {
+            u8 hash[crypto::Sha256Generator::HashSize];
+            crypto::GenerateSha256Hash(hash, sizeof(hash), std::addressof(id), sizeof(id));
             return static_cast<u16>(hash[0]) | (static_cast<u16>(hash[1]) << 8);
         }
 
-        u8 Get8BitSha256HashPrefix(util::Uuid uuid) {
-            u8 hash[SHA256_HASH_SIZE];
-            sha256CalculateHash(hash, uuid.data, sizeof(util::Uuid));
+        u8 Get8BitSha256HashPrefix(ContentId id) {
+            u8 hash[crypto::Sha256Generator::HashSize];
+            crypto::GenerateSha256Hash(hash, sizeof(hash), std::addressof(id), sizeof(id));
+            return hash[0];
+        }
+
+        u8 Get8BitSha256HashPrefix(PlaceHolderId id) {
+            u8 hash[crypto::Sha256Generator::HashSize];
+            crypto::GenerateSha256Hash(hash, sizeof(hash), std::addressof(id), sizeof(id));
             return hash[0];
         }
 
     }
 
-    void MakeContentPathFlat(PathString *out, ContentId content_id, const PathString &root) {
-        Path content_name;
-        GetContentFileName(content_name.str, content_id);
-        out->SetFormat("%s/%s", root.Get(), content_name.str);
+    void MakeFlatContentFilePath(PathString *out, ContentId content_id, const char *root_path) {
+        PathString content_name;
+        MakeContentName(std::addressof(content_name), content_id);
+        out->SetFormat("%s/%s", root_path, content_name.Get());
     }
 
-    void MakeContentPathDualLayered(PathString *out, ContentId content_id, const PathString &root) {
-        const u16 hash = Get16BitSha256HashPrefix(content_id.uuid);
-        const u32 hash_lower = (hash >> 4) & 0x3f;
+    void MakeSha256HierarchicalContentFilePath_ForFat4KCluster(PathString *out, ContentId content_id, const char *root_path) {
+        const u16 hash = Get16BitSha256HashPrefix(content_id);
         const u32 hash_upper = (hash >> 10) & 0x3f;
+        const u32 hash_lower = (hash >>  4) & 0x3f;
 
-        Path content_name;
-        GetContentFileName(content_name.str, content_id);
-        out->SetFormat("%s/%08X/%08X/%s", root.Get(), hash_upper, hash_lower, content_name.str);
+        PathString content_name;
+        MakeContentName(std::addressof(content_name), content_id);
+        out->SetFormat("%s/%08X/%08X/%s", root_path, hash_upper, hash_lower, content_name.Get());
     }
 
-    void MakeContentPath10BitLayered(PathString *out, ContentId content_id, const PathString &root) {
-        const u32 hash = (Get16BitSha256HashPrefix(content_id.uuid) >> 6) & 0x3FF;
+    void MakeSha256HierarchicalContentFilePath_ForFat32KCluster(PathString *out, ContentId content_id, const char *root_path) {
+        const u32 hash = (Get16BitSha256HashPrefix(content_id) >> 6) & 0x3FF;
 
-        Path content_name;
-        GetContentFileName(content_name.str, content_id);
-        out->SetFormat("%s/%08X/%s", root.Get(), hash, content_name.str);
+        PathString content_name;
+        MakeContentName(std::addressof(content_name), content_id);
+        out->SetFormat("%s/%08X/%s", root_path, hash, content_name.Get());
     }
 
-    void MakeContentPathHashByteLayered(PathString *out, ContentId content_id, const PathString &root) {
-        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id.uuid));
+    void MakeSha256HierarchicalContentFilePath_ForFat16KCluster(PathString *out, ContentId content_id, const char *root_path) {
+        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id));
 
-        Path content_name;
-        GetContentFileName(content_name.str, content_id);
-        out->SetFormat("%s/%08X/%s", root.Get(), hash_byte, content_name.str);
+        PathString content_name;
+        MakeContentName(std::addressof(content_name), content_id);
+        out->SetFormat("%s/%08X/%s", root_path, hash_byte, content_name.Get());
     }
 
-    void MakePlaceHolderPathFlat(PathString *out, PlaceHolderId placeholder_id, const PathString &root) {
-        Path placeholder_name;
-        GetPlaceHolderFileName(placeholder_name.str, placeholder_id);
-        out->SetFormat("%s/%s", root.Get(), placeholder_name.str);
+    size_t GetHierarchicalContentDirectoryDepth(MakeContentPathFunction func) {
+        if (func == MakeFlatContentFilePath) {
+            return 1;
+        } else if (func == MakeSha256HierarchicalContentFilePath_ForFat4KCluster) {
+            return 3;
+        } else if (func == MakeSha256HierarchicalContentFilePath_ForFat16KCluster ||
+                   func == MakeSha256HierarchicalContentFilePath_ForFat32KCluster) {
+            return 2;
+        } else {
+            AMS_ABORT();
+        }
     }
 
-    void MakePlaceHolderPathHashByteLayered(PathString *out, PlaceHolderId placeholder_id, const PathString &root) {
-        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id.uuid));
+    void MakeFlatPlaceHolderFilePath(PathString *out, PlaceHolderId placeholder_id, const char *root_path) {
+        PathString placeholder_name;
+        MakePlaceHolderName(std::addressof(placeholder_name), placeholder_id);
+        out->SetFormat("%s/%s", root_path, placeholder_name.Get());
+    }
 
-        Path placeholder_name;
-        GetPlaceHolderFileName(placeholder_name.str, placeholder_id);
-        out->SetFormat("%s/%08X/%s", root.Get(), hash_byte, placeholder_name.str);
+    void MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster(PathString *out, PlaceHolderId placeholder_id, const char *root_path) {
+        const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id));
+
+        PathString placeholder_name;
+        MakePlaceHolderName(std::addressof(placeholder_name), placeholder_id);
+        out->SetFormat("%s/%08X/%s", root_path, hash_byte, placeholder_name.Get());
+    }
+
+    size_t GetHierarchicalPlaceHolderDirectoryDepth(MakePlaceHolderPathFunction func) {
+        if (func == MakeFlatPlaceHolderFilePath) {
+            return 1;
+        } else if (func == MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster) {
+            return 2;
+        } else {
+            AMS_ABORT();
+        }
     }
 
 }

@@ -103,7 +103,7 @@ namespace ams::fs::impl {
     }
 
     bool IsReservedMountName(const char *name) {
-        return name[0] != ReservedMountNamePrefixCharacter;
+        return name[0] == ReservedMountNamePrefixCharacter;
     }
 
     Result CheckMountName(const char *name) {

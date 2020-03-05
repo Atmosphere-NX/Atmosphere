@@ -18,14 +18,18 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace ams::ncm::path {
+namespace ams::ncm {
 
-    void MakeContentPathFlat(PathString *out, ContentId content_id, const PathString &root);
-    void MakeContentPathHashByteLayered(PathString *out, ContentId content_id, const PathString &root);
-    void MakeContentPath10BitLayered(PathString *out, ContentId content_id, const PathString &root);
-    void MakeContentPathDualLayered(PathString *out, ContentId content_id, const PathString &root);
+    void MakeFlatContentFilePath(PathString *out, ContentId content_id, const char *root_path);
+    void MakeSha256HierarchicalContentFilePath_ForFat4KCluster(PathString *out, ContentId content_id, const char *root_path);
+    void MakeSha256HierarchicalContentFilePath_ForFat16KCluster(PathString *out, ContentId content_id, const char *root_path);
+    void MakeSha256HierarchicalContentFilePath_ForFat32KCluster(PathString *out, ContentId content_id, const char *root_path);
 
-    void MakePlaceHolderPathFlat(PathString *out, PlaceHolderId placeholder_id, const PathString &root);
-    void MakePlaceHolderPathHashByteLayered(PathString *out, PlaceHolderId placeholder_id, const PathString &root);
+    size_t GetHierarchicalContentDirectoryDepth(MakeContentPathFunction func);
+
+    void MakeFlatPlaceHolderFilePath(PathString *out, PlaceHolderId placeholder_id, const char *root_path);
+    void MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster(PathString *out, PlaceHolderId placeholder_id, const char *root_pathroot);
+
+    size_t GetHierarchicalPlaceHolderDirectoryDepth(MakePlaceHolderPathFunction func);
 
 }
