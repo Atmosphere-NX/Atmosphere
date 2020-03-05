@@ -140,6 +140,12 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(MapFull,  6811);
 
     R_DEFINE_ERROR_RANGE(BadState, 6900, 6999);
-        R_DEFINE_ERROR_RESULT(NotMounted,   6905);
+        R_DEFINE_ERROR_RESULT(NotInitialized, 6902);
+        R_DEFINE_ERROR_RESULT(NotMounted,     6905);
+
+    R_DEFINE_ERROR_RESULT(DbmInvalidOperation,     7914);
+    R_DEFINE_ERROR_RESULT(DbmInvalidPathFormat,    7915);
+    R_DEFINE_ERROR_RESULT(DbmDirectoryNameTooLong, 7916);
+    R_DEFINE_ERROR_RESULT(DbmFileNameTooLong,      7917);
 
 }

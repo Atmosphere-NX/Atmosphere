@@ -26,7 +26,7 @@ namespace ams::fs {
         constexpr inline char Dot                = '.';
         constexpr inline char NullTerminator     = '\x00';
 
-        constexpr inline char UnsupportedDirectorySeparator = '/';
+        constexpr inline char UnsupportedDirectorySeparator = '\\';
     }
 
     class PathTool {
