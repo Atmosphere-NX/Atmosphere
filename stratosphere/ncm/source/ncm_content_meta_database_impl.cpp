@@ -294,7 +294,7 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::Commit() {
         R_TRY(this->EnsureEnabled());
         R_TRY(this->kvs->Save());
-        return fsdevCommitDevice(this->mount_name);
+        return fs::CommitSaveData(this->mount_name);
     }
 
     Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) {
