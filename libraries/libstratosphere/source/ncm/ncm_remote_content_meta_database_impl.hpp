@@ -144,9 +144,9 @@ namespace ams::ncm {
                 return ncmContentMetaDatabaseListContentMetaInfo(std::addressof(this->srv), reinterpret_cast<s32 *>(out_entries_written.GetPointer()), out_meta_info.GetPointer(), out_meta_info.GetSize(), Convert(key), start_index);
             }
 
-            virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) override {
+            virtual Result GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) override {
                 static_assert(sizeof(ContentMetaAttribute) == sizeof(u8));
-                return ncmContentMetaDatabaseGetAttributes(std::addressof(this->srv), Convert(key), reinterpret_cast<u8 *>(out_attributes.GetPointer()));
+                return ncmContentMetaDatabaseGetAttributes(std::addressof(this->srv), Convert(key), out_attributes.GetPointer());
             }
 
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) override {

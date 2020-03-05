@@ -236,7 +236,7 @@ namespace ams::kvdb {
             static Result CreateNewCache(const char *dir) {
                 /* Make a new key value store filesystem, and a new lru_list.dat. */
                 R_TRY(LeastRecentlyUsedList::CreateNewList(GetLeastRecentlyUsedListPath(dir)));
-                R_UNLESS(mkdir(GetFileKeyValueStorePath(dir), 0) == 0, fsdevGetLastResult());
+                R_TRY(fs::CreateDirectory(dir));
 
                 return ResultSuccess();
             }

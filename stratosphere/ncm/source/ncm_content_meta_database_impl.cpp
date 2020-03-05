@@ -333,7 +333,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) {
+    Result ContentMetaDatabaseImpl::GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
         const void *meta;

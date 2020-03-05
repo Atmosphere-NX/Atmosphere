@@ -103,7 +103,7 @@ namespace ams::ncm {
                 return lc;
             }
 
-            ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type, ProgramId app_id, ProgramId min, ProgramId max, ContentInstallType install_type) {
+            ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type, ProgramId app_id = InvalidProgramId, ProgramId min = {std::numeric_limits<u64>::min()}, ProgramId max = {std::numeric_limits<u64>::max()}, ContentInstallType install_type = ContentInstallType::Full) {
                 ListCount lc = {};
                 R_ABORT_UNLESS(this->interface->List(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ContentMetaKey>(dst, dst_size), type, app_id, min, max, install_type));
                 return lc;
@@ -173,7 +173,7 @@ namespace ams::ncm {
                 return this->interface->Commit();
             }
 
-            Result GetAttributes(ContentMetaAttribute *out_attributes, const ContentMetaKey &key) {
+            Result GetAttributes(u8 *out_attributes, const ContentMetaKey &key) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetAttributes(out_attributes, key);
             }

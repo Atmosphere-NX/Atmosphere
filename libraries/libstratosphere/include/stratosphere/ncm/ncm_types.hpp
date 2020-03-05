@@ -43,10 +43,10 @@ namespace ams::ncm {
         DeltaFragment       = 6,
     };
 
-    enum class ContentMetaAttribute : u8 {
-        None                   = 0,
-        IncludesExFatDriver    = 1,
-        Rebootless             = 2,
+    enum ContentMetaAttribute : u8 {
+        ContentMetaAttribute_None                   = (0 << 0),
+        ContentMetaAttribute_IncludesExFatDriver    = (1 << 0),
+        ContentMetaAttribute_Rebootless             = (1 << 1),
     };
 
     enum class ContentInstallType : u8 {

@@ -23,7 +23,7 @@ namespace ams::ncm {
         u16 extended_header_size;
         u16 content_count;
         u16 content_meta_count;
-        ContentMetaAttribute attributes;
+        u8 attributes;
         StorageId storage_id;
     };
 

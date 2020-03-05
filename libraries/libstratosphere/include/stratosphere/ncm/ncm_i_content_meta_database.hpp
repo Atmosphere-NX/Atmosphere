@@ -66,7 +66,7 @@ namespace ams::ncm {
             virtual Result Commit() = 0;
             virtual Result HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) = 0;
             virtual Result ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, u32 start_index) = 0;
-            virtual Result GetAttributes(sf::Out<ContentMetaAttribute> out_attributes, const ContentMetaKey &key) = 0;
+            virtual Result GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) = 0;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) = 0;
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) = 0;
         public:
