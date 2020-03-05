@@ -29,7 +29,7 @@ namespace ams::fs {
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
         size_t read_size;
-        R_TRY(ReadFile(std::addressof(size), handle, offset, buffer, size, option));
+        R_TRY(ReadFile(std::addressof(read_size), handle, offset, buffer, size, option));
         R_UNLESS(read_size == size, fs::ResultOutOfRange());
         return ResultSuccess();
     }
