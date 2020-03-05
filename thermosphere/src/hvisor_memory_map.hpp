@@ -85,7 +85,7 @@ namespace ams::hvisor {
 
             // Caller is expected to disable interrupts, etc, etc.
             static uintptr_t MapGuestPage(uintptr_t pa, u64 memAttribs, u64 shareability);
-            static uintptr_t UnmapGuestPage();
+            static void UnmapGuestPage();
 
         public:
             constexpr MemoryMap() = delete;

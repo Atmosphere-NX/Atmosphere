@@ -24,7 +24,7 @@
 #include "hvisor_gdb_defines_internal.hpp"
 #include "hvisor_gdb_packet_data.hpp"
 
-#include "../guest_memory.h"
+#include "../hvisor_guest_memory.hpp"
 
 namespace ams::hvisor::gdb {
 
@@ -40,7 +40,7 @@ namespace ams::hvisor::gdb {
             return prefixLen == 0 ? ReplyErrno(ENOMEM) : -1;
         }
 
-        size_t total = guestReadMemory(addr, len, membuf);
+        size_t total = GuestReadMemory(addr, len, membuf);
 
         if (total == 0) {
             return prefixLen == 0 ? ReplyErrno(EFAULT) : -EFAULT;
@@ -73,7 +73,7 @@ namespace ams::hvisor::gdb {
             return ReplyErrno(EILSEQ);
         }
 
-        size_t total = guestWriteMemory(addr, len, workbuf);
+        size_t total = GuestWriteMemory(addr, len, workbuf);
         return total == len ? ReplyOk() : ReplyErrno(EFAULT);
     }
 

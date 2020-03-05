@@ -16,12 +16,11 @@
 
 #include "hvisor_sw_breakpoint_manager.hpp"
 #include "hvisor_core_context.hpp"
+#include "hvisor_guest_memory.hpp"
 #include "cpu/hvisor_cpu_instructions.hpp"
 #include "cpu/hvisor_cpu_interrupt_mask_guard.hpp"
 
 #include <mutex>
-
-#include "guest_memory.h"
 
 #define _REENT_ONLY
 #include <cerrno>
@@ -59,7 +58,7 @@ namespace ams::hvisor {
         Breakpoint &bp = m_breakpoints[id];
         u32 brkInst = 0xD4200000 | (bp.uid << 5);
 
-        size_t sz = guestReadWriteMemory(bp.address, 4, &bp.savedInstruction, &brkInst);
+        size_t sz = GuestReadWriteMemory(bp.address, 4, &bp.savedInstruction, &brkInst);
         bp.applied = sz == 4;
         return sz == 4;
     }
@@ -67,7 +66,7 @@ namespace ams::hvisor {
     bool SwBreakpointManager::DoRevert(size_t id)
     {
         Breakpoint &bp = m_breakpoints[id];
-        size_t sz = guestWriteMemory(bp.address, 4, &bp.savedInstruction);
+        size_t sz = GuestWriteMemory(bp.address, 4, &bp.savedInstruction);
         bp.applied = sz != 4;
         return sz == 4;
     }

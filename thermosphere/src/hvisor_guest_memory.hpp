@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,16 +16,20 @@
 
 #pragma once
 
-#include "utils.h"
+#include "defines.hpp"
 
-size_t guestReadWriteMemory(uintptr_t addr, size_t size, void *readBuf, const void *writeBuf);
+namespace ams::hvisor {
 
-static inline size_t guestReadMemory(uintptr_t addr, size_t size, void *buf)
-{
-    return guestReadWriteMemory(addr, size, buf, NULL);
-}
+    size_t GuestReadWriteMemory(uintptr_t addr, size_t size, void *readBuf, const void *writeBuf);
 
-static inline size_t guestWriteMemory(uintptr_t addr, size_t size, const void *buf)
-{
-    return guestReadWriteMemory(addr, size, NULL, buf);
+    inline size_t GuestReadMemory(uintptr_t addr, size_t size, void *buf)
+    {
+        return GuestReadWriteMemory(addr, size, buf, NULL);
+    }
+
+    inline size_t GuestWriteMemory(uintptr_t addr, size_t size, const void *buf)
+    {
+        return GuestReadWriteMemory(addr, size, NULL, buf);
+    }
+
 }

@@ -21,8 +21,6 @@
 #include "cpu/hvisor_cpu_mmu.hpp"
 #include "cpu/hvisor_cpu_instructions.hpp"
 
-#include "platform/interrupt_config.h" // TODO remove
-
 namespace ams::hvisor {
 
     uintptr_t MemoryMap::currentPlatformMmioPage = MemoryMap::mmioPlatBaseVa;
@@ -176,7 +174,7 @@ namespace ams::hvisor {
         isb();
     }
 
-    uintptr_t MemoryMap::UnmapGuestPage()
+    void MemoryMap::UnmapGuestPage()
     {
         using namespace cpu;
         using Builder = MmuTableBuilder<3, addressSpaceSize, true>;
