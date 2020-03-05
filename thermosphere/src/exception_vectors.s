@@ -152,11 +152,8 @@ vector_entry        _synchSp0
     eret
 
     _handleSafecpy:
-    // Set Z flag
-    mrs     x18, spsr_el2
-    orr     x18, x18, #(1 << 30)
-    msr     spsr_el2, x18
-    mov     x18, #0
+    // Set x16 to 1
+    mov     x16, #1
     eret
 
 check_vector_size   _synchSp0
