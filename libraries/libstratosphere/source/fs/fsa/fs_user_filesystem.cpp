@@ -170,7 +170,7 @@ namespace ams::fs {
 
         Result CommitImpl(const char *path) {
             impl::FileSystemAccessor *accessor;
-            R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+            R_TRY(impl::Find(std::addressof(accessor), path));
 
             return accessor->Commit();
         }
