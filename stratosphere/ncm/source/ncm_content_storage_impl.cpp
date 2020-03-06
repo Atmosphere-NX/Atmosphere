@@ -56,7 +56,8 @@ namespace ams::ncm {
 
         template<typename F>
         Result TraverseDirectory(bool *out_should_continue, const char *root_path, int max_level, F f) {
-            R_UNLESS(max_level > 0, ResultSuccess());
+            /* If the level is zero, we're done. */
+            R_SUCCEED_IF(max_level <= 0);
 
             /* Retry traversal upon request. */
             bool retry_dir_read = true;
@@ -230,7 +231,8 @@ namespace ams::ncm {
     }
 
     Result ContentStorageImpl::OpenContentIdFile(ContentId content_id) {
-        R_UNLESS(this->cached_content_id != content_id, ResultSuccess());
+        /* If the file is the currently cached one, we've nothing to do. */
+        R_SUCCEED_IF(this->cached_content_id == content_id);
 
         /* Close any cached file. */
         this->InvalidateFileCache();

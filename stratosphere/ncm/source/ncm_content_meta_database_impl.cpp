@@ -215,9 +215,12 @@ namespace ams::ncm {
 
         /* Check if keys are present. */
         for (size_t i = 0; i < keys.GetSize(); i++) {
+            /* Check if we have the current key. */
             bool has;
             R_TRY(this->Has(std::addressof(has), keys[i]));
-            R_UNLESS(has, ResultSuccess());
+
+            /* If we don't, then we can early return because we don't have all. */
+            R_SUCCEED_IF(!has);
         }
 
         *out = true;
@@ -287,9 +290,6 @@ namespace ams::ncm {
         for (size_t i = 0; i < out_orphaned.GetSize(); i++) {
             out_orphaned[i] = true;
         }
-
-        /* If key value store is empty, all content is orphaned. */
-        R_UNLESS(this->kvs->GetCount() != 0, ResultSuccess());
 
         auto IsOrphanedContent = [](const sf::InArray<ContentId> &list, const ncm::ContentId &id) ALWAYS_INLINE_LAMBDA {
             /* Check if any input content ids match our found content id. */

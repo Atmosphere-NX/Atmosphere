@@ -84,7 +84,7 @@ namespace ams::ncm {
 
     Result PlaceHolderAccessor::Open(fs::FileHandle *out_handle, PlaceHolderId placeholder_id) {
         /* Try to load from the cache. */
-        R_UNLESS(!this->LoadFromCache(out_handle, placeholder_id), ResultSuccess());
+        R_SUCCEED_IF(this->LoadFromCache(out_handle, placeholder_id));
 
         /* Make the path of the placeholder. */
         PathString placeholder_path;
@@ -231,7 +231,7 @@ namespace ams::ncm {
         /* Attempt to find the placeholder in the cache. */
         fs::FileHandle handle;
         auto found = this->LoadFromCache(std::addressof(handle), placeholder_id);
-        
+
         if (found) {
             /* Renew the entry in the cache. */
             this->StoreToCache(placeholder_id, handle);

@@ -81,7 +81,7 @@ namespace ams::ncm {
 
             /* Obtain the existing flags. */
             R_TRY(fs::GetSaveDataFlags(std::addressof(cur_flags), BuiltInSystemSaveDataId));
-            
+
             /* Update the flags if needed. */
             if (cur_flags != BuiltInSystemSaveDataFlags) {
                 R_TRY(fs::SetSaveDataFlags(BuiltInSystemSaveDataId, fs::SaveDataSpaceId::System, BuiltInSystemSaveDataFlags));
@@ -222,8 +222,8 @@ namespace ams::ncm {
     Result ContentManagerImpl::Initialize() {
         std::scoped_lock lk(this->mutex);
 
-        /* Already initialized. */
-        R_UNLESS(!this->initialized, ResultSuccess());
+        /* Check if we've already initialized. */
+        R_SUCCEED_IF(this->initialized);
 
         /* Clear storage id for all roots. */
         for (auto &root : this->content_storage_roots) {
@@ -289,7 +289,7 @@ namespace ams::ncm {
 
         /* Ensure the content storage root's path exists. */
         R_TRY(impl::EnsureDirectoryRecursively(root->path));
-        
+
         /* Initialize content and placeholder directories for the root. */
         R_TRY(ContentStorageImpl::InitializeBase(root->path));
 
@@ -312,7 +312,7 @@ namespace ams::ncm {
         /* Ensure the content meta database root's path exists. */
         R_TRY(impl::EnsureDirectoryRecursively(root->path));
 
-        /* Commit our changes. */ 
+        /* Commit our changes. */
         R_TRY(fs::CommitSaveData(root->mount_name));
 
         return ResultSuccess();
@@ -342,7 +342,7 @@ namespace ams::ncm {
 
     Result ContentManagerImpl::VerifyContentMetaDatabase(StorageId storage_id) {
         /* Game card content meta databases will always be valid. */
-        R_UNLESS(storage_id != StorageId::GameCard, ResultSuccess());
+        R_SUCCEED_IF(storage_id == StorageId::GameCard);
 
         std::scoped_lock lk(this->mutex);
 
@@ -441,7 +441,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
         /* Check if the storage is already activated. */
-        R_UNLESS(root->content_storage == nullptr, ResultSuccess());
+        R_SUCCEED_IF(root->content_storage != nullptr);
 
         /* Mount based on the storage type. */
         if (storage_id == StorageId::GameCard) {
@@ -511,7 +511,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
         /* Already activated. */
-        R_UNLESS(root->content_meta_database == nullptr, ResultSuccess());
+        R_SUCCEED_IF(root->content_meta_database != nullptr);
 
         /* Make a new kvs. */
         root->kvs.emplace();
