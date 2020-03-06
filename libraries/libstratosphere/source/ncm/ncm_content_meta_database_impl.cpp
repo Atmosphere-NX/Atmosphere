@@ -22,14 +22,16 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         /* Find the meta key. */
-        ContentMetaKeyValueStore::Entry *entry = nullptr;
-        R_TRY(this->FindContentMetaKeyValue(std::addressof(entry), key));
-        const auto stored_key = entry->GetKey();
+        const auto it = this->kvs->lower_bound(key);
+        R_UNLESS(it != this->kvs->end(),    ncm::ResultContentMetaNotFound());
+        R_UNLESS(it->GetKey().id == key.id, ncm::ResultContentMetaNotFound());
+
+        const auto found_key = it->GetKey();
 
         /* Create a reader for this content meta. */
         const void *meta;
         size_t meta_size;
-        R_TRY(this->GetContentMetaPointer(&meta, &meta_size, stored_key));
+        R_TRY(this->GetContentMetaPointer(&meta, &meta_size, found_key));
 
         ContentMetaReader reader(meta, meta_size);
 
@@ -79,12 +81,25 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) {
         R_TRY(this->EnsureEnabled());
-        return this->kvs->Get(out_size.GetPointer(), out_value.GetPointer(), out_value.GetSize(), key);
+
+        /* Get the entry from our key-value store. */
+        size_t size;
+        R_TRY_CATCH(this->kvs->Get(std::addressof(size), out_value.GetPointer(), out_value.GetSize(), key)) {
+            R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
+        } R_END_TRY_CATCH;
+
+        out_size.SetValue(size);
+        return ResultSuccess();
     }
 
     Result ContentMetaDatabaseImpl::Remove(const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
-        return this->kvs->Remove(key);
+
+        R_TRY_CATCH(this->kvs->Remove(key)) {
+            R_CONVERT(kvdb::ResultKeyNotFound, ncm::ResultContentMetaNotFound())
+        } R_END_TRY_CATCH;
+
+        return ResultSuccess();
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
@@ -121,7 +136,7 @@ namespace ams::ncm {
 
         /* Iterate over all entries. */
         for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
-            ContentMetaKey key = entry->GetKey();
+            const ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
             if (!((meta_type == ContentMetaType::Unknown || key.type == meta_type) && (min <= key.id && key.id <= max) && (install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
@@ -129,7 +144,7 @@ namespace ams::ncm {
             }
 
             /* If application id is present, check if it matches the filter. */
-            if (application_id != InvalidProgramId) {
+            if (application_id != InvalidApplicationId) {
                 /* Obtain the content meta for the key. */
                 const void *meta;
                 size_t meta_size;
@@ -169,10 +184,10 @@ namespace ams::ncm {
 
         /* Iterate over all entries. */
         for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
-            ContentMetaKey key = entry->GetKey();
+            const ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
-            if (!((type == ContentMetaType::Unknown || key.type == type))) {
+            if (!(type == ContentMetaType::Unknown || key.type == type)) {
                 continue;
             }
 
@@ -250,10 +265,14 @@ namespace ams::ncm {
         ContentMetaReader reader(meta, meta_size);
 
         /* Obtain the required system version. */
-        if (key.type == ContentMetaType::Application) {
-            out_version.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->required_system_version);
-        } else {
-            out_version.SetValue(reader.GetExtendedHeader<PatchMetaExtendedHeader>()->required_system_version);
+        switch (key.type) {
+            case ContentMetaType::Application:
+                out_version.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->required_system_version);
+                break;
+            case ContentMetaType::Patch:
+                out_version.SetValue(reader.GetExtendedHeader<PatchMetaExtendedHeader>()->required_system_version);
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
         return ResultSuccess();
@@ -333,14 +352,15 @@ namespace ams::ncm {
         /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
+        /* Optimistically suppose that we will find the content. */
+        out.SetValue(true);
+
         /* Check if any content infos contain a matching id. */
         for (size_t i = 0; i < reader.GetContentCount(); i++) {
-            if (content_id == reader.GetContentInfo(i)->GetId()) {
-                out.SetValue(true);
-                return ResultSuccess();
-            }
+            R_SUCCEED_IF(content_id == reader.GetContentInfo(i)->GetId());
         }
 
+        /* We didn't find a content info. */
         out.SetValue(false);
         return ResultSuccess();
     }
@@ -395,13 +415,16 @@ namespace ams::ncm {
 
         /* Get the required version. */
         u32 required_version;
-        if (key.type == ContentMetaType::Application && hos::GetVersion() >= hos::Version_900) {
-            /* As of 9.0.0, applications can be dependent on a specific base application version. */
-            required_version = reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->required_application_version;
-        } else if (key.type == ContentMetaType::AddOnContent) {
-            required_version = reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>()->required_application_version;
-        } else {
-            return ncm::ResultInvalidContentMetaKey();
+        switch (key.type) {
+            case ContentMetaType::AddOnContent:
+                required_version = reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>()->required_application_version;
+                break;
+            case ContentMetaType::Application:
+                /* As of 9.0.0, applications can be dependent on a specific base application version. */
+                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_900);
+                required_version = reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->required_application_version;
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
         out_version.SetValue(required_version);

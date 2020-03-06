@@ -25,7 +25,7 @@ namespace ams::ncm {
             using ContentMetaKeyValueStore = ams::kvdb::MemoryKeyValueStore<ContentMetaKey>;
         protected:
             ContentMetaKeyValueStore *kvs;
-            char mount_name[16];
+            char mount_name[fs::MountNameLengthMax + 1];
             bool disabled;
         protected:
             ContentMetaDatabaseImplBase(ContentMetaKeyValueStore *kvs) : kvs(kvs), disabled(false) { /* ... */ }
@@ -37,14 +37,6 @@ namespace ams::ncm {
             /* Helpers. */
             Result EnsureEnabled() const {
                 R_UNLESS(!this->disabled, ncm::ResultInvalidContentMetaDatabase());
-                return ResultSuccess();
-            }
-
-            Result FindContentMetaKeyValue(ContentMetaKeyValueStore::Entry **out_entry, const ContentMetaKey &key) const {
-                const auto it = this->kvs->lower_bound(key);
-                R_UNLESS(it != this->kvs->end(), ncm::ResultContentMetaNotFound());
-                R_UNLESS(it->GetKey().id == key.id, ncm::ResultContentMetaNotFound());
-                *out_entry = it;
                 return ResultSuccess();
             }
 

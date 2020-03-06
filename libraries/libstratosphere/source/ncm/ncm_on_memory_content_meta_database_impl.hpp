@@ -22,8 +22,10 @@ namespace ams::ncm {
     class OnMemoryContentMetaDatabaseImpl : public ContentMetaDatabaseImpl {
         public:
             OnMemoryContentMetaDatabaseImpl(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : ContentMetaDatabaseImpl(kvs) { /* ... */ }
+            Result GetLatestKeyImpl(ContentMetaKey *out_key, u64 id) const;
         public:
             /* Actual commands. */
+            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) override;
             virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) override;
             virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
             virtual Result Commit() override;
