@@ -63,7 +63,7 @@ namespace ams::kern::init {
         constexpr size_t SlabCountKTransferMemory       = 200;
         constexpr size_t SlabCountKCodeMemory           = 10;
         constexpr size_t SlabCountKDeviceAddressSpace   = 300;
-        constexpr size_t SlabCountKSession              = 900;
+        constexpr size_t SlabCountKSession              = 933;
         constexpr size_t SlabCountKLightSession         = 100;
         constexpr size_t SlabCountKObjectName           = 7;
         constexpr size_t SlabCountKResourceLimit        = 5;

@@ -63,3 +63,29 @@ Result fsOpenSaveDataFileSystemFwd(Service* s, FsFileSystem* out, FsSaveDataSpac
         .out_objects = &out->s,
     );
 }
+
+Result fsOpenFileSystemWithPatchFwd(Service* s, FsFileSystem* out, u64 id, FsFileSystemType fsType) {
+    const struct {
+        u32 fsType;
+        u64 id;
+    } in = { fsType, id };
+
+    return serviceDispatchIn(s, 7, in,
+        .out_num_objects = 1,
+        .out_objects = &out->s
+    );
+}
+
+Result fsOpenFileSystemWithIdFwd(Service* s, FsFileSystem* out, u64 id, FsFileSystemType fsType, const char* contentPath) {
+    const struct {
+        u32 fsType;
+        u64 id;
+    } in = { fsType, id };
+
+    return serviceDispatchIn(s, 8, in,
+        .buffer_attrs = { SfBufferAttr_HipcPointer | SfBufferAttr_In },
+        .buffers = { { contentPath, FS_MAX_PATH } },
+        .out_num_objects = 1,
+        .out_objects = &out->s
+    );
+}

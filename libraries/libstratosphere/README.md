@@ -15,6 +15,7 @@ You can find a copy of the license in the [LICENSE file](LICENSE).
 
 Exemptions:
 * The [yuzu emulator project](https://github.com/yuzu-emu/yuzu) is exempt from GPLv2 licensing and may (at its option) instead license any source code authored for the libstratosphere project as GPLv2 or later.
+* [Nintendo](https://github.com/Nintendo) is exempt from GPLv2 licensing and may (at its option) instead license any source code authored for the libstratosphere project under the Zero-Clause BSD license.
 
 Credits
 =====
@@ -29,3 +30,4 @@ In addition to those credited in [Atmosphère's credits](https://github.com/Atmo
 * __misson20000__
 * __neobrain__
 * __yellows8__
+* @[Nintendo](https://github.com/Nintendo)

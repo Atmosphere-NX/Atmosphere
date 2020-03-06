@@ -69,12 +69,12 @@ typedef u32 Result;          ///< Function error code result type.
 
 /// Creates a bitmask for bit range extraction.
 #ifndef MASK2
-#define MASK2(a,b) (MASK(a) & ~MASK(b))
+#define MASK2(a,b) (MASK((a) + 1) & ~MASK(b))
 #endif
 
 /// Creates a bitmask for bit range extraction (long).
 #ifndef MASK2L
-#define MASK2L(a,b) (MASKL(a) & ~MASKL(b))
+#define MASK2L(a,b) (MASKL((a) + 1) & ~MASKL(b))
 #endif
 
 /// Marks a function as not returning, for the purposes of compiler optimization.

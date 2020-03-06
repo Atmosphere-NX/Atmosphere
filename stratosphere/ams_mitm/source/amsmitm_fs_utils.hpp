@@ -38,8 +38,10 @@ namespace ams::mitm::fs {
     Result OpenAtmosphereSdRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode);
     Result OpenAtmosphereRomfsDirectory(FsDir *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs);
 
-    /* TODO: Remove this in Atmosphere 0.10.2. */
-    Result RenameProgramDirectoryForCompatibility(const char *dir_name);
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *src_path);
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, const char *subdir, const char *src_path);
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *src_path);
+    void FormatAtmosphereSdPath(char *dst_path, size_t dst_path_size, ncm::ProgramId program_id, const char *subdir, const char *src_path);
 
     bool HasSdRomfsContent(ncm::ProgramId program_id);
 
