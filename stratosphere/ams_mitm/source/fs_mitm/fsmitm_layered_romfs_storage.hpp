@@ -49,6 +49,16 @@ namespace ams::mitm::fs {
             virtual Result GetSize(s64 *out_size) override;
             virtual Result Flush() override;
             virtual Result OperateRange(void *dst, size_t dst_size, ams::fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
+
+            virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                /* TODO: Better result code? */
+                return ams::fs::ResultUnsupportedOperation();
+            }
+
+            virtual Result SetSize(s64 size) override {
+                /* TODO: Better result code? */
+                return ams::fs::ResultUnsupportedOperation();
+            }
     };
 
 }

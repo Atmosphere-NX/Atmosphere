@@ -26,21 +26,15 @@ namespace ams::fs {
 
             virtual Result Read(s64 offset, void *buffer, size_t size) = 0;
 
-            virtual Result Write(s64 offset, const void *buffer, size_t size) {
-                return fs::ResultUnsupportedOperation();
-            }
+            virtual Result Write(s64 offset, const void *buffer, size_t size) = 0;
 
             virtual Result Flush() = 0;
 
-            virtual Result SetSize(s64 size) {
-                return fs::ResultUnsupportedOperation();
-            }
+            virtual Result SetSize(s64 size) = 0;
 
             virtual Result GetSize(s64 *out) = 0;
 
-            virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
-                return fs::ResultUnsupportedOperation();
-            }
+            virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) = 0;
 
             virtual Result OperateRange(OperationId op_id, s64 offset, s64 size) {
                 return this->OperateRange(nullptr, 0, op_id, offset, size, nullptr, 0);
@@ -86,20 +80,30 @@ namespace ams::fs {
 
             virtual ~ReadOnlyStorageAdapter() { /* ... */ }
         public:
-            virtual Result Read(s64 offset, void *buffer, size_t size) {
+            virtual Result Read(s64 offset, void *buffer, size_t size) override {
                 return this->storage->Read(offset, buffer, size);
             }
 
-            virtual Result Flush() {
+            virtual Result Flush() override {
                 return this->storage->Flush();
             }
 
-            virtual Result GetSize(s64 *out) {
+            virtual Result GetSize(s64 *out) override {
                 return this->storage->GetSize(out);
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                 return this->storage->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
+            }
+
+            virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                /* TODO: Better result? Is it possible to get a more specific one? */
+                return fs::ResultUnsupportedOperation();
+            }
+
+            virtual Result SetSize(s64 size) override {
+                /* TODO: Better result? Is it possible to get a more specific one? */
+                return fs::ResultUnsupportedOperation();
             }
     };
 

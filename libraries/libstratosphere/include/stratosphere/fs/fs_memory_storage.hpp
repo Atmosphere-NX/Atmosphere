@@ -62,6 +62,10 @@ namespace ams::fs {
                 return ResultSuccess();
             }
 
+            virtual Result SetSize(s64 size) override {
+                return fs::ResultUnsupportedMemoryStorageSetSize();
+            }
+
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                 switch (op_id) {
                     case OperationId::InvalidateCache:
@@ -72,7 +76,7 @@ namespace ams::fs {
                         reinterpret_cast<QueryRangeInfo *>(dst)->Clear();
                         return ResultSuccess();
                     default:
-                        return fs::ResultUnsupportedOperation();
+                        return fs::ResultUnsupportedMemoryStorageOperateRange();
                 }
             }
     };
