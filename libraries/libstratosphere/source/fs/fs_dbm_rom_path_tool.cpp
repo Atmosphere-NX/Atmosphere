@@ -18,7 +18,7 @@
 namespace ams::fs::RomPathTool {
 
     Result PathParser::Initialize(const RomPathChar *path) {
-        AMS_ABORT_UNLESS(path != nullptr);
+        AMS_ASSERT(path != nullptr);
 
         /* Require paths start with a separator, and skip repeated separators. */
         R_UNLESS(IsSeparator(path[0]), fs::ResultDbmInvalidPathFormat());
@@ -65,10 +65,10 @@ namespace ams::fs::RomPathTool {
     }
 
     Result PathParser::GetAsDirectoryName(RomEntryName *out) const {
-        AMS_ABORT_UNLESS(out != nullptr);
-        AMS_ABORT_UNLESS(this->prev_path_start != nullptr);
-        AMS_ABORT_UNLESS(this->prev_path_end   != nullptr);
-        AMS_ABORT_UNLESS(this->next_path       != nullptr);
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(this->prev_path_start != nullptr);
+        AMS_ASSERT(this->prev_path_end   != nullptr);
+        AMS_ASSERT(this->next_path       != nullptr);
 
         const size_t len = this->prev_path_end - this->prev_path_start;
         R_UNLESS(len <= MaxPathLength, fs::ResultDbmDirectoryNameTooLong());
@@ -79,10 +79,10 @@ namespace ams::fs::RomPathTool {
     }
 
     Result PathParser::GetAsFileName(RomEntryName *out) const {
-        AMS_ABORT_UNLESS(out != nullptr);
-        AMS_ABORT_UNLESS(this->prev_path_start != nullptr);
-        AMS_ABORT_UNLESS(this->prev_path_end   != nullptr);
-        AMS_ABORT_UNLESS(this->next_path       != nullptr);
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(this->prev_path_start != nullptr);
+        AMS_ASSERT(this->prev_path_end   != nullptr);
+        AMS_ASSERT(this->next_path       != nullptr);
 
         const size_t len = this->prev_path_end - this->prev_path_start;
         R_UNLESS(len <= MaxPathLength, fs::ResultDbmFileNameTooLong());
@@ -93,10 +93,10 @@ namespace ams::fs::RomPathTool {
     }
 
     Result PathParser::GetNextDirectoryName(RomEntryName *out) {
-        AMS_ABORT_UNLESS(out != nullptr);
-        AMS_ABORT_UNLESS(this->prev_path_start != nullptr);
-        AMS_ABORT_UNLESS(this->prev_path_end   != nullptr);
-        AMS_ABORT_UNLESS(this->next_path       != nullptr);
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(this->prev_path_start != nullptr);
+        AMS_ASSERT(this->prev_path_end   != nullptr);
+        AMS_ASSERT(this->next_path       != nullptr);
 
         /* Set the current path to output. */
         out->length = this->prev_path_end - this->prev_path_start;
@@ -132,8 +132,8 @@ namespace ams::fs::RomPathTool {
     }
 
     Result GetParentDirectoryName(RomEntryName *out, const RomEntryName &cur, const RomPathChar *p) {
-        AMS_ABORT_UNLESS(out != nullptr);
-        AMS_ABORT_UNLESS(p != nullptr);
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(p != nullptr);
 
         const RomPathChar *start = cur.path;
         const RomPathChar *end   = cur.path + cur.length - 1;
@@ -158,6 +158,7 @@ namespace ams::fs::RomPathTool {
 
                     if (depth == 0) {
                         start = head + 1;
+                        break;
                     }
 
                     while (IsSeparator(*head)) {

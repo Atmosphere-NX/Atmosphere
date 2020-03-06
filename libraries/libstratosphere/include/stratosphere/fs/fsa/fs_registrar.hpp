@@ -29,7 +29,7 @@ namespace ams::fs::fsa {
 
     Result Register(const char *name, std::unique_ptr<IFileSystem> &&fs);
     Result Register(const char *name, std::unique_ptr<IFileSystem> &&fs, std::unique_ptr<ICommonMountNameGenerator> &&generator);
-    /* TODO: Register with cache settings */
+    Result Register(const char *name, std::unique_ptr<IFileSystem> &&fs, std::unique_ptr<ICommonMountNameGenerator> &&generator, bool use_data_cache, bool use_path_cache, bool multi_commit_supported);
 
     void Unregister(const char *name);
 }

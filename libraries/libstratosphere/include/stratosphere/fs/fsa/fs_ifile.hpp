@@ -16,6 +16,7 @@
 #pragma once
 #include "../fs_common.hpp"
 #include "../fs_file.hpp"
+#include "../fs_filesystem.hpp"
 #include "../fs_operate_range.hpp"
 
 namespace ams::fs::fsa {
@@ -82,7 +83,25 @@ namespace ams::fs::fsa {
             /* TODO: This is a hack to allow the mitm API to work. Find a better way? */
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const = 0;
         protected:
-            /* ...? */
+            Result DryRead(size_t *out, s64 offset, size_t size, const ReadOption &option, fs::OpenMode mode) {
+                R_UNLESS((mode & fs::OpenMode_Read) != 0, fs::ResultInvalidOperationForOpenMode());
+
+                s64 file_size = 0;
+                R_TRY(this->GetSize(std::addressof(file_size)));
+                R_UNLESS(offset <= file_size, fs::ResultOutOfRange());
+
+                const size_t readable_size = file_size - offset;
+                *out = std::min(readable_size, size);
+                return ResultSuccess();
+            }
+
+            Result DrySetSize(s64 size, fs::OpenMode mode) {
+                R_UNLESS((mode & fs::OpenMode_Write) != 0, fs::ResultInvalidOperationForOpenMode());
+
+                AMS_ASSERT(size >= 0);
+
+                return ResultSuccess();
+            }
         private:
             virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) = 0;
             virtual Result GetSizeImpl(s64 *out) = 0;

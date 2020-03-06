@@ -43,8 +43,8 @@ namespace ams::fs {
     static_assert(std::is_pod<RomDirectoryInfo>::value);
 
     struct RomFileInfo {
-        s64 offset;
-        s64 size;
+        Int64 offset;
+        Int64 size;
     };
     static_assert(std::is_pod<RomFileInfo>::value);
 

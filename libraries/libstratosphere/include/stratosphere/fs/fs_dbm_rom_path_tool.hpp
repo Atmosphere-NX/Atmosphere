@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_rom_types.hpp"
+#include "fs_dbm_rom_types.hpp"
 
 namespace ams::fs {
 

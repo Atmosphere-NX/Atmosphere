@@ -16,10 +16,11 @@
 #pragma once
 #include "fs_common.hpp"
 #include "fs_istorage.hpp"
+#include "impl/fs_newable.hpp"
 
 namespace ams::fs {
 
-    class RemoteStorage : public IStorage {
+    class RemoteStorage : public IStorage, public impl::Newable {
         private:
             std::unique_ptr<::FsStorage, impl::Deleter> base_storage;
         public:
