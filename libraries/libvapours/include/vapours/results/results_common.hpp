@@ -264,6 +264,9 @@ namespace ams {
         } \
     })
 
+/// Evaluates a boolean expression, and succeeds if that expression is true.
+#define R_SUCCEED_IF(expr) R_UNLESS(!(expr), ResultSuccess())
+
 /// Helpers for pattern-matching on a result expression, if the result would fail.
 #define R_CURRENT_RESULT _tmp_r_current_result
 
