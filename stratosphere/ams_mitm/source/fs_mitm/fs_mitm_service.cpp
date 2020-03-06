@@ -137,7 +137,7 @@ namespace ams::mitm::fs {
 
         Result OpenWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
             /* Check first that we're a web applet opening web content. */
-            R_UNLESS(ncm::IsWebAppletProgramId(client_program_id),      sm::mitm::ResultShouldForwardToSession());
+            R_UNLESS(ncm::IsWebAppletId(client_program_id),             sm::mitm::ResultShouldForwardToSession());
             R_UNLESS(filesystem_type == FsFileSystemType_ContentManual, sm::mitm::ResultShouldForwardToSession());
 
             /* Try to mount the HBL web filesystem. If this succeeds then we're done. */
