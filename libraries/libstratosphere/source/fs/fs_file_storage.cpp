@@ -86,7 +86,7 @@ namespace ams::fs {
                 R_UNLESS(IStorage::IsOffsetAndSizeValid(offset, size), fs::ResultOutOfRange());
                 return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
             default:
-                return fs::ResultUnsupportedFileStorageOperateRange();
+                return fs::ResultUnsupportedOperationInFileStorageA();
         }
     }
 

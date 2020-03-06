@@ -103,13 +103,13 @@ namespace ams::fs {
             virtual Result SetSize(s64 size) override {
                 /* Ensure we're initialized and validate arguments. */
                 R_UNLESS(this->IsValid(),                                    fs::ResultNotInitialized());
-                R_UNLESS(this->resizable,                                    fs::ResultUnsupportedSubStorageSetSizeA());
+                R_UNLESS(this->resizable,                                    fs::ResultUnsupportedOperationInSubStorageA());
                 R_UNLESS(IStorage::IsOffsetAndSizeValid(this->offset, size), fs::ResultInvalidSize());
 
                 /* Ensure that we're allowed to set size. */
                 s64 cur_size;
                 R_TRY(this->base_storage->GetSize(std::addressof(cur_size)));
-                R_UNLESS(cur_size == this->offset + this->size, fs::ResultUnsupportedSubStorageSetSizeB());
+                R_UNLESS(cur_size == this->offset + this->size, fs::ResultUnsupportedOperationInSubStorageB());
 
                 /* Set the size. */
                 R_TRY(this->base_storage->SetSize(this->offset + size));

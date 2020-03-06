@@ -232,16 +232,16 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(FileExtensionWithoutOpenModeAllowAppend, 6201);
 
             R_DEFINE_ERROR_RANGE(UnsupportedOperation, 6300, 6399);
-                R_DEFINE_ERROR_RESULT(UnsupportedSubStorageSetSizeA,                    6302);
-                R_DEFINE_ERROR_RESULT(UnsupportedSubStorageSetSizeB,                    6303);
-                R_DEFINE_ERROR_RESULT(UnsupportedMemoryStorageSetSize,                  6304);
-                R_DEFINE_ERROR_RESULT(UnsupportedMemoryStorageOperateRange,             6305);
-                R_DEFINE_ERROR_RESULT(UnsupportedFileStorageOperateRange,               6306);
-                R_DEFINE_ERROR_RESULT(UnsupportedRomFsFileSystemWrite,                  6364);
-                R_DEFINE_ERROR_RESULT(UnsupportedRomFsFileSystemCommitProvisionally,    6365);
-                R_DEFINE_ERROR_RESULT(UnsupportedRomFsFileSystemGetSize,                6366);
-                R_DEFINE_ERROR_RESULT(UnsupportedRomFsFileWrite,                        6367);
-                R_DEFINE_ERROR_RESULT(UnsupportedRomFsFileOperateRange,                 6368);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,        6302);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageB,        6303);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,     6304);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,     6305);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,       6306);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,   6364);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,   6365);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemC,   6366);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileA,         6367);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileB,         6368);
 
             R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 

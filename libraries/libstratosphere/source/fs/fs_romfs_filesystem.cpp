@@ -223,11 +223,11 @@ namespace ams::fs {
                 }
 
                 virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
-                    return fs::ResultUnsupportedRomFsFileWrite();
+                    return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
                 virtual Result SetSizeImpl(s64 size) override {
-                    return fs::ResultUnsupportedRomFsFileWrite();
+                    return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
                 virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
@@ -239,7 +239,7 @@ namespace ams::fs {
                                 R_UNLESS(this->GetSize() >= 0, fs::ResultOutOfRange());
                             }
                         default:
-                            return fs::ResultUnsupportedRomFsFileOperateRange();
+                            return fs::ResultUnsupportedOperationInRomFsFileB();
                     }
                 }
             public:
@@ -438,31 +438,31 @@ namespace ams::fs {
     }
 
     Result RomFsFileSystem::CreateFileImpl(const char *path, s64 size, int flags) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DeleteFileImpl(const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::CreateDirectoryImpl(const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DeleteDirectoryImpl(const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::DeleteDirectoryRecursivelyImpl(const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::RenameFileImpl(const char *old_path, const char *new_path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::RenameDirectoryImpl(const char *old_path, const char *new_path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) {
@@ -519,19 +519,19 @@ namespace ams::fs {
     }
 
     Result RomFsFileSystem::GetFreeSpaceSizeImpl(s64 *out, const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemGetSize();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemC();
     }
 
     Result RomFsFileSystem::GetTotalSpaceSizeImpl(s64 *out, const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemGetSize();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemC();
     }
 
     Result RomFsFileSystem::CleanDirectoryRecursivelyImpl(const char *path) {
-        return fs::ResultUnsupportedRomFsFileSystemWrite();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
     Result RomFsFileSystem::CommitProvisionallyImpl(s64 counter) {
-        return fs::ResultUnsupportedRomFsFileSystemCommitProvisionally();
+        return fs::ResultUnsupportedOperationInRomFsFileSystemB();
     }
 
     Result RomFsFileSystem::RollbackImpl() {
