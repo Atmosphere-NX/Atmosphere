@@ -59,7 +59,7 @@ namespace ams::lr {
         return ResultSuccess();
     }
 
-    Result ContentLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) {
+    Result ContentLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
         /* Find the latest data content for the program id. */
         ncm::ContentId data_content_id;
         R_TRY(this->content_meta_database.GetLatestData(&data_content_id, id));

@@ -31,8 +31,8 @@ namespace ams::mitm::bpc {
                  * - fatal, to simplify payload reboot logic significantly
                  * - hbl, to allow homebrew to take advantage of the feature.
                  */
-                return client_info.program_id == ncm::ProgramId::Am ||
-                       client_info.program_id == ncm::ProgramId::Fatal ||
+                return client_info.program_id == ncm::SystemProgramId::Am ||
+                       client_info.program_id == ncm::SystemProgramId::Fatal ||
                        client_info.override_status.IsHbl();
             }
         public:

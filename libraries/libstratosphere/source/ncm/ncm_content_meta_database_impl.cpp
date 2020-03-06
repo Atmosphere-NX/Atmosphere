@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    Result ContentMetaDatabaseImpl::GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) {
+    Result ContentMetaDatabaseImpl::GetContentIdImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) const {
         R_TRY(this->EnsureEnabled());
 
         /* Find the meta key. */
@@ -47,13 +47,13 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetLatestContentMetaKeyImpl(ContentMetaKey *out_key, ProgramId id) {
+    Result ContentMetaDatabaseImpl::GetLatestKeyImpl(ContentMetaKey *out_key, u64 id) const {
         R_TRY(this->EnsureEnabled());
 
         std::optional<ContentMetaKey> found_key = std::nullopt;
 
         /* Find the last key with the desired program id. */
-        for (auto entry = this->kvs->lower_bound(ContentMetaKey::Make(id, 0, ContentMetaType::Unknown)); entry != this->kvs->end(); entry++) {
+        for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
             /* No further entries will match the program id, discontinue. */
             if (entry->GetKey().id != id) {
                 break;
@@ -88,7 +88,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) {
-        return this->GetContentIdByTypeImpl(out_content_id.GetPointer(), key, type, std::nullopt);
+        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, std::nullopt);
     }
 
     Result ContentMetaDatabaseImpl::ListContentInfo(sf::Out<s32> out_count, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) {
@@ -113,7 +113,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_id, u64 min, u64 max, ContentInstallType install_type) {
+    Result ContentMetaDatabaseImpl::List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) {
         R_TRY(this->EnsureEnabled());
 
         size_t entries_total = 0;
@@ -124,7 +124,7 @@ namespace ams::ncm {
             ContentMetaKey key = entry->GetKey();
 
             /* Check if this entry matches the given filters. */
-            if (!((meta_type == ContentMetaType::Unknown || key.type == meta_type) && (min <= static_cast<u64>(key.id) && static_cast<u64>(key.id) <= max) && (install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
+            if (!((meta_type == ContentMetaType::Unknown || key.type == meta_type) && (min <= key.id && key.id <= max) && (install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
                 continue;
             }
 
@@ -156,9 +156,9 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId program_id) {
+    Result ContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
         R_TRY(this->EnsureEnabled());
-        return this->GetLatestContentMetaKeyImpl(out_key.GetPointer(), program_id);
+        return this->GetLatestKeyImpl(out_key.GetPointer(), id);
     }
 
     Result ContentMetaDatabaseImpl::ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType type) {
@@ -259,7 +259,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<ProgramId> out_patch_id, const ContentMetaKey &key) {
+    Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
         R_UNLESS(key.type == ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
 
@@ -409,7 +409,7 @@ namespace ams::ncm {
     }
 
     Result ContentMetaDatabaseImpl::GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) {
-        return this->GetContentIdByTypeImpl(out_content_id.GetPointer(), key, type, std::make_optional(id_offset));
+        return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, std::make_optional(id_offset));
     }
 
 }

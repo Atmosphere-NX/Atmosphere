@@ -91,11 +91,11 @@ namespace ams::ncm {
                 return ncmContentMetaDatabaseListContentInfo(std::addressof(this->srv), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), Convert(key), offset);
             }
 
-            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_id, u64 min, u64 max, ContentInstallType install_type) override {
-                return ncmContentMetaDatabaseList(std::addressof(this->srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), static_cast<::NcmContentMetaType>(meta_type), static_cast<u64>(application_id), min, max, static_cast<::NcmContentInstallType>(install_type));
+            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) override {
+                return ncmContentMetaDatabaseList(std::addressof(this->srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), static_cast<::NcmContentMetaType>(meta_type), application_id.value, min, max, static_cast<::NcmContentInstallType>(install_type));
             }
 
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override {
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) override {
                 return ncmContentMetaDatabaseGetLatestContentMetaKey(std::addressof(this->srv), Convert(out_key.GetPointer()), static_cast<u64>(id));
             }
 
@@ -119,7 +119,7 @@ namespace ams::ncm {
                 return ncmContentMetaDatabaseGetRequiredSystemVersion(std::addressof(this->srv), out_version.GetPointer(), Convert(key));
             }
 
-            virtual Result GetPatchId(sf::Out<ProgramId> out_patch_id, const ContentMetaKey &key) override {
+            virtual Result GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) override {
                 return ncmContentMetaDatabaseGetPatchId(std::addressof(this->srv), reinterpret_cast<u64 *>(out_patch_id.GetPointer()), Convert(key));
             }
 

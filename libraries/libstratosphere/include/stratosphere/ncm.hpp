@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/ncm/ncm_auto_buffer.hpp>
 #include <stratosphere/ncm/ncm_make_path.hpp>
 #include <stratosphere/ncm/ncm_content_id_utils.hpp>

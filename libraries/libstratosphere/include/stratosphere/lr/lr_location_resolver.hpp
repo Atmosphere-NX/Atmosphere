@@ -61,7 +61,7 @@ namespace ams::lr {
                 return this->interface->ResolveApplicationHtmlDocumentPath(out, id);
             }
 
-            Result ResolveDataPath(Path *out, ncm::ProgramId id) {
+            Result ResolveDataPath(Path *out, ncm::DataId id) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->ResolveDataPath(out, id);
             }

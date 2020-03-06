@@ -14,9 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/os.hpp>
+#include <stratosphere/fs/fs_content_storage.hpp>
+#include <stratosphere/fs/fs_mount.hpp>
+#include <stratosphere/fs/fs_system_save_data.hpp>
 #include <stratosphere/ncm/ncm_i_content_manager.hpp>
+#include <stratosphere/ncm/ncm_content_meta_database.hpp>
+#include <stratosphere/ncm/ncm_bounded_map.hpp>
 #include <stratosphere/ncm/ncm_rights_id_cache.hpp>
+#include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
 namespace ams::ncm {
 

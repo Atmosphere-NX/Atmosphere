@@ -38,7 +38,7 @@ namespace ams::cfg {
                 .key_combination     = KEY_R,
                 .override_by_default = true,
             },
-            .program_id = ncm::ProgramId::AppletPhotoViewer,
+            .program_id = ncm::SystemAppletId::PhotoViewer,
         };
 
         constexpr size_t MaxProgramOverrideKeys = 8;
@@ -269,7 +269,7 @@ namespace ams::cfg {
         }
 
         inline bool IsAnyApplicationHblProgramId(ncm::ProgramId program_id) {
-            return g_hbl_override_config.override_any_app && ncm::IsApplicationProgramId(program_id) && !IsAnySpecificHblProgramId(program_id);
+            return g_hbl_override_config.override_any_app && ncm::IsApplicationId(program_id) && !IsAnySpecificHblProgramId(program_id);
         }
 
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
@@ -320,7 +320,7 @@ namespace ams::cfg {
         }
 
         /* For system modules and anything launched before the home menu, always override. */
-        if (program_id < ncm::ProgramId::AppletStart || !pm::info::HasLaunchedProgram(ncm::ProgramId::AppletQlaunch)) {
+        if (program_id < ncm::SystemAppletId::Start || !pm::info::HasLaunchedProgram(ncm::SystemAppletId::Qlaunch)) {
             status.SetProgramSpecific();
             return status;
         }

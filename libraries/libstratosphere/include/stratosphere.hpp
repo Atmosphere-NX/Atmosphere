@@ -28,8 +28,8 @@
 #include "stratosphere/dd.hpp"
 #include "stratosphere/lmem.hpp"
 
-/* Lots of things depend on NCM, for Program IDs. */
-#include "stratosphere/ncm.hpp"
+/* Pull in all ID definitions from NCM. */
+#include "stratosphere/ncm/ncm_ids.hpp"
 
 /* At this point, just include the rest alphabetically. */
 /* TODO: Figure out optimal order. */

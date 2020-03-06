@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_types.hpp>
 #include <stratosphere/ncm/ncm_i_content_meta_database.hpp>
 
 namespace ams::ncm {
@@ -59,31 +58,40 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            /* TODO: Proper ProgramId vs DataId vs ApplicationId for Get */
-            #define AMS_NCM_DEFINE_GETTERS(Kind)                                                                                    \
-            Result Get##Kind(ContentId *out, ProgramId id, u32 version) {                                                           \
-                return this->interface->GetContentIdByType(out, ContentMetaKey::MakeUnknownType(id, version), ContentType::Kind);   \
-            }                                                                                                                       \
-                                                                                                                                    \
-            Result GetLatest##Kind(ContentId *out, ProgramId id) {                                                                  \
-                ContentMetaKey latest_key;                                                                                          \
-                R_TRY(this->interface->GetLatestContentMetaKey(std::addressof(latest_key), id));                                    \
-                return this->interface->GetContentIdByType(out, latest_key, ContentType::Kind);                                     \
+            #define AMS_NCM_DEFINE_GETTERS(Kind, IdType)                                                                                \
+            Result Get##Kind(ContentId *out, IdType##Id id, u32 version) {                                                              \
+                return this->interface->GetContentIdByType(out, ContentMetaKey::MakeUnknownType(id.value, version), ContentType::Kind); \
+            }                                                                                                                           \
+                                                                                                                                        \
+            Result GetLatest##Kind(ContentId *out, IdType##Id id) {                                                                     \
+                ContentMetaKey latest_key;                                                                                              \
+                R_TRY(this->interface->GetLatestContentMetaKey(std::addressof(latest_key), id.value));                                  \
+                return this->interface->GetContentIdByType(out, latest_key, ContentType::Kind);                                         \
             }
 
-            AMS_NCM_DEFINE_GETTERS(Program)
-            AMS_NCM_DEFINE_GETTERS(Data)
-            AMS_NCM_DEFINE_GETTERS(Control)
-            AMS_NCM_DEFINE_GETTERS(HtmlDocument)
-            AMS_NCM_DEFINE_GETTERS(LegalInformation)
+            AMS_NCM_DEFINE_GETTERS(Program,          Program)
+            AMS_NCM_DEFINE_GETTERS(Data,             Data)
+            AMS_NCM_DEFINE_GETTERS(Control,          Application)
+            AMS_NCM_DEFINE_GETTERS(HtmlDocument,     Application)
+            AMS_NCM_DEFINE_GETTERS(LegalInformation, Application)
 
             #undef AMS_NCM_DEFINE_GETTERS
-
-            /* TODO: Remove(SystemProgramId) Remove(SystemDataId) Remove(ProgramId) */
 
             Result Remove(const ContentMetaKey &key) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->Remove(key);
+            }
+
+            Result Remove(SystemProgramId id, u32 version) {
+                return this->Remove(ContentMetaKey::Make(id, version));
+            }
+
+            Result Remove(SystemDataId id, u32 version) {
+                return this->Remove(ContentMetaKey::Make(id, version));
+            }
+
+            Result Remove(ApplicationId id, u32 version) {
+                return this->Remove(ContentMetaKey::Make(id, version));
             }
 
             Result GetContentIdByType(ContentId *out_content_id, const ContentMetaKey &key, ContentType type) {
@@ -102,13 +110,13 @@ namespace ams::ncm {
                 return lc;
             }
 
-            ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type, ProgramId app_id = InvalidProgramId, u64 min = std::numeric_limits<u64>::min(), u64 max = std::numeric_limits<u64>::max(), ContentInstallType install_type = ContentInstallType::Full) {
+            ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type, ApplicationId app_id = InvalidApplicationId, u64 min = std::numeric_limits<u64>::min(), u64 max = std::numeric_limits<u64>::max(), ContentInstallType install_type = ContentInstallType::Full) {
                 ListCount lc = {};
                 R_ABORT_UNLESS(this->interface->List(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ContentMetaKey>(dst, dst_size), type, app_id, min, max, install_type));
                 return lc;
             }
 
-            Result GetLatest(ContentMetaKey *out_key, ProgramId id) {
+            Result GetLatest(ContentMetaKey *out_key, u64 id) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetLatestContentMetaKey(out_key, id);
             }
@@ -152,7 +160,7 @@ namespace ams::ncm {
                 return this->interface->GetRequiredSystemVersion(out_version, key);
             }
 
-            Result GetPatchId(ProgramId *out_patch_id, const ContentMetaKey &key) {
+            Result GetPatchId(PatchId *out_patch_id, const ContentMetaKey &key) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetPatchId(out_patch_id, key);
             }

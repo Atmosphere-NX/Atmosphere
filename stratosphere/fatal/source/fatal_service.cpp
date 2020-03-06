@@ -83,7 +83,7 @@ namespace ams::fatal::srv {
 
             /* Get program id. */
             pm::info::GetProgramId(&this->context.program_id, process_id);
-            this->context.is_creport = (this->context.program_id == ncm::ProgramId::Creport);
+            this->context.is_creport = (this->context.program_id == ncm::SystemProgramId::Creport);
 
             if (!this->context.is_creport) {
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */

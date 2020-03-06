@@ -15,7 +15,7 @@
  */
 
 #pragma once
-#include "ldr_types.hpp"
+#include <stratosphere/ldr/ldr_types.hpp>
 
 namespace ams::ldr::pm {
 

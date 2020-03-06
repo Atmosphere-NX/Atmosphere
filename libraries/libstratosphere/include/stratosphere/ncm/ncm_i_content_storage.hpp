@@ -14,10 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_types.hpp>
-#include <stratosphere/ncm/ncm_path.hpp>
-#include <stratosphere/lr/lr_types.hpp>
 #include <stratosphere/sf.hpp>
+#include <stratosphere/ncm/ncm_content_id.hpp>
+#include <stratosphere/ncm/ncm_placeholder_id.hpp>
+#include <stratosphere/ncm/ncm_path.hpp>
+#include <stratosphere/ncm/ncm_rights_id.hpp>
 
 namespace ams::ncm {
 

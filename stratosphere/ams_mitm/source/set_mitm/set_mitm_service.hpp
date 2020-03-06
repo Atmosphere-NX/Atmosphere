@@ -33,8 +33,8 @@ namespace ams::mitm::settings {
                 /* We will mitm:
                  * - ns and games, to allow for overriding game locales.
                  */
-                const bool is_game = (ncm::IsApplicationProgramId(client_info.program_id) && !client_info.override_status.IsHbl());
-                return client_info.program_id == ncm::ProgramId::Ns || is_game;
+                const bool is_game = (ncm::IsApplicationId(client_info.program_id) && !client_info.override_status.IsHbl());
+                return client_info.program_id == ncm::SystemProgramId::Ns || is_game;
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(SetMitmService) {

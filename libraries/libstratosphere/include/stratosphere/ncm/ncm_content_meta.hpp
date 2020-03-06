@@ -14,9 +14,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/ncm/ncm_content_meta_id.hpp>
+#include <stratosphere/ncm/ncm_content_meta_key.hpp>
+#include <stratosphere/ncm/ncm_content_info.hpp>
+#include <stratosphere/ncm/ncm_content_info_data.hpp>
+#include <stratosphere/ncm/ncm_storage_id.hpp>
 
 namespace ams::ncm {
+
+    enum ContentMetaAttribute : u8 {
+        ContentMetaAttribute_None                   = (0 << 0),
+        ContentMetaAttribute_IncludesExFatDriver    = (1 << 0),
+        ContentMetaAttribute_Rebootless             = (1 << 1),
+    };
+
+    struct ContentMetaInfo {
+        u64 id;
+        u32 version;
+        ContentMetaType type;
+        u8 attributes;
+        u8 padding[2];
+
+        static constexpr ContentMetaInfo Make(u64 id, u32 version, ContentMetaType type, u8 attributes) {
+            return {
+                .id         = id,
+                .version    = version,
+                .type       = type,
+                .attributes = attributes,
+            };
+        }
+
+        constexpr ContentMetaKey ToKey() {
+            return ContentMetaKey::Make(this->id, this->version, this->type);
+        }
+    };
+
+    static_assert(sizeof(ContentMetaInfo) == 0x10);
 
     struct ContentMetaHeader {
         u16 extended_header_size;
@@ -26,29 +59,29 @@ namespace ams::ncm {
         StorageId storage_id;
     };
 
-    static_assert(sizeof(ContentMetaHeader) == 0x8, "ContentMetaHeader definition!");
+    static_assert(sizeof(ContentMetaHeader) == 0x8);
 
     struct ApplicationMetaExtendedHeader {
-        ProgramId patch_id;
+        PatchId patch_id;
         u32 required_system_version;
         u32 required_application_version;
     };
 
     struct PatchMetaExtendedHeader {
-        ProgramId application_id;
+        ApplicationId application_id;
         u32 required_system_version;
         u32 extended_data_size;
         u8 reserved[0x8];
     };
 
     struct AddOnContentMetaExtendedHeader {
-        ProgramId application_id;
+        ApplicationId application_id;
         u32 required_application_version;
         u32 padding;
     };
 
     struct DeltaMetaExtendedHeader {
-        ProgramId application_id;
+        ApplicationId application_id;
         u32 extended_data_size;
         u32 padding;
     };
@@ -222,9 +255,9 @@ namespace ams::ncm {
                 return false;
             }
 
-            std::optional<ProgramId> GetApplicationId(const ContentMetaKey &key) const {
+            std::optional<ApplicationId> GetApplicationId(const ContentMetaKey &key) const {
                 switch (key.type) {
-                    case ContentMetaType::Application:  return key.id;
+                    case ContentMetaType::Application:  return ApplicationId{ key.id };
                     case ContentMetaType::Patch:        return this->GetExtendedHeader<PatchMetaExtendedHeader>()->application_id;
                     case ContentMetaType::AddOnContent: return this->GetExtendedHeader<AddOnContentMetaExtendedHeader>()->application_id;
                     case ContentMetaType::Delta:        return this->GetExtendedHeader<DeltaMetaExtendedHeader>()->application_id;
@@ -232,7 +265,7 @@ namespace ams::ncm {
                 }
             }
 
-            std::optional<ProgramId> GetApplicationId() const {
+            std::optional<ApplicationId> GetApplicationId() const {
                 return this->GetApplicationId(this->GetKey());
             }
     };

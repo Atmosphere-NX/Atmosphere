@@ -30,7 +30,7 @@ namespace ams::mitm::ns {
                 /* We will mitm:
                  * - web applets, to facilitate hbl web browser launching.
                  */
-                return ncm::IsWebAppletProgramId(client_info.program_id);
+                return ncm::IsWebAppletId(client_info.program_id);
             }
         public:
             SF_MITM_SERVICE_OBJECT_CTOR(NsAmMitmService) { /* ... */ }

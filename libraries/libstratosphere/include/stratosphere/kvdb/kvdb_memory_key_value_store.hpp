@@ -15,10 +15,11 @@
  */
 
 #pragma once
-#include <stratosphere/fs.hpp>
-#include "kvdb_auto_buffer.hpp"
-#include "kvdb_archive.hpp"
-#include "kvdb_bounded_string.hpp"
+#include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/fs/fs_file.hpp>
+#include <stratosphere/kvdb/kvdb_auto_buffer.hpp>
+#include <stratosphere/kvdb/kvdb_archive.hpp>
+#include <stratosphere/kvdb/kvdb_bounded_string.hpp>
 
 namespace ams::kvdb {
 

@@ -15,9 +15,9 @@
  */
 
 #pragma once
-#include "../os/os_common_types.hpp"
-#include "../ncm/ncm_types.hpp"
-#include "../sf/sf_buffer_tags.hpp"
+#include <stratosphere/os.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/sf/sf_buffer_tags.hpp>
 
 namespace ams::dmnt::cheat {
 

@@ -42,17 +42,17 @@ namespace ams::lr {
             }
         public:
             /* Actual commands. */
-            Result ResolveAddOnContentPath(Path *out, ncm::ProgramId id) {
+            Result ResolveAddOnContentPath(Path *out, ncm::DataId id) {
                 AMS_ASSERT(this->interface);
                 return this->interface->ResolveAddOnContentPath(out, id);
             }
 
-            Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) {
+            Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) {
                 AMS_ASSERT(this->interface);
                 if (hos::GetVersion() >= hos::Version_900) {
-                    return this->interface->RegisterAddOnContentStorage(storage_id, id, application_id);
+                    return this->interface->RegisterAddOnContentStorage(id, application_id, storage_id);
                 } else {
-                    return this->interface->RegisterAddOnContentStorageDeprecated(storage_id, id);
+                    return this->interface->RegisterAddOnContentStorageDeprecated(id, storage_id);
                 }
             }
 
@@ -61,12 +61,12 @@ namespace ams::lr {
                 return this->interface->UnregisterAllAddOnContentPath();
             }
 
-            Result RefreshApplicationAddOnContent(const ncm::ProgramId *ids, size_t num_ids) {
+            Result RefreshApplicationAddOnContent(const ncm::ApplicationId *ids, size_t num_ids) {
                 AMS_ASSERT(this->interface);
-                return this->interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ProgramId>(ids, num_ids));
+                return this->interface->RefreshApplicationAddOnContent(sf::InArray<ncm::ApplicationId>(ids, num_ids));
             }
 
-            Result UnregisterApplicationAddOnContent(ncm::ProgramId id) {
+            Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) {
                 AMS_ASSERT(this->interface);
                 return this->interface->UnregisterApplicationAddOnContent(id);
             }

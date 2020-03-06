@@ -59,7 +59,7 @@ namespace ams::lr {
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) = 0;
             virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
             virtual Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
-            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
+            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::DataId id) = 0;
             virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) = 0;
             virtual Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) = 0;
             virtual Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) = 0;

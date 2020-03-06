@@ -14,9 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_types.hpp>
 #include <stratosphere/sf.hpp>
-#include <stratosphere/kvdb.hpp>
+#include <stratosphere/ncm/ncm_content_meta.hpp>
 
 namespace ams::ncm {
 
@@ -52,14 +51,14 @@ namespace ams::ncm {
             virtual Result Remove(const ContentMetaKey &key) = 0;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) = 0;
             virtual Result ListContentInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) = 0;
-            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_id, u64 min, u64 max, ContentInstallType install_type) = 0;
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) = 0;
+            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) = 0;
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) = 0;
             virtual Result ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) = 0;
             virtual Result Has(sf::Out<bool> out, const ContentMetaKey &key) = 0;
             virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) = 0;
             virtual Result GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) = 0;
             virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) = 0;
-            virtual Result GetPatchId(sf::Out<ProgramId> out_patch_id, const ContentMetaKey &key) = 0;
+            virtual Result GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) = 0;
             virtual Result DisableForcibly() = 0;
             virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) = 0;
             virtual Result Commit() = 0;

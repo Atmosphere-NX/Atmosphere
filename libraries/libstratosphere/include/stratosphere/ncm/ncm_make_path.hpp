@@ -14,9 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_path.hpp>
+#include <stratosphere/ncm/ncm_content_id.hpp>
+#include <stratosphere/ncm/ncm_placeholder_id.hpp>
+#include <stratosphere/ncm/ncm_path_string.hpp>
 
 namespace ams::ncm {
+
+    using MakeContentPathFunction        = void (*)(PathString *out, ContentId content_id, const char *root_path);
+    using MakePlaceHolderPathFunction    = void (*)(PathString *out, PlaceHolderId placeholder_id,const char *root_path);
 
     void MakeFlatContentFilePath(PathString *out, ContentId content_id, const char *root_path);
     void MakeSha256HierarchicalContentFilePath_ForFat4KCluster(PathString *out, ContentId content_id, const char *root_path);

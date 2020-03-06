@@ -25,8 +25,8 @@ namespace ams::ncm {
             ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs) : ContentMetaDatabaseImplBase(kvs) { /* ... */ }
         private:
             /* Helpers. */
-            Result GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
-            Result GetLatestContentMetaKeyImpl(ContentMetaKey *out_key, ProgramId id);
+            Result GetContentIdImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) const;
+            Result GetLatestKeyImpl(ContentMetaKey *out_key, u64 id) const;
         public:
             /* Actual commands. */
             virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;
@@ -34,14 +34,14 @@ namespace ams::ncm {
             virtual Result Remove(const ContentMetaKey &key) override;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) override;
             virtual Result ListContentInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) override;
-            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_id, u64 min, u64 max, ContentInstallType install_type) override;
-            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;
+            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ApplicationId application_id, u64 min, u64 max, ContentInstallType install_type) override;
+            virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) override;
             virtual Result ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) override;
             virtual Result Has(sf::Out<bool> out, const ContentMetaKey &key) override;
             virtual Result HasAll(sf::Out<bool> out, const sf::InArray<ContentMetaKey> &keys) override;
             virtual Result GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) override;
             virtual Result GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) override;
-            virtual Result GetPatchId(sf::Out<ProgramId> out_patch_id, const ContentMetaKey &key) override;
+            virtual Result GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) override;
             virtual Result DisableForcibly() override;
             virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
             virtual Result Commit() override;

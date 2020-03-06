@@ -31,12 +31,12 @@ namespace ams::lr {
             };
         public:
             /* Actual commands. */
-            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) = 0;
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) = 0;
-            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) = 0;
+            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id) = 0;
+            virtual Result RegisterAddOnContentStorageDeprecated(ncm::DataId id, ncm::StorageId storage_id) = 0;
+            virtual Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) = 0;
             virtual Result UnregisterAllAddOnContentPath() = 0;
-            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids) = 0;
-            virtual Result UnregisterApplicationAddOnContent(ncm::ProgramId id) = 0;
+            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids) = 0;
+            virtual Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_200),

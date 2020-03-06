@@ -15,9 +15,9 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include "../os.hpp"
-#include "../ncm.hpp"
-#include "../sf.hpp"
+#include <stratosphere/os.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/sf.hpp>
 
 namespace ams::fs {
 

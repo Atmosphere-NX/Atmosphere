@@ -35,7 +35,7 @@ namespace ams::mitm::settings {
             }
 
             /* Mount firmware version data archive. */
-            R_ABORT_UNLESS(romfsMountFromDataArchive(static_cast<u64>(ncm::ProgramId::ArchiveSystemVersion), NcmStorageId_BuiltInSystem, "sysver"));
+            R_ABORT_UNLESS(romfsMountFromDataArchive(ncm::SystemDataId::SystemVersion.value, NcmStorageId_BuiltInSystem, "sysver"));
             {
                 ON_SCOPE_EXIT { romfsUnmount("sysver"); };
 
@@ -75,7 +75,7 @@ namespace ams::mitm::settings {
 
             /* We want to give a special firmware version to the home menu title, and nothing else. */
             /* This means Qlaunch + Maintenance Menu, and nothing else. */
-            if (client_info.program_id == ncm::ProgramId::AppletQlaunch || client_info.program_id == ncm::ProgramId::AppletMaintenanceMenu) {
+            if (client_info.program_id == ncm::SystemAppletId::Qlaunch || client_info.program_id == ncm::SystemAppletId::MaintenanceMenu) {
                 *out = g_ams_firmware_version;
             } else {
                 *out = g_firmware_version;

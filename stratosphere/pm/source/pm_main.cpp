@@ -41,7 +41,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Pm;
+    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Pm;
 
     namespace result {
 

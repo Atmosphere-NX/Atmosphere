@@ -43,8 +43,8 @@ namespace ams::lr {
                 return lrLrResolveApplicationHtmlDocumentPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
             }
 
-            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveDataPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::DataId id) override {
+                return lrLrResolveDataPath(std::addressof(this->srv), id.value, out->str);
             }
 
             virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) override {

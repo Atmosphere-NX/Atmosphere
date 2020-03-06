@@ -23,158 +23,158 @@ constexpr u32 MakeSystemVersion(u32 major, u32 minor, u32 micro) {
 }
 
 constexpr MinimumProgramVersion g_MinimumProgramVersions810[] = {
-    {ncm::ProgramId::Settings,    1},
-    {ncm::ProgramId::Bus,         1},
-    {ncm::ProgramId::Audio,       1},
-    {ncm::ProgramId::NvServices,  1},
-    {ncm::ProgramId::Ns,          1},
-    {ncm::ProgramId::Ssl,         1},
-    {ncm::ProgramId::Es,          1},
-    {ncm::ProgramId::Creport,     1},
-    {ncm::ProgramId::Ro,          1},
+    {ncm::SystemProgramId::Settings,    1},
+    {ncm::SystemProgramId::Bus,         1},
+    {ncm::SystemProgramId::Audio,       1},
+    {ncm::SystemProgramId::NvServices,  1},
+    {ncm::SystemProgramId::Ns,          1},
+    {ncm::SystemProgramId::Ssl,         1},
+    {ncm::SystemProgramId::Es,          1},
+    {ncm::SystemProgramId::Creport,     1},
+    {ncm::SystemProgramId::Ro,          1},
 };
 constexpr size_t g_MinimumProgramVersionsCount810 = util::size(g_MinimumProgramVersions810);
 
 constexpr MinimumProgramVersion g_MinimumProgramVersions900[] = {
     /* All non-Development System Modules. */
-    {ncm::ProgramId::Usb,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Tma,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Boot2,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Settings,    MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Bus,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Bcat,        MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Friends,     MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Nifm,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Ptm,         MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Shell,       MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::BsdSockets,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Hid,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Audio,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::LogManager,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Wlan,        MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Cs,          MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Ldn,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::NvServices,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Pcv,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Ppc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Pcie,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Account,     MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Ns,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Nfc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Psc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::CapSrv,      MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Am,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Ssl,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Nim,         MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Cec,         MakeSystemVersion(9, 0, 0)}, */
- /* {ncm::ProgramId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
- /* {ncm::ProgramId::Spl,         MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Lbl,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Btm,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Erpt,        MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Time,        MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Vi,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Pctl,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Npns,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Eupld,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Glue,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Eclct,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Es,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Fatal,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Grc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Creport,     MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Ro,          MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Sdb,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Migration,   MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Jit,         MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::JpegDec,     MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::SafeMode,    MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Olsc,        MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Dt,          MakeSystemVersion(9, 0, 0)}, */
- /* {ncm::ProgramId::Nd,          MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Ngct,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Usb,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Tma,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Boot2,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Settings,    MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Bus,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Bcat,        MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Friends,     MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Nifm,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Ptm,         MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Shell,       MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::BsdSockets,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Hid,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Audio,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::LogManager,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Wlan,        MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Cs,          MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Ldn,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::NvServices,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Pcv,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Ppc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Pcie,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Account,     MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Ns,          MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Nfc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Psc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::CapSrv,      MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Am,          MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Ssl,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Nim,         MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Cec,         MakeSystemVersion(9, 0, 0)}, */
+ /* {ncm::SystemProgramId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
+ /* {ncm::SystemProgramId::Spl,         MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Lbl,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Btm,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Erpt,        MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Time,        MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Vi,          MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Pctl,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Npns,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Eupld,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Glue,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Eclct,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Es,          MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Fatal,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Grc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Creport,     MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Ro,          MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Sdb,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Migration,   MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Jit,         MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::JpegDec,     MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::SafeMode,    MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Olsc,        MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Dt,          MakeSystemVersion(9, 0, 0)}, */
+ /* {ncm::SystemProgramId::Nd,          MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Ngct,        MakeSystemVersion(9, 0, 0)},
 
     /* All Web Applets. */
-    {ncm::ProgramId::AppletWeb,           MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::AppletShop,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::AppletOfflineWeb,    MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::AppletLoginShare,    MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::AppletWifiWebAuth,   MakeSystemVersion(9, 0, 0)},
+    {ncm::WebAppletId::Web,           MakeSystemVersion(9, 0, 0)},
+    {ncm::WebAppletId::Shop,          MakeSystemVersion(9, 0, 0)},
+    {ncm::WebAppletId::OfflineWeb,    MakeSystemVersion(9, 0, 0)},
+    {ncm::WebAppletId::LoginShare,    MakeSystemVersion(9, 0, 0)},
+    {ncm::WebAppletId::WifiWebAuth,   MakeSystemVersion(9, 0, 0)},
 };
 constexpr size_t g_MinimumProgramVersionsCount900 = util::size(g_MinimumProgramVersions900);
 
 constexpr MinimumProgramVersion g_MinimumProgramVersions910[] = {
     /* All non-Development System Modules. */
-    {ncm::ProgramId::Usb,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Tma,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Boot2,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Settings,    MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Bus,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Bcat,        MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Friends,     MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Nifm,        MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Ptm,         MakeSystemVersion(9, 0, 0)},
- /* {ncm::ProgramId::Shell,       MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::BsdSockets,  MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Hid,         MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Audio,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::LogManager,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Wlan,        MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Cs,          MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Ldn,         MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::NvServices,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Pcv,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Ppc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Pcie,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Account,     MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Ns,          MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Nfc,         MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Psc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::CapSrv,      MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Am,          MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Ssl,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Nim,         MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Cec,         MakeSystemVersion(9, 0, 0)}, */
- /* {ncm::ProgramId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
- /* {ncm::ProgramId::Spl,         MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Lbl,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Btm,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Erpt,        MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Time,        MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Vi,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Pctl,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Npns,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Eupld,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Glue,        MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Eclct,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Es,          MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Fatal,       MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Grc,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Creport,     MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::Ro,          MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Sdb,         MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Migration,   MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Jit,         MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::JpegDec,     MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::SafeMode,    MakeSystemVersion(9, 0, 0)},
-    {ncm::ProgramId::Olsc,        MakeSystemVersion(9, 1, 0)},
- /* {ncm::ProgramId::Dt,          MakeSystemVersion(9, 0, 0)}, */
- /* {ncm::ProgramId::Nd,          MakeSystemVersion(9, 0, 0)}, */
-    {ncm::ProgramId::Ngct,        MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Usb,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Tma,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Boot2,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Settings,    MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Bus,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Bluetooth,   MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Bcat,        MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Dmnt,        MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Friends,     MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Nifm,        MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Ptm,         MakeSystemVersion(9, 0, 0)},
+ /* {ncm::SystemProgramId::Shell,       MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::BsdSockets,  MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Hid,         MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Audio,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::LogManager,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Wlan,        MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Cs,          MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Ldn,         MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::NvServices,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Pcv,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Ppc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::NvnFlinger,  MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Pcie,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Account,     MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Ns,          MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Nfc,         MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Psc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::CapSrv,      MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Am,          MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Ssl,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Nim,         MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Cec,         MakeSystemVersion(9, 0, 0)}, */
+ /* {ncm::SystemProgramId::Tspm,        MakeSystemVersion(9, 0, 0)}, */
+ /* {ncm::SystemProgramId::Spl,         MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Lbl,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Btm,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Erpt,        MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Time,        MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Vi,          MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Pctl,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Npns,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Eupld,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Glue,        MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Eclct,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Es,          MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Fatal,       MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Grc,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Creport,     MakeSystemVersion(9, 1, 0)},
+    {ncm::SystemProgramId::Ro,          MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Profiler,    MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Sdb,         MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Migration,   MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Jit,         MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::JpegDec,     MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::SafeMode,    MakeSystemVersion(9, 0, 0)},
+    {ncm::SystemProgramId::Olsc,        MakeSystemVersion(9, 1, 0)},
+ /* {ncm::SystemProgramId::Dt,          MakeSystemVersion(9, 0, 0)}, */
+ /* {ncm::SystemProgramId::Nd,          MakeSystemVersion(9, 0, 0)}, */
+    {ncm::SystemProgramId::Ngct,        MakeSystemVersion(9, 1, 0)},
 
     /* All Web Applets. */
-    {ncm::ProgramId::AppletWeb,           MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::AppletShop,          MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::AppletOfflineWeb,    MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::AppletLoginShare,    MakeSystemVersion(9, 1, 0)},
-    {ncm::ProgramId::AppletWifiWebAuth,   MakeSystemVersion(9, 1, 0)},
+    {ncm::WebAppletId::Web,           MakeSystemVersion(9, 1, 0)},
+    {ncm::WebAppletId::Shop,          MakeSystemVersion(9, 1, 0)},
+    {ncm::WebAppletId::OfflineWeb,    MakeSystemVersion(9, 1, 0)},
+    {ncm::WebAppletId::LoginShare,    MakeSystemVersion(9, 1, 0)},
+    {ncm::WebAppletId::WifiWebAuth,   MakeSystemVersion(9, 1, 0)},
 };
 constexpr size_t g_MinimumProgramVersionsCount910 = util::size(g_MinimumProgramVersions910);

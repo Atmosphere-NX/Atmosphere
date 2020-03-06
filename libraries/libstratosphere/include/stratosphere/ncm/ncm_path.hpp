@@ -15,10 +15,8 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/ncm/ncm_types.hpp>
 #include <stratosphere/fs/fs_directory.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
-#include <stratosphere/kvdb/kvdb_bounded_string.hpp>
 
 namespace ams::ncm {
 
@@ -37,10 +35,5 @@ namespace ams::ncm {
             return path;
         }
     };
-
-    using PathString = kvdb::BoundedString<fs::EntryNameLengthMax>;
-
-    using MakeContentPathFunction        = void (*)(PathString *out, ContentId content_id, const char *root_path);
-    using MakePlaceHolderPathFunction    = void (*)(PathString *out, PlaceHolderId placeholder_id,const char *root_path);
 
 }

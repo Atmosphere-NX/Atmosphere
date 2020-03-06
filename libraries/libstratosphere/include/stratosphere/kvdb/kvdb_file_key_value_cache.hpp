@@ -13,9 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere/fs.hpp>
-#include "kvdb_bounded_string.hpp"
-#include "kvdb_file_key_value_store.hpp"
+#include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/fs/fs_file.hpp>
+#include <stratosphere/kvdb/kvdb_bounded_string.hpp>
+#include <stratosphere/kvdb/kvdb_file_key_value_store.hpp>
 
 namespace ams::kvdb {
 

@@ -15,7 +15,6 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/ncm/ncm_types.hpp>
 
 namespace ams::ncm {
 
@@ -60,7 +59,7 @@ namespace ams::ncm {
 
             Value &operator[](const Key &key) {
                 /* Try to find an existing value. */
-                if (Value *value = this->Find(key); value != nullptr) { 
+                if (Value *value = this->Find(key); value != nullptr) {
                     return *value;
                 }
 

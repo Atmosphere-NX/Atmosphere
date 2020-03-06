@@ -50,12 +50,12 @@ namespace ams::mitm::fs {
                 }
 
                 /* We want to mitm ns, to intercept SD card requests. */
-                if (program_id == ncm::ProgramId::Ns) {
+                if (program_id == ncm::SystemProgramId::Ns) {
                     return true;
                 }
 
                 /* We want to mitm sdb, to support sd-romfs redirection of common system archives (like system font, etc). */
-                if (program_id == ncm::ProgramId::Sdb) {
+                if (program_id == ncm::SystemProgramId::Sdb) {
                     return true;
                 }
 
@@ -69,7 +69,7 @@ namespace ams::mitm::fs {
                 /* Figure out why, and address it. */
                 /* TODO: This may be because pre-rewrite code really mismanaged domain objects in a way that would cause bad things. */
                 /* Need to verify if this is fixed now. */
-                if (client_info.program_id == ncm::ProgramId::AppletQlaunch || client_info.program_id == ncm::ProgramId::AppletMaintenanceMenu) {
+                if (client_info.program_id == ncm::SystemAppletId::Qlaunch || client_info.program_id == ncm::SystemAppletId::MaintenanceMenu) {
                     has_launched_qlaunch = true;
                 }
 
@@ -85,7 +85,7 @@ namespace ams::mitm::fs {
             Result OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, const FsSaveDataAttribute &attribute);
             Result OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
             Result OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<IStorageInterface>> out);
-            Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::ProgramId /* TODO: ncm::DataId */ data_id, u8 storage_id);
+            Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::DataId data_id, u8 storage_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_200),

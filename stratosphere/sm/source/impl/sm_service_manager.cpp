@@ -239,10 +239,13 @@ namespace ams::sm::impl {
         bool IsMitmDisallowed(ncm::ProgramId program_id) {
             /* Mitm used on certain programs can prevent the boot process from completing. */
             /* TODO: Is there a way to do this that's less hardcoded? Needs design thought. */
-            return program_id == ncm::ProgramId::Loader ||
-                   program_id == ncm::ProgramId::Boot ||
-                   program_id == ncm::ProgramId::AtmosphereMitm ||
-                   program_id == ncm::ProgramId::Creport;
+            return program_id == ncm::SystemProgramId::Loader   ||
+                   program_id == ncm::SystemProgramId::Pm       ||
+                   program_id == ncm::SystemProgramId::Spl      ||
+                   program_id == ncm::SystemProgramId::Boot     ||
+                   program_id == ncm::SystemProgramId::Ncm      ||
+                   program_id == ncm::AtmosphereProgramId::Mitm ||
+                   program_id == ncm::SystemProgramId::Creport;
         }
 
         Result AddFutureMitmDeclaration(ServiceName service) {

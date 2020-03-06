@@ -16,7 +16,6 @@
 
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/ncm/ncm_types.hpp>
 #include <stratosphere/fs/fs_directory.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
 

@@ -43,7 +43,7 @@ namespace ams::lr {
         return ResultSuccess();
     }
 
-    Result RedirectOnlyLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::ProgramId id) {
+    Result RedirectOnlyLocationResolverImpl::ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
         return ResultDataNotFound();
     }
 

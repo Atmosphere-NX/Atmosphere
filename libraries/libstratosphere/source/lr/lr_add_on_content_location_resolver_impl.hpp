@@ -23,18 +23,18 @@ namespace ams::lr {
 
     class AddOnContentLocationResolverImpl : public IAddOnContentLocationResolver {
         private:
-            /* Storage for RegisteredData entries by program id. */
-            RegisteredStorages<ncm::ProgramId, 0x800> registered_storages;
+            /* Storage for RegisteredData entries by data id. */
+            RegisteredStorages<ncm::DataId, 0x800> registered_storages;
         public:
             AddOnContentLocationResolverImpl() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
 
             /* Actual commands. */
-            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::StorageId storage_id, ncm::ProgramId id) override;
-            virtual Result RegisterAddOnContentStorage(ncm::StorageId storage_id, ncm::ProgramId id, ncm::ProgramId application_id) override;
+            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id) override;
+            virtual Result RegisterAddOnContentStorageDeprecated(ncm::DataId id, ncm::StorageId storage_id) override;
+            virtual Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) override;
             virtual Result UnregisterAllAddOnContentPath() override;
-            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ProgramId> &ids) override;
-            virtual Result UnregisterApplicationAddOnContent(ncm::ProgramId id) override;
+            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids) override;
+            virtual Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) override;
     };
 
 }

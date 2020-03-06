@@ -352,7 +352,7 @@ namespace ams::pm::impl {
             /* Process hooks/signaling. */
             if (location.program_id == g_program_id_hook) {
                 g_hook_to_create_process_event.Signal();
-                g_program_id_hook = ncm::ProgramId::Invalid;
+                g_program_id_hook = ncm::InvalidProgramId;
             } else if (is_application && g_application_hook) {
                 g_hook_to_create_application_process_event.Signal();
                 g_application_hook = false;
@@ -666,7 +666,7 @@ namespace ams::pm::impl {
         *out_hook = INVALID_HANDLE;
 
         {
-            ncm::ProgramId old_value = ncm::ProgramId::Invalid;
+            ncm::ProgramId old_value = ncm::InvalidProgramId;
             R_UNLESS(g_program_id_hook.compare_exchange_strong(old_value, program_id), pm::ResultDebugHookInUse());
         }
 
@@ -688,7 +688,7 @@ namespace ams::pm::impl {
 
     Result ClearHook(u32 which) {
         if (which & HookType_ProgramId) {
-            g_program_id_hook = ncm::ProgramId::Invalid;
+            g_program_id_hook = ncm::InvalidProgramId;
         }
         if (which & HookType_Application) {
             g_application_hook = false;

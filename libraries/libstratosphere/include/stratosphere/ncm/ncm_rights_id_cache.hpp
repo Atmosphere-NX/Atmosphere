@@ -14,7 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <stratosphere/os.hpp>
+#include <stratosphere/ncm/ncm_rights_id.hpp>
+#include <stratosphere/ncm/ncm_content_id.hpp>
 
 namespace ams::ncm {
 
