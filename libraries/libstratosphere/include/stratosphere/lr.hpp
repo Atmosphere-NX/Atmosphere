@@ -18,3 +18,4 @@
 #include <vapours.hpp>
 #include <stratosphere/lr/lr_types.hpp>
 #include <stratosphere/lr/lr_api.hpp>
+#include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>

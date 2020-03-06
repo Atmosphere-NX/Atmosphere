@@ -18,6 +18,7 @@
 #include <stratosphere/ncm/ncm_types.hpp>
 #include <stratosphere/fs/fs_directory.hpp>
 #include <stratosphere/sf/sf_buffer_tags.hpp>
+#include <stratosphere/kvdb/kvdb_bounded_string.hpp>
 
 namespace ams::ncm {
 

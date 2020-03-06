@@ -13,13 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include "ncm_content_manager_impl.hpp"
+#include <stratosphere.hpp>
+#include "ncm_content_storage_impl.hpp"
+#include "ncm_read_only_content_storage_impl.hpp"
 #include "ncm_content_meta_database_impl.hpp"
 #include "ncm_on_memory_content_meta_database_impl.hpp"
-#include "ncm_content_storage_impl.hpp"
-#include "ncm_make_path.hpp"
-#include "ncm_read_only_content_storage_impl.hpp"
+#include "ncm_fs_utils.hpp"
 
 namespace ams::ncm {
 

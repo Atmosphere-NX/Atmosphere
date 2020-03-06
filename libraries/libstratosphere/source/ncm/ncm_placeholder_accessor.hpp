@@ -13,13 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
 #include <stratosphere.hpp>
-
-#include "ncm_fs_utils.hpp"
-#include "ncm_make_path.hpp"
 
 namespace ams::ncm {
 

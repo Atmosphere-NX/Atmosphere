@@ -13,17 +13,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
 #include <stratosphere.hpp>
+
 #include "ncm_content_storage_impl_base.hpp"
+#include "ncm_placeholder_accessor.hpp"
 
 namespace ams::ncm {
 
-    class ReadOnlyContentStorageImpl : public ContentStorageImplBase {
+    class ContentStorageImpl : public ContentStorageImplBase {
+        protected:
+            PlaceHolderAccessor placeholder_accessor;
+            ContentId cached_content_id;
+            fs::FileHandle cached_file_handle;
+            RightsIdCache *rights_id_cache;
         public:
-            Result Initialize(const char *root_path, MakeContentPathFunction content_path_func);
+            static Result InitializeBase(const char *root_path);
+            static Result CleanupBase(const char *root_path);
+            static Result VerifyBase(const char *root_path);
+        public:
+            ~ContentStorageImpl();
+
+            Result Initialize(const char *root_path, MakeContentPathFunction content_path_func, MakePlaceHolderPathFunction placeholder_path_func, bool delay_flush, RightsIdCache *rights_id_cache);
+        private:
+            /* Helpers. */
+            Result OpenContentIdFile(ContentId content_id);
+            void InvalidateFileCache();
         public:
             /* Actual commands. */
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override;

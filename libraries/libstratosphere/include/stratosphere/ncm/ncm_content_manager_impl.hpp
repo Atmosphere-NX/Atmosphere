@@ -13,11 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <stratosphere.hpp>
-#include "ncm_rights_cache.hpp"
-#include "ncm_fs_utils.hpp"
+#include <stratosphere/ncm/ncm_types.hpp>
+#include <stratosphere/ncm/ncm_i_content_manager.hpp>
+#include <stratosphere/ncm/ncm_rights_id_cache.hpp>
 
 namespace ams::ncm {
 

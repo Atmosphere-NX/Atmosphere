@@ -15,8 +15,6 @@
  */
 
 #include <stratosphere.hpp>
-#include <stratosphere/lr/lr_location_resolver_manager_impl.hpp>
-#include "ncm_content_manager_impl.hpp"
 
 extern "C" {
     extern u32 __start__;
