@@ -26,7 +26,6 @@ namespace ams::ncm {
         private:
             /* Helpers. */
             Result GetContentIdImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) const;
-            Result GetLatestKeyImpl(ContentMetaKey *out_key, u64 id) const;
         public:
             /* Actual commands. */
             virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;

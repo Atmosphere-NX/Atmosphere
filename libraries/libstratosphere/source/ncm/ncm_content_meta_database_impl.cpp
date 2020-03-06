@@ -49,31 +49,6 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentMetaDatabaseImpl::GetLatestKeyImpl(ContentMetaKey *out_key, u64 id) const {
-        R_TRY(this->EnsureEnabled());
-
-        std::optional<ContentMetaKey> found_key = std::nullopt;
-
-        /* Find the last key with the desired program id. */
-        for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
-            /* No further entries will match the program id, discontinue. */
-            if (entry->GetKey().id != id) {
-                break;
-            }
-
-            /* We are only interested in keys with the Full content install type. */
-            if (entry->GetKey().install_type == ContentInstallType::Full) {
-                found_key = entry->GetKey();
-            }
-        }
-
-        /* Check if the key is absent. */
-        R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
-
-        *out_key = *found_key;
-        return ResultSuccess();
-    }
-
     Result ContentMetaDatabaseImpl::Set(const ContentMetaKey &key, sf::InBuffer value) {
         R_TRY(this->EnsureEnabled());
         return this->kvs->Set(key, value.GetPointer(), value.GetSize());
@@ -173,7 +148,27 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, u64 id) {
         R_TRY(this->EnsureEnabled());
-        return this->GetLatestKeyImpl(out_key.GetPointer(), id);
+
+        std::optional<ContentMetaKey> found_key = std::nullopt;
+
+        /* Find the last key with the desired program id. */
+        for (auto entry = this->kvs->lower_bound(ContentMetaKey::MakeUnknownType(id, 0)); entry != this->kvs->end(); entry++) {
+            /* No further entries will match the program id, discontinue. */
+            if (entry->GetKey().id != id) {
+                break;
+            }
+
+            /* We are only interested in keys with the Full content install type. */
+            if (entry->GetKey().install_type == ContentInstallType::Full) {
+                found_key = entry->GetKey();
+            }
+        }
+
+        /* Check if the key is absent. */
+        R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
+
+        out_key.SetValue(*found_key);
+        return ResultSuccess();
     }
 
     Result ContentMetaDatabaseImpl::ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType type) {
