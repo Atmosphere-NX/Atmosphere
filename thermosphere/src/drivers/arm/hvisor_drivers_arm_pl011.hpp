@@ -51,6 +51,8 @@ namespace ams::hvisor::drivers::arm {
                 u32 icr;
                 u32 dmacr;
             };
+            static_assert(std::is_standard_layout_v<Registers>);
+            static_assert(std::is_trivial_v<Registers>);
 
             enum Mask : u32 {
                 DATA_ERROR_MASK     = 0x0F00,           // Data status bits
@@ -76,46 +78,46 @@ namespace ams::hvisor::drivers::arm {
                 DCDMI               = BIT(2),  // DCD modem interrupt
                 CTSMI               = BIT(1),  // CTS modem interrupt
                 RIMI                = BIT(0),  // RI modem interrupt
-                ALL_INTERRUPTS      = MASK(11),
+                ALL_INTERRUPTS_MASK = MASK(11),
             };
 
             // Flag reg bits
             enum FrFlags : u32 {
-                UARTFR_RI           = BIT(8),  // Ring indicator
-                UARTFR_TXFE         = BIT(7),  // Transmit FIFO empty
-                UARTFR_RXFF         = BIT(6),  // Receive  FIFO full
-                UARTFR_TXFF         = BIT(5),  // Transmit FIFO full
-                UARTFR_RXFE         = BIT(4),  // Receive  FIFO empty
-                UARTFR_BUSY         = BIT(3),  // UART busy
-                UARTFR_DCD          = BIT(2),  // Data carrier detect
-                UARTFR_DSR          = BIT(1),  // Data set ready
-                UARTFR_CTS          = BIT(0),  // Clear to send
+                FR_RI           = BIT(8),  // Ring indicator
+                FR_TXFE         = BIT(7),  // Transmit FIFO empty
+                FR_RXFF         = BIT(6),  // Receive  FIFO full
+                FR_TXFF         = BIT(5),  // Transmit FIFO full
+                FR_RXFE         = BIT(4),  // Receive  FIFO empty
+                FR_BUSY         = BIT(3),  // UART busy
+                FR_DCD          = BIT(2),  // Data carrier detect
+                FR_DSR          = BIT(1),  // Data set ready
+                FR_CTS          = BIT(0),  // Clear to send
             };
 
             // Control reg bits
             enum CrFlags : u32 {
-                UARTCR_CTSEN        = BIT(15), // CTS hardware flow control enable
-                UARTCR_RTSEN        = BIT(14), // RTS hardware flow control enable
-                UARTCR_RTS          = BIT(11), // Request to send
-                UARTCR_DTR          = BIT(10), // Data transmit ready.
-                UARTCR_RXE          = BIT(9),  // Receive enable
-                UARTCR_TXE          = BIT(8),  // Transmit enable
-                UARTCR_LBE          = BIT(7),  // Loopback enable
-                UARTCR_UARTEN       = BIT(0),  // UART Enable
+                CR_CTSEN        = BIT(15), // CTS hardware flow control enable
+                CR_RTSEN        = BIT(14), // RTS hardware flow control enable
+                CR_RTS          = BIT(11), // Request to send
+                CR_DTR          = BIT(10), // Data transmit ready.
+                CR_RXE          = BIT(9),  // Receive enable
+                CR_TXE          = BIT(8),  // Transmit enable
+                CR_LBE          = BIT(7),  // Loopback enable
+                CR_UARTEN       = BIT(0),  // UART Enable
             };
 
             // Line Control Register Bits
             enum LcrFlags : u32 {
-                UARTLCR_H_SPS       = BIT(7),  // Stick parity select
-                UARTLCR_H_WLEN_8    = (3 << 5),
-                UARTLCR_H_WLEN_7    = (2 << 5),
-                UARTLCR_H_WLEN_6    = BIT(5),
-                UARTLCR_H_WLEN_5    = (0 << 5),
-                UARTLCR_H_FEN       = BIT(4),  // FIFOs Enable
-                UARTLCR_H_STP2      = BIT(3),  // Two stop bits select
-                UARTLCR_H_EPS       = BIT(2),  // Even parity select
-                UARTLCR_H_PEN       = BIT(1),  // Parity Enable
-                UARTLCR_H_BRK       = BIT(0),  // Send break
+                LCR_H_SPS       = BIT(7),  // Stick parity select
+                LCR_H_WLEN_8    = (3 << 5),
+                LCR_H_WLEN_7    = (2 << 5),
+                LCR_H_WLEN_6    = BIT(5),
+                LCR_H_WLEN_5    = (0 << 5),
+                LCR_H_FEN       = BIT(4),  // FIFOs Enable
+                LCR_H_STP2      = BIT(3),  // Two stop bits select
+                LCR_H_EPS       = BIT(2),  // Even parity select
+                LCR_H_PEN       = BIT(1),  // Parity Enable
+                LCR_H_BRK       = BIT(0),  // Send break
             };
 
             // FIFO level select register
@@ -133,12 +135,13 @@ namespace ams::hvisor::drivers::arm {
             };
 
         private:
-            volatile Registers *m_regs = nullptr;
-            void Initialize(u32 baudRate, u32 clkRate = 1) const;
-
             // TODO friend
-        public:
+            volatile Registers *m_regs = nullptr;
 
+        private:
+            void Initialize(u32 baudRate, u32 clkRate) const;
+
+        public:
             void WriteData(const void *buffer, size_t size) const;
             void ReadData(void *buffer, size_t size) const;
             size_t ReadDataMax(void *buffer, size_t maxSize) const;

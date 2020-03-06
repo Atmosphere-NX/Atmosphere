@@ -32,24 +32,25 @@ namespace ams::hvisor::drivers::arm {
             5. Enable the UART.
          */
         // First, disable the UART. Flush the receive FIFO, wait for tx to complete, and disable both FIFOs.
-        m_regs->cr &= ~UARTCR_UARTEN;
-        while (!(m_regs->fr & UARTFR_RXFE)) {
+        m_regs->cr &= ~CR_UARTEN;
+        while (!(m_regs->fr & FR_RXFE)) {
             m_regs->dr;
         }
-        while (m_regs->fr & UARTFR_BUSY);
+        while (m_regs->fr & FR_BUSY);
         // This flushes the transmit FIFO:
-        m_regs->lcr_h &= ~UARTLCR_H_FEN;
+        m_regs->lcr_h &= ~LCR_H_FEN;
 
-        // Set baudrate, Divisor =  (Uart clock * 4) / baudrate; stored in IBRD|FBRD
-        u32 divisor = (4 * clkRate) / baudRate;
-        m_regs->ibrd = divisor >> 6;
-        m_regs->fbrd = divisor & 0x3F;
+        // Divisor = clkRate / (16 * baudRate). Integer part (16 bits) in IBRD, 6 fractional bits in FBRD (fixed point)
+        // This means the encoded divisor is 2^6 * divisor = 4*clkRate / baudRate
+        u32 rawDivisor = (4 * clkRate) / baudRate;
+        m_regs->ibrd = (rawDivisor >> 6) & 0xFFFF;
+        m_regs->fbrd = rawDivisor & 0x3F;
 
         // Select FIFO fill levels for interrupts
         m_regs->ifls = IFLS_RX4_8 | IFLS_TX4_8;
 
         // FIFO Enabled / No Parity / 8 Data bit / One Stop Bit
-        m_regs->lcr_h = UARTLCR_H_FEN | UARTLCR_H_WLEN_8;
+        m_regs->lcr_h = LCR_H_FEN | LCR_H_WLEN_8;
 
         // Select the interrupts we want to have
         // RX timeout and TX/RX fill interrupts
@@ -59,17 +60,17 @@ namespace ams::hvisor::drivers::arm {
         m_regs->ecr = 0;
 
         // Clear all interrupts
-        m_regs->icr = ALL_INTERRUPTS;
+        m_regs->icr = ALL_INTERRUPTS_MASK;
 
         // Enable tx, rx, and uart overall
-        m_regs->cr = UARTCR_RXE | UARTCR_TXE | UARTCR_UARTEN;
+        m_regs->cr = CR_RXE | CR_TXE | CR_UARTEN;
     }
 
     void PL011::WriteData(const void *buffer, size_t size) const
     {
         const u8 *buf8 = reinterpret_cast<const u8 *>(buffer);
         for (size_t i = 0; i < size; i++) {
-            while (m_regs->fr & UARTFR_TXFF); // while TX FIFO full
+            while (m_regs->fr & FR_TXFF); // while TX FIFO full
             m_regs->dr = buf8[i]; 
         }
 
@@ -81,7 +82,7 @@ namespace ams::hvisor::drivers::arm {
         size_t i;
 
         for (i = 0; i < size; i++) {
-            while (m_regs->fr & UARTFR_RXFE);
+            while (m_regs->fr & FR_RXFE);
             buf8[i] = m_regs->dr;
         }
 
@@ -92,7 +93,7 @@ namespace ams::hvisor::drivers::arm {
         u8 *buf8 = reinterpret_cast<u8 *>(buffer);
         size_t count = 0;
 
-        for (size_t i = 0; i < maxSize && !(m_regs->fr & UARTFR_RXFE); i++) {
+        for (size_t i = 0; i < maxSize && !(m_regs->fr & FR_RXFE); i++) {
             buf8[i] = m_regs->dr;
             ++count;
         }
@@ -106,7 +107,7 @@ namespace ams::hvisor::drivers::arm {
         size_t count = 0;
 
         for (size_t i = 0; i < maxSize; i++) {
-            while (m_regs->fr & UARTFR_RXFE);
+            while (m_regs->fr & FR_RXFE);
             buffer[i] = m_regs->dr;
             ++count;
             if (buffer[i] == delimiter) {
@@ -121,11 +122,8 @@ namespace ams::hvisor::drivers::arm {
     {
         constexpr u32 mask = RTI | RXI;
 
-        if (enabled) {
-            m_regs->imsc |= mask;
-        } else {
-            m_regs->imsc &= ~mask;
-        }
+        // We don't support any other interrupt here.
+        m_regs->imsc = enabled ? mask : 0;
     }
 
 }
