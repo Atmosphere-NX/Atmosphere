@@ -18,9 +18,9 @@
 
 namespace ams::fs {
 
-    Result QueryMountSystemDataCacheSize(size_t *out, ncm::DataId data_id);
+    Result QueryMountSystemDataCacheSize(size_t *out, ncm::SystemDataId data_id);
 
-    Result MountSystemData(const char *name, ncm::DataId data_id);
-    Result MountSystemData(const char *name, ncm::DataId data_id, void *cache_buffer, size_t cache_size);
+    Result MountSystemData(const char *name, ncm::SystemDataId data_id);
+    Result MountSystemData(const char *name, ncm::SystemDataId data_id, void *cache_buffer, size_t cache_size);
 
 }
