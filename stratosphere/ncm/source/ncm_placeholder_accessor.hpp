@@ -59,6 +59,7 @@ namespace ams::ncm {
             static void MakeBaseDirectoryPath(PathString *out, const char *root_path);
             static Result GetPlaceHolderIdFromFileName(PlaceHolderId *out, const char *name);
         public:
+            /* API. */
             void Initialize(PathString *root, MakePlaceHolderPathFunction path_func, bool delay_flush) {
                 this->root_path = root;
                 this->make_placeholder_path_func = path_func;

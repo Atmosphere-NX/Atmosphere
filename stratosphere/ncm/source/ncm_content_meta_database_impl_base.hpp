@@ -35,6 +35,7 @@ namespace ams::ncm {
                 std::strcpy(this->mount_name, mount_name);
             }
         protected:
+            /* Helpers. */
             Result EnsureEnabled() const {
                 R_UNLESS(!this->disabled, ncm::ResultInvalidContentMetaDatabase());
                 return ResultSuccess();

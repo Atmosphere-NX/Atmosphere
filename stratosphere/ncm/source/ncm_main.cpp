@@ -193,17 +193,22 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Create and initialize the content manager. */
     auto content_manager = GetSharedPointerToContentManager();
     R_ABORT_UNLESS(content_manager->Initialize());
 
+    /* Initialize ncm's server and start threads. */
     R_ABORT_UNLESS(g_ncm_server_manager.Initialize(content_manager));
     R_ABORT_UNLESS(g_ncm_server_manager.StartThreads());
 
+    /* Initialize ncm api. */
     ncm::InitializeWithObject(content_manager);
 
+    /* Initialize lr's server and start threads. */
     R_ABORT_UNLESS(g_lr_server_manager.Initialize());
     R_ABORT_UNLESS(g_lr_server_manager.StartThreads());
 
+    /* Wait indefinitely. */
     g_ncm_server_manager.Wait();
     g_lr_server_manager.Wait();
 

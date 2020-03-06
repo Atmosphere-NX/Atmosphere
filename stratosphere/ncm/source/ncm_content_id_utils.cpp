@@ -26,10 +26,12 @@ namespace ams::ncm {
         }
 
         bool GetBytesFromString(void *dst, size_t dst_size, const char *src, size_t src_size) {
+            /* Each byte is comprised of hex characters. */
             if (!util::IsAligned(src_size, 2) || (dst_size * 2 < src_size)) {
                 return false;
             }
 
+            /* Convert each character pair to a byte until we reach the end. */
             for (size_t i = 0; i < src_size; i += 2) {
                 char tmp[3];
                 strlcpy(tmp, src + i, sizeof(tmp));

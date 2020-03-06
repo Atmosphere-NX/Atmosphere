@@ -21,10 +21,11 @@ namespace ams::ncm {
     Result OnMemoryContentMetaDatabaseImpl::GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId program_id) {
         R_TRY(this->EnsureEnabled());
 
-        const ContentMetaKey key = ContentMetaKey::Make(program_id, 0, ContentMetaType::Unknown);
-
         std::optional<ContentMetaKey> found_key;
-        for (auto entry = this->kvs->lower_bound(key); entry != this->kvs->end(); entry++) {
+
+        /* Find the last key with the desired program id. */
+        for (auto entry = this->kvs->lower_bound(ContentMetaKey::Make(program_id, 0, ContentMetaType::Unknown)); entry != this->kvs->end(); entry++) {
+            /* No further entries will match the program id, discontinue. */
             if (entry->GetKey().id != program_id) {
                 break;
             }

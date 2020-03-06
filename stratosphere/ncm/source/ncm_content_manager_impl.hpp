@@ -76,6 +76,7 @@ namespace ams::ncm {
         public:
             Result Initialize();
         private:
+            /* Helpers. */
             Result GetContentStorageRoot(ContentStorageRoot **out, StorageId id);
             Result GetContentMetaDatabaseRoot(ContentMetaDatabaseRoot **out, StorageId id);
 
@@ -88,6 +89,7 @@ namespace ams::ncm {
             Result EnsureAndMountSystemSaveData(const char *mount, const SystemSaveDataInfo &info) const;
 
         public:
+            /* Actual commands. */
             virtual Result CreateContentStorage(StorageId storage_id) override;
             virtual Result CreateContentMetaDatabase(StorageId storage_id) override;
             virtual Result VerifyContentStorage(StorageId storage_id) override;

@@ -29,6 +29,7 @@ namespace ams::ncm {
         protected:
             ContentStorageImplBase() { /* ... */ }
         protected:
+            /* Helpers. */
             Result EnsureEnabled() const {
                 R_UNLESS(!this->disabled, ncm::ResultInvalidContentStorage());
                 return ResultSuccess();

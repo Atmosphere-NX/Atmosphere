@@ -78,7 +78,11 @@ namespace ams::ncm {
 
         Result EnsureBuiltInSystemSaveDataFlags() {
             u32 cur_flags = 0;
+
+            /* Obtain the existing flags. */
             R_TRY(fs::GetSaveDataFlags(std::addressof(cur_flags), BuiltInSystemSaveDataId));
+            
+            /* Update the flags if needed. */
             if (cur_flags != BuiltInSystemSaveDataFlags) {
                 R_TRY(fs::SetSaveDataFlags(BuiltInSystemSaveDataId, fs::SaveDataSpaceId::System, BuiltInSystemSaveDataFlags));
             }
@@ -109,10 +113,12 @@ namespace ams::ncm {
     ContentManagerImpl::~ContentManagerImpl() {
         std::scoped_lock lk(this->mutex);
 
+        /* Disable and unmount all content storage roots. */
         for (auto &root : this->content_storage_roots) {
             this->InactivateContentStorage(root.storage_id);
         }
 
+        /* Disable and unmount all content meta database roots. */
         for (auto &root : this->content_meta_database_roots) {
             this->InactivateContentMetaDatabase(root.storage_id);
         }
@@ -121,8 +127,10 @@ namespace ams::ncm {
     Result ContentManagerImpl::EnsureAndMountSystemSaveData(const char *mount_name, const SystemSaveDataInfo &info) const {
         constexpr u64 OwnerId = 0;
 
+        /* Don't create save if absent - We want to handle this case ourselves. */
         fs::DisableAutoSaveDataCreation();
 
+        /* Mount existing system save data if present, otherwise create it then mount. */
         R_TRY_CATCH(fs::MountSystemSaveData(mount_name, info.space_id, info.id)) {
             R_CATCH(fs::ResultTargetNotFound) {
                 R_TRY(fs::CreateSystemSaveData(info.space_id, info.id, OwnerId, info.size, info.journal_size, info.flags));
@@ -134,8 +142,10 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::GetContentStorageRoot(ContentStorageRoot **out, StorageId id) {
+        /* Storage must not be StorageId::Any or StorageId::None. */
         R_UNLESS(IsUniqueStorage(id), ncm::ResultUnknownStorage());
 
+        /* Find a root with a matching storage id. */
         for (auto &root : this->content_storage_roots) {
             if (root.storage_id == id) {
                 *out = std::addressof(root);
@@ -147,8 +157,10 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::GetContentMetaDatabaseRoot(ContentMetaDatabaseRoot **out, StorageId id) {
+        /* Storage must not be StorageId::Any or StorageId::None. */
         R_UNLESS(IsUniqueStorage(id), ncm::ResultUnknownStorage());
 
+        /* Find a root with a matching storage id. */
         for (auto &root : this->content_meta_database_roots) {
             if (root.storage_id == id) {
                 *out = std::addressof(root);
@@ -165,6 +177,7 @@ namespace ams::ncm {
         out->content_storage_id = content_storage_id;
         out->content_storage    = nullptr;
 
+        /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
         std::snprintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
 
@@ -175,6 +188,7 @@ namespace ams::ncm {
         out->storage_id         = StorageId::GameCard;
         out->content_storage    = nullptr;
 
+        /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
         std::snprintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
 
@@ -188,6 +202,7 @@ namespace ams::ncm {
         out->content_meta_database = nullptr;
         out->kvs                   = std::nullopt;
 
+        /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
         out->mount_name[0] = '#';
         std::snprintf(out->path, sizeof(out->path), "%s:/meta", out->mount_name);
@@ -264,13 +279,18 @@ namespace ams::ncm {
     Result ContentManagerImpl::CreateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content storage root. */
         ContentStorageRoot *root;
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
+        /* Mount the relevant content storage. */
         R_TRY(fs::MountContentStorage(root->mount_name, root->content_storage_id));
         ON_SCOPE_EXIT { fs::Unmount(root->mount_name); };
 
+        /* Ensure the content storage root's path exists. */
         R_TRY(impl::EnsureDirectoryRecursively(root->path));
+        
+        /* Initialize content and placeholder directories for the root. */
         R_TRY(ContentStorageImpl::InitializeBase(root->path));
 
         return ResultSuccess();
@@ -281,14 +301,18 @@ namespace ams::ncm {
 
         R_UNLESS(storage_id != StorageId::GameCard, ncm::ResultUnknownStorage());
 
+        /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
+        /* Mount (and optionally create) save data for the root. */
         R_TRY(this->EnsureAndMountSystemSaveData(root->mount_name, root->info));
         ON_SCOPE_EXIT { fs::Unmount(root->mount_name); };
 
+        /* Ensure the content meta database root's path exists. */
         R_TRY(impl::EnsureDirectoryRecursively(root->path));
 
+        /* Commit our changes. */ 
         R_TRY(fs::CommitSaveData(root->mount_name));
 
         return ResultSuccess();
@@ -297,29 +321,36 @@ namespace ams::ncm {
     Result ContentManagerImpl::VerifyContentStorage(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content storage root. */
         ContentStorageRoot *root;
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
+        /* Substitute the mount name in the root's path with a unique one. */
         char path[0x80];
-        auto mount_name = impl::CreateUniqueMountName();  /* should this be fs::? should it be ncm::? ncm::impl? */
+        auto mount_name = impl::CreateUniqueMountName();
         ReplaceMountName(path, mount_name.str, root->path);
 
+        /* Mount the relevant content storage. */
         R_TRY(fs::MountContentStorage(mount_name.str, root->content_storage_id));
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
+        /* Ensure the root, content and placeholder directories exist for the storage. */
         R_TRY(ContentStorageImpl::VerifyBase(path));
 
         return ResultSuccess();
     }
 
     Result ContentManagerImpl::VerifyContentMetaDatabase(StorageId storage_id) {
+        /* Game card content meta databases will always be valid. */
         R_UNLESS(storage_id != StorageId::GameCard, ResultSuccess());
 
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
+        /* Mount save data for non-existing content meta databases. */
         auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
         if (!root->content_meta_database) {
             R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
@@ -327,6 +358,7 @@ namespace ams::ncm {
             mount_guard.Cancel();
         }
 
+        /* Ensure the root path exists. */
         bool has_dir = false;
         R_TRY(impl::HasDirectory(&has_dir, root->path));
         R_UNLESS(has_dir, ncm::ResultInvalidContentMetaDatabase());
@@ -337,10 +369,12 @@ namespace ams::ncm {
     Result ContentManagerImpl::OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content storage root. */
         ContentStorageRoot *root;
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
         if (hos::GetVersion() >= hos::Version_200) {
+            /* Obtain the content storage if already active. */
             R_UNLESS(root->content_storage, GetContentStorageNotActiveResult(storage_id));
         } else {
             /* 1.0.0 activates content storages as soon as they are opened. */
@@ -357,11 +391,12 @@ namespace ams::ncm {
     Result ContentManagerImpl::OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
-
         if (hos::GetVersion() >= hos::Version_200) {
+            /* Obtain the content meta database if already active. */
             R_UNLESS(root->content_meta_database, GetContentMetaDatabaseNotActiveResult(storage_id));
         } else {
             /* 1.0.0 activates content meta databases as soon as they are opened. */
@@ -386,11 +421,14 @@ namespace ams::ncm {
     Result ContentManagerImpl::CleanupContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Disable and unmount content meta database root. */
         R_TRY(this->InactivateContentMetaDatabase(storage_id));
 
+        /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
+        /* Delete save data for the content meta database root. */
         R_TRY(fs::DeleteSaveData(root->info.space_id, root->info.id));
         return ResultSuccess();
     }
@@ -398,12 +436,14 @@ namespace ams::ncm {
     Result ContentManagerImpl::ActivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content storage root. */
         ContentStorageRoot *root;
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
         /* Check if the storage is already activated. */
         R_UNLESS(root->content_storage == nullptr, ResultSuccess());
 
+        /* Mount based on the storage type. */
         if (storage_id == StorageId::GameCard) {
             fs::GameCardHandle handle;
             R_TRY(fs::GetGameCardHandle(std::addressof(handle)));
@@ -412,15 +452,19 @@ namespace ams::ncm {
             R_TRY(fs::MountContentStorage(root->mount_name, root->content_storage_id));
         }
 
+        /* Unmount on failure. */
         auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
 
         if (storage_id == StorageId::GameCard) {
+            /* Game card content storage is read only. */
             auto content_storage = std::make_shared<ReadOnlyContentStorageImpl>();
             R_TRY(content_storage->Initialize(root->path, MakeFlatContentFilePath));
             root->content_storage = std::move(content_storage);
         } else {
+            /* Create a content storage. */
             auto content_storage = std::make_shared<ContentStorageImpl>();
 
+            /* Initialize content storage with an appropriate path function. */
             switch (storage_id) {
                 case StorageId::BuiltInSystem:
                     R_TRY(content_storage->Initialize(root->path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(this->rights_id_cache)));
@@ -436,6 +480,7 @@ namespace ams::ncm {
             root->content_storage = std::move(content_storage);
         }
 
+        /* Prevent unmounting. */
         mount_guard.Cancel();
         return ResultSuccess();
     }
@@ -443,9 +488,11 @@ namespace ams::ncm {
     Result ContentManagerImpl::InactivateContentStorage(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content storage root. */
         ContentStorageRoot *root;
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
+        /* Disable and unmount the content storage, if present. */
         if (root->content_storage) {
             /* N doesn't bother checking the result of this */
             root->content_storage->DisableForcibly();
@@ -459,6 +506,7 @@ namespace ams::ncm {
     Result ContentManagerImpl::ActivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
@@ -469,15 +517,23 @@ namespace ams::ncm {
         root->kvs.emplace();
 
         if (storage_id == StorageId::GameCard) {
+            /* Initialize the key value store. */
             R_TRY(root->kvs->Initialize(root->max_content_metas));
+
+            /* Create an on memory content meta database for game cards. */
             root->content_meta_database = std::make_shared<OnMemoryContentMetaDatabaseImpl>(std::addressof(*root->kvs));
         } else {
+            /* Mount save data for this root. */
             R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
+
+            /* Unmount on failure. */
             auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
 
+            /* Initialize and load the key value store from the filesystem. */
             R_TRY(root->kvs->Initialize(root->path, root->max_content_metas));
             R_TRY(root->kvs->Load());
 
+            /* Create the content meta database. */
             root->content_meta_database = std::make_shared<ContentMetaDatabaseImpl>(std::addressof(*root->kvs), root->mount_name);
             mount_guard.Cancel();
         }
@@ -488,15 +544,18 @@ namespace ams::ncm {
     Result ContentManagerImpl::InactivateContentMetaDatabase(StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
+        /* Obtain the content meta database root. */
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
+        /* Disable the content meta database, if present. */
         if (root->content_meta_database) {
             /* N doesn't bother checking the result of this */
             root->content_meta_database->DisableForcibly();
             root->content_meta_database = nullptr;
             root->kvs = std::nullopt;
 
+            /* Also unmount, except in the case of game cards. */
             if (storage_id != StorageId::GameCard) {
                 fs::Unmount(root->mount_name);
             }

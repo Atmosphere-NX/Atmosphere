@@ -28,10 +28,14 @@ namespace ams::ncm {
         void MakePlaceHolderName(PathString *out, PlaceHolderId id) {
             auto &bytes = id.uuid.data;
             char tmp[3];
+
+            /* Create a hex string from bytes. */
             for (size_t i = 0; i < sizeof(bytes); i++) {
                 std::snprintf(tmp, util::size(tmp), "%02x", bytes[i]);
                 out->Append(tmp);
             }
+
+            /* Append file extension. */
             out->Append(".nca");
         }
 
@@ -56,34 +60,49 @@ namespace ams::ncm {
     }
 
     void MakeFlatContentFilePath(PathString *out, ContentId content_id, const char *root_path) {
+        /* Create the content name from the content id. */
         PathString content_name;
         MakeContentName(std::addressof(content_name), content_id);
+
+        /* Format the output path. */
         out->SetFormat("%s/%s", root_path, content_name.Get());
     }
 
     void MakeSha256HierarchicalContentFilePath_ForFat4KCluster(PathString *out, ContentId content_id, const char *root_path) {
+        /* Hash the content id. */
         const u16 hash = Get16BitSha256HashPrefix(content_id);
         const u32 hash_upper = (hash >> 10) & 0x3f;
         const u32 hash_lower = (hash >>  4) & 0x3f;
 
+        /* Create the content name from the content id. */
         PathString content_name;
         MakeContentName(std::addressof(content_name), content_id);
+
+        /* Format the output path. */
         out->SetFormat("%s/%08X/%08X/%s", root_path, hash_upper, hash_lower, content_name.Get());
     }
 
     void MakeSha256HierarchicalContentFilePath_ForFat32KCluster(PathString *out, ContentId content_id, const char *root_path) {
+        /* Hash the content id. */
         const u32 hash = (Get16BitSha256HashPrefix(content_id) >> 6) & 0x3FF;
 
+        /* Create the content name from the content id. */
         PathString content_name;
         MakeContentName(std::addressof(content_name), content_id);
+
+        /* Format the output path. */
         out->SetFormat("%s/%08X/%s", root_path, hash, content_name.Get());
     }
 
     void MakeSha256HierarchicalContentFilePath_ForFat16KCluster(PathString *out, ContentId content_id, const char *root_path) {
+        /* Hash the content id. */
         const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(content_id));
 
+        /* Create the content name from the content id. */
         PathString content_name;
         MakeContentName(std::addressof(content_name), content_id);
+
+        /* Format the output path. */
         out->SetFormat("%s/%08X/%s", root_path, hash_byte, content_name.Get());
     }
 
@@ -101,16 +120,23 @@ namespace ams::ncm {
     }
 
     void MakeFlatPlaceHolderFilePath(PathString *out, PlaceHolderId placeholder_id, const char *root_path) {
+        /* Create the placeholder name from the placeholder id. */
         PathString placeholder_name;
         MakePlaceHolderName(std::addressof(placeholder_name), placeholder_id);
+
+        /* Format the output path. */
         out->SetFormat("%s/%s", root_path, placeholder_name.Get());
     }
 
     void MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster(PathString *out, PlaceHolderId placeholder_id, const char *root_path) {
+        /* Hash the placeholder id. */
         const u32 hash_byte = static_cast<u32>(Get8BitSha256HashPrefix(placeholder_id));
 
+        /* Create the placeholder name from the placeholder id. */
         PathString placeholder_name;
         MakePlaceHolderName(std::addressof(placeholder_name), placeholder_id);
+
+        /* Format the output path. */
         out->SetFormat("%s/%08X/%s", root_path, hash_byte, placeholder_name.Get());
     }
 

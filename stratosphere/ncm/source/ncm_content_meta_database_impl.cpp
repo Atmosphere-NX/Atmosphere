@@ -52,15 +52,21 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         std::optional<ContentMetaKey> found_key = std::nullopt;
+
+        /* Find the last key with the desired program id. */
         for (auto entry = this->kvs->lower_bound(ContentMetaKey::Make(id, 0, ContentMetaType::Unknown)); entry != this->kvs->end(); entry++) {
+            /* No further entries will match the program id, discontinue. */
             if (entry->GetKey().id != id) {
                 break;
             }
 
+            /* We are only interested in keys with the Full content install type. */
             if (entry->GetKey().install_type == ContentInstallType::Full) {
                 found_key = entry->GetKey();
             }
         }
+
+        /* Check if the key is absent. */
         R_UNLESS(found_key, ncm::ResultContentMetaNotFound());
 
         *out_key = *found_key;
@@ -90,12 +96,15 @@ namespace ams::ncm {
         R_UNLESS(offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
+        /* Obtain the content meta for the given key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
+        /* Read content infos from the given offset up to the given count. */
         size_t count;
         for (count = 0; count < out_info.GetSize() && count + offset < reader.GetContentCount(); count++) {
             out_info[count] = *reader.GetContentInfo(offset + count);
@@ -111,6 +120,7 @@ namespace ams::ncm {
         size_t entries_total = 0;
         size_t entries_written = 0;
 
+        /* Iterate over all entries. */
         for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
             ContentMetaKey key = entry->GetKey();
 
@@ -121,12 +131,15 @@ namespace ams::ncm {
 
             /* If application id is present, check if it matches the filter. */
             if (application_id != InvalidProgramId) {
+                /* Obtain the content meta for the key. */
                 const void *meta;
                 size_t meta_size;
                 R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+                /* Create a reader. */
                 ContentMetaReader reader(meta, meta_size);
 
+                /* Ensure application id matches, if present. */
                 if (const auto entry_application_id = reader.GetApplicationId(key); entry_application_id && application_id != *entry_application_id) {
                     continue;
                 }
@@ -155,6 +168,7 @@ namespace ams::ncm {
         size_t entries_total = 0;
         size_t entries_written = 0;
 
+        /* Iterate over all entries. */
         for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
             ContentMetaKey key = entry->GetKey();
 
@@ -185,6 +199,7 @@ namespace ams::ncm {
 
         *out = false;
 
+        /* Check if key is present. */
         size_t size;
         R_TRY_CATCH(this->kvs->GetValueSize(&size, key)) {
             R_CONVERT(kvdb::ResultKeyNotFound, ResultSuccess());
@@ -198,6 +213,7 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
         *out = false;
 
+        /* Check if keys are present. */
         for (size_t i = 0; i < keys.GetSize(); i++) {
             bool has;
             R_TRY(this->Has(std::addressof(has), keys[i]));
@@ -211,6 +227,7 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::GetSize(sf::Out<u64> out_size, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
+        /* Determine the content meta size for the key. */
         size_t size;
         R_TRY(this->GetContentMetaSize(&size, key));
 
@@ -222,12 +239,15 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
         R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch, ncm::ResultInvalidContentMetaKey());
 
+        /* Obtain the content meta for the key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
+        /* Obtain the required system version. */
         if (key.type == ContentMetaType::Application) {
             out_version.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->required_system_version);
         } else {
@@ -241,12 +261,15 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
         R_UNLESS(key.type == ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
 
+        /* Obtain the content meta for the key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
+        /* Obtain the patch id. */
         out_patch_id.SetValue(reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->patch_id);
         return ResultSuccess();
     }
@@ -265,9 +288,11 @@ namespace ams::ncm {
             out_orphaned[i] = true;
         }
 
+        /* If key value store is empty, all content is orphaned. */
         R_UNLESS(this->kvs->GetCount() != 0, ResultSuccess());
 
         auto IsOrphanedContent = [](const sf::InArray<ContentId> &list, const ncm::ContentId &id) ALWAYS_INLINE_LAMBDA {
+            /* Check if any input content ids match our found content id. */
             for (size_t i = 0; i < list.GetSize(); i++) {
                 if (list[i] == id) {
                     return std::make_optional(i);
@@ -276,6 +301,7 @@ namespace ams::ncm {
             return std::optional<size_t>(std::nullopt);
         };
 
+        /* Iterate over all entries. */
         for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
             ContentMetaReader reader(entry->GetValuePointer(), entry->GetValueSize());
 
@@ -293,16 +319,22 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::Commit() {
         R_TRY(this->EnsureEnabled());
+
+        /* Save and commit. */
         R_TRY(this->kvs->Save());
         return fs::CommitSaveData(this->mount_name);
     }
 
     Result ContentMetaDatabaseImpl::HasContent(sf::Out<bool> out, const ContentMetaKey &key, const ContentId &content_id) {
+        /* Obtain the content meta for the key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
+
+        /* Check if any content infos contain a matching id. */
         for (size_t i = 0; i < reader.GetContentCount(); i++) {
             if (content_id == reader.GetContentInfo(i)->GetId()) {
                 out.SetValue(true);
@@ -318,12 +350,15 @@ namespace ams::ncm {
         R_UNLESS(offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
+        /* Obtain the content meta for the key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
+        /* Read content meta infos from the given offset up to the given count. */
         size_t count;
         for (count = 0; count < out_meta_info.GetSize() && count + offset <= reader.GetContentMetaCount(); count++) {
             out_meta_info[count] = *reader.GetContentMetaInfo(count + offset);
@@ -336,10 +371,12 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
+        /* Obtain the content meta for the key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
         out_attributes.SetValue(reader.GetHeader()->attributes);
@@ -349,10 +386,12 @@ namespace ams::ncm {
     Result ContentMetaDatabaseImpl::GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
 
+        /* Obtain the content meta for the key. */
         const void *meta;
         size_t meta_size;
         R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
 
+        /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
         /* Get the required version. */

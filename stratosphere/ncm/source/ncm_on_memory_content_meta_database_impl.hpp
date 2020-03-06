@@ -25,6 +25,7 @@ namespace ams::ncm {
         public:
             OnMemoryContentMetaDatabaseImpl(ams::kvdb::MemoryKeyValueStore<ContentMetaKey> *kvs) : ContentMetaDatabaseImpl(kvs) { /* ... */ }
         public:
+            /* Actual commands. */
             virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override;
             virtual Result LookupOrphanContent(const sf::OutArray<bool> &out_orphaned, const sf::InArray<ContentId> &content_ids) override;
             virtual Result Commit() override;

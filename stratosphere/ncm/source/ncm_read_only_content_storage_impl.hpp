@@ -25,6 +25,7 @@ namespace ams::ncm {
         public:
             Result Initialize(const char *root_path, MakeContentPathFunction content_path_func);
         public:
+            /* Actual commands. */
             virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override;
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) override;
             virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) override;

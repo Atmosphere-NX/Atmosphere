@@ -63,9 +63,11 @@ namespace ams::ncm {
     }
 
     Result PlaceHolderAccessor::GetPlaceHolderIdFromFileName(PlaceHolderId *out, const char *name) {
+        /* Ensure placeholder name is valid. */
         R_UNLESS(strnlen(name, PlaceHolderFileNameLength) == PlaceHolderFileNameLength,                                            ncm::ResultInvalidPlaceHolderFile());
         R_UNLESS(strncmp(name + PlaceHolderFileNameLengthWithoutExtension, PlaceHolderExtension, PlaceHolderExtensionLength) == 0, ncm::ResultInvalidPlaceHolderFile());
 
+        /* Convert each character pair to a byte until we reach the end. */
         PlaceHolderId placeholder_id = {};
         for (size_t i = 0; i < sizeof(placeholder_id); i++) {
             char tmp[3];
@@ -84,20 +86,24 @@ namespace ams::ncm {
         /* Try to load from the cache. */
         R_UNLESS(!this->LoadFromCache(out_handle, placeholder_id), ResultSuccess());
 
+        /* Make the path of the placeholder. */
         PathString placeholder_path;
         this->MakePath(std::addressof(placeholder_path), placeholder_id);
 
+        /* Open the placeholder file. */
         return fs::OpenFile(out_handle, placeholder_path, fs::OpenMode_Write);
     }
 
     bool PlaceHolderAccessor::LoadFromCache(fs::FileHandle *out_handle, PlaceHolderId placeholder_id) {
         std::scoped_lock lk(this->cache_mutex);
 
+        /* attempt to find an entry in the cache. */
         CacheEntry *entry = this->FindInCache(placeholder_id);
         if (!entry) {
             return false;
         }
 
+        /* No cached entry found. */
         entry->id = InvalidPlaceHolderId;
         *out_handle = entry->handle;
         return true;
@@ -106,6 +112,7 @@ namespace ams::ncm {
     void PlaceHolderAccessor::StoreToCache(PlaceHolderId placeholder_id, fs::FileHandle handle) {
         std::scoped_lock lk(this->cache_mutex);
 
+        /* Store placeholder id and file handle to a free entry. */
         CacheEntry *entry = this->GetFreeEntry();
         entry->id      = placeholder_id;
         entry->handle  = handle;
@@ -113,6 +120,7 @@ namespace ams::ncm {
     }
 
     void PlaceHolderAccessor::Invalidate(CacheEntry *entry) {
+        /* Flush and close the cached entry's file. */
         if (entry != nullptr) {
             fs::FlushFile(entry->handle);
             fs::CloseFile(entry->handle);
@@ -121,10 +129,12 @@ namespace ams::ncm {
     }
 
     PlaceHolderAccessor::CacheEntry *PlaceHolderAccessor::FindInCache(PlaceHolderId placeholder_id) {
+        /* Ensure placeholder id is valid. */
         if (placeholder_id == InvalidPlaceHolderId) {
             return nullptr;
         }
 
+        /* Attempt to find a cache entry with the same placeholder id. */
         for (size_t i = 0; i < MaxCacheEntries; i++) {
             if (placeholder_id == this->caches[i].id) {
                 return &this->caches[i];
@@ -161,11 +171,14 @@ namespace ams::ncm {
     }
 
     Result PlaceHolderAccessor::CreatePlaceHolderFile(PlaceHolderId placeholder_id, s64 size) {
+        /* Ensure the destination directory exists. */
         R_TRY(this->EnsurePlaceHolderDirectory(placeholder_id));
 
+        /* Get the placeholder path. */
         PathString placeholder_path;
         this->GetPath(std::addressof(placeholder_path), placeholder_id);
 
+        /* Create the placeholder file. */
         R_TRY_CATCH(fs::CreateFile(placeholder_path, size, fs::CreateOption_BigFile)) {
             R_CONVERT(fs::ResultPathAlreadyExists, ncm::ResultPlaceHolderAlreadyExists())
         } R_END_TRY_CATCH;
@@ -174,9 +187,11 @@ namespace ams::ncm {
     }
 
     Result PlaceHolderAccessor::DeletePlaceHolderFile(PlaceHolderId placeholder_id) {
+        /* Get the placeholder path. */
         PathString placeholder_path;
         this->GetPath(std::addressof(placeholder_path), placeholder_id);
 
+        /* Delete the placeholder file. */
         R_TRY_CATCH(fs::DeleteFile(placeholder_path)) {
             R_CONVERT(fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
         } R_END_TRY_CATCH;
@@ -185,32 +200,40 @@ namespace ams::ncm {
     }
 
     Result PlaceHolderAccessor::WritePlaceHolderFile(PlaceHolderId placeholder_id, s64 offset, const void *buffer, size_t size) {
+        /* Open the placeholder file. */
         fs::FileHandle file;
         R_TRY_CATCH(this->Open(std::addressof(file), placeholder_id)) {
             R_CONVERT(fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
         } R_END_TRY_CATCH;
+
+        /* Store opened files to the cache regardless of write failures. */
         ON_SCOPE_EXIT { this->StoreToCache(placeholder_id, file); };
 
-        R_TRY(fs::WriteFile(file, offset, buffer, size, this->delay_flush ? fs::WriteOption::Flush : fs::WriteOption::None));
-        return ResultSuccess();
+        /* Write data to the placeholder file. */
+        return fs::WriteFile(file, offset, buffer, size, this->delay_flush ? fs::WriteOption::Flush : fs::WriteOption::None);
     }
 
     Result PlaceHolderAccessor::SetPlaceHolderFileSize(PlaceHolderId placeholder_id, s64 size) {
+        /* Open the placeholder file. */
         fs::FileHandle file;
         R_TRY_CATCH(this->Open(std::addressof(file), placeholder_id)) {
             R_CONVERT(fs::ResultPathNotFound, ncm::ResultPlaceHolderNotFound())
         } R_END_TRY_CATCH;
+
+        /* Close the file on exit. */
         ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-        R_TRY(fs::SetFileSize(file, size));
-
-        return ResultSuccess();
+        /* Set the size of the placeholder file. */
+        return fs::SetFileSize(file, size);
     }
 
     Result PlaceHolderAccessor::TryGetPlaceHolderFileSize(bool *found_in_cache, s64 *out_size, PlaceHolderId placeholder_id) {
+        /* Attempt to find the placeholder in the cache. */
         fs::FileHandle handle;
         auto found = this->LoadFromCache(std::addressof(handle), placeholder_id);
+        
         if (found) {
+            /* Renew the entry in the cache. */
             this->StoreToCache(placeholder_id, handle);
             R_TRY(fs::GetFileSize(out_size, handle));
             *found_in_cache = true;
@@ -222,6 +245,7 @@ namespace ams::ncm {
     }
 
     void PlaceHolderAccessor::InvalidateAll() {
+        /* Invalidate all cache entries. */
         for (auto &entry : this->caches) {
             if (entry.id != InvalidPlaceHolderId) {
                 this->Invalidate(std::addressof(entry));

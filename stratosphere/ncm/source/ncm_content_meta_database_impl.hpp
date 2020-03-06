@@ -26,9 +26,11 @@ namespace ams::ncm {
             ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs, const char *mount_name) : ContentMetaDatabaseImplBase(kvs, mount_name) { /* ... */ }
             ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs) : ContentMetaDatabaseImplBase(kvs) { /* ... */ }
         private:
+            /* Helpers. */
             Result GetContentIdByTypeImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset);
             Result GetLatestContentMetaKeyImpl(ContentMetaKey *out_key, ProgramId id);
         public:
+            /* Actual commands. */
             virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;
             virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) override;
             virtual Result Remove(const ContentMetaKey &key) override;
