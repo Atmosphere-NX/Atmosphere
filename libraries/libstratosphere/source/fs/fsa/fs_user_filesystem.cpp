@@ -34,74 +34,85 @@ namespace ams::fs {
 
     Result CreateFile(const char* path, s64 size, int option) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->CreateFile(impl::GetSubPath(path), size, option);
+        return accessor->CreateFile(sub_path, size, option);
     }
 
     Result DeleteFile(const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->DeleteFile(impl::GetSubPath(path));
+        return accessor->DeleteFile(sub_path);
     }
 
     Result CreateDirectory(const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->CreateDirectory(impl::GetSubPath(path));
+        return accessor->CreateDirectory(sub_path);
     }
 
     Result DeleteDirectory(const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->DeleteDirectory(impl::GetSubPath(path));
+        return accessor->DeleteDirectory(sub_path);
     }
 
     Result DeleteDirectoryRecursively(const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->DeleteDirectoryRecursively(impl::GetSubPath(path));
+        return accessor->DeleteDirectoryRecursively(sub_path);
     }
 
     Result RenameFile(const char *old_path, const char *new_path) {
         impl::FileSystemAccessor *old_accessor;
         impl::FileSystemAccessor *new_accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(old_accessor), old_path));
-        R_TRY(impl::FindFileSystem(std::addressof(new_accessor), new_path));
+        const char *old_sub_path;
+        const char *new_sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(old_accessor), std::addressof(old_sub_path), old_path));
+        R_TRY(impl::FindFileSystem(std::addressof(new_accessor), std::addressof(new_sub_path), new_path));
 
         R_UNLESS(old_accessor == new_accessor, fs::ResultRenameToOtherFileSystem());
-        return old_accessor->RenameFile(impl::GetSubPath(old_path), impl::GetSubPath(new_path));
+        return old_accessor->RenameFile(old_sub_path, new_sub_path);
     }
 
     Result RenameDirectory(const char *old_path, const char *new_path) {
         impl::FileSystemAccessor *old_accessor;
         impl::FileSystemAccessor *new_accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(old_accessor), old_path));
-        R_TRY(impl::FindFileSystem(std::addressof(new_accessor), new_path));
+        const char *old_sub_path;
+        const char *new_sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(old_accessor), std::addressof(old_sub_path), old_path));
+        R_TRY(impl::FindFileSystem(std::addressof(new_accessor), std::addressof(new_sub_path), new_path));
 
         R_UNLESS(old_accessor == new_accessor, fs::ResultRenameToOtherFileSystem());
-        return old_accessor->RenameDirectory(impl::GetSubPath(old_path), impl::GetSubPath(new_path));
+        return old_accessor->RenameDirectory(old_sub_path, new_sub_path);
     }
 
     Result GetEntryType(DirectoryEntryType *out, const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->GetEntryType(out, impl::GetSubPath(path));
+        return accessor->GetEntryType(out, sub_path);
     }
 
     Result OpenFile(FileHandle *out_file, const char *path, int mode) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
         R_UNLESS(out_file != nullptr, fs::ResultNullptrArgument());
 
         std::unique_ptr<impl::FileAccessor> file_accessor;
-        R_TRY(accessor->OpenFile(std::addressof(file_accessor), impl::GetSubPath(path), static_cast<OpenMode>(mode)));
+        R_TRY(accessor->OpenFile(std::addressof(file_accessor), sub_path, static_cast<OpenMode>(mode)));
 
         out_file->handle = file_accessor.release();
         return ResultSuccess();
@@ -109,12 +120,13 @@ namespace ams::fs {
 
     Result OpenDirectory(DirectoryHandle *out_dir, const char *path, int mode) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
         R_UNLESS(out_dir != nullptr, fs::ResultNullptrArgument());
 
         std::unique_ptr<impl::DirectoryAccessor> dir_accessor;
-        R_TRY(accessor->OpenDirectory(std::addressof(dir_accessor), impl::GetSubPath(path), static_cast<OpenDirectoryMode>(mode)));
+        R_TRY(accessor->OpenDirectory(std::addressof(dir_accessor), sub_path, static_cast<OpenDirectoryMode>(mode)));
 
         out_dir->handle = dir_accessor.release();
         return ResultSuccess();
@@ -122,38 +134,43 @@ namespace ams::fs {
 
     Result CleanDirectoryRecursively(const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->CleanDirectoryRecursively(impl::GetSubPath(path));
+        return accessor->CleanDirectoryRecursively(sub_path);
     }
 
     Result GetFreeSpaceSize(s64 *out, const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->GetFreeSpaceSize(out, impl::GetSubPath(path));
+        return accessor->GetFreeSpaceSize(out, sub_path);
     }
 
     Result GetTotalSpaceSize(s64 *out, const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->GetTotalSpaceSize(out, impl::GetSubPath(path));
+        return accessor->GetTotalSpaceSize(out, sub_path);
     }
 
 
     Result SetConcatenationFileAttribute(const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->QueryEntry(nullptr, 0, nullptr, 0, fsa::QueryId::SetConcatenationFileAttribute, impl::GetSubPath(path));
+        return accessor->QueryEntry(nullptr, 0, nullptr, 0, fsa::QueryId::SetConcatenationFileAttribute, sub_path);
     }
 
     Result GetFileTimeStampRaw(FileTimeStampRaw *out, const char *path) {
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::FindFileSystem(std::addressof(accessor), path));
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
 
-        return accessor->GetFileTimeStampRaw(out, impl::GetSubPath(path));
+        return accessor->GetFileTimeStampRaw(out, sub_path);
     }
 
     Result OpenFile(FileHandle *out, std::unique_ptr<fsa::IFile> &&file, int mode) {

@@ -33,45 +33,34 @@ namespace ams::fs::impl {
             return nullptr;
         }
 
-        Result GetMountNameImpl(MountName &out, const char *path) {
+        Result GetMountNameAndSubPath(MountName *out_mount_name, const char **out_sub_path, const char *path) {
+            /* Handle the Host-path case. */
+            if (PathTool::IsWindowsAbsolutePath(path) || PathTool::IsUnc(path)) {
+                std::strncpy(out_mount_name->str, HostRootFileSystemMountName, MountNameLengthMax);
+                out_mount_name->str[MountNameLengthMax] = '\x00';
+                return ResultSuccess();
+            }
+
+            /* Locate the drive separator. */
             const char *drive_separator = FindMountNameDriveSeparator(path);
             R_UNLESS(drive_separator != nullptr, fs::ResultInvalidMountName());
 
+            /* Ensure the mount name isn't too long. */
             const size_t len = drive_separator - path;
-            R_UNLESS(len + 1 <= sizeof(MountName), fs::ResultInvalidMountName());
+            R_UNLESS(len <= MountNameLengthMax, fs::ResultInvalidMountName());
 
-            std::memcpy(out.str, path, len);
-            out.str[len] = StringTraits::NullTerminator;
+            /* Ensure the result sub-path is valid. */
+            const char *sub_path = drive_separator + 1;
+            R_UNLESS(!PathTool::IsNullTerminator(sub_path[0]), fs::ResultInvalidMountName());
+            R_UNLESS(PathTool::IsAnySeparator(sub_path[0]),    fs::ResultInvalidPathFormat());
+
+            /* Set output. */
+            std::memcpy(out_mount_name->str, path, len);
+            out_mount_name->str[len] = StringTraits::NullTerminator;
+            *out_sub_path = sub_path;
             return ResultSuccess();
         }
 
-    }
-
-    MountName GetMountName(const char *path) {
-        MountName mount_name;
-
-        if (IsWindowsDrive(path)) {
-            std::strncpy(mount_name.str, HostRootFileSystemMountName, MountNameLengthMax);
-            mount_name.str[MountNameLengthMax] = StringTraits::NullTerminator;
-        } else {
-            R_ABORT_UNLESS(GetMountNameImpl(mount_name, path));
-        }
-
-        return mount_name;
-    }
-
-    const char *GetSubPath(const char *path) {
-        if (IsWindowsDrive(path)) {
-            return path;
-        }
-
-        const char *sub_path = path;
-        while (!PathTool::IsDriveSeparator(*sub_path)) {
-            sub_path++;
-        }
-
-        AMS_ABORT_UNLESS(PathTool::IsSeparator(sub_path[1]) || PathTool::IsUnsupportedSeparator(sub_path[1]));
-        return sub_path + 1;
     }
 
     bool IsValidMountName(const char *name) {
@@ -118,12 +107,17 @@ namespace ams::fs::impl {
         return ResultSuccess();
     }
 
-    Result FindFileSystem(FileSystemAccessor **out, const char *path) {
-        R_UNLESS(path != nullptr, fs::ResultInvalidPath());
+    Result FindFileSystem(FileSystemAccessor **out_accessor, const char **out_sub_path, const char *path) {
+        R_UNLESS(out_accessor != nullptr, fs::ResultUnexpectedInFindFileSystemA());
+        R_UNLESS(out_sub_path != nullptr, fs::ResultUnexpectedInFindFileSystemA());
+        R_UNLESS(path != nullptr,         fs::ResultNullptrArgument());
 
-        R_UNLESS(strncmp(path, HostRootFileSystemMountName, strnlen(HostRootFileSystemMountName, sizeof(MountName))) != 0, fs::ResultInvalidPathFormat());
+        R_UNLESS(strncmp(path, HostRootFileSystemMountName, strnlen(HostRootFileSystemMountName, sizeof(MountName))) != 0, fs::ResultNotMounted());
 
-        return impl::Find(out, GetMountName(path).str);
+        MountName mount_name;
+        R_TRY(GetMountNameAndSubPath(std::addressof(mount_name), out_sub_path, path));
+
+        return impl::Find(out_accessor, mount_name.str);
     }
 
 }
@@ -147,15 +141,21 @@ namespace ams::fs {
     }
 
     Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *src) {
-        /* Get the mount name for the path. */
-        MountName mount_name = impl::GetMountName(src);
+        /* Ensure neither argument is nullptr. */
+        R_UNLESS(dst != nullptr, fs::ResultNullptrArgument());
+        R_UNLESS(src != nullptr, fs::ResultNullptrArgument());
+
+        /* Get the mount name and sub path for the path. */
+        MountName mount_name;
+        const char *sub_path;
+        R_TRY(impl::GetMountNameAndSubPath(std::addressof(mount_name), std::addressof(sub_path), src));
 
         impl::FileSystemAccessor *accessor;
         R_TRY(impl::Find(std::addressof(accessor), mount_name.str));
         R_TRY(accessor->GetCommonMountName(dst, dst_size));
 
         const auto mount_name_len = strnlen(dst, dst_size);
-        const auto common_path_len = std::snprintf(dst + mount_name_len, dst_size - mount_name_len, "%s", impl::GetSubPath(src));
+        const auto common_path_len = std::snprintf(dst + mount_name_len, dst_size - mount_name_len, "%s", sub_path);
 
         R_UNLESS(static_cast<size_t>(common_path_len) < dst_size - mount_name_len, fs::ResultTooLongPath());
         return ResultSuccess();

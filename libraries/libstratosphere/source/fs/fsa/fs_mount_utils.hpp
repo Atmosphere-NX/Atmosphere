@@ -20,9 +20,8 @@ namespace ams::fs::impl {
 
     class FileSystemAccessor;
 
-    Result FindFileSystem(FileSystemAccessor **out, const char *path);
+    Result FindFileSystem(FileSystemAccessor **out_accessor, const char **out_sub_path, const char *path);
 
-    const char *GetSubPath(const char *path);
     bool IsWindowsDrive(const char *name);
     bool IsReservedMountName(const char *name);
     Result CheckMountName(const char *name);
