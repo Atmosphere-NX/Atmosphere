@@ -379,7 +379,8 @@ namespace ams::i2c::driver::impl {
 
         /* Wait for flush to finish, check every ms for 5 ms. */
         for (size_t i = 0; i < 5; i++) {
-            R_UNLESS((reg::Read(&this->i2c_registers->I2C_FIFO_CONTROL_0) & 3), ResultSuccess());
+            const bool flush_done = (reg::Read(&this->i2c_registers->I2C_FIFO_CONTROL_0) & 3) == 0;
+            R_SUCCEED_IF(flush_done);
             svcSleepThread(1'000'000ul);
         }
 
@@ -418,7 +419,8 @@ namespace ams::i2c::driver::impl {
 
     Result BusAccessor::GetAndHandleTransactionResult() {
         const auto transaction_result = this->GetTransactionResult();
-        R_UNLESS(R_FAILED(transaction_result), ResultSuccess());
+        R_SUCCEED_IF(R_SUCCEEDED(transaction_result));
+
         this->HandleTransactionResult(transaction_result);
         this->ClearInterruptMask();
         this->interrupt_event.Reset();

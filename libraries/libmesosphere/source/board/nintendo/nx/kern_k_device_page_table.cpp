@@ -257,7 +257,7 @@ namespace ams::kern::board::nintendo::nx {
                             const WordType clear_bit = (this->state[i] + 1) ^ (this->state[i]);
                             this->state[i] |= clear_bit;
                             out[num_reserved++] = static_cast<u8>(BitsPerWord * i + BitsPerWord - 1 - ClearLeadingZero(clear_bit));
-                            R_UNLESS(num_reserved != num_desired, ResultSuccess());
+                            R_SUCCEED_IF(num_reserved == num_desired);
                         }
                     }
 

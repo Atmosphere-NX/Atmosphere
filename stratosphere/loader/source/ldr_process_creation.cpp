@@ -84,7 +84,10 @@ namespace ams::ldr {
         #include "ldr_anti_downgrade_tables.inc"
 
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
-            R_UNLESS(hos::GetVersion() >= hos::Version_810, ResultSuccess());
+            /* No version verification is done before 8.1.0. */
+            R_SUCCEED_IF(hos::GetVersion() < hos::Version_810);
+
+            /* Do version-dependent validation, if compiled to do so. */
 #ifdef LDR_VALIDATE_PROCESS_VERSION
             const MinimumProgramVersion *entries = nullptr;
             size_t num_entries = 0;

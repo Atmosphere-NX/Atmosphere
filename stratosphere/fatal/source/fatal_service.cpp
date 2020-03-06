@@ -64,8 +64,8 @@ namespace ams::fatal::srv {
 
         /* Throw implementation. */
         Result ServiceContext::ThrowFatalWithCpuContext(Result result, os::ProcessId process_id, FatalPolicy policy, const CpuContext &cpu_ctx) {
-            /* We don't support Error Report only fatals. */
-            R_UNLESS(policy != FatalPolicy_ErrorReport, ResultSuccess());
+            /* We don't support Error-Report-only fatals. */
+            R_SUCCEED_IF(policy == FatalPolicy_ErrorReport);
 
             /* Note that we've thrown fatal. */
             R_TRY(this->TrySetHasThrown());

@@ -297,7 +297,7 @@ namespace ams::sm::impl {
                         is_valid &= std::memcmp(&ac_service, &service, access_control.GetServiceNameSize() - 1) == 0;
                     }
 
-                    R_UNLESS(!is_valid, ResultSuccess());
+                    R_SUCCEED_IF(is_valid);
                 }
                 access_control = access_control.GetNextEntry();
             }

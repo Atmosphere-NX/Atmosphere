@@ -69,16 +69,27 @@ namespace ams::fs {
             }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
+                /* Ensure we're initialized. */
                 R_UNLESS(this->IsValid(),                                  fs::ResultNotInitialized());
-                R_UNLESS(size != 0,                                        ResultSuccess());
+
+                /* Succeed immediately on zero-sized operation. */
+                R_SUCCEED_IF(size == 0);
+
+
+                /* Validate arguments and read. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
                 R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
                 return this->base_storage->Read(this->offset + offset, buffer, size);
             }
 
             virtual Result Write(s64 offset, const void *buffer, size_t size) override{
+                /* Ensure we're initialized. */
                 R_UNLESS(this->IsValid(),                                  fs::ResultNotInitialized());
-                R_UNLESS(size != 0,                                        ResultSuccess());
+
+                /* Succeed immediately on zero-sized operation. */
+                R_SUCCEED_IF(size == 0);
+
+                /* Validate arguments and write. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
                 R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
                 return this->base_storage->Write(this->offset + offset, buffer, size);
@@ -90,15 +101,17 @@ namespace ams::fs {
             }
 
             virtual Result SetSize(s64 size) override {
+                /* Ensure we're initialized and validate arguments. */
                 R_UNLESS(this->IsValid(),                                    fs::ResultNotInitialized());
                 R_UNLESS(this->resizable,                                    fs::ResultUnsupportedOperation());
                 R_UNLESS(IStorage::IsOffsetAndSizeValid(this->offset, size), fs::ResultInvalidSize());
 
+                /* Ensure that we're allowed to set size. */
                 s64 cur_size;
                 R_TRY(this->base_storage->GetSize(std::addressof(cur_size)));
-
                 R_UNLESS(cur_size == this->offset + this->size, fs::ResultUnsupportedOperation());
 
+                /* Set the size. */
                 R_TRY(this->base_storage->SetSize(this->offset + size));
 
                 this->size = size;
@@ -106,14 +119,21 @@ namespace ams::fs {
             }
 
             virtual Result GetSize(s64 *out) override {
+                /* Ensure we're initialized. */
                 R_UNLESS(this->IsValid(), fs::ResultNotInitialized());
+
                 *out = this->size;
                 return ResultSuccess();
             }
 
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                /* Ensure we're initialized. */
                 R_UNLESS(this->IsValid(),                              fs::ResultNotInitialized());
-                R_UNLESS(size != 0,                                    ResultSuccess());
+
+                /* Succeed immediately on zero-sized operation. */
+                R_SUCCEED_IF(size == 0);
+
+                /* Validate arguments and operate. */
                 R_UNLESS(IStorage::IsOffsetAndSizeValid(offset, size), fs::ResultOutOfRange());
                 return this->base_storage->OperateRange(dst, dst_size, op_id, this->offset + offset, size, src, src_size);
             }

@@ -128,13 +128,11 @@ namespace ams::lr {
     }
 
     Result RedirectOnlyLocationResolverImpl::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
-        /* Use a redirection if present. */
-        R_UNLESS(!this->debug_program_redirector.FindRedirection(out.GetPointer(), id), ResultSuccess());
+        /* If a debug program redirection is present, use it. */
+        R_SUCCEED_IF(this->debug_program_redirector.FindRedirection(out.GetPointer(), id));
 
-        /* Otherwise find the path for the program id. */
-        R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {
-            R_CONVERT(ResultProgramNotFound, lr::ResultDebugProgramNotFound())
-        } R_END_TRY_CATCH;
+        /* Otherwise, try to find a normal program redirection. */
+        R_UNLESS(this->program_redirector.FindRedirection(out.GetPointer(), id), lr::ResultDebugProgramNotFound());
 
         return ResultSuccess();
     }

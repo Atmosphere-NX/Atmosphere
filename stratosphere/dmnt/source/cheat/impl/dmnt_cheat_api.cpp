@@ -602,7 +602,7 @@ namespace ams::dmnt::cheat::impl {
             {
                 if (this->HasActiveCheatProcess()) {
                     /* When forcing attach, we're done. */
-                    R_UNLESS(on_process_launch, ResultSuccess());
+                    R_SUCCEED_IF(!on_process_launch);
                 }
 
                 /* Detach from the current process, if it's open. */

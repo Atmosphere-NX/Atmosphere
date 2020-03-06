@@ -27,7 +27,7 @@ namespace ams::boot {
             u64 cur_time = 0;
             while (true) {
                 const auto retry_result = f();
-                R_UNLESS(R_FAILED(retry_result), ResultSuccess());
+                R_SUCCEED_IF(R_SUCCEEDED(retry_result));
 
                 cur_time += retry_interval;
                 if (cur_time < timeout) {

@@ -28,17 +28,27 @@ namespace ams::fs {
             MemoryStorage(void *b, s64 sz) : buf(static_cast<u8 *>(b)), size(sz) { /* .. */ }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override {
-                R_UNLESS(size != 0,                                        ResultSuccess());
+                /* Succeed immediately on zero-sized read. */
+                R_SUCCEED_IF(size == 0);
+
+                /* Validate arguments. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
                 R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+
+                /* Copy from memory. */
                 std::memcpy(buffer, this->buf + offset, size);
                 return ResultSuccess();
             }
 
-            virtual Result Write(s64 offset, const void *buffer, size_t size) override{
-                R_UNLESS(size != 0,                                        ResultSuccess());
+            virtual Result Write(s64 offset, const void *buffer, size_t size) override {
+                /* Succeed immediately on zero-sized write. */
+                R_SUCCEED_IF(size == 0);
+
+                /* Validate arguments. */
                 R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
                 R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+
+                /* Copy to memory. */
                 std::memcpy(this->buf + offset, buffer, size);
                 return ResultSuccess();
             }

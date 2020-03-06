@@ -30,7 +30,7 @@ namespace ams::lr {
 
     Result ContentLocationResolverImpl::ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
         /* Use a redirection if present. */
-        R_UNLESS(!this->program_redirector.FindRedirection(out.GetPointer(), id), ResultSuccess());
+        R_SUCCEED_IF(this->program_redirector.FindRedirection(out.GetPointer(), id));
 
         /* Find the latest program content for the program id. */
         ncm::ContentId program_content_id;
@@ -164,7 +164,7 @@ namespace ams::lr {
 
     Result ContentLocationResolverImpl::ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
         /* Use a redirection if present. */
-        R_UNLESS(!this->debug_program_redirector.FindRedirection(out.GetPointer(), id), ResultSuccess());
+        R_SUCCEED_IF(this->debug_program_redirector.FindRedirection(out.GetPointer(), id));
 
         /* Otherwise find the path for the program id. */
         R_TRY_CATCH(this->ResolveProgramPath(out.GetPointer(), id)) {

@@ -307,7 +307,7 @@ namespace ams::ldr {
         R_TRY(lr::OpenLocationResolver(std::addressof(lr),  static_cast<ncm::StorageId>(loc.storage_id)));
 
         /* If there's already a Html Document path, we don't need to set one. */
-        R_UNLESS(R_FAILED(lr.ResolveApplicationHtmlDocumentPath(std::addressof(path), loc.program_id)), ResultSuccess());
+        R_SUCCEED_IF(R_SUCCEEDED(lr.ResolveApplicationHtmlDocumentPath(std::addressof(path), loc.program_id)));
 
         /* We just need to set this to any valid NCA path. Let's use the executable path. */
         R_TRY(lr.ResolveProgramPath(std::addressof(path), loc.program_id));
