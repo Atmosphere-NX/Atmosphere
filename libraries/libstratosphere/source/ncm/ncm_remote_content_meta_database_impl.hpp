@@ -88,20 +88,20 @@ namespace ams::ncm {
                 return ncmContentMetaDatabaseGetContentIdByType(std::addressof(this->srv), Convert(out_content_id.GetPointer()), Convert(key), static_cast<::NcmContentType>(type));
             }
 
-            virtual Result ListContentInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, u32 start_index) override {
-                return ncmContentMetaDatabaseListContentInfo(std::addressof(this->srv), reinterpret_cast<s32 *>(out_entries_written.GetPointer()), Convert(out_info.GetPointer()), out_info.GetSize(), Convert(key), start_index);
+            virtual Result ListContentInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) override {
+                return ncmContentMetaDatabaseListContentInfo(std::addressof(this->srv), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), Convert(key), offset);
             }
 
-            virtual Result List(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaKey> &out, ContentMetaType meta_type, ProgramId application_program_id, ProgramId program_id_min, ProgramId program_id_max, ContentInstallType install_type) override {
-                return ncmContentMetaDatabaseList(std::addressof(this->srv), reinterpret_cast<s32 *>(out_entries_total.GetPointer()), reinterpret_cast<s32 *>(out_entries_written.GetPointer()), Convert(out.GetPointer()), out.GetSize(), static_cast<::NcmContentMetaType>(meta_type), static_cast<u64>(application_program_id), static_cast<u64>(program_id_min), static_cast<u64>(program_id_max), static_cast<::NcmContentInstallType>(install_type));
+            virtual Result List(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaKey> &out_info, ContentMetaType meta_type, ProgramId application_id, u64 min, u64 max, ContentInstallType install_type) override {
+                return ncmContentMetaDatabaseList(std::addressof(this->srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_info.GetPointer()), out_info.GetSize(), static_cast<::NcmContentMetaType>(meta_type), static_cast<u64>(application_id), min, max, static_cast<::NcmContentInstallType>(install_type));
             }
 
             virtual Result GetLatestContentMetaKey(sf::Out<ContentMetaKey> out_key, ProgramId id) override {
                 return ncmContentMetaDatabaseGetLatestContentMetaKey(std::addressof(this->srv), Convert(out_key.GetPointer()), static_cast<u64>(id));
             }
 
-            virtual Result ListApplication(sf::Out<u32> out_entries_total, sf::Out<u32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) override {
-                return ncmContentMetaDatabaseListApplication(std::addressof(this->srv), reinterpret_cast<s32 *>(out_entries_total.GetPointer()), reinterpret_cast<s32 *>(out_entries_written.GetPointer()), Convert(out_keys.GetPointer()), out_keys.GetSize(), static_cast<::NcmContentMetaType>(meta_type));
+            virtual Result ListApplication(sf::Out<s32> out_entries_total, sf::Out<s32> out_entries_written, const sf::OutArray<ApplicationContentMetaKey> &out_keys, ContentMetaType meta_type) override {
+                return ncmContentMetaDatabaseListApplication(std::addressof(this->srv), out_entries_total.GetPointer(), out_entries_written.GetPointer(), Convert(out_keys.GetPointer()), out_keys.GetSize(), static_cast<::NcmContentMetaType>(meta_type));
             }
 
             virtual Result Has(sf::Out<bool> out, const ContentMetaKey &key) override {
@@ -140,8 +140,8 @@ namespace ams::ncm {
                 return ncmContentMetaDatabaseHasContent(std::addressof(this->srv), out.GetPointer(), Convert(key), Convert(content_id));
             }
 
-            virtual Result ListContentMetaInfo(sf::Out<u32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, u32 start_index) override {
-                return ncmContentMetaDatabaseListContentMetaInfo(std::addressof(this->srv), reinterpret_cast<s32 *>(out_entries_written.GetPointer()), out_meta_info.GetPointer(), out_meta_info.GetSize(), Convert(key), start_index);
+            virtual Result ListContentMetaInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentMetaInfo> &out_meta_info, const ContentMetaKey &key, s32 offset) override {
+                return ncmContentMetaDatabaseListContentMetaInfo(std::addressof(this->srv), out_entries_written.GetPointer(), out_meta_info.GetPointer(), out_meta_info.GetSize(), Convert(key), offset);
             }
 
             virtual Result GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) override {

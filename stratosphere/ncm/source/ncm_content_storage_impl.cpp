@@ -73,7 +73,7 @@ namespace ams::ncm {
                     fs::DirectoryEntry entry;
                     s64 entry_count;
                     R_TRY(fs::ReadDirectory(std::addressof(entry_count), std::addressof(entry), dir, 1));
-                    
+
                     /* Directory has no entries to process. */
                     if (entry_count == 0) {
                         break;
@@ -269,7 +269,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
+    Result ContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
         R_TRY(this->EnsureEnabled());
 
         R_TRY(EnsureContentDirectory(content_id, this->make_content_path_func, this->root_path));
@@ -298,9 +298,9 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
-        /* Offset is too large */
-        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+    Result ContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) {
+        /* Ensure offset is valid. */
+        R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
         return this->placeholder_accessor.WritePlaceHolderFile(placeholder_id, offset, data.GetPointer(), data.GetSize());
     }
@@ -392,13 +392,13 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
+    Result ContentStorageImpl::ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
         R_TRY(this->EnsureEnabled());
 
         /* Obtain the placeholder base directory path. */
         PathString placeholder_dir;
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(placeholder_dir), this->root_path);
-        
+
         const size_t max_entries = out_buf.GetSize();
         size_t entry_count = 0;
 
@@ -421,17 +421,17 @@ namespace ams::ncm {
             return ResultSuccess();
         }));
 
-        out_count.SetValue(static_cast<u32>(entry_count));
+        out_count.SetValue(static_cast<s32>(entry_count));
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetContentCount(sf::Out<u32> out_count) {
+    Result ContentStorageImpl::GetContentCount(sf::Out<s32> out_count) {
         R_TRY(this->EnsureEnabled());
 
         /* Obtain the content base directory path. */
         PathString path;
         MakeBaseContentDirectoryPath(std::addressof(path), this->root_path);
-        
+
         const auto depth = GetHierarchicalContentDirectoryDepth(this->make_content_path_func);
         size_t count = 0;
 
@@ -448,12 +448,12 @@ namespace ams::ncm {
             return ResultSuccess();
         }));
 
-        out_count.SetValue(static_cast<u32>(count));
+        out_count.SetValue(static_cast<s32>(count));
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 offset) {
-        R_UNLESS(offset <= std::numeric_limits<s32>::max(), ncm::ResultInvalidOffset());
+    Result ContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) {
+        R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         /* Obtain the content base directory path. */
@@ -493,11 +493,11 @@ namespace ams::ncm {
             return ResultSuccess();
         }));
 
-        out_count.SetValue(static_cast<u32>(entry_count));
+        out_count.SetValue(static_cast<s32>(entry_count));
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) {
+    Result ContentStorageImpl::GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         /* Create the content path. */
@@ -553,14 +553,14 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
+    Result ContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
         R_TRY(this->EnsureEnabled());
         return this->placeholder_accessor.SetPlaceHolderFileSize(placeholder_id, size);
     }
 
-    Result ContentStorageImpl::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
-        /* Offset is too large */
-        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+    Result ContentStorageImpl::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) {
+        /* Ensure offset is valid. */
+        R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         /* Create the content path. */
@@ -628,9 +628,9 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
-        /* Offset is too large */
-        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+    Result ContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) {
+        /* Ensure offset is valid. */
+        R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         /* This command is for development hardware only. */
@@ -654,14 +654,14 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetFreeSpaceSize(sf::Out<u64> out_size) {
+    Result ContentStorageImpl::GetFreeSpaceSize(sf::Out<s64> out_size) {
         s64 size;
         R_TRY(fs::GetFreeSpaceSize(std::addressof(size), this->root_path));
         out_size.SetValue(size);
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetTotalSpaceSize(sf::Out<u64> out_size) {
+    Result ContentStorageImpl::GetTotalSpaceSize(sf::Out<s64> out_size) {
         s64 size;
         R_TRY(fs::GetTotalSpaceSize(std::addressof(size), this->root_path));
         out_size.SetValue(size);
@@ -673,14 +673,14 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<u64> out_size, PlaceHolderId placeholder_id) {
+    Result ContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<s64> out_size, PlaceHolderId placeholder_id) {
         R_TRY(this->EnsureEnabled());
 
         /* Attempt to get the placeholder file size. */
         bool found = false;
         s64 file_size = 0;
         R_TRY(this->placeholder_accessor.TryGetPlaceHolderFileSize(std::addressof(found), std::addressof(file_size), placeholder_id));
-        
+
         /* Set the output if placeholder file is found. */
         if (found) {
             out_size.SetValue(file_size);

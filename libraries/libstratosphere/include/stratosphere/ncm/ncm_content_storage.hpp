@@ -49,7 +49,7 @@ namespace ams::ncm {
                 return id;
             }
 
-            Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
+            Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->CreatePlaceHolder(placeholder_id, content_id, size);
             }
@@ -64,7 +64,7 @@ namespace ams::ncm {
                 return this->interface->HasPlaceHolder(out, placeholder_id);
             }
 
-            Result WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, const void *buf, size_t size) {
+            Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const void *buf, size_t size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->WritePlaceHolder(placeholder_id, offset, sf::InBuffer(buf, size));
             }
@@ -99,27 +99,27 @@ namespace ams::ncm {
                 return this->interface->CleanupAllPlaceHolder();
             }
 
-            Result ListPlaceHolder(u32 *out_count, PlaceHolderId *out_list, size_t out_list_size) {
+            Result ListPlaceHolder(s32 *out_count, PlaceHolderId *out_list, size_t out_list_size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->ListPlaceHolder(out_count, sf::OutArray<PlaceHolderId>(out_list, out_list_size));
             }
 
-            Result GetContentCount(u32 *out_count) {
+            Result GetContentCount(s32 *out_count) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetContentCount(out_count);
             }
 
-            Result ListContentId(u32 *out_count, ContentId *out_list, size_t out_list_size, u32 offset) {
+            Result ListContentId(s32 *out_count, ContentId *out_list, size_t out_list_size, s32 offset) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->ListContentId(out_count, sf::OutArray<ContentId>(out_list, out_list_size), offset);
             }
 
-            Result GetSize(u64 *out_size, ContentId content_id) {
+            Result GetSize(s64 *out_size, ContentId content_id) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetSizeFromContentId(out_size, content_id);
             }
 
-            Result GetSize(u64 *out_size, PlaceHolderId placeholder_id) {
+            Result GetSize(s64 *out_size, PlaceHolderId placeholder_id) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetSizeFromPlaceHolderId(out_size, placeholder_id);
             }
@@ -134,12 +134,12 @@ namespace ams::ncm {
                 return this->interface->RevertToPlaceHolder(placeholder_id, old_content_id, new_content_id);
             }
 
-            Result SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
+            Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->SetPlaceHolderSize(placeholder_id, size);
             }
 
-            Result ReadContentIdFile(void *dst, size_t size, ContentId content_id, u64 offset) {
+            Result ReadContentIdFile(void *dst, size_t size, ContentId content_id, s64 offset) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->ReadContentIdFile(sf::OutBuffer(dst, size), content_id, offset);
             }
@@ -168,17 +168,17 @@ namespace ams::ncm {
                 return this->interface->GetRightsIdFromContentId(out_rights_id, content_id);
             }
 
-            Result WriteContentForDebug(ContentId content_id, u64 offset, const void *buf, size_t size) {
+            Result WriteContentForDebug(ContentId content_id, s64 offset, const void *buf, size_t size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->WriteContentForDebug(content_id, offset, sf::InBuffer(buf, size));
             }
 
-            Result GetFreeSpaceSize(u64 *out_size) {
+            Result GetFreeSpaceSize(s64 *out_size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetFreeSpaceSize(out_size);
             }
 
-            Result GetTotalSpaceSize(u64 *out_size) {
+            Result GetTotalSpaceSize(s64 *out_size) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->GetTotalSpaceSize(out_size);
             }

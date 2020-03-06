@@ -24,8 +24,8 @@ namespace ams::ncm {
         NON_COPYABLE(ContentMetaDatabase);
         public:
             struct ListCount {
-                u32 written;
-                u32 total;
+                s32 written;
+                s32 total;
             };
         private:
             std::shared_ptr<IContentMetaDatabase> interface;
@@ -103,7 +103,7 @@ namespace ams::ncm {
                 return lc;
             }
 
-            ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type, ProgramId app_id = InvalidProgramId, ProgramId min = {std::numeric_limits<u64>::min()}, ProgramId max = {std::numeric_limits<u64>::max()}, ContentInstallType install_type = ContentInstallType::Full) {
+            ListCount ListContentMeta(ContentMetaKey *dst, size_t dst_size, ContentMetaType type, ProgramId app_id = InvalidProgramId, u64 min = std::numeric_limits<u64>::min(), u64 max = std::numeric_limits<u64>::max(), ContentInstallType install_type = ContentInstallType::Full) {
                 ListCount lc = {};
                 R_ABORT_UNLESS(this->interface->List(std::addressof(lc.total), std::addressof(lc.written), sf::OutArray<ContentMetaKey>(dst, dst_size), type, app_id, min, max, install_type));
                 return lc;
@@ -114,12 +114,12 @@ namespace ams::ncm {
                 return this->interface->GetLatestContentMetaKey(out_key, id);
             }
 
-            Result ListContentInfo(u32 *out_count, ContentInfo *dst, size_t dst_size, const ContentMetaKey &key, u32 offset) {
+            Result ListContentInfo(s32 *out_count, ContentInfo *dst, size_t dst_size, const ContentMetaKey &key, s32 offset) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->ListContentInfo(out_count, sf::OutArray<ContentInfo>(dst, dst_size), key, offset);
             }
 
-            Result ListContentMetaInfo(u32 *out_count, ContentMetaInfo *dst, size_t dst_size, const ContentMetaKey &key, u32 offset) {
+            Result ListContentMetaInfo(s32 *out_count, ContentMetaInfo *dst, size_t dst_size, const ContentMetaKey &key, s32 offset) {
                 AMS_ASSERT(this->interface != nullptr);
                 return this->interface->ListContentMetaInfo(out_count, sf::OutArray<ContentMetaInfo>(dst, dst_size), key, offset);
             }

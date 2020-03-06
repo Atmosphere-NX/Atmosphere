@@ -64,7 +64,7 @@ namespace ams::ncm {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, u64 size) {
+    Result ReadOnlyContentStorageImpl::CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
@@ -76,7 +76,7 @@ namespace ams::ncm {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, u64 offset, sf::InBuffer data) {
+    Result ReadOnlyContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
@@ -119,7 +119,7 @@ namespace ams::ncm {
         /* Check if the file exists. */
         bool has_file;
         R_TRY(impl::HasFile(std::addressof(has_file), content_path));
-        
+
         /* If the file is absent, make the path for regular content. */
         if (!has_file) {
             MakeContentPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
@@ -128,7 +128,7 @@ namespace ams::ncm {
         /* Substitute mount name with the common mount name. */
         Path common_path;
         R_TRY(fs::ConvertToFsCommonPath(common_path.str, sizeof(common_path.str), content_path));
-        
+
         out.SetValue(common_path);
         return ResultSuccess();
     }
@@ -141,19 +141,19 @@ namespace ams::ncm {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::ListPlaceHolder(sf::Out<u32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
+    Result ReadOnlyContentStorageImpl::ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::GetContentCount(sf::Out<u32> out_count) {
+    Result ReadOnlyContentStorageImpl::GetContentCount(sf::Out<s32> out_count) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::ListContentId(sf::Out<u32> out_count, const sf::OutArray<ContentId> &out_buf, u32 start_offset) {
+    Result ReadOnlyContentStorageImpl::ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::GetSizeFromContentId(sf::Out<u64> out_size, ContentId content_id) {
+    Result ReadOnlyContentStorageImpl::GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) {
         R_TRY(this->EnsureEnabled());
 
         /* Open the file for the content id. */
@@ -178,13 +178,13 @@ namespace ams::ncm {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, u64 size) {
+    Result ReadOnlyContentStorageImpl::SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, u64 offset) {
-        /* Offset is too large */
-        R_UNLESS(offset <= std::numeric_limits<s64>::max(), ncm::ResultInvalidOffset());
+    Result ReadOnlyContentStorageImpl::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) {
+        /* Ensure offset is valid. */
+        R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
 
         /* Open the file for the content id. */
@@ -231,16 +231,16 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageImpl::WriteContentForDebug(ContentId content_id, u64 offset, sf::InBuffer data) {
+    Result ReadOnlyContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::GetFreeSpaceSize(sf::Out<u64> out_size) {
+    Result ReadOnlyContentStorageImpl::GetFreeSpaceSize(sf::Out<s64> out_size) {
         out_size.SetValue(0);
         return ResultSuccess();
     }
 
-    Result ReadOnlyContentStorageImpl::GetTotalSpaceSize(sf::Out<u64> out_size) {
+    Result ReadOnlyContentStorageImpl::GetTotalSpaceSize(sf::Out<s64> out_size) {
         out_size.SetValue(0);
         return ResultSuccess();
     }
@@ -249,7 +249,7 @@ namespace ams::ncm {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
-    Result ReadOnlyContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<u64> out, PlaceHolderId placeholder_id) {
+    Result ReadOnlyContentStorageImpl::GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) {
         return ncm::ResultWriteToReadOnlyContentStorage();
     }
 
