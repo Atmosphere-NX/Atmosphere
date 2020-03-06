@@ -20,10 +20,10 @@ namespace ams::fs::impl {
 
     namespace {
 
-        Result OpenDataStorageByDataId(std::unique_ptr<ams::fs::IStorage> *out, ncm::ProgramId data_id, ncm::StorageId storage_id) {
+        Result OpenDataStorageByDataId(std::unique_ptr<ams::fs::IStorage> *out, ncm::DataId data_id, ncm::StorageId storage_id) {
             /* Open storage using libnx bindings. */
             ::FsStorage s;
-            R_TRY_CATCH(fsOpenDataStorageByDataId(std::addressof(s), static_cast<u64>(data_id), static_cast<::NcmStorageId>(storage_id))) {
+            R_TRY_CATCH(fsOpenDataStorageByDataId(std::addressof(s), data_id.value, static_cast<::NcmStorageId>(storage_id))) {
                 R_CONVERT(ncm::ResultContentMetaNotFound, fs::ResultTargetNotFound());
             } R_END_TRY_CATCH;
 
@@ -34,7 +34,7 @@ namespace ams::fs::impl {
             return ResultSuccess();
         }
 
-        Result MountDataImpl(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_cache, bool use_data_cache, bool use_path_cache) {
+        Result MountDataImpl(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_cache, bool use_data_cache, bool use_path_cache) {
             std::unique_ptr<fs::IStorage> storage;
             R_TRY(OpenDataStorageByDataId(std::addressof(storage), data_id, storage_id));
 
@@ -47,7 +47,7 @@ namespace ams::fs::impl {
 
     }
 
-    Result QueryMountDataCacheSize(size_t *out, ncm::ProgramId data_id, ncm::StorageId storage_id) {
+    Result QueryMountDataCacheSize(size_t *out, ncm::DataId data_id, ncm::StorageId storage_id) {
         R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
 
         std::unique_ptr<fs::IStorage> storage;
@@ -61,14 +61,14 @@ namespace ams::fs::impl {
         return ResultSuccess();
     }
 
-    Result MountData(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id) {
+    Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id) {
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 
         return MountDataImpl(name, data_id, storage_id, nullptr, 0, false, false, false);
     }
 
-    Result MountData(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size) {
+    Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size) {
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 
@@ -77,7 +77,7 @@ namespace ams::fs::impl {
         return MountDataImpl(name, data_id, storage_id, cache_buffer, cache_size, true, false, false);
     }
 
-    Result MountData(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_data_cache, bool use_path_cache) {
+    Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_data_cache, bool use_path_cache) {
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 

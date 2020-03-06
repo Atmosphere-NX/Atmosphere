@@ -14,14 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_common.hpp"
+#include <stratosphere/fs/fs_common.hpp>
 
 namespace ams::fs::impl {
 
-    Result QueryMountDataCacheSize(size_t *out, ncm::ProgramId data_id, ncm::StorageId storage_id);
+    Result QueryMountDataCacheSize(size_t *out, ncm::DataId data_id, ncm::StorageId storage_id);
 
-    Result MountData(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id);
-    Result MountData(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size);
-    Result MountData(const char *name, ncm::ProgramId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_data_cache, bool use_path_cache);
+    Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id);
+    Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size);
+    Result MountData(const char *name, ncm::DataId data_id, ncm::StorageId storage_id, void *cache_buffer, size_t cache_size, bool use_data_cache, bool use_path_cache);
 
 }

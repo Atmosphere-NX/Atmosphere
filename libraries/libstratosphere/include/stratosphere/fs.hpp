@@ -32,7 +32,7 @@
 #include "fs/fs_path_tool.hpp"
 #include "fs/fs_path_utils.hpp"
 #include "fs/fs_romfs_filesystem.hpp"
-#include "fs/fs_data.hpp"
+#include "fs/impl/fs_data.hpp"
 #include "fs/fs_system_data.hpp"
 #include "fs/fs_content_storage.hpp"
 #include "fs/fs_game_card.hpp"
