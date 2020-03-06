@@ -21,7 +21,7 @@ namespace ams::ncm {
 
     namespace {
 
-        constexpr inline const char * const BasePlaceHolderDirectory = "/registered";
+        constexpr inline const char * const BasePlaceHolderDirectory = "/placehld";
 
         constexpr inline const char * const PlaceHolderExtension = ".nca";
         constexpr inline size_t PlaceHolderExtensionLength = 4;
