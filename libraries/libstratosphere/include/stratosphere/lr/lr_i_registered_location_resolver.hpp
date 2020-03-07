@@ -66,7 +66,7 @@ namespace ams::lr {
                 MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPath,           hos::Version_900),
                 MAKE_SERVICE_COMMAND_META(UnregisterHtmlDocumentPath,         hos::Version_200),
                 MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPathDeprecated, hos::Version_200, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPathDeprecated, hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPath,           hos::Version_900),
                 MAKE_SERVICE_COMMAND_META(Refresh,                            hos::Version_700),
                 MAKE_SERVICE_COMMAND_META(RefreshExcluding,                   hos::Version_900),
             };

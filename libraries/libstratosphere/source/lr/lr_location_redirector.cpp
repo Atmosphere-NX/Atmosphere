@@ -63,7 +63,7 @@ namespace ams::lr {
     }
 
     void LocationRedirector::SetRedirection(ncm::ProgramId program_id, const Path &path, u32 flags) {
-        this->SetRedirection(program_id, path, flags);
+        this->SetRedirection(program_id, ncm::InvalidProgramId, path, flags);
     }
 
     void LocationRedirector::SetRedirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) {
