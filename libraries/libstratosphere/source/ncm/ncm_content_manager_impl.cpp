@@ -344,12 +344,11 @@ namespace ams::ncm {
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
         /* Mount save data for non-existing content meta databases. */
-        auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
-        if (!root->content_meta_database) {
+        const bool mount = !root->content_meta_database;
+        if (mount) {
             R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
-        } else {
-            mount_guard.Cancel();
         }
+        auto mount_guard = SCOPE_GUARD { if (mount) { fs::Unmount(root->mount_name); } };
 
         /* Ensure the root path exists. */
         bool has_dir = false;
