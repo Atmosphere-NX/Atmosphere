@@ -32,3 +32,4 @@
 #include <vapours/util/util_intrusive_red_black_tree.hpp>
 #include <vapours/util/util_tinymt.hpp>
 #include <vapours/util/util_uuid.hpp>
+#include <vapours/util/util_bounded_map.hpp>

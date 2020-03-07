@@ -30,11 +30,11 @@ namespace ams::lr {
         /* No existing resolver is present, create one. */
         if (!resolver) {
             if (storage_id == ncm::StorageId::Host) {
-                this->location_resolvers[storage_id] = std::make_shared<RedirectOnlyLocationResolverImpl>();
+                AMS_ABORT_UNLESS(this->location_resolvers.Insert(storage_id, std::make_shared<RedirectOnlyLocationResolverImpl>()));
             } else {
                 auto content_resolver = std::make_shared<ContentLocationResolverImpl>(storage_id);
                 R_TRY(content_resolver->Refresh());
-                this->location_resolvers[storage_id] = std::move(content_resolver);
+                AMS_ABORT_UNLESS(this->location_resolvers.Insert(storage_id, std::move(content_resolver)));
             }
 
             /* Acquire the newly-created resolver. */

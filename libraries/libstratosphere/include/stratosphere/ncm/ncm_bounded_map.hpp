@@ -19,61 +19,6 @@
 namespace ams::ncm {
 
     template<class Key, class Value, size_t N>
-    class BoundedMap {
-        private:
-            std::array<std::optional<Key>, N> keys;
-            std::array<Value, N> values;
-        public:
-            Value *Find(const Key &key) {
-                for (size_t i = 0; i < N; i++) {
-                    if (this->keys[i] && this->keys[i].value() == key) {
-                        return &this->values[i];
-                    }
-                }
-                return nullptr;
-            }
-
-            void Remove(const Key &key) {
-                for (size_t i = 0; i < N; i++) {
-                    if (this->keys[i] && this->keys[i].value() == key) {
-                        this->keys[i].reset();
-                    }
-                }
-            }
-
-            void RemoveAll() {
-                for (size_t i = 0; i < N; i++) {
-                    this->keys[i].reset();
-                }
-            }
-
-            bool IsFull() {
-                for (size_t i = 0; i < N; i++) {
-                    if (!this->keys[i]) {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
-
-            Value &operator[](const Key &key) {
-                /* Try to find an existing value. */
-                if (Value *value = this->Find(key); value != nullptr) {
-                    return *value;
-                }
-
-                /* Reference a new value. */
-                for (size_t i = 0; i < N; i++) {
-                    if (!this->keys[i]) {
-                        this->keys[i] = key;
-                        return this->values[i];
-                    }
-                }
-
-                /* We ran out of space in the map. */
-                AMS_ABORT();
-            }
-    };
+    using BoundedMap = util::BoundedMap<Key, Value, N>;
 
 }
