@@ -108,25 +108,22 @@ namespace ams::ncm {
             }
         }
 
-        ALWAYS_INLINE bool ShouldPerformImport(const ContentManagerConfig &config, const char *bis_mount_name) {
-            AMS_ASSERT(config.HasAnyImport());
-            if (config.import_database_from_system) {
-                /* If we're importing from system, just do the import. */
-                return true;
-            } else /* if (config.import_database_from_system_on_sd) */ {
-                /* If we're importing from system on SD, make sure that the signed system partition is valid. */
-                const auto version = hos::GetVersion();
-                if (version >= hos::Version_800 || version < hos::Version_400) {
-                    /* On >= 8.0.0, a simpler method was added to check validity. */
-                    /* This also works on < 4.0.0 (though the system partition will never be on-sd there), */
-                    /* and so this will always return false. */
-                    char path[fs::MountNameLengthMax + 2 /* :/ */ + 1];
-                    std::snprintf(path, sizeof(path), "%s:/", bis_mount_name);
-                    return fs::IsSignedSystemPartitionOnSdCardValid(path);
-                } else {
-                    /* On 4.0.0-7.0.1, use the remote command to validate the system partition. */
-                    return fs::IsSignedSystemPartitionOnSdCardValidDeprecated();
-                }
+        ALWAYS_INLINE bool IsSignedSystemPartitionOnSdCardValid(const char *bis_mount_name) {
+            /* Signed system partition should never be checked on < 4.0.0, as it did not exist before then. */
+            AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_400);
+
+            /* If we're importing from system on SD, make sure that the signed system partition is valid. */
+            const auto version = hos::GetVersion();
+            if (version >= hos::Version_800) {
+                /* On >= 8.0.0, a simpler method was added to check validity. */
+                /* This also works on < 4.0.0 (though the system partition will never be on-sd there), */
+                /* and so this will always return false. */
+                char path[fs::MountNameLengthMax + 2 /* :/ */ + 1];
+                std::snprintf(path, sizeof(path), "%s:/", bis_mount_name);
+                return fs::IsSignedSystemPartitionOnSdCardValid(path);
+            } else {
+                /* On 4.0.0-7.0.1, use the remote command to validate the system partition. */
+                return fs::IsSignedSystemPartitionOnSdCardValidDeprecated();
             }
         }
     }
@@ -240,7 +237,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentManagerImpl::ImportContentMetaDatabase(StorageId storage_id, const char *import_mount_name, const char *path) {
+    Result ContentManagerImpl::ImportContentMetaDatabaseImpl(StorageId storage_id, const char *import_mount_name, const char *path) {
         std::scoped_lock lk(this->mutex);
 
         /* Obtain the content meta database root. */
@@ -267,6 +264,46 @@ namespace ams::ncm {
 
         /* Commit the import. */
         return fs::CommitSaveData(root->mount_name);
+    }
+
+    Result ContentManagerImpl::BuildContentMetaDatabase(StorageId storage_id) {
+        if (hos::GetVersion() <= hos::Version_400) {
+            /* Temporarily activate the database. */
+            R_TRY(this->ActivateContentMetaDatabase(storage_id));
+            ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
+
+            /* Open the content meta database and storage. */
+            ContentMetaDatabase meta_db;
+            ContentStorage storage;
+            R_TRY(ncm::OpenContentMetaDatabase(std::addressof(meta_db), storage_id));
+            R_TRY(ncm::OpenContentStorage(std::addressof(storage), storage_id));
+
+            /* Create a builder, and build. */
+            ContentMetaDatabaseBuilder builder(std::addressof(meta_db));
+            return builder.BuildFromStorage(std::addressof(storage));
+        } else {
+            /* On 5.0.0+, building just performs an import. */
+            return this->ImportContentMetaDatabase(storage_id, false);
+        }
+    }
+
+    Result ContentManagerImpl::ImportContentMetaDatabase(StorageId storage_id, bool from_signed_partition) {
+        /* Only support importing BuiltInSystem. */
+        AMS_ABORT_UNLESS(storage_id == StorageId::BuiltInSystem);
+
+        /* Get a mount name for the system partition. */
+        auto bis_mount_name = impl::CreateUniqueMountName();
+
+        /* Mount the BIS partition that contains the database we're importing. */
+        R_TRY(fs::MountBis(bis_mount_name.str, fs::BisPartitionId::System));
+        ON_SCOPE_EXIT { fs::Unmount(bis_mount_name.str); };
+
+        /* If we're not importing from a signed partition (or the partition signature is valid), import. */
+        if (!from_signed_partition || IsSignedSystemPartitionOnSdCardValid(bis_mount_name.str)) {
+            R_TRY(this->ImportContentMetaDatabaseImpl(StorageId::BuiltInSystem, bis_mount_name.str, "cnmtdb.arc"));
+        }
+
+        return ResultSuccess();
     }
 
     Result ContentManagerImpl::Initialize(const ContentManagerConfig &config) {
@@ -297,22 +334,15 @@ namespace ams::ncm {
         if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
 
-            /* NOTE: Nintendo added support for building/importing in 4.0.0. */
-            /* However, there's no reason to restrict this on a per-version basis. */
-
-            /* If we should import the database from system, do so  and verify it. */
-            if (config.HasAnyImport()) {
-                /* Get a mount name for the system partition. */
-                auto bis_mount_name = impl::CreateUniqueMountName();
-
-                /* Mount the BIS partition that contains the database we're importing. */
-                R_TRY(fs::MountBis(bis_mount_name.str, fs::BisPartitionId::System));
-                ON_SCOPE_EXIT { fs::Unmount(bis_mount_name.str); };
-
-                if (ShouldPerformImport(config, bis_mount_name.str)) {
-                    R_TRY(this->ImportContentMetaDatabase(StorageId::BuiltInSystem, bis_mount_name.str, "cnmtdb.arc"));
-                    R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
-                }
+            /* Try to build or import a database, depending on our configuration. */
+            if (config.ShouldBuildDatabase()) {
+                /* If we should build the database, do so. */
+                R_TRY(this->BuildContentMetaDatabase(StorageId::BuiltInSystem));
+                R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
+            } else if (config.ShouldImportDatabaseFromSignedSystemPartitionOnSd()) {
+                /* Otherwise if we should import the database from the SD, do so. */
+                R_TRY(this->ImportContentMetaDatabase(StorageId::BuiltInSystem, true));
+                R_TRY(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem));
             }
         }
 

@@ -24,6 +24,8 @@
 #include <stratosphere/ncm/ncm_content_meta_database.hpp>
 #include <stratosphere/ncm/ncm_bounded_map.hpp>
 #include <stratosphere/ncm/ncm_rights_id_cache.hpp>
+#include <stratosphere/ncm/ncm_content_management_utils.hpp>
+#include <stratosphere/ncm/ncm_content_meta_utils.hpp>
 #include <stratosphere/kvdb/kvdb_memory_key_value_store.hpp>
 
 namespace ams::ncm {
@@ -93,7 +95,9 @@ namespace ams::ncm {
             Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas);
             Result InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas);
 
-            Result ImportContentMetaDatabase(StorageId storage_id, const char *import_mount_name, const char *path);
+            Result BuildContentMetaDatabase(StorageId storage_id);
+            Result ImportContentMetaDatabase(StorageId storage_id, bool from_signed_partition);
+            Result ImportContentMetaDatabaseImpl(StorageId storage_id, const char *import_mount_name, const char *path);
 
             Result EnsureAndMountSystemSaveData(const char *mount, const SystemSaveDataInfo &info) const;
         public:

@@ -155,21 +155,4 @@ namespace ams::ncm::impl {
         return ResultSuccess();
     }
 
-    Result GetSaveDataFlags(u32 *out_flags, u64 save_id) {
-        FsSaveDataExtraData extra_data;
-
-        R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));
-        *out_flags = extra_data.flags;
-        return ResultSuccess();
-    }
-
-    Result SetSaveDataFlags(u64 save_id, FsSaveDataSpaceId space_id, u32 flags) {
-        FsSaveDataExtraData extra_data;
-
-        R_TRY(fsReadSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), save_id));
-        extra_data.flags = flags;
-        R_TRY(fsWriteSaveDataFileSystemExtraData(&extra_data, sizeof(FsSaveDataExtraData), space_id, save_id));
-        return ResultSuccess();
-    }
-
 }

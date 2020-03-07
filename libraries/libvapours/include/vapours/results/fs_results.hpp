@@ -56,6 +56,8 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInBisA,                        3215);
         R_DEFINE_ERROR_RESULT(AllocationFailureInBisB,                        3216);
         R_DEFINE_ERROR_RESULT(AllocationFailureInBisC,                        3217);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInCodeA,                       3218);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentA,                    3219);
         R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageA,             3220);
         R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,             3221);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDataA,                       3222);
@@ -79,7 +81,7 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInDbmRomKeyValueStorage,       3375);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemE,            3377);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemInterfaceAdapter,  3407);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInUserFileSystem,              3420);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInNew,                         3420);
 
     R_DEFINE_ERROR_RANGE(MmcAccessFailed, 3500, 3999);
 
@@ -235,16 +237,17 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(FileExtensionWithoutOpenModeAllowAppend, 6201);
 
             R_DEFINE_ERROR_RANGE(UnsupportedOperation, 6300, 6399);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,        6302);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageB,        6303);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,     6304);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,     6305);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,       6306);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,   6364);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,   6365);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemC,   6366);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileA,         6367);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileB,         6368);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,                6302);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageB,                6303);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,             6304);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,             6305);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,               6306);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileServiceObjectAdapterA,  6362);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,           6364);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,           6365);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemC,           6366);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileA,                 6367);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileB,                 6368);
 
             R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 

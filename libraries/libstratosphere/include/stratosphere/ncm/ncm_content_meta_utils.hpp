@@ -14,25 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere/ncm/ncm_auto_buffer.hpp>
+#include <stratosphere/ncm/ncm_storage_id.hpp>
+#include <stratosphere/ncm/ncm_content_storage.hpp>
+#include <stratosphere/ncm/ncm_content_meta_key.hpp>
+#include <stratosphere/ncm/ncm_content_meta_database.hpp>
 
 namespace ams::ncm {
 
-    struct ContentManagerConfig {
-        bool build_system_database;
-        bool import_database_from_system_on_sd;
-
-        bool HasAnyConfig() const {
-            return this->ShouldBuildDatabase() || this->import_database_from_system_on_sd;
-        }
-
-        bool ShouldBuildDatabase() const {
-            return hos::GetVersion() < hos::Version_400 || this->build_system_database;
-        }
-
-        bool ShouldImportDatabaseFromSignedSystemPartitionOnSd() const {
-            return this->import_database_from_system_on_sd;
-        }
-    };
+    Result ReadContentMetaPath(AutoBuffer *out, const char *path);
 
 }

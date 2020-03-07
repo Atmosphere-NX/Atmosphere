@@ -13,17 +13,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-
+#include "fs_common.hpp"
 #include <stratosphere/ncm/ncm_ids.hpp>
-#include <stratosphere/ncm/ncm_program_location.hpp>
-#include <stratosphere/ncm/ncm_auto_buffer.hpp>
-#include <stratosphere/ncm/ncm_make_path.hpp>
-#include <stratosphere/ncm/ncm_content_id_utils.hpp>
-#include <stratosphere/ncm/ncm_content_meta.hpp>
-#include <stratosphere/ncm/ncm_content_meta_database.hpp>
-#include <stratosphere/ncm/ncm_content_storage.hpp>
-#include <stratosphere/ncm/ncm_content_manager_impl.hpp>
-#include <stratosphere/ncm/ncm_content_meta_utils.hpp>
-#include <stratosphere/ncm/ncm_api.hpp>
+
+namespace ams::fs {
+
+    enum ContentType {
+        ContentType_Meta    = 0,
+        ContentType_Control = 1,
+        ContentType_Manual  = 2,
+        ContentType_Logo    = 3,
+        ContentType_Data    = 4,
+    };
+
+    Result MountContent(const char *name, const char *path, ContentType content_type);
+    Result MountContent(const char *name, const char *path, ncm::ProgramId id, ContentType content_type);
+    Result MountContent(const char *name, const char *path, ncm::DataId id, ContentType content_type);
+
+}

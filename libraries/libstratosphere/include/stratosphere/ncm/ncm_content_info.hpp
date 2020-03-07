@@ -42,7 +42,7 @@ namespace ams::ncm {
             return this->id_offset;
         }
 
-        static constexpr ContentInfo Make(ContentId id, u64 size, ContentType type, u8 id_ofs) {
+        static constexpr ContentInfo Make(ContentId id, u64 size, ContentType type, u8 id_ofs = 0) {
             const u32 size_low  = size & 0xFFFFFFFFu;
             const u16 size_high = static_cast<u16>(size >> 32);
             return {

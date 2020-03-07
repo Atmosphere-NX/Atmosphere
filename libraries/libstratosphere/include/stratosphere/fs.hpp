@@ -19,6 +19,7 @@
 #include <stratosphere/fs/fsa/fs_ifile.hpp>
 #include <stratosphere/fs/fsa/fs_idirectory.hpp>
 #include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
+#include <stratosphere/fs/impl/fs_filesystem_proxy_type.hpp>
 #include <stratosphere/fs/fsa/fs_registrar.hpp>
 #include <stratosphere/fs/fs_remote_filesystem.hpp>
 #include <stratosphere/fs/fs_readonly_filesystem_adapter.hpp>
@@ -36,6 +37,7 @@
 #include <stratosphere/fs/impl/fs_data.hpp>
 #include <stratosphere/fs/fs_system_data.hpp>
 #include <stratosphere/fs/fs_bis.hpp>
+#include <stratosphere/fs/fs_content.hpp>
 #include <stratosphere/fs/fs_content_storage.hpp>
 #include <stratosphere/fs/fs_game_card.hpp>
 #include <stratosphere/fs/fs_sd_card.hpp>

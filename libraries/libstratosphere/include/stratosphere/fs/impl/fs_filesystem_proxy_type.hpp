@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,23 +16,18 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::ncm {
+namespace ams::fs::impl {
 
-    struct ContentManagerConfig {
-        bool build_system_database;
-        bool import_database_from_system_on_sd;
-
-        bool HasAnyConfig() const {
-            return this->ShouldBuildDatabase() || this->import_database_from_system_on_sd;
-        }
-
-        bool ShouldBuildDatabase() const {
-            return hos::GetVersion() < hos::Version_400 || this->build_system_database;
-        }
-
-        bool ShouldImportDatabaseFromSignedSystemPartitionOnSd() const {
-            return this->import_database_from_system_on_sd;
-        }
+    enum FileSystemProxyType {
+        FileSystemProxyType_Code            = 0,
+        FileSystemProxyType_Rom             = 1,
+        FileSystemProxyType_Logo            = 2,
+        FileSystemProxyType_Control         = 3,
+        FileSystemProxyType_Manual          = 4,
+        FileSystemProxyType_Meta            = 5,
+        FileSystemProxyType_Data            = 6,
+        FileSystemProxyType_Package         = 7,
+        FileSystemProxyType_UpdatePartition = 8,
     };
 
 }

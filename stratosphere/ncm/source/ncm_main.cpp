@@ -189,9 +189,9 @@ namespace {
 
     /* Compile-time configuration. */
 #ifdef NCM_BUILD_FOR_INTITIALIZE
-    constexpr inline bool ImportSystemDatabase = true;
+    constexpr inline bool BuildSystemDatabase = true;
 #else
-    constexpr inline bool ImportSystemDatabase = false;
+    constexpr inline bool BuildSystemDatabase = false;
 #endif
 
 #ifdef NCM_BUILD_FOR_SAFEMODE
@@ -200,9 +200,9 @@ namespace {
     constexpr inline bool ImportSystemDatabaseFromSignedSystemPartitionOnSdCard = false;
 #endif
 
-    static_assert(!(ImportSystemDatabase && ImportSystemDatabaseFromSignedSystemPartitionOnSdCard), "Invalid NCM build configuration!");
+    static_assert(!(BuildSystemDatabase && ImportSystemDatabaseFromSignedSystemPartitionOnSdCard), "Invalid NCM build configuration!");
 
-    constexpr inline ncm::ContentManagerConfig ManagerConfig = { ImportSystemDatabase, ImportSystemDatabaseFromSignedSystemPartitionOnSdCard };
+    constexpr inline ncm::ContentManagerConfig ManagerConfig = { BuildSystemDatabase, ImportSystemDatabaseFromSignedSystemPartitionOnSdCard };
 
 }
 
