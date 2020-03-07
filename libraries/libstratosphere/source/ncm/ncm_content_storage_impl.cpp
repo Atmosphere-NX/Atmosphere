@@ -57,6 +57,9 @@ namespace ams::ncm {
             /* If the level is zero, we're done. */
             R_SUCCEED_IF(max_level <= 0);
 
+            /* On 1.0.0, NotRequireFileSize was not a valid open mode. */
+            const auto open_dir_mode = hos::GetVersion() >= hos::Version_200 ? (fs::OpenDirectoryMode_All | fs::OpenDirectoryMode_NotRequireFileSize) : (fs::OpenDirectoryMode_All);
+
             /* Retry traversal upon request. */
             bool retry_dir_read = true;
             while (retry_dir_read) {
@@ -64,7 +67,7 @@ namespace ams::ncm {
 
                 /* Open the directory at the given path. All entry types are allowed. */
                 fs::DirectoryHandle dir;
-                R_TRY(fs::OpenDirectory(std::addressof(dir), root_path, fs::OpenDirectoryMode_All | fs::OpenDirectoryMode_NotRequireFileSize));
+                R_TRY(fs::OpenDirectory(std::addressof(dir), root_path, open_dir_mode));
                 ON_SCOPE_EXIT { fs::CloseDirectory(dir); };
 
                 while (true) {
