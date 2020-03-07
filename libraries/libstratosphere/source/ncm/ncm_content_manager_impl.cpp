@@ -91,8 +91,8 @@ namespace ams::ncm {
         ALWAYS_INLINE Result GetContentStorageNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
                 case StorageId::GameCard:       return ResultGameCardContentStorageNotActive();
-                case StorageId::BuiltInSystem:  return ResultNandSystemContentStorageNotActive();
-                case StorageId::BuiltInUser:    return ResultNandUserContentStorageNotActive();
+                case StorageId::BuiltInSystem:  return ResultBuiltInSystemContentStorageNotActive();
+                case StorageId::BuiltInUser:    return ResultBuiltInUserContentStorageNotActive();
                 case StorageId::SdCard:         return ResultSdCardContentStorageNotActive();
                 default:                        return ResultUnknownContentStorageNotActive();
             }
@@ -101,8 +101,8 @@ namespace ams::ncm {
         ALWAYS_INLINE Result GetContentMetaDatabaseNotActiveResult(StorageId storage_id) {
             switch (storage_id) {
                 case StorageId::GameCard:       return ResultGameCardContentMetaDatabaseNotActive();
-                case StorageId::BuiltInSystem:  return ResultNandSystemContentMetaDatabaseNotActive();
-                case StorageId::BuiltInUser:    return ResultNandUserContentMetaDatabaseNotActive();
+                case StorageId::BuiltInSystem:  return ResultBuiltInSystemContentMetaDatabaseNotActive();
+                case StorageId::BuiltInUser:    return ResultBuiltInUserContentMetaDatabaseNotActive();
                 case StorageId::SdCard:         return ResultSdCardContentMetaDatabaseNotActive();
                 default:                        return ResultUnknownContentMetaDatabaseNotActive();
             }
@@ -290,9 +290,7 @@ namespace ams::ncm {
         R_TRY(impl::EnsureDirectoryRecursively(root->path));
 
         /* Initialize content and placeholder directories for the root. */
-        R_TRY(ContentStorageImpl::InitializeBase(root->path));
-
-        return ResultSuccess();
+        return ContentStorageImpl::InitializeBase(root->path);
     }
 
     Result ContentManagerImpl::CreateContentMetaDatabase(StorageId storage_id) {
@@ -312,9 +310,7 @@ namespace ams::ncm {
         R_TRY(impl::EnsureDirectoryRecursively(root->path));
 
         /* Commit our changes. */
-        R_TRY(fs::CommitSaveData(root->mount_name));
-
-        return ResultSuccess();
+        return fs::CommitSaveData(root->mount_name);
     }
 
     Result ContentManagerImpl::VerifyContentStorage(StorageId storage_id) {
@@ -334,9 +330,7 @@ namespace ams::ncm {
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
         /* Ensure the root, content and placeholder directories exist for the storage. */
-        R_TRY(ContentStorageImpl::VerifyBase(path));
-
-        return ResultSuccess();
+        return ContentStorageImpl::VerifyBase(path);
     }
 
     Result ContentManagerImpl::VerifyContentMetaDatabase(StorageId storage_id) {
@@ -382,8 +376,7 @@ namespace ams::ncm {
             }
         }
 
-        auto content_storage = root->content_storage;
-        out.SetValue(std::move(content_storage));
+        out.SetValue(std::shared_ptr<IContentStorage>(root->content_storage));
         return ResultSuccess();
     }
 
@@ -404,8 +397,7 @@ namespace ams::ncm {
             }
         }
 
-        auto content_meta_db = root->content_meta_database;
-        out.SetValue(std::move(content_meta_db));
+        out.SetValue(std::shared_ptr<IContentMetaDatabase>(root->content_meta_database));
         return ResultSuccess();
     }
 
@@ -428,8 +420,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
         /* Delete save data for the content meta database root. */
-        R_TRY(fs::DeleteSaveData(root->info.space_id, root->info.id));
-        return ResultSuccess();
+        return fs::DeleteSaveData(root->info.space_id, root->info.id);
     }
 
     Result ContentManagerImpl::ActivateContentStorage(StorageId storage_id) {

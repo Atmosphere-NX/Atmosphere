@@ -65,8 +65,7 @@ namespace ams::ncm {
                 /* Update the cache. */
                 eviction_candidate->uuid = content_id.uuid;
                 eviction_candidate->rights_id = rights_id;
-                eviction_candidate->last_accessed = this->counter;
-                this->counter++;
+                eviction_candidate->last_accessed = this->counter++;
             }
 
             bool Find(ncm::RightsId *out_rights_id, ContentId content_id) {

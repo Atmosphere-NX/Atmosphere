@@ -69,14 +69,14 @@ namespace ams::ncm {
             };
         private:
             os::Mutex mutex;
-            bool initialized = false;
+            bool initialized;
             ContentStorageRoot content_storage_roots[MaxContentStorageRoots];
             ContentMetaDatabaseRoot content_meta_database_roots[MaxContentMetaDatabaseRoots];
             u32 num_content_storage_entries;
             u32 num_content_meta_entries;
             RightsIdCache rights_id_cache;
         public:
-            ContentManagerImpl() { /* ... */ };
+            ContentManagerImpl() : initialized(false) { /* ... */ };
             ~ContentManagerImpl();
         public:
             Result Initialize();

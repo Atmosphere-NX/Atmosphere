@@ -106,7 +106,7 @@ namespace ams::lr {
     }
 
     Result ContentLocationResolverImpl::Refresh() {
-        /* Obtain Content Meta Database and Content Storage objects for this resolver's storage. */
+        /* Obtain content meta database and content storage objects for this resolver's storage. */
         ncm::ContentMetaDatabase meta_db;
         ncm::ContentStorage storage;
         R_TRY(ncm::OpenContentMetaDatabase(&meta_db, this->storage_id));

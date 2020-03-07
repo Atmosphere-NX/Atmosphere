@@ -249,6 +249,8 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::GetRequiredSystemVersion(sf::Out<u32> out_version, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
+
+        /* Only applications and patches have a required system version. */
         R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch, ncm::ResultInvalidContentMetaKey());
 
         /* Obtain the content meta for the key. */
@@ -275,6 +277,8 @@ namespace ams::ncm {
 
     Result ContentMetaDatabaseImpl::GetPatchId(sf::Out<PatchId> out_patch_id, const ContentMetaKey &key) {
         R_TRY(this->EnsureEnabled());
+
+        /* Only applications can have patches. */
         R_UNLESS(key.type == ContentMetaType::Application, ncm::ResultInvalidContentMetaKey());
 
         /* Obtain the content meta for the key. */
@@ -378,6 +382,7 @@ namespace ams::ncm {
             out_meta_info[count] = *reader.GetContentMetaInfo(count + offset);
         }
 
+        /* Set the ouput value. */
         out_entries_written.SetValue(count);
         return ResultSuccess();
     }
@@ -393,6 +398,7 @@ namespace ams::ncm {
         /* Create a reader. */
         ContentMetaReader reader(meta, meta_size);
 
+        /* Set the ouput value. */
         out_attributes.SetValue(reader.GetHeader()->attributes);
         return ResultSuccess();
     }
@@ -422,6 +428,7 @@ namespace ams::ncm {
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
+        /* Set the ouput value. */
         out_version.SetValue(required_version);
         return ResultSuccess();
     }

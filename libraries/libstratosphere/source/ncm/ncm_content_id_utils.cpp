@@ -51,9 +51,7 @@ namespace ams::ncm {
 
     ContentIdString GetContentIdString(ContentId id) {
         ContentIdString str;
-
         GetStringFromContentId(str.data, sizeof(str), id);
-
         return str;
     }
 

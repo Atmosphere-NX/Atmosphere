@@ -97,7 +97,7 @@ namespace ams::ncm {
     bool PlaceHolderAccessor::LoadFromCache(fs::FileHandle *out_handle, PlaceHolderId placeholder_id) {
         std::scoped_lock lk(this->cache_mutex);
 
-        /* attempt to find an entry in the cache. */
+        /* Attempt to find an entry in the cache. */
         CacheEntry *entry = this->FindInCache(placeholder_id);
         if (!entry) {
             return false;

@@ -97,7 +97,7 @@ namespace ams::lr {
     }
 
     void LocationRedirector::ClearRedirections(u32 flags) {
-        /* Remove anyredirections with matching flags. */
+        /* Remove any redirections with matching flags. */
         for (auto it = this->redirection_list.begin(); it != this->redirection_list.end();) {
             if ((it->GetFlags() & flags) == flags) {
                 auto old = it;

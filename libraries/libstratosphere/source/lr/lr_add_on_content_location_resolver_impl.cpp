@@ -23,7 +23,7 @@ namespace ams::lr {
         ncm::StorageId storage_id = ncm::StorageId::None;
         R_UNLESS(this->registered_storages.Find(&storage_id, id), lr::ResultAddOnContentNotFound());
 
-        /* Obtain a Content Meta Database for the storage id. */
+        /* Obtain a content meta database for the storage id. */
         ncm::ContentMetaDatabase content_meta_database;
         R_TRY(ncm::OpenContentMetaDatabase(&content_meta_database, storage_id));
 
@@ -31,7 +31,7 @@ namespace ams::lr {
         ncm::ContentId data_content_id;
         R_TRY(content_meta_database.GetLatestData(&data_content_id, id));
 
-        /* Obtain a Content Storage for the storage id. */
+        /* Obtain a content storage for the storage id. */
         ncm::ContentStorage content_storage;
         R_TRY(ncm::OpenContentStorage(&content_storage, storage_id));
 

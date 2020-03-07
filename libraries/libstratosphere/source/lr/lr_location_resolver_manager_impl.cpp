@@ -42,8 +42,7 @@ namespace ams::lr {
         }
 
         /* Copy the output interface. */
-        std::shared_ptr<ILocationResolver> new_intf = *resolver;
-        out.SetValue(std::move(new_intf));
+        out.SetValue(std::shared_ptr<ILocationResolver>(*resolver));
         return ResultSuccess();
     }
 
@@ -56,8 +55,7 @@ namespace ams::lr {
         }
 
         /* Copy the output interface. */
-        std::shared_ptr<IRegisteredLocationResolver> new_intf = this->registered_location_resolver;
-        out.SetValue(std::move(new_intf));
+        out.SetValue(std::shared_ptr<IRegisteredLocationResolver>(this->registered_location_resolver));
         return ResultSuccess();
     }
 
@@ -85,8 +83,7 @@ namespace ams::lr {
         }
 
         /* Copy the output interface. */
-        std::shared_ptr<IAddOnContentLocationResolver> new_intf = this->add_on_content_location_resolver;
-        out.SetValue(std::move(new_intf));
+        out.SetValue(std::shared_ptr<IAddOnContentLocationResolver>(this->add_on_content_location_resolver));
         return ResultSuccess();
     }
 
