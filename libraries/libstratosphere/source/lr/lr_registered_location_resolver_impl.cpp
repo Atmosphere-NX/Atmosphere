@@ -85,7 +85,7 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverImpl::RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
-        RegisterPath(this->registered_program_locations, id, path, ncm::ProgramId::Invalid);
+        RegisterPath(this->registered_program_locations, id, path, ncm::InvalidProgramId);
         return ResultSuccess();
     }
 
@@ -115,7 +115,7 @@ namespace ams::lr {
     }
 
     Result RegisteredLocationResolverImpl::RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
-        RegisterPath(this->registered_html_docs_locations, id, path, ncm::ProgramId::Invalid);
+        RegisterPath(this->registered_html_docs_locations, id, path, ncm::InvalidProgramId);
         return ResultSuccess();
     }
 
