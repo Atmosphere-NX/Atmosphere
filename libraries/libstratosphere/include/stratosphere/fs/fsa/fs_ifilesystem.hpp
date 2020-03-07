@@ -24,7 +24,8 @@ namespace ams::fs::fsa {
     class IDirectory;
 
     enum class QueryId {
-        SetConcatenationFileAttribute = FsFileSystemQueryId_SetConcatenationFileAttribute
+        SetConcatenationFileAttribute        = 0,
+        IsSignedSystemPartitionOnSdCardValid = 2,
     };
 
     class IFileSystem {

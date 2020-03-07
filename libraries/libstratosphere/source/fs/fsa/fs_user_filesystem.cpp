@@ -156,7 +156,6 @@ namespace ams::fs {
         return accessor->GetTotalSpaceSize(out, sub_path);
     }
 
-
     Result SetConcatenationFileAttribute(const char *path) {
         impl::FileSystemAccessor *accessor;
         const char *sub_path;

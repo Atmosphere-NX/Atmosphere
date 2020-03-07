@@ -53,6 +53,9 @@ namespace ams::fs {
     R_DEFINE_ERROR_RANGE(AllocationFailure, 3200, 3499);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorA,         3211);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorB,         3212);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisA,                        3215);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisB,                        3216);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisC,                        3217);
         R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageA,             3220);
         R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,             3221);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDataA,                       3222);

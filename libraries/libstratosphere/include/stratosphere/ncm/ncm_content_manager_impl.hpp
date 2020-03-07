@@ -15,10 +15,12 @@
  */
 #pragma once
 #include <stratosphere/os.hpp>
-#include <stratosphere/fs/fs_content_storage.hpp>
 #include <stratosphere/fs/fs_mount.hpp>
+#include <stratosphere/fs/fs_bis.hpp>
+#include <stratosphere/fs/fs_content_storage.hpp>
 #include <stratosphere/fs/fs_system_save_data.hpp>
 #include <stratosphere/ncm/ncm_i_content_manager.hpp>
+#include <stratosphere/ncm/ncm_content_manager_config.hpp>
 #include <stratosphere/ncm/ncm_content_meta_database.hpp>
 #include <stratosphere/ncm/ncm_bounded_map.hpp>
 #include <stratosphere/ncm/ncm_rights_id_cache.hpp>
@@ -68,7 +70,7 @@ namespace ams::ncm {
                 ContentMetaDatabaseRoot() { /* ... */ }
             };
         private:
-            os::Mutex mutex;
+            os::RecursiveMutex mutex;
             bool initialized;
             ContentStorageRoot content_storage_roots[MaxContentStorageRoots];
             ContentMetaDatabaseRoot content_meta_database_roots[MaxContentMetaDatabaseRoots];
@@ -79,7 +81,7 @@ namespace ams::ncm {
             ContentManagerImpl() : initialized(false) { /* ... */ };
             ~ContentManagerImpl();
         public:
-            Result Initialize();
+            Result Initialize(const ContentManagerConfig &config);
         private:
             /* Helpers. */
             Result GetContentStorageRoot(ContentStorageRoot **out, StorageId id);
@@ -91,8 +93,9 @@ namespace ams::ncm {
             Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas);
             Result InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas);
 
-            Result EnsureAndMountSystemSaveData(const char *mount, const SystemSaveDataInfo &info) const;
+            Result ImportContentMetaDatabase(StorageId storage_id, const char *import_mount_name, const char *path);
 
+            Result EnsureAndMountSystemSaveData(const char *mount, const SystemSaveDataInfo &info) const;
         public:
             /* Actual commands. */
             virtual Result CreateContentStorage(StorageId storage_id) override;

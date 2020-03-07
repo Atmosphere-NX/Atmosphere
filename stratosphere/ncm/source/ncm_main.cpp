@@ -187,13 +187,30 @@ namespace {
         return sf::ServiceObjectTraits<ncm::ContentManagerImpl>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_ncm_manager_service_object));
     }
 
+    /* Compile-time configuration. */
+#ifdef NCM_BUILD_FOR_INTITIALIZE
+    constexpr inline bool ImportSystemDatabase = true;
+#else
+    constexpr inline bool ImportSystemDatabase = false;
+#endif
+
+#ifdef NCM_BUILD_FOR_SAFEMODE
+    constexpr inline bool ImportSystemDatabaseFromSignedSystemPartitionOnSdCard = true;
+#else
+    constexpr inline bool ImportSystemDatabaseFromSignedSystemPartitionOnSdCard = false;
+#endif
+
+    static_assert(!(ImportSystemDatabase && ImportSystemDatabaseFromSignedSystemPartitionOnSdCard), "Invalid NCM build configuration!");
+
+    constexpr inline ncm::ContentManagerConfig ManagerConfig = { ImportSystemDatabase, ImportSystemDatabaseFromSignedSystemPartitionOnSdCard };
+
 }
 
 int main(int argc, char **argv)
 {
     /* Create and initialize the content manager. */
     auto content_manager = GetSharedPointerToContentManager();
-    R_ABORT_UNLESS(content_manager->Initialize());
+    R_ABORT_UNLESS(content_manager->Initialize(ManagerConfig));
 
     /* Initialize ncm's server and start threads. */
     R_ABORT_UNLESS(g_ncm_server_manager.Initialize(content_manager));
