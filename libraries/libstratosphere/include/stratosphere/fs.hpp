@@ -37,6 +37,7 @@
 #include <stratosphere/fs/impl/fs_data.hpp>
 #include <stratosphere/fs/fs_system_data.hpp>
 #include <stratosphere/fs/fs_bis.hpp>
+#include <stratosphere/fs/fs_code.hpp>
 #include <stratosphere/fs/fs_content.hpp>
 #include <stratosphere/fs/fs_content_storage.hpp>
 #include <stratosphere/fs/fs_game_card.hpp>

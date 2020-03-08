@@ -100,7 +100,6 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    fsdevUnmountAll();
     pmshellExit();
     splExit();
     fsExit();
