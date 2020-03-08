@@ -19,7 +19,7 @@
 namespace ams::updater {
 
     /* Path functionality. */
-    const char *GetBootImagePackageMountPath();
+    const char *GetMountName();
     const char *GetBctPath(BootImageUpdateType boot_image_update_type);
     const char *GetPackage1Path(BootImageUpdateType boot_image_update_type);
     const char *GetPackage2Path(BootImageUpdateType boot_image_update_type);

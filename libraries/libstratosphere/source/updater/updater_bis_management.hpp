@@ -20,19 +20,14 @@
 namespace ams::updater {
 
     class BisAccessor {
+        NON_COPYABLE(BisAccessor);
         public:
             static constexpr size_t SectorAlignment = 0x200;
         private:
-            FsStorage storage = {};
-            FsBisPartitionId partition_id;
-            bool active;
+            std::unique_ptr<fs::IStorage> storage;
+            const fs::BisPartitionId partition_id;
         public:
-            BisAccessor(FsBisPartitionId id) : partition_id(id), active(false) { }
-            ~BisAccessor() {
-                if (this->active) {
-                    fsStorageClose(&storage);
-                }
-            }
+            explicit BisAccessor(fs::BisPartitionId id) : partition_id(id) { /* ... */ }
 
         public:
             Result Initialize();
@@ -79,7 +74,7 @@ namespace ams::updater {
     };
 
     struct Boot0Meta {
-        using EnumType = Boot0Partition;
+        using EnumType       = Boot0Partition;
         using OffsetSizeType = OffsetSizeEntry<EnumType>;
 
         static constexpr size_t NumEntries = static_cast<size_t>(EnumType::Count);
@@ -96,7 +91,7 @@ namespace ams::updater {
     };
 
     struct Boot1Meta {
-        using EnumType = Boot1Partition;
+        using EnumType       = Boot1Partition;
         using OffsetSizeType = OffsetSizeEntry<EnumType>;
 
         static constexpr size_t NumEntries = static_cast<size_t>(EnumType::Count);
@@ -109,7 +104,7 @@ namespace ams::updater {
     };
 
     struct Package2Meta {
-        using EnumType = Package2Partition;
+        using EnumType       = Package2Partition;
         using OffsetSizeType = OffsetSizeEntry<EnumType>;
 
         static constexpr size_t NumEntries = static_cast<size_t>(EnumType::Count);
@@ -121,11 +116,12 @@ namespace ams::updater {
 
     template<typename Meta>
     class PartitionAccessor : public BisAccessor {
+        NON_COPYABLE(PartitionAccessor);
         public:
-            using EnumType = typename Meta::EnumType;
+            using EnumType       = typename Meta::EnumType;
             using OffsetSizeType = typename Meta::OffsetSizeType;
         public:
-            PartitionAccessor(FsBisPartitionId id) : BisAccessor(id) { }
+            explicit PartitionAccessor(fs::BisPartitionId id) : BisAccessor(id) { /* ... */ }
         private:
             constexpr const OffsetSizeType *FindEntry(EnumType which) {
                 const OffsetSizeType *entry = nullptr;
@@ -182,27 +178,27 @@ namespace ams::updater {
         RepairSub,
     };
 
-    static constexpr FsBisPartitionId GetPackage2StorageId(Package2Type which) {
+    static constexpr fs::BisPartitionId GetPackage2StorageId(Package2Type which) {
         switch (which) {
             case Package2Type::NormalMain:
-                return FsBisPartitionId_BootConfigAndPackage2Part1;
+                return fs::BisPartitionId::BootConfigAndPackage2Part1;
             case Package2Type::NormalSub:
-                return FsBisPartitionId_BootConfigAndPackage2Part2;
+                return fs::BisPartitionId::BootConfigAndPackage2Part2;
             case Package2Type::SafeMain:
-                return FsBisPartitionId_BootConfigAndPackage2Part3;
+                return fs::BisPartitionId::BootConfigAndPackage2Part3;
             case Package2Type::SafeSub:
-                return FsBisPartitionId_BootConfigAndPackage2Part4;
+                return fs::BisPartitionId::BootConfigAndPackage2Part4;
             case Package2Type::RepairMain:
-                return FsBisPartitionId_BootConfigAndPackage2Part5;
+                return fs::BisPartitionId::BootConfigAndPackage2Part5;
             case Package2Type::RepairSub:
-                return FsBisPartitionId_BootConfigAndPackage2Part6;
+                return fs::BisPartitionId::BootConfigAndPackage2Part6;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
     class Boot0Accessor : public PartitionAccessor<Boot0Meta> {
         public:
-            static constexpr FsBisPartitionId PartitionId = FsBisPartitionId_BootPartition1Root;
+            static constexpr fs::BisPartitionId PartitionId = fs::BisPartitionId::BootPartition1Root;
             static constexpr size_t BctPubkOffset = 0x210;
             static constexpr size_t BctPubkSize = 0x100;
             static constexpr size_t BctEksOffset = 0x450;
@@ -222,7 +218,7 @@ namespace ams::updater {
 
     class Boot1Accessor : public PartitionAccessor<Boot1Meta> {
         public:
-            static constexpr FsBisPartitionId PartitionId = FsBisPartitionId_BootPartition2Root;
+            static constexpr fs::BisPartitionId PartitionId = fs::BisPartitionId::BootPartition2Root;
         public:
             Boot1Accessor() : PartitionAccessor<Boot1Meta>(PartitionId) { }
     };

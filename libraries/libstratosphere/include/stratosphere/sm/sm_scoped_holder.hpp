@@ -65,7 +65,12 @@ namespace ams::sm {
                 AMS_ABORT_UNLESS(!this->has_initialized);
 
                 sm::DoWithSession([&]() {
-                    this->result = Initializer();
+                    if constexpr (std::is_same<decltype(Initializer()), void>::value) {
+                        Initializer();
+                        this->result = ResultSuccess();
+                    } else {
+                        this->result = Initializer();
+                    }
                 });
 
                 this->has_initialized = R_SUCCEEDED(this->result);
