@@ -110,8 +110,8 @@ namespace ams::ncm {
         size_t entries_written = 0;
 
         /* Iterate over all entries. */
-        for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
-            const ContentMetaKey key = entry->GetKey();
+        for (auto &entry : *this->kvs) {
+            const ContentMetaKey key = entry.GetKey();
 
             /* Check if this entry matches the given filters. */
             if (!((meta_type == ContentMetaType::Unknown || key.type == meta_type) && (min <= key.id && key.id <= max) && (install_type == ContentInstallType::Unknown || key.install_type == install_type))) {
@@ -178,8 +178,8 @@ namespace ams::ncm {
         size_t entries_written = 0;
 
         /* Iterate over all entries. */
-        for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
-            const ContentMetaKey key = entry->GetKey();
+        for (auto &entry : *this->kvs) {
+            const ContentMetaKey key = entry.GetKey();
 
             /* Check if this entry matches the given filters. */
             if (!(type == ContentMetaType::Unknown || key.type == type)) {
@@ -187,7 +187,7 @@ namespace ams::ncm {
             }
 
             /* Check if the entry has an application id. */
-            ContentMetaReader reader(entry->GetValuePointer(), entry->GetValueSize());
+            ContentMetaReader reader(entry.GetValuePointer(), entry.GetValueSize());
 
             if (const auto entry_application_id = reader.GetApplicationId(key); entry_application_id) {
                 /* Write the entry to the output buffer. */
@@ -315,12 +315,15 @@ namespace ams::ncm {
                     return std::make_optional(i);
                 }
             }
+
+            /* TODO: C++20 (gcc 10) fixes ALWAYS_INLINE_LAMBDA in conjunction with trailing return types. */
+            /* This should be changed to std::nullopt once possible. */
             return std::optional<size_t>(std::nullopt);
         };
 
         /* Iterate over all entries. */
-        for (auto entry = this->kvs->begin(); entry != this->kvs->end(); entry++) {
-            ContentMetaReader reader(entry->GetValuePointer(), entry->GetValueSize());
+        for (auto &entry : *this->kvs) {
+            ContentMetaReader reader(entry.GetValuePointer(), entry.GetValueSize());
 
             /* Check if any of this entry's content infos matches one of the content ids for lookup. */
             /* If they do, then the content id isn't orphaned. */

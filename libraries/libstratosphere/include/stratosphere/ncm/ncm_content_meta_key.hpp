@@ -34,37 +34,16 @@ namespace ams::ncm {
         ContentInstallType install_type;
         u8 padding[2];
 
-        bool operator<(const ContentMetaKey& other) const {
-            if (this->id < other.id) {
-                return true;
-            } else if (this->id != other.id) {
-                return false;
-            }
-
-            if (this->version < other.version) {
-                return true;
-            } else if (this->version != other.version) {
-                return false;
-            }
-
-            if (this->type < other.type) {
-                return true;
-            } else if (this->type != other.type) {
-                return false;
-            }
-
-            return this->install_type < other.install_type;
+        bool operator<(const ContentMetaKey& rhs) const {
+            return std::tie(this->id, this->version, this->type, this->install_type) < std::tie(rhs.id, rhs.version, rhs.type, rhs.install_type);
         }
 
-        constexpr bool operator==(const ContentMetaKey& other) const {
-            return this->id == other.id &&
-                this->version == other.version &&
-                this->type == other.type &&
-                this->install_type == other.install_type;
+        constexpr bool operator==(const ContentMetaKey& rhs) const {
+            return std::tie(this->id, this->version, this->type, this->install_type) == std::tie(rhs.id, rhs.version, rhs.type, rhs.install_type);
         }
 
-        constexpr bool operator!=(const ContentMetaKey& other) const {
-            return !(*this == other);
+        constexpr bool operator!=(const ContentMetaKey& rhs) const {
+            return !(*this == rhs);
         }
 
         static constexpr ContentMetaKey MakeUnknownType(u64 id, u32 version) {

@@ -1,16 +1,12 @@
 /*
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
- * This program is free software {
-
-    } you can redistribute it and/or modify it
+ * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
- * ANY WARRANTY {
-
-    } without even the implied warranty of MERCHANTABILITY or
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
  *
@@ -349,7 +345,7 @@ namespace ams::fs {
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem:: Initialize(IStorage *base, void *work, size_t work_size, bool use_cache) {
+    Result RomFsFileSystem::Initialize(IStorage *base, void *work, size_t work_size, bool use_cache) {
         AMS_ABORT_UNLESS(!use_cache || work != nullptr);
         AMS_ABORT_UNLESS(base != nullptr);
 

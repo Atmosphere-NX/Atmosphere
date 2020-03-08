@@ -127,30 +127,13 @@ namespace ams::fs {
     static_assert(std::is_trivially_destructible<SaveDataAttribute>::value);
 
     constexpr inline bool operator<(const SaveDataAttribute &lhs, const SaveDataAttribute &rhs) {
-        #define FS_SDA_CHECK_FIELD(FIELD)        \
-            if (lhs.FIELD < rhs.FIELD) {         \
-                return true;                     \
-            } else if (lhs.FIELD != rhs.FIELD) { \
-                return false;                    \
-            }
-
-        FS_SDA_CHECK_FIELD(program_id);
-        FS_SDA_CHECK_FIELD(user_id);
-        FS_SDA_CHECK_FIELD(system_save_data_id);
-        FS_SDA_CHECK_FIELD(index);
-        FS_SDA_CHECK_FIELD(rank);
-        return false;
-
-        #undef FS_SDA_CHECK_FIELD
+        return std::tie(lhs.program_id, lhs.user_id, lhs.system_save_data_id, lhs.index, lhs.rank) <
+               std::tie(rhs.program_id, rhs.user_id, rhs.system_save_data_id, rhs.index, rhs.rank);
     }
 
     constexpr inline bool operator==(const SaveDataAttribute &lhs, const SaveDataAttribute &rhs) {
-        return lhs.program_id          == rhs.program_id          &&
-               lhs.user_id             == rhs.user_id             &&
-               lhs.system_save_data_id == rhs.system_save_data_id &&
-               lhs.type                == rhs.type                &&
-               lhs.rank                == rhs.rank                &&
-               lhs.index               == rhs.index;
+        return std::tie(lhs.program_id, lhs.user_id, lhs.system_save_data_id, lhs.type, lhs.rank, lhs.index) ==
+               std::tie(rhs.program_id, rhs.user_id, rhs.system_save_data_id, rhs.type, rhs.rank, rhs.index);
     }
 
     constexpr inline bool operator!=(const SaveDataAttribute &lhs, const SaveDataAttribute &rhs) {
