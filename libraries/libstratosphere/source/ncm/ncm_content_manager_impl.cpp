@@ -27,7 +27,7 @@ namespace ams::ncm {
         constexpr fs::SystemSaveDataId BuiltInSystemSaveDataId = 0x8000000000000120;
         constexpr u64 BuiltInSystemSaveDataSize                = 0x6c000;
         constexpr u64 BuiltInSystemSaveDataJournalSize         = 0x6c000;
-        constexpr u32 BuiltInSystemSaveDataFlags               = FsSaveDataFlags_KeepAfterResettingSystemSaveData | FsSaveDataFlags_KeepAfterRefurbishment;
+        constexpr u32 BuiltInSystemSaveDataFlags               = fs::SaveDataFlags_KeepAfterResettingSystemSaveData | fs::SaveDataFlags_KeepAfterRefurbishment;
 
         constexpr SystemSaveDataInfo BuiltInSystemSystemSaveDataInfo = {
             .id              = BuiltInSystemSaveDataId,
@@ -151,7 +151,10 @@ namespace ams::ncm {
         /* Mount existing system save data if present, otherwise create it then mount. */
         R_TRY_CATCH(fs::MountSystemSaveData(mount_name, info.space_id, info.id)) {
             R_CATCH(fs::ResultTargetNotFound) {
-                R_TRY(fs::CreateSystemSaveData(info.space_id, info.id, OwnerId, info.size, info.journal_size, info.flags));
+                /* On 1.0.0, not all flags existed. Mask when appropriate. */
+                constexpr u32 SaveDataFlags100Mask = fs::SaveDataFlags_KeepAfterResettingSystemSaveData;
+                const u32 flags = (hos::GetVersion() >= hos::Version_200) ? (info.flags) : (info.flags & SaveDataFlags100Mask);
+                R_TRY(fs::CreateSystemSaveData(info.space_id, info.id, OwnerId, info.size, info.journal_size, flags));
                 R_TRY(fs::MountSystemSaveData(mount_name, info.space_id, info.id));
             }
         } R_END_TRY_CATCH;
@@ -347,8 +350,10 @@ namespace ams::ncm {
         }
 
         /* Ensure correct flags on the BuiltInSystem save data. */
+        /* NOTE: Nintendo does not check this succeeds, and it does on older system versions. */
+        /* We will not check the error, either, even though this kind of defeats the call's purpose. */
         if (hos::GetVersion() >= hos::Version_200) {
-            R_TRY(EnsureBuiltInSystemSaveDataFlags());
+            EnsureBuiltInSystemSaveDataFlags();
         }
 
         R_TRY(this->ActivateContentMetaDatabase(StorageId::BuiltInSystem));

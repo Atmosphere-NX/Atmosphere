@@ -74,6 +74,14 @@ namespace ams::fs {
     constexpr inline SystemSaveDataId InvalidSystemSaveDataId = 0;
     constexpr inline UserId InvalidUserId = {};
 
+    enum SaveDataFlags : u32 {
+        SaveDataFlags_None                                                = (0 << 0),
+        SaveDataFlags_KeepAfterResettingSystemSaveData                    = (1 << 0),
+        SaveDataFlags_KeepAfterRefurbishment                              = (1 << 1),
+        SaveDataFlags_KeepAfterResettingSystemSaveDataWithoutUserSaveData = (1 << 2),
+        SaveDataFlags_NeedsSecureDelete                                   = (1 << 3),
+    };
+
     struct SaveDataCreationInfo {
         s64 size;
         s64 journal_size;
