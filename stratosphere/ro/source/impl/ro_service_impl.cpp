@@ -87,7 +87,7 @@ namespace ams::ro::impl {
                     process_h = other_process_h;
                 }
 
-                ncm::ProgramId program_id = ncm::ProgramId::Invalid;
+                ncm::ProgramId program_id = ncm::InvalidProgramId;
                 if (hos::GetVersion() >= hos::Version_300) {
                     /* 3.0.0+: Use svcGetInfo. */
                     R_ABORT_UNLESS(svcGetInfo(&program_id.value, InfoType_ProgramId, process_h, 0));

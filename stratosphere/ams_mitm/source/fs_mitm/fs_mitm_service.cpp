@@ -137,7 +137,7 @@ namespace ams::mitm::fs {
 
         Result OpenWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
             /* Check first that we're a web applet opening web content. */
-            R_UNLESS(ncm::IsWebAppletProgramId(client_program_id),      sm::mitm::ResultShouldForwardToSession());
+            R_UNLESS(ncm::IsWebAppletId(client_program_id),             sm::mitm::ResultShouldForwardToSession());
             R_UNLESS(filesystem_type == FsFileSystemType_ContentManual, sm::mitm::ResultShouldForwardToSession());
 
             /* Try to mount the HBL web filesystem. If this succeeds then we're done. */
@@ -162,8 +162,8 @@ namespace ams::mitm::fs {
 
     Result FsMitmService::OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out) {
         /* We only care about redirecting this for NS/emummc. */
-        R_UNLESS(this->client_info.program_id == ncm::ProgramId::Ns, sm::mitm::ResultShouldForwardToSession());
-        R_UNLESS(emummc::IsActive(),                                 sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(this->client_info.program_id == ncm::SystemProgramId::Ns, sm::mitm::ResultShouldForwardToSession());
+        R_UNLESS(emummc::IsActive(),                                       sm::mitm::ResultShouldForwardToSession());
 
         /* Create a new SD card filesystem. */
         FsFileSystem sd_fs;
@@ -178,7 +178,7 @@ namespace ams::mitm::fs {
 
     Result FsMitmService::OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 _space_id, const FsSaveDataAttribute &attribute) {
         /* We only want to intercept saves for games, right now. */
-        const bool is_game_or_hbl = this->client_info.override_status.IsHbl() || ncm::IsApplicationProgramId(this->client_info.program_id);
+        const bool is_game_or_hbl = this->client_info.override_status.IsHbl() || ncm::IsApplicationId(this->client_info.program_id);
         R_UNLESS(is_game_or_hbl, sm::mitm::ResultShouldForwardToSession());
 
         /* Only redirect if the appropriate system setting is set. */
@@ -333,9 +333,12 @@ namespace ams::mitm::fs {
         return ResultSuccess();
     }
 
-    Result FsMitmService::OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::ProgramId /* TODO: ncm::DataId */ data_id, u8 storage_id) {
+    Result FsMitmService::OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::DataId _data_id, u8 storage_id) {
         /* Only mitm if we should override contents for the current process. */
         R_UNLESS(this->client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
+
+        /* TODO: Decide how to handle DataId vs ProgramId for this API. */
+        const ncm::ProgramId data_id = {_data_id.value};
 
         /* Only mitm if there is actually an override romfs. */
         R_UNLESS(mitm::fs::HasSdRomfsContent(data_id),                  sm::mitm::ResultShouldForwardToSession());

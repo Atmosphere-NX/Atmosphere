@@ -65,7 +65,7 @@ namespace ams::spl {
 
         constexpr inline ::ams::Result ConvertResult(Result smc_result) {
             /* smc::Result::Success becomes ResultSuccess() directly. */
-            R_UNLESS(smc_result != Result::Success, ResultSuccess());
+            R_SUCCEED_IF(smc_result == smc::Result::Success);
 
             /* Convert to the list of known SecureMonitorErrors. */
             const auto converted = R_MAKE_NAMESPACE_RESULT(::ams::spl, static_cast<u32>(smc_result));

@@ -60,4 +60,19 @@ namespace ams::fs {
 
     static_assert(std::is_pod<WriteOption>::value && sizeof(WriteOption) == sizeof(u32));
 
+    struct FileHandle {
+        void *handle;
+    };
+
+    Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option);
+    Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size);
+    Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option);
+    Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size);
+    Result GetFileSize(s64 *out, FileHandle handle);
+    Result FlushFile(FileHandle handle);
+    Result WriteFile(FileHandle handle, s64 offset, const void *buffer, size_t size, const fs::WriteOption &option);
+    Result SetFileSize(FileHandle handle, s64 size);
+    int GetFileOpenMode(FileHandle handle);
+    void CloseFile(FileHandle handle);
+
 }

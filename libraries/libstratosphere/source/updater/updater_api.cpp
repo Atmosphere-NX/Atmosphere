@@ -32,25 +32,26 @@ namespace ams::updater {
         /* Configuration Prototypes. */
         bool HasEks(BootImageUpdateType boot_image_update_type);
         bool HasAutoRcmPreserve(BootImageUpdateType boot_image_update_type);
-        NcmContentMetaType GetNcmContentMetaType(BootModeType mode);
-        Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size);
+        ncm::ContentMetaType GetContentMetaType(BootModeType mode);
+        Result GetBootImagePackageId(ncm::SystemDataId *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size);
 
         /* Verification Prototypes. */
         Result GetVerificationState(VerificationState *out, void *work_buffer, size_t work_buffer_size);
-        Result VerifyBootImages(u64 data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
-        Result VerifyBootImagesNormal(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
-        Result VerifyBootImagesSafe(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result VerifyBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result VerifyBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result VerifyBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
 
         /* Update Prototypes. */
         Result SetVerificationNeeded(BootModeType mode, bool needed, void *work_buffer, size_t work_buffer_size);
-        Result UpdateBootImages(u64 data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
-        Result UpdateBootImagesNormal(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
-        Result UpdateBootImagesSafe(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result UpdateBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result UpdateBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result UpdateBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
 
         /* Package helpers. */
         Result ValidateBctFileHash(Boot0Accessor &accessor, Boot0Partition which, const void *stored_hash, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
         Result GetPackage2Hash(void *dst_hash, size_t package2_size, void *work_buffer, size_t work_buffer_size, Package2Type which);
         Result WritePackage2(void *work_buffer, size_t work_buffer_size, Package2Type which, BootImageUpdateType boot_image_update_type);
+        Result CompareHash(const void *lhs, const void *rhs, size_t size);
 
         /* Implementations. */
         Result ValidateWorkBuffer(const void *work_buffer, size_t work_buffer_size) {
@@ -80,12 +81,12 @@ namespace ams::updater {
             }
         }
 
-        NcmContentMetaType GetNcmContentMetaType(BootModeType mode) {
+        ncm::ContentMetaType GetContentMetaType(BootModeType mode) {
             switch (mode) {
                 case BootModeType::Normal:
-                    return NcmContentMetaType_BootImagePackage;
+                    return ncm::ContentMetaType::BootImagePackage;
                 case BootModeType::Safe:
-                    return NcmContentMetaType_BootImagePackageSafe;
+                    return ncm::ContentMetaType::BootImagePackageSafe;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
@@ -114,8 +115,8 @@ namespace ams::updater {
 
         Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Get system data id for boot images (819/81A/81B/81C). */
-            u64 bip_data_id = 0;
-            R_TRY(GetBootImagePackageDataId(&bip_data_id, mode, work_buffer, work_buffer_size));
+            ncm::SystemDataId bip_data_id;
+            R_TRY(GetBootImagePackageId(&bip_data_id, mode, work_buffer, work_buffer_size));
 
             /* Verify the boot images in NAND. */
             R_TRY_CATCH(VerifyBootImages(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type)) {
@@ -130,47 +131,40 @@ namespace ams::updater {
             return SetVerificationNeeded(mode, false, work_buffer, work_buffer_size);
         }
 
-        Result GetBootImagePackageDataId(u64 *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
+        Result GetBootImagePackageId(ncm::SystemDataId *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
             /* Ensure we can read content metas. */
             constexpr size_t MaxContentMetas = 0x40;
-            AMS_ABORT_UNLESS(work_buffer_size >= sizeof(NcmContentMetaKey) * MaxContentMetas);
+            AMS_ABORT_UNLESS(work_buffer_size >= sizeof(ncm::ContentMetaKey) * MaxContentMetas);
 
             /* Open NAND System meta database, list contents. */
-            NcmContentMetaDatabase meta_db;
-            R_TRY(ncmOpenContentMetaDatabase(&meta_db, NcmStorageId_BuiltInSystem));
-            ON_SCOPE_EXIT { serviceClose(&meta_db.s); };
+            ncm::ContentMetaDatabase db;
+            R_TRY(ncm::OpenContentMetaDatabase(std::addressof(db), ncm::StorageId::BuiltInSystem));
 
-            NcmContentMetaKey *records = reinterpret_cast<NcmContentMetaKey *>(work_buffer);
+            ncm::ContentMetaKey *keys = reinterpret_cast<ncm::ContentMetaKey *>(work_buffer);
+            const auto content_meta_type = GetContentMetaType(mode);
 
-            const auto content_meta_type = GetNcmContentMetaType(mode);
-            s32 written_entries;
-            s32 total_entries;
-            R_TRY(ncmContentMetaDatabaseList(&meta_db, &total_entries, &written_entries, records, MaxContentMetas * sizeof(*records), content_meta_type, 0, 0, UINT64_MAX, NcmContentInstallType_Full));
-            if (total_entries <= 0) {
-                return ResultBootImagePackageNotFound();
-            }
-
-            AMS_ABORT_UNLESS(total_entries == written_entries);
+            auto count = db.ListContentMeta(keys, MaxContentMetas, content_meta_type);
+            R_UNLESS(count.total > 0, ResultBootImagePackageNotFound());
 
             /* Output is sorted, return the lowest valid exfat entry. */
-            if (total_entries > 1) {
-                for (size_t i = 0; i < size_t(total_entries); i++) {
+            if (count.total > 1) {
+                for (auto i = 0; i < count.total; i++) {
                     u8 attr;
-                    R_TRY(ncmContentMetaDatabaseGetAttributes(&meta_db, &records[i], &attr));
+                    R_TRY(db.GetAttributes(std::addressof(attr), keys[i]));
 
-                    if (attr & NcmContentMetaAttribute_IncludesExFatDriver) {
-                        *out_data_id = records[i].id;
+                    if (attr & ncm::ContentMetaAttribute_IncludesExFatDriver) {
+                        out_data_id->value = keys[i].id;
                         return ResultSuccess();
                     }
                 }
             }
 
             /* If there's only one entry or no exfat entries, return that entry. */
-            *out_data_id = records[0].id;
+            out_data_id->value = keys[0].id;
             return ResultSuccess();
         }
 
-        Result VerifyBootImages(u64 data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        Result VerifyBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             switch (mode) {
                 case BootModeType::Normal:
                     return VerifyBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
@@ -180,20 +174,22 @@ namespace ams::updater {
             }
         }
 
-        Result VerifyBootImagesNormal(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        Result VerifyBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
+            /* Mount the boot image package. */
+            const char *mount_name = GetMountName();
+            R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
             /* Read and validate hashes of boot images. */
             {
                 size_t size;
-                u8 nand_hash[SHA256_HASH_SIZE];
-                u8 file_hash[SHA256_HASH_SIZE];
+                u8 nand_hash[crypto::Sha256Generator::HashSize];
+                u8 file_hash[crypto::Sha256Generator::HashSize];
 
                 Boot0Accessor boot0_accessor;
                 R_TRY(boot0_accessor.Initialize());
@@ -209,44 +205,42 @@ namespace ams::updater {
 
                 /* Compare Package1 Normal/Sub hashes. */
                 R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
+
                 R_TRY(boot0_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot0Partition::Package1NormalMain));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
+
                 R_TRY(boot0_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot0Partition::Package1NormalSub));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
 
                 /* Compare Package2 Normal/Sub hashes. */
                 R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
+
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::NormalMain));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
+
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::NormalSub));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
             }
 
             return ResultSuccess();
         }
 
-        Result VerifyBootImagesSafe(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        Result VerifyBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
+            /* Mount the boot image package. */
+            const char *mount_name = GetMountName();
+            R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
             /* Read and validate hashes of boot images. */
             {
                 size_t size;
-                u8 nand_hash[SHA256_HASH_SIZE];
-                u8 file_hash[SHA256_HASH_SIZE];
+                u8 nand_hash[crypto::Sha256Generator::HashSize];
+                u8 file_hash[crypto::Sha256Generator::HashSize];
 
                 Boot0Accessor boot0_accessor;
                 R_TRY(boot0_accessor.Initialize());
@@ -267,31 +261,27 @@ namespace ams::updater {
 
                 /* Compare Package1 Normal/Sub hashes. */
                 R_TRY(GetFileHash(&size, file_hash, GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size));
+
                 R_TRY(boot1_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot1Partition::Package1SafeMain));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
+
                 R_TRY(boot1_accessor.GetHash(nand_hash, size, work_buffer, work_buffer_size, Boot1Partition::Package1SafeSub));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
 
                 /* Compare Package2 Normal/Sub hashes. */
                 R_TRY(GetFileHash(&size, file_hash, GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size));
+
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::SafeMain));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
+
                 R_TRY(GetPackage2Hash(nand_hash, size, work_buffer, work_buffer_size, Package2Type::SafeSub));
-                if (std::memcmp(file_hash, nand_hash, SHA256_HASH_SIZE) != 0) {
-                    return ResultNeedsRepairBootImages();
-                }
+                R_TRY(CompareHash(file_hash, nand_hash, sizeof(file_hash)));
             }
 
             return ResultSuccess();
         }
 
-        Result UpdateBootImages(u64 data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        Result UpdateBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             switch (mode) {
                 case BootModeType::Normal:
                     return UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
@@ -301,14 +291,16 @@ namespace ams::updater {
             }
         }
 
-        Result UpdateBootImagesNormal(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        Result UpdateBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
+            /* Mount the boot image package. */
+            const char *mount_name = GetMountName();
+            R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
             {
                 Boot0Accessor boot0_accessor;
@@ -356,14 +348,16 @@ namespace ams::updater {
             return ResultSuccess();
         }
 
-        Result UpdateBootImagesSafe(u64 data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        Result UpdateBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
-            R_TRY_CATCH(romfsMountFromDataArchive(data_id, NcmStorageId_BuiltInSystem, GetBootImagePackageMountPath())) {
+            /* Mount the boot image package. */
+            const char *mount_name = GetMountName();
+            R_TRY_CATCH(fs::MountSystemData(mount_name, data_id)) {
                 R_CONVERT(fs::ResultTargetNotFound, ResultBootImagePackageNotFound())
             } R_END_TRY_CATCH;
-            ON_SCOPE_EXIT { R_ABORT_UNLESS(romfsUnmount(GetBootImagePackageMountPath())); };
+            ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
             {
                 Boot0Accessor boot0_accessor;
@@ -450,14 +444,10 @@ namespace ams::updater {
                 R_TRY(accessor.PreserveAutoRcm(bct, work, which));
             }
 
-            u8 file_hash[SHA256_HASH_SIZE];
-            sha256CalculateHash(file_hash, bct, BctSize);
+            u8 file_hash[crypto::Sha256Generator::HashSize];
+            crypto::GenerateSha256Hash(file_hash, sizeof(file_hash), bct, BctSize);
 
-            if (std::memcmp(file_hash, stored_hash, SHA256_HASH_SIZE) != 0) {
-                return ResultNeedsRepairBootImages();
-            }
-
-            return ResultSuccess();
+            return CompareHash(file_hash, stored_hash, sizeof(file_hash));
         }
 
         Result GetPackage2Hash(void *dst_hash, size_t package2_size, void *work_buffer, size_t work_buffer_size, Package2Type which) {
@@ -474,6 +464,11 @@ namespace ams::updater {
             ON_SCOPE_EXIT { accessor.Finalize(); };
 
             return accessor.Write(GetPackage2Path(boot_image_update_type), work_buffer, work_buffer_size, Package2Partition::Package2);
+        }
+
+        Result CompareHash(const void *lhs, const void *rhs, size_t size) {
+            R_UNLESS(crypto::IsSameBytes(lhs, rhs, size), ResultNeedsRepairBootImages());
+            return ResultSuccess();
         }
 
     }
@@ -508,7 +503,7 @@ namespace ams::updater {
         }
 
         /* Get a session to ncm. */
-        sm::ScopedServiceHolder<ncmInitialize, ncmExit> ncm_holder;
+        sm::ScopedServiceHolder<ncm::Initialize, ncm::Finalize> ncm_holder;
         R_ABORT_UNLESS(ncm_holder.GetResult());
 
         /* Verify normal, verify safe as needed. */

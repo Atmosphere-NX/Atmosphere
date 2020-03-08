@@ -22,12 +22,12 @@ namespace ams::mitm::settings {
     Result SetMitmService::EnsureLocale() {
         std::scoped_lock lk(this->lock);
 
-        const bool is_ns = this->client_info.program_id == ncm::ProgramId::Ns;
+        const bool is_ns = this->client_info.program_id == ncm::SystemProgramId::Ns;
 
         if (!this->got_locale) {
             std::memset(&this->locale, 0xCC, sizeof(this->locale));
             ncm::ProgramId program_id = this->client_info.program_id;
-            if (program_id == ncm::ProgramId::Ns) {
+            if (is_ns) {
                 /* When NS asks for a locale, refresh to get the current application locale. */
                 os::ProcessId application_process_id;
                 R_TRY(pm::dmnt::GetApplicationProcessId(&application_process_id));

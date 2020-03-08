@@ -140,8 +140,7 @@ namespace ams::mitm::fs {
         private:
             bool CanModifyBctPublicKey();
         public:
-            Boot0Storage(FsStorage *s, const sm::MitmProcessInfo &c) : Base(s), client_info(c) { /* ... */ }
-            Boot0Storage(FsStorage s,  const sm::MitmProcessInfo &c) : Base(s), client_info(c) { /* ... */ }
+            Boot0Storage(FsStorage &s,  const sm::MitmProcessInfo &c) : Base(s), client_info(c) { /* ... */ }
         public:
             virtual Result Read(s64 offset, void *_buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *_buffer, size_t size) override;

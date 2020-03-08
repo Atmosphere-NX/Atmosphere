@@ -18,6 +18,12 @@
 
 namespace ams::fs {
 
+    namespace fsa {
+
+        class IFile;
+
+    }
+
     enum OpenMode {
         OpenMode_Read   = ::FsOpenMode_Read,
         OpenMode_Write  = ::FsOpenMode_Write,
@@ -48,5 +54,28 @@ namespace ams::fs {
     };
 
     using FileTimeStampRaw = ::FsTimeStampRaw;
+
+    struct FileHandle;
+    struct DirectoryHandle;
+
+    Result CreateFile(const char *path, s64 size);
+    Result CreateFile(const char* path, s64 size, int option);
+    Result DeleteFile(const char *path);
+    Result CreateDirectory(const char *path);
+    Result DeleteDirectory(const char *path);
+    Result DeleteDirectoryRecursively(const char *path);
+    Result RenameFile(const char *old_path, const char *new_path);
+    Result RenameDirectory(const char *old_path, const char *new_path);
+    Result GetEntryType(DirectoryEntryType *out, const char *path);
+    Result OpenFile(FileHandle *out_file, const char *path, int mode);
+    Result OpenDirectory(DirectoryHandle *out_dir, const char *path, int mode);
+    Result CleanDirectoryRecursively(const char *path);
+    Result GetFreeSpaceSize(s64 *out, const char *path);
+    Result GetTotalSpaceSize(s64 *out, const char *path);
+
+    Result SetConcatenationFileAttribute(const char *path);
+    Result GetFileTimeStampRaw(FileTimeStampRaw *out, const char *path);
+
+    Result OpenFile(FileHandle *out, std::unique_ptr<fsa::IFile> &&file, int mode);
 
 }

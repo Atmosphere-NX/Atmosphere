@@ -96,9 +96,11 @@ namespace ams::fs::fsa {
                 return ResultSuccess();
             }
 
-            Result DrySetSize(s64 size, OpenMode open_mode) {
+            Result DrySetSize(s64 size, fs::OpenMode open_mode) {
                 /* Check that we can write. */
                 R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultInvalidOperationForOpenMode());
+
+                AMS_ASSERT(size >= 0);
 
                 return ResultSuccess();
             }

@@ -22,4 +22,12 @@ namespace ams::fs {
 
     using DirectoryEntry = ::FsDirectoryEntry;
 
+    struct DirectoryHandle {
+        void *handle;
+    };
+
+    Result ReadDirectory(s64 *out_count, DirectoryEntry *out_entries, DirectoryHandle handle, s64 max_entries);
+    Result GetDirectoryEntryCount(s64 *out, DirectoryHandle handle);
+    void CloseDirectory(DirectoryHandle handle);
+
 }

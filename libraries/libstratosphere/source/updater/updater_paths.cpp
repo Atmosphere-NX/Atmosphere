@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sys/stat.h>
 #include "updater_paths.hpp"
 
 namespace ams::updater {
@@ -21,7 +20,7 @@ namespace ams::updater {
     namespace {
 
         /* Actual paths. */
-        constexpr const char *BootImagePackageMountPath = "bip";
+        constexpr const char *BootImagePackageMountName = "bip";
         constexpr const char *BctPathNx = "bip:/nx/bct";
         constexpr const char *Package1PathNx = "bip:/nx/package1";
         constexpr const char *Package2PathNx = "bip:/nx/package2";
@@ -33,12 +32,12 @@ namespace ams::updater {
             AMS_ABORT_UNLESS(num_candidates > 0);
 
             for (size_t i = 0; i < num_candidates; i++) {
-                struct stat buf;
-                if (stat(candidates[i], &buf) != 0) {
+                fs::DirectoryEntryType type;
+                if (R_FAILED(fs::GetEntryType(std::addressof(type), candidates[i]))) {
                     continue;
                 }
 
-                if (!S_ISREG(buf.st_mode)) {
+                if (type != fs::DirectoryEntryType_File) {
                     continue;
                 }
 
@@ -51,8 +50,8 @@ namespace ams::updater {
 
     }
 
-    const char *GetBootImagePackageMountPath() {
-        return BootImagePackageMountPath;
+    const char *GetMountName() {
+        return BootImagePackageMountName;
     }
 
 

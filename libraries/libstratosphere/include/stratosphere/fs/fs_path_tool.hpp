@@ -26,14 +26,23 @@ namespace ams::fs {
         constexpr inline char Dot                = '.';
         constexpr inline char NullTerminator     = '\x00';
 
+        constexpr inline char AlternateDirectorySeparator = '\\';
     }
 
     class PathTool {
         public:
             static constexpr const char RootPath[] = "/";
         public:
+            static constexpr inline bool IsAlternateSeparator(char c) {
+                return c == StringTraits::AlternateDirectorySeparator;
+            }
+
             static constexpr inline bool IsSeparator(char c) {
                 return c == StringTraits::DirectorySeparator;
+            }
+
+            static constexpr inline bool IsAnySeparator(char c) {
+                return IsSeparator(c) || IsAlternateSeparator(c);
             }
 
             static constexpr inline bool IsNullTerminator(char c) {
@@ -54,6 +63,10 @@ namespace ams::fs {
 
             static constexpr inline bool IsWindowsAbsolutePath(const char *p) {
                 return IsWindowsDriveCharacter(p[0]) && IsDriveSeparator(p[1]);
+            }
+
+            static constexpr inline bool IsUnc(const char *p) {
+                return (IsSeparator(p[0]) && IsSeparator(p[1])) || (IsAlternateSeparator(p[0]) && IsAlternateSeparator(p[1]));
             }
 
             static constexpr inline bool IsCurrentDirectory(const char *p) {

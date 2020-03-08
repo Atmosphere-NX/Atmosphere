@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <vapours.hpp>
 
@@ -51,6 +50,7 @@ namespace ams::kvdb {
                 std::va_list args;
                 va_start(args, format);
                 CheckLength(std::vsnprintf(string.buffer, N, format, args));
+                string.buffer[N - 1] = 0;
                 va_end(args);
 
                 return string;
@@ -74,6 +74,7 @@ namespace ams::kvdb {
                 /* Ensure string can fit in our buffer. */
                 CheckLength(strnlen(s, N));
                 std::strncpy(this->buffer, s, N);
+                this->buffer[N - 1] = 0;
             }
 
             void SetFormat(const char *format, ...) __attribute__((format (printf, 2, 3))) {

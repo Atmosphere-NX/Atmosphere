@@ -44,26 +44,158 @@ namespace ams::fs {
 
     R_DEFINE_ERROR_RANGE(GameCardAccessFailed, 2500, 2999);
 
-    R_DEFINE_ERROR_RESULT(NotImplemented, 3001);
-    R_DEFINE_ERROR_RESULT(OutOfRange,     3005);
+    R_DEFINE_ERROR_RESULT(NotImplemented,     3001);
+    R_DEFINE_ERROR_RESULT(UnsupportedVersion, 3002);
+    R_DEFINE_ERROR_RESULT(OutOfRange,         3005);
+
+    R_DEFINE_ERROR_RESULT(SystemPartitionNotReady, 3100);
 
     R_DEFINE_ERROR_RANGE(AllocationFailure, 3200, 3499);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorA,         3211);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorB,         3212);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisA,                        3215);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisB,                        3216);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisC,                        3217);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInCodeA,                       3218);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentA,                    3219);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageA,             3220);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,             3221);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDataA,                       3222);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDataB,                       3223);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardA,                   3225);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardB,                   3226);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardC,                   3227);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardD,                   3228);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardA,                     3244);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardB,                     3245);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSystemSaveDataA,             3246);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemA,            3247);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemB,            3248);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,            3249);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemD,            3352);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSubDirectoryFileSystem,      3355);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterA,                   3365);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterB,                   3366);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPathNormalizer,              3367);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDbmRomKeyValueStorage,       3375);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemE,            3377);
         R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemInterfaceAdapter,  3407);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInNew,                         3420);
 
     R_DEFINE_ERROR_RANGE(MmcAccessFailed, 3500, 3999);
 
     R_DEFINE_ERROR_RANGE(DataCorrupted, 4000, 4999);
         R_DEFINE_ERROR_RANGE(RomCorrupted, 4001, 4299);
+            R_DEFINE_ERROR_RESULT(UnsupportedRomVersion, 4002);
+
+            R_DEFINE_ERROR_RANGE(RomNcaCorrupted, 4041, 4139);
+                R_DEFINE_ERROR_RANGE(RomNcaFileSystemCorrupted, 4051, 4069);
+                    R_DEFINE_ERROR_RESULT(InvalidRomNcaFileSystemType,                 4052);
+                    R_DEFINE_ERROR_RESULT(InvalidRomAcidFileSize,                      4053);
+                    R_DEFINE_ERROR_RESULT(InvalidRomAcidSize,                          4054);
+                    R_DEFINE_ERROR_RESULT(InvalidRomAcid,                              4055);
+                    R_DEFINE_ERROR_RESULT(RomAcidVerificationFailed,                   4056);
+                    R_DEFINE_ERROR_RESULT(InvalidRomNcaSignature,                      4057);
+                    R_DEFINE_ERROR_RESULT(RomNcaHeaderSignature1VerificationFailed,    4058);
+                    R_DEFINE_ERROR_RESULT(RomNcaHeaderSignature2VerificationFailed,    4059);
+                    R_DEFINE_ERROR_RESULT(RomNcaFsHeaderHashVerificationFailed,        4060);
+                    R_DEFINE_ERROR_RESULT(InvalidRomNcaKeyIndex,                       4061);
+                    R_DEFINE_ERROR_RESULT(InvalidRomNcaFsHeaderHashType,               4062);
+                    R_DEFINE_ERROR_RESULT(InvalidRomNcaFsHeaderEncryptionType,         4063);
+
+                R_DEFINE_ERROR_RANGE(RomNcaHierarchicalSha256StorageCorrupted, 4071, 4079);
+                    R_DEFINE_ERROR_RESULT(InvalidRomHierarchicalSha256BlockSize,       4072);
+                    R_DEFINE_ERROR_RESULT(InvalidRomHierarchicalSha256LayerCount,      4073);
+                    R_DEFINE_ERROR_RESULT(RomHierarchicalSha256BaseStorageTooLarge,    4074);
+                    R_DEFINE_ERROR_RESULT(RomHierarchicalSha256HashVerificationFailed, 4075);
+
+            R_DEFINE_ERROR_RANGE(RomIntegrityVerificationStorageCorrupted, 4141, 4179);
+                 R_DEFINE_ERROR_RESULT(IncorrectRomIntegrityVerificationMagic,                4142);
+                 R_DEFINE_ERROR_RESULT(InvalidRomZeroHash,                                    4143);
+                 R_DEFINE_ERROR_RESULT(RomNonRealDataVerificationFailed,                      4144);
+                 R_DEFINE_ERROR_RESULT(InvalidRomHierarchicalIntegrityVerificationLayerCount, 4145);
+
+                 R_DEFINE_ERROR_RANGE(RomRealDataVerificationFailed, 4151, 4159);
+                     R_DEFINE_ERROR_RESULT(ClearedRomRealDataVerificationFailed,   4152);
+                     R_DEFINE_ERROR_RESULT(UnclearedRomRealDataVerificationFailed, 4153);
+
+            R_DEFINE_ERROR_RANGE(RomPartitionFileSystemCorrupted, 4181, 4199);
+                R_DEFINE_ERROR_RESULT(InvalidRomSha256PartitionHashTarget,           4182);
+                R_DEFINE_ERROR_RESULT(RomSha256PartitionHashVerificationFailed,      4183);
+                R_DEFINE_ERROR_RESULT(RomPartitionSignatureVerificationFailed,       4184);
+                R_DEFINE_ERROR_RESULT(RomSha256PartitionSignatureVerificationFailed, 4185);
+                R_DEFINE_ERROR_RESULT(InvalidRomPartitionEntryOffset,                4186);
+                R_DEFINE_ERROR_RESULT(InvalidRomSha256PartitionMetaDataSize,         4187);
+
+            R_DEFINE_ERROR_RANGE(RomBuiltInStorageCorrupted, 4201, 4219);
+                R_DEFINE_ERROR_RESULT(RomGptHeaderVerificationFailed, 4202);
+
+            R_DEFINE_ERROR_RANGE(RomHostFileSystemCorrupted, 4241, 4259);
+                R_DEFINE_ERROR_RESULT(RomHostEntryCorrupted,    4242);
+                R_DEFINE_ERROR_RESULT(RomHostFileDataCorrupted, 4243);
+                R_DEFINE_ERROR_RESULT(RomHostFileCorrupted,     4244);
+                R_DEFINE_ERROR_RESULT(InvalidRomHostHandle,     4245);
+
+            R_DEFINE_ERROR_RANGE(RomDatabaseCorrupted, 4261, 4279);
+                R_DEFINE_ERROR_RESULT(InvalidRomAllocationTableBlock,     4262);
+                R_DEFINE_ERROR_RESULT(InvalidRomKeyValueListElementIndex, 4263);
+
         R_DEFINE_ERROR_RANGE(SaveDataCorrupted, 4301, 4499);
         R_DEFINE_ERROR_RANGE(NcaCorrupted, 4501, 4599);
+            R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4511, 4529);
+                R_DEFINE_ERROR_RESULT(InvalidNcaFileSystemType,              4512);
+                R_DEFINE_ERROR_RESULT(InvalidAcidFileSize,                   4513);
+                R_DEFINE_ERROR_RESULT(InvalidAcidSize,                       4514);
+                R_DEFINE_ERROR_RESULT(InvalidAcid,                           4515);
+                R_DEFINE_ERROR_RESULT(AcidVerificationFailed,                4516);
+                R_DEFINE_ERROR_RESULT(InvalidNcaSignature,                   4517);
+                R_DEFINE_ERROR_RESULT(NcaHeaderSignature1VerificationFailed, 4518);
+                R_DEFINE_ERROR_RESULT(NcaHeaderSignature2VerificationFailed, 4519);
+                R_DEFINE_ERROR_RESULT(NcaFsHeaderHashVerificationFailed,     4520);
+                R_DEFINE_ERROR_RESULT(InvalidNcaKeyIndex,                    4521);
+                R_DEFINE_ERROR_RESULT(InvalidNcaFsHeaderHashType,            4522);
+                R_DEFINE_ERROR_RESULT(InvalidNcaFsHeaderEncryptionType,      4523);
+
+            R_DEFINE_ERROR_RANGE(NcaHierarchicalSha256StorageCorrupted, 4531, 4539);
+                R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256BlockSize,       4532);
+                R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256LayerCount,      4533);
+                R_DEFINE_ERROR_RESULT(HierarchicalSha256BaseStorageTooLarge,    4534);
+                R_DEFINE_ERROR_RESULT(HierarchicalSha256HashVerificationFailed, 4535);
+
         R_DEFINE_ERROR_RANGE(IntegrityVerificationStorageCorrupted, 4601, 4639);
+             R_DEFINE_ERROR_RESULT(IncorrectIntegrityVerificationMagic,                4602);
+             R_DEFINE_ERROR_RESULT(InvalidZeroHash,                                    4603);
+             R_DEFINE_ERROR_RESULT(NonRealDataVerificationFailed,                      4604);
+             R_DEFINE_ERROR_RESULT(InvalidHierarchicalIntegrityVerificationLayerCount, 4605);
+
+             R_DEFINE_ERROR_RANGE(RealDataVerificationFailed, 4611, 4619);
+                 R_DEFINE_ERROR_RESULT(ClearedRealDataVerificationFailed,   4612);
+                 R_DEFINE_ERROR_RESULT(UnclearedRealDataVerificationFailed, 4613);
+
         R_DEFINE_ERROR_RANGE(PartitionFileSystemCorrupted, 4641, 4659);
+            R_DEFINE_ERROR_RESULT(InvalidSha256PartitionHashTarget,           4642);
+            R_DEFINE_ERROR_RESULT(Sha256PartitionHashVerificationFailed,      4643);
+            R_DEFINE_ERROR_RESULT(PartitionSignatureVerificationFailed,       4644);
+            R_DEFINE_ERROR_RESULT(Sha256PartitionSignatureVerificationFailed, 4645);
+            R_DEFINE_ERROR_RESULT(InvalidPartitionEntryOffset,                4646);
+            R_DEFINE_ERROR_RESULT(InvalidSha256PartitionMetaDataSize,         4647);
+
         R_DEFINE_ERROR_RANGE(BuiltInStorageCorrupted, 4661, 4679);
+            R_DEFINE_ERROR_RESULT(GptHeaderVerificationFailed, 4662);
+
+        R_DEFINE_ERROR_RANGE(FatFileSystemCorrupted, 4681, 4699);
+
         R_DEFINE_ERROR_RANGE(HostFileSystemCorrupted, 4701, 4719);
+            R_DEFINE_ERROR_RESULT(HostEntryCorrupted,    4702);
+            R_DEFINE_ERROR_RESULT(HostFileDataCorrupted, 4703);
+            R_DEFINE_ERROR_RESULT(HostFileCorrupted,     4704);
+            R_DEFINE_ERROR_RESULT(InvalidHostHandle,     4705);
+
         R_DEFINE_ERROR_RANGE(DatabaseCorrupted, 4721, 4739);
+            R_DEFINE_ERROR_RESULT(InvalidAllocationTableBlock,     4722);
+            R_DEFINE_ERROR_RESULT(InvalidKeyValueListElementIndex, 4723);
+
         R_DEFINE_ERROR_RANGE(AesXtsFileSystemCorrupted, 4741, 4759);
         R_DEFINE_ERROR_RANGE(SaveDataTransferDataCorrupted, 4761, 4769);
         R_DEFINE_ERROR_RANGE(SignedSystemPartitionDataCorrupted, 4771, 4779);
@@ -71,6 +203,7 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(GameCardLogoDataCorrupted, 4781);
 
     R_DEFINE_ERROR_RANGE(Unexpected, 5000, 5999);
+        R_DEFINE_ERROR_RESULT(UnexpectedInFindFileSystemA, 5319);
 
     R_DEFINE_ERROR_RANGE(PreconditionViolation, 6000, 6499);
         R_DEFINE_ERROR_RANGE(InvalidArgument, 6001, 6199);
@@ -104,12 +237,30 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(FileExtensionWithoutOpenModeAllowAppend, 6201);
 
             R_DEFINE_ERROR_RANGE(UnsupportedOperation, 6300, 6399);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,                6302);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageB,                6303);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,             6304);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,             6305);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,               6306);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileServiceObjectAdapterA,  6362);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,           6364);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,           6365);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemC,           6366);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileA,                 6367);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileB,                 6368);
 
             R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 
+            R_DEFINE_ERROR_RESULT(NeedFlush, 6454);
+            R_DEFINE_ERROR_RESULT(FileNotClosed, 6455);
+            R_DEFINE_ERROR_RESULT(DirectoryNotClosed, 6456);
             R_DEFINE_ERROR_RESULT(WriteModeFileNotClosed, 6457);
+            R_DEFINE_ERROR_RESULT(AllocatorAlreadyRegistered, 6458);
+            R_DEFINE_ERROR_RESULT(DefaultAllocatorUsed, 6459);
             R_DEFINE_ERROR_RESULT(AllocatorAlignmentViolation,  6461);
             R_DEFINE_ERROR_RESULT(UserNotExist,           6465);
+
+    R_DEFINE_ERROR_RANGE(NotFound, 6600, 6699);
 
     R_DEFINE_ERROR_RANGE(OutOfResource, 6700, 6799);
         R_DEFINE_ERROR_RESULT(MappingTableFull, 6706);
@@ -119,6 +270,27 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(MapFull,  6811);
 
     R_DEFINE_ERROR_RANGE(BadState, 6900, 6999);
-        R_DEFINE_ERROR_RESULT(NotMounted,   6905);
+        R_DEFINE_ERROR_RESULT(NotInitialized, 6902);
+        R_DEFINE_ERROR_RESULT(NotMounted,     6905);
+
+
+    R_DEFINE_ERROR_RANGE(DbmNotFound, 7901, 7904);
+        R_DEFINE_ERROR_RESULT(DbmKeyNotFound,       7902);
+        R_DEFINE_ERROR_RESULT(DbmFileNotFound,      7903);
+        R_DEFINE_ERROR_RESULT(DbmDirectoryNotFound,  7904);
+
+    R_DEFINE_ERROR_RESULT(DbmAlreadyExists,         7906);
+    R_DEFINE_ERROR_RESULT(DbmKeyFull,               7907);
+    R_DEFINE_ERROR_RESULT(DbmDirectoryEntryFull,    7908);
+    R_DEFINE_ERROR_RESULT(DbmFileEntryFull,         7909);
+
+    R_DEFINE_ERROR_RANGE(DbmFindFinished, 7910, 7912);
+        R_DEFINE_ERROR_RESULT(DbmFindKeyFinished,   7911);
+        R_DEFINE_ERROR_RESULT(DbmIterationFinished, 7912);
+
+    R_DEFINE_ERROR_RESULT(DbmInvalidOperation,      7914);
+    R_DEFINE_ERROR_RESULT(DbmInvalidPathFormat,     7915);
+    R_DEFINE_ERROR_RESULT(DbmDirectoryNameTooLong,  7916);
+    R_DEFINE_ERROR_RESULT(DbmFileNameTooLong,       7917);
 
 }

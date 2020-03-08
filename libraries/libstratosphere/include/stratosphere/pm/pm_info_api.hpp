@@ -16,8 +16,11 @@
 
 #pragma once
 
-#include "pm_types.hpp"
-#include "../ncm/ncm_types.hpp"
+#include <stratosphere/os.hpp>
+#include <stratosphere/pm/pm_types.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/ncm/ncm_program_location.hpp>
+#include <stratosphere/cfg/cfg_types.hpp>
 
 namespace ams::pm::info {
 

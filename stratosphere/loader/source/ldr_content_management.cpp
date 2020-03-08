@@ -264,52 +264,54 @@ namespace ams::ldr {
 
     /* Redirection API. */
     Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc) {
-        char path[FS_MAX_PATH];
+        lr::Path path;
 
         /* Try to get the path from the registered resolver. */
-        LrRegisteredLocationResolver reg;
-        R_TRY(lrOpenRegisteredLocationResolver(&reg));
-        ON_SCOPE_EXIT { serviceClose(&reg.s); };
+        lr::RegisteredLocationResolver reg;
+        R_TRY(lr::OpenRegisteredLocationResolver(std::addressof(reg)));
 
-        R_TRY_CATCH(lrRegLrResolveProgramPath(&reg, static_cast<u64>(loc.program_id), path)) {
+        R_TRY_CATCH(reg.ResolveProgramPath(std::addressof(path), loc.program_id)) {
             R_CATCH(lr::ResultProgramNotFound) {
                 /* Program wasn't found via registered resolver, fall back to the normal resolver. */
-                LrLocationResolver lr;
-                R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(loc.storage_id), &lr));
-                ON_SCOPE_EXIT { serviceClose(&lr.s); };
-
-                R_TRY(lrLrResolveProgramPath(&lr, static_cast<u64>(loc.program_id), path));
+                lr::LocationResolver lr;
+                R_TRY(lr::OpenLocationResolver(std::addressof(lr), static_cast<ncm::StorageId>(loc.storage_id)));
+                R_TRY(lr.ResolveProgramPath(std::addressof(path), loc.program_id));
             }
         } R_END_TRY_CATCH;
 
-        std::strncpy(out_path, path, FS_MAX_PATH);
-        out_path[FS_MAX_PATH - 1] = '\0';
+        std::strncpy(out_path, path.str, fs::EntryNameLengthMax);
+        out_path[fs::EntryNameLengthMax - 1] = '\0';
         FixFileSystemPath(out_path);
         return ResultSuccess();
     }
 
     Result RedirectContentPath(const char *path, const ncm::ProgramLocation &loc) {
-        LrLocationResolver lr;
-        R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(loc.storage_id), &lr));
-        ON_SCOPE_EXIT { serviceClose(&lr.s); };
+        /* Copy in path. */
+        lr::Path lr_path;
+        std::strncpy(lr_path.str, path, sizeof(lr_path.str));
+        lr_path.str[sizeof(lr_path.str) - 1] = '\0';
 
-        return lrLrRedirectProgramPath(&lr, static_cast<u64>(loc.program_id), path);
+        /* Redirect the path. */
+        lr::LocationResolver lr;
+        R_TRY(lr::OpenLocationResolver(std::addressof(lr),  static_cast<ncm::StorageId>(loc.storage_id)));
+        lr.RedirectProgramPath(lr_path, loc.program_id);
+
+        return ResultSuccess();
     }
 
     Result RedirectHtmlDocumentPathForHbl(const ncm::ProgramLocation &loc) {
-        char path[FS_MAX_PATH];
+        lr::Path path;
 
         /* Open a location resolver. */
-        LrLocationResolver lr;
-        R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(loc.storage_id), &lr));
-        ON_SCOPE_EXIT { serviceClose(&lr.s); };
+        lr::LocationResolver lr;
+        R_TRY(lr::OpenLocationResolver(std::addressof(lr),  static_cast<ncm::StorageId>(loc.storage_id)));
 
         /* If there's already a Html Document path, we don't need to set one. */
-        R_UNLESS(R_FAILED(lrLrResolveApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.program_id), path)), ResultSuccess());
+        R_SUCCEED_IF(R_SUCCEEDED(lr.ResolveApplicationHtmlDocumentPath(std::addressof(path), loc.program_id)));
 
         /* We just need to set this to any valid NCA path. Let's use the executable path. */
-        R_TRY(lrLrResolveProgramPath(&lr, static_cast<u64>(loc.program_id), path));
-        R_TRY(lrLrRedirectApplicationHtmlDocumentPath(&lr, static_cast<u64>(loc.program_id), static_cast<u64>(loc.program_id), path));
+        R_TRY(lr.ResolveProgramPath(std::addressof(path), loc.program_id));
+        lr.RedirectApplicationHtmlDocumentPath(path, loc.program_id, loc.program_id);
 
         return ResultSuccess();
     }

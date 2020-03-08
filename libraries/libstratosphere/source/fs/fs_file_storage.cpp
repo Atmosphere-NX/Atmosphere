@@ -18,13 +18,13 @@
 namespace ams::fs {
 
     Result FileStorage::UpdateSize() {
-        R_UNLESS(this->size == InvalidSize, ResultSuccess());
+        R_SUCCEED_IF(this->size != InvalidSize);
         return this->base_file->GetSize(&this->size);
     }
 
     Result FileStorage::Read(s64 offset, void *buffer, size_t size) {
         /* Immediately succeed if there's nothing to read. */
-        R_UNLESS(size > 0, ResultSuccess());
+        R_SUCCEED_IF(size == 0);
 
         /* Validate buffer. */
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
@@ -41,7 +41,7 @@ namespace ams::fs {
 
     Result FileStorage::Write(s64 offset, const void *buffer, size_t size) {
         /* Immediately succeed if there's nothing to write. */
-        R_UNLESS(size > 0, ResultSuccess());
+        R_SUCCEED_IF(size == 0);
 
         /* Validate buffer. */
         R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
@@ -86,7 +86,7 @@ namespace ams::fs {
                 R_UNLESS(IStorage::IsOffsetAndSizeValid(offset, size), fs::ResultOutOfRange());
                 return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
             default:
-                return fs::ResultUnsupportedOperation();
+                return fs::ResultUnsupportedOperationInFileStorageA();
         }
     }
 

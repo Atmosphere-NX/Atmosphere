@@ -18,49 +18,43 @@
 namespace ams::updater {
 
     Result ReadFile(size_t *out_size, void *dst, size_t dst_size, const char *path) {
-        FILE *fp = fopen(path, "rb");
-        if (fp == NULL) {
-            return ResultInvalidBootImagePackage();
-        }
-        ON_SCOPE_EXIT { fclose(fp); };
+        /* Open the file. */
+        fs::FileHandle file;
+        R_TRY_CATCH(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read)) {
+            R_CONVERT(fs::ResultPathNotFound, ResultInvalidBootImagePackage())
+        } R_END_TRY_CATCH;
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
 
         std::memset(dst, 0, dst_size);
-        size_t read_size = fread(dst, 1, dst_size, fp);
-        if (ferror(fp)) {
-            return fsdevGetLastResult();
-        }
-        *out_size = read_size;
-        return ResultSuccess();
+        return fs::ReadFile(out_size, file, 0, dst, dst_size, fs::ReadOption());
     }
 
     Result GetFileHash(size_t *out_size, void *dst_hash, const char *path, void *work_buffer, size_t work_buffer_size) {
-        FILE *fp = fopen(path, "rb");
-        if (fp == NULL) {
-            return ResultInvalidBootImagePackage();
-        }
-        ON_SCOPE_EXIT { fclose(fp); };
+        /* Open the file. */
+        fs::FileHandle file;
+        R_TRY_CATCH(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read)) {
+            R_CONVERT(fs::ResultPathNotFound, ResultInvalidBootImagePackage())
+        } R_END_TRY_CATCH;
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-        Sha256Context sha_ctx;
-        sha256ContextCreate(&sha_ctx);
+        /* Read in chunks, hashing as we go. */
+        crypto::Sha256Generator generator;
+        generator.Initialize();
 
         size_t total_size = 0;
         while (true) {
-            size_t read_size = fread(work_buffer, 1, work_buffer_size, fp);
-            if (ferror(fp)) {
-                return fsdevGetLastResult();
-            }
-            if (read_size == 0) {
-                break;
-            }
+            size_t size;
+            R_TRY(fs::ReadFile(std::addressof(size), file, total_size, work_buffer, work_buffer_size, fs::ReadOption()));
 
-            sha256ContextUpdate(&sha_ctx, work_buffer, read_size);
-            total_size += read_size;
-            if (read_size != work_buffer_size) {
+            generator.Update(work_buffer, size);
+            total_size += size;
+
+            if (size != work_buffer_size) {
                 break;
             }
         }
 
-        sha256ContextGetHash(&sha_ctx, dst_hash);
+        generator.GetHash(dst_hash, crypto::Sha256Generator::HashSize);
         *out_size = total_size;
         return ResultSuccess();
     }

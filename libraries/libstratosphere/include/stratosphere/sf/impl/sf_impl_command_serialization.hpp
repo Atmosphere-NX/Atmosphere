@@ -86,11 +86,13 @@ namespace ams::sf {
             cmif::ServiceObjectHolder *srv;
             cmif::DomainObjectId *object_id;
         public:
+            Out(cmif::ServiceObjectHolder *s) : srv(s), object_id(nullptr) { /* ... */ }
             Out(cmif::ServiceObjectHolder *s, cmif::DomainObjectId *o) : srv(s), object_id(o) { /* ... */ }
 
             void SetValue(std::shared_ptr<ServiceImpl> &&s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
                 *this->srv = cmif::ServiceObjectHolder(std::move(s));
                 if (new_object_id != cmif::InvalidDomainObjectId) {
+                    AMS_ABORT_UNLESS(object_id != nullptr);
                     *this->object_id = new_object_id;
                 }
             }

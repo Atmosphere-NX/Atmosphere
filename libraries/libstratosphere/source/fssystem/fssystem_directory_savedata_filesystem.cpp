@@ -178,7 +178,7 @@ namespace ams::fssystem {
 
     Result DirectorySaveDataFileSystem::CopySaveFromFileSystem(fs::fsa::IFileSystem *save_fs) {
         /* If the input save is null, there's nothing to copy. */
-        R_UNLESS(save_fs != nullptr, ResultSuccess());
+        R_SUCCEED_IF(save_fs == nullptr);
 
         /* Get a work buffer to work with. */
         std::unique_ptr<u8[]> work_buf;

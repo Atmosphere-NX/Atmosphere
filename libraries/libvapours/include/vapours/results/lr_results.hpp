@@ -28,6 +28,7 @@ namespace ams::lr {
     R_DEFINE_ERROR_RESULT(AddOnContentNotFound,     7);
     R_DEFINE_ERROR_RESULT(ControlNotFound,          8);
     R_DEFINE_ERROR_RESULT(LegalInformationNotFound, 9);
+    R_DEFINE_ERROR_RESULT(DebugProgramNotFound,    10);
 
     R_DEFINE_ERROR_RESULT(TooManyRegisteredPaths,   90);
 

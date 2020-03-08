@@ -211,7 +211,9 @@ namespace ams::kern {
         /* Validate this is a capability we can act on. */
         const auto type = GetCapabilityType(cap);
         R_UNLESS(type != CapabilityType::Invalid, svc::ResultInvalidArgument());
-        R_UNLESS(type != CapabilityType::Padding, ResultSuccess());
+
+        /* If the type is padding, we have no work to do. */
+        R_SUCCEED_IF(type == CapabilityType::Padding);
 
         /* Check that we haven't already processed this capability. */
         const auto flag = GetCapabilityFlag(type);

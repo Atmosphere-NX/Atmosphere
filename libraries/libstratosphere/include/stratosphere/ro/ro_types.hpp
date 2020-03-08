@@ -16,7 +16,7 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../ncm/ncm_types.hpp"
+#include <stratosphere/ncm/ncm_ids.hpp>
 
 namespace ams::ro {
 

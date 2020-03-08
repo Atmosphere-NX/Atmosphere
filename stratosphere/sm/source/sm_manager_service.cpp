@@ -19,7 +19,7 @@
 namespace ams::sm {
 
     Result ManagerService::RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac) {
-        return impl::RegisterProcess(process_id, ncm::ProgramId::Invalid, cfg::OverrideStatus{}, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
+        return impl::RegisterProcess(process_id, ncm::InvalidProgramId, cfg::OverrideStatus{}, acid_sac.GetPointer(), acid_sac.GetSize(), aci_sac.GetPointer(), aci_sac.GetSize());
     }
 
     Result ManagerService::UnregisterProcess(os::ProcessId process_id) {

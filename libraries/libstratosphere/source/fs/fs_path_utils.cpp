@@ -25,7 +25,7 @@ namespace ams::fs {
             const char c = *(cur++);
 
             /* If terminated, we're done. */
-            R_UNLESS(c != StringTraits::NullTerminator, ResultSuccess());
+            R_SUCCEED_IF(PathTool::IsNullTerminator(c));
 
             /* TODO: Nintendo converts the path from utf-8 to utf-32, one character at a time. */
             /* We should do this. */

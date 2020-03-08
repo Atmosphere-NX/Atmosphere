@@ -41,7 +41,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Pm;
+    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Pm;
 
     namespace result {
 
@@ -141,7 +141,6 @@ void __appInit(void) {
         /* Use AMS manager extension to tell SM that FS has been worked around. */
         R_ABORT_UNLESS(sm::manager::EndInitialDefers());
 
-        R_ABORT_UNLESS(lrInitialize());
         R_ABORT_UNLESS(ldrPmInitialize());
         R_ABORT_UNLESS(splInitialize());
     });
@@ -153,7 +152,6 @@ void __appExit(void) {
     /* Cleanup services. */
     splExit();
     ldrPmExit();
-    lrExit();
     smManagerExit();
     fsprExit();
 }

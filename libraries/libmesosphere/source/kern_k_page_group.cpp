@@ -38,7 +38,7 @@ namespace ams::kern {
 
     Result KPageGroup::AddBlock(KVirtualAddress addr, size_t num_pages) {
         /* Succeed immediately if we're adding no pages. */
-        R_UNLESS(num_pages != 0, ResultSuccess());
+        R_SUCCEED_IF(num_pages == 0);
 
         /* Check for overflow. */
         MESOSPHERE_ASSERT(addr < addr + num_pages * PageSize);
@@ -46,7 +46,7 @@ namespace ams::kern {
         /* Try to just append to the last block. */
         if (!this->block_list.empty()) {
             auto it = --(this->block_list.end());
-            R_UNLESS(!it->TryConcatenate(addr, num_pages), ResultSuccess());
+            R_SUCCEED_IF(it->TryConcatenate(addr, num_pages));
         }
 
         /* Allocate a new block. */

@@ -52,7 +52,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Boot;
+    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Boot;
 
     void ExceptionHandler(FatalErrorContext *ctx) {
         /* We're boot sysmodule, so manually reboot to fatal error. */
@@ -100,7 +100,6 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    fsdevUnmountAll();
     pmshellExit();
     splExit();
     fsExit();

@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <vapours.hpp>
 
@@ -39,7 +38,7 @@ namespace ams::kvdb {
             }
 
             AutoBuffer& operator=(AutoBuffer &&rhs) {
-                rhs.Swap(*this);
+                AutoBuffer(std::move(rhs)).Swap(*this);
                 return *this;
             }
 
@@ -70,9 +69,8 @@ namespace ams::kvdb {
 
                 /* Allocate a buffer. */
                 this->buffer = static_cast<u8 *>(std::malloc(size));
-                if (this->buffer == nullptr) {
-                    return ResultAllocationFailed();
-                }
+                R_UNLESS(this->buffer != nullptr, ResultAllocationFailed());
+
                 this->size = size;
                 return ResultSuccess();
             }

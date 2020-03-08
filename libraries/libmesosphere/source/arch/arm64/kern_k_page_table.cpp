@@ -832,7 +832,7 @@ namespace ams::kern::arch::arm64 {
         L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr);
         if (l1_entry->IsBlock()) {
             /* If our block size is too big, don't bother. */
-            R_UNLESS(block_size < L1BlockSize, ResultSuccess());
+            R_SUCCEED_IF(block_size >= L1BlockSize);
 
             /* Get the addresses we're working with. */
             const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
@@ -859,10 +859,10 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* If we don't have an l1 table, we're done. */
-        R_UNLESS(l1_entry->IsTable(), ResultSuccess());
+        R_SUCCEED_IF(!l1_entry->IsTable());
 
         /* We want to separate L2 contiguous blocks into L2 blocks, so check that our size permits that. */
-        R_UNLESS(block_size < L2ContiguousBlockSize, ResultSuccess());
+        R_SUCCEED_IF(block_size >= L2ContiguousBlockSize);
 
         L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, virt_addr);
         if (l2_entry->IsBlock()) {
@@ -878,7 +878,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* We want to separate L2 blocks into L3 contiguous blocks, so check that our size permits that. */
-            R_UNLESS(block_size < L2BlockSize, ResultSuccess());
+            R_SUCCEED_IF(block_size >= L2BlockSize);
 
             /* Get the addresses we're working with. */
             const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L2BlockSize);
@@ -905,10 +905,10 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* If we don't have an L3 table, we're done. */
-        R_UNLESS(l2_entry->IsTable(), ResultSuccess());
+        R_SUCCEED_IF(!l2_entry->IsTable());
 
         /* We want to separate L3 contiguous blocks into L2 blocks, so check that our size permits that. */
-        R_UNLESS(block_size < L3ContiguousBlockSize, ResultSuccess());
+        R_SUCCEED_IF(block_size >= L3ContiguousBlockSize);
 
         /* If we're contiguous, try to separate. */
         L3PageTableEntry *l3_entry = impl.GetL3Entry(l2_entry, virt_addr);

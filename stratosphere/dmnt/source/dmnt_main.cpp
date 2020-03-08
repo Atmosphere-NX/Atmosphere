@@ -35,7 +35,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Dmnt;
+    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Dmnt;
 
     namespace result {
 
@@ -71,7 +71,7 @@ void __appInit(void) {
             R_ABORT_UNLESS(roDmntInitialize());
         }
         R_ABORT_UNLESS(nsdevInitialize());
-        R_ABORT_UNLESS(lrInitialize());
+        lr::Initialize();
         R_ABORT_UNLESS(setInitialize());
         R_ABORT_UNLESS(setsysInitialize());
         R_ABORT_UNLESS(hidInitialize());
@@ -90,7 +90,7 @@ void __appExit(void) {
     hidExit();
     setsysExit();
     setExit();
-    lrExit();
+    lr::Finalize();
     nsdevExit();
     roDmntExit();
     ldrDmntExit();

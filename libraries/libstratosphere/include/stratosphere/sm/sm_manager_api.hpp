@@ -15,10 +15,10 @@
  */
 
 #pragma once
-
-#include "sm_types.hpp"
-#include "../ncm/ncm_types.hpp"
-#include "../os/os_common_types.hpp"
+#include <stratosphere/os.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/cfg/cfg_types.hpp>
+#include <stratosphere/sm/sm_types.hpp>
 
 namespace ams::sm::manager {
 

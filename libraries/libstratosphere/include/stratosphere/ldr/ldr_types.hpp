@@ -16,8 +16,9 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../ncm/ncm_types.hpp"
-#include "../sf/sf_buffer_tags.hpp"
+#include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/ncm/ncm_program_location.hpp>
+#include <stratosphere/sf/sf_buffer_tags.hpp>
 
 namespace ams::ldr {
 

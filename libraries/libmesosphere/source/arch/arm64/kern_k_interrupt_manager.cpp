@@ -262,8 +262,8 @@ namespace ams::kern::arch::arm64 {
         R_UNLESS(entry.handler != nullptr, svc::ResultInvalidState());
 
         /* If auto-cleared, we can succeed immediately. */
-        R_UNLESS(entry.manually_cleared,   ResultSuccess());
-        R_UNLESS(entry.needs_clear,        ResultSuccess());
+        R_SUCCEED_IF(!entry.manually_cleared);
+        R_SUCCEED_IF(!entry.needs_clear);
 
         /* Clear and enable. */
         entry.needs_clear = false;
@@ -277,8 +277,8 @@ namespace ams::kern::arch::arm64 {
         R_UNLESS(entry.handler != nullptr, svc::ResultInvalidState());
 
         /* If auto-cleared, we can succeed immediately. */
-        R_UNLESS(entry.manually_cleared,   ResultSuccess());
-        R_UNLESS(entry.needs_clear,        ResultSuccess());
+        R_SUCCEED_IF(!entry.manually_cleared);
+        R_SUCCEED_IF(!entry.needs_clear);
 
         /* Clear and set priority. */
         entry.needs_clear = false;

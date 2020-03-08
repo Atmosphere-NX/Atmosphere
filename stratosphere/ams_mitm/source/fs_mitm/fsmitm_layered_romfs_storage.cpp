@@ -98,7 +98,7 @@ namespace ams::mitm::fs {
     Result LayeredRomfsStorage::Read(s64 offset, void *buffer, size_t size) {
         /* Check if we can succeed immediately. */
         R_UNLESS(size >= 0, fs::ResultInvalidSize());
-        R_UNLESS(size > 0,  ResultSuccess());
+        R_SUCCEED_IF(size == 0);
 
         /* Ensure we're initialized. */
         if (!this->is_initialized) {

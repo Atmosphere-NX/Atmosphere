@@ -15,8 +15,8 @@
  */
 
 #pragma once
-#include "../os/os_common_types.hpp"
-#include "../ncm/ncm_types.hpp"
+#include <stratosphere/os.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
 
 namespace ams::cfg {
 

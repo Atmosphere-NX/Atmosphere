@@ -49,7 +49,7 @@ namespace ams::dmnt {
 
         Result EnsureSdInitialized() {
             std::scoped_lock lk(g_sd_lock);
-            R_UNLESS(!g_sd_initialized, ResultSuccess());
+            R_SUCCEED_IF(g_sd_initialized);
 
             R_TRY(fsOpenSdCardFileSystem(&g_sd_fs));
             g_sd_initialized = true;

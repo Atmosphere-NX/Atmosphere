@@ -38,7 +38,7 @@ extern "C" {
 
 namespace ams {
 
-    ncm::ProgramId CurrentProgramId = ncm::ProgramId::Boot2;
+    ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Boot2;
 
     namespace result {
 
@@ -79,13 +79,14 @@ void __appInit(void) {
         R_ABORT_UNLESS(gpioInitialize());
     });
 
-    R_ABORT_UNLESS(fsdevMountSdmc());
+    /* Mount the SD card. */
+    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 
     ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    fsdevUnmountAll();
+    fs::Unmount("sdmc");
     gpioExit();
     setsysExit();
     pmshellExit();
@@ -96,6 +97,7 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    /* Launch all programs off of SYSTEM/the SD. */
     boot2::LaunchPostSdCardBootPrograms();
 }
 

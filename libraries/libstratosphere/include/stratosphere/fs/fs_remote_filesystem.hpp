@@ -14,165 +14,217 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_common.hpp"
-#include "fsa/fs_ifile.hpp"
-#include "fsa/fs_idirectory.hpp"
-#include "fsa/fs_ifilesystem.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/impl/fs_newable.hpp>
+#include <stratosphere/fs/fsa/fs_ifile.hpp>
+#include <stratosphere/fs/fsa/fs_idirectory.hpp>
+#include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
+#include <stratosphere/fs/fs_query_range.hpp>
+#include <stratosphere/fs/fs_path_tool.hpp>
+#include <stratosphere/fs/fs_path_utils.hpp>
 
 namespace ams::fs {
 
-    class RemoteFile : public fsa::IFile {
+    class RemoteFile : public fsa::IFile, public impl::Newable {
         private:
-            std::unique_ptr<::FsFile> base_file;
+            ::FsFile base_file;
         public:
-            RemoteFile(::FsFile *f) : base_file(f) { /* ... */ }
-            RemoteFile(std::unique_ptr<::FsFile> f) : base_file(std::move(f)) { /* ... */ }
-            RemoteFile(::FsFile f) {
-                this->base_file = std::make_unique<::FsFile>(f);
-            }
+            RemoteFile(const ::FsFile &f) : base_file(f) { /* ... */ }
 
-            virtual ~RemoteFile() { fsFileClose(this->base_file.get()); }
+            virtual ~RemoteFile() { fsFileClose(std::addressof(this->base_file)); }
         public:
             virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override final {
-                return fsFileRead(this->base_file.get(), offset, buffer, size, option.value, out);
+                return fsFileRead(std::addressof(this->base_file), offset, buffer, size, option.value, out);
             }
 
             virtual Result GetSizeImpl(s64 *out) override final {
-                return fsFileGetSize(this->base_file.get(), out);
+                return fsFileGetSize(std::addressof(this->base_file), out);
             }
 
             virtual Result FlushImpl() override final {
-                return fsFileFlush(this->base_file.get());
+                return fsFileFlush(std::addressof(this->base_file));
             }
 
             virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override final {
-                return fsFileWrite(this->base_file.get(), offset, buffer, size, option.value);
+                return fsFileWrite(std::addressof(this->base_file), offset, buffer, size, option.value);
             }
 
             virtual Result SetSizeImpl(s64 size) override final {
-                return fsFileSetSize(this->base_file.get(), size);
+                return fsFileSetSize(std::addressof(this->base_file), size);
             }
 
             virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override final {
-                /* TODO: How should this be handled? */
-                return fs::ResultNotImplemented();
+                R_UNLESS(op_id == OperationId::QueryRange,       fs::ResultUnsupportedOperationInFileServiceObjectAdapterA());
+                R_UNLESS(dst_size == sizeof(FileQueryRangeInfo), fs::ResultInvalidSize());
+
+                return fsFileOperateRange(std::addressof(this->base_file), static_cast<::FsOperationId>(op_id), offset, size, reinterpret_cast<::FsRangeInfo *>(dst));
             }
         public:
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
-                return sf::cmif::DomainObjectId{serviceGetObjectId(&this->base_file->s)};
+                return sf::cmif::DomainObjectId{serviceGetObjectId(const_cast<::Service *>(std::addressof(this->base_file.s)))};
             }
     };
 
-    class RemoteDirectory : public fsa::IDirectory {
+    class RemoteDirectory : public fsa::IDirectory, public impl::Newable {
         private:
-            std::unique_ptr<::FsDir> base_dir;
+            ::FsDir base_dir;
         public:
-            RemoteDirectory(::FsDir *d) : base_dir(d) { /* ... */ }
-            RemoteDirectory(std::unique_ptr<::FsDir> d) : base_dir(std::move(d)) { /* ... */ }
-            RemoteDirectory(::FsDir d) {
-                this->base_dir = std::make_unique<::FsDir>(d);
-            }
+            RemoteDirectory(const ::FsDir &d) : base_dir(d) { /* ... */ }
 
-            virtual ~RemoteDirectory() { fsDirClose(this->base_dir.get()); }
+            virtual ~RemoteDirectory() { fsDirClose(std::addressof(this->base_dir)); }
         public:
             virtual Result ReadImpl(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) override final {
-                return fsDirRead(this->base_dir.get(), out_count, max_entries, out_entries);
+                return fsDirRead(std::addressof(this->base_dir), out_count, max_entries, out_entries);
             }
 
             virtual Result GetEntryCountImpl(s64 *out) override final {
-                return fsDirGetEntryCount(this->base_dir.get(), out);
+                return fsDirGetEntryCount(std::addressof(this->base_dir), out);
             }
         public:
             virtual sf::cmif::DomainObjectId GetDomainObjectId() const override {
-                return sf::cmif::DomainObjectId{serviceGetObjectId(&this->base_dir->s)};
+                return sf::cmif::DomainObjectId{serviceGetObjectId(const_cast<::Service *>(std::addressof(this->base_dir.s)))};
             }
     };
 
-    class RemoteFileSystem : public fsa::IFileSystem {
+    class RemoteFileSystem : public fsa::IFileSystem, public impl::Newable {
         private:
-            std::unique_ptr<::FsFileSystem> base_fs;
+            ::FsFileSystem base_fs;
         public:
-            RemoteFileSystem(::FsFileSystem *fs) : base_fs(fs) { /* ... */ }
-            RemoteFileSystem(std::unique_ptr<::FsFileSystem> fs) : base_fs(std::move(fs)) { /* ... */ }
-            RemoteFileSystem(::FsFileSystem fs) {
-                this->base_fs = std::make_unique<::FsFileSystem>(fs);
-            }
+            RemoteFileSystem(const ::FsFileSystem &fs) : base_fs(fs) { /* ... */ }
 
-            virtual ~RemoteFileSystem() { fsFsClose(this->base_fs.get()); }
+            virtual ~RemoteFileSystem() { fsFsClose(std::addressof(this->base_fs)); }
+        private:
+            Result GetPathForServiceObject(fssrv::sf::Path *out_path, const char *path) {
+                /* Copy and null terminate. */
+                std::strncpy(out_path->str, path, sizeof(out_path->str) - 1);
+                out_path->str[sizeof(out_path->str) - 1] = '\x00';
+
+                /* Replace directory separators. */
+                Replace(out_path->str, sizeof(out_path->str) - 1, StringTraits::AlternateDirectorySeparator, StringTraits::DirectorySeparator);
+
+                /* Get lengths. */
+                const auto mount_name_len = PathTool::IsWindowsAbsolutePath(path) ? 2 : 0;
+                const auto rel_path = out_path->str + mount_name_len;
+                const auto max_len  = fs::EntryNameLengthMax - mount_name_len;
+                return VerifyPath(rel_path, max_len, max_len);
+            }
         public:
             virtual Result CreateFileImpl(const char *path, s64 size, int flags) override final {
-                return fsFsCreateFile(this->base_fs.get(), path, size, flags);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsCreateFile(std::addressof(this->base_fs), sf_path.str, size, flags);
             }
 
             virtual Result DeleteFileImpl(const char *path) override final {
-                return fsFsDeleteFile(this->base_fs.get(), path);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsDeleteFile(std::addressof(this->base_fs), sf_path.str);
             }
 
             virtual Result CreateDirectoryImpl(const char *path) override final {
-                return fsFsCreateDirectory(this->base_fs.get(), path);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsCreateDirectory(std::addressof(this->base_fs), sf_path.str);
             }
 
             virtual Result DeleteDirectoryImpl(const char *path) override final {
-                return fsFsDeleteDirectory(this->base_fs.get(), path);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsDeleteDirectory(std::addressof(this->base_fs), sf_path.str);
             }
 
             virtual Result DeleteDirectoryRecursivelyImpl(const char *path) override final {
-                return fsFsDeleteDirectoryRecursively(this->base_fs.get(), path);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsDeleteDirectoryRecursively(std::addressof(this->base_fs), sf_path.str);
             }
 
             virtual Result RenameFileImpl(const char *old_path, const char *new_path) override final {
-                return fsFsRenameFile(this->base_fs.get(), old_path, new_path);
+                fssrv::sf::Path old_sf_path;
+                fssrv::sf::Path new_sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(old_sf_path), old_path));
+                R_TRY(GetPathForServiceObject(std::addressof(new_sf_path), new_path));
+                return fsFsRenameFile(std::addressof(this->base_fs), old_sf_path.str, new_sf_path.str);
             }
 
             virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) override final {
-                return fsFsRenameDirectory(this->base_fs.get(), old_path, new_path);
+                fssrv::sf::Path old_sf_path;
+                fssrv::sf::Path new_sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(old_sf_path), old_path));
+                R_TRY(GetPathForServiceObject(std::addressof(new_sf_path), new_path));
+                return fsFsRenameDirectory(std::addressof(this->base_fs), old_sf_path.str, new_sf_path.str);
             }
 
             virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const char *path) override final {
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+
                 static_assert(sizeof(::FsDirEntryType) == sizeof(DirectoryEntryType));
-                return fsFsGetEntryType(this->base_fs.get(), path, reinterpret_cast<::FsDirEntryType *>(out));
+                return fsFsGetEntryType(std::addressof(this->base_fs), sf_path.str, reinterpret_cast<::FsDirEntryType *>(out));
             }
 
             virtual Result OpenFileImpl(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
-                FsFile f;
-                R_TRY(fsFsOpenFile(this->base_fs.get(), path, mode, &f));
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
 
-                *out_file = std::make_unique<RemoteFile>(f);
+                FsFile f;
+                R_TRY(fsFsOpenFile(std::addressof(this->base_fs), sf_path.str, mode, &f));
+
+                auto file = std::make_unique<RemoteFile>(f);
+                R_UNLESS(file != nullptr, fs::ResultAllocationFailureInNew());
+
+                *out_file = std::move(file);
                 return ResultSuccess();
             }
 
             virtual Result OpenDirectoryImpl(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
-                FsDir d;
-                R_TRY(fsFsOpenDirectory(this->base_fs.get(), path, mode, &d));
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
 
-                *out_dir = std::make_unique<RemoteDirectory>(d);
+                FsDir d;
+                R_TRY(fsFsOpenDirectory(std::addressof(this->base_fs), sf_path.str, mode, &d));
+
+                auto dir = std::make_unique<RemoteDirectory>(d);
+                R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInNew());
+
+                *out_dir = std::move(dir);
                 return ResultSuccess();
             }
 
             virtual Result CommitImpl() override final {
-                return fsFsCommit(this->base_fs.get());
+                return fsFsCommit(std::addressof(this->base_fs));
             }
 
 
             virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) {
-                return fsFsGetFreeSpace(this->base_fs.get(), path, out);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsGetFreeSpace(std::addressof(this->base_fs), sf_path.str, out);
             }
 
             virtual Result GetTotalSpaceSizeImpl(s64 *out, const char *path) {
-                return fsFsGetTotalSpace(this->base_fs.get(), path, out);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsGetTotalSpace(std::addressof(this->base_fs), sf_path.str, out);
             }
 
             virtual Result CleanDirectoryRecursivelyImpl(const char *path) {
-                return fsFsCleanDirectoryRecursively(this->base_fs.get(), path);
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsCleanDirectoryRecursively(std::addressof(this->base_fs), sf_path.str);
             }
 
             virtual Result GetFileTimeStampRawImpl(FileTimeStampRaw *out, const char *path) {
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
                 static_assert(sizeof(FileTimeStampRaw) == sizeof(::FsTimeStampRaw));
-                return fsFsGetFileTimeStampRaw(this->base_fs.get(), path, reinterpret_cast<::FsTimeStampRaw *>(out));
+                return fsFsGetFileTimeStampRaw(std::addressof(this->base_fs), sf_path.str, reinterpret_cast<::FsTimeStampRaw *>(out));
             }
 
             virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fsa::QueryId query, const char *path) {
-                return fsFsQueryEntry(this->base_fs.get(), dst, dst_size, src, src_size, path, static_cast<FsFileSystemQueryId>(query));
+                fssrv::sf::Path sf_path;
+                R_TRY(GetPathForServiceObject(std::addressof(sf_path), path));
+                return fsFsQueryEntry(std::addressof(this->base_fs), dst, dst_size, src, src_size, sf_path.str, static_cast<FsFileSystemQueryId>(query));
             }
     };
 

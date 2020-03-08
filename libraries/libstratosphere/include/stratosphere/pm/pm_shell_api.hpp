@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "../ldr.hpp"
-#include "pm_types.hpp"
+#include <stratosphere/ldr.hpp>
+#include <stratosphere/pm/pm_types.hpp>
+#include <stratosphere/ncm/ncm_program_location.hpp>
 
 namespace ams::pm::shell {
 

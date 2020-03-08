@@ -15,10 +15,11 @@
  */
 
 #pragma once
-#include <sys/stat.h>
-#include "kvdb_auto_buffer.hpp"
-#include "kvdb_archive.hpp"
-#include "kvdb_bounded_string.hpp"
+#include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/fs/fs_file.hpp>
+#include <stratosphere/kvdb/kvdb_auto_buffer.hpp>
+#include <stratosphere/kvdb/kvdb_archive.hpp>
+#include <stratosphere/kvdb/kvdb_bounded_string.hpp>
 
 namespace ams::kvdb {
 
@@ -262,11 +263,9 @@ namespace ams::kvdb {
 
             Result Initialize(const char *dir, size_t capacity) {
                 /* Ensure that the passed path is a directory. */
-                {
-                    struct stat st;
-                    R_UNLESS(stat(dir, &st) == 0,   fs::ResultPathNotFound());
-                    R_UNLESS((S_ISDIR(st.st_mode)), fs::ResultPathNotFound());
-                }
+                fs::DirectoryEntryType entry_type;
+                R_TRY(fs::GetEntryType(std::addressof(entry_type), dir));
+                R_UNLESS(entry_type == fs::DirectoryEntryType_Directory, fs::ResultPathNotFound());
 
                 /* Set paths. */
                 this->path.SetFormat("%s%s", dir, "/imkvdb.arc");
@@ -337,7 +336,7 @@ namespace ams::kvdb {
                 return ResultSuccess();
             }
 
-            Result Save() {
+            Result Save(bool destructive = false) {
                 /* Create a buffer to hold the archive. */
                 AutoBuffer buffer;
                 R_TRY(buffer.Initialize(this->GetArchiveSize()));
@@ -353,7 +352,7 @@ namespace ams::kvdb {
                 }
 
                 /* Save the buffer to disk. */
-                return this->Commit(buffer);
+                return this->Commit(buffer, destructive);
             }
 
             Result Set(const Key &key, const void *value, size_t value_size) {
@@ -468,27 +467,38 @@ namespace ams::kvdb {
                 return this->index.find(key);
             }
         private:
-            Result Commit(const AutoBuffer &buffer) {
-                /* Try to delete temporary archive, but allow deletion failure (it may not exist). */
-                std::remove(this->temp_path.Get());
+            Result SaveArchiveToFile(const char *path, const void *buf, size_t size) {
+                /* Try to delete the archive, but allow deletion failure. */
+                fs::DeleteFile(path);
 
-                /* Create new temporary archive. */
-                R_TRY(fsdevCreateFile(this->temp_path.Get(), buffer.GetSize(), 0));
+                /* Create new archive. */
+                R_TRY(fs::CreateFile(path, size));
 
-                /* Write data to the temporary archive. */
+                /* Write data to the archive. */
                 {
-                    FILE *f = fopen(this->temp_path, "r+b");
-                    R_UNLESS(f != nullptr, fsdevGetLastResult());
-                    ON_SCOPE_EXIT { fclose(f); };
-
-                    R_UNLESS(fwrite(buffer.Get(), buffer.GetSize(), 1, f) == 1, fsdevGetLastResult());
+                    fs::FileHandle file;
+                    R_TRY(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Write));
+                    ON_SCOPE_EXIT { fs::CloseFile(file); };
+                    R_TRY(fs::WriteFile(file, 0, buf, size, fs::WriteOption::Flush));
                 }
 
-                /* Try to delete the saved archive, but allow deletion failure. */
-                std::remove(this->path.Get());
+                return ResultSuccess();
+            }
 
-                /* Rename the path. */
-                R_UNLESS(std::rename(this->temp_path.Get(), this->path.Get()) == 0, fsdevGetLastResult());
+            Result Commit(const AutoBuffer &buffer, bool destructive) {
+                if (destructive) {
+                    /* Delete and save to the real archive. */
+                    R_TRY(SaveArchiveToFile(this->path.Get(), buffer.Get(), buffer.GetSize()));
+                } else {
+                    /* Delete and save to a temporary archive. */
+                    R_TRY(SaveArchiveToFile(this->temp_path.Get(), buffer.Get(), buffer.GetSize()));
+
+                    /* Try to delete the saved archive, but allow deletion failure. */
+                    fs::DeleteFile(this->path.Get());
+
+                    /* Rename the path. */
+                    R_TRY(fs::RenameFile(this->temp_path.Get(), this->path.Get()));
+                }
 
                 return ResultSuccess();
             }
@@ -505,18 +515,17 @@ namespace ams::kvdb {
 
             Result ReadArchiveFile(AutoBuffer *dst) const {
                 /* Open the file. */
-                FILE *f = fopen(this->path, "rb");
-                R_UNLESS(f != nullptr, fsdevGetLastResult());
-                ON_SCOPE_EXIT { fclose(f); };
+                fs::FileHandle file;
+                R_TRY(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read));
+                ON_SCOPE_EXIT { fs::CloseFile(file); };
 
                 /* Get the archive file size. */
-                fseek(f, 0, SEEK_END);
-                const size_t archive_size = ftell(f);
-                fseek(f, 0, SEEK_SET);
+                s64 archive_size;
+                R_TRY(fs::GetFileSize(std::addressof(archive_size), file));
 
                 /* Make a new buffer, read the file. */
-                R_TRY(dst->Initialize(archive_size));
-                R_UNLESS(fread(dst->Get(), archive_size, 1, f) == 1, fsdevGetLastResult());
+                R_TRY(dst->Initialize(static_cast<size_t>(archive_size)));
+                R_TRY(fs::ReadFile(file, 0, dst->Get(), dst->GetSize()));
 
                 return ResultSuccess();
             }
