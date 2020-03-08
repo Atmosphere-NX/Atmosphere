@@ -20,76 +20,8 @@ namespace ams::ncm::impl {
 
     namespace {
 
-        Result EnsureDirectory(const char *path) {
-            /* Create the path, and allow it to already exist. */
-            R_TRY_CATCH(fs::CreateDirectory(path)) {
-                R_CONVERT(fs::ResultPathAlreadyExists, ResultSuccess())
-            } R_END_TRY_CATCH;
-
-            return ResultSuccess();
-        }
-
-        Result EnsureDirectoryRecursivelyImpl(const char *path, bool create_last) {
-            char work_buf[fs::EntryNameLengthMax];
-
-            /* Ensure the path is not too long. */
-            const size_t len = std::strlen(path);
-            R_UNLESS(len + 1 <= sizeof(work_buf), ResultAllocationFailed());
-
-            /* Copy in the path. */
-            std::strncpy(work_buf, path, sizeof(work_buf));
-
-            /* Create all but the last directory. */
-            for (size_t i = 0; i < len; i++) {
-                if (i > 0 && fs::PathTool::IsSeparator(work_buf[i]) && !fs::PathTool::IsDriveSeparator(work_buf[i-1])) {
-                    work_buf[i] = fs::StringTraits::NullTerminator;
-                    R_TRY(EnsureDirectory(work_buf));
-                    work_buf[i] = fs::StringTraits::DirectorySeparator;
-                }
-            }
-
-            /* Create the last directory if requested. */
-            if (create_last) {
-                R_TRY(EnsureDirectory(path));
-            }
-
-            return ResultSuccess();
-        }
-
-        Result HasEntry(bool *out, const char *path, fs::DirectoryEntryType type) {
-            /* Set out to false initially. */
-            *out = false;
-
-            /* Try to get the entry type. */
-            fs::DirectoryEntryType entry_type;
-            R_TRY_CATCH(fs::GetEntryType(std::addressof(entry_type), path)) {
-                /* If the path doesn't exist, nothing has gone wrong. */
-                R_CONVERT(fs::ResultPathNotFound, ResultSuccess());
-            } R_END_TRY_CATCH;
-
-            /* We succeeded. */
-            *out = entry_type == type;
-            return ResultSuccess();
-        }
-
         std::atomic<u32> g_mount_name_count;
 
-    }
-
-    Result HasFile(bool *out, const char *path) {
-        return HasEntry(out, path, fs::DirectoryEntryType_File);
-    }
-
-    Result HasDirectory(bool *out, const char *path) {
-        return HasEntry(out, path, fs::DirectoryEntryType_Directory);
-    }
-
-    Result EnsureDirectoryRecursively(const char *path) {
-        return EnsureDirectoryRecursivelyImpl(path, true);
-    }
-
-    Result EnsureParentDirectoryRecursively(const char *path) {
-        return EnsureDirectoryRecursivelyImpl(path, false);
     }
 
     bool PathView::HasPrefix(std::string_view prefix) const {

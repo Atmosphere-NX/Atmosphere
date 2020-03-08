@@ -36,7 +36,7 @@ namespace ams::ncm {
         Result EnsureContentDirectory(ContentId id, MakeContentPathFunction func, const char *root_path) {
             PathString path;
             MakeContentPath(std::addressof(path), id, func, root_path);
-            return impl::EnsureParentDirectoryRecursively(path);
+            return fs::EnsureParentDirectoryRecursively(path);
         }
 
         Result DeleteContentFile(ContentId id, MakeContentPathFunction func, const char *root_path) {
@@ -175,11 +175,11 @@ namespace ams::ncm {
 
         /* Create the content directory. */
         MakeBaseContentDirectoryPath(std::addressof(path), root_path);
-        R_TRY(impl::EnsureDirectoryRecursively(path));
+        R_TRY(fs::EnsureDirectoryRecursively(path));
 
         /* Create the placeholder directory. */
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
-        return impl::EnsureDirectoryRecursively(path);
+        return fs::EnsureDirectoryRecursively(path);
     }
 
     Result ContentStorageImpl::CleanupBase(const char *root_path) {
@@ -199,18 +199,18 @@ namespace ams::ncm {
 
         /* Check if root directory exists. */
         bool has_dir;
-        R_TRY(impl::HasDirectory(std::addressof(has_dir), root_path));
+        R_TRY(fs::HasDirectory(std::addressof(has_dir), root_path));
         R_UNLESS(has_dir, ncm::ResultContentStorageBaseNotFound());
 
         /* Check if content directory exists. */
         bool has_registered;
         MakeBaseContentDirectoryPath(std::addressof(path), root_path);
-        R_TRY(impl::HasDirectory(std::addressof(has_registered), path));
+        R_TRY(fs::HasDirectory(std::addressof(has_registered), path));
 
         /* Check if placeholder directory exists. */
         bool has_placeholder;
         PlaceHolderAccessor::MakeBaseDirectoryPath(std::addressof(path), root_path);
-        R_TRY(impl::HasDirectory(std::addressof(has_placeholder), path));
+        R_TRY(fs::HasDirectory(std::addressof(has_placeholder), path));
 
         /* Convert findings to results. */
         R_UNLESS(has_registered || has_placeholder, ncm::ResultContentStorageBaseNotFound());
@@ -287,7 +287,7 @@ namespace ams::ncm {
 
         /* Check if placeholder file exists. */
         bool has = false;
-        R_TRY(impl::HasFile(&has, placeholder_path));
+        R_TRY(fs::HasFile(&has, placeholder_path));
         out.SetValue(has);
         return ResultSuccess();
     }
@@ -335,7 +335,7 @@ namespace ams::ncm {
 
         /* Check if the content file exists. */
         bool has = false;
-        R_TRY(impl::HasFile(&has, content_path));
+        R_TRY(fs::HasFile(&has, content_path));
         out.SetValue(has);
         return ResultSuccess();
     }

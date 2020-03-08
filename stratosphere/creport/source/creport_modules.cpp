@@ -44,16 +44,16 @@ namespace ams::creport {
 
     }
 
-    void ModuleList::SaveToFile(FILE *f_report) {
-        fprintf(f_report, "    Number of Modules:           %zu\n", this->num_modules);
+    void ModuleList::SaveToFile(ScopedFile &file) {
+        file.WriteFormat("    Number of Modules:           %zu\n", this->num_modules);
         for (size_t i = 0; i < this->num_modules; i++) {
             const auto& module = this->modules[i];
-            fprintf(f_report, "    Module %02zu:\n", i);
-            fprintf(f_report, "        Address:                 %016lx-%016lx\n", module.start_address, module.end_address);
+            file.WriteFormat("    Module %02zu:\n", i);
+            file.WriteFormat("        Address:                 %016lx-%016lx\n", module.start_address, module.end_address);
             if (std::strcmp(this->modules[i].name, "") != 0) {
-                fprintf(f_report, "        Name:                    %s\n", module.name);
+                file.WriteFormat("        Name:                    %s\n", module.name);
             }
-            DumpMemoryHexToFile(f_report,  "        Build Id:                ", module.build_id, sizeof(module.build_id));
+            file.DumpMemory("        Build Id:                ", module.build_id, sizeof(module.build_id));
         }
     }
 

@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "creport_scoped_file.hpp"
 
 namespace ams::creport {
 
@@ -76,8 +77,8 @@ namespace ams::creport {
             }
 
             bool ReadFromProcess(Handle debug_handle, std::map<u64, u64> &tls_map, u64 thread_id, bool is_64_bit);
-            void SaveToFile(FILE *f_report);
-            void DumpBinary(FILE *f_bin);
+            void SaveToFile(ScopedFile &file);
+            void DumpBinary(ScopedFile &file);
         private:
             void TryGetStackInfo(Handle debug_handle);
     };
@@ -104,8 +105,8 @@ namespace ams::creport {
             }
 
             void ReadFromProcess(Handle debug_handle, std::map<u64, u64> &tls_map, bool is_64_bit);
-            void SaveToFile(FILE *f_report);
-            void DumpBinary(FILE *f_bin, u64 crashed_thread_id);
+            void SaveToFile(ScopedFile &file);
+            void DumpBinary(ScopedFile &file, u64 crashed_thread_id);
     };
 
 }

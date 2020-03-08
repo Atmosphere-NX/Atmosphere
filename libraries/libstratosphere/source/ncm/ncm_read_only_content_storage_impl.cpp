@@ -97,12 +97,12 @@ namespace ams::ncm {
 
         /* Check if the file exists. */
         bool has;
-        R_TRY(impl::HasFile(std::addressof(has), content_path));
+        R_TRY(fs::HasFile(std::addressof(has), content_path));
 
         /* If the file is absent, make the path for game card content meta and check presence again. */
         if (!has) {
             MakeGameCardContentMetaPath(std::addressof(content_path), content_id, this->make_content_path_func, this->root_path);
-            R_TRY(impl::HasFile(std::addressof(has), content_path));
+            R_TRY(fs::HasFile(std::addressof(has), content_path));
         }
 
         out.SetValue(has);
@@ -118,7 +118,7 @@ namespace ams::ncm {
 
         /* Check if the file exists. */
         bool has_file;
-        R_TRY(impl::HasFile(std::addressof(has_file), content_path));
+        R_TRY(fs::HasFile(std::addressof(has_file), content_path));
 
         /* If the file is absent, make the path for regular content. */
         if (!has_file) {

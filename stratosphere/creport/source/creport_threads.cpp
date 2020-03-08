@@ -59,53 +59,53 @@ namespace ams::creport {
 
     }
 
-    void ThreadList::SaveToFile(FILE *f_report) {
-        fprintf(f_report, "Number of Threads:               %02zu\n", this->thread_count);
+    void ThreadList::SaveToFile(ScopedFile &file) {
+        file.WriteFormat("Number of Threads:               %02zu\n", this->thread_count);
         for (size_t i = 0; i < this->thread_count; i++) {
-            fprintf(f_report, "Threads[%02zu]:\n", i);
-            this->threads[i].SaveToFile(f_report);
+            file.WriteFormat("Threads[%02zu]:\n", i);
+            this->threads[i].SaveToFile(file);
         }
     }
 
-    void ThreadInfo::SaveToFile(FILE *f_report) {
-        fprintf(f_report, "    Thread ID:                   %016lx\n", this->thread_id);
+    void ThreadInfo::SaveToFile(ScopedFile &file) {
+        file.WriteFormat("    Thread ID:                   %016lx\n", this->thread_id);
         if (std::strcmp(this->name, "") != 0) {
-            fprintf(f_report, "    Thread Name:                 %s\n", this->name);
+            file.WriteFormat("    Thread Name:                 %s\n", this->name);
         }
         if (this->stack_top != 0) {
-            fprintf(f_report, "    Stack Region:                %016lx-%016lx\n", this->stack_bottom, this->stack_top);
+            file.WriteFormat("    Stack Region:                %016lx-%016lx\n", this->stack_bottom, this->stack_top);
         }
-        fprintf(f_report, "    Registers:\n");
+        file.WriteFormat("    Registers:\n");
         {
             for (unsigned int i = 0; i <= 28; i++) {
-                fprintf(f_report, "        X[%02u]:                   %s\n", i, this->module_list->GetFormattedAddressString(this->context.cpu_gprs[i].x));
+                file.WriteFormat("        X[%02u]:                   %s\n", i, this->module_list->GetFormattedAddressString(this->context.cpu_gprs[i].x));
             }
-            fprintf(f_report, "        FP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.fp));
-            fprintf(f_report, "        LR:                      %s\n", this->module_list->GetFormattedAddressString(this->context.lr));
-            fprintf(f_report, "        SP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.sp));
-            fprintf(f_report, "        PC:                      %s\n", this->module_list->GetFormattedAddressString(this->context.pc.x));
+            file.WriteFormat("        FP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.fp));
+            file.WriteFormat("        LR:                      %s\n", this->module_list->GetFormattedAddressString(this->context.lr));
+            file.WriteFormat("        SP:                      %s\n", this->module_list->GetFormattedAddressString(this->context.sp));
+            file.WriteFormat("        PC:                      %s\n", this->module_list->GetFormattedAddressString(this->context.pc.x));
         }
         if (this->stack_trace_size != 0) {
-            fprintf(f_report, "    Stack Trace:\n");
+            file.WriteFormat("    Stack Trace:\n");
             for (size_t i = 0; i < this->stack_trace_size; i++) {
-                fprintf(f_report, "        ReturnAddress[%02zu]:       %s\n", i, this->module_list->GetFormattedAddressString(this->stack_trace[i]));
+                file.WriteFormat("        ReturnAddress[%02zu]:       %s\n", i, this->module_list->GetFormattedAddressString(this->stack_trace[i]));
             }
         }
         if (this->stack_dump_base != 0) {
-            fprintf(f_report, "    Stack Dump:                               00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+            file.WriteFormat("    Stack Dump:                               00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
             for (size_t i = 0; i < 0x10; i++) {
                 const size_t ofs = i * 0x10;
-                fprintf(f_report, "                                 %012lx %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                file.WriteFormat("                                 %012lx %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
                     this->stack_dump_base + ofs, this->stack_dump[ofs + 0], this->stack_dump[ofs + 1], this->stack_dump[ofs + 2], this->stack_dump[ofs + 3], this->stack_dump[ofs + 4], this->stack_dump[ofs + 5], this->stack_dump[ofs + 6], this->stack_dump[ofs + 7],
                     this->stack_dump[ofs + 8], this->stack_dump[ofs + 9], this->stack_dump[ofs + 10], this->stack_dump[ofs + 11], this->stack_dump[ofs + 12], this->stack_dump[ofs + 13], this->stack_dump[ofs + 14], this->stack_dump[ofs + 15]);
             }
         }
         if (this->tls_address != 0) {
-            fprintf(f_report, "    TLS Address:                 %016lx\n", this->tls_address);
-            fprintf(f_report, "    TLS Dump:                                 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+            file.WriteFormat("    TLS Address:                 %016lx\n", this->tls_address);
+            file.WriteFormat("    TLS Dump:                                 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
             for (size_t i = 0; i < 0x10; i++) {
                 const size_t ofs = i * 0x10;
-                fprintf(f_report, "                                 %012lx %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+                file.WriteFormat("                                 %012lx %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
                     this->tls_address + ofs, this->tls[ofs + 0], this->tls[ofs + 1], this->tls[ofs + 2], this->tls[ofs + 3], this->tls[ofs + 4], this->tls[ofs + 5], this->tls[ofs + 6], this->tls[ofs + 7],
                     this->tls[ofs + 8], this->tls[ofs + 9], this->tls[ofs + 10], this->tls[ofs + 11], this->tls[ofs + 12], this->tls[ofs + 13], this->tls[ofs + 14], this->tls[ofs + 15]);
             }
@@ -207,38 +207,38 @@ namespace ams::creport {
         }
     }
 
-    void ThreadInfo::DumpBinary(FILE *f_bin) {
+    void ThreadInfo::DumpBinary(ScopedFile &file) {
         /* Dump id and context. */
-        fwrite(&this->thread_id, sizeof(this->thread_id), 1, f_bin);
-        fwrite(&this->context, sizeof(this->context), 1, f_bin);
+        file.Write(&this->thread_id, sizeof(this->thread_id));
+        file.Write(&this->context, sizeof(this->context));
 
         /* Dump TLS info and name. */
-        fwrite(&this->tls_address, sizeof(this->tls_address), 1, f_bin);
-        fwrite(&this->tls, sizeof(this->tls), 1, f_bin);
-        fwrite(&this->name, sizeof(this->name), 1, f_bin);
+        file.Write(&this->tls_address, sizeof(this->tls_address));
+        file.Write(&this->tls, sizeof(this->tls));
+        file.Write(&this->name, sizeof(this->name));
 
         /* Dump stack extents and stack dump. */
-        fwrite(&this->stack_bottom, sizeof(this->stack_bottom), 1, f_bin);
-        fwrite(&this->stack_top, sizeof(this->stack_top), 1, f_bin);
-        fwrite(&this->stack_dump_base, sizeof(this->stack_dump_base), 1, f_bin);
-        fwrite(&this->stack_dump, sizeof(this->stack_dump), 1, f_bin);
+        file.Write(&this->stack_bottom, sizeof(this->stack_bottom));
+        file.Write(&this->stack_top, sizeof(this->stack_top));
+        file.Write(&this->stack_dump_base, sizeof(this->stack_dump_base));
+        file.Write(&this->stack_dump, sizeof(this->stack_dump));
 
         /* Dump stack trace. */
         {
             const u64 sts = this->stack_trace_size;
-            fwrite(&sts, sizeof(sts), 1, f_bin);
+            file.Write(&sts, sizeof(sts));
         }
-        fwrite(this->stack_trace, sizeof(this->stack_trace[0]), this->stack_trace_size, f_bin);
+        file.Write(this->stack_trace, this->stack_trace_size);
     }
 
-    void ThreadList::DumpBinary(FILE *f_bin, u64 crashed_thread_id) {
+    void ThreadList::DumpBinary(ScopedFile &file, u64 crashed_thread_id) {
         const u32 magic = DumpedThreadInfoMagic;
         const u32 count = this->thread_count;
-        fwrite(&magic, sizeof(magic), 1, f_bin);
-        fwrite(&count, sizeof(count), 1, f_bin);
-        fwrite(&crashed_thread_id, sizeof(crashed_thread_id), 1, f_bin);
+        file.Write(&magic, sizeof(magic));
+        file.Write(&count, sizeof(count));
+        file.Write(&crashed_thread_id, sizeof(crashed_thread_id));
         for (size_t i = 0; i < this->thread_count; i++) {
-            this->threads[i].DumpBinary(f_bin);
+            this->threads[i].DumpBinary(file);
         }
     }
 

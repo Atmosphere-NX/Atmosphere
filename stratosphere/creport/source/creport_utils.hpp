@@ -19,7 +19,6 @@
 namespace ams::creport {
 
     /* Utility functions. */
-    void DumpMemoryHexToFile(FILE *f, const char *prefix, const void *data, size_t size);
     os::ProcessId ParseProcessIdArgument(const char *s);
 
 }

@@ -18,12 +18,6 @@
 
 namespace ams::ncm::impl {
 
-    Result HasFile(bool *out, const char *path);
-    Result HasDirectory(bool *out, const char *path);
-
-    Result EnsureDirectoryRecursively(const char *path);
-    Result EnsureParentDirectoryRecursively(const char *path);
-
     Result CopyFile(const char *dst_path, const char *src_path);
 
     class PathView {

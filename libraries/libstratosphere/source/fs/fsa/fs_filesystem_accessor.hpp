@@ -86,6 +86,10 @@ namespace ams::fs::impl {
             }
 
             std::shared_ptr<fssrv::impl::FileSystemInterfaceAdapter> GetMultiCommitTarget();
+
+            fsa::IFileSystem *GetRawFileSystemUnsafe() {
+                return this->impl.get();
+            }
         private:
             void NotifyCloseFile(FileAccessor *f);
             void NotifyCloseDirectory(DirectoryAccessor *d);

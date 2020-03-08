@@ -64,6 +64,7 @@ dkms.conf
 # Distribution files
 *.tgz
 *.zip
+*.bz2
 
 # IDA binaries
 *.id0

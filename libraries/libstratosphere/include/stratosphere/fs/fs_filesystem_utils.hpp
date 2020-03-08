@@ -13,24 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "creport_utils.hpp"
+#pragma once
+#include "fs_common.hpp"
+#include "fs_filesystem.hpp"
 
-namespace ams::creport {
+namespace ams::fs {
 
-    os::ProcessId ParseProcessIdArgument(const char *s) {
-        /* Official creport uses this custom parsing logic... */
-        u64 out_val = 0;
+    /* Common utilities. */
+    Result EnsureDirectoryRecursively(const char *path);
+    Result EnsureParentDirectoryRecursively(const char *path);
 
-        for (unsigned int i = 0; i < 20 && s[i]; i++) {
-            if ('0' <= s[i] && s[i] <= '9') {
-                out_val *= 10;
-                out_val += (s[i] - '0');
-            } else {
-                break;
-            }
-        }
-
-        return os::ProcessId{out_val};
-    }
+    Result HasFile(bool *out, const char *path);
+    Result HasDirectory(bool *out, const char *path);
 
 }

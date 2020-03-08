@@ -19,10 +19,34 @@ namespace ams::fssystem {
 
     namespace {
 
-        inline Result EnsureDirectoryExists(fs::fsa::IFileSystem *fs, const char *path) {
+        inline Result EnsureDirectory(fs::fsa::IFileSystem *fs, const char *path) {
             R_TRY_CATCH(fs->CreateDirectory(path)) {
                 R_CATCH(fs::ResultPathAlreadyExists) { /* If path already exists, there's no problem. */ }
             } R_END_TRY_CATCH;
+
+            return ResultSuccess();
+        }
+
+        Result EnsureDirectoryRecursivelyImpl(fs::fsa::IFileSystem *fs, const char *path, bool create_last) {
+            /* Normalize the path. */
+            char normalized_path[fs::EntryNameLengthMax + 1];
+            size_t normalized_path_len;
+            R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, path, sizeof(normalized_path)));
+
+            /* Repeatedly call CreateDirectory on each directory leading to the target. */
+            for (size_t i = 1; i < normalized_path_len; i++) {
+                /* If we detect a separator, create the directory. */
+                if (PathTool::IsSeparator(normalized_path[i])) {
+                    normalized_path[i] = StringTraits::NullTerminator;
+                    R_TRY(EnsureDirectory(fs, normalized_path));
+                    normalized_path[i] = StringTraits::DirectorySeparator;
+                }
+            }
+
+            /* Create the last directory if requested. */
+            if (create_last) {
+                R_TRY(EnsureDirectory(fs, normalized_path));
+            }
 
             return ResultSuccess();
         }
@@ -93,26 +117,12 @@ namespace ams::fssystem {
         );
     }
 
-    Result EnsureDirectoryExistsRecursively(fs::fsa::IFileSystem *fs, const char *path) {
-        /* Normalize the path. */
-        char normalized_path[fs::EntryNameLengthMax + 1];
-        size_t normalized_path_len;
-        R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, path, sizeof(normalized_path)));
+    Result EnsureDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path) {
+        return EnsureDirectoryRecursivelyImpl(fs, path, true);
+    }
 
-        /* Repeatedly call CreateDirectory on each directory leading to the target. */
-        for (size_t i = 1; i < normalized_path_len; i++) {
-            /* If we detect a separator, create the directory. */
-            if (PathTool::IsSeparator(normalized_path[i])) {
-                normalized_path[i] = StringTraits::NullTerminator;
-                R_TRY(EnsureDirectoryExists(fs, normalized_path));
-                normalized_path[i] = StringTraits::DirectorySeparator;
-            }
-        }
-
-        /* Call CreateDirectory on the final path. */
-        R_TRY(EnsureDirectoryExists(fs, normalized_path));
-
-        return ResultSuccess();
+    Result EnsureParentDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path) {
+        return EnsureDirectoryRecursivelyImpl(fs, path, false);
     }
 
 }

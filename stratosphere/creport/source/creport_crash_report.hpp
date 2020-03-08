@@ -90,7 +90,7 @@ namespace ams::creport {
             void HandleDebugEventInfoAttachThread(const svc::DebugEventInfo &d);
             void HandleDebugEventInfoException(const svc::DebugEventInfo &d);
 
-            void SaveToFile(FILE *f_report);
+            void SaveToFile(ScopedFile &file);
     };
 
 }

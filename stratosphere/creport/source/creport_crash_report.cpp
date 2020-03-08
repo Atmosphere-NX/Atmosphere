@@ -48,11 +48,8 @@ namespace ams::creport {
         }
 
         void TryCreateReportDirectories() {
-            mkdir("sdmc:/atmosphere", S_IRWXU);
-            mkdir("sdmc:/atmosphere/crash_reports", S_IRWXU);
-            mkdir("sdmc:/atmosphere/crash_reports/dumps", S_IRWXU);
-            mkdir("sdmc:/atmosphere/fatal_reports", S_IRWXU);
-            mkdir("sdmc:/atmosphere/fatal_reports/dumps", S_IRWXU);
+            fs::EnsureDirectoryRecursively("sdmc:/atmosphere/crash_reports/dumps");
+            fs::EnsureDirectoryRecursively("sdmc:/atmosphere/fatal_reports/dumps");
         }
 
         constexpr const char *GetDebugExceptionString(const svc::DebugException type) {
@@ -281,90 +278,90 @@ namespace ams::creport {
 
         /* Save files. */
         {
-            char file_path[FS_MAX_PATH];
+            char file_path[fs::EntryNameLengthMax + 1];
 
             /* Save crash report. */
             std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, this->process_info.program_id);
-            FILE *fp = fopen(file_path, "w");
-            if (fp != nullptr) {
-                this->SaveToFile(fp);
-                fclose(fp);
-                fp = nullptr;
+            {
+                ScopedFile file(file_path);
+                if (file.IsOpen()) {
+                    this->SaveToFile(file);
+                }
             }
 
             /* Dump threads. */
             std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, this->process_info.program_id);
-            fp = fopen(file_path, "wb");
-            if (fp != nullptr) {
-                this->thread_list.DumpBinary(fp, this->crashed_thread.GetThreadId());
-                fclose(fp);
-                fp = nullptr;
+            {
+                ScopedFile file(file_path);
+                if (file.IsOpen()) {
+                    this->thread_list.DumpBinary(file, this->crashed_thread.GetThreadId());
+                }
             }
         }
     }
 
-    void CrashReport::SaveToFile(FILE *f_report) {
-        fprintf(f_report, "Atmosphère Crash Report (v1.4):\n");
-        fprintf(f_report, "Result:                          0x%X (2%03d-%04d)\n\n", this->result.GetValue(), this->result.GetModule(), this->result.GetDescription());
+    void CrashReport::SaveToFile(ScopedFile &file) {
+        file.WriteFormat("Atmosphère Crash Report (v1.5):\n");
+        file.WriteFormat("Result:                          0x%X (2%03d-%04d)\n\n", this->result.GetValue(), this->result.GetModule(), this->result.GetDescription());
 
         /* Process Info. */
         char name_buf[0x10] = {};
         static_assert(sizeof(name_buf) >= sizeof(this->process_info.name), "buffer overflow!");
         std::memcpy(name_buf, this->process_info.name, sizeof(this->process_info.name));
-        fprintf(f_report, "Process Info:\n");
-        fprintf(f_report, "    Process Name:                %s\n", name_buf);
-        fprintf(f_report, "    Program ID:                  %016lx\n", this->process_info.program_id);
-        fprintf(f_report, "    Process ID:                  %016lx\n", this->process_info.process_id);
-        fprintf(f_report, "    Process Flags:               %08x\n", this->process_info.flags);
+        file.WriteFormat("Process Info:\n");
+        file.WriteFormat("    Process Name:                %s\n", name_buf);
+        file.WriteFormat("    Program ID:                  %016lx\n", this->process_info.program_id);
+        file.WriteFormat("    Process ID:                  %016lx\n", this->process_info.process_id);
+        file.WriteFormat("    Process Flags:               %08x\n", this->process_info.flags);
         if (hos::GetVersion() >= hos::Version_500) {
-            fprintf(f_report, "    User Exception Address:      %s\n", this->module_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
+            file.WriteFormat("    User Exception Address:      %s\n", this->module_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
         }
 
         /* Exception Info. */
-        fprintf(f_report, "Exception Info:\n");
-        fprintf(f_report, "    Type:                        %s\n", GetDebugExceptionString(this->exception_info.type));
-        fprintf(f_report, "    Address:                     %s\n", this->module_list.GetFormattedAddressString(this->exception_info.address));
+        file.WriteFormat("Exception Info:\n");
+        file.WriteFormat("    Type:                        %s\n", GetDebugExceptionString(this->exception_info.type));
+        file.WriteFormat("    Address:                     %s\n", this->module_list.GetFormattedAddressString(this->exception_info.address));
         switch (this->exception_info.type) {
             case svc::DebugException_UndefinedInstruction:
-                fprintf(f_report, "    Opcode:                      %08x\n", this->exception_info.specific.undefined_instruction.insn);
+                file.WriteFormat("    Opcode:                      %08x\n", this->exception_info.specific.undefined_instruction.insn);
                 break;
             case svc::DebugException_DataAbort:
             case svc::DebugException_AlignmentFault:
                 if (this->exception_info.specific.raw != this->exception_info.address) {
-                    fprintf(f_report, "    Fault Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.raw));
+                    file.WriteFormat("    Fault Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.raw));
                 }
                 break;
             case svc::DebugException_UndefinedSystemCall:
-                fprintf(f_report, "    Svc Id:                      0x%02x\n", this->exception_info.specific.undefined_system_call.id);
+                file.WriteFormat("    Svc Id:                      0x%02x\n", this->exception_info.specific.undefined_system_call.id);
                 break;
             case svc::DebugException_UserBreak:
-                fprintf(f_report, "    Break Reason:                0x%x\n", this->exception_info.specific.user_break.break_reason);
-                fprintf(f_report, "    Break Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.user_break.address));
-                fprintf(f_report, "    Break Size:                  0x%lx\n", this->exception_info.specific.user_break.size);
+                file.WriteFormat("    Break Reason:                0x%x\n", this->exception_info.specific.user_break.break_reason);
+                file.WriteFormat("    Break Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.user_break.address));
+                file.WriteFormat("    Break Size:                  0x%lx\n", this->exception_info.specific.user_break.size);
                 break;
             default:
                 break;
         }
 
         /* Crashed Thread Info. */
-        fprintf(f_report, "Crashed Thread Info:\n");
-        this->crashed_thread.SaveToFile(f_report);
+        file.WriteFormat("Crashed Thread Info:\n");
+        this->crashed_thread.SaveToFile(file);
 
         /* Dying Message. */
         if (hos::GetVersion() >= hos::Version_500 && this->dying_message_size != 0) {
-            fprintf(f_report, "Dying Message Info:\n");
-            fprintf(f_report, "    Address:                     0x%s\n", this->module_list.GetFormattedAddressString(this->dying_message_address));
-            fprintf(f_report, "    Size:                        0x%016lx\n", this->dying_message_size);
-            DumpMemoryHexToFile(f_report, "    Dying Message:              ", this->dying_message, this->dying_message_size);
+            file.WriteFormat("Dying Message Info:\n");
+            file.WriteFormat("    Address:                     0x%s\n", this->module_list.GetFormattedAddressString(this->dying_message_address));
+            file.WriteFormat("    Size:                        0x%016lx\n", this->dying_message_size);
+            file.DumpMemory( "    Dying Message:               ", this->dying_message, this->dying_message_size);
         }
 
         /* Module Info. */
-        fprintf(f_report, "Module Info:\n");
-        this->module_list.SaveToFile(f_report);
+        file.WriteFormat("Module Info:\n");
+        this->module_list.SaveToFile(file);
 
         /* Thread Info. */
-        fprintf(f_report, "\nThread Report:\n");
-        this->thread_list.SaveToFile(f_report);
+        file.WriteFormat("\nThread Report:\n");
+        this->thread_list.SaveToFile(file);
     }
 
 }

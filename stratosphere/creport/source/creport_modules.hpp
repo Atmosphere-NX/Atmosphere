@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include "creport_scoped_file.hpp"
 #include "creport_threads.hpp"
 
 namespace ams::creport {
@@ -52,7 +53,7 @@ namespace ams::creport {
 
             void FindModulesFromThreadInfo(Handle debug_handle, const ThreadInfo &thread);
             const char *GetFormattedAddressString(uintptr_t address);
-            void SaveToFile(FILE *f_report);
+            void SaveToFile(ScopedFile &file);
         private:
             bool TryFindModule(uintptr_t *out_address, uintptr_t guess);
             void TryAddModule(uintptr_t guess);

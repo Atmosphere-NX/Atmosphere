@@ -59,7 +59,7 @@ namespace ams::ncm {
     Result PlaceHolderAccessor::EnsurePlaceHolderDirectory(PlaceHolderId placeholder_id) {
         PathString path;
         this->MakePath(std::addressof(path), placeholder_id);
-        return impl::EnsureParentDirectoryRecursively(path);
+        return fs::EnsureParentDirectoryRecursively(path);
     }
 
     Result PlaceHolderAccessor::GetPlaceHolderIdFromFileName(PlaceHolderId *out, const char *name) {
