@@ -1,5 +1,5 @@
 {
-    "name": "ProcessMana",
+    "name": "ProcessManager",
     "title_id": "0x0100000000000003",
     "main_thread_stack_size": "0x00002000",
     "main_thread_priority": 49,

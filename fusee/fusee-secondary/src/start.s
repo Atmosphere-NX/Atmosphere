@@ -97,11 +97,18 @@ _metadata:
 #define CONTENT_TYPE_KLD 9
 #define CONTENT_TYPE_KRN 10
 
+#define CONTENT_FLAG_NONE          (0 << 0)
+
+#define CONTENT_FLAG0_EXPERIMENTAL (1 << 0)
+
 _content_headers:
 /* ams_mitm content header */
 .word __ams_mitm_kip_start__
 .word __ams_mitm_kip_size__
-.word CONTENT_TYPE_KIP
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "ams_mitm"
 .align 5
@@ -109,7 +116,10 @@ _content_headers:
 /* boot content header */
 .word __boot_kip_start__
 .word __boot_kip_size__
-.word CONTENT_TYPE_KIP
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "boot"
 .align 5
@@ -117,7 +127,10 @@ _content_headers:
 /* exosphere content header */
 .word __exosphere_bin_start__
 .word __exosphere_bin_size__
-.word CONTENT_TYPE_EXO
+.byte CONTENT_TYPE_EXO
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "exosphere"
 .align 5
@@ -125,7 +138,10 @@ _content_headers:
 /* fusee_primary content header */
 .word __fusee_primary_bin_start__
 .word __fusee_primary_bin_size__
-.word CONTENT_TYPE_FSP
+.byte CONTENT_TYPE_FSP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "fusee_primary"
 .align 5
@@ -133,15 +149,21 @@ _content_headers:
 /* loader content header */
 .word __loader_kip_start__
 .word __loader_kip_size__
-.word CONTENT_TYPE_KIP
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
-.asciz "loader"
+.asciz "Loader"
 .align 5
 
 /* lp0fw content header */
 .word __lp0fw_bin_start__
 .word __lp0fw_bin_size__
-.word CONTENT_TYPE_WBT
+.byte CONTENT_TYPE_WBT
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "lp0fw"
 .align 5
@@ -149,15 +171,20 @@ _content_headers:
 /* pm content header */
 .word __pm_kip_start__
 .word __pm_kip_size__
-.word CONTENT_TYPE_KIP
-.word 0xCCCCCCCC
-.asciz "pm"
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.asciz "ProcessManager"
 .align 5
 
 /* rebootstub content header */
 .word __rebootstub_bin_start__
 .word __rebootstub_bin_size__
-.word CONTENT_TYPE_RBT
+.byte CONTENT_TYPE_RBT
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "rebootstub"
 .align 5
@@ -165,7 +192,10 @@ _content_headers:
 /* sept_primary content header */
 .word __sept_primary_bin_start__
 .word __sept_primary_bin_size__
-.word CONTENT_TYPE_SP1
+.byte CONTENT_TYPE_SP1
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "sept_primary"
 .align 5
@@ -173,7 +203,10 @@ _content_headers:
 /* sept_secondary 00 content header */
 .word __sept_secondary_00_enc_start__
 .word __sept_secondary_00_enc_size__
-.word CONTENT_TYPE_SP2
+.byte CONTENT_TYPE_SP2
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "septsecondary00"
 .align 5
@@ -181,7 +214,10 @@ _content_headers:
 /* sept_secondary 01 content header */
 .word __sept_secondary_01_enc_start__
 .word __sept_secondary_01_enc_size__
-.word CONTENT_TYPE_SP2
+.byte CONTENT_TYPE_SP2
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "septsecondary01"
 .align 5
@@ -189,7 +225,10 @@ _content_headers:
 /* sm content header */
 .word __sm_kip_start__
 .word __sm_kip_size__
-.word CONTENT_TYPE_KIP
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "sm"
 .align 5
@@ -197,15 +236,21 @@ _content_headers:
 /* spl content header */
 .word __spl_kip_start__
 .word __spl_kip_size__
-.word CONTENT_TYPE_KIP
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "spl"
 .align 5
 
-/* spl content header */
+/* ncm content header */
 .word __ncm_kip_start__
 .word __ncm_kip_size__
-.word CONTENT_TYPE_KIP
+.byte CONTENT_TYPE_KIP
+.byte CONTENT_FLAG0_EXPERIMENTAL
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "NCM"
 .align 5
@@ -213,7 +258,10 @@ _content_headers:
 /* emummc content header */
 .word __emummc_kip_start__
 .word __emummc_kip_size__
-.word CONTENT_TYPE_EMC
+.byte CONTENT_TYPE_EMC
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "emummc"
 .align 5
@@ -221,7 +269,10 @@ _content_headers:
 /* kernel_ldr content header */
 .word __kernel_ldr_bin_start__
 .word __kernel_ldr_bin_size__
-.word CONTENT_TYPE_KLD
+.byte CONTENT_TYPE_KLD
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "kernel_ldr"
 .align 5
@@ -230,6 +281,9 @@ _content_headers:
 .word __splash_screen_bmp_start__
 .word __splash_screen_bmp_size__
 .word CONTENT_TYPE_BMP
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "splash_screen"
 .align 5
