@@ -42,6 +42,7 @@ namespace ams::creport {
                 return this->opened;
             }
 
+            void WriteString(const char *str);
             void WriteFormat(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
             void DumpMemory(const char *prefix, const void *data, size_t size);
 

@@ -301,7 +301,7 @@ namespace ams::creport {
     }
 
     void CrashReport::SaveToFile(ScopedFile &file) {
-        file.WriteFormat("Atmosphère Crash Report (v1.5):\n");
+        file.WriteFormat(u8"Atmosphère Crash Report (v1.5):\n");
         file.WriteFormat("Result:                          0x%X (2%03d-%04d)\n\n", this->result.GetValue(), this->result.GetModule(), this->result.GetDescription());
 
         /* Process Info. */
@@ -360,7 +360,7 @@ namespace ams::creport {
         this->module_list.SaveToFile(file);
 
         /* Thread Info. */
-        file.WriteFormat("\nThread Report:\n");
+        file.WriteFormat("Thread Report:\n");
         this->thread_list.SaveToFile(file);
     }
 

@@ -53,7 +53,7 @@ namespace ams::creport {
             if (std::strcmp(this->modules[i].name, "") != 0) {
                 file.WriteFormat("        Name:                    %s\n", module.name);
             }
-            file.DumpMemory("        Build Id:                ", module.build_id, sizeof(module.build_id));
+            file.DumpMemory("        Build Id:                ", &module.build_id[0], sizeof(module.build_id));
         }
     }
 

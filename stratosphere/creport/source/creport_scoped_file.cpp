@@ -27,6 +27,10 @@ namespace ams::creport {
 
     }
 
+    void ScopedFile::WriteString(const char *str) {
+        this->Write(str, std::strlen(str));
+    }
+
     void ScopedFile::WriteFormat(const char *fmt, ...) {
         /* Acquire exclusive access to the format buffer. */
         std::scoped_lock lk(g_format_lock);
@@ -40,13 +44,13 @@ namespace ams::creport {
         }
 
         /* Write data. */
-        this->Write(g_format_buffer, std::strlen(g_format_buffer));
+        this->WriteString(g_format_buffer);
     }
 
     void ScopedFile::DumpMemory(const char *prefix, const void *data, size_t size) {
         const u8 *data_u8 = reinterpret_cast<const u8 *>(data);
         const int prefix_len = std::strlen(prefix);
-        size_t offset = 0;
+        size_t data_ofs = 0;
         size_t remaining = size;
         bool first = true;
 
@@ -63,14 +67,14 @@ namespace ams::creport {
 
             /* Dump up to 0x20 of hex memory. */
             {
-                char hex[MaximumLineLength * 2 + 2];
+                char hex[MaximumLineLength * 2 + 2] = {};
                 for (size_t i = 0; i < cur_size; i++) {
-                    std::snprintf(hex + i * 2, 3, "%02X", data_u8[offset++]);
+                    std::snprintf(hex + i * 2, 3, "%02X", data_u8[data_ofs++]);
                 }
                 hex[cur_size * 2 + 0] = '\n';
                 hex[cur_size * 2 + 1] = '\x00';
 
-                this->Write(hex, std::strlen(hex));
+                this->WriteString(hex);
             }
 
             /* Continue. */
@@ -85,7 +89,7 @@ namespace ams::creport {
         }
 
         /* Advance, if we write successfully. */
-        if (R_SUCCEEDED(fs::WriteFile(this->file, this->offset, g_format_buffer, size, fs::WriteOption::Flush))) {
+        if (R_SUCCEEDED(fs::WriteFile(this->file, this->offset, data, size, fs::WriteOption::Flush))) {
             this->offset += size;
         }
     }
