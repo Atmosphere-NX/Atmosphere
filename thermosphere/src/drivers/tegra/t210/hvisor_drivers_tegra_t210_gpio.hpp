@@ -193,15 +193,14 @@ namespace ams::hvisor::drivers::tegra::t210 {
                 return static_cast<Level>((m_regs->bank[pin.port / portsPerBank].in[pin.port % portsPerBank] >> pin.pos) & 1);
             }
 
-            void ConfigureUartPins(u32 id)
+            void ConfigureUartPins()
             {
-                if (id > 3) {
-                    return;
-                }
                 constexpr Pin uartPins[] = {uart1Tx, uart2Tx, uart3Tx, uart4Tx};
 
                 // Set SFIO to all the 4 contiguous pins (tx, rx, rts, cts)
-                SetModeContiguous(uartPins[id], 4, Mode::Sfio);
+                for (Pin pin : uartPins) {
+                    SetModeContiguous(pin, 4, Mode::Sfio);
+                }
             }
     };
 

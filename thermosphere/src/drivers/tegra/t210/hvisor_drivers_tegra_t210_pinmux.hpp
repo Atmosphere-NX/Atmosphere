@@ -234,20 +234,24 @@ namespace ams::hvisor::drivers::tegra::t210 {
             volatile Registers *m_regs = nullptr;
 
         public:
-            CONFIGURE_UART_DECL(1)
-            CONFIGURE_UART_DECL(2)
-            CONFIGURE_UART_DECL(3)
-            CONFIGURE_UART_DECL(4)
-
-            void ConfigureUart(u32 id)
+            void ConfigureUartPins() const
             {
-                switch (id) {
-                    case 0: ConfigureUart1(); break;
-                    case 1: ConfigureUart2(); break;
-                    case 2: ConfigureUart3(); break;
-                    case 3: ConfigureUart4(); break;
-                    default: break;
-                }
+                m_regs->uart1_tx    = 0     | 0             | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart1_rx    = INPUT | TRISTATE      | PULL_UP   | SELECT_FUNCTION0;
+                m_regs->uart1_rts   = 0     | 0             | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart1_cts   = INPUT | TRISTATE      | PULL_DOWN | SELECT_FUNCTION0;
+                m_regs->uart2_tx    = 0     | 0             | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart2_rx    = INPUT | TRISTATE      | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart2_rts   = 0     | 0             | PULL_DOWN | SELECT_FUNCTION0;
+                m_regs->uart2_cts   = INPUT | TRISTATE      | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart3_tx    = 0     | 0             | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart3_rx    = INPUT | TRISTATE      | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart3_rts   = 0     | 0             | PULL_DOWN | SELECT_FUNCTION0;
+                m_regs->uart3_cts   = INPUT | TRISTATE      | PULL_NONE | SELECT_FUNCTION0;
+                m_regs->uart4_tx    = 0     | 0             | PULL_DOWN | SELECT_FUNCTION0;
+                m_regs->uart4_rx    = INPUT | TRISTATE      | PULL_DOWN | SELECT_FUNCTION0;
+                m_regs->uart4_cts   = 0     | 0             | PULL_DOWN | SELECT_FUNCTION0;
+                m_regs->uart4_rts   = INPUT | TRISTATE      | PULL_DOWN | SELECT_FUNCTION0;
             }
     };
 }
