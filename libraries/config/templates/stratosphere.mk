@@ -15,11 +15,11 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-export DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE
-export SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2
-export CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
-export CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
-export ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)
+export DEFINES     = $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE
+export SETTINGS    = $(ATMOSPHERE_SETTINGS) -O2
+export CFLAGS      = $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
+export CXXFLAGS    = $(CFLAGS) $(ATMOSPHERE_CXXFLAGS)
+export ASFLAGS     = $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES)
 
 export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,__cxa_throw \
@@ -36,17 +36,17 @@ export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,_ZSt20__throw_length_errorPKc \
 			-Wl,--wrap,_ZNSt11logic_errorC2EPKc
 
-export LDFLAGS     := -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
+export LDFLAGS     = -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
 
-export LIBS	:= -lstratosphere -lnx
+export LIBS	= -lstratosphere -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-export LIBDIRS	:= $(PORTLIBS) $(LIBNX) $(ATMOSPHERE_LIBRARIES_DIR)/libvapours $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere
+export LIBDIRS	= $(PORTLIBS) $(LIBNX) $(ATMOSPHERE_LIBRARIES_DIR)/libvapours $(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere
 
 #---------------------------------------------------------------------------------
 # stratosphere sysmodules may (but usually do not) have an exefs source dir
 #---------------------------------------------------------------------------------
-export EXEFS_SRC := exefs_src
+export EXEFS_SRC = exefs_src
