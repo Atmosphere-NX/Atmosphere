@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_STRATOSPHERE_H
 #define FUSEE_STRATOSPHERE_H
 
@@ -30,6 +30,8 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware);
 ini1_header_t *stratosphere_get_sd_files_ini1(void);
 void stratosphere_free_ini1(void);
 
+void stratosphere_enable_ncm(void);
+
 emummc_fs_ver_t stratosphere_get_fs_version(void);
 
 ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_inis, void *emummc, size_t emummc_size);
@@ -37,8 +39,10 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_in
 typedef struct {
     bool has_nogc_config;
     bool enable_nogc;
+    bool ncm_enabled;
 } stratosphere_cfg_t;
 
 #define STRATOSPHERE_NOGC_KEY "nogc"
+#define STRATOSPHERE_ENABLE_NCM_KEY "enable_ncm"
 
 #endif

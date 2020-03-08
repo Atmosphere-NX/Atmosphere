@@ -202,6 +202,14 @@ _content_headers:
 .asciz "spl"
 .align 5
 
+/* spl content header */
+.word __ncm_kip_start__
+.word __ncm_kip_size__
+.word CONTENT_TYPE_KIP
+.word 0xCCCCCCCC
+.asciz "NCM"
+.align 5
+
 /* emummc content header */
 .word __emummc_kip_start__
 .word __emummc_kip_size__

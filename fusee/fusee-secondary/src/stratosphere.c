@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -30,6 +30,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "loader_kip.h"
+#include "ncm_kip.h"
 #include "pm_kip.h"
 #include "sm_kip.h"
 #include "ams_mitm_kip.h"
@@ -47,14 +48,28 @@ static bool g_stratosphere_pm_enabled = true;
 static bool g_stratosphere_ams_mitm_enabled = true;
 static bool g_stratosphere_spl_enabled = true;
 static bool g_stratosphere_boot_enabled = true;
+static bool g_stratosphere_ncm_enabled = false;
 
-extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], boot_kip[], ams_mitm_kip[];
-extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, spl_kip_size, boot_kip_size, ams_mitm_kip_size;
+extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], boot_kip[], ncm_kip[], ams_mitm_kip[];
+extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, spl_kip_size, boot_kip_size, ncm_kip_size, ams_mitm_kip_size;
 
 static emummc_fs_ver_t g_fs_ver = FS_VER_1_0_0;
 
 emummc_fs_ver_t stratosphere_get_fs_version(void) {
     return g_fs_ver;
+}
+
+void stratosphere_enable_ncm(void) {
+    /* The Atmosphere team believes our implementation of NCM to be extremely accurate, */
+    /* and does not think it likely there is any possibility of undesirable behavior */
+    /* when using the NCM reimplementation. However, because NCM manages critical save games */
+    /* the implementation will default to off for some time, until the code has been thoroughly */
+    /* tested in practice. */
+
+    /* PLEASE NOTE: The default behavior will be NCM on in a future atmosphere release, */
+    /* and this opt-in functionality will be removed at that time. */
+
+    g_stratosphere_ncm_enabled = true;
 }
 
 /* GCC doesn't consider the size as const... we have to write it ourselves. */
@@ -68,38 +83,43 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
     }
 
     size_t size = sizeof(ini1_header_t);
-    
+
     /* Calculate our processes' sizes. */
     if (g_stratosphere_loader_enabled) {
         size += loader_kip_size;
         num_processes++;
     }
-    
+
     if (g_stratosphere_pm_enabled) {
         size += pm_kip_size;
         num_processes++;
     }
-    
+
     if (g_stratosphere_sm_enabled) {
         size += sm_kip_size;
         num_processes++;
     }
-    
+
     if (g_stratosphere_spl_enabled) {
         size += spl_kip_size;
         num_processes++;
     }
-    
+
     if (g_stratosphere_ams_mitm_enabled) {
         size += ams_mitm_kip_size;
         num_processes++;
     }
-    
+
+    if (g_stratosphere_ncm_enabled) {
+        size += ncm_kip_size;
+        num_processes++;
+    }
+
     if (g_stratosphere_boot_enabled) {
         size += boot_kip_size;
         num_processes++;
     }
-    
+
     g_stratosphere_ini1 = (ini1_header_t *)malloc(size);
 
     if (g_stratosphere_ini1 == NULL) {
@@ -134,6 +154,11 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
         data += spl_kip_size;
     }
 
+    if (g_stratosphere_ncm_enabled) {
+        memcpy(data, ncm_kip, ncm_kip_size);
+        data += ncm_kip_size;
+    }
+
     if (g_stratosphere_ams_mitm_enabled) {
         memcpy(data, ams_mitm_kip, ams_mitm_kip_size);
         data += ams_mitm_kip_size;
@@ -143,7 +168,7 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware) {
         memcpy(data, boot_kip, boot_kip_size);
         data += boot_kip_size;
     }
-    
+
     return g_stratosphere_ini1;
 }
 
@@ -160,26 +185,26 @@ void stratosphere_free_ini1(void) {
 
 static void try_add_sd_kip(ini1_header_t *ini1, const char *kip_path) {
     size_t file_size = get_file_size(kip_path);
-    
+
     if (ini1->size + file_size > PACKAGE2_SIZE_MAX) {
         fatal_error("Failed to load %s: INI1 would be too large!\n", kip_path);
     }
-    
+
     kip1_header_t kip_header;
     if (read_from_file(&kip_header, sizeof(kip_header), kip_path) != sizeof(kip_header) || kip_header.magic != MAGIC_KIP1) {
         return;
     }
-    
+
     size_t kip_size = kip1_get_size_from_header(&kip_header);
     if (kip_size > file_size) {
         fatal_error("Failed to load %s: KIP size is corrupt!\n", kip_path);
     }
-    
+
     if (read_from_file(ini1->kip_data + ini1->size - sizeof(ini1_header_t), kip_size, kip_path) != kip_size) {
         /* TODO: is this error fatal? */
         return;
     }
-    
+
     ini1->size += kip_size;
     ini1->num_processes++;
 }
@@ -189,24 +214,24 @@ static kip1_header_t *inject_emummc_kip(kip1_header_t *fs_kip, kip1_header_t *em
     size_t fs_kip_size, emummc_kip_size;
     fs_kip = kip1_uncompress(fs_kip, &fs_kip_size);
     emummc_kip = kip1_uncompress(emummc_kip, &emummc_kip_size);
-    
+
     /* Allocate kip. */
     kip1_header_t *injected_kip = calloc(1, fs_kip_size + emummc_kip_size);
     if (injected_kip == NULL) {
         fatal_error("Failed to allocate memory for emummc kip injection!");
     }
     memcpy(injected_kip, fs_kip, sizeof(*fs_kip));
-    
+
     const size_t fs_contents_size = kip1_get_size_from_header(fs_kip) - sizeof(kip1_header_t);
-    
+
     const size_t emummc_data_size = emummc_kip->section_headers[3].out_offset + emummc_kip->section_headers[3].out_size;
     if (emummc_data_size & 0xFFF) {
         fatal_error("Invalid emummc kip!");
     }
-    
+
     /* Copy over capabilities. */
     memcpy(injected_kip->capabilities, emummc_kip->capabilities, sizeof(emummc_kip->capabilities));
-    
+
     /* Add extra cap for 1.0.0 */
     if (stratosphere_get_fs_version() == FS_VER_1_0_0) {
         for (size_t i = 0; i < 0x20; i++) {
@@ -217,14 +242,14 @@ static kip1_header_t *inject_emummc_kip(kip1_header_t *fs_kip, kip1_header_t *em
             }
         }
     }
-    
+
     /* Update sections. */
     injected_kip->section_headers[0].out_size += emummc_data_size;
     injected_kip->section_headers[0].compressed_size += emummc_data_size;
     for (size_t i = 1; i < 4; i++) {
         injected_kip->section_headers[i].out_offset += emummc_data_size;
     }
-    
+
     /* Copy data. */
     {
         size_t ofs = 0;
@@ -234,22 +259,22 @@ static kip1_header_t *inject_emummc_kip(kip1_header_t *fs_kip, kip1_header_t *em
         }
     }
     memcpy(injected_kip->data + emummc_data_size, fs_kip->data, fs_contents_size);
-    
+
     return injected_kip;
 }
 
-ini1_header_t *stratosphere_get_sd_files_ini1(void) {    
+ini1_header_t *stratosphere_get_sd_files_ini1(void) {
     if (g_sd_files_ini1 != NULL) {
         return g_sd_files_ini1;
     }
-    
+
     /* Allocate space. */
     g_sd_files_ini1 = (ini1_header_t *)malloc(PACKAGE2_SIZE_MAX);
     g_sd_files_ini1->magic = MAGIC_INI1;
     g_sd_files_ini1->size = sizeof(ini1_header_t);
     g_sd_files_ini1->num_processes = 0;
     g_sd_files_ini1->_0xC = 0;
-    
+
     /* Load all kips from /atmosphere/kips/<*>.kip or /atmosphere/kips/<*>/<*>.kip. */
     DIR *kips_dir = opendir("atmosphere/kips");
     struct dirent *ent;
@@ -258,15 +283,15 @@ ini1_header_t *stratosphere_get_sd_files_ini1(void) {
             if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) {
                 continue;
             }
-            
+
             char kip_path[0x301] = {0};
             snprintf(kip_path, 0x300, "atmosphere/kips/%s", ent->d_name);
-            
+
             struct stat kip_stat;
             if (stat(kip_path, &kip_stat) == -1) {
                 continue;
             }
-            
+
             if ((kip_stat.st_mode & S_IFMT) == S_IFREG) {
                 /* If file, add to ini1. */
                 try_add_sd_kip(g_sd_files_ini1, kip_path);
@@ -279,15 +304,15 @@ ini1_header_t *stratosphere_get_sd_files_ini1(void) {
                         if (strcmp(sub_ent->d_name, ".") == 0 || strcmp(sub_ent->d_name, "..") == 0) {
                             continue;
                         }
-                        
+
                         /* Reuse kip path variable. */
                         memset(kip_path, 0, sizeof(kip_path));
                         snprintf(kip_path, 0x300, "atmosphere/kips/%s/%s", ent->d_name, sub_ent->d_name);
-                        
+
                         if (stat(kip_path, &kip_stat) == -1) {
                             continue;
                         }
-                        
+
                         if ((kip_stat.st_mode & S_IFMT) == S_IFREG) {
                             /* If file, add to ini1. */
                             try_add_sd_kip(g_sd_files_ini1, kip_path);
@@ -299,7 +324,7 @@ ini1_header_t *stratosphere_get_sd_files_ini1(void) {
         }
         closedir(kips_dir);
     }
-    
+
     return g_sd_files_ini1;
 }
 
@@ -344,7 +369,7 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis, vo
             }
 
             offset += kip1_get_size_from_header(current_kip);
-            
+
             bool already_loaded = false;
             for (uint32_t j = 0; j < merged->num_processes; j++) {
                 if (process_list[j] == current_kip->title_id) {
@@ -355,20 +380,20 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis, vo
             if (already_loaded) {
                 continue;
             }
-            
+
             print(SCREEN_LOG_LEVEL_MANDATORY, "[NXBOOT]: Loading KIP %08x%08x...\n", (uint32_t)(current_kip->title_id >> 32), (uint32_t)current_kip->title_id);
 
             size_t current_kip_size = kip1_get_size_from_header(current_kip);
             if (current_kip_size > remaining_size) {
                 fatal_error("Not enough space for all the KIP1s!\n");
             }
-            
+
             kip1_header_t *patched_kip = apply_kip_ips_patches(current_kip, current_kip_size, &g_fs_ver);
-            
+
             if (current_kip->title_id == FS_TITLE_ID && emummc != NULL) {
                 patched_kip = inject_emummc_kip(patched_kip != NULL ? patched_kip : current_kip, (kip1_header_t *)emummc);
             }
-            
+
             if (patched_kip != NULL) {
                 size_t patched_kip_size = kip1_get_size_from_header(patched_kip);
                 if (patched_kip_size > remaining_size) {
@@ -377,9 +402,9 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, size_t num_inis, vo
                 memcpy(current_dst_kip, patched_kip, patched_kip_size);
                 remaining_size -= patched_kip_size;
                 current_dst_kip += patched_kip_size;
-                
+
                 free(patched_kip);
-            } else {   
+            } else {
                 memcpy(current_dst_kip, current_kip, current_kip_size);
                 remaining_size -= current_kip_size;
                 current_dst_kip += current_kip_size;
