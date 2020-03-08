@@ -96,7 +96,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(fsInitialize());
     });
 
-    R_ABORT_UNLESS(fsdevMountSdmc());
+    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 
     /* fatal cannot throw fatal, so don't do: ams::CheckApiVersion(); */
 }
