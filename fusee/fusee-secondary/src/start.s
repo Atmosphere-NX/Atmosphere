@@ -202,12 +202,12 @@ _content_headers:
 .asciz "spl"
 .align 5
 
-/* spl content header */
+/* ncm content header */
 .word __ncm_kip_start__
 .word __ncm_kip_size__
 .word CONTENT_TYPE_KIP
 .word 0xCCCCCCCC
-.asciz "NCM"
+.asciz "ncm"
 .align 5
 
 /* emummc content header */
