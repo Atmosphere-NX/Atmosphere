@@ -29,8 +29,11 @@ namespace ams::ncm {
             explicit ContentMetaDatabaseBuilder(ContentMetaDatabase *d) : db(d) { /* ... */ }
 
             Result BuildFromStorage(ContentStorage *storage);
+            Result BuildFromPackage(const char *package_root_path);
 
             Result Cleanup();
     };
+
+    Result ListApplicationPackage(s32 *out_count, ApplicationId *out_ids, s32 max_out_ids, const char *package_root_path);
 
 }
