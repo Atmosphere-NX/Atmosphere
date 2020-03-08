@@ -27,7 +27,7 @@ namespace ams::fs::impl {
                 R_CONVERT(ncm::ResultContentMetaNotFound, fs::ResultTargetNotFound());
             } R_END_TRY_CATCH;
 
-            std::unique_ptr<fs::IStorage> storage(new RemoteStorage(s));
+            auto storage = std::make_unique<RemoteStorage>(s);
             R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInDataA());
 
             *out = std::move(storage);
@@ -38,7 +38,7 @@ namespace ams::fs::impl {
             std::unique_ptr<fs::IStorage> storage;
             R_TRY(OpenDataStorageByDataId(std::addressof(storage), data_id, storage_id));
 
-            std::unique_ptr<RomFsFileSystem> fs(new RomFsFileSystem());
+            auto fs = std::make_unique<RomFsFileSystem>();
             R_UNLESS(fs != nullptr, fs::ResultAllocationFailureInDataB());
             R_TRY(fs->Initialize(std::move(storage), cache_buffer, cache_size, use_cache));
 

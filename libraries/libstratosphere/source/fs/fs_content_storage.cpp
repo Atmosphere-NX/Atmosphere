@@ -79,11 +79,11 @@ namespace ams::fs {
         }
 
         /* Allocate a new filesystem wrapper. */
-        std::unique_ptr<fsa::IFileSystem> fsa(new RemoteFileSystem(fs));
+        auto fsa = std::make_unique<RemoteFileSystem>(fs);
         R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInContentStorageA());
 
         /* Allocate a new mountname generator. */
-        std::unique_ptr<ContentStorageCommonMountNameGenerator> generator(new ContentStorageCommonMountNameGenerator(id));
+        auto generator = std::make_unique<ContentStorageCommonMountNameGenerator>(id);
         R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInContentStorageB());
 
         /* Register. */

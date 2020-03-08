@@ -169,7 +169,7 @@ namespace ams::fs {
     Result OpenFile(FileHandle *out, std::unique_ptr<fsa::IFile> &&file, int mode) {
         R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
 
-        std::unique_ptr<impl::FileAccessor> file_accessor(new impl::FileAccessor(std::move(file), nullptr, static_cast<OpenMode>(mode)));
+        auto file_accessor = std::make_unique<impl::FileAccessor>(std::move(file), nullptr, static_cast<OpenMode>(mode));
         R_UNLESS(file_accessor != nullptr, fs::ResultAllocationFailureInNew());
         out->handle = file_accessor.release();
 

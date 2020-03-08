@@ -73,11 +73,11 @@ namespace ams::fs {
         R_TRY(fsOpenGameCardFileSystem(std::addressof(fs), std::addressof(_hnd), static_cast<::FsGameCardPartition>(partition)));
 
         /* Allocate a new filesystem wrapper. */
-        std::unique_ptr<fsa::IFileSystem> fsa(new RemoteFileSystem(fs));
+        auto fsa = std::make_unique<RemoteFileSystem>(fs);
         R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInGameCardC());
 
         /* Allocate a new mountname generator. */
-        std::unique_ptr<GameCardCommonMountNameGenerator> generator(new GameCardCommonMountNameGenerator(handle, partition));
+        auto generator = std::make_unique<GameCardCommonMountNameGenerator>(handle, partition);
         R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInGameCardD());
 
         /* Register. */

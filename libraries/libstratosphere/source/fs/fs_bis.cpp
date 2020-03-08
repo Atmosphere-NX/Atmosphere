@@ -54,11 +54,11 @@ namespace ams::fs {
             R_TRY(fsOpenBisFileSystem(std::addressof(fs), static_cast<::FsBisPartitionId>(id), ""));
 
             /* Allocate a new mountname generator. */
-            std::unique_ptr<BisCommonMountNameGenerator> generator(new BisCommonMountNameGenerator(id));
+            auto generator = std::make_unique<BisCommonMountNameGenerator>(id);
             R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInBisA());
 
             /* Allocate a new filesystem wrapper. */
-            std::unique_ptr<fsa::IFileSystem> fsa(new RemoteFileSystem(fs));
+            auto fsa = std::make_unique<RemoteFileSystem>(fs);
             R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInBisB());
 
             /* Register. */
@@ -112,7 +112,7 @@ namespace ams::fs {
         R_TRY(fsOpenBisStorage(std::addressof(s), static_cast<::FsBisPartitionId>(id)));
 
         /* Allocate a new storage wrapper. */
-        std::unique_ptr<fs::IStorage> storage(new RemoteStorage(s));
+        auto storage = std::make_unique<RemoteStorage>(s);
         R_UNLESS(storage != nullptr, fs::ResultAllocationFailureInBisC());
 
         *out = std::move(storage);

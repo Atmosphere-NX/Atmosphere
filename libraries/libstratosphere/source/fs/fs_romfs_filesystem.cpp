@@ -486,7 +486,7 @@ namespace ams::fs {
         RomFileTable::FileInfo file_info;
         R_TRY(this->GetFileInfo(std::addressof(file_info), path));
 
-        std::unique_ptr<RomFsFile> file(new RomFsFile(this, this->entry_size + file_info.offset.Get(), this->entry_size + file_info.offset.Get() + file_info.size.Get()));
+        auto file = std::make_unique<RomFsFile>(this, this->entry_size + file_info.offset.Get(), this->entry_size + file_info.offset.Get() + file_info.size.Get());
         R_UNLESS(file != nullptr, fs::ResultAllocationFailureInRomFsFileSystemB());
 
         *out_file = std::move(file);
@@ -503,7 +503,7 @@ namespace ams::fs {
             R_CONVERT(fs::ResultDbmInvalidOperation, fs::ResultPathNotFound())
         } R_END_TRY_CATCH;
 
-        std::unique_ptr<RomFsDirectory> dir(new RomFsDirectory(this, find, mode));
+        auto dir = std::make_unique<RomFsDirectory>(this, find, mode);
         R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInRomFsFileSystemC());
 
         *out_dir = std::move(dir);

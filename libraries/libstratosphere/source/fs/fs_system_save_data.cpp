@@ -33,7 +33,7 @@ namespace ams::fs {
             R_TRY(fsOpenSaveDataFileSystemBySystemSaveDataId(std::addressof(fs), static_cast<::FsSaveDataSpaceId>(space_id), reinterpret_cast<const ::FsSaveDataAttribute *>(std::addressof(attribute))));
 
             /* Allocate a new filesystem wrapper. */
-            std::unique_ptr<fsa::IFileSystem> fsa(new RemoteFileSystem(fs));
+            auto fsa = std::make_unique<RemoteFileSystem>(fs);
             R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSystemSaveDataA());
 
             /* Register. */

@@ -34,7 +34,7 @@ namespace ams::fs {
         R_TRY(fsldrOpenCodeFileSystem(program_id.value, sf_path.str, std::addressof(fs)));
 
         /* Allocate a new filesystem wrapper. */
-        std::unique_ptr<fsa::IFileSystem> fsa(new RemoteFileSystem(fs));
+        auto fsa = std::make_unique<RemoteFileSystem>(fs);
         R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInCodeA());
 
         /* Register. */

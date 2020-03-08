@@ -170,7 +170,7 @@ namespace ams::fs {
                 FsFile f;
                 R_TRY(fsFsOpenFile(std::addressof(this->base_fs), sf_path.str, mode, &f));
 
-                std::unique_ptr<RemoteFile> file(new RemoteFile(f));
+                auto file = std::make_unique<RemoteFile>(f);
                 R_UNLESS(file != nullptr, fs::ResultAllocationFailureInNew());
 
                 *out_file = std::move(file);
@@ -184,7 +184,7 @@ namespace ams::fs {
                 FsDir d;
                 R_TRY(fsFsOpenDirectory(std::addressof(this->base_fs), sf_path.str, mode, &d));
 
-                std::unique_ptr<RemoteDirectory> dir(new RemoteDirectory(d));
+                auto dir = std::make_unique<RemoteDirectory>(d);
                 R_UNLESS(dir != nullptr, fs::ResultAllocationFailureInNew());
 
                 *out_dir = std::move(dir);

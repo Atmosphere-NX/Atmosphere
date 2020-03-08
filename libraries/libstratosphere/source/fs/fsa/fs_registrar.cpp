@@ -20,21 +20,21 @@
 namespace ams::fs::fsa {
 
     Result Register(const char *name, std::unique_ptr<IFileSystem> &&fs) {
-        std::unique_ptr<impl::FileSystemAccessor> accessor(new impl::FileSystemAccessor(name, std::move(fs)));
+        auto accessor = std::make_unique<impl::FileSystemAccessor>(name, std::move(fs));
         R_UNLESS(accessor != nullptr, fs::ResultAllocationFailureInRegisterA());
 
         return impl::Register(std::move(accessor));
     }
 
     Result Register(const char *name, std::unique_ptr<IFileSystem> &&fs, std::unique_ptr<ICommonMountNameGenerator> &&generator) {
-        std::unique_ptr<impl::FileSystemAccessor> accessor(new impl::FileSystemAccessor(name, std::move(fs), std::move(generator)));
+        auto accessor = std::make_unique<impl::FileSystemAccessor>(name, std::move(fs), std::move(generator));
         R_UNLESS(accessor != nullptr, fs::ResultAllocationFailureInRegisterB());
 
         return impl::Register(std::move(accessor));
     }
 
     Result Register(const char *name, std::unique_ptr<IFileSystem> &&fs, std::unique_ptr<ICommonMountNameGenerator> &&generator, bool use_data_cache, bool use_path_cache, bool support_multi_commit) {
-        std::unique_ptr<impl::FileSystemAccessor> accessor(new impl::FileSystemAccessor(name, std::move(fs), std::move(generator)));
+        auto accessor = std::make_unique<impl::FileSystemAccessor>(name, std::move(fs), std::move(generator));
         R_UNLESS(accessor != nullptr, fs::ResultAllocationFailureInRegisterB());
 
         accessor->SetFileDataCacheAttachable(use_data_cache);
