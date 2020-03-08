@@ -61,6 +61,26 @@ namespace ams::ncm {
 
     static_assert(sizeof(ContentMetaHeader) == 0x8);
 
+    struct PackagedContentMetaHeader {
+        u64 id;
+        u32 version;
+        ContentMetaType type;
+        u8 reserved_0D;
+        u16 extended_header_size;
+        u16 content_count;
+        u16 content_meta_count;
+        u8 attributes;
+        u8 storage_id;
+        ContentInstallType install_type;
+        u8 reserved_17;
+        u32 required_download_system_version;
+        u8 reserved_1C[4];
+    };
+    static_assert(sizeof(PackagedContentMetaHeader) == 0x20);
+    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_0D) == 0x0D);
+    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_17) == 0x17);
+    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_1C) == 0x1C);
+
     struct ApplicationMetaExtendedHeader {
         PatchId patch_id;
         u32 required_system_version;
@@ -275,6 +295,21 @@ namespace ams::ncm {
             constexpr ContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
 
             using ContentMetaAccessor::CalculateSize;
+    };
+
+    class PackagedContentMetaReader : public ContentMetaAccessor<PackagedContentMetaHeader, PackagedContentInfo> {
+        public:
+            constexpr PackagedContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+
+            size_t CalculateConvertContentMetaSize() const;
+
+            void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
+
+            size_t CountDeltaFragments() const;
+
+            static constexpr size_t CalculateSize(ContentMetaType type, size_t content_count, size_t content_meta_count, size_t extended_data_size) {
+                return ContentMetaAccessor::CalculateSize(type, content_count, content_meta_count, extended_data_size, true);
+            }
     };
 
 }

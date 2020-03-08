@@ -25,4 +25,21 @@ namespace ams::ncm {
         u8 data[crypto::Sha256Generator::HashSize];
     };
 
+    struct PackagedContentInfo {
+        Digest digest;
+        ContentInfo info;
+
+        constexpr const ContentId &GetId() const {
+            return this->info.GetId();
+        }
+
+        constexpr const ContentType GetType() const {
+            return this->info.GetType();
+        }
+
+        constexpr const u8 GetIdOffset() const {
+            return this->info.GetIdOffset();
+        }
+    };
+
 }

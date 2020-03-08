@@ -57,8 +57,8 @@ namespace ams::fs {
     }
 
     Result MountContent(const char *name, const char *path, ContentType content_type) {
-        /* This API only supports mounting Manual content. */
-        AMS_ABORT_UNLESS(content_type == ContentType_Manual);
+        /* This API only supports mounting Meta content. */
+        AMS_ABORT_UNLESS(content_type == ContentType_Meta);
 
         return MountContent(name, path, ncm::InvalidProgramId, content_type);
     }
