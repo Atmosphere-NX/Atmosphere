@@ -103,7 +103,6 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    fsdevUnmountAll();
     fsExit();
     plExit();
     gpioExit();

@@ -296,7 +296,10 @@ namespace ams::dmnt::cheat::impl {
             void Execute(const CheatProcessMetadata *metadata);
     #ifdef DMNT_CHEAT_VM_DEBUG_LOG
         private:
-            FILE *debug_log_file = NULL;
+            fs::FileHandle debug_log_file;
+            s64 debug_log_file_offset;
+            bool has_debug_log_file;
+            char debug_log_format_buf[0x100];
     #endif
     };
 

@@ -28,7 +28,7 @@ namespace ams::creport {
         public:
             ScopedFile(const char *path) : file(), offset(), opened(false) {
                 if (R_SUCCEEDED(fs::CreateFile(path, 0))) {
-                    this->opened = R_SUCCEEDED(fs::OpenFile(std::addressof(this->file), path, fs::OpenMode_Write | fs::OpenMode_Append));
+                    this->opened = R_SUCCEEDED(fs::OpenFile(std::addressof(this->file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
                 }
             }
 

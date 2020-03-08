@@ -272,23 +272,34 @@ namespace ams::cfg {
             return g_hbl_override_config.override_any_app && ncm::IsApplicationId(program_id) && !IsAnySpecificHblProgramId(program_id);
         }
 
+        std::atomic<u32> g_ini_mount_count;
+
+        void GetIniMountName(char *dst) {
+            std::snprintf(dst, fs::MountNameLengthMax + 1, "#ini%08x", g_ini_mount_count.fetch_add(1));
+        }
+
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
             /* Mount the SD card. */
-            FsFileSystem sd_fs = {};
-            if (R_FAILED(fsOpenSdCardFileSystem(&sd_fs))) {
+            char mount_name[fs::MountNameLengthMax + 1];
+            GetIniMountName(mount_name);
+            if (R_FAILED(fs::MountSdCard(mount_name))) {
                 return;
             }
-            ON_SCOPE_EXIT { serviceClose(&sd_fs.s); };
+            ON_SCOPE_EXIT { fs::Unmount(mount_name); };
 
             /* Open the file. */
-            FsFile config_file;
-            if (R_FAILED(fsFsOpenFile(&sd_fs, path, FsOpenMode_Read, &config_file))) {
-                return;
+            fs::FileHandle file;
+            {
+                char full_path[fs::EntryNameLengthMax + 1];
+                std::snprintf(full_path, sizeof(full_path), "%s:/%s", mount_name, path[0] == '/' ? path + 1 : path);
+                if (R_FAILED(fs::OpenFile(std::addressof(file), full_path, fs::OpenMode_Read))) {
+                    return;
+                }
             }
-            ON_SCOPE_EXIT { fsFileClose(&config_file); };
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
 
             /* Parse the config. */
-            util::ini::ParseFile(&config_file, user_ctx, handler);
+            util::ini::ParseFile(file, user_ctx, handler);
         }
 
         void RefreshOverrideConfiguration() {
@@ -296,8 +307,8 @@ namespace ams::cfg {
         }
 
         ContentSpecificOverrideConfig GetContentOverrideConfig(ncm::ProgramId program_id) {
-            char path[FS_MAX_PATH];
-            std::snprintf(path, sizeof(path) - 1, "/atmosphere/contents/%016lx/config.ini", static_cast<u64>(program_id));
+            char path[fs::EntryNameLengthMax + 1];
+            std::snprintf(path, sizeof(path), "/atmosphere/contents/%016lx/config.ini", static_cast<u64>(program_id));
 
             ContentSpecificOverrideConfig config = {
                 .override_key = g_default_override_key,

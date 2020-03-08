@@ -24,34 +24,30 @@ namespace ams::util::ini {
 
     namespace {
 
-        struct FsFileContext {
-            FsFile *f;
-            size_t offset;
-            size_t num_left;
+        struct FileContext {
+            fs::FileHandle file;
+            s64 offset;
+            s64 num_left;
 
-            explicit FsFileContext(FsFile *f) : f(f), offset(0) {
-                s64 size;
-                R_ABORT_UNLESS(fsFileGetSize(this->f, &size));
-                this->num_left = size_t(size);
+            explicit FileContext(fs::FileHandle f) : file(f), offset(0) {
+                R_ABORT_UNLESS(fs::GetFileSize(std::addressof(this->num_left), this->file));
             }
         };
 
-        char *ini_reader_fs_file(char *str, int num, void *stream) {
-            FsFileContext *ctx = reinterpret_cast<FsFileContext *>(stream);
+        char *ini_reader_file_handle(char *str, int num, void *stream) {
+            FileContext *ctx = static_cast<FileContext *>(stream);
 
             if (ctx->num_left == 0 || num < 2) {
                 return nullptr;
             }
 
             /* Read as many bytes as we can. */
-            size_t try_read = std::min(size_t(num - 1), ctx->num_left);
-            size_t actually_read;
-            R_ABORT_UNLESS(fsFileRead(ctx->f, ctx->offset, str, try_read, FsReadOption_None, &actually_read));
-            AMS_ABORT_UNLESS(actually_read == try_read);
+            s64 cur_read = std::min<s64>(num - 1, ctx->num_left);
+            R_ABORT_UNLESS(fs::ReadFile(ctx->file, ctx->offset, str, cur_read, fs::ReadOption()));
 
             /* Only "read" up to the first \n. */
-            size_t offset = actually_read;
-            for (size_t i = 0; i < actually_read; i++) {
+            size_t offset = cur_read;
+            for (auto i = 0; i < cur_read; i++) {
                 if (str[i] == '\n') {
                     offset = i + 1;
                     break;
@@ -62,7 +58,7 @@ namespace ams::util::ini {
             str[offset] = '\0';
 
             /* Update context. */
-            ctx->offset += offset;
+            ctx->offset   += offset;
             ctx->num_left -= offset;
 
             return str;
@@ -75,17 +71,19 @@ namespace ams::util::ini {
         return ini_parse_string(ini_str, h, user_ctx);
     }
 
-    int ParseFile(FILE *f, void *user_ctx, Handler h) {
-        return ini_parse_file(f, h, user_ctx);
-    }
-
-    int ParseFile(FsFile *f, void *user_ctx, Handler h) {
-        FsFileContext ctx(f);
-        return ini_parse_stream(ini_reader_fs_file, &ctx, h, user_ctx);
+    int ParseFile(fs::FileHandle file, void *user_ctx, Handler h) {
+        FileContext ctx(file);
+        return ini_parse_stream(ini_reader_file_handle, &ctx, h, user_ctx);
     }
 
     int ParseFile(const char *path, void *user_ctx, Handler h) {
-        return ini_parse(path, h, user_ctx);
+        fs::FileHandle file;
+        if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
+            return -1;
+        }
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+        return ParseFile(file, user_ctx, h);
     }
 
 }

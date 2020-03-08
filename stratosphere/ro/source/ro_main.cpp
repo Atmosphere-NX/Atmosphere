@@ -70,13 +70,12 @@ void __appInit(void) {
         }
     });
 
-    R_ABORT_UNLESS(fsdevMountSdmc());
+    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 
     ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    fsdevUnmountAll();
     fsExit();
     if (hos::GetVersion() < hos::Version_300) {
         pminfoExit();

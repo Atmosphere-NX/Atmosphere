@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <dirent.h>
 #include <stratosphere.hpp>
 
 /* IPS Patching adapted from Luma3DS (https://github.com/AuroraWright/Luma3DS/blob/master/sysmodules/loader/source/patcher.c) */
@@ -31,6 +30,10 @@ namespace ams::patcher {
         constexpr size_t IpsFileExtensionLength = std::strlen(IpsFileExtension);
         constexpr size_t ModuleIpsPatchLength = 2 * sizeof(ro::ModuleId) + IpsFileExtensionLength;
 
+        /* Global data. */
+        os::Mutex apply_patch_lock;
+        u8 g_patch_read_buffer[os::MemoryPageSize];
+
         /* Helpers. */
         inline u8 ConvertHexNybble(const char nybble) {
             if ('0' <= nybble && nybble <= '9') {
@@ -45,7 +48,7 @@ namespace ams::patcher {
         bool ParseModuleIdFromPath(ro::ModuleId *out_module_id, const char *name, size_t name_len, size_t extension_len) {
             /* Validate name is hex module id. */
             for (unsigned int i = 0; i < name_len - extension_len; i++) {
-                if (std::isxdigit(name[i]) == 0) {
+                if (!std::isxdigit(static_cast<unsigned char>(name[i]))) {
                     return false;
                 }
             }
@@ -70,6 +73,28 @@ namespace ams::patcher {
             return std::memcmp(&module_id_from_name, module_id, sizeof(*module_id)) == 0;
         }
 
+        bool IsIpsFileForModule(const char *name, const ro::ModuleId *module_id) {
+            const size_t name_len = std::strlen(name);
+
+            /* The path must be correct size for a build id (with trailing zeroes optionally trimmed) + ".ips". */
+            if (!(IpsFileExtensionLength < name_len && name_len <= ModuleIpsPatchLength)) {
+                return false;
+            }
+
+            /* The path must be an even number of characters to conform. */
+            if (!util::IsAligned(name_len, 2)) {
+                return false;
+            }
+
+            /* The path needs to end with .ips. */
+            if (std::strcmp(name + name_len - IpsFileExtensionLength, IpsFileExtension) != 0) {
+                return false;
+            }
+
+            /* The path needs to match the module id. */
+            return MatchesModuleId(name, name_len, IpsFileExtensionLength, module_id);
+        }
+
         inline bool IsIpsTail(bool is_ips32, u8 *buffer) {
             if (is_ips32) {
                 return std::memcmp(buffer, Ips32TailMagic, sizeof(Ips32TailMagic)) == 0;
@@ -90,13 +115,19 @@ namespace ams::patcher {
             return (buffer[0] << 8) | (buffer[1]);
         }
 
-        void ApplyIpsPatch(u8 *mapped_module, size_t mapped_size, size_t protected_size, size_t offset, bool is_ips32, FILE *f_ips) {
+        void ApplyIpsPatch(u8 *mapped_module, size_t mapped_size, size_t protected_size, size_t offset, bool is_ips32, fs::FileHandle file) {
             /* Validate offset/protected size. */
             AMS_ABORT_UNLESS(offset <= protected_size);
 
+            s64 file_offset = sizeof(IpsHeadMagic);
+            auto ReadData = [&](void *dst, size_t size) ALWAYS_INLINE_LAMBDA {
+                R_ABORT_UNLESS(fs::ReadFile(file, file_offset, dst, size));
+                file_offset += size;
+            };
+
             u8 buffer[sizeof(Ips32TailMagic)];
             while (true) {
-                AMS_ABORT_UNLESS(fread(buffer, is_ips32 ? sizeof(Ips32TailMagic) : sizeof(IpsTailMagic), 1, f_ips) == 1);
+                ReadData(buffer, is_ips32 ? sizeof(Ips32TailMagic) : sizeof(IpsTailMagic));
 
                 if (IsIpsTail(is_ips32, buffer)) {
                     break;
@@ -106,18 +137,18 @@ namespace ams::patcher {
                 u32 patch_offset = GetIpsPatchOffset(is_ips32, buffer);
 
                 /* Size of patch. */
-                AMS_ABORT_UNLESS(fread(buffer, 2, 1, f_ips) == 1);
+                ReadData(buffer, 2);
                 u32 patch_size = GetIpsPatchSize(is_ips32, buffer);
 
                 /* Check for RLE encoding. */
                 if (patch_size == 0) {
                     /* Size of RLE. */
-                    AMS_ABORT_UNLESS(fread(buffer, 2, 1, f_ips) == 1);
+                    ReadData(buffer, 2);
 
                     u32 rle_size = (buffer[0] << 8) | (buffer[1]);
 
                     /* Value for RLE. */
-                    AMS_ABORT_UNLESS(fread(buffer, 1, 1, f_ips) == 1);
+                    ReadData(buffer, 1);
 
                     /* Ensure we don't write to protected region. */
                     if (patch_offset < protected_size) {
@@ -145,9 +176,9 @@ namespace ams::patcher {
                             const u32 diff = protected_size - patch_offset;
                             patch_offset += diff;
                             patch_size -= diff;
-                            fseek(f_ips, diff, SEEK_CUR);
+                            file_offset += diff;
                         } else {
-                            fseek(f_ips, patch_size, SEEK_CUR);
+                            file_offset += patch_size;
                             continue;
                         }
                     }
@@ -160,9 +191,19 @@ namespace ams::patcher {
                     if (patch_offset + read_size > mapped_size) {
                         read_size = mapped_size - patch_offset;
                     }
-                    AMS_ABORT_UNLESS(fread(mapped_module + patch_offset, read_size, 1, f_ips) == 1);
+                    {
+                        size_t remaining   = read_size;
+                        size_t copy_offset = 0;
+                        while (remaining > 0) {
+                            const size_t cur_read = std::min(remaining, sizeof(g_patch_read_buffer));
+                            ReadData(g_patch_read_buffer, cur_read);
+                            std::memcpy(mapped_module + copy_offset, g_patch_read_buffer, cur_read);
+                            remaining   -= cur_read;
+                            copy_offset += cur_read;
+                        }
+                    }
                     if (patch_size > read_size) {
-                        fseek(f_ips, patch_size - read_size, SEEK_CUR);
+                        file_offset += patch_size - read_size;
                     }
                 }
             }
@@ -171,64 +212,72 @@ namespace ams::patcher {
     }
 
     void LocateAndApplyIpsPatchesToModule(const char *patch_dir_name, size_t protected_size, size_t offset, const ro::ModuleId *module_id, u8 *mapped_module, size_t mapped_size) {
-        /* Inspect all patches from /atmosphere/<patch_dir>/<*>/<*>.ips */
-        char path[FS_MAX_PATH+1] = {0};
-        std::snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/%s", patch_dir_name);
+        /* Ensure only one thread tries to apply patches at a time. */
+        std::scoped_lock lk(apply_patch_lock);
 
-        DIR *patches_dir = opendir(path);
-        struct dirent *pdir_ent;
-        if (patches_dir != NULL) {
-            /* Iterate over the patches directory to find patch subdirectories. */
-            while ((pdir_ent = readdir(patches_dir)) != NULL) {
-                if (std::strcmp(pdir_ent->d_name, ".") == 0 || std::strcmp(pdir_ent->d_name, "..") == 0) {
+        /* Inspect all patches from /atmosphere/<patch_dir>/<*>/<*>.ips */
+        char path[fs::EntryNameLengthMax + 1];
+        std::snprintf(path, sizeof(path), "sdmc:/atmosphere/%s", patch_dir_name);
+        const size_t patches_dir_path_len = std::strlen(path);
+
+        /* Open the patch directory. */
+        fs::DirectoryHandle patches_dir;
+        if (R_FAILED(fs::OpenDirectory(std::addressof(patches_dir), path, fs::OpenDirectoryMode_Directory))) {
+            return;
+        }
+        ON_SCOPE_EXIT { fs::CloseDirectory(patches_dir); };
+
+        /* Iterate over the patches directory to find patch subdirectories. */
+        while (true) {
+            /* Read the next entry. */
+            s64 count;
+            fs::DirectoryEntry entry;
+            if (R_FAILED(fs::ReadDirectory(std::addressof(count), std::addressof(entry), patches_dir, 1)) || count == 0) {
+                break;
+            }
+
+            /* Print the path for this directory. */
+            std::snprintf(path + patches_dir_path_len, sizeof(path) - patches_dir_path_len, "/%s", entry.name);
+            const size_t patch_dir_path_len = patches_dir_path_len + 1 + std::strlen(entry.name);
+
+            /* Open the patch directory. */
+            fs::DirectoryHandle patch_dir;
+            if (R_FAILED(fs::OpenDirectory(std::addressof(patch_dir), path, fs::OpenDirectoryMode_File))) {
+                continue;
+            }
+            ON_SCOPE_EXIT { fs::CloseDirectory(patch_dir); };
+
+            /* Iterate over files in the patch directory. */
+            while (true) {
+                if (R_FAILED(fs::ReadDirectory(std::addressof(count), std::addressof(entry), patch_dir, 1)) || count == 0) {
+                    break;
+                }
+
+                /* Check if this file is an ips. */
+                if (!IsIpsFileForModule(entry.name, module_id)) {
                     continue;
                 }
 
-                std::snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/%s/%s", patch_dir_name, pdir_ent->d_name);
-                DIR *patch_dir = opendir(path);
-                struct dirent *ent;
-                if (patch_dir != NULL) {
-                    /* Iterate over the patch subdirectory to find .ips patches. */
-                    while ((ent = readdir(patch_dir)) != NULL) {
-                        if (std::strcmp(ent->d_name, ".") == 0 || std::strcmp(ent->d_name, "..") == 0) {
-                            continue;
-                        }
+                /* Print the path for this file. */
+                std::snprintf(path + patch_dir_path_len, sizeof(path) - patch_dir_path_len, "/%s", entry.name);
 
-                        size_t name_len = strlen(ent->d_name);
-                        if (!(IpsFileExtensionLength < name_len && name_len <= ModuleIpsPatchLength)) {
-                            continue;
-                        }
-                        if ((name_len & 1) != 0) {
-                            continue;
-                        }
-                        if (std::strcmp(ent->d_name + name_len - IpsFileExtensionLength, IpsFileExtension) != 0) {
-                            continue;
-                        }
-                        if (!MatchesModuleId(ent->d_name, name_len, IpsFileExtensionLength, module_id)) {
-                            continue;
-                        }
+                /* Open the file. */
+                fs::FileHandle file;
+                if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
+                    continue;
+                }
+                ON_SCOPE_EXIT { fs::CloseFile(file); };
 
-                        std::snprintf(path, sizeof(path) - 1, "sdmc:/atmosphere/%s/%s/%s", patch_dir_name, pdir_ent->d_name, ent->d_name);
-                        FILE *f_ips = fopen(path, "rb");
-                        if (f_ips == NULL) {
-                            continue;
-                        }
-                        ON_SCOPE_EXIT { fclose(f_ips); };
-
-                        u8 header[5];
-                        if (fread(header, 5, 1, f_ips) == 1) {
-                            if (std::memcmp(header, IpsHeadMagic, 5) == 0) {
-                                ApplyIpsPatch(mapped_module, mapped_size, protected_size, offset, false, f_ips);
-                            } else if (std::memcmp(header, Ips32HeadMagic, 5) == 0) {
-                                ApplyIpsPatch(mapped_module, mapped_size, protected_size, offset, true, f_ips);
-                            }
-                        }
-                        fclose(f_ips);
+                /* Read the header. */
+                u8 header[sizeof(IpsHeadMagic)];
+                if (R_SUCCEEDED(fs::ReadFile(file, 0, header, sizeof(header)))) {
+                    if (std::memcmp(header, IpsHeadMagic, sizeof(header)) == 0) {
+                        ApplyIpsPatch(mapped_module, mapped_size, protected_size, offset, false, file);
+                    } else if (std::memcmp(header, Ips32HeadMagic, sizeof(header)) == 0) {
+                        ApplyIpsPatch(mapped_module, mapped_size, protected_size, offset, true, file);
                     }
-                    closedir(patch_dir);
                 }
             }
-            closedir(patches_dir);
         }
     }
 

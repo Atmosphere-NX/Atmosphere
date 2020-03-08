@@ -15,8 +15,9 @@
  */
 
 #pragma once
-#include <stratosphere/fs/fs_filesystem.hpp>
 #include <stratosphere/fs/fs_file.hpp>
+#include <stratosphere/fs/fs_directory.hpp>
+#include <stratosphere/fs/fs_filesystem.hpp>
 #include <stratosphere/kvdb/kvdb_auto_buffer.hpp>
 #include <stratosphere/kvdb/kvdb_archive.hpp>
 #include <stratosphere/kvdb/kvdb_bounded_string.hpp>
@@ -252,8 +253,7 @@ namespace ams::kvdb {
                     }
             };
         private:
-            static constexpr size_t MaxPathLen = 0x300; /* TODO: FS_MAX_PATH - 1? */
-            using Path = kvdb::BoundedString<MaxPathLen>;
+            using Path = kvdb::BoundedString<fs::EntryNameLengthMax>;
         private:
             Index index;
             Path path;

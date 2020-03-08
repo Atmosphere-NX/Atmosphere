@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere/os.hpp>
+#include <stratosphere/fs/fs_directory.hpp>
 #include <stratosphere/kvdb/kvdb_bounded_string.hpp>
 
 namespace ams::kvdb {
@@ -23,12 +24,11 @@ namespace ams::kvdb {
         NON_COPYABLE(FileKeyValueStore);
         NON_MOVEABLE(FileKeyValueStore);
         public:
-            static constexpr size_t MaxPathLength = 0x300; /* TODO: FS_MAX_PATH - 1? */
             static constexpr size_t MaxFileLength = 0xFF;
             static constexpr char FileExtension[5] = ".val";
             static constexpr size_t FileExtensionLength = sizeof(FileExtension) - 1;
             static constexpr size_t MaxKeySize = (MaxFileLength - FileExtensionLength) / 2;
-            using Path = kvdb::BoundedString<MaxPathLength>;
+            using Path = kvdb::BoundedString<fs::EntryNameLengthMax>;
             using FileName = kvdb::BoundedString<MaxFileLength>;
         private:
             /* Subtypes. */

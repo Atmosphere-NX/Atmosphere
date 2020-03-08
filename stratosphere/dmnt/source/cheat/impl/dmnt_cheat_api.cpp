@@ -877,78 +877,74 @@ namespace ams::dmnt::cheat::impl {
             this->ResetAllCheatEntries();
 
             /* Open the file for program/build_id. */
-            FILE *f_cht = nullptr;
+            fs::FileHandle file;
             {
-                char path[FS_MAX_PATH+1] = {0};
-                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/contents/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", static_cast<u64>(program_id),
+                char path[fs::EntryNameLengthMax + 1];
+                std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", program_id.value,
                         build_id[0], build_id[1], build_id[2], build_id[3], build_id[4], build_id[5], build_id[6], build_id[7]);
-
-                f_cht = fopen(path, "rb");
+                if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
+                    return false;
+                }
             }
-
-            /* Check for open failure. */
-            if (f_cht == nullptr) {
-                return false;
-            }
-            ON_SCOPE_EXIT { fclose(f_cht); };
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
 
             /* Get file size. */
-            fseek(f_cht, 0L, SEEK_END);
-            const size_t cht_sz = ftell(f_cht);
-            fseek(f_cht, 0L, SEEK_SET);
+            s64 file_size;
+            if (R_FAILED(fs::GetFileSize(std::addressof(file_size), file))) {
+                return false;
+            }
 
             /* Allocate cheat txt buffer. */
-            char *cht_txt = reinterpret_cast<char *>(std::malloc(cht_sz + 1));
+            char *cht_txt = static_cast<char *>(std::malloc(file_size + 1));
             if (cht_txt == nullptr) {
                 return false;
             }
             ON_SCOPE_EXIT { std::free(cht_txt); };
 
             /* Read cheats into buffer. */
-            if (fread(cht_txt, 1, cht_sz, f_cht) != cht_sz) {
+            if (R_FAILED(fs::ReadFile(file, 0, cht_txt, file_size))) {
                 return false;
             }
-            cht_txt[cht_sz] = 0;
+            cht_txt[file_size] = '\x00';
 
             /* Parse cheat buffer. */
             return this->ParseCheats(cht_txt, std::strlen(cht_txt));
         }
 
         bool CheatProcessManager::LoadCheatToggles(const ncm::ProgramId program_id) {
-            /* Open the file for program_id. */
-            FILE *f_tg = nullptr;
-            {
-                char path[FS_MAX_PATH+1] = {0};
-                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", static_cast<u64>(program_id));
-                f_tg = fopen(path, "rb");
-            }
-
             /* Unless we successfully parse, don't save toggles on close. */
             this->should_save_cheat_toggles = false;
 
-            /* Check for null, which is allowed. */
-            if (f_tg == nullptr) {
-                return true;
+            /* Open the file for program_id. */
+            fs::FileHandle file;
+            {
+                char path[fs::EntryNameLengthMax + 1];
+                std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
+                if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
+                    /* No file presence is allowed. */
+                    return true;
+                }
             }
-            ON_SCOPE_EXIT { fclose(f_tg); };
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
 
             /* Get file size. */
-            fseek(f_tg, 0L, SEEK_END);
-            const size_t tg_sz = ftell(f_tg);
-            fseek(f_tg, 0L, SEEK_SET);
+            s64 file_size;
+            if (R_FAILED(fs::GetFileSize(std::addressof(file_size), file))) {
+                return false;
+            }
 
             /* Allocate toggle txt buffer. */
-            char *tg_txt = reinterpret_cast<char *>(std::malloc(tg_sz + 1));
+            char *tg_txt = static_cast<char *>(std::malloc(file_size + 1));
             if (tg_txt == nullptr) {
                 return false;
             }
             ON_SCOPE_EXIT { std::free(tg_txt); };
 
             /* Read cheats into buffer. */
-            if (fread(tg_txt, 1, tg_sz, f_tg) != tg_sz) {
+            if (R_FAILED(fs::ReadFile(file, 0, tg_txt, file_size))) {
                 return false;
             }
-            tg_txt[tg_sz] = 0;
+            tg_txt[file_size] = '\x00';
 
             /* Parse toggle buffer. */
             this->should_save_cheat_toggles = this->ParseCheatToggles(tg_txt, std::strlen(tg_txt));
@@ -957,24 +953,34 @@ namespace ams::dmnt::cheat::impl {
 
         void CheatProcessManager::SaveCheatToggles(const ncm::ProgramId program_id) {
             /* Open the file for program_id. */
-            FILE *f_tg = nullptr;
+            fs::FileHandle file;
             {
-                char path[FS_MAX_PATH+1] = {0};
-                std::snprintf(path, FS_MAX_PATH, "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", static_cast<u64>(program_id));
-                if ((f_tg = fopen(path, "wb")) == nullptr) {
+                char path[fs::EntryNameLengthMax + 1];
+                std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
+                fs::DeleteFile(path);
+                fs::CreateFile(path, 0);
+                if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend))) {
                     return;
                 }
             }
-            ON_SCOPE_EXIT { fclose(f_tg); };
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+            s64 offset = 0;
+            char buf[0x100];
 
             /* Save all non-master cheats. */
             for (size_t i = 1; i < MaxCheatCount; i++) {
                 if (this->cheat_entries[i].definition.num_opcodes != 0) {
-                    fprintf(f_tg, "[%s]\n", this->cheat_entries[i].definition.readable_name);
-                    if (this->cheat_entries[i].enabled) {
-                        fprintf(f_tg, "true\n");
-                    } else {
-                        fprintf(f_tg, "false\n");
+                    std::snprintf(buf, sizeof(buf), "[%s]\n", this->cheat_entries[i].definition.readable_name);
+                    const size_t name_len = std::strlen(buf);
+                    if (R_SUCCEEDED(fs::WriteFile(file, offset, buf, name_len, fs::WriteOption::Flush))) {
+                        offset += name_len;
+                    }
+
+                    const char *entry = this->cheat_entries[i].enabled ? "true\n" : "false\n";
+                    const size_t entry_len = std::strlen(entry);
+                    if (R_SUCCEEDED(fs::WriteFile(file, offset, entry, entry_len, fs::WriteOption::Flush))) {
+                        offset += entry_len;
                     }
                 }
             }

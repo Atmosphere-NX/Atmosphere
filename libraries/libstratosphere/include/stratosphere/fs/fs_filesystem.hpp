@@ -25,12 +25,12 @@ namespace ams::fs {
     }
 
     enum OpenMode {
-        OpenMode_Read   = ::FsOpenMode_Read,
-        OpenMode_Write  = ::FsOpenMode_Write,
-        OpenMode_Append = ::FsOpenMode_Append,
+        OpenMode_Read   = (1 << 0),
+        OpenMode_Write  = (1 << 1),
+        OpenMode_AllowAppend = (1 << 2),
 
         OpenMode_ReadWrite = (OpenMode_Read | OpenMode_Write),
-        OpenMode_All       = (OpenMode_ReadWrite | OpenMode_Append),
+        OpenMode_All       = (OpenMode_ReadWrite | OpenMode_AllowAppend),
     };
 
     enum OpenDirectoryMode {

@@ -21,43 +21,66 @@ namespace ams::dmnt::cheat::impl {
 
     void CheatVirtualMachine::DebugLog(u32 log_id, u64 value) {
         /* Just unconditionally try to create the log folder. */
-        mkdir("/atmosphere/cheat_vm_logs", 0777);
-        FILE *f_log = NULL;
+        fs::EnsureDirectoryRecursively("sdmc:/atmosphere/cheat_vm_logs");
+
+        fs::FileHandle log_file;
         {
-            char log_path[FS_MAX_PATH];
-            snprintf(log_path, sizeof(log_path), "/atmosphere/cheat_vm_logs/%x.log", log_id);
-            f_log = fopen(log_path, "ab");
+            char log_path[fs::EntryNameLengthMax + 1];
+            std::snprintf(log_path, sizeof(log_path), "sdmc:/atmosphere/cheat_vm_logs/%08x.log", log_id);
+            if (R_FAILED(fs::OpenFile(std::addressof(log_file), log_path, fs::OpenMode_Write | fs::OpenMode_AllowAppend))) {
+                return;
+            }
         }
-        if (f_log != NULL) {
-            ON_SCOPE_EXIT { fclose(f_log); };
-            fprintf(f_log, "%016lx\n", value);
+        ON_SCOPE_EXIT { fs::CloseFile(log_file); };
+
+        s64 log_offset;
+        if (R_FAILED(fs::GetFileSize(std::addressof(log_offset), log_file))) {
+            return;
         }
+
+        char log_value[18];
+        std::snprintf(log_value, sizeof(log_value), "%016lx\n", value);
+        fs::WriteFile(log_file, log_offset, log_value, std::strlen(log_value), fs::WriteOption::Flush);
     }
 
     void CheatVirtualMachine::OpenDebugLogFile() {
         #ifdef DMNT_CHEAT_VM_DEBUG_LOG
         CloseDebugLogFile();
-        this->debug_log_file = fopen("cheat_vm_log.txt", "ab");
+        R_ABORT_UNLESS(fs::OpenFile(std::addressof(this->debug_log_file), "sdmc:/atmosphere/cheat_vm_logs/debug_log.txt"));
+        this->debug_log_file_offset = 0;
         #endif
     }
 
     void CheatVirtualMachine::CloseDebugLogFile() {
         #ifdef DMNT_CHEAT_VM_DEBUG_LOG
-        if (this->debug_log_file != NULL) {
-            fclose(this->debug_log_file);
-            this->debug_log_file = NULL;
+        if (this->has_debug_log_file) {
+            fs::CloseFile(this->debug_log_file);
         }
+        this->has_debug_log_file = false;
         #endif
     }
 
     void CheatVirtualMachine::LogToDebugFile(const char *format, ...) {
         #ifdef DMNT_CHEAT_VM_DEBUG_LOG
-        if (this->debug_log_file != NULL) {
-            va_list arglist;
-            va_start(arglist, format);
-            vfprintf(this->debug_log_file, format, arglist);
-            va_end(arglist);
+        if (!this->has_debug_log_file) {
+            return;
         }
+
+        {
+            std::va_list vl;
+            va_start(vl, format);
+            std::vsnprintf(this->debug_log_format_buf, sizeof(this->debug_log_format_buf) - 1, format, vl);
+            va_end(vl);
+        }
+
+        size_t fmt_len = std::strlen(this->debug_log_format_buf);
+        if (this->debug_log_format_buf[fmt_len - 1] != '\n') {
+            this->debug_log_format_buf[fmt_len + 0] = '\n';
+            this->debug_log_format_buf[fmt_len + 1] = '\x00';
+            fmt_len += 1;
+        }
+
+        fs::WriteFile(this->debug_log_file, this->debug_log_offset, this->debug_log_format_buf, fmt_len, fs::WriteOption::Flush);
         #endif
     }
 

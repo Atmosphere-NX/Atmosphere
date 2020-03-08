@@ -179,7 +179,7 @@ namespace ams::fs::impl {
         }
 
         if (this->path_cache_attached) {
-            if (mode & OpenMode_Append) {
+            if (mode & OpenMode_AllowAppend) {
                 /* TODO: Append Path cache */
             } else {
                 /* TODO: Non-append path cache */
