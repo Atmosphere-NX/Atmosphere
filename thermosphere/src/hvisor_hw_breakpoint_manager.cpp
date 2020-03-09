@@ -20,13 +20,26 @@
 #define _REENT_ONLY
 #include <cerrno>
 
+// Can't use two THERMOSPHERE_SAVE_SYSREG as it prevents ldp from being generated
+#define SAVE_BREAKPOINT(i, _)\
+    __asm__ __volatile__ (\
+        "msr " STRINGIZE(dbgbvr##i##_el1) ", %0\n"\
+        "msr " STRINGIZE(dbgbcr##i##_el1) ", %1"\
+        :\
+        : "r"(m_stopPoints[i].vr), "r"(m_stopPoints[i].cr.raw)\
+        : "memory"\
+    );
+
 namespace ams::hvisor {
 
     HwBreakpointManager HwBreakpointManager::instance{};
 
     void HwBreakpointManager::Reload() const
     {
-        // TODO
+        cpu::dmb();
+        EVAL(REPEAT(MAX_BCR, SAVE_BREAKPOINT, ~));
+        cpu::dsb();
+        cpu::isb();
     }
 
     bool HwBreakpointManager::FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t, cpu::DebugRegisterPair::LoadStoreControl) const

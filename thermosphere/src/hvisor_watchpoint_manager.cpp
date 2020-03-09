@@ -21,6 +21,16 @@
 #define _REENT_ONLY
 #include <cerrno>
 
+// Can't use two THERMOSPHERE_SAVE_SYSREG as it prevents ldp from being generated
+#define SAVE_WATCHPOINT(i, _)\
+    __asm__ __volatile__ (\
+        "msr " STRINGIZE(dbgwvr##i##_el1) ", %0\n"\
+        "msr " STRINGIZE(dbgwcr##i##_el1) ", %1"\
+        :\
+        : "r"(m_stopPoints[i].vr), "r"(m_stopPoints[i].cr.raw)\
+        : "memory"\
+    );
+
 namespace {
 
     constexpr bool IsRangeMaskWatchpoint(uintptr_t addr, size_t size)
@@ -49,7 +59,10 @@ namespace ams::hvisor {
 
     void WatchpointManager::Reload() const
     {
-        // TODO
+        cpu::dmb();
+        EVAL(REPEAT(MAX_WCR, SAVE_WATCHPOINT, ~));
+        cpu::dsb();
+        cpu::isb();
     }
 
     bool WatchpointManager::FindPredicate(const cpu::DebugRegisterPair &pair, uintptr_t addr, size_t size, cpu::DebugRegisterPair::LoadStoreControl direction) const
