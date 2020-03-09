@@ -15,7 +15,6 @@
  */
 #include "ldr_arguments.hpp"
 #include "ldr_content_management.hpp"
-#include "ldr_ecs.hpp"
 #include "ldr_process_creation.hpp"
 #include "ldr_launch_record.hpp"
 #include "ldr_loader_service.hpp"
@@ -97,12 +96,12 @@ namespace ams::ldr {
     }
 
     /* Atmosphere commands. */
-    Result LoaderService::AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::ProgramId program_id) {
-        return ecs::Set(out.GetHandlePointer(), program_id);
+    Result LoaderService::AtmosphereRegisterExternalCode(sf::OutMoveHandle out, ncm::ProgramId program_id) {
+        return fssystem::CreateExternalCode(out.GetHandlePointer(), program_id);
     }
 
-    void LoaderService::AtmosphereClearExternalContentSource(ncm::ProgramId program_id) {
-        R_ABORT_UNLESS(ecs::Clear(program_id));
+    void LoaderService::AtmosphereUnregisterExternalCode(ncm::ProgramId program_id) {
+        fssystem::DestroyExternalCode(program_id);
     }
 
     void LoaderService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {

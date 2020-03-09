@@ -19,26 +19,6 @@
 
 namespace ams::fs {
 
-    namespace {
-
-        Result HasEntry(bool *out, const char *path, fs::DirectoryEntryType type) {
-            /* Set out to false initially. */
-            *out = false;
-
-            /* Try to get the entry type. */
-            fs::DirectoryEntryType entry_type;
-            R_TRY_CATCH(fs::GetEntryType(std::addressof(entry_type), path)) {
-                /* If the path doesn't exist, nothing has gone wrong. */
-                R_CONVERT(fs::ResultPathNotFound, ResultSuccess());
-            } R_END_TRY_CATCH;
-
-            /* We succeeded. */
-            *out = entry_type == type;
-            return ResultSuccess();
-        }
-
-    }
-
     Result EnsureDirectoryRecursively(const char *path) {
         /* Get the filesystem accessor and sub path. */
         impl::FileSystemAccessor *accessor;
@@ -60,11 +40,21 @@ namespace ams::fs {
     }
 
     Result HasFile(bool *out, const char *path) {
-        return HasEntry(out, path, fs::DirectoryEntryType_File);
+        /* Get the filesystem accessor and sub path. */
+        impl::FileSystemAccessor *accessor;
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
+
+        return fssystem::HasFile(out, accessor->GetRawFileSystemUnsafe(), sub_path);
     }
 
     Result HasDirectory(bool *out, const char *path) {
-        return HasEntry(out, path, fs::DirectoryEntryType_Directory);
+        /* Get the filesystem accessor and sub path. */
+        impl::FileSystemAccessor *accessor;
+        const char *sub_path;
+        R_TRY(impl::FindFileSystem(std::addressof(accessor), std::addressof(sub_path), path));
+
+        return fssystem::HasDirectory(out, accessor->GetRawFileSystemUnsafe(), sub_path);
     }
 
 }

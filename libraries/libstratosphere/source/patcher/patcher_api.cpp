@@ -193,7 +193,7 @@ namespace ams::patcher {
                     }
                     {
                         size_t remaining   = read_size;
-                        size_t copy_offset = 0;
+                        size_t copy_offset = patch_offset;
                         while (remaining > 0) {
                             const size_t cur_read = std::min(remaining, sizeof(g_patch_read_buffer));
                             ReadData(g_patch_read_buffer, cur_read);
@@ -211,13 +211,13 @@ namespace ams::patcher {
 
     }
 
-    void LocateAndApplyIpsPatchesToModule(const char *patch_dir_name, size_t protected_size, size_t offset, const ro::ModuleId *module_id, u8 *mapped_module, size_t mapped_size) {
+    void LocateAndApplyIpsPatchesToModule(const char *mount_name, const char *patch_dir_name, size_t protected_size, size_t offset, const ro::ModuleId *module_id, u8 *mapped_module, size_t mapped_size) {
         /* Ensure only one thread tries to apply patches at a time. */
         std::scoped_lock lk(apply_patch_lock);
 
         /* Inspect all patches from /atmosphere/<patch_dir>/<*>/<*>.ips */
         char path[fs::EntryNameLengthMax + 1];
-        std::snprintf(path, sizeof(path), "sdmc:/atmosphere/%s", patch_dir_name);
+        std::snprintf(path, sizeof(path), "%s:/atmosphere/%s", mount_name, patch_dir_name);
         const size_t patches_dir_path_len = std::strlen(path);
 
         /* Open the patch directory. */

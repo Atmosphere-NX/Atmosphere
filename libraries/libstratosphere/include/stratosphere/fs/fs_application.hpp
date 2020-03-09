@@ -14,13 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include "fs_common.hpp"
 
-namespace ams::ldr::ecs {
+namespace ams::fs {
 
-    /* External Content Source API. */
-    const char *Get(ncm::ProgramId program_id);
-    Result Set(Handle *out, ncm::ProgramId program_id);
-    Result Clear(ncm::ProgramId program_id);
+    Result MountApplicationPackage(const char *name, const char *common_path);
 
 }

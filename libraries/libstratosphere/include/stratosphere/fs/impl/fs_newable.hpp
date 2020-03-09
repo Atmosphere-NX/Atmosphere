@@ -24,6 +24,10 @@ namespace ams::fs::impl {
                 return ::ams::fs::impl::Allocate(size);
             }
 
+            static void *operator new(size_t size, Newable *placement) {
+                return placement;
+            }
+
             static void *operator new[](size_t size) {
                 return ::ams::fs::impl::Allocate(size);
             }

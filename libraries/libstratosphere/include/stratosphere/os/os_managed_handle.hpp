@@ -24,8 +24,8 @@ namespace ams::os {
         private:
             Handle hnd;
         public:
-            ManagedHandle() : hnd(INVALID_HANDLE) { /* ... */ }
-            ManagedHandle(Handle h) : hnd(h) { /* ... */ }
+            constexpr ManagedHandle() : hnd(INVALID_HANDLE) { /* ... */ }
+            constexpr ManagedHandle(Handle h) : hnd(h) { /* ... */ }
             ~ManagedHandle() {
                 if (this->hnd != INVALID_HANDLE) {
                     R_ABORT_UNLESS(svcCloseHandle(this->hnd));

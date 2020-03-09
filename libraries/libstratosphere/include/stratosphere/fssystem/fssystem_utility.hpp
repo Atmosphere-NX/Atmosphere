@@ -142,6 +142,9 @@ namespace ams::fssystem {
     };
 
     /* Other utility. */
+    Result HasFile(bool *out, fs::fsa::IFileSystem *fs, const char *path);
+    Result HasDirectory(bool *out, fs::fsa::IFileSystem *fs, const char *path);
+
     Result EnsureDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path);
     Result EnsureParentDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path);
 

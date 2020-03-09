@@ -49,7 +49,7 @@ namespace ams::ldr {
         if (IsTrackableSystemProgramId(program_id)) {
             return HasLaunchedSystemProgram(ncm::SystemProgramId{program_id.value});
         } else {
-            return g_launched_programs.find(static_cast<u64>(program_id)) != g_launched_programs.end();
+            return g_launched_programs.find(program_id.value) != g_launched_programs.end();
         }
     }
 

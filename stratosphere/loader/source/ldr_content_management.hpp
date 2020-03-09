@@ -21,12 +21,14 @@ namespace ams::ldr {
     /* Utility reference to make code mounting automatic. */
     class ScopedCodeMount {
         NON_COPYABLE(ScopedCodeMount);
+        NON_MOVEABLE(ScopedCodeMount);
         private:
-            Result result;
+            std::scoped_lock<os::Mutex> lk;
             cfg::OverrideStatus override_status;
+            Result result;
             bool has_status;
-            bool is_code_mounted;
-            bool is_hbl_mounted;
+            bool mounted_ams;
+            bool mounted_code;
         public:
             ScopedCodeMount(const ncm::ProgramLocation &loc);
             ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status);
@@ -36,32 +38,20 @@ namespace ams::ldr {
                 return this->result;
             }
 
-            bool IsCodeMounted() const {
-                return this->is_code_mounted;
-            }
-
-            bool IsHblMounted() const {
-                return this->is_hbl_mounted;
-            }
-
             const cfg::OverrideStatus &GetOverrideStatus() const {
                 AMS_ABORT_UNLESS(this->has_status);
                 return this->override_status;
             }
-
         private:
             Result Initialize(const ncm::ProgramLocation &loc);
-
-            void InitializeOverrideStatus(const ncm::ProgramLocation &loc);
-
-            Result MountCodeFileSystem(const ncm::ProgramLocation &loc);
-            Result MountSdCardCodeFileSystem(const ncm::ProgramLocation &loc);
-            Result MountHblFileSystem();
+            void EnsureOverrideStatus(const ncm::ProgramLocation &loc);
     };
 
-    /* Content Management API. */
-    Result OpenCodeFile(FILE *&out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path);
-    Result OpenCodeFileFromBaseExefs(FILE *&out, ncm::ProgramId program_id, const cfg::OverrideStatus &status, const char *relative_path);
+    constexpr inline const char * const AtmosphereCodeMountName = "ams-code";
+    constexpr inline const char * const CodeMountName           = "code";
+
+    #define ENCODE_ATMOSPHERE_CODE_PATH(relative) "ams-code:" relative
+    #define ENCODE_CODE_PATH(relative) "ams:" relative
 
     /* Redirection API. */
     Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc);

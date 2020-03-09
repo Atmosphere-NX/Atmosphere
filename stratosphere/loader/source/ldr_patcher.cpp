@@ -26,13 +26,42 @@ namespace ams::ldr {
         constexpr size_t NsoPatchesProtectedSize   = sizeof(NsoHeader);
         constexpr size_t NsoPatchesProtectedOffset = sizeof(NsoHeader);
 
+        constexpr const char * const LoaderSdMountName = "#amsldr-sdpatch";
+        static_assert(sizeof(LoaderSdMountName) <= fs::MountNameLengthMax);
+
+        os::Mutex g_ldr_sd_lock;
+        bool g_mounted_sd;
+
+        bool EnsureSdCardMounted() {
+            std::scoped_lock lk(g_ldr_sd_lock);
+
+            if (g_mounted_sd) {
+                return true;
+            }
+
+            if (!cfg::IsSdCardInitialized()) {
+                return false;
+            }
+
+            if (R_FAILED(fs::MountSdCard(LoaderSdMountName))) {
+                return false;
+            }
+
+            return (g_mounted_sd = true);
+        }
+
+
     }
 
     /* Apply IPS patches. */
     void LocateAndApplyIpsPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size) {
+        if (!EnsureSdCardMounted()) {
+            return;
+        }
+
         ro::ModuleId module_id;
         std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
-        ams::patcher::LocateAndApplyIpsPatchesToModule(NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
+        ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
     }
 
 }

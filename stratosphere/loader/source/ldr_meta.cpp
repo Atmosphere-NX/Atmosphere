@@ -23,7 +23,8 @@ namespace ams::ldr {
 
         /* Convenience definitions. */
         constexpr size_t MetaCacheBufferSize = 0x8000;
-        constexpr const char *MetaFilePath = "/main.npdm";
+        constexpr inline const char AtmosphereMetaPath[] = ENCODE_ATMOSPHERE_CODE_PATH("/main.npdm");
+        constexpr inline const char BaseMetaPath[]       = ENCODE_CODE_PATH("/main.npdm");
 
         /* Types. */
         struct MetaCache {
@@ -93,25 +94,23 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result LoadMetaFromFile(FILE *f, MetaCache *cache) {
+        Result LoadMetaFromFile(fs::FileHandle file, MetaCache *cache) {
             /* Reset cache. */
             cache->meta = {};
 
             /* Read from file. */
-            size_t npdm_size = 0;
+            s64 npdm_size = 0;
             {
                 /* Get file size. */
-                fseek(f, 0, SEEK_END);
-                npdm_size = ftell(f);
-                fseek(f, 0, SEEK_SET);
+                R_TRY(fs::GetFileSize(std::addressof(npdm_size), file));
 
                 /* Read data into cache buffer. */
-                R_UNLESS(npdm_size <= MetaCacheBufferSize,            ResultTooLargeMeta());
-                R_UNLESS(fread(cache->buffer, npdm_size, 1, f) == 1,  ResultTooLargeMeta());
+                R_UNLESS(npdm_size <= static_cast<s64>(MetaCacheBufferSize), ResultTooLargeMeta());
+                R_TRY(fs::ReadFile(file, 0, cache->buffer, npdm_size));
             }
 
             /* Ensure size is big enough. */
-            R_UNLESS(npdm_size >= sizeof(Npdm), ResultInvalidMeta());
+            R_UNLESS(npdm_size >= static_cast<s64>(sizeof(Npdm)), ResultInvalidMeta());
 
             /* Validate the meta. */
             {
@@ -146,13 +145,12 @@ namespace ams::ldr {
 
     /* API. */
     Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status) {
-        FILE *f = nullptr;
-
         /* Try to load meta from file. */
-        R_TRY(OpenCodeFile(f, program_id, status, MetaFilePath));
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), AtmosphereMetaPath, fs::OpenMode_Read));
         {
-            ON_SCOPE_EXIT { fclose(f); };
-            R_TRY(LoadMetaFromFile(f, &g_meta_cache));
+            ON_SCOPE_EXIT { fs::CloseFile(file); };
+            R_TRY(LoadMetaFromFile(file, &g_meta_cache));
         }
 
         /* Patch meta. Start by setting all program ids to the current program id. */
@@ -163,9 +161,9 @@ namespace ams::ldr {
 
         /* For HBL, we need to copy some information from the base meta. */
         if (status.IsHbl()) {
-            if (R_SUCCEEDED(OpenCodeFileFromBaseExefs(f, program_id, status, MetaFilePath))) {
-                ON_SCOPE_EXIT { fclose(f); };
-                if (R_SUCCEEDED(LoadMetaFromFile(f, &g_original_meta_cache))) {
+            if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read))) {
+                ON_SCOPE_EXIT { fs::CloseFile(file); };
+                if (R_SUCCEEDED(LoadMetaFromFile(file, &g_original_meta_cache))) {
                     Meta *o_meta = &g_original_meta_cache.meta;
 
                     /* Fix pool partition. */

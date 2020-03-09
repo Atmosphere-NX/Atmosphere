@@ -30,7 +30,7 @@ namespace ams::ro::impl {
 
     /* Apply IPS patches. */
     void LocateAndApplyIpsPatchesToModule(const ModuleId *module_id, u8 *mapped_nro, size_t mapped_size) {
-        ams::patcher::LocateAndApplyIpsPatchesToModule(NroPatchesDirectory, NroPatchesProtectedSize, NroPatchesProtectedOffset, module_id, mapped_nro, mapped_size);
+        ams::patcher::LocateAndApplyIpsPatchesToModule("sdmc", NroPatchesDirectory, NroPatchesProtectedSize, NroPatchesProtectedOffset, module_id, mapped_nro, mapped_size);
     }
 
 }

@@ -15,7 +15,7 @@
         "permissions":    "0xFFFFFFFFFFFFFFFF"
     },
     "service_host": [],
-    "service_access": [],
+    "service_access": ["fatal:u"],
     "kernel_capabilities": [
         {
             "type": "kernel_flags",

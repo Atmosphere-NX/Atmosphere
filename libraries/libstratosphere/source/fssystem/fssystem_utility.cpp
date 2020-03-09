@@ -51,6 +51,22 @@ namespace ams::fssystem {
             return ResultSuccess();
         }
 
+        Result HasEntry(bool *out, fs::fsa::IFileSystem *fsa, const char *path, fs::DirectoryEntryType type) {
+            /* Set out to false initially. */
+            *out = false;
+
+            /* Try to get the entry type. */
+            fs::DirectoryEntryType entry_type;
+            R_TRY_CATCH(fsa->GetEntryType(std::addressof(entry_type), path)) {
+                /* If the path doesn't exist, nothing has gone wrong. */
+                R_CONVERT(fs::ResultPathNotFound, ResultSuccess());
+            } R_END_TRY_CATCH;
+
+            /* We succeeded. */
+            *out = entry_type == type;
+            return ResultSuccess();
+        }
+
     }
 
     Result CopyFile(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_parent_path, const char *src_path, const fs::DirectoryEntry *entry, void *work_buf, size_t work_buf_size) {
@@ -115,6 +131,14 @@ namespace ams::fssystem {
                 return CopyFile(dst_fs, src_fs, dst_path_buf, path, &entry, work_buf, work_buf_size);
             }
         );
+    }
+
+    Result HasFile(bool *out, fs::fsa::IFileSystem *fs, const char *path) {
+        return HasEntry(out, fs, path, fs::DirectoryEntryType_File);
+    }
+
+    Result HasDirectory(bool *out, fs::fsa::IFileSystem *fs, const char *path) {
+        return HasEntry(out, fs, path, fs::DirectoryEntryType_Directory);
     }
 
     Result EnsureDirectoryRecursively(fs::fsa::IFileSystem *fs, const char *path) {

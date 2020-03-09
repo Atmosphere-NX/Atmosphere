@@ -30,8 +30,8 @@ namespace ams::ldr {
             virtual Result GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id);
 
             /* Atmosphere commands. */
-            virtual Result AtmosphereSetExternalContentSource(sf::OutMoveHandle out, ncm::ProgramId program_id);
-            virtual void   AtmosphereClearExternalContentSource(ncm::ProgramId program_id);
+            virtual Result AtmosphereRegisterExternalCode(sf::OutMoveHandle out, ncm::ProgramId program_id);
+            virtual void   AtmosphereUnregisterExternalCode(ncm::ProgramId program_id);
             virtual void   AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
             virtual Result AtmosphereGetProgramInfo(sf::Out<ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc);
             virtual Result AtmospherePinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status);
@@ -97,16 +97,16 @@ namespace ams::ldr {
                     SetProgramArguments  = 0,
                     FlushArguments       = 1,
 
-                    AtmosphereSetExternalContentSource   = 65000,
-                    AtmosphereClearExternalContentSource = 65001,
+                    AtmosphereRegisterExternalCode   = 65000,
+                    AtmosphereUnregisterExternalCode = 65001,
                 };
             public:
                 DEFINE_SERVICE_DISPATCH_TABLE {
                     MAKE_SERVICE_COMMAND_META(SetProgramArguments),
                     MAKE_SERVICE_COMMAND_META(FlushArguments),
 
-                    MAKE_SERVICE_COMMAND_META(AtmosphereSetExternalContentSource),
-                    MAKE_SERVICE_COMMAND_META(AtmosphereClearExternalContentSource),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereRegisterExternalCode),
+                    MAKE_SERVICE_COMMAND_META(AtmosphereUnregisterExternalCode),
                 };
         };
 
