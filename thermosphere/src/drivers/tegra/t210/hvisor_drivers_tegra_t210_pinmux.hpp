@@ -18,15 +18,6 @@
 
 #include "../../../defines.hpp"
 
-#define CONFIGURE_UART_DECL(n)\
-void ConfigureUart##n() const\
-{\
-    m_regs->uart##n##_tx    = 0;\
-    m_regs->uart##n##_rx    = INPUT | PULL_UP;\
-    m_regs->uart##n##_rts   = 0;\
-    m_regs->uart##n##_cts   = INPUT | PULL_DOWN;\
-}
-
 namespace ams::hvisor::drivers::tegra::t210 {
 
     class Pinmux final {
@@ -255,5 +246,3 @@ namespace ams::hvisor::drivers::tegra::t210 {
             }
     };
 }
-
-#undef CONFIGURE_UART_DECL
