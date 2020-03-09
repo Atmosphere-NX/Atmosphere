@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_PANIC_H
 #define FUSEE_PANIC_H
 
@@ -30,6 +30,7 @@
 
 #define AMS_FATAL_ERROR_MAX_STACKTRACE 0x20
 #define AMS_FATAL_ERROR_MAX_STACKDUMP 0x100
+#define AMS_FATAL_ERROR_TLS_SIZE      0x100
 
 /* Atmosphere reboot-to-fatal-error. */
 typedef struct {
@@ -57,10 +58,13 @@ typedef struct {
     uint64_t stack_dump_size;
     uint64_t stack_trace[AMS_FATAL_ERROR_MAX_STACKTRACE];
     uint8_t stack_dump[AMS_FATAL_ERROR_MAX_STACKDUMP];
+    uint8_t tls[AMS_FATAL_ERROR_TLS_SIZE];
 } atmosphere_fatal_error_ctx;
 
+/* "AFE2" */
+#define ATMOSPHERE_REBOOT_TO_FATAL_MAGIC   0x32454641
 /* "AFE1" */
-#define ATMOSPHERE_REBOOT_TO_FATAL_MAGIC 0x31454641
+#define ATMOSPHERE_REBOOT_TO_FATAL_MAGIC_1 0x31454641
 /* "AFE0" */
 #define ATMOSPHERE_REBOOT_TO_FATAL_MAGIC_0 0x30454641
 

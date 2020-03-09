@@ -119,6 +119,9 @@ namespace ams {
                     ams_ctx.stack_dump_size = 0;
                 }
             }
+
+            /* Grab 0x100 of tls. */
+            std::memcpy(ams_ctx.tls, armGetTls(), sizeof(ams_ctx.tls));
         }
 
         /* Just call the user exception handler. */

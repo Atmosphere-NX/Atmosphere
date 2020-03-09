@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 #include "panic.h"
 #include "di.h"
@@ -51,8 +51,10 @@ static const char *get_error_desc_str(uint32_t error_desc) {
 
 static void _check_and_display_atmosphere_fatal_error(void) {
     /* Check for valid magic. */
-    if (ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC &&
-        ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC_0) {
+    if (ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC   &&
+        ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC_1 &&
+        ATMOSPHERE_FATAL_ERROR_CONTEXT->magic != ATMOSPHERE_REBOOT_TO_FATAL_MAGIC_0)
+    {
         return;
     }
 
@@ -69,10 +71,10 @@ static void _check_and_display_atmosphere_fatal_error(void) {
         /* Turn on the backlight after initializing the lfb */
         /* to avoid flickering. */
         display_backlight(true);
-        
+
         /* Override the global logging level. */
         log_set_log_level(SCREEN_LOG_LEVEL_ERROR);
-    
+
         /* Copy fatal error context to the stack. */
         atmosphere_fatal_error_ctx ctx = *(ATMOSPHERE_FATAL_ERROR_CONTEXT);
 
@@ -103,7 +105,7 @@ static void _check_and_display_atmosphere_fatal_error(void) {
 void check_and_display_panic(void) {
     /* Handle a panic sent via a stratosphere module. */
     _check_and_display_atmosphere_fatal_error();
-    
+
     /* We also handle our own panics. */
     bool has_panic = ((APBDEV_PMC_RST_STATUS_0 != 0) || (g_panic_code != 0));
     uint32_t code = (g_panic_code == 0) ? APBDEV_PMC_SCRATCH200_0 : g_panic_code;
@@ -152,10 +154,10 @@ void check_and_display_panic(void) {
 
         /* Initialize the display. */
         display_init();
-        
+
         /* Fill the screen. */
         display_color_screen(color);
-        
+
         /* Wait for button and reboot. */
         wait_for_button_and_reboot();
     } else {

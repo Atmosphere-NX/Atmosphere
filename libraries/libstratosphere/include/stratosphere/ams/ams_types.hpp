@@ -83,12 +83,13 @@ namespace ams {
     struct FatalErrorContext : sf::LargeData, sf::PrefersMapAliasTransferMode {
         static constexpr size_t MaxStackTrace = 0x20;
         static constexpr size_t MaxStackDumpSize = 0x100;
+        static constexpr size_t ThreadLocalSize = 0x100;
         static constexpr size_t NumGprs = 29;
         static constexpr uintptr_t StdAbortMagicAddress = 0x8;
         static constexpr u64       StdAbortMagicValue = 0xA55AF00DDEADCAFEul;
         static constexpr u32       StdAbortErrorDesc = 0xFFE;
         static constexpr u32       DataAbortErrorDesc = 0x101;
-        static constexpr u32       Magic = util::FourCC<'A', 'F', 'E', '1'>::Code;
+        static constexpr u32       Magic = util::FourCC<'A', 'F', 'E', '2'>::Code;
 
         u32 magic;
         u32 error_desc;
@@ -113,10 +114,11 @@ namespace ams {
         u64 stack_trace_size;
         u64 stack_dump_size;
         u64 stack_trace[MaxStackTrace];
-        u8 stack_dump[MaxStackDumpSize];
+        u8  stack_dump[MaxStackDumpSize];
+        u8  tls[ThreadLocalSize];
     };
 
-    static_assert(sizeof(FatalErrorContext) == 0x350, "sizeof(FatalErrorContext)");
+    static_assert(sizeof(FatalErrorContext) == 0x450, "sizeof(FatalErrorContext)");
     static_assert(std::is_pod<FatalErrorContext>::value, "FatalErrorContext");
 
 #ifdef ATMOSPHERE_GIT_BRANCH
