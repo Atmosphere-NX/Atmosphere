@@ -51,7 +51,7 @@ namespace ams::ldr {
     constexpr inline const char * const CodeMountName           = "code";
 
     #define ENCODE_ATMOSPHERE_CODE_PATH(relative) "ams-code:" relative
-    #define ENCODE_CODE_PATH(relative) "ams:" relative
+    #define ENCODE_CODE_PATH(relative) "code:" relative
 
     /* Redirection API. */
     Result ResolveContentPath(char *out_path, const ncm::ProgramLocation &loc);
