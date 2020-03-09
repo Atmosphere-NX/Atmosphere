@@ -34,6 +34,16 @@ namespace ams::util::ini {
             }
         };
 
+        struct IFileContext {
+            fs::fsa::IFile *file;
+            s64 offset;
+            s64 num_left;
+
+            explicit IFileContext(fs::fsa::IFile *f) : file(f), offset(0) {
+                R_ABORT_UNLESS(file->GetSize(std::addressof(this->num_left)));
+            }
+        };
+
         char *ini_reader_file_handle(char *str, int num, void *stream) {
             FileContext *ctx = static_cast<FileContext *>(stream);
 
@@ -44,6 +54,38 @@ namespace ams::util::ini {
             /* Read as many bytes as we can. */
             s64 cur_read = std::min<s64>(num - 1, ctx->num_left);
             R_ABORT_UNLESS(fs::ReadFile(ctx->file, ctx->offset, str, cur_read, fs::ReadOption()));
+
+            /* Only "read" up to the first \n. */
+            size_t offset = cur_read;
+            for (auto i = 0; i < cur_read; i++) {
+                if (str[i] == '\n') {
+                    offset = i + 1;
+                    break;
+                }
+            }
+
+            /* Ensure null termination. */
+            str[offset] = '\0';
+
+            /* Update context. */
+            ctx->offset   += offset;
+            ctx->num_left -= offset;
+
+            return str;
+        }
+
+        char *ini_reader_ifile(char *str, int num, void *stream) {
+            IFileContext *ctx = static_cast<IFileContext *>(stream);
+
+            if (ctx->num_left == 0 || num < 2) {
+                return nullptr;
+            }
+
+            /* Read as many bytes as we can. */
+            s64 cur_read = std::min<s64>(num - 1, ctx->num_left);
+            size_t read;
+            R_ABORT_UNLESS(ctx->file->Read(std::addressof(read), ctx->offset, str, cur_read, fs::ReadOption()));
+            AMS_ABORT_UNLESS(static_cast<s64>(read) == cur_read);
 
             /* Only "read" up to the first \n. */
             size_t offset = cur_read;
@@ -76,14 +118,9 @@ namespace ams::util::ini {
         return ini_parse_stream(ini_reader_file_handle, &ctx, h, user_ctx);
     }
 
-    int ParseFile(const char *path, void *user_ctx, Handler h) {
-        fs::FileHandle file;
-        if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
-            return -1;
-        }
-        ON_SCOPE_EXIT { fs::CloseFile(file); };
-
-        return ParseFile(file, user_ctx, h);
+    int ParseFile(fs::fsa::IFile *file, void *user_ctx, Handler h) {
+        IFileContext ctx(file);
+        return ini_parse_stream(ini_reader_ifile, &ctx, h, user_ctx);
     }
 
 }

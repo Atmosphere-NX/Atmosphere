@@ -85,7 +85,7 @@ namespace ams::mitm::fs {
             const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&sd_fs.s)};
             std::unique_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_unique<fs::RemoteFileSystem>(sd_fs);
 
-            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fs::ReadOnlyFileSystemAdapter>(std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir)), false), target_object_id);
+            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fs::ReadOnlyFileSystem>(std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir)), false), target_object_id);
             return ResultSuccess();
         }
 
@@ -126,7 +126,7 @@ namespace ams::mitm::fs {
                     new_fs = std::make_shared<ReadOnlyLayeredFileSystem>(std::move(subdir_fs), std::make_unique<fs::RemoteFileSystem>(base_fs));
                 } else {
                     /* Without an existing FS, just make a read only adapter to the subdirectory. */
-                    new_fs = std::make_shared<fs::ReadOnlyFileSystemAdapter>(std::move(subdir_fs));
+                    new_fs = std::make_shared<fs::ReadOnlyFileSystem>(std::move(subdir_fs));
                 }
 
                 out.SetValue(std::make_shared<IFileSystemInterface>(std::move(new_fs), false), target_object_id);
@@ -220,7 +220,7 @@ namespace ams::mitm::fs {
         }
 
         /* Ensure the directory exists. */
-        R_TRY(fssystem::EnsureDirectoryExistsRecursively(sd_ifs.get(), save_dir_path));
+        R_TRY(fssystem::EnsureDirectoryRecursively(sd_ifs.get(), save_dir_path));
 
         /* Create directory savedata filesystem. */
         std::unique_ptr<fs::fsa::IFileSystem> subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(sd_ifs, save_dir_path);

@@ -290,15 +290,17 @@ namespace ams::settings::fwdbg {
 
         Result LoadSdCardKeyValueStore() {
             /* Open file. */
-            FsFile config_file;
-            if (R_FAILED(ams::mitm::fs::OpenAtmosphereSdFile(&config_file, "/config/system_settings.ini", fs::OpenMode_Read))) {
-                /* It's okay if the file isn't readable/present, because we already loaded defaults. */
-                return ResultSuccess();
+            /* It's okay if the file isn't readable/present, because we already loaded defaults. */
+            std::unique_ptr<ams::fs::fsa::IFile> file;
+            {
+                FsFile f;
+                R_SUCCEED_IF(R_FAILED(ams::mitm::fs::OpenAtmosphereSdFile(std::addressof(f), "/config/system_settings.ini", fs::OpenMode_Read)));
+                file = std::make_unique<ams::fs::RemoteFile>(f);
             }
-            ON_SCOPE_EXIT { fsFileClose(&config_file); };
+            AMS_ABORT_UNLESS(file != nullptr);
 
             Result parse_result = ResultSuccess();
-            util::ini::ParseFile(&config_file, &parse_result, SystemSettingsIniHandler);
+            util::ini::ParseFile(file.get(), &parse_result, SystemSettingsIniHandler);
             R_TRY(parse_result);
 
             return ResultSuccess();

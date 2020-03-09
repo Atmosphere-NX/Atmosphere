@@ -20,8 +20,8 @@ namespace ams::mitm::fs {
 
     class ReadOnlyLayeredFileSystem : public ams::fs::fsa::IFileSystem {
         private:
-            ams::fs::ReadOnlyFileSystemAdapter fs_1;
-            ams::fs::ReadOnlyFileSystemAdapter fs_2;
+            ams::fs::ReadOnlyFileSystem fs_1;
+            ams::fs::ReadOnlyFileSystem fs_2;
         public:
             explicit ReadOnlyLayeredFileSystem(std::unique_ptr<ams::fs::fsa::IFileSystem> a, std::unique_ptr<ams::fs::fsa::IFileSystem> b) : fs_1(std::move(a)), fs_2(std::move(b)) { /* ... */ }
 

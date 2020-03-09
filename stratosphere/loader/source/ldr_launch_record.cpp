@@ -22,43 +22,15 @@ namespace ams::ldr {
         /* Global cache. */
         std::set<u64> g_launched_programs;
 
-        constexpr size_t NumSystemProgramIds = ncm::SystemProgramId::End.value - ncm::SystemProgramId::Start.value + 1;
-        static_assert(util::IsPowerOfTwo(NumSystemProgramIds));
-        static_assert(util::IsAligned(NumSystemProgramIds, BITSIZEOF(u64)));
-
-        bool IsTrackableSystemProgramId(ncm::ProgramId program_id) {
-            return ncm::SystemProgramId::Start <= program_id && program_id <= ncm::SystemProgramId::End;
-        }
-
-        u64 g_system_launch_records[NumSystemProgramIds / BITSIZEOF(u64)];
-
-        void SetLaunchedSystemProgram(ncm::SystemProgramId program_id) {
-            const u64 val = program_id.value - ncm::SystemProgramId::Start.value;
-            g_system_launch_records[val / BITSIZEOF(u64)] |= (1ul << (val % BITSIZEOF(u64)));
-        }
-
-        bool HasLaunchedSystemProgram(ncm::SystemProgramId program_id) {
-            const u64 val = program_id.value - ncm::SystemProgramId::Start.value;
-            return (g_system_launch_records[val / BITSIZEOF(u64)] & (1ul << (val % BITSIZEOF(u64)))) != 0;
-        }
-
     }
 
     /* Launch Record API. */
     bool HasLaunchedProgram(ncm::ProgramId program_id) {
-        if (IsTrackableSystemProgramId(program_id)) {
-            return HasLaunchedSystemProgram(ncm::SystemProgramId{program_id.value});
-        } else {
-            return g_launched_programs.find(program_id.value) != g_launched_programs.end();
-        }
+        return g_launched_programs.find(program_id.value) != g_launched_programs.end();
     }
 
     void SetLaunchedProgram(ncm::ProgramId program_id) {
-        if (IsTrackableSystemProgramId(program_id)) {
-            SetLaunchedSystemProgram(ncm::SystemProgramId{program_id.value});
-        } else {
-            g_launched_programs.insert(static_cast<u64>(program_id));
-        }
+        g_launched_programs.insert(program_id.value);
     }
 
 }

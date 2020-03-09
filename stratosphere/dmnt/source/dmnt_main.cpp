@@ -21,7 +21,6 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
-    u32 __nx_fsdev_direntry_cache_size = 1;
 
     /* TODO: Evaluate how much this can be reduced by. */
     #define INNER_HEAP_SIZE 0x20000
