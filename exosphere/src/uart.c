@@ -21,12 +21,12 @@
 
 static inline void uart_wait_cycles(uint32_t baud, uint32_t num)
 {
-    wait((num * 1000000 + 16 * baud - 1) / (16 * baud));
+    udelay((num * 1000000 + 16 * baud - 1) / (16 * baud));
 }
 
 static inline void uart_wait_syms(uint32_t baud, uint32_t num)
 {
-    wait((num * 1000000 + baud - 1) / baud);
+    udelay((num * 1000000 + baud - 1) / baud);
 }
 
 void uart_config(UartDevice dev) {
@@ -34,28 +34,28 @@ void uart_config(UartDevice dev) {
 
     switch (dev) {
         case UART_A:
-            pinmux->uart1_tx = 0;
-            pinmux->uart1_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
-            pinmux->uart1_rts = 0;
-            pinmux->uart1_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            pinmux->uart1_tx = (0 | 0 | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart1_rx = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_UP | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart1_rts = (0 | 0 | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart1_cts = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
             break;
         case UART_B:
-            pinmux->uart2_tx = 0;
-            pinmux->uart2_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
-            pinmux->uart2_rts = 0;
-            pinmux->uart2_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            pinmux->uart2_tx = (0 | 0 | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart2_rx = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart2_rts = (0 | 0 | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart2_cts = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
             break;
         case UART_C:
-            pinmux->uart3_tx = 0;
-            pinmux->uart3_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
-            pinmux->uart3_rts = 0;
-            pinmux->uart3_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            pinmux->uart3_tx = (0 | 0 | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart3_rx = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart3_rts = (0 | 0 | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart3_cts = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_NONE | PINMUX_SELECT_FUNCTION0);
             break;
         case UART_D:
-            pinmux->uart4_tx = 0;
-            pinmux->uart4_rx = (PINMUX_INPUT | PINMUX_PULL_UP);
-            pinmux->uart4_rts = 0;
-            pinmux->uart4_cts = (PINMUX_INPUT | PINMUX_PULL_DOWN);
+            pinmux->uart4_tx = (0 | 0 | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart4_rx = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart4_rts = (0 | 0 | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
+            pinmux->uart4_cts = (PINMUX_INPUT | PINMUX_TRISTATE | PINMUX_PULL_DOWN | PINMUX_SELECT_FUNCTION0);
             break;
         case UART_E:
             /* Unused. */
