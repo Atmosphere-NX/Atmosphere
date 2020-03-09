@@ -21,66 +21,58 @@
 #include "gpio.h"
 #include "utils.h"
 
-static volatile tegra_gpio_bank_t *gpio_get_bank(uint32_t pin) {
+/* Set GPIO's value. */
+static void gpio_register_set(uint32_t pin, bool do_set, uint32_t offset) {
     volatile tegra_gpio_t *gpio = gpio_get_regs();
-    uint32_t bank_number = (pin >> GPIO_BANK_SHIFT);
-
-    return &gpio->bank[bank_number];
-}
-
-static volatile uint32_t gpio_get_port(uint32_t pin) {
-    return ((pin >> GPIO_PORT_SHIFT) & GPIO_PORT_MASK);
-}
-
-static volatile uint32_t gpio_get_mask(uint32_t pin) {
-    uint32_t pin_number = (pin & GPIO_PIN_MASK);
-    return (1 << pin_number);
-}
-
-static void gpio_simple_register_set(uint32_t pin, bool should_be_set, uint32_t offset) {
+    
     /* Retrieve the register set that corresponds to the given pin and offset. */
-    uintptr_t cluster_addr = (uintptr_t)gpio_get_bank(pin) + offset;
-    uint32_t *cluster = (uint32_t *)cluster_addr;
+    volatile uint32_t *cluster = (uint32_t *)((uintptr_t)&gpio->bank[(pin >> GPIO_BANK_SHIFT)] + offset);
 
     /* Figure out the offset into the cluster, and the mask to be used. */
-    uint32_t port = gpio_get_port(pin);
-    uint32_t mask = gpio_get_mask(pin);
+    uint32_t port = ((pin >> GPIO_PORT_SHIFT) & GPIO_PORT_MASK);
+    uint32_t mask = (1 << (pin & GPIO_PIN_MASK));
 
     /* Set or clear the bit, as appropriate. */
-    if (should_be_set)
+    if (do_set)
         cluster[port] |= mask;
     else
         cluster[port] &= ~mask;
     
     /* Dummy read. */
-    (void)cluster[port];
+    cluster[port];
 }
 
-static bool gpio_simple_register_get(uint32_t pin, uint32_t offset) {
+/* Get GPIO's value. */
+static bool gpio_register_get(uint32_t pin, uint32_t offset) {
+    volatile tegra_gpio_t *gpio = gpio_get_regs();
+    
     /* Retrieve the register set that corresponds to the given pin and offset. */
-    uintptr_t cluster_addr = (uintptr_t)gpio_get_bank(pin) + offset;
-    uint32_t *cluster = (uint32_t *)cluster_addr;
+    volatile uint32_t *cluster = (uint32_t *)((uintptr_t)&gpio->bank[(pin >> GPIO_BANK_SHIFT)] + offset);
 
     /* Figure out the offset into the cluster, and the mask to be used. */
-    uint32_t port = gpio_get_port(pin);
-    uint32_t mask = gpio_get_mask(pin);
+    uint32_t port = ((pin >> GPIO_PORT_SHIFT) & GPIO_PORT_MASK);
+    uint32_t mask = (1 << (pin & GPIO_PIN_MASK));
 
     /* Convert the given value to a boolean. */
     return !!(cluster[port] & mask);
 }
 
+/* Configure GPIO's mode. */
 void gpio_configure_mode(uint32_t pin, uint32_t mode) {
-    gpio_simple_register_set(pin, mode == GPIO_MODE_GPIO, offsetof(tegra_gpio_bank_t, config));
+    gpio_register_set(pin, mode == GPIO_MODE_GPIO, offsetof(tegra_gpio_bank_t, config));
 }
 
+/* Configure GPIO's direction. */
 void gpio_configure_direction(uint32_t pin, uint32_t dir) {
-    gpio_simple_register_set(pin, dir == GPIO_DIRECTION_OUTPUT, offsetof(tegra_gpio_bank_t, direction)); 
+    gpio_register_set(pin, dir == GPIO_DIRECTION_OUTPUT, offsetof(tegra_gpio_bank_t, direction)); 
 }
 
+/* Write to GPIO. */
 void gpio_write(uint32_t pin, uint32_t value) {
-    gpio_simple_register_set(pin, value == GPIO_LEVEL_HIGH, offsetof(tegra_gpio_bank_t, out)); 
+    gpio_register_set(pin, value == GPIO_LEVEL_HIGH, offsetof(tegra_gpio_bank_t, out)); 
 }
 
+/* Read from GPIO. */
 uint32_t gpio_read(uint32_t pin) {
-    return gpio_simple_register_get(pin, offsetof(tegra_gpio_bank_t, in)); 
+    return gpio_register_get(pin, offsetof(tegra_gpio_bank_t, in)); 
 }
