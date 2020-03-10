@@ -84,6 +84,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.UnmapPages(addr, num_pages, state);
             }
 
+            Result MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
+                return this->page_table.MakeAndOpenPageGroup(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
+            }
+
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }
@@ -96,12 +100,23 @@ namespace ams::kern::arch::arm64 {
             KProcessAddress GetAliasRegionStart()     const { return this->page_table.GetAliasRegionStart(); }
             KProcessAddress GetStackRegionStart()     const { return this->page_table.GetStackRegionStart(); }
             KProcessAddress GetKernelMapRegionStart() const { return this->page_table.GetKernelMapRegionStart(); }
+            KProcessAddress GetAliasCodeRegionStart() const { return this->page_table.GetAliasCodeRegionStart(); }
 
             size_t GetAddressSpaceSize()    const { return this->page_table.GetAddressSpaceSize(); }
             size_t GetHeapRegionSize()      const { return this->page_table.GetHeapRegionSize(); }
             size_t GetAliasRegionSize()     const { return this->page_table.GetAliasRegionSize(); }
             size_t GetStackRegionSize()     const { return this->page_table.GetStackRegionSize(); }
             size_t GetKernelMapRegionSize() const { return this->page_table.GetKernelMapRegionSize(); }
+            size_t GetAliasCodeRegionSize() const { return this->page_table.GetAliasCodeRegionSize(); }
+
+            KPhysicalAddress GetHeapPhysicalAddress(KVirtualAddress address) const {
+                /* TODO: Better way to convert address type? */
+                return this->page_table.GetHeapPhysicalAddress(address);
+            }
+
+            KBlockInfoManager *GetBlockInfoManager() {
+                return this->page_table.GetBlockInfoManager();
+            }
     };
 
 }

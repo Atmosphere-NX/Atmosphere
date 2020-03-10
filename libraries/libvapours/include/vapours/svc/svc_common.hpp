@@ -28,12 +28,14 @@ namespace ams::svc {
     using Handle = u32;
 #endif
 
-    static constexpr size_t MaxWaitSynchronizationHandleCount = 0x40;
+    constexpr inline size_t MaxWaitSynchronizationHandleCount = 0x40;
 
     enum PseudoHandle : Handle {
         CurrentThread  = 0xFFFF8000,
         CurrentProcess = 0xFFFF8001,
     };
+
+    constexpr inline Handle InvalidHandle = Handle(0);
 
     constexpr ALWAYS_INLINE bool operator==(const Handle &lhs, const PseudoHandle &rhs) {
         return static_cast<Handle>(lhs) == static_cast<Handle>(rhs);

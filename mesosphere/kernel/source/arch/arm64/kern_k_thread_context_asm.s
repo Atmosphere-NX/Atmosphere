@@ -100,22 +100,22 @@ _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters64ERKS3_:
     msr fpsr, x1
 
     /* Restore the FPU registers. */
-    ldp q0,  q1,  [sp, #(16 *  0 + 0x80)]
-    ldp q2,  q3,  [sp, #(16 *  2 + 0x80)]
-    ldp q4,  q5,  [sp, #(16 *  4 + 0x80)]
-    ldp q6,  q7,  [sp, #(16 *  6 + 0x80)]
-    ldp q8,  q9,  [sp, #(16 *  8 + 0x80)]
-    ldp q10, q11, [sp, #(16 * 10 + 0x80)]
-    ldp q12, q13, [sp, #(16 * 12 + 0x80)]
-    ldp q14, q15, [sp, #(16 * 14 + 0x80)]
-    ldp q16, q17, [sp, #(16 * 16 + 0x80)]
-    ldp q18, q19, [sp, #(16 * 18 + 0x80)]
-    ldp q20, q21, [sp, #(16 * 20 + 0x80)]
-    ldp q22, q23, [sp, #(16 * 22 + 0x80)]
-    ldp q24, q25, [sp, #(16 * 24 + 0x80)]
-    ldp q26, q27, [sp, #(16 * 26 + 0x80)]
-    ldp q28, q29, [sp, #(16 * 28 + 0x80)]
-    ldp q30, q31, [sp, #(16 * 30 + 0x80)]
+    ldp q0,  q1,  [x0, #(16 *  0 + 0x80)]
+    ldp q2,  q3,  [x0, #(16 *  2 + 0x80)]
+    ldp q4,  q5,  [x0, #(16 *  4 + 0x80)]
+    ldp q6,  q7,  [x0, #(16 *  6 + 0x80)]
+    ldp q8,  q9,  [x0, #(16 *  8 + 0x80)]
+    ldp q10, q11, [x0, #(16 * 10 + 0x80)]
+    ldp q12, q13, [x0, #(16 * 12 + 0x80)]
+    ldp q14, q15, [x0, #(16 * 14 + 0x80)]
+    ldp q16, q17, [x0, #(16 * 16 + 0x80)]
+    ldp q18, q19, [x0, #(16 * 18 + 0x80)]
+    ldp q20, q21, [x0, #(16 * 20 + 0x80)]
+    ldp q22, q23, [x0, #(16 * 22 + 0x80)]
+    ldp q24, q25, [x0, #(16 * 24 + 0x80)]
+    ldp q26, q27, [x0, #(16 * 26 + 0x80)]
+    ldp q28, q29, [x0, #(16 * 28 + 0x80)]
+    ldp q30, q31, [x0, #(16 * 30 + 0x80)]
 
     ret
 
@@ -131,13 +131,13 @@ _ZN3ams4kern4arch5arm6414KThreadContext21RestoreFpuRegisters32ERKS3_:
     msr fpsr, x1
 
     /* Restore the FPU registers. */
-    ldp q0,  q1,  [sp, #(16 *  0 + 0x80)]
-    ldp q2,  q3,  [sp, #(16 *  2 + 0x80)]
-    ldp q4,  q5,  [sp, #(16 *  4 + 0x80)]
-    ldp q6,  q7,  [sp, #(16 *  6 + 0x80)]
-    ldp q8,  q9,  [sp, #(16 *  8 + 0x80)]
-    ldp q10, q11, [sp, #(16 * 10 + 0x80)]
-    ldp q12, q13, [sp, #(16 * 12 + 0x80)]
-    ldp q14, q15, [sp, #(16 * 14 + 0x80)]
+    ldp q0,  q1,  [x0, #(16 *  0 + 0x80)]
+    ldp q2,  q3,  [x0, #(16 *  2 + 0x80)]
+    ldp q4,  q5,  [x0, #(16 *  4 + 0x80)]
+    ldp q6,  q7,  [x0, #(16 *  6 + 0x80)]
+    ldp q8,  q9,  [x0, #(16 *  8 + 0x80)]
+    ldp q10, q11, [x0, #(16 * 10 + 0x80)]
+    ldp q12, q13, [x0, #(16 * 12 + 0x80)]
+    ldp q14, q15, [x0, #(16 * 14 + 0x80)]
 
     ret

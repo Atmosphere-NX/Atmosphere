@@ -28,7 +28,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     void CallSecureMonitor64(ams::svc::lp64::SecureMonitorArguments *args) {
-        MESOSPHERE_PANIC("Stubbed SvcCallSecureMonitor64 was called.");
+        KSystemControl::CallSecureMonitorFromUser(args);
     }
 
     /* ============================= 64From32 ABI ============================= */

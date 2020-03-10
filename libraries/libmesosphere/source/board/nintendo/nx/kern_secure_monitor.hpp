@@ -91,6 +91,8 @@ namespace ams::kern::board::nintendo::nx::smc {
 
     void NORETURN Panic(u32 color);
 
+    void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);
+
     namespace init {
 
         void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);

@@ -32,7 +32,7 @@ namespace ams::kern {
 #define MESOSPHERE_UNUSED(...) ::ams::kern::UnusedImpl(__VA_ARGS__)
 
 #ifdef MESOSPHERE_ENABLE_DEBUG_PRINT
-#define MESOSPHERE_PANIC(...) do { ::ams::kern::Panic(__FILE__, __LINE__, __VA_ARGS__); } while(0)
+#define MESOSPHERE_PANIC(...) do { ::ams::kern::Panic(__FILE__, __LINE__, ## __VA_ARGS__); } while(0)
 #else
 #define MESOSPHERE_PANIC(...) do { MESOSPHERE_UNUSED(__VA_ARGS__); ::ams::kern::Panic(); } while(0)
 #endif

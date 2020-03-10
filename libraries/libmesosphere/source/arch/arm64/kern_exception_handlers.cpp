@@ -150,6 +150,15 @@ namespace ams::kern::arch::arm64 {
                     HandleUserException(context, esr, far, afsr0, afsr1, data);
                 }
             } else {
+                MESOSPHERE_LOG("Unhandled Exception in Supervisor Mode\n");
+                MESOSPHERE_LOG("Current Process = %s\n", GetCurrentProcess().GetName());
+
+                for (size_t i = 0; i < 31; i++) {
+                    MESOSPHERE_LOG("X[%02zu] = %016lx\n", i, context->x[i]);
+                }
+                MESOSPHERE_LOG("PC    = %016lx\n", context->pc);
+                MESOSPHERE_LOG("SP    = %016lx\n", context->sp);
+
                 MESOSPHERE_PANIC("Unhandled Exception in Supervisor Mode\n");
             }
 

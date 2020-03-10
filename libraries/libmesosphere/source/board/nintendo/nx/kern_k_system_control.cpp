@@ -327,4 +327,53 @@ namespace ams::kern::board::nintendo::nx {
         while (true) { /* ... */ }
     }
 
+    /* User access. */
+    void KSystemControl::CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args) {
+        /* Get the function id for the current call. */
+        u64 function_id = args->r[0];
+
+        MESOSPHERE_LOG("CallSecureMonitor(%lx, %lx, %lx, %lx, %lx, %lx, %lx, %lx);\n", args->r[0], args->r[1], args->r[2], args->r[3], args->r[4], args->r[5], args->r[6], args->r[7]);
+
+        /* We'll need to map in pages if arguments are pointers. Prepare page groups to do so. */
+        auto &page_table = GetCurrentProcess().GetPageTable();
+        auto *bim = page_table.GetBlockInfoManager();
+
+        constexpr size_t MaxMappedRegisters = 7;
+        std::array<KPageGroup, MaxMappedRegisters> page_groups = { KPageGroup(bim), KPageGroup(bim), KPageGroup(bim), KPageGroup(bim), KPageGroup(bim), KPageGroup(bim), KPageGroup(bim), };
+
+        for (size_t i = 0; i < MaxMappedRegisters; i++) {
+            const size_t reg_id = i + 1;
+            if (function_id & (1ul << (8 + reg_id))) {
+                /* Create and open a new page group for the address. */
+                KVirtualAddress virt_addr = args->r[reg_id];
+
+                if (R_SUCCEEDED(page_table.MakeAndOpenPageGroup(std::addressof(page_groups[i]), util::AlignDown(GetInteger(virt_addr), PageSize), 1, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None))) {
+                    /* Translate the virtual address to a physical address. */
+                    const auto it = page_groups[i].begin();
+                    MESOSPHERE_ASSERT(it != page_groups[i].end());
+                    MESOSPHERE_ASSERT(it->GetNumPages() == 1);
+
+                    KPhysicalAddress phys_addr = page_table.GetHeapPhysicalAddress(it->GetAddress());
+
+                    args->r[reg_id] = GetInteger(phys_addr) | (GetInteger(virt_addr) & (PageSize - 1));
+                    MESOSPHERE_LOG("Mapped arg %zu\n", reg_id);
+                } else {
+                    /* If we couldn't map, we should clear the address. */
+                    MESOSPHERE_LOG("Failed to map arg %zu\n", reg_id);
+                    args->r[reg_id] = 0;
+                }
+            }
+        }
+
+        /* Invoke the secure monitor. */
+        smc::CallSecureMonitorFromUser(args);
+
+        MESOSPHERE_LOG("Secure Monitor Returned: (%lx, %lx, %lx, %lx, %lx, %lx, %lx, %lx);\n", args->r[0], args->r[1], args->r[2], args->r[3], args->r[4], args->r[5], args->r[6], args->r[7]);
+
+        /* Make sure that we close any pages that we opened. */
+        for (size_t i = 0; i < MaxMappedRegisters; i++) {
+            page_groups[i].Close();
+        }
+    }
+
 }

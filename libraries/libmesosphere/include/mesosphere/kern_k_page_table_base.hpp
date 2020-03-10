@@ -191,8 +191,6 @@ namespace ams::kern {
             KPageTableImpl &GetImpl() { return this->impl; }
             const KPageTableImpl &GetImpl() const { return this->impl; }
 
-            KBlockInfoManager *GetBlockInfoManager() const { return this->block_info_manager; }
-
             bool IsLockedByCurrentThread() const { return this->general_lock.IsLockedByCurrentThread(); }
 
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
@@ -245,6 +243,8 @@ namespace ams::kern {
                 return this->GetImpl().GetPhysicalAddress(out, virt_addr);
             }
 
+            KBlockInfoManager *GetBlockInfoManager() const { return this->block_info_manager; }
+
             Result SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
             Result SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
             Result SetHeapSize(KProcessAddress *out, size_t size);
@@ -270,18 +270,22 @@ namespace ams::kern {
             Result MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm);
             Result MapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state, KMemoryPermission perm);
             Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state);
+
+            Result MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr);
         public:
             KProcessAddress GetAddressSpaceStart()    const { return this->address_space_start; }
             KProcessAddress GetHeapRegionStart()      const { return this->heap_region_start; }
             KProcessAddress GetAliasRegionStart()     const { return this->alias_region_start; }
             KProcessAddress GetStackRegionStart()     const { return this->stack_region_start; }
             KProcessAddress GetKernelMapRegionStart() const { return this->kernel_map_region_start; }
+            KProcessAddress GetAliasCodeRegionStart() const { return this->alias_code_region_start; }
 
             size_t GetAddressSpaceSize()    const { return this->address_space_end     - this->address_space_start; }
             size_t GetHeapRegionSize()      const { return this->heap_region_end       - this->heap_region_start; }
             size_t GetAliasRegionSize()     const { return this->alias_region_end      - this->alias_region_start; }
             size_t GetStackRegionSize()     const { return this->stack_region_end      - this->stack_region_start; }
             size_t GetKernelMapRegionSize() const { return this->kernel_map_region_end - this->kernel_map_region_start; }
+            size_t GetAliasCodeRegionSize() const { return this->alias_code_region_end - this->alias_code_region_start; }
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);
