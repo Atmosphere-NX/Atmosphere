@@ -175,6 +175,7 @@ _content_headers:
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
+.word 0xCCCCCCCC
 .asciz "ProcessManager"
 .align 5
 
@@ -280,7 +281,7 @@ _content_headers:
 /* splash_screen content header */
 .word __splash_screen_bmp_start__
 .word __splash_screen_bmp_size__
-.word CONTENT_TYPE_BMP
+.byte CONTENT_TYPE_BMP
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
