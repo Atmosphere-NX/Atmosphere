@@ -278,7 +278,7 @@ namespace ams::kern {
                 return entry;
             }
 
-            constexpr NOINLINE KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
+            constexpr ALWAYS_INLINE KAutoObject *GetObjectImpl(ams::svc::Handle handle) const {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Handles must not have reserved bits set. */
@@ -293,7 +293,7 @@ namespace ams::kern {
                 }
             }
 
-            constexpr NOINLINE KAutoObject *GetObjectByIndexImpl(ams::svc::Handle *out_handle, size_t index) const {
+            constexpr ALWAYS_INLINE KAutoObject *GetObjectByIndexImpl(ams::svc::Handle *out_handle, size_t index) const {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Index must be in bounds. */
@@ -309,6 +309,49 @@ namespace ams::kern {
 
                 *out_handle = EncodeHandle(index, entry->GetLinearId());
                 return entry->GetObject();
+            }
+
+            template<typename T>
+            ALWAYS_INLINE bool GetMultipleObjects(T **out, const ams::svc::Handle *handles, size_t num_handles) const {
+                /* Try to convert and open all the handles. */
+                size_t num_opened;
+                {
+                    /* Lock the table. */
+                    KScopedDisableDispatch dd;
+                    KScopedSpinLock lk(this->lock);
+                    for (num_opened = 0; num_opened < num_handles; num_opened++) {
+                        /* Get the current handle. */
+                        const auto cur_handle = handles[num_opened];
+
+                        /* Get the object for the current handle. */
+                        KAutoObject *cur_object = this->GetObjectImpl(cur_handle);
+                        if (AMS_UNLIKELY(cur_object == nullptr)) {
+                            break;
+                        }
+
+                        /* Cast the current object to the desired type. */
+                        T *cur_t = cur_object->DynamicCast<T*>();
+                        if (AMS_UNLIKELY(cur_t == nullptr)) {
+                            break;
+                        }
+
+                        /* Open a reference to the current object. */
+                        cur_t->Open();
+                        out[num_opened] = cur_t;
+                    }
+                }
+
+                /* If we converted every object, succeed. */
+                if (AMS_LIKELY(num_opened == num_handles)) {
+                    return true;
+                }
+
+                /* If we didn't convert entry object, close the ones we opened. */
+                for (size_t i = 0; i < num_opened; i++) {
+                    out[i]->Close();
+                }
+
+                return false;
             }
     };
 
