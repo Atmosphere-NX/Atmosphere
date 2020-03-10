@@ -18,24 +18,33 @@
 
 namespace ams::svc::codegen::impl {
 
-    #define SVC_CODEGEN_FOR_I_FROM_0_TO_64(HANDLER, ...)                                                                    \
-        HANDLER( 0, ## __VA_ARGS__); HANDLER( 1, ## __VA_ARGS__); HANDLER( 2, ## __VA_ARGS__); HANDLER( 3, ## __VA_ARGS__); \
-        HANDLER( 4, ## __VA_ARGS__); HANDLER( 5, ## __VA_ARGS__); HANDLER( 6, ## __VA_ARGS__); HANDLER( 7, ## __VA_ARGS__); \
-        HANDLER( 8, ## __VA_ARGS__); HANDLER( 9, ## __VA_ARGS__); HANDLER(10, ## __VA_ARGS__); HANDLER(11, ## __VA_ARGS__); \
-        HANDLER(12, ## __VA_ARGS__); HANDLER(13, ## __VA_ARGS__); HANDLER(14, ## __VA_ARGS__); HANDLER(15, ## __VA_ARGS__); \
-        HANDLER(16, ## __VA_ARGS__); HANDLER(17, ## __VA_ARGS__); HANDLER(18, ## __VA_ARGS__); HANDLER(19, ## __VA_ARGS__); \
-        HANDLER(20, ## __VA_ARGS__); HANDLER(21, ## __VA_ARGS__); HANDLER(22, ## __VA_ARGS__); HANDLER(23, ## __VA_ARGS__); \
-        HANDLER(24, ## __VA_ARGS__); HANDLER(25, ## __VA_ARGS__); HANDLER(26, ## __VA_ARGS__); HANDLER(27, ## __VA_ARGS__); \
-        HANDLER(28, ## __VA_ARGS__); HANDLER(29, ## __VA_ARGS__); HANDLER(30, ## __VA_ARGS__); HANDLER(31, ## __VA_ARGS__); \
-        HANDLER(32, ## __VA_ARGS__); HANDLER(33, ## __VA_ARGS__); HANDLER(34, ## __VA_ARGS__); HANDLER(35, ## __VA_ARGS__); \
-        HANDLER(36, ## __VA_ARGS__); HANDLER(37, ## __VA_ARGS__); HANDLER(38, ## __VA_ARGS__); HANDLER(39, ## __VA_ARGS__); \
-        HANDLER(40, ## __VA_ARGS__); HANDLER(41, ## __VA_ARGS__); HANDLER(42, ## __VA_ARGS__); HANDLER(43, ## __VA_ARGS__); \
-        HANDLER(44, ## __VA_ARGS__); HANDLER(45, ## __VA_ARGS__); HANDLER(46, ## __VA_ARGS__); HANDLER(47, ## __VA_ARGS__); \
-        HANDLER(48, ## __VA_ARGS__); HANDLER(49, ## __VA_ARGS__); HANDLER(50, ## __VA_ARGS__); HANDLER(51, ## __VA_ARGS__); \
-        HANDLER(52, ## __VA_ARGS__); HANDLER(53, ## __VA_ARGS__); HANDLER(54, ## __VA_ARGS__); HANDLER(55, ## __VA_ARGS__); \
-        HANDLER(56, ## __VA_ARGS__); HANDLER(57, ## __VA_ARGS__); HANDLER(58, ## __VA_ARGS__); HANDLER(59, ## __VA_ARGS__); \
+    #define SVC_CODEGEN_FOR_I_FROM_0_TO_64(HANDLER, ...)                                                                        \
+        HANDLER( 0, ## __VA_ARGS__); HANDLER( 1, ## __VA_ARGS__); HANDLER( 2, ## __VA_ARGS__); HANDLER( 3, ## __VA_ARGS__);     \
+        HANDLER( 4, ## __VA_ARGS__); HANDLER( 5, ## __VA_ARGS__); HANDLER( 6, ## __VA_ARGS__); HANDLER( 7, ## __VA_ARGS__);     \
+        HANDLER( 8, ## __VA_ARGS__); HANDLER( 9, ## __VA_ARGS__); HANDLER(10, ## __VA_ARGS__); HANDLER(11, ## __VA_ARGS__);     \
+        HANDLER(12, ## __VA_ARGS__); HANDLER(13, ## __VA_ARGS__); HANDLER(14, ## __VA_ARGS__); HANDLER(15, ## __VA_ARGS__);     \
+        HANDLER(16, ## __VA_ARGS__); HANDLER(17, ## __VA_ARGS__); HANDLER(18, ## __VA_ARGS__); HANDLER(19, ## __VA_ARGS__);     \
+        HANDLER(20, ## __VA_ARGS__); HANDLER(21, ## __VA_ARGS__); HANDLER(22, ## __VA_ARGS__); HANDLER(23, ## __VA_ARGS__);     \
+        HANDLER(24, ## __VA_ARGS__); HANDLER(25, ## __VA_ARGS__); HANDLER(26, ## __VA_ARGS__); HANDLER(27, ## __VA_ARGS__);     \
+        HANDLER(28, ## __VA_ARGS__); HANDLER(29, ## __VA_ARGS__); HANDLER(30, ## __VA_ARGS__); HANDLER(31, ## __VA_ARGS__);     \
+        HANDLER(32, ## __VA_ARGS__); HANDLER(33, ## __VA_ARGS__); HANDLER(34, ## __VA_ARGS__); HANDLER(35, ## __VA_ARGS__);     \
+        HANDLER(36, ## __VA_ARGS__); HANDLER(37, ## __VA_ARGS__); HANDLER(38, ## __VA_ARGS__); HANDLER(39, ## __VA_ARGS__);     \
+        HANDLER(40, ## __VA_ARGS__); HANDLER(41, ## __VA_ARGS__); HANDLER(42, ## __VA_ARGS__); HANDLER(43, ## __VA_ARGS__);     \
+        HANDLER(44, ## __VA_ARGS__); HANDLER(45, ## __VA_ARGS__); HANDLER(46, ## __VA_ARGS__); HANDLER(47, ## __VA_ARGS__);     \
+        HANDLER(48, ## __VA_ARGS__); HANDLER(49, ## __VA_ARGS__); HANDLER(50, ## __VA_ARGS__); HANDLER(51, ## __VA_ARGS__);     \
+        HANDLER(52, ## __VA_ARGS__); HANDLER(53, ## __VA_ARGS__); HANDLER(54, ## __VA_ARGS__); HANDLER(55, ## __VA_ARGS__);     \
+        HANDLER(56, ## __VA_ARGS__); HANDLER(57, ## __VA_ARGS__); HANDLER(58, ## __VA_ARGS__); HANDLER(59, ## __VA_ARGS__);     \
         HANDLER(60, ## __VA_ARGS__); HANDLER(61, ## __VA_ARGS__); HANDLER(62, ## __VA_ARGS__); HANDLER(63, ## __VA_ARGS__);
 
+    #define SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, ...)                                                                         \
+        HANDLER( 0, ## __VA_ARGS__); HANDLER( 1, ## __VA_ARGS__); HANDLER( 2, ## __VA_ARGS__); HANDLER( 3, ## __VA_ARGS__);     \
+        HANDLER( 4, ## __VA_ARGS__); HANDLER( 5, ## __VA_ARGS__); HANDLER( 6, ## __VA_ARGS__); HANDLER( 7, ## __VA_ARGS__);
+
+    #define SVC_CODEGEN_FOR_I_J_FROM_0_TO_8(HANDLER, ...)                                                                       \
+        SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 0, ## __VA_ARGS__); SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 1, ## __VA_ARGS__);   \
+        SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 2, ## __VA_ARGS__); SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 3, ## __VA_ARGS__);   \
+        SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 4, ## __VA_ARGS__); SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 5, ## __VA_ARGS__);   \
+        SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 6, ## __VA_ARGS__); SVC_CODEGEN_FOR_I_FROM_0_TO_8(HANDLER, 7, ## __VA_ARGS__);
 
     class Aarch64CodeGenerator {
         private:
@@ -186,29 +195,50 @@ namespace ams::svc::codegen::impl {
 
             template<size_t Dst, size_t Src>
             static ALWAYS_INLINE void MoveRegister() {
-                __asm__ __volatile__("mov     x%c[dst], x%c[src]" :: [dst]"i"(Dst), [src]"i"(Src) : "memory");
+                #define SVC_CODEGEN_HANDLER(dst)                                                                    \
+                    if constexpr (dst == Dst) {                                                                     \
+                        __asm__ __volatile__("mov     x" #dst ", x%c[src]" :: [src]"i"(Src) : "x" #dst, "memory");  \
+                    }
+
+                SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER)
+
+                #undef SVC_CODEGEN_HANDLER
             }
 
             template<size_t Reg, size_t Offset, size_t Size>
             static ALWAYS_INLINE void LoadFromStack() {
+                #define SVC_CODEGEN_HANDLER(reg, pfix)                                                                                  \
+                    if constexpr (reg == Reg) {                                                                                         \
+                        __asm__ __volatile__("ldr     " #pfix #reg", [sp, %c[offset]]" :: [offset]"i"(Offset) : #pfix #reg, "memory");  \
+                    }
+
                 if constexpr (Size == 4) {
-                    __asm__ __volatile__("ldr     w%c[r], [sp, %c[offset]]" :: [r]"i"(Reg), [offset]"i"(Offset) : "memory");
+                    SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER, w)
                 } else if constexpr (Size == 8) {
-                    __asm__ __volatile__("ldr     x%c[r], [sp, %c[offset]]" :: [r]"i"(Reg), [offset]"i"(Offset) : "memory");
+                    SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER, r)
                 } else {
                     static_assert(Size != Size);
                 }
+
+                #undef SVC_CODEGEN_HANDLER
             }
 
             template<size_t Reg0, size_t Reg1, size_t Offset, size_t Size>
             static ALWAYS_INLINE void LoadPairFromStack() {
+                #define SVC_CODEGEN_HANDLER(r0, r1, pfix)                                                                                                       \
+                    if constexpr (r0 == Reg0 && r1 == Reg1) {                                                                                                   \
+                        __asm__ __volatile__("ldp     " #pfix #r0 ", " #pfix #r1 ", [sp, %c[offset]]" :: [offset]"i"(Offset) : #pfix #r0, #pfix #r1, "memory"); \
+                    }
+
                 if constexpr (Size == 4) {
-                    __asm__ __volatile__("ldp     w%c[r0], w%c[r1], [sp, %c[offset]]" :: [r0]"i"(Reg0), [r1]"i"(Reg1), [offset]"i"(Offset) : "memory");
+                    SVC_CODEGEN_FOR_I_J_FROM_0_TO_8(SVC_CODEGEN_HANDLER, w)
                 } else if constexpr (Size == 8) {
-                    __asm__ __volatile__("ldp     x%c[r0], x%c[r1], [sp, %c[offset]]" :: [r0]"i"(Reg0), [r1]"i"(Reg1), [offset]"i"(Offset) : "memory");
+                    SVC_CODEGEN_FOR_I_J_FROM_0_TO_8(SVC_CODEGEN_HANDLER, x)
                 } else {
                     static_assert(Size != Size);
                 }
+
+                #undef SVC_CODEGEN_HANDLER
             }
 
             template<size_t Reg, size_t Offset, size_t Size>
@@ -235,7 +265,14 @@ namespace ams::svc::codegen::impl {
 
             template<size_t Dst, size_t Low, size_t High>
             static ALWAYS_INLINE void Pack() {
-                __asm__ __volatile__("orr     x%c[dst], x%c[low], x%c[high], lsl #32" :: [dst]"i"(Dst), [low]"i"(Low), [high]"i"(High) : "memory");
+                #define SVC_CODEGEN_HANDLER(dst)                                                                                                        \
+                    if constexpr (dst == Dst) {                                                                                                         \
+                        __asm__ __volatile__("orr     x" #dst ", x%c[low], x%c[high], lsl#32" :: [low]"i"(Low), [high]"i"(High) : "x" #dst, "memory");  \
+                    }
+
+                SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER)
+
+                #undef SVC_CODEGEN_HANDLER
             }
 
             template<size_t Low, size_t High, size_t Src>
@@ -244,15 +281,38 @@ namespace ams::svc::codegen::impl {
                     MoveRegister<Src, Low>();
                 }
 
-                __asm__ __volatile__("lsr     x%c[high], x%c[src], #32" :: [high]"i"(High), [src]"i"(Src) : "memory");
+                #define SVC_CODEGEN_HANDLER(h)                                                                      \
+                    if constexpr (h == High) {                                                                      \
+                        __asm__ __volatile__("lsr     x" #h ", x%c[src], #32" :: [src]"i"(Src) : "x" #h, "memory"); \
+                    }
+
+                SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER)
+
+                #undef SVC_CODEGEN_HANDLER
             }
 
             template<size_t Dst, size_t Offset>
             static ALWAYS_INLINE void LoadStackAddress() {
                 if constexpr (Offset > 0) {
-                    __asm__ __volatile__("add     x%c[dst], sp, %c[offset]" :: [dst]"i"(Dst), [offset]"i"(Offset) : "memory");
+                    #define SVC_CODEGEN_HANDLER(dst)                                                                                \
+                        if constexpr (dst == Dst) {                                                                                 \
+                            __asm__ __volatile__("add     x" #dst ", sp, %c[offset]" :: [offset]"i"(Offset) : "x" #dst, "memory");  \
+                        }
+
+                    SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER)
+
+                    #undef SVC_CODEGEN_HANDLER
                 } else if constexpr (Offset == 0) {
-                    __asm__ __volatile__("mov     x%c[dst], sp" :: [dst]"i"(Dst) : "memory");
+                    #define SVC_CODEGEN_HANDLER(dst)                                                \
+                        if constexpr (dst == Dst) {                                                 \
+                            __asm__ __volatile__("mov     x" #dst ", sp" ::: "x" #dst, "memory");   \
+                        }
+
+                    SVC_CODEGEN_FOR_I_FROM_0_TO_8(SVC_CODEGEN_HANDLER)
+
+                    #undef SVC_CODEGEN_HANDLER
+                } else {
+                    static_assert(Offset != Offset);
                 }
             }
     };
