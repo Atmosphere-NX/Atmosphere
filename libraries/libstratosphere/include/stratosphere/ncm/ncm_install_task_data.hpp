@@ -24,7 +24,7 @@ namespace ams::ncm {
         std::unique_ptr<char[]> data;
         size_t size;
 
-        InstallContentMeta GetReader() const {
+        InstallContentMetaReader GetReader() const {
             return InstallContentMetaReader(this->data.get(), this->size);
         }
     };
