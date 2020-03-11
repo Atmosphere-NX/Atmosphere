@@ -61,6 +61,7 @@ QUICKREF
 /*SUPPRESS 20*/
 void *
 //__inhibit_loop_to_libcall
+__attribute__((weak))
 memmove (void *dst_void,
 	const void *src_void,
 	size_t length)
@@ -169,6 +170,7 @@ QUICKREF
 	*/
 
 void *
+__attribute__((weak))
 memcpy (void * dst0,
 	const void * __restrict src0,
 	size_t len0)
@@ -259,6 +261,7 @@ QUICKREF
 #define TOO_SMALL(LEN) ((LEN) < LBLOCKSIZE)
 
 void *
+__attribute__((weak))
 memset (void *m,
 	int c,
 	size_t n)
@@ -357,6 +360,7 @@ QUICKREF
 #define TOO_SMALL(LEN)  ((LEN) < LBLOCKSIZE)
 
 int
+__attribute__((weak))
 memcmp (const void *m1,
 	const void *m2,
 	size_t n)
