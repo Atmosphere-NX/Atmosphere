@@ -18,6 +18,8 @@
 #include "hvisor_irq_manager.hpp"
 #include "hvisor_fpu_register_cache.hpp"
 #include "hvisor_guest_timers.hpp"
+#include "hvisor_generic_timer.hpp"
+#include "hvisor_memory_map.hpp"
 
 #include "traps/hvisor_traps_data_abort.hpp"
 #include "traps/hvisor_traps_hvc.hpp"
@@ -50,10 +52,10 @@ namespace ams::hvisor {
         EnableGuestTimerTraps();
     }
 
-void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
+    void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
     {
 #ifndef NDEBUG
-        uintptr_t stackTop = memoryMapGetStackTop(currentCoreCtx->GetCoreId());
+        uintptr_t stackTop = MemoryMap::GetStackTopVa(currentCoreCtx->GetCoreId());
 
         for (u32 i = 0; i < 30; i += 2) {
             DEBUG("x%u\t\t%016llx\t\tx%u\t\t%016llx\n", i, frame->x[i], i + 1, frame->x[i + 1]);
@@ -111,7 +113,7 @@ void DumpStackFrame(ExceptionStackFrame *frame, bool sameEl)
             }
 
             // Update virtual counter
-            u64 ticksNow = 0;// TODO timerGetSystemTick();
+            u64 ticksNow = GenericTimer::GetSystemTick();
             currentCoreCtx->IncrementTotalTimeInHypervisor(ticksNow - frame->cntpct_el0);
             UpdateVirtualOffsetSysreg();
 

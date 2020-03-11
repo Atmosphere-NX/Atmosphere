@@ -80,6 +80,11 @@ namespace ams::hvisor {
             static void SetupMmu(const LoadImageLayout *layout);
             static std::array<uintptr_t, 2> EnableMmuGetStacks(const LoadImageLayout *layout, u32 coreId);
 
+            static constexpr uintptr_t GetStackTopVa(u32 coreId)
+            {
+                return stacksBottomVa + 0x2000 * coreId + 0x1000;
+            }
+
             // Caller is expected to invalidate TLB + barrier at some point
             static uintptr_t MapPlatformMmio(uintptr_t pa, size_t size);
 
