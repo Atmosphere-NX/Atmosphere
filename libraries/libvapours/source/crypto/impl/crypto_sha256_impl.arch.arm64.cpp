@@ -35,6 +35,27 @@ namespace ams::crypto::impl {
         ::sha256ContextGetHash(reinterpret_cast<::Sha256Context *>(std::addressof(this->state)), dst);
     }
 
+    void Sha256Impl::InitializeWithContext(const Sha256Context *context) {
+        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
+
+        /* Copy state in from the context. */
+        std::memcpy(this->state.intermediate_hash, context->intermediate_hash, sizeof(this->state.intermediate_hash));
+        this->state.bits_consumed = context->bits_consumed;
+
+        /* Clear the rest of state. */
+        std::memset(this->state.buffer, 0, sizeof(this->state.buffer));
+        this->state.num_buffered = 0;
+        this->state.finalized = false;
+    }
+
+    size_t Sha256Impl::GetContext(Sha256Context *context) const {
+        static_assert(sizeof(this->state) == sizeof(::Sha256Context));
+        std::memcpy(context->intermediate_hash, this->state.intermediate_hash, sizeof(context->intermediate_hash));
+        context->bits_consumed = this->state.bits_consumed;
+
+        return this->state.num_buffered;
+    }
+
 #else
 
     /* TODO: Non-EL0 implementation. */

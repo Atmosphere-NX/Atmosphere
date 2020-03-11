@@ -21,6 +21,12 @@
 #include <vapours/crypto/impl/crypto_hash_function.hpp>
 #include <vapours/crypto/crypto_memory_clear.hpp>
 
+namespace ams::crypto {
+
+    struct Sha256Context;
+
+}
+
 namespace ams::crypto::impl {
 
     class Sha256Impl {
@@ -47,6 +53,17 @@ namespace ams::crypto::impl {
             void Initialize();
             void Update(const void *data, size_t size);
             void GetHash(void *dst, size_t size);
+
+            void InitializeWithContext(const Sha256Context *context);
+            size_t GetContext(Sha256Context *context) const;
+
+            size_t GetBufferedDataSize() const { return this->state.num_buffered; }
+
+            void GetBufferedData(void *dst, size_t dst_size) const {
+                AMS_ASSERT(dst_size >= this->GetBufferedDataSize());
+
+                std::memcpy(dst, this->state.buffer, this->GetBufferedDataSize());
+            }
     };
 
     /* static_assert(HashFunction<Sha256Impl>); */

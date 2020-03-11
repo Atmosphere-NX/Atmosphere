@@ -22,6 +22,11 @@
 
 namespace ams::crypto {
 
+    struct Sha256Context {
+        u32 intermediate_hash[impl::Sha256Impl::HashSize / sizeof(u32)];
+        u64 bits_consumed;
+    };
+
     class Sha256Generator {
         private:
             using Impl = impl::Sha256Impl;
@@ -53,6 +58,22 @@ namespace ams::crypto {
 
             void GetHash(void *dst, size_t size) {
                 this->impl.GetHash(dst, size);
+            }
+
+            void InitializeWithContext(const Sha256Context *context) {
+                this->impl.InitializeWithContext(context);
+            }
+
+            size_t GetContext(Sha256Context *context) const {
+                return this->impl.GetContext(context);
+            }
+
+            size_t GetBufferedDataSize() const {
+                return this->impl.GetBufferedDataSize();
+            }
+
+            void GetBufferedData(void *dst, size_t dst_size) const {
+                return this->impl.GetBufferedData(dst, dst_size);
             }
     };
 
