@@ -26,4 +26,5 @@
 #include <stratosphere/ncm/ncm_content_storage.hpp>
 #include <stratosphere/ncm/ncm_content_manager_impl.hpp>
 #include <stratosphere/ncm/ncm_content_meta_utils.hpp>
+#include <stratosphere/ncm/ncm_install_task_data.hpp>
 #include <stratosphere/ncm/ncm_api.hpp>

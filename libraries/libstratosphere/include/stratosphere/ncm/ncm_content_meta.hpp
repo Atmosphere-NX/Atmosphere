@@ -81,6 +81,9 @@ namespace ams::ncm {
     static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_17) == 0x17);
     static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_1C) == 0x1C);
 
+    /* TODO: Confirm this is correct. */
+    using InstallContentMetaHeader = PackagedContentMetaHeader;
+
     struct ApplicationMetaExtendedHeader {
         PatchId patch_id;
         u32 required_system_version;
@@ -310,6 +313,11 @@ namespace ams::ncm {
             static constexpr size_t CalculateSize(ContentMetaType type, size_t content_count, size_t content_meta_count, size_t extended_data_size) {
                 return ContentMetaAccessor::CalculateSize(type, content_count, content_meta_count, extended_data_size, true);
             }
+    };
+
+    class InstallContentMetaReader : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
+        public:
+            constexpr InstallContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
     };
 
 }
