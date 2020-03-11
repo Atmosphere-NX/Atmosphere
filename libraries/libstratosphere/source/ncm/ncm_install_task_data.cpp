@@ -179,7 +179,7 @@ namespace ams::ncm {
 
     Result FileInstallTaskData::Write(const void *data, size_t size, s64 offset) {
         fs::FileHandle file;
-        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Write | fs::OpenMode_Append));
+        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
         ON_SCOPE_EXIT { fs::CloseFile(file); };
         return fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush);
     }
