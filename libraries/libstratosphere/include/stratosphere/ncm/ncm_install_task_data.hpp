@@ -50,7 +50,35 @@ namespace ams::ncm {
             virtual Result Update(s32 index, const void *data, size_t data_size) = 0;
     };
 
-    /* TODO: MemoryInstallTaskData */
+    class MemoryInstallTaskData : public InstallTaskDataBase {
+        private:
+            struct DataHolder : public InstallContentMeta, public util::IntrusiveListBaseNode<DataHolder>{};
+            using DataList = util::IntrusiveListBaseTraits<DataHolder>::ListType;
+        private:
+            DataList data_list;
+            InstallProgressState state;
+            Result last_result;
+            SystemUpdateTaskApplyInfo system_update_task_apply_info;
+        public:
+            MemoryInstallTaskData() { /* ... */ };
+            ~MemoryInstallTaskData() {
+                this->Cleanup();
+            }
+        public:
+            virtual Result GetProgress(InstallProgress *out_progress) override;
+            virtual Result GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) override;
+            virtual Result SetState(InstallProgressState state) override;
+            virtual Result SetLastResult(Result result) override;
+            virtual Result SetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo info) override;
+            virtual Result Push(const void *data, size_t data_size) override;
+            virtual Result Count(s32 *out) override;
+            virtual Result Delete(const ContentMetaKey *keys, s32 num_keys) override;
+            virtual Result Cleanup() override;
+        private:
+            virtual Result GetSize(size_t *out_size, s32 index) override;
+            virtual Result Get(s32 index, void *out, size_t out_size) override;
+            virtual Result Update(s32 index, const void *data, size_t data_size) override;
+    };
 
     class FileInstallTaskData : public InstallTaskDataBase {
         private:
