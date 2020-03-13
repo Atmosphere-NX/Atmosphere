@@ -73,6 +73,145 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
+    Result MemoryInstallTaskData::GetProgress(InstallProgress *out_progress) {
+        /* Initialize install progress. */
+        InstallProgress install_progress = {
+            .state = this->state,
+        };
+        install_progress.SetLastResult(this->last_result);
+
+        /* Only states after prepared are allowed. */
+        if (this->state != InstallProgressState::NotPrepared && this->state != InstallProgressState::DataPrepared) {
+            for (auto &data_holder : this->data_list) {
+                const InstallContentMetaReader reader = data_holder.GetReader();
+
+                /* Sum the sizes from this entry's content infos. */
+                for (size_t i = 0; i < reader.GetContentCount(); i++) {
+                    const InstallContentInfo *content_info = reader.GetContentInfo(i);
+                    install_progress.installed_size += content_info->GetSize();
+                    install_progress.total_size += content_info->GetSizeWritten();
+                }
+            }
+        }
+
+        *out_progress = install_progress;
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) {
+        *out_info = this->system_update_task_apply_info;
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::SetState(InstallProgressState state) {
+        this->state = state;
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::SetLastResult(Result result) {
+        this->last_result = result;
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::SetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo info) {
+        this->system_update_task_apply_info = info;
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::Push(const void *data, size_t size) {
+        /* Allocate a new data holder. */
+        auto holder = std::unique_ptr<DataHolder>(new (std::nothrow) DataHolder());
+        R_UNLESS(holder != nullptr, ncm::ResultAllocationFailed());
+
+        /* Allocate memory for the content meta data. */
+        holder->data = std::unique_ptr<char[]>(new (std::nothrow) char[size]);
+        R_UNLESS(holder->data != nullptr, ncm::ResultAllocationFailed());
+        holder->size = size;
+
+        /* Copy data to the data holder. */
+        std::memcpy(holder->data.get(), data, size);
+
+        /* Put the data holder into the data list. */
+        this->data_list.push_back(*holder);
+        
+        /* Relinquish control over the memory allocated to the data holder. */
+        holder.release();
+
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::Count(s32 *out) {
+        *out = this->data_list.size();
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::GetSize(size_t *out_size, s32 index) {
+        /* Find the correct entry in the list. */
+        s32 count = 0;
+        for (auto &data_holder : this->data_list) {
+            if (index == count++) {
+                *out_size = data_holder.size;
+                return ResultSuccess();
+            }
+        }
+        /* Out of bounds indexing is an unrecoverable error. */
+        AMS_ABORT();
+    }
+
+    Result MemoryInstallTaskData::Get(s32 index, void *out, size_t out_size) {
+        /* Find the correct entry in the list. */
+        s32 count = 0;
+        for (auto &data_holder : this->data_list) {
+            if (index == count++) {
+                R_UNLESS(out_size >= data_holder.size, ncm::ResultBufferInsufficient());
+                memcpy(out, data_holder.data.get(), data_holder.size);
+                return ResultSuccess();
+            }
+        }
+        /* Out of bounds indexing is an unrecoverable error. */
+        AMS_ABORT();
+    }
+
+    Result MemoryInstallTaskData::Update(s32 index, const void *data, size_t data_size) {
+        /* Find the correct entry in the list. */
+        s32 count = 0;
+        for (auto &data_holder : this->data_list) {
+            if (index == count++) {
+                R_UNLESS(data_size == data_holder.size, ncm::ResultBufferInsufficient());
+                memcpy(data_holder.data.get(), data, data_size);
+                return ResultSuccess();
+            }
+        }
+        /* Out of bounds indexing is an unrecoverable error. */
+        AMS_ABORT();
+    }
+    Result MemoryInstallTaskData::Delete(const ContentMetaKey *keys, s32 num_keys) {
+        /* Iterate over keys. */
+        for (s32 i = 0; i < num_keys; i++) {
+            const auto &key = keys[i];
+
+            /* Find and remove matching data from the list. */
+            for (auto &data_holder : this->data_list) {
+                if (key == data_holder.GetReader().GetKey()) {
+                    this->data_list.erase(this->data_list.iterator_to(data_holder));
+                    delete std::addressof(data_holder);
+                    break;
+                }
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result MemoryInstallTaskData::Cleanup() {
+        while (!this->data_list.empty()) {
+            auto *data_holder = std::addressof(this->data_list.front());
+            this->data_list.pop_front();
+            delete data_holder;
+        }
+        return ResultSuccess();
+    }
+
     Result FileInstallTaskData::Create(const char *path, s32 max_entries) {
         /* Create the file. */
         R_TRY(fs::CreateFile(path, 0));
