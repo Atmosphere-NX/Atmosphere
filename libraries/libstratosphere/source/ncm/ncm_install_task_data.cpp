@@ -164,7 +164,7 @@ namespace ams::ncm {
         for (auto &data_holder : this->data_list) {
             if (index == count++) {
                 R_UNLESS(out_size >= data_holder.size, ncm::ResultBufferInsufficient());
-                memcpy(out, data_holder.data.get(), data_holder.size);
+                std::memcpy(out, data_holder.data.get(), data_holder.size);
                 return ResultSuccess();
             }
         }
@@ -178,7 +178,7 @@ namespace ams::ncm {
         for (auto &data_holder : this->data_list) {
             if (index == count++) {
                 R_UNLESS(data_size == data_holder.size, ncm::ResultBufferInsufficient());
-                memcpy(data_holder.data.get(), data, data_size);
+                std::memcpy(data_holder.data.get(), data, data_size);
                 return ResultSuccess();
             }
         }
@@ -227,7 +227,7 @@ namespace ams::ncm {
     }
 
     Result FileInstallTaskData::Initialize(const char *path) {
-        strncpy(this->path, path, sizeof(this->path));
+        std::strncpy(this->path, path, sizeof(this->path));
         this->path[sizeof(this->path) - 1] = '\x00';
         return this->Read(std::addressof(this->header), sizeof(Header), 0);
     }
