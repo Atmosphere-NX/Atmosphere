@@ -23,7 +23,39 @@ namespace ams::kern {
 
     class KObjectName : public KSlabAllocated<KObjectName>, public util::IntrusiveListBaseNode<KObjectName> {
         public:
-            /* TODO: This is a placeholder definition. */
+            static constexpr size_t NameLengthMax = 12;
+
+            using List = util::IntrusiveListBaseTraits<KObjectName>::ListType;
+        private:
+            char name[NameLengthMax];
+            KAutoObject *object;
+        public:
+            constexpr KObjectName() : name(), object() { /* ... */ }
+        public:
+            static Result NewFromName(KAutoObject *obj, const char *name);
+            static Result Delete(KAutoObject *obj, const char *name);
+
+            static KScopedAutoObject<KAutoObject> Find(const char *name);
+
+            template<typename Derived>
+            static Result Delete(const char *name) {
+                /* Find the object. */
+                KScopedAutoObject obj = Find(name);
+                R_UNLESS(obj.IsNotNull(), svc::ResultNotFound());
+
+                /* Cast the object to the desired type. */
+                Derived *derived = obj->DynamicCast<Derived *>();
+                R_UNLESS(derived != nullptr, svc::ResultNotFound());
+
+                return Delete(obj.GetPointerUnsafe(), name);
+            }
+        private:
+            static KScopedAutoObject<KAutoObject> FindImpl(const char *name);
+
+            void Initialize(KAutoObject *obj, const char *name);
+
+            bool MatchesName(const char *name) const;
+            KAutoObject *GetObject() const { return this->object; }
     };
 
 }

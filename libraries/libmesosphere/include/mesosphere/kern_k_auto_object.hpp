@@ -222,6 +222,8 @@ namespace ams::kern {
                 KScopedAutoObject(o).Swap(*this);
             }
 
+            constexpr ALWAYS_INLINE T *GetPointerUnsafe() { return this->obj; }
+
             constexpr ALWAYS_INLINE bool IsNull() const { return this->obj == nullptr; }
             constexpr ALWAYS_INLINE bool IsNotNull() const { return this->obj != nullptr; }
     };

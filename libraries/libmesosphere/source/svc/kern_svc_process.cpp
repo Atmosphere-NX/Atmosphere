@@ -21,6 +21,32 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result GetProcessId(u64 *out_process_id, ams::svc::Handle handle) {
+            /* Get the object from the handle table. */
+            KScopedAutoObject obj = GetCurrentProcess().GetHandleTable().GetObject<KAutoObject>(handle);
+            R_UNLESS(obj.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the process from the object. */
+            KProcess *process = nullptr;
+            if (obj->IsDerivedFrom(KProcess::GetStaticTypeObj())) {
+                /* The object is a process, so we can use it directly. */
+                process = reinterpret_cast<KProcess *>(obj.GetPointerUnsafe());
+            } else if (obj->IsDerivedFrom(KThread::GetStaticTypeObj())) {
+                /* The object is a thread, so we want to use its parent. */
+                process = reinterpret_cast<KThread *>(obj.GetPointerUnsafe())->GetOwnerProcess();
+            } else if (obj->IsDerivedFrom(KDebug::GetStaticTypeObj())) {
+                /* The object is a debug, so we want to use the process it's attached to. */
+                MESOSPHERE_UNIMPLEMENTED();
+            }
+
+            /* Make sure the target process exists. */
+            R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
+
+            /* Get the process id. */
+            *out_process_id = process->GetId();
+            return ResultSuccess();
+        }
+
 
 
     }
@@ -32,7 +58,7 @@ namespace ams::kern::svc {
     }
 
     Result GetProcessId64(uint64_t *out_process_id, ams::svc::Handle process_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetProcessId64 was called.");
+        return GetProcessId(out_process_id, process_handle);
     }
 
     Result GetProcessList64(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
@@ -62,7 +88,7 @@ namespace ams::kern::svc {
     }
 
     Result GetProcessId64From32(uint64_t *out_process_id, ams::svc::Handle process_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetProcessId64From32 was called.");
+        return GetProcessId(out_process_id, process_handle);
     }
 
     Result GetProcessList64From32(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {

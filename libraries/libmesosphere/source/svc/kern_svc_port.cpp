@@ -21,7 +21,61 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result ManageNamedPort(ams::svc::Handle *out_server_handle, KUserPointer<const char *> user_name, s32 max_sessions) {
+            /* Copy the provided name from user memory to kernel memory. */
+            char name[KObjectName::NameLengthMax] = {};
+            R_TRY(user_name.CopyStringTo(name, sizeof(name)));
 
+            /* Validate that sessions and name are valid. */
+            R_UNLESS(max_sessions >= 0,                svc::ResultOutOfRange());
+            R_UNLESS(name[sizeof(name) - 1] == '\x00', svc::ResultOutOfRange());
+
+            if (max_sessions > 0) {
+                MESOSPHERE_LOG("Creating Named Port %s (max sessions = %d)\n", name, max_sessions);
+                /* Get the current handle table. */
+                auto &handle_table = GetCurrentProcess().GetHandleTable();
+
+                /* Create a new port. */
+                KPort *port = KPort::Create();
+                R_UNLESS(port != nullptr, svc::ResultOutOfResource());
+
+                /* Reserve a handle for the server port. */
+                R_TRY(handle_table.Reserve(out_server_handle));
+                auto reserve_guard = SCOPE_GUARD { handle_table.Unreserve(*out_server_handle); };
+
+                /* Initialize the new port. */
+                port->Initialize(max_sessions, false, 0);
+
+                /* Register the port. */
+                KPort::Register(port);
+
+                /* Register the handle in the table. */
+                handle_table.Register(*out_server_handle, std::addressof(port->GetServerPort()));
+                reserve_guard.Cancel();
+                auto register_guard = SCOPE_GUARD { handle_table.Remove(*out_server_handle); };
+
+                /* Create a new object name. */
+                R_TRY(KObjectName::NewFromName(std::addressof(port->GetClientPort()), name));
+
+                /* Perform resource cleanup. */
+                port->GetServerPort().Close();
+                port->GetClientPort().Close();
+                register_guard.Cancel();
+            } else /* if (max_sessions == 0) */ {
+                MESOSPHERE_LOG("Deleting Named Port %s\n", name);
+
+                /* Ensure that this else case is correct. */
+                MESOSPHERE_AUDIT(max_sessions == 0);
+
+                /* If we're closing, there's no server handle. */
+                *out_server_handle = ams::svc::InvalidHandle;
+
+                /* Delete the object. */
+                R_TRY(KObjectName::Delete<KClientPort>(name));
+            }
+
+            return ResultSuccess();
+        }
 
     }
 
@@ -36,7 +90,7 @@ namespace ams::kern::svc {
     }
 
     Result ManageNamedPort64(ams::svc::Handle *out_server_handle, KUserPointer<const char *> name, int32_t max_sessions) {
-        MESOSPHERE_PANIC("Stubbed SvcManageNamedPort64 was called.");
+        return ManageNamedPort(out_server_handle, name, max_sessions);
     }
 
     Result ConnectToPort64(ams::svc::Handle *out_handle, ams::svc::Handle port) {
@@ -54,7 +108,7 @@ namespace ams::kern::svc {
     }
 
     Result ManageNamedPort64From32(ams::svc::Handle *out_server_handle, KUserPointer<const char *> name, int32_t max_sessions) {
-        MESOSPHERE_PANIC("Stubbed SvcManageNamedPort64From32 was called.");
+        return ManageNamedPort(out_server_handle, name, max_sessions);
     }
 
     Result ConnectToPort64From32(ams::svc::Handle *out_handle, ams::svc::Handle port) {

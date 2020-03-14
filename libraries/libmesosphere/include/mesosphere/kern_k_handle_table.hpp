@@ -130,11 +130,11 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Handle pseudo-handles. */
-                if constexpr (std::is_same<T, KProcess>::value) {
+                if constexpr (std::is_base_of<T, KProcess>::value) {
                     if (handle == ams::svc::PseudoHandle::CurrentProcess) {
                         return GetCurrentProcessPointer();
                     }
-                } else if constexpr (std::is_same<T, KThread>::value) {
+                } else if constexpr (std::is_base_of<T, KThread>::value) {
                     if (handle == ams::svc::PseudoHandle::CurrentThread) {
                         return GetCurrentThreadPointer();
                     }
@@ -156,11 +156,11 @@ namespace ams::kern {
                 static_assert(!std::is_base_of<KInterruptEvent, T>::value);
 
                 /* Handle pseudo-handles. */
-                if constexpr (std::is_same<T, KProcess>::value) {
+                if constexpr (std::is_base_of<T, KProcess>::value) {
                     if (handle == ams::svc::PseudoHandle::CurrentProcess) {
                         return GetCurrentProcessPointer();
                     }
-                } else if constexpr (std::is_same<T, KThread>::value) {
+                } else if constexpr (std::is_base_of<T, KThread>::value) {
                     if (handle == ams::svc::PseudoHandle::CurrentThread) {
                         return GetCurrentThreadPointer();
                     }
@@ -201,7 +201,7 @@ namespace ams::kern {
             template<typename T>
             ALWAYS_INLINE void Register(ams::svc::Handle handle, T *obj) {
                 static_assert(std::is_base_of<KAutoObject, T>::value);
-                return this->Add(handle, obj, obj->GetTypeObj().GetClassToken());
+                return this->Register(handle, obj, obj->GetTypeObj().GetClassToken());
             }
         private:
             NOINLINE Result Add(ams::svc::Handle *out_handle, KAutoObject *obj, u16 type);
