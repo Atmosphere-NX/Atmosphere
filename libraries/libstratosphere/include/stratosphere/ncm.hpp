@@ -21,10 +21,13 @@
 #include <stratosphere/ncm/ncm_auto_buffer.hpp>
 #include <stratosphere/ncm/ncm_make_path.hpp>
 #include <stratosphere/ncm/ncm_content_id_utils.hpp>
+#include <stratosphere/ncm/ncm_content_info_utils.hpp>
 #include <stratosphere/ncm/ncm_content_meta.hpp>
 #include <stratosphere/ncm/ncm_content_meta_database.hpp>
 #include <stratosphere/ncm/ncm_content_storage.hpp>
 #include <stratosphere/ncm/ncm_content_manager_impl.hpp>
 #include <stratosphere/ncm/ncm_content_meta_utils.hpp>
+#include <stratosphere/ncm/ncm_install_task.hpp>
 #include <stratosphere/ncm/ncm_install_task_data.hpp>
+#include <stratosphere/ncm/ncm_storage_id_utils.hpp>
 #include <stratosphere/ncm/ncm_api.hpp>
