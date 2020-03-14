@@ -197,6 +197,18 @@ namespace ams::ncm {
                 return nullptr;
             }
 
+            s64 CalculateContentRequiredSize() const {
+                s64 required_size = 0;
+                for (size_t i = 0; i < this->GetContentCount(); i++) {
+                    required_size += CalculateRequiredSize(this->GetContentInfo(i)->info.GetSize());
+                }
+                return required_size;
+            }
+
+            void SetStorageId(StorageId storage_id) {
+                this->GetWritableHeader()->storage_id = static_cast<u8>(storage_id);
+            }
+
         public:
             const void *GetData() const {
                 return this->data;
@@ -294,19 +306,6 @@ namespace ams::ncm {
 
             std::optional<ApplicationId> GetApplicationId() const {
                 return this->GetApplicationId(this->GetKey());
-            }
-        
-        protected:
-            s64 CalculateContentRequiredSize() const {
-                s64 required_size = 0;
-                for (size_t i = 0; i < this->GetContentCount(); i++) {
-                    required_size += CalculateRequiredSize(this->GetContentInfo(i)->info.GetSize());
-                }
-                return required_size;
-            }
-
-            void SetStorageId(StorageId storage_id) {
-                this->GetWritableHeader()->storage_id = static_cast<u8>(storage_id);
             }
     };
 
