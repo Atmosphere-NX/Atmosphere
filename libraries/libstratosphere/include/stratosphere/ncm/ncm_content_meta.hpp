@@ -206,6 +206,10 @@ namespace ams::ncm {
                 return this->size;
             }
 
+            HeaderType *GetWritableHeader() const {
+                return reinterpret_cast<HeaderType *>(this->data);
+            }
+
             const HeaderType *GetHeader() const {
                 AMS_ABORT_UNLESS(this->is_header_valid);
                 return static_cast<const HeaderType *>(this->data);
@@ -291,6 +295,19 @@ namespace ams::ncm {
             std::optional<ApplicationId> GetApplicationId() const {
                 return this->GetApplicationId(this->GetKey());
             }
+        
+        protected:
+            s64 CalculateContentRequiredSize() const {
+                s64 required_size = 0;
+                for (size_t i = 0; i < this->GetContentCount(); i++) {
+                    required_size += CalculateRequiredSize(this->GetContentInfo(i)->info.GetSize());
+                }
+                return required_size;
+            }
+
+            void SetStorageId(StorageId storage_id) {
+                this->GetWritableHeader()->storage_id = static_cast<u8>(storage_id);
+            }
     };
 
     class ContentMetaReader : public ContentMetaAccessor<ContentMetaHeader, ContentInfo> {
@@ -318,6 +335,16 @@ namespace ams::ncm {
     class InstallContentMetaReader : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
         public:
             constexpr InstallContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+    };
+
+    class InstallContentMetaWriter : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
+        public:
+            InstallContentMetaWriter(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+
+            using ContentMetaAccessor::CalculateSize;
+            using ContentMetaAccessor::CalculateContentRequiredSize;
+            using ContentMetaAccessor::GetWritableContentInfo;
+            using ContentMetaAccessor::SetStorageId;
     };
 
 }

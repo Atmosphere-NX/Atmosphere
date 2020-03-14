@@ -27,6 +27,10 @@ namespace ams::ncm {
         InstallContentMetaReader GetReader() const {
             return InstallContentMetaReader(this->data.get(), this->size);
         }
+
+        InstallContentMetaWriter GetWriter() const {
+            return InstallContentMetaWriter(this->data.get(), this->size);
+        }
     };
 
     class InstallTaskDataBase {
