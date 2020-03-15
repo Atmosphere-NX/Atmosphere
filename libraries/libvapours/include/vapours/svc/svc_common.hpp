@@ -57,7 +57,7 @@ namespace ams::svc {
         return handle == PseudoHandle::CurrentProcess || handle == PseudoHandle::CurrentThread;
     }
 
-#ifdef        ATMOSPHERE_ARCH_ARM64
+#if   defined(ATMOSPHERE_ARCH_ARM64)
 
 
     namespace lp64    { /* ... */ }
@@ -74,7 +74,7 @@ namespace ams::svc {
         using namespace ::ams::svc::aarch64::ilp32;
     #endif
 
-#elif defined ATMOSPHERE_ARCH_ARM
+#elif defined(ATMOSPHERE_ARCH_ARM)
 
     namespace ilp32   { /* ... */ }
     namespace aarch32 { /* ... */ }

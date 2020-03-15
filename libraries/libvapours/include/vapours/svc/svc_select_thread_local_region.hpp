@@ -15,10 +15,25 @@
  */
 
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
+#include <vapours/svc/svc_common.hpp>
 
-#include <vapours/svc/svc_types.hpp>
-#include <vapours/svc/svc_definitions.hpp>
-#include <vapours/svc/ipc/svc_message_buffer.hpp>
+#if defined(ATMOSPHERE_ARCH_ARM64)
+
+    #include <vapours/svc/arch/arm64/svc_thread_local_region.hpp>
+    namespace ams::svc {
+        using ams::svc::arch::arm64::ThreadLocalRegion;
+        using ams::svc::arch::arm64::GetThreadLocalRegion;
+    }
+
+#else
+
+    #error "Unknown architecture for svc::ThreadLocalRegion"
+
+#endif
+
+namespace ams::svc {
+
+    constexpr inline size_t ThreadLocalRegionSize = 0x200;
+    static_assert(sizeof(::ams::svc::ThreadLocalRegion) == ThreadLocalRegionSize);
+
+}

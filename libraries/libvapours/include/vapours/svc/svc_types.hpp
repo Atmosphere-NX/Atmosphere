@@ -17,6 +17,7 @@
 
 #include <vapours/svc/svc_common.hpp>
 #include <vapours/svc/svc_tick.hpp>
+#include <vapours/svc/svc_select_thread_local_region.hpp>
 #include <vapours/svc/svc_types_common.hpp>
 #include <vapours/svc/svc_types_base.hpp>
 #include <vapours/svc/svc_types_dd.hpp>

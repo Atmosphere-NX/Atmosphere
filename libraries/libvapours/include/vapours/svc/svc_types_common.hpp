@@ -277,8 +277,6 @@ namespace ams::svc {
         ThreadActivity_Paused   = 1,
     };
 
-    constexpr size_t ThreadLocalRegionSize = 0x200;
-
     constexpr s32 LowestThreadPriority  = 63;
     constexpr s32 HighestThreadPriority = 0;
 
