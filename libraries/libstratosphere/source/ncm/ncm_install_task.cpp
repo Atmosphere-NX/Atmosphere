@@ -414,12 +414,17 @@ namespace ams::ncm {
 
     /* ... */
 
+    void InstallTaskBase::IncrementProgress(s64 size) {
+        std::scoped_lock lk(this->progress_mutex);
+        this->progress.installed_size += size;
+    }
+
     void InstallTaskBase::UpdateThroughputMeasurement(s64 throughput) {
         std::scoped_lock lk(this->throughput_mutex);
 
         if (this->throughput_start_time.GetNanoSeconds() != 0) {
             this->throughput.installed += throughput;
-            /* TODO. */
+            this->throughput.elapsed_time = os::ConvertToTimeSpan(os::GetSystemTick()) - this->throughput_start_time;
         }
     }
 
