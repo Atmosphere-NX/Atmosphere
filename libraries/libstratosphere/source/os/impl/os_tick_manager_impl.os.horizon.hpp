@@ -24,7 +24,11 @@ namespace ams::os::impl {
 
             ALWAYS_INLINE Tick GetTick() const {
                 s64 tick;
-                __asm__ __volatile__("mrs %[tick], cntpct_el0" : [tick]"=&r"(tick) :: "memory");
+                #if   defined(ATMOSPHERE_ARCH_ARM64)
+                    __asm__ __volatile__("mrs %[tick], cntpct_el0" : [tick]"=&r"(tick) :: "memory");
+                #else
+                    #error "Unknown Architecture for TickManagerImpl::GetTick"
+                #endif
                 return Tick(tick);
             }
 
