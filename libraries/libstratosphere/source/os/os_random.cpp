@@ -42,7 +42,7 @@ namespace ams::os {
     void GenerateRandomBytes(void *dst, size_t size) {
         std::scoped_lock lk(g_random_mutex);
 
-        if (!g_initialized_random) {
+        if (AMS_UNLIKELY(!g_initialized_random)) {
             impl::InitializeRandomImpl(&g_random);
             g_initialized_random = true;
         }

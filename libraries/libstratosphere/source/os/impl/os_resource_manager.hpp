@@ -15,18 +15,21 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "os_rng_manager_impl.hpp"
 #include "os_tick_manager_impl.hpp"
 
 namespace ams::os::impl {
 
     class OsResourceManager {
         private:
+            RngManager  rng_manager{};
             /* TODO */
             TickManager tick_manager{};
             /* TODO */
         public:
             constexpr OsResourceManager() = default;
 
+            constexpr ALWAYS_INLINE RngManager &GetRngManager() { return this->rng_manager; }
             constexpr ALWAYS_INLINE TickManager &GetTickManager() { return this->tick_manager; }
     };
 
