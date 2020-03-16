@@ -19,11 +19,17 @@
 namespace ams::ncm {
 
 /* protected:
-PrepareContentMeta (both), WritePlaceHolderBuffer, PrepareAgain, Get/Delete InstallContentMetaData, PrepareDependency, PrepareSystemDependency, PrepareContentMetaIfLatest, GetConfig, WriteContentMetaToPlaceHolder, GetInstallStorage, GetSystemUpdateTaskApplyInfo, CanContinue
+PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMetaData, PrepareDependency, PrepareSystemDependency, PrepareContentMetaIfLatest, GetConfig, WriteContentMetaToPlaceHolder, GetInstallStorage, GetSystemUpdateTaskApplyInfo, CanContinue
 */
     struct InstallThroughput {
         s64 installed;
         TimeSpan elapsed_time;
+    };
+
+    enum class ListContentMetaKeyFilter : u8 {
+        All          = 0,
+        Committed    = 1,
+        NotCommitted = 2,
     };
 
     class InstallTaskBase {
@@ -48,17 +54,30 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, PrepareAgain, Get/Delete Inst
             Result Initialize(StorageId install_storage, InstallTaskDataBase *data, u32 config);
             Result CountInstallContentMetaData(s32 *out_count);
             Result GetInstallContentMetaData(InstallContentMeta *out_content_meta, s32 index);
+
+            void PrepareAgain();
         public:
             /* TODO: Fix access types. */
-           bool IsCancelRequested();
-           Result Prepare();
-           void SetLastResult(Result last_result);
-           Result GetPreparedPlaceHolderPath(Path *out_path, u64 id, ContentMetaType meta_type, ContentType type);
-           Result CalculateRequiredSize(size_t *out_size);
-           void ResetThroughputMeasurement();
-           void SetProgressState(InstallProgressState state);
-           void SetTotalSize(s64 size);
-           Result PreparePlaceHolder();
+            bool IsCancelRequested();
+            Result Prepare();
+            void SetLastResult(Result last_result);
+            Result GetPreparedPlaceHolderPath(Path *out_path, u64 id, ContentMetaType meta_type, ContentType type);
+            Result CalculateRequiredSize(size_t *out_size);
+            void ResetThroughputMeasurement();
+            void SetProgressState(InstallProgressState state);
+
+            void UpdateThroughputMeasurement(s64 throughput);
+            bool IsNecessaryInstallTicket(const fs::RightsId &rights_id);
+            void SetTotalSize(s64 size);
+            Result PreparePlaceHolder();
+            Result Cleanup();
+            Result CleanupOne(const InstallContentMeta &content_meta);
+            void CleanupProgress();
+            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter);
+            Result ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
+
+            void ResetLastResult();
+            s64 GetThroughput();
         protected:
             virtual Result OnPrepareComplete();
             virtual Result PrepareDependency();
