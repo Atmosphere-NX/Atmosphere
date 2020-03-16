@@ -66,6 +66,7 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             void ResetThroughputMeasurement();
             void SetProgressState(InstallProgressState state);
 
+            void IncrementProgress(s64 size);
             void UpdateThroughputMeasurement(s64 throughput);
             bool IsNecessaryInstallTicket(const fs::RightsId &rights_id);
             void SetTotalSize(s64 size);
