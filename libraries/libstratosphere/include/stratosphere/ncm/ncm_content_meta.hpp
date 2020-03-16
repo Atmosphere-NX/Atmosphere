@@ -72,16 +72,14 @@ namespace ams::ncm {
         u8 attributes;
         u8 storage_id;
         ContentInstallType install_type;
-        u8 reserved_17;
+        bool committed;
         u32 required_download_system_version;
         u8 reserved_1C[4];
     };
     static_assert(sizeof(PackagedContentMetaHeader) == 0x20);
     static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_0D) == 0x0D);
-    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_17) == 0x17);
     static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_1C) == 0x1C);
 
-    /* TODO: Confirm this is correct. */
     using InstallContentMetaHeader = PackagedContentMetaHeader;
 
     struct ApplicationMetaExtendedHeader {
@@ -292,6 +290,10 @@ namespace ams::ncm {
                     }
                 }
                 return false;
+            }
+
+            StorageId GetStorageId() const {
+                return static_cast<StorageId>(this->GetHeader()->storage_id);
             }
 
             std::optional<ApplicationId> GetApplicationId(const ContentMetaKey &key) const {
