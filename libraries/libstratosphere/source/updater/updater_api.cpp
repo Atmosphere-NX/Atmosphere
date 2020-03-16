@@ -115,7 +115,7 @@ namespace ams::updater {
 
         Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
             /* Get system data id for boot images (819/81A/81B/81C). */
-            ncm::SystemDataId bip_data_id;
+            ncm::SystemDataId bip_data_id = {};
             R_TRY(GetBootImagePackageId(&bip_data_id, mode, work_buffer, work_buffer_size));
 
             /* Verify the boot images in NAND. */

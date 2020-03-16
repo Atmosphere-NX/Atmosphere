@@ -222,7 +222,7 @@ namespace ams::kvdb {
         R_UNLESS(file_size <= static_cast<s64>(max_out_size), ResultBufferInsufficient());
 
         /* Read the value. */
-        const size_t value_size = static_cast<size_t>(value_size);
+        const size_t value_size = static_cast<size_t>(file_size);
         R_TRY(fs::ReadFile(file, 0, out_value, value_size));
         *out_size = value_size;
 

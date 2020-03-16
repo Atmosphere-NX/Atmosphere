@@ -33,7 +33,7 @@ namespace ams::fs {
         public:
             SubStorage() : shared_base_storage(), base_storage(nullptr), offset(0), size(0), resizable(false) { /* ... */ }
 
-            SubStorage(const SubStorage &rhs) : shared_base_storage(), base_storage(rhs.base_storage), offset(rhs.offset), size(rhs.size),  resizable(rhs.resizable) { /* ... */}
+            SubStorage(const SubStorage &rhs) : shared_base_storage(), base_storage(rhs.base_storage), offset(rhs.offset), size(rhs.size), resizable(rhs.resizable) { /* ... */}
             SubStorage &operator=(const SubStorage &rhs) {
                 if (this != std::addressof(rhs)) {
                     this->base_storage        = rhs.base_storage;
@@ -44,19 +44,19 @@ namespace ams::fs {
                 return *this;
             }
 
-            SubStorage(IStorage *storage, s64 o, s64 sz) : shared_base_storage(), base_storage(storage), offset(o), size(sz) {
+            SubStorage(IStorage *storage, s64 o, s64 sz) : shared_base_storage(), base_storage(storage), offset(o), size(sz), resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
                 AMS_ABORT_UNLESS(this->offset  >= 0);
                 AMS_ABORT_UNLESS(this->size    >= 0);
             }
 
-            SubStorage(std::shared_ptr<IStorage> storage, s64 o, s64 sz) : shared_base_storage(storage), base_storage(storage.get()), offset(o), size(sz) {
+            SubStorage(std::shared_ptr<IStorage> storage, s64 o, s64 sz) : shared_base_storage(storage), base_storage(storage.get()), offset(o), size(sz), resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
                 AMS_ABORT_UNLESS(this->offset  >= 0);
                 AMS_ABORT_UNLESS(this->size    >= 0);
             }
 
-            SubStorage(SubStorage *sub, s64 o, s64 sz) : shared_base_storage(), base_storage(sub->base_storage), offset(o + sub->offset), size(sz) {
+            SubStorage(SubStorage *sub, s64 o, s64 sz) : shared_base_storage(), base_storage(sub->base_storage), offset(o + sub->offset), size(sz), resizable(false) {
                 AMS_ABORT_UNLESS(this->IsValid());
                 AMS_ABORT_UNLESS(this->offset  >= 0);
                 AMS_ABORT_UNLESS(this->size    >= 0);
