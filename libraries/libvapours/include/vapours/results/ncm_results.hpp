@@ -32,16 +32,19 @@ namespace ams::ncm {
 
     R_DEFINE_ERROR_RESULT(InvalidContentStorage,                    100);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaDatabase,               110);
-
     R_DEFINE_ERROR_RESULT(InvalidPackageFormat,                     130);
+    R_DEFINE_ERROR_RESULT(InvalidContentHash,                       140);
 
+    R_DEFINE_ERROR_RESULT(InvalidInstallTaskState,                  160);
     R_DEFINE_ERROR_RESULT(InvalidPlaceHolderFile,                   170);
     R_DEFINE_ERROR_RESULT(BufferInsufficient,                       180);
     R_DEFINE_ERROR_RESULT(WriteToReadOnlyContentStorage,            190);
     R_DEFINE_ERROR_RESULT(NotEnoughInstallSpace,                    200);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaKey,                    240);
+    R_DEFINE_ERROR_RESULT(IgnorableInstallTicketFailure,            280);
 
     R_DEFINE_ERROR_RESULT(ContentStorageBaseNotFound,               310);
+    R_DEFINE_ERROR_RESULT(ListPartiallyNotCommitted,                330);
 
     R_DEFINE_ERROR_RANGE(ContentStorageNotActive, 250, 258);
         R_DEFINE_ERROR_RESULT(GameCardContentStorageNotActive,              251);

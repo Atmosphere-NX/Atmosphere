@@ -30,6 +30,17 @@ namespace ams::ncm {
             dst->attributes           = src.attributes;
         }
 
+        void ConvertInstallContentMetaHeaderToContentMetaHeader(ContentMetaHeader *dst, const InstallContentMetaHeader &src) {
+            /* Clear destination. */
+            *dst = {};
+
+            /* Set converted fields. */
+            dst->extended_header_size = src.extended_header_size;
+            dst->content_meta_count   = src.content_meta_count;
+            dst->content_count        = src.content_meta_count;
+            dst->attributes           = src.attributes;
+        }
+
     }
 
     size_t PackagedContentMetaReader::CountDeltaFragments() const {
@@ -86,6 +97,44 @@ namespace ams::ncm {
                 }
             }
 
+            /* Copy the current info. */
+            std::memcpy(reinterpret_cast<void *>(dst_addr), std::addressof(this->GetContentInfo(i)->info), sizeof(ContentInfo));
+            dst_addr += sizeof(ContentInfo);
+        }
+
+        /* Copy content meta infos. */
+        for (size_t i = 0; i < this->GetContentMetaCount(); i++) {
+            std::memcpy(reinterpret_cast<void *>(dst_addr), this->GetContentMetaInfo(i), sizeof(ContentMetaInfo));
+            dst_addr += sizeof(ContentMetaInfo);
+        }
+    }
+
+    size_t InstallContentMetaReader::CalculateConvertSize() const {
+        return CalculateSizeImpl<ContentMetaHeader, ContentInfo>(this->GetExtendedHeaderSize(), this->GetContentCount(), this->GetContentMetaCount(), this->GetExtendedDataSize(), false);
+    }
+
+    void InstallContentMetaReader::ConvertToContentMeta(void *dst, size_t size) const {
+        /* Ensure we have enough space to convert. */
+        AMS_ABORT_UNLESS(size >= this->CalculateConvertSize());
+
+        /* Prepare for conversion. */
+        const auto *install_header = this->GetHeader();
+        uintptr_t dst_addr = reinterpret_cast<uintptr_t>(dst);
+
+        /* Convert the header. */
+        ContentMetaHeader header;
+        ConvertInstallContentMetaHeaderToContentMetaHeader(std::addressof(header), *install_header);
+
+        /* Copy the header. */
+        std::memcpy(reinterpret_cast<void *>(dst_addr), std::addressof(header), sizeof(header));
+        dst_addr += sizeof(header);
+
+        /* Copy the extended header. */
+        std::memcpy(reinterpret_cast<void *>(dst_addr), reinterpret_cast<void *>(this->GetExtendedHeaderAddress()), install_header->extended_header_size);
+        dst_addr += install_header->extended_header_size;
+
+        /* Copy content infos. */
+        for (size_t i = 0; i < this->GetContentCount(); i++) {
             /* Copy the current info. */
             std::memcpy(reinterpret_cast<void *>(dst_addr), std::addressof(this->GetContentInfo(i)->info), sizeof(ContentInfo));
             dst_addr += sizeof(ContentInfo);
