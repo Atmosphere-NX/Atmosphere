@@ -32,6 +32,12 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
         NotCommitted = 2,
     };
 
+    enum InstallConfig {
+        InstallConfig_SystemUpdate           = (1 << 2),
+        InstallConfig_RequiresExFatDriver    = (1 << 3),
+        InstallConfig_IgnoreTicket           = (1 << 4),
+    };
+
     class InstallTaskBase {
         private:
             crypto::Sha256Generator sha256_generator;
@@ -49,7 +55,16 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
         public:
             virtual ~InstallTaskBase() { /* TODO */ };
         private:
+            ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
+                if (R_FAILED(result)) {
+                    this->SetLastResult(result);
+                }
+                return result;
+            }
+
             Result PrepareImpl();
+            Result ExecuteImpl();
+            Result CommitImpl(const StorageContentMetaKey *keys, s32 num_keys);
         protected:
             Result Initialize(StorageId install_storage, InstallTaskDataBase *data, u32 config);
             Result CountInstallContentMetaData(s32 *out_count);
@@ -76,6 +91,12 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             void CleanupProgress();
             Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter);
             Result ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
+            Result Execute();
+            void StartThroughputMeasurement(); 
+            Result WritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info);
+            Result PrepareAndExecute();
+            Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
+            Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
 
             void ResetLastResult();
             s64 GetThroughput();
@@ -92,8 +113,8 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id);
             virtual Result CheckInstallable();
             virtual Result OnExecuteComplete();
-            void *OnWritePlaceHolder;
-            void *InstallTicket;
+            virtual Result OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) = 0;
+            virtual Result InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) = 0;
     };
 
 }

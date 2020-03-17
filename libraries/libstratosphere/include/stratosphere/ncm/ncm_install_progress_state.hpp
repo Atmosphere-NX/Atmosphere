@@ -23,7 +23,7 @@ namespace ams::ncm {
         DataPrepared    = 1,
         Prepared        = 2,
         Downloaded      = 3,
-        Commited        = 4,
+        Committed       = 4,
         Fatal           = 5,
     };
 

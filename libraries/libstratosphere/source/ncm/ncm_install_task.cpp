@@ -17,6 +17,23 @@
 
 namespace ams::ncm {
 
+    namespace {
+
+        bool Contains(const StorageContentMetaKey *keys, s32 num_keys, const ContentMetaKey &key, StorageId storage_id) {
+            for (s32 i = 0; i < num_keys; i++) {
+                const StorageContentMetaKey &storage_key = keys[i];
+
+                /* Check if the key matches the input key and storage id. */
+                if (storage_key.key == key && storage_key.storage_id == storage_id) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+    }
+
     Result InstallTaskBase::OnPrepareComplete() {
         return ResultSuccess();
     }
@@ -57,12 +74,8 @@ namespace ams::ncm {
     }
 
     Result InstallTaskBase::Prepare() {
-        /* Call the implementation. */
-        Result result = this->PrepareImpl();
-        
-        /* Update the last result. */
-        this->SetLastResult(result);
-        return result;
+        R_TRY(this->SetLastResultOnFailure(this->PrepareImpl()));
+        return ResultSuccess();
     }
 
     Result InstallTaskBase::PrepareImpl() {
@@ -412,6 +425,251 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
+    Result InstallTaskBase::Execute() {
+        R_TRY(this->SetLastResultOnFailure(this->ExecuteImpl()));
+        return ResultSuccess();
+    }
+
+    Result InstallTaskBase::ExecuteImpl() {
+        this->StartThroughputMeasurement();
+
+        /* Count the number of content meta entries. */
+        s32 count;
+        R_TRY(this->data->Count(std::addressof(count)));
+
+        /* Iterate over content meta. */
+        for (s32 i = 0; i < count; i++) {
+            /* Obtain the content meta. */
+            InstallContentMeta content_meta;
+            R_TRY(this->data->Get(&content_meta, i));
+
+            /* Update the data when we are done. */
+            ON_SCOPE_EXIT { this->data->Update(content_meta, i); };
+
+            /* Create a writer. */
+            const auto writer = content_meta.GetWriter();
+
+            /* Iterate over content infos. */
+            for (size_t j = 0; j < writer.GetContentCount(); j++) {
+                auto *content_info = writer.GetWritableContentInfo(j);
+
+                /* Write prepared content infos. */
+                if (content_info->install_state == InstallState::Prepared) {
+                    R_TRY(this->WritePlaceHolder(writer.GetKey(), content_info));
+                    content_info->install_state = InstallState::Installed;
+                }
+            }
+        }
+
+        /* Execution has finished, signal this and update the state. */
+        R_TRY(this->OnExecuteComplete());
+        this->SetProgressState(InstallProgressState::Downloaded);
+        return ResultSuccess();
+    }
+
+    void InstallTaskBase::StartThroughputMeasurement() {
+        std::scoped_lock lk(this->throughput_mutex);
+        this->throughput.installed = 0;
+        this->throughput.elapsed_time = TimeSpan();
+        this->throughput_start_time = os::ConvertToTimeSpan(os::GetSystemTick());
+    }
+
+    Result InstallTaskBase::WritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) {
+        if (content_info->is_sha256_calculated) {
+            /* Update the hash with the buffered data. */
+            this->sha256_generator.InitializeWithContext(std::addressof(content_info->context));
+            this->sha256_generator.Update(content_info->buffered_data, content_info->buffered_data_size);
+        } else {
+            /* Initialize the generator. */
+            this->sha256_generator.Initialize();
+        }
+
+        {
+            ON_SCOPE_EXIT {
+                /* Update this content info's sha256 data. */
+                this->sha256_generator.GetContext(std::addressof(content_info->context));
+                content_info->buffered_data_size = this->sha256_generator.GetBufferedDataSize();
+                this->sha256_generator.GetBufferedData(content_info->buffered_data, this->sha256_generator.GetBufferedDataSize());
+                content_info->is_sha256_calculated = true;
+            };
+
+            /* Perform the placeholder write. */
+            R_TRY(this->OnWritePlaceHolder(key, content_info));
+        }
+
+        /* Compare generated hash to expected hash if verification required. */
+        if (content_info->verify_hash) {
+            u8 hash[crypto::Sha256Generator::HashSize];
+            this->sha256_generator.GetHash(hash, crypto::Sha256Generator::HashSize);
+            R_UNLESS(std::memcmp(hash, content_info->digest.data, crypto::Sha256Generator::HashSize) == 0, ncm::ResultInvalidContentHash());
+        }
+
+        if (!(this->config & InstallConfig_IgnoreTicket)) {
+            ncm::RightsId rights_id;
+            {
+                /* Open the content storage and obtain the rights id. */
+                ncm::ContentStorage storage;
+                R_TRY(OpenContentStorage(std::addressof(storage), content_info->storage_id));
+                R_TRY(storage.GetRightsId(std::addressof(rights_id), content_info->placeholder_id));
+            }
+
+            /* Install a ticket if necessary. */
+            if (this->IsNecessaryInstallTicket(rights_id.id)) {
+                R_TRY_CATCH(this->InstallTicket(rights_id.id, content_info->meta_type)) {
+                    R_CATCH(ncm::ResultIgnorableInstallTicketFailure) { /* We can ignore the installation failure. */ }
+                } R_END_TRY_CATCH;
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result InstallTaskBase::PrepareAndExecute() {
+        R_TRY(this->SetLastResultOnFailure(this->PrepareImpl()));
+        R_TRY(this->SetLastResultOnFailure(this->ExecuteImpl()));
+        return ResultSuccess();
+    }
+
+    Result InstallTaskBase::VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys) {
+        /* No keys to check. */
+        R_SUCCEED_IF(keys == nullptr);
+        
+        /* Count the number of content meta entries. */
+        s32 count;
+        R_TRY(this->data->Count(std::addressof(count)));
+
+        s32 num_not_committed = 0;
+
+        /* Iterate over content meta. */
+        for (s32 i = 0; i < count; i++) {
+            /* Obtain the content meta. */
+            InstallContentMeta content_meta;
+            R_TRY(this->data->Get(&content_meta, i));
+
+            /* Create a reader. */
+            const auto reader = content_meta.GetReader();
+
+            if (Contains(keys, num_keys, reader.GetKey(), reader.GetStorageId())) {
+                /* Ensure content meta isn't committed. */
+                R_UNLESS(!reader.GetHeader()->committed, ncm::ResultListPartiallyNotCommitted());
+                num_not_committed++;
+            }
+        }
+
+        /* Ensure number of uncommitted keys equals the number of input keys. */
+        R_UNLESS(num_not_committed == num_keys, ncm::ResultListPartiallyNotCommitted());
+        return ResultSuccess();
+    }
+
+    Result InstallTaskBase::CommitImpl(const StorageContentMetaKey *keys, s32 num_keys) {
+        /* Ensure progress state is Downloaded. */
+        R_UNLESS(this->GetProgress().state == InstallProgressState::Downloaded, ncm::ResultInvalidInstallTaskState());
+
+        /* Ensure keys aren't committed. */
+        R_TRY(this->VerifyAllNotCommitted(keys, num_keys));
+
+        /* Count the number of content meta entries. */
+        s32 count;
+        R_TRY(this->data->Count(std::addressof(count)));
+
+        /* List of storages to commit. */
+        StorageList commit_list;
+
+        /* Iterate over content meta. */
+        for (s32 i = 0; i < count; i++) {
+            /* Obtain the content meta. */
+            InstallContentMeta content_meta;
+            R_TRY(this->data->Get(&content_meta, i));
+
+            /* Create a reader. */
+            const auto reader         = content_meta.GetReader();
+            const auto cur_key        = reader.GetKey();
+            const auto storage_id     = reader.GetStorageId();
+            const size_t convert_size = reader.CalculateConvertSize();
+
+            /* Skip content meta not contained in input keys. */
+            if (keys != nullptr && !Contains(keys, num_keys, cur_key, storage_id)) {
+                continue;
+            }
+
+            /* Skip already committed. This check is primarily for if keys is nullptr. */
+            if (reader.GetHeader()->committed) {
+                continue;
+            }
+
+            /* Helper for performing an update. */
+            const auto DoUpdate = [&]() ALWAYS_INLINE_LAMBDA { return this->data->Update(content_meta, i); };
+            
+            /* Commit the current meta. */
+            {
+                /* Ensure that if something goes wrong during commit, we still try to update. */
+                auto update_guard = SCOPE_GUARD { DoUpdate(); };
+                
+                /* Open a writer. */
+                const auto writer = content_meta.GetWriter();
+
+                /* Convert to content meta and store to a buffer. */
+                std::unique_ptr<char[]> content_meta_buffer(new (std::nothrow) char[convert_size]);
+                R_UNLESS(content_meta_buffer != nullptr, ncm::ResultAllocationFailed());
+                reader.ConvertToContentMeta(content_meta_buffer.get(), convert_size);
+
+                /* Open the content storage for this meta. */
+                ContentStorage content_storage;
+                R_TRY(OpenContentStorage(&content_storage, storage_id));
+
+                /* Open the content meta database for this meta. */
+                ContentMetaDatabase meta_db;
+                R_TRY(OpenContentMetaDatabase(std::addressof(meta_db), storage_id));
+
+                /* Iterate over content infos. */
+                for (size_t j = 0; j < reader.GetContentCount(); j++) {
+                    const auto *content_info = reader.GetContentInfo(j);
+
+                    /* Register non-existing content infos. */
+                    if (content_info->install_state != InstallState::AlreadyExists) {
+                        R_TRY(content_storage.Register(content_info->placeholder_id, content_info->info.content_id));
+                    }
+                }
+
+                /* Store the content meta. */
+                R_TRY(meta_db.Set(reader.GetKey(), content_meta_buffer.get(), convert_size));
+
+                /* Mark as committed. */
+                writer.GetWritableHeader()->committed = true;
+
+                /* Mark storage id to be committed later. */
+                commit_list.Push(reader.GetStorageId());
+                
+                /* We successfully commited this meta, so we want to check for errors when updating. */
+                update_guard.Cancel();
+            }
+            
+            /* Try to update, checking for failure. */
+            R_TRY(DoUpdate());
+        }
+
+        /* Commit all applicable content meta databases. */
+        for (s32 i = 0; i < commit_list.Count(); i++) {
+            ContentMetaDatabase meta_db;
+            R_TRY(OpenContentMetaDatabase(std::addressof(meta_db), commit_list[i]));
+            R_TRY(meta_db.Commit());
+        }
+
+        /* Change progress state to committed if keys are nullptr. */
+        if (keys == nullptr) {
+            this->SetProgressState(InstallProgressState::Committed);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result InstallTaskBase::Commit(const StorageContentMetaKey *keys, s32 num_keys) {
+        auto fatal_guard = SCOPE_GUARD { SetProgressState(InstallProgressState::Fatal); };
+        R_TRY(this->SetLastResultOnFailure(this->CommitImpl(keys, num_keys)));
+        fatal_guard.Cancel();
+        return ResultSuccess();
+    }
+
     /* ... */
 
     void InstallTaskBase::IncrementProgress(s64 size) {
@@ -422,6 +680,7 @@ namespace ams::ncm {
     void InstallTaskBase::UpdateThroughputMeasurement(s64 throughput) {
         std::scoped_lock lk(this->throughput_mutex);
 
+        /* Update throughput only if start time has been set. */
         if (this->throughput_start_time.GetNanoSeconds() != 0) {
             this->throughput.installed += throughput;
             this->throughput.elapsed_time = os::ConvertToTimeSpan(os::GetSystemTick()) - this->throughput_start_time;

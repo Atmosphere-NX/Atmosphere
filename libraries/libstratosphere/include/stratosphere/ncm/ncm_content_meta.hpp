@@ -336,6 +336,10 @@ namespace ams::ncm {
     class InstallContentMetaReader : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
         public:
             constexpr InstallContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+
+            size_t CalculateConvertSize() const;
+
+            void ConvertToContentMeta(void *dst, size_t size) const;
     };
 
     class InstallContentMetaWriter : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
