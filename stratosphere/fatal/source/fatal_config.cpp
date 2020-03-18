@@ -25,7 +25,7 @@ namespace ams::fatal::srv {
         /* Event creator. */
         Handle GetFatalDirtyEventReadableHandle() {
             Event evt;
-            R_ABORT_UNLESS(setsysBindFatalDirtyFlagEvent(&evt));
+            R_ABORT_UNLESS(setsysAcquireFatalDirtyFlagEventHandle(&evt));
             return evt.revent;
         }
 

@@ -49,7 +49,7 @@ namespace ams::os {
 
         while (true) {
             /* Continuously wait, until success. */
-            R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), U64_MAX)) {
+            R_TRY_CATCH(svcWaitSynchronizationSingle(this->handle.Get(), std::numeric_limits<u64>::max())) {
                 R_CATCH(svc::ResultCancelled) { continue; }
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 

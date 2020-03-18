@@ -418,7 +418,7 @@ namespace ams::fatal::srv {
 
         Result ShowFatalTask::Run() {
             /* Don't show the fatal error screen until we've verified the battery is okay. */
-            eventWait(const_cast<Event *>(&this->context->battery_event), U64_MAX);
+            eventWait(const_cast<Event *>(&this->context->battery_event), std::numeric_limits<u64>::max());
 
             return ShowFatal();
         }

@@ -23,9 +23,9 @@ namespace ams::sf::hipc {
             s32 unused_index;
             if (message_buf == armGetTls()) {
                 /* Consider: AMS_ABORT_UNLESS(message_buf_size == TlsMessageBufferSize); */
-                return svcReplyAndReceive(&unused_index, &session_handle, 1, INVALID_HANDLE, U64_MAX);
+                return svcReplyAndReceive(&unused_index, &session_handle, 1, INVALID_HANDLE, std::numeric_limits<u64>::max());
             } else {
-                return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 1, INVALID_HANDLE, U64_MAX);
+                return svcReplyAndReceiveWithUserBuffer(&unused_index, message_buf, message_buf_size, &session_handle, 1, INVALID_HANDLE, std::numeric_limits<u64>::max());
             }
         }
 

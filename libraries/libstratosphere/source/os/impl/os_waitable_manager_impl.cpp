@@ -51,7 +51,7 @@ namespace ams::os::impl{
         WaitableHolderBase *objects[MaximumHandleCount];
 
         const size_t count = this->BuildHandleArray(object_handles, objects);
-        const u64 end_time = infinite ? U64_MAX : armTicksToNs(armGetSystemTick());
+        const u64 end_time = infinite ? std::numeric_limits<u64>::max() : armTicksToNs(armGetSystemTick());
 
         while (true) {
             this->current_time = armTicksToNs(armGetSystemTick());

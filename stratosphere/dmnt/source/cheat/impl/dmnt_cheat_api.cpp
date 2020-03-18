@@ -522,7 +522,7 @@ namespace ams::dmnt::cheat::impl {
             Event hook;
             while (true) {
                 eventLoadRemote(&hook, this_ptr->HookToCreateApplicationProcess(), true);
-                if (R_SUCCEEDED(eventWait(&hook, U64_MAX))) {
+                if (R_SUCCEEDED(eventWait(&hook, std::numeric_limits<u64>::max()))) {
                     this_ptr->AttachToApplicationProcess(true);
                 }
                 eventClose(&hook);
@@ -535,7 +535,7 @@ namespace ams::dmnt::cheat::impl {
                 /* Atomically wait (and clear) signal for new process. */
                 this_ptr->debug_events_event.Wait();
                 while (true) {
-                    while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), U64_MAX))) {
+                    while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), std::numeric_limits<u64>::max()))) {
                         std::scoped_lock lk(this_ptr->cheat_lock);
 
                         /* Handle any pending debug events. */

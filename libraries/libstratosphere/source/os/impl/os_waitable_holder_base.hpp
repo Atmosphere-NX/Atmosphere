@@ -38,7 +38,7 @@ namespace ams::os::impl {
             virtual Handle GetHandle() const = 0;
             /* Gets the amount of time remaining until this wakes up. */
             virtual u64 GetWakeupTime() const {
-                return U64_MAX;
+                return std::numeric_limits<u64>::max();
             }
 
             /* Interface with manager. */

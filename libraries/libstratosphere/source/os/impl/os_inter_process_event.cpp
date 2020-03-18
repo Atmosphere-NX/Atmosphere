@@ -118,7 +118,7 @@ namespace ams::os::impl {
 
         while (true) {
             /* Continuously wait, until success. */
-            R_TRY_CATCH(svcWaitSynchronizationSingle(handle, U64_MAX)) {
+            R_TRY_CATCH(svcWaitSynchronizationSingle(handle, std::numeric_limits<u64>::max())) {
                 R_CATCH(svc::ResultCancelled) { continue; }
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 

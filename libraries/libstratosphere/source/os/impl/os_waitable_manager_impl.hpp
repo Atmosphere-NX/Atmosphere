@@ -44,7 +44,7 @@ namespace ams::os::impl {
         public:
             /* Wait. */
             WaitableHolderBase *WaitAny() {
-                return this->WaitAnyImpl(true, U64_MAX);
+                return this->WaitAnyImpl(true, std::numeric_limits<u64>::max());
             }
 
             WaitableHolderBase *TryWaitAny() {
