@@ -199,6 +199,9 @@ namespace ams::mitm::fs::romfs {
         }
     };
 
+    class DirectoryTableReader;
+    class FileTableReader;
+
     struct Builder {
         NON_COPYABLE(Builder);
         NON_MOVEABLE(Builder);
@@ -243,7 +246,7 @@ namespace ams::mitm::fs::romfs {
             DataSourceType cur_source_type;
         private:
             void VisitDirectory(FsFileSystem *fs, BuildDirectoryContext *parent);
-            void VisitDirectory(BuildDirectoryContext *parent, u32 parent_offset, const void *dir_table, size_t dir_table_size, const void *file_table, size_t file_table_size);
+            void VisitDirectory(BuildDirectoryContext *parent, u32 parent_offset, DirectoryTableReader &dir_table, FileTableReader &file_table);
 
             void AddDirectory(BuildDirectoryContext **out, BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildDirectoryContext> file_ctx);
             void AddFile(BuildDirectoryContext *parent_ctx, std::unique_ptr<BuildFileContext> file_ctx);
