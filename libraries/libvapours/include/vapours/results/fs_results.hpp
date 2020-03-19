@@ -63,6 +63,7 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,             3221);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDataA,                       3222);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDataB,                       3223);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDeviceSaveDataA,             3224);
         R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardA,                   3225);
         R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardB,                   3226);
         R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardC,                   3227);
