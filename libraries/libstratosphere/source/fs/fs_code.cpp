@@ -241,6 +241,7 @@ namespace ams::fs {
                     R_TRY(OpenSdCardCodeOrCodeFileSystemImpl(std::addressof(fsa), path, program_id));
                     this->code_fs.emplace(std::move(fsa), program_id, is_specific);
 
+                    this->program_id = program_id;
                     this->initialized = true;
 
                     return ResultSuccess();
