@@ -20,6 +20,7 @@
 #include <vapours/literals.hpp>
 
 #include <vapours/timespan.hpp>
+#include <vapours/span.hpp>
 
 #include <vapours/util.hpp>
 #include <vapours/results.hpp>
