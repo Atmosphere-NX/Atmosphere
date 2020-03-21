@@ -77,4 +77,70 @@ namespace ams::ncm {
         return ncm::ResultContentMetaNotFound();
     }
 
+    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id) {
+        AutoBuffer meta;
+        {
+            /* TODO: fs::ScopedAutoAbortDisabler aad; */
+            R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
+        }
+
+        PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
+        /* TODO: ON_SCOPE_EXIT { <auto abort func> }; */
+
+        /* No firmware variations to list. */
+        if (reader.GetExtendedDataSize() == 0) {
+            return ResultSuccess();
+        }
+
+        SystemUpdateMetaExtendedDataReader extended_data_reader(reader.GetExtendedData(), reader.GetExtendedDataSize());
+        std::optional<s32> firmware_variation_index = std::nullopt;
+
+        /* Find the input firmware variation id. */
+        for (s32 i = 0; i < extended_data_reader.GetFirmwareVariationCount(); i++) {
+            if (*extended_data_reader.GetFirmwareVariationId(i) == firmware_variation_id) {
+                firmware_variation_index = i;
+                break;
+            }
+        }
+
+        /* We couldn't find the input firmware variation id. */
+        if (!firmware_variation_index) {
+            return ResultInvalidFirmwareVariation();
+        }
+
+        /* Obtain the variation info. */
+        const FirmwareVariationInfo *variation_info = extended_data_reader.GetFirmwareVariationInfo(*firmware_variation_index);
+
+        /* Success if refer to base, or unk is 1 (unk is usually 2). */
+        if (variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1) {
+            return ResultSuccess();
+        }
+
+        /* Output the content meta count. */
+        const u32 content_meta_count = variation_info->content_meta_count;
+        *out_count = content_meta_count;
+
+        /* No content metas to list. */
+        if (content_meta_count == 0) {
+            return ResultSuccess();
+        }
+
+        /* Allocate a buffer for the content meta infos. */
+        std::unique_ptr<ContentMetaInfo[]> buffer(new (std::nothrow) ContentMetaInfo[content_meta_count]);
+        AMS_ABORT_UNLESS(buffer != nullptr);
+
+        /* Get the content meta infos. */
+        Span<const ContentMetaInfo> meta_infos;
+        extended_data_reader.GetContentMetaInfoList(std::addressof(meta_infos), content_meta_count);
+
+        /* Copy the meta infos to the buffer. */
+        for (size_t i = 0; i < content_meta_count; i++) {
+            buffer[i] = meta_infos[i];
+        }
+
+        /* Output the content meta info buffer. */
+        *out_meta_infos = std::move(buffer);
+        return ResultSuccess();
+    }
+
 }

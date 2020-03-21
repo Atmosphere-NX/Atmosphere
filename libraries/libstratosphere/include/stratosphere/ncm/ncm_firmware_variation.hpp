@@ -27,6 +27,14 @@ namespace ams::ncm {
 
     struct FirmwareVariationId {
         u32 value;
+
+        bool operator==(const FirmwareVariationId& other) const {
+            return this->value == other.value;
+        }
+
+        bool operator!=(const FirmwareVariationId& other) const {
+            return this->value != other.value;
+        }
     };
 
 }

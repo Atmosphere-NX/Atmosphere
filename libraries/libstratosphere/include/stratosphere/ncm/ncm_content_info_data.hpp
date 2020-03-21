@@ -101,6 +101,13 @@ namespace ams::ncm {
             return this->written;
         }
 
+        static constexpr InstallContentInfo Make(const ContentInfo &info, ContentMetaType meta_type) {
+            return {
+                .info          = info,
+                .meta_type     = meta_type,
+            };
+        }
+
         static constexpr InstallContentInfo Make(const PackagedContentInfo &info, ContentMetaType meta_type) {
             return {
                 .digest        = info.digest,

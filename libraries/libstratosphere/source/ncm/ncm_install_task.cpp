@@ -725,7 +725,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result InstallTaskBase::WriteContentMetaToPlaceHolder(InstallContentInfo *install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary) {
+    Result InstallTaskBase::WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary) {
         /* Generate a placeholder id. */
         auto placeholder_id = storage->GeneratePlaceHolderId();
 
@@ -734,14 +734,14 @@ namespace ams::ncm {
         auto placeholder_guard = SCOPE_GUARD { storage->DeletePlaceHolder(placeholder_id); };
 
         /* Output install content info. */
-        *install_content_info = this->MakeInstallContentInfoFrom(meta_info, placeholder_id, is_temporary);
+        *out_install_content_info = this->MakeInstallContentInfoFrom(meta_info, placeholder_id, is_temporary);
 
         /* Write install content info. */
-        R_TRY(this->WritePlaceHolder(meta_info.key, install_content_info));
+        R_TRY(this->WritePlaceHolder(meta_info.key, out_install_content_info));
         
         /* Don't delete the placeholder. Set state to installed. */
         placeholder_guard.Cancel();
-        install_content_info->install_state = InstallState::Installed;
+        out_install_content_info->install_state = InstallState::Installed;
         return ResultSuccess();
     }
 
@@ -756,6 +756,24 @@ namespace ams::ncm {
             .storage_id     = StorageId::BuiltInSystem,
             .is_temporary   = is_tmp ? *is_tmp : (this->install_storage != StorageId::BuiltInSystem),
         };
+    }
+
+    /* ... */
+
+    Result InstallTaskBase::PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer) {
+        /* Create a reader. */
+        PackagedContentMetaReader reader(buffer->Get(), buffer->GetSize());
+
+        /* Initialize the temporary buffer. */
+        AutoBuffer tmp_buffer;
+        R_TRY(tmp_buffer.Initialize(reader.CalculateConvertInstallContentMetaSize()));
+
+        /* Convert packaged content meta to install content meta. */
+        reader.ConvertToInstallContentMeta(tmp_buffer.Get(), tmp_buffer.GetSize(), InstallContentInfo::Make(ContentInfo::Make(content_id, size, ContentType::Meta), meta_type));
+        
+        /* Push the content meta. */
+        this->data->Push(tmp_buffer.Get(), tmp_buffer.GetSize());
+        return ResultSuccess();
     }
 
     /* ... */
@@ -799,6 +817,39 @@ namespace ams::ncm {
     }
 
     Result InstallTaskBase::PrepareDependency() {
+        return ResultSuccess();
+    }
+
+    // Result InstallTaskBase::PrepareSystemUpdateDependency() {
+    //     /* TODO */
+
+    //     return ResultSuccess();
+    // }
+
+    Result InstallTaskBase::GetContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key) {
+        /* Get the install content meta info. */
+        InstallContentMetaInfo install_content_meta_info;
+        R_TRY(this->GetInstallContentMetaInfo(std::addressof(install_content_meta_info), key));
+
+        /* Open the BuiltInSystem content storage. */
+        ContentStorage content_storage;
+        R_TRY(ncm::OpenContentStorage(&content_storage, StorageId::BuiltInSystem));
+
+        /* Write content meta to a placeholder. */
+        InstallContentInfo content_info;
+        R_TRY(this->WriteContentMetaToPlaceHolder(std::addressof(content_info), std::addressof(content_storage), install_content_meta_info, true));
+        
+        const PlaceHolderId placeholder_id = content_info.placeholder_id;
+        
+        /* Get the path of the new placeholder. */
+        Path path;
+        content_storage.GetPlaceHolderPath(std::addressof(path), placeholder_id);
+
+        /* Read the variation list. */
+        R_TRY(ReadVariationContentMetaInfoList(out_count, out_meta_infos, path, this->firmware_variation_id));
+
+        /* Delete the placeholder. */
+        content_storage.DeletePlaceHolder(placeholder_id);
         return ResultSuccess();
     }
 
@@ -871,4 +922,93 @@ namespace ams::ncm {
         return this->throughput.installed;
     }
 
+    /* ... */
+
+    Result InstallTaskBase::FindMaxRequiredApplicationVersion(u32 *out) {
+        /* Count the number of content meta entries. */
+        s32 count;
+        R_TRY(this->data->Count(std::addressof(count)));
+
+        u32 max_version = 0;
+
+        /* Iterate over content meta. */
+        for (s32 i = 0; i < count; i++) {
+            /* Obtain the content meta. */
+            InstallContentMeta content_meta;
+            R_TRY(this->data->Get(&content_meta, i));
+            
+            /* Create a reader. */
+            const InstallContentMetaReader reader = content_meta.GetReader();
+
+            /* Check if the meta type is for add on content. */
+            if (reader.GetHeader()->type == ContentMetaType::AddOnContent) {
+                const auto *extended_header = reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>();
+                
+                /* Set the max version if higher. */
+                if (extended_header->required_application_version >= max_version) {
+                    max_version = extended_header->required_application_version;
+                }
+            }
+        }
+
+        *out = max_version;
+        return ResultSuccess();
+    }
+
+    Result InstallTaskBase::FindMaxRequiredSystemVersion(u32 *out) {
+        /* Count the number of content meta entries. */
+        s32 count;
+        R_TRY(this->data->Count(std::addressof(count)));
+
+        u32 max_version = 0;
+
+        /* Iterate over content meta. */
+        for (s32 i = 0; i < count; i++) {
+            /* Obtain the content meta. */
+            InstallContentMeta content_meta;
+            R_TRY(this->data->Get(&content_meta, i));
+            
+            /* Create a reader. */
+            const InstallContentMetaReader reader = content_meta.GetReader();
+
+            if (reader.GetHeader()->type == ContentMetaType::Application) {
+                const auto *extended_header = reader.GetExtendedHeader<ApplicationMetaExtendedHeader>();
+
+                /* Set the max version if higher. */
+                if (extended_header->required_system_version >= max_version) {
+                    max_version = extended_header->required_system_version;
+                }
+            } else if (reader.GetHeader()->type == ContentMetaType::Patch) {
+                const auto *extended_header = reader.GetExtendedHeader<PatchMetaExtendedHeader>();
+
+                /* Set the max version if higher. */
+                if (extended_header->required_system_version >= max_version) {
+                    max_version = extended_header->required_system_version;
+                }
+            }
+        }
+
+        *out = max_version;
+        return ResultSuccess();
+    }
+
+    /* ... */
+
+    Result InstallTaskBase::CanContinue() {
+        auto progress = this->GetProgress();
+
+        if (progress.state == InstallProgressState::NotPrepared || progress.state == InstallProgressState::DataPrepared) {
+            R_UNLESS(!this->IsCancelRequested(), ncm::ResultCreatePlaceHolderCancelled());
+        }
+
+        if (progress.state == InstallProgressState::Prepared) {
+            R_UNLESS(!this->IsCancelRequested(), ncm::ResultWritePlaceHolderCancelled());
+        }
+
+        return ResultSuccess();
+    }
+
+    void InstallTaskBase::SetFirmwareVariationId(FirmwareVariationId id) {
+        this->firmware_variation_id = id;
+    }
 }
