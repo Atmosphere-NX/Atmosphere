@@ -424,8 +424,16 @@ namespace ams::ncm {
                 return reinterpret_cast<FirmwareVariationInfo *>(this->GetFirmwareVariationInfoAddress(i));
             }
 
-            void GetContentMetaInfoList() const {
-                /* TODO */
+            void GetContentMetaInfoList(Span<const ContentMetaInfo> *out_list, size_t i) const {
+                size_t preceding_content_meta_count = 0;
+
+                /* Count the number of preceding content metas. */
+                for (size_t j = 0; j < i; j++) {
+                    preceding_content_meta_count += GetFirmwareVariationInfo(j)->content_meta_count;
+                }
+
+                /* Output the list. */
+                *out_list = Span<const ContentMetaInfo>(reinterpret_cast<const ContentMetaInfo *>(GetContentMetaInfoAddress(preceding_content_meta_count)), GetFirmwareVariationInfo(i)->content_meta_count);
             }
     };
 
