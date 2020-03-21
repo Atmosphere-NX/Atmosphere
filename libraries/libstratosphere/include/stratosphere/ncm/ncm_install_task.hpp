@@ -21,11 +21,6 @@ namespace ams::ncm {
 /* protected:
 PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMetaData, PrepareDependency, PrepareSystemDependency, PrepareContentMetaIfLatest, GetConfig, WriteContentMetaToPlaceHolder, GetInstallStorage, GetSystemUpdateTaskApplyInfo, CanContinue
 */
-    struct InstallThroughput {
-        s64 installed;
-        TimeSpan elapsed_time;
-    };
-
     enum class ListContentMetaKeyFilter : u8 {
         All          = 0,
         Committed    = 1,
@@ -37,6 +32,40 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
         InstallConfig_RequiresExFatDriver    = (1 << 3),
         InstallConfig_IgnoreTicket           = (1 << 4),
     };
+
+    struct InstallThroughput {
+        s64 installed;
+        TimeSpan elapsed_time;
+    };
+
+    struct InstallContentMetaInfo {
+        ContentId content_id;
+        s64 content_size;
+        ContentMetaKey key;
+        bool verify_digest;
+        Digest digest;
+
+        static constexpr InstallContentMetaInfo MakeVerifiable(const ContentId &cid, s64 sz, const ContentMetaKey &ky, const Digest &d) {
+            return {
+                .content_id    = cid,
+                .content_size  = sz,
+                .key           = ky,
+                .verify_digest = true,
+                .digest        = d,
+            };
+        }
+
+        static constexpr InstallContentMetaInfo MakeUnverifiable(const ContentId &cid, s64 sz, const ContentMetaKey &ky) {
+            return {
+                .content_id    = cid,
+                .content_size  = sz,
+                .key           = ky,
+                .verify_digest = false,
+            };
+        }
+    };
+
+    static_assert(sizeof(InstallContentMetaInfo) == 0x50);
 
     class InstallTaskBase {
         private:
@@ -51,9 +80,8 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             InstallThroughput throughput;
             TimeSpan throughput_start_time;
             os::Mutex throughput_mutex;
-            /* ... */
         public:
-            virtual ~InstallTaskBase() { /* TODO */ };
+            virtual ~InstallTaskBase() { /* ... */ };
         private:
             ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
                 if (R_FAILED(result)) {
@@ -97,7 +125,13 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             Result PrepareAndExecute();
             Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
             Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
+            Result IncludesExFatDriver(bool *out);
+            Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
+            Result WriteContentMetaToPlaceHolder(InstallContentInfo *install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
+            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
 
+            Result IsNewerThanInstalled(bool *out, const ContentMetaKey &key);
+            Result DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys);
             void ResetLastResult();
             s64 GetThroughput();
         protected:
