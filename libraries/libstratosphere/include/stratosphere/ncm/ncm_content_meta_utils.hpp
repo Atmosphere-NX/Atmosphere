@@ -19,9 +19,12 @@
 #include <stratosphere/ncm/ncm_content_storage.hpp>
 #include <stratosphere/ncm/ncm_content_meta_key.hpp>
 #include <stratosphere/ncm/ncm_content_meta_database.hpp>
+#include <stratosphere/ncm/ncm_firmware_variation.hpp>
 
 namespace ams::ncm {
 
     Result ReadContentMetaPath(AutoBuffer *out, const char *path);
+
+    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id);
 
 }

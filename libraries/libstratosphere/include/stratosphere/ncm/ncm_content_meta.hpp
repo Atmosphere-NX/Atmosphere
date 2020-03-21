@@ -281,7 +281,7 @@ namespace ams::ncm {
                 switch (this->GetHeader()->type) {
                     case ContentMetaType::Patch:        return this->GetExtendedHeader<PatchMetaExtendedHeader>()->extended_data_size;
                     case ContentMetaType::Delta:        return this->GetExtendedHeader<DeltaMetaExtendedHeader>()->extended_data_size;
-                    case ContentMetaType::SystemUpdate: return this->GetExtendedHeader<SystemUpdateMetaExtendedHeader>()->extended_data_size;
+                    case ContentMetaType::SystemUpdate: return this->GetExtendedHeaderSize() == 0 ? 0 : this->GetExtendedHeader<SystemUpdateMetaExtendedHeader>()->extended_data_size;
                     default:                            return 0;
                 }
             }
@@ -357,7 +357,7 @@ namespace ams::ncm {
 
     class InstallContentMetaWriter : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
         public:
-            InstallContentMetaWriter(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+            InstallContentMetaWriter(void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
 
             using ContentMetaAccessor::CalculateSize;
             using ContentMetaAccessor::CalculateContentRequiredSize;
@@ -412,13 +412,13 @@ namespace ams::ncm {
                 return this->GetHeader()->firmware_variation_count;
             }
             
-            FirmwareVariationId *GetFirmwareVariationId(size_t i) const {
+            const FirmwareVariationId *GetFirmwareVariationId(size_t i) const {
                 AMS_ABORT_UNLESS(i < this->GetFirmwareVariationCount());
 
                 return reinterpret_cast<FirmwareVariationId *>(this->GetFirmwareVariationIdAddress(i));
             }
 
-            FirmwareVariationInfo *GetFirmwareVariationInfo(size_t i) const {
+            const FirmwareVariationInfo *GetFirmwareVariationInfo(size_t i) const {
                 AMS_ABORT_UNLESS(i < this->GetFirmwareVariationCount());
 
                 return reinterpret_cast<FirmwareVariationInfo *>(this->GetFirmwareVariationInfoAddress(i));
@@ -435,6 +435,11 @@ namespace ams::ncm {
                 /* Output the list. */
                 *out_list = Span<const ContentMetaInfo>(reinterpret_cast<const ContentMetaInfo *>(GetContentMetaInfoAddress(preceding_content_meta_count)), GetFirmwareVariationInfo(i)->content_meta_count);
             }
+    };
+
+    class SystemUpdateMetaExtendedDataReader : public SystemUpdateMetaExtendedDataReaderWriterBase {
+        public:
+            constexpr SystemUpdateMetaExtendedDataReader(const void *data, size_t size) : SystemUpdateMetaExtendedDataReaderWriterBase(data, size) { /* ... */ }
     };
 
 }

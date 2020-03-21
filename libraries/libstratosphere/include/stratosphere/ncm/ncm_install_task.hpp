@@ -80,6 +80,7 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             InstallThroughput throughput;
             TimeSpan throughput_start_time;
             os::Mutex throughput_mutex;
+            FirmwareVariationId firmware_variation_id;
         public:
             virtual ~InstallTaskBase() { /* ... */ };
         private:
@@ -127,13 +128,23 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
             Result IncludesExFatDriver(bool *out);
             Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
-            Result WriteContentMetaToPlaceHolder(InstallContentInfo *install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
+            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
             InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
+
+            Result PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer);
+
+            Result GetContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
 
             Result IsNewerThanInstalled(bool *out, const ContentMetaKey &key);
             Result DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys);
             void ResetLastResult();
             s64 GetThroughput();
+
+            Result FindMaxRequiredApplicationVersion(u32 *out);
+            Result FindMaxRequiredSystemVersion(u32 *out);
+
+            Result CanContinue();
+            void SetFirmwareVariationId(FirmwareVariationId id);
         protected:
             virtual Result OnPrepareComplete();
             virtual Result PrepareDependency();
@@ -143,7 +154,7 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             virtual void ResetCancel();
             virtual InstallProgress GetProgress();
             virtual Result PrepareInstallContentMetaData() = 0;
-            void *GetInstallContentMetaInfo;
+            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key);
             virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id);
             virtual Result CheckInstallable();
             virtual Result OnExecuteComplete();
