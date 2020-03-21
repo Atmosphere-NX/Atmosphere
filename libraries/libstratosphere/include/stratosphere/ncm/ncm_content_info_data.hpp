@@ -32,6 +32,23 @@ namespace ams::ncm {
         AlreadyExists,
     };
 
+    struct PackagedContentInfo {
+        Digest digest;
+        ContentInfo info;
+
+        constexpr const ContentId &GetId() const {
+            return this->info.GetId();
+        }
+
+        constexpr const ContentType GetType() const {
+            return this->info.GetType();
+        }
+
+        constexpr const u8 GetIdOffset() const {
+            return this->info.GetIdOffset();
+        }
+    };
+
     struct InstallContentInfo {
         Digest digest;
         crypto::Sha256Context context;
@@ -41,7 +58,7 @@ namespace ams::ncm {
         PlaceHolderId placeholder_id;
         ContentMetaType meta_type;
         InstallState install_state;
-        bool verify_hash;
+        bool verify_digest;
         StorageId storage_id;
         bool is_temporary;
         bool is_sha256_calculated;
@@ -83,25 +100,17 @@ namespace ams::ncm {
         constexpr s64 GetSizeWritten() const {
             return this->written;
         }
+
+        static constexpr InstallContentInfo Make(const PackagedContentInfo &info, ContentMetaType meta_type) {
+            return {
+                .digest        = info.digest,
+                .info          = info.info,
+                .meta_type     = meta_type,
+                .verify_digest = true,
+            };
+        }
     };
 
     static_assert(sizeof(InstallContentInfo) == 0xC8);
-
-    struct PackagedContentInfo {
-        Digest digest;
-        ContentInfo info;
-
-        constexpr const ContentId &GetId() const {
-            return this->info.GetId();
-        }
-
-        constexpr const ContentType GetType() const {
-            return this->info.GetType();
-        }
-
-        constexpr const u8 GetIdOffset() const {
-            return this->info.GetIdOffset();
-        }
-    };
 
 }
