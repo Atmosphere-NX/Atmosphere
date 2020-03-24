@@ -25,4 +25,6 @@ namespace ams::ncm {
         u8 reserved[7];
     };
 
+    static_assert(sizeof(InstallTaskOccupiedSize) == 0x20);
+
 }
