@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere/ncm/ncm_install_task_data.hpp>
+#include <stratosphere/ncm/ncm_install_task_occupied_size.hpp>
 
 namespace ams::ncm {
 
@@ -130,18 +131,21 @@ PrepareContentMeta (both), WritePlaceHolderBuffer, Get/Delete InstallContentMeta
             Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
             Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
             InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
-
+            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, std::optional<ContentMetaKey> key, std::optional<u32> source_version);
+            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version);
             Result PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer);
-
-            Result GetContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
-
+            Result PrepareSystemUpdateDependency();
+            Result ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
+            Result PrepareContentMetaIfLatest(const ContentMetaKey &key);
+            Result GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out);
             Result IsNewerThanInstalled(bool *out, const ContentMetaKey &key);
             Result DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys);
             void ResetLastResult();
             s64 GetThroughput();
-
+            Result CalculateContentsSize(s64 *out_size, const ContentMetaKey &key, StorageId storage_id);
             Result FindMaxRequiredApplicationVersion(u32 *out);
             Result FindMaxRequiredSystemVersion(u32 *out);
+            Result ListOccupiedSize(s32 *out_written, InstallTaskOccupiedSize *out_list, s32 out_list_size, s32 offset);
 
             Result CanContinue();
             void SetFirmwareVariationId(FirmwareVariationId id);
