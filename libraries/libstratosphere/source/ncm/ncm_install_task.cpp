@@ -1305,4 +1305,73 @@ namespace ams::ncm {
     void InstallTaskBase::SetFirmwareVariationId(FirmwareVariationId id) {
         this->firmware_variation_id = id;
     }
+
+    Result InstallTaskBase::ListRightsIds(s32 *out_count, Span<RightsId> out_span, const ContentMetaKey &key, s32 offset) {
+        /* Count the number of content meta entries. */
+        s32 count;
+        R_TRY(this->data->Count(std::addressof(count)));
+
+        /* Ensure count is >= 1. */
+        R_UNLESS(count >= 1, ncm::ResultContentMetaNotFound());
+
+        /* Iterate over content meta. */
+        for (s32 i = 0; i < count; i++) {
+            /* Obtain the content meta. */
+            InstallContentMeta content_meta;
+            R_TRY(this->data->Get(std::addressof(content_meta), i));
+
+            /* Create a reader. */
+            const InstallContentMetaReader reader = content_meta.GetReader();
+
+            /* List rights ids if the reader's key matches ours. */
+            if (reader.GetKey() == key) {
+                return this->ListRightsIdsByInstallContentMeta(out_count, out_span, content_meta, offset);
+            }
+        }
+
+        return ncm::ResultContentMetaNotFound();
+    }
+
+    Result InstallTaskBase::ListRightsIdsByInstallContentMeta(s32 *out_count, Span<RightsId> out_span, const InstallContentMeta &content_meta, s32 offset) {
+        /* If the offset is greater than zero, we can't create a unique span of rights ids. */
+        /* Thus, we have nothing to list. */
+        if (offset > 0) {
+            *out_count = 0;
+            return ResultSuccess();
+        }
+
+        /* Create a reader. */
+        const InstallContentMetaReader reader = content_meta.GetReader();
+
+        s32 count = 0;
+        for (size_t i = 0; i < reader.GetContentCount(); i++) {
+            const auto *content_info = reader.GetContentInfo(i);
+
+            /* Skip meta content infos and already installed content infos. Also skip if the content meta has already been comitted. */
+            if (content_info->GetType() == ContentType::Meta || content_info->GetInstallState() == InstallState::Installed || reader.GetHeader()->committed) {
+                continue;
+            }
+
+            /* Open the relevant content storage. */
+            ContentStorage content_storage;
+            R_TRY(ncm::OpenContentStorage(&content_storage, content_info->storage_id));
+
+            /* Get the rights id. */
+            RightsId rights_id;
+            R_TRY(content_storage.GetRightsId(std::addressof(rights_id), content_info->GetPlaceHolderId()));
+            
+            /* Skip empty rights ids. */
+            if (rights_id.id == fs::InvalidRightsId) {
+                continue;
+            }
+
+            /* Output the rights id. */
+            out_span[count++] = rights_id;
+        }
+
+        /* Sort and remove duplicate ids from the output span. */
+        std::sort(out_span.begin(), out_span.end());
+        *out_count = std::distance(out_span.begin(), std::unique(out_span.begin(), out_span.end()));
+        return ResultSuccess();
+    }
 }

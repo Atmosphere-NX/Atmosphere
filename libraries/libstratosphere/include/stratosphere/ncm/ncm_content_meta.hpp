@@ -340,13 +340,11 @@ namespace ams::ncm {
             void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
 
             Result CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) {
-                /* TODO */
-                return ResultSuccess();
+                AMS_ABORT("Not implemented");
             };
 
             Result ConvertToFragmentOnlyInstallContentMeta(void *dst, size_t size, const InstallContentInfo &content_info, u32 source_version) {
-                /* TODO */
-                return ResultSuccess();
+                AMS_ABORT("Not implemented");
             }
 
             size_t CountDeltaFragments() const;
