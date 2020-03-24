@@ -30,5 +30,6 @@
 #include <stratosphere/ncm/ncm_firmware_variation.hpp>
 #include <stratosphere/ncm/ncm_install_task.hpp>
 #include <stratosphere/ncm/ncm_install_task_data.hpp>
+#include <stratosphere/ncm/ncm_install_task_occupied_size.hpp>
 #include <stratosphere/ncm/ncm_storage_id_utils.hpp>
 #include <stratosphere/ncm/ncm_api.hpp>

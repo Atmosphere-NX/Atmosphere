@@ -334,10 +334,20 @@ namespace ams::ncm {
             constexpr PackagedContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
 
             size_t CalculateConvertInstallContentMetaSize() const;
-            size_t CalculateConvertContentMetaSize() const;
-
-            void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
             void ConvertToInstallContentMeta(void *dst, size_t size, const InstallContentInfo &meta);
+
+            size_t CalculateConvertContentMetaSize() const;
+            void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
+
+            Result CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) {
+                /* TODO */
+                return ResultSuccess();
+            };
+
+            Result ConvertToFragmentOnlyInstallContentMeta(void *dst, size_t size, const InstallContentInfo &content_info, u32 source_version) {
+                /* TODO */
+                return ResultSuccess();
+            }
 
             size_t CountDeltaFragments() const;
 
