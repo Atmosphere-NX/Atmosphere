@@ -22,8 +22,8 @@ namespace ams::ncm {
         return impl::PathView(name).HasSuffix(".cnmt");
     }
 
-    Result PackageInstallTask::Initialize(const char *package_root_path, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
-        return PackageInstallTaskBase::Initialize(package_root_path, buffer, buffer_size, storage_id, std::addressof(this->data), ignore_ticket ? InstallConfig_IgnoreTicket : InstallConfig_None);
+    Result PackageInstallTask::Initialize(const char *package_root, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
+        return PackageInstallTaskBase::Initialize(package_root, buffer, buffer_size, storage_id, std::addressof(this->data), ignore_ticket ? InstallConfig_IgnoreTicket : InstallConfig_None);
     }
 
     Result PackageInstallTask::GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) {

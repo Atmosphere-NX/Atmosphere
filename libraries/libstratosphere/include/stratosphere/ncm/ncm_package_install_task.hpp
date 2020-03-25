@@ -25,7 +25,7 @@ namespace ams::ncm {
             PackageInstallTask() { /* ... */ }
             virtual ~PackageInstallTask() override { /* ... */ }
 
-            Result Initialize(const char *package_path, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
+            Result Initialize(const char *package_root, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
         protected:
             bool IsContentMetaContentName(const char *name);
             virtual Result PrepareInstallContentMetaData() override;
