@@ -17,9 +17,9 @@
 
 namespace ams::ncm {
 
-    Result PackageInstallTaskBase::Initialize(const char *package_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config) {
+    Result PackageInstallTaskBase::Initialize(const char *package_root_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config) {
         R_TRY(InstallTaskBase::Initialize(storage_id, data, config));
-        this->package_root.Set(package_path);
+        this->package_root.Set(package_root_path);
         this->buffer = buffer;
         this->buffer_size = buffer_size;
         return ResultSuccess();
