@@ -68,10 +68,48 @@ namespace ams::ncm {
     }
 
     Result PackageInstallTaskBase::InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) {
-        /* TODO: Read ticket from file. */
-        /* TODO: Read certificate from file. */
+        /* Read ticket from file. */
+        s64 ticket_size;
+        std::unique_ptr<char[]> ticket;
+        {
+            fs::FileHandle ticket_file;
+            {
+                PackagePath ticket_path;
+                this->CreateTicketPath(std::addressof(ticket_path), rights_id);
+                R_TRY(fs::OpenFile(std::addressof(ticket_file), ticket_path, fs::OpenMode_Read));
+            }
+            ON_SCOPE_EXIT { fs::CloseFile(ticket_file); };
+
+            R_TRY(fs::GetFileSize(std::addressof(ticket_size), ticket_file));
+
+            ticket.reset(new (std::nothrow) char[static_cast<size_t>(ticket_size)]);
+            R_UNLESS(ticket != nullptr, ncm::ResultAllocationFailed());
+            R_TRY(fs::ReadFile(ticket_file, 0, ticket.get(), static_cast<size_t>(ticket_size)));
+        }
+
+
+        /* Read certificate from file. */
+        s64 cert_size;
+        std::unique_ptr<char[]> cert;
+        {
+            fs::FileHandle cert_file;
+            {
+                PackagePath cert_path;
+                this->CreateCertificatePath(std::addressof(cert_path), rights_id);
+                R_TRY(fs::OpenFile(std::addressof(cert_file), cert_path, fs::OpenMode_Read));
+            }
+            ON_SCOPE_EXIT { fs::CloseFile(cert_file); };
+
+            R_TRY(fs::GetFileSize(std::addressof(cert_size), cert_file));
+
+            cert.reset(new (std::nothrow) char[static_cast<size_t>(cert_size)]);
+            R_UNLESS(cert != nullptr, ncm::ResultAllocationFailed());
+            R_TRY(fs::ReadFile(cert_file, 0, cert.get(), static_cast<size_t>(cert_size)));
+        }
+
         /* TODO: es::ImportTicket() */
         /* TODO: How should es be handled without undesired effects? */
+
         return ResultSuccess();
     }
 
