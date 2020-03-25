@@ -42,6 +42,7 @@ namespace ams::ncm {
         s64 content_size;
         ContentMetaKey key;
         bool verify_digest;
+        bool has_key;
         Digest digest;
 
         static constexpr InstallContentMetaInfo MakeVerifiable(const ContentId &cid, s64 sz, const ContentMetaKey &ky, const Digest &d) {
@@ -50,6 +51,7 @@ namespace ams::ncm {
                 .content_size  = sz,
                 .key           = ky,
                 .verify_digest = true,
+                .has_key       = true,
                 .digest        = d,
             };
         }
@@ -60,6 +62,16 @@ namespace ams::ncm {
                 .content_size  = sz,
                 .key           = ky,
                 .verify_digest = false,
+                .has_key       = true,
+            };
+        }
+
+        static constexpr InstallContentMetaInfo MakeUnverifiable(const ContentId &cid, s64 sz) {
+            return {
+                .content_id    = cid,
+                .content_size  = sz,
+                .verify_digest = false,
+                .has_key       = false,
             };
         }
     };
