@@ -27,6 +27,8 @@ namespace ams::ncm {
             void *buffer;
             size_t buffer_size;
         public:
+            PackageInstallTaskBase() : package_root() { /* ... */ }
+
             Result Initialize(const char *package_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config);
         protected:
             const char *GetPackageRootPath() {
@@ -35,11 +37,11 @@ namespace ams::ncm {
         private:
             void CreateContentMetaPath(PackagePath *out_path, ContentId content_id);
             void CreateContentPath(PackagePath *out_path, ContentId content_id);
-            Result InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type);
             void CreateTicketPath(PackagePath *out_path, fs::RightsId id);
             void CreateCertificatePath(PackagePath *out_path, fs::RightsId id);
         private:
             virtual Result OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) override;
+            virtual Result InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) override;
     };
 
 }
