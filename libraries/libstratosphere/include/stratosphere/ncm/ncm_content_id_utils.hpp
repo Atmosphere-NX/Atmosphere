@@ -32,6 +32,10 @@ namespace ams::ncm {
     ContentIdString GetContentIdString(ContentId id);
 
     void GetStringFromContentId(char *dst, size_t dst_size, ContentId id);
+    void GetStringFromRightsId(char *dst, size_t dst_size, fs::RightsId id);
+
+    void GetTicketFileStringFromRightsId(char *dst, size_t dst_size, fs::RightsId id);
+    void GetCertificateFileStringFromRightsId(char *dst, size_t dst_size, fs::RightsId id);
 
     std::optional<ContentId> GetContentIdFromString(const char *str, size_t len);
 
