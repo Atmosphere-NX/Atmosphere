@@ -20,7 +20,7 @@ namespace ams::mitm::fs {
 
     class SaveUtil {
         public:
-            static Result GetDirectorySaveDataPath(char *dst, size_t dst_size, ncm::ProgramId program_id, u8 space_id, const FsSaveDataAttribute &attribute);
+            static Result GetDirectorySaveDataPath(char *dst, size_t dst_size, ncm::ProgramId program_id, u8 space_id, const ams::fs::SaveDataAttribute &attribute);
     };
 
 }
