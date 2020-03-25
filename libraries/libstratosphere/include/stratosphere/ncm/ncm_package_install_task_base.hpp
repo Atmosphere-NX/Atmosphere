@@ -29,7 +29,7 @@ namespace ams::ncm {
         public:
             PackageInstallTaskBase() : package_root() { /* ... */ }
 
-            Result Initialize(const char *package_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config);
+            Result Initialize(const char *package_root_path, void *buffer, size_t buffer_size, StorageId storage_id, InstallTaskDataBase *data, u32 config);
         protected:
             const char *GetPackageRootPath() {
                 return this->package_root.Get();

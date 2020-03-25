@@ -26,6 +26,7 @@ namespace ams::ncm {
     };
 
     enum InstallConfig {
+        InstallConfig_None                   = (0 << 0),
         InstallConfig_SystemUpdate           = (1 << 2),
         InstallConfig_RequiresExFatDriver    = (1 << 3),
         InstallConfig_IgnoreTicket           = (1 << 4),
