@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2018-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -32,10 +32,12 @@ namespace ams::fssystem {
             static_assert(std::is_pod<PartitionEntry>::value);
             #pragma pack(pop)
 
-            static constexpr char VersionSignature[] = { 'P', 'F', 'S', '0' };
+            static constexpr const char VersionSignature[] = { 'P', 'F', 'S', '0' };
 
             static constexpr size_t EntryNameLengthMax = ::ams::fs::EntryNameLengthMax;
             static constexpr size_t FileDataAlignmentSize = 0x20;
+
+            using ResultSignatureVerificationFailed = fs::ResultPartitionSignatureVerificationFailed;
         };
 
     }
@@ -50,7 +52,6 @@ namespace ams::fssystem {
             struct PartitionFileSystemHeader;
 
             using PartitionEntry = typename Format::PartitionEntry;
-            using ResultSignatureVerificationFailed = fs::ResultSha256PartitionSignatureVerificationFailed;
         protected:
             bool initialized;
             PartitionFileSystemHeader *header;
@@ -60,9 +61,9 @@ namespace ams::fssystem {
             MemoryResource *allocator;
             char *buffer;
         public:
-            PartitionFileSystemMetaCore() { /* ... */ }
+            PartitionFileSystemMetaCore() : initialized(false), allocator(nullptr), buffer(nullptr) { /* ... */ }
             ~PartitionFileSystemMetaCore();
-            
+
             Result Initialize(fs::IStorage *storage, MemoryResource *allocator);
             Result Initialize(fs::IStorage *storage, void *header, size_t header_size);
 
@@ -72,7 +73,8 @@ namespace ams::fssystem {
             const char *GetEntryName(s32 index) const;
             size_t GetHeaderSize() const;
             size_t GetMetaDataSize() const;
-            Result QueryMetaDataSize(size_t *out_size, fs::IStorage *storage) const;
+        public:
+            static Result QueryMetaDataSize(size_t *out_size, fs::IStorage *storage);
         protected:
             void DeallocateBuffer();
     };

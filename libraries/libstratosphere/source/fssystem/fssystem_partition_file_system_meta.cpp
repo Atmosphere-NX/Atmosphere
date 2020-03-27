@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2018-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,11 +19,13 @@ namespace ams::fssystem {
 
     template <typename Format>
     struct PartitionFileSystemMetaCore<Format>::PartitionFileSystemHeader {
-        u32 signature;
+        char signature[sizeof(Format::VersionSignature)];
         s32 entry_count;
         u32 name_table_size;
         u32 reserved;
     };
+    static_assert(std::is_pod<PartitionFileSystemMeta::PartitionFileSystemHeader>::value);
+    static_assert(sizeof(PartitionFileSystemMeta::PartitionFileSystemHeader) == 0x10);
 
     template <typename Format>
     PartitionFileSystemMetaCore<Format>::~PartitionFileSystemMetaCore() {
@@ -32,14 +34,17 @@ namespace ams::fssystem {
 
     template <typename Format>
     Result PartitionFileSystemMetaCore<Format>::Initialize(fs::IStorage *storage, MemoryResource *allocator) {
+        /* Validate preconditions. */
+        AMS_ASSERT(allocator != nullptr);
+
         /* Determine the meta data size. */
         R_TRY(this->QueryMetaDataSize(std::addressof(this->meta_data_size), storage));
 
         /* Deallocate any old meta buffer and allocate a new one. */
         this->DeallocateBuffer();
         this->allocator = allocator;
-        this->buffer = reinterpret_cast<char *>(this->allocator->Allocate(this->meta_data_size));
-        R_UNLESS(this->buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaCore());
+        this->buffer = static_cast<char *>(this->allocator->Allocate(this->meta_data_size));
+        R_UNLESS(this->buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaA());
 
         /* Perform regular initialization. */
         return this->Initialize(storage, this->buffer, this->meta_data_size);
@@ -55,12 +60,12 @@ namespace ams::fssystem {
 
         /* Set and validate the header. */
         this->header = reinterpret_cast<PartitionFileSystemHeader *>(meta);
-        R_UNLESS(crypto::IsSameBytes(this->header, Format::VersionSignature, sizeof(Format::VersionSignature)), ResultSignatureVerificationFailed());
+        R_UNLESS(crypto::IsSameBytes(this->header->signature, Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
 
         /* Setup entries and name table. */
         const size_t entries_size = this->header->entry_count * sizeof(typename Format::PartitionEntry);
-        this->entries = reinterpret_cast<PartitionEntry *>(reinterpret_cast<u8 *>(meta) + sizeof(PartitionFileSystemHeader));
-        this->name_table = reinterpret_cast<char *>(meta) + sizeof(PartitionFileSystemHeader) + entries_size;
+        this->entries = reinterpret_cast<PartitionEntry *>(static_cast<u8 *>(meta) + sizeof(PartitionFileSystemHeader));
+        this->name_table = static_cast<char *>(meta) + sizeof(PartitionFileSystemHeader) + entries_size;
 
         /* Validate size for header + entries + name table. */
         R_UNLESS(meta_size >= sizeof(PartitionFileSystemHeader) + entries_size + this->header->name_table_size, fs::ResultInvalidSize());
@@ -84,7 +89,7 @@ namespace ams::fssystem {
 
     template <typename Format>
     const typename Format::PartitionEntry *PartitionFileSystemMetaCore<Format>::GetEntry(s32 index) const {
-        if (this->initialized && index >= 0 && index < this->header->entry_count) {
+        if (this->initialized && 0 <= index && index < static_cast<s32>(this->header->entry_count)) {
             return std::addressof(this->entries[index]);
         }
         return nullptr;
@@ -100,32 +105,33 @@ namespace ams::fssystem {
 
     template <typename Format>
     s32 PartitionFileSystemMetaCore<Format>::GetEntryIndex(const char *name) const {
-        if (this->initialized) {
-            for (s32 i = 0; i < this->header->entry_count; i++) {
-                const auto &entry = this->entries[i];
-
-                /* Name offset is invalid. */
-                if (entry.name_offset >= this->header->name_table_size) {
-                    return 0;
-                }
-
-                /* Compare to input name. */
-                const s32 max_count = this->header->name_table_size - entry.name_offset;
-                if (std::strncmp(std::addressof(this->name_table[entry.name_offset]), name, max_count) == 0) {
-                    return i;
-                }
-            }
-
-            /* Not found. */
-            return -1;
+        /* Fail if not initialized. */
+        if (!this->initialized) {
+            return 0;
         }
 
-        return 0;
+        for (s32 i = 0; i < static_cast<s32>(this->header->entry_count); i++) {
+            const auto &entry = this->entries[i];
+
+            /* Name offset is invalid. */
+            if (entry.name_offset >= this->header->name_table_size) {
+                return 0;
+            }
+
+            /* Compare to input name. */
+            const s32 max_name_len = this->header->name_table_size - entry.name_offset;
+            if (std::strncmp(std::addressof(this->name_table[entry.name_offset]), name, max_name_len) == 0) {
+                return i;
+            }
+        }
+
+        /* Not found. */
+        return -1;
     }
 
     template <typename Format>
     const char *PartitionFileSystemMetaCore<Format>::GetEntryName(s32 index) const {
-        if (this->initialized && index < this->header->entry_count) {
+        if (this->initialized && index < static_cast<s32>(this->header->entry_count)) {
             return std::addressof(this->name_table[this->GetEntry(index)->name_offset]);
         }
         return nullptr;
@@ -142,13 +148,11 @@ namespace ams::fssystem {
     }
 
     template <typename Format>
-    Result PartitionFileSystemMetaCore<Format>::QueryMetaDataSize(size_t *out_size, fs::IStorage *storage) const {
-        AMS_ABORT_UNLESS(allocator != nullptr);
-
+    Result PartitionFileSystemMetaCore<Format>::QueryMetaDataSize(size_t *out_size, fs::IStorage *storage) {
         /* Read and validate the header. */
         PartitionFileSystemHeader header;
         R_TRY(storage->Read(0, std::addressof(header), sizeof(PartitionFileSystemHeader)));
-        R_UNLESS(crypto::IsSameBytes(std::addressof(header), Format::VersionSignature, sizeof(Format::VersionSignature)), ResultSignatureVerificationFailed());
+        R_UNLESS(crypto::IsSameBytes(std::addressof(header), Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
 
         /* Output size. */
         *out_size = sizeof(PartitionFileSystemHeader) + header.entry_count * sizeof(typename Format::PartitionEntry) + header.name_table_size;
