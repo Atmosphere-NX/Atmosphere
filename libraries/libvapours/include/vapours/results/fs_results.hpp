@@ -74,7 +74,12 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemA,            3247);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemB,            3248);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,            3249);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA, 3280);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
+
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemA,        3347);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemB,        3348);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemC,        3349);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemMetaA,    3350);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemMetaB,    3351);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemD,            3352);
@@ -260,6 +265,10 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateC,    6371);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileA,                  6372);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileB,                  6373);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemA,           6374);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemB,           6375);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileA,                 6376);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileB,                 6377);
 
             R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 
