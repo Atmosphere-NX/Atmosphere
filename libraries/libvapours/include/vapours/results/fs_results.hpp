@@ -254,6 +254,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,                 6304);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,                 6305);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,                   6306);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageB,                   6307);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileServiceObjectAdapterA,      6362);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,               6364);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,               6365);
