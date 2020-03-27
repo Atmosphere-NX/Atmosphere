@@ -41,6 +41,7 @@
 #include <stratosphere/fs/fs_code.hpp>
 #include <stratosphere/fs/fs_content.hpp>
 #include <stratosphere/fs/fs_content_storage.hpp>
+#include <stratosphere/fs/fs_image_directory.hpp>
 #include <stratosphere/fs/fs_game_card.hpp>
 #include <stratosphere/fs/fs_save_data_types.hpp>
 #include <stratosphere/fs/fs_save_data_management.hpp>

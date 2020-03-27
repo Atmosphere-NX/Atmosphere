@@ -68,6 +68,7 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardB,                   3226);
         R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardC,                   3227);
         R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardD,                   3228);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInImageDirectoryA,             3232);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardA,                     3244);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardB,                     3245);
         R_DEFINE_ERROR_RESULT(AllocationFailureInSystemSaveDataA,             3246);
