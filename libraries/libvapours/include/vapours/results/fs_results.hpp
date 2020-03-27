@@ -240,6 +240,8 @@ namespace ams::fs {
 
             R_DEFINE_ERROR_RANGE(InvalidOperationForOpenMode, 6200, 6299);
                 R_DEFINE_ERROR_RESULT(FileExtensionWithoutOpenModeAllowAppend, 6201);
+                R_DEFINE_ERROR_RESULT(ReadNotPermitted,                        6202);
+                R_DEFINE_ERROR_RESULT(WriteNotPermitted,                       6203);
 
             R_DEFINE_ERROR_RANGE(UnsupportedOperation, 6300, 6399);
                 R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,                    6302);

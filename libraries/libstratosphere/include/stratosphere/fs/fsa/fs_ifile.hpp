@@ -85,7 +85,7 @@ namespace ams::fs::fsa {
         protected:
             Result DryRead(size_t *out, s64 offset, size_t size, const fs::ReadOption &option, OpenMode open_mode) {
                 /* Check that we can read. */
-                R_UNLESS((open_mode & OpenMode_Read) != 0, fs::ResultInvalidOperationForOpenMode());
+                R_UNLESS((open_mode & OpenMode_Read) != 0, fs::ResultReadNotPermitted());
 
                 /* Get the file size, and validate our offset. */
                 s64 file_size = 0;
@@ -98,9 +98,28 @@ namespace ams::fs::fsa {
 
             Result DrySetSize(s64 size, fs::OpenMode open_mode) {
                 /* Check that we can write. */
-                R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultInvalidOperationForOpenMode());
+                R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultWriteNotPermitted());
 
                 AMS_ASSERT(size >= 0);
+
+                return ResultSuccess();
+            }
+
+            Result DryWrite(bool *out_append, s64 offset, size_t size, const fs::WriteOption &option, fs::OpenMode open_mode) {
+                /* Check that we can write. */
+                R_UNLESS((open_mode & OpenMode_Write) != 0, fs::ResultWriteNotPermitted());
+
+                /* Get the file size. */
+                s64 file_size = 0;
+                R_TRY(this->GetSize(&file_size));
+
+                /* Determine if we need to append. */
+                if (file_size < offset +  static_cast<s64>(size)) {
+                    R_UNLESS((open_mode & OpenMode_AllowAppend) != 0, fs::ResultFileExtensionWithoutOpenModeAllowAppend());
+                    *out_append = true;
+                } else {
+                    *out_append = false;
+                }
 
                 return ResultSuccess();
             }
