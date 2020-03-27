@@ -28,7 +28,6 @@
 #include <stratosphere/fs/fs_memory_storage.hpp>
 #include <stratosphere/fs/fs_remote_storage.hpp>
 #include <stratosphere/fs/fs_file_storage.hpp>
-#include <stratosphere/fs/fs_file_handle_storage.hpp>
 #include <stratosphere/fs/fs_query_range.hpp>
 #include <stratosphere/fs/impl/fs_common_mount_name.hpp>
 #include <stratosphere/fs/fs_mount.hpp>

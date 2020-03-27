@@ -90,4 +90,75 @@ namespace ams::fs {
         }
     }
 
+    Result FileHandleStorage::UpdateSize() {
+        R_SUCCEED_IF(this->size != InvalidSize);
+        return GetFileSize(std::addressof(this->size), this->handle);
+    }
+
+    Result FileHandleStorage::Read(s64 offset, void *buffer, size_t size) {
+        /* Lock the mutex. */
+        std::scoped_lock lk(this->mutex);
+
+        /* Immediately succeed if there's nothing to read. */
+        R_SUCCEED_IF(size == 0);
+
+        /* Validate buffer. */
+        R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
+
+        /* Ensure our size is valid. */
+        R_TRY(this->UpdateSize());
+
+        /* Ensure our access is valid. */
+        R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+
+        return ReadFile(this->handle, offset, buffer, size, fs::ReadOption());
+    }
+
+    Result FileHandleStorage::Write(s64 offset, const void *buffer, size_t size) {
+        /* Lock the mutex. */
+        std::scoped_lock lk(this->mutex);
+
+        /* Immediately succeed if there's nothing to write. */
+        R_SUCCEED_IF(size == 0);
+
+        /* Validate buffer. */
+        R_UNLESS(buffer != nullptr, fs::ResultNullptrArgument());
+
+        /* Ensure our size is valid. */
+        R_TRY(this->UpdateSize());
+
+        /* Ensure our access is valid. */
+        R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+
+        return WriteFile(this->handle, offset, buffer, size, fs::WriteOption());
+    }
+
+    Result FileHandleStorage::Flush() {
+        return FlushFile(this->handle);
+    }
+
+    Result FileHandleStorage::GetSize(s64 *out_size) {
+        R_TRY(this->UpdateSize());
+        *out_size = this->size;
+        return ResultSuccess();
+    }
+
+    Result FileHandleStorage::SetSize(s64 size) {
+        this->size = InvalidSize;
+        return SetFileSize(this->handle, size);
+    }
+
+    Result FileHandleStorage::OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) {
+        switch (op_id) {
+            case OperationId::QueryRange:
+                /* Validate buffer and size. */
+                R_UNLESS(dst != nullptr,                     fs::ResultNullptrArgument());
+                R_UNLESS(dst_size == sizeof(QueryRangeInfo), fs::ResultInvalidSize());
+
+                return QueryRange(static_cast<QueryRangeInfo *>(dst), this->handle, offset, size);
+            default:
+                return fs::ResultUnsupportedOperationInFileStorageB();
+        }
+    }
+
 }
