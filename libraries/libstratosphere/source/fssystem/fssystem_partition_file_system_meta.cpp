@@ -160,5 +160,60 @@ namespace ams::fssystem {
     }
 
     template class PartitionFileSystemMetaCore<impl::PartitionFileSystemFormat>;
+    template class PartitionFileSystemMetaCore<impl::Sha256PartitionFileSystemFormat>;
+
+    Result Sha256PartitionFileSystemMeta::Initialize(fs::IStorage *base_storage, MemoryResource *allocator, const void *hash, size_t hash_size, std::optional<u8> suffix) {
+        /* Ensure preconditions. */
+        R_UNLESS(hash_size == crypto::Sha256Generator::HashSize, fs::ResultPreconditionViolation());
+
+        /* Get metadata size. */
+        R_TRY(QueryMetaDataSize(std::addressof(this->meta_data_size), base_storage));
+
+        /* Ensure we have no buffer. */
+        this->DeallocateBuffer();
+
+        /* Set allocator and allocate buffer. */
+        this->allocator = allocator;
+        this->buffer = static_cast<char *>(this->allocator->Allocate(this->meta_data_size));
+        R_UNLESS(this->buffer != nullptr, fs::ResultAllocationFailureInPartitionFileSystemMetaB());
+
+        /* Read metadata. */
+        R_TRY(base_storage->Read(0, this->buffer, this->meta_data_size));
+
+        /* Calculate hash. */
+        char calc_hash[crypto::Sha256Generator::HashSize];
+        {
+            crypto::Sha256Generator generator;
+            generator.Initialize();
+            generator.Update(this->buffer, this->meta_data_size);
+            if (suffix) {
+                u8 suffix_val = *suffix;
+                generator.Update(std::addressof(suffix_val), 1);
+            }
+            generator.GetHash(calc_hash, sizeof(calc_hash));
+        }
+
+        /* Ensure hash is valid. */
+        R_UNLESS(crypto::IsSameBytes(hash, calc_hash, sizeof(calc_hash)), fs::ResultSha256PartitionHashVerificationFailed());
+
+        /* Give access to Format */
+        using Format = impl::Sha256PartitionFileSystemFormat;
+
+        /* Set header. */
+        this->header = reinterpret_cast<PartitionFileSystemHeader *>(this->buffer);
+        R_UNLESS(crypto::IsSameBytes(this->header->signature, Format::VersionSignature, sizeof(Format::VersionSignature)), typename Format::ResultSignatureVerificationFailed());
+
+        /* Validate size for entries and name table. */
+        const size_t entries_size = this->header->entry_count * sizeof(typename Format::PartitionEntry);
+        R_UNLESS(this->meta_data_size >= sizeof(PartitionFileSystemHeader) + entries_size + this->header->name_table_size, fs::ResultInvalidSha256PartitionMetaDataSize());
+
+        /* Set entries and name table. */
+        this->entries = reinterpret_cast<PartitionEntry *>(this->buffer + sizeof(PartitionFileSystemHeader));
+        this->name_table = this->buffer + sizeof(PartitionFileSystemHeader) + entries_size;
+
+        /* We initialized. */
+        this->initialized = true;
+        return ResultSuccess();
+    }
 
 }

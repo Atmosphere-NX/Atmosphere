@@ -67,5 +67,6 @@ namespace ams::fssystem {
     };
 
     using PartitionFileSystem       = PartitionFileSystemCore<PartitionFileSystemMeta>;
+    using Sha256PartitionFileSystem = PartitionFileSystemCore<Sha256PartitionFileSystemMeta>;
 
 }

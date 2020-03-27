@@ -126,6 +126,94 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
+    template<>
+    Result PartitionFileSystemCore<Sha256PartitionFileSystemMeta>::PartitionFile::ReadImpl(size_t *out, s64 offset, void *dst, size_t dst_size, const fs::ReadOption &option) {
+        /* Perform a dry read. */
+        size_t read_size = 0;
+        R_TRY(this->DryRead(std::addressof(read_size), offset, dst_size, option, this->mode));
+
+        const s64 entry_start = this->parent->meta_data_size + this->partition_entry->offset;
+        const s64 read_end    = static_cast<s64>(offset + read_size);
+        const s64 hash_start  = static_cast<s64>(this->partition_entry->hash_target_offset);
+        const s64 hash_end    = hash_start + this->partition_entry->hash_target_size;
+
+        if (read_end <= hash_start || hash_end <= offset) {
+            /* We aren't reading hashed data, so we can just read from the base storage. */
+            R_TRY(this->parent->base_storage->Read(entry_start + offset, dst, read_size));
+        } else {
+            /* Only hash target offset == 0 is supported. */
+            R_UNLESS(hash_start == 0, fs::ResultInvalidSha256PartitionHashTarget());
+
+            /* Ensure that the hash region is valid. */
+            R_UNLESS(this->partition_entry->hash_target_offset + this->partition_entry->hash_target_size <= this->partition_entry->size, fs::ResultInvalidSha256PartitionHashTarget());
+
+            /* Validate our read offset. */
+            const s64 read_offset = entry_start + offset;
+            R_UNLESS(read_offset >= offset, fs::ResultOutOfRange());
+
+            /* Prepare a buffer for our calculated hash. */
+            char hash[crypto::Sha256Generator::HashSize];
+            crypto::Sha256Generator generator;
+
+            /* Ensure we can perform our read. */
+            const bool hash_in_read = offset <= hash_start && hash_end <= read_end;
+            const bool read_in_hash = hash_start <= offset && read_end <= hash_end;
+            R_UNLESS(hash_in_read || read_in_hash, fs::ResultInvalidSha256PartitionHashTarget());
+
+            /* Initialize the generator. */
+            generator.Initialize();
+
+            if (hash_in_read) {
+                /* Easy case: hash region is contained within the bounds. */
+                R_TRY(this->parent->base_storage->Read(entry_start + offset, dst, read_size));
+                generator.Update(static_cast<u8 *>(dst) + hash_start - offset, this->partition_entry->hash_target_size);
+            } else /* if (read_in_hash) */ {
+                /* We're reading a portion of what's hashed. */
+                s64 remaining_hash_size = this->partition_entry->hash_target_size;
+                s64 hash_offset         = entry_start + hash_start;
+                s64 remaining_size      = read_size;
+                s64 copy_offset         = 0;
+                while (remaining_hash_size > 0) {
+                    /* Read some portion of data into the buffer. */
+                    constexpr size_t HashBufferSize = 0x200;
+                    char hash_buffer[HashBufferSize];
+                    size_t cur_size = static_cast<size_t>(std::min(static_cast<s64>(HashBufferSize), remaining_hash_size));
+                    R_TRY(this->parent->base_storage->Read(hash_offset, hash_buffer, cur_size));
+
+                    /*  Update the hash. */
+                    generator.Update(hash_buffer, cur_size);
+
+                    /* If we need to copy, do so. */
+                    if (read_offset <= (hash_offset + static_cast<s64>(cur_size)) && remaining_size > 0) {
+                        const s64 hash_buffer_offset = std::max<s64>(read_offset - hash_offset, 0);
+                        const size_t copy_size = static_cast<size_t>(std::min<s64>(cur_size - hash_buffer_offset, remaining_size));
+                        std::memcpy(static_cast<u8 *>(dst) + copy_offset, hash_buffer + hash_buffer_offset, copy_size);
+                        remaining_size -= copy_size;
+                        copy_offset    += copy_size;
+                    }
+
+                    /* Update offsets. */
+                    remaining_hash_size -= cur_size;
+                    hash_offset         += cur_size;
+                }
+            }
+
+            /* Get the hash. */
+            generator.GetHash(hash, sizeof(hash));
+
+            /* Validate the hash. */
+            auto hash_guard = SCOPE_GUARD { std::memset(dst, 0, read_size); };
+            R_UNLESS(crypto::IsSameBytes(this->partition_entry->hash, hash, sizeof(hash)), fs::ResultSha256PartitionHashVerificationFailed());
+
+            /* We successfully completed our read. */
+            hash_guard.Cancel();
+        }
+
+        /* Set output size. */
+        *out = read_size;
+        return ResultSuccess();
+    }
+
     template <typename MetaType>
     class PartitionFileSystemCore<MetaType>::PartitionDirectory : public fs::fsa::IDirectory, public fs::impl::Newable {
         private:
@@ -357,5 +445,6 @@ namespace ams::fssystem {
     }
 
     template class PartitionFileSystemCore<PartitionFileSystemMeta>;
+    template class PartitionFileSystemCore<Sha256PartitionFileSystemMeta>;
 
 }

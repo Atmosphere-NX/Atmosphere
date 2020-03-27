@@ -40,6 +40,29 @@ namespace ams::fssystem {
             using ResultSignatureVerificationFailed = fs::ResultPartitionSignatureVerificationFailed;
         };
 
+        struct Sha256PartitionFileSystemFormat {
+            static constexpr size_t HashSize = ::ams::crypto::Sha256Generator::HashSize;
+
+            #pragma pack(push, 1)
+            struct PartitionEntry {
+                u64 offset;
+                u64 size;
+                u32 name_offset;
+                u32 hash_target_size;
+                u64 hash_target_offset;
+                char hash[HashSize];
+            };
+            static_assert(std::is_pod<PartitionEntry>::value);
+            #pragma pack(pop)
+
+            static constexpr const char VersionSignature[] = { 'H', 'F', 'S', '0' };
+
+            static constexpr size_t EntryNameLengthMax = ::ams::fs::EntryNameLengthMax;
+            static constexpr size_t FileDataAlignmentSize = 0x200;
+
+            using ResultSignatureVerificationFailed = fs::ResultSha256PartitionSignatureVerificationFailed;
+        };
+
     }
 
     template<typename Format>
@@ -80,5 +103,11 @@ namespace ams::fssystem {
     };
 
     using PartitionFileSystemMeta = PartitionFileSystemMetaCore<impl::PartitionFileSystemFormat>;
+
+    class Sha256PartitionFileSystemMeta : public PartitionFileSystemMetaCore<impl::Sha256PartitionFileSystemFormat> {
+        public:
+            using PartitionFileSystemMetaCore<impl::Sha256PartitionFileSystemFormat>::Initialize;
+            Result Initialize(fs::IStorage *base_storage, MemoryResource *allocator, const void *hash, size_t hash_size, std::optional<u8> suffix = std::nullopt);
+    };
 
 }
