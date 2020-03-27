@@ -24,6 +24,7 @@ namespace ams::fssystem {
     template<typename MetaType>
     class PartitionFileSystemCore : public fs::impl::Newable, public fs::fsa::IFileSystem {
         NON_COPYABLE(PartitionFileSystemCore);
+        NON_MOVEABLE(PartitionFileSystemCore);
         private:
             class PartitionFile;
             class PartitionDirectory;
@@ -40,7 +41,7 @@ namespace ams::fssystem {
             PartitionFileSystemCore();
             virtual ~PartitionFileSystemCore() override;
 
-            Result Initialize(std::unique_ptr<MetaType> &meta_data, std::shared_ptr<fs::IStorage> base_storage);
+            Result Initialize(std::unique_ptr<MetaType> &&meta_data, std::shared_ptr<fs::IStorage> base_storage);
             Result Initialize(MetaType *meta_data, std::shared_ptr<fs::IStorage> base_storage);
             Result Initialize(fs::IStorage *base_storage);
             Result Initialize(std::shared_ptr<fs::IStorage> base_storage);
