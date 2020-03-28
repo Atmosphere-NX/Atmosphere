@@ -23,7 +23,8 @@ namespace ams::ncm {
             fs::FileHandleStorage storage;
             std::optional<impl::MountName> mount_name;
         public:
-            explicit Impl(fs::FileHandle handle) : storage(handle), mount_name(std::nullopt) { /* ... */ }
+            explicit Impl(fs::FileHandle file) : storage(file), mount_name(std::nullopt) { /* ... */ }
+
             ~Impl() {
                 if (this->mount_name) {
                     fs::fsa::Unregister(this->mount_name->str);
@@ -47,21 +48,18 @@ namespace ams::ncm {
             }
 
             const impl::MountName &GetMountName() const {
-                return this->mount_name;
+                return *this->mount_name;
             }
     };
 
-    SubmissionPackageInstallTask::~SubmissionPackageInstallTask() {
-        if (this->impl != nullptr) {
-            delete this->impl;
-        }
-    }
+    SubmissionPackageInstallTask::SubmissionPackageInstallTask()  { /* ... */ }
+    SubmissionPackageInstallTask::~SubmissionPackageInstallTask() { /* ... */ }
 
-    Result SubmissionPackageInstallTask::Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
+    Result SubmissionPackageInstallTask::Initialize(fs::FileHandle file, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
         AMS_ASSERT(!this->impl);
-        
+
         /* Allocate impl. */
-        this->impl.reset(new (std::nothrow) Impl(handle));
+        this->impl.reset(new (std::nothrow) Impl(file));
         R_UNLESS(this->impl != nullptr, ncm::ResultAllocationFailed());
 
         /* Initialize impl. */
