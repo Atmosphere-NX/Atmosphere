@@ -21,17 +21,18 @@ namespace ams::ncm {
     class SubmissionPackageInstallTask::Impl {
         private:
             fs::FileHandleStorage storage;
-            bool initialized;
-            impl::MountName mount_name;
+            std::optional<impl::MountName> mount_name;
         public:
-            Impl(fs::FileHandle handle) : storage(handle), initialized(false) { /* ... */ }
+            explicit Impl(fs::FileHandle handle) : storage(handle), mount_name(std::nullopt) { /* ... */ }
             ~Impl() {
-                if (this->initialized) {
-                    fs::fsa::Unregister(this->mount_name.str);
+                if (this->mount_name) {
+                    fs::fsa::Unregister(this->mount_name->str);
                 }
             }
 
             Result Initialize() {
+                AMS_ASSERT(!this->mount_name);
+
                 /* Allocate a partition file system. */
                 auto partition_file_system = std::make_unique<fssystem::PartitionFileSystem>();
                 R_UNLESS(partition_file_system != nullptr, ncm::ResultAllocationFailed());
@@ -42,7 +43,6 @@ namespace ams::ncm {
 
                 /* Initialize members. */
                 this->mount_name = mount_name;
-                this->initialized = true;
                 return ResultSuccess();
             }
 
@@ -58,8 +58,10 @@ namespace ams::ncm {
     }
 
     Result SubmissionPackageInstallTask::Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
+        AMS_ASSERT(!this->impl);
+        
         /* Allocate impl. */
-        this->impl = new (std::nothrow) Impl(handle);
+        this->impl.reset(new (std::nothrow) Impl(handle));
         R_UNLESS(this->impl != nullptr, ncm::ResultAllocationFailed());
 
         /* Initialize impl. */

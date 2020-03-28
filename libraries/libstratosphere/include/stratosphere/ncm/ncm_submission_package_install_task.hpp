@@ -23,10 +23,10 @@ namespace ams::ncm {
         private:
             class Impl;
         private:
-            Impl *impl;
+            std::unique_ptr<Impl> impl;
         public:
             SubmissionPackageInstallTask() { /* ... */ }
-            ~SubmissionPackageInstallTask();
+            virtual ~SubmissionPackageInstallTask() override { /* ... */ }
 
             Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
     };
