@@ -34,5 +34,6 @@
 #include <stratosphere/ncm/ncm_package_install_task_base.hpp>
 #include <stratosphere/ncm/ncm_package_install_task.hpp>
 #include <stratosphere/ncm/ncm_package_system_update_task.hpp>
+#include <stratosphere/ncm/ncm_submission_package_install_task.hpp>
 #include <stratosphere/ncm/ncm_storage_id_utils.hpp>
 #include <stratosphere/ncm/ncm_api.hpp>

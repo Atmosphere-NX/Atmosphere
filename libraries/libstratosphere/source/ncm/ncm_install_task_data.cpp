@@ -341,7 +341,7 @@ namespace ams::ncm {
         R_TRY(this->GetEntryInfo(std::addressof(entry_info), index));
 
         /* Read the entry to the output buffer. */
-        R_UNLESS(entry_info.size <= out_size, ncm::ResultBufferInsufficient());
+        R_UNLESS(entry_info.size <= static_cast<s64>(out_size), ncm::ResultBufferInsufficient());
         return this->Read(out, out_size, entry_info.offset);
     }
 
@@ -351,7 +351,7 @@ namespace ams::ncm {
         R_TRY(this->GetEntryInfo(std::addressof(entry_info), index));
 
         /* Data size must match existing data size. */
-        R_UNLESS(entry_info.size == data_size, ncm::ResultBufferInsufficient());
+        R_UNLESS(entry_info.size == static_cast<s64>(data_size), ncm::ResultBufferInsufficient());
         return this->Write(data, data_size, entry_info.offset);
     }
 
