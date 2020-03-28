@@ -13,21 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere/os/os_common_types.hpp>
+#include <stratosphere/os/os_memory_common.hpp>
 
 namespace ams::os {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
-
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
-
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
+    struct TlsSlot {
+        u32 _value;
     };
+
+    using TlsDestructor = void (*)(uintptr_t arg);
+
+    constexpr inline size_t TlsSlotCountMax = 16;
+    constexpr inline size_t SdkTlsSlotCountMax = 16;
 
 }

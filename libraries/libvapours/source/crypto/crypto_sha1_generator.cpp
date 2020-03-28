@@ -13,21 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <vapours.hpp>
 
-namespace ams::os {
+namespace ams::crypto {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
+    void GenerateSha1Hash(void *dst, size_t dst_size, const void *src, size_t src_size) {
+        Sha1Generator gen;
 
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
-
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
-    };
+        gen.Initialize();
+        gen.Update(src, src_size);
+        gen.GetHash(dst, dst_size);
+    }
 
 }

@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 
         /* Initialize threads. */
         if constexpr (NumExtraThreads > 0) {
-            const u32 priority = os::GetCurrentThreadPriority();
+            const s32 priority = os::GetCurrentThreadPriority();
             for (size_t i = 0; i < NumExtraThreads; i++) {
                 R_ABORT_UNLESS(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
             }

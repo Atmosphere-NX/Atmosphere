@@ -46,11 +46,11 @@ namespace ams::diag {
 #endif
 
 #ifdef AMS_ENABLE_ASSERTIONS
-#define AMS_ASSERT_IMPL(expr, ...)                                                           \
-    ({                                                                                       \
-        if (const bool __tmp_ams_assert_val = (expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
-            AMS_CALL_ASSERT_FAIL_IMPL(#expr, ## __VA_ARGS__);                                \
-        }                                                                                    \
+#define AMS_ASSERT_IMPL(expr, ...)                                                                            \
+    ({                                                                                                        \
+        if (const bool __tmp_ams_assert_val = static_cast<bool>(expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
+            AMS_CALL_ASSERT_FAIL_IMPL(#expr, ## __VA_ARGS__);                                                 \
+        }                                                                                                     \
     })
 #else
 #define AMS_ASSERT_IMPL(expr, ...) AMS_UNUSED(expr, ## __VA_ARGS__)
@@ -68,9 +68,9 @@ namespace ams::diag {
 
 #define AMS_ABORT(...) AMS_CALL_ABORT_IMPL("", ## __VA_ARGS__)
 
-#define AMS_ABORT_UNLESS(expr, ...)                                                          \
-    ({                                                                                       \
-        if (const bool __tmp_ams_assert_val = (expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
-            AMS_CALL_ABORT_IMPL(#expr, ##__VA_ARGS__);                                       \
-        }                                                                                    \
+#define AMS_ABORT_UNLESS(expr, ...)                                                                           \
+    ({                                                                                                        \
+        if (const bool __tmp_ams_assert_val = static_cast<bool>(expr); AMS_UNLIKELY(!__tmp_ams_assert_val)) { \
+            AMS_CALL_ABORT_IMPL(#expr, ##__VA_ARGS__);                                                        \
+        }                                                                                                     \
     })

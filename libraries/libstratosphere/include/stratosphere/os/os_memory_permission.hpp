@@ -15,19 +15,11 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/os/os_common_types.hpp>
+#include <stratosphere/os/os_memory_common.hpp>
 
 namespace ams::os {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
-
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
-
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
-    };
+    void SetMemoryPermission(uintptr_t address, size_t size, MemoryPermission perm);
 
 }
