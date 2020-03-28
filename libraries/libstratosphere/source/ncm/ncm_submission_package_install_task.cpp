@@ -52,7 +52,7 @@ namespace ams::ncm {
     };
 
     SubmissionPackageInstallTask::~SubmissionPackageInstallTask() {
-        delete impl;
+        delete this->impl;
     }
 
     Result SubmissionPackageInstallTask::Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket) {
