@@ -32,7 +32,7 @@ namespace ams::pm::dmnt {
 
             /* Atmosphere extension commands. */
             virtual Result AtmosphereGetProcessInfo(sf::OutCopyHandle out_process_handle, sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id);
-            virtual Result AtmosphereGetCurrentLimitInfo(sf::Out<u64> out_cur_val, sf::Out<u64> out_lim_val, u32 group, u32 resource);
+            virtual Result AtmosphereGetCurrentLimitInfo(sf::Out<s64> out_cur_val, sf::Out<s64> out_lim_val, u32 group, u32 resource);
     };
 
     /* This represents modern DebugMonitorService (5.0.0+). */

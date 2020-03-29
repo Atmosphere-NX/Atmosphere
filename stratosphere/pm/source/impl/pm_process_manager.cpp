@@ -97,7 +97,7 @@ namespace ams::pm::impl {
             Started        = 2,
             Exception      = 3,
             DebugRunning   = 4,
-            DebugSuspended = 5,
+            DebugBreak = 5,
         };
 
         enum class ProcessEventDeprecated {
@@ -105,7 +105,7 @@ namespace ams::pm::impl {
             Exception      = 1,
             Exited         = 2,
             DebugRunning   = 3,
-            DebugSuspended = 4,
+            DebugBreak = 4,
             Started        = 5,
         };
 
@@ -124,8 +124,8 @@ namespace ams::pm::impl {
                     return static_cast<u32>(ProcessEventDeprecated::Exception);
                 case ProcessEvent::DebugRunning:
                     return static_cast<u32>(ProcessEventDeprecated::DebugRunning);
-                case ProcessEvent::DebugSuspended:
-                    return static_cast<u32>(ProcessEventDeprecated::DebugSuspended);
+                case ProcessEvent::DebugBreak:
+                    return static_cast<u32>(ProcessEventDeprecated::DebugBreak);
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
@@ -263,7 +263,7 @@ namespace ams::pm::impl {
 
         Result StartProcess(ProcessInfo *process_info, const ldr::ProgramInfo *program_info) {
             R_TRY(svcStartProcess(process_info->GetHandle(), program_info->main_thread_priority, program_info->default_cpu_id, program_info->main_thread_stack_size));
-            process_info->SetState(ProcessState_Running);
+            process_info->SetState(svc::ProcessState_Running);
             return ResultSuccess();
         }
 
@@ -372,25 +372,25 @@ namespace ams::pm::impl {
             svcResetSignal(process_info->GetHandle());
 
             /* Update the process's state. */
-            const ProcessState old_state = process_info->GetState();
+            const svc::ProcessState old_state = process_info->GetState();
             {
-                u64 tmp = 0;
-                R_ABORT_UNLESS(svcGetProcessInfo(&tmp, process_info->GetHandle(), ProcessInfoType_ProcessState));
-                process_info->SetState(static_cast<ProcessState>(tmp));
+                s64 tmp = 0;
+                R_ABORT_UNLESS(svc::GetProcessInfo(&tmp, process_info->GetHandle(), svc::ProcessInfoType_ProcessState));
+                process_info->SetState(static_cast<svc::ProcessState>(tmp));
             }
-            const ProcessState new_state = process_info->GetState();
+            const svc::ProcessState new_state = process_info->GetState();
 
             /* If we're transitioning away from crashed, clear waiting attached. */
-            if (old_state == ProcessState_Crashed && new_state != ProcessState_Crashed) {
+            if (old_state == svc::ProcessState_Crashed && new_state != svc::ProcessState_Crashed) {
                 process_info->ClearExceptionWaitingAttach();
             }
 
             switch (new_state) {
-                case ProcessState_Created:
-                case ProcessState_CreatedAttached:
-                case ProcessState_Exiting:
+                case svc::ProcessState_Created:
+                case svc::ProcessState_CreatedAttached:
+                case svc::ProcessState_Terminating:
                     break;
-                case ProcessState_Running:
+                case svc::ProcessState_Running:
                     if (process_info->ShouldSignalOnDebugEvent()) {
                         process_info->ClearSuspended();
                         process_info->SetSuspendedStateChanged();
@@ -401,18 +401,18 @@ namespace ams::pm::impl {
                         g_process_event.Signal();
                     }
                     break;
-                case ProcessState_Crashed:
+                case svc::ProcessState_Crashed:
                     process_info->SetExceptionOccurred();
                     g_process_event.Signal();
                     break;
-                case ProcessState_RunningAttached:
+                case svc::ProcessState_RunningAttached:
                     if (process_info->ShouldSignalOnDebugEvent()) {
                         process_info->ClearSuspended();
                         process_info->SetSuspendedStateChanged();
                         g_process_event.Signal();
                     }
                     break;
-                case ProcessState_Exited:
+                case svc::ProcessState_Terminated:
                     /* Free process resources, unlink from waitable manager. */
                     process_info->Cleanup();
 
@@ -438,7 +438,7 @@ namespace ams::pm::impl {
                         }
                     }
                     break;
-                case ProcessState_DebugSuspended:
+                case svc::ProcessState_DebugBreak:
                     if (process_info->ShouldSignalOnDebugEvent()) {
                         process_info->SetSuspended();
                         process_info->SetSuspendedStateChanged();
@@ -535,7 +535,7 @@ namespace ams::pm::impl {
                 if (process.HasSuspendedStateChanged()) {
                     process.ClearSuspendedStateChanged();
                     if (process.IsSuspended()) {
-                        out->event = GetProcessEventValue(ProcessEvent::DebugSuspended);
+                        out->event = GetProcessEventValue(ProcessEvent::DebugBreak);
                     } else {
                         out->event = GetProcessEventValue(ProcessEvent::DebugRunning);
                     }
@@ -548,7 +548,7 @@ namespace ams::pm::impl {
                     out->process_id = process.GetProcessId();
                     return ResultSuccess();
                 }
-                if (hos::GetVersion() < hos::Version_500 && process.ShouldSignalOnExit() && process.HasExited()) {
+                if (hos::GetVersion() < hos::Version_500 && process.ShouldSignalOnExit() && process.HasTerminated()) {
                     out->event = GetProcessEventValue(ProcessEvent::Exited);
                     out->process_id = process.GetProcessId();
                     return ResultSuccess();
@@ -579,8 +579,8 @@ namespace ams::pm::impl {
         ProcessListAccessor list(g_process_list);
 
         auto process_info = list->Find(process_id);
-        R_UNLESS(process_info != nullptr,   pm::ResultProcessNotFound());
-        R_UNLESS(process_info->HasExited(), pm::ResultNotExited());
+        R_UNLESS(process_info != nullptr,       pm::ResultProcessNotFound());
+        R_UNLESS(process_info->HasTerminated(), pm::ResultNotTerminated());
 
         CleanupProcessInfo(list, process_info);
         return ResultSuccess();
@@ -725,8 +725,8 @@ namespace ams::pm::impl {
         return resource::BoostApplicationThreadResourceLimit();
     }
 
-    Result AtmosphereGetCurrentLimitInfo(u64 *out_cur_val, u64 *out_lim_val, u32 group, u32 resource) {
-        return resource::GetResourceLimitValues(out_cur_val, out_lim_val, static_cast<ResourceLimitGroup>(group), static_cast<LimitableResource>(resource));
+    Result AtmosphereGetCurrentLimitInfo(s64 *out_cur_val, s64 *out_lim_val, u32 group, u32 resource) {
+        return resource::GetResourceLimitValues(out_cur_val, out_lim_val, static_cast<ResourceLimitGroup>(group), static_cast<svc::LimitableResource>(resource));
     }
 
 }

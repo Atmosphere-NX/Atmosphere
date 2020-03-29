@@ -58,7 +58,7 @@ namespace ams::pm::dmnt {
         return impl::AtmosphereGetProcessInfo(out_process_handle.GetHandlePointer(), out_loc.GetPointer(), out_status.GetPointer(), process_id);
     }
 
-    Result DebugMonitorServiceBase::AtmosphereGetCurrentLimitInfo(sf::Out<u64> out_cur_val, sf::Out<u64> out_lim_val, u32 group, u32 resource) {
+    Result DebugMonitorServiceBase::AtmosphereGetCurrentLimitInfo(sf::Out<s64> out_cur_val, sf::Out<s64> out_lim_val, u32 group, u32 resource) {
         return impl::AtmosphereGetCurrentLimitInfo(out_cur_val.GetPointer(), out_lim_val.GetPointer(), group, resource);
     }
 

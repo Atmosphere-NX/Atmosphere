@@ -51,6 +51,6 @@ namespace ams::pm::impl {
     /* Resource Limit API. */
     Result BoostSystemMemoryResourceLimit(u64 boost_size);
     Result BoostApplicationThreadResourceLimit();
-    Result AtmosphereGetCurrentLimitInfo(u64 *out_cur_val, u64 *out_lim_val, u32 group, u32 resource);
+    Result AtmosphereGetCurrentLimitInfo(s64 *out_cur_val, s64 *out_lim_val, u32 group, u32 resource);
 
 }

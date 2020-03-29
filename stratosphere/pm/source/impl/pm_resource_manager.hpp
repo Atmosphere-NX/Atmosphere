@@ -26,6 +26,6 @@ namespace ams::pm::resource {
     Handle GetResourceLimitHandle(const ldr::ProgramInfo *info);
     void   WaitResourceAvailable(const ldr::ProgramInfo *info);
 
-    Result GetResourceLimitValues(u64 *out_cur, u64 *out_lim, ResourceLimitGroup group, LimitableResource resource);
+    Result GetResourceLimitValues(s64 *out_cur, s64 *out_lim, ResourceLimitGroup group, svc::LimitableResource resource);
 
 }

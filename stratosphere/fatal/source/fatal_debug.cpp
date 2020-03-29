@@ -213,14 +213,14 @@ namespace ams::fatal::srv {
         ThreadContext thread_ctx;
         {
             /* We start by trying to get a list of threads. */
-            u32 thread_count;
+            s32 thread_count;
             u64 thread_ids[0x60];
-            if (R_FAILED(svcGetThreadList(&thread_count, thread_ids, 0x60, debug_handle.Get()))) {
+            if (R_FAILED(svc::GetThreadList(&thread_count, thread_ids, 0x60, debug_handle.Get()))) {
                 return;
             }
 
             /* We need to locate the thread that's called fatal. */
-            for (u32 i = 0; i < thread_count; i++) {
+            for (s32 i = 0; i < thread_count; i++) {
                 const u64 cur_thread_id = thread_ids[i];
                 if (thread_id_to_tls.find(cur_thread_id) == thread_id_to_tls.end()) {
                     continue;

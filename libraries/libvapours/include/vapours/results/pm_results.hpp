@@ -23,7 +23,7 @@ namespace ams::pm {
 
     R_DEFINE_ERROR_RESULT(ProcessNotFound,    1);
     R_DEFINE_ERROR_RESULT(AlreadyStarted,     2);
-    R_DEFINE_ERROR_RESULT(NotExited,          3);
+    R_DEFINE_ERROR_RESULT(NotTerminated,      3);
     R_DEFINE_ERROR_RESULT(DebugHookInUse,     4);
     R_DEFINE_ERROR_RESULT(ApplicationRunning, 5);
     R_DEFINE_ERROR_RESULT(InvalidSize,        6);

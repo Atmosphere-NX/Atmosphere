@@ -17,7 +17,7 @@
 
 namespace ams::pm::impl {
 
-    ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(ProcessState_Created), flags(0), waitable_holder(h) {
+    ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(svc::ProcessState_Created), flags(0), waitable_holder(h) {
         this->waitable_holder.SetUserData(reinterpret_cast<uintptr_t>(this));
     }
 
