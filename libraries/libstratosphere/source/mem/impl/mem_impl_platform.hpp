@@ -14,20 +14,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::os {
+namespace ams::mem::impl {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
-
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
-
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
+    enum Prot {
+        Prot_none  = (0 << 0),
+        Prot_read  = (1 << 0),
+        Prot_write = (1 << 1),
+        Prot_exec  = (1 << 2),
     };
+
+    errno_t virtual_alloc(void **ptr, size_t size);
+    errno_t virtual_free(void *ptr, size_t size);
+    errno_t physical_alloc(void *ptr, size_t size, Prot prot);
+    errno_t physical_free(void *ptr, size_t size);
+
+    size_t strlcpy(char *dst, const char *src, size_t size);
+
+    errno_t gen_random(void *dst, size_t dst_size);
+
+    errno_t epochtime(s64 *dst);
+
+    errno_t getcpu(s32 *out);
 
 }

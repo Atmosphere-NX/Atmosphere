@@ -18,37 +18,32 @@
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
 #include <vapours/util.hpp>
-#include <vapours/crypto/impl/crypto_sha256_impl.hpp>
+#include <vapours/crypto/impl/crypto_sha1_impl.hpp>
 
 namespace ams::crypto {
 
-    struct Sha256Context {
-        u32 intermediate_hash[impl::Sha256Impl::HashSize / sizeof(u32)];
-        u64 bits_consumed;
-    };
-
-    class Sha256Generator {
-        NON_COPYABLE(Sha256Generator);
-        NON_MOVEABLE(Sha256Generator);
+    class Sha1Generator {
+        NON_COPYABLE(Sha1Generator);
+        NON_MOVEABLE(Sha1Generator);
         private:
-            using Impl = impl::Sha256Impl;
+            using Impl = impl::Sha1Impl;
         public:
             static constexpr size_t HashSize  = Impl::HashSize;
             static constexpr size_t BlockSize = Impl::BlockSize;
 
             static constexpr inline u8 Asn1Identifier[] = {
-                0x30, 0x31, /* Sequence, size 0x31 */
-                    0x30, 0x0D, /* Sequence, size 0x0D */
-                        0x06, 0x09, /* Object Identifier */
-                            0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, /* SHA-256 */
+                0x30, 0x21, /* Sequence, size 0x21 */
+                    0x30, 0x09, /* Sequence, size 0x09 */
+                        0x06, 0x05, /* Object Identifier */
+                            0x2B, 0x0E, 0x03, 0x02, 0x1A, /* SHA-1 */
                         0x05, 0x00, /* Null */
-                    0x04, 0x20, /* Octet string, size 0x20 */
+                    0x04, 0x14, /* Octet string, size 0x14 */
             };
             static constexpr size_t Asn1IdentifierSize = util::size(Asn1Identifier);
         private:
             Impl impl;
         public:
-            Sha256Generator() { /* ... */ }
+            Sha1Generator() { /* ... */ }
 
             void Initialize() {
                 this->impl.Initialize();
@@ -61,24 +56,8 @@ namespace ams::crypto {
             void GetHash(void *dst, size_t size) {
                 this->impl.GetHash(dst, size);
             }
-
-            void InitializeWithContext(const Sha256Context *context) {
-                this->impl.InitializeWithContext(context);
-            }
-
-            size_t GetContext(Sha256Context *context) const {
-                return this->impl.GetContext(context);
-            }
-
-            size_t GetBufferedDataSize() const {
-                return this->impl.GetBufferedDataSize();
-            }
-
-            void GetBufferedData(void *dst, size_t dst_size) const {
-                return this->impl.GetBufferedData(dst, dst_size);
-            }
     };
 
-    void GenerateSha256Hash(void *dst, size_t dst_size, const void *src, size_t src_size);
+    void GenerateSha1Hash(void *dst, size_t dst_size, const void *src, size_t src_size);
 
 }

@@ -41,7 +41,7 @@ namespace ams::diag {
             __builtin_unreachable();
         }
 
-        ALWAYS_INLINE void DebugLog(const char *format, ...) __attribute__((format(printf, 1, 2)));
+        inline void DebugLog(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 #ifdef AMS_ENABLE_DEBUG_PRINT
         os::Mutex g_debug_log_lock;
@@ -55,7 +55,7 @@ namespace ams::diag {
             svc::OutputDebugString(g_debug_buffer, strlen(g_debug_buffer));
         }
 
-        void DebugLog(const char *format, ...) __attribute__((format(printf, 1, 2))) {
+        void DebugLog(const char *format, ...) {
             ::std::va_list vl;
             va_start(vl, format);
             DebugLogImpl(format, vl);

@@ -101,10 +101,19 @@ namespace ams::os {
             }
     };
 
-    NX_INLINE u32 GetCurrentThreadPriority() {
-        u32 prio;
+    ALWAYS_INLINE s32 GetCurrentThreadPriority() {
+        s32 prio;
         R_ABORT_UNLESS(svcGetThreadPriority(&prio, CUR_THREAD_HANDLE));
         return prio;
+    }
+
+    /* TODO: ThreadManager? */
+    ALWAYS_INLINE s32 GetCurrentProcessorNumber() {
+        return svcGetCurrentProcessorNumber();
+    }
+
+    ALWAYS_INLINE s32 GetCurrentCoreNumber() {
+        return GetCurrentProcessorNumber();
     }
 
 }

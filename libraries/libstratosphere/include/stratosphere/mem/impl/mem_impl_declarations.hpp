@@ -13,21 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <vapours.hpp>
 
-namespace ams::os {
+namespace ams::mem::impl {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
+    namespace heap {
 
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
+        class CentralHeap;
 
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
+    }
 
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
-    };
+    using InternalCentralHeapStorage = ::ams::util::TypedStorage<::ams::mem::impl::heap::CentralHeap, sizeof(void *) * 6, alignof(void *)>;
 
 }

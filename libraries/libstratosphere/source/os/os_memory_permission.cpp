@@ -13,21 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
+#include "impl/os_memory_permission_impl.hpp"
 
 namespace ams::os {
 
-    constexpr inline size_t MemoryPageSize      = 0x1000;
-
-    constexpr inline size_t MemoryBlockUnitSize = 0x200000;
-
-    enum MemoryPermission {
-        MemoryPermission_None      = (0 << 0),
-        MemoryPermission_ReadOnly  = (1 << 0),
-        MemoryPermission_WriteOnly = (1 << 1),
-
-        MemoryPermission_ReadWrite = MemoryPermission_ReadOnly | MemoryPermission_WriteOnly,
-    };
+    void SetMemoryPermission(uintptr_t address, size_t size, MemoryPermission perm) {
+        return impl::SetMemoryPermissionImpl(address, size, perm);
+    }
 
 }
