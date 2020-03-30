@@ -30,6 +30,16 @@
 
 namespace ams::ncm {
 
+    class ContentMetaMemoryResource {
+        private:
+            mem::StandardAllocator allocator;
+            sf::StandardAllocatorMemoryResource memory_resource;
+        public:
+            ContentMetaMemoryResource(void *heap, size_t heap_size) : allocator(heap, heap_size), memory_resource(std::addressof(allocator)) { /* ... */ }
+
+            MemoryResource *Get() { return std::addressof(this->memory_resource); }
+    };
+
     struct SystemSaveDataInfo {
         u64 id;
         u64 size;
@@ -67,6 +77,7 @@ namespace ams::ncm {
                 SystemSaveDataInfo info;
                 std::shared_ptr<IContentMetaDatabase> content_meta_database;
                 std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
+                ContentMetaMemoryResource *memory_resource;
                 u32 max_content_metas;
 
                 ContentMetaDatabaseRoot() { /* ... */ }
@@ -92,8 +103,8 @@ namespace ams::ncm {
             Result InitializeContentStorageRoot(ContentStorageRoot *out, StorageId storage_id, fs::ContentStorageId content_storage_id);
             Result InitializeGameCardContentStorageRoot(ContentStorageRoot *out);
 
-            Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas);
-            Result InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas);
+            Result InitializeContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, StorageId storage_id, const SystemSaveDataInfo &info, size_t max_content_metas, ContentMetaMemoryResource *mr);
+            Result InitializeGameCardContentMetaDatabaseRoot(ContentMetaDatabaseRoot *out, size_t max_content_metas, ContentMetaMemoryResource *mr);
 
             Result BuildContentMetaDatabase(StorageId storage_id);
             Result ImportContentMetaDatabase(StorageId storage_id, bool from_signed_partition);

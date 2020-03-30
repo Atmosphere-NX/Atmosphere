@@ -16,6 +16,6 @@
 
 #pragma once
 #include <vapours.hpp>
-#include "../ams.hpp"
-#include "../os.hpp"
-#include "../sm/sm_types.hpp"
+#include <stratosphere/ams.hpp>
+#include <stratosphere/os.hpp>
+#include <stratosphere/sm/sm_types.hpp>

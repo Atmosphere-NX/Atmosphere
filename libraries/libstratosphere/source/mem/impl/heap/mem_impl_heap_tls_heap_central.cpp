@@ -22,8 +22,6 @@ namespace ams::mem::impl::heap {
 
     namespace {
 
-        char g_log_buf[4_KB];
-
         void InitializeSpanPage(SpanPage *sp) {
             static_assert(SpanPage::MaxSpanCount <= BITSIZEOF(u64));
             constexpr size_t NumUnusedBits = BITSIZEOF(u64) - SpanPage::MaxSpanCount;

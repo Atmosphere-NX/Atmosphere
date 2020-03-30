@@ -49,7 +49,7 @@ namespace ams::ncm {
 
             void Reset() {
                 if (this->buffer != nullptr) {
-                    std::free(this->buffer);
+                    delete[] this->buffer;
                     this->buffer = nullptr;
                     this->size = 0;
                 }
@@ -68,7 +68,7 @@ namespace ams::ncm {
                 AMS_ABORT_UNLESS(this->buffer == nullptr);
 
                 /* Allocate a buffer. */
-                this->buffer = static_cast<u8 *>(std::malloc(size));
+                this->buffer = new (std::nothrow) u8[size];
                 R_UNLESS(this->buffer != nullptr, ResultAllocationFailed());
 
                 this->size = size;
@@ -85,4 +85,5 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
     };
+
 }

@@ -21,7 +21,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x400000
+    #define INNER_HEAP_SIZE 0x8000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -49,6 +49,25 @@ namespace ams {
 
 using namespace ams;
 
+namespace {
+
+    u8 g_heap_memory[1_MB];
+    lmem::HeapHandle g_heap_handle;
+
+    void *Allocate(size_t size) {
+        return lmem::AllocateFromExpHeap(g_heap_handle, size);
+    }
+
+    void Deallocate(void *p, size_t size) {
+        lmem::FreeToExpHeap(g_heap_handle, p);
+    }
+
+    void InitializeHeap() {
+        g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_None);
+    }
+
+}
+
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);
 }
@@ -63,10 +82,14 @@ void __libnx_initheap(void) {
 
     fake_heap_start = (char*)addr;
     fake_heap_end   = (char*)addr + size;
+
+    InitializeHeap();
 }
 
 void __appInit(void) {
     hos::SetVersionForLibnx();
+
+    fs::SetAllocator(Allocate, Deallocate);
 
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(fsInitialize());
@@ -80,6 +103,30 @@ void __appExit(void) {
     /* Cleanup services. */
     splExit();
     fsExit();
+}
+
+void *operator new(size_t size) {
+    return Allocate(size);
+}
+
+void *operator new(size_t size, const std::nothrow_t &) {
+    return Allocate(size);
+}
+
+void operator delete(void *p) {
+    return Deallocate(p, 0);
+}
+
+void *operator new[](size_t size) {
+    return Allocate(size);
+}
+
+void *operator new[](size_t size, const std::nothrow_t &) {
+    return Allocate(size);
+}
+
+void operator delete[](void *p) {
+    return Deallocate(p, 0);
 }
 
 namespace {
