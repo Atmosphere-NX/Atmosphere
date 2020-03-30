@@ -284,7 +284,7 @@ namespace ams::lmem::impl {
 
             {
                 /* Create the used block */
-                MemoryRegion used_region{ .start = free_region_front.end, .end = free_region_back.start };
+                MemoryRegion used_region{ .start = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(block) - sizeof(ExpHeapMemoryBlockHead)), .end = free_region_back.start };
 
                 ExpHeapMemoryBlockHead *used_block = InitializeUsedMemoryBlock(used_region);
 
