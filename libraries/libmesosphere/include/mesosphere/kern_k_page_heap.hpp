@@ -239,7 +239,7 @@ namespace ams::kern {
 
                         /* Align up the address. */
                         KVirtualAddress end = addr + size;
-                        const size_t align = (this->next_block_shift != 0) ? (u64(1) << this->next_block_shift) : (this->block_shift);
+                        const size_t align = (this->next_block_shift != 0) ? (u64(1) << this->next_block_shift) : (u64(1) << this->block_shift);
                         addr = util::AlignDown(GetInteger(addr), align);
                         end  = util::AlignUp(GetInteger(end), align);
 
