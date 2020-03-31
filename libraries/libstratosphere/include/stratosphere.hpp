@@ -48,6 +48,7 @@
 #include "stratosphere/lr.hpp"
 #include "stratosphere/map.hpp"
 #include "stratosphere/ncm.hpp"
+#include "stratosphere/nim.hpp"
 #include "stratosphere/patcher.hpp"
 #include "stratosphere/pm.hpp"
 #include "stratosphere/reg.hpp"
@@ -57,7 +58,6 @@
 #include "stratosphere/sm.hpp"
 #include "stratosphere/spl.hpp"
 #include "stratosphere/updater.hpp"
-
 
 /* Include FS last. */
 #include "stratosphere/fs.hpp"
