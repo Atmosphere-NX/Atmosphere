@@ -140,6 +140,7 @@ namespace ams::ncm {
             Result Cleanup();
             void CleanupProgress();
             Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter);
+            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
             Result ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
             Result Execute();
             void StartThroughputMeasurement(); 
@@ -147,6 +148,7 @@ namespace ams::ncm {
             Result PrepareAndExecute();
             Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
             Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
+            Result Commit();
             Result IncludesExFatDriver(bool *out);
             Result IsNewerThanInstalled(bool *out, const ContentMetaKey &key);
             void ResetLastResult();

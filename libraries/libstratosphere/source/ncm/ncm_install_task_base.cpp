@@ -405,6 +405,10 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
+    Result InstallTaskBase::ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset) {
+        return this->ListContentMetaKey(out_keys_written, out_keys, out_keys_count, offset, ListContentMetaKeyFilter::All);
+    }
+
     Result InstallTaskBase::ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset) {
         /* Count the number of content meta entries. */
         s32 count;
@@ -679,6 +683,10 @@ namespace ams::ncm {
         R_TRY(this->SetLastResultOnFailure(this->CommitImpl(keys, num_keys)));
         fatal_guard.Cancel();
         return ResultSuccess();
+    }
+
+    Result InstallTaskBase::Commit() {
+        return this->Commit(nullptr, 0);
     }
 
     Result InstallTaskBase::IncludesExFatDriver(bool *out) {
