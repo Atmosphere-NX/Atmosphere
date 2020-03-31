@@ -21,7 +21,16 @@
 namespace ams::updater {
 
     /* Public API. */
+    BootImageUpdateType GetBootImageUpdateType(int boot_image_update_type);
     BootImageUpdateType GetBootImageUpdateType(spl::HardwareType hw_type);
+
+    Result GetBootImagePackageId(ncm::SystemDataId *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size);
+
+    Result MarkVerifyingRequired(BootModeType mode, void *work_buffer, size_t work_buffer_size);
+    Result MarkVerified(BootModeType mode, void *work_buffer, size_t work_buffer_size);
+
+    Result UpdateBootImagesFromPackage(ncm::SystemDataId boot_image_package_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+
     Result VerifyBootImagesAndRepairIfNeeded(bool *out_repaired_normal, bool *out_repaired_safe, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
 
 }

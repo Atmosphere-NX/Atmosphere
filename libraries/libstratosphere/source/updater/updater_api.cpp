@@ -33,7 +33,6 @@ namespace ams::updater {
         bool HasEks(BootImageUpdateType boot_image_update_type);
         bool HasAutoRcmPreserve(BootImageUpdateType boot_image_update_type);
         ncm::ContentMetaType GetContentMetaType(BootModeType mode);
-        Result GetBootImagePackageId(ncm::SystemDataId *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size);
 
         /* Verification Prototypes. */
         Result GetVerificationState(VerificationState *out, void *work_buffer, size_t work_buffer_size);
@@ -42,8 +41,7 @@ namespace ams::updater {
         Result VerifyBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
 
         /* Update Prototypes. */
-        Result SetVerificationNeeded(BootModeType mode, bool needed, void *work_buffer, size_t work_buffer_size);
-        Result UpdateBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
+        Result SetVerificationNeeded(BootModeType mode, void *work_buffer, size_t work_buffer_size, bool needed);
         Result UpdateBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
         Result UpdateBootImagesSafe(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type);
 
@@ -123,45 +121,12 @@ namespace ams::updater {
                 R_CATCH(ResultNeedsRepairBootImages) {
                     /* Perform repair. */
                     *out_repaired = true;
-                    R_TRY(UpdateBootImages(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type));
+                    R_TRY(UpdateBootImagesFromPackage(bip_data_id, mode, work_buffer, work_buffer_size, boot_image_update_type));
                 }
             } R_END_TRY_CATCH;
 
             /* We've either just verified or just repaired. Either way, we don't need to verify any more. */
-            return SetVerificationNeeded(mode, false, work_buffer, work_buffer_size);
-        }
-
-        Result GetBootImagePackageId(ncm::SystemDataId *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
-            /* Ensure we can read content metas. */
-            constexpr size_t MaxContentMetas = 0x40;
-            AMS_ABORT_UNLESS(work_buffer_size >= sizeof(ncm::ContentMetaKey) * MaxContentMetas);
-
-            /* Open NAND System meta database, list contents. */
-            ncm::ContentMetaDatabase db;
-            R_TRY(ncm::OpenContentMetaDatabase(std::addressof(db), ncm::StorageId::BuiltInSystem));
-
-            ncm::ContentMetaKey *keys = reinterpret_cast<ncm::ContentMetaKey *>(work_buffer);
-            const auto content_meta_type = GetContentMetaType(mode);
-
-            auto count = db.ListContentMeta(keys, MaxContentMetas, content_meta_type);
-            R_UNLESS(count.total > 0, ResultBootImagePackageNotFound());
-
-            /* Output is sorted, return the lowest valid exfat entry. */
-            if (count.total > 1) {
-                for (auto i = 0; i < count.total; i++) {
-                    u8 attr;
-                    R_TRY(db.GetAttributes(std::addressof(attr), keys[i]));
-
-                    if (attr & ncm::ContentMetaAttribute_IncludesExFatDriver) {
-                        out_data_id->value = keys[i].id;
-                        return ResultSuccess();
-                    }
-                }
-            }
-
-            /* If there's only one entry or no exfat entries, return that entry. */
-            out_data_id->value = keys[0].id;
-            return ResultSuccess();
+            return SetVerificationNeeded(mode, work_buffer, work_buffer_size, false);
         }
 
         Result VerifyBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -279,16 +244,6 @@ namespace ams::updater {
             }
 
             return ResultSuccess();
-        }
-
-        Result UpdateBootImages(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
-            switch (mode) {
-                case BootModeType::Normal:
-                    return UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
-                case BootModeType::Safe:
-                    return UpdateBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
-                AMS_UNREACHABLE_DEFAULT_CASE();
-            }
         }
 
         Result UpdateBootImagesNormal(ncm::SystemDataId data_id, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
@@ -409,7 +364,7 @@ namespace ams::updater {
             return ResultSuccess();
         }
 
-        Result SetVerificationNeeded(BootModeType mode, bool needed, void *work_buffer, size_t work_buffer_size) {
+        Result SetVerificationNeeded(BootModeType mode, void *work_buffer, size_t work_buffer_size, bool needed) {
             /* Ensure work buffer is big enough for us to do what we want to do. */
             R_TRY(ValidateWorkBuffer(work_buffer, work_buffer_size));
 
@@ -481,6 +436,67 @@ namespace ams::updater {
             case spl::HardwareType::Hoag:
             case spl::HardwareType::Iowa:
                 return BootImageUpdateType::Mariko;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    BootImageUpdateType GetBootImageUpdateType(int boot_image_update_type) {
+        switch (boot_image_update_type) {
+            case 0:
+                return BootImageUpdateType::Erista;
+            case 1:
+                return BootImageUpdateType::Mariko;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    Result GetBootImagePackageId(ncm::SystemDataId *out_data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size) {
+        /* Ensure we can read content metas. */
+        constexpr size_t MaxContentMetas = 0x40;
+        AMS_ABORT_UNLESS(work_buffer_size >= sizeof(ncm::ContentMetaKey) * MaxContentMetas);
+
+        /* Open NAND System meta database, list contents. */
+        ncm::ContentMetaDatabase db;
+        R_TRY(ncm::OpenContentMetaDatabase(std::addressof(db), ncm::StorageId::BuiltInSystem));
+
+        ncm::ContentMetaKey *keys = reinterpret_cast<ncm::ContentMetaKey *>(work_buffer);
+        const auto content_meta_type = GetContentMetaType(mode);
+
+        auto count = db.ListContentMeta(keys, MaxContentMetas, content_meta_type);
+        R_UNLESS(count.total > 0, ResultBootImagePackageNotFound());
+
+        /* Output is sorted, return the lowest valid exfat entry. */
+        if (count.total > 1) {
+            for (auto i = 0; i < count.total; i++) {
+                u8 attr;
+                R_TRY(db.GetAttributes(std::addressof(attr), keys[i]));
+
+                if (attr & ncm::ContentMetaAttribute_IncludesExFatDriver) {
+                    out_data_id->value = keys[i].id;
+                    return ResultSuccess();
+                }
+            }
+        }
+
+        /* If there's only one entry or no exfat entries, return that entry. */
+        out_data_id->value = keys[0].id;
+        return ResultSuccess();
+    }
+
+    Result MarkVerifyingRequired(BootModeType mode, void *work_buffer, size_t work_buffer_size) {
+        return SetVerificationNeeded(mode, work_buffer, work_buffer_size, true);
+    }
+
+    Result MarkVerified(BootModeType mode, void *work_buffer, size_t work_buffer_size) {
+        return SetVerificationNeeded(mode, work_buffer, work_buffer_size, false);
+    }
+
+    Result UpdateBootImagesFromPackage(ncm::SystemDataId data_id, BootModeType mode, void *work_buffer, size_t work_buffer_size, BootImageUpdateType boot_image_update_type) {
+        switch (mode) {
+            case BootModeType::Normal:
+                return UpdateBootImagesNormal(data_id, work_buffer, work_buffer_size, boot_image_update_type);
+            case BootModeType::Safe:
+                return UpdateBootImagesSafe(data_id, work_buffer, work_buffer_size, boot_image_update_type);
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
