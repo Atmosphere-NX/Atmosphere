@@ -84,11 +84,31 @@ namespace ams::ncm {
             R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
         }
 
+        /* Create a reader for the content meta. */
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
-        /* TODO: ON_SCOPE_EXIT { <auto abort func> }; */
 
-        /* No firmware variations to list. */
-        R_SUCCEED_IF(reader.GetExtendedDataSize() == 0);
+        /* Define a helper to output the base meta infos. */
+        /* TODO: C++20 ALWAYS_INLINE_LAMBDA */
+        const auto ReadMetaInfoListFromBase = [&]() -> Result {
+            /* Output the base content meta info count. */
+            *out_count = reader.GetContentMetaCount();
+
+            /* Create a buffer to hold the infos. NOTE: N does not check for nullptr before accessing. */
+            std::unique_ptr<ContentMetaInfo[]> buffer(new (std::nothrow) ContentMetaInfo[reader.GetContentMetaCount()]);
+            AMS_ABORT_UNLESS(buffer != nullptr);
+
+            /* Copy all base meta infos to output */
+            for (size_t i = 0; i < reader.GetContentMetaCount(); i++) {
+                buffer[i] = *reader.GetContentMetaInfo(i);
+            }
+
+            /* Write out the buffer we've populated. */
+            *out_meta_infos = std::move(buffer);
+            return ResultSuccess();
+        };
+
+        /* If there are no firmware variations to list, read meta infos from base. */
+        R_UNLESS(reader.GetExtendedDataSize() != 0, ReadMetaInfoListFromBase());
 
         SystemUpdateMetaExtendedDataReader extended_data_reader(reader.GetExtendedData(), reader.GetExtendedDataSize());
         std::optional<s32> firmware_variation_index = std::nullopt;
@@ -107,8 +127,9 @@ namespace ams::ncm {
         /* Obtain the variation info. */
         const FirmwareVariationInfo *variation_info = extended_data_reader.GetFirmwareVariationInfo(*firmware_variation_index);
 
-        /* Success if refer to base, or unk is 1 (unk is usually 2). */
-        R_SUCCEED_IF(variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1);
+        /* Refer to base if variation info says we should, or if unk is 1 (unk is usually 2, probably a version). */
+        const bool refer_to_base = variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1;
+        R_UNLESS(!refer_to_base, ReadMetaInfoListFromBase());
 
         /* Output the content meta count. */
         const u32 content_meta_count = variation_info->content_meta_count;
