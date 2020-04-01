@@ -18,6 +18,30 @@
 
 namespace ams::fs {
 
+    namespace {
+
+        /* NOTE: Nintendo does not attach a generator to a mounted SD card filesystem. */
+        /* However, it is desirable for homebrew to be able to access SD via common path. */
+        class SdCardCommonMountNameGenerator : public fsa::ICommonMountNameGenerator, public impl::Newable {
+            public:
+                explicit SdCardCommonMountNameGenerator() { /* ... */ }
+
+                virtual Result GenerateCommonMountName(char *dst, size_t dst_size) override {
+                    /* Determine how much space we need. */
+                    const size_t needed_size = strnlen(impl::SdCardFileSystemMountName, MountNameLengthMax) + 2;
+                    AMS_ABORT_UNLESS(dst_size >= needed_size);
+
+                    /* Generate the name. */
+                    auto size = std::snprintf(dst, dst_size, "%s:", impl::SdCardFileSystemMountName);
+                    AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
+
+                    return ResultSuccess();
+                }
+        };
+
+    }
+
+
     Result MountSdCard(const char *name) {
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
@@ -30,8 +54,13 @@ namespace ams::fs {
         auto fsa = std::make_unique<RemoteFileSystem>(fs);
         R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
 
+        /* Allocate a new mountname generator. */
+        /* NOTE: Nintendo does not attach a generator. */
+        auto generator = std::make_unique<SdCardCommonMountNameGenerator>();
+        R_UNLESS(generator != nullptr, fs::ResultAllocationFailureInSdCardA());
+
         /* Register. */
-        return fsa::Register(name, std::move(fsa));
+        return fsa::Register(name, std::move(fsa), std::move(generator));
     }
 
 }
