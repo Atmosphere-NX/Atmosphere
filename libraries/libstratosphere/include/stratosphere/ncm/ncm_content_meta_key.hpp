@@ -34,15 +34,15 @@ namespace ams::ncm {
         ContentInstallType install_type;
         u8 padding[2];
 
-        bool operator<(const ContentMetaKey& rhs) const {
+        bool operator<(const ContentMetaKey &rhs) const {
             return std::tie(this->id, this->version, this->type, this->install_type) < std::tie(rhs.id, rhs.version, rhs.type, rhs.install_type);
         }
 
-        constexpr bool operator==(const ContentMetaKey& rhs) const {
+        constexpr bool operator==(const ContentMetaKey &rhs) const {
             return std::tie(this->id, this->version, this->type, this->install_type) == std::tie(rhs.id, rhs.version, rhs.type, rhs.install_type);
         }
 
-        constexpr bool operator!=(const ContentMetaKey& rhs) const {
+        constexpr bool operator!=(const ContentMetaKey &rhs) const {
             return !(*this == rhs);
         }
 

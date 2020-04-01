@@ -71,11 +71,6 @@ namespace ams::ncm {
             .space_id        = fs::SaveDataSpaceId::SdSystem,
         };
 
-        constexpr size_t MaxBuiltInSystemContentMetaCount = 0x800;
-        constexpr size_t MaxBuiltInUserContentMetaCount   = 0x2000;
-        constexpr size_t MaxSdCardContentMetaCount        = 0x2000;
-        constexpr size_t MaxGameCardContentMetaCount      = 0x800;
-
         using RootPath = kvdb::BoundedString<32>;
 
         inline void ReplaceMountName(char *out_path, const char *mount_name, const char *path) {
@@ -342,7 +337,7 @@ namespace ams::ncm {
         R_TRY(this->ActivateContentStorage(StorageId::BuiltInSystem));
 
         /* Next, the BuiltInSystem content meta entry. */
-        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[this->num_content_meta_entries++], StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, MaxBuiltInSystemContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[this->num_content_meta_entries++], StorageId::BuiltInSystem, BuiltInSystemSystemSaveDataInfo, SystemMaxContentMetaCount, std::addressof(g_system_content_meta_memory_resource)));
 
         if (R_FAILED(this->VerifyContentMetaDatabase(StorageId::BuiltInSystem))) {
             R_TRY(this->CreateContentMetaDatabase(StorageId::BuiltInSystem));
@@ -370,18 +365,18 @@ namespace ams::ncm {
 
         /* Now for BuiltInUser's content storage and content meta entries. */
         R_TRY(this->InitializeContentStorageRoot(&this->content_storage_roots[this->num_content_storage_entries++], StorageId::BuiltInUser, fs::ContentStorageId::User));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[this->num_content_meta_entries++], StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, MaxBuiltInUserContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[this->num_content_meta_entries++], StorageId::BuiltInUser, BuiltInUserSystemSaveDataInfo, UserMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
 
         /* Beyond this point, N uses hardcoded indices. */
 
         /* Next SdCard's content storage and content meta entries. */
         R_TRY(this->InitializeContentStorageRoot(&this->content_storage_roots[2], StorageId::SdCard, fs::ContentStorageId::SdCard));
-        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[2], StorageId::SdCard, SdCardSystemSaveDataInfo, MaxSdCardContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
+        R_TRY(this->InitializeContentMetaDatabaseRoot(&this->content_meta_database_roots[2], StorageId::SdCard, SdCardSystemSaveDataInfo, SdCardMaxContentMetaCount, std::addressof(g_sd_and_user_content_meta_memory_resource)));
 
         /* GameCard's content storage and content meta entries. */
         /* N doesn't set a content storage id for game cards, so we'll just use 0 (System). */
         R_TRY(this->InitializeGameCardContentStorageRoot(&this->content_storage_roots[3]));
-        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(&this->content_meta_database_roots[3], MaxGameCardContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
+        R_TRY(this->InitializeGameCardContentMetaDatabaseRoot(&this->content_meta_database_roots[3], GameCardMaxContentMetaCount, std::addressof(g_gamecard_content_meta_memory_resource)));
 
         this->initialized = true;
         return ResultSuccess();

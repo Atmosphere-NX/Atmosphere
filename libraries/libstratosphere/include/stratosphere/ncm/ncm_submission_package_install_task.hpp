@@ -28,7 +28,7 @@ namespace ams::ncm {
             SubmissionPackageInstallTask();
             virtual ~SubmissionPackageInstallTask() override;
 
-            Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
+            Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket = false);
     };
 
 }

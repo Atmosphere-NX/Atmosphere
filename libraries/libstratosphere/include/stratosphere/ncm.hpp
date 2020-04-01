@@ -17,12 +17,14 @@
 #pragma once
 
 #include <stratosphere/ncm/ncm_ids.hpp>
+#include <stratosphere/ncm/ncm_max_count.hpp>
 #include <stratosphere/ncm/ncm_program_location.hpp>
 #include <stratosphere/ncm/ncm_auto_buffer.hpp>
 #include <stratosphere/ncm/ncm_make_path.hpp>
 #include <stratosphere/ncm/ncm_content_id_utils.hpp>
 #include <stratosphere/ncm/ncm_content_info_utils.hpp>
 #include <stratosphere/ncm/ncm_content_meta.hpp>
+#include <stratosphere/ncm/ncm_content_meta_extended_data.hpp>
 #include <stratosphere/ncm/ncm_content_meta_database.hpp>
 #include <stratosphere/ncm/ncm_content_storage.hpp>
 #include <stratosphere/ncm/ncm_content_manager_impl.hpp>
@@ -35,5 +37,5 @@
 #include <stratosphere/ncm/ncm_package_install_task.hpp>
 #include <stratosphere/ncm/ncm_package_system_update_task.hpp>
 #include <stratosphere/ncm/ncm_submission_package_install_task.hpp>
-#include <stratosphere/ncm/ncm_storage_id_utils.hpp>
+#include <stratosphere/ncm/ncm_storage_utils.hpp>
 #include <stratosphere/ncm/ncm_api.hpp>

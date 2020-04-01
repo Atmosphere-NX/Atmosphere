@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    Result ContentMetaDatabaseImpl::GetContentIdImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) const {
+    Result ContentMetaDatabaseImpl::GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, std::optional<u8> id_offset) const {
         R_TRY(this->EnsureEnabled());
 
         /* Find the meta key. */

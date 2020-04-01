@@ -21,19 +21,19 @@ namespace ams::ncm {
     struct alignas(8) PlaceHolderId {
         util::Uuid uuid;
 
-        bool operator==(const PlaceHolderId& other) const {
+        bool operator==(const PlaceHolderId &other) const {
             return this->uuid == other.uuid;
         }
 
-        bool operator!=(const PlaceHolderId& other) const {
+        bool operator!=(const PlaceHolderId &other) const {
             return this->uuid != other.uuid;
         }
 
-        bool operator==(const util::Uuid& other) const {
+        bool operator==(const util::Uuid &other) const {
             return this->uuid == other;
         }
 
-        bool operator!=(const util::Uuid& other) const {
+        bool operator!=(const util::Uuid &other) const {
             return this->uuid != other;
         }
     };

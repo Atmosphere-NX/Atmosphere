@@ -22,9 +22,6 @@ namespace ams::ncm {
         private:
             MemoryInstallTaskData data;
         public:
-            PackageInstallTask() { /* ... */ }
-            virtual ~PackageInstallTask() override { /* ... */ }
-
             Result Initialize(const char *package_root, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
         protected:
             bool IsContentMetaContentName(const char *name);

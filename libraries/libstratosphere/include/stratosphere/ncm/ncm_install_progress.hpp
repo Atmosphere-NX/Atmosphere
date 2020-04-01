@@ -14,9 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/ncm/ncm_install_progress_state.hpp>
 
 namespace ams::ncm {
+
+    enum class InstallProgressState : u8 {
+        NotPrepared     = 0,
+        DataPrepared    = 1,
+        Prepared        = 2,
+        Downloaded      = 3,
+        Committed       = 4,
+        Fatal           = 5,
+    };
 
     struct InstallProgress {
         InstallProgressState state;

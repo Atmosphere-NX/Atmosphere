@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/ncm/ncm_content_meta_key.hpp>
 
 namespace ams::ncm {
 
@@ -22,5 +23,9 @@ namespace ams::ncm {
 
     s64 CalculateRequiredSize(s64 file_size, s64 cluster_size = MaxClusterSize);
     s64 CalculateRequiredSizeForExtension(s64 file_size, s64 cluster_size = MaxClusterSize);
+
+    class ContentMetaDatabase;
+
+    Result EstimateRequiredSize(s64 *out_size, const ContentMetaKey &key, ContentMetaDatabase *db);
 
 }

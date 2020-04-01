@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere/ncm/ncm_storage_id.hpp>
+#include <stratosphere/ncm/ncm_content_meta_id.hpp>
 
 namespace ams::ncm {
 
@@ -63,11 +64,12 @@ namespace ams::ncm {
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
-        
+
         return list;
     }
 
-    Result SelectDownloadableStorage(StorageId *out_storage_id, StorageId storage_id, size_t required_size);
+    Result SelectDownloadableStorage(StorageId *out_storage_id, StorageId storage_id, s64 required_size);
+    Result SelectPatchStorage(StorageId *out_storage_id, StorageId storage_id, PatchId patch_id);
     const char *GetStorageIdString(StorageId storage_id);
     const char *GetStorageIdStringForPlayReport(StorageId storage_id);
 

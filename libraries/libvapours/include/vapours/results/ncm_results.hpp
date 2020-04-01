@@ -42,6 +42,7 @@ namespace ams::ncm {
     R_DEFINE_ERROR_RESULT(NotEnoughInstallSpace,                    200);
     R_DEFINE_ERROR_RESULT(SystemUpdateNotFoundInPackage,            210);
     R_DEFINE_ERROR_RESULT(ContentInfoNotFound,                      220);
+    R_DEFINE_ERROR_RESULT(DeltaNotFound,                            237);
     R_DEFINE_ERROR_RESULT(InvalidContentMetaKey,                    240);
     R_DEFINE_ERROR_RESULT(IgnorableInstallTicketFailure,            280);
 

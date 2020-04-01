@@ -18,13 +18,9 @@
 
 namespace ams::ncm {
 
-    enum class InstallProgressState : u8 {
-        NotPrepared     = 0,
-        DataPrepared    = 1,
-        Prepared        = 2,
-        Downloaded      = 3,
-        Committed       = 4,
-        Fatal           = 5,
-    };
+    constexpr inline s32 SystemMaxContentMetaCount   = 0x800;
+    constexpr inline s32 GameCardMaxContentMetaCount = 0x800;
+    constexpr inline s32 UserMaxContentMetaCount     = 0x2000;
+    constexpr inline s32 SdCardMaxContentMetaCount   = 0x2000;
 
 }

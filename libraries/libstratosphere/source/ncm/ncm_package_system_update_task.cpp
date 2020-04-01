@@ -38,15 +38,10 @@ namespace ams::ncm {
         /* Activate the game card content meta database. */
         R_TRY(ActivateContentMetaDatabase(StorageId::GameCard));
         this->gamecard_content_meta_database_active = true;
+        auto meta_db_guard = SCOPE_GUARD { this->Inactivate(); };
 
         /* Open the game card content meta database. */
         OpenContentMetaDatabase(std::addressof(this->package_db), StorageId::GameCard);
-        auto meta_db_guard = SCOPE_GUARD {
-            if (this->gamecard_content_meta_database_active) {
-                InactivateContentMetaDatabase(StorageId::GameCard);
-                this->gamecard_content_meta_database_active = false;
-            }
-        };
 
         ContentMetaDatabaseBuilder builder(std::addressof(this->package_db));
 
@@ -56,10 +51,8 @@ namespace ams::ncm {
 
         /* Create a new context file. */
         fs::DeleteFile(context_path);
-        R_TRY(FileInstallTaskData::Create(context_path, 0x800));
-        auto context_guard = SCOPE_GUARD {
-            fs::DeleteFile(context_path);
-        };
+        R_TRY(FileInstallTaskData::Create(context_path, GameCardMaxContentMetaCount));
+        auto context_guard = SCOPE_GUARD { fs::DeleteFile(context_path); };
 
         /* Initialize data. */
         R_TRY(this->data.Initialize(context_path));
@@ -113,30 +106,6 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result PackageSystemUpdateTask::GetContentInfoOfContentMeta(ContentInfo *out, const ContentMetaKey &key) {
-        s32 ofs = 0;
-        while (true) {
-            /* List content infos. */
-            s32 count;
-            ContentInfo info;
-            R_TRY(this->package_db.ListContentInfo(std::addressof(count), std::addressof(info), 1, key, ofs++));
-            
-            /* No content infos left to list. */
-            if (count == 0) {
-                break;
-            }
-
-            /* Check if the info is for meta content. */
-            if (info.GetType() == ContentType::Meta) {
-                *out = info;
-                return ResultSuccess();
-            }
-        }
-
-        /* Not found. */
-        return ncm::ResultContentInfoNotFound();
-    }
-
     Result PackageSystemUpdateTask::PrepareInstallContentMetaData() {
         /* Obtain a SystemUpdate key. */
         ContentMetaKey key;
@@ -153,6 +122,30 @@ namespace ams::ncm {
 
     Result PackageSystemUpdateTask::PrepareDependency() {
         return this->PrepareSystemUpdateDependency();
+    }
+
+    Result PackageSystemUpdateTask::GetContentInfoOfContentMeta(ContentInfo *out, const ContentMetaKey &key) {
+        s32 ofs = 0;
+        while (true) {
+            /* List content infos. */
+            s32 count;
+            ContentInfo info;
+            R_TRY(this->package_db.ListContentInfo(std::addressof(count), std::addressof(info), 1, key, ofs++));
+
+            /* No content infos left to list. */
+            if (count == 0) {
+                break;
+            }
+
+            /* Check if the info is for meta content. */
+            if (info.GetType() == ContentType::Meta) {
+                *out = info;
+                return ResultSuccess();
+            }
+        }
+
+        /* Not found. */
+        return ncm::ResultContentInfoNotFound();
     }
 
 }

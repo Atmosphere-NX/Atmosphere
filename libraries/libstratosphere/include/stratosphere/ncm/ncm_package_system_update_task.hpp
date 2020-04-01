@@ -35,9 +35,10 @@ namespace ams::ncm {
         protected:
             virtual Result PrepareInstallContentMetaData() override;
         private:
-            Result GetContentInfoOfContentMeta(ContentInfo *out, const ContentMetaKey &key);
             virtual Result PrepareDependency() override;
             virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) override;
+
+            Result GetContentInfoOfContentMeta(ContentInfo *out, const ContentMetaKey &key);
     };
 
 }

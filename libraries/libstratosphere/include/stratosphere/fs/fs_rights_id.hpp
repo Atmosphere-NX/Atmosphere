@@ -25,7 +25,7 @@ namespace ams::fs {
     static_assert(sizeof(RightsId) == 0x10);
     static_assert(std::is_pod<RightsId>::value);
 
-    inline bool operator==(const RightsId &lhs, const RightsId& rhs) {
+    inline bool operator==(const RightsId &lhs, const RightsId &rhs) {
         return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(RightsId)) == 0;
     }
 
@@ -33,7 +33,7 @@ namespace ams::fs {
         return !(lhs == rhs);
     }
 
-    inline bool operator<(const RightsId &lhs, const RightsId& rhs) {
+    inline bool operator<(const RightsId &lhs, const RightsId &rhs) {
         return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(RightsId)) < 0;
     }
 

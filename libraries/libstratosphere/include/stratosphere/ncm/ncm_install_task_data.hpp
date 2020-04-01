@@ -64,7 +64,7 @@ namespace ams::ncm {
             Result last_result;
             SystemUpdateTaskApplyInfo system_update_task_apply_info;
         public:
-            MemoryInstallTaskData() { /* ... */ };
+            MemoryInstallTaskData() : state(InstallProgressState::NotPrepared), last_result(ResultSuccess()) { /* ... */ };
             ~MemoryInstallTaskData() {
                 this->Cleanup();
             }
@@ -87,8 +87,8 @@ namespace ams::ncm {
     class FileInstallTaskData : public InstallTaskDataBase {
         private:
             struct Header {
-                s32 max_entries;
-                s32 count;
+                u32 max_entries;
+                u32 count;
                 s64 last_data_offset;
                 Result last_result;
                 InstallProgressState progress_state;
@@ -107,19 +107,19 @@ namespace ams::ncm {
             Header header;
             char path[64];
         private:
-            static constexpr s64 GetEntryInfoOffset(s32 index) {
-                return index * sizeof(EntryInfo) + sizeof(Header);
-            }
-
             static constexpr Header MakeInitialHeader(s32 max_entries) {
                 return {
-                    .max_entries                      = max_entries,
+                    .max_entries                      = static_cast<u32>(max_entries),
                     .count                            = 0,
                     .last_data_offset                 = GetEntryInfoOffset(max_entries),
                     .last_result                      = ResultSuccess(),
                     .progress_state                   = InstallProgressState::NotPrepared,
                     .system_update_task_apply_info    = SystemUpdateTaskApplyInfo::Unknown,
                 };
+            }
+
+            static constexpr s64 GetEntryInfoOffset(s32 index) {
+                return index * sizeof(EntryInfo) + sizeof(Header);
             }
         public:
             static Result Create(const char *path, s32 max_entries);
@@ -135,15 +135,15 @@ namespace ams::ncm {
             virtual Result Delete(const ContentMetaKey *keys, s32 num_keys) override;
             virtual Result Cleanup() override;
         private:
-            Result GetEntryInfo(EntryInfo *out_entry_info, s32 index);
-
-            Result Read(void *out, size_t out_size, s64 offset);
-            Result Write(const void *data, size_t size, s64 offset);
-            Result WriteHeader();
-
             virtual Result GetSize(size_t *out_size, s32 index) override;
             virtual Result Get(s32 index, void *out, size_t out_size) override;
             virtual Result Update(s32 index, const void *data, size_t data_size) override;
+
+            Result GetEntryInfo(EntryInfo *out_entry_info, s32 index);
+
+            Result Write(const void *data, size_t size, s64 offset);
+            Result Read(void *out, size_t out_size, s64 offset);
+            Result WriteHeader();
     };
 
 }

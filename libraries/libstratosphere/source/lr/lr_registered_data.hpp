@@ -47,7 +47,7 @@ namespace ams::lr {
 
             inline void RegisterImpl(size_t i, const Key &key, const Value &value, const ncm::ProgramId owner_id) {
                 /* Populate entry. */
-                Entry& entry = this->entries[i];
+                Entry &entry = this->entries[i];
                 entry.key = key;
                 entry.value = value;
                 entry.owner_id = owner_id;
@@ -61,7 +61,7 @@ namespace ams::lr {
             bool Register(const Key &key, const Value &value, const ncm::ProgramId owner_id) {
                 /* Try to find an existing value. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry& entry = this->entries[i];
+                    Entry &entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         this->RegisterImpl(i, key, value, owner_id);
                         return true;
@@ -70,7 +70,7 @@ namespace ams::lr {
 
                 /* We didn't find an existing entry, so try to create a new one. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry& entry = this->entries[i];
+                    Entry &entry = this->entries[i];
                     if (!entry.is_valid) {
                         this->RegisterImpl(i, key, value, owner_id);
                         return true;
@@ -83,7 +83,7 @@ namespace ams::lr {
             void Unregister(const Key &key) {
                 /* Invalidate entries with a matching key. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry& entry = this->entries[i];
+                    Entry &entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         entry.is_valid = false;
                     }
@@ -93,7 +93,7 @@ namespace ams::lr {
             void UnregisterOwnerProgram(ncm::ProgramId owner_id) {
                 /* Invalidate entries with a matching owner id. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry& entry = this->entries[i];
+                    Entry &entry = this->entries[i];
                     if (entry.owner_id == owner_id) {
                         entry.is_valid = false;
                     }
@@ -103,7 +103,7 @@ namespace ams::lr {
             bool Find(Value *out, const Key &key) const {
                 /* Locate a matching entry. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    const Entry& entry = this->entries[i];
+                    const Entry &entry = this->entries[i];
                     if (entry.is_valid && entry.key == key) {
                         *out = entry.value;
                         return true;
@@ -123,7 +123,7 @@ namespace ams::lr {
             void ClearExcluding(const ncm::ProgramId *ids, size_t num_ids) {
                 /* Invalidate all entries unless excluded. */
                 for (size_t i = 0; i < this->GetCapacity(); i++) {
-                    Entry& entry = this->entries[i];
+                    Entry &entry = this->entries[i];
 
                     if (!this->IsExcluded(entry.owner_id, ids, num_ids)) {
                         entry.is_valid = false;

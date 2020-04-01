@@ -27,7 +27,7 @@ namespace ams::lr {
             Path path;
             u32 flags;
         public:
-            Redirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path& path, u32 flags) :
+            Redirection(ncm::ProgramId program_id, ncm::ProgramId owner_id, const Path &path, u32 flags) :
                 program_id(program_id), owner_id(owner_id), path(path), flags(flags) { /* ... */ }
 
             ncm::ProgramId GetProgramId() const {

@@ -47,12 +47,12 @@ namespace ams::sm {
                 rhs.has_initialized = false;
             }
 
-            ScopedServiceHolder& operator=(ScopedServiceHolder&& rhs) {
+            ScopedServiceHolder &operator=(ScopedServiceHolder&& rhs) {
                 rhs.Swap(*this);
                 return *this;
             }
 
-            void Swap(ScopedServiceHolder& rhs) {
+            void Swap(ScopedServiceHolder &rhs) {
                 std::swap(this->result, rhs.result);
                 std::swap(this->has_initialized, rhs.has_initialized);
             }

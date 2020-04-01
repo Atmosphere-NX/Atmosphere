@@ -62,7 +62,6 @@ namespace ams::ncm {
         StorageId storage_id;
         bool is_temporary;
         bool is_sha256_calculated;
-        u8 reserved[2];
         s64 written;
 
         constexpr const ContentId &GetId() const {

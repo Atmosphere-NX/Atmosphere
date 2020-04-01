@@ -79,6 +79,8 @@ namespace ams::ncm {
     static_assert(sizeof(InstallContentMetaInfo) == 0x50);
 
     class InstallTaskBase {
+        NON_COPYABLE(InstallTaskBase);
+        NON_MOVEABLE(InstallTaskBase);
         private:
             crypto::Sha256Generator sha256_generator;
             StorageId install_storage;
@@ -92,8 +94,6 @@ namespace ams::ncm {
             TimeSpan throughput_start_time;
             os::Mutex throughput_mutex;
             FirmwareVariationId firmware_variation_id;
-        public:
-            virtual ~InstallTaskBase() { /* ... */ };
         private:
             ALWAYS_INLINE Result SetLastResultOnFailure(Result result) {
                 if (R_FAILED(result)) {
@@ -101,78 +101,103 @@ namespace ams::ncm {
                 }
                 return result;
             }
-        private:
-            Result PrepareImpl();
-            Result CleanupOne(const InstallContentMeta &content_meta);
-            Result ExecuteImpl();
-            Result CommitImpl(const StorageContentMetaKey *keys, s32 num_keys);
-            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
-            Result ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
-            Result ListRightsIdsByInstallContentMeta(s32 *out_count, Span<RightsId> out_span, const InstallContentMeta &content_meta, s32 offset);
-        protected:
-            Result Initialize(StorageId install_storage, InstallTaskDataBase *data, u32 config);
-            Result CountInstallContentMetaData(s32 *out_count);
-            Result GetInstallContentMetaData(InstallContentMeta *out_content_meta, s32 index);
-            Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
-            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
-            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, std::optional<ContentMetaKey> key, std::optional<u32> source_version);
-            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version);
-            Result PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer);
-            void PrepareAgain();
-            Result PrepareSystemUpdateDependency();
-            Result PrepareContentMetaIfLatest(const ContentMetaKey &key);
-            Result GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out);
-            Result DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys);
-            Result CanContinue();
         public:
-            bool IsCancelRequested();
-            Result Prepare();
-            void SetLastResult(Result last_result);
-            Result GetPreparedPlaceHolderPath(Path *out_path, u64 id, ContentMetaType meta_type, ContentType type);
-            Result CalculateRequiredSize(size_t *out_size);
-            void ResetThroughputMeasurement();
-            void SetProgressState(InstallProgressState state);
-            void IncrementProgress(s64 size);
-            void UpdateThroughputMeasurement(s64 throughput);
-            bool IsNecessaryInstallTicket(const fs::RightsId &rights_id);
-            void SetTotalSize(s64 size);
-            Result PreparePlaceHolder();
-            Result Cleanup();
-            void CleanupProgress();
-            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter);
-            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
-            Result ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
-            Result Execute();
-            void StartThroughputMeasurement(); 
-            Result WritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info);
-            Result PrepareAndExecute();
-            Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
-            Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
-            Result Commit();
-            Result IncludesExFatDriver(bool *out);
-            Result IsNewerThanInstalled(bool *out, const ContentMetaKey &key);
-            void ResetLastResult();
-            s64 GetThroughput();
-            Result CalculateContentsSize(s64 *out_size, const ContentMetaKey &key, StorageId storage_id);
-            Result FindMaxRequiredApplicationVersion(u32 *out);
-            Result FindMaxRequiredSystemVersion(u32 *out);
-            Result ListOccupiedSize(s32 *out_written, InstallTaskOccupiedSize *out_list, s32 out_list_size, s32 offset);
-            void SetFirmwareVariationId(FirmwareVariationId id);
-            Result ListRightsIds(s32 *out_count, Span<RightsId> out_span, const ContentMetaKey &key, s32 offset);
-        protected:
-            virtual Result OnPrepareComplete();
-            virtual Result PrepareDependency();
+            InstallTaskBase() : data(), progress(), cancel_requested() { /* ... */ }
+            virtual ~InstallTaskBase() { /* ... */ };
         public:
             virtual void Cancel();
             virtual void ResetCancel();
+
+            Result Prepare();
+            Result GetPreparedPlaceHolderPath(Path *out_path, u64 id, ContentMetaType meta_type, ContentType type);
+            Result CalculateRequiredSize(s64 *out_size);
+            Result Cleanup();
+            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset, ListContentMetaKeyFilter filter);
+            Result ListContentMetaKey(s32 *out_keys_written, StorageContentMetaKey *out_keys, s32 out_keys_count, s32 offset) { return this->ListContentMetaKey(out_keys_written, out_keys, out_keys_count, offset, ListContentMetaKeyFilter::All); }
+            Result ListApplicationContentMetaKey(s32 *out_keys_written, ApplicationContentMetaKey *out_keys, s32 out_keys_count, s32 offset);
+            Result Execute();
+            Result PrepareAndExecute();
+            Result Commit(const StorageContentMetaKey *keys, s32 num_keys);
+            Result Commit() { return this->Commit(nullptr, 0); }
             virtual InstallProgress GetProgress();
+            void ResetLastResult();
+            Result IncludesExFatDriver(bool *out);
+            InstallThroughput GetThroughput();
+            Result CalculateContentsSize(s64 *out_size, const ContentMetaKey &key, StorageId storage_id);
+            Result ListOccupiedSize(s32 *out_written, InstallTaskOccupiedSize *out_list, s32 out_list_size, s32 offset);
+
+            Result FindMaxRequiredApplicationVersion(u32 *out);
+            Result FindMaxRequiredSystemVersion(u32 *out);
+        protected:
+            Result Initialize(StorageId install_storage, InstallTaskDataBase *data, u32 config);
+
+            Result PrepareContentMeta(const InstallContentMetaInfo &meta_info, std::optional<ContentMetaKey> key, std::optional<u32> source_version);
+            Result PrepareContentMeta(ContentId content_id, s64 size, ContentMetaType meta_type, AutoBuffer *buffer);
+            Result WritePlaceHolderBuffer(InstallContentInfo *content_info, const void *data, size_t data_size);
+            void PrepareAgain();
+
+            Result CountInstallContentMetaData(s32 *out_count);
+            Result GetInstallContentMetaData(InstallContentMeta *out_content_meta, s32 index);
+            Result DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys);
+
+            virtual Result PrepareDependency();
+            Result PrepareSystemUpdateDependency();
+            Result PrepareContentMetaIfLatest(const ContentMetaKey &key);
+            u32 GetConfig() const { return this->config; }
+            Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
+
+            StorageId GetInstallStorage() const { return this->install_storage; }
+
+            virtual Result OnPrepareComplete() { return ResultSuccess(); }
+
+            Result GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out);
+
+            Result CanContinue();
+        private:
+            bool IsCancelRequested();
+            Result PrepareImpl();
+            Result ExecuteImpl();
+            Result CommitImpl(const StorageContentMetaKey *keys, s32 num_keys);
+            Result CleanupOne(const InstallContentMeta &content_meta);
+
+            Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
+
             virtual Result PrepareInstallContentMetaData() = 0;
-            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key);
-            virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id);
-            virtual Result CheckInstallable();
-            virtual Result OnExecuteComplete();
+            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) = 0;
+            virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id) { return ncm::ResultContentMetaNotFound(); }
+
+            virtual Result OnExecuteComplete() { return ResultSuccess(); }
+
+            Result WritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info);
             virtual Result OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) = 0;
+
+            bool IsNecessaryInstallTicket(const fs::RightsId &rights_id);
             virtual Result InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) = 0;
+
+            Result IsNewerThanInstalled(bool *out, const ContentMetaKey &key);
+            Result PreparePlaceHolder();
+
+            void SetProgressState(InstallProgressState state);
+            void IncrementProgress(s64 size);
+            void SetTotalSize(s64 size);
+            void SetLastResult(Result last_result);
+            void CleanupProgress();
+
+            void ResetThroughputMeasurement();
+            void StartThroughputMeasurement();
+            void UpdateThroughputMeasurement(s64 throughput);
+
+            Result GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version);
+
+            InstallContentInfo MakeInstallContentInfoFrom(const InstallContentMetaInfo &info, const PlaceHolderId &placeholder_id, std::optional<bool> is_temporary);
+
+            Result ReadContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const ContentMetaKey &key);
+            Result ListRightsIdsByInstallContentMeta(s32 *out_count, Span<RightsId> out_span, const InstallContentMeta &content_meta, s32 offset);
+        public:
+            virtual Result CheckInstallable() { return ResultSuccess(); }
+
+            void SetFirmwareVariationId(FirmwareVariationId id) { this->firmware_variation_id = id; }
+            Result ListRightsIds(s32 *out_count, Span<RightsId> out_span, const ContentMetaKey &key, s32 offset);
     };
 
 }

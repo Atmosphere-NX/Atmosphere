@@ -88,15 +88,13 @@ namespace ams::ncm {
         /* TODO: ON_SCOPE_EXIT { <auto abort func> }; */
 
         /* No firmware variations to list. */
-        if (reader.GetExtendedDataSize() == 0) {
-            return ResultSuccess();
-        }
+        R_SUCCEED_IF(reader.GetExtendedDataSize() == 0);
 
         SystemUpdateMetaExtendedDataReader extended_data_reader(reader.GetExtendedData(), reader.GetExtendedDataSize());
         std::optional<s32> firmware_variation_index = std::nullopt;
 
         /* Find the input firmware variation id. */
-        for (s32 i = 0; i < extended_data_reader.GetFirmwareVariationCount(); i++) {
+        for (size_t i = 0; i < extended_data_reader.GetFirmwareVariationCount(); i++) {
             if (*extended_data_reader.GetFirmwareVariationId(i) == firmware_variation_id) {
                 firmware_variation_index = i;
                 break;
@@ -104,26 +102,20 @@ namespace ams::ncm {
         }
 
         /* We couldn't find the input firmware variation id. */
-        if (!firmware_variation_index) {
-            return ResultInvalidFirmwareVariation();
-        }
+        R_UNLESS(firmware_variation_index, ncm::ResultInvalidFirmwareVariation());
 
         /* Obtain the variation info. */
         const FirmwareVariationInfo *variation_info = extended_data_reader.GetFirmwareVariationInfo(*firmware_variation_index);
 
         /* Success if refer to base, or unk is 1 (unk is usually 2). */
-        if (variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1) {
-            return ResultSuccess();
-        }
+        R_SUCCEED_IF(variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1);
 
         /* Output the content meta count. */
         const u32 content_meta_count = variation_info->content_meta_count;
         *out_count = content_meta_count;
 
-        /* No content metas to list. */
-        if (content_meta_count == 0) {
-            return ResultSuccess();
-        }
+        /* We're done if there are no content metas to list. */
+        R_SUCCEED_IF(content_meta_count);
 
         /* Allocate a buffer for the content meta infos. */
         std::unique_ptr<ContentMetaInfo[]> buffer(new (std::nothrow) ContentMetaInfo[content_meta_count]);

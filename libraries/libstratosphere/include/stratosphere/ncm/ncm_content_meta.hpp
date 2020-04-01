@@ -112,11 +112,6 @@ namespace ams::ncm {
         u32 extended_data_size;
     };
 
-    struct SystemUpdateMetaExtendedDataHeader {
-        u32 unk;                      // Always seems to be set to 2
-        u32 firmware_variation_count;
-    };
-
     template<typename ContentMetaHeaderType, typename ContentInfoType>
     class ContentMetaAccessor {
         public:
@@ -227,6 +222,7 @@ namespace ams::ncm {
             }
 
             HeaderType *GetWritableHeader() const {
+                AMS_ABORT_UNLESS(this->is_header_valid);
                 return reinterpret_cast<HeaderType *>(this->data);
             }
 
@@ -339,13 +335,8 @@ namespace ams::ncm {
             size_t CalculateConvertContentMetaSize() const;
             void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
 
-            Result CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) {
-                AMS_ABORT("Not implemented");
-            };
-
-            Result ConvertToFragmentOnlyInstallContentMeta(void *dst, size_t size, const InstallContentInfo &content_info, u32 source_version) {
-                AMS_ABORT("Not implemented");
-            }
+            Result CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) const;
+            Result ConvertToFragmentOnlyInstallContentMeta(void *dst, size_t size, const InstallContentInfo &content_info, u32 source_version);
 
             size_t CountDeltaFragments() const;
 
@@ -357,6 +348,10 @@ namespace ams::ncm {
     class InstallContentMetaReader : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
         public:
             constexpr InstallContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+
+            using ContentMetaAccessor::CalculateSize;
+            using ContentMetaAccessor::CalculateContentRequiredSize;
+            using ContentMetaAccessor::GetStorageId;
 
             size_t CalculateConvertSize() const;
 
@@ -371,83 +366,6 @@ namespace ams::ncm {
             using ContentMetaAccessor::CalculateContentRequiredSize;
             using ContentMetaAccessor::GetWritableContentInfo;
             using ContentMetaAccessor::SetStorageId;
-    };
-
-    class SystemUpdateMetaExtendedDataReaderWriterBase {
-        private:
-            void *data;
-            const size_t size;
-            bool is_header_valid;
-        protected:
-            constexpr SystemUpdateMetaExtendedDataReaderWriterBase(const void *d, size_t sz) : data(const_cast<void *>(d)), size(sz), is_header_valid(true) { /* ... */ }
-            constexpr SystemUpdateMetaExtendedDataReaderWriterBase(void *d, size_t sz) : data(d), size(sz), is_header_valid(false) { /* ... */ }
-
-            uintptr_t GetHeaderAddress() const {
-                return reinterpret_cast<uintptr_t>(this->data);
-            }
-
-            uintptr_t GetFirmwarVariationIdStartAddress() const {
-                return this->GetHeaderAddress() + sizeof(SystemUpdateMetaExtendedDataHeader);
-            }
-
-            uintptr_t GetFirmwareVariationIdAddress(size_t i) const {
-                return this->GetFirmwarVariationIdStartAddress() + i * sizeof(FirmwareVariationId);
-            }
-
-            uintptr_t GetFirmwareVariationInfoStartAddress() const {
-                return this->GetFirmwareVariationIdAddress(this->GetFirmwareVariationCount());
-            }
-
-            uintptr_t GetFirmwareVariationInfoAddress(size_t i) const {
-                return this->GetFirmwarVariationIdStartAddress() + i * sizeof(FirmwareVariationInfo);
-            }
-
-            uintptr_t GetContentMetaInfoStartAddress() const {
-                return this->GetFirmwareVariationInfoAddress(this->GetFirmwareVariationCount());
-            }
-
-            uintptr_t GetContentMetaInfoAddress(size_t i) const {
-                return this->GetContentMetaInfoStartAddress() + i * sizeof(ContentMetaInfo);
-            }
-
-        public:
-            const SystemUpdateMetaExtendedDataHeader *GetHeader() const {
-                AMS_ABORT_UNLESS(this->is_header_valid);
-                return reinterpret_cast<const SystemUpdateMetaExtendedDataHeader *>(this->GetHeaderAddress());
-            }
-
-            size_t GetFirmwareVariationCount() const {
-                return this->GetHeader()->firmware_variation_count;
-            }
-            
-            const FirmwareVariationId *GetFirmwareVariationId(size_t i) const {
-                AMS_ABORT_UNLESS(i < this->GetFirmwareVariationCount());
-
-                return reinterpret_cast<FirmwareVariationId *>(this->GetFirmwareVariationIdAddress(i));
-            }
-
-            const FirmwareVariationInfo *GetFirmwareVariationInfo(size_t i) const {
-                AMS_ABORT_UNLESS(i < this->GetFirmwareVariationCount());
-
-                return reinterpret_cast<FirmwareVariationInfo *>(this->GetFirmwareVariationInfoAddress(i));
-            }
-
-            void GetContentMetaInfoList(Span<const ContentMetaInfo> *out_list, size_t i) const {
-                size_t preceding_content_meta_count = 0;
-
-                /* Count the number of preceding content metas. */
-                for (size_t j = 0; j < i; j++) {
-                    preceding_content_meta_count += GetFirmwareVariationInfo(j)->content_meta_count;
-                }
-
-                /* Output the list. */
-                *out_list = Span<const ContentMetaInfo>(reinterpret_cast<const ContentMetaInfo *>(GetContentMetaInfoAddress(preceding_content_meta_count)), GetFirmwareVariationInfo(i)->content_meta_count);
-            }
-    };
-
-    class SystemUpdateMetaExtendedDataReader : public SystemUpdateMetaExtendedDataReaderWriterBase {
-        public:
-            constexpr SystemUpdateMetaExtendedDataReader(const void *data, size_t size) : SystemUpdateMetaExtendedDataReaderWriterBase(data, size) { /* ... */ }
     };
 
 }

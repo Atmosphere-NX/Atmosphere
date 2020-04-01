@@ -32,6 +32,7 @@ namespace ams::ncm {
         } else {
             this->CreateContentPath(std::addressof(path), content_info->GetId());
         }
+
         /* Open the file. */
         fs::FileHandle file;
         R_TRY(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read));
@@ -53,18 +54,6 @@ namespace ams::ncm {
         }
 
         return ResultSuccess();
-    }
-
-    void PackageInstallTaskBase::CreateContentMetaPath(PackagePath *out_path, ContentId content_id) {
-        char str[ContentIdStringLength + 1] = {};
-        GetStringFromContentId(str, sizeof(str), content_id);
-        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".cnmt.nca");
-    }
-
-    void PackageInstallTaskBase::CreateContentPath(PackagePath *out_path, ContentId content_id) {
-        char str[ContentIdStringLength + 1] = {};
-        GetStringFromContentId(str, sizeof(str), content_id);
-        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".nca");
     }
 
     Result PackageInstallTaskBase::InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) {
@@ -111,6 +100,18 @@ namespace ams::ncm {
         /* TODO: How should es be handled without undesired effects? */
 
         return ResultSuccess();
+    }
+
+    void PackageInstallTaskBase::CreateContentPath(PackagePath *out_path, ContentId content_id) {
+        char str[ContentIdStringLength + 1] = {};
+        GetStringFromContentId(str, sizeof(str), content_id);
+        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".nca");
+    }
+
+    void PackageInstallTaskBase::CreateContentMetaPath(PackagePath *out_path, ContentId content_id) {
+        char str[ContentIdStringLength + 1] = {};
+        GetStringFromContentId(str, sizeof(str), content_id);
+        out_path->SetFormat("%s%s%s", this->package_root.Get(), str, ".cnmt.nca");
     }
 
     void PackageInstallTaskBase::CreateTicketPath(PackagePath *out_path, fs::RightsId id) {

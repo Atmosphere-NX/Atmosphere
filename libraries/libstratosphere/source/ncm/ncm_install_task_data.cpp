@@ -133,7 +133,7 @@ namespace ams::ncm {
 
         /* Put the data holder into the data list. */
         this->data_list.push_back(*holder);
-        
+
         /* Relinquish control over the memory allocated to the data holder. */
         holder.release();
 
@@ -232,13 +232,6 @@ namespace ams::ncm {
         return this->Read(std::addressof(this->header), sizeof(Header), 0);
     }
 
-    Result FileInstallTaskData::Read(void *out, size_t out_size, s64 offset) {
-        fs::FileHandle file;
-        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Read));
-        ON_SCOPE_EXIT { fs::CloseFile(file); };
-        return fs::ReadFile(file, offset, out, out_size);
-    }
-
     Result FileInstallTaskData::GetProgress(InstallProgress *out_progress) {
         /* Initialize install progress. */
         InstallProgress install_progress = {
@@ -248,7 +241,7 @@ namespace ams::ncm {
 
         /* Only states after prepared are allowed. */
         if (this->header.progress_state != InstallProgressState::NotPrepared && this->header.progress_state != InstallProgressState::DataPrepared) {
-            for (s32 i = 0; i < this->header.count; i++) {
+            for (size_t i = 0; i < this->header.count; i++) {
                 /* Obtain the content meta for this entry. */
                 InstallContentMeta content_meta;
                 R_TRY(InstallTaskDataBase::Get(std::addressof(content_meta), i));
@@ -267,11 +260,6 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result FileInstallTaskData::GetEntryInfo(EntryInfo *out_entry_info, s32 index) {
-        AMS_ABORT_UNLESS(index < this->header.count);
-        return this->Read(out_entry_info, sizeof(EntryInfo), GetEntryInfoOffset(index));
-    }
-
     Result FileInstallTaskData::GetSystemUpdateTaskApplyInfo(SystemUpdateTaskApplyInfo *out_info) {
         *out_info = this->header.system_update_task_apply_info;
         return ResultSuccess();
@@ -280,10 +268,6 @@ namespace ams::ncm {
     Result FileInstallTaskData::SetState(InstallProgressState state) {
         this->header.progress_state = state;
         return this->WriteHeader();
-    }
-
-    Result FileInstallTaskData::WriteHeader() {
-        return this->Write(std::addressof(this->header), sizeof(Header), 0);
     }
 
     Result FileInstallTaskData::SetLastResult(Result result) {
@@ -300,7 +284,7 @@ namespace ams::ncm {
         R_UNLESS(this->header.count < this->header.max_entries, ncm::ResultBufferInsufficient());
 
         /* Create a new entry info. Data of the given size will be stored at the end of the file. */
-        const EntryInfo entry_info = { this->header.last_data_offset, data_size };
+        const EntryInfo entry_info = { this->header.last_data_offset, static_cast<s64>(data_size) };
 
         /* Write the new entry info. */
         R_TRY(this->Write(std::addressof(entry_info), sizeof(EntryInfo), GetEntryInfoOffset(this->header.count)));
@@ -314,13 +298,6 @@ namespace ams::ncm {
 
         /* Write the updated header. */
         return this->WriteHeader();
-    }
-
-    Result FileInstallTaskData::Write(const void *data, size_t size, s64 offset) {
-        fs::FileHandle file;
-        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
-        ON_SCOPE_EXIT { fs::CloseFile(file); };
-        return fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush);
     }
 
     Result FileInstallTaskData::Count(s32 *out) {
@@ -392,6 +369,29 @@ namespace ams::ncm {
     Result FileInstallTaskData::Cleanup() {
         this->header = MakeInitialHeader(this->header.max_entries);
         return this->WriteHeader();
+    }
+
+    Result FileInstallTaskData::GetEntryInfo(EntryInfo *out_entry_info, s32 index) {
+        AMS_ABORT_UNLESS(static_cast<u32>(index) < this->header.count);
+        return this->Read(out_entry_info, sizeof(EntryInfo), GetEntryInfoOffset(index));
+    }
+
+    Result FileInstallTaskData::Write(const void *data, size_t size, s64 offset) {
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
+        return fs::WriteFile(file, offset, data, size, fs::WriteOption::Flush);
+    }
+
+    Result FileInstallTaskData::Read(void *out, size_t out_size, s64 offset) {
+        fs::FileHandle file;
+        R_TRY(fs::OpenFile(std::addressof(file), this->path, fs::OpenMode_Read));
+        ON_SCOPE_EXIT { fs::CloseFile(file); };
+        return fs::ReadFile(file, offset, out, out_size);
+    }
+
+    Result FileInstallTaskData::WriteHeader() {
+        return this->Write(std::addressof(this->header), sizeof(Header), 0);
     }
 
 }

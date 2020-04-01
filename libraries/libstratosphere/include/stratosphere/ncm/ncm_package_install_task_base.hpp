@@ -35,13 +35,13 @@ namespace ams::ncm {
                 return this->package_root.Get();
             }
         private:
+            virtual Result OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) override;
+            virtual Result InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) override;
+
             void CreateContentMetaPath(PackagePath *out_path, ContentId content_id);
             void CreateContentPath(PackagePath *out_path, ContentId content_id);
             void CreateTicketPath(PackagePath *out_path, fs::RightsId id);
             void CreateCertificatePath(PackagePath *out_path, fs::RightsId id);
-        private:
-            virtual Result OnWritePlaceHolder(const ContentMetaKey &key, InstallContentInfo *content_info) override;
-            virtual Result InstallTicket(const fs::RightsId &rights_id, ContentMetaType meta_type) override;
     };
 
 }
