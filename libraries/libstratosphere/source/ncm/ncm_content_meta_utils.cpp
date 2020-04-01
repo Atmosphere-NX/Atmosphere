@@ -115,7 +115,7 @@ namespace ams::ncm {
         *out_count = content_meta_count;
 
         /* We're done if there are no content metas to list. */
-        R_SUCCEED_IF(content_meta_count);
+        R_SUCCEED_IF(content_meta_count == 0);
 
         /* Allocate a buffer for the content meta infos. */
         std::unique_ptr<ContentMetaInfo[]> buffer(new (std::nothrow) ContentMetaInfo[content_meta_count]);
