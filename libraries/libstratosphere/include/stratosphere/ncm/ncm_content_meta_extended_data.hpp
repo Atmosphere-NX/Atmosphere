@@ -91,7 +91,7 @@ namespace ams::ncm {
         ContentMetaKey key;
         Digest digest;
         u16 content_count;
-        u8 reserver[2];
+        u8 reserved[2];
     };
 
     struct PatchDeltaHistory {
