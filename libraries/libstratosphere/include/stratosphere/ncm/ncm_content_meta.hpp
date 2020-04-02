@@ -360,7 +360,7 @@ namespace ams::ncm {
 
     class InstallContentMetaWriter : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
         public:
-            InstallContentMetaWriter(void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+            InstallContentMetaWriter(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
 
             using ContentMetaAccessor::CalculateSize;
             using ContentMetaAccessor::CalculateContentRequiredSize;
