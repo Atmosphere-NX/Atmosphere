@@ -20,43 +20,29 @@ namespace ams::ncm {
     namespace {
 
         void ConvertPackageContentMetaHeaderToContentMetaHeader(ContentMetaHeader *dst, const PackagedContentMetaHeader &src) {
-            /* Clear destination. */
-            *dst = {};
-
-            /* Set converted fields. */
-            dst->extended_header_size = src.extended_header_size;
-            dst->content_meta_count   = src.content_meta_count;
-            dst->content_count        = src.content_meta_count;
-            dst->attributes           = src.attributes;
+            /* Set destination. */
+            *dst = {
+                .extended_header_size = src.extended_header_size,
+                .content_count        = src.content_count,
+                .content_meta_count   = src.content_meta_count,
+                .attributes           = src.attributes,
+            };
         }
 
         void ConvertPackageContentMetaHeaderToInstallContentMetaHeader(InstallContentMetaHeader *dst, const PackagedContentMetaHeader &src) {
-            /* Clear destination. */
-            *dst = {};
-
-            /* Set converted fields. */
-            dst->id                               = src.id;
-            dst->version                          = src.version;
-            dst->type                             = src.type;
-            dst->extended_header_size             = src.extended_header_size;
-            dst->content_count                    = src.content_count;
-            dst->content_meta_count               = src.content_meta_count;
-            dst->attributes                       = src.attributes;
-            dst->storage_id                       = src.storage_id;
-            dst->install_type                     = src.install_type;
-            dst->committed                        = src.committed;
-            dst->required_download_system_version = src.required_download_system_version;
+            /* Set destination. */
+            static_assert(std::is_same<InstallContentMetaHeader, PackagedContentMetaHeader>::value);
+            std::memcpy(dst, std::addressof(src), sizeof(*dst));
         }
 
         void ConvertInstallContentMetaHeaderToContentMetaHeader(ContentMetaHeader *dst, const InstallContentMetaHeader &src) {
-            /* Clear destination. */
-            *dst = {};
-
-            /* Set converted fields. */
-            dst->extended_header_size = src.extended_header_size;
-            dst->content_meta_count   = src.content_meta_count;
-            dst->content_count        = src.content_meta_count;
-            dst->attributes           = src.attributes;
+            /* Set destination. */
+            *dst = {
+                .extended_header_size = src.extended_header_size,
+                .content_count        = src.content_count,
+                .content_meta_count   = src.content_meta_count,
+                .attributes           = src.attributes,
+            };
         }
 
         Result FindDeltaIndex(s32 *out_index, const PatchMetaExtendedDataReader &reader, u32 src_version, u32 dst_version) {
