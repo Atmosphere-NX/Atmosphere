@@ -83,16 +83,16 @@ namespace ams::fs::fsa {
             Result OpenFile(std::unique_ptr<IFile> *out_file, const char *path, OpenMode mode) {
                 R_UNLESS(path != nullptr,                  fs::ResultInvalidPath());
                 R_UNLESS(out_file != nullptr,              fs::ResultNullptrArgument());
-                R_UNLESS((mode & OpenMode_ReadWrite) != 0, fs::ResultInvalidArgument());
-                R_UNLESS((mode & ~OpenMode_All) == 0,      fs::ResultInvalidArgument());
+                R_UNLESS((mode & OpenMode_ReadWrite) != 0, fs::ResultInvalidOpenMode());
+                R_UNLESS((mode & ~OpenMode_All) == 0,      fs::ResultInvalidOpenMode());
                 return this->OpenFileImpl(out_file, path, mode);
             }
 
             Result OpenDirectory(std::unique_ptr<IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) {
                 R_UNLESS(path != nullptr,                                                               fs::ResultInvalidPath());
                 R_UNLESS(out_dir != nullptr,                                                            fs::ResultNullptrArgument());
-                R_UNLESS((mode &  OpenDirectoryMode_All) != 0,                                          fs::ResultInvalidArgument());
-                R_UNLESS((mode & ~(OpenDirectoryMode_All | OpenDirectoryMode_NotRequireFileSize)) == 0, fs::ResultInvalidArgument());
+                R_UNLESS((mode &  OpenDirectoryMode_All) != 0,                                          fs::ResultInvalidOpenMode());
+                R_UNLESS((mode & ~(OpenDirectoryMode_All | OpenDirectoryMode_NotRequireFileSize)) == 0, fs::ResultInvalidOpenMode());
                 return this->OpenDirectoryImpl(out_dir, path, mode);
             }
 

@@ -15,11 +15,13 @@
  */
 
 #pragma once
-#include "fssystem/fssystem_utility.hpp"
-#include "fssystem/fssystem_external_code.hpp"
-#include "fssystem/fssystem_partition_file_system.hpp"
-#include "fssystem/fssystem_partition_file_system_meta.hpp"
-#include "fssystem/fssystem_path_tool.hpp"
-#include "fssystem/fssystem_subdirectory_filesystem.hpp"
-#include "fssystem/fssystem_directory_redirection_filesystem.hpp"
-#include "fssystem/fssystem_directory_savedata_filesystem.hpp"
+#include <stratosphere/fssystem/fssystem_utility.hpp>
+#include <stratosphere/fssystem/fssystem_external_code.hpp>
+#include <stratosphere/fssystem/fssystem_partition_file_system.hpp>
+#include <stratosphere/fssystem/fssystem_partition_file_system_meta.hpp>
+#include <stratosphere/fssystem/fssystem_path_tool.hpp>
+#include <stratosphere/fssystem/fssystem_subdirectory_filesystem.hpp>
+#include <stratosphere/fssystem/fssystem_directory_redirection_filesystem.hpp>
+#include <stratosphere/fssystem/fssystem_directory_savedata_filesystem.hpp>
+#include <stratosphere/fssystem/fssystem_romfs_file_system.hpp>
+#include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>

@@ -82,7 +82,7 @@ namespace ams::fs {
         private:
             virtual Result OpenFileImpl(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
                 /* Only allow opening files with mode = read. */
-                R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidArgument());
+                R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
                 std::unique_ptr<fsa::IFile> base_file;
                 R_TRY(this->base_fs->OpenFile(std::addressof(base_file), path, mode));

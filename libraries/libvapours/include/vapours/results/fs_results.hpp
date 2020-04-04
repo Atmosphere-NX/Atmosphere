@@ -240,6 +240,8 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(ExtensionSizeTooLarge, 6066);
             R_DEFINE_ERROR_RESULT(ExtensionSizeInvalid,  6067);
 
+            R_DEFINE_ERROR_RESULT(InvalidOpenMode, 6072);
+
             R_DEFINE_ERROR_RANGE(InvalidEnumValue,  6080, 6099);
                 R_DEFINE_ERROR_RESULT(InvalidSaveDataState, 6081);
                 R_DEFINE_ERROR_RESULT(InvalidSaveDataSpaceId, 6082);
@@ -286,8 +288,9 @@ namespace ams::fs {
     R_DEFINE_ERROR_RANGE(NotFound, 6600, 6699);
 
     R_DEFINE_ERROR_RANGE(OutOfResource, 6700, 6799);
-        R_DEFINE_ERROR_RESULT(MappingTableFull, 6706);
-        R_DEFINE_ERROR_RESULT(OpenCountLimit,   6709);
+        R_DEFINE_ERROR_RESULT(BufferAllocationFailed, 6705);
+        R_DEFINE_ERROR_RESULT(MappingTableFull,       6706);
+        R_DEFINE_ERROR_RESULT(OpenCountLimit,         6709);
 
     R_DEFINE_ERROR_RANGE(MappingFailed, 6800, 6899);
         R_DEFINE_ERROR_RESULT(MapFull,  6811);
