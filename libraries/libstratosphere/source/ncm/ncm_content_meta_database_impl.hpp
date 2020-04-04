@@ -25,7 +25,7 @@ namespace ams::ncm {
             ContentMetaDatabaseImpl(ContentMetaKeyValueStore *kvs) : ContentMetaDatabaseImplBase(kvs) { /* ... */ }
         private:
             /* Helpers. */
-            Result GetContentIdImpl(ContentId *out, const ContentMetaKey& key, ContentType type, std::optional<u8> id_offset) const;
+            Result GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, std::optional<u8> id_offset) const;
         public:
             /* Actual commands. */
             virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;

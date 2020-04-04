@@ -24,7 +24,7 @@ namespace ams::nim {
     void FinalizeForNetworkInstallManager();
 
     /* Service API. */
-    Result DestroySystemUpdateTask(const SystemUpdateTaskId& id);
+    Result DestroySystemUpdateTask(const SystemUpdateTaskId &id);
     s32 ListSystemUpdateTask(SystemUpdateTaskId *out_list, size_t out_list_size);
 
 

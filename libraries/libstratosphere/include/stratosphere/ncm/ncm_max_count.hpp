@@ -18,28 +18,9 @@
 
 namespace ams::ncm {
 
-    struct alignas(8) PlaceHolderId {
-        util::Uuid uuid;
-
-        bool operator==(const PlaceHolderId &other) const {
-            return this->uuid == other.uuid;
-        }
-
-        bool operator!=(const PlaceHolderId &other) const {
-            return this->uuid != other.uuid;
-        }
-
-        bool operator==(const util::Uuid &other) const {
-            return this->uuid == other;
-        }
-
-        bool operator!=(const util::Uuid &other) const {
-            return this->uuid != other;
-        }
-    };
-
-    static_assert(alignof(PlaceHolderId) == 8);
-
-    constexpr inline PlaceHolderId InvalidPlaceHolderId = { util::InvalidUuid };
+    constexpr inline s32 SystemMaxContentMetaCount   = 0x800;
+    constexpr inline s32 GameCardMaxContentMetaCount = 0x800;
+    constexpr inline s32 UserMaxContentMetaCount     = 0x2000;
+    constexpr inline s32 SdCardMaxContentMetaCount   = 0x2000;
 
 }

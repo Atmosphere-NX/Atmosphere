@@ -37,7 +37,7 @@ namespace ams::kvdb {
                 rhs.size = 0;
             }
 
-            AutoBuffer& operator=(AutoBuffer &&rhs) {
+            AutoBuffer &operator=(AutoBuffer &&rhs) {
                 AutoBuffer(std::move(rhs)).Swap(*this);
                 return *this;
             }

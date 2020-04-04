@@ -77,4 +77,83 @@ namespace ams::ncm {
         return ncm::ResultContentMetaNotFound();
     }
 
+    Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id) {
+        AutoBuffer meta;
+        {
+            /* TODO: fs::ScopedAutoAbortDisabler aad; */
+            R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
+        }
+
+        /* Create a reader for the content meta. */
+        PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
+
+        /* Define a helper to output the base meta infos. */
+        /* TODO: C++20 ALWAYS_INLINE_LAMBDA */
+        const auto ReadMetaInfoListFromBase = [&]() -> Result {
+            /* Output the base content meta info count. */
+            *out_count = reader.GetContentMetaCount();
+
+            /* Create a buffer to hold the infos. NOTE: N does not check for nullptr before accessing. */
+            std::unique_ptr<ContentMetaInfo[]> buffer(new (std::nothrow) ContentMetaInfo[reader.GetContentMetaCount()]);
+            AMS_ABORT_UNLESS(buffer != nullptr);
+
+            /* Copy all base meta infos to output */
+            for (size_t i = 0; i < reader.GetContentMetaCount(); i++) {
+                buffer[i] = *reader.GetContentMetaInfo(i);
+            }
+
+            /* Write out the buffer we've populated. */
+            *out_meta_infos = std::move(buffer);
+            return ResultSuccess();
+        };
+
+        /* If there are no firmware variations to list, read meta infos from base. */
+        R_UNLESS(reader.GetExtendedDataSize() != 0, ReadMetaInfoListFromBase());
+
+        SystemUpdateMetaExtendedDataReader extended_data_reader(reader.GetExtendedData(), reader.GetExtendedDataSize());
+        std::optional<s32> firmware_variation_index = std::nullopt;
+
+        /* Find the input firmware variation id. */
+        for (size_t i = 0; i < extended_data_reader.GetFirmwareVariationCount(); i++) {
+            if (*extended_data_reader.GetFirmwareVariationId(i) == firmware_variation_id) {
+                firmware_variation_index = i;
+                break;
+            }
+        }
+
+        /* We couldn't find the input firmware variation id. */
+        R_UNLESS(firmware_variation_index, ncm::ResultInvalidFirmwareVariation());
+
+        /* Obtain the variation info. */
+        const FirmwareVariationInfo *variation_info = extended_data_reader.GetFirmwareVariationInfo(*firmware_variation_index);
+
+        /* Refer to base if variation info says we should, or if unk is 1 (unk is usually 2, probably a version). */
+        const bool refer_to_base = variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1;
+        R_UNLESS(!refer_to_base, ReadMetaInfoListFromBase());
+
+        /* Output the content meta count. */
+        const u32 content_meta_count = variation_info->content_meta_count;
+        *out_count = content_meta_count;
+
+        /* We're done if there are no content metas to list. */
+        R_SUCCEED_IF(content_meta_count == 0);
+
+        /* Allocate a buffer for the content meta infos. */
+        std::unique_ptr<ContentMetaInfo[]> buffer(new (std::nothrow) ContentMetaInfo[content_meta_count]);
+        AMS_ABORT_UNLESS(buffer != nullptr);
+
+        /* Get the content meta infos. */
+        Span<const ContentMetaInfo> meta_infos;
+        extended_data_reader.GetContentMetaInfoList(std::addressof(meta_infos), content_meta_count);
+
+        /* Copy the meta infos to the buffer. */
+        for (size_t i = 0; i < content_meta_count; i++) {
+            buffer[i] = meta_infos[i];
+        }
+
+        /* Output the content meta info buffer. */
+        *out_meta_infos = std::move(buffer);
+        return ResultSuccess();
+    }
+
 }

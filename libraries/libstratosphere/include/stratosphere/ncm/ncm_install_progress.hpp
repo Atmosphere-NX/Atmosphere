@@ -14,32 +14,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
 
 namespace ams::ncm {
 
-    struct alignas(8) PlaceHolderId {
-        util::Uuid uuid;
-
-        bool operator==(const PlaceHolderId &other) const {
-            return this->uuid == other.uuid;
-        }
-
-        bool operator!=(const PlaceHolderId &other) const {
-            return this->uuid != other.uuid;
-        }
-
-        bool operator==(const util::Uuid &other) const {
-            return this->uuid == other;
-        }
-
-        bool operator!=(const util::Uuid &other) const {
-            return this->uuid != other;
-        }
+    enum class InstallProgressState : u8 {
+        NotPrepared     = 0,
+        DataPrepared    = 1,
+        Prepared        = 2,
+        Downloaded      = 3,
+        Committed       = 4,
+        Fatal           = 5,
     };
 
-    static_assert(alignof(PlaceHolderId) == 8);
+    struct InstallProgress {
+        InstallProgressState state;
+        u8 pad[3];
+        TYPED_STORAGE(Result) last_result;
+        s64 installed_size;
+        s64 total_size;
 
-    constexpr inline PlaceHolderId InvalidPlaceHolderId = { util::InvalidUuid };
+        Result GetLastResult() const {
+            return util::GetReference(last_result);
+        }
+
+        void SetLastResult(Result result) {
+            *util::GetPointer(last_result) = result;
+        }
+    };
 
 }

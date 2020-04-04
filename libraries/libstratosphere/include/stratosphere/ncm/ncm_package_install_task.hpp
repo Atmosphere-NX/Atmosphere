@@ -14,32 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere/ncm/ncm_package_install_task_base.hpp>
 
 namespace ams::ncm {
 
-    struct alignas(8) PlaceHolderId {
-        util::Uuid uuid;
-
-        bool operator==(const PlaceHolderId &other) const {
-            return this->uuid == other.uuid;
-        }
-
-        bool operator!=(const PlaceHolderId &other) const {
-            return this->uuid != other.uuid;
-        }
-
-        bool operator==(const util::Uuid &other) const {
-            return this->uuid == other;
-        }
-
-        bool operator!=(const util::Uuid &other) const {
-            return this->uuid != other;
-        }
+    class PackageInstallTask : public PackageInstallTaskBase {
+        private:
+            MemoryInstallTaskData data;
+        public:
+            Result Initialize(const char *package_root, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket);
+        protected:
+            bool IsContentMetaContentName(const char *name);
+            virtual Result PrepareInstallContentMetaData() override;
+        private:
+            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) override;
     };
-
-    static_assert(alignof(PlaceHolderId) == 8);
-
-    constexpr inline PlaceHolderId InvalidPlaceHolderId = { util::InvalidUuid };
 
 }

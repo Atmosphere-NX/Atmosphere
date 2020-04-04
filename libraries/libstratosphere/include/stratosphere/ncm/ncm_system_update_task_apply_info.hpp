@@ -18,28 +18,10 @@
 
 namespace ams::ncm {
 
-    struct alignas(8) PlaceHolderId {
-        util::Uuid uuid;
-
-        bool operator==(const PlaceHolderId &other) const {
-            return this->uuid == other.uuid;
-        }
-
-        bool operator!=(const PlaceHolderId &other) const {
-            return this->uuid != other.uuid;
-        }
-
-        bool operator==(const util::Uuid &other) const {
-            return this->uuid == other;
-        }
-
-        bool operator!=(const util::Uuid &other) const {
-            return this->uuid != other;
-        }
+    enum class SystemUpdateTaskApplyInfo : u8 {
+        Unknown            = 0,
+        RequireReboot      = 1,
+        RequireNoReboot    = 2,
     };
-
-    static_assert(alignof(PlaceHolderId) == 8);
-
-    constexpr inline PlaceHolderId InvalidPlaceHolderId = { util::InvalidUuid };
 
 }

@@ -15,31 +15,17 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <stratosphere/ncm/ncm_content_meta_key.hpp>
 
 namespace ams::ncm {
 
-    struct alignas(8) PlaceHolderId {
-        util::Uuid uuid;
+    constexpr inline s64 MaxClusterSize = 256_KB;
 
-        bool operator==(const PlaceHolderId &other) const {
-            return this->uuid == other.uuid;
-        }
+    s64 CalculateRequiredSize(s64 file_size, s64 cluster_size = MaxClusterSize);
+    s64 CalculateRequiredSizeForExtension(s64 file_size, s64 cluster_size = MaxClusterSize);
 
-        bool operator!=(const PlaceHolderId &other) const {
-            return this->uuid != other.uuid;
-        }
+    class ContentMetaDatabase;
 
-        bool operator==(const util::Uuid &other) const {
-            return this->uuid == other;
-        }
-
-        bool operator!=(const util::Uuid &other) const {
-            return this->uuid != other;
-        }
-    };
-
-    static_assert(alignof(PlaceHolderId) == 8);
-
-    constexpr inline PlaceHolderId InvalidPlaceHolderId = { util::InvalidUuid };
+    Result EstimateRequiredSize(s64 *out_size, const ContentMetaKey &key, ContentMetaDatabase *db);
 
 }

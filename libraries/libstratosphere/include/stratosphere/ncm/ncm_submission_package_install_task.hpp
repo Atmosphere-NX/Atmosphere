@@ -14,32 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <stratosphere/fs/fs_file_storage.hpp>
+#include <stratosphere/ncm/ncm_package_install_task.hpp>
 
 namespace ams::ncm {
 
-    struct alignas(8) PlaceHolderId {
-        util::Uuid uuid;
+    class SubmissionPackageInstallTask : public PackageInstallTask {
+        private:
+            class Impl;
+        private:
+            std::unique_ptr<Impl> impl;
+        public:
+            SubmissionPackageInstallTask();
+            virtual ~SubmissionPackageInstallTask() override;
 
-        bool operator==(const PlaceHolderId &other) const {
-            return this->uuid == other.uuid;
-        }
-
-        bool operator!=(const PlaceHolderId &other) const {
-            return this->uuid != other.uuid;
-        }
-
-        bool operator==(const util::Uuid &other) const {
-            return this->uuid == other;
-        }
-
-        bool operator!=(const util::Uuid &other) const {
-            return this->uuid != other;
-        }
+            Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket = false);
     };
-
-    static_assert(alignof(PlaceHolderId) == 8);
-
-    constexpr inline PlaceHolderId InvalidPlaceHolderId = { util::InvalidUuid };
 
 }

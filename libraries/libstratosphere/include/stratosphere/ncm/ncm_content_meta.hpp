@@ -18,6 +18,7 @@
 #include <stratosphere/ncm/ncm_content_meta_key.hpp>
 #include <stratosphere/ncm/ncm_content_info.hpp>
 #include <stratosphere/ncm/ncm_content_info_data.hpp>
+#include <stratosphere/ncm/ncm_firmware_variation.hpp>
 #include <stratosphere/ncm/ncm_storage_id.hpp>
 
 namespace ams::ncm {
@@ -72,14 +73,15 @@ namespace ams::ncm {
         u8 attributes;
         u8 storage_id;
         ContentInstallType install_type;
-        u8 reserved_17;
+        bool committed;
         u32 required_download_system_version;
         u8 reserved_1C[4];
     };
     static_assert(sizeof(PackagedContentMetaHeader) == 0x20);
     static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_0D) == 0x0D);
-    static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_17) == 0x17);
     static_assert(OFFSETOF(PackagedContentMetaHeader, reserved_1C) == 0x1C);
+
+    using InstallContentMetaHeader = PackagedContentMetaHeader;
 
     struct ApplicationMetaExtendedHeader {
         PatchId patch_id;
@@ -104,6 +106,10 @@ namespace ams::ncm {
         ApplicationId application_id;
         u32 extended_data_size;
         u32 padding;
+    };
+
+    struct SystemUpdateMetaExtendedHeader {
+        u32 extended_data_size;
     };
 
     template<typename ContentMetaHeaderType, typename ContentInfoType>
@@ -194,6 +200,18 @@ namespace ams::ncm {
                 return nullptr;
             }
 
+            s64 CalculateContentRequiredSize() const {
+                s64 required_size = 0;
+                for (size_t i = 0; i < this->GetContentCount(); i++) {
+                    required_size += CalculateRequiredSize(this->GetContentInfo(i)->info.GetSize());
+                }
+                return required_size;
+            }
+
+            void SetStorageId(StorageId storage_id) {
+                this->GetWritableHeader()->storage_id = static_cast<u8>(storage_id);
+            }
+
         public:
             const void *GetData() const {
                 return this->data;
@@ -201,6 +219,11 @@ namespace ams::ncm {
 
             size_t GetSize() const {
                 return this->size;
+            }
+
+            HeaderType *GetWritableHeader() const {
+                AMS_ABORT_UNLESS(this->is_header_valid);
+                return reinterpret_cast<HeaderType *>(this->data);
             }
 
             const HeaderType *GetHeader() const {
@@ -252,9 +275,10 @@ namespace ams::ncm {
 
             size_t GetExtendedDataSize() const {
                 switch (this->GetHeader()->type) {
-                    case ContentMetaType::Patch: return this->GetExtendedHeader<PatchMetaExtendedHeader>()->extended_data_size;
-                    case ContentMetaType::Delta: return this->GetExtendedHeader<DeltaMetaExtendedHeader>()->extended_data_size;
-                    default:                     return 0;
+                    case ContentMetaType::Patch:        return this->GetExtendedHeader<PatchMetaExtendedHeader>()->extended_data_size;
+                    case ContentMetaType::Delta:        return this->GetExtendedHeader<DeltaMetaExtendedHeader>()->extended_data_size;
+                    case ContentMetaType::SystemUpdate: return this->GetExtendedHeaderSize() == 0 ? 0 : this->GetExtendedHeader<SystemUpdateMetaExtendedHeader>()->extended_data_size;
+                    default:                            return 0;
                 }
             }
 
@@ -273,6 +297,10 @@ namespace ams::ncm {
                     }
                 }
                 return false;
+            }
+
+            StorageId GetStorageId() const {
+                return static_cast<StorageId>(this->GetHeader()->storage_id);
             }
 
             std::optional<ApplicationId> GetApplicationId(const ContentMetaKey &key) const {
@@ -301,15 +329,43 @@ namespace ams::ncm {
         public:
             constexpr PackagedContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
 
-            size_t CalculateConvertContentMetaSize() const;
+            size_t CalculateConvertInstallContentMetaSize() const;
+            void ConvertToInstallContentMeta(void *dst, size_t size, const InstallContentInfo &meta);
 
+            size_t CalculateConvertContentMetaSize() const;
             void ConvertToContentMeta(void *dst, size_t size, const ContentInfo &meta);
+
+            Result CalculateConvertFragmentOnlyInstallContentMetaSize(size_t *out_size, u32 source_version) const;
+            Result ConvertToFragmentOnlyInstallContentMeta(void *dst, size_t size, const InstallContentInfo &content_info, u32 source_version);
 
             size_t CountDeltaFragments() const;
 
             static constexpr size_t CalculateSize(ContentMetaType type, size_t content_count, size_t content_meta_count, size_t extended_data_size) {
                 return ContentMetaAccessor::CalculateSize(type, content_count, content_meta_count, extended_data_size, true);
             }
+    };
+
+    class InstallContentMetaReader : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
+        public:
+            constexpr InstallContentMetaReader(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+
+            using ContentMetaAccessor::CalculateSize;
+            using ContentMetaAccessor::CalculateContentRequiredSize;
+            using ContentMetaAccessor::GetStorageId;
+
+            size_t CalculateConvertSize() const;
+
+            void ConvertToContentMeta(void *dst, size_t size) const;
+    };
+
+    class InstallContentMetaWriter : public ContentMetaAccessor<InstallContentMetaHeader, InstallContentInfo> {
+        public:
+            InstallContentMetaWriter(const void *data, size_t size) : ContentMetaAccessor(data, size) { /* ... */ }
+
+            using ContentMetaAccessor::CalculateSize;
+            using ContentMetaAccessor::CalculateContentRequiredSize;
+            using ContentMetaAccessor::GetWritableContentInfo;
+            using ContentMetaAccessor::SetStorageId;
     };
 
 }
