@@ -21,6 +21,10 @@
 #include <vapours/crypto/crypto_memory_clear.hpp>
 #include <vapours/crypto/crypto_sha1_generator.hpp>
 #include <vapours/crypto/crypto_sha256_generator.hpp>
+#include <vapours/crypto/crypto_aes_encryptor.hpp>
+#include <vapours/crypto/crypto_aes_decryptor.hpp>
+#include <vapours/crypto/crypto_aes_ctr_encryptor_decryptor.hpp>
+#include <vapours/crypto/crypto_aes_xts_encryptor_decryptor.hpp>
 #include <vapours/crypto/crypto_rsa_pss_sha256_verifier.hpp>
 #include <vapours/crypto/crypto_rsa_oaep_sha256_decoder.hpp>
 #include <vapours/crypto/crypto_rsa_oaep_sha256_decryptor.hpp>
