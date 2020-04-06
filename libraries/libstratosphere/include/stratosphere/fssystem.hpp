@@ -22,6 +22,7 @@
 #include <stratosphere/fssystem/fssystem_path_tool.hpp>
 #include <stratosphere/fssystem/fssystem_thread_priority_changer.hpp>
 #include <stratosphere/fssystem/fssystem_aes_ctr_storage.hpp>
+#include <stratosphere/fssystem/fssystem_aes_xts_storage.hpp>
 #include <stratosphere/fssystem/fssystem_subdirectory_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_directory_redirection_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_directory_savedata_filesystem.hpp>

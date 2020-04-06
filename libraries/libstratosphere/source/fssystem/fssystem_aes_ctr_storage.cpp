@@ -41,7 +41,7 @@ namespace ams::fssystem {
     }
 
     Result AesCtrStorage::Read(s64 offset, void *buffer, size_t size) {
-        /* Allow zero-size writes. */
+        /* Allow zero-size reads. */
         R_SUCCEED_IF(size == 0);
 
         /* Ensure buffer is valid. */

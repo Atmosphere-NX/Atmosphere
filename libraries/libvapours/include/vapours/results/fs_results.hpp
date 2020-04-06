@@ -215,6 +215,7 @@ namespace ams::fs {
 
     R_DEFINE_ERROR_RANGE(Unexpected, 5000, 5999);
         R_DEFINE_ERROR_RESULT(UnexpectedInAesCtrStorageA,  5315);
+        R_DEFINE_ERROR_RESULT(UnexpectedInAesXtsStorageA,  5316);
         R_DEFINE_ERROR_RESULT(UnexpectedInFindFileSystemA, 5319);
 
     R_DEFINE_ERROR_RANGE(PreconditionViolation, 6000, 6499);
