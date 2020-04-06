@@ -76,8 +76,8 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemB,            3248);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,            3249);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA, 3280);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemBuddyHeapA,        3294);
         R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
-
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemA,        3347);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemB,        3348);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemC,        3349);

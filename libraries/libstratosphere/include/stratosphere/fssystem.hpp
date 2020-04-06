@@ -25,3 +25,4 @@
 #include <stratosphere/fssystem/fssystem_directory_savedata_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_romfs_file_system.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>
+#include <stratosphere/fssystem/buffers/fssystem_file_system_buddy_heap.hpp>
