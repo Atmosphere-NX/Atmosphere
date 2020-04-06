@@ -26,3 +26,4 @@
 #include <stratosphere/fssystem/fssystem_romfs_file_system.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_file_system_buddy_heap.hpp>
+#include <stratosphere/fssystem/fssystem_pooled_buffer.hpp>
