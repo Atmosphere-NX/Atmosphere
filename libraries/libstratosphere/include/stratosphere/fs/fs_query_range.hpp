@@ -20,9 +20,9 @@
 namespace ams::fs {
 
     struct QueryRangeInfo {
-        u32 aes_ctr_key_type;
-        u32 speed_emulation_type;
-        u32 reserved[0x38 / sizeof(u32)];
+        s32 aes_ctr_key_type;
+        s32 speed_emulation_type;
+        u8 reserved[0x38];
 
         void Clear() {
             this->aes_ctr_key_type = 0;
@@ -44,5 +44,9 @@ namespace ams::fs {
     using StorageQueryRangeInfo = QueryRangeInfo;
 
     Result QueryRange(QueryRangeInfo *out, FileHandle handle, s64 offset, s64 size);
+
+    enum class AesCtrKeyTypeFlag : s32 {
+        InternalKeyForSoftwareAes = (1 << 0),
+    };
 
 }

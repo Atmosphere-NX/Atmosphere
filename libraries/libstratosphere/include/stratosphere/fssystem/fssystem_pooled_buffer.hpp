@@ -105,4 +105,8 @@ namespace ams::fssystem {
     void UnregisterAdditionalDeviceAddress(uintptr_t address);
     bool IsAdditionalDeviceAddress(const void *ptr);
 
+    inline bool IsDeviceAddress(const void *buffer) {
+        return IsPooledBuffer(buffer) || IsAdditionalDeviceAddress(buffer);
+    }
+
 }

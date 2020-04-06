@@ -20,6 +20,8 @@
 #include <stratosphere/fssystem/fssystem_partition_file_system.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system_meta.hpp>
 #include <stratosphere/fssystem/fssystem_path_tool.hpp>
+#include <stratosphere/fssystem/fssystem_thread_priority_changer.hpp>
+#include <stratosphere/fssystem/fssystem_aes_ctr_storage.hpp>
 #include <stratosphere/fssystem/fssystem_subdirectory_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_directory_redirection_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_directory_savedata_filesystem.hpp>

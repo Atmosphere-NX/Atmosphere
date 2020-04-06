@@ -170,4 +170,6 @@ namespace ams::fssystem {
         }
     }
 
+    void AddCounter(void *counter, size_t counter_size, u64 value);
+
 }

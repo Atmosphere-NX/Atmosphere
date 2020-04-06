@@ -149,4 +149,23 @@ namespace ams::fssystem {
         return EnsureDirectoryRecursivelyImpl(fs, path, false);
     }
 
+    void AddCounter(void *_counter, size_t counter_size, u64 value) {
+        u8 *counter   = static_cast<u8 *>(_counter);
+        u64 remaining = value;
+        u8 carry = 0;
+
+        for (size_t i = 0; i < counter_size; i++) {
+            auto sum  = counter[counter_size - 1 - i] + (remaining & 0xFF) + carry;
+            carry     = static_cast<u8>(sum >> BITSIZEOF(u8));
+            auto sum8 = static_cast<u8>(sum & 0xFF);
+
+            counter[counter_size - 1 - i] = sum8;
+
+            remaining >>= BITSIZEOF(u8);
+            if (carry == 0 && remaining == 0) {
+                break;
+            }
+        }
+    }
+
 }
