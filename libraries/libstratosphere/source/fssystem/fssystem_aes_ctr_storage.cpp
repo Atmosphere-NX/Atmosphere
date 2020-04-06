@@ -64,7 +64,7 @@ namespace ams::fssystem {
 
         /* Decrypt, ensure we decrypt correctly. */
         auto dec_size = crypto::DecryptAes128Ctr(buffer, size, this->key, KeySize, ctr, IvSize, buffer, size);
-        AMS_ABORT_UNLESS(size == dec_size);
+        R_UNLESS(size == dec_size, fs::ResultUnexpectedInAesCtrStorageA());
 
         return ResultSuccess();
     }
@@ -105,7 +105,7 @@ namespace ams::fssystem {
                 ScopedThreadPriorityChanger cp(+1, ScopedThreadPriorityChanger::Mode::Relative);
 
                 auto enc_size = crypto::EncryptAes128Ctr(write_buf, write_size, this->key, KeySize, ctr, IvSize, reinterpret_cast<const char *>(buffer) + cur_offset, write_size);
-                AMS_ABORT_UNLESS(enc_size == write_size);
+                R_UNLESS(enc_size == write_size, fs::ResultUnexpectedInAesCtrStorageA());
             }
 
             /* Write the encrypted data. */
