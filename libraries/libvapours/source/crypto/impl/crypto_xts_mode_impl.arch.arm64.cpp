@@ -14,12 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <vapours.hpp>
-#include <arm_neon.h>
 #include "crypto_update_impl.hpp"
+
+#ifdef ATMOSPHERE_IS_STRATOSPHERE
+#include <arm_neon.h>
 
 namespace ams::crypto::impl {
 
-#ifdef ATMOSPHERE_IS_STRATOSPHERE
 
     /* Variable management macros. */
     #define DECLARE_ROUND_KEY_VAR(n) \
@@ -1178,10 +1179,14 @@ namespace ams::crypto::impl {
         return processed;
     }
 
+}
+
 #else
 
-    /* TODO: Non-EL0 implementation. */
+/* TODO: Non-EL0 implementation. */
+namespace ams::crypto::impl {
+
+}
 
 #endif
 
-}

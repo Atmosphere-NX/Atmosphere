@@ -6,7 +6,8 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-PRECOMPILED_HEADERS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/include/mesosphere.hpp
+#PRECOMPILED_HEADERS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/include/mesosphere.hpp
+PRECOMPILED_HEADERS :=
 
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror -fno-non-call-exceptions
