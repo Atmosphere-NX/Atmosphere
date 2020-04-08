@@ -40,6 +40,7 @@
 #include "stratosphere/boot2.hpp"
 #include "stratosphere/cfg.hpp"
 #include "stratosphere/dmnt.hpp"
+#include "stratosphere/erpt.hpp"
 #include "stratosphere/fatal.hpp"
 #include "stratosphere/hid.hpp"
 #include "stratosphere/hos.hpp"
