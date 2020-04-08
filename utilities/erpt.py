@@ -238,6 +238,11 @@ FIELD_TYPES = {
     15 : 'FieldType_I8Array',
 }
 
+FIELD_FLAGS = {
+    0 : 'FieldFlag_None',
+    1 : 'FieldFlag_Encrypt',
+}
+
 def get_full(nxo):
     full = nxo.text[0]
     if nxo.ro[2] >= len(full):
@@ -352,11 +357,19 @@ def find_types(full, num_fields):
     ind = full.index(''.join(pk('<I', i) for i in KNOWN))
     return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
+def find_flags(full, num_fields):
+    KNOWN = '\x00' + ('\x01'*6) + '\x00\x01\x01\x00'
+    ind = full.index(KNOWN) - 443
+    return list(up('<'+'B'*num_fields, full[ind:ind+num_fields]))
+
 def cat_to_string(c):
     return CATEGORIES[c] if c in CATEGORIES else 'Category_Unknown%d' % c
 
 def typ_to_string(t):
     return FIELD_TYPES[t] if t in FIELD_TYPES else 'FieldType_Unknown%d' % t
+
+def flg_to_string(f):
+    return FIELD_FLAGS[f] if f in FIELD_FLAGS else 'FieldFlag_Unknown%d' % f
 
 def main(argc, argv):
     if argc != 2:
@@ -370,14 +383,16 @@ def main(argc, argv):
     NUM_FIELDS = len(fields)
     cats = find_categories(full, NUM_FIELDS)
     types = find_types(full, NUM_FIELDS)
+    flags = find_flags(full, NUM_FIELDS)
     print 'Identified %d fields.' % NUM_FIELDS
     mf = max(len(s) for s in fields)
     mc = max(len(cat_to_string(c)) for c in cats)
     mt = max(len(typ_to_string(t)) for t in types)
-    format_string = '- %%-%ds %%-%ds %%-%ds' % (mf+1, mc+1, mt)
+    ml = max(len(flg_to_string(f)) for f in flags)
+    format_string = '- %%-%ds %%-%ds %%-%ds %%-%ds' % (mf+1, mc+1, mt+1, ml)
     for i in xrange(NUM_FIELDS):
-        f, c, t = fields[i], cat_to_string(cats[i]), typ_to_string(types[i])
-        print format_string % (f+',', c+',', t)
+        f, c, t, l = fields[i], cat_to_string(cats[i]), typ_to_string(types[i]), flg_to_string(flags[i])
+        print format_string % (f+',', c+',', t+',', l)
     with open(argv[1]+'.hpp', 'w') as out:
         out.write(HEADER)
         out.write('#define AMS_ERPT_FOREACH_FIELD_TYPE(HANDLER) \\\n')
@@ -390,8 +405,8 @@ def main(argc, argv):
         out.write('\n')
         out.write('#define AMS_ERPT_FOREACH_FIELD(HANDLER) \\\n')
         for i in xrange(NUM_FIELDS):
-            f, c, t = fields[i], cats[i], types[i]
-            out.write(('    HANDLER(%%-%ds %%-4s %%-%ds %%-%ds) \\\n' % (mf+1, mc+1, mt)) % (f+',', '%d,'%i, cat_to_string(c)+',', typ_to_string(t)))
+            f, c, t, l = fields[i], cats[i], types[i], flags[i]
+            out.write(('    HANDLER(%%-%ds %%-4s %%-%ds %%-%ds %%-%ds) \\\n' % (mf+1, mc+1, mt+1, ml)) % (f+',', '%d,'%i, cat_to_string(c)+',', typ_to_string(t)+',', flg_to_string(l)))
         out.write('\n')
     return 0
 
