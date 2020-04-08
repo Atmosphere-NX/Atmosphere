@@ -17,26 +17,26 @@
 
 namespace ams::fatal::srv {
 
-    FatalEventManager::FatalEventManager() {
+    FatalEventManager::FatalEventManager() : lock(false) {
         /* Just create all the events. */
         for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-            R_ABORT_UNLESS(eventCreate(&this->events[i], true));
+            R_ABORT_UNLESS(os::CreateSystemEvent(std::addressof(this->events[i]), os::EventClearMode_AutoClear, true));
         }
     }
 
-    Result FatalEventManager::GetEvent(Handle *out) {
+    Result FatalEventManager::GetEvent(const os::SystemEventType **out) {
         std::scoped_lock lk{this->lock};
 
         /* Only allow GetEvent to succeed NumFatalEvents times. */
         R_UNLESS(this->num_events_gotten < FatalEventManager::NumFatalEvents, ResultTooManyEvents());
 
-        *out = this->events[this->num_events_gotten++].revent;
+        *out = std::addressof(this->events[this->num_events_gotten++]);
         return ResultSuccess();
     }
 
     void FatalEventManager::SignalEvents() {
         for (size_t i = 0; i < FatalEventManager::NumFatalEvents; i++) {
-            eventFire(&this->events[i]);
+            os::SignalSystemEvent(std::addressof(this->events[i]));
         }
     }
 

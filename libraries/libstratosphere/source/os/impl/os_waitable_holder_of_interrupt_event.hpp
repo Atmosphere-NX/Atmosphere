@@ -20,19 +20,16 @@ namespace ams::os::impl {
 
     class WaitableHolderOfInterruptEvent : public WaitableHolderOfKernelObject {
         private:
-            InterruptEvent *event;
+            InterruptEventType *event;
         public:
-            explicit WaitableHolderOfInterruptEvent(InterruptEvent *e) : event(e) { /* ... */ }
+            explicit WaitableHolderOfInterruptEvent(InterruptEventType *e) : event(e) { /* ... */ }
 
             /* IsSignaled, GetHandle both implemented. */
             virtual TriBool IsSignaled() const override {
                 return TriBool::Undefined;
             }
 
-            virtual Handle GetHandle() const override {
-                AMS_ABORT_UNLESS(this->event->is_initialized);
-                return this->event->handle.Get();
-            }
+            virtual Handle GetHandle() const override;
     };
 
 }

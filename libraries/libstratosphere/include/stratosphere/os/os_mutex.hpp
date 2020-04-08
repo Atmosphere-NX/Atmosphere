@@ -15,82 +15,60 @@
  */
 
 #pragma once
-#include "os_common_types.hpp"
+#include <stratosphere/os/os_mutex_common.hpp>
+#include <stratosphere/os/os_mutex_types.hpp>
+#include <stratosphere/os/os_mutex_api.hpp>
 
 namespace ams::os {
-
-    class ConditionVariable;
 
     class Mutex {
         NON_COPYABLE(Mutex);
         NON_MOVEABLE(Mutex);
-        friend class ams::os::ConditionVariable;
         private:
-            ::Mutex m;
-        private:
-            constexpr ::Mutex *GetMutex() {
-                return &this->m;
-            }
+            MutexType mutex;
         public:
-            constexpr Mutex() : m() { /* ... */ }
+            constexpr explicit Mutex(bool recursive) : mutex{::ams::os::MutexType::State_Initialized, recursive, 0, 0, nullptr, {{0}}} { /* ... */ }
+
+            ~Mutex() { FinalizeMutex(std::addressof(this->mutex)); }
 
             void lock() {
-                mutexLock(GetMutex());
+                return LockMutex(std::addressof(this->mutex));
             }
 
             void unlock() {
-                mutexUnlock(GetMutex());
+                return UnlockMutex(std::addressof(this->mutex));
             }
 
             bool try_lock() {
-                return mutexTryLock(GetMutex());
+                return TryLockMutex(std::addressof(this->mutex));
             }
 
-            void Lock() {
-                lock();
+            bool IsLockedByCurrentThread() const {
+                return IsMutexLockedByCurrentThread(std::addressof(this->mutex));
             }
 
-            void Unlock() {
-                unlock();
+            ALWAYS_INLINE void Lock() {
+                return this->lock();
             }
 
-            bool TryLock() {
-                return try_lock();
-            }
-    };
-
-    class RecursiveMutex {
-        private:
-            ::RMutex m;
-        private:
-            constexpr ::RMutex *GetMutex() {
-                return &this->m;
-            }
-        public:
-            constexpr RecursiveMutex() : m() { /* ... */ }
-
-            void lock() {
-                rmutexLock(GetMutex());
+            ALWAYS_INLINE void Unlock() {
+                return this->unlock();
             }
 
-            void unlock() {
-                rmutexUnlock(GetMutex());
+            ALWAYS_INLINE bool TryLock() {
+                return this->try_lock();
             }
 
-            bool try_lock() {
-                return rmutexTryLock(GetMutex());
+            operator MutexType &() {
+                return this->mutex;
             }
 
-            void Lock() {
-                lock();
+            operator const MutexType &() const {
+                return this->mutex;
             }
 
-            void Unlock() {
-                unlock();
-            }
-
-            bool TryLock() {
-                return try_lock();
+            MutexType *GetBase() {
+                return std::addressof(this->mutex);
             }
     };
 

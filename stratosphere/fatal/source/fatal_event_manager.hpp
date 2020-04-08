@@ -19,15 +19,17 @@
 namespace ams::fatal::srv {
 
     class FatalEventManager {
-        private:
+        NON_COPYABLE(FatalEventManager);
+        NON_MOVEABLE(FatalEventManager);
+        public:
             static constexpr size_t NumFatalEvents = 3;
-
+        private:
             os::Mutex lock;
             size_t num_events_gotten = 0;
-            Event events[NumFatalEvents];
+            os::SystemEventType events[NumFatalEvents];
         public:
             FatalEventManager();
-            Result GetEvent(Handle *out);
+            Result GetEvent(const os::SystemEventType **out);
             void SignalEvents();
     };
 

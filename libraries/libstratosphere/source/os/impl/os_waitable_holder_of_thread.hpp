@@ -18,21 +18,33 @@
 
 namespace ams::os::impl {
 
-    /* Nintendo implements this as a user wait object, operating on Thread state. */
-    /* Libnx doesn't have an equivalent, so we'll use the thread's handle for kernel semantics. */
-    class WaitableHolderOfThread : public WaitableHolderOfKernelObject {
+    class WaitableHolderOfThread : public WaitableHolderOfUserObject {
         private:
-            Thread *thread;
+            ThreadType *thread;
+        private:
+            TriBool IsSignaledImpl() const {
+                return this->thread->state == ThreadType::State_Terminated ? TriBool::True : TriBool::False;
+            }
         public:
-            explicit WaitableHolderOfThread(Thread *t) : thread(t) { /* ... */ }
+            explicit WaitableHolderOfThread(ThreadType *t) : thread(t) { /* ... */ }
 
-            /* IsSignaled, GetHandle both implemented. */
+            /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                return TriBool::Undefined;
+                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+                return this->IsSignaledImpl();
             }
 
-            virtual Handle GetHandle() const override {
-                return this->thread->GetHandle();
+            virtual TriBool LinkToObjectList() override {
+                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+
+                GetReference(this->thread->waitlist).LinkWaitableHolder(*this);
+                return this->IsSignaledImpl();
+            }
+
+            virtual void UnlinkFromObjectList() override {
+                std::scoped_lock lk(GetReference(this->thread->cs_thread));
+
+                GetReference(this->thread->waitlist).UnlinkWaitableHolder(*this);
             }
     };
 

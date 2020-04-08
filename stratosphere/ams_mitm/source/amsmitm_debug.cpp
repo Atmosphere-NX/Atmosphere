@@ -20,7 +20,7 @@ namespace ams::mitm {
 
     namespace {
 
-        os::Mutex g_throw_lock;
+        os::Mutex g_throw_lock(false);
         bool g_threw;
         Result g_throw_result;
 
@@ -28,12 +28,14 @@ namespace ams::mitm {
         void DebugThrowThreadFunc(void *arg);
 
         constexpr size_t DebugThrowThreadStackSize = 0x4000;
-        constexpr int    DebugThrowThreadPriority  = 49;
-        os::StaticThread<DebugThrowThreadStackSize> g_debug_throw_thread(&DebugThrowThreadFunc, nullptr, DebugThrowThreadPriority);
+        constexpr int    DebugThrowThreadPriority  = 21;
+        os::ThreadType g_debug_throw_thread;
+
+        alignas(os::ThreadStackAlignment) u8 g_debug_throw_thread_stack[DebugThrowThreadStackSize];
 
         void DebugThrowThreadFunc(void *arg) {
             /* TODO: Better heuristic for fatal startup than sleep. */
-            svcSleepThread(10'000'000'000ul);
+            os::SleepThread(TimeSpan::FromSeconds(10));
             fatalThrow(g_throw_result.GetValue());
         }
 
@@ -48,7 +50,8 @@ namespace ams::mitm {
 
         g_throw_result = res;
         g_threw = true;
-        R_ABORT_UNLESS(g_debug_throw_thread.Start());
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_debug_throw_thread), DebugThrowThreadFunc, nullptr, g_debug_throw_thread_stack, sizeof(g_debug_throw_thread_stack), DebugThrowThreadPriority));
+        os::StartThread(std::addressof(g_debug_throw_thread));
     }
 
 }

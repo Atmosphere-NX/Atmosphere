@@ -19,6 +19,6 @@
 
 namespace ams::mitm::ns {
 
-    DEFINE_MITM_MODULE_CLASS(0x4000, 48);
+    DEFINE_MITM_MODULE_CLASS(0x4000, 20);
 
 }

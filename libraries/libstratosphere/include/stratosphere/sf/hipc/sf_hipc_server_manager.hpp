@@ -47,7 +47,7 @@ namespace ams::sf::hipc {
             using ServerDomainSessionManager::DomainEntryStorage;
             using ServerDomainSessionManager::DomainStorage;
         private:
-            class ServerBase : public os::WaitableHolder {
+            class ServerBase : public os::WaitableHolderType {
                 friend class ServerManagerBase;
                 template<size_t, typename, size_t>
                 friend class ServerManager;
@@ -60,9 +60,9 @@ namespace ams::sf::hipc {
                     bool service_managed;
                 public:
                     ServerBase(Handle ph, sm::ServiceName sn, bool m, cmif::ServiceObjectHolder &&sh) :
-                        os::WaitableHolder(ph), static_object(std::move(sh)), port_handle(ph), service_name(sn), service_managed(m)
+                        static_object(std::move(sh)), port_handle(ph), service_name(sn), service_managed(m)
                     {
-                        /* ... */
+                        hipc::AttachWaitableHolderForAccept(this, ph);
                     }
 
                     virtual ~ServerBase() = 0;
@@ -87,7 +87,7 @@ namespace ams::sf::hipc {
                             } else {
                                 R_ABORT_UNLESS(sm::UnregisterService(this->service_name));
                             }
-                            R_ABORT_UNLESS(svcCloseHandle(this->port_handle));
+                            R_ABORT_UNLESS(svc::CloseHandle(this->port_handle));
                         }
                     }
 
@@ -118,30 +118,30 @@ namespace ams::sf::hipc {
             };
         private:
             /* Management of waitables. */
-            os::WaitableManager waitable_manager;
+            os::WaitableManagerType waitable_manager;
             os::Event request_stop_event;
-            os::WaitableHolder request_stop_event_holder;
+            os::WaitableHolderType request_stop_event_holder;
             os::Event notify_event;
-            os::WaitableHolder notify_event_holder;
+            os::WaitableHolderType notify_event_holder;
 
             os::Mutex waitable_selection_mutex;
 
             os::Mutex waitlist_mutex;
-            os::WaitableManager waitlist;
+            os::WaitableManagerType waitlist;
 
             os::Mutex deferred_session_mutex;
             using DeferredSessionList = typename util::IntrusiveListMemberTraits<&ServerSession::deferred_list_node>::ListType;
             DeferredSessionList deferred_session_list;
         private:
             virtual void RegisterSessionToWaitList(ServerSession *session) override final;
-            void RegisterToWaitList(os::WaitableHolder *holder);
+            void RegisterToWaitList(os::WaitableHolderType *holder);
             void ProcessWaitList();
 
             bool WaitAndProcessImpl();
 
-            Result ProcessForServer(os::WaitableHolder *holder);
-            Result ProcessForMitmServer(os::WaitableHolder *holder);
-            Result ProcessForSession(os::WaitableHolder *holder);
+            Result ProcessForServer(os::WaitableHolderType *holder);
+            Result ProcessForMitmServer(os::WaitableHolderType *holder);
+            Result ProcessForSession(os::WaitableHolderType *holder);
 
             void   ProcessDeferredSessions();
 
@@ -154,13 +154,13 @@ namespace ams::sf::hipc {
 
                 if constexpr (!ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject) {
                     /* Non-mitm server. */
-                    server->SetUserData(static_cast<uintptr_t>(UserDataTag::Server));
+                    os::SetWaitableHolderUserData(server, static_cast<uintptr_t>(UserDataTag::Server));
                 } else {
                     /* Mitm server. */
-                    server->SetUserData(static_cast<uintptr_t>(UserDataTag::MitmServer));
+                    os::SetWaitableHolderUserData(server, static_cast<uintptr_t>(UserDataTag::MitmServer));
                 }
 
-                this->waitable_manager.LinkWaitableHolder(server);
+                os::LinkWaitableHolder(std::addressof(this->waitable_manager), server);
             }
 
             template<typename ServiceImpl>
@@ -175,12 +175,16 @@ namespace ams::sf::hipc {
         public:
             ServerManagerBase(DomainEntryStorage *entry_storage, size_t entry_count) :
                 ServerDomainSessionManager(entry_storage, entry_count),
-                request_stop_event(false), request_stop_event_holder(&request_stop_event),
-                notify_event(false), notify_event_holder(&notify_event)
+                request_stop_event(os::EventClearMode_ManualClear), notify_event(os::EventClearMode_ManualClear),
+                waitable_selection_mutex(false), waitlist_mutex(false), deferred_session_mutex(false)
             {
                 /* Link waitables. */
-                this->waitable_manager.LinkWaitableHolder(&this->request_stop_event_holder);
-                this->waitable_manager.LinkWaitableHolder(&this->notify_event_holder);
+                os::InitializeWaitableManager(std::addressof(this->waitable_manager));
+                os::InitializeWaitableHolder(std::addressof(this->request_stop_event_holder), this->request_stop_event.GetBase());
+                os::LinkWaitableHolder(std::addressof(this->waitable_manager), std::addressof(this->request_stop_event_holder));
+                os::InitializeWaitableHolder(std::addressof(this->notify_event_holder), this->notify_event.GetBase());
+                os::LinkWaitableHolder(std::addressof(this->waitable_manager), std::addressof(this->notify_event_holder));
+                os::InitializeWaitableManager(std::addressof(this->waitlist));
             }
 
             template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
@@ -224,13 +228,13 @@ namespace ams::sf::hipc {
             }
 
             /* Processing. */
-            os::WaitableHolder *WaitSignaled();
+            os::WaitableHolderType *WaitSignaled();
 
             void   ResumeProcessing();
             void   RequestStopProcessing();
-            void   AddUserWaitableHolder(os::WaitableHolder *waitable);
+            void   AddUserWaitableHolder(os::WaitableHolderType *waitable);
 
-            Result Process(os::WaitableHolder *waitable);
+            Result Process(os::WaitableHolderType *waitable);
             void   WaitAndProcess();
             void   LoopProcess();
     };
@@ -356,7 +360,7 @@ namespace ams::sf::hipc {
                 return this->GetObjectBySessionIndex(session, this->saved_messages_start, hipc::TlsMessageBufferSize);
             }
         public:
-            ServerManager() : ServerManagerBase(this->domain_entry_storages, ManagerOptions::MaxDomainObjects) {
+            ServerManager() : ServerManagerBase(this->domain_entry_storages, ManagerOptions::MaxDomainObjects), resource_mutex(false) {
                 /* Clear storages. */
                 #define SF_SM_MEMCLEAR(obj) if constexpr (sizeof(obj) > 0) { std::memset(obj, 0, sizeof(obj)); }
                 SF_SM_MEMCLEAR(this->server_storages);

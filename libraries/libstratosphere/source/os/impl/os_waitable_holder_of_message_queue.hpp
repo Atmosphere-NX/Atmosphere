@@ -19,57 +19,57 @@
 
 namespace ams::os::impl {
 
-    template<MessageQueueWaitKind WaitKind>
+    template<MessageQueueWaitType WaitType>
     class WaitableHolderOfMessageQueue : public WaitableHolderOfUserObject {
-        static_assert(WaitKind == MessageQueueWaitKind::ForNotEmpty || WaitKind == MessageQueueWaitKind::ForNotFull, "MessageQueueHolder WaitKind!");
+        static_assert(WaitType == MessageQueueWaitType::ForNotEmpty || WaitType == MessageQueueWaitType::ForNotFull);
         private:
-            MessageQueue *message_queue;
+            MessageQueueType *mq;
         private:
             constexpr inline TriBool IsSignaledImpl() const {
-                if constexpr (WaitKind == MessageQueueWaitKind::ForNotEmpty) {
+                if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
                     /* ForNotEmpty. */
-                    return this->message_queue->IsEmpty() ? TriBool::False : TriBool::True;
-                } else if constexpr (WaitKind == MessageQueueWaitKind::ForNotFull) {
+                    return this->mq->count > 0 ? TriBool::True : TriBool::False;
+                } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
                     /* ForNotFull */
-                    return this->message_queue->IsFull() ? TriBool::False : TriBool::True;
+                    return this->mq->count < this->mq->capacity ? TriBool::True : TriBool::False;
                 } else {
-                    static_assert(WaitKind != WaitKind);
+                    static_assert(WaitType != WaitType);
                 }
             }
 
             constexpr inline WaitableObjectList &GetObjectList() const {
-                if constexpr (WaitKind == MessageQueueWaitKind::ForNotEmpty) {
-                    return GetReference(this->message_queue->waitlist_not_empty);
-                } else if constexpr (WaitKind == MessageQueueWaitKind::ForNotFull) {
-                    return GetReference(this->message_queue->waitlist_not_full);
+                if constexpr (WaitType == MessageQueueWaitType::ForNotEmpty) {
+                    return GetReference(this->mq->waitlist_not_empty);
+                } else if constexpr (WaitType == MessageQueueWaitType::ForNotFull) {
+                    return GetReference(this->mq->waitlist_not_full);
                 } else {
-                    static_assert(WaitKind != WaitKind);
+                    static_assert(WaitType != WaitType);
                 }
             }
         public:
-            explicit WaitableHolderOfMessageQueue(MessageQueue *mq) : message_queue(mq) { /* ... */ }
+            explicit WaitableHolderOfMessageQueue(MessageQueueType *mq) : mq(mq) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(this->message_queue->queue_lock);
+                std::scoped_lock lk(GetReference(this->mq->cs_queue));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(this->message_queue->queue_lock);
+                std::scoped_lock lk(GetReference(this->mq->cs_queue));
 
                 this->GetObjectList().LinkWaitableHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(this->message_queue->queue_lock);
+                std::scoped_lock lk(GetReference(this->mq->cs_queue));
 
                 this->GetObjectList().UnlinkWaitableHolder(*this);
             }
     };
 
-    using WaitableHolderOfMessageQueueForNotEmpty = WaitableHolderOfMessageQueue<MessageQueueWaitKind::ForNotEmpty>;
-    using WaitableHolderOfMessageQueueForNotFull  = WaitableHolderOfMessageQueue<MessageQueueWaitKind::ForNotFull>;
+    using WaitableHolderOfMessageQueueForNotEmpty = WaitableHolderOfMessageQueue<MessageQueueWaitType::ForNotEmpty>;
+    using WaitableHolderOfMessageQueueForNotFull  = WaitableHolderOfMessageQueue<MessageQueueWaitType::ForNotFull>;
 
 }

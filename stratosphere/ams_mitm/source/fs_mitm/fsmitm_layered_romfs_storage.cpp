@@ -22,10 +22,11 @@ namespace ams::mitm::fs {
 
     namespace {
 
-        os::Mutex g_mq_lock;
+        os::Mutex g_mq_lock(false);
         bool g_started_req_thread;
-        os::MessageQueue g_req_mq(1);
-        os::MessageQueue g_ack_mq(1);
+        uintptr_t g_mq_storage[2];
+        os::MessageQueue g_req_mq(g_mq_storage + 0, 1);
+        os::MessageQueue g_ack_mq(g_mq_storage + 1, 1);
 
         void RomfsInitializerThreadFunction(void *arg) {
             while (true) {
@@ -38,14 +39,16 @@ namespace ams::mitm::fs {
         }
 
         constexpr size_t RomfsInitializerThreadStackSize = 0x8000;
-        constexpr int    RomfsInitializerThreadPriority  = 44;
-        os::StaticThread<RomfsInitializerThreadStackSize> g_romfs_initializer_thread(&RomfsInitializerThreadFunction, nullptr, RomfsInitializerThreadPriority);
+        constexpr int    RomfsInitializerThreadPriority  = 16;
+        os::ThreadType g_romfs_initializer_thread;
+        alignas(os::ThreadStackAlignment) u8 g_romfs_initializer_thread_stack[RomfsInitializerThreadStackSize];
 
         void RequestInitializeStorage(uintptr_t storage_uptr) {
             std::scoped_lock lk(g_mq_lock);
 
-            if (!g_started_req_thread) {
-                R_ABORT_UNLESS(g_romfs_initializer_thread.Start());
+            if (AMS_UNLIKELY(!g_started_req_thread)) {
+                R_ABORT_UNLESS(os::CreateThread(std::addressof(g_romfs_initializer_thread), RomfsInitializerThreadFunction, nullptr, g_romfs_initializer_thread_stack, sizeof(g_romfs_initializer_thread_stack), RomfsInitializerThreadPriority));
+                os::StartThread(std::addressof(g_romfs_initializer_thread));
                 g_started_req_thread = true;
             }
 
@@ -59,7 +62,7 @@ namespace ams::mitm::fs {
 
     using namespace ams::fs;
 
-    LayeredRomfsStorage::LayeredRomfsStorage(std::unique_ptr<IStorage> s_r, std::unique_ptr<IStorage> f_r, ncm::ProgramId pr_id) : storage_romfs(std::move(s_r)), file_romfs(std::move(f_r)), initialize_event(false, false), program_id(std::move(pr_id)), is_initialized(false), started_initialize(false) {
+    LayeredRomfsStorage::LayeredRomfsStorage(std::unique_ptr<IStorage> s_r, std::unique_ptr<IStorage> f_r, ncm::ProgramId pr_id) : storage_romfs(std::move(s_r)), file_romfs(std::move(f_r)), initialize_event(os::EventClearMode_ManualClear), program_id(std::move(pr_id)), is_initialized(false), started_initialize(false) {
         /* ... */
     }
 

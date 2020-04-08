@@ -19,6 +19,6 @@
 
 namespace ams::mitm::hid {
 
-    DEFINE_MITM_MODULE_CLASS(0x8000, 47);
+    DEFINE_MITM_MODULE_CLASS(0x8000, 19);
 
 }

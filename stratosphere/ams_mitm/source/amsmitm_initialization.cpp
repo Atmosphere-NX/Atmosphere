@@ -50,11 +50,13 @@ namespace ams::mitm {
         void InitializeThreadFunc(void *arg);
 
         constexpr size_t InitializeThreadStackSize = 0x4000;
-        constexpr int    InitializeThreadPriority  = 0x15;
-        os::StaticThread<InitializeThreadStackSize> g_initialize_thread(&InitializeThreadFunc, nullptr, InitializeThreadPriority);
+        constexpr int    InitializeThreadPriority  = -7;
 
         /* Globals. */
-        os::Event g_init_event(false);
+        os::Event g_init_event(os::EventClearMode_ManualClear);
+
+        os::ThreadType g_initialize_thread;
+        alignas(os::ThreadStackAlignment) u8 g_initialize_thread_stack[InitializeThreadStackSize];
 
         /* Console-unique data backup and protection. */
         constexpr size_t CalibrationBinarySize = 0x8000;
@@ -221,7 +223,8 @@ namespace ams::mitm {
     }
 
     void StartInitialize() {
-        R_ABORT_UNLESS(g_initialize_thread.Start());
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_initialize_thread), InitializeThreadFunc, nullptr, g_initialize_thread_stack, sizeof(g_initialize_thread_stack), InitializeThreadPriority));
+        os::StartThread(std::addressof(g_initialize_thread));
     }
 
     bool IsInitialized() {

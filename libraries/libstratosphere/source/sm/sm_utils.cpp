@@ -20,22 +20,22 @@ namespace ams::sm::impl {
     namespace {
 
         /* Globals. */
-        os::RecursiveMutex g_user_session_mutex;
-        os::RecursiveMutex g_mitm_ack_session_mutex;
-        os::RecursiveMutex g_per_thread_session_mutex;
+        os::Mutex g_user_session_mutex(true);
+        os::Mutex g_mitm_ack_session_mutex(true);
+        os::Mutex g_per_thread_session_mutex(true);
 
     }
 
     /* Utilities. */
-    os::RecursiveMutex &GetUserSessionMutex() {
+    os::Mutex &GetUserSessionMutex() {
         return g_user_session_mutex;
     }
 
-    os::RecursiveMutex &GetMitmAcknowledgementSessionMutex() {
+    os::Mutex &GetMitmAcknowledgementSessionMutex() {
         return g_mitm_ack_session_mutex;
     }
 
-    os::RecursiveMutex &GetPerThreadSessionMutex() {
+    os::Mutex &GetPerThreadSessionMutex() {
         return g_per_thread_session_mutex;
     }
 

@@ -40,7 +40,7 @@ namespace ams::sf::hipc::impl {
         };
 
         /* Globals. */
-        os::Mutex g_query_server_lock;
+        os::Mutex g_query_server_lock(false);
         bool g_constructed_server = false;
         bool g_registered_any = false;
 
@@ -49,8 +49,9 @@ namespace ams::sf::hipc::impl {
         }
 
         constexpr size_t QueryServerProcessThreadStackSize = 0x4000;
-        constexpr int    QueryServerProcessThreadPriority  = 27;
-        os::StaticThread<QueryServerProcessThreadStackSize> g_query_server_process_thread;
+        constexpr s32    QueryServerProcessThreadPriority  = -1;
+        alignas(os::ThreadStackAlignment) u8 g_server_process_thread_stack[QueryServerProcessThreadStackSize];
+        os::ThreadType g_query_server_process_thread;
 
         constexpr size_t MaxServers = 0;
         TYPED_STORAGE(sf::hipc::ServerManager<MaxServers>) g_query_server_storage;
@@ -61,16 +62,16 @@ namespace ams::sf::hipc::impl {
         std::scoped_lock lk(g_query_server_lock);
 
 
-        if (!g_constructed_server) {
+        if (AMS_UNLIKELY(!g_constructed_server)) {
             new (GetPointer(g_query_server_storage)) sf::hipc::ServerManager<MaxServers>();
             g_constructed_server = true;
         }
 
         R_ABORT_UNLESS(GetPointer(g_query_server_storage)->RegisterSession(query_handle, cmif::ServiceObjectHolder(std::make_shared<MitmQueryService>(query_func))));
 
-        if (!g_registered_any) {
-            R_ABORT_UNLESS(g_query_server_process_thread.Initialize(&QueryServerProcessThreadMain, GetPointer(g_query_server_storage), QueryServerProcessThreadPriority));
-            R_ABORT_UNLESS(g_query_server_process_thread.Start());
+        if (AMS_UNLIKELY(!g_registered_any)) {
+            R_ABORT_UNLESS(os::CreateThread(std::addressof(g_query_server_process_thread), &QueryServerProcessThreadMain, GetPointer(g_query_server_storage), g_server_process_thread_stack, sizeof(g_server_process_thread_stack), QueryServerProcessThreadPriority));
+            os::StartThread(std::addressof(g_query_server_process_thread));
             g_registered_any = true;
         }
     }

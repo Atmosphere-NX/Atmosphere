@@ -58,7 +58,7 @@ namespace ams::emummc {
         };
 
         /* Globals. */
-        os::Mutex g_lock;
+        os::Mutex g_lock(false);
         ExosphereConfig g_exo_config;
         bool g_is_emummc;
         bool g_has_cached;

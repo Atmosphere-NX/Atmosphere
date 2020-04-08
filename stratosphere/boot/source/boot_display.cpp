@@ -56,6 +56,10 @@ namespace ams::boot {
         constexpr size_t ApbMiscSize =     os::MemoryPageSize;
         constexpr size_t MipiCalSize =     os::MemoryPageSize;
 
+        constexpr s32 DsiWaitForCommandMilliSecondsMax        = 250;
+        constexpr s32 DsiWaitForCommandCompletionMilliSeconds = 5;
+        constexpr s32 DsiWaitForHostControlMilliSecondsMax    = 150;
+
         /* Types. */
 
         /* Globals. */
@@ -151,10 +155,10 @@ namespace ams::boot {
         }
 
         void WaitDsiTrigger() {
-            os::TimeoutHelper timeout_helper(250'000'000ul);
+            os::Tick timeout = os::GetSystemTick() + os::ConvertToTick(TimeSpan::FromMilliSeconds(DsiWaitForCommandMilliSecondsMax));
 
             while (true) {
-                if (timeout_helper.TimedOut()) {
+                if (os::GetSystemTick() >= timeout) {
                     break;
                 }
                 if (reg::Read(g_dsi_regs + sizeof(u32) * DSI_TRIGGER) == 0) {
@@ -162,14 +166,14 @@ namespace ams::boot {
                 }
             }
 
-            svcSleepThread(5'000'000ul);
+            os::SleepThread(TimeSpan::FromMilliSeconds(DsiWaitForCommandCompletionMilliSeconds));
         }
 
         void WaitDsiHostControl() {
-            os::TimeoutHelper timeout_helper(150'000'000ul);
+            os::Tick timeout = os::GetSystemTick() + os::ConvertToTick(TimeSpan::FromMilliSeconds(DsiWaitForHostControlMilliSecondsMax));
 
             while (true) {
-                if (timeout_helper.TimedOut()) {
+                if (os::GetSystemTick() >= timeout) {
                     break;
                 }
                 if ((reg::Read(g_dsi_regs + sizeof(u32) * DSI_HOST_CONTROL) & DSI_HOST_CONTROL_IMM_BTA) == 0) {

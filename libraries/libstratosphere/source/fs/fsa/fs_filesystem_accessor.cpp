@@ -60,7 +60,7 @@ namespace ams::fs::impl {
     }
 
     FileSystemAccessor::FileSystemAccessor(const char *n, std::unique_ptr<fsa::IFileSystem> &&fs, std::unique_ptr<fsa::ICommonMountNameGenerator> &&generator)
-        : impl(std::move(fs)), mount_name_generator(std::move(generator)),
+        : impl(std::move(fs)), open_list_lock(false), mount_name_generator(std::move(generator)),
           access_log_enabled(false), data_cache_attachable(false), path_cache_attachable(false), path_cache_attached(false), multi_commit_supported(false)
     {
         R_ABORT_UNLESS(ValidateMountName(n));

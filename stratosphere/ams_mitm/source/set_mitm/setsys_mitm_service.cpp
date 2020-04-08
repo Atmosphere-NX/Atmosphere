@@ -22,7 +22,7 @@ namespace ams::mitm::settings {
 
     namespace {
 
-        os::Mutex g_firmware_version_lock;
+        os::Mutex g_firmware_version_lock(false);
         bool g_cached_firmware_version;
         settings::FirmwareVersion g_firmware_version;
         settings::FirmwareVersion g_ams_firmware_version;
@@ -30,7 +30,7 @@ namespace ams::mitm::settings {
         void CacheFirmwareVersion() {
             std::scoped_lock lk(g_firmware_version_lock);
 
-            if (g_cached_firmware_version) {
+            if (AMS_LIKELY(g_cached_firmware_version)) {
                 return;
             }
 

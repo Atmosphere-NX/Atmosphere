@@ -15,35 +15,56 @@
  */
 
 #pragma once
-#include "os_managed_handle.hpp"
+#include <vapours.hpp>
+#include <stratosphere/os/os_event_common.hpp>
+#include <stratosphere/os/os_interrupt_event_common.hpp>
+#include <stratosphere/os/os_interrupt_event_types.hpp>
+#include <stratosphere/os/os_interrupt_event_api.hpp>
 
 namespace ams::os {
 
-    namespace impl {
-
-        class WaitableHolderOfInterruptEvent;
-
-    }
-
     class InterruptEvent {
-        friend class impl::WaitableHolderOfInterruptEvent;
         NON_COPYABLE(InterruptEvent);
         NON_MOVEABLE(InterruptEvent);
         private:
-            ManagedHandle handle;
-            bool auto_clear;
-            bool is_initialized;
+            InterruptEventType event;
         public:
-            InterruptEvent() : auto_clear(true), is_initialized(false) { }
-            InterruptEvent(u32 interrupt_id, bool autoclear = true);
+            explicit InterruptEvent(InterruptName name, EventClearMode clear_mode) {
+                InitializeInterruptEvent(std::addressof(this->event), name, clear_mode);
+            }
 
-            Result Initialize(u32 interrupt_id, bool autoclear = true);
-            void Finalize();
+            ~InterruptEvent() {
+                FinalizeInterruptEvent(std::addressof(this->event));
+            }
 
-            void Reset();
-            void Wait();
-            bool TryWait();
-            bool TimedWait(u64 ns);
+            void Wait() {
+                return WaitInterruptEvent(std::addressof(this->event));
+            }
+
+            bool TryWait() {
+                return TryWaitInterruptEvent(std::addressof(this->event));
+            }
+
+            bool TimedWait(TimeSpan timeout) {
+                return TimedWaitInterruptEvent(std::addressof(this->event), timeout);
+            }
+
+            void Clear() {
+                return ClearInterruptEvent(std::addressof(this->event));
+            }
+
+            operator InterruptEventType &() {
+                return this->event;
+            }
+
+            operator const InterruptEventType &() const {
+                return this->event;
+            }
+
+            InterruptEventType *GetBase() {
+                return std::addressof(this->event);
+            }
     };
+
 
 }

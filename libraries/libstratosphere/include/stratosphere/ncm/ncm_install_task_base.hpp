@@ -102,7 +102,7 @@ namespace ams::ncm {
                 return result;
             }
         public:
-            InstallTaskBase() : data(), progress(), cancel_requested() { /* ... */ }
+            InstallTaskBase() : data(), progress(), progress_mutex(false), cancel_mutex(false), cancel_requested(), throughput_mutex(false) { /* ... */ }
             virtual ~InstallTaskBase() { /* ... */ };
         public:
             virtual void Cancel();

@@ -20,7 +20,7 @@ namespace ams::hid {
     namespace {
 
         /* Global lock. */
-        os::Mutex g_hid_lock;
+        os::Mutex g_hid_lock(false);
         bool g_initialized_hid = false;
 
         /* Helper. */

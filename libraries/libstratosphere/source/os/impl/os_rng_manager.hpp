@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "os_resource_manager.hpp"
 
 namespace ams::os::impl {
 

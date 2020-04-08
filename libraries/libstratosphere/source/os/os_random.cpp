@@ -21,7 +21,7 @@ namespace ams::os {
     namespace {
 
         util::TinyMT g_random;
-        os::Mutex g_random_mutex;
+        os::Mutex g_random_mutex(false);
         bool g_initialized_random;
 
         template<typename T>

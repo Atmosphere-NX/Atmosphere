@@ -25,7 +25,7 @@ namespace ams::cfg {
         constexpr os::ProcessId InitialProcessIdMaxDeprecated = {0x50};
 
         /* Privileged process globals. */
-        os::Mutex g_lock;
+        os::Mutex g_lock(false);
         bool g_got_privileged_process_status = false;
         os::ProcessId g_min_initial_process_id = os::InvalidProcessId, g_max_initial_process_id = os::InvalidProcessId;
         os::ProcessId g_cur_process_id = os::InvalidProcessId;

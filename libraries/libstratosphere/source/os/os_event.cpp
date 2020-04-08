@@ -13,93 +13,158 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include "impl/os_timeout_helper.hpp"
 #include "impl/os_waitable_object_list.hpp"
+#include "impl/os_waitable_holder_impl.hpp"
 
 namespace ams::os {
 
-    Event::Event(bool a, bool s) : auto_clear(a), signaled(s) {
-        new (GetPointer(this->waitable_object_list_storage)) impl::WaitableObjectList();
+    namespace {
+
+        ALWAYS_INLINE u64 GetBroadcastCounterUnsafe(EventType *event) {
+            const u64 upper = event->broadcast_counter_high;
+            return (upper << BITSIZEOF(event->broadcast_counter_low)) | event->broadcast_counter_low;
+        }
+
+        ALWAYS_INLINE void IncrementBroadcastCounterUnsafe(EventType *event) {
+            if ((++event->broadcast_counter_low) == 0) {
+                ++event->broadcast_counter_high;
+            }
+        }
+
     }
 
-    Event::~Event() {
-        GetReference(this->waitable_object_list_storage).~WaitableObjectList();
+    void InitializeEvent(EventType *event, bool signaled, EventClearMode clear_mode) {
+        /* Initialize internal variables. */
+        new (GetPointer(event->cs_event))    impl::InternalCriticalSection;
+        new (GetPointer(event->cv_signaled)) impl::InternalConditionVariable;
+
+        /* Initialize the waitable object list. */
+        new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList();
+
+        /* Initialize member variables. */
+        event->signaled               = signaled;
+        event->initially_signaled     = signaled;
+        event->clear_mode             = static_cast<u8>(clear_mode);
+        event->broadcast_counter_low  = 0;
+        event->broadcast_counter_high = 0;
+
+        /* Mark initialized. */
+        event->state = EventType::State_Initialized;
     }
 
-    void Event::Signal() {
-        std::scoped_lock lk(this->lock);
+    void FinalizeEvent(EventType *event) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
+
+        /* Mark uninitialized. */
+        event->state = EventType::State_NotInitialized;
+
+        /* Destroy objects. */
+        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
+        GetReference(event->cv_signaled).~InternalConditionVariable();
+        GetReference(event->cs_event).~InternalCriticalSection();
+    }
+
+    void SignalEvent(EventType *event) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
+
+        std::scoped_lock lk(GetReference(event->cs_event));
 
         /* If we're already signaled, nothing more to do. */
-        if (this->signaled) {
+        if (event->signaled) {
             return;
         }
 
-        this->signaled = true;
+        event->signaled = true;
 
         /* Signal! */
-        if (this->auto_clear) {
-            /* If we're auto clear, signal one thread, which will clear. */
-            this->cv.Signal();
-        } else {
+        if (event->clear_mode == EventClearMode_ManualClear) {
             /* If we're manual clear, increment counter and wake all. */
-            this->counter++;
-            this->cv.Broadcast();
+            IncrementBroadcastCounterUnsafe(event);
+            GetReference(event->cv_signaled).Broadcast();
+        } else {
+            /* If we're auto clear, signal one thread, which will clear. */
+            GetReference(event->cv_signaled).Signal();
         }
 
         /* Wake up whatever manager, if any. */
-        GetReference(this->waitable_object_list_storage).SignalAllThreads();
+        GetReference(event->waitable_object_list_storage).SignalAllThreads();
     }
 
-    void Event::Reset() {
-        std::scoped_lock lk(this->lock);
-        this->signaled = false;
-    }
+    void WaitEvent(EventType *event) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
 
-    void Event::Wait() {
-        std::scoped_lock lk(this->lock);
+        std::scoped_lock lk(GetReference(event->cs_event));
 
-        u64 cur_counter = this->counter;
-        while (!this->signaled) {
-            if (this->counter != cur_counter) {
+        const auto cur_counter = GetBroadcastCounterUnsafe(event);
+        while (!event->signaled) {
+            if (cur_counter != GetBroadcastCounterUnsafe(event)) {
                 break;
             }
-            this->cv.Wait(&this->lock);
+            GetReference(event->cv_signaled).Wait(GetPointer(event->cs_event));
         }
 
-        if (this->auto_clear) {
-            this->signaled = false;
+        if (event->clear_mode == EventClearMode_AutoClear) {
+            event->signaled = false;
         }
     }
 
-    bool Event::TryWait() {
-        std::scoped_lock lk(this->lock);
+    bool TryWaitEvent(EventType *event) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
 
-        const bool success = this->signaled;
-        if (this->auto_clear) {
-            this->signaled = false;
+        std::scoped_lock lk(GetReference(event->cs_event));
+
+        const bool signaled = event->signaled;
+        if (event->clear_mode == EventClearMode_AutoClear) {
+            event->signaled = false;
         }
 
-        return success;
+        return signaled;
     }
 
-    bool Event::TimedWait(u64 ns) {
-        TimeoutHelper timeout_helper(ns);
-        std::scoped_lock lk(this->lock);
+    bool TimedWaitEvent(EventType *event, TimeSpan timeout) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
 
-        u64 cur_counter = this->counter;
-        while (!this->signaled) {
-            if (this->counter != cur_counter) {
-                break;
-            }
-            if (this->cv.TimedWait(&this->lock, timeout_helper.NsUntilTimeout()) == ConditionVariableStatus::TimedOut) {
-                return false;
-            }
-        }
+        {
+            impl::TimeoutHelper timeout_helper(timeout);
+            std::scoped_lock lk(GetReference(event->cs_event));
 
-        if (this->auto_clear) {
-            this->signaled = false;
+            const auto cur_counter = GetBroadcastCounterUnsafe(event);
+            while (!event->signaled) {
+                if (cur_counter != GetBroadcastCounterUnsafe(event)) {
+                    break;
+                }
+
+                auto wait_res = GetReference(event->cv_signaled).TimedWait(GetPointer(event->cs_event), timeout_helper);
+                if (wait_res == ConditionVariableStatus::TimedOut) {
+                    return false;
+                }
+            }
+
+            if (event->clear_mode == EventClearMode_AutoClear) {
+                event->signaled = false;
+            }
         }
 
         return true;
+    }
+
+    void ClearEvent(EventType *event) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
+
+        std::scoped_lock lk(GetReference(event->cs_event));
+
+        /* Clear the signaled state. */
+        event->signaled = false;
+    }
+
+    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, EventType *event) {
+        AMS_ASSERT(event->state == EventType::State_Initialized);
+
+        new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfEvent(event);
+
+        waitable_holder->user_data = 0;
     }
 
 }

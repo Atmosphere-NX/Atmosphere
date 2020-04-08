@@ -21,7 +21,7 @@ namespace ams::mitm::fs {
 
     namespace {
 
-        os::Mutex g_boot0_access_mutex;
+        os::Mutex g_boot0_access_mutex(false);
         u8 g_boot0_bct_buffer[Boot0Storage::BctEndOffset];
 
     }

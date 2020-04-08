@@ -45,7 +45,7 @@ namespace ams::pm::impl {
             Handle handle;
             svc::ProcessState state;
             u32 flags;
-            os::WaitableHolder waitable_holder;
+            os::WaitableHolderType waitable_holder;
         private:
             void SetFlag(Flag flag) {
                 this->flags |= flag;
@@ -63,8 +63,8 @@ namespace ams::pm::impl {
             ~ProcessInfo();
             void Cleanup();
 
-            void LinkToWaitableManager(os::WaitableManager &manager) {
-                manager.LinkWaitableHolder(&this->waitable_holder);
+            void LinkToWaitableManager(os::WaitableManagerType &manager) {
+                os::LinkWaitableHolder(std::addressof(manager), std::addressof(this->waitable_holder));
             }
 
             Handle GetHandle() const {
@@ -163,6 +163,8 @@ namespace ams::pm::impl {
         private:
             os::Mutex lock;
         public:
+            constexpr ProcessList() : lock(false) { /* ... */ }
+
             void Lock() {
                 this->lock.Lock();
             }

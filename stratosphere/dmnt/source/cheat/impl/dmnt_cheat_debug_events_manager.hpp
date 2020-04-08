@@ -18,6 +18,8 @@
 
 namespace ams::dmnt::cheat::impl {
 
+    void InitializeDebugEventsManager();
+
     void ContinueCheatProcess(Handle cheat_dbg_hnd);
 
 }

@@ -30,7 +30,7 @@ namespace ams::fs {
             std::free(ptr);
         }
 
-        os::Mutex g_lock;
+        os::Mutex g_lock(false);
         AllocateFunction g_allocate_func     = DefaultAllocate;
         DeallocateFunction g_deallocate_func = DefaultDeallocate;
 

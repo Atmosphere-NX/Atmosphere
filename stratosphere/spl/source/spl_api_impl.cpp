@@ -97,14 +97,14 @@ namespace ams::spl::impl {
 
         /* Global variables. */
         CtrDrbg g_drbg;
-        os::InterruptEvent g_se_event;
-        os::SystemEvent g_se_keyslot_available_event;
+        os::InterruptEventType g_se_event;
+        os::SystemEventType g_se_keyslot_available_event;
 
         Handle g_se_das_hnd;
         u32 g_se_mapped_work_buffer_addr;
         alignas(os::MemoryPageSize) u8 g_work_buffer[2 * WorkBufferSizeMax];
 
-        os::Mutex g_async_op_lock;
+        os::Mutex g_async_op_lock(false);
 
         const void *g_keyslot_owners[MaxAesKeyslots];
         BootReasonValue g_boot_reason;
@@ -130,10 +130,10 @@ namespace ams::spl::impl {
         void InitializeSeEvents() {
             u64 irq_num;
             AMS_ABORT_UNLESS(smc::GetConfig(&irq_num, 1, SplConfigItem_SecurityEngineIrqNumber) == smc::Result::Success);
-            R_ABORT_UNLESS(g_se_event.Initialize(irq_num));
+            os::InitializeInterruptEvent(std::addressof(g_se_event), irq_num, os::EventClearMode_AutoClear);
 
-            R_ABORT_UNLESS(g_se_keyslot_available_event.InitializeAsInterProcessEvent());
-            g_se_keyslot_available_event.Signal();
+            R_ABORT_UNLESS(os::CreateSystemEvent(std::addressof(g_se_keyslot_available_event), os::EventClearMode_AutoClear, true));
+            os::SignalSystemEvent(std::addressof(g_se_keyslot_available_event));
         }
 
         void InitializeDeviceAddressSpace() {
@@ -173,7 +173,7 @@ namespace ams::spl::impl {
 
         /* Internal async implementation functionality. */
         void WaitSeOperationComplete() {
-            g_se_event.Wait();
+            os::WaitInterruptEvent(std::addressof(g_se_event));
         }
 
         smc::Result WaitCheckStatus(smc::AsyncOperationKey op_key) {
@@ -596,7 +596,7 @@ namespace ams::spl::impl {
             }
         }
 
-        g_se_keyslot_available_event.Reset();
+        os::ClearSystemEvent(std::addressof(g_se_keyslot_available_event));
         return spl::ResultOutOfKeyslots();
     }
 
@@ -616,7 +616,7 @@ namespace ams::spl::impl {
             smc::LoadAesKey(keyslot, access_key, key_source);
         }
         g_keyslot_owners[keyslot] = nullptr;
-        g_se_keyslot_available_event.Signal();
+        os::SignalSystemEvent(std::addressof(g_se_keyslot_available_event));
         return ResultSuccess();
     }
 
@@ -792,7 +792,7 @@ namespace ams::spl::impl {
     }
 
     Handle GetAesKeyslotAvailableEventHandle() {
-        return g_se_keyslot_available_event.GetReadableHandle();
+        return os::GetReadableHandleOfSystemEvent(std::addressof(g_se_keyslot_available_event));
     }
 
 }

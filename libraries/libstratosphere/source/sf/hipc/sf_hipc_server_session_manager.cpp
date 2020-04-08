@@ -77,6 +77,7 @@ namespace ams::sf::hipc {
 
     void ServerSessionManager::CloseSessionImpl(ServerSession *session) {
         const Handle session_handle = session->session_handle;
+        os::FinalizeWaitableHolder(session);
         this->DestroySession(session);
         R_ABORT_UNLESS(svcCloseHandle(session_handle));
     }

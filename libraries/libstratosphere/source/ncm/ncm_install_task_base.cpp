@@ -626,7 +626,6 @@ namespace ams::ncm {
     }
 
     Result InstallTaskBase::PreparePlaceHolder() {
-        static os::Mutex placeholder_mutex;
         size_t total_size = 0;
 
         /* Count the number of content meta entries. */
@@ -635,7 +634,9 @@ namespace ams::ncm {
 
         for (s32 i = 0; i < count; i++) {
             R_UNLESS(!this->IsCancelRequested(), ncm::ResultCreatePlaceHolderCancelled());
-            std::scoped_lock lk(placeholder_mutex);
+
+            static os::Mutex s_placeholder_mutex(false);
+            std::scoped_lock lk(s_placeholder_mutex);
 
             InstallContentMeta content_meta;
             R_TRY(this->data->Get(std::addressof(content_meta), i));

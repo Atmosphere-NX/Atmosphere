@@ -15,75 +15,87 @@
  */
 
 #pragma once
-#include "os_mutex.hpp"
-#include "os_condvar.hpp"
+#include <stratosphere/os/os_message_queue_common.hpp>
+#include <stratosphere/os/os_message_queue_types.hpp>
+#include <stratosphere/os/os_message_queue_api.hpp>
 
 namespace ams::os {
 
-    namespace impl {
-
-        class WaitableObjectList;
-
-        template<MessageQueueWaitKind WaitKind>
-        class WaitableHolderOfMessageQueue;
-
-    }
-
     class MessageQueue {
-        template<MessageQueueWaitKind WaitKind>
-        friend class impl::WaitableHolderOfMessageQueue;
         NON_COPYABLE(MessageQueue);
         NON_MOVEABLE(MessageQueue);
         private:
-            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_empty;
-            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitlist_not_full;
-            Mutex queue_lock;
-            ConditionVariable cv_not_full;
-            ConditionVariable cv_not_empty;
-            std::unique_ptr<uintptr_t[]> buffer;
-            size_t capacity;
-
-            size_t count;
-            size_t offset;
-        private:
-            constexpr inline bool IsFull() const {
-                return this->count >= this->capacity;
-            }
-
-            constexpr inline bool IsEmpty() const {
-                return this->count == 0;
-            }
-
-            void SendInternal(uintptr_t data);
-            void SendNextInternal(uintptr_t data);
-            uintptr_t ReceiveInternal();
-            uintptr_t PeekInternal();
+            MessageQueueType mq;
         public:
-            MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c);
-            ~MessageQueue();
+            explicit MessageQueue(uintptr_t *buf, size_t count) {
+                InitializeMessageQueue(std::addressof(this->mq), buf, count);
+            }
 
-            /* For convenience. */
-            MessageQueue(size_t c) : MessageQueue(std::make_unique<uintptr_t[]>(c), c) { /* ... */ }
+            ~MessageQueue() { FinalizeMessageQueue(std::addressof(this->mq)); }
 
             /* Sending (FIFO functionality) */
-            void Send(uintptr_t data);
-            bool TrySend(uintptr_t data);
-            bool TimedSend(uintptr_t data, u64 timeout);
+            void Send(uintptr_t data) {
+                return SendMessageQueue(std::addressof(this->mq), data);
+            }
+
+            bool TrySend(uintptr_t data) {
+                return TrySendMessageQueue(std::addressof(this->mq), data);
+            }
+
+            bool TimedSend(uintptr_t data, TimeSpan timeout) {
+                return TimedSendMessageQueue(std::addressof(this->mq), data, timeout);
+            }
 
             /* Sending (LIFO functionality) */
-            void SendNext(uintptr_t data);
-            bool TrySendNext(uintptr_t data);
-            bool TimedSendNext(uintptr_t data, u64 timeout);
+            void SendNext(uintptr_t data) {
+                return SendNextMessageQueue(std::addressof(this->mq), data);
+            }
+
+            bool TrySendNext(uintptr_t data) {
+                return TrySendNextMessageQueue(std::addressof(this->mq), data);
+            }
+
+            bool TimedSendNext(uintptr_t data, TimeSpan timeout) {
+                return TimedSendNextMessageQueue(std::addressof(this->mq), data, timeout);
+            }
 
             /* Receive functionality */
-            void Receive(uintptr_t *out);
-            bool TryReceive(uintptr_t *out);
-            bool TimedReceive(uintptr_t *out, u64 timeout);
+            void Receive(uintptr_t *out) {
+                return ReceiveMessageQueue(out, std::addressof(this->mq));
+            }
+
+            bool TryReceive(uintptr_t *out) {
+                return TryReceiveMessageQueue(out, std::addressof(this->mq));
+            }
+
+            bool TimedReceive(uintptr_t *out, TimeSpan timeout) {
+                return TimedReceiveMessageQueue(out, std::addressof(this->mq), timeout);
+            }
 
             /* Peek functionality */
-            void Peek(uintptr_t *out);
-            bool TryPeek(uintptr_t *out);
-            bool TimedPeek(uintptr_t *out, u64 timeout);
+            void Peek(uintptr_t *out) const {
+                return PeekMessageQueue(out, std::addressof(this->mq));
+            }
+
+            bool TryPeek(uintptr_t *out) const {
+                return TryPeekMessageQueue(out, std::addressof(this->mq));
+            }
+
+            bool TimedPeek(uintptr_t *out, TimeSpan timeout) const {
+                return TimedPeekMessageQueue(out, std::addressof(this->mq), timeout);
+            }
+
+            operator MessageQueueType &() {
+                return this->mq;
+            }
+
+            operator const MessageQueueType &() const {
+                return this->mq;
+            }
+
+            MessageQueueType *GetBase() {
+                return std::addressof(this->mq);
+            }
     };
 
 }

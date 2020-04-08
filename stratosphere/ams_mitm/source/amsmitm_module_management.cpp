@@ -40,7 +40,7 @@ namespace ams::mitm {
         struct ModuleDefinition {
             ThreadFunc main;
             void *stack_mem;
-            u32 priority;
+            s32 priority;
             u32 stack_size;
         };
 
@@ -56,7 +56,7 @@ namespace ams::mitm {
             };
         }
 
-        ams::os::Thread g_module_threads[ModuleId_Count];
+        ams::os::ThreadType g_module_threads[ModuleId_Count];
 
         constexpr ModuleDefinition g_module_definitions[ModuleId_Count] = {
             GetModuleDefinition<fs::MitmModule>(),
@@ -72,19 +72,19 @@ namespace ams::mitm {
         /* Create thread for each module. */
         for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
             const ModuleDefinition &cur_module = g_module_definitions[i];
-            R_ABORT_UNLESS(g_module_threads[i].Initialize(cur_module.main, nullptr, cur_module.stack_mem, cur_module.stack_size, cur_module.priority));
+            R_ABORT_UNLESS(os::CreateThread(g_module_threads + i, cur_module.main, nullptr, cur_module.stack_mem, cur_module.stack_size, cur_module.priority));
         }
 
         /* Start thread for each module. */
         for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
-            R_ABORT_UNLESS(g_module_threads[i].Start());
+            os::StartThread(g_module_threads + i);
         }
     }
 
     void WaitAllModules() {
         /* Wait on thread for each module. */
         for (u32 i = 0; i < static_cast<u32>(ModuleId_Count); i++) {
-            g_module_threads[i].Join();
+            os::WaitThread(g_module_threads + i);
         }
     }
 

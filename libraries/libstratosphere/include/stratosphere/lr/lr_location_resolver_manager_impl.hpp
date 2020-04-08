@@ -28,7 +28,7 @@ namespace ams::lr {
             std::shared_ptr<IRegisteredLocationResolver> registered_location_resolver = nullptr;
             std::shared_ptr<IAddOnContentLocationResolver> add_on_content_location_resolver = nullptr;
 
-            os::Mutex mutex;
+            os::Mutex mutex{false};
         public:
             /* Actual commands. */
             virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) override;

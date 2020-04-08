@@ -324,28 +324,20 @@ namespace ams::fatal {
             bool is_creport;
             CpuContext cpu_ctx;
             bool generate_error_report;
-            Event erpt_event;
-            Event battery_event;
+            os::Event *erpt_event;
+            os::Event *battery_event;
             size_t stack_dump_size;
             u64 stack_dump_base;
             u8 stack_dump[0x100];
             u64 tls_address;
             u8 tls_dump[0x100];
 
-            void ClearState() {
-                this->result = ResultSuccess();
-                this->program_id = ncm::ProgramId::Invalid;
-                std::memset(this->proc_name, 0, sizeof(this->proc_name));
-                this->is_creport = false;
-                std::memset(&this->cpu_ctx, 0, sizeof(this->cpu_ctx));
-                this->generate_error_report = false;
-                std::memset(&this->erpt_event, 0, sizeof(this->erpt_event));
-                std::memset(&this->battery_event, 0, sizeof(this->battery_event));
-                this->stack_dump_size = 0;
-                this->stack_dump_base = 0;
-                std::memset(this->stack_dump, 0, sizeof(this->stack_dump));
-                this->tls_address = 0;
-                std::memset(this->tls_dump, 0, sizeof(this->tls_dump));
+            ThrowContext(os::Event *erpt, os::Event *bat)
+                : result(ResultSuccess()), program_id(), proc_name(), is_creport(), cpu_ctx(), generate_error_report(),
+                  erpt_event(erpt), battery_event(bat),
+                  stack_dump_size(), stack_dump_base(), stack_dump(), tls_address(), tls_dump()
+            {
+                /* ... */
             }
         };
 

@@ -17,8 +17,9 @@
 
 namespace ams::pm::impl {
 
-    ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(svc::ProcessState_Created), flags(0), waitable_holder(h) {
-        this->waitable_holder.SetUserData(reinterpret_cast<uintptr_t>(this));
+    ProcessInfo::ProcessInfo(Handle h, os::ProcessId pid, ldr::PinId pin, const ncm::ProgramLocation &l, const cfg::OverrideStatus &s) : process_id(pid), pin_id(pin), loc(l), status(s), handle(h), state(svc::ProcessState_Created), flags(0) {
+        os::InitializeWaitableHolder(std::addressof(this->waitable_holder), this->handle);
+        os::SetWaitableHolderUserData(std::addressof(this->waitable_holder), reinterpret_cast<uintptr_t>(this));
     }
 
     ProcessInfo::~ProcessInfo() {
@@ -37,7 +38,7 @@ namespace ams::pm::impl {
             this->handle = INVALID_HANDLE;
 
             /* Unlink the process from its waitable manager. */
-            this->waitable_holder.UnlinkFromWaitableManager();
+            os::UnlinkWaitableHolder(std::addressof(this->waitable_holder));
         }
     }
 

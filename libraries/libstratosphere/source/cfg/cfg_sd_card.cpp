@@ -30,7 +30,7 @@ namespace ams::cfg {
         constexpr size_t NumRequiredServicesForSdCardAccess = util::size(RequiredServicesForSdCardAccess);
 
         /* SD card globals. */
-        os::Mutex g_sd_card_lock;
+        os::Mutex g_sd_card_lock(false);
         bool g_sd_card_initialized = false;
         FsFileSystem g_sd_card_filesystem = {};
 

@@ -16,6 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "os_rng_manager_impl.hpp"
+#include "os_thread_manager_types.hpp"
 #include "os_tick_manager_impl.hpp"
 
 namespace ams::os::impl {
@@ -24,12 +25,15 @@ namespace ams::os::impl {
         private:
             RngManager  rng_manager{};
             /* TODO */
+            ThreadManager thread_manager{};
+            /* TODO */
             TickManager tick_manager{};
             /* TODO */
         public:
-            constexpr OsResourceManager() = default;
+            OsResourceManager() = default;
 
             constexpr ALWAYS_INLINE RngManager &GetRngManager() { return this->rng_manager; }
+            constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return this->thread_manager; }
             constexpr ALWAYS_INLINE TickManager &GetTickManager() { return this->tick_manager; }
     };
 

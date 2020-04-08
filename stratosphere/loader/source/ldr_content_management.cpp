@@ -19,7 +19,7 @@ namespace ams::ldr {
 
     namespace {
 
-        os::Mutex g_scoped_code_mount_lock;
+        os::Mutex g_scoped_code_mount_lock(false);
 
     }
 

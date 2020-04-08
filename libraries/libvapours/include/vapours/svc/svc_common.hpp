@@ -28,7 +28,13 @@ namespace ams::svc {
     using Handle = u32;
 #endif
 
+    enum {
+        HandleWaitMask = (1u << 30),
+    };
+
     constexpr inline size_t MaxWaitSynchronizationHandleCount = 0x40;
+
+    constexpr inline s64 WaitInfinite = -1;
 
     enum PseudoHandle : Handle {
         CurrentThread  = 0xFFFF8000,

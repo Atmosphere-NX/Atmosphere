@@ -21,29 +21,29 @@ namespace ams::os::impl {
 
     class WaitableHolderOfSemaphore : public WaitableHolderOfUserObject {
         private:
-            Semaphore *semaphore;
+            SemaphoreType *semaphore;
         private:
             TriBool IsSignaledImpl() const {
                 return this->semaphore->count > 0 ? TriBool::True : TriBool::False;
             }
         public:
-            explicit WaitableHolderOfSemaphore(Semaphore *s) : semaphore(s) { /* ... */ }
+            explicit WaitableHolderOfSemaphore(SemaphoreType *s) : semaphore(s) { /* ... */ }
 
             /* IsSignaled, Link, Unlink implemented. */
             virtual TriBool IsSignaled() const override {
-                std::scoped_lock lk(this->semaphore->mutex);
+                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
                 return this->IsSignaledImpl();
             }
 
             virtual TriBool LinkToObjectList() override {
-                std::scoped_lock lk(this->semaphore->mutex);
+                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
 
                 GetReference(this->semaphore->waitlist).LinkWaitableHolder(*this);
                 return this->IsSignaledImpl();
             }
 
             virtual void UnlinkFromObjectList() override {
-                std::scoped_lock lk(this->semaphore->mutex);
+                std::scoped_lock lk(GetReference(this->semaphore->cs_sema));
 
                 GetReference(this->semaphore->waitlist).UnlinkWaitableHolder(*this);
             }

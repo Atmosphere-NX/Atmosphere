@@ -51,6 +51,6 @@ namespace ams::os::impl {
 
     #undef CHECK_HOLDER
 
-    static_assert(std::is_trivial<WaitableHolderImpl>::value && std::is_trivially_destructible<WaitableHolderImpl>::value, "WaitableHolderImpl");
-    static_assert(sizeof(WaitableHolderImpl) == WaitableHolder::ImplStorageSize, "WaitableHolderImpl size");
+    static_assert(std::is_trivial<WaitableHolderImpl>::value && std::is_trivially_destructible<WaitableHolderImpl>::value);
+    static_assert(sizeof(WaitableHolderImpl) == sizeof(os::WaitableHolderType::impl_storage));
 }

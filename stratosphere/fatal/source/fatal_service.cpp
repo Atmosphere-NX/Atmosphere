@@ -27,6 +27,8 @@ namespace ams::fatal::srv {
         /* Service Context. */
         class ServiceContext {
             private:
+                os::Event erpt_event;
+                os::Event battery_event;
                 ThrowContext context;
                 FatalEventManager event_manager;
                 bool has_thrown;
@@ -37,14 +39,14 @@ namespace ams::fatal::srv {
                     return ResultSuccess();
                 }
             public:
-                ServiceContext() {
-                    this->context.ClearState();
-                    R_ABORT_UNLESS(eventCreate(&this->context.erpt_event, false));
-                    R_ABORT_UNLESS(eventCreate(&this->context.battery_event, false));
-                    this->has_thrown = false;
+                ServiceContext()
+                    : erpt_event(os::EventClearMode_ManualClear), battery_event(os::EventClearMode_ManualClear),
+                      context(std::addressof(erpt_event), std::addressof(battery_event)), has_thrown(false)
+                {
+                    /* ... */
                 }
 
-                Result GetEvent(Handle *out) {
+                Result GetEvent(const os::SystemEventType **out) {
                     return this->event_manager.GetEvent(out);
                 }
 
@@ -143,7 +145,10 @@ namespace ams::fatal::srv {
     }
 
     Result PrivateService::GetFatalEvent(sf::OutCopyHandle out_h) {
-        return g_context.GetEvent(out_h.GetHandlePointer());
+        const os::SystemEventType *event;
+        R_TRY(g_context.GetEvent(std::addressof(event)));
+        out_h.SetValue(os::GetReadableHandleOfSystemEvent(event));
+        return ResultSuccess();
     }
 
 }

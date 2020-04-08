@@ -15,6 +15,7 @@
  */
 #include "dmnt_service.hpp"
 #include "cheat/dmnt_cheat_service.hpp"
+#include "cheat/impl/dmnt_cheat_api.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -122,12 +123,15 @@ namespace {
     constexpr size_t ThreadStackSize = 0x4000;
     alignas(os::MemoryPageSize) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
 
-    os::Thread g_extra_threads[NumExtraThreads];
+    os::ThreadType g_extra_threads[NumExtraThreads];
 
 }
 
 int main(int argc, char **argv)
 {
+    /* Initialize the cheat manager. */
+    ams::dmnt::cheat::impl::InitializeCheatManager();
+
     /* Create services. */
     /* TODO: Implement rest of dmnt:- in ams.tma development branch. */
     /* R_ABORT_UNLESS((g_server_manager.RegisterServer<dmnt::cheat::CheatService>(DebugMonitorServiceName, DebugMonitorMaxSessions))); */
@@ -139,16 +143,16 @@ int main(int argc, char **argv)
 
         /* Initialize threads. */
         if constexpr (NumExtraThreads > 0) {
-            const s32 priority = os::GetCurrentThreadPriority();
+            const s32 priority = os::GetThreadCurrentPriority(os::GetCurrentThread());
             for (size_t i = 0; i < NumExtraThreads; i++) {
-                R_ABORT_UNLESS(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
+                R_ABORT_UNLESS(os::CreateThread(std::addressof(g_extra_threads[i]), LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
             }
         }
 
         /* Start extra threads. */
         if constexpr (NumExtraThreads > 0) {
             for (size_t i = 0; i < NumExtraThreads; i++) {
-                R_ABORT_UNLESS(g_extra_threads[i].Start());
+                os::StartThread(std::addressof(g_extra_threads[i]));
             }
         }
 
@@ -158,7 +162,7 @@ int main(int argc, char **argv)
         /* Wait for extra threads to finish. */
         if constexpr (NumExtraThreads > 0) {
             for (size_t i = 0; i < NumExtraThreads; i++) {
-                R_ABORT_UNLESS(g_extra_threads[i].Join());
+                os::WaitThread(std::addressof(g_extra_threads[i]));
             }
         }
     }

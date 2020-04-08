@@ -21,7 +21,7 @@ namespace ams::pm::info {
     namespace {
 
         /* Global lock. */
-        os::Mutex g_info_lock;
+        os::Mutex g_info_lock(false);
         /* TODO: Less memory-intensive storage? */
         std::set<u64> g_cached_launched_programs;
 

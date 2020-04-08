@@ -25,7 +25,7 @@ namespace ams::mitm::settings {
                 GetRegionCode   = 4,
             };
         private:
-            os::Mutex lock;
+            os::Mutex lock{false};
             cfg::OverrideLocale locale;
             bool got_locale;
         public:

@@ -257,7 +257,7 @@ namespace ams::mitm::fs {
                 }
             }
 
-            os::Mutex g_fs_romfs_path_lock;
+            os::Mutex g_fs_romfs_path_lock(false);
             char g_fs_romfs_path_buffer[fs::EntryNameLengthMax + 1];
 
             NOINLINE void OpenFileSystemRomfsDirectory(FsDir *out, ncm::ProgramId program_id, BuildDirectoryContext *parent, fs::OpenDirectoryMode mode, FsFileSystem *fs) {

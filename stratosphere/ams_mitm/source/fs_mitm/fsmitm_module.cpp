@@ -39,7 +39,7 @@ namespace ams::mitm::fs {
         constexpr size_t ThreadStackSize = mitm::ModuleTraits<fs::MitmModule>::StackSize;
         alignas(os::MemoryPageSize) u8 g_extra_thread_stacks[NumExtraThreads][ThreadStackSize];
 
-        os::Thread g_extra_threads[NumExtraThreads];
+        os::ThreadType g_extra_threads[NumExtraThreads];
 
         void LoopServerThread(void *arg) {
             /* Loop forever, servicing our services. */
@@ -49,16 +49,16 @@ namespace ams::mitm::fs {
         void ProcessForServerOnAllThreads() {
             /* Initialize threads. */
             if constexpr (NumExtraThreads > 0) {
-                const s32 priority = os::GetCurrentThreadPriority();
+                const s32 priority = os::GetThreadCurrentPriority(os::GetCurrentThread());
                 for (size_t i = 0; i < NumExtraThreads; i++) {
-                    R_ABORT_UNLESS(g_extra_threads[i].Initialize(LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
+                    R_ABORT_UNLESS(os::CreateThread(g_extra_threads + i, LoopServerThread, nullptr, g_extra_thread_stacks[i], ThreadStackSize, priority));
                 }
             }
 
             /* Start extra threads. */
             if constexpr (NumExtraThreads > 0) {
                 for (size_t i = 0; i < NumExtraThreads; i++) {
-                    R_ABORT_UNLESS(g_extra_threads[i].Start());
+                    os::StartThread(g_extra_threads + i);
                 }
             }
 
@@ -68,7 +68,7 @@ namespace ams::mitm::fs {
             /* Wait for extra threads to finish. */
             if constexpr (NumExtraThreads > 0) {
                 for (size_t i = 0; i < NumExtraThreads; i++) {
-                    R_ABORT_UNLESS(g_extra_threads[i].Join());
+                    os::WaitThread(g_extra_threads + i);
                 }
             }
         }

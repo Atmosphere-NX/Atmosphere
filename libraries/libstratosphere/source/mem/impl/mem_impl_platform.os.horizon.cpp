@@ -20,7 +20,7 @@ namespace ams::mem::impl {
 
     namespace {
 
-        os::Mutex g_virt_mem_enabled_lock;
+        os::Mutex g_virt_mem_enabled_lock(false);
         bool g_virt_mem_enabled_detected;
         bool g_virt_mem_enabled;
 

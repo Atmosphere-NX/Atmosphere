@@ -29,7 +29,7 @@ namespace ams::ldr {
         constexpr const char * const LoaderSdMountName = "#amsldr-sdpatch";
         static_assert(sizeof(LoaderSdMountName) <= fs::MountNameLengthMax);
 
-        os::Mutex g_ldr_sd_lock;
+        os::Mutex g_ldr_sd_lock(false);
         bool g_mounted_sd;
 
         bool EnsureSdCardMounted() {

@@ -13,167 +13,139 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "os_inter_process_event.hpp"
+#include "os_inter_process_event_impl.hpp"
+#include "os_waitable_object_list.hpp"
 
 namespace ams::os::impl {
 
     namespace {
 
-        Result CreateEventHandles(Handle *out_readable, Handle *out_writable) {
-            /* Create the event handles. */
-            R_TRY_CATCH(svcCreateEvent(out_writable, out_readable)) {
-                R_CONVERT(svc::ResultOutOfResource, ResultOutOfResource());
-            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+        inline void SetupInterProcessEventType(InterProcessEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode) {
+            /* Set handles. */
+            event->readable_handle            = read_handle;
+            event->is_readable_handle_managed = read_handle_managed;
+            event->writable_handle            = write_handle;
+            event->is_writable_handle_managed = write_handle_managed;
 
-            return ResultSuccess();
+            /* Set auto clear. */
+            event->auto_clear = (clear_mode == EventClearMode_AutoClear);
+
+            /* Create the waitlist node. */
+            new (GetPointer(event->waitable_object_list_storage)) impl::WaitableObjectList;
+
+            /* Set state. */
+            event->state = InterProcessEventType::State_Initialized;
         }
 
     }
 
-    InterProcessEvent::InterProcessEvent(bool autoclear) : is_initialized(false) {
-        R_ABORT_UNLESS(this->Initialize(autoclear));
-    }
-
-    InterProcessEvent::~InterProcessEvent() {
-        this->Finalize();
-    }
-
-    Result InterProcessEvent::Initialize(bool autoclear) {
-        AMS_ABORT_UNLESS(!this->is_initialized);
+    Result CreateInterProcessEvent(InterProcessEventType *event, EventClearMode clear_mode) {
         Handle rh, wh;
-        R_TRY(CreateEventHandles(&rh, &wh));
-        this->Initialize(rh, true, wh, true, autoclear);
+        R_TRY(impl::InterProcessEventImpl::Create(std::addressof(wh), std::addressof(rh)));
+
+        SetupInterProcessEventType(event, rh, true, wh, true, clear_mode);
         return ResultSuccess();
     }
 
-    void InterProcessEvent::Initialize(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) {
-        AMS_ABORT_UNLESS(!this->is_initialized);
-        AMS_ABORT_UNLESS(read_handle != INVALID_HANDLE || write_handle != INVALID_HANDLE);
-        this->read_handle = read_handle;
-        this->manage_read_handle = manage_read_handle;
-        this->write_handle = write_handle;
-        this->manage_write_handle = manage_write_handle;
-        this->auto_clear = autoclear;
-        this->is_initialized = true;
+    void DestroyInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state == InterProcessEventType::State_Initialized);
+
+        /* Clear the state. */
+        event->state = InterProcessEventType::State_NotInitialized;
+
+        /* Close handles if required. */
+        if (event->is_readable_handle_managed) {
+            if (event->readable_handle != svc::InvalidHandle) {
+                impl::InterProcessEventImpl::Close(event->readable_handle);
+            }
+            event->is_readable_handle_managed = false;
+        }
+
+        if (event->is_writable_handle_managed) {
+            if (event->writable_handle != svc::InvalidHandle) {
+                impl::InterProcessEventImpl::Close(event->writable_handle);
+            }
+            event->is_writable_handle_managed = false;
+        }
+
+        /* Destroy the waitlist. */
+        GetReference(event->waitable_object_list_storage).~WaitableObjectList();
     }
 
-    Handle InterProcessEvent::DetachReadableHandle() {
-        AMS_ABORT_UNLESS(this->is_initialized);
-        const Handle handle = this->read_handle;
-        AMS_ABORT_UNLESS(handle != INVALID_HANDLE);
-        this->read_handle = INVALID_HANDLE;
-        this->manage_read_handle = false;
+    void AttachInterProcessEvent(InterProcessEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode) {
+        AMS_ASSERT(read_handle != svc::InvalidHandle || write_handle != svc::InvalidHandle);
+
+        return SetupInterProcessEventType(event, read_handle, read_handle_managed, write_handle, write_handle_managed, clear_mode);
+    }
+
+    Handle DetachReadableHandleOfInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state == InterProcessEventType::State_Initialized);
+
+        const Handle handle = event->readable_handle;
+
+        event->readable_handle            = svc::InvalidHandle;
+        event->is_readable_handle_managed = false;
+
+        return handle;
+    }
+    Handle DetachWritableHandleOfInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state == InterProcessEventType::State_Initialized);
+
+        const Handle handle = event->writable_handle;
+
+        event->writable_handle            = svc::InvalidHandle;
+        event->is_writable_handle_managed = false;
+
         return handle;
     }
 
-    Handle InterProcessEvent::DetachWritableHandle() {
-        AMS_ABORT_UNLESS(this->is_initialized);
-        const Handle handle = this->write_handle;
-        AMS_ABORT_UNLESS(handle != INVALID_HANDLE);
-        this->write_handle = INVALID_HANDLE;
-        this->manage_write_handle = false;
-        return handle;
+    void WaitInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state == InterProcessEventType::State_Initialized);
+
+        return impl::InterProcessEventImpl::Wait(event->readable_handle, event->auto_clear);
     }
 
-    Handle InterProcessEvent::GetReadableHandle() const {
-        AMS_ABORT_UNLESS(this->is_initialized);
-        return this->read_handle;
+    bool TryWaitInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state == InterProcessEventType::State_Initialized);
+
+        return impl::InterProcessEventImpl::TryWait(event->readable_handle, event->auto_clear);
     }
 
-    Handle InterProcessEvent::GetWritableHandle() const {
-        AMS_ABORT_UNLESS(this->is_initialized);
-        return this->write_handle;
+    bool TimedWaitInterProcessEvent(InterProcessEventType *event, TimeSpan timeout) {
+        AMS_ASSERT(event->state == InterProcessEventType::State_Initialized);
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
+
+        return impl::InterProcessEventImpl::TimedWait(event->readable_handle, event->auto_clear, timeout);
     }
 
-    void InterProcessEvent::Finalize() {
-        if (this->is_initialized) {
-            if (this->manage_read_handle && this->read_handle != INVALID_HANDLE) {
-                R_ABORT_UNLESS(svcCloseHandle(this->read_handle));
-            }
-            if (this->manage_write_handle && this->write_handle != INVALID_HANDLE) {
-                R_ABORT_UNLESS(svcCloseHandle(this->write_handle));
-            }
+    void SignalInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state != InterProcessEventType::State_NotInitialized);
+
+        return impl::InterProcessEventImpl::Signal(event->writable_handle);
+    }
+
+    void ClearInterProcessEvent(InterProcessEventType *event) {
+        AMS_ASSERT(event->state != InterProcessEventType::State_NotInitialized);
+
+        auto handle = event->readable_handle;
+        if (handle == svc::InvalidHandle) {
+            handle = event->writable_handle;
         }
-        this->read_handle  = INVALID_HANDLE;
-        this->manage_read_handle = false;
-        this->write_handle = INVALID_HANDLE;
-        this->manage_write_handle = false;
-        this->is_initialized = false;
+        return impl::InterProcessEventImpl::Clear(handle);
     }
 
-    void InterProcessEvent::Signal() {
-        R_ABORT_UNLESS(svcSignalEvent(this->GetWritableHandle()));
+    Handle GetReadableHandleOfInterProcessEvent(const InterProcessEventType *event) {
+        AMS_ASSERT(event->state != InterProcessEventType::State_NotInitialized);
+
+        return event->readable_handle;
     }
 
-    void InterProcessEvent::Reset() {
-        Handle handle = this->GetReadableHandle();
-        if (handle == INVALID_HANDLE) {
-            handle = this->GetWritableHandle();
-        }
-        R_ABORT_UNLESS(svcClearEvent(handle));
+    Handle GetWritableHandleOfInterProcessEvent(const InterProcessEventType *event) {
+        AMS_ASSERT(event->state != InterProcessEventType::State_NotInitialized);
+
+        return event->writable_handle;
     }
 
-    void InterProcessEvent::Wait() {
-        const Handle handle = this->GetReadableHandle();
-
-        while (true) {
-            /* Continuously wait, until success. */
-            R_TRY_CATCH(svcWaitSynchronizationSingle(handle, std::numeric_limits<u64>::max())) {
-                R_CATCH(svc::ResultCancelled) { continue; }
-            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-            /* Clear, if we must. */
-            if (this->auto_clear) {
-                R_TRY_CATCH(svcResetSignal(handle)) {
-                    /* Some other thread might have caught this before we did. */
-                    R_CATCH(svc::ResultInvalidState) { continue; }
-                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-            }
-            return;
-        }
-    }
-
-    bool InterProcessEvent::TryWait() {
-        const Handle handle = this->GetReadableHandle();
-
-        if (this->auto_clear) {
-            /* Auto-clear. Just try to reset. */
-            return R_SUCCEEDED(svcResetSignal(handle));
-        } else {
-            /* Not auto-clear. */
-            while (true) {
-                /* Continuously wait, until success or timeout. */
-                R_TRY_CATCH(svcWaitSynchronizationSingle(handle, 0)) {
-                    R_CATCH(svc::ResultTimedOut) { return false; }
-                    R_CATCH(svc::ResultCancelled) { continue; }
-                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-                /* We succeeded, so we're signaled. */
-                return true;
-            }
-        }
-    }
-
-    bool InterProcessEvent::TimedWait(u64 ns) {
-        const Handle handle = this->GetReadableHandle();
-
-        TimeoutHelper timeout_helper(ns);
-        while (true) {
-            /* Continuously wait, until success or timeout. */
-            R_TRY_CATCH(svcWaitSynchronizationSingle(handle, timeout_helper.NsUntilTimeout())) {
-                R_CATCH(svc::ResultTimedOut) { return false; }
-                R_CATCH(svc::ResultCancelled) { continue; }
-            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-            /* Clear, if we must. */
-            if (this->auto_clear) {
-                R_TRY_CATCH(svcResetSignal(handle)) {
-                    /* Some other thread might have caught this before we did. */
-                    R_CATCH(svc::ResultInvalidState) { continue; }
-                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-            }
-
-            return true;
-        }
-    }
 }

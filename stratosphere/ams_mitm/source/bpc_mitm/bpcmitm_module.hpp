@@ -19,6 +19,6 @@
 
 namespace ams::mitm::bpc {
 
-    DEFINE_MITM_MODULE_CLASS(0x8000, 32);
+    DEFINE_MITM_MODULE_CLASS(0x8000, 4);
 
 }

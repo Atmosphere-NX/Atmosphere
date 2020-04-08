@@ -41,7 +41,7 @@ namespace ams::pm::resource {
         constexpr size_t ExtraSystemMemorySizeAtmosphere500 = 33_MB; /* Applet pool is 0x20100000 */
 
         /* Globals. */
-        os::Mutex g_resource_limit_lock;
+        os::Mutex g_resource_limit_lock(false);
         Handle g_resource_limit_handles[ResourceLimitGroup_Count];
         spl::MemoryArrangement g_memory_arrangement = spl::MemoryArrangement_Standard;
         u64 g_system_memory_boost_size = 0;

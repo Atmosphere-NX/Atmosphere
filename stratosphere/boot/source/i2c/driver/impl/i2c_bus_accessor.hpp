@@ -25,9 +25,9 @@ namespace ams::i2c::driver::impl {
                 Send    = 0,
                 Receive = 1,
             };
-            static constexpr u64 InterruptTimeout = 100'000'000ul;
+            static constexpr TimeSpan InterruptTimeout = TimeSpan::FromMilliSeconds(100);
         private:
-            os::InterruptEvent interrupt_event;
+            os::InterruptEventType interrupt_event;
             os::Mutex open_mutex;
             os::Mutex register_mutex;
             Registers *i2c_registers = nullptr;
@@ -38,7 +38,7 @@ namespace ams::i2c::driver::impl {
             PcvModule pcv_module = PcvModule_I2C1;
             bool suspended = false;
         public:
-            BusAccessor() { /* ... */ }
+            BusAccessor() : open_mutex(false), register_mutex(false) { /* ... */ }
         private:
             inline void ClearInterruptMask() const {
                 reg::Write(&i2c_registers->I2C_INTERRUPT_MASK_REGISTER_0, 0);

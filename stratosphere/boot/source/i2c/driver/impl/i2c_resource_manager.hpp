@@ -34,10 +34,18 @@ namespace ams::i2c::driver::impl {
             bool power_bus_suspended = false;
             Session sessions[MaxDriverSessions];
             BusAccessor bus_accessors[ConvertToIndex(Bus::Count)];
-            os::Mutex transaction_mutexes[ConvertToIndex(Bus::Count)];
+            TYPED_STORAGE(os::Mutex) transaction_mutexes[ConvertToIndex(Bus::Count)];
         public:
-            ResourceManager() {
-                /* ... */
+            ResourceManager() : initialize_mutex(false), session_open_mutex(false) {
+                for (size_t i = 0; i < util::size(this->transaction_mutexes); i++) {
+                    new (GetPointer(this->transaction_mutexes[i])) os::Mutex(false);
+                }
+            }
+
+            ~ResourceManager() {
+                for (size_t i = 0; i < util::size(this->transaction_mutexes); i++) {
+                    GetReference(this->transaction_mutexes[i]).~Mutex();
+                }
             }
         private:
             size_t GetFreeSessionId() const;
@@ -57,7 +65,7 @@ namespace ams::i2c::driver::impl {
             }
 
             os::Mutex& GetTransactionMutex(Bus bus) {
-                return this->transaction_mutexes[ConvertToIndex(bus)];
+                return GetReference(this->transaction_mutexes[ConvertToIndex(bus)]);
             }
 
             void Initialize();

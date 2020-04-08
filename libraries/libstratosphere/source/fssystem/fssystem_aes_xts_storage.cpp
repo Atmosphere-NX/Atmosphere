@@ -17,7 +17,7 @@
 
 namespace ams::fssystem {
 
-    AesXtsStorage::AesXtsStorage(IStorage *base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size) : base_storage(base), block_size(block_size), mutex() {
+    AesXtsStorage::AesXtsStorage(IStorage *base, const void *key1, const void *key2, size_t key_size, const void *iv, size_t iv_size, size_t block_size) : base_storage(base), block_size(block_size), mutex(false) {
         AMS_ASSERT(base != nullptr);
         AMS_ASSERT(key1 != nullptr);
         AMS_ASSERT(key2 != nullptr);

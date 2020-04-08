@@ -21,13 +21,13 @@
 namespace ams::sm::impl {
 
     /* Utilities. */
-    os::RecursiveMutex &GetUserSessionMutex();
-    os::RecursiveMutex &GetMitmAcknowledgementSessionMutex();
-    os::RecursiveMutex &GetPerThreadSessionMutex();
+    os::Mutex &GetUserSessionMutex();
+    os::Mutex &GetMitmAcknowledgementSessionMutex();
+    os::Mutex &GetPerThreadSessionMutex();
 
     template<typename F>
     Result DoWithUserSession(F f) {
-        std::scoped_lock<os::RecursiveMutex &> lk(GetUserSessionMutex());
+        std::scoped_lock lk(GetUserSessionMutex());
         {
             R_ABORT_UNLESS(smInitialize());
             ON_SCOPE_EXIT { smExit(); };
@@ -38,7 +38,7 @@ namespace ams::sm::impl {
 
     template<typename F>
     Result DoWithMitmAcknowledgementSession(F f) {
-        std::scoped_lock<os::RecursiveMutex &> lk(GetMitmAcknowledgementSessionMutex());
+        std::scoped_lock lk(GetMitmAcknowledgementSessionMutex());
         {
             R_ABORT_UNLESS(smAtmosphereMitmInitialize());
             ON_SCOPE_EXIT { smAtmosphereMitmExit(); };
@@ -51,7 +51,7 @@ namespace ams::sm::impl {
     Result DoWithPerThreadSession(F f) {
         Service srv;
         {
-            std::scoped_lock<os::RecursiveMutex &> lk(GetPerThreadSessionMutex());
+            std::scoped_lock lk(GetPerThreadSessionMutex());
             R_ABORT_UNLESS(smAtmosphereOpenSession(&srv));
         }
         {

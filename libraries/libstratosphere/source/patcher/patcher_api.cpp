@@ -31,7 +31,7 @@ namespace ams::patcher {
         constexpr size_t ModuleIpsPatchLength = 2 * sizeof(ro::ModuleId) + IpsFileExtensionLength;
 
         /* Global data. */
-        os::Mutex apply_patch_lock;
+        os::Mutex apply_patch_lock(false);
         u8 g_patch_read_buffer[os::MemoryPageSize];
 
         /* Helpers. */

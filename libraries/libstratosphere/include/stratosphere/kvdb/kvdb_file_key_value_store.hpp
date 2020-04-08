@@ -70,7 +70,7 @@ namespace ams::kvdb {
             Path GetPath(const void *key, size_t key_size);
             Result GetKey(size_t *out_size, void *out_key, size_t max_out_size, const FileName &file_name);
         public:
-            FileKeyValueStore() { /* ... */ }
+            FileKeyValueStore() : lock(false) { /* ... */ }
 
             /* Basic accessors. */
             Result Initialize(const char *dir);

@@ -22,7 +22,7 @@ namespace ams::hos {
 
         hos::Version g_hos_version;
         bool g_has_cached;
-        os::Mutex g_mutex;
+        os::Mutex g_mutex(false);
 
         void CacheValues() {
             if (__atomic_load_n(&g_has_cached, __ATOMIC_SEQ_CST)) {

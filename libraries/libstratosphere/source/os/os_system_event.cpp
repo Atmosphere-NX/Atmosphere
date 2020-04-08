@@ -15,174 +15,120 @@
  */
 #include <stratosphere.hpp>
 #include "impl/os_waitable_holder_impl.hpp"
+#include "impl/os_inter_process_event.hpp"
+#include "impl/os_timeout_helper.hpp"
 
 namespace ams::os {
 
-    SystemEvent::SystemEvent(bool inter_process, bool autoclear) : state(SystemEventState::Uninitialized) {
+    Result CreateSystemEvent(SystemEventType *event, EventClearMode clear_mode, bool inter_process) {
         if (inter_process) {
-            R_ABORT_UNLESS(this->InitializeAsInterProcessEvent(autoclear));
+            R_TRY(impl::CreateInterProcessEvent(std::addressof(event->inter_process_event), clear_mode));
+            event->state = SystemEventType::State_InitializedAsInterProcessEvent;
         } else {
-            R_ABORT_UNLESS(this->InitializeAsEvent(autoclear));
+            InitializeEvent(std::addressof(event->event), false, clear_mode);
+            event->state = SystemEventType::State_InitializedAsEvent;
         }
-    }
-
-    SystemEvent::SystemEvent(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) : state(SystemEventState::Uninitialized)  {
-        this->AttachHandles(read_handle, manage_read_handle, write_handle, manage_write_handle, autoclear);
-    }
-
-    SystemEvent::~SystemEvent() {
-        this->Finalize();
-    }
-
-    Event &SystemEvent::GetEvent() {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::Event);
-        return GetReference(this->storage_for_event);
-    }
-
-    const Event &SystemEvent::GetEvent() const {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::Event);
-        return GetReference(this->storage_for_event);
-    }
-
-    impl::InterProcessEvent &SystemEvent::GetInterProcessEvent() {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
-        return GetReference(this->storage_for_inter_process_event);
-    }
-
-    const impl::InterProcessEvent &SystemEvent::GetInterProcessEvent() const {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
-        return GetReference(this->storage_for_inter_process_event);
-    }
-
-    Result SystemEvent::InitializeAsEvent(bool autoclear) {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::Uninitialized);
-        new (GetPointer(this->storage_for_event)) Event(autoclear);
-        this->state = SystemEventState::Event;
         return ResultSuccess();
     }
 
-    Result SystemEvent::InitializeAsInterProcessEvent(bool autoclear) {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::Uninitialized);
-        new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
-        this->state = SystemEventState::InterProcessEvent;
+    void DestroySystemEvent(SystemEventType *event) {
+        auto state = event->state;
+        event->state = SystemEventType::State_NotInitialized;
 
-        /* Ensure we end up in a correct state if initialization fails. */
-        {
-            auto guard = SCOPE_GUARD { this->Finalize(); };
-            R_TRY(this->GetInterProcessEvent().Initialize(autoclear));
-            guard.Cancel();
-        }
-
-        return ResultSuccess();
-    }
-
-    void SystemEvent::AttachHandles(Handle read_handle, bool manage_read_handle, Handle write_handle, bool manage_write_handle, bool autoclear) {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::Uninitialized);
-        new (GetPointer(this->storage_for_inter_process_event)) impl::InterProcessEvent();
-        this->state = SystemEventState::InterProcessEvent;
-        this->GetInterProcessEvent().Initialize(read_handle, manage_read_handle, write_handle, manage_write_handle, autoclear);
-    }
-
-    void SystemEvent::AttachReadableHandle(Handle read_handle, bool manage_read_handle, bool autoclear) {
-        this->AttachHandles(read_handle, manage_read_handle, INVALID_HANDLE, false, autoclear);
-    }
-
-    void SystemEvent::AttachWritableHandle(Handle write_handle, bool manage_write_handle, bool autoclear) {
-        this->AttachHandles(INVALID_HANDLE, false, write_handle, manage_write_handle, autoclear);
-    }
-
-    Handle SystemEvent::DetachReadableHandle() {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
-        return this->GetInterProcessEvent().DetachReadableHandle();
-    }
-
-    Handle SystemEvent::DetachWritableHandle() {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
-        return this->GetInterProcessEvent().DetachWritableHandle();
-    }
-
-    Handle SystemEvent::GetReadableHandle() const {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
-        return this->GetInterProcessEvent().GetReadableHandle();
-    }
-
-    Handle SystemEvent::GetWritableHandle() const {
-        AMS_ABORT_UNLESS(this->state == SystemEventState::InterProcessEvent);
-        return this->GetInterProcessEvent().GetWritableHandle();
-    }
-
-    void SystemEvent::Finalize() {
-        switch (this->state) {
-            case SystemEventState::Uninitialized:
-                break;
-            case SystemEventState::Event:
-                this->GetEvent().~Event();
-                break;
-            case SystemEventState::InterProcessEvent:
-                this->GetInterProcessEvent().~InterProcessEvent();
-                break;
-            AMS_UNREACHABLE_DEFAULT_CASE();
-        }
-        this->state = SystemEventState::Uninitialized;
-    }
-
-    void SystemEvent::Signal() {
-        switch (this->state) {
-            case SystemEventState::Event:
-                this->GetEvent().Signal();
-                break;
-            case SystemEventState::InterProcessEvent:
-                this->GetInterProcessEvent().Signal();
-                break;
-            case SystemEventState::Uninitialized:
+        switch (state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent: impl::DestroyInterProcessEvent(std::addressof(event->inter_process_event)); break;
+            case SystemEventType::State_InitializedAsEvent:             FinalizeEvent(std::addressof(event->event)); break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    void SystemEvent::Reset() {
-        switch (this->state) {
-            case SystemEventState::Event:
-                this->GetEvent().Reset();
-                break;
-            case SystemEventState::InterProcessEvent:
-                this->GetInterProcessEvent().Reset();
-                break;
-            case SystemEventState::Uninitialized:
-            AMS_UNREACHABLE_DEFAULT_CASE();
-        }
+    void AttachSystemEvent(SystemEventType *event, Handle read_handle, bool read_handle_managed, Handle write_handle, bool write_handle_managed, EventClearMode clear_mode) {
+        AMS_ASSERT(read_handle != svc::InvalidHandle || write_handle != svc::InvalidHandle);
+        impl::AttachInterProcessEvent(std::addressof(event->inter_process_event), read_handle, read_handle_managed, write_handle, write_handle_managed, clear_mode);
+        event->state = SystemEventType::State_InitializedAsInterProcessEvent;
     }
-    void SystemEvent::Wait() {
-        switch (this->state) {
-            case SystemEventState::Event:
-                this->GetEvent().Wait();
-                break;
-            case SystemEventState::InterProcessEvent:
-                this->GetInterProcessEvent().Wait();
-                break;
-            case SystemEventState::Uninitialized:
+
+    void AttachReadableHandleToSystemEvent(SystemEventType *event, Handle read_handle, bool manage_read_handle, EventClearMode clear_mode) {
+        return AttachSystemEvent(event, read_handle, manage_read_handle, svc::InvalidHandle, false, clear_mode);
+    }
+
+    void AttachWritableHandleToSystemEvent(SystemEventType *event, Handle write_handle, bool manage_write_handle, EventClearMode clear_mode) {
+        return AttachSystemEvent(event, svc::InvalidHandle, false, write_handle, manage_write_handle, clear_mode);
+    }
+
+    Handle DetachReadableHandleOfSystemEvent(SystemEventType *event) {
+        AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
+        return impl::DetachReadableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
+    }
+
+    Handle DetachWritableHandleOfSystemEvent(SystemEventType *event) {
+        AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
+        return impl::DetachWritableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
+    }
+
+    Handle GetReadableHandleOfSystemEvent(const SystemEventType *event) {
+        AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
+        return impl::GetReadableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
+    }
+
+    Handle GetWritableHandleOfSystemEvent(const SystemEventType *event) {
+        AMS_ASSERT(event->state == SystemEventType::State_InitializedAsInterProcessEvent);
+        return impl::GetWritableHandleOfInterProcessEvent(std::addressof(event->inter_process_event));
+
+    }
+
+    void SignalSystemEvent(SystemEventType *event) {
+        switch (event->state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent: return impl::SignalInterProcessEvent(std::addressof(event->inter_process_event));
+            case SystemEventType::State_InitializedAsEvent:             return SignalEvent(std::addressof(event->event));
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    bool SystemEvent::TryWait() {
-        switch (this->state) {
-            case SystemEventState::Event:
-                return this->GetEvent().TryWait();
-            case SystemEventState::InterProcessEvent:
-                return this->GetInterProcessEvent().TryWait();
-            case SystemEventState::Uninitialized:
+    void WaitSystemEvent(SystemEventType *event) {
+        switch (event->state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent: return impl::WaitInterProcessEvent(std::addressof(event->inter_process_event));
+            case SystemEventType::State_InitializedAsEvent:             return WaitEvent(std::addressof(event->event));
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
-    bool SystemEvent::TimedWait(u64 ns) {
-        switch (this->state) {
-            case SystemEventState::Event:
-                return this->GetEvent().TimedWait(ns);
-            case SystemEventState::InterProcessEvent:
-                return this->GetInterProcessEvent().TimedWait(ns);
-            case SystemEventState::Uninitialized:
+    bool TryWaitSystemEvent(SystemEventType *event) {
+        switch (event->state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent: return impl::TryWaitInterProcessEvent(std::addressof(event->inter_process_event));
+            case SystemEventType::State_InitializedAsEvent:             return TryWaitEvent(std::addressof(event->event));
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
+
+    bool TimedWaitSystemEvent(SystemEventType *event, TimeSpan timeout) {
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
+
+        switch (event->state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent: return impl::TimedWaitInterProcessEvent(std::addressof(event->inter_process_event), timeout);
+            case SystemEventType::State_InitializedAsEvent:             return TimedWaitEvent(std::addressof(event->event), timeout);
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    void ClearSystemEvent(SystemEventType *event) {
+        switch (event->state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent: return impl::ClearInterProcessEvent(std::addressof(event->inter_process_event));
+            case SystemEventType::State_InitializedAsEvent:             return ClearEvent(std::addressof(event->event));
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    void InitializeWaitableHolder(WaitableHolderType *waitable_holder, SystemEventType *event) {
+        switch (event->state) {
+            case SystemEventType::State_InitializedAsInterProcessEvent:
+                new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfInterProcessEvent(std::addressof(event->inter_process_event));
+                break;
+            case SystemEventType::State_InitializedAsEvent:
+                new (GetPointer(waitable_holder->impl_storage)) impl::WaitableHolderOfEvent(std::addressof(event->event));
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
 }

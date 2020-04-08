@@ -22,12 +22,12 @@ namespace ams::mitm {
     class ModuleBase {};
 
     #define DEFINE_MITM_MODULE_CLASS(ss, prio) class MitmModule : public ::ams::mitm::ModuleBase { \
-        public: \
-            static constexpr size_t ThreadPriority = prio; \
-            static constexpr size_t StackSize = ss; \
-            alignas(os::MemoryPageSize) static inline u8 Stack[StackSize]; \
-        public: \
-            static void ThreadFunction(void *); \
+        public:                                                                                    \
+            static constexpr s32 ThreadPriority = prio;                                            \
+            static constexpr size_t StackSize = ss;                                                \
+            alignas(os::ThreadStackAlignment) static inline u8 Stack[StackSize];                   \
+        public:                                                                                    \
+            static void ThreadFunction(void *);                                                    \
     }
 
     template<class M>
@@ -37,7 +37,7 @@ namespace ams::mitm {
         static constexpr void *Stack = &M::Stack[0];
         static constexpr size_t StackSize = M::StackSize;
 
-        static constexpr size_t ThreadPriority = M::ThreadPriority;
+        static constexpr s32 ThreadPriority = M::ThreadPriority;
 
         static constexpr ::ThreadFunc ThreadFunction = &M::ThreadFunction;
     };

@@ -37,8 +37,8 @@ namespace ams::os::impl {
             /* Gets handle to output, returns INVALID_HANDLE on failure. */
             virtual Handle GetHandle() const = 0;
             /* Gets the amount of time remaining until this wakes up. */
-            virtual u64 GetWakeupTime() const {
-                return std::numeric_limits<u64>::max();
+            virtual TimeSpan GetAbsoluteWakeupTime() const {
+                return TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max());
             }
 
             /* Interface with manager. */
@@ -58,18 +58,18 @@ namespace ams::os::impl {
     class WaitableHolderOfUserObject : public WaitableHolderBase {
         public:
             /* All user objects have no handle to wait on. */
-            virtual Handle GetHandle() const override {
-                return INVALID_HANDLE;
+            virtual Handle GetHandle() const override final {
+                return svc::InvalidHandle;
             }
     };
 
     class WaitableHolderOfKernelObject : public WaitableHolderBase {
         public:
             /* All kernel objects have native handles, and thus don't have object list semantics. */
-            virtual TriBool LinkToObjectList() override {
+            virtual TriBool LinkToObjectList() override final {
                 return TriBool::Undefined;
             }
-            virtual void UnlinkFromObjectList() override {
+            virtual void UnlinkFromObjectList() override final {
                 /* ... */
             }
     };

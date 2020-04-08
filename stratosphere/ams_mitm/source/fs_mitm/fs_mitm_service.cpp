@@ -30,8 +30,8 @@ namespace ams::mitm::fs {
         constexpr const char AtmosphereHblWebContentDir[] = "/atmosphere/hbl_html/";
         constexpr const char ProgramWebContentDir[] = "/manual_html/";
 
-        os::Mutex g_data_storage_lock;
-        os::Mutex g_storage_cache_lock;
+        os::Mutex g_data_storage_lock(false);
+        os::Mutex g_storage_cache_lock(false);
         std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_storage_cache;
 
         std::shared_ptr<IStorageInterface> GetStorageCacheEntry(ncm::ProgramId program_id) {

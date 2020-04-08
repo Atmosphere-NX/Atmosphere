@@ -63,7 +63,7 @@ namespace ams::fs {
             s64 size;
             os::Mutex mutex;
         public:
-            constexpr explicit FileHandleStorage(FileHandle handle, bool close_file) : handle(handle), close_file(close_file), size(InvalidSize), mutex() { /* ... */ }
+            constexpr explicit FileHandleStorage(FileHandle handle, bool close_file) : handle(handle), close_file(close_file), size(InvalidSize), mutex(false) { /* ... */ }
             constexpr explicit FileHandleStorage(FileHandle handle) : FileHandleStorage(handle, false) { /* ... */ }
 
             virtual ~FileHandleStorage() override {

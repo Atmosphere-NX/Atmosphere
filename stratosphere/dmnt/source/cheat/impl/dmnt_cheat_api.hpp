@@ -18,6 +18,8 @@
 
 namespace ams::dmnt::cheat::impl {
 
+    void InitializeCheatManager();
+
     bool GetHasActiveCheatProcess();
     Handle GetCheatProcessEventHandle();
     Result GetCheatProcessMetadata(CheatProcessMetadata *out);

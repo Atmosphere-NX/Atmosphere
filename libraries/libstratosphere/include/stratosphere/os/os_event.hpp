@@ -15,39 +15,58 @@
  */
 
 #pragma once
-#include "os_mutex.hpp"
-#include "os_condvar.hpp"
-#include "os_timeout_helper.hpp"
+#include <vapours.hpp>
+#include <stratosphere/os/os_event_common.hpp>
+#include <stratosphere/os/os_event_types.hpp>
+#include <stratosphere/os/os_event_api.hpp>
 
 namespace ams::os {
 
-    namespace impl {
-
-        class WaitableObjectList;
-        class WaitableHolderOfEvent;
-
-    }
-
     class Event {
-        friend class impl::WaitableHolderOfEvent;
         NON_COPYABLE(Event);
         NON_MOVEABLE(Event);
         private:
-            util::TypedStorage<impl::WaitableObjectList, sizeof(util::IntrusiveListNode), alignof(util::IntrusiveListNode)> waitable_object_list_storage;
-            Mutex lock;
-            ConditionVariable cv;
-            u64 counter = 0;
-            bool auto_clear;
-            bool signaled;
+            EventType event;
         public:
-            Event(bool a = true, bool s = false);
-            ~Event();
+            explicit Event(EventClearMode clear_mode) {
+                InitializeEvent(std::addressof(this->event), false, clear_mode);
+            }
 
-            void Signal();
-            void Reset();
-            void Wait();
-            bool TryWait();
-            bool TimedWait(u64 ns);
+            ~Event() {
+                FinalizeEvent(std::addressof(this->event));
+            }
+
+            void Wait() {
+                return WaitEvent(std::addressof(this->event));
+            }
+
+            bool TryWait() {
+                return TryWaitEvent(std::addressof(this->event));
+            }
+
+            bool TimedWait(TimeSpan timeout) {
+                return TimedWaitEvent(std::addressof(this->event), timeout);
+            }
+
+            void Signal() {
+                return SignalEvent(std::addressof(this->event));
+            }
+
+            void Clear() {
+                return ClearEvent(std::addressof(this->event));
+            }
+
+            operator EventType &() {
+                return this->event;
+            }
+
+            operator const EventType &() const {
+                return this->event;
+            }
+
+            EventType *GetBase() {
+                return std::addressof(this->event);
+            }
     };
 
 }

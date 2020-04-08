@@ -26,15 +26,13 @@
 #include <stratosphere/os/os_process_handle.hpp>
 #include <stratosphere/os/os_random.hpp>
 #include <stratosphere/os/os_mutex.hpp>
-#include <stratosphere/os/os_condvar.hpp>
+#include <stratosphere/os/os_condition_variable.hpp>
 #include <stratosphere/os/os_rw_lock.hpp>
 #include <stratosphere/os/os_semaphore.hpp>
-#include <stratosphere/os/os_timeout_helper.hpp>
 #include <stratosphere/os/os_event.hpp>
 #include <stratosphere/os/os_system_event.hpp>
 #include <stratosphere/os/os_interrupt_event.hpp>
 #include <stratosphere/os/os_thread_local_storage_api.hpp>
 #include <stratosphere/os/os_thread.hpp>
 #include <stratosphere/os/os_message_queue.hpp>
-#include <stratosphere/os/os_waitable_holder.hpp>
-#include <stratosphere/os/os_waitable_manager.hpp>
+#include <stratosphere/os/os_waitable.hpp>

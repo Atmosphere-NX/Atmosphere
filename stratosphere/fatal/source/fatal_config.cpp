@@ -30,17 +30,24 @@ namespace ams::fatal::srv {
         }
 
         /* Global event. */
-        os::SystemEvent g_fatal_dirty_event(GetFatalDirtyEventReadableHandle(), true, false);
-        os::WaitableHolder g_fatal_dirty_waitable_holder(&g_fatal_dirty_event);
+        os::SystemEventType g_fatal_dirty_event;
+        os::WaitableHolderType g_fatal_dirty_waitable_holder;
+        bool g_initialized;
 
     }
 
-    os::WaitableHolder *GetFatalDirtyWaitableHolder() {
-        return &g_fatal_dirty_waitable_holder;
+    os::WaitableHolderType *GetFatalDirtyWaitableHolder() {
+        if (AMS_UNLIKELY(!g_initialized)) {
+            os::AttachReadableHandleToSystemEvent(std::addressof(g_fatal_dirty_event), GetFatalDirtyEventReadableHandle(), true, os::EventClearMode_ManualClear);
+            os::InitializeWaitableHolder(std::addressof(g_fatal_dirty_waitable_holder), std::addressof(g_fatal_dirty_event));
+            os::SetWaitableHolderUserData(std::addressof(g_fatal_dirty_waitable_holder), reinterpret_cast<uintptr_t>(std::addressof(g_fatal_dirty_waitable_holder)));
+            g_initialized = true;
+        }
+        return std::addressof(g_fatal_dirty_waitable_holder);
     }
 
     void OnFatalDirtyEvent() {
-        g_fatal_dirty_event.Reset();
+        os::ClearSystemEvent(std::addressof(g_fatal_dirty_event));
 
         u64 flags_0, flags_1;
         if (R_SUCCEEDED(setsysGetFatalDirtyFlags(&flags_0, &flags_1)) && (flags_0 & 1)) {

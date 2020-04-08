@@ -14,233 +14,387 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "impl/os_waitable_object_list.hpp"
+#include "impl/os_timeout_helper.hpp"
 
 namespace ams::os {
 
-    MessageQueue::MessageQueue(std::unique_ptr<uintptr_t[]> buf, size_t c): buffer(std::move(buf)), capacity(c), count(0), offset(0) {
-        new (GetPointer(this->waitlist_not_empty)) impl::WaitableObjectList();
-        new (GetPointer(this->waitlist_not_full))  impl::WaitableObjectList();
-    }
+    namespace {
 
-    MessageQueue::~MessageQueue() {
-        GetReference(this->waitlist_not_empty).~WaitableObjectList();
-        GetReference(this->waitlist_not_full).~WaitableObjectList();
-    }
-
-    void MessageQueue::SendInternal(uintptr_t data) {
-        /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ABORT_UNLESS(this->count < this->capacity);
-
-        /* Write data to tail of queue. */
-        this->buffer[(this->count++ + this->offset) % this->capacity] = data;
-    }
-
-    void MessageQueue::SendNextInternal(uintptr_t data) {
-        /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ABORT_UNLESS(this->count < this->capacity);
-
-        /* Write data to head of queue. */
-        this->offset = (this->offset + this->capacity - 1) % this->capacity;
-        this->buffer[this->offset] = data;
-        this->count++;
-    }
-
-    uintptr_t MessageQueue::ReceiveInternal() {
-        /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ABORT_UNLESS(this->count > 0);
-
-        uintptr_t data = this->buffer[this->offset];
-        this->offset = (this->offset + 1) % this->capacity;
-        this->count--;
-        return data;
-    }
-
-    inline uintptr_t MessageQueue::PeekInternal() {
-        /* Ensure we don't corrupt the queue, but this should never happen. */
-        AMS_ABORT_UNLESS(this->count > 0);
-
-        return this->buffer[this->offset];
-    }
-
-    void MessageQueue::Send(uintptr_t data) {
-        /* Acquire mutex, wait sendable. */
-        std::scoped_lock lock(this->queue_lock);
-
-        while (this->IsFull()) {
-            this->cv_not_full.Wait(&this->queue_lock);
+        ALWAYS_INLINE bool IsMessageQueueFull(const MessageQueueType *mq) {
+            return mq->count >= mq->capacity;
         }
 
-        /* Send, signal. */
-        this->SendInternal(data);
-        this->cv_not_empty.Broadcast();
-        GetReference(this->waitlist_not_empty).SignalAllThreads();
-    }
-
-    bool MessageQueue::TrySend(uintptr_t data) {
-        std::scoped_lock lock(this->queue_lock);
-        if (this->IsFull()) {
-            return false;
+        ALWAYS_INLINE bool IsMessageQueueEmpty(const MessageQueueType *mq) {
+            return mq->count == 0;
         }
 
-        /* Send, signal. */
-        this->SendInternal(data);
-        this->cv_not_empty.Broadcast();
-        GetReference(this->waitlist_not_empty).SignalAllThreads();
-        return true;
+        void SendUnsafe(MessageQueueType *mq, uintptr_t data) {
+            /* Ensure our limits are correct. */
+            auto count    = mq->count;
+            auto capacity = mq->capacity;
+            AMS_ASSERT(count < capacity);
+
+            /* Determine where we're writing. */
+            auto ind = mq->offset + count;
+            if (ind >= capacity) {
+                ind -= capacity;
+            }
+            AMS_ASSERT(0 <= ind && ind < capacity);
+
+            /* Write the data. */
+            mq->buffer[ind] = data;
+            ++count;
+
+            /* Update tracking. */
+            mq->count = count;
+        }
+
+        void SendNextUnsafe(MessageQueueType *mq, uintptr_t data) {
+            /* Ensure our limits are correct. */
+            auto count    = mq->count;
+            auto capacity = mq->capacity;
+            AMS_ASSERT(count < capacity);
+
+            /* Determine where we're writing. */
+            auto offset = mq->offset - 1;
+            if (offset < 0) {
+                offset += capacity;
+            }
+            AMS_ASSERT(0 <= offset && offset < capacity);
+
+            /* Write the data. */
+            mq->buffer[offset] = data;
+            ++count;
+
+            /* Update tracking. */
+            mq->offset = offset;
+            mq->count  = count;
+        }
+
+        uintptr_t ReceiveUnsafe(MessageQueueType *mq) {
+            /* Ensure our limits are correct. */
+            auto count    = mq->count;
+            auto offset   = mq->offset;
+            auto capacity = mq->capacity;
+            AMS_ASSERT(count > 0);
+            AMS_ASSERT(offset >= 0 && offset < capacity);
+
+            /* Get the data. */
+            auto data = mq->buffer[offset];
+
+            /* Calculate new tracking variables. */
+            if ((++offset) >= capacity) {
+                offset -= capacity;
+            }
+            --count;
+
+            /* Update tracking. */
+            mq->offset = offset;
+            mq->count  = count;
+
+            return data;
+        }
+
+        uintptr_t PeekUnsafe(const MessageQueueType *mq) {
+            /* Ensure our limits are correct. */
+            auto count    = mq->count;
+            auto offset   = mq->offset;
+            AMS_ASSERT(count > 0);
+
+            return mq->buffer[offset];
+        }
+
     }
 
-    bool MessageQueue::TimedSend(uintptr_t data, u64 timeout) {
-        std::scoped_lock lock(this->queue_lock);
-        TimeoutHelper timeout_helper(timeout);
+    void InitializeMessageQueue(MessageQueueType *mq, uintptr_t *buffer, size_t count) {
+        AMS_ASSERT(buffer != nullptr);
+        AMS_ASSERT(count >= 1);
 
-        while (this->IsFull()) {
-            if (timeout_helper.TimedOut()) {
+        /* Setup objects. */
+        new (GetPointer(mq->cs_queue))     impl::InternalCriticalSection;
+        new (GetPointer(mq->cv_not_full))  impl::InternalConditionVariable;
+        new (GetPointer(mq->cv_not_empty)) impl::InternalConditionVariable;
+
+        /* Setup wait lists. */
+        new (GetPointer(mq->waitlist_not_empty)) impl::WaitableObjectList;
+        new (GetPointer(mq->waitlist_not_full))  impl::WaitableObjectList;
+
+        /* Set member variables. */
+        mq->buffer   = buffer;
+        mq->capacity = static_cast<s32>(count);
+        mq->count    = 0;
+        mq->offset   = 0;
+
+        /* Mark initialized. */
+        mq->state = MessageQueueType::State_Initialized;
+    }
+
+    void FinalizeMessageQueue(MessageQueueType *mq) {
+        AMS_ASSERT(mq->state = MessageQueueType::State_Initialized);
+
+        AMS_ASSERT(GetReference(mq->waitlist_not_empty).IsEmpty());
+        AMS_ASSERT(GetReference(mq->waitlist_not_full).IsEmpty());
+
+        /* Mark uninitialized. */
+        mq->state = MessageQueueType::State_NotInitialized;
+
+        /* Destroy wait lists. */
+        GetReference(mq->waitlist_not_empty).~WaitableObjectList();
+        GetReference(mq->waitlist_not_full).~WaitableObjectList();
+
+        /* Destroy objects. */
+        GetReference(mq->cv_not_empty).~InternalConditionVariable();
+        GetReference(mq->cv_not_full).~InternalConditionVariable();
+        GetReference(mq->cs_queue).~InternalCriticalSection();
+    }
+
+    /* Sending (FIFO functionality) */
+    void SendMessageQueue(MessageQueueType *mq, uintptr_t data) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+
+        {
+            /* Acquire mutex, wait sendable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueFull(mq)) {
+                GetReference(mq->cv_not_full).Wait(GetPointer(mq->cs_queue));
+            }
+
+            /* Send, signal. */
+            SendUnsafe(mq, data);
+            GetReference(mq->cv_not_empty).Broadcast();
+            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+        }
+    }
+
+    bool TrySendMessageQueue(MessageQueueType *mq, uintptr_t data) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+
+        {
+            /* Acquire mutex, check sendable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            if (IsMessageQueueFull(mq)) {
                 return false;
             }
 
-            this->cv_not_full.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
+            /* Send, signal. */
+            SendUnsafe(mq, data);
+            GetReference(mq->cv_not_empty).Broadcast();
+            GetReference(mq->waitlist_not_empty).SignalAllThreads();
         }
 
-        /* Send, signal. */
-        this->SendInternal(data);
-        this->cv_not_empty.Broadcast();
-        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
-    void MessageQueue::SendNext(uintptr_t data) {
-        /* Acquire mutex, wait sendable. */
-        std::scoped_lock lock(this->queue_lock);
+    bool TimedSendMessageQueue(MessageQueueType *mq, uintptr_t data, TimeSpan timeout) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
 
-        while (this->IsFull()) {
-            this->cv_not_full.Wait(&this->queue_lock);
+        {
+            /* Acquire mutex, wait sendable. */
+            impl::TimeoutHelper timeout_helper(timeout);
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueFull(mq)) {
+                if (timeout_helper.TimedOut()) {
+                    return false;
+                }
+                GetReference(mq->cv_not_full).TimedWait(GetPointer(mq->cs_queue), timeout_helper);
+            }
+
+            /* Send, signal. */
+            SendUnsafe(mq, data);
+            GetReference(mq->cv_not_empty).Broadcast();
+            GetReference(mq->waitlist_not_empty).SignalAllThreads();
         }
 
-        /* Send, signal. */
-        this->SendNextInternal(data);
-        this->cv_not_empty.Broadcast();
-        GetReference(this->waitlist_not_empty).SignalAllThreads();
-    }
-
-    bool MessageQueue::TrySendNext(uintptr_t data) {
-        std::scoped_lock lock(this->queue_lock);
-        if (this->IsFull()) {
-            return false;
-        }
-
-        /* Send, signal. */
-        this->SendNextInternal(data);
-        this->cv_not_empty.Broadcast();
-        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
-    bool MessageQueue::TimedSendNext(uintptr_t data, u64 timeout) {
-        std::scoped_lock lock(this->queue_lock);
-        TimeoutHelper timeout_helper(timeout);
+    /* Sending (LIFO functionality) */
+    void SendNextMessageQueue(MessageQueueType *mq, uintptr_t data) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
 
-        while (this->IsFull()) {
-            if (timeout_helper.TimedOut()) {
+        {
+            /* Acquire mutex, wait sendable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueFull(mq)) {
+                GetReference(mq->cv_not_full).Wait(GetPointer(mq->cs_queue));
+            }
+
+            /* Send, signal. */
+            SendNextUnsafe(mq, data);
+            GetReference(mq->cv_not_empty).Broadcast();
+            GetReference(mq->waitlist_not_empty).SignalAllThreads();
+        }
+    }
+
+    bool TrySendNextMessageQueue(MessageQueueType *mq, uintptr_t data) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+
+        {
+            /* Acquire mutex, check sendable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            if (IsMessageQueueFull(mq)) {
                 return false;
             }
 
-            this->cv_not_full.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
+            /* Send, signal. */
+            SendNextUnsafe(mq, data);
+            GetReference(mq->cv_not_empty).Broadcast();
+            GetReference(mq->waitlist_not_empty).SignalAllThreads();
         }
 
-        /* Send, signal. */
-        this->SendNextInternal(data);
-        this->cv_not_empty.Broadcast();
-        GetReference(this->waitlist_not_empty).SignalAllThreads();
         return true;
     }
 
-    void MessageQueue::Receive(uintptr_t *out) {
-        /* Acquire mutex, wait receivable. */
-        std::scoped_lock lock(this->queue_lock);
+    bool TimedSendNextMessageQueue(MessageQueueType *mq, uintptr_t data, TimeSpan timeout) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
 
-        while (this->IsEmpty()) {
-            this->cv_not_empty.Wait(&this->queue_lock);
+        {
+            /* Acquire mutex, wait sendable. */
+            impl::TimeoutHelper timeout_helper(timeout);
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueFull(mq)) {
+                if (timeout_helper.TimedOut()) {
+                    return false;
+                }
+                GetReference(mq->cv_not_full).TimedWait(GetPointer(mq->cs_queue), timeout_helper);
+            }
+
+            /* Send, signal. */
+            SendNextUnsafe(mq, data);
+            GetReference(mq->cv_not_empty).Broadcast();
+            GetReference(mq->waitlist_not_empty).SignalAllThreads();
         }
 
-        /* Receive, signal. */
-        *out = this->ReceiveInternal();
-        this->cv_not_full.Broadcast();
-        GetReference(this->waitlist_not_full).SignalAllThreads();
-    }
-
-    bool MessageQueue::TryReceive(uintptr_t *out) {
-        /* Acquire mutex, wait receivable. */
-        std::scoped_lock lock(this->queue_lock);
-
-        if (this->IsEmpty()) {
-            return false;
-        }
-
-        /* Receive, signal. */
-        *out = this->ReceiveInternal();
-        this->cv_not_full.Broadcast();
-        GetReference(this->waitlist_not_full).SignalAllThreads();
         return true;
     }
 
-    bool MessageQueue::TimedReceive(uintptr_t *out, u64 timeout) {
-        std::scoped_lock lock(this->queue_lock);
-        TimeoutHelper timeout_helper(timeout);
+    /* Receive functionality */
+    void ReceiveMessageQueue(uintptr_t *out, MessageQueueType *mq) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
 
-        while (this->IsEmpty()) {
-            if (timeout_helper.TimedOut()) {
+        {
+            /* Acquire mutex, wait receivable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueEmpty(mq)) {
+                GetReference(mq->cv_not_empty).Wait(GetPointer(mq->cs_queue));
+            }
+
+            /* Receive, signal. */
+            *out = ReceiveUnsafe(mq);
+            GetReference(mq->cv_not_full).Broadcast();
+            GetReference(mq->waitlist_not_full).SignalAllThreads();
+        }
+    }
+
+    bool TryReceiveMessageQueue(uintptr_t *out, MessageQueueType *mq) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+
+        {
+            /* Acquire mutex, check receivable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            if (IsMessageQueueEmpty(mq)) {
                 return false;
             }
 
-            this->cv_not_empty.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
+            /* Receive, signal. */
+            *out = ReceiveUnsafe(mq);
+            GetReference(mq->cv_not_full).Broadcast();
+            GetReference(mq->waitlist_not_full).SignalAllThreads();
         }
 
-        /* Receive, signal. */
-        *out = this->ReceiveInternal();
-        this->cv_not_full.Broadcast();
-        GetReference(this->waitlist_not_full).SignalAllThreads();
         return true;
     }
 
-    void MessageQueue::Peek(uintptr_t *out) {
-        /* Acquire mutex, wait receivable. */
-        std::scoped_lock lock(this->queue_lock);
+    bool TimedReceiveMessageQueue(uintptr_t *out, MessageQueueType *mq, TimeSpan timeout) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
 
-        while (this->IsEmpty()) {
-            this->cv_not_empty.Wait(&this->queue_lock);
+        {
+            /* Acquire mutex, wait receivable. */
+            impl::TimeoutHelper timeout_helper(timeout);
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueEmpty(mq)) {
+                if (timeout_helper.TimedOut()) {
+                    return false;
+                }
+                GetReference(mq->cv_not_empty).TimedWait(GetPointer(mq->cs_queue), timeout_helper);
+            }
+
+            /* Receive, signal. */
+            *out = ReceiveUnsafe(mq);
+            GetReference(mq->cv_not_full).Broadcast();
+            GetReference(mq->waitlist_not_full).SignalAllThreads();
         }
 
-        /* Peek. */
-        *out = this->PeekInternal();
-    }
-
-    bool MessageQueue::TryPeek(uintptr_t *out) {
-        /* Acquire mutex, wait receivable. */
-        std::scoped_lock lock(this->queue_lock);
-
-        if (this->IsEmpty()) {
-            return false;
-        }
-
-        /* Peek. */
-        *out = this->PeekInternal();
         return true;
     }
 
-    bool MessageQueue::TimedPeek(uintptr_t *out, u64 timeout) {
-        std::scoped_lock lock(this->queue_lock);
-        TimeoutHelper timeout_helper(timeout);
+    /* Peek functionality */
+    void PeekMessageQueue(uintptr_t *out, const MessageQueueType *mq) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
 
-        while (this->IsEmpty()) {
-            if (timeout_helper.TimedOut()) {
+        {
+            /* Acquire mutex, wait receivable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueEmpty(mq)) {
+                GetReference(mq->cv_not_empty).Wait(GetPointer(mq->cs_queue));
+            }
+
+            /* Peek. */
+            *out = PeekUnsafe(mq);
+        }
+    }
+
+    bool TryPeekMessageQueue(uintptr_t *out, const MessageQueueType *mq) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+
+        {
+            /* Acquire mutex, check receivable. */
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            if (IsMessageQueueEmpty(mq)) {
                 return false;
             }
 
-            this->cv_not_empty.TimedWait(&this->queue_lock, timeout_helper.NsUntilTimeout());
+            /* Peek. */
+            *out = PeekUnsafe(mq);
         }
 
-        /* Peek. */
-        *out = this->PeekInternal();
+        return true;
+    }
+
+    bool TimedPeekMessageQueue(uintptr_t *out, const MessageQueueType *mq, TimeSpan timeout) {
+        AMS_ASSERT(mq->state == MessageQueueType::State_Initialized);
+        AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
+
+        {
+            /* Acquire mutex, wait receivable. */
+            impl::TimeoutHelper timeout_helper(timeout);
+            std::scoped_lock lk(GetReference(mq->cs_queue));
+
+            while (IsMessageQueueEmpty(mq)) {
+                if (timeout_helper.TimedOut()) {
+                    return false;
+                }
+                GetReference(mq->cv_not_empty).TimedWait(GetPointer(mq->cs_queue), timeout_helper);
+            }
+
+            /* Peek. */
+            *out = PeekUnsafe(mq);
+        }
+
         return true;
     }
 

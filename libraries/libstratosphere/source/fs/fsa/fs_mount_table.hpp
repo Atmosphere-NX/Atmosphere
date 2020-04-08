@@ -28,7 +28,7 @@ namespace ams::fs::impl {
             FileSystemList fs_list;
             os::Mutex mutex;
         public:
-            constexpr MountTable() : fs_list(), mutex() { /* ... */ }
+            constexpr MountTable() : fs_list(), mutex(false) { /* ... */ }
         private:
             bool CanAcceptMountName(const char *name);
         public:

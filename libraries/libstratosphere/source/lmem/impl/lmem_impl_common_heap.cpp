@@ -33,12 +33,6 @@ namespace ams::lmem::impl {
         new (&out->list_node)  util::IntrusiveListNode;
         new (&out->child_list) decltype(out->child_list);
 
-        /* Only initialize mutex if option requires it. */
-        if (option & CreateOption_ThreadSafe) {
-            static_assert(std::is_trivially_destructible<os::Mutex>::value);
-            new (&out->mutex) os::Mutex;
-        }
-
         /* Set fields. */
         out->magic = magic;
         out->heap_start = start;

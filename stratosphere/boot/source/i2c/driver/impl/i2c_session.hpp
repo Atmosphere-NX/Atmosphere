@@ -30,7 +30,7 @@ namespace ams::i2c::driver::impl {
             u64 retry_wait_time = 0;
             bool open = false;
         public:
-            Session() { /* ... */ }
+            Session() : bus_accessor_mutex(false) { /* ... */ }
         public:
             void Open(Bus bus, u32 slave_address, AddressingMode addr_mode, SpeedMode speed_mode, BusAccessor *bus_accessor, u32 max_retries, u64 retry_wait_time);
             void Start();

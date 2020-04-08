@@ -160,7 +160,7 @@ namespace ams::fatal::srv {
             }
 
             /* Signal we're done with our job. */
-            eventFire(const_cast<Event *>(&this->context->erpt_event));
+            this->context->erpt_event->Signal();
 
             return ResultSuccess();
         }

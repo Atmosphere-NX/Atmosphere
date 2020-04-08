@@ -44,16 +44,16 @@ namespace ams::fatal::srv {
                 gpioPadSetDirection(&vol_btn, GpioDirection_Input);
 
                 /* Ensure that we're holding the volume button for a full second. */
-                os::TimeoutHelper timeout_helper(1'000'000'000ul);
-                while (!timeout_helper.TimedOut()) {
+                auto start = os::GetSystemTick();
+                do {
                     GpioValue val;
                     if (R_FAILED(gpioPadGetValue(&vol_btn, &val)) || val != GpioValue_Low) {
                         return true;
                     }
 
                     /* Sleep for 100 ms. */
-                    svcSleepThread(100'000'000ul);
-                }
+                    os::SleepThread(TimeSpan::FromMilliSeconds(100));
+                } while (os::ConvertToTimeSpan(os::GetSystemTick() - start) < TimeSpan::FromSeconds(1));
             }
 
             return false;

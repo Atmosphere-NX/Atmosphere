@@ -83,7 +83,7 @@ namespace ams::ncm {
                 ContentMetaDatabaseRoot() { /* ... */ }
             };
         private:
-            os::RecursiveMutex mutex;
+            os::Mutex mutex;
             bool initialized;
             ContentStorageRoot content_storage_roots[MaxContentStorageRoots];
             ContentMetaDatabaseRoot content_meta_database_roots[MaxContentMetaDatabaseRoots];
@@ -91,7 +91,7 @@ namespace ams::ncm {
             u32 num_content_meta_entries;
             RightsIdCache rights_id_cache;
         public:
-            ContentManagerImpl() : initialized(false) { /* ... */ };
+            ContentManagerImpl() : mutex(true), initialized(false) { /* ... */ };
             ~ContentManagerImpl();
         public:
             Result Initialize(const ContentManagerConfig &config);
