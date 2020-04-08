@@ -391,7 +391,7 @@ def main(argc, argv):
         out.write('#define AMS_ERPT_FOREACH_FIELD(HANDLER) \\\n')
         for i in xrange(NUM_FIELDS):
             f, c, t = fields[i], cats[i], types[i]
-            out.write(('    HANDLER(%%-%ds %%-4s %%-4s %%-2s) \\\n' % (mf+1)) % (f+',', '%d,'%i, '%d,'%c, '%d'%t))
+            out.write(('    HANDLER(%%-%ds %%-4s %%-%ds %%-%ds) \\\n' % (mf+1, mc+1, mt)) % (f+',', '%d,'%i, cat_to_string(c)+',', typ_to_string(t)))
         out.write('\n')
     return 0
 
