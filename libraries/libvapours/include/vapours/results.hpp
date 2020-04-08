@@ -27,6 +27,7 @@
 #include <vapours/results/creport_results.hpp>
 #include <vapours/results/debug_results.hpp>
 #include <vapours/results/dmnt_results.hpp>
+#include <vapours/results/erpt_results.hpp>
 #include <vapours/results/err_results.hpp>
 #include <vapours/results/fatal_results.hpp>
 #include <vapours/results/fs_results.hpp>
@@ -38,12 +39,14 @@
 #include <vapours/results/os_results.hpp>
 #include <vapours/results/ncm_results.hpp>
 #include <vapours/results/pm_results.hpp>
+#include <vapours/results/psc_results.hpp>
 #include <vapours/results/ro_results.hpp>
 #include <vapours/results/settings_results.hpp>
 #include <vapours/results/sf_results.hpp>
 #include <vapours/results/sm_results.hpp>
 #include <vapours/results/spl_results.hpp>
 #include <vapours/results/svc_results.hpp>
+#include <vapours/results/time_results.hpp>
 #include <vapours/results/updater_results.hpp>
 #include <vapours/results/vi_results.hpp>
 

@@ -20,4 +20,6 @@ namespace ams::fs {
 
     Result MountSdCard(const char *name);
 
+    Result MountSdCardErrorReportDirectoryForAtmosphere(const char *name);
+
 }

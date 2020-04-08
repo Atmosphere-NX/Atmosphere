@@ -20,47 +20,49 @@
 #include <vapours.hpp>
 
 /* Libstratosphere-only utility. */
-#include "stratosphere/util.hpp"
+#include <stratosphere/util.hpp>
 
 /* Sadly required shims. */
-#include "stratosphere/svc/svc_stratosphere_shims.hpp"
+#include <stratosphere/svc/svc_stratosphere_shims.hpp>
 
 /* Critical modules with no dependencies. */
-#include "stratosphere/ams.hpp"
-#include "stratosphere/os.hpp"
-#include "stratosphere/dd.hpp"
-#include "stratosphere/lmem.hpp"
-#include "stratosphere/mem.hpp"
+#include <stratosphere/ams.hpp>
+#include <stratosphere/os.hpp>
+#include <stratosphere/dd.hpp>
+#include <stratosphere/lmem.hpp>
+#include <stratosphere/mem.hpp>
 
 /* Pull in all ID definitions from NCM. */
-#include "stratosphere/ncm/ncm_ids.hpp"
+#include <stratosphere/ncm/ncm_ids.hpp>
 
 /* At this point, just include the rest alphabetically. */
 /* TODO: Figure out optimal order. */
-#include "stratosphere/boot2.hpp"
-#include "stratosphere/cfg.hpp"
-#include "stratosphere/dmnt.hpp"
-#include "stratosphere/erpt.hpp"
-#include "stratosphere/fatal.hpp"
-#include "stratosphere/hid.hpp"
-#include "stratosphere/hos.hpp"
-#include "stratosphere/kvdb.hpp"
-#include "stratosphere/ldr.hpp"
-#include "stratosphere/lr.hpp"
-#include "stratosphere/map.hpp"
-#include "stratosphere/ncm.hpp"
-#include "stratosphere/nim.hpp"
-#include "stratosphere/patcher.hpp"
-#include "stratosphere/pm.hpp"
-#include "stratosphere/reg.hpp"
-#include "stratosphere/ro.hpp"
-#include "stratosphere/settings.hpp"
-#include "stratosphere/sf.hpp"
-#include "stratosphere/sm.hpp"
-#include "stratosphere/spl.hpp"
-#include "stratosphere/updater.hpp"
+#include <stratosphere/boot2.hpp>
+#include <stratosphere/cfg.hpp>
+#include <stratosphere/dmnt.hpp>
+#include <stratosphere/erpt.hpp>
+#include <stratosphere/fatal.hpp>
+#include <stratosphere/hid.hpp>
+#include <stratosphere/hos.hpp>
+#include <stratosphere/kvdb.hpp>
+#include <stratosphere/ldr.hpp>
+#include <stratosphere/lr.hpp>
+#include <stratosphere/map.hpp>
+#include <stratosphere/ncm.hpp>
+#include <stratosphere/nim.hpp>
+#include <stratosphere/patcher.hpp>
+#include <stratosphere/psc.hpp>
+#include <stratosphere/pm.hpp>
+#include <stratosphere/reg.hpp>
+#include <stratosphere/ro.hpp>
+#include <stratosphere/settings.hpp>
+#include <stratosphere/sf.hpp>
+#include <stratosphere/sm.hpp>
+#include <stratosphere/spl.hpp>
+#include <stratosphere/time.hpp>
+#include <stratosphere/updater.hpp>
 
 /* Include FS last. */
-#include "stratosphere/fs.hpp"
-#include "stratosphere/fssrv.hpp"
-#include "stratosphere/fssystem.hpp"
+#include <stratosphere/fs.hpp>
+#include <stratosphere/fssrv.hpp>
+#include <stratosphere/fssystem.hpp>

@@ -14,15 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "../../fs/fs_common.hpp"
-#include "../../fs/fsa/fs_ifile.hpp"
-#include "../../fs/fsa/fs_idirectory.hpp"
-#include "../../fs/fsa/fs_ifilesystem.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fsa/fs_ifile.hpp>
+#include <stratosphere/fs/fsa/fs_idirectory.hpp>
+#include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
+#include <stratosphere/fs/impl/fs_newable.hpp>
 
 namespace ams::fssystem::impl {
 
     template<typename Impl>
-    class IPathResolutionFileSystem : public fs::fsa::IFileSystem {
+    class IPathResolutionFileSystem : public fs::fsa::IFileSystem, public fs::impl::Newable {
         NON_COPYABLE(IPathResolutionFileSystem);
         private:
             std::shared_ptr<fs::fsa::IFileSystem> shared_fs;

@@ -178,9 +178,9 @@ namespace ams::util {
             constexpr BitFlagSet<N, T> operator^(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v ^= rhs; return v; }
             constexpr BitFlagSet<N, T> operator|(const BitFlagSet<N, T> &rhs) const { BitFlagSet<N, T> v = *this; v |= rhs; return v; }
 
-            constexpr BitFlagSet<N, T> &operator&=(const BitFlagSet<N, T> &rhs) const { ams::util::impl::AndImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
-            constexpr BitFlagSet<N, T> &operator^=(const BitFlagSet<N, T> &rhs) const { ams::util::impl::XorImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
-            constexpr BitFlagSet<N, T> &operator|=(const BitFlagSet<N, T> &rhs) const { ams::util::impl::OrImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
+            constexpr BitFlagSet<N, T> &operator&=(const BitFlagSet<N, T> &rhs) { ams::util::impl::AndImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
+            constexpr BitFlagSet<N, T> &operator^=(const BitFlagSet<N, T> &rhs) { ams::util::impl::XorImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
+            constexpr BitFlagSet<N, T> &operator|=(const BitFlagSet<N, T> &rhs) { ams::util::impl::OrImpl<StorageCount>(this->_storage, rhs._storage); return *this; }
     };
 
     template<size_t N, typename T>

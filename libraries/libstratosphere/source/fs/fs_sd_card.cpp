@@ -20,6 +20,8 @@ namespace ams::fs {
 
     namespace {
 
+        constexpr inline const char AtmosphereErrorReportDirectory[] = "/atmosphere/erpt_reports";
+
         /* NOTE: Nintendo does not attach a generator to a mounted SD card filesystem. */
         /* However, it is desirable for homebrew to be able to access SD via common path. */
         class SdCardCommonMountNameGenerator : public fsa::ICommonMountNameGenerator, public impl::Newable {
@@ -61,6 +63,29 @@ namespace ams::fs {
 
         /* Register. */
         return fsa::Register(name, std::move(fsa), std::move(generator));
+    }
+
+    Result MountSdCardErrorReportDirectoryForAtmosphere(const char *name) {
+        /* Validate the mount name. */
+        R_TRY(impl::CheckMountName(name));
+
+        /* Open the SD card. This uses libnx bindings. */
+        FsFileSystem fs;
+        R_TRY(fsOpenSdCardFileSystem(std::addressof(fs)));
+
+        /* Allocate a new filesystem wrapper. */
+        std::unique_ptr<fsa::IFileSystem> fsa = std::make_unique<RemoteFileSystem>(fs);
+        R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
+
+        /* Ensure that the error report directory exists. */
+        R_TRY(fssystem::EnsureDirectoryRecursively(fsa.get(), AtmosphereErrorReportDirectory));
+
+        /* Create a subdirectory filesystem. */
+        auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(fsa), AtmosphereErrorReportDirectory);
+        R_UNLESS(subdir_fs != nullptr, fs::ResultAllocationFailureInSdCardA());
+
+        /* Register. */
+        return fsa::Register(name, std::move(subdir_fs));
     }
 
 }

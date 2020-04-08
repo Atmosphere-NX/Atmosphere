@@ -17,3 +17,9 @@
 #pragma once
 
 #include <stratosphere/erpt/erpt_ids.autogen.hpp>
+#include <stratosphere/erpt/erpt_types.hpp>
+#include <stratosphere/erpt/erpt_multiple_category_context.hpp>
+#include <stratosphere/erpt/sf/erpt_sf_i_context.hpp>
+#include <stratosphere/erpt/sf/erpt_sf_i_session.hpp>
+#include <stratosphere/erpt/srv/erpt_srv_types.hpp>
+#include <stratosphere/erpt/srv/erpt_srv_api.hpp>

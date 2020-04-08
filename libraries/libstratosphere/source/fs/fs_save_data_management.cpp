@@ -116,4 +116,24 @@ namespace ams::fs {
         return impl::WriteSaveDataFileSystemExtraData(space_id, id, extra_data);
     }
 
+    Result GetSaveDataAvailableSize(s64 *out, SaveDataId id) {
+        SaveDataExtraData extra_data;
+        R_TRY(impl::ReadSaveDataFileSystemExtraData(std::addressof(extra_data), id));
+
+        *out = extra_data.available_size;
+        return ResultSuccess();
+    }
+
+    Result GetSaveDataJournalSize(s64 *out, SaveDataId id) {
+        SaveDataExtraData extra_data;
+        R_TRY(impl::ReadSaveDataFileSystemExtraData(std::addressof(extra_data), id));
+
+        *out = extra_data.journal_size;
+        return ResultSuccess();
+    }
+
+    Result ExtendSaveData(SaveDataSpaceId space_id, SaveDataId id, s64 available_size, s64 journal_size) {
+        return ::fsExtendSaveDataFileSystem(static_cast<::FsSaveDataSpaceId>(space_id), static_cast<u64>(id), available_size, journal_size);
+    }
+
 }

@@ -45,7 +45,7 @@ namespace ams::crypto {
             u8   label_digest[HashSize];
             State state;
         public:
-            RsaOaepDecryptor() : set_label_digest(false), state(State::None) { /* ... */ }
+            RsaOaepDecryptor() : set_label_digest(false), state(State::None) { std::memset(this->label_digest, 0, sizeof(this->label_digest)); }
 
             ~RsaOaepDecryptor() {
                 ClearMemory(this->label_digest, sizeof(this->label_digest));
@@ -78,20 +78,21 @@ namespace ams::crypto {
 
             size_t Decrypt(void *dst, size_t dst_size, const void *src, size_t src_size) {
                 AMS_ASSERT(this->state == State::Initialized);
-                ON_SCOPE_EXIT { this->state = State::Done; };
 
                 impl::RsaOaepImpl<Hash> impl;
                 u8 message[BlockSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
                 if (!this->calculator.ExpMod(message, src, src_size)) {
+                    std::memset(dst, 0, dst_size);
                     return false;
                 }
 
                 if (!this->set_label_digest) {
                     this->hash.GetHash(this->label_digest, sizeof(this->label_digest));
-                    this->set_label_digest = true;
                 }
+
+                ON_SCOPE_EXIT { this->state = State::Done; };
 
                 return impl.Decode(dst, dst_size, this->label_digest, sizeof(this->label_digest), message, sizeof(message));
             }
