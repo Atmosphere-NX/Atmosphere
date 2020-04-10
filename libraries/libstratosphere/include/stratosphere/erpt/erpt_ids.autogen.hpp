@@ -99,6 +99,7 @@
     HANDLER(RadioStrengthInfo,                   58 ) \
     HANDLER(ErrorInfoAuto,                       59 ) \
     HANDLER(AccessPointInfo,                     60 ) \
+    HANDLER(ErrorInfoDefaults,                   61 ) \
     HANDLER(SystemPowerStateInfo,                62 ) \
     HANDLER(PerformanceInfo,                     63 ) \
     HANDLER(ThrottlingInfo,                      64 ) \
@@ -109,6 +110,7 @@
     HANDLER(RunningApplicationInfo,              69 ) \
     HANDLER(RunningAppletInfo,                   70 ) \
     HANDLER(FocusedAppletHistoryInfo,            71 ) \
+    HANDLER(CompositorInfo,                      72 ) \
     HANDLER(BatteryChargeInfo,                   73 ) \
     HANDLER(NANDExtendedCsd,                     74 ) \
     HANDLER(NANDPatrolInfo,                      75 ) \

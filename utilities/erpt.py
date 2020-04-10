@@ -396,11 +396,11 @@ def main(argc, argv):
     with open(argv[1]+'.hpp', 'w') as out:
         out.write(HEADER)
         out.write('#define AMS_ERPT_FOREACH_FIELD_TYPE(HANDLER) \\\n')
-        for tp in sorted(list(set(types))):
+        for tp in sorted(list(set(types + FIELD_TYPES.keys()))):
             out.write(('    HANDLER(%%-%ds %%-2d) \\\n' % (mt+1)) % (typ_to_string(tp)+',', tp))
         out.write('\n')
         out.write('#define AMS_ERPT_FOREACH_CATEGORY(HANDLER) \\\n')
-        for ct in sorted(list(set(cats))):
+        for ct in sorted(list(set(cats + CATEGORIES.keys()))):
             out.write(('    HANDLER(%%-%ds %%-3d) \\\n' % (mc+1)) % (cat_to_string(ct)+',', ct))
         out.write('\n')
         out.write('#define AMS_ERPT_FOREACH_FIELD(HANDLER) \\\n')
