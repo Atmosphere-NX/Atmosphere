@@ -118,12 +118,17 @@ namespace ams::erpt::srv {
 
             auto record_guard = SCOPE_GUARD { delete record; };
 
-            R_UNLESS(R_SUCCEEDED(Stream::GetStreamSize(std::addressof(record->info.attachment_size), Attachment::FileName(record->info.attachment_id).name)), erpt::ResultCorruptJournal());
+            if (R_FAILED(Stream::GetStreamSize(std::addressof(record->info.attachment_size), Attachment::FileName(record->info.attachment_id).name))) {
+                continue;
+            }
 
             if (record->info.flags.Test<AttachmentFlag::HasOwner>() && JournalForReports::RetrieveRecord(record->info.owner_report_id) != nullptr) {
                 /* NOTE: Nintendo does not check the result of storing the new record... */
                 record_guard.Cancel();
                 StoreRecord(record);
+            } else {
+                /* If the attachment has no owner (or we deleted the report), delete the file associated with it. */
+                Stream::DeleteStream(Attachment::FileName(record->info.attachment_id).name);
             }
         }
 
