@@ -20,8 +20,8 @@ namespace ams::fatal::srv {
 
     class FatalConfig {
         private:
-            char serial_number[0x18];
-            SetSysFirmwareVersion firmware_version;
+            settings::system::SerialNumber serial_number;
+            settings::system::FirmwareVersion firmware_version;
             u64 language_code;
             u64 quest_reboot_interval_second;
             bool transition_to_fatal;
@@ -35,11 +35,11 @@ namespace ams::fatal::srv {
         public:
             FatalConfig();
 
-            const char *GetSerialNumber() const {
+            const settings::system::SerialNumber &GetSerialNumber() const {
                 return this->serial_number;
             }
 
-            const SetSysFirmwareVersion &GetFirmwareVersion() const {
+            const settings::system::FirmwareVersion &GetFirmwareVersion() const {
                 return this->firmware_version;
             }
 

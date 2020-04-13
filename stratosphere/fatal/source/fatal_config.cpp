@@ -60,8 +60,8 @@ namespace ams::fatal::srv {
         std::memset(this, 0, sizeof(*this));
 
         /* Get information from set. */
-        setsysGetSerialNumber(this->serial_number);
-        setsysGetFirmwareVersion(&this->firmware_version);
+        settings::system::GetSerialNumber(std::addressof(this->serial_number));
+        settings::system::GetFirmwareVersion(std::addressof(this->firmware_version));
         setsysGetQuestFlag(&this->quest_flag);
         this->UpdateLanguageCode();
 
