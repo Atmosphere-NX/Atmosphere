@@ -81,7 +81,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(i2cInitialize());
         R_ABORT_UNLESS(bpcInitialize());
 
-        if (hos::GetVersion() >= hos::Version_800) {
+        if (hos::GetVersion() >= hos::Version_8_0_0) {
             R_ABORT_UNLESS(clkrstInitialize());
         } else {
             R_ABORT_UNLESS(pcvInitialize());
@@ -108,7 +108,7 @@ void __appExit(void) {
     spsmExit();
     psmExit();
     lblExit();
-    if (hos::GetVersion() >= hos::Version_800) {
+    if (hos::GetVersion() >= hos::Version_8_0_0) {
         clkrstExit();
     } else {
         pcvExit();

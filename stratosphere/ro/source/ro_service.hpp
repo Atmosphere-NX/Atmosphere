@@ -54,7 +54,7 @@ namespace ams::ro {
                 MAKE_SERVICE_COMMAND_META(LoadNrr),
                 MAKE_SERVICE_COMMAND_META(UnloadNrr),
                 MAKE_SERVICE_COMMAND_META(Initialize),
-                MAKE_SERVICE_COMMAND_META(LoadNrrEx,   hos::Version_700),
+                MAKE_SERVICE_COMMAND_META(LoadNrrEx,   hos::Version_7_0_0),
             };
 
     };

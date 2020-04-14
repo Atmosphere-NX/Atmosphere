@@ -28,7 +28,7 @@ namespace ams::lr {
             static_assert(MaxRegisteredLocations >= MaxRegisteredLocationsDeprecated);
         private:
             static ALWAYS_INLINE size_t GetMaxRegisteredLocations() {
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return MaxRegisteredLocations;
                 } else {
                     return MaxRegisteredLocationsDeprecated;

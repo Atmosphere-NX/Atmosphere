@@ -49,7 +49,7 @@ namespace ams::lr {
 
             Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) {
                 AMS_ASSERT(this->interface);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return this->interface->RegisterAddOnContentStorage(id, application_id, storage_id);
                 } else {
                     return this->interface->RegisterAddOnContentStorageDeprecated(id, storage_id);

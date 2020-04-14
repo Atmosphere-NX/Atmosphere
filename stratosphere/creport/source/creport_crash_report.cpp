@@ -169,7 +169,7 @@ namespace ams::creport {
         this->process_info = d.info.attach_process;
 
         /* On 5.0.0+, we want to parse out a dying message from application crashes. */
-        if (hos::GetVersion() < hos::Version_500 || !IsApplication()) {
+        if (hos::GetVersion() < hos::Version_5_0_0 || !IsApplication()) {
             return;
         }
 
@@ -222,7 +222,7 @@ namespace ams::creport {
             case svc::DebugException_UserBreak:
                 this->result = ResultUserBreak();
                 /* Try to parse out the user break result. */
-                if (hos::GetVersion() >= hos::Version_500) {
+                if (hos::GetVersion() >= hos::Version_5_0_0) {
                     svcReadDebugProcessMemory(&this->result, this->debug_handle, d.info.exception.specific.user_break.address, sizeof(this->result));
                 }
                 break;
@@ -245,7 +245,7 @@ namespace ams::creport {
 
     void CrashReport::ProcessDyingMessage() {
         /* Dying message is only stored starting in 5.0.0. */
-        if (hos::GetVersion() < hos::Version_500) {
+        if (hos::GetVersion() < hos::Version_5_0_0) {
             return;
         }
 
@@ -313,7 +313,7 @@ namespace ams::creport {
         file.WriteFormat("    Program ID:                  %016lx\n", this->process_info.program_id);
         file.WriteFormat("    Process ID:                  %016lx\n", this->process_info.process_id);
         file.WriteFormat("    Process Flags:               %08x\n", this->process_info.flags);
-        if (hos::GetVersion() >= hos::Version_500) {
+        if (hos::GetVersion() >= hos::Version_5_0_0) {
             file.WriteFormat("    User Exception Address:      %s\n", this->module_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
         }
 
@@ -348,7 +348,7 @@ namespace ams::creport {
         this->crashed_thread.SaveToFile(file);
 
         /* Dying Message. */
-        if (hos::GetVersion() >= hos::Version_500 && this->dying_message_size != 0) {
+        if (hos::GetVersion() >= hos::Version_5_0_0 && this->dying_message_size != 0) {
             file.WriteFormat("Dying Message Info:\n");
             file.WriteFormat("    Address:                     0x%s\n", this->module_list.GetFormattedAddressString(this->dying_message_address));
             file.WriteFormat("    Size:                        0x%016lx\n", this->dying_message_size);

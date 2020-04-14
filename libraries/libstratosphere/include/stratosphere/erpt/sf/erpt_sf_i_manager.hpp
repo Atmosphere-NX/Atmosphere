@@ -41,10 +41,10 @@ namespace ams::erpt::sf {
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GetReportList),
                 MAKE_SERVICE_COMMAND_META(GetEvent),
-                MAKE_SERVICE_COMMAND_META(CleanupReports,            hos::Version_400),
-                MAKE_SERVICE_COMMAND_META(DeleteReport,              hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(GetStorageUsageStatistics, hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(GetAttachmentList,         hos::Version_800),
+                MAKE_SERVICE_COMMAND_META(CleanupReports,            hos::Version_4_0_0),
+                MAKE_SERVICE_COMMAND_META(DeleteReport,              hos::Version_5_0_0),
+                MAKE_SERVICE_COMMAND_META(GetStorageUsageStatistics, hos::Version_5_0_0),
+                MAKE_SERVICE_COMMAND_META(GetAttachmentList,         hos::Version_8_0_0),
             };
     };
 

@@ -88,8 +88,8 @@ namespace ams::mitm::fs {
             Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::DataId data_id, u8 storage_id);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(OpenSdCardFileSystem),
                 MAKE_SERVICE_COMMAND_META(OpenSaveDataFileSystem),
                 MAKE_SERVICE_COMMAND_META(OpenBisStorage),

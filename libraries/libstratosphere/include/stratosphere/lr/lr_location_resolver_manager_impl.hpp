@@ -40,7 +40,7 @@ namespace ams::lr {
                 MAKE_SERVICE_COMMAND_META(OpenLocationResolver),
                 MAKE_SERVICE_COMMAND_META(OpenRegisteredLocationResolver),
                 MAKE_SERVICE_COMMAND_META(RefreshLocationResolver),
-                MAKE_SERVICE_COMMAND_META(OpenAddOnContentLocationResolver, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(OpenAddOnContentLocationResolver, hos::Version_2_0_0),
             };
     };
 

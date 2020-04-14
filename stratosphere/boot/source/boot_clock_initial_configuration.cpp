@@ -30,7 +30,7 @@ namespace ams::boot {
 
     void SetInitialClockConfiguration() {
         /* Write mask to APBDEV_PMC_PWR_DET, then clear APBDEV_PMC_PWR_DET_VAL. */
-        const u32 mask = hos::GetVersion() >= hos::Version_600 ? InitialClockOutMask6x : InitialClockOutMask1x;
+        const u32 mask = hos::GetVersion() >= hos::Version_6_0_0 ? InitialClockOutMask6x : InitialClockOutMask1x;
         WritePmcRegister(PmcClkOutCntrl, mask, mask);
     }
 

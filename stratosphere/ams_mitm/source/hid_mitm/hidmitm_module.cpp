@@ -44,7 +44,7 @@ namespace ams::mitm::hid {
 
     void MitmModule::ThreadFunction(void *arg) {
         /* This is only necessary on 9.x+ */
-        if (hos::GetVersion() < hos::Version_900) {
+        if (hos::GetVersion() < hos::Version_9_0_0) {
             return;
         }
 

@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     }
 
     /* Don't fatal if we have extra info, or if we're 5.0.0+ and an application crashed. */
-    if (hos::GetVersion() >= hos::Version_500) {
+    if (hos::GetVersion() >= hos::Version_5_0_0) {
         if (g_crash_report.IsApplication()) {
             return EXIT_SUCCESS;
         }

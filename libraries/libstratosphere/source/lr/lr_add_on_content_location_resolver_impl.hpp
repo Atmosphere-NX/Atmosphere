@@ -26,7 +26,7 @@ namespace ams::lr {
             /* Storage for RegisteredData entries by data id. */
             RegisteredStorages<ncm::DataId, 0x800> registered_storages;
         public:
-            AddOnContentLocationResolverImpl() : registered_storages(hos::GetVersion() < hos::Version_900 ? 0x800 : 0x2) { /* ... */ }
+            AddOnContentLocationResolverImpl() : registered_storages(hos::GetVersion() < hos::Version_9_0_0 ? 0x800 : 0x2) { /* ... */ }
 
             /* Actual commands. */
             virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id) override;

@@ -89,7 +89,7 @@ namespace ams::fatal::srv {
 
             if (!this->context.is_creport) {
                 /* On firmware version 2.0.0, use debugging SVCs to collect information. */
-                if (hos::GetVersion() >= hos::Version_200) {
+                if (hos::GetVersion() >= hos::Version_2_0_0) {
                     fatal::srv::TryCollectDebugInformation(&this->context, process_id);
                 }
             } else {

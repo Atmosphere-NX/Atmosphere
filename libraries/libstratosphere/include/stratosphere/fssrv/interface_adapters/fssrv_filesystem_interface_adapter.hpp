@@ -72,7 +72,7 @@ namespace ams::fssrv::impl {
                 MAKE_SERVICE_COMMAND_META(GetSize),
 
                 /* 4.0.0- */
-                MAKE_SERVICE_COMMAND_META(OperateRange, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(OperateRange, hos::Version_4_0_0),
             };
     };
 
@@ -181,11 +181,11 @@ namespace ams::fssrv::impl {
                 MAKE_SERVICE_COMMAND_META(GetTotalSpaceSize),
 
                 /* 3.0.0- */
-                MAKE_SERVICE_COMMAND_META(CleanDirectoryRecursively, hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(GetFileTimeStampRaw,       hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(CleanDirectoryRecursively, hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(GetFileTimeStampRaw,       hos::Version_3_0_0),
 
                 /* 4.0.0- */
-                MAKE_SERVICE_COMMAND_META(QueryEntry,                hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(QueryEntry,                hos::Version_4_0_0),
             };
     };
 

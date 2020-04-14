@@ -88,7 +88,7 @@ namespace ams::boot {
         g_boot_reason = MakeBootReason(power_intr, rtc_intr & ~rtc_intr_m, nv_erc, ac_ok);
 
         /* Set boot reason for SPL. */
-        if (hos::GetVersion() >= hos::Version_300) {
+        if (hos::GetVersion() >= hos::Version_3_0_0) {
             BootReasonValue boot_reason_value;
             boot_reason_value.power_intr = power_intr;
             boot_reason_value.rtc_intr = rtc_intr & ~rtc_intr_m;

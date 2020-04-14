@@ -39,12 +39,12 @@ namespace ams::lr {
             virtual Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorageDeprecated, hos::Version_200, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorage,           hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(UnregisterAllAddOnContentPath,         hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(RefreshApplicationAddOnContent,        hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(UnregisterApplicationAddOnContent,     hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorageDeprecated, hos::Version_2_0_0, hos::Version_8_1_0),
+                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorage,           hos::Version_9_0_0),
+                MAKE_SERVICE_COMMAND_META(UnregisterAllAddOnContentPath,         hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(RefreshApplicationAddOnContent,        hos::Version_9_0_0),
+                MAKE_SERVICE_COMMAND_META(UnregisterApplicationAddOnContent,     hos::Version_9_0_0),
             };
     };
 

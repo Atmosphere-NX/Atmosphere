@@ -85,8 +85,8 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(SetConfig),
                 MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
                 MAKE_SERVICE_COMMAND_META(IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(SetBootReason,        hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(GetBootReason,        hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,        hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,        hos::Version_3_0_0),
             };
     };
 

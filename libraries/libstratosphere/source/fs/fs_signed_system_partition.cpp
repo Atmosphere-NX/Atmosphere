@@ -37,7 +37,7 @@ namespace ams::fs {
     bool IsSignedSystemPartitionOnSdCardValidDeprecated() {
         /* Ensure we only call with correct version. */
         auto version = hos::GetVersion();
-        AMS_ABORT_UNLESS(hos::Version_400 <= version && version < hos::Version_800);
+        AMS_ABORT_UNLESS(hos::Version_4_0_0 <= version && version < hos::Version_8_0_0);
 
         /* Check that the partition is valid. */
         bool is_valid;

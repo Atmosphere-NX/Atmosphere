@@ -37,7 +37,7 @@ namespace ams::fatal::srv {
 
         /* Task implementation. */
         Result AdjustClockTask::AdjustClockForModule(PcvModule module, u32 hz) {
-            if (hos::GetVersion() >= hos::Version_800) {
+            if (hos::GetVersion() >= hos::Version_8_0_0) {
                 /* On 8.0.0+, convert to module id + use clkrst API. */
                 PcvModuleId module_id;
                 R_TRY(pcvGetModuleId(&module_id, module));

@@ -113,11 +113,11 @@ namespace ams::ncm {
 
         ALWAYS_INLINE bool IsSignedSystemPartitionOnSdCardValid(const char *bis_mount_name) {
             /* Signed system partition should never be checked on < 4.0.0, as it did not exist before then. */
-            AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_400);
+            AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_4_0_0);
 
             /* If we're importing from system on SD, make sure that the signed system partition is valid. */
             const auto version = hos::GetVersion();
-            if (version >= hos::Version_800) {
+            if (version >= hos::Version_8_0_0) {
                 /* On >= 8.0.0, a simpler method was added to check validity. */
                 /* This also works on < 4.0.0 (though the system partition will never be on-sd there), */
                 /* and so this will always return false. */
@@ -156,7 +156,7 @@ namespace ams::ncm {
             R_CATCH(fs::ResultTargetNotFound) {
                 /* On 1.0.0, not all flags existed. Mask when appropriate. */
                 constexpr u32 SaveDataFlags100Mask = fs::SaveDataFlags_KeepAfterResettingSystemSaveData;
-                const u32 flags = (hos::GetVersion() >= hos::Version_200) ? (info.flags) : (info.flags & SaveDataFlags100Mask);
+                const u32 flags = (hos::GetVersion() >= hos::Version_2_0_0) ? (info.flags) : (info.flags & SaveDataFlags100Mask);
                 R_TRY(fs::CreateSystemSaveData(info.space_id, info.id, OwnerId, info.size, info.journal_size, flags));
                 R_TRY(fs::MountSystemSaveData(mount_name, info.space_id, info.id));
             }
@@ -275,7 +275,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::BuildContentMetaDatabase(StorageId storage_id) {
-        if (hos::GetVersion() <= hos::Version_400) {
+        if (hos::GetVersion() <= hos::Version_4_0_0) {
             /* Temporarily activate the database. */
             R_TRY(this->ActivateContentMetaDatabase(storage_id));
             ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
@@ -357,7 +357,7 @@ namespace ams::ncm {
         /* Ensure correct flags on the BuiltInSystem save data. */
         /* NOTE: Nintendo does not check this succeeds, and it does on older system versions. */
         /* We will not check the error, either, even though this kind of defeats the call's purpose. */
-        if (hos::GetVersion() >= hos::Version_200) {
+        if (hos::GetVersion() >= hos::Version_2_0_0) {
             EnsureBuiltInSystemSaveDataFlags();
         }
 
@@ -472,7 +472,7 @@ namespace ams::ncm {
         ContentStorageRoot *root;
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
-        if (hos::GetVersion() >= hos::Version_200) {
+        if (hos::GetVersion() >= hos::Version_2_0_0) {
             /* Obtain the content storage if already active. */
             R_UNLESS(root->content_storage, GetContentStorageNotActiveResult(storage_id));
         } else {
@@ -493,7 +493,7 @@ namespace ams::ncm {
         ContentMetaDatabaseRoot *root;
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
-        if (hos::GetVersion() >= hos::Version_200) {
+        if (hos::GetVersion() >= hos::Version_2_0_0) {
             /* Obtain the content meta database if already active. */
             R_UNLESS(root->content_meta_database, GetContentMetaDatabaseNotActiveResult(storage_id));
         } else {

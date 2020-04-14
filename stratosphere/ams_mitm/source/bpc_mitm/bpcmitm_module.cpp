@@ -49,7 +49,7 @@ namespace ams::mitm::bpc {
         }
 
         /* Create bpc mitm. */
-        const sm::ServiceName service_name = (hos::GetVersion() >= hos::Version_200) ? MitmServiceName : DeprecatedMitmServiceName;
+        const sm::ServiceName service_name = (hos::GetVersion() >= hos::Version_2_0_0) ? MitmServiceName : DeprecatedMitmServiceName;
         R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<BpcMitmService>(service_name));
 
         /* Loop forever, servicing our services. */

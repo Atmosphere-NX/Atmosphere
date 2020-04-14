@@ -40,17 +40,17 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(SetConfig),
                 MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
                 MAKE_SERVICE_COMMAND_META(IsDevelopment),
-                MAKE_SERVICE_COMMAND_META(SetBootReason,               hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(GetBootReason,               hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,               hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,               hos::Version_3_0_0),
                 MAKE_SERVICE_COMMAND_META(GenerateAesKek),
                 MAKE_SERVICE_COMMAND_META(LoadAesKey),
                 MAKE_SERVICE_COMMAND_META(GenerateAesKey),
                 MAKE_SERVICE_COMMAND_META(DecryptAesKey),
                 MAKE_SERVICE_COMMAND_META(CryptAesCtr),
                 MAKE_SERVICE_COMMAND_META(ComputeCmac),
-                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,          hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,              hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent, hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,          hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,              hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent, hos::Version_2_0_0),
             };
     };
 

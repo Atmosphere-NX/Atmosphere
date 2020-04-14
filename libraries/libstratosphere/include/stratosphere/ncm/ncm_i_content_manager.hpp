@@ -60,14 +60,14 @@ namespace ams::ncm {
                 MAKE_SERVICE_COMMAND_META(VerifyContentMetaDatabase),
                 MAKE_SERVICE_COMMAND_META(OpenContentStorage),
                 MAKE_SERVICE_COMMAND_META(OpenContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(CloseContentStorageForcibly,      hos::Version_100, hos::Version_100),
-                MAKE_SERVICE_COMMAND_META(CloseContentMetaDatabaseForcibly, hos::Version_100, hos::Version_100),
+                MAKE_SERVICE_COMMAND_META(CloseContentStorageForcibly,      hos::Version_1_0_0, hos::Version_1_0_0),
+                MAKE_SERVICE_COMMAND_META(CloseContentMetaDatabaseForcibly, hos::Version_1_0_0, hos::Version_1_0_0),
                 MAKE_SERVICE_COMMAND_META(CleanupContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(ActivateContentStorage,           hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(InactivateContentStorage,         hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(ActivateContentMetaDatabase,      hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(InactivateContentMetaDatabase,    hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(InvalidateRightsIdCache,          hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(ActivateContentStorage,           hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(InactivateContentStorage,         hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(ActivateContentMetaDatabase,      hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(InactivateContentMetaDatabase,    hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(InvalidateRightsIdCache,          hos::Version_9_0_0),
             };
     };
 

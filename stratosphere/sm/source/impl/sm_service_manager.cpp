@@ -479,7 +479,7 @@ namespace ams::sm::impl {
         /* that will never register. Thus, in the interest of not breaking every single piece of homebrew */
         /* we will provide a little first class help. */
         constexpr ServiceName ApmP = ServiceName::Encode("apm:p");
-        R_UNLESS((hos::GetVersion() < hos::Version_800) || (service != ApmP), sm::ResultNotAllowed());
+        R_UNLESS((hos::GetVersion() < hos::Version_8_0_0) || (service != ApmP), sm::ResultNotAllowed());
 
         /* Check that the process is registered and allowed to get the service. */
         if (!IsInitialProcess(process_id)) {

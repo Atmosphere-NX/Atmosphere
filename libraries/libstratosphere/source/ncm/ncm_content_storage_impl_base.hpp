@@ -35,7 +35,7 @@ namespace ams::ncm {
             }
 
             static Result GetRightsId(ncm::RightsId *out_rights_id, const Path &path) {
-                if (hos::GetVersion() >= hos::Version_300) {
+                if (hos::GetVersion() >= hos::Version_3_0_0) {
                     R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), std::addressof(out_rights_id->key_generation), path.str));
                 } else {
                     R_TRY(fs::GetRightsId(std::addressof(out_rights_id->id), path.str));

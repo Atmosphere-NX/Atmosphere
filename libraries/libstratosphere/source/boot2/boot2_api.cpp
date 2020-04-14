@@ -308,7 +308,7 @@ namespace ams::boot2 {
 
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
-        if (hos::GetVersion() >= hos::Version_200) {
+        if (hos::GetVersion() >= hos::Version_2_0_0) {
             R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
         } else {
             R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
@@ -337,7 +337,7 @@ namespace ams::boot2 {
         if (maintenance) {
             LaunchList(AdditionalMaintenanceLaunchPrograms, NumAdditionalMaintenanceLaunchPrograms);
             /* Starting in 7.0.0, npns is launched during maintenance boot. */
-            if (hos::GetVersion() >= hos::Version_700) {
+            if (hos::GetVersion() >= hos::Version_7_0_0) {
                 LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Npns, ncm::StorageId::BuiltInSystem), 0);
             }
         } else {

@@ -39,7 +39,7 @@ namespace ams::spl::impl {
 
         /* Max Keyslots helper. */
         inline size_t GetMaxKeyslots() {
-            return (hos::GetVersion() >= hos::Version_600) ? MaxAesKeyslots : MaxAesKeyslotsDeprecated;
+            return (hos::GetVersion() >= hos::Version_6_0_0) ? MaxAesKeyslots : MaxAesKeyslotsDeprecated;
         }
 
         /* Type definitions. */
@@ -203,7 +203,7 @@ namespace ams::spl::impl {
         /* Internal Keyslot utility. */
         Result ValidateAesKeyslot(u32 keyslot, const void *owner) {
             R_UNLESS(keyslot < GetMaxKeyslots(), spl::ResultInvalidKeyslot());
-            R_UNLESS((g_keyslot_owners[keyslot] == owner || hos::GetVersion() == hos::Version_100), spl::ResultInvalidKeyslot());
+            R_UNLESS((g_keyslot_owners[keyslot] == owner || hos::GetVersion() == hos::Version_1_0_0), spl::ResultInvalidKeyslot());
             return ResultSuccess();
         }
 
@@ -262,7 +262,7 @@ namespace ams::spl::impl {
 
             armDCacheFlush(layout, sizeof(*layout));
             smc::Result smc_res;
-            if (hos::GetVersion() >= hos::Version_500) {
+            if (hos::GetVersion() >= hos::Version_5_0_0) {
                 smc_res = smc::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, static_cast<smc::DecryptOrImportMode>(option));
             } else {
                 smc_res = smc::ImportSecureExpModKey(layout->data, src_size, access_key, key_source, option);
@@ -582,7 +582,7 @@ namespace ams::spl::impl {
     }
 
     Result AllocateAesKeyslot(u32 *out_keyslot, const void *owner) {
-        if (hos::GetVersion() <= hos::Version_100) {
+        if (hos::GetVersion() <= hos::Version_1_0_0) {
             /* On 1.0.0, keyslots were kind of a wild west. */
             *out_keyslot = 0;
             return ResultSuccess();
@@ -601,7 +601,7 @@ namespace ams::spl::impl {
     }
 
     Result FreeAesKeyslot(u32 keyslot, const void *owner) {
-        if (hos::GetVersion() <= hos::Version_100) {
+        if (hos::GetVersion() <= hos::Version_1_0_0) {
             /* On 1.0.0, keyslots were kind of a wild west. */
             return ResultSuccess();
         }
@@ -636,7 +636,7 @@ namespace ams::spl::impl {
 
         smc::Result smc_res;
         size_t copy_size = 0;
-        if (hos::GetVersion() >= hos::Version_500) {
+        if (hos::GetVersion() >= hos::Version_5_0_0) {
             copy_size = std::min(dst_size, src_size - RsaPrivateKeyMetaSize);
             smc_res = smc::DecryptOrImportRsaPrivateKey(layout->data, src_size, access_key, key_source, static_cast<smc::DecryptOrImportMode>(option));
         } else {
@@ -663,7 +663,7 @@ namespace ams::spl::impl {
 
     /* ES */
     Result ImportEsKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option) {
-        if (hos::GetVersion() >= hos::Version_500) {
+        if (hos::GetVersion() >= hos::Version_5_0_0) {
             return ImportSecureExpModKey(src, src_size, access_key, key_source, option);
         } else {
             struct ImportEsKeyLayout {

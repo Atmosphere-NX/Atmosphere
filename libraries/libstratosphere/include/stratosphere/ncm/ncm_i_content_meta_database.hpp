@@ -88,8 +88,8 @@ namespace ams::ncm {
                 MAKE_SERVICE_COMMAND_META(HasContent),
                 MAKE_SERVICE_COMMAND_META(ListContentMetaInfo),
                 MAKE_SERVICE_COMMAND_META(GetAttributes),
-                MAKE_SERVICE_COMMAND_META(GetRequiredApplicationVersion, hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetContentIdByTypeAndIdOffset, hos::Version_500),
+                MAKE_SERVICE_COMMAND_META(GetRequiredApplicationVersion, hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(GetContentIdByTypeAndIdOffset, hos::Version_5_0_0),
             };
     };
 

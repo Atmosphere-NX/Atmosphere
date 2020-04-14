@@ -129,7 +129,7 @@ namespace ams::os::impl {
     }
 
     void ThreadManagerHorizonImpl::YieldThread() {
-        if (hos::GetVersion() >= hos::Version_400) {
+        if (hos::GetVersion() >= hos::Version_4_0_0) {
             svc::SleepThread(svc::YieldType_WithCoreMigration);
         } else {
             svc::SleepThread(svc::YieldType_WithoutCoreMigration);

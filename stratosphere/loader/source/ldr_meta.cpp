@@ -53,7 +53,7 @@ namespace ams::ldr {
 
             /* Validate flags. */
             u32 mask = ~0x1F;
-            if (hos::GetVersion() < hos::Version_700) {
+            if (hos::GetVersion() < hos::Version_7_0_0) {
                 /* 7.0.0 added 0x10 as a valid bit to NPDM flags, so before that we only check 0xF. */
                 mask = ~0xF;
             }
@@ -167,7 +167,7 @@ namespace ams::ldr {
                     Meta *o_meta = &g_original_meta_cache.meta;
 
                     /* Fix pool partition. */
-                    if (hos::GetVersion() >= hos::Version_500) {
+                    if (hos::GetVersion() >= hos::Version_5_0_0) {
                         meta->acid->flags = (meta->acid->flags & 0xFFFFFFC3) | (o_meta->acid->flags & 0x0000003C);
                     }
 

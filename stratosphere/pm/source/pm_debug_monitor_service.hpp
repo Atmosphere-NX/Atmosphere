@@ -62,7 +62,7 @@ namespace ams::pm::dmnt {
                 MAKE_SERVICE_COMMAND_META(HookToCreateApplicationProcess),
 
                 /* 6.0.0-* */
-                MAKE_SERVICE_COMMAND_META(ClearHook, hos::Version_600),
+                MAKE_SERVICE_COMMAND_META(ClearHook, hos::Version_6_0_0),
 
                 /* Atmosphere extensions. */
                 MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessInfo),

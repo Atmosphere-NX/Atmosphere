@@ -20,7 +20,7 @@ namespace ams::sf::cmif {
     Result impl::ServiceDispatchTableBase::ProcessMessageImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
         /* Get versioning info. */
         const auto hos_version      = hos::GetVersion();
-        const u32  max_cmif_version = hos_version >= hos::Version_500 ? 1 : 0;
+        const u32  max_cmif_version = hos_version >= hos::Version_5_0_0 ? 1 : 0;
 
         /* Parse the CMIF in header. */
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());
@@ -60,7 +60,7 @@ namespace ams::sf::cmif {
     Result impl::ServiceDispatchTableBase::ProcessMessageForMitmImpl(ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const ServiceCommandMeta *entries, const size_t entry_count) const {
         /* Get versioning info. */
         const auto hos_version      = hos::GetVersion();
-        const u32  max_cmif_version = hos_version >= hos::Version_500 ? 1 : 0;
+        const u32  max_cmif_version = hos_version >= hos::Version_5_0_0 ? 1 : 0;
 
         /* Parse the CMIF in header. */
         const CmifInHeader *in_header = reinterpret_cast<const CmifInHeader *>(in_raw_data.GetPointer());

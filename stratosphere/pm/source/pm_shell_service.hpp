@@ -63,10 +63,10 @@ namespace ams::pm::shell {
                 MAKE_SERVICE_COMMAND_META(BoostSystemMemoryResourceLimit),
 
                 /* 7.0.0-* */
-                MAKE_SERVICE_COMMAND_META(BoostApplicationThreadResourceLimit, hos::Version_700),
+                MAKE_SERVICE_COMMAND_META(BoostApplicationThreadResourceLimit, hos::Version_7_0_0),
 
                 /* 8.0.0-* */
-                MAKE_SERVICE_COMMAND_META(GetBootFinishedEventHandle,          hos::Version_800),
+                MAKE_SERVICE_COMMAND_META(GetBootFinishedEventHandle,          hos::Version_8_0_0),
             };
     };
 
@@ -99,7 +99,7 @@ namespace ams::pm::shell {
                 MAKE_SERVICE_COMMAND_META(GetApplicationProcessIdForShell),
 
                 /* 4.0.0-4.1.0 */
-                MAKE_SERVICE_COMMAND_META(BoostSystemMemoryResourceLimit, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(BoostSystemMemoryResourceLimit, hos::Version_4_0_0),
             };
     };
 

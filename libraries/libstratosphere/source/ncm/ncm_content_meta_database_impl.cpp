@@ -425,7 +425,7 @@ namespace ams::ncm {
                 break;
             case ContentMetaType::Application:
                 /* As of 9.0.0, applications can be dependent on a specific base application version. */
-                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_900);
+                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_9_0_0);
                 required_version = reader.GetExtendedHeader<ApplicationMetaExtendedHeader>()->required_application_version;
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();

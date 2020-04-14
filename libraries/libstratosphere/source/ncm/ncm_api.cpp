@@ -101,12 +101,12 @@ namespace ams::ncm {
 
     /* Deprecated API. */
     Result CloseContentStorageForcibly(StorageId storage_id) {
-        AMS_ABORT_UNLESS(hos::GetVersion() == hos::Version_100);
+        AMS_ABORT_UNLESS(hos::GetVersion() == hos::Version_1_0_0);
         return g_content_manager->CloseContentStorageForcibly(storage_id);
     }
 
     Result CloseContentMetaDatabaseForcibly(StorageId storage_id) {
-        AMS_ABORT_UNLESS(hos::GetVersion() == hos::Version_100);
+        AMS_ABORT_UNLESS(hos::GetVersion() == hos::Version_1_0_0);
         return g_content_manager->CloseContentMetaDatabaseForcibly(storage_id);
     }
 }

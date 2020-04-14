@@ -37,7 +37,7 @@ namespace ams::mitm::ns {
         mitm::WaitInitialized();
 
         /* Create mitm servers. */
-        if (hos::GetVersion() < hos::Version_300) {
+        if (hos::GetVersion() < hos::Version_3_0_0) {
             R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<NsAmMitmService>(NsAmMitmServiceName));
         } else {
             R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<NsWebMitmService>(NsWebMitmServiceName));

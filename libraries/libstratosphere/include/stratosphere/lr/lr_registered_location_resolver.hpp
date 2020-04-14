@@ -49,7 +49,7 @@ namespace ams::lr {
 
             Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return this->interface->RegisterProgramPath(path, id, owner_id);
                 } else {
                     return this->interface->RegisterProgramPathDeprecated(path, id);
@@ -63,7 +63,7 @@ namespace ams::lr {
 
             void RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectProgramPath(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectProgramPathDeprecated(path, id));
@@ -77,7 +77,7 @@ namespace ams::lr {
 
             Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return this->interface->RegisterHtmlDocumentPath(path, id, owner_id);
                 } else {
                     return this->interface->RegisterHtmlDocumentPathDeprecated(path, id);
@@ -91,7 +91,7 @@ namespace ams::lr {
 
             void RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectHtmlDocumentPath(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectHtmlDocumentPathDeprecated(path, id));

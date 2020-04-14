@@ -58,7 +58,7 @@ namespace ams::ncm {
             R_SUCCEED_IF(max_level <= 0);
 
             /* On 1.0.0, NotRequireFileSize was not a valid open mode. */
-            const auto open_dir_mode = hos::GetVersion() >= hos::Version_200 ? (fs::OpenDirectoryMode_All | fs::OpenDirectoryMode_NotRequireFileSize) : (fs::OpenDirectoryMode_All);
+            const auto open_dir_mode = hos::GetVersion() >= hos::Version_2_0_0 ? (fs::OpenDirectoryMode_All | fs::OpenDirectoryMode_NotRequireFileSize) : (fs::OpenDirectoryMode_All);
 
             /* Retry traversal upon request. */
             bool retry_dir_read = true;
@@ -153,7 +153,7 @@ namespace ams::ncm {
         }
 
         Result CleanDirectoryRecursively(const PathString &path) {
-            if (hos::GetVersion() >= hos::Version_300) {
+            if (hos::GetVersion() >= hos::Version_3_0_0) {
                 R_TRY(fs::CleanDirectoryRecursively(path));
             } else {
                 /* CleanDirectoryRecursively didn't exist on < 3.0.0, so we will polyfill it. */

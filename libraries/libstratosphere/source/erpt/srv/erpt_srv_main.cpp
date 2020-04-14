@@ -40,7 +40,7 @@ namespace ams::erpt::srv {
             R_TRY(fs::GetSaveDataAvailableSize(std::addressof(cur_savedata_size), SystemSaveDataId));
 
             if (cur_journal_size < SystemSaveDataJournalSize || cur_savedata_size < SystemSaveDataSize) {
-                if (hos::GetVersion() >= hos::Version_300) {
+                if (hos::GetVersion() >= hos::Version_3_0_0) {
                     R_TRY(fs::ExtendSaveData(fs::SaveDataSpaceId::System, SystemSaveDataId, SystemSaveDataSize, SystemSaveDataJournalSize));
                 }
             }

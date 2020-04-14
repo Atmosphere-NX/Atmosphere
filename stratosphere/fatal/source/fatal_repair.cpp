@@ -22,7 +22,7 @@ namespace ams::fatal::srv {
 
         bool IsInRepair() {
             /* Before firmware 3.0.0, this wasn't implemented. */
-            if (hos::GetVersion() < hos::Version_300) {
+            if (hos::GetVersion() < hos::Version_3_0_0) {
                 return false;
             }
 
@@ -61,7 +61,7 @@ namespace ams::fatal::srv {
 
         bool NeedsRunTimeReviser() {
             /* Before firmware 5.0.0, this wasn't implemented. */
-            if (hos::GetVersion() < hos::Version_500) {
+            if (hos::GetVersion() < hos::Version_5_0_0) {
                 return false;
             }
 

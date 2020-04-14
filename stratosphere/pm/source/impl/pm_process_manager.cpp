@@ -54,7 +54,7 @@ namespace ams::pm::impl {
             LaunchFlagsDeprecated_SignalOnStart       = (1 << 5),
         };
 
-#define GET_FLAG_MASK(flag) (hos_version >= hos::Version_500 ? static_cast<u32>(LaunchFlags_##flag) : static_cast<u32>(LaunchFlagsDeprecated_##flag))
+#define GET_FLAG_MASK(flag) (hos_version >= hos::Version_5_0_0 ? static_cast<u32>(LaunchFlags_##flag) : static_cast<u32>(LaunchFlagsDeprecated_##flag))
 
         inline bool ShouldSignalOnExit(u32 launch_flags) {
             const auto hos_version = hos::GetVersion();
@@ -63,7 +63,7 @@ namespace ams::pm::impl {
 
         inline bool ShouldSignalOnStart(u32 launch_flags) {
             const auto hos_version = hos::GetVersion();
-            if (hos_version < hos::Version_200) {
+            if (hos_version < hos::Version_2_0_0) {
                 return false;
             }
             return launch_flags & GET_FLAG_MASK(SignalOnStart);
@@ -110,7 +110,7 @@ namespace ams::pm::impl {
         };
 
         inline u32 GetProcessEventValue(ProcessEvent event) {
-            if (hos::GetVersion() >= hos::Version_500) {
+            if (hos::GetVersion() >= hos::Version_5_0_0) {
                 return static_cast<u32>(event);
             }
             switch (event) {
@@ -241,7 +241,7 @@ namespace ams::pm::impl {
         inline u32 GetLoaderCreateProcessFlags(u32 launch_flags) {
             u32 ldr_flags = 0;
 
-            if (ShouldSignalOnException(launch_flags) || (hos::GetVersion() >= hos::Version_200 && !ShouldStartSuspended(launch_flags))) {
+            if (ShouldSignalOnException(launch_flags) || (hos::GetVersion() >= hos::Version_2_0_0 && !ShouldStartSuspended(launch_flags))) {
                 ldr_flags |= ldr::CreateProcessFlag_EnableDebug;
             }
             if (ShouldDisableAslr(launch_flags)) {
@@ -283,7 +283,7 @@ namespace ams::pm::impl {
             cfg::OverrideStatus override_status;
             R_TRY(ldr::pm::AtmosphereGetProgramInfo(&program_info, &override_status, args.location));
             const bool is_application = (program_info.flags & ldr::ProgramInfoFlag_ApplicationTypeMask) == ldr::ProgramInfoFlag_Application;
-            const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || hos::GetVersion() < hos::Version_200;
+            const bool allow_debug    = (program_info.flags & ldr::ProgramInfoFlag_AllowDebug) || hos::GetVersion() < hos::Version_2_0_0;
 
             /* Ensure we only try to run one application. */
             R_UNLESS(!is_application || !HasApplicationProcess(), pm::ResultApplicationRunning());
@@ -397,7 +397,7 @@ namespace ams::pm::impl {
                         process_info->ClearSuspended();
                         process_info->SetSuspendedStateChanged();
                         os::SignalSystemEvent(std::addressof(g_process_event));
-                    } else if (hos::GetVersion() >= hos::Version_200 && process_info->ShouldSignalOnStart()) {
+                    } else if (hos::GetVersion() >= hos::Version_2_0_0 && process_info->ShouldSignalOnStart()) {
                         process_info->SetStartedStateChanged();
                         process_info->ClearSignalOnStart();
                         os::SignalSystemEvent(std::addressof(g_process_event));
@@ -418,11 +418,11 @@ namespace ams::pm::impl {
                     /* Free process resources, unlink from waitable manager. */
                     process_info->Cleanup();
 
-                    if (hos::GetVersion() < hos::Version_500 && process_info->ShouldSignalOnExit()) {
+                    if (hos::GetVersion() < hos::Version_5_0_0 && process_info->ShouldSignalOnExit()) {
                         os::SignalSystemEvent(std::addressof(g_process_event));
                     } else {
                         /* Handle the case where we need to keep the process alive some time longer. */
-                        if (hos::GetVersion() >= hos::Version_500 && process_info->ShouldSignalOnExit()) {
+                        if (hos::GetVersion() >= hos::Version_5_0_0 && process_info->ShouldSignalOnExit()) {
                             /* Remove from the living list. */
                             list->Remove(process_info);
 
@@ -553,7 +553,7 @@ namespace ams::pm::impl {
                     out->process_id = process.GetProcessId();
                     return ResultSuccess();
                 }
-                if (hos::GetVersion() < hos::Version_500 && process.ShouldSignalOnExit() && process.HasTerminated()) {
+                if (hos::GetVersion() < hos::Version_5_0_0 && process.ShouldSignalOnExit() && process.HasTerminated()) {
                     out->event = GetProcessEventValue(ProcessEvent::Exited);
                     out->process_id = process.GetProcessId();
                     return ResultSuccess();
@@ -562,7 +562,7 @@ namespace ams::pm::impl {
         }
 
         /* Check for event from exited process. */
-        if (hos::GetVersion() >= hos::Version_500) {
+        if (hos::GetVersion() >= hos::Version_5_0_0) {
             ProcessListAccessor dead_list(g_dead_process_list);
 
             if (!dead_list->empty()) {

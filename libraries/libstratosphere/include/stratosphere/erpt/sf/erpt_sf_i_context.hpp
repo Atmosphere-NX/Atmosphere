@@ -54,15 +54,15 @@ namespace ams::erpt::sf {
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(SubmitContext),
                 MAKE_SERVICE_COMMAND_META(CreateReport),
-                MAKE_SERVICE_COMMAND_META(SetInitialLaunchSettingsCompletionTime,   hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(ClearInitialLaunchSettingsCompletionTime, hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(UpdatePowerOnTime,                        hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(UpdateAwakeTime,                          hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(SubmitMultipleCategoryContext,            hos::Version_500),
-                MAKE_SERVICE_COMMAND_META(UpdateApplicationLaunchTime,              hos::Version_600),
-                MAKE_SERVICE_COMMAND_META(ClearApplicationLaunchTime,               hos::Version_600),
-                MAKE_SERVICE_COMMAND_META(SubmitAttachment,                         hos::Version_800),
-                MAKE_SERVICE_COMMAND_META(CreateReportWithAttachments,              hos::Version_800),
+                MAKE_SERVICE_COMMAND_META(SetInitialLaunchSettingsCompletionTime,   hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(ClearInitialLaunchSettingsCompletionTime, hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(UpdatePowerOnTime,                        hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(UpdateAwakeTime,                          hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(SubmitMultipleCategoryContext,            hos::Version_5_0_0),
+                MAKE_SERVICE_COMMAND_META(UpdateApplicationLaunchTime,              hos::Version_6_0_0),
+                MAKE_SERVICE_COMMAND_META(ClearApplicationLaunchTime,               hos::Version_6_0_0),
+                MAKE_SERVICE_COMMAND_META(SubmitAttachment,                         hos::Version_8_0_0),
+                MAKE_SERVICE_COMMAND_META(CreateReportWithAttachments,              hos::Version_8_0_0),
             };
     };
 

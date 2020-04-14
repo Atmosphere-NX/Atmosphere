@@ -184,7 +184,7 @@ namespace ams::pm::resource {
 
         /* Adjust resource limits based on hos firmware version. */
         const auto hos_version = hos::GetVersion();
-        if (hos_version >= hos::Version_400) {
+        if (hos_version >= hos::Version_4_0_0) {
             /* 4.0.0 increased the system thread limit. */
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] += ExtraSystemThreadCount400;
             /* 4.0.0 also took memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
@@ -193,19 +193,19 @@ namespace ams::pm::resource {
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_System] += ExtraSystemMemorySize400;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize400;
         }
-        if (hos_version >= hos::Version_500) {
+        if (hos_version >= hos::Version_5_0_0) {
             /* 5.0.0 took more memory away from applet and gave it to system, for the Standard and StandardForSystemDev profiles. */
             g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_System] += ExtraSystemMemorySize500;
             g_memory_resource_limits[spl::MemoryArrangement_Standard][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize500;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_System] += ExtraSystemMemorySize500;
             g_memory_resource_limits[spl::MemoryArrangement_StandardForSystemDev][ResourceLimitGroup_Applet] -= ExtraSystemMemorySize500;
         }
-        if (hos_version >= hos::Version_600) {
+        if (hos_version >= hos::Version_6_0_0) {
             /* 6.0.0 increased the system event and session limits. */
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_EventCountMax]   += ExtraSystemEventCount600;
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount600;
         }
-        if (hos_version >= hos::Version_900) {
+        if (hos_version >= hos::Version_9_0_0) {
             /* 9.2.0 increased the system session limit. */
             /* NOTE: We don't currently support detection of minor version, so we will provide this increase on 9.0.0+. */
             /* This shouldn't impact any existing behavior in undesirable ways. */
@@ -213,7 +213,7 @@ namespace ams::pm::resource {
         }
 
         /* 7.0.0+: Calculate the number of extra application threads available. */
-        if (hos::GetVersion() >= hos::Version_700) {
+        if (hos::GetVersion() >= hos::Version_7_0_0) {
             /* See how many threads we have available. */
             s64 total_threads_available = 0;
             R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_ThreadCountMax));
@@ -231,7 +231,7 @@ namespace ams::pm::resource {
         }
 
         /* Choose and initialize memory arrangement. */
-        if (hos_version >= hos::Version_600) {
+        if (hos_version >= hos::Version_6_0_0) {
             /* 6.0.0 retrieves memory limit information from the kernel, rather than using a hardcoded profile. */
             g_memory_arrangement = spl::MemoryArrangement_Dynamic;
 
@@ -259,9 +259,9 @@ namespace ams::pm::resource {
         /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
         /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead modify the kernel, which we do */
         /* via patches in fusee-secondary. */
-        if (hos_version < hos::Version_600) {
-            const size_t extra_memory_size = hos_version == hos::Version_500 ? ExtraSystemMemorySizeAtmosphere500 : ExtraSystemMemorySizeAtmosphere;
-            const auto src_group = hos_version >= hos::Version_300 ? ResourceLimitGroup_Applet : ResourceLimitGroup_Application;
+        if (hos_version < hos::Version_6_0_0) {
+            const size_t extra_memory_size = hos_version == hos::Version_5_0_0 ? ExtraSystemMemorySizeAtmosphere500 : ExtraSystemMemorySizeAtmosphere;
+            const auto src_group = hos_version >= hos::Version_3_0_0 ? ResourceLimitGroup_Applet : ResourceLimitGroup_Application;
             for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
                 g_memory_resource_limits[i][ResourceLimitGroup_System] += extra_memory_size;
                 g_memory_resource_limits[i][src_group] -= extra_memory_size;
@@ -288,7 +288,7 @@ namespace ams::pm::resource {
         {
             std::scoped_lock lk(g_resource_limit_lock);
 
-            if (hos::GetVersion() >= hos::Version_500) {
+            if (hos::GetVersion() >= hos::Version_5_0_0) {
                 /* Starting in 5.0.0, PM does not allow for only one of the sets to fail. */
                 if (boost_size < g_system_memory_boost_size) {
                     R_TRY(svc::SetUnsafeLimit(boost_size));
@@ -338,7 +338,7 @@ namespace ams::pm::resource {
     void WaitResourceAvailable(const ldr::ProgramInfo *info) {
         if (GetResourceLimitGroup(info) == ResourceLimitGroup_Application) {
             WaitResourceAvailable(ResourceLimitGroup_Application);
-            if (hos::GetVersion() >= hos::Version_500) {
+            if (hos::GetVersion() >= hos::Version_5_0_0) {
                 WaitApplicationMemoryAvailable();
             }
         }

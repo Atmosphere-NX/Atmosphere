@@ -27,7 +27,7 @@ namespace ams::ncm {
         }
 
         bool ShouldBuildDatabase() const {
-            return hos::GetVersion() < hos::Version_400 || this->build_system_database;
+            return hos::GetVersion() < hos::Version_4_0_0 || this->build_system_database;
         }
 
         bool ShouldImportDatabaseFromSignedSystemPartitionOnSd() const {

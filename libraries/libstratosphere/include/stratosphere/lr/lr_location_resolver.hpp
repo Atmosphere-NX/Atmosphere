@@ -68,7 +68,7 @@ namespace ams::lr {
 
             void RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationControlPath(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationControlPathDeprecated(path, id));
@@ -77,7 +77,7 @@ namespace ams::lr {
 
             void RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationHtmlDocumentPath(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationHtmlDocumentPathDeprecated(path, id));
@@ -91,7 +91,7 @@ namespace ams::lr {
 
             void RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationLegalInformationPath(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationLegalInformationPathDeprecated(path, id));
@@ -105,7 +105,7 @@ namespace ams::lr {
 
             void RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationProgramPath(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationProgramPathDeprecated(path, id));
@@ -114,13 +114,13 @@ namespace ams::lr {
 
             Result ClearApplicationRedirection() {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ASSERT(hos::GetVersion() < hos::Version_900);
+                AMS_ASSERT(hos::GetVersion() < hos::Version_9_0_0);
                 return this->ClearApplicationRedirection(nullptr, 0);
             }
 
             Result ClearApplicationRedirection(const ncm::ProgramId *excluding_ids, size_t num_ids) {
                 AMS_ASSERT(this->interface != nullptr);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     return this->interface->ClearApplicationRedirection(sf::InArray<ncm::ProgramId>(excluding_ids, num_ids));
                 } else {
                     return this->interface->ClearApplicationRedirectionDeprecated();
@@ -159,7 +159,7 @@ namespace ams::lr {
 
             void RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                if (hos::GetVersion() >= hos::Version_900) {
+                if (hos::GetVersion() >= hos::Version_9_0_0) {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationProgramPathForDebug(path, id, owner_id));
                 } else {
                     R_ABORT_UNLESS(this->interface->RedirectApplicationProgramPathForDebugDeprecated(path, id));

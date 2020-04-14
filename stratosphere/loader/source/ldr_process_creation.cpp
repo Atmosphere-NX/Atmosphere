@@ -84,22 +84,22 @@ namespace ams::ldr {
 
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
             /* No version verification is done before 8.1.0. */
-            R_SUCCEED_IF(hos::GetVersion() < hos::Version_810);
+            R_SUCCEED_IF(hos::GetVersion() < hos::Version_8_1_0);
 
             /* Do version-dependent validation, if compiled to do so. */
 #ifdef LDR_VALIDATE_PROCESS_VERSION
             const MinimumProgramVersion *entries = nullptr;
             size_t num_entries = 0;
             switch (hos::GetVersion()) {
-                case hos::Version_810:
+                case hos::Version_8_1_0:
                     entries = g_MinimumProgramVersions810;
                     num_entries = g_MinimumProgramVersionsCount810;
                     break;
-                case hos::Version_900:
+                case hos::Version_9_0_0:
                     entries = g_MinimumProgramVersions900;
                     num_entries = g_MinimumProgramVersionsCount900;
                     break;
-                case hos::Version_910:
+                case hos::Version_9_1_0:
                     entries = g_MinimumProgramVersions910;
                     num_entries = g_MinimumProgramVersionsCount910;
                     break;
@@ -264,7 +264,7 @@ namespace ams::ldr {
                 flags |= svc::CreateProcessFlag_IsApplication;
 
                 /* 7.0.0+: Set OptimizeMemoryAllocation if relevant. */
-                if (hos::GetVersion() >= hos::Version_700) {
+                if (hos::GetVersion() >= hos::Version_7_0_0) {
                     if (meta_flags & Npdm::MetaFlag_OptimizeMemoryAllocation) {
                         flags |= svc::CreateProcessFlag_OptimizeMemoryAllocation;
                     }
@@ -272,7 +272,7 @@ namespace ams::ldr {
             }
 
             /* 5.0.0+ Set Pool Partition. */
-            if (hos::GetVersion() >= hos::Version_500) {
+            if (hos::GetVersion() >= hos::Version_5_0_0) {
                 switch (GetPoolPartition(meta)) {
                     case Acid::PoolPartition_Application:
                         if (IsApplet(meta)) {
@@ -293,7 +293,7 @@ namespace ams::ldr {
                     default:
                         return ResultInvalidMeta();
                 }
-            } else if (hos::GetVersion() >= hos::Version_400) {
+            } else if (hos::GetVersion() >= hos::Version_4_0_0) {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
                 if (meta->acid->flags & Acid::AcidFlag_DeprecatedUseSecureMemory) {
                     flags |= svc::CreateProcessFlag_DeprecatedUseSecureMemory;
@@ -318,7 +318,7 @@ namespace ams::ldr {
             R_TRY(GetCreateProcessFlags(&out->flags, meta, flags));
 
             /* 3.0.0+ System Resource Size. */
-            if (hos::GetVersion() >= hos::Version_300) {
+            if (hos::GetVersion() >= hos::Version_3_0_0) {
                 /* Validate size is aligned. */
                 R_UNLESS(util::IsAligned(meta->npdm->system_resource_size, os::MemoryBlockUnitSize), ResultInvalidSize());
 
@@ -374,7 +374,7 @@ namespace ams::ldr {
             /* Calculate ASLR. */
             uintptr_t aslr_start = 0;
             uintptr_t aslr_size  = 0;
-            if (hos::GetVersion() >= hos::Version_200) {
+            if (hos::GetVersion() >= hos::Version_2_0_0) {
                 switch (out_param->flags & svc::CreateProcessFlag_AddressSpaceMask) {
                     case svc::CreateProcessFlag_AddressSpace32Bit:
                     case svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:

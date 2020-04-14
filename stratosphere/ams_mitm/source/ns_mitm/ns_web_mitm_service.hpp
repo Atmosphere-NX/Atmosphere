@@ -45,7 +45,7 @@ namespace ams::mitm::ns {
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GetApplicationContentPath),
                 MAKE_SERVICE_COMMAND_META(ResolveApplicationContentPath),
-                MAKE_SERVICE_COMMAND_META(GetRunningApplicationProgramId, hos::Version_600),
+                MAKE_SERVICE_COMMAND_META(GetRunningApplicationProgramId, hos::Version_6_0_0),
             };
     };
 

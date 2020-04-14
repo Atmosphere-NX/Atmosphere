@@ -76,7 +76,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
                 Result ContinueDebugEvent(Handle debug_handle) {
-                    if (hos::GetVersion() >= hos::Version_300) {
+                    if (hos::GetVersion() >= hos::Version_3_0_0) {
                         return svcContinueDebugEvent(debug_handle, 5, nullptr, 0);
                     } else {
                         return svcLegacyContinueDebugEvent(debug_handle, 5, 0);

@@ -20,19 +20,20 @@
 namespace ams::hos {
 
     enum Version : u16 {
-        Version_Min = 0,
-        Version_100 = Version_Min,
-        Version_200 = 1,
-        Version_300 = 2,
-        Version_400 = 3,
-        Version_500 = 4,
-        Version_600 = 5,
-        Version_700 = 6,
-        Version_800 = 7,
-        Version_810 = 8,
-        Version_900 = 9,
-        Version_910 = 10,
-        Version_Current = Version_910,
+        Version_Min     = 0,
+        Version_1_0_0   = Version_Min,
+        Version_2_0_0   = 1,
+        Version_3_0_0   = 2,
+        Version_4_0_0   = 3,
+        Version_5_0_0   = 4,
+        Version_6_0_0   = 5,
+        Version_7_0_0   = 6,
+        Version_8_0_0   = 7,
+        Version_8_1_0   = 8,
+        Version_9_0_0   = 9,
+        Version_9_1_0   = 10,
+        Version_10_0_0  = 11,
+        Version_Current = Version_10_0_0,
         Version_Max = 32,
     };
 

@@ -71,7 +71,7 @@ namespace ams::fssrv::impl {
                 MAKE_SERVICE_COMMAND_META(GetSize),
 
                 /* 4.0.0- */
-                MAKE_SERVICE_COMMAND_META(OperateRange, hos::Version_400),
+                MAKE_SERVICE_COMMAND_META(OperateRange, hos::Version_4_0_0),
             };
     };
 

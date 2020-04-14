@@ -146,7 +146,7 @@ namespace ams::mitm {
             /* Backup BIS keys. */
             {
                 u64 key_generation = 0;
-                if (hos::GetVersion() >= hos::Version_500) {
+                if (hos::GetVersion() >= hos::Version_5_0_0) {
                     R_ABORT_UNLESS(splGetConfig(SplConfigItem_NewKeyGeneration, &key_generation));
                 }
 

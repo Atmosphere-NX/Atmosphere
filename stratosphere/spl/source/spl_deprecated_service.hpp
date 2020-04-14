@@ -103,26 +103,26 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKey),
                 MAKE_SERVICE_COMMAND_META(DecryptAesKey),
 
-                MAKE_SERVICE_COMMAND_META(CryptAesCtrDeprecated,          hos::Version_100, hos::Version_100),
-                MAKE_SERVICE_COMMAND_META(CryptAesCtr,                    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(CryptAesCtrDeprecated,          hos::Version_1_0_0, hos::Version_1_0_0),
+                MAKE_SERVICE_COMMAND_META(CryptAesCtr,                    hos::Version_2_0_0),
 
                 MAKE_SERVICE_COMMAND_META(ComputeCmac),
                 MAKE_SERVICE_COMMAND_META(ImportEsKey),
 
-                MAKE_SERVICE_COMMAND_META(UnwrapTitleKeyDeprecated,       hos::Version_100, hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(UnwrapTitleKey,                 hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(UnwrapTitleKeyDeprecated,       hos::Version_1_0_0, hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(UnwrapTitleKey,                 hos::Version_3_0_0),
 
                 MAKE_SERVICE_COMMAND_META(LoadTitleKey),
 
-                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKeyDeprecated, hos::Version_200, hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKey,           hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKeyDeprecated, hos::Version_2_0_0, hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKey,           hos::Version_3_0_0),
 
-                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_200),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_2_0_0),
 
-                MAKE_SERVICE_COMMAND_META(SetBootReason,                  hos::Version_300),
-                MAKE_SERVICE_COMMAND_META(GetBootReason,                  hos::Version_300),
+                MAKE_SERVICE_COMMAND_META(SetBootReason,                  hos::Version_3_0_0),
+                MAKE_SERVICE_COMMAND_META(GetBootReason,                  hos::Version_3_0_0),
             };
     };
 

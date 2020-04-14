@@ -38,7 +38,7 @@ namespace ams::erpt::sf {
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(OpenReport),
                 MAKE_SERVICE_COMMAND_META(OpenManager),
-                MAKE_SERVICE_COMMAND_META(OpenAttachment, hos::Version_800),
+                MAKE_SERVICE_COMMAND_META(OpenAttachment, hos::Version_8_0_0),
             };
     };
 

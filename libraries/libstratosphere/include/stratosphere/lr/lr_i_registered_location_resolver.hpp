@@ -56,19 +56,19 @@ namespace ams::lr {
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(ResolveProgramPath),
-                MAKE_SERVICE_COMMAND_META(RegisterProgramPathDeprecated,      hos::Version_100, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RegisterProgramPath,                hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(RegisterProgramPathDeprecated,      hos::Version_1_0_0, hos::Version_8_1_0),
+                MAKE_SERVICE_COMMAND_META(RegisterProgramPath,                hos::Version_9_0_0),
                 MAKE_SERVICE_COMMAND_META(UnregisterProgramPath),
-                MAKE_SERVICE_COMMAND_META(RedirectProgramPathDeprecated,      hos::Version_100, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectProgramPath,                hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(ResolveHtmlDocumentPath,            hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPathDeprecated, hos::Version_200, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPath,           hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(UnregisterHtmlDocumentPath,         hos::Version_200),
-                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPathDeprecated, hos::Version_200, hos::Version_810),
-                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPath,           hos::Version_900),
-                MAKE_SERVICE_COMMAND_META(Refresh,                            hos::Version_700),
-                MAKE_SERVICE_COMMAND_META(RefreshExcluding,                   hos::Version_900),
+                MAKE_SERVICE_COMMAND_META(RedirectProgramPathDeprecated,      hos::Version_1_0_0, hos::Version_8_1_0),
+                MAKE_SERVICE_COMMAND_META(RedirectProgramPath,                hos::Version_9_0_0),
+                MAKE_SERVICE_COMMAND_META(ResolveHtmlDocumentPath,            hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPathDeprecated, hos::Version_2_0_0, hos::Version_8_1_0),
+                MAKE_SERVICE_COMMAND_META(RegisterHtmlDocumentPath,           hos::Version_9_0_0),
+                MAKE_SERVICE_COMMAND_META(UnregisterHtmlDocumentPath,         hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPathDeprecated, hos::Version_2_0_0, hos::Version_8_1_0),
+                MAKE_SERVICE_COMMAND_META(RedirectHtmlDocumentPath,           hos::Version_9_0_0),
+                MAKE_SERVICE_COMMAND_META(Refresh,                            hos::Version_7_0_0),
+                MAKE_SERVICE_COMMAND_META(RefreshExcluding,                   hos::Version_9_0_0),
             };
     };
 

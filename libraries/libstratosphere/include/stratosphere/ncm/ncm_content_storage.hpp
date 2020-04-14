@@ -144,25 +144,25 @@ namespace ams::ncm {
 
             Result GetRightsId(ams::fs::RightsId *out_rights_id, PlaceHolderId placeholder_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() < hos::Version_300);
+                AMS_ABORT_UNLESS(hos::GetVersion() < hos::Version_3_0_0);
                 return this->interface->GetRightsIdFromPlaceHolderIdDeprecated(out_rights_id, placeholder_id);
             }
 
             Result GetRightsId(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_300);
+                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_3_0_0);
                 return this->interface->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id);
             }
 
             Result GetRightsId(ams::fs::RightsId *out_rights_id, ContentId content_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() < hos::Version_300);
+                AMS_ABORT_UNLESS(hos::GetVersion() < hos::Version_3_0_0);
                 return this->interface->GetRightsIdFromContentIdDeprecated(out_rights_id, content_id);
             }
 
             Result GetRightsId(ncm::RightsId *out_rights_id, ContentId content_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_300);
+                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_3_0_0);
                 return this->interface->GetRightsIdFromContentId(out_rights_id, content_id);
             }
 

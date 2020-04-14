@@ -37,37 +37,37 @@ namespace ams::hos {
 
             switch (exosphere::GetApiInfo().GetTargetFirmware()) {
                 case exosphere::TargetFirmware_100:
-                    g_hos_version = hos::Version_100;
+                    g_hos_version = hos::Version_1_0_0;
                     break;
                 case exosphere::TargetFirmware_200:
-                    g_hos_version = hos::Version_200;
+                    g_hos_version = hos::Version_2_0_0;
                     break;
                 case exosphere::TargetFirmware_300:
-                    g_hos_version = hos::Version_300;
+                    g_hos_version = hos::Version_3_0_0;
                     break;
                 case exosphere::TargetFirmware_400:
-                    g_hos_version = hos::Version_400;
+                    g_hos_version = hos::Version_4_0_0;
                     break;
                 case exosphere::TargetFirmware_500:
-                    g_hos_version = hos::Version_500;
+                    g_hos_version = hos::Version_5_0_0;
                     break;
                 case exosphere::TargetFirmware_600:
                 case exosphere::TargetFirmware_620:
-                    g_hos_version = hos::Version_600;
+                    g_hos_version = hos::Version_6_0_0;
                     break;
                 case exosphere::TargetFirmware_700:
-                    g_hos_version = hos::Version_700;
+                    g_hos_version = hos::Version_7_0_0;
                     break;
                 case exosphere::TargetFirmware_800:
-                    g_hos_version = hos::Version_800;
+                    g_hos_version = hos::Version_8_0_0;
                     break;
                 case exosphere::TargetFirmware_810:
-                    g_hos_version = hos::Version_810;
+                    g_hos_version = hos::Version_8_1_0;
                     break;
                 case exosphere::TargetFirmware_900:
-                    g_hos_version = hos::Version_900;
+                    g_hos_version = hos::Version_9_0_0;
                 case exosphere::TargetFirmware_910:
-                    g_hos_version = hos::Version_910;
+                    g_hos_version = hos::Version_9_1_0;
                     break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
@@ -85,56 +85,56 @@ namespace ams::hos {
     void SetVersionForLibnx() {
         u32 major = 0, minor = 0, micro = 0;
         switch (hos::GetVersion()) {
-            case hos::Version_100:
+            case hos::Version_1_0_0:
                 major = 1;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_200:
+            case hos::Version_2_0_0:
                 major = 2;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_300:
+            case hos::Version_3_0_0:
                 major = 3;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_400:
+            case hos::Version_4_0_0:
                 major = 4;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_500:
+            case hos::Version_5_0_0:
                 major = 5;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_600:
+            case hos::Version_6_0_0:
                 major = 6;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_700:
+            case hos::Version_7_0_0:
                 major = 7;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_800:
+            case hos::Version_8_0_0:
                 major = 8;
                 minor = 0;
                 micro = 0;
                 break;
-            case hos::Version_810:
+            case hos::Version_8_1_0:
                 major = 8;
                 minor = 1;
                 micro = 0;
                 break;
-            case hos::Version_900:
+            case hos::Version_9_0_0:
                 major = 9;
                 minor = 0;
                 micro = 0;
-            case hos::Version_910:
+            case hos::Version_9_1_0:
                 major = 9;
                 minor = 1;
                 micro = 0;

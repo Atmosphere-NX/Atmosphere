@@ -64,7 +64,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(setsysInitialize());
         R_ABORT_UNLESS(fsInitialize());
         R_ABORT_UNLESS(splInitialize());
-        if (hos::GetVersion() < hos::Version_300) {
+        if (hos::GetVersion() < hos::Version_3_0_0) {
             R_ABORT_UNLESS(pminfoInitialize());
         }
     });
@@ -76,7 +76,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     fsExit();
-    if (hos::GetVersion() < hos::Version_300) {
+    if (hos::GetVersion() < hos::Version_3_0_0) {
         pminfoExit();
     }
     setsysExit();
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
     R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
     R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
-    if (hos::GetVersion() >= hos::Version_700) {
+    if (hos::GetVersion() >= hos::Version_7_0_0) {
         R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
     }
 
