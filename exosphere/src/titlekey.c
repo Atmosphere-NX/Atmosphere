@@ -1,4 +1,4 @@
-/*expected_label_hash
+/*
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
