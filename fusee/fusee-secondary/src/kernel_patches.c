@@ -855,7 +855,7 @@ const kernel_info_t *get_kernel_info(void *kernel, size_t size) {
     return NULL;
 }
 
-void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel, void **out_ini1) {
+void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel, void **out_ini1, uint32_t target_firmware) {
     const kernel_info_t *kernel_info = get_kernel_info(_kernel, *kernel_size);
     *out_ini1 = NULL;
 
@@ -875,6 +875,12 @@ void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel
         /* Copy in our kernel loader. */
         const uint32_t kernel_ldr_offset = *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr + 8));
         memcpy((void *)((uintptr_t)_kernel + kernel_ldr_offset), kernel_ldr_bin, kernel_ldr_bin_size);
+
+        /* Set target firmware for our kernel loader. */
+        uint32_t *kldr_u32 = (uint32_t *)((uintptr_t)_kernel + kernel_ldr_offset);
+        if (kldr_u32[1] == 0x30444C4D) {
+            kldr_u32[2] = target_firmware;
+        }
 
         /* Update size. */
         *kernel_size = kernel_ldr_offset + kernel_ldr_bin_size;

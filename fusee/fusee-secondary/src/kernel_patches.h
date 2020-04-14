@@ -19,6 +19,6 @@
 
 #include "utils.h"
 
-void package2_patch_kernel(void *kernel, size_t *kernel_size, bool is_sd_kernel, void **out_ini1);
+void package2_patch_kernel(void *kernel, size_t *kernel_size, bool is_sd_kernel, void **out_ini1, uint32_t target_firmware);
 
 #endif
