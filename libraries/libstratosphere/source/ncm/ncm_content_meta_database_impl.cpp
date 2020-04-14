@@ -440,4 +440,47 @@ namespace ams::ncm {
         return this->GetContentIdImpl(out_content_id.GetPointer(), key, type, std::make_optional(id_offset));
     }
 
+    Result ContentMetaDatabaseImpl::GetCount(sf::Out<u32> out_count) {
+        R_TRY(this->EnsureEnabled());
+        out_count.SetValue(this->kvs->GetCount());
+        return ResultSuccess();
+    }
+
+    Result ContentMetaDatabaseImpl::GetOwnerApplicationId(sf::Out<ApplicationId> out_id, const ContentMetaKey &key) {
+        R_TRY(this->EnsureEnabled());
+
+        /* Ensure this type of key has an owner. */
+        R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch || key.type == ContentMetaType::AddOnContent, ncm::ResultInvalidContentMetaKey());
+    
+        /* Applications are their own owner. */
+        if (key.type == ContentMetaType::Application) {
+            out_id.SetValue({key.id});
+            return ResultSuccess();
+        }
+
+        /* Obtain the content meta for the key. */
+        const void *meta;
+        size_t meta_size;
+        R_TRY(this->GetContentMetaPointer(&meta, &meta_size, key));
+
+        /* Create a reader. */
+        ContentMetaReader reader(meta, meta_size);
+
+        /* Get the owner application id. */
+        ApplicationId owner_application_id;
+        switch (key.type) {
+            case ContentMetaType::Patch:
+                owner_application_id = reader.GetExtendedHeader<PatchMetaExtendedHeader>()->application_id;
+                break;
+            case ContentMetaType::AddOnContent:
+                owner_application_id = reader.GetExtendedHeader<AddOnContentMetaExtendedHeader>()->application_id;
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+
+        /* Set the output value. */
+        out_id.SetValue(owner_application_id);
+        return ResultSuccess();
+    }
+
 }

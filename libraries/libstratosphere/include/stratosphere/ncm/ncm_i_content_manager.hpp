@@ -16,6 +16,7 @@
 #pragma once
 #include <stratosphere/ncm/ncm_i_content_storage.hpp>
 #include <stratosphere/ncm/ncm_i_content_meta_database.hpp>
+#include <stratosphere/ncm/ncm_memory_report.hpp>
 
 namespace ams::ncm {
 
@@ -36,6 +37,7 @@ namespace ams::ncm {
                 ActivateContentMetaDatabase         = 11,
                 InactivateContentMetaDatabase       = 12,
                 InvalidateRightsIdCache             = 13,
+                GetMemoryReport                     = 14,
             };
         public:
             virtual Result CreateContentStorage(StorageId storage_id) = 0;
@@ -52,6 +54,7 @@ namespace ams::ncm {
             virtual Result ActivateContentMetaDatabase(StorageId storage_id) = 0;
             virtual Result InactivateContentMetaDatabase(StorageId storage_id) = 0;
             virtual Result InvalidateRightsIdCache() = 0;
+            virtual Result GetMemoryReport(sf::Out<MemoryReport> out) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(CreateContentStorage),
@@ -68,6 +71,7 @@ namespace ams::ncm {
                 MAKE_SERVICE_COMMAND_META(ActivateContentMetaDatabase,      hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(InactivateContentMetaDatabase,    hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(InvalidateRightsIdCache,          hos::Version_9_0_0),
+                MAKE_SERVICE_COMMAND_META(GetMemoryReport,                  hos::Version_10_0_0),
             };
     };
 

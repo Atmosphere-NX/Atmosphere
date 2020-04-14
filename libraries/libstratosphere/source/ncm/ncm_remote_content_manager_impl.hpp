@@ -89,6 +89,11 @@ namespace ams::ncm {
             virtual Result InvalidateRightsIdCache() override {
                 return ::ncmInvalidateRightsIdCache();
             }
+
+            virtual Result GetMemoryReport(sf::Out<MemoryReport> out) override {
+                /* TODO: libnx bindings */
+                AMS_ABORT();
+            }
     };
 
 }

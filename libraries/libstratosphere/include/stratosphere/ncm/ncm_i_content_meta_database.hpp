@@ -43,6 +43,8 @@ namespace ams::ncm {
                 GetAttributes                    = 18,
                 GetRequiredApplicationVersion    = 19,
                 GetContentIdByTypeAndIdOffset    = 20,
+                GetCount                         = 21,
+                GetOwnerApplicationId            = 22,
             };
         public:
             /* Actual commands. */
@@ -67,6 +69,8 @@ namespace ams::ncm {
             virtual Result GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) = 0;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) = 0;
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) = 0;
+            virtual Result GetCount(sf::Out<u32> out_count) = 0;
+            virtual Result GetOwnerApplicationId(sf::Out<ApplicationId> out_id, const ContentMetaKey &key) = 0;
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(Set),
@@ -90,6 +94,8 @@ namespace ams::ncm {
                 MAKE_SERVICE_COMMAND_META(GetAttributes),
                 MAKE_SERVICE_COMMAND_META(GetRequiredApplicationVersion, hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(GetContentIdByTypeAndIdOffset, hos::Version_5_0_0),
+                MAKE_SERVICE_COMMAND_META(GetCount,                      hos::Version_10_0_0),
+                MAKE_SERVICE_COMMAND_META(GetOwnerApplicationId,         hos::Version_10_0_0),
             };
     };
 
