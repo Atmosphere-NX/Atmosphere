@@ -98,6 +98,7 @@ namespace ams::ldr {
 
     Result LoaderService::SetEnabledProgramVerification(bool enabled) {
         ldr::SetEnabledProgramVerification(enabled);
+        return ResultSuccess();
     }
 
     /* Atmosphere commands. */

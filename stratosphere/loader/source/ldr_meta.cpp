@@ -219,7 +219,8 @@ namespace ams::ldr {
             }
         } else if (hos::GetVersion() >= hos::Version_10_0_0) {
             /* If storage id is none, there is no base code filesystem, and thus it is impossible for us to validate. */
-            if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None) {
+            /* However, if we're an application, we are guaranteed a base code filesystem. */
+            if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None || ncm::IsApplicationId(loc.program_id)) {
                 R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
                 R_TRY(LoadMetaFromFile(file, &g_original_meta_cache));
