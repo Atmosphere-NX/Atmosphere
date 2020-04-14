@@ -318,8 +318,12 @@ namespace ams::svc::aarch64::lp64 {
         return ::svcQueryPhysicalAddress(reinterpret_cast<::PhysicalMemoryInfo *>(out_info), address);
     }
 
-    ALWAYS_INLINE Result QueryIoMapping(::ams::svc::Address *out_address, ::ams::svc::PhysicalAddress physical_address, ::ams::svc::Size size) {
-        return ::svcQueryIoMapping(reinterpret_cast<u64 *>(out_address), physical_address, size);
+    ALWAYS_INLINE Result QueryIoMapping(::ams::svc::Address *out_address, ::ams::svc::Size *out_size, ::ams::svc::PhysicalAddress physical_address, ::ams::svc::Size size) {
+        return ::svcQueryIoMapping(reinterpret_cast<u64 *>(out_address), reinterpret_cast<u64 *>(out_size), physical_address, size);
+    }
+
+    ALWAYS_INLINE Result LegacyQueryIoMapping(::ams::svc::Address *out_address, ::ams::svc::PhysicalAddress physical_address, ::ams::svc::Size size) {
+        return ::svcLegacyQueryIoMapping(reinterpret_cast<u64 *>(out_address), physical_address, size);
     }
 
     ALWAYS_INLINE Result CreateDeviceAddressSpace(::ams::svc::Handle *out_handle, uint64_t das_address, uint64_t das_size) {

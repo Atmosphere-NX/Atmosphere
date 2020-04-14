@@ -604,6 +604,15 @@ namespace ams::kern::arch::arm64::init {
                 this->state.free_bitmap  = ~uintptr_t();
             }
 
+            ALWAYS_INLINE void InitializeFromState(uintptr_t state_val) {
+                if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+                    this->state = *reinterpret_cast<State *>(state_val);
+                } else {
+                    this->state.next_address = state_val;
+                    this->state.free_bitmap  = 0;
+                }
+            }
+
             ALWAYS_INLINE void GetFinalState(State *out) {
                 *out = this->state;
                 this->state = {};

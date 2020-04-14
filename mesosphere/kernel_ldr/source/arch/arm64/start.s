@@ -25,9 +25,9 @@ _start:
 __metadata_begin:
     .ascii "MLD0"                     /* Magic */
 __metadata_target_firmware:
-    .dword  0xCCCCCCCC                /* Target Firmware. */
+    .word  0xCCCCCCCC                 /* Target Firmware. */
 __metadata_reserved:
-    .dword  0xCCCCCCCC                /* Reserved. */
+    .word  0xCCCCCCCC                 /* Reserved. */
 _main:
     /* KernelLdr_Main(uintptr_t kernel_base_address, KernelMap *kernel_map, uintptr_t ini1_base_address); */
     adr x18, _start

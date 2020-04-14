@@ -87,7 +87,7 @@ namespace ams::kern::init {
         cpu::ThreadIdRegisterAccessor(0).Store();
 
         /* Restore the page allocator state setup by kernel loader. */
-        g_initial_page_allocator.Initialize(initial_page_allocator_state);
+        g_initial_page_allocator.InitializeFromState(initial_page_allocator_state);
 
         /* Ensure that the T1SZ is correct (and what we expect). */
         MESOSPHERE_INIT_ABORT_UNLESS((cpu::TranslationControlRegisterAccessor().GetT1Size() / arch::arm64::L1BlockSize) == arch::arm64::MaxPageTableEntries);
@@ -266,7 +266,9 @@ namespace ams::kern::init {
         SetupCoreLocalRegionMemoryRegions(ttbr1_table, g_initial_page_allocator);
 
         /* Finalize the page allocator, we're done allocating at this point. */
-        const KPhysicalAddress final_init_page_table_end_address = g_initial_page_allocator.GetFinalNextAddress();
+        KInitialPageAllocator::State final_init_page_table_state;
+        g_initial_page_allocator.GetFinalState(std::addressof(final_init_page_table_state));
+        const KPhysicalAddress final_init_page_table_end_address = final_init_page_table_state.next_address;
         const size_t init_page_table_region_size = GetInteger(final_init_page_table_end_address) - GetInteger(resource_end_phys_addr);
 
         /* Insert regions for the initial page table region. */

@@ -42,6 +42,8 @@ __metadata_ini_offset:
     .quad  0                          /* INI1 base address. */
 __metadata_kernelldr_offset:
     .quad  0                          /* Kernel Loader base address. */
+__metadata_target_firmware:
+    .word  0xCCCCCCCC                 /* Target firmware. */
 __metadata_kernel_layout:
     .word _start - _start             /* rx_offset */
     .word __rodata_start     - _start /* rx_end_offset */
@@ -55,9 +57,16 @@ __metadata_kernel_layout:
     .word _DYNAMIC           - _start /* dynamic_offset */
     .word __init_array_start - _start /* init_array_offset */
     .word __init_array_end   - _start /* init_array_end_offset */
-.if (. - __metadata_begin) != 0x44
+.if (. - __metadata_begin) != 0x48
     .error "Incorrect Mesosphere Metadata"
 .endif
+
+.global     _ZN3ams4kern17GetTargetFirmwareEv
+.type       _ZN3ams4kern17GetTargetFirmwareEv, %function
+_ZN3ams4kern17GetTargetFirmwareEv:
+    adr x0, __metadata_target_firmware
+    ldr x0, [x0]
+    ret
 
 /* ams::kern::init::StartCore0(uintptr_t, uintptr_t) */
 .section    .crt0.text._ZN3ams4kern4init10StartCore0Emm, "ax", %progbits

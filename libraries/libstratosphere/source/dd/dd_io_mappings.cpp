@@ -22,10 +22,19 @@ namespace ams::dd {
         const u64 aligned_addr = util::AlignDown(phys_addr, os::MemoryPageSize);
         const size_t offset = phys_addr - aligned_addr;
         const u64 aligned_size = size + offset;
-        R_TRY_CATCH(svcQueryIoMapping(&virtual_addr, aligned_addr, aligned_size)) {
-            /* Official software handles this by returning 0. */
-            R_CATCH(svc::ResultNotFound) { return 0; }
-        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+        if (hos::GetVersion() >= hos::Version_10_0_0) {
+            u64 region_size;
+            R_TRY_CATCH(svcQueryIoMapping(&virtual_addr, &region_size, aligned_addr, aligned_size)) {
+                /* Official software handles this by returning 0. */
+                R_CATCH(svc::ResultNotFound) { exosphere::ForceRebootToRcm(); return 0; }
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+            AMS_ASSERT(region_size >= aligned_size);
+        } else {
+            R_TRY_CATCH(svcLegacyQueryIoMapping(&virtual_addr, aligned_addr, aligned_size)) {
+                /* Official software handles this by returning 0. */
+                R_CATCH(svc::ResultNotFound) { return 0; }
+            } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+        }
 
         return static_cast<uintptr_t>(virtual_addr + offset);
     }
