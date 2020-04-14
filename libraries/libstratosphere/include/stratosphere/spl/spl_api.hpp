@@ -21,6 +21,7 @@ namespace ams::spl {
 
     HardwareType GetHardwareType();
     MemoryArrangement GetMemoryArrangement();
+    bool IsDisabledProgramVerification();
     bool IsDevelopmentHardware();
     bool IsDevelopmentFunctionEnabled();
     bool IsMariko();

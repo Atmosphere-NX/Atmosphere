@@ -41,6 +41,12 @@ namespace ams::spl {
         }
     }
 
+    bool IsDisabledProgramVerification() {
+        u64 val = 0;
+        R_ABORT_UNLESS(splGetConfig(SplConfigItem_DisableProgramVerification, &val));
+        return val != 0;
+    }
+
     bool IsDevelopmentHardware() {
         bool is_dev_hardware;
         R_ABORT_UNLESS(splIsDevelopment(&is_dev_hardware));

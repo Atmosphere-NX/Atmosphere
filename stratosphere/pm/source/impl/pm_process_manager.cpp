@@ -705,6 +705,16 @@ namespace ams::pm::impl {
     Result NotifyBootFinished() {
         static bool g_has_boot_finished = false;
         if (!g_has_boot_finished) {
+            /* Set program verification disabled, if we should. */
+            /* NOTE: Nintendo does not check the result of this. */
+            if (spl::IsDisabledProgramVerification()) {
+                if (hos::GetVersion() >= hos::Version_10_0_0) {
+                    ldr::pm::SetEnabledProgramVerification(false);
+                } else {
+                    fsprSetEnabledProgramVerification(false);
+                }
+            }
+
             boot2::LaunchPreSdCardBootProgramsAndBoot2();
             g_has_boot_finished = true;
             os::SignalSystemEvent(std::addressof(g_boot_finished_event));
