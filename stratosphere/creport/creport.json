@@ -23,6 +23,7 @@
         "erpt:c",
         "fatal:u",
         "ns:dev",
+        "pgl",
         "time:*",
         "fsp-srv"
     ],
