@@ -26,4 +26,9 @@ namespace ams::fs {
     Result GetSaveDataFlags(u32 *out, SaveDataSpaceId space_id, SaveDataId id);
     Result SetSaveDataFlags(SaveDataId id, SaveDataSpaceId space_id, u32 flags);
 
+    Result GetSaveDataAvailableSize(s64 *out, SaveDataId id);
+    Result GetSaveDataJournalSize(s64 *out, SaveDataId id);
+
+    Result ExtendSaveData(SaveDataSpaceId space_id, SaveDataId id, s64 available_size, s64 journal_size);
+
 }

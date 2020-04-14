@@ -21,20 +21,60 @@
 namespace ams::util {
 
     struct Uuid {
-        static constexpr size_t Size = 0x10;
+        static constexpr size_t Size       = 0x10;
+        static constexpr size_t StringSize = sizeof("XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX");
 
         u8 data[Size];
 
-        bool operator==(const Uuid &rhs) const {
-            return std::memcmp(this->data, rhs.data, Size) == 0;
+        friend bool operator==(const Uuid &lhs, const Uuid &rhs) {
+            return std::memcmp(lhs.data, rhs.data, Size) == 0;
         }
 
-        bool operator!=(const Uuid &rhs) const {
-            return !(*this == rhs);
+        friend bool operator!=(const Uuid &lhs, const Uuid &rhs) {
+            return !(lhs == rhs);
         }
 
-        u8 operator[](size_t i) const {
-            return this->data[i];
+        const char *ToString(char *dst, size_t dst_size) const {
+            std::snprintf(dst, dst_size, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                         this->data[ 0], this->data[ 1], this->data[ 2], this->data[ 3], this->data[ 4], this->data[ 5], this->data[ 6], this->data[ 7],
+                         this->data[ 8], this->data[ 9], this->data[10], this->data[11], this->data[12], this->data[13], this->data[14], this->data[15]);
+
+            return dst;
+        }
+
+        void FromString(const char *str) {
+            char buf[2 + 1] = {};
+            char *end;
+            s32 i = 0;
+
+            for (/* ... */; i <  4; ++i, str += 2) {
+                std::memcpy(buf, str, 2);
+                this->data[i] = static_cast<u8>(std::strtoul(buf, std::addressof(end), 16));
+            }
+            ++str;
+
+            for (/* ... */; i <  6; ++i, str += 2) {
+                std::memcpy(buf, str, 2);
+                this->data[i] = static_cast<u8>(std::strtoul(buf, std::addressof(end), 16));
+            }
+            ++str;
+
+            for (/* ... */; i <  8; ++i, str += 2) {
+                std::memcpy(buf, str, 2);
+                this->data[i] = static_cast<u8>(std::strtoul(buf, std::addressof(end), 16));
+            }
+            ++str;
+
+            for (/* ... */; i < 10; ++i, str += 2) {
+                std::memcpy(buf, str, 2);
+                this->data[i] = static_cast<u8>(std::strtoul(buf, std::addressof(end), 16));
+            }
+            ++str;
+
+            for (/* ... */; i < 16; ++i, str += 2) {
+                std::memcpy(buf, str, 2);
+                this->data[i] = static_cast<u8>(std::strtoul(buf, std::addressof(end), 16));
+            }
         }
     };
 

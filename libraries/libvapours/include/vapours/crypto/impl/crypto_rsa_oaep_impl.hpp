@@ -71,6 +71,39 @@ namespace ams::crypto::impl {
         public:
             RsaOaepImpl() { /* ... */ }
 
+            void Encode(void *dst, size_t dst_size, Hash *hash, const void *src, size_t src_size, const void *salt, size_t salt_size) {
+                u8 label_digest[HashSize];
+                ON_SCOPE_EXIT { ClearMemory(label_digest, HashSize); };
+
+                hash->GetHash(label_digest, HashSize);
+                return this->Encode(dst, dst_size, label_digest, sizeof(label_digest), src, src_size, salt, salt_size);
+            }
+
+            void Encode(void *dst, size_t dst_size, const void *label_digest, size_t label_digest_size, const void *src, size_t src_size, const void *salt, size_t salt_size) {
+                /* Check our preconditions. */
+                AMS_ASSERT(dst_size >= 2 * HashSize + 2 + src_size);
+                AMS_ASSERT(salt_size > 0);
+                AMS_ASSERT(salt_size == HashSize);
+                AMS_ASSERT(label_digest_size == HashSize);
+
+                u8 *buf = static_cast<u8 *>(dst);
+                buf[0] = HeadMagic;
+
+                u8 *seed = buf + 1;
+                std::memcpy(seed, salt, HashSize);
+
+                u8 *db = seed + HashSize;
+                std::memcpy(db, label_digest, HashSize);
+                std::memset(db + HashSize, 0, dst_size - 2 * HashSize - 2 - src_size);
+
+                u8 *msg = buf + dst_size - src_size - 1;
+                *(msg++) = 0x01;
+                std::memcpy(msg, src, src_size);
+
+                ApplyMGF1(db, dst_size - (1 + HashSize), seed, HashSize);
+                ApplyMGF1(seed, HashSize, db, dst_size - (1 + HashSize));
+            }
+
             size_t Decode(void *dst, size_t dst_size, const void *label_digest, size_t label_digest_size, u8 *buf, size_t buf_size) {
                 /* Check our preconditions. */
                 AMS_ABORT_UNLESS(dst_size > 0);
