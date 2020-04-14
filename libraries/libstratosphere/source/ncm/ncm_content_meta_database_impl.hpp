@@ -49,6 +49,8 @@ namespace ams::ncm {
             virtual Result GetAttributes(sf::Out<u8> out_attributes, const ContentMetaKey &key) override;
             virtual Result GetRequiredApplicationVersion(sf::Out<u32> out_version, const ContentMetaKey &key) override;
             virtual Result GetContentIdByTypeAndIdOffset(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type, u8 id_offset) override;
+            virtual Result GetCount(sf::Out<u32> out_count) override;
+            virtual Result GetOwnerApplicationId(sf::Out<ApplicationId> out_id, const ContentMetaKey &key) override;
     };
 
 }

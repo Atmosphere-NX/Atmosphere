@@ -33,6 +33,7 @@
 #include <stratosphere/ncm/ncm_install_task_base.hpp>
 #include <stratosphere/ncm/ncm_install_task_data.hpp>
 #include <stratosphere/ncm/ncm_install_task_occupied_size.hpp>
+#include <stratosphere/ncm/ncm_memory_report.hpp>
 #include <stratosphere/ncm/ncm_package_install_task_base.hpp>
 #include <stratosphere/ncm/ncm_package_install_task.hpp>
 #include <stratosphere/ncm/ncm_package_system_update_task.hpp>

@@ -614,7 +614,7 @@ namespace ams::ncm {
 
         if (storage_id == StorageId::GameCard) {
             /* Initialize the key value store. */
-            R_TRY(root->kvs->Initialize(root->max_content_metas, root->memory_resource->Get()));
+            R_TRY(root->kvs->Initialize(root->max_content_metas, root->memory_resource));
 
             /* Create an on memory content meta database for game cards. */
             root->content_meta_database = std::make_shared<OnMemoryContentMetaDatabaseImpl>(std::addressof(*root->kvs));
@@ -626,7 +626,7 @@ namespace ams::ncm {
             auto mount_guard = SCOPE_GUARD { fs::Unmount(root->mount_name); };
 
             /* Initialize and load the key value store from the filesystem. */
-            R_TRY(root->kvs->Initialize(root->path, root->max_content_metas, root->memory_resource->Get()));
+            R_TRY(root->kvs->Initialize(root->path, root->max_content_metas, root->memory_resource));
             R_TRY(root->kvs->Load());
 
             /* Create the content meta database. */
@@ -662,6 +662,38 @@ namespace ams::ncm {
 
     Result ContentManagerImpl::InvalidateRightsIdCache() {
         this->rights_id_cache.Invalidate();
+        return ResultSuccess();
+    }
+
+    Result ContentManagerImpl::GetMemoryReport(sf::Out<MemoryReport> out) {
+        /* Populate content meta resource states. */
+        MemoryReport report = {
+            .system_content_meta_resource_state = {
+                .peak_total_alloc_size = g_system_content_meta_memory_resource.GetPeakTotalAllocationSize(),
+                .peak_alloc_size       = g_system_content_meta_memory_resource.GetPeakAllocationSize(),
+                .allocatable_size      = g_system_content_meta_memory_resource.GetAllocator()->GetAllocatableSize(),
+                .total_free_size       = g_system_content_meta_memory_resource.GetAllocator()->GetTotalFreeSize(),
+            },
+            .sd_and_user_content_meta_resource_state {
+                .peak_total_alloc_size = g_sd_and_user_content_meta_memory_resource.GetPeakTotalAllocationSize(),
+                .peak_alloc_size       = g_sd_and_user_content_meta_memory_resource.GetPeakAllocationSize(),
+                .allocatable_size      = g_sd_and_user_content_meta_memory_resource.GetAllocator()->GetAllocatableSize(),
+                .total_free_size       = g_sd_and_user_content_meta_memory_resource.GetAllocator()->GetTotalFreeSize(),
+            },
+            .gamecard_content_meta_resource_state {
+                .peak_total_alloc_size = g_gamecard_content_meta_memory_resource.GetPeakTotalAllocationSize(),
+                .peak_alloc_size       = g_gamecard_content_meta_memory_resource.GetPeakAllocationSize(),
+                .allocatable_size      = g_gamecard_content_meta_memory_resource.GetAllocator()->GetAllocatableSize(),
+                .total_free_size       = g_gamecard_content_meta_memory_resource.GetAllocator()->GetTotalFreeSize(),
+            },
+            .heap_resource_state = {},
+        };
+
+        /* Populate heap memory resource state. */
+        GetHeapState().GetMemoryResourceState(std::addressof(report.heap_resource_state));
+
+        /* Output the report. */
+        out.SetValue(report);
         return ResultSuccess();
     }
 

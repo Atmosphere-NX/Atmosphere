@@ -156,6 +156,16 @@ namespace ams::ncm {
                 return ncmContentMetaDatabaseGetContentIdByTypeAndIdOffset(std::addressof(this->srv), Convert(out_content_id.GetPointer()), Convert(key), static_cast<::NcmContentType>(type), id_offset);
             }
 
+            virtual Result GetCount(sf::Out<u32> out_count) override {
+                /* TODO: libnx bindings */
+                AMS_ABORT();
+            }
+
+            virtual Result GetOwnerApplicationId(sf::Out<ApplicationId> out_id, const ContentMetaKey &key) override {
+                /* TODO: libnx bindings */
+                AMS_ABORT();
+            }
+
     };
 
 }
