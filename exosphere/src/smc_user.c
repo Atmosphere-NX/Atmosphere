@@ -34,11 +34,92 @@
 
 /* Globals. */
 static bool g_crypt_aes_done = false;
-static bool g_exp_mod_done = false;
+static uint32_t g_exp_mod_result = 0;
 
 static uint8_t g_imported_exponents[4][0x100];
+static uint8_t g_imported_moduli[4][0x100];
+static bool g_is_modulus_verified[4];
+
+static const uint8_t g_rsa_public_key[4] = { 0x00, 0x01, 0x00, 0x01 };
+
+static const uint8_t g_rsa_test_vector[0x100] = {
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+    'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D'
+};
+
+static uint32_t g_test_exp_mod_keyslot = 0;
+static uint32_t g_test_exp_mod_usecase = 0;
+static bool g_test_exp_mod_in_progress = false;
 
 static uint8_t g_rsausecase_to_cryptousecase[5] = {1, 2, 3, 5, 6};
+
+static void import_rsa_exponent(unsigned int which, const uint8_t *exponent, uint64_t size) {
+    g_is_modulus_verified[which] = false;
+    for (unsigned int i = 0; i < 0x100; i++) {
+        g_imported_exponents[which][i] = exponent[i];
+        g_imported_moduli[which][i]    = 0;
+    }
+}
+
+static void import_rsa_modulus(unsigned int which, const uint8_t *modulus, uint64_t size) {
+    uint64_t clamped_size = 0x100;
+    if (size <= 0x100) {
+        clamped_size = size;
+    }
+    if (clamped_size != 0) {
+        /* The official secure monitor implements this via bit-fiddling, */
+        /* and to prevent accidental inaccuracy we will too. */
+        /* It's probably done to prevent errors on negative sizes. */
+        uint64_t remaining = 0x100;
+        if (size != 0x100 && (~size >= ~0xFFFFFFFFFFFFFEFFULL)) {
+            remaining = size;
+        }
+        memcpy(&g_imported_moduli[which][0], modulus, remaining);
+    }
+}
+
+static bool load_imported_rsa_keypair(unsigned int keyslot, unsigned int which) {
+    if (!g_is_modulus_verified[which]) {
+        return false;
+    }
+    set_rsa_keyslot(keyslot, g_imported_moduli[which], 0x100, g_imported_exponents[which], 0x100);
+    return true;
+}
+
+static void test_rsa_modulus_public(unsigned int which, unsigned int keyslot, const uint8_t *modulus, uint64_t modulus_size, unsigned int (*callback)(void)) {
+    import_rsa_modulus(which, modulus, modulus_size);
+    set_rsa_keyslot(keyslot, modulus, modulus_size, g_rsa_public_key, 0x4);
+    se_exp_mod(keyslot, g_rsa_test_vector, 0x100, callback);
+}
+
+static void test_rsa_modulus_private(unsigned int which, unsigned int keyslot, unsigned int (*callback)(void)) {
+    uint8_t exponentiated_data[0x100];
+    se_get_exp_mod_output(exponentiated_data, sizeof(exponentiated_data));
+    set_rsa_keyslot(keyslot, g_imported_moduli[which], 0x100, g_imported_exponents[which], 0x100);
+    se_exp_mod(keyslot, exponentiated_data, 0x100, callback);
+}
+
+static void validate_rsa_result(unsigned int which) {
+    char result[0x100];
+    se_get_exp_mod_output(result, sizeof(result));
+    if (memcmp(result, g_rsa_test_vector, sizeof(result)) == 0) {
+        g_is_modulus_verified[which] = true;
+    }
+}
 
 static bool is_user_keyslot_valid(unsigned int keyslot) {
     switch (exosphere_get_target_firmware()) {
@@ -55,23 +136,41 @@ static bool is_user_keyslot_valid(unsigned int keyslot) {
         case ATMOSPHERE_TARGET_FIRMWARE_810:
         case ATMOSPHERE_TARGET_FIRMWARE_900:
         case ATMOSPHERE_TARGET_FIRMWARE_910:
+        case ATMOSPHERE_TARGET_FIRMWARE_1000:
         default:
             return keyslot <= 5;
     }
 }
 
-void set_exp_mod_done(bool done) {
-    g_exp_mod_done = done;
+void set_exp_mod_result(uint32_t result) {
+    g_exp_mod_result = result;
 }
 
-bool get_exp_mod_done(void) {
-    return g_exp_mod_done;
+uint32_t get_exp_mod_result(void) {
+    return g_exp_mod_result;
 }
 
 uint32_t exp_mod_done_handler(void) {
-    set_exp_mod_done(true);
+    set_exp_mod_result(0);
 
     se_trigger_interrupt();
+
+    return 0;
+}
+
+static uint32_t test_exp_mod_done_handler(void) {
+    if (g_test_exp_mod_in_progress) {
+        g_test_exp_mod_in_progress = false;
+        test_rsa_modulus_private(g_test_exp_mod_usecase, g_test_exp_mod_keyslot, test_exp_mod_done_handler);
+    } else {
+        validate_rsa_result(g_test_exp_mod_usecase);
+        if (load_imported_rsa_keypair(g_test_exp_mod_keyslot, g_test_exp_mod_usecase)) {
+            se_exp_mod(g_test_exp_mod_keyslot, g_rsa_shared_data.storage_exp_mod.user_data, 0x100, exp_mod_done_handler);
+        } else {
+            set_exp_mod_result(2);
+            se_trigger_interrupt();
+        }
+    }
 
     return 0;
 }
@@ -108,7 +207,8 @@ uint32_t user_exp_mod(smc_args_t *args) {
         return 2;
     }
 
-    set_exp_mod_done(false);
+    set_exp_mod_result(3);
+
     /* Hardcode RSA keyslot 0. */
     set_rsa_keyslot(0, modulus, 0x100, exponent, exponent_size);
     se_exp_mod(0, input, 0x100, exp_mod_done_handler);
@@ -650,10 +750,21 @@ uint32_t user_secure_exp_mod(smc_args_t *args) {
         return 2;
     }
 
-    set_exp_mod_done(false);
+    set_exp_mod_result(3);
+
     /* Hardcode RSA keyslot 0. */
-    set_rsa_keyslot(0, modulus, 0x100, g_imported_exponents[exponent_id], 0x100);
-    se_exp_mod(0, input, 0x100, exp_mod_done_handler);
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_1000) {
+        set_rsa_keyslot(0, modulus, 0x100, g_imported_exponents[exponent_id], 0x100);
+        se_exp_mod(0, input, 0x100, exp_mod_done_handler);
+    } else if (load_imported_rsa_keypair(0, exponent_id)) {
+        se_exp_mod(0, input, 0x100, exp_mod_done_handler);
+    } else {
+        memcpy(g_rsa_shared_data.storage_exp_mod.user_data, input, 0x100);
+        g_test_exp_mod_keyslot     = 0;
+        g_test_exp_mod_usecase     = exponent_id;
+        g_test_exp_mod_in_progress = true;
+        test_rsa_modulus_public(exponent_id, 0, modulus, 0x100, test_exp_mod_done_handler);
+    }
 
     return 0;
 }
@@ -700,7 +811,7 @@ uint32_t user_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {
         return 2;
     }
 
-    set_exp_mod_done(false);
+    set_exp_mod_result(3);
 
     /* Expected label_hash occupies args->X[3] to args->X[6]. */
     tkey_set_expected_label_hash(&args->X[3]);
@@ -879,6 +990,7 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
     }
 
     unsigned int exponent_id;
+    bool import_modulus;
 
     switch (usecase) {
         case 0:
@@ -888,22 +1000,33 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args) {
             return 0;
         case 1:
             exponent_id = 1;
+            import_modulus = false;
             break;
         case 2:
             exponent_id = 0;
+            import_modulus = true;
             break;
         case 3:
             exponent_id = 2;
+            import_modulus = false;
             break;
         case 4:
             exponent_id = 3;
+            import_modulus = true;
             break;
         default:
             generic_panic();
     }
 
-    /* Copy key to global. */
-    memcpy(g_imported_exponents[exponent_id], user_data, 0x100);
+    /* Modulus import isn't implemented on < 10.0.0. */
+    import_modulus &= (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_1000);
+
+    /* Import the key. */
+    import_rsa_exponent(exponent_id, user_data, 0x100);
+    if (import_modulus) {
+        import_rsa_modulus(exponent_id, user_data + 0x100, 0x100);
+        g_is_modulus_verified[exponent_id] = true;
+    }
     return 0;
 
 }

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_SMC_USER_H
 #define EXOSPHERE_SMC_USER_H
 
@@ -41,7 +41,7 @@ uint32_t user_decrypt_or_import_rsa_key(smc_args_t *args);
 void set_crypt_aes_done(bool done);
 bool get_crypt_aes_done(void);
 
-void set_exp_mod_done(bool done);
-bool get_exp_mod_done(void);
+void set_exp_mod_result(uint32_t result);
+uint32_t get_exp_mod_result(void);
 
 #endif

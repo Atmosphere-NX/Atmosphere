@@ -1,4 +1,4 @@
-/*
+/*expected_label_hash
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <string.h>
 
@@ -25,14 +25,10 @@
 #include "masterkey.h"
 #include "se.h"
 
-static uint64_t g_tkey_expected_label_hash[4];
-static unsigned int g_tkey_master_key_rev = MASTERKEY_REVISION_MAX;
-static unsigned int g_tkey_type = 0;
-
 /* Set the expected db prefix. */
 void tkey_set_expected_label_hash(uint64_t *label_hash) {
     for (unsigned int i = 0; i < 4; i++) {
-        g_tkey_expected_label_hash[i] = label_hash[i];
+        g_rsa_shared_data.unwrap_titlekey.expected_label_hash[i] = label_hash[i];
     }
 }
 
@@ -40,7 +36,7 @@ void tkey_set_master_key_rev(unsigned int master_key_rev) {
     if (master_key_rev >= MASTERKEY_REVISION_MAX) {
         generic_panic();
     }
-    g_tkey_master_key_rev = master_key_rev;
+    g_rsa_shared_data.unwrap_titlekey.master_key_rev = master_key_rev;
 }
 
 static void tkey_validate_type(unsigned int type) {
@@ -51,7 +47,7 @@ static void tkey_validate_type(unsigned int type) {
 
 void tkey_set_type(unsigned int type) {
     tkey_validate_type(type);
-    g_tkey_type = type;
+    g_rsa_shared_data.unwrap_titlekey.type = type;
 }
 
 /* Reference for MGF1 can be found here: https://en.wikipedia.org/wiki/Mask_generation_function#MGF1 */
@@ -116,7 +112,7 @@ size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_si
     uint8_t *db = message + 0x21;
 
     /* This will be passed to smc_unwrap_rsa_oaep_wrapped_titlekey. */
-    uint8_t *expected_label_hash = (uint8_t *)(&g_tkey_expected_label_hash[0]);
+    uint8_t *expected_label_hash = (uint8_t *)(&g_rsa_shared_data.unwrap_titlekey.expected_label_hash[0]);
 
     /* Unmask the salt. */
     calculate_mgf1_and_xor(salt, 0x20, db, 0xDF);
@@ -171,13 +167,13 @@ static const uint8_t titlekek_sources[TITLEKEY_TYPE_MAX+1][0x10] = {
 };
 
 void tkey_aes_unwrap(void *dst, size_t dst_size, const void *src, size_t src_size) {
-    if (g_tkey_master_key_rev >= MASTERKEY_REVISION_MAX || dst_size != 0x10 || src_size != 0x10) {
+    if (g_rsa_shared_data.unwrap_titlekey.master_key_rev >= MASTERKEY_REVISION_MAX || dst_size != 0x10 || src_size != 0x10) {
         generic_panic();
     }
-    
+
     /* Generate the appropriate titlekek into keyslot 9. */
-    unsigned int master_keyslot = mkey_get_keyslot(g_tkey_master_key_rev);
-    decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, master_keyslot, titlekek_sources[g_tkey_type], 0x10);
+    unsigned int master_keyslot = mkey_get_keyslot(g_rsa_shared_data.unwrap_titlekey.master_key_rev);
+    decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, master_keyslot, titlekek_sources[g_rsa_shared_data.unwrap_titlekey.type], 0x10);
 
     /* Unwrap the titlekey using the titlekek. */
     se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, dst, 0x10, src, 0x10);

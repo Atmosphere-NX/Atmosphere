@@ -149,6 +149,7 @@ static void setup_se(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_810:
         case ATMOSPHERE_TARGET_FIRMWARE_900:
         case ATMOSPHERE_TARGET_FIRMWARE_910:
+        case ATMOSPHERE_TARGET_FIRMWARE_1000:
             derive_new_device_keys(KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY);
             break;
     }
@@ -338,7 +339,7 @@ static bool validate_package2_metadata(package2_meta_t *metadata) {
 
     /* Perform version checks. */
     /* We will be compatible with all package2s released before current, but not newer ones. */
-    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_910_CURRENT) {
+    if (metadata->version_max >= PACKAGE2_MINVER_THEORETICAL && metadata->version_min < PACKAGE2_MAXVER_1000_CURRENT) {
         return true;
     }
 
@@ -466,6 +467,7 @@ static void copy_warmboot_bin_to_dram() {
         case ATMOSPHERE_TARGET_FIRMWARE_810:
         case ATMOSPHERE_TARGET_FIRMWARE_900:
         case ATMOSPHERE_TARGET_FIRMWARE_910:
+        case ATMOSPHERE_TARGET_FIRMWARE_1000:
             warmboot_src = (uint8_t *)0x4003E000;
             break;
     }
@@ -550,6 +552,9 @@ void load_package2(coldboot_crt0_reloc_list_t *reloc_list) {
                 break;
             case ATMOSPHERE_TARGET_FIRMWARE_910:
                 MAKE_REG32(PMC_BASE + 0x360) = 0x18C;
+                break;
+            case ATMOSPHERE_TARGET_FIRMWARE_1000:
+                MAKE_REG32(PMC_BASE + 0x360) = 0x1AD;
                 break;
         }
     }

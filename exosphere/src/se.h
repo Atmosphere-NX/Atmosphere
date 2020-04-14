@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_SE_H
 #define EXOSPHERE_SE_H
 
@@ -213,7 +213,7 @@ void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, co
 void se_calculate_sha256(void *dst, const void *src, size_t src_size);
 
 /* RSA API */
-void se_exp_mod(unsigned int keyslot, void *buf, size_t size, unsigned int (*callback)(void));
+void se_exp_mod(unsigned int keyslot, const void *buf, size_t size, unsigned int (*callback)(void));
 void se_get_exp_mod_output(void *buf, size_t size);
 void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 bool se_rsa2048_pss_verify(const void *signature, size_t signature_size, const void *modulus, size_t modulus_size, const void *data, size_t data_size);

@@ -188,6 +188,7 @@ void set_version_specific_smcs(void) {
         case ATMOSPHERE_TARGET_FIRMWARE_810:
         case ATMOSPHERE_TARGET_FIRMWARE_900:
         case ATMOSPHERE_TARGET_FIRMWARE_910:
+        case ATMOSPHERE_TARGET_FIRMWARE_1000:
             /* No more LoadSecureExpModKey. */
             g_smc_user_table[0xE].handler = NULL;
             g_smc_user_table[0xC].id = 0xC300D60C;
@@ -433,19 +434,18 @@ uint32_t smc_get_result(smc_args_t *args) {
 }
 
 uint32_t smc_exp_mod_get_result(void *buf, uint64_t size) {
-    if (get_exp_mod_done() != 1) {
-        return 3;
+    uint32_t res = get_exp_mod_result();
+    if (res == 0) {
+        if (size == 0x100) {
+            se_get_exp_mod_output(buf, 0x100);
+            /* smc_exp_mod is done now. */
+            clear_user_smc_in_progress();
+            res = 0;
+        } else {
+            res = 2;
+        }
     }
-
-    if (size != 0x100) {
-        return 2;
-    }
-
-    se_get_exp_mod_output(buf, 0x100);
-
-    /* smc_exp_mod is done now. */
-    clear_user_smc_in_progress();
-    return 0;
+    return res;
 }
 
 uint32_t smc_exp_mod(smc_args_t *args) {
@@ -508,30 +508,31 @@ uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey_get_result(void *buf, uint64_t siz
     uint8_t aes_wrapped_titlekey[0x10];
     uint8_t titlekey[0x10];
     uint64_t sealed_titlekey[2];
-    if (get_exp_mod_done() != 1) {
-        return 3;
+    uint32_t res = get_exp_mod_result();
+    if (res == 0) {
+        if (size == 0x10) {
+            se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
+            if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) == 0x10) {
+                tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
+                seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);
+
+                p_sealed_key[0] = sealed_titlekey[0];
+                p_sealed_key[1] = sealed_titlekey[1];
+
+                res = 0;
+            } else {
+                /* Failed to extract RSA OAEP wrapped key. */
+                res = 2;
+            }
+
+            /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
+            clear_user_smc_in_progress();
+        } else {
+            res = 2;
+        }
     }
 
-    if (size != 0x10) {
-        return 2;
-    }
-
-    se_get_exp_mod_output(rsa_wrapped_titlekey, 0x100);
-    if (tkey_rsa_oaep_unwrap(aes_wrapped_titlekey, 0x10, rsa_wrapped_titlekey, 0x100) != 0x10) {
-        /* Failed to extract RSA OAEP wrapped key. */
-        clear_user_smc_in_progress();
-        return 2;
-    }
-
-    tkey_aes_unwrap(titlekey, 0x10, aes_wrapped_titlekey, 0x10);
-    seal_titlekey(sealed_titlekey, 0x10, titlekey, 0x10);
-
-    p_sealed_key[0] = sealed_titlekey[0];
-    p_sealed_key[1] = sealed_titlekey[1];
-
-    /* smc_unwrap_rsa_oaep_wrapped_titlekey is done now. */
-    clear_user_smc_in_progress();
-    return 0;
+    return res;
 }
 
 uint32_t smc_unwrap_rsa_oaep_wrapped_titlekey(smc_args_t *args) {

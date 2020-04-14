@@ -14,20 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EXOSPHERE_TITLEKEY_H
-#define EXOSPHERE_TITLEKEY_H
-
+#ifndef EXOSPHERE_RSA_COMMON_H
+#define EXOSPHERE_RSA_COMMON_H
 #include <stdint.h>
-#include "rsa_common.h"
 
-#define TITLEKEY_TYPE_MAX 0x1
+typedef union {
+    struct {
+        uint8_t user_data[0x100];
+    } storage_exp_mod;
+    struct {
+        uint32_t master_key_rev;
+        uint32_t type;
+        uint64_t expected_label_hash[4];
+    } unwrap_titlekey;
+} rsa_shared_data_t __attribute__((aligned(4)));
 
-void tkey_set_expected_label_hash(uint64_t *label_hash);
-void tkey_set_master_key_rev(unsigned int master_key_rev);
-void tkey_set_type(unsigned int type);
+_Static_assert(sizeof(rsa_shared_data_t) == 0x100);
 
-size_t tkey_rsa_oaep_unwrap(void *dst, size_t dst_size, void *src, size_t src_size);
-
-void tkey_aes_unwrap(void *dst, size_t dst_size, const void *src, size_t src_size);
+extern rsa_shared_data_t g_rsa_shared_data;
 
 #endif
