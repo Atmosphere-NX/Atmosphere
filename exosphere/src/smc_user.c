@@ -36,13 +36,13 @@
 static bool g_crypt_aes_done = false;
 static uint32_t g_exp_mod_result = 0;
 
-static uint8_t g_imported_exponents[4][0x100];
-static uint8_t g_imported_moduli[4][0x100];
+static __attribute__((aligned(4))) uint8_t g_imported_exponents[4][0x100];
+static __attribute__((aligned(4))) uint8_t g_imported_moduli[4][0x100];
 static bool g_is_modulus_verified[4];
 
-static const uint8_t g_rsa_public_key[4] = { 0x00, 0x01, 0x00, 0x01 };
+static __attribute__((aligned(4))) const uint8_t g_rsa_public_key[4] = { 0x00, 0x01, 0x00, 0x01 };
 
-static const uint8_t g_rsa_test_vector[0x100] = {
+static __attribute__((aligned(4))) const uint8_t g_rsa_test_vector[0x100] = {
     'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
     'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
     'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',

@@ -52,19 +52,20 @@ void ll_init(volatile se_ll_t *ll, void *buffer, size_t size) {
 }
 
 void set_security_engine_callback(unsigned int (*callback)(void)) {
-    if (callback == NULL || g_se_callback != NULL) {
-        generic_panic();
-    }
-
+    /* Set the callback. */
     g_se_callback = callback;
+
+    /* Enable SE Interrupt firing for async op. */
+    se_get_regs()->SE_INT_ENABLE = 0x10;
 }
 
 /* Fires on Security Engine operation completion. */
 void se_operation_completed(void) {
     se_get_regs()->SE_INT_ENABLE = 0;
-    if (g_se_callback != NULL) {
-        g_se_callback();
+    unsigned int (*callback)(void) = g_se_callback;
+    if (callback != NULL) {
         g_se_callback = NULL;
+        callback();
     }
 }
 
@@ -304,9 +305,6 @@ void se_aes_crypt_insecure_internal(unsigned int keyslot, uint32_t out_ll_paddr,
     /* Set the callback, for after the async operation. */
     set_security_engine_callback(callback);
 
-    /* Enable SE Interrupt firing for async op. */
-    se->SE_INT_ENABLE = 0x10;
-
     /* Setup Input/Output lists */
     se->SE_IN_LL_ADDR = in_ll_paddr;
     se->SE_OUT_LL_ADDR = out_ll_paddr;
@@ -357,9 +355,6 @@ void se_exp_mod(unsigned int keyslot, const void *buf, size_t size, unsigned int
     se->SE_RSA_EXP_SIZE = g_se_exp_sizes[keyslot] >> 2;
 
     set_security_engine_callback(callback);
-
-    /* Enable SE interrupt firing for async op. */
-    se->SE_INT_ENABLE = 0x10;
 
     flush_dcache_range(stack_buf, stack_buf + KEYSIZE_RSA_MAX);
     trigger_se_rsa_op(stack_buf, size);
