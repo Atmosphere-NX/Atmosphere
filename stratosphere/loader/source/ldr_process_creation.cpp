@@ -103,6 +103,10 @@ namespace ams::ldr {
                     entries = g_MinimumProgramVersions910;
                     num_entries = g_MinimumProgramVersionsCount910;
                     break;
+                case hos::Version_10_0_0:
+                    entries = g_MinimumProgramVersions1000;
+                    num_entries = g_MinimumProgramVersionsCount1000;
+                    break;
                 default:
                     entries = nullptr;
                     num_entries = 0;
