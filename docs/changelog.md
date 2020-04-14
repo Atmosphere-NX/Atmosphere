@@ -1,4 +1,17 @@
 # Changelog
+## 0.11.0
++ Support was added for 10.0.0.
+  + Exosphere has been updated to reflect the new key import semantics in 10.0.0.
+  + kernel_ldr now implements physical ASLR for the kernel's backing pages.
+  + Loader, NCM, and PM have been updated to reflect the changes Nintendo made in 10.0.0.
+  + Creport was updated to use the new `pgl` service to terminate processes instead of `ns:dev`.
+  +
++ libstratosphere and libvapours received a number of improvements.
+  + With thanks to @Adubbz for his work, the NCM namespace now has client code.
+    + This lays the groundwork for first-class system update/downgrade homebrew support in the near future.
+  + In particular, code implementing the os namespace is significantly more accurate.
+  + In addition, Nintendo's allocators were implemented, allowing for identical memory efficiency versus Nintendo's implementations.
++ General system stability improvements to enhance the user's experience.
 ## 0.10.5
 + Changes were made to the way fs.mitm builds images when providing a layeredfs romfs.
   + Building romfs metadata previously had a memory cost of about ~4-5x the file table size.
