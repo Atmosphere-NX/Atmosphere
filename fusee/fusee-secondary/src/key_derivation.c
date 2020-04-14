@@ -160,6 +160,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 desired_keyblob = MASTERKEY_REVISION_900;
                 /* Fallthrough */
             case ATMOSPHERE_TARGET_FIRMWARE_910:
+            case ATMOSPHERE_TARGET_FIRMWARE_1000:
                 desired_keyblob = MASTERKEY_REVISION_910_CURRENT;
                 break;
             default:

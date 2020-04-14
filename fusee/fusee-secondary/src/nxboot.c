@@ -232,6 +232,8 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
                 return ATMOSPHERE_TARGET_FIRMWARE_900;
             } else if (memcmp(package1loader_header->build_timestamp, "20191021", 8) == 0) {
                 return ATMOSPHERE_TARGET_FIRMWARE_910;
+            } else if (memcmp(package1loader_header->build_timestamp, "20200303", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_1000;
             } else {
                 fatal_error("[NXBOOT] Unable to identify package1!\n");
             }
