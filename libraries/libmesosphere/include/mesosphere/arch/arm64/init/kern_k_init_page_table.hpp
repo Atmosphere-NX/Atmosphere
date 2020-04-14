@@ -19,6 +19,7 @@
 #include <mesosphere/kern_k_typed_address.hpp>
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/arch/arm64/kern_k_page_table_entry.hpp>
+#include <mesosphere/kern_select_system_control.hpp>
 
 namespace ams::kern::arch::arm64::init {
 
@@ -63,6 +64,220 @@ namespace ams::kern::arch::arm64::init {
                 /* This Physical Address -> void * conversion is valid, because this is page table code. */
                 /* The MMU is necessarily not yet turned on, if we are creating an initial page table. */
                 std::memset(reinterpret_cast<void *>(GetInteger(address)), 0, PageSize);
+            }
+        private:
+            size_t NOINLINE GetBlockCount(KVirtualAddress virt_addr, size_t size, size_t block_size) {
+                const KVirtualAddress end_virt_addr = virt_addr + size;
+                size_t count = 0;
+                while (virt_addr < end_virt_addr) {
+                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+
+                    /* If an L1 block is mapped or we're empty, advance by L1BlockSize. */
+                    if (l1_entry->IsBlock() || l1_entry->IsEmpty()) {
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= L1BlockSize);
+                        virt_addr += L1BlockSize;
+                        if (l1_entry->IsBlock() && block_size == L1BlockSize) {
+                            count++;
+                        }
+                        continue;
+                    }
+
+                    /* Non empty and non-block must be table. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsTable());
+
+                    /* Table, so check if we're mapped in L2. */
+                    L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
+
+                    if (l2_entry->IsBlock() || l2_entry->IsEmpty()) {
+                        const size_t advance_size = (l2_entry->IsBlock() && l2_entry->IsContiguous()) ? L2ContiguousBlockSize : L2BlockSize;
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
+                        MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= advance_size);
+                        virt_addr += advance_size;
+                        if (l2_entry->IsBlock() && block_size == advance_size) {
+                            count++;
+                        }
+                        continue;
+                    }
+
+                    /* Non empty and non-block must be table. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsTable());
+
+                    /* Table, so check if we're mapped in L3. */
+                    L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
+
+                    /* L3 must be block or empty. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsBlock() || l3_entry->IsEmpty());
+
+                    const size_t advance_size = (l3_entry->IsBlock() && l3_entry->IsContiguous()) ? L3ContiguousBlockSize : L3BlockSize;
+                    MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
+                    MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= advance_size);
+                    virt_addr += advance_size;
+                    if (l3_entry->IsBlock() && block_size == advance_size) {
+                        count++;
+                    }
+                }
+                return count;
+            }
+
+            KVirtualAddress NOINLINE GetBlockByIndex(KVirtualAddress virt_addr, size_t size, size_t block_size, size_t index) {
+                const KVirtualAddress end_virt_addr = virt_addr + size;
+                size_t count = 0;
+                while (virt_addr < end_virt_addr) {
+                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+
+                    /* If an L1 block is mapped or we're empty, advance by L1BlockSize. */
+                    if (l1_entry->IsBlock() || l1_entry->IsEmpty()) {
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= L1BlockSize);
+                        if (l1_entry->IsBlock() && block_size == L1BlockSize) {
+                            if ((count++) == index) {
+                                return virt_addr;
+                            }
+                        }
+                        virt_addr += L1BlockSize;
+                        continue;
+                    }
+
+                    /* Non empty and non-block must be table. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsTable());
+
+                    /* Table, so check if we're mapped in L2. */
+                    L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
+
+                    if (l2_entry->IsBlock() || l2_entry->IsEmpty()) {
+                        const size_t advance_size = (l2_entry->IsBlock() && l2_entry->IsContiguous()) ? L2ContiguousBlockSize : L2BlockSize;
+                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
+                        MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= advance_size);
+                        if (l2_entry->IsBlock() && block_size == advance_size) {
+                            if ((count++) == index) {
+                                return virt_addr;
+                            }
+                        }
+                        virt_addr += advance_size;
+                        continue;
+                    }
+
+                    /* Non empty and non-block must be table. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsTable());
+
+                    /* Table, so check if we're mapped in L3. */
+                    L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
+
+                    /* L3 must be block or empty. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsBlock() || l3_entry->IsEmpty());
+
+                    const size_t advance_size = (l3_entry->IsBlock() && l3_entry->IsContiguous()) ? L3ContiguousBlockSize : L3BlockSize;
+                    MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), advance_size));
+                    MESOSPHERE_INIT_ABORT_UNLESS(static_cast<size_t>(end_virt_addr - virt_addr) >= advance_size);
+                    if (l3_entry->IsBlock() && block_size == advance_size) {
+                        if ((count++) == index) {
+                            return virt_addr;
+                        }
+                    }
+                    virt_addr += advance_size;
+                }
+                return Null<KVirtualAddress>;
+            }
+
+            PageTableEntry *GetMappingEntry(KVirtualAddress virt_addr, size_t block_size) {
+                L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+
+                if (l1_entry->IsBlock()) {
+                    MESOSPHERE_INIT_ABORT_UNLESS(block_size == L1BlockSize);
+                    return l1_entry;
+                }
+
+                MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsTable());
+
+                /* Table, so check if we're mapped in L2. */
+                L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
+
+                if (l2_entry->IsBlock()) {
+                    const size_t real_size = (l2_entry->IsContiguous()) ? L2ContiguousBlockSize : L2BlockSize;
+                    MESOSPHERE_INIT_ABORT_UNLESS(real_size == block_size);
+                    return l2_entry;
+                }
+
+                MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsTable());
+
+                /* Table, so check if we're mapped in L3. */
+                L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
+
+                /* L3 must be block. */
+                MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsBlock());
+
+                const size_t real_size = (l3_entry->IsContiguous()) ? L3ContiguousBlockSize : L3BlockSize;
+                MESOSPHERE_INIT_ABORT_UNLESS(real_size == block_size);
+                return l3_entry;
+            }
+
+            void NOINLINE SwapBlocks(KVirtualAddress src_virt_addr, KVirtualAddress dst_virt_addr, size_t block_size, bool do_copy) {
+                static_assert(L2ContiguousBlockSize / L2BlockSize == L3ContiguousBlockSize / L3BlockSize);
+                const bool contig = (block_size == L2ContiguousBlockSize || block_size == L3ContiguousBlockSize);
+                const size_t num_mappings = contig ? L2ContiguousBlockSize / L2BlockSize : 1;
+
+                /* Unmap the source. */
+                PageTableEntry *src_entry = this->GetMappingEntry(src_virt_addr, block_size);
+                const auto src_saved = *src_entry;
+                for (size_t i = 0; i < num_mappings; i++) {
+                    *src_entry = InvalidPageTableEntry;
+                }
+
+                /* Unmap the target. */
+                PageTableEntry *dst_entry = this->GetMappingEntry(dst_virt_addr, block_size);
+                const auto dst_saved = *dst_entry;
+                for (size_t i = 0; i < num_mappings; i++) {
+                    *dst_entry = InvalidPageTableEntry;
+                }
+
+                /* Invalidate the entire tlb. */
+                cpu::DataSynchronizationBarrierInnerShareable();
+                cpu::InvalidateEntireTlb();
+
+                /* Copy data, if we should. */
+                const u64 negative_block_size_for_mask = static_cast<u64>(-static_cast<s64>(block_size));
+                const u64 offset_mask                  = negative_block_size_for_mask & ((1ul << 36) - 1);
+                const KVirtualAddress copy_src_addr = KVirtualAddress(src_saved.GetRawAttributesUnsafeForSwap() & offset_mask);
+                const KVirtualAddress copy_dst_addr = KVirtualAddress(dst_saved.GetRawAttributesUnsafeForSwap() & offset_mask);
+                if (block_size && do_copy) {
+                    u8 tmp[0x100];
+                    for (size_t ofs = 0; ofs < block_size; ofs += sizeof(tmp)) {
+                        std::memcpy(tmp, GetVoidPointer(copy_src_addr + ofs), sizeof(tmp));
+                        std::memcpy(GetVoidPointer(copy_src_addr + ofs), GetVoidPointer(copy_dst_addr + ofs), sizeof(tmp));
+                        std::memcpy(GetVoidPointer(copy_dst_addr + ofs), tmp, sizeof(tmp));
+                    }
+                }
+
+                /* Swap the mappings. */
+                const u64 attr_preserve_mask  = (negative_block_size_for_mask | 0xFFFF000000000000ul) ^ ((1ul << 36) - 1);
+                const size_t shift_for_contig = contig ? 4 : 0;
+                size_t advanced_size = 0;
+                const u64 src_attr_val = src_saved.GetRawAttributesUnsafeForSwap() & attr_preserve_mask;
+                const u64 dst_attr_val = dst_saved.GetRawAttributesUnsafeForSwap() & attr_preserve_mask;
+                for (size_t i = 0; i < num_mappings; i++) {
+                    reinterpret_cast<u64 *>(src_entry)[i] = GetInteger(copy_dst_addr + (advanced_size >> shift_for_contig)) | src_attr_val;
+                    reinterpret_cast<u64 *>(dst_entry)[i] = GetInteger(copy_src_addr + (advanced_size >> shift_for_contig)) | dst_attr_val;
+                    advanced_size += block_size;
+                }
+
+                cpu::DataSynchronizationBarrierInnerShareable();
+            }
+
+            void NOINLINE PhysicallyRandomize(KVirtualAddress virt_addr, size_t size, size_t block_size, bool do_copy) {
+                const size_t block_count = this->GetBlockCount(virt_addr, size, block_size);
+                if (block_count > 1) {
+                    for (size_t cur_block = 0; cur_block < block_count; cur_block++) {
+                        const size_t target_block = KSystemControl::Init::GenerateRandomRange(cur_block, block_count - 1);
+                        if (cur_block != target_block) {
+                            const KVirtualAddress cur_virt_addr    = this->GetBlockByIndex(virt_addr, size, block_size, cur_block);
+                            const KVirtualAddress target_virt_addr = this->GetBlockByIndex(virt_addr, size, block_size, target_block);
+                            MESOSPHERE_INIT_ABORT_UNLESS(cur_virt_addr    != Null<KVirtualAddress>);
+                            MESOSPHERE_INIT_ABORT_UNLESS(target_virt_addr != Null<KVirtualAddress>);
+                            this->SwapBlocks(cur_virt_addr, target_virt_addr, block_size, do_copy);
+                        }
+                    }
+                }
             }
         public:
             void NOINLINE Map(KVirtualAddress virt_addr, size_t size, KPhysicalAddress phys_addr, const PageTableEntry &attr, IPageAllocator &allocator) {
@@ -363,32 +578,53 @@ namespace ams::kern::arch::arm64::init {
                 cpu::DataSynchronizationBarrierInnerShareable();
             }
 
+            void PhysicallyRandomize(KVirtualAddress virt_addr, size_t size, bool do_copy) {
+                this->PhysicallyRandomize(virt_addr, size, L1BlockSize, do_copy);
+                this->PhysicallyRandomize(virt_addr, size, L2ContiguousBlockSize, do_copy);
+                this->PhysicallyRandomize(virt_addr, size, L2BlockSize, do_copy);
+                this->PhysicallyRandomize(virt_addr, size, L3ContiguousBlockSize, do_copy);
+                this->PhysicallyRandomize(virt_addr, size, L3BlockSize, do_copy);
+            }
+
     };
 
     class KInitialPageAllocator : public KInitialPageTable::IPageAllocator {
-        private:
-            uintptr_t next_address;
         public:
-            constexpr ALWAYS_INLINE KInitialPageAllocator() : next_address(Null<uintptr_t>) { /* ... */ }
+            struct State {
+                uintptr_t next_address;
+                uintptr_t free_bitmap;
+            };
+        private:
+            State state;
+        public:
+            constexpr ALWAYS_INLINE KInitialPageAllocator() : state{} { /* ... */ }
 
             ALWAYS_INLINE void Initialize(uintptr_t address) {
-                this->next_address = address;
+                this->state.next_address = address + BITSIZEOF(this->state.free_bitmap) * PageSize;
+                this->state.free_bitmap  = ~uintptr_t();
             }
 
-            ALWAYS_INLINE uintptr_t GetFinalNextAddress() {
-                const uintptr_t final_address = this->next_address;
-                this->next_address = Null<uintptr_t>;
-                return final_address;
-            }
-
-            ALWAYS_INLINE uintptr_t GetFinalState() {
-                return this->GetFinalNextAddress();
+            ALWAYS_INLINE void GetFinalState(State *out) {
+                *out = this->state;
+                this->state = {};
             }
         public:
             virtual KPhysicalAddress Allocate() override {
-                MESOSPHERE_INIT_ABORT_UNLESS(this->next_address != Null<uintptr_t>);
-                const uintptr_t allocated = this->next_address;
-                this->next_address += PageSize;
+                MESOSPHERE_INIT_ABORT_UNLESS(this->state.next_address != Null<uintptr_t>);
+                uintptr_t allocated = this->state.next_address;
+                if (this->state.free_bitmap != 0) {
+                    u64 index;
+                    uintptr_t mask;
+                    do {
+                        index = KSystemControl::Init::GenerateRandomRange(0, BITSIZEOF(this->state.free_bitmap) - 1);
+                        mask  = (static_cast<uintptr_t>(1) << index);
+                    } while ((this->state.free_bitmap & mask) == 0);
+                    this->state.free_bitmap &= ~mask;
+                    allocated = this->state.next_address - ((BITSIZEOF(this->state.free_bitmap) - index) * PageSize);
+                } else {
+                    this->state.next_address += PageSize;
+                }
+
                 std::memset(reinterpret_cast<void *>(allocated), 0, PageSize);
                 return allocated;
             }

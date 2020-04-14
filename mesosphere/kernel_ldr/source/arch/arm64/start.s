@@ -21,6 +21,14 @@
 .section    .crt0.text.start, "ax", %progbits
 .global     _start
 _start:
+    b _main
+__metadata_begin:
+    .ascii "MLD0"                     /* Magic */
+__metadata_target_firmware:
+    .dword  0xCCCCCCCC                /* Target Firmware. */
+__metadata_reserved:
+    .dword  0xCCCCCCCC                /* Reserved. */
+_main:
     /* KernelLdr_Main(uintptr_t kernel_base_address, KernelMap *kernel_map, uintptr_t ini1_base_address); */
     adr x18, _start
     adr x16, __external_references
@@ -95,6 +103,14 @@ _start:
     ldr x2, [sp, #0x20]
     mov sp, x2
     br  x1
+
+
+.global     _ZN3ams4kern17GetTargetFirmwareEv
+.type       _ZN3ams4kern17GetTargetFirmwareEv, %function
+_ZN3ams4kern17GetTargetFirmwareEv:
+    adr x0, __metadata_target_firmware
+    ldr x0, [x0]
+    ret
 
 .balign 8
 __external_references:
