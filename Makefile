@@ -58,6 +58,7 @@ dist-no-debug: all
 	mkdir atmosphere-$(AMSVER)/switch
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000008
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000000D
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000002B
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000034
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036

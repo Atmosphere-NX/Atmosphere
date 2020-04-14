@@ -56,18 +56,18 @@ namespace {
 
     void *Allocate(size_t size) {
         void *mem = lmem::AllocateFromExpHeap(g_heap_handle, size);
-        GetHeapState().Allocate(size);
+        ncm::GetHeapState().Allocate(size);
         return mem;
     }
 
     void Deallocate(void *p, size_t size) {
-        GetHeapState().Free(size);
+        ncm::GetHeapState().Free(size != 0 ? size : lmem::GetExpHeapMemoryBlockSize(p));
         lmem::FreeToExpHeap(g_heap_handle, p);
     }
 
     void InitializeHeap() {
         g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_None);
-        GetHeapState().Initialize(g_heap_handle);
+        ncm::GetHeapState().Initialize(g_heap_handle);
     }
 
 }
