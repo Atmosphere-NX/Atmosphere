@@ -7,6 +7,6 @@
 	remote = https://github.com/m4xw/emuMMC
 	branch = develop
 	commit = d12dd5464422029a1e5601916517ec3f1c81d8d0
-	parent = 259a1a7513236a1de4d373bc6cb99032ede2c626
+	parent = b15b46a68e709620c47666e347ae53a506c9c094
 	method = rebase
 	cmdver = 0.4.1
