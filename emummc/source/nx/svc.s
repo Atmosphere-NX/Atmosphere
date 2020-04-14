@@ -17,6 +17,15 @@
 .endm
 
 SVC_BEGIN svcQueryIoMapping
+	STP X0, X1, [SP, #-16]!
+	SVC 0x55
+	LDP X3, X4, [SP], #16
+	STR X1, [X3]
+	STR X2, [X4]
+	RET
+SVC_END
+
+SVC_BEGIN svcLegacyQueryIoMapping
 	STR X0, [SP, #-16]!
 	SVC 0x55
 	LDR X2, [SP], #16

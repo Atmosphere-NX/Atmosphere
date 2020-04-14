@@ -36,7 +36,6 @@ sdmmc_storage_t sd_storage;
 
 // init vars
 bool custom_driver = true;
-extern const volatile emuMMC_ctx_t emuMMC_ctx;
 
 // FS funcs
 _sdmmc_accessor_gc sdmmc_accessor_gc;
@@ -344,7 +343,7 @@ uint64_t sdmmc_wrapper_controller_close(int mmc_id)
         {
             return 0;
         }
-        
+
         if (mmc_id == FS_SDMMC_EMMC)
         {
             // Close file handles and unmount

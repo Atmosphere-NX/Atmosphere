@@ -19,6 +19,7 @@
 #define _UTIL_H_
 
 #include "types.h"
+#include "../emuMMC/emummc_ctx.h"
 
 intptr_t QueryIoMapping(u64 addr, u64 size);
 #define byte_swap_32(num) ((num >> 24) & 0xff) | ((num << 8) & 0xff0000) | \
@@ -36,5 +37,7 @@ u64 get_tmr_s();
 void usleep(u64 ticks);
 void msleep(u64 milliseconds);
 void exec_cfg(u32 *base, const cfg_op_t *ops, u32 num_ops);
+
+extern volatile emuMMC_ctx_t emuMMC_ctx;
 
 #endif

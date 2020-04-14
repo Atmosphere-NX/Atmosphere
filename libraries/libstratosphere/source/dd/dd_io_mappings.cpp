@@ -26,7 +26,7 @@ namespace ams::dd {
             u64 region_size;
             R_TRY_CATCH(svcQueryIoMapping(&virtual_addr, &region_size, aligned_addr, aligned_size)) {
                 /* Official software handles this by returning 0. */
-                R_CATCH(svc::ResultNotFound) { exosphere::ForceRebootToRcm(); return 0; }
+                R_CATCH(svc::ResultNotFound) { return 0; }
             } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
             AMS_ASSERT(region_size >= aligned_size);
         } else {

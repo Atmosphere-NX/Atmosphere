@@ -66,7 +66,7 @@ namespace {
     }
 
     void InitializeHeap() {
-        g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_None);
+        g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_ThreadSafe);
         ncm::GetHeapState().Initialize(g_heap_handle);
     }
 
