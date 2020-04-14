@@ -19,12 +19,18 @@
 
 namespace ams::os::impl {
 
-    class ReadWriteLockImpl;
+    #if defined(ATMOSPHERE_OS_HORIZON)
+        class ReadWriteLockHorizonImpl;
+    #endif
+
     class InternalConditionVariableImpl;
 
     class InternalCriticalSectionImpl {
         private:
-            friend class ReadWriteLockImpl;
+            #if defined(ATMOSPHERE_OS_HORIZON)
+                friend class ReadWriteLockHorizonImpl;
+            #endif
+
             friend class InternalConditionVariableImpl;
         private:
             u32 thread_handle;

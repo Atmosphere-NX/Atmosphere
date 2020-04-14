@@ -42,7 +42,7 @@ namespace ams::util {
 
             inline Uuid Convert() const {
                 /* Convert the fields from native endian to big endian. */
-                util::BitPack32 converted[4] = {util::BitPack32(0), util::BitPack32(0), util::BitPack32(0), util::BitPack32(0)};
+                util::BitPack32 converted[4] = {util::BitPack32{0}, util::BitPack32{0}, util::BitPack32{0}, util::BitPack32{0}};
 
                 converted[0].Set<TimeLow>(util::ConvertToBigEndian(this->data[0].Get<TimeLow>()));
 
@@ -75,7 +75,7 @@ namespace ams::util {
             constexpr u8  Reserved = 0x1;
 
             /* Generate a random uuid. */
-            UuidImpl uuid = {util::BitPack32(0), util::BitPack32(0), util::BitPack32(0), util::BitPack32(0)};
+            UuidImpl uuid = {util::BitPack32{0}, util::BitPack32{0}, util::BitPack32{0}, util::BitPack32{0}};
             os::GenerateRandomBytes(uuid.data, sizeof(uuid.data));
 
             /* Set version and reserved. */
@@ -97,7 +97,7 @@ namespace ams::util {
         constexpr u8  Reserved = 0x1;
 
         /* Generate a uuid from a SHA1 hash. */
-        UuidImpl uuid = {util::BitPack32(0), util::BitPack32(0), util::BitPack32(0), util::BitPack32(0)};
+        UuidImpl uuid = {util::BitPack32{0}, util::BitPack32{0}, util::BitPack32{0}, util::BitPack32{0}};
         std::memcpy(uuid.data, sha1_hash, sizeof(uuid.data));
 
         /* Set version and reserved. */

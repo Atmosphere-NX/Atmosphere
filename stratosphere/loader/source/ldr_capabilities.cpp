@@ -42,8 +42,7 @@ namespace ams::ldr::caps {
             constexpr ALWAYS_INLINE typename name::Type Get##name() const { return this->Get<name>(); }
 
         constexpr ALWAYS_INLINE CapabilityId GetCapabilityId(util::BitPack32 cap) {
-            using RawValue = CapabilityField<0, BITSIZEOF(u32)>;
-            return static_cast<CapabilityId>(__builtin_ctz(~cap.Get<RawValue>()));
+            return static_cast<CapabilityId>(__builtin_ctz(~cap.value));
         }
 
 #define CAPABILITY_CLASS_NAME(id) Capability##id
@@ -53,7 +52,6 @@ namespace ams::ldr::caps {
             public:                                                                                                             \
                 static constexpr CapabilityId Id = CapabilityId::id;                                                            \
                 using IdBits   = CapabilityField<0, static_cast<size_t>(Id) + 1>;                                               \
-                using RawValue = CapabilityField<IdBits::Next, BITSIZEOF(u32) - IdBits::Next>;                                  \
                 static constexpr u32 IdBitsValue = (static_cast<u32>(1) << static_cast<size_t>(Id)) - 1;                        \
             private:                                                                                                            \
                 util::BitPack32 value;                                                                                          \
@@ -62,9 +60,9 @@ namespace ams::ldr::caps {
                 constexpr ALWAYS_INLINE typename FieldType::Type Get() const { return this->value.Get<FieldType>(); }           \
                 template<typename FieldType>                                                                                    \
                 constexpr ALWAYS_INLINE void Set(typename FieldType::Type fv) { this->value.Set<FieldType>(fv); }               \
-                constexpr ALWAYS_INLINE u32 GetValue() const { return this->Get<RawValue>(); }                                  \
+                constexpr ALWAYS_INLINE u32 GetValue() const { return this->value.value; }                                      \
             public:                                                                                                             \
-                constexpr ALWAYS_INLINE CAPABILITY_CLASS_NAME(id)(util::BitPack32 v) : value(v) { /* ... */ }                   \
+                constexpr ALWAYS_INLINE CAPABILITY_CLASS_NAME(id)(util::BitPack32 v) : value{v} { /* ... */ }                   \
                                                                                                                                 \
                 static constexpr CAPABILITY_CLASS_NAME(id) Decode(util::BitPack32 v) { return CAPABILITY_CLASS_NAME(id)(v); }   \
                                                                                                                                 \

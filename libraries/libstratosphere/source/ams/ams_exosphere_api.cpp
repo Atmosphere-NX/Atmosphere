@@ -26,7 +26,7 @@ namespace ams::exosphere {
             R_ABORT_UNLESS(ResultNotPresent());
         }
 
-        return ApiInfo{ util::BitPack64(exosphere_cfg) };
+        return ApiInfo{ util::BitPack64{exosphere_cfg} };
     }
 
     void ForceRebootToRcm() {

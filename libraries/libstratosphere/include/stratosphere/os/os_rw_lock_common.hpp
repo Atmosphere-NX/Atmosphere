@@ -13,29 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "impl/os_tick_manager.hpp"
+#pragma once
+#include <vapours.hpp>
 
 namespace ams::os {
 
-    Tick GetSystemTick() {
-        return impl::GetTickManager().GetTick();
-    }
-
-    Tick GetSystemTickOrdered() {
-        return impl::GetTickManager().GetSystemTickOrdered();
-    }
-
-    s64 GetSystemTickFrequency() {
-        return impl::GetTickManager().GetTickFrequency();
-    }
-
-    TimeSpan ConvertToTimeSpan(Tick tick) {
-        return impl::GetTickManager().ConvertToTimeSpan(tick);
-    }
-
-    Tick ConvertToTick(TimeSpan ts) {
-        return impl::GetTickManager().ConvertToTick(ts);
-    }
+    constexpr inline s32 ReadWriteLockCountMax       = (1 << (BITSIZEOF(u16) - 1)) - 1;
+    constexpr inline s32 ReadWriteLockWaiterCountMax = (1 << BITSIZEOF(u8)) - 1;
 
 }

@@ -23,8 +23,8 @@ namespace ams::svc::arch::arm64 {
 
     struct ThreadLocalRegion {
         u32 message_buffer[MessageBufferSize / sizeof(u32)];
-        u16 disable_count;
-        u16 preemption_state;
+        volatile u16 disable_count;
+        volatile u16 interrupt_flag;
         /* TODO: How should we handle libnx vs Nintendo user thread local space? */
         uintptr_t TODO[(0x200 - 0x108) / sizeof(uintptr_t)];
     };

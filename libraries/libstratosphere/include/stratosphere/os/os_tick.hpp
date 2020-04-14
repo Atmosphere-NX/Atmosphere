@@ -22,6 +22,7 @@ namespace ams::os {
 
     /* Tick API. */
     Tick GetSystemTick();
+    Tick GetSystemTickOrdered();
     s64 GetSystemTickFrequency();
     TimeSpan ConvertToTimeSpan(Tick tick);
     Tick ConvertToTick(TimeSpan ts);

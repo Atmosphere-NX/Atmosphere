@@ -32,6 +32,22 @@ namespace ams::os::impl {
                 return Tick(tick);
             }
 
+            ALWAYS_INLINE Tick GetSystemTickOrdered() const {
+                s64 tick;
+                #if   defined(ATMOSPHERE_ARCH_ARM64)
+                    __asm__ __volatile__("dsb ish\n"
+                                         "isb\n"
+                                         "mrs %[tick], cntpct_el0\n"
+                                         "isb"
+                                         : [tick]"=&r"(tick)
+                                         :
+                                         : "memory");
+                #else
+                    #error "Unknown Architecture for TickManagerImpl::GetSystemTickOrdered"
+                #endif
+                return Tick(tick);
+            }
+
             static constexpr ALWAYS_INLINE s64 GetTickFrequency() {
                 return static_cast<s64>(::ams::svc::TicksPerSecond);
             }
