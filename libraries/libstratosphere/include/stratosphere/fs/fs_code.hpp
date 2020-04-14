@@ -19,9 +19,17 @@
 
 namespace ams::fs {
 
-    Result MountCode(const char *name, const char *path, ncm::ProgramId program_id);
+    struct CodeInfo {
+        u8 signature[crypto::Rsa2048PssSha256Verifier::SignatureSize];
+        u8 hash[crypto::Rsa2048PssSha256Verifier::HashSize];
+        bool is_signed;
+        u8 reserved[3];
+    };
+    static_assert(sizeof(CodeInfo) == crypto::Rsa2048PssSha256Verifier::SignatureSize + crypto::Rsa2048PssSha256Verifier::HashSize + 4);
 
-    Result MountCodeForAtmosphereWithRedirection(const char *name, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific);
-    Result MountCodeForAtmosphere(const char *name, const char *path, ncm::ProgramId program_id);
+    Result MountCode(CodeInfo *out, const char *name, const char *path, ncm::ProgramId program_id);
+
+    Result MountCodeForAtmosphereWithRedirection(CodeInfo *out, const char *name, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific);
+    Result MountCodeForAtmosphere(CodeInfo *out, const char *name, const char *path, ncm::ProgramId program_id);
 
 }

@@ -45,6 +45,10 @@ namespace ams::ldr::pm {
         return ldrPmAtmosphereGetProgramInfo(reinterpret_cast<LoaderProgramInfo *>(out), reinterpret_cast<CfgOverrideStatus *>(out_status), reinterpret_cast<const NcmProgramLocation *>(&loc));
     }
 
+    Result SetEnabledProgramVerification(bool enabled) {
+        return ldrPmSetEnabledProgramVerification(enabled);
+    }
+
     Result AtmospherePinProgram(PinId *out, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
         static_assert(sizeof(*out) == sizeof(u64), "PinId definition!");
         static_assert(sizeof(status) == sizeof(CfgOverrideStatus), "CfgOverrideStatus definition!");

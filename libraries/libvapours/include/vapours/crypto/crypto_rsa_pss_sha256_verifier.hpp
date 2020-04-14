@@ -42,12 +42,28 @@ namespace ams::crypto {
         return Rsa2048PssSha256Verifier::Verify(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size, work_buf, work_buf_size);
     }
 
+    inline bool VerifyRsa2048PssSha256WithHash(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *hash, size_t hash_size) {
+        return Rsa2048PssSha256Verifier::VerifyWithHash(sig, sig_size, mod, mod_size, exp, exp_size, hash, hash_size);
+    }
+
+    inline bool VerifyRsa2048PssSha256WithHash(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *hash, size_t hash_size, void *work_buf, size_t work_buf_size) {
+        return Rsa2048PssSha256Verifier::VerifyWithHash(sig, sig_size, mod, mod_size, exp, exp_size, hash, hash_size, work_buf, work_buf_size);
+    }
+
     inline bool VerifyRsa4096PssSha256(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *msg, size_t msg_size) {
         return Rsa4096PssSha256Verifier::Verify(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
     }
 
     inline bool VerifyRsa4096PssSha256(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *msg, size_t msg_size, void *work_buf, size_t work_buf_size) {
         return Rsa4096PssSha256Verifier::Verify(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size, work_buf, work_buf_size);
+    }
+
+    inline bool VerifyRsa4096PssSha256WithHash(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *hash, size_t hash_size) {
+        return Rsa4096PssSha256Verifier::VerifyWithHash(sig, sig_size, mod, mod_size, exp, exp_size, hash, hash_size);
+    }
+
+    inline bool VerifyRsa4096PssSha256WithHash(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *hash, size_t hash_size, void *work_buf, size_t work_buf_size) {
+        return Rsa4096PssSha256Verifier::VerifyWithHash(sig, sig_size, mod, mod_size, exp, exp_size, hash, hash_size, work_buf, work_buf_size);
     }
 
 }

@@ -221,7 +221,8 @@ namespace ams::ldr {
         };
 
         u32 magic;
-        u8  reserved_04[8];
+        u32 signature_key_generation;
+        u8  reserved_08[4];
         u8  flags;
         u8  reserved_0D;
         u8 main_thread_priority;

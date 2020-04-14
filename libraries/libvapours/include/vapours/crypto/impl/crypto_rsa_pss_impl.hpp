@@ -31,19 +31,22 @@ namespace ams::crypto::impl {
         private:
             static constexpr u8 TailMagic = 0xBC;
         private:
-            static void ComputeHashWithPadding(void *dst, Hash *hash, const void *salt, size_t salt_size) {
+            static void ComputeHashWithPadding(void *dst, const u8 *user_hash, size_t user_hash_size, const void *salt, size_t salt_size) {
+                AMS_ASSERT(user_hash_size == HashSize);
+
                 /* Initialize our buffer. */
                 u8 buf[8 + HashSize];
                 std::memset(buf, 0, 8);
-                hash->GetHash(buf + 8, HashSize);
+                std::memcpy(buf + 8, user_hash, HashSize);
                 ON_SCOPE_EXIT { ClearMemory(buf, sizeof(buf)); };
 
 
                 /* Calculate our hash. */
-                hash->Initialize();
-                hash->Update(buf, sizeof(buf));
-                hash->Update(salt, salt_size);
-                hash->GetHash(dst, HashSize);
+                Hash hash;
+                hash.Initialize();
+                hash.Update(buf, sizeof(buf));
+                hash.Update(salt, salt_size);
+                hash.GetHash(dst, HashSize);
             }
 
             static void ApplyMGF1(u8 *dst, size_t dst_size, const void *src, size_t src_size) {
@@ -71,7 +74,7 @@ namespace ams::crypto::impl {
         public:
             RsaPssImpl() { /* ... */ }
 
-            bool Verify(u8 *buf, size_t size, Hash *hash) {
+            bool Verify(u8 *buf, size_t size, const u8 *hash, size_t hash_size) {
                 /* Validate sanity byte. */
                 bool is_valid = buf[size - 1] == TailMagic;
 
@@ -112,7 +115,7 @@ namespace ams::crypto::impl {
                 u8 cmp_hash[HashSize];
                 ON_SCOPE_EXIT { ClearMemory(cmp_hash, sizeof(cmp_hash)); };
 
-                ComputeHashWithPadding(cmp_hash, hash, salt, salt_size);
+                ComputeHashWithPadding(cmp_hash, hash, hash_size, salt, salt_size);
                 is_valid &= IsSameBytes(cmp_hash, h, HashSize);
 
                 /* Succeed if all our checks succeeded. */

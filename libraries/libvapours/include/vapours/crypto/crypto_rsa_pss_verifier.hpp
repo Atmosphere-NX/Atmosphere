@@ -23,13 +23,14 @@
 
 namespace ams::crypto {
 
-    template<size_t ModulusSize, typename Hash> /* requires HashFunction<Hash> */
+    template<size_t _ModulusSize, typename Hash> /* requires HashFunction<Hash> */
     class RsaPssVerifier {
         NON_COPYABLE(RsaPssVerifier);
         NON_MOVEABLE(RsaPssVerifier);
         public:
             static constexpr size_t HashSize               = Hash::HashSize;
             static constexpr size_t SaltSize               = Hash::HashSize;
+            static constexpr size_t ModulusSize            = _ModulusSize;
             static constexpr size_t SignatureSize          = ModulusSize;
             static constexpr size_t MaximumExponentSize    = 3;
             static constexpr size_t RequiredWorkBufferSize = RsaCalculator<ModulusSize, MaximumExponentSize>::RequiredWorkBufferSize;
@@ -70,8 +71,15 @@ namespace ams::crypto {
                 u8 message[SignatureSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                return this->calculator.ExpMod(message, signature, SignatureSize) &&
-                       impl.Verify(message, sizeof(message), std::addressof(this->hash));
+                if (!this->calculator.ExpMod(message, signature, SignatureSize)) {
+                    return false;
+                }
+
+                u8 calc_hash[Hash::HashSize];
+                this->hash.GetHash(calc_hash, sizeof(calc_hash));
+                ON_SCOPE_EXIT { ClearMemory(calc_hash, sizeof(calc_hash)); };
+
+                return impl.Verify(message, sizeof(message), calc_hash, sizeof(calc_hash));
             }
 
             bool Verify(const void *signature, size_t size, void *work_buf, size_t work_buf_size) {
@@ -83,8 +91,47 @@ namespace ams::crypto {
                 u8 message[SignatureSize];
                 ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
 
-                return this->calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size) &&
-                       impl.Verify(message, sizeof(message), std::addressof(this->hash));
+                if (!this->calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size)) {
+                    return false;
+                }
+
+                u8 calc_hash[Hash::HashSize];
+                this->hash.GetHash(calc_hash, sizeof(calc_hash));
+                ON_SCOPE_EXIT { ClearMemory(calc_hash, sizeof(calc_hash)); };
+
+                return impl.Verify(message, sizeof(message), calc_hash, sizeof(calc_hash));
+            }
+
+            bool VerifyWithHash(const void *signature, size_t size, const void *hash, size_t hash_size) {
+                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(size == SignatureSize);
+                ON_SCOPE_EXIT { this->state = State::Done; };
+
+                impl::RsaPssImpl<Hash> impl;
+                u8 message[SignatureSize];
+                ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
+
+                if (!this->calculator.ExpMod(message, signature, SignatureSize)) {
+                    return false;
+                }
+
+                return impl.Verify(message, sizeof(message), static_cast<const u8 *>(hash), hash_size);
+            }
+
+            bool VerifyWithHash(const void *signature, size_t size, const void *hash, size_t hash_size, void *work_buf, size_t work_buf_size) {
+                AMS_ASSERT(this->state == State::Initialized);
+                AMS_ASSERT(size == SignatureSize);
+                ON_SCOPE_EXIT { this->state = State::Done; };
+
+                impl::RsaPssImpl<Hash> impl;
+                u8 message[SignatureSize];
+                ON_SCOPE_EXIT { ClearMemory(message, sizeof(message)); };
+
+                if (!this->calculator.ExpMod(message, signature, SignatureSize, work_buf, work_buf_size)) {
+                    return false;
+                }
+
+                return impl.Verify(message, sizeof(message), static_cast<const u8 *>(hash), hash_size);
             }
 
             static bool Verify(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *msg, size_t msg_size) {
@@ -103,6 +150,22 @@ namespace ams::crypto {
                 }
                 verifier.Update(msg, msg_size);
                 return verifier.Verify(sig, sig_size, work_buf, work_buf_size);
+            }
+
+            static bool VerifyWithHash(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *hash, size_t hash_size) {
+                RsaPssVerifier<ModulusSize, Hash> verifier;
+                if (!verifier.Initialize(mod, mod_size, exp, exp_size)) {
+                    return false;
+                }
+                return verifier.VerifyWithHash(sig, sig_size, hash, hash_size);
+            }
+
+            static bool VerifyWithHash(const void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *exp, size_t exp_size, const void *hash, size_t hash_size, void *work_buf, size_t work_buf_size) {
+                RsaPssVerifier<ModulusSize, Hash> verifier;
+                if (!verifier.Initialize(mod, mod_size, exp, exp_size)) {
+                    return false;
+                }
+                return verifier.VerifyWithHash(sig, sig_size, hash, hash_size, work_buf, work_buf_size);
             }
     };
 

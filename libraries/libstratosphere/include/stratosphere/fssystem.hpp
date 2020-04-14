@@ -17,6 +17,7 @@
 #pragma once
 #include <stratosphere/fssystem/fssystem_utility.hpp>
 #include <stratosphere/fssystem/fssystem_external_code.hpp>
+#include <stratosphere/fssystem/fssystem_acid_sign_key.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system_meta.hpp>
 #include <stratosphere/fssystem/fssystem_path_tool.hpp>

@@ -98,10 +98,10 @@ namespace {
     constexpr size_t          RandomMaxSessions = 3;
 
     constexpr sm::ServiceName DeprecatedServiceName = sm::ServiceName::Encode("spl:");
-    constexpr size_t          DeprecatedMaxSessions = 12;
+    constexpr size_t          DeprecatedMaxSessions = 13;
 
     constexpr sm::ServiceName GeneralServiceName = sm::ServiceName::Encode("spl:");
-    constexpr size_t          GeneralMaxSessions = 6;
+    constexpr size_t          GeneralMaxSessions = 7;
 
     constexpr sm::ServiceName CryptoServiceName = sm::ServiceName::Encode("spl:mig");
     constexpr size_t          CryptoMaxSessions = 6;

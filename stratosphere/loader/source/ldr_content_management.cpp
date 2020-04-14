@@ -24,11 +24,11 @@ namespace ams::ldr {
     }
 
     /* ScopedCodeMount functionality. */
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc) : lk(g_scoped_code_mount_lock), has_status(false), mounted_ams(false), mounted_code(false) {
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc) : lk(g_scoped_code_mount_lock), has_status(false), mounted_ams(false), mounted_sd_or_code(false), mounted_code(false) {
         this->result = this->Initialize(loc);
     }
 
-    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o) : lk(g_scoped_code_mount_lock), override_status(o), has_status(true), mounted_ams(false), mounted_code(false) {
+    ScopedCodeMount::ScopedCodeMount(const ncm::ProgramLocation &loc, const cfg::OverrideStatus &o) : lk(g_scoped_code_mount_lock), override_status(o), has_status(true), mounted_ams(false), mounted_sd_or_code(false), mounted_code(false) {
         this->result = this->Initialize(loc);
     }
 
@@ -36,6 +36,9 @@ namespace ams::ldr {
         /* Unmount filesystems. */
         if (this->mounted_ams) {
             fs::Unmount(AtmosphereCodeMountName);
+        }
+        if (this->mounted_sd_or_code) {
+            fs::Unmount(SdOrCodeMountName);
         }
         if (this->mounted_code) {
             fs::Unmount(CodeMountName);
@@ -54,12 +57,17 @@ namespace ams::ldr {
         }
 
         /* Mount the atmosphere code file system. */
-        R_TRY(fs::MountCodeForAtmosphereWithRedirection(AtmosphereCodeMountName, content_path, loc.program_id, this->override_status.IsHbl(), this->override_status.IsProgramSpecific()));
+        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(this->ams_code_info), AtmosphereCodeMountName, content_path, loc.program_id, this->override_status.IsHbl(), this->override_status.IsProgramSpecific()));
         this->mounted_ams = true;
 
+        /* Mount the sd or base code file system. */
+        R_TRY(fs::MountCodeForAtmosphere(std::addressof(this->sd_or_base_code_info), SdOrCodeMountName, content_path, loc.program_id));
+        this->mounted_sd_or_code = true;
+
         /* Mount the base code file system. */
-        R_TRY(fs::MountCodeForAtmosphere(CodeMountName, content_path, loc.program_id));
-        this->mounted_code = true;
+        if (R_SUCCEEDED(fs::MountCode(std::addressof(this->base_code_info), CodeMountName, content_path, loc.program_id))) {
+            this->mounted_code = true;
+        }
 
         return ResultSuccess();
     }

@@ -25,9 +25,13 @@ namespace ams::ldr {
         private:
             std::scoped_lock<os::Mutex> lk;
             cfg::OverrideStatus override_status;
+            fs::CodeInfo ams_code_info;
+            fs::CodeInfo sd_or_base_code_info;
+            fs::CodeInfo base_code_info;
             Result result;
             bool has_status;
             bool mounted_ams;
+            bool mounted_sd_or_code;
             bool mounted_code;
         public:
             ScopedCodeMount(const ncm::ProgramLocation &loc);
@@ -42,15 +46,29 @@ namespace ams::ldr {
                 AMS_ABORT_UNLESS(this->has_status);
                 return this->override_status;
             }
+
+            const fs::CodeInfo &GetAtmosphereCodeInfo() const {
+                return this->ams_code_info;
+            }
+
+            const fs::CodeInfo &GetSdOrBaseCodeInfo() const {
+                return this->sd_or_base_code_info;
+            }
+
+            const fs::CodeInfo &GetCodeInfo() const {
+                return this->base_code_info;
+            }
         private:
             Result Initialize(const ncm::ProgramLocation &loc);
             void EnsureOverrideStatus(const ncm::ProgramLocation &loc);
     };
 
     constexpr inline const char * const AtmosphereCodeMountName = "ams-code";
+    constexpr inline const char * const SdOrCodeMountName       = "sd-code";
     constexpr inline const char * const CodeMountName           = "code";
 
     #define ENCODE_ATMOSPHERE_CODE_PATH(relative) "ams-code:" relative
+    #define ENCODE_SD_OR_CODE_PATH(relative) "sd-code:" relative
     #define ENCODE_CODE_PATH(relative) "code:" relative
 
     /* Redirection API. */

@@ -18,26 +18,15 @@
 
 namespace ams::ldr {
 
-    struct Meta {
-        Npdm *npdm;
-        Acid *acid;
-        Aci *aci;
+    /* Development Manager API. */
+    void SetDevelopmentForAcidProductionCheck(bool development);
+    void SetDevelopmentForAntiDowngradeCheck(bool development);
+    void SetDevelopmentForAcidSignatureCheck(bool development);
+    void SetEnabledProgramVerification(bool enabled);
 
-        void *acid_fac;
-        void *acid_sac;
-        void *acid_kac;
-
-        void *aci_fah;
-        void *aci_sac;
-        void *aci_kac;
-
-        void *modulus;
-        bool is_signed;
-    };
-
-    /* Meta API. */
-    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status);
-    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status);
-    void   InvalidateMetaCache();
+    bool IsDevelopmentForAcidProductionCheck();
+    bool IsDevelopmentForAntiDowngradeCheck();
+    bool IsDevelopmentForAcidSignatureCheck();
+    bool IsEnabledProgramVerification();
 
 }

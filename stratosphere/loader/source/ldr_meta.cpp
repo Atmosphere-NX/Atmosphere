@@ -15,6 +15,7 @@
  */
 #include "ldr_capabilities.hpp"
 #include "ldr_content_management.hpp"
+#include "ldr_development_manager.hpp"
 #include "ldr_meta.hpp"
 
 namespace ams::ldr {
@@ -24,6 +25,7 @@ namespace ams::ldr {
         /* Convenience definitions. */
         constexpr size_t MetaCacheBufferSize = 0x8000;
         constexpr inline const char AtmosphereMetaPath[] = ENCODE_ATMOSPHERE_CODE_PATH("/main.npdm");
+        constexpr inline const char SdOrBaseMetaPath[]   = ENCODE_SD_OR_CODE_PATH("/main.npdm");
         constexpr inline const char BaseMetaPath[]       = ENCODE_CODE_PATH("/main.npdm");
 
         /* Types. */
@@ -72,7 +74,10 @@ namespace ams::ldr {
             /* Validate magic. */
             R_UNLESS(acid->magic == Acid::Magic, ResultInvalidMeta());
 
-            /* TODO: Check if retail flag is set if not development hardware. */
+            /* Validate that the acid is for production if not development. */
+            if (!IsDevelopmentForAcidProductionCheck()) {
+                R_UNLESS((acid->flags & Acid::AcidFlag_Production) != 0, ResultInvalidMeta());
+            }
 
             /* Validate Fac, Sac, Kac. */
             R_TRY(ValidateSubregion(sizeof(Acid), size, acid->fac_offset, acid->fac_size));
@@ -91,6 +96,39 @@ namespace ams::ldr {
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->sac_offset, aci->sac_size));
             R_TRY(ValidateSubregion(sizeof(Aci), size, aci->kac_offset, aci->kac_size));
 
+            return ResultSuccess();
+        }
+
+        const u8 *GetAcidSignatureModulus(u32 key_generation) {
+            AMS_ASSERT(key_generation <= fssystem::AcidSignatureKeyGenerationMax);
+            const u32 used_keygen = (key_generation % (fssystem::AcidSignatureKeyGenerationMax + 1));
+            if (IsDevelopmentForAcidSignatureCheck()) {
+                return fssystem::AcidSignatureKeyModulusDev[used_keygen];
+            } else {
+                return fssystem::AcidSignatureKeyModulusProd[used_keygen];
+            }
+        }
+
+        Result ValidateAcidSignature(Meta *meta) {
+            /* Loader did not check signatures prior to 10.0.0. */
+            if (hos::GetVersion() < hos::Version_10_0_0) {
+                meta->is_signed = false;
+                return ResultSuccess();
+            }
+
+            /* Verify the signature. */
+            const u8 *sig         = meta->acid->signature;
+            const size_t sig_size = sizeof(meta->acid->signature);
+            const u8 *mod         = GetAcidSignatureModulus(meta->npdm->signature_key_generation);
+            const size_t mod_size = fssystem::AcidSignatureKeyModulusSize;
+            const u8 *exp         = fssystem::AcidSignatureKeyExponent;
+            const size_t exp_size = fssystem::AcidSignatureKeyExponentSize;
+            const u8 *msg         = meta->acid->modulus;
+            const size_t msg_size = meta->acid->size;
+            const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
+            R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ResultInvalidAcidSignature());
+
+            meta->is_signed = is_signature_valid;
             return ResultSuccess();
         }
 
@@ -136,6 +174,8 @@ namespace ams::ldr {
                 meta->aci_fah = reinterpret_cast<u8 *>(aci) + aci->fah_offset;
                 meta->aci_sac = reinterpret_cast<u8 *>(aci) + aci->sac_offset;
                 meta->aci_kac = reinterpret_cast<u8 *>(aci) + aci->kac_offset;
+
+                meta->modulus   = acid->modulus;
             }
 
             return ResultSuccess();
@@ -144,7 +184,7 @@ namespace ams::ldr {
     }
 
     /* API. */
-    Result LoadMeta(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status) {
+    Result LoadMeta(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
         /* Try to load meta from file. */
         fs::FileHandle file;
         R_TRY(fs::OpenFile(std::addressof(file), AtmosphereMetaPath, fs::OpenMode_Read));
@@ -155,13 +195,13 @@ namespace ams::ldr {
 
         /* Patch meta. Start by setting all program ids to the current program id. */
         Meta *meta = &g_meta_cache.meta;
-        meta->acid->program_id_min = program_id;
-        meta->acid->program_id_max = program_id;
-        meta->aci->program_id = program_id;
+        meta->acid->program_id_min = loc.program_id;
+        meta->acid->program_id_max = loc.program_id;
+        meta->aci->program_id      = loc.program_id;
 
         /* For HBL, we need to copy some information from the base meta. */
         if (status.IsHbl()) {
-            if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read))) {
+            if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), SdOrBaseMetaPath, fs::OpenMode_Read))) {
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
                 if (R_SUCCEEDED(LoadMetaFromFile(file, &g_original_meta_cache))) {
                     Meta *o_meta = &g_original_meta_cache.meta;
@@ -177,19 +217,29 @@ namespace ams::ldr {
                     caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
                 }
             }
+        } else if (hos::GetVersion() >= hos::Version_10_0_0) {
+            /* If storage id is none, there is no base code filesystem, and thus it is impossible for us to validate. */
+            if (static_cast<ncm::StorageId>(loc.storage_id) != ncm::StorageId::None) {
+                R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
+                ON_SCOPE_EXIT { fs::CloseFile(file); };
+                R_TRY(LoadMetaFromFile(file, &g_original_meta_cache));
+                R_TRY(ValidateAcidSignature(&g_original_meta_cache.meta));
+                meta->modulus   = g_original_meta_cache.meta.modulus;
+                meta->is_signed = g_original_meta_cache.meta.is_signed;
+            }
         }
 
         /* Set output. */
-        g_cached_program_id = program_id;
+        g_cached_program_id = loc.program_id;
         g_cached_override_status = status;
         *out_meta = *meta;
 
         return ResultSuccess();
     }
 
-    Result LoadMetaFromCache(Meta *out_meta, ncm::ProgramId program_id, const cfg::OverrideStatus &status) {
-        if (g_cached_program_id != program_id || g_cached_override_status != status) {
-            return LoadMeta(out_meta, program_id, status);
+    Result LoadMetaFromCache(Meta *out_meta, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &status) {
+        if (g_cached_program_id != loc.program_id || g_cached_override_status != status) {
+            return LoadMeta(out_meta, loc, status);
         }
         *out_meta = g_meta_cache.meta;
         return ResultSuccess();

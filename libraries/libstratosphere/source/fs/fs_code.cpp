@@ -20,14 +20,15 @@ namespace ams::fs {
 
     namespace {
 
-        Result OpenCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, const char *path, ncm::ProgramId program_id) {
+        Result OpenCodeFileSystemImpl(CodeInfo *out_code_info, std::unique_ptr<fsa::IFileSystem> *out, const char *path, ncm::ProgramId program_id) {
             /* Print a path suitable for the remote service. */
             fssrv::sf::Path sf_path;
             R_TRY(FspPathPrintf(std::addressof(sf_path), "%s", path));
 
             /* Open the filesystem using libnx bindings. */
+            static_assert(sizeof(CodeInfo) == sizeof(::FsCodeInfo));
             ::FsFileSystem fs;
-            R_TRY(fsldrOpenCodeFileSystem(program_id.value, sf_path.str, std::addressof(fs)));
+            R_TRY(fsldrOpenCodeFileSystem(reinterpret_cast<::FsCodeInfo *>(out_code_info), program_id.value, sf_path.str, std::addressof(fs)));
 
             /* Allocate a new filesystem wrapper. */
             auto fsa = std::make_unique<RemoteFileSystem>(fs);
@@ -61,12 +62,12 @@ namespace ams::fs {
             return OpenPackageFileSystemImpl(out, sf_path.str);
         }
 
-        Result OpenSdCardCodeOrCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out, const char *path, ncm::ProgramId program_id) {
+        Result OpenSdCardCodeOrCodeFileSystemImpl(CodeInfo *out_code_info, std::unique_ptr<fsa::IFileSystem> *out, const char *path, ncm::ProgramId program_id) {
             /* If we can open an sd card code fs, use it. */
             R_SUCCEED_IF(R_SUCCEEDED(OpenSdCardCodeFileSystemImpl(out, program_id)));
 
             /* Otherwise, fall back to a normal code fs. */
-            return OpenCodeFileSystemImpl(out, path, program_id);
+            return OpenCodeFileSystemImpl(out_code_info, out, path, program_id);
         }
 
         Result OpenHblCodeFileSystemImpl(std::unique_ptr<fsa::IFileSystem> *out) {
@@ -226,7 +227,7 @@ namespace ams::fs {
             public:
                 AtmosphereCodeFileSystem() : initialized(false) { /* ... */ }
 
-                Result Initialize(const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific) {
+                Result Initialize(CodeInfo *out_code_info, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific) {
                     AMS_ABORT_UNLESS(!this->initialized);
 
                     /* If we're hbl, we need to open a hbl fs. */
@@ -238,7 +239,7 @@ namespace ams::fs {
 
                     /* Open the code filesystem. */
                     std::unique_ptr<fsa::IFileSystem> fsa;
-                    R_TRY(OpenSdCardCodeOrCodeFileSystemImpl(std::addressof(fsa), path, program_id));
+                    R_TRY(OpenSdCardCodeOrCodeFileSystemImpl(out_code_info, std::addressof(fsa), path, program_id));
                     this->code_fs.emplace(std::move(fsa), program_id, is_specific);
 
                     this->program_id = program_id;
@@ -274,7 +275,10 @@ namespace ams::fs {
 
     }
 
-    Result MountCode(const char *name, const char *path, ncm::ProgramId program_id) {
+    Result MountCode(CodeInfo *out, const char *name, const char *path, ncm::ProgramId program_id) {
+        /* Clear the output. */
+        std::memset(out, 0, sizeof(*out));
+
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 
@@ -283,13 +287,16 @@ namespace ams::fs {
 
         /* Open the code file system. */
         std::unique_ptr<fsa::IFileSystem> fsa;
-        R_TRY(OpenCodeFileSystemImpl(std::addressof(fsa), path, program_id));
+        R_TRY(OpenCodeFileSystemImpl(out, std::addressof(fsa), path, program_id));
 
         /* Register. */
         return fsa::Register(name, std::move(fsa));
     }
 
-    Result MountCodeForAtmosphereWithRedirection(const char *name, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific) {
+    Result MountCodeForAtmosphereWithRedirection(CodeInfo *out, const char *name, const char *path, ncm::ProgramId program_id, bool is_hbl, bool is_specific) {
+        /* Clear the output. */
+        std::memset(out, 0, sizeof(*out));
+
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 
@@ -301,13 +308,16 @@ namespace ams::fs {
         R_UNLESS(ams_code_fs != nullptr, fs::ResultAllocationFailureInCodeA());
 
         /* Initialize the code file system. */
-        R_TRY(ams_code_fs->Initialize(path, program_id, is_hbl, is_specific));
+        R_TRY(ams_code_fs->Initialize(out, path, program_id, is_hbl, is_specific));
 
         /* Register. */
         return fsa::Register(name, std::move(ams_code_fs));
     }
 
-    Result MountCodeForAtmosphere(const char *name, const char *path, ncm::ProgramId program_id) {
+    Result MountCodeForAtmosphere(CodeInfo *out, const char *name, const char *path, ncm::ProgramId program_id) {
+        /* Clear the output. */
+        std::memset(out, 0, sizeof(*out));
+
         /* Validate the mount name. */
         R_TRY(impl::CheckMountName(name));
 
@@ -316,7 +326,7 @@ namespace ams::fs {
 
         /* Open the code file system. */
         std::unique_ptr<fsa::IFileSystem> fsa;
-        R_TRY(OpenSdCardCodeOrCodeFileSystemImpl(std::addressof(fsa), path, program_id));
+        R_TRY(OpenSdCardCodeOrCodeFileSystemImpl(out, std::addressof(fsa), path, program_id));
 
         /* Create a wrapper fs. */
         auto wrap_fsa = std::make_unique<SdCardRedirectionCodeFileSystem>(std::move(fsa), program_id, false);

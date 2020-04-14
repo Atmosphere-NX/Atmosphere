@@ -31,6 +31,8 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(NotPinned,             8);
     R_DEFINE_ERROR_RESULT(InvalidProgramId,      9);
     R_DEFINE_ERROR_RESULT(InvalidVersion,        10);
+    R_DEFINE_ERROR_RESULT(InvalidAcidSignature,  11);
+    R_DEFINE_ERROR_RESULT(InvalidNcaSignature,   12);
 
     R_DEFINE_ERROR_RESULT(InsufficientAddressSpace,     51);
     R_DEFINE_ERROR_RESULT(InvalidNro,                   52);

@@ -28,6 +28,7 @@ namespace ams::ldr {
             virtual Result SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size);
             virtual Result FlushArguments();
             virtual Result GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id);
+            virtual Result SetEnabledProgramVerification(bool enabled);
 
             /* Atmosphere commands. */
             virtual Result AtmosphereRegisterExternalCode(sf::OutMoveHandle out, ncm::ProgramId program_id);
@@ -42,10 +43,11 @@ namespace ams::ldr {
         class ProcessManagerInterface final : public LoaderService {
             protected:
                 enum class CommandId {
-                    CreateProcess   = 0,
-                    GetProgramInfo  = 1,
-                    PinProgram      = 2,
-                    UnpinProgram    = 3,
+                    CreateProcess                 = 0,
+                    GetProgramInfo                = 1,
+                    PinProgram                    = 2,
+                    UnpinProgram                  = 3,
+                    SetEnabledProgramVerification = 4,
 
                     AtmosphereHasLaunchedProgram = 65000,
                     AtmosphereGetProgramInfo     = 65001,
@@ -57,6 +59,7 @@ namespace ams::ldr {
                     MAKE_SERVICE_COMMAND_META(GetProgramInfo),
                     MAKE_SERVICE_COMMAND_META(PinProgram),
                     MAKE_SERVICE_COMMAND_META(UnpinProgram),
+                    MAKE_SERVICE_COMMAND_META(SetEnabledProgramVerification, hos::Version_10_0_0),
 
                     MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
                     MAKE_SERVICE_COMMAND_META(AtmosphereGetProgramInfo),

@@ -15,6 +15,7 @@
  */
 #include "ldr_capabilities.hpp"
 #include "ldr_content_management.hpp"
+#include "ldr_development_manager.hpp"
 #include "ldr_launch_record.hpp"
 #include "ldr_meta.hpp"
 #include "ldr_patcher.hpp"
@@ -85,6 +86,9 @@ namespace ams::ldr {
         Result ValidateProgramVersion(ncm::ProgramId program_id, u32 version) {
             /* No version verification is done before 8.1.0. */
             R_SUCCEED_IF(hos::GetVersion() < hos::Version_8_1_0);
+
+            /* No verification is done if development. */
+            R_SUCCEED_IF(IsDevelopmentForAntiDowngradeCheck());
 
             /* Do version-dependent validation, if compiled to do so. */
 #ifdef LDR_VALIDATE_PROCESS_VERSION
@@ -210,7 +214,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc) {
+        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc, const fs::CodeInfo &code_info) {
             /* Validate version. */
             R_TRY(ValidateProgramVersion(loc.program_id, meta->npdm->version));
 
@@ -220,6 +224,21 @@ namespace ams::ldr {
 
             /* Validate the kernel capabilities. */
             R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
+
+            /* If we have data to validate, validate it. */
+            if (code_info.is_signed && meta->is_signed) {
+                const u8 *sig         = code_info.signature;
+                const size_t sig_size = sizeof(code_info.signature);
+                const u8 *mod         = static_cast<u8 *>(meta->modulus);
+                const size_t mod_size = crypto::Rsa2048PssSha256Verifier::ModulusSize;
+                const u8 *exp         = fssystem::AcidSignatureKeyExponent;
+                const size_t exp_size = fssystem::AcidSignatureKeyExponentSize;
+                const u8 *hsh         = code_info.hash;
+                const size_t hsh_size = sizeof(code_info.hash);
+                const bool is_signature_valid = crypto::VerifyRsa2048PssSha256WithHash(sig, sig_size, mod, mod_size, exp, exp_size, hsh, hsh_size);
+
+                R_UNLESS(is_signature_valid, ResultInvalidNcaSignature());
+            }
 
             /* All good. */
             return ResultSuccess();
@@ -578,10 +597,10 @@ namespace ams::ldr {
 
             /* Load meta, possibly from cache. */
             Meta meta;
-            R_TRY(LoadMetaFromCache(&meta, loc.program_id, override_status));
+            R_TRY(LoadMetaFromCache(&meta, loc, override_status));
 
             /* Validate meta. */
-            R_TRY(ValidateMeta(&meta, loc));
+            R_TRY(ValidateMeta(&meta, loc, mount.GetCodeInfo()));
 
             /* Load, validate NSOs. */
             R_TRY(LoadNsoHeaders(nso_headers, has_nso));
@@ -636,7 +655,7 @@ namespace ams::ldr {
         {
             ScopedCodeMount mount(loc);
             R_TRY(mount.GetResult());
-            R_TRY(LoadMeta(&meta, loc.program_id, mount.GetOverrideStatus()));
+            R_TRY(LoadMeta(&meta, loc, mount.GetOverrideStatus()));
             if (out_status != nullptr) {
                 *out_status = mount.GetOverrideStatus();
             }
