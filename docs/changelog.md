@@ -1,4 +1,11 @@
 # Changelog
+## 0.11.1
++ A bug was fixed that could cause owls to flicker under certain circumstances.
+  + For those interested in technical details, in 10.0.0 kernelldr/kernel no longer set cpuactlr_el1, assuming that it was set correctly by the secure monitor.
+  + However, exosphere did not set cpuactlr_el1. This meant that the register held the reset value going into boot.
+  + This caused a variety of highly erratic symptoms, including causing basically any game to crash seemingly randomly.
++ A number of other major inaccuracies in exosphere were corrected.
++ General system stability improvements to enhance the user's experience.
 ## 0.11.0
 + Support was added for 10.0.0.
   + Exosphere has been updated to reflect the new key import semantics in 10.0.0.
