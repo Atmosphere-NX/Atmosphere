@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "utils.h"
 #include "memory_map.h"
 #include "mc.h"
@@ -65,7 +65,7 @@ void init_dma_controllers(unsigned int target_firmware) {
         MAKE_REG32(0x6000C038) = 0x0;
 
         /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
-        MAKE_REG32(0x50060000) |= 0x38000000;
+        MAKE_REG32(0x50060000) = (MAKE_REG32(0x50060000) & 0xC4FFFFFF) | 0x38000000;
 
         /* AHB_ARBITRATION_DISABLE_0 - Disables USB, USB2, and AHB-DMA from arbitration */
         MAKE_REG32(0x6000C004) = 0x40060;
@@ -99,7 +99,7 @@ void init_dma_controllers(unsigned int target_firmware) {
         MAKE_REG32(0x60020038) = 0;
 
         /* MSELECT_CONFIG_0 |= WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
-        MAKE_REG32(0x50060000) |= 0x38000000;
+        MAKE_REG32(0x50060000) |= (MAKE_REG32(0x50060000) & 0xC4FFFFFF) | 0x38000000;
 
         /* AHB_ARBITRATION_PRIORITY_CTRL_0 - Select high prio group with prio 7 */
         MAKE_REG32(0x6000C008) = 0xE0000001;
@@ -111,6 +111,14 @@ void init_dma_controllers(unsigned int target_firmware) {
 
 void _set_memory_registers_enable_mmu(const uintptr_t ttbr0) {
     static const uintptr_t vbar  = TZRAM_GET_SEGMENT_ADDRESS(TZRAM_SEGEMENT_ID_SECMON_EVT) + 0x800;
+    /*
+        - Non-cacheable load forwarding enabled
+        - Disable load-pass DMB.
+        - NOTE: This and this alone is done via inline asm, due to register argument limits.
+    */
+
+    static const uint64_t cpuactlr = 0x800000001000000ull;
+    __asm__ __volatile__("msr s3_1_c15_c2_0, %0" :: "r"(cpuactlr) : "memory", "cc");
 
     /*
         - Disable table walk descriptor access prefetch.
@@ -197,12 +205,12 @@ void warmboot_init(void) {
     */
     flush_dcache_all();
     invalidate_icache_all();
-    
+
     /* On warmboot (not cpu_on) only */
     if (VIRT_MC_SECURITY_CFG3 == 0) {
         init_dma_controllers(g_exosphere_target_firmware_for_init);
     }
-    
+
     /*identity_remap_tzram();*/
     /* Nintendo pointlessly fully invalidate the TLB & invalidate the data cache on the modified ranges here */
     if (g_exosphere_target_firmware_for_init < ATMOSPHERE_TARGET_FIRMWARE_500) {
