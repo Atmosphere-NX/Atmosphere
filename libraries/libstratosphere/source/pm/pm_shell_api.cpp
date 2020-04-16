@@ -37,4 +37,8 @@ namespace ams::pm::shell {
         return ::pmshellBoostSystemMemoryResourceLimit(size);
     }
 
+    Result EnableApplicationExtraThread() {
+        return ::pmshellEnableApplicationExtraThread();
+    }
+
 }

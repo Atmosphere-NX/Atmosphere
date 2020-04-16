@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "pgl_srv_shell_interface.hpp"
 #include "pgl_srv_shell.hpp"
 
 namespace ams::pgl::srv {

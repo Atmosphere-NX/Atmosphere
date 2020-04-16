@@ -14,7 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/pgl/pgl_types.hpp>
+#include <stratosphere/pgl/sf/pgl_sf_i_shell_interface.hpp>
 
 namespace ams::pgl::srv {
 
