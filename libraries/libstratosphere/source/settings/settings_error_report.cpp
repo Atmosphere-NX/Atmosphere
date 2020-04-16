@@ -21,7 +21,7 @@ namespace ams::settings::system {
     ErrorReportSharePermission GetErrorReportSharePermission() {
         s32 perm = 0;
         R_ABORT_UNLESS(settings::impl::GetErrorReportSharePermission(std::addressof(perm)));
-        return static_cast<ErrorReportSharePermission>(model);
+        return static_cast<ErrorReportSharePermission>(perm);
     }
 
 }
