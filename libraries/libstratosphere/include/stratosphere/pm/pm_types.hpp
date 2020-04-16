@@ -54,7 +54,7 @@ namespace ams::pm {
 
     constexpr inline u32 LaunchFlagsMask = (1 << 6) - 1;
 
-    enum class ProcessEvent {
+    enum class ProcessEvent : u32 {
         None           = 0,
         Exited         = 1,
         Started        = 2,
@@ -63,7 +63,7 @@ namespace ams::pm {
         DebugBreak     = 5,
     };
 
-    enum class ProcessEventDeprecated {
+    enum class ProcessEventDeprecated : u32 {
         None           = 0,
         Exception      = 1,
         Exited         = 2,

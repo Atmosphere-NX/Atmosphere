@@ -15,12 +15,17 @@
  */
 
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/settings/settings_types.hpp>
 
-#include "settings/settings_types.hpp"
-#include "settings/settings_fwdbg_types.hpp"
-#include "settings/settings_fwdbg_api.hpp"
-#include "settings/system/settings_error_report.hpp"
-#include "settings/system/settings_firmware_version.hpp"
-#include "settings/system/settings_product_model.hpp"
-#include "settings/system/settings_region.hpp"
-#include "settings/system/settings_serial_number.hpp"
+namespace ams::settings::system {
+
+    enum ErrorReportSharePermission {
+        ErrorReportSharePermission_NotConfirmed = 0,
+        ErrorReportSharePermission_Granted      = 1,
+        ErrorReportSharePermission_Denied       = 2,
+    };
+
+    ErrorReportSharePermission GetErrorReportSharePermission();
+
+}

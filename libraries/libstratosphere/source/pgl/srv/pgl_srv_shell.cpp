@@ -140,8 +140,182 @@ namespace ams::pgl::srv {
             return pm::shell::LaunchProgram(std::addressof(dummy_process_id), ncm::ProgramLocation::Make(ncm::SystemDebugAppletId::SnapShotDumper, ncm::StorageId::BuiltInSystem), pm::LaunchFlags_None);
         }
 
+        bool ShouldSnapShotAutoDump() {
+            bool dump;
+            const size_t sz = settings::fwdbg::GetSettingsItemValue(std::addressof(dump), sizeof(dump), "snap_shot_dump", "auto_dump");
+            return sz == sizeof(dump) && dump;
+        }
+
+        bool ShouldSnapShotFullDump() {
+            bool dump;
+            const size_t sz = settings::fwdbg::GetSettingsItemValue(std::addressof(dump), sizeof(dump), "snap_shot_dump", "full_dump");
+            return sz == sizeof(dump) && dump;
+        }
+
+        SnapShotDumpType GetSnapShotDumpType() {
+            if (ShouldSnapShotAutoDump()) {
+                if (ShouldSnapShotFullDump()) {
+                    return SnapShotDumpType::Full;
+                } else {
+                    return SnapShotDumpType::Auto;
+                }
+            } else {
+                return SnapShotDumpType::None;
+            }
+        }
+
+        void TriggerSnapShotDumper(os::ProcessId process_id) {
+            TriggerSnapShotDumper(process_id, GetSnapShotDumpType(), nullptr);
+        }
+
+        s32 GetCrashReportDetailedArgument(u32 data_flags) {
+            if (((data_flags & ProcessDataFlag_DetailedCrashReportAllowed) != 0) && ((data_flags & ProcessDataFlag_DetailedCrashReportEnabled) != 0)) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+
+        s32 GetCrashReportScreenShotArgument(u32 data_flags) {
+            if (settings::system::GetErrorReportSharePermission() == settings::system::ErrorReportSharePermission_Granted) {
+                return ((data_flags & ProcessDataFlag_EnableCrashReportScreenShot) != 0) ? 1 : 0;
+            } else {
+                return 0;
+            }
+        }
+
+        void TriggerCrashReport(os::ProcessId process_id) {
+            static os::ProcessId s_crashed_process_id = os::InvalidProcessId;
+            static os::ProcessId s_creport_process_id = os::InvalidProcessId;
+
+            /* If the program that crashed is creport, we should just terminate both processes and return. */
+            if (process_id == s_creport_process_id) {
+                TerminateProcess(s_crashed_process_id);
+                TerminateProcess(s_creport_process_id);
+                s_crashed_process_id = os::InvalidProcessId;
+                s_creport_process_id = os::InvalidProcessId;
+                return;
+            }
+
+            /* Get the data flags for the process. */
+            u32 data_flags;
+            {
+                std::scoped_lock lk(g_process_data_mutex);
+                if (auto *data = FindProcessData(process_id); data != nullptr) {
+                    data_flags = data->flags;
+                } else {
+                    data_flags = ProcessDataFlag_None;
+                }
+            }
+
+            /* Generate arguments. */
+            char arguments[0x40];
+            const size_t len = std::snprintf(arguments, sizeof(arguments), "%ld %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags));
+            if (R_FAILED(ldr::SetProgramArgument(ncm::SystemProgramId::Creport, arguments, len + 1))) {
+                return;
+            }
+
+            /* Launch creport. */
+            os::ProcessId creport_process_id;
+            if (R_FAILED(pm::shell::LaunchProgram(std::addressof(creport_process_id), ncm::ProgramLocation::Make(ncm::SystemProgramId::Creport, ncm::StorageId::BuiltInSystem), pm::LaunchFlags_None))) {
+                return;
+            }
+
+            /* Set the globals. */
+            s_crashed_process_id = process_id;
+            s_creport_process_id = creport_process_id;
+        }
+
+        void HandleException(os::ProcessId process_id) {
+            if (g_enable_jit_debug) {
+                /* If jit debug is enabled, we want to try to launch snap shot dumper. */
+                ProcessData *data = nullptr;
+                {
+                    std::scoped_lock lk(g_process_data_mutex);
+                    data = FindProcessData(process_id);
+                }
+
+                /* If we're tracking the process, we can launch dumper. Otherwise we should just terminate. */
+                if (data != nullptr) {
+                    TriggerSnapShotDumper(process_id);
+                } else {
+                    TerminateProcess(process_id);
+                }
+            } else {
+                /* Otherwise, we want to launch creport. */
+                TriggerCrashReport(process_id);
+            }
+        }
+
+        void HandleExit(os::ProcessId process_id) {
+            std::scoped_lock lk(g_process_data_mutex);
+            if (auto *data = FindProcessData(process_id); data != nullptr) {
+                data->process_id = os::InvalidProcessId;
+            }
+        }
+
+        void OnProcessEvent(const pm::ProcessEventInfo &event_info) {
+            /* Determine if we're tracking the process. */
+            ProcessData *data = nullptr;
+            {
+                std::scoped_lock lk(g_process_data_mutex);
+                data = FindProcessData(event_info.process_id);
+            }
+
+            /* If we are, we're going to want to notify our listeners. */
+            if (data != nullptr) {
+                /* If we closed the process, note that. */
+                if (static_cast<pm::ProcessEvent>(event_info.event) == pm::ProcessEvent::Exited) {
+                    HandleExit(event_info.process_id);
+                }
+
+                /* Notify all observers. */
+                std::scoped_lock lk(g_observer_list_mutex);
+                for (auto &observer : g_observer_list) {
+                    observer.Notify(event_info);
+                }
+            }
+
+            /* If the process crashed, handle that. */
+            if (static_cast<pm::ProcessEvent>(event_info.event) == pm::ProcessEvent::Exception) {
+                HandleException(event_info.process_id);
+            }
+        }
+
         void ProcessControlTask(void *) {
-            /* TODO */
+            /* Get the process event event from pm. */
+            os::SystemEvent process_event;
+            R_ABORT_UNLESS(pm::shell::GetProcessEventEvent(std::addressof(process_event)));
+
+            while (true) {
+                /* Wait for an event to come in, and clear our signal. */
+                process_event.Wait();
+                process_event.Signal();
+
+                bool continue_getting_event = true;
+                while (continue_getting_event) {
+                    /* Try to get an event info. */
+                    pm::ProcessEventInfo event_info;
+                    if (R_FAILED(pm::shell::GetProcessEventInfo(std::addressof(event_info)))) {
+                        break;
+                    }
+
+                    /* Process the event. */
+                    switch (static_cast<pm::ProcessEvent>(event_info.event)) {
+                        case pm::ProcessEvent::None:
+                            continue_getting_event = false;
+                            break;
+                        case pm::ProcessEvent::Exited:
+                        case pm::ProcessEvent::Started:
+                        case pm::ProcessEvent::Exception:
+                        case pm::ProcessEvent::DebugRunning:
+                        case pm::ProcessEvent::DebugBreak:
+                            OnProcessEvent(event_info);
+                            break;
+                        AMS_UNREACHABLE_DEFAULT_CASE();
+                    }
+                }
+            }
         }
 
     }

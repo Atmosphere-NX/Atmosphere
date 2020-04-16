@@ -13,14 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "impl/settings_error_report_impl.hpp"
 
-#pragma once
+namespace ams::settings::system {
 
-#include "settings/settings_types.hpp"
-#include "settings/settings_fwdbg_types.hpp"
-#include "settings/settings_fwdbg_api.hpp"
-#include "settings/system/settings_error_report.hpp"
-#include "settings/system/settings_firmware_version.hpp"
-#include "settings/system/settings_product_model.hpp"
-#include "settings/system/settings_region.hpp"
-#include "settings/system/settings_serial_number.hpp"
+    ErrorReportSharePermission GetErrorReportSharePermission() {
+        s32 perm = 0;
+        R_ABORT_UNLESS(settings::impl::GetErrorReportSharePermission(std::addressof(perm)));
+        return static_cast<ErrorReportSharePermission>(model);
+    }
+
+}

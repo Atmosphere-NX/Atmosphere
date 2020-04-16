@@ -28,6 +28,18 @@ namespace ams::pm::shell {
         return ::pmshellTerminateProcess(static_cast<u64>(process_id));
     }
 
+    Result GetProcessEventEvent(os::SystemEvent *out) {
+        ::Event evt;
+        R_TRY(::pmshellGetProcessEventHandle(std::addressof(evt)));
+        out->Attach(evt.revent, true, svc::InvalidHandle, false, os::EventClearMode_ManualClear);
+        return ResultSuccess();
+    }
+
+    Result GetProcessEventInfo(ProcessEventInfo *out) {
+        static_assert(sizeof(*out) == sizeof(::PmProcessEventInfo));
+        return ::pmshellGetProcessEventInfo(reinterpret_cast<::PmProcessEventInfo *>(out));
+    }
+
     Result GetApplicationProcessIdForShell(os::ProcessId *out) {
         static_assert(sizeof(*out) == sizeof(u64));
         return ::pmshellGetApplicationProcessIdForShell(reinterpret_cast<u64 *>(out));
