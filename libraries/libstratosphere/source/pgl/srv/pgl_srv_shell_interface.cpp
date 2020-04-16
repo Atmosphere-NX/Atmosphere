@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "pgl_srv_shell.hpp"
+#include "pgl_srv_shell_event_observer.hpp"
 
 namespace ams::pgl::srv {
 
@@ -67,7 +68,22 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterface::GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) {
-        /* TODO */
+        /* Allocate a new interface. */
+        auto *observer_memory = this->memory_resource->Allocate(sizeof(EventObserverInterface), alignof(EventObserverInterface));
+        AMS_ABORT_UNLESS(observer_memory != nullptr);
+
+        /* Create the interface object. */
+        new (observer_memory) EventObserverInterface;
+
+        /* Set the output. */
+        out.SetValue(std::shared_ptr<EventObserverInterface>(reinterpret_cast<EventObserverInterface *>(observer_memory), [&](EventObserverInterface *obj) {
+            /* Destroy the object. */
+            obj->~EventObserverInterface();
+
+            /* Custom deleter: use the memory resource to free. */
+            this->memory_resource->Deallocate(obj, sizeof(EventObserverInterface), alignof(EventObserverInterface));
+        }));
+        return ResultSuccess();
     }
 
 }

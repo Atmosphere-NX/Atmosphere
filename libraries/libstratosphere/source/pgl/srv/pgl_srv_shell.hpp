@@ -20,6 +20,11 @@ namespace ams::pgl::srv {
 
     void InitializeProcessControlTask();
 
+    class ShellEventObserverHolder;
+
+    void RegisterShellEventObserver(ShellEventObserverHolder *holder);
+    void UnregisterShellEventObserver(ShellEventObserverHolder *holder);
+
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags);
     Result TerminateProcess(os::ProcessId process_id);
     Result GetApplicationProcessId(os::ProcessId *out);

@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "pgl_srv_shell.hpp"
+#include "pgl_srv_shell_event_observer.hpp"
 
 namespace ams::pgl::srv {
 
@@ -45,6 +46,9 @@ namespace ams::pgl::srv {
         constexpr inline s32    ProcessControlTaskPriority  = 21;
         os::ThreadType g_process_control_task_thread;
         alignas(os::ThreadStackAlignment) u8 g_process_control_task_stack[ProcessControlTaskStackSize];
+
+        os::SdkMutex g_observer_list_mutex;
+        util::IntrusiveListBaseTraits<ShellEventObserverHolder>::ListType g_observer_list;
 
         os::SdkMutex g_process_data_mutex;
         ProcessData g_process_data[ProcessDataCount];
@@ -153,6 +157,23 @@ namespace ams::pgl::srv {
 
         /* Start the thread. */
         os::StartThread(std::addressof(g_process_control_task_thread));
+    }
+
+    void RegisterShellEventObserver(ShellEventObserverHolder *holder) {
+        std::scoped_lock lk(g_observer_list_mutex);
+
+        g_observer_list.push_back(*holder);
+    }
+
+    void UnregisterShellEventObserver(ShellEventObserverHolder *holder) {
+        std::scoped_lock lk(g_observer_list_mutex);
+
+        for (auto &observer : g_observer_list) {
+            if (std::addressof(observer) == holder) {
+                g_observer_list.erase(g_observer_list.iterator_to(observer));
+                break;
+            }
+        }
     }
 
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {
