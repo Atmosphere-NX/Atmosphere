@@ -13,9 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#pragma once
+namespace ams::ldr {
 
-#include <stratosphere/ldr/ldr_types.hpp>
-#include <stratosphere/ldr/ldr_shell_api.hpp>
-#include <stratosphere/ldr/ldr_pm_api.hpp>
+    Result InitializeForShell() {
+        return ::ldrShellInitialize();
+    }
+
+    Result FinalizeForShell() {
+        ::ldrShellExit();
+        return ResultSuccess();
+    }
+
+    Result SetProgramArgument(ncm::ProgramId program_id, const void *arg, size_t size) {
+        return ::ldrShellSetProgramArguments(static_cast<u64>(program_id), arg, size);
+    }
+
+    Result FlushArguments() {
+        return ::ldrShellFlushArguments();
+    }
+
+}

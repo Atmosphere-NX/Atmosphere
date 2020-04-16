@@ -15,7 +15,17 @@
  */
 
 #pragma once
-
+#include <vapours.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
 #include <stratosphere/ldr/ldr_types.hpp>
-#include <stratosphere/ldr/ldr_shell_api.hpp>
-#include <stratosphere/ldr/ldr_pm_api.hpp>
+
+namespace ams::ldr {
+
+    /* Shell API. */
+    Result InitializeForShell();
+    Result FinalizeForShell();
+
+    Result SetProgramArgument(ncm::ProgramId program_id, const void *arg, size_t size);
+    Result FlushArguments();
+
+}

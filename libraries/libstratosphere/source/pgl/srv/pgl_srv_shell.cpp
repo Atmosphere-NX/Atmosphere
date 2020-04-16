@@ -82,6 +82,55 @@ namespace ams::pgl::srv {
             }
         }
 
+        s32 ConvertDumpTypeToArgument(SnapShotDumpType dump_type) {
+            switch (dump_type) {
+                case SnapShotDumpType::None: return -1;
+                case SnapShotDumpType::Auto: return 0;
+                case SnapShotDumpType::Full: return 1;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
+        bool GetSnapShotDumpOutputAllLog(os::ProcessId process_id) {
+            /* Check if we have an option set for the process. */
+            {
+                std::scoped_lock lk(g_process_data_mutex);
+                if (ProcessData *data = FindProcessData(process_id); data != nullptr) {
+                    if ((data->flags & ProcessDataFlag_HasLogOption) != 0) {
+                        return ((data->flags & ProcessDataFlag_OutputAllLog) != 0);
+                    }
+                }
+            }
+
+            /* If we don't have an option for the process, fall back to settings. */
+            u8 log_option;
+            const size_t option_size = settings::fwdbg::GetSettingsItemValue(std::addressof(log_option), sizeof(log_option), "snap_shot_dump", "output_all_log");
+            return (option_size == sizeof(log_option) && log_option != 0);
+        }
+
+        size_t CreateSnapShotDumpArguments(char *dst, size_t dst_size, os::ProcessId process_id, SnapShotDumpType dump_type, const char *str_arg) {
+            const s32 dump_arg = ConvertDumpTypeToArgument(dump_type);
+            const s32 log_arg  = GetSnapShotDumpOutputAllLog(process_id) ? 1 : 0;
+            if (str_arg != nullptr) {
+                return std::snprintf(dst, dst_size, "D %010llu \"%s\" -log %d -dump %d", static_cast<unsigned long long>(static_cast<u64>(process_id)), str_arg, log_arg, dump_arg);
+            } else {
+                return std::snprintf(dst, dst_size, "D %010llu -log %d -dump %d", static_cast<unsigned long long>(static_cast<u64>(process_id)), log_arg, dump_arg);
+            }
+        }
+
+        Result TriggerSnapShotDumper(os::ProcessId process_id, SnapShotDumpType dump_type, const char *arg) {
+            /* Create the arguments. */
+            char process_arguments[800];
+            const size_t arg_len = CreateSnapShotDumpArguments(process_arguments, sizeof(process_arguments), process_id, dump_type, arg);
+
+            /* Set the arguments. */
+            R_TRY(ldr::SetProgramArgument(ncm::SystemDebugAppletId::SnapShotDumper, process_arguments, arg_len + 1));
+
+            /* Launch the process. */
+            os::ProcessId dummy_process_id;
+            return pm::shell::LaunchProgram(std::addressof(dummy_process_id), ncm::ProgramLocation::Make(ncm::SystemDebugAppletId::SnapShotDumper, ncm::StorageId::BuiltInSystem), pm::LaunchFlags_None);
+        }
+
     }
 
     void InitializeProcessControlTask() {
@@ -205,7 +254,12 @@ namespace ams::pgl::srv {
     }
 
     Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const char *arg) {
-        /* TODO */
+        /* Try to get the application process id. */
+        os::ProcessId process_id;
+        R_TRY(pm::shell::GetApplicationProcessIdForShell(std::addressof(process_id)));
+
+        /* Launch the snapshot dumper. */
+        return TriggerSnapShotDumper(process_id, dump_type, arg);
     }
 
 }

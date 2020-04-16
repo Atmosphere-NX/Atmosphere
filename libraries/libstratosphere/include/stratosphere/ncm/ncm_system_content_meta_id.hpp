@@ -402,6 +402,34 @@ namespace ams::ncm {
         return true;
     }
 
+    struct SystemDebugAppletId {
+        u64 value;
+
+        constexpr operator ProgramId() const {
+            return { this->value };
+        }
+
+        static const SystemDebugAppletId Start;
+
+        static const SystemDebugAppletId SnapShotDumper;
+
+        static const SystemDebugAppletId End;
+    };
+
+    inline constexpr const SystemDebugAppletId SystemDebugAppletId::Start           = { 0x0100000000002000ul };
+
+    inline constexpr const SystemDebugAppletId SystemDebugAppletId::SnapShotDumper  = { 0x0100000000002071ul };
+
+    inline constexpr const SystemDebugAppletId SystemDebugAppletId::End             = { 0x0100000000002FFFul };
+
+    inline constexpr bool IsSystemDebugAppletId(const ProgramId &program_id) {
+        return SystemDebugAppletId::Start <= program_id && program_id <= SystemDebugAppletId::End;
+    }
+
+    inline constexpr bool IsSystemDebugAppletId(const SystemDebugAppletId &program_id) {
+        return true;
+    }
+
     struct LibraryAppletId {
         u64 value;
 
