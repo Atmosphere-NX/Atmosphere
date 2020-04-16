@@ -31,7 +31,7 @@ namespace ams::pgl {
     enum class SnapShotDumpType : u32 {
         None = 0,
         Auto = 1,
-        Full = 1,
+        Full = 2,
     };
 
     /* TODO: Is this really nn::ncm::Content<Something>Info? */

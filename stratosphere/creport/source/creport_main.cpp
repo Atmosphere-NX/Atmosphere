@@ -110,9 +110,9 @@ int main(int argc, char **argv) {
     /* Try to terminate the process. */
     if (hos::GetVersion() >= hos::Version_10_0_0) {
         /* On 10.0.0+, use pgl to terminate. */
-        sm::ScopedServiceHolder<pglInitialize, pglExit> pgl_holder;
+        sm::ScopedServiceHolder<pgl::Initialize, pgl::Finalize> pgl_holder;
         if (pgl_holder) {
-            pglTerminateProcess(static_cast<u64>(crashed_pid));
+            pgl::TerminateProcess(crashed_pid);
         }
     } else {
         /* On < 10.0.0, use ns:dev to terminate. */

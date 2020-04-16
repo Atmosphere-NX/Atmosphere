@@ -24,12 +24,13 @@ namespace ams::pgl {
     Result Initialize();
     void   Finalize();
 
-    Result LaunchProgram(const ncm::ProgramLocation &loc, u32 process_flags, u8 pgl_flags);
+    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 process_flags, u8 pgl_flags);
     Result TerminateProcess(os::ProcessId process_id);
-    Result LaunchProgramFromHost(const char *content_path, u32 process_flags);
+    Result LaunchProgramFromHost(os::ProcessId *out, const char *content_path, u32 process_flags);
     Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path);
     Result GetApplicationProcessId(os::ProcessId *out);
     Result BoostSystemMemoryResourceLimit(u64 size);
+    Result IsProcessTracked(bool *out, os::ProcessId process_id);
     Result EnableApplicationCrashReport(bool enabled);
     Result IsApplicationCrashReportEnabled(bool *out);
     Result EnableApplicationAllThreadDumpOnCrash(bool enabled);
