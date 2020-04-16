@@ -42,7 +42,7 @@ namespace ams::pgl::srv {
         bool g_enable_crash_report_screenshot = true;
         bool g_enable_jit_debug               = false;
 
-        constexpr inline size_t ProcessControlTaskStackSize = 4_KB;
+        constexpr inline size_t ProcessControlTaskStackSize = 8_KB;
         constexpr inline s32    ProcessControlTaskPriority  = 21;
         os::ThreadType g_process_control_task_thread;
         alignas(os::ThreadStackAlignment) u8 g_process_control_task_stack[ProcessControlTaskStackSize];
@@ -290,7 +290,7 @@ namespace ams::pgl::srv {
             while (true) {
                 /* Wait for an event to come in, and clear our signal. */
                 process_event.Wait();
-                process_event.Signal();
+                process_event.Clear();
 
                 bool continue_getting_event = true;
                 while (continue_getting_event) {
@@ -328,6 +328,13 @@ namespace ams::pgl::srv {
         settings::fwdbg::GetSettingsItemValue(std::addressof(g_enable_jit_debug), sizeof(g_enable_jit_debug), "jit_debug", "enable_jit_debug");
         settings::fwdbg::GetSettingsItemValue(std::addressof(g_enable_crash_report_screenshot), sizeof(g_enable_crash_report_screenshot), "creport", "crash_screen_shot");
         g_is_production = !settings::fwdbg::IsDebugModeEnabled();
+
+        /* Clear all process data. */
+        {
+            for (size_t i = 0; i < util::size(g_process_data); i++) {
+                g_process_data[i].process_id = os::InvalidProcessId;
+            }
+        }
 
         /* Start the thread. */
         os::StartThread(std::addressof(g_process_control_task_thread));

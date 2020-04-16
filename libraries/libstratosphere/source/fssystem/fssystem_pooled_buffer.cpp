@@ -169,7 +169,7 @@ namespace ams::fssystem {
         if (this->size > ideal_size) {
             /* If we do, we need to have a buffer allocated from the heap. */
             AMS_ASSERT(this->buffer != nullptr);
-            AMS_ASSERT(g_heap.GetBlockSize(), HeapBlockSize);
+            AMS_ASSERT(g_heap.GetBlockSize() == HeapBlockSize);
 
             const size_t new_size = util::AlignUp(ideal_size, HeapBlockSize);
 

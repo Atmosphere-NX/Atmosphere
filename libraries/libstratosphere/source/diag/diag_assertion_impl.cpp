@@ -44,7 +44,7 @@ namespace ams::diag {
         inline void DebugLog(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
 #ifdef AMS_ENABLE_DEBUG_PRINT
-        os::Mutex g_debug_log_lock;
+        os::Mutex g_debug_log_lock(true);
         char g_debug_buffer[0x400];
 
         void DebugLogImpl(const char *format, ::std::va_list vl) {
