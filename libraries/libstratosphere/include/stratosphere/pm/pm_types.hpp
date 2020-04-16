@@ -34,6 +34,45 @@ namespace ams::pm {
 
     using LimitableResource = ::LimitableResource;
 
+    enum class ProcessEvent {
+        None           = 0,
+        Exited         = 1,
+        Started        = 2,
+        Exception      = 3,
+        DebugRunning   = 4,
+        DebugBreak     = 5,
+    };
+
+    enum class ProcessEventDeprecated {
+        None           = 0,
+        Exception      = 1,
+        Exited         = 2,
+        DebugRunning   = 3,
+        DebugBreak     = 4,
+        Started        = 5,
+    };
+
+    inline u32 GetProcessEventValue(ProcessEvent event) {
+        if (hos::GetVersion() >= hos::Version_5_0_0) {
+            return static_cast<u32>(event);
+        }
+        switch (event) {
+            case ProcessEvent::None:
+                return static_cast<u32>(ProcessEventDeprecated::None);
+            case ProcessEvent::Exited:
+                return static_cast<u32>(ProcessEventDeprecated::Exited);
+            case ProcessEvent::Started:
+                return static_cast<u32>(ProcessEventDeprecated::Started);
+            case ProcessEvent::Exception:
+                return static_cast<u32>(ProcessEventDeprecated::Exception);
+            case ProcessEvent::DebugRunning:
+                return static_cast<u32>(ProcessEventDeprecated::DebugRunning);
+            case ProcessEvent::DebugBreak:
+                return static_cast<u32>(ProcessEventDeprecated::DebugBreak);
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
     struct ProcessEventInfo {
         u32 event;
         os::ProcessId process_id;
