@@ -23,6 +23,7 @@
 namespace ams::pgl {
 
     enum LaunchFlags : u8 {
+        LaunchFlags_None                                     = 0,
         LaunchFlags_EnableDetailedCrashReport                = (1 << 0),
         LaunchFlags_EnableCrashReportScreenShotForProduction = (1 << 1),
         LaunchFlags_EnableCrashReportScreenShotForDevelop    = (1 << 2),

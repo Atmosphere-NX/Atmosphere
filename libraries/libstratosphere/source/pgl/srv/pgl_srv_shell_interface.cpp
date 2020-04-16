@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "pgl_srv_shell.hpp"
 #include "pgl_srv_shell_event_observer.hpp"
+#include "pgl_srv_shell_host_utils.hpp"
 
 namespace ams::pgl::srv {
 
@@ -28,11 +29,11 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterface::LaunchProgramFromHost(ams::sf::Out<os::ProcessId> out, const ams::sf::InBuffer &content_path, u32 pm_flags) {
-        /* TODO */
+        return pgl::srv::LaunchProgramFromHost(out.GetPointer(), reinterpret_cast<const char *>(content_path.GetPointer()), pm_flags);
     }
 
     Result ShellInterface::GetHostContentMetaInfo(ams::sf::Out<pgl::ContentMetaInfo> out, const ams::sf::InBuffer &content_path) {
-        /* TODO */
+        return pgl::srv::GetHostContentMetaInfo(out.GetPointer(), reinterpret_cast<const char *>(content_path.GetPointer()));
     }
 
     Result ShellInterface::GetApplicationProcessId(ams::sf::Out<os::ProcessId> out) {
