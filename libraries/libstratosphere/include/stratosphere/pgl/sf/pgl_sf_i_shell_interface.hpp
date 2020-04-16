@@ -51,7 +51,7 @@ namespace ams::pgl::sf {
             virtual Result EnableApplicationCrashReport(bool enabled) = 0;
             virtual Result IsApplicationCrashReportEnabled(ams::sf::Out<bool> out) = 0;
             virtual Result EnableApplicationAllThreadDumpOnCrash(bool enabled) = 0;
-            virtual Result TriggerSnapShotDumper(const ams::sf::InBuffer &arg, SnapShotDumpType dump_type) = 0;
+            virtual Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) = 0;
 
             virtual Result GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) = 0;
         public:

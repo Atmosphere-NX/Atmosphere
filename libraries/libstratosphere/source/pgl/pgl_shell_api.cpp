@@ -71,8 +71,8 @@ namespace ams::pgl {
         return ::pglEnableApplicationAllThreadDumpOnCrash(enabled);
     }
 
-    Result TriggerSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
-        return ::pglTriggerSnapShotDumper(arg, static_cast<::PglSnapShotDumpType>(dump_type));
+    Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type) {
+        return ::pglTriggerApplicationSnapShotDumper(static_cast<::PglSnapShotDumpType>(dump_type), arg);
     }
 
     Result GetEventObserver(pgl::EventObserver *out) {

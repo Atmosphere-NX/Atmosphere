@@ -142,4 +142,70 @@ namespace ams::pgl::srv {
         return FindProcessData(process_id) != nullptr;
     }
 
+    void EnableApplicationCrashReport(bool enabled) {
+        /* Get the application process id. */
+        auto application_process_id = GetRunningApplicationProcessId();
+        if (application_process_id) {
+            /* Find the data for the application process. */
+            std::scoped_lock lk(g_process_data_mutex);
+            ProcessData *data = FindProcessData(*application_process_id);
+
+            /* It's okay if we aren't tracking the process. */
+            if (data != nullptr) {
+                /* Set or clear the flag. */
+                if (enabled) {
+                    data->flags |= ProcessDataFlag_DetailedCrashReportEnabled;
+                } else {
+                    data->flags &= ~ProcessDataFlag_DetailedCrashReportEnabled;
+                }
+            }
+        }
+    }
+
+    bool IsApplicationCrashReportEnabled() {
+        /* Get the application process id. */
+        auto application_process_id = GetRunningApplicationProcessId();
+        if (!application_process_id) {
+            return false;
+        }
+
+        /* Find the data for the process. */
+        std::scoped_lock lk(g_process_data_mutex);
+        if (ProcessData *data = FindProcessData(*application_process_id); data != nullptr) {
+            return (data->flags & ProcessDataFlag_DetailedCrashReportEnabled) != 0;
+        } else {
+            return false;
+        }
+    }
+
+    void EnableApplicationAllThreadDumpOnCrash(bool enabled) {
+        /* Get the application process id. */
+        auto application_process_id = GetRunningApplicationProcessId();
+        if (application_process_id) {
+            /* Find the data for the application process. */
+            std::scoped_lock lk(g_process_data_mutex);
+            ProcessData *data = FindProcessData(*application_process_id);
+
+            /* It's okay if we aren't tracking the process. */
+            if (data != nullptr) {
+                /* Set or clear the flag. */
+                if (enabled) {
+                    data->flags |= ProcessDataFlag_OutputAllLog;
+                } else {
+                    data->flags &= ~ProcessDataFlag_OutputAllLog;
+                }
+
+                /* NOTE: Here Nintendo releases the lock, re-takes the lock, and re-finds the process data. */
+                /* This is unnecessary and less efficient, so we will not bother. */
+
+                /* Note that the flag bit has a meaningful value. */
+                data->flags |= ProcessDataFlag_HasLogOption;
+            }
+        }
+    }
+
+    Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const char *arg) {
+        /* TODO */
+    }
+
 }

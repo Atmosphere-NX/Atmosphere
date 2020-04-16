@@ -24,6 +24,6 @@ namespace ams::pgl {
     R_DEFINE_ERROR_RESULT(ApplicationNotRunning,      3);
     R_DEFINE_ERROR_RESULT(BufferNotEnough,            4);
     R_DEFINE_ERROR_RESULT(ApplicationContentNotFound, 5);
-    R_DEFINE_ERROR_RESULT(ContentMetaNotFound,        4);
+    R_DEFINE_ERROR_RESULT(ContentMetaNotFound,        6);
 
 }

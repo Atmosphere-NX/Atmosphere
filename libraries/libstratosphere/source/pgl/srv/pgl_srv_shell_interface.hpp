@@ -42,7 +42,7 @@ namespace ams::pgl::srv {
             virtual Result EnableApplicationCrashReport(bool enabled) override final;
             virtual Result IsApplicationCrashReportEnabled(ams::sf::Out<bool> out) override final;
             virtual Result EnableApplicationAllThreadDumpOnCrash(bool enabled) override final;
-            virtual Result TriggerSnapShotDumper(const ams::sf::InBuffer &arg, SnapShotDumpType dump_type) override final;
+            virtual Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) override final;
 
             virtual Result GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) override final;
     };

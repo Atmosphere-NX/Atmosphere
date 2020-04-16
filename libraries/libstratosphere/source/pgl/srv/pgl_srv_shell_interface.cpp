@@ -49,19 +49,22 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterface::EnableApplicationCrashReport(bool enabled) {
-        /* TODO */
+        pgl::srv::EnableApplicationCrashReport(enabled);
+        return ResultSuccess();
     }
 
     Result ShellInterface::IsApplicationCrashReportEnabled(ams::sf::Out<bool> out) {
-        /* TODO */
+        out.SetValue(pgl::srv::IsApplicationCrashReportEnabled());
+        return ResultSuccess();
     }
 
     Result ShellInterface::EnableApplicationAllThreadDumpOnCrash(bool enabled) {
-        /* TODO */
+        pgl::srv::EnableApplicationAllThreadDumpOnCrash(enabled);
+        return ResultSuccess();
     }
 
-    Result ShellInterface::TriggerSnapShotDumper(const ams::sf::InBuffer &arg, SnapShotDumpType dump_type) {
-        /* TODO */
+    Result ShellInterface::TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) {
+        return pgl::srv::TriggerApplicationSnapShotDumper(dump_type, reinterpret_cast<const char *>(arg.GetPointer()));
     }
 
     Result ShellInterface::GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) {

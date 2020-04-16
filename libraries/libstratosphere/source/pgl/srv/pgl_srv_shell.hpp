@@ -25,5 +25,9 @@ namespace ams::pgl::srv {
     Result GetApplicationProcessId(os::ProcessId *out);
     Result BoostSystemMemoryResourceLimit(u64 size);
     bool IsProcessTracked(os::ProcessId process_id);
+    void EnableApplicationCrashReport(bool enabled);
+    bool IsApplicationCrashReportEnabled();
+    void EnableApplicationAllThreadDumpOnCrash(bool enabled);
+    Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const char *arg);
 
 }
