@@ -27,6 +27,7 @@
 #include <stratosphere/os/os_random.hpp>
 #include <stratosphere/os/os_mutex.hpp>
 #include <stratosphere/os/os_condition_variable.hpp>
+#include <stratosphere/os/os_sdk_mutex.hpp>
 #include <stratosphere/os/os_rw_lock.hpp>
 #include <stratosphere/os/os_semaphore.hpp>
 #include <stratosphere/os/os_event.hpp>

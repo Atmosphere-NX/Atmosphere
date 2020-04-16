@@ -32,7 +32,27 @@ namespace ams::pm {
         ResourceLimitGroup_Count,
     };
 
-    using LimitableResource = ::LimitableResource;
+    enum LaunchFlags : u32 {
+        LaunchFlags_None                = 0,
+        LaunchFlags_SignalOnExit        = (1 << 0),
+        LaunchFlags_SignalOnStart       = (1 << 1),
+        LaunchFlags_SignalOnException   = (1 << 2),
+        LaunchFlags_SignalOnDebugEvent  = (1 << 3),
+        LaunchFlags_StartSuspended      = (1 << 4),
+        LaunchFlags_DisableAslr         = (1 << 5),
+    };
+
+    enum LaunchFlagsDeprecated : u32 {
+        LaunchFlagsDeprecated_None                = 0,
+        LaunchFlagsDeprecated_SignalOnExit        = (1 << 0),
+        LaunchFlagsDeprecated_StartSuspended      = (1 << 1),
+        LaunchFlagsDeprecated_SignalOnException   = (1 << 2),
+        LaunchFlagsDeprecated_DisableAslr         = (1 << 3),
+        LaunchFlagsDeprecated_SignalOnDebugEvent  = (1 << 4),
+        LaunchFlagsDeprecated_SignalOnStart       = (1 << 5),
+    };
+
+    constexpr inline u32 LaunchFlagsMask = (1 << 6) - 1;
 
     enum class ProcessEvent {
         None           = 0,

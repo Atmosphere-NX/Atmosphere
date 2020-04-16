@@ -34,26 +34,6 @@ namespace ams::pm::impl {
             u32 flags;
         };
 
-        enum LaunchFlags {
-            LaunchFlags_None                = 0,
-            LaunchFlags_SignalOnExit        = (1 << 0),
-            LaunchFlags_SignalOnStart       = (1 << 1),
-            LaunchFlags_SignalOnException   = (1 << 2),
-            LaunchFlags_SignalOnDebugEvent  = (1 << 3),
-            LaunchFlags_StartSuspended      = (1 << 4),
-            LaunchFlags_DisableAslr         = (1 << 5),
-        };
-
-        enum LaunchFlagsDeprecated {
-            LaunchFlagsDeprecated_None                = 0,
-            LaunchFlagsDeprecated_SignalOnExit        = (1 << 0),
-            LaunchFlagsDeprecated_StartSuspended      = (1 << 1),
-            LaunchFlagsDeprecated_SignalOnException   = (1 << 2),
-            LaunchFlagsDeprecated_DisableAslr         = (1 << 3),
-            LaunchFlagsDeprecated_SignalOnDebugEvent  = (1 << 4),
-            LaunchFlagsDeprecated_SignalOnStart       = (1 << 5),
-        };
-
 #define GET_FLAG_MASK(flag) (hos_version >= hos::Version_5_0_0 ? static_cast<u32>(LaunchFlags_##flag) : static_cast<u32>(LaunchFlagsDeprecated_##flag))
 
         inline bool ShouldSignalOnExit(u32 launch_flags) {
