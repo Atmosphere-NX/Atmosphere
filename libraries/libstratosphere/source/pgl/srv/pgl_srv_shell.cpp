@@ -41,6 +41,11 @@ namespace ams::pgl::srv {
         bool g_enable_crash_report_screenshot = true;
         bool g_enable_jit_debug               = false;
 
+        constexpr inline size_t ProcessControlTaskStackSize = 4_KB;
+        constexpr inline s32    ProcessControlTaskPriority  = 21;
+        os::ThreadType g_process_control_task_thread;
+        alignas(os::ThreadStackAlignment) u8 g_process_control_task_stack[ProcessControlTaskStackSize];
+
         os::SdkMutex g_process_data_mutex;
         ProcessData g_process_data[ProcessDataCount];
 
@@ -131,10 +136,23 @@ namespace ams::pgl::srv {
             return pm::shell::LaunchProgram(std::addressof(dummy_process_id), ncm::ProgramLocation::Make(ncm::SystemDebugAppletId::SnapShotDumper, ncm::StorageId::BuiltInSystem), pm::LaunchFlags_None);
         }
 
+        void ProcessControlTask(void *) {
+            /* TODO */
+        }
+
     }
 
     void InitializeProcessControlTask() {
-        /* TODO */
+        /* Create the task thread. */
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_process_control_task_thread), ProcessControlTask, nullptr, g_process_control_task_stack, sizeof(g_process_control_task_stack), ProcessControlTaskPriority));
+
+        /* Retrieve settings. */
+        settings::fwdbg::GetSettingsItemValue(std::addressof(g_enable_jit_debug), sizeof(g_enable_jit_debug), "jit_debug", "enable_jit_debug");
+        settings::fwdbg::GetSettingsItemValue(std::addressof(g_enable_crash_report_screenshot), sizeof(g_enable_crash_report_screenshot), "creport", "crash_screen_shot");
+        g_is_production = !settings::fwdbg::IsDebugModeEnabled();
+
+        /* Start the thread. */
+        os::StartThread(std::addressof(g_process_control_task_thread));
     }
 
     Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {
