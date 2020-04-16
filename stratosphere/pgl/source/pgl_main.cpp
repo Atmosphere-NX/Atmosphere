@@ -53,6 +53,55 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);
 }
 
+namespace ams::pgl {
+
+    namespace {
+
+        /* pgl. */
+        constexpr size_t NumServers  = 1;
+        ams::sf::hipc::ServerManager<NumServers> g_server_manager;
+
+        constexpr sm::ServiceName ShellServiceName = sm::ServiceName::Encode("pgl");
+        constexpr size_t          ShellMaxSessions = 8; /* Official maximum is 8. */
+
+        /* TODO: C++20 constinit */ pgl::srv::ShellInterface g_shell_interface;
+
+        ALWAYS_INLINE std::shared_ptr<pgl::srv::ShellInterface> GetSharedPointerToShellInterface() {
+            return ams::sf::ServiceObjectTraits<pgl::srv::ShellInterface>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_shell_interface));
+        }
+
+        void RegisterServiceSession() {
+            R_ABORT_UNLESS(g_server_manager.RegisterServer<pgl::srv::ShellInterface>(ShellServiceName, ShellMaxSessions, GetSharedPointerToShellInterface()));
+        }
+
+        void LoopProcess() {
+            g_server_manager.LoopProcess();
+        }
+
+        /* NOTE: Nintendo reserves only 0x2000 bytes for this heap, which is used "mostly" to allocate shell event observers. */
+        /* However, we would like very much for homebrew sysmodules to be able to subscribe to events if they so choose */
+        /* And so we will use a larger heap (32 KB). */
+        /* We should have a smaller memory footprint than N in the end, regardless. */
+        u8 g_heap_memory[32_KB];
+        TYPED_STORAGE(ams::sf::ExpHeapMemoryResource) g_heap_memory_resource;
+
+        void *Allocate(size_t size) {
+            return lmem::AllocateFromExpHeap(GetReference(g_heap_memory_resource).GetHandle(), size);
+        }
+
+        void Deallocate(void *p, size_t size) {
+            return lmem::FreeToExpHeap(GetReference(g_heap_memory_resource).GetHandle(), p);
+        }
+
+        void InitializeHeap() {
+            auto heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_ThreadSafe);
+            new (GetPointer(g_heap_memory_resource)) ams::sf::ExpHeapMemoryResource(heap_handle);
+        }
+
+    }
+
+}
+
 void __libnx_initheap(void) {
 	void*  addr = nx_inner_heap;
 	size_t size = nx_inner_heap_size;
@@ -63,10 +112,14 @@ void __libnx_initheap(void) {
 
 	fake_heap_start = (char*)addr;
 	fake_heap_end   = (char*)addr + size;
+
+    ams::pgl::InitializeHeap();
 }
 
 void __appInit(void) {
     hos::SetVersionForLibnx();
+
+    fs::SetAllocator(pgl::Allocate, pgl::Deallocate);
 
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(setInitialize());
@@ -92,7 +145,14 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
-    /* TODO */
+    /* Register the pgl service. */
+    pgl::RegisterServiceSession();
+
+    /* Initialize the server library. */
+    pgl::srv::Initialize(std::addressof(pgl::g_shell_interface), GetPointer(pgl::g_heap_memory_resource));
+
+    /* Loop forever, servicing our services. */
+    pgl::LoopProcess();
 
     /* Cleanup */
     return 0;

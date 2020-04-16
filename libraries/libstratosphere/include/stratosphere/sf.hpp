@@ -16,15 +16,16 @@
 
 #pragma once
 
-#include "sf/sf_common.hpp"
-#include "sf/sf_mem_utility.hpp"
-#include "sf/sf_service_object.hpp"
-#include "sf/hipc/sf_hipc_server_session_manager.hpp"
+#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_lmem_utility.hpp>
+#include <stratosphere/sf/sf_mem_utility.hpp>
+#include <stratosphere/sf/sf_service_object.hpp>
+#include <stratosphere/sf/hipc/sf_hipc_server_session_manager.hpp>
 
-#include "sf/sf_out.hpp"
-#include "sf/sf_buffers.hpp"
-#include "sf/impl/sf_impl_command_serialization.hpp"
+#include <stratosphere/sf/sf_out.hpp>
+#include <stratosphere/sf/sf_buffers.hpp>
+#include <stratosphere/sf/impl/sf_impl_command_serialization.hpp>
 
-#include "sf/hipc/sf_hipc_server_manager.hpp"
+#include <stratosphere/sf/hipc/sf_hipc_server_manager.hpp>
 
-#include "sf/sf_mitm_dispatch.h"
+#include <stratosphere/sf/sf_mitm_dispatch.h>

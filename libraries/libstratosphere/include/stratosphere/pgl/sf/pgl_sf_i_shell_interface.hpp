@@ -36,7 +36,7 @@ namespace ams::pgl::sf {
                 EnableApplicationCrashReport          = 8,
                 IsApplicationCrashReportEnabled       = 9,
                 EnableApplicationAllThreadDumpOnCrash = 10,
-                TriggerSnapShotDumper                 = 12,
+                TriggerApplicationSnapShotDumper      = 12,
                 GetShellEventObserver                 = 20,
             };
         public:
@@ -66,7 +66,7 @@ namespace ams::pgl::sf {
                 MAKE_SERVICE_COMMAND_META(EnableApplicationCrashReport),
                 MAKE_SERVICE_COMMAND_META(IsApplicationCrashReportEnabled),
                 MAKE_SERVICE_COMMAND_META(EnableApplicationAllThreadDumpOnCrash),
-                MAKE_SERVICE_COMMAND_META(TriggerSnapShotDumper),
+                MAKE_SERVICE_COMMAND_META(TriggerApplicationSnapShotDumper),
                 MAKE_SERVICE_COMMAND_META(GetShellEventObserver),
             };
     };
