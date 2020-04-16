@@ -13,17 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours/results/results_common.hpp>
 
-namespace ams::pgl::srv {
+namespace ams::pgl {
 
-    void InitializeProcessControlTask();
+    R_DEFINE_NAMESPACE_RESULT_MODULE(228);
 
-    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags);
-    Result TerminateProcess(os::ProcessId process_id);
-    Result GetApplicationProcessId(os::ProcessId *out);
-    Result BoostSystemMemoryResourceLimit(u64 size);
-    bool IsProcessTracked(os::ProcessId process_id);
+    R_DEFINE_ERROR_RESULT(ApplicationNotRunning,      3);
+    R_DEFINE_ERROR_RESULT(BufferNotEnough,            4);
+    R_DEFINE_ERROR_RESULT(ApplicationContentNotFound, 5);
+    R_DEFINE_ERROR_RESULT(ContentMetaNotFound,        4);
 
 }

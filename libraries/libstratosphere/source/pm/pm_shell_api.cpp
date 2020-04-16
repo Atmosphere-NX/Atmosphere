@@ -18,14 +18,23 @@
 namespace ams::pm::shell {
 
     /* Shell API. */
-    Result WEAK_SYMBOL LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
+    Result WEAK_SYMBOL LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags) {
         static_assert(sizeof(ncm::ProgramLocation) == sizeof(NcmProgramLocation));
         static_assert(alignof(ncm::ProgramLocation) == alignof(NcmProgramLocation));
-        return pmshellLaunchProgram(launch_flags, reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<u64 *>(out_process_id));
+        return pmshellLaunchProgram(launch_flags, reinterpret_cast<const NcmProgramLocation *>(&loc), reinterpret_cast<u64 *>(out));
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
         return ::pmshellTerminateProcess(static_cast<u64>(process_id));
+    }
+
+    Result GetApplicationProcessIdForShell(os::ProcessId *out) {
+        static_assert(sizeof(*out) == sizeof(u64));
+        return ::pmshellGetApplicationProcessIdForShell(reinterpret_cast<u64 *>(out));
+    }
+
+    Result BoostSystemMemoryResourceLimit(u64 size) {
+        return ::pmshellBoostSystemMemoryResourceLimit(size);
     }
 
 }

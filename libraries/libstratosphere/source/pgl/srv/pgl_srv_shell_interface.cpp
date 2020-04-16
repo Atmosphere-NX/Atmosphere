@@ -36,15 +36,16 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterface::GetApplicationProcessId(ams::sf::Out<os::ProcessId> out) {
-        /* TODO */
+        return pgl::srv::GetApplicationProcessId(out.GetPointer());
     }
 
     Result ShellInterface::BoostSystemMemoryResourceLimit(u64 size) {
-        /* TODO */
+        return pgl::srv::BoostSystemMemoryResourceLimit(size);
     }
 
     Result ShellInterface::IsProcessTracked(ams::sf::Out<bool> out, os::ProcessId process_id) {
-        /* TODO */
+        out.SetValue(pgl::srv::IsProcessTracked(process_id));
+        return ResultSuccess();
     }
 
     Result ShellInterface::EnableApplicationCrashReport(bool enabled) {

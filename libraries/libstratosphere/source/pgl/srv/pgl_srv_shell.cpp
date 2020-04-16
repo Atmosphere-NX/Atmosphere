@@ -73,6 +73,15 @@ namespace ams::pgl::srv {
             }
         }
 
+        std::optional<os::ProcessId> GetRunningApplicationProcessId() {
+            os::ProcessId process_id;
+            if (R_SUCCEEDED(pm::shell::GetApplicationProcessIdForShell(std::addressof(process_id)))) {
+                return process_id;
+            } else {
+                return std::nullopt;
+            }
+        }
+
     }
 
     void InitializeProcessControlTask() {
@@ -108,7 +117,29 @@ namespace ams::pgl::srv {
     }
 
     Result TerminateProcess(os::ProcessId process_id) {
+        /* Ask PM to terminate the process. */
         return pm::shell::TerminateProcess(process_id);
+    }
+
+    Result GetApplicationProcessId(os::ProcessId *out) {
+        /* Get the application process id. */
+        auto application_process_id = GetRunningApplicationProcessId();
+        R_UNLESS(application_process_id, pgl::ResultApplicationNotRunning());
+
+        /* Return the id. */
+        *out = *application_process_id;
+        return ResultSuccess();
+    }
+
+    Result BoostSystemMemoryResourceLimit(u64 size) {
+        /* Ask PM to boost the limit. */
+        return pm::shell::BoostSystemMemoryResourceLimit(size);
+    }
+
+    bool IsProcessTracked(os::ProcessId process_id) {
+        /* Check whether a ProcessData exists for the process. */
+        std::scoped_lock lk(g_process_data_mutex);
+        return FindProcessData(process_id) != nullptr;
     }
 
 }
