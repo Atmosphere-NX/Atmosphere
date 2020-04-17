@@ -275,7 +275,7 @@ namespace ams::kern {
             }
 
             /* Call the locked update function. */
-            std::addressof(*it)->*lock_func(perm);
+            (std::addressof(*it)->*lock_func)(perm);
             cur_address += cur_info.GetSize();
             remaining_pages -= cur_info.GetNumPages();
             it++;
