@@ -237,10 +237,15 @@ namespace ams::dmnt::cheat::impl {
                     this->LogToDebugFile("Act[%02x]:   %d\n", i, opcode->save_restore_regmask.should_operate[i]);
                 }
                 break;
-            case CheatVmOpcodeType_LoadStaticRegister:
-                this->LogToDebugFile("Opcode: Load Static Register\n");
-                this->LogToDebugFile("Reg Idx:   %x\n", opcode->load_static_reg.idx);
-                this->LogToDebugFile("Stc Idx:   %x\n", opcode->load_static_reg.static_idx);
+            case CheatVmOpcodeType_ReadWriteStaticRegister:
+                this->LogToDebugFile("Opcode: Read/Write Static Register\n");
+                if (opcode->rw_static_reg.static_idx < NumReadableStaticRegisters) {
+                    this->LogToDebugFile("Op Type: ReadStaticRegister\n");
+                } else {
+                    this->LogToDebugFile("Op Type: WriteStaticRegister\n");
+                }
+                this->LogToDebugFile("Reg Idx:   %x\n", opcode->rw_static_reg.idx);
+                this->LogToDebugFile("Stc Idx:   %x\n", opcode->rw_static_reg.static_idx);
                 break;
             case CheatVmOpcodeType_BreakProcess:
                 this->LogToDebugFile("Opcode: Break Cheat Process\n");
@@ -581,14 +586,14 @@ namespace ams::dmnt::cheat::impl {
                     }
                 }
                 break;
-            case CheatVmOpcodeType_LoadStaticRegister:
+            case CheatVmOpcodeType_ReadWriteStaticRegister:
                 {
                     /* C3000XXx */
                     /* C3 = opcode 0xC3. */
                     /* XX = static register index. */
                     /* x  = register index. */
-                    opcode.load_static_reg.static_idx = ((first_dword >> 4) & 0xFF);
-                    opcode.load_static_reg.idx        = (first_dword & 0xF);
+                    opcode.rw_static_reg.static_idx = ((first_dword >> 4) & 0xFF);
+                    opcode.rw_static_reg.idx        = (first_dword & 0xF);
                 }
                 break;
             case CheatVmOpcodeType_BreakProcess:
@@ -1209,9 +1214,14 @@ namespace ams::dmnt::cheat::impl {
                         }
                     }
                     break;
-                case CheatVmOpcodeType_LoadStaticRegister:
-                    /* Load a register with a static register. */
-                    this->registers[cur_opcode.load_static_reg.idx] = this->static_registers[cur_opcode.load_static_reg.static_idx];
+                case CheatVmOpcodeType_ReadWriteStaticRegister:
+                    if (cur_opcode.rw_static_reg.static_idx < NumReadableStaticRegisters) {
+                        /* Load a register with a static register. */
+                        this->registers[cur_opcode.rw_static_reg.idx] = this->static_registers[cur_opcode.rw_static_reg.static_idx];
+                    } else {
+                        /* Store a register to a static register. */
+                        this->static_registers[cur_opcode.rw_static_reg.static_idx] = this->registers[cur_opcode.rw_static_reg.idx];
+                    }
                     break;
                 case CheatVmOpcodeType_BreakProcess:
                     dmnt::cheat::impl::BreakCheatProcessUnsafe();

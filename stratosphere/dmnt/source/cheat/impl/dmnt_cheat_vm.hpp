@@ -42,7 +42,7 @@ namespace ams::dmnt::cheat::impl {
         CheatVmOpcodeType_BeginRegisterConditionalBlock = 0xC0,
         CheatVmOpcodeType_SaveRestoreRegister = 0xC1,
         CheatVmOpcodeType_SaveRestoreRegisterMask = 0xC2,
-        CheatVmOpcodeType_LoadStaticRegister = 0xC3,
+        CheatVmOpcodeType_ReadWriteStaticRegister = 0xC3,
 
         /* This is a meta entry, and not a real opcode. */
         /* This is to facilitate multi-nybble instruction decoding. */
@@ -226,7 +226,7 @@ namespace ams::dmnt::cheat::impl {
         bool should_operate[0x10];
     };
 
-    struct LoadStaticRegisterOpcode {
+    struct ReadWriteStaticRegisterOpcode {
         u32 static_idx;
         u32 idx;
     };
@@ -260,7 +260,7 @@ namespace ams::dmnt::cheat::impl {
             BeginRegisterConditionalOpcode begin_reg_cond;
             SaveRestoreRegisterOpcode save_restore_reg;
             SaveRestoreRegisterMaskOpcode save_restore_regmask;
-            LoadStaticRegisterOpcode load_static_reg;
+            ReadWriteStaticRegisterOpcode rw_static_reg;
             DebugLogOpcode debug_log;
         };
     };
@@ -269,7 +269,9 @@ namespace ams::dmnt::cheat::impl {
         public:
             constexpr static size_t MaximumProgramOpcodeCount = 0x400;
             constexpr static size_t NumRegisters = 0x10;
-            constexpr static size_t NumStaticRegisters = 0x100;
+            constexpr static size_t NumReadableStaticRegisters = 0x80;
+            constexpr static size_t NumWritableStaticRegisters = 0x80;
+            constexpr static size_t NumStaticRegisters = NumReadableStaticRegisters + NumWritableStaticRegisters;
         private:
             size_t num_opcodes = 0;
             size_t instruction_ptr = 0;
