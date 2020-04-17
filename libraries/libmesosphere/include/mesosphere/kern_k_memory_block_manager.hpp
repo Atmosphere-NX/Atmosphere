@@ -94,6 +94,7 @@ namespace ams::kern {
             KProcessAddress FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const;
 
             void Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
+            void UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, void (KMemoryBlock::*lock_func)(KMemoryPermission new_perm), KMemoryPermission perm);
 
             iterator FindIterator(KProcessAddress address) const {
                 return this->memory_block_tree.find(KMemoryBlock(address, 1, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None));
