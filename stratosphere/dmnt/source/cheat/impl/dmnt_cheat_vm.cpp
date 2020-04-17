@@ -237,6 +237,17 @@ namespace ams::dmnt::cheat::impl {
                     this->LogToDebugFile("Act[%02x]:   %d\n", i, opcode->save_restore_regmask.should_operate[i]);
                 }
                 break;
+            case CheatVmOpcodeType_LoadStaticRegister:
+                this->LogToDebugFile("Opcode: Load Static Register\n");
+                this->LogToDebugFile("Reg Idx:   %x\n", opcode->load_static_reg.idx);
+                this->LogToDebugFile("Stc Idx:   %x\n", opcode->load_static_reg.static_idx);
+                break;
+            case CheatVmOpcodeType_BreakProcess:
+                this->LogToDebugFile("Opcode: Break Cheat Process\n");
+                break;
+            case CheatVmOpcodeType_ContinueProcess:
+                this->LogToDebugFile("Opcode: Continue Cheat Process\n");
+                break;
             case CheatVmOpcodeType_DebugLog:
                 this->LogToDebugFile("Opcode: Debug Log\n");
                 this->LogToDebugFile("Bit Width: %x\n", opcode->debug_log.bit_width);
@@ -568,6 +579,30 @@ namespace ams::dmnt::cheat::impl {
                     for (size_t i = 0; i < NumRegisters; i++) {
                         opcode.save_restore_regmask.should_operate[i] = (first_dword & (1u << i)) != 0;
                     }
+                }
+                break;
+            case CheatVmOpcodeType_LoadStaticRegister:
+                {
+                    /* C3000XXx */
+                    /* C3 = opcode 0xC3. */
+                    /* XX = static register index. */
+                    /* x  = register index. */
+                    opcode.load_static_reg.static_idx = ((first_dword >> 4) & 0xFF);
+                    opcode.load_static_reg.idx        = (first_dword & 0xF);
+                }
+                break;
+            case CheatVmOpcodeType_BreakProcess:
+                {
+                    /* FF0????? */
+                    /* FF0 = opcode 0xFF0 */
+                    /* Breaks the current process. */
+                }
+                break;
+            case CheatVmOpcodeType_ContinueProcess:
+                {
+                    /* FF1????? */
+                    /* FF1 = opcode 0xFF1 */
+                    /* Continues the current process. */
                 }
                 break;
             case CheatVmOpcodeType_DebugLog:
@@ -1173,6 +1208,16 @@ namespace ams::dmnt::cheat::impl {
                             }
                         }
                     }
+                    break;
+                case CheatVmOpcodeType_LoadStaticRegister:
+                    /* Load a register with a static register. */
+                    this->registers[cur_opcode.load_static_reg.idx] = this->static_registers[cur_opcode.load_static_reg.static_idx];
+                    break;
+                case CheatVmOpcodeType_BreakProcess:
+                    dmnt::cheat::impl::BreakCheatProcessUnsafe();
+                    break;
+                case CheatVmOpcodeType_ContinueProcess:
+                    dmnt::cheat::impl::ContinueCheatProcessUnsafe();
                     break;
                 case CheatVmOpcodeType_DebugLog:
                     {

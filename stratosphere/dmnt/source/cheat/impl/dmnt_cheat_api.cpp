@@ -34,6 +34,7 @@ namespace ams::dmnt::cheat::impl {
                 static constexpr s32 DebugEventsThreadPriority = -1;
             private:
                 os::Mutex cheat_lock;
+                os::Event unsafe_break_event;
                 os::Event debug_events_event; /* Autoclear. */
                 os::ThreadType detect_thread, debug_events_thread;
                 os::SystemEvent cheat_process_event;
@@ -41,6 +42,7 @@ namespace ams::dmnt::cheat::impl {
                 CheatProcessMetadata cheat_process_metadata = {};
 
                 os::ThreadType vm_thread;
+                bool broken_unsafe = false;
                 bool needs_reload_vm = false;
                 CheatVirtualMachine cheat_vm;
 
@@ -88,6 +90,8 @@ namespace ams::dmnt::cheat::impl {
                     for (size_t i = 0; i < MaxCheatCount; i++) {
                         this->ResetCheatEntry(i);
                     }
+
+                    this->cheat_vm.ResetStaticRegisters();
                 }
 
                 CheatEntry *GetCheatEntryById(size_t i) {
@@ -122,6 +126,10 @@ namespace ams::dmnt::cheat::impl {
 
                 void CloseActiveCheatProcess() {
                     if (this->cheat_process_debug_handle != svc::InvalidHandle) {
+                        /* We don't need to do any unsafe brekaing. */
+                        this->broken_unsafe = false;
+                        this->unsafe_break_event.Signal();
+
                         /* Knock out the debug events thread. */
                         os::CancelThreadSynchronization(std::addressof(this->debug_events_thread));
 
@@ -185,7 +193,7 @@ namespace ams::dmnt::cheat::impl {
                 }
 
             public:
-                CheatProcessManager() : cheat_lock(false), debug_events_event(os::EventClearMode_AutoClear), cheat_process_event(os::EventClearMode_AutoClear, true) {
+                CheatProcessManager() : cheat_lock(false), unsafe_break_event(os::EventClearMode_ManualClear), debug_events_event(os::EventClearMode_AutoClear), cheat_process_event(os::EventClearMode_AutoClear, true) {
                     /* Learn whether we should enable cheats by default. */
                     {
                         u8 en = 0;
@@ -254,6 +262,19 @@ namespace ams::dmnt::cheat::impl {
                         }
                     }
 
+                    return ResultSuccess();
+                }
+
+                Result BreakCheatProcessUnsafe() {
+                    this->broken_unsafe = true;
+                    this->unsafe_break_event.Clear();
+                    return svcBreakDebugProcess(this->GetCheatProcessHandle());
+                }
+
+                Result ContinueCheatProcessUnsafe() {
+                    this->broken_unsafe = false;
+                    this->unsafe_break_event.Signal();
+                    dmnt::cheat::impl::ContinueCheatProcess(this->GetCheatProcessHandle());
                     return ResultSuccess();
                 }
 
@@ -333,6 +354,22 @@ namespace ams::dmnt::cheat::impl {
 
                     u32 tmp;
                     return svcQueryDebugProcessMemory(mapping, &tmp, this->GetCheatProcessHandle(), address);
+                }
+
+                Result BreakCheatProcess() {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+
+                    return this->BreakCheatProcessUnsafe();
+                }
+
+                Result ContinueCheatProcess() {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+
+                    return this->ContinueCheatProcessUnsafe();
                 }
 
                 Result GetCheatCount(u64 *out_count) {
@@ -436,6 +473,35 @@ namespace ams::dmnt::cheat::impl {
                     return ResultSuccess();
                 }
 
+                Result ReadStaticRegister(u64 *out, size_t which) {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+                    R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, ResultCheatInvalid());
+
+                    *out = this->cheat_vm.GetStaticRegister(which);
+                    return ResultSuccess();
+                }
+
+                Result WriteStaticRegister(size_t which, u64 value) {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+                    R_UNLESS(which < CheatVirtualMachine::NumStaticRegisters, ResultCheatInvalid());
+
+                    this->cheat_vm.SetStaticRegister(which, value);
+                    return ResultSuccess();
+                }
+
+                Result ResetStaticRegisters() {
+                    std::scoped_lock lk(this->cheat_lock);
+
+                    R_TRY(this->EnsureCheatProcess());
+
+                    this->cheat_vm.ResetStaticRegisters();
+                    return ResultSuccess();
+                }
+
                 Result GetFrozenAddressCount(u64 *out_count) {
                     std::scoped_lock lk(this->cheat_lock);
 
@@ -533,7 +599,20 @@ namespace ams::dmnt::cheat::impl {
                 this_ptr->debug_events_event.Wait();
                 while (true) {
                     while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), std::numeric_limits<u64>::max()))) {
-                        std::scoped_lock lk(this_ptr->cheat_lock);
+                        this_ptr->cheat_lock.Lock();
+                        ON_SCOPE_EXIT { this_ptr->cheat_lock.Unlock(); };
+
+                        /* If we did an unsafe break, wait until we're not broken. */
+                        if (this_ptr->broken_unsafe) {
+                            this_ptr->cheat_lock.Unlock();
+                            this_ptr->unsafe_break_event.Wait();
+                            this_ptr->cheat_lock.Lock();
+                            if (this_ptr->GetCheatProcessHandle() != svc::InvalidHandle) {
+                                continue;
+                            } else {
+                                break;
+                            }
+                        }
 
                         /* Handle any pending debug events. */
                         if (this_ptr->HasActiveCheatProcess()) {
@@ -679,6 +758,10 @@ namespace ams::dmnt::cheat::impl {
 
             /* Cancel process guard. */
             proc_guard.Cancel();
+
+            /* Reset broken state. */
+            this->broken_unsafe = false;
+            this->unsafe_break_event.Signal();
 
             /* If new process, start the process. */
             if (on_process_launch) {
@@ -1021,6 +1104,14 @@ namespace ams::dmnt::cheat::impl {
         return GetReference(g_cheat_process_manager).WriteCheatProcessMemoryUnsafe(process_addr, data, size);
     }
 
+    Result BreakCheatProcessUnsafe() {
+        return GetReference(g_cheat_process_manager).BreakCheatProcessUnsafe();
+    }
+
+    Result ContinueCheatProcessUnsafe() {
+        return GetReference(g_cheat_process_manager).ContinueCheatProcessUnsafe();
+    }
+
     Result GetCheatProcessMappingCount(u64 *out_count) {
         return GetReference(g_cheat_process_manager).GetCheatProcessMappingCount(out_count);
     }
@@ -1039,6 +1130,14 @@ namespace ams::dmnt::cheat::impl {
 
     Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address) {
         return GetReference(g_cheat_process_manager).QueryCheatProcessMemory(mapping, address);
+    }
+
+    Result BreakCheatProcess() {
+        return GetReference(g_cheat_process_manager).BreakCheatProcess();
+    }
+
+    Result ContinueCheatProcess() {
+        return GetReference(g_cheat_process_manager).ContinueCheatProcess();
     }
 
     Result GetCheatCount(u64 *out_count) {
@@ -1063,6 +1162,18 @@ namespace ams::dmnt::cheat::impl {
 
     Result RemoveCheat(u32 cheat_id) {
         return GetReference(g_cheat_process_manager).RemoveCheat(cheat_id);
+    }
+
+    Result ReadStaticRegister(u64 *out, size_t which) {
+        return GetReference(g_cheat_process_manager).ReadStaticRegister(out, which);
+    }
+
+    Result WriteStaticRegister(size_t which, u64 value) {
+        return GetReference(g_cheat_process_manager).WriteStaticRegister(which, value);
+    }
+
+    Result ResetStaticRegisters() {
+        return GetReference(g_cheat_process_manager).ResetStaticRegisters();
     }
 
     Result GetFrozenAddressCount(u64 *out_count) {

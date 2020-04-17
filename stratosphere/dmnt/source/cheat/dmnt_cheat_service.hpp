@@ -33,14 +33,19 @@ namespace ams::dmnt::cheat {
                 ReadCheatProcessMemory      = 65102,
                 WriteCheatProcessMemory     = 65103,
                 QueryCheatProcessMemory     = 65104,
+                BreakCheatProcess           = 65105,
+                ContinueCheatProcess        = 65106,
 
                 /* Interact with Cheats */
-                GetCheatCount = 65200,
-                GetCheats     = 65201,
-                GetCheatById  = 65202,
-                ToggleCheat   = 65203,
-                AddCheat      = 65204,
-                RemoveCheat   = 65205,
+                GetCheatCount        = 65200,
+                GetCheats            = 65201,
+                GetCheatById         = 65202,
+                ToggleCheat          = 65203,
+                AddCheat             = 65204,
+                RemoveCheat          = 65205,
+                ReadStaticRegister   = 65206,
+                WriteStaticRegister  = 65207,
+                ResetStaticRegisters = 65208,
 
                 /* Interact with Frozen Addresses */
                 GetFrozenAddressCount = 65300,
@@ -60,6 +65,8 @@ namespace ams::dmnt::cheat {
             Result ReadCheatProcessMemory(const sf::OutBuffer &buffer, u64 address, u64 out_size);
             Result WriteCheatProcessMemory(const sf::InBuffer &buffer, u64 address, u64 in_size);
             Result QueryCheatProcessMemory(sf::Out<MemoryInfo> mapping, u64 address);
+            Result BreakCheatProcess();
+            Result ContinueCheatProcess();
 
             Result GetCheatCount(sf::Out<u64> out_count);
             Result GetCheats(const sf::OutArray<CheatEntry> &cheats, sf::Out<u64> out_count, u64 offset);
@@ -67,6 +74,9 @@ namespace ams::dmnt::cheat {
             Result ToggleCheat(u32 cheat_id);
             Result AddCheat(const CheatDefinition &cheat, sf::Out<u32> out_cheat_id, bool enabled);
             Result RemoveCheat(u32 cheat_id);
+            Result ReadStaticRegister(sf::Out<u64> out, u8 which);
+            Result WriteStaticRegister(u8 which, u64 value);
+            Result ResetStaticRegisters();
 
             Result GetFrozenAddressCount(sf::Out<u64> out_count);
             Result GetFrozenAddresses(const sf::OutArray<FrozenAddressEntry> &addresses, sf::Out<u64> out_count, u64 offset);
@@ -86,6 +96,8 @@ namespace ams::dmnt::cheat {
                 MAKE_SERVICE_COMMAND_META(ReadCheatProcessMemory),
                 MAKE_SERVICE_COMMAND_META(WriteCheatProcessMemory),
                 MAKE_SERVICE_COMMAND_META(QueryCheatProcessMemory),
+                MAKE_SERVICE_COMMAND_META(BreakCheatProcess),
+                MAKE_SERVICE_COMMAND_META(ContinueCheatProcess),
 
                 MAKE_SERVICE_COMMAND_META(GetCheatCount),
                 MAKE_SERVICE_COMMAND_META(GetCheats),
@@ -93,6 +105,9 @@ namespace ams::dmnt::cheat {
                 MAKE_SERVICE_COMMAND_META(ToggleCheat),
                 MAKE_SERVICE_COMMAND_META(AddCheat),
                 MAKE_SERVICE_COMMAND_META(RemoveCheat),
+                MAKE_SERVICE_COMMAND_META(ReadStaticRegister),
+                MAKE_SERVICE_COMMAND_META(WriteStaticRegister),
+                MAKE_SERVICE_COMMAND_META(ResetStaticRegisters),
 
                 MAKE_SERVICE_COMMAND_META(GetFrozenAddressCount),
                 MAKE_SERVICE_COMMAND_META(GetFrozenAddresses),

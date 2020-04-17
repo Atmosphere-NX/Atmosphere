@@ -28,11 +28,16 @@ namespace ams::dmnt::cheat::impl {
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemoryUnsafe(u64 process_addr, void *data, size_t size);
 
+    Result BreakCheatProcessUnsafe();
+    Result ContinueCheatProcessUnsafe();
+
     Result GetCheatProcessMappingCount(u64 *out_count);
     Result GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset);
     Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
     Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address);
+    Result BreakCheatProcess();
+    Result ContinueCheatProcess();
 
     Result GetCheatCount(u64 *out_count);
     Result GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset);
@@ -40,6 +45,9 @@ namespace ams::dmnt::cheat::impl {
     Result ToggleCheat(u32 cheat_id);
     Result AddCheat(u32 *out_id, const CheatDefinition &def, bool enabled);
     Result RemoveCheat(u32 cheat_id);
+    Result ReadStaticRegister(u64 *out, size_t which);
+    Result WriteStaticRegister(size_t which, u64 value);
+    Result ResetStaticRegisters();
 
     Result GetFrozenAddressCount(u64 *out_count);
     Result GetFrozenAddresses(FrozenAddressEntry *frz_addrs, size_t max_count, u64 *out_count, u64 offset);
