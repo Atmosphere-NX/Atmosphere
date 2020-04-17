@@ -96,6 +96,10 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    /* Set thread name. */
+    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot2, Main));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot2, Main));
+
     /* Launch all programs off of SYSTEM/the SD. */
     boot2::LaunchPostSdCardBootPrograms();
 }

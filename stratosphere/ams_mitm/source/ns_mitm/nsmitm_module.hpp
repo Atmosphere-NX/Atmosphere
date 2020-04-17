@@ -19,6 +19,6 @@
 
 namespace ams::mitm::ns {
 
-    DEFINE_MITM_MODULE_CLASS(0x4000, 20);
+    DEFINE_MITM_MODULE_CLASS(0x4000, AMS_GET_SYSTEM_THREAD_PRIORITY(ns, ApplicationManagerIpcSession) - 1);
 
 }

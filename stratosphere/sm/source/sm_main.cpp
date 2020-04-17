@@ -89,6 +89,10 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Set thread name. */
+    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(sm, Main));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(sm, Main));
+
     /* NOTE: These handles are manually managed, but we don't save references to them to close on exit. */
     /* This is fine, because if SM crashes we have much bigger issues. */
 

@@ -117,7 +117,6 @@ namespace ams::pm::impl {
         /* Process Tracking globals. */
         void ProcessTrackingMain(void *arg);
 
-        constexpr int    ProcessTrackThreadPriority  = 21;
         os::ThreadType g_process_track_thread;
         alignas(os::ThreadStackAlignment) u8 g_process_track_thread_stack[16_KB];
 
@@ -405,7 +404,8 @@ namespace ams::pm::impl {
         R_TRY(resource::InitializeResourceManager());
 
         /* Create thread. */
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_process_track_thread), ProcessTrackingMain, nullptr, g_process_track_thread_stack, sizeof(g_process_track_thread_stack), ProcessTrackThreadPriority));
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_process_track_thread), ProcessTrackingMain, nullptr, g_process_track_thread_stack, sizeof(g_process_track_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(pm, ProcessTrack)));
+        os::SetThreadNamePointer(std::addressof(g_process_track_thread), AMS_GET_SYSTEM_THREAD_NAME(pm, ProcessTrack));
 
         /* Start thread. */
         os::StartThread(std::addressof(g_process_track_thread));

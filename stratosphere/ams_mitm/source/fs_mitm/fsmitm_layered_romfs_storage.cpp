@@ -39,7 +39,6 @@ namespace ams::mitm::fs {
         }
 
         constexpr size_t RomfsInitializerThreadStackSize = 0x8000;
-        constexpr int    RomfsInitializerThreadPriority  = 16;
         os::ThreadType g_romfs_initializer_thread;
         alignas(os::ThreadStackAlignment) u8 g_romfs_initializer_thread_stack[RomfsInitializerThreadStackSize];
 
@@ -47,7 +46,8 @@ namespace ams::mitm::fs {
             std::scoped_lock lk(g_mq_lock);
 
             if (AMS_UNLIKELY(!g_started_req_thread)) {
-                R_ABORT_UNLESS(os::CreateThread(std::addressof(g_romfs_initializer_thread), RomfsInitializerThreadFunction, nullptr, g_romfs_initializer_thread_stack, sizeof(g_romfs_initializer_thread_stack), RomfsInitializerThreadPriority));
+                R_ABORT_UNLESS(os::CreateThread(std::addressof(g_romfs_initializer_thread), RomfsInitializerThreadFunction, nullptr, g_romfs_initializer_thread_stack, sizeof(g_romfs_initializer_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(mitm_fs, RomFileSystemInitializeThread)));
+                os::SetThreadNamePointer(std::addressof(g_romfs_initializer_thread), AMS_GET_SYSTEM_THREAD_NAME(mitm_fs, RomFileSystemInitializeThread));
                 os::StartThread(std::addressof(g_romfs_initializer_thread));
                 g_started_req_thread = true;
             }

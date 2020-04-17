@@ -107,6 +107,10 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    /* Set thread name. */
+    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot, Main));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot, Main));
+
     /* Change voltage from 3.3v to 1.8v for select devices. */
     boot::ChangeGpioVoltageTo1_8v();
 

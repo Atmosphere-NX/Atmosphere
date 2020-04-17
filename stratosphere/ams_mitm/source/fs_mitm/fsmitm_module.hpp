@@ -19,6 +19,6 @@
 
 namespace ams::mitm::fs {
 
-    DEFINE_MITM_MODULE_CLASS(0x8000, 15);
+    DEFINE_MITM_MODULE_CLASS(0x8000, AMS_GET_SYSTEM_THREAD_PRIORITY(fs, WorkerThreadPool) - 1);
 
 }

@@ -28,7 +28,6 @@ namespace ams::mitm {
         void DebugThrowThreadFunc(void *arg);
 
         constexpr size_t DebugThrowThreadStackSize = 0x4000;
-        constexpr int    DebugThrowThreadPriority  = 21;
         os::ThreadType g_debug_throw_thread;
 
         alignas(os::ThreadStackAlignment) u8 g_debug_throw_thread_stack[DebugThrowThreadStackSize];
@@ -50,7 +49,8 @@ namespace ams::mitm {
 
         g_throw_result = res;
         g_threw = true;
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_debug_throw_thread), DebugThrowThreadFunc, nullptr, g_debug_throw_thread_stack, sizeof(g_debug_throw_thread_stack), DebugThrowThreadPriority));
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_debug_throw_thread), DebugThrowThreadFunc, nullptr, g_debug_throw_thread_stack, sizeof(g_debug_throw_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(mitm, DebugThrowThread)));
+        os::SetThreadNamePointer(std::addressof(g_debug_throw_thread), AMS_GET_SYSTEM_THREAD_NAME(mitm, DebugThrowThread));
         os::StartThread(std::addressof(g_debug_throw_thread));
     }
 

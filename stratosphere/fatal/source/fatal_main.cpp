@@ -90,7 +90,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(lblInitialize());
         R_ABORT_UNLESS(psmInitialize());
         R_ABORT_UNLESS(spsmInitialize());
-        R_ABORT_UNLESS(plInitialize());
+        R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
         R_ABORT_UNLESS(gpioInitialize());
         R_ABORT_UNLESS(fsInitialize());
     });
@@ -141,6 +141,10 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Set thread name. */
+    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(fatal, Main));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(fatal, Main));
+
     /* Load shared font. */
     R_ABORT_UNLESS(fatal::srv::font::InitializeSharedFont());
 

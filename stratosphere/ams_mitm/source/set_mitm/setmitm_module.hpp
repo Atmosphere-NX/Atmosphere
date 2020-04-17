@@ -19,6 +19,6 @@
 
 namespace ams::mitm::settings {
 
-    DEFINE_MITM_MODULE_CLASS(0x8000, 20);
+    DEFINE_MITM_MODULE_CLASS(0x8000, AMS_GET_SYSTEM_THREAD_PRIORITY(settings, IpcServer) - 1);
 
 }

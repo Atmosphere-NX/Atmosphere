@@ -43,7 +43,6 @@ namespace ams::pgl::srv {
         bool g_enable_jit_debug               = false;
 
         constexpr inline size_t ProcessControlTaskStackSize = 8_KB;
-        constexpr inline s32    ProcessControlTaskPriority  = 21;
         os::ThreadType g_process_control_task_thread;
         alignas(os::ThreadStackAlignment) u8 g_process_control_task_stack[ProcessControlTaskStackSize];
 
@@ -322,7 +321,8 @@ namespace ams::pgl::srv {
 
     void InitializeProcessControlTask() {
         /* Create the task thread. */
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_process_control_task_thread), ProcessControlTask, nullptr, g_process_control_task_stack, sizeof(g_process_control_task_stack), ProcessControlTaskPriority));
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_process_control_task_thread), ProcessControlTask, nullptr, g_process_control_task_stack, sizeof(g_process_control_task_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(pgl, ProcessControlTask)));
+        os::SetThreadNamePointer(std::addressof(g_process_control_task_thread), AMS_GET_SYSTEM_THREAD_NAME(pgl, ProcessControlTask));
 
         /* Retrieve settings. */
         settings::fwdbg::GetSettingsItemValue(std::addressof(g_enable_jit_debug), sizeof(g_enable_jit_debug), "jit_debug", "enable_jit_debug");

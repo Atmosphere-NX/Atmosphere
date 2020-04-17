@@ -174,7 +174,8 @@ namespace {
             }
 
             ams::Result StartThreads() {
-                R_TRY(os::CreateThread(std::addressof(this->thread), ThreadFunction, this, g_content_manager_thread_stack, sizeof(g_content_manager_thread_stack), 21));
+                R_TRY(os::CreateThread(std::addressof(this->thread), ThreadFunction, this, g_content_manager_thread_stack, sizeof(g_content_manager_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(ncm, ContentManagerServerIpcSession)));
+                os::SetThreadNamePointer(std::addressof(this->thread),  AMS_GET_SYSTEM_THREAD_NAME(ncm, ContentManagerServerIpcSession));
                 os::StartThread(std::addressof(this->thread));
                 return ResultSuccess();
             }
@@ -219,7 +220,8 @@ namespace {
             }
 
             ams::Result StartThreads() {
-                R_TRY(os::CreateThread(std::addressof(this->thread), ThreadFunction, this, g_location_resolver_thread_stack, sizeof(g_location_resolver_thread_stack), 21));
+                R_TRY(os::CreateThread(std::addressof(this->thread), ThreadFunction, this, g_location_resolver_thread_stack, sizeof(g_location_resolver_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(ncm, LocationResolverServerIpcSession)));
+                os::SetThreadNamePointer(std::addressof(this->thread), AMS_GET_SYSTEM_THREAD_NAME(ncm, LocationResolverServerIpcSession));
                 os::StartThread(std::addressof(this->thread));
                 return ResultSuccess();
             }
@@ -260,6 +262,10 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Set thread name. */
+    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(ncm, MainWaitThreads));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(ncm, MainWaitThreads));
+
     /* Create and initialize the content manager. */
     auto content_manager = GetSharedPointerToContentManager();
     R_ABORT_UNLESS(content_manager->Initialize(ManagerConfig));

@@ -25,7 +25,6 @@ namespace ams::dmnt::cheat::impl {
             public:
                 static constexpr size_t NumCores = 4;
                 static constexpr size_t ThreadStackSize = os::MemoryPageSize;
-                static constexpr s32 ThreadPriority = -3;
             private:
                 std::array<uintptr_t, NumCores> message_queue_buffers;
                 std::array<os::MessageQueue, NumCores> message_queues;
@@ -103,7 +102,8 @@ namespace ams::dmnt::cheat::impl {
                 {
                     for (size_t i = 0; i < NumCores; i++) {
                         /* Create thread. */
-                        R_ABORT_UNLESS(os::CreateThread(std::addressof(this->threads[i]), PerCoreThreadFunction, this, this->thread_stacks[i], ThreadStackSize, ThreadPriority, i));
+                        R_ABORT_UNLESS(os::CreateThread(std::addressof(this->threads[i]), PerCoreThreadFunction, this, this->thread_stacks[i], ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, MultiCoreEventManager), i));
+                        os::SetThreadNamePointer(std::addressof(this->threads[i]), AMS_GET_SYSTEM_THREAD_NAME(dmnt, MultiCoreEventManager));
 
                         /* Set core mask. */
                         os::SetThreadCoreMask(std::addressof(this->threads[i]), i, (1u << i));

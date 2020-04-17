@@ -34,8 +34,6 @@ namespace ams::erpt::srv {
         constexpr inline size_t ErrorReportContextSessions = 10;
         constexpr inline size_t ErrorReportMaxSessions     = ErrorReportReportSessions + ErrorReportContextSessions;
 
-        constexpr inline s32 ErrorReportServerThreadPriority = 21;
-
         constexpr inline sm::ServiceName ErrorReportContextServiceName = sm::ServiceName::Encode("erpt:c");
         constexpr inline sm::ServiceName ErrorReportReportServiceName  = sm::ServiceName::Encode("erpt:r");
 
@@ -64,7 +62,8 @@ namespace ams::erpt::srv {
 
                     this->ResumeProcessing();
 
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->thread), ThreadFunction, this, g_server_thread_stack, sizeof(g_server_thread_stack), ErrorReportServerThreadPriority));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->thread), ThreadFunction, this, g_server_thread_stack, sizeof(g_server_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(erpt, IpcServer)));
+                    os::SetThreadNamePointer(std::addressof(this->thread), AMS_GET_SYSTEM_THREAD_NAME(erpt, IpcServer));
 
                     os::StartThread(std::addressof(this->thread));
 

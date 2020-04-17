@@ -85,6 +85,10 @@ void __appExit(void) {
 static creport::CrashReport g_crash_report;
 
 int main(int argc, char **argv) {
+    /* Set thread name. */
+    os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(creport, Main));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(creport, Main));
+
     /* Validate arguments. */
     if (argc < 2) {
         return EXIT_FAILURE;

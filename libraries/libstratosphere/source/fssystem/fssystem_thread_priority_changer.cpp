@@ -13,12 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
-#include "../amsmitm_module.hpp"
 
-namespace ams::mitm::hid {
+namespace ams::fssystem {
 
-    DEFINE_MITM_MODULE_CLASS(0x8000, AMS_GET_SYSTEM_THREAD_PRIORITY(hid, IpcServer));
+    s32 ScopedThreadPriorityChangerByAccessPriority::GetThreadPriorityByAccessPriority(AccessMode mode) {
+        /* TODO: Actually implement this for real. */
+        return os::GetThreadPriority(os::GetCurrentThread());
+    }
 
 }

@@ -29,9 +29,6 @@ namespace ams::dmnt::cheat::impl {
         class CheatProcessManager {
             private:
                 static constexpr size_t ThreadStackSize = 0x4000;
-                static constexpr s32 DetectThreadPriority = 11;
-                static constexpr s32 VirtualMachineThreadPriority = 20;
-                static constexpr s32 DebugEventsThreadPriority = -1;
             private:
                 os::Mutex cheat_lock;
                 os::Event debug_events_event; /* Autoclear. */
@@ -200,9 +197,12 @@ namespace ams::dmnt::cheat::impl {
                     }
 
                     /* Spawn application detection thread, spawn cheat vm thread. */
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->detect_thread), DetectLaunchThread, this, this->detect_thread_stack, ThreadStackSize, DetectThreadPriority));
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->vm_thread), VirtualMachineThread, this, this->vm_thread_stack, ThreadStackSize, VirtualMachineThreadPriority));
-                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->debug_events_thread), DebugEventsThread, this, this->debug_events_thread_stack, ThreadStackSize, DebugEventsThreadPriority));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->detect_thread), DetectLaunchThread, this, this->detect_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatDetect)));
+                    os::SetThreadNamePointer(std::addressof(this->detect_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatDetect));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->vm_thread), VirtualMachineThread, this, this->vm_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatVirtualMachine)));
+                    os::SetThreadNamePointer(std::addressof(this->vm_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatVirtualMachine));
+                    R_ABORT_UNLESS(os::CreateThread(std::addressof(this->debug_events_thread), DebugEventsThread, this, this->debug_events_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(dmnt, CheatDebugEvents)));
+                    os::SetThreadNamePointer(std::addressof(this->debug_events_thread), AMS_GET_SYSTEM_THREAD_NAME(dmnt, CheatDebugEvents));
 
                     /* Start threads. */
                     os::StartThread(std::addressof(this->detect_thread));

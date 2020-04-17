@@ -49,7 +49,6 @@ namespace ams::sf::hipc::impl {
         }
 
         constexpr size_t QueryServerProcessThreadStackSize = 0x4000;
-        constexpr s32    QueryServerProcessThreadPriority  = -1;
         alignas(os::ThreadStackAlignment) u8 g_server_process_thread_stack[QueryServerProcessThreadStackSize];
         os::ThreadType g_query_server_process_thread;
 
@@ -70,7 +69,8 @@ namespace ams::sf::hipc::impl {
         R_ABORT_UNLESS(GetPointer(g_query_server_storage)->RegisterSession(query_handle, cmif::ServiceObjectHolder(std::make_shared<MitmQueryService>(query_func))));
 
         if (AMS_UNLIKELY(!g_registered_any)) {
-            R_ABORT_UNLESS(os::CreateThread(std::addressof(g_query_server_process_thread), &QueryServerProcessThreadMain, GetPointer(g_query_server_storage), g_server_process_thread_stack, sizeof(g_server_process_thread_stack), QueryServerProcessThreadPriority));
+            R_ABORT_UNLESS(os::CreateThread(std::addressof(g_query_server_process_thread), &QueryServerProcessThreadMain, GetPointer(g_query_server_storage), g_server_process_thread_stack, sizeof(g_server_process_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(mitm_sf, QueryServerProcessThread)));
+            os::SetThreadNamePointer(std::addressof(g_query_server_process_thread), AMS_GET_SYSTEM_THREAD_NAME(mitm_sf, QueryServerProcessThread));
             os::StartThread(std::addressof(g_query_server_process_thread));
             g_registered_any = true;
         }

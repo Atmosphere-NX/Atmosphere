@@ -26,14 +26,33 @@ namespace ams::fssystem {
                 Relative,
             };
         private:
-            /* TODO */
+            os::ThreadType *thread;
+            s32 priority;
         public:
-            ALWAYS_INLINE explicit ScopedThreadPriorityChanger(s32 priority, Mode mode) {
-                /* TODO */
+            ALWAYS_INLINE explicit ScopedThreadPriorityChanger(s32 prio, Mode mode) : thread(os::GetCurrentThread()), priority(0) {
+                const auto result_priority = std::min((mode == Mode::Relative) ? os::GetThreadPriority(this->thread) + priority : priority, os::LowestSystemThreadPriority);
+                this->priority = os::ChangeThreadPriority(thread, result_priority);
             }
 
             ALWAYS_INLINE ~ScopedThreadPriorityChanger() {
-                /* TODO */
+                os::ChangeThreadPriority(this->thread, this->priority);
             }
     };
+
+    class ScopedThreadPriorityChangerByAccessPriority {
+        public:
+            enum class AccessMode {
+                Read,
+                Write,
+            };
+        private:
+            static s32 GetThreadPriorityByAccessPriority(AccessMode mode);
+        private:
+            ScopedThreadPriorityChanger scoped_changer;
+        public:
+            ALWAYS_INLINE explicit ScopedThreadPriorityChangerByAccessPriority(AccessMode mode) : scoped_changer(GetThreadPriorityByAccessPriority(mode), ScopedThreadPriorityChanger::Mode::Absolute) {
+                /* ... */
+            }
+    };
+
 }
