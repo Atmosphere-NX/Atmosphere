@@ -15,11 +15,10 @@
  */
 
 #pragma once
-#include "hos_types.hpp"
+#include <stratosphere/hos/hos_types.hpp>
 
 namespace ams::hos {
 
     ::ams::hos::Version GetVersion();
-    void SetVersionForLibnx();
 
 }

@@ -16,5 +16,6 @@
 
 #pragma once
 
-#include "hos/hos_types.hpp"
-#include "hos/hos_version_api.hpp"
+#include <stratosphere/hos/hos_types.hpp>
+#include <stratosphere/hos/hos_version_api.hpp>
+#include <stratosphere/hos/hos_stratosphere_api.hpp>

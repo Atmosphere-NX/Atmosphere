@@ -14,11 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "os_resource_manager.hpp"
+#include "hos_version_api_private.hpp"
 
-namespace ams::os::impl {
+namespace ams::os {
 
-    /* TODO: C++20 constinit */
-    TYPED_STORAGE(OsResourceManager) ResourceManagerHolder::s_resource_manager_storage = {};
+    void InitializeForStratosphereInternal();
+
+}
+
+namespace ams::hos {
+
+    void InitializeForStratosphere() {
+        /* Initialize the global os resource managers. This *must* be done before anything else in stratosphere. */
+        os::InitializeForStratosphereInternal();
+
+        /* Initialize hos::Version API. */
+        hos::SetVersionForLibnxInternal();
+    }
 
 }

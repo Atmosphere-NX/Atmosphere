@@ -68,7 +68,7 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    hos::SetVersionForLibnx();
+    hos::InitializeForStratosphere();
 
     /* Initialize services we need. */
     sm::DoWithSession([&]() {

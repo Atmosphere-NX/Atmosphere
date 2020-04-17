@@ -39,12 +39,17 @@ namespace ams::os::impl {
 
     class ResourceManagerHolder {
         private:
-            static /* TODO: C++20 constinit */ OsResourceManager s_resource_manager;
+            static TYPED_STORAGE(OsResourceManager) s_resource_manager_storage;
         private:
             constexpr ResourceManagerHolder() { /* ... */ }
         public:
+            static ALWAYS_INLINE void InitializeResourceManagerInstance() {
+                /* Construct the resource manager instance. */
+                new (GetPointer(s_resource_manager_storage)) OsResourceManager;
+            }
+
             static ALWAYS_INLINE OsResourceManager &GetResourceManagerInstance() {
-                return s_resource_manager;
+                return GetReference(s_resource_manager_storage);
             }
     };
 

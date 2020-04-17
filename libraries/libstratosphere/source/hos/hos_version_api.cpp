@@ -13,8 +13,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <stratosphere.hpp>
+#include "hos_version_api_private.hpp"
 
 namespace ams::hos {
 
@@ -86,7 +86,7 @@ namespace ams::hos {
         return g_hos_version;
     }
 
-    void SetVersionForLibnx() {
+    void SetVersionForLibnxInternal() {
         u32 major = 0, minor = 0, micro = 0;
         switch (hos::GetVersion()) {
             case hos::Version_1_0_0:

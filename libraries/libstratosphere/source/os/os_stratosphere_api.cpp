@@ -14,11 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "os_resource_manager.hpp"
+#include "impl/os_resource_manager.hpp"
 
-namespace ams::os::impl {
+namespace ams::os {
 
-    /* TODO: C++20 constinit */
-    TYPED_STORAGE(OsResourceManager) ResourceManagerHolder::s_resource_manager_storage = {};
+    void InitializeForStratosphereInternal() {
+        /* Initialize the global os resource manager. */
+        os::impl::ResourceManagerHolder::InitializeResourceManagerInstance();
+    }
 
 }

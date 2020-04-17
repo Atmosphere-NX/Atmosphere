@@ -13,12 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "os_resource_manager.hpp"
 
-namespace ams::os::impl {
+#pragma once
+#include <stratosphere/hos/hos_types.hpp>
 
-    /* TODO: C++20 constinit */
-    TYPED_STORAGE(OsResourceManager) ResourceManagerHolder::s_resource_manager_storage = {};
+namespace ams::hos {
+
+    void InitializeForStratosphere();
 
 }

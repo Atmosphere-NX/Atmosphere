@@ -13,12 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <stratosphere.hpp>
-#include "os_resource_manager.hpp"
 
-namespace ams::os::impl {
+namespace ams::hos {
 
-    /* TODO: C++20 constinit */
-    TYPED_STORAGE(OsResourceManager) ResourceManagerHolder::s_resource_manager_storage = {};
+    void SetVersionForLibnxInternal();
 
 }
