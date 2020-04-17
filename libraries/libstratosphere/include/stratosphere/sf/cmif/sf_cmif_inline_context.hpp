@@ -15,20 +15,21 @@
  */
 
 #pragma once
-
 #include <stratosphere/sf/sf_common.hpp>
-#include <stratosphere/sf/sf_lmem_utility.hpp>
-#include <stratosphere/sf/sf_mem_utility.hpp>
-#include <stratosphere/sf/sf_service_object.hpp>
-#include <stratosphere/sf/hipc/sf_hipc_server_session_manager.hpp>
 
-#include <stratosphere/sf/cmif/sf_cmif_inline_context.hpp>
-#include <stratosphere/sf/sf_fs_inline_context.hpp>
+namespace ams::sf::cmif {
 
-#include <stratosphere/sf/sf_out.hpp>
-#include <stratosphere/sf/sf_buffers.hpp>
-#include <stratosphere/sf/impl/sf_impl_command_serialization.hpp>
+    using InlineContext = u32;
 
-#include <stratosphere/sf/hipc/sf_hipc_server_manager.hpp>
+    InlineContext GetInlineContext();
+    InlineContext SetInlineContext(InlineContext ctx);
 
-#include <stratosphere/sf/sf_mitm_dispatch.h>
+    class ScopedInlineContextChanger {
+        private:
+            InlineContext prev_ctx;
+        public:
+            ALWAYS_INLINE explicit ScopedInlineContextChanger(InlineContext new_ctx) : prev_ctx(SetInlineContext(new_ctx)) { /* ... */ }
+            ~ScopedInlineContextChanger() { SetInlineContext(this->prev_ctx); }
+    };
+
+}
