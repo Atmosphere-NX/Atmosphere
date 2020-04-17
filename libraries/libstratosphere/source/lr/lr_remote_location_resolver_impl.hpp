@@ -28,19 +28,19 @@ namespace ams::lr {
         public:
             /* Actual commands. */
             virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveProgramPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+                return lrLrResolveProgramPath(std::addressof(this->srv), id.value, out->str);
             }
 
             virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectProgramPath(std::addressof(this->srv), static_cast<u64>(id), path.str);
+                return lrLrRedirectProgramPath(std::addressof(this->srv), id.value, path.str);
             }
 
             virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveApplicationControlPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+                return lrLrResolveApplicationControlPath(std::addressof(this->srv), id.value, out->str);
             }
 
             virtual Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveApplicationHtmlDocumentPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+                return lrLrResolveApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, out->str);
             }
 
             virtual Result ResolveDataPath(sf::Out<Path> out, ncm::DataId id) override {
@@ -48,31 +48,31 @@ namespace ams::lr {
             }
 
             virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectApplicationControlPath(std::addressof(this->srv), static_cast<u64>(id), 0, path.str);
+                return lrLrRedirectApplicationControlPath(std::addressof(this->srv), id.value, 0, path.str);
             }
 
             virtual Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
-                return lrLrRedirectApplicationControlPath(std::addressof(this->srv), static_cast<u64>(id), static_cast<u64>(owner_id), path.str);
+                return lrLrRedirectApplicationControlPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
             }
 
             virtual Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), static_cast<u64>(id), 0, path.str);
+                return lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, 0, path.str);
             }
 
             virtual Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
-                return lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), static_cast<u64>(id), static_cast<u64>(owner_id), path.str);
+                return lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
             }
 
             virtual Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveApplicationLegalInformationPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+                return lrLrResolveApplicationLegalInformationPath(std::addressof(this->srv), id.value, out->str);
             }
 
             virtual Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), static_cast<u64>(id), 0, path.str);
+                return lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), id.value, 0, path.str);
             }
 
             virtual Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
-                return lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), static_cast<u64>(id), static_cast<u64>(owner_id), path.str);
+                return lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
             }
 
             virtual Result Refresh() override {
@@ -100,8 +100,7 @@ namespace ams::lr {
             }
 
             virtual Result EraseProgramRedirection(ncm::ProgramId id) override {
-                /* TODO: libnx bindings */
-                AMS_ABORT();
+                return lrLrEraseProgramRedirection(std::addressof(this->srv), id.value);
             }
 
             virtual Result EraseApplicationControlRedirection(ncm::ProgramId id) override {

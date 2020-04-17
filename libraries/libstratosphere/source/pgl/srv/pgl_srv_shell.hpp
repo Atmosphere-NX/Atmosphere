@@ -13,22 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/ldr.hpp>
-#include <stratosphere/pm/pm_types.hpp>
-#include <stratosphere/ncm/ncm_program_location.hpp>
+namespace ams::pgl::srv {
 
-namespace ams::pm::shell {
+    void InitializeProcessControlTask();
 
-    /* Shell API. */
-    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 launch_flags);
+    class ShellEventObserverHolder;
+
+    void RegisterShellEventObserver(ShellEventObserverHolder *holder);
+    void UnregisterShellEventObserver(ShellEventObserverHolder *holder);
+
+    Result LaunchProgram(os::ProcessId *out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags);
     Result TerminateProcess(os::ProcessId process_id);
-    Result GetProcessEventEvent(os::SystemEvent *out);
-    Result GetProcessEventInfo(ProcessEventInfo *out);
-    Result GetApplicationProcessIdForShell(os::ProcessId *out);
+    Result GetApplicationProcessId(os::ProcessId *out);
     Result BoostSystemMemoryResourceLimit(u64 size);
-    Result EnableApplicationExtraThread();
+    bool IsProcessTracked(os::ProcessId process_id);
+    void EnableApplicationCrashReport(bool enabled);
+    bool IsApplicationCrashReportEnabled();
+    void EnableApplicationAllThreadDumpOnCrash(bool enabled);
+    Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const char *arg);
 
 }

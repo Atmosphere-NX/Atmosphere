@@ -13,11 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/pgl/pgl_types.hpp>
-#include <stratosphere/pgl/pgl_event_observer.hpp>
-#include <stratosphere/pgl/pgl_shell_api.hpp>
-#include <stratosphere/pgl/pgl_shell_api.hpp>
-#include <stratosphere/pgl/srv/pgl_srv_api.hpp>
+namespace ams::pgl::srv {
+
+    Result LaunchProgramFromHost(os::ProcessId *out, const char *content_path, u32 pm_flags);
+    Result GetHostContentMetaInfo(pgl::ContentMetaInfo *out, const char *content_path);
+
+}

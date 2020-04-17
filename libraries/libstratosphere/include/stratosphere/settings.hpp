@@ -19,6 +19,7 @@
 #include "settings/settings_types.hpp"
 #include "settings/settings_fwdbg_types.hpp"
 #include "settings/settings_fwdbg_api.hpp"
+#include "settings/system/settings_error_report.hpp"
 #include "settings/system/settings_firmware_version.hpp"
 #include "settings/system/settings_product_model.hpp"
 #include "settings/system/settings_region.hpp"

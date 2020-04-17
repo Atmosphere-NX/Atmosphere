@@ -17,8 +17,11 @@
 
 namespace ams::settings::fwdbg {
 
-    /* TODO: Implement when libnx wrapper is added. */
-    bool IsDebugModeEnabled();
+    bool IsDebugModeEnabled() {
+        bool value = false;
+        R_ABORT_UNLESS(::setsysGetDebugModeFlag(std::addressof(value)));
+        return value;
+    }
 
     size_t WEAK_SYMBOL GetSettingsItemValueSize(const char *name, const char *key) {
         u64 size = 0;

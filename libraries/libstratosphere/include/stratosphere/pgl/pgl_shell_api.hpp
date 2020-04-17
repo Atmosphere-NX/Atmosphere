@@ -34,7 +34,7 @@ namespace ams::pgl {
     Result EnableApplicationCrashReport(bool enabled);
     Result IsApplicationCrashReportEnabled(bool *out);
     Result EnableApplicationAllThreadDumpOnCrash(bool enabled);
-    Result TriggerSnapShotDumper(const char *arg, SnapShotDumpType dump_type);
+    Result TriggerApplicationSnapShotDumper(const char *arg, SnapShotDumpType dump_type);
 
     Result GetEventObserver(pgl::EventObserver *out);
 

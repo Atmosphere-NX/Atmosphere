@@ -13,11 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "impl/settings_error_report_impl.hpp"
 
-#pragma once
+namespace ams::settings::system {
 
-#include <stratosphere/pgl/pgl_types.hpp>
-#include <stratosphere/pgl/pgl_event_observer.hpp>
-#include <stratosphere/pgl/pgl_shell_api.hpp>
-#include <stratosphere/pgl/pgl_shell_api.hpp>
-#include <stratosphere/pgl/srv/pgl_srv_api.hpp>
+    ErrorReportSharePermission GetErrorReportSharePermission() {
+        s32 perm = 0;
+        R_ABORT_UNLESS(settings::impl::GetErrorReportSharePermission(std::addressof(perm)));
+        return static_cast<ErrorReportSharePermission>(perm);
+    }
+
+}

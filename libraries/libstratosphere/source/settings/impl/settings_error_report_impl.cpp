@@ -13,11 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "settings_error_report_impl.hpp"
 
-#pragma once
+namespace ams::settings::impl {
 
-#include <stratosphere/pgl/pgl_types.hpp>
-#include <stratosphere/pgl/pgl_event_observer.hpp>
-#include <stratosphere/pgl/pgl_shell_api.hpp>
-#include <stratosphere/pgl/pgl_shell_api.hpp>
-#include <stratosphere/pgl/srv/pgl_srv_api.hpp>
+    Result GetErrorReportSharePermission(s32 *out) {
+        static_assert(sizeof(*out) == sizeof(::SetSysErrorReportSharePermission));
+        return ::setsysGetErrorReportSharePermission(reinterpret_cast<::SetSysErrorReportSharePermission *>(out));
+    }
+
+}
