@@ -20,35 +20,36 @@ namespace ams::kern {
 
     Result KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize our members. */
-        this->address_space_width       = (is_64_bit) ? BITSIZEOF(u64) : BITSIZEOF(u32);
-        this->address_space_start       = KProcessAddress(GetInteger(start));
-        this->address_space_end         = KProcessAddress(GetInteger(end));
-        this->is_kernel                 = true;
-        this->enable_aslr               = true;
+        this->address_space_width           = (is_64_bit) ? BITSIZEOF(u64) : BITSIZEOF(u32);
+        this->address_space_start           = KProcessAddress(GetInteger(start));
+        this->address_space_end             = KProcessAddress(GetInteger(end));
+        this->is_kernel                     = true;
+        this->enable_aslr                   = true;
 
-        this->heap_region_start         = 0;
-        this->heap_region_end           = 0;
-        this->current_heap_end          = 0;
-        this->alias_region_start        = 0;
-        this->alias_region_end          = 0;
-        this->stack_region_start        = 0;
-        this->stack_region_end          = 0;
-        this->kernel_map_region_start   = 0;
-        this->kernel_map_region_end     = 0;
-        this->alias_code_region_start   = 0;
-        this->alias_code_region_end     = 0;
-        this->code_region_start         = 0;
-        this->code_region_end           = 0;
-        this->max_heap_size             = 0;
-        this->max_physical_memory_size  = 0;
+        this->heap_region_start             = 0;
+        this->heap_region_end               = 0;
+        this->current_heap_end              = 0;
+        this->alias_region_start            = 0;
+        this->alias_region_end              = 0;
+        this->stack_region_start            = 0;
+        this->stack_region_end              = 0;
+        this->kernel_map_region_start       = 0;
+        this->kernel_map_region_end         = 0;
+        this->alias_code_region_start       = 0;
+        this->alias_code_region_end         = 0;
+        this->code_region_start             = 0;
+        this->code_region_end               = 0;
+        this->max_heap_size                 = 0;
+        this->max_physical_memory_size      = 0;
+        this->mapped_unsafe_physical_memory = 0;
 
-        this->memory_block_slab_manager = std::addressof(Kernel::GetSystemMemoryBlockManager());
-        this->block_info_manager        = std::addressof(Kernel::GetBlockInfoManager());
+        this->memory_block_slab_manager     = std::addressof(Kernel::GetSystemMemoryBlockManager());
+        this->block_info_manager            = std::addressof(Kernel::GetBlockInfoManager());
 
-        this->allocate_option           = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-        this->heap_fill_value           = MemoryFillValue_Zero;
-        this->ipc_fill_value            = MemoryFillValue_Zero;
-        this->stack_fill_value          = MemoryFillValue_Zero;
+        this->allocate_option               = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
+        this->heap_fill_value               = MemoryFillValue_Zero;
+        this->ipc_fill_value                = MemoryFillValue_Zero;
+        this->stack_fill_value              = MemoryFillValue_Zero;
 
         this->cached_physical_linear_region = nullptr;
         this->cached_physical_heap_region   = nullptr;
@@ -222,9 +223,10 @@ namespace ams::kern {
         }
 
         /* Set heap and fill members. */
-        this->current_heap_end          = this->heap_region_start;
-        this->max_heap_size             = 0;
-        this->max_physical_memory_size  = 0;
+        this->current_heap_end              = this->heap_region_start;
+        this->max_heap_size                 = 0;
+        this->max_physical_memory_size      = 0;
+        this->mapped_unsafe_physical_memory = 0;
 
         const bool fill_memory = KTargetSystem::IsDebugMemoryFillEnabled();
         this->heap_fill_value  = fill_memory ? MemoryFillValue_Heap  : MemoryFillValue_Zero;

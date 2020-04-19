@@ -44,6 +44,7 @@ namespace ams::kern::board::nintendo::nx {
             /* Randomness. */
             static void GenerateRandomBytes(void *dst, size_t size);
             static u64  GenerateRandomRange(u64 min, u64 max);
+            static u64  GenerateRandomU64();
 
             /* Privileged Access. */
             static void ReadWriteRegisterPrivileged(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);

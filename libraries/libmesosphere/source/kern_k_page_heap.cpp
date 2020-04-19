@@ -51,11 +51,11 @@ namespace ams::kern {
         return num_free;
     }
 
-    KVirtualAddress KPageHeap::AllocateBlock(s32 index) {
+    KVirtualAddress KPageHeap::AllocateBlock(s32 index, bool random) {
         const size_t needed_size = this->blocks[index].GetSize();
 
         for (s32 i = index; i < static_cast<s32>(this->num_blocks); i++) {
-            if (const KVirtualAddress addr = this->blocks[i].PopBlock(); addr != Null<KVirtualAddress>) {
+            if (const KVirtualAddress addr = this->blocks[i].PopBlock(random); addr != Null<KVirtualAddress>) {
                 if (const size_t allocated_size = this->blocks[i].GetSize(); allocated_size > needed_size) {
                     this->Free(addr + needed_size, (allocated_size - needed_size) / PageSize);
                 }

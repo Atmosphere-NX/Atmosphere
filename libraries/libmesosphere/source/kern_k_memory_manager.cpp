@@ -104,7 +104,7 @@ namespace ams::kern {
         Impl *chosen_manager = nullptr;
         KVirtualAddress allocated_block = Null<KVirtualAddress>;
         for (chosen_manager = this->GetFirstManager(pool, dir); chosen_manager != nullptr; chosen_manager = this->GetNextManager(chosen_manager, dir)) {
-            allocated_block = chosen_manager->AllocateBlock(heap_index);
+            allocated_block = chosen_manager->AllocateBlock(heap_index, true);
             if (allocated_block != Null<KVirtualAddress>) {
                 break;
             }
@@ -129,19 +129,7 @@ namespace ams::kern {
         return allocated_block;
     }
 
-    Result KMemoryManager::Allocate(KPageGroup *out, size_t num_pages, u32 option) {
-        MESOSPHERE_ASSERT(out != nullptr);
-        MESOSPHERE_ASSERT(out->GetNumPages() == 0);
-
-        /* Early return if we're allocating no pages. */
-        if (num_pages == 0) {
-            return ResultSuccess();
-        }
-
-        /* Lock the pool that we're allocating from. */
-        const auto [pool, dir] = DecodeOption(option);
-        KScopedLightLock lk(this->pool_locks[pool]);
-
+    Result KMemoryManager::AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool optimize, bool random) {
         /* Choose a heap based on our page size request. */
         const s32 heap_index = KPageHeap::GetBlockIndex(num_pages);
         R_UNLESS(0 <= heap_index, svc::ResultOutOfMemory());
@@ -162,7 +150,7 @@ namespace ams::kern {
             for (Impl *cur_manager = this->GetFirstManager(pool, dir); cur_manager != nullptr; cur_manager = this->GetNextManager(cur_manager, dir)) {
                 while (num_pages >= pages_per_alloc) {
                     /* Allocate a block. */
-                    KVirtualAddress allocated_block = cur_manager->AllocateBlock(index);
+                    KVirtualAddress allocated_block = cur_manager->AllocateBlock(index, random);
                     if (allocated_block == Null<KVirtualAddress>) {
                         break;
                     }
@@ -175,7 +163,7 @@ namespace ams::kern {
                     }
 
                     /* Maintain the optimized memory bitmap, if we should. */
-                    if (this->has_optimized_process[pool]) {
+                    if (optimize) {
                         cur_manager->TrackAllocationForOptimizedProcess(allocated_block, pages_per_alloc);
                     }
 
@@ -191,6 +179,21 @@ namespace ams::kern {
         /* We succeeded! */
         group_guard.Cancel();
         return ResultSuccess();
+    }
+
+    Result KMemoryManager::Allocate(KPageGroup *out, size_t num_pages, u32 option) {
+        MESOSPHERE_ASSERT(out != nullptr);
+        MESOSPHERE_ASSERT(out->GetNumPages() == 0);
+
+        /* Early return if we're allocating no pages. */
+        R_SUCCEED_IF(num_pages == 0);
+
+        /* Lock the pool that we're allocating from. */
+        const auto [pool, dir] = DecodeOption(option);
+        KScopedLightLock lk(this->pool_locks[pool]);
+
+        /* Allocate the page group. */
+        return this->AllocatePageGroupImpl(out, num_pages, pool, dir, this->has_optimized_process[pool], true);
     }
 
     size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress metadata, KVirtualAddress metadata_end) {

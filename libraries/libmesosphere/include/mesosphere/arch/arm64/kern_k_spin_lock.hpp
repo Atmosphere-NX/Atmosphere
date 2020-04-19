@@ -38,14 +38,14 @@ namespace ams::kern::arch::arm64 {
                     "    \n"
                     "    and    %w[tmp1], %w[tmp0], #0xFFFF\n"
                     "    cmp    %w[tmp1], %w[tmp0], lsr #16\n"
-                    "    b.eq   done"
+                    "    b.eq   3f\n"
                     "    sevl\n"
                     "2:\n"
                     "    wfe\n"
                     "    ldaxrh %w[tmp1], %[packed_tickets]\n"
                     "    cmp    %w[tmp1], %w[tmp0], lsr #16\n"
                     "    b.ne   2b\n"
-                    "done:\n"
+                    "3:\n"
                     : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [packed_tickets]"+Q"(this->packed_tickets)
                     :
                     : "cc", "memory"
@@ -106,6 +106,6 @@ namespace ams::kern::arch::arm64 {
     };
     static_assert(sizeof(KAlignedSpinLock) == 2 * cpu::DataCacheLineSize);
 
-    using KSpinLock = KAlignedSpinLock;
+    using KSpinLock = KNotAlignedSpinLock;
 
 }

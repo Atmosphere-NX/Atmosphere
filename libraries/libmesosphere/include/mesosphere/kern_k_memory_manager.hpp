@@ -58,11 +58,11 @@ namespace ams::kern {
                     Impl *next;
                     Impl *prev;
                 public:
-                    constexpr Impl() : heap(), page_reference_counts(), metadata_region(), pool(), next(), prev() { /* ... */ }
+                    Impl() : heap(), page_reference_counts(), metadata_region(), pool(), next(), prev() { /* ... */ }
 
                     size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress metadata_region, KVirtualAddress metadata_region_end);
 
-                    KVirtualAddress AllocateBlock(s32 index) { return this->heap.AllocateBlock(index); }
+                    KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
 
                     void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
@@ -149,8 +149,10 @@ namespace ams::kern {
                     return cur->GetNext();
                 }
             }
+
+            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool optimize, bool random);
         public:
-            constexpr KMemoryManager()
+            KMemoryManager()
                 : pool_locks(), pool_managers_head(), pool_managers_tail(), managers(), num_managers(), optimized_process_ids(), has_optimized_process()
             {
                 /* ... */

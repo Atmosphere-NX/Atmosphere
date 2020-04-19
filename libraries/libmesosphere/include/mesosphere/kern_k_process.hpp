@@ -89,6 +89,7 @@ namespace ams::kern {
             u32                         version{};
             KHandleTable                handle_table{};
             KProcessAddress             plr_address{};
+            void                       *plr_heap_address{};
             KThread                    *exception_thread{};
             ThreadList                  thread_list{};
             SharedMemoryInfoList        shared_memory_list{};
@@ -118,7 +119,7 @@ namespace ams::kern {
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
         public:
-            constexpr KProcess() { /* ... */ }
+            KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);

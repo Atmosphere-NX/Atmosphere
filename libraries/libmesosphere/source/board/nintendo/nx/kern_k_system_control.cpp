@@ -81,6 +81,15 @@ namespace ams::kern::board::nintendo::nx {
             return value;
         }
 
+        void EnsureRandomGeneratorInitialized() {
+            if (AMS_UNLIKELY(!g_initialized_random_generator)) {
+                u64 seed;
+                smc::GenerateRandomBytes(&seed, sizeof(seed));
+                g_random_generator.Initialize(reinterpret_cast<u32*>(&seed), sizeof(seed) / sizeof(u32));
+                g_initialized_random_generator = true;
+            }
+        }
+
         ALWAYS_INLINE u64 GenerateRandomU64FromGenerator() {
             return g_random_generator.GenerateRandomU64();
         }
@@ -304,14 +313,18 @@ namespace ams::kern::board::nintendo::nx {
         KScopedInterruptDisable intr_disable;
         KScopedSpinLock lk(g_random_lock);
 
-        if (AMS_UNLIKELY(!g_initialized_random_generator)) {
-            u64 seed;
-            GenerateRandomBytes(&seed, sizeof(seed));
-            g_random_generator.Initialize(reinterpret_cast<u32*>(&seed), sizeof(seed) / sizeof(u32));
-            g_initialized_random_generator = true;
-        }
+        EnsureRandomGeneratorInitialized();
 
         return GenerateUniformRange(min, max, GenerateRandomU64FromGenerator);
+    }
+
+    u64 KSystemControl::GenerateRandomU64() {
+        KScopedInterruptDisable intr_disable;
+        KScopedSpinLock lk(g_random_lock);
+
+        EnsureRandomGeneratorInitialized();
+
+        return GenerateRandomU64();
     }
 
     void KSystemControl::SleepSystem() {

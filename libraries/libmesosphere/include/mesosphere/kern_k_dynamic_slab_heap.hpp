@@ -18,18 +18,9 @@
 #include <mesosphere/kern_k_slab_heap.hpp>
 #include <mesosphere/kern_k_page_group.hpp>
 #include <mesosphere/kern_k_memory_block.hpp>
+#include <mesosphere/kern_k_dynamic_page_manager.hpp>
 
 namespace ams::kern {
-
-    namespace impl {
-
-        class DynamicSlabHeapPage {
-            private:
-                u8 buffer[PageSize];
-        };
-        static_assert(sizeof(DynamicSlabHeapPage) == PageSize);
-
-    };
 
     template<typename T>
     class KDynamicSlabHeap {
@@ -37,10 +28,10 @@ namespace ams::kern {
         NON_MOVEABLE(KDynamicSlabHeap);
         private:
             using Impl       = impl::KSlabHeapImpl;
-            using PageBuffer = impl::DynamicSlabHeapPage;
+            using PageBuffer = KDynamicPageManager::PageBuffer;
         private:
             Impl impl;
-            KDynamicSlabHeap<PageBuffer> *next_allocator;
+            KDynamicPageManager *page_allocator;
             std::atomic<size_t> used;
             std::atomic<size_t> peak;
             std::atomic<size_t> count;
@@ -54,7 +45,7 @@ namespace ams::kern {
                 return std::addressof(this->impl);
             }
         public:
-            constexpr KDynamicSlabHeap() : impl(), next_allocator(), used(), peak(), count(), address(), size() { /* ... */ }
+            constexpr KDynamicSlabHeap() : impl(), page_allocator(), used(), peak(), count(), address(), size() { /* ... */ }
 
             constexpr KVirtualAddress GetAddress() const { return this->address; }
             constexpr size_t GetSize() const { return this->size; }
@@ -80,10 +71,10 @@ namespace ams::kern {
                 }
             }
 
-            void Initialize(KDynamicSlabHeap<PageBuffer> *next) {
-                this->next_allocator = next;
-                this->address = next->GetAddress();
-                this->size = next->GetSize();
+            void Initialize(KDynamicPageManager *page_allocator) {
+                this->page_allocator = page_allocator;
+                this->address        = this->page_allocator->GetAddress();
+                this->size           = this->page_allocator->GetSize();
             }
 
             T *Allocate() {
@@ -91,8 +82,8 @@ namespace ams::kern {
 
                 /* If we fail to allocate, try to get a new page from our next allocator. */
                 if (AMS_UNLIKELY(allocated == nullptr)) {
-                    if (this->next_allocator != nullptr) {
-                        allocated = reinterpret_cast<T *>(this->next_allocator->Allocate());
+                    if (this->page_allocator != nullptr) {
+                        allocated = reinterpret_cast<T *>(this->page_allocator->Allocate());
                         if (allocated != nullptr) {
                             /* If we succeeded in getting a page, free the rest to our slab. */
                             for (size_t i = 1; i < sizeof(PageBuffer) / sizeof(T); i++) {
@@ -126,7 +117,6 @@ namespace ams::kern {
             }
     };
 
-    class KDynamicPageManager     : public KDynamicSlabHeap<impl::DynamicSlabHeapPage>{};
     class KBlockInfoManager       : public KDynamicSlabHeap<KBlockInfo>{};
     class KMemoryBlockSlabManager : public KDynamicSlabHeap<KMemoryBlock>{};
 

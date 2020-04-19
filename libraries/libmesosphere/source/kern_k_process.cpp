@@ -35,7 +35,8 @@ namespace ams::kern {
 
         /* Create and clear the process local region. */
         R_TRY(this->CreateThreadLocalRegion(std::addressof(this->plr_address)));
-        std::memset(this->GetThreadLocalRegionPointer(this->plr_address), 0, ams::svc::ThreadLocalRegionSize);
+        this->plr_heap_address = this->GetThreadLocalRegionPointer(this->plr_address);
+        std::memset(this->plr_heap_address, 0, ams::svc::ThreadLocalRegionSize);
 
         /* Copy in the name from parameters. */
         static_assert(sizeof(params.name) < sizeof(this->name));

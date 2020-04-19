@@ -72,6 +72,10 @@ namespace ams::kern {
             }
 
             void Free(KVirtualAddress addr) {
+                /* Ensure all pages in the heap are zero. */
+                cpu::ClearPageToZero(GetVoidPointer(addr));
+
+                /* Free the page. */
                 BaseHeap::Free(GetPointer<impl::PageTablePage>(addr));
             }
 

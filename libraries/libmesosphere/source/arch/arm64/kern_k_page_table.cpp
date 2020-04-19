@@ -765,6 +765,7 @@ namespace ams::kern::arch::arm64 {
             KVirtualAddress l3_table = util::AlignDown(reinterpret_cast<uintptr_t>(l3_entry), PageSize);
             if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
                 this->GetPageTableManager().Close(l3_table, L2BlockSize / L3BlockSize);
+                ClearPageTable(l3_table);
                 this->FreePageTable(page_list, l3_table);
             }
         }
@@ -816,6 +817,7 @@ namespace ams::kern::arch::arm64 {
             KVirtualAddress l2_table = util::AlignDown(reinterpret_cast<uintptr_t>(l2_entry), PageSize);
             if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
                 this->GetPageTableManager().Close(l2_table, L1BlockSize / L2BlockSize);
+                ClearPageTable(l2_table);
                 this->FreePageTable(page_list, l2_table);
             }
         }

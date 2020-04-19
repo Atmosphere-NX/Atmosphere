@@ -258,8 +258,6 @@ namespace ams::kern::arch::arm64 {
                     }
                 }
 
-                ClearPageTable(table);
-
                 MESOSPHERE_ASSERT(this->GetPageTableManager().GetRefCount(table) == 0);
 
                 return table;

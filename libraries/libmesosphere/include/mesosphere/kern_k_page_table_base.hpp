@@ -91,7 +91,7 @@ namespace ams::kern {
             };
             static_assert(std::is_trivially_destructible<PageLinkedList>::value);
 
-            static constexpr u32 DefaultMemoryIgnoreAttr = KMemoryAttribute_DontCareMask | KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared;
+            static constexpr u32 DefaultMemoryIgnoreAttr = KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared;
 
             static constexpr size_t GetAddressSpaceWidth(ams::svc::CreateProcessFlag as_type) {
                 switch (static_cast<ams::svc::CreateProcessFlag>(as_type & ams::svc::CreateProcessFlag_AddressSpaceMask)) {
@@ -135,6 +135,7 @@ namespace ams::kern {
             KProcessAddress code_region_end;
             size_t max_heap_size;
             size_t max_physical_memory_size;
+            size_t mapped_unsafe_physical_memory;
             mutable KLightLock general_lock;
             mutable KLightLock map_physical_memory_lock;
             KPageTableImpl impl;
@@ -156,9 +157,9 @@ namespace ams::kern {
                 address_space_start(), address_space_end(), heap_region_start(), heap_region_end(), current_heap_end(),
                 alias_region_start(), alias_region_end(), stack_region_start(), stack_region_end(), kernel_map_region_start(),
                 kernel_map_region_end(), alias_code_region_start(), alias_code_region_end(), code_region_start(), code_region_end(),
-                max_heap_size(), max_physical_memory_size(), general_lock(), map_physical_memory_lock(), impl(), memory_block_manager(),
-                allocate_option(), address_space_width(), is_kernel(), enable_aslr(), memory_block_slab_manager(), block_info_manager(),
-                cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_heap_region(),
+                max_heap_size(), max_physical_memory_size(),mapped_unsafe_physical_memory(), general_lock(), map_physical_memory_lock(),
+                impl(), memory_block_manager(), allocate_option(), address_space_width(), is_kernel(), enable_aslr(), memory_block_slab_manager(),
+                block_info_manager(), cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_heap_region(),
                 heap_fill_value(), ipc_fill_value(), stack_fill_value()
             {
                 /* ... */
