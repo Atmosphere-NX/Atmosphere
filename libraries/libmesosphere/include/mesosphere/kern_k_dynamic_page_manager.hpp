@@ -64,11 +64,12 @@ namespace ams::kern {
                 this->page_bitmap.Initialize(metadata_ptr, this->count);
 
                 /* Free the pages to the bitmap. */
-                PageBuffer *cur_page = GetPointer<PageBuffer>(this->address);
+                std::memset(GetPointer<PageBuffer>(this->address), 0, this->count * sizeof(PageBuffer));
                 for (size_t i = 0; i < this->count; i++) {
-                    std::memset(cur_page, 0, sizeof(*cur_page));
                     this->page_bitmap.SetBit(i);
                 }
+
+                return ResultSuccess();
             }
 
             constexpr KVirtualAddress GetAddress() const { return this->address; }

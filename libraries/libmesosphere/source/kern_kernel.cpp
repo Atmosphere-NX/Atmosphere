@@ -19,6 +19,8 @@ namespace ams::kern {
 
     namespace {
 
+        KDynamicPageManager g_resource_manager_page_manager;
+
         template<typename T>
         ALWAYS_INLINE void PrintMemoryRegion(const char *prefix, const T &extents) {
             static_assert(std::is_same<decltype(extents.GetAddress()),     uintptr_t>::value);
@@ -88,24 +90,29 @@ namespace ams::kern {
 
     void Kernel::InitializeResourceManagers(KVirtualAddress address, size_t size) {
         /* Ensure that the buffer is suitable for our use. */
-        const size_t app_size   = ApplicationMemoryBlockSlabHeapSize * sizeof(KMemoryBlock);
-        const size_t sys_size   = SystemMemoryBlockSlabHeapSize      * sizeof(KMemoryBlock);
-        const size_t info_size  = BlockInfoSlabHeapSize              * sizeof(KBlockInfo);
-        const size_t fixed_size = util::AlignUp(app_size + sys_size + info_size, PageSize);
+        //const size_t app_size   = ApplicationMemoryBlockSlabHeapSize * sizeof(KMemoryBlock);
+        //const size_t sys_size   = SystemMemoryBlockSlabHeapSize      * sizeof(KMemoryBlock);
+        //const size_t info_size  = BlockInfoSlabHeapSize              * sizeof(KBlockInfo);
+        //const size_t fixed_size = util::AlignUp(app_size + sys_size + info_size, PageSize);
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(address), PageSize));
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, PageSize));
-        MESOSPHERE_ABORT_UNLESS(fixed_size < size);
 
-        size_t pt_size = size - fixed_size;
-        const size_t rc_size = util::AlignUp(KPageTableManager::CalculateReferenceCountSize(pt_size), PageSize);
-        MESOSPHERE_ABORT_UNLESS(rc_size < pt_size);
-        pt_size -= rc_size;
+        /* Ensure that we have space for our reference counts. */
+        const size_t rc_size = util::AlignUp(KPageTableManager::CalculateReferenceCountSize(size), PageSize);
+        MESOSPHERE_ABORT_UNLESS(rc_size < size);
+        size -= rc_size;
 
-        /* Initialize the slabheaps. */
-        s_app_memory_block_manager.Initialize(address + pt_size, app_size);
-        s_sys_memory_block_manager.Initialize(address + pt_size + app_size, sys_size);
-        s_block_info_manager.Initialize(address + pt_size + app_size + sys_size, info_size);
-        s_page_table_manager.Initialize(address, pt_size, GetPointer<KPageTableManager::RefCount>(address + pt_size + fixed_size));
+        /* Initialize the resource managers' shared page manager. */
+        g_resource_manager_page_manager.Initialize(address, size);
+
+        /* Initialize the fixed-size slabheaps. */
+        s_app_memory_block_manager.Initialize(std::addressof(g_resource_manager_page_manager), ApplicationMemoryBlockSlabHeapSize);
+        s_sys_memory_block_manager.Initialize(std::addressof(g_resource_manager_page_manager), SystemMemoryBlockSlabHeapSize);
+        s_block_info_manager.Initialize(std::addressof(g_resource_manager_page_manager), BlockInfoSlabHeapSize);
+
+        /* Reserve all remaining pages for the page table manager. */
+        const size_t num_pt_pages = g_resource_manager_page_manager.GetCount() - g_resource_manager_page_manager.GetUsed();
+        s_page_table_manager.Initialize(std::addressof(g_resource_manager_page_manager), num_pt_pages, GetPointer<KPageTableManager::RefCount>(address + size));
     }
 
     void Kernel::PrintLayout() {

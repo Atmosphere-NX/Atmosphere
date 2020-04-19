@@ -57,13 +57,13 @@ namespace ams::kern {
                 return std::addressof(this->ref_counts[(addr - this->GetAddress()) / PageSize]);
             }
         public:
-            void Initialize(KDynamicPageManager *next_allocator, RefCount *rc) {
-                BaseHeap::Initialize(next_allocator);
+            void Initialize(KDynamicPageManager *page_allocator, RefCount *rc) {
+                BaseHeap::Initialize(page_allocator);
                 this->Initialize(rc);
             }
 
-            void Initialize(KVirtualAddress memory, size_t sz, RefCount *rc) {
-                BaseHeap::Initialize(memory, sz);
+            void Initialize(KDynamicPageManager *page_allocator, size_t object_count, RefCount *rc) {
+                BaseHeap::Initialize(page_allocator, object_count);
                 this->Initialize(rc);
             }
 

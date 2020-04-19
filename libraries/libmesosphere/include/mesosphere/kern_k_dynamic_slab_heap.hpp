@@ -77,6 +77,23 @@ namespace ams::kern {
                 this->size           = this->page_allocator->GetSize();
             }
 
+            void Initialize(KDynamicPageManager *page_allocator, size_t num_objects) {
+                MESOSPHERE_ASSERT(page_allocator != nullptr);
+
+                /* Initialize members. */
+                this->Initialize(page_allocator);
+
+                /* Allocate until we have the correct number of objects. */
+                while (this->count < num_objects) {
+                    auto *allocated = reinterpret_cast<T *>(this->page_allocator->Allocate());
+                    MESOSPHERE_ABORT_UNLESS(allocated != nullptr);
+                    for (size_t i = 0; i < sizeof(PageBuffer) / sizeof(T); i++) {
+                        this->GetImpl()->Free(allocated + i);
+                    }
+                    this->count += sizeof(PageBuffer) / sizeof(T);
+                }
+            }
+
             T *Allocate() {
                 T *allocated = reinterpret_cast<T *>(this->GetImpl()->Allocate());
 
