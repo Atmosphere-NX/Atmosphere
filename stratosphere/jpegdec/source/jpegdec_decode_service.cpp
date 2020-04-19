@@ -20,7 +20,8 @@ namespace ams::jpegdec {
 
     namespace {
 
-        u8 g_workmem[0x20000];
+        /* Enough for four linebuffers RGB. */
+        u8 g_workmem[0x3C00];
 
     }
 
