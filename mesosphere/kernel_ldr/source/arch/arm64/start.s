@@ -109,7 +109,7 @@ _main:
 .type       _ZN3ams4kern17GetTargetFirmwareEv, %function
 _ZN3ams4kern17GetTargetFirmwareEv:
     adr x0, __metadata_target_firmware
-    ldr x0, [x0]
+    ldr w0, [x0]
     ret
 
 .balign 8

@@ -156,6 +156,7 @@ namespace ams::kern::arch::arm64::cpu {
     void ClearPageToZeroImpl(void *);
     void FlushEntireDataCacheSharedForInit();
     void FlushEntireDataCacheLocalForInit();
+    void StoreEntireCacheForInit();
 
     void FlushEntireDataCache();
 

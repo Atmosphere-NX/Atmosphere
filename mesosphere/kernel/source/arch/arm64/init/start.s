@@ -65,7 +65,7 @@ __metadata_kernel_layout:
 .type       _ZN3ams4kern17GetTargetFirmwareEv, %function
 _ZN3ams4kern17GetTargetFirmwareEv:
     adr x0, __metadata_target_firmware
-    ldr x0, [x0]
+    ldr w0, [x0]
     ret
 
 /* ams::kern::init::StartCore0(uintptr_t, uintptr_t) */
@@ -101,6 +101,15 @@ core0_el1:
     add x2, x0, x2
     LOAD_FROM_LABEL(x3, __metadata_kernelldr_offset)
     add x3, x0, x3
+
+    /* If kernelldr is ours, set its target firmware. */
+    ldr w4, [x3, #4]
+    LOAD_IMMEDIATE_32(w5, 0x30444C4D)
+    cmp w4, w5
+    b.ne 1f
+    LOAD_FROM_LABEL(x4, __metadata_target_firmware)
+    str w4, [x3, #8]
+1:
     blr x3
 
     /* At this point kernelldr has been invoked, and we are relocated at a random virtual address. */

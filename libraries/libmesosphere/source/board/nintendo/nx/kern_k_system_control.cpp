@@ -324,7 +324,7 @@ namespace ams::kern::board::nintendo::nx {
 
         EnsureRandomGeneratorInitialized();
 
-        return GenerateRandomU64();
+        return GenerateRandomU64FromGenerator();
     }
 
     void KSystemControl::SleepSystem() {

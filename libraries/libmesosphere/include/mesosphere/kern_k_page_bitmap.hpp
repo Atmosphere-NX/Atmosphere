@@ -51,11 +51,11 @@ namespace ams::kern {
                         u64 selected     = 0;
 
                         u64 cur_num_bits = BITSIZEOF(bitmap) / 2;
-                        u64 cur_mask     = (1ull << cur_num_bits) / 2;
+                        u64 cur_mask     = (1ull << cur_num_bits) - 1;
 
                         while (cur_num_bits) {
-                            const u64 high = (bitmap >> 0) & cur_mask;
-                            const u64 low  = (bitmap >> cur_num_bits) & cur_mask;
+                            const u64 low  = (bitmap >> 0) & cur_mask;
+                            const u64 high = (bitmap >> cur_num_bits) & cur_mask;
 
                             bool choose_low;
                             if (high == 0) {

@@ -304,7 +304,7 @@ namespace ams::kern::init::loader {
         ttbr1_table.Map(virtual_base_address + ro_offset, ro_end_offset - ro_offset, base_address + ro_offset, KernelRwDataAttribute, g_initial_page_allocator);
         ttbr1_table.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
 
-        /* On 10.0.0+, Physicaly randomize the kernel region. */
+        /* On 10.0.0+, Physically randomize the kernel region. */
         if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
             ttbr1_table.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
         }

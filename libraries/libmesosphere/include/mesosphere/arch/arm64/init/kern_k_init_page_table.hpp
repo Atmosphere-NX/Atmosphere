@@ -394,6 +394,77 @@ namespace ams::kern::arch::arm64::init {
                 return l3_entry->GetBlock() + (GetInteger(virt_addr) & (L3BlockSize - 1));
             }
 
+            KPhysicalAddress GetPhysicalAddressOfRandomizedRange(KVirtualAddress virt_addr, size_t size) const {
+                /* Define tracking variables for ourselves to use. */
+                KPhysicalAddress min_phys_addr = Null<KPhysicalAddress>;
+                KPhysicalAddress max_phys_addr = Null<KPhysicalAddress>;
+
+                /* Ensure the range we're querying is valid. */
+                const KVirtualAddress end_virt_addr = virt_addr + size;
+                if (virt_addr > end_virt_addr) {
+                    MESOSPHERE_INIT_ABORT_UNLESS(size == 0);
+                    return min_phys_addr;
+                }
+
+                auto UpdateExtents = [&](const KPhysicalAddress block, size_t block_size) ALWAYS_INLINE_LAMBDA {
+                    /* Ensure that we are allowed to have the block here. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), block_size));
+                    MESOSPHERE_INIT_ABORT_UNLESS(block_size <= GetInteger(end_virt_addr) - GetInteger(virt_addr));
+                    MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     block_size));
+                    MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size, block_size));
+
+                    const KPhysicalAddress block_end = block + block_size;
+
+                    /* We want to update min phys addr when it's 0 or > block. */
+                    /* This is equivalent in two's complement to (n - 1) >= block. */
+                    if ((GetInteger(min_phys_addr) - 1) >= GetInteger(block)) {
+                        min_phys_addr = block;
+                    }
+
+                    /* Update max phys addr when it's 0 or < block_end. */
+                    if (GetInteger(max_phys_addr) < GetInteger(block_end) || GetInteger(max_phys_addr) == 0) {
+                        max_phys_addr = block_end;
+                    }
+
+                    /* Traverse onwards. */
+                    virt_addr += block_size;
+                };
+
+                while (virt_addr < end_virt_addr) {
+                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+
+                    /* If an L1 block is mapped, update. */
+                    if (l1_entry->IsBlock()) {
+                        UpdateExtents(l1_entry->GetBlock(), L1BlockSize);
+                        continue;
+                    }
+
+                    /* Not a block, so we must have a table. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsTable());
+
+                    L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
+                    if (l2_entry->IsBlock()) {
+                        UpdateExtents(l2_entry->GetBlock(), l2_entry->IsContiguous() ? L2ContiguousBlockSize : L2BlockSize);
+                        continue;
+                    }
+
+                    /* Not a block, so we must have a table. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsTable());
+
+                    /* We must have a mapped l3 entry to inspect. */
+                    L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
+                    MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsBlock());
+
+                    UpdateExtents(l3_entry->GetBlock(), l3_entry->IsContiguous() ? L3ContiguousBlockSize : L3BlockSize);
+                }
+
+                /* Ensure we got the right range. */
+                MESOSPHERE_INIT_ABORT_UNLESS(GetInteger(max_phys_addr) - GetInteger(min_phys_addr) == size);
+
+                /* Write the address that we found. */
+                return min_phys_addr;
+            }
+
             bool IsFree(KVirtualAddress virt_addr, size_t size) {
                 /* Ensure that addresses and sizes are page aligned. */
                 MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr),    PageSize));

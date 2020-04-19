@@ -333,6 +333,13 @@ namespace ams::kern::arch::arm64::cpu {
         return PerformCacheOperationBySetWayLocal<true>(FlushDataCacheLineBySetWayImpl);
     }
 
+    void StoreEntireCacheForInit() {
+        PerformCacheOperationBySetWayLocal<true>(StoreDataCacheLineBySetWayImpl);
+        PerformCacheOperationBySetWayShared<true>(StoreDataCacheLineBySetWayImpl);
+        DataSynchronizationBarrierInnerShareable();
+        InvalidateEntireInstructionCache();
+    }
+
     void FlushEntireDataCache() {
         return PerformCacheOperationBySetWayShared<false>(FlushDataCacheLineBySetWayImpl);
     }

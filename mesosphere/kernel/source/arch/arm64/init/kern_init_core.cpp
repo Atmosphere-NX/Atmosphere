@@ -34,12 +34,27 @@ namespace ams::kern::init {
         constexpr size_t KernelResourceRegionSize = 0x1728000;
         constexpr size_t ExtraKernelResourceSize  = 0x68000;
         static_assert(ExtraKernelResourceSize + KernelResourceRegionSize == 0x1790000);
+        constexpr size_t KernelResourceReduction_10_0_0 = 0x10000;
 
         /* Global Allocator. */
         KInitialPageAllocator g_initial_page_allocator;
 
         /* Global initial arguments array. */
         KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
+
+        size_t GetResourceRegionSize() {
+            /* Decide if Kernel should have enlarged resource region. */
+            const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
+            size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
+            static_assert(KernelResourceRegionSize > InitialProcessBinarySizeMax);
+            static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
+
+            /* 10.0.0 reduced the kernel resource region size by 64K. */
+            if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+                resource_region_size -= KernelResourceReduction_10_0_0;
+            }
+            return resource_region_size;
+        }
 
         /* Page table attributes. */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR,  PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable);
@@ -138,25 +153,21 @@ namespace ams::kern::init {
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_region_start), StackRegionSize, KMemoryRegionType_KernelStack));
 
         /* Decide if Kernel should have enlarged resource region (slab region + page table heap region). */
-        const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-        const size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
+        const size_t resource_region_size = GetResourceRegionSize();
 
         /* Determine the size of the slab region. */
         const size_t slab_region_size = CalculateTotalSlabHeapSize();
         MESOSPHERE_INIT_ABORT_UNLESS(slab_region_size <= resource_region_size);
 
         /* Setup the slab region. */
-        const KPhysicalAddress code_start_phys_addr = ttbr1_table.GetPhysicalAddress(code_start_virt_addr);
-        const KPhysicalAddress code_end_phys_addr   = code_start_phys_addr + (code_end_virt_addr - code_start_virt_addr);
+        const KPhysicalAddress code_start_phys_addr = ttbr1_table.GetPhysicalAddressOfRandomizedRange(code_start_virt_addr, code_region_size);
+        const KPhysicalAddress code_end_phys_addr   = code_start_phys_addr + code_region_size;
         const KPhysicalAddress slab_start_phys_addr = code_end_phys_addr;
         const KPhysicalAddress slab_end_phys_addr   = slab_start_phys_addr + slab_region_size;
         constexpr size_t SlabRegionAlign = KernelAslrAlignment;
         const size_t slab_region_needed_size = util::AlignUp(GetInteger(code_end_phys_addr) + slab_region_size, SlabRegionAlign) - util::AlignDown(GetInteger(code_end_phys_addr), SlabRegionAlign);
         const KVirtualAddress slab_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(slab_region_needed_size, SlabRegionAlign, KMemoryRegionType_Kernel) + (GetInteger(code_end_phys_addr) % SlabRegionAlign);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(slab_region_start), slab_region_size, KMemoryRegionType_KernelSlab));
-
-        /* Set the slab region's pair region. */
-        KMemoryLayout::GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelSlab)->SetPairAddress(GetInteger(slab_start_phys_addr));
 
         /* Setup the temp region. */
         constexpr size_t TempRegionSize  = 128_MB;
@@ -206,15 +217,20 @@ namespace ams::kern::init {
         SetupDramPhysicalMemoryRegions();
 
         /* Insert a physical region for the kernel code region. */
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(code_start_phys_addr), (code_end_virt_addr - code_start_virt_addr), KMemoryRegionType_DramKernelCode));
-        KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_DramKernelCode)->SetPairAddress(code_start_virt_addr);
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(code_start_phys_addr), code_region_size, KMemoryRegionType_DramKernelCode));
 
         /* Insert a physical region for the kernel slab region. */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_start_phys_addr), slab_region_size, KMemoryRegionType_DramKernelSlab));
-        KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_DramKernelSlab)->SetPairAddress(GetInteger(slab_region_start));
 
-        /* Map and clear the slab region. */
+        /* Map the slab region. */
         ttbr1_table.Map(slab_region_start, slab_region_size, slab_start_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+
+        /* Physically randomize the slab region. */
+        /* NOTE: Nintendo does this only on 10.0.0+ */
+        ttbr1_table.PhysicallyRandomize(slab_region_start, slab_region_size, false);
+        cpu::StoreEntireCacheForInit();
+
+        /* Clear the slab region. */
         std::memset(GetVoidPointer(slab_region_start), 0, slab_region_size);
 
         /* Determine size available for kernel page table heaps, requiring > 8 MB. */
