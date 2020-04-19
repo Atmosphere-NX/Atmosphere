@@ -251,6 +251,7 @@ namespace ams::mitm::fs {
 
         const bool is_sysmodule = ncm::IsSystemProgramId(this->client_info.program_id);
         const bool is_hbl = this->client_info.override_status.IsHbl();
+        const bool cal_write_protect = !GetSettingsItemBooleanValue("atmosphere", "disable_cal_write");
         const bool can_write_bis = is_sysmodule || (is_hbl && GetSettingsItemBooleanValue("atmosphere", "enable_hbl_bis_write"));
         const bool can_read_cal  = is_sysmodule || (is_hbl && GetSettingsItemBooleanValue("atmosphere", "enable_hbl_cal_read"));
 
@@ -266,8 +267,11 @@ namespace ams::mitm::fs {
             out.SetValue(std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
         } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
             /* PRODINFO should *never* be writable. */
+            if (!cal_write_protect) {
+                /* unless the user explicitly disabled write-protection */
+                out.SetValue(std::make_shared<IStorageInterface>(new RemoteStorage(bis_storage)), target_object_id);
             /* If we have permissions, create a read only storage. */
-            if (can_read_cal) {
+            } else if (can_read_cal) {
                 out.SetValue(std::make_shared<IStorageInterface>(new ReadOnlyStorageAdapter(new RemoteStorage(bis_storage))), target_object_id);
             } else {
                 /* If we can't read cal, return permission denied. */
