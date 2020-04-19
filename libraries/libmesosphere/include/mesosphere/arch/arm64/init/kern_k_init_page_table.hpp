@@ -291,7 +291,7 @@ namespace ams::kern::arch::arm64::init {
                     L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
 
                     /* Can we make an L1 block? */
-                    if (util::IsAligned(GetInteger(virt_addr), L1BlockSize) && util::IsAligned(GetInteger(phys_addr), L1BlockSize) && util::IsAligned(size, L1BlockSize)) {
+                    if (util::IsAligned(GetInteger(virt_addr), L1BlockSize) && util::IsAligned(GetInteger(phys_addr), L1BlockSize) && size >= L1BlockSize) {
                         *l1_entry = L1PageTableEntry(phys_addr, attr, false);
                         cpu::DataSynchronizationBarrierInnerShareable();
 
@@ -312,7 +312,7 @@ namespace ams::kern::arch::arm64::init {
                     L2PageTableEntry *l2_entry = GetL2Entry(l1_entry, virt_addr);
 
                     /* Can we make a contiguous L2 block? */
-                    if (util::IsAligned(GetInteger(virt_addr), L2ContiguousBlockSize) && util::IsAligned(GetInteger(phys_addr), L2ContiguousBlockSize) && util::IsAligned(size, L2ContiguousBlockSize)) {
+                    if (util::IsAligned(GetInteger(virt_addr), L2ContiguousBlockSize) && util::IsAligned(GetInteger(phys_addr), L2ContiguousBlockSize) && size >= L2ContiguousBlockSize) {
                         for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
                             l2_entry[i] = L2PageTableEntry(phys_addr, attr, true);
                             cpu::DataSynchronizationBarrierInnerShareable();
@@ -325,7 +325,7 @@ namespace ams::kern::arch::arm64::init {
                     }
 
                     /* Can we make an L2 block? */
-                    if (util::IsAligned(GetInteger(virt_addr), L2BlockSize) && util::IsAligned(GetInteger(phys_addr), L2BlockSize) && util::IsAligned(size, L2BlockSize)) {
+                    if (util::IsAligned(GetInteger(virt_addr), L2BlockSize) && util::IsAligned(GetInteger(phys_addr), L2BlockSize) && size >= L2BlockSize) {
                         *l2_entry = L2PageTableEntry(phys_addr, attr, false);
                         cpu::DataSynchronizationBarrierInnerShareable();
 
@@ -346,7 +346,7 @@ namespace ams::kern::arch::arm64::init {
                     L3PageTableEntry *l3_entry = GetL3Entry(l2_entry, virt_addr);
 
                     /* Can we make a contiguous L3 block? */
-                    if (util::IsAligned(GetInteger(virt_addr), L3ContiguousBlockSize) && util::IsAligned(GetInteger(phys_addr), L3ContiguousBlockSize) && util::IsAligned(size, L3ContiguousBlockSize)) {
+                    if (util::IsAligned(GetInteger(virt_addr), L3ContiguousBlockSize) && util::IsAligned(GetInteger(phys_addr), L3ContiguousBlockSize) && size >= L3ContiguousBlockSize) {
                         for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
                             l3_entry[i] = L3PageTableEntry(phys_addr, attr, true);
                             cpu::DataSynchronizationBarrierInnerShareable();
@@ -411,7 +411,7 @@ namespace ams::kern::arch::arm64::init {
                     MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), block_size));
                     MESOSPHERE_INIT_ABORT_UNLESS(block_size <= GetInteger(end_virt_addr) - GetInteger(virt_addr));
                     MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     block_size));
-                    MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size, block_size));
+                    MESOSPHERE_INIT_ABORT_UNLESS(size >= block_size);
 
                     const KPhysicalAddress block_end = block + block_size;
 
@@ -528,7 +528,7 @@ namespace ams::kern::arch::arm64::init {
                         /* Ensure that we are allowed to have an L1 block here. */
                         const KPhysicalAddress block = l1_entry->GetBlock();
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
-                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size, L1BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(size >= L1BlockSize);
                         MESOSPHERE_INIT_ABORT_UNLESS(l1_entry->IsCompatibleWithAttribute(attr_before, false));
 
                         /* Invalidate the existing L1 block. */
@@ -555,7 +555,7 @@ namespace ams::kern::arch::arm64::init {
                             /* Ensure that we are allowed to have a contiguous L2 block here. */
                             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2ContiguousBlockSize));
                             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2ContiguousBlockSize));
-                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L2ContiguousBlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(size >= L2ContiguousBlockSize);
 
                             /* Invalidate the existing contiguous L2 block. */
                             for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
@@ -577,7 +577,7 @@ namespace ams::kern::arch::arm64::init {
                             /* Ensure that we are allowed to have an L2 block here. */
                             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
                             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L2BlockSize));
-                            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L2BlockSize));
+                            MESOSPHERE_INIT_ABORT_UNLESS(size >= L2BlockSize);
                             MESOSPHERE_INIT_ABORT_UNLESS(l2_entry->IsCompatibleWithAttribute(attr_before, false));
 
                             /* Invalidate the existing L2 block. */
@@ -607,7 +607,7 @@ namespace ams::kern::arch::arm64::init {
                         /* Ensure that we are allowed to have a contiguous L3 block here. */
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3ContiguousBlockSize));
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3ContiguousBlockSize));
-                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L3ContiguousBlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(size >= L3ContiguousBlockSize);
 
                         /* Invalidate the existing contiguous L3 block. */
                         for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
@@ -629,7 +629,7 @@ namespace ams::kern::arch::arm64::init {
                         /* Ensure that we are allowed to have an L3 block here. */
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(virt_addr), L3BlockSize));
                         MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(GetInteger(block),     L3BlockSize));
-                        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size,                  L3BlockSize));
+                        MESOSPHERE_INIT_ABORT_UNLESS(size >= L3BlockSize);
                         MESOSPHERE_INIT_ABORT_UNLESS(l3_entry->IsCompatibleWithAttribute(attr_before, false));
 
                         /* Invalidate the existing L3 block. */
