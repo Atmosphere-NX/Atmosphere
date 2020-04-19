@@ -21,6 +21,9 @@ namespace ams::jpegdec::impl {
 
     namespace {
 
+        constexpr const size_t LinebufferCount = 4;
+        constexpr const size_t ColorComponents = 3;
+
         struct RGB {
             u8 r, g, b;
         };
@@ -44,10 +47,9 @@ namespace ams::jpegdec::impl {
         AMS_ASSERT(out.width != nullptr);
         AMS_ASSERT(out.height != nullptr);
 
-        constexpr const size_t linebuffer_count = 4;
-        constexpr const size_t color_components = 3;
-        const size_t linebuffer_size = linebuffer_count * color_components * in.width;
-        R_UNLESS(work_size >= linebuffer_size, capsrv::ResultOutOfWorkMemory());
+        const size_t linebuffer_size = ColorComponents * in.width;
+        const size_t total_linebuffer_size = LinebufferCount * linebuffer_size;
+        R_UNLESS(work_size >= total_linebuffer_size, capsrv::ResultOutOfWorkMemory());
 
         jpeg_decompress_struct cinfo;
         std::memset(&cinfo, 0, sizeof(cinfo));
@@ -71,10 +73,11 @@ namespace ams::jpegdec::impl {
         int res = jpeg_read_header(&cinfo, true);
 
         R_UNLESS(res == JPEG_HEADER_OK,             capsrv::ResultInvalidFileData());
+
         R_UNLESS(cinfo.image_width == in.width,     capsrv::ResultInvalidFileData());
         R_UNLESS(cinfo.image_height == in.height,   capsrv::ResultInvalidFileData());
 
-        cinfo.out_color_space = JCS_EXT_BGR;
+        cinfo.out_color_space = JCS_RGB;
         cinfo.dct_method = JDCT_ISLOW;
         cinfo.do_fancy_upsampling = in.fancy_upsampling;
         cinfo.do_block_smoothing = in.block_smoothing;
@@ -85,8 +88,9 @@ namespace ams::jpegdec::impl {
 
         R_UNLESS(cinfo.output_width == in.width,    capsrv::ResultInvalidArgument());
         R_UNLESS(cinfo.output_height == in.height,  capsrv::ResultInvalidArgument());
-        R_UNLESS(cinfo.out_color_components == 3,   capsrv::ResultInvalidArgument());
-        R_UNLESS(cinfo.output_components == 3,      capsrv::ResultInvalidArgument());
+
+        R_UNLESS(cinfo.out_color_components == ColorComponents, capsrv::ResultInvalidArgument());
+        R_UNLESS(cinfo.output_components == ColorComponents,    capsrv::ResultInvalidArgument());
 
         /* Pointer to output. */
         RGBX *bmp = reinterpret_cast<RGBX *>(out.bmp);
@@ -104,15 +108,13 @@ namespace ams::jpegdec::impl {
             /* Decode scanlines. */
             int parsed = jpeg_read_scanlines(&cinfo, linebuffer, 4);
 
-            /* Too few lines read, abort decompression. */
-            R_UNLESS(parsed >= 4, capsrv::ResultInvalidArgument());
-
             /* Done! */
             if (parsed == 0)
                 break;
             
             /* Line by line */
-            for (u8 *buffer : linebuffer) {
+            for (int index = 0; index < parsed; index++) {
+                u8 *buffer = linebuffer[index];
                 const RGB* rgb = reinterpret_cast<RGB *>(buffer);
                 for (u32 i = 0; i < in.width; i++) {
                     /* Fill output. */
