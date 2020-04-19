@@ -102,6 +102,8 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, IpcServer);
 
+    AMS_DEFINE_SYSTEM_THREAD(21, jpegdec, Main);
+
     /* pgl. */
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, ProcessControlTask);
