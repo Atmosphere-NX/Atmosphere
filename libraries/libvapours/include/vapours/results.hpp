@@ -24,6 +24,7 @@
 
 /* Official. */
 #include <vapours/results/cal_results.hpp>
+#include <vapours/results/capsrv_results.hpp>
 #include <vapours/results/creport_results.hpp>
 #include <vapours/results/debug_results.hpp>
 #include <vapours/results/dmnt_results.hpp>

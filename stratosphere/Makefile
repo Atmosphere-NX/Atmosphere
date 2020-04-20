@@ -1,4 +1,4 @@
-MODULES := loader ncm pm sm boot ams_mitm spl eclct.stub ro creport fatal dmnt boot2 erpt
+MODULES := loader ncm pm sm boot ams_mitm spl eclct.stub ro creport fatal dmnt boot2 erpt jpegdec
 
 SUBFOLDERS := $(MODULES)
 
