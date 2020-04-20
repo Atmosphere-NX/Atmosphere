@@ -368,9 +368,9 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     memcpy(&exo_cfg.emummc_cfg, exo_emummc_cfg, sizeof(*exo_emummc_cfg));
 
     if (keygen_type) {
-        exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT | EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
+        exo_cfg.flags = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
     } else {
-        exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT;
+        exo_cfg.flags = 0;
     }
 
     /* Setup exosphere parse configuration with defaults. */

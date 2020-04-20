@@ -34,7 +34,6 @@
 #define EXOSPHERE_FLAG_BLANK_PRODINFO_SYSMMC                (1 << 5u)
 #define EXOSPHERE_FLAG_BLANK_PRODINFO_EMUMMC                (1 << 6u)
 #define EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC          (1 << 7u)
-#define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
 
 typedef struct {
     uint32_t magic;
