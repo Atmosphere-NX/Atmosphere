@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "jpegdec_decode_service.hpp"
+#include <stratosphere.hpp>
 
 extern "C" {
     extern u32 __start__;
@@ -72,16 +72,6 @@ void __appExit(void) {
     /* ... */
 }
 
-namespace {
-    constexpr size_t NumServers  = 1;
-    sf::hipc::ServerManager<NumServers> g_server_manager;
-
-    /* NOTE: Official code only allows for one session. */
-    constexpr sm::ServiceName DecodeServiceName    = sm::ServiceName::Encode("caps:dc");
-    constexpr size_t          DecodeMaxSessions    = 2;
-
-}
-
 int main(int argc, char **argv)
 {
     /* Set thread name. */
@@ -92,11 +82,14 @@ int main(int argc, char **argv)
     os::ChangeThreadPriority(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_PRIORITY(jpegdec, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(jpegdec, Main));
 
-    /* Create service. */
-    R_ASSERT(g_server_manager.RegisterServer<jpegdec::DecodeService>(DecodeServiceName, DecodeMaxSessions));
+    /* Initialize the capsrv library. */
+    R_ABORT_UNLESS(capsrv::server::InitializeForDecoderServer());
 
-    /* Loop forever, servicing our services. */
-    g_server_manager.LoopProcess();
+    /* Service the decoder server. */
+    capsrv::server::DecoderControlServerThreadFunction(nullptr);
+
+    /* Finalize the capsrv library. */
+    capsrv::server::FinalizeForDecoderServer();
 
     /* Cleanup */
     return 0;

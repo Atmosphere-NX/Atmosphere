@@ -16,28 +16,19 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::jpegdec::impl {
+namespace ams::capsrv::server {
 
-    struct DecodeInput {
-        const u8 *jpeg;
-        size_t jpeg_size;
-        u32 width;
-        u32 height;
-        bool fancy_upsampling;
-        bool block_smoothing;
+    class DecoderControlService final : public sf::IServiceObject {
+        protected:
+            enum class CommandId {
+                DecodeJpeg  = 3001,
+            };
+        public:
+            /* Actual commands. */
+            virtual Result DecodeJpeg(const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option);
+        public:
+            DEFINE_SERVICE_DISPATCH_TABLE {
+                MAKE_SERVICE_COMMAND_META(DecodeJpeg)
+            };
     };
-
-    struct DecodeOutput {
-        u32 *width;
-        u32 *height;
-        u8 *bmp;
-        size_t bmp_size;
-    };
-
-    struct Dimensions {
-        u32 width, height;
-    };
-
-    Result DecodeJpeg(DecodeOutput &out, const DecodeInput &in, u8 *work, size_t work_size);
-
 }

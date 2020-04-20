@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,22 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::jpegdec {
+namespace ams::capsrv::server {
 
-    class DecodeService final : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                DecodeJpeg  = 3001,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result DecodeJpeg(const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const CapsScreenShotDecodeOption &opts);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(DecodeJpeg)
-            };
-    };
+    Result InitializeForDecoderServer();
+    void FinalizeForDecoderServer();
+
+    void DecoderControlServerThreadFunction(void *);
+
 }

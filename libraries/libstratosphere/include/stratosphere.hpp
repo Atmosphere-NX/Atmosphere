@@ -41,6 +41,7 @@
 /* At this point, just include the rest alphabetically. */
 /* TODO: Figure out optimal order. */
 #include <stratosphere/boot2.hpp>
+#include <stratosphere/capsrv.hpp>
 #include <stratosphere/cfg.hpp>
 #include <stratosphere/dmnt.hpp>
 #include <stratosphere/erpt.hpp>
