@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "amsmitm_initialization.hpp"
 #include "amsmitm_fs_utils.hpp"
+#include "amsmitm_prodinfo_utils.hpp"
 #include "bpc_mitm/bpc_ams_power_utils.hpp"
 #include "set_mitm/settings_sd_kvs.hpp"
 
@@ -58,10 +59,6 @@ namespace ams::mitm {
         alignas(os::ThreadStackAlignment) u8 g_initialize_thread_stack[InitializeThreadStackSize];
 
         /* Console-unique data backup and protection. */
-        constexpr size_t CalibrationBinarySize = 0x8000;
-        u8 g_calibration_binary_storage_backup[CalibrationBinarySize];
-        u8 g_calibration_binary_file_backup[CalibrationBinarySize];
-        FsFile g_calibration_binary_file;
         FsFile g_bis_key_file;
 
         /* Emummc file protection. */
@@ -90,57 +87,10 @@ namespace ams::mitm {
             /* Create a backup directory, if one doesn't exist. */
             mitm::fs::CreateAtmosphereSdDirectory("/automatic_backups");
 
-            /* Read the calibration binary. */
-            {
-                FsStorage calibration_binary_storage;
-                R_ABORT_UNLESS(fsOpenBisStorage(&calibration_binary_storage, FsBisPartitionId_CalibrationBinary));
-                ON_SCOPE_EXIT { fsStorageClose(&calibration_binary_storage); };
-
-                R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, 0, g_calibration_binary_storage_backup, CalibrationBinarySize));
-            }
-
-            /* Copy serial number from partition. */
-            /* TODO: Define the magic numbers? Structs? */
-            char serial_number[0x40] = {};
-            std::memcpy(serial_number, g_calibration_binary_storage_backup + 0x250, 0x18);
-
-            /* Backup the calibration binary. */
-            {
-                char calibration_binary_backup_name[ams::fs::EntryNameLengthMax + 1];
-                GetBackupFileName(calibration_binary_backup_name, sizeof(calibration_binary_backup_name), serial_number, "PRODINFO.bin");
-
-                mitm::fs::CreateAtmosphereSdFile(calibration_binary_backup_name, CalibrationBinarySize, ams::fs::CreateOption_None);
-                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(&g_calibration_binary_file, calibration_binary_backup_name, ams::fs::OpenMode_ReadWrite));
-
-                s64 file_size = 0;
-                R_ABORT_UNLESS(fsFileGetSize(&g_calibration_binary_file, &file_size));
-
-                bool is_file_backup_valid = file_size == CalibrationBinarySize;
-                if (is_file_backup_valid) {
-                    u64 read_size = 0;
-                    R_ABORT_UNLESS(fsFileRead(&g_calibration_binary_file, 0, g_calibration_binary_file_backup, CalibrationBinarySize, FsReadOption_None, &read_size));
-                    AMS_ABORT_UNLESS(read_size == CalibrationBinarySize);
-                    is_file_backup_valid &= std::memcmp(g_calibration_binary_file_backup, "CAL0", 4) == 0;
-                    is_file_backup_valid &= std::memcmp(g_calibration_binary_file_backup + 0x250, serial_number, 0x18) == 0;
-                    const u32 cal_bin_size = *reinterpret_cast<const u32 *>(g_calibration_binary_file_backup + 0x8);
-                    is_file_backup_valid &= cal_bin_size + 0x40 <= CalibrationBinarySize;
-                    if (is_file_backup_valid) {
-                        u8 calc_hash[SHA256_HASH_SIZE];
-                        /* TODO: ams::crypto? */
-                        sha256CalculateHash(calc_hash, g_calibration_binary_file_backup + 0x40, cal_bin_size);
-                        is_file_backup_valid &= std::memcmp(calc_hash, g_calibration_binary_file_backup + 0x20, sizeof(calc_hash)) == 0;
-                    }
-                }
-
-                if (!is_file_backup_valid) {
-                    R_ABORT_UNLESS(fsFileSetSize(&g_calibration_binary_file, CalibrationBinarySize));
-                    R_ABORT_UNLESS(fsFileWrite(&g_calibration_binary_file, 0, g_calibration_binary_storage_backup, CalibrationBinarySize, FsWriteOption_Flush));
-                }
-
-                /* Note: g_calibration_binary_file is intentionally not closed here. This prevents any other process from opening it. */
-                std::memset(g_calibration_binary_file_backup, 0, CalibrationBinarySize);
-                std::memset(g_calibration_binary_storage_backup, 0, CalibrationBinarySize);
-            }
+            /* Initialize PRODINFO and get a reference for the device. */
+            char device_reference[0x40] = {};
+            ON_SCOPE_EXIT { std::memset(device_reference, 0, sizeof(device_reference)); };
+            mitm::InitializeProdInfoManagement(device_reference, sizeof(device_reference));
 
             /* Backup BIS keys. */
             {
@@ -151,6 +101,7 @@ namespace ams::mitm {
 
                 u8 bis_keys[4][2][0x10];
                 std::memset(bis_keys, 0xCC, sizeof(bis_keys));
+                ON_SCOPE_EXIT { std::memset(bis_keys, 0xCC, sizeof(bis_keys)); };
 
                 /* TODO: Clean this up. */
                 for (size_t partition = 0; partition < 4; partition++) {
@@ -170,7 +121,7 @@ namespace ams::mitm {
                 }
 
                 char bis_keys_backup_name[ams::fs::EntryNameLengthMax + 1];
-                GetBackupFileName(bis_keys_backup_name, sizeof(bis_keys_backup_name), serial_number, "BISKEYS.bin");
+                GetBackupFileName(bis_keys_backup_name, sizeof(bis_keys_backup_name), device_reference, "BISKEYS.bin");
 
                 mitm::fs::CreateAtmosphereSdFile(bis_keys_backup_name, sizeof(bis_keys), ams::fs::CreateOption_None);
                 R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(&g_bis_key_file, bis_keys_backup_name, ams::fs::OpenMode_ReadWrite));

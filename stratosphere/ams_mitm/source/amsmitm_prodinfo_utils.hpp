@@ -13,21 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "spl_types.hpp"
+#include <stratosphere.hpp>
 
-namespace ams::spl {
+namespace ams::mitm {
 
-    HardwareType GetHardwareType();
-    MemoryArrangement GetMemoryArrangement();
-    bool IsDisabledProgramVerification();
-    bool IsDevelopmentHardware();
-    bool IsDevelopmentFunctionEnabled();
-    bool IsMariko();
-    bool IsRecoveryBoot();
+    void InitializeProdInfoManagement(char *out_name, size_t out_name_size);
 
-    Result GenerateAesKek(AccessKey *access_key, const void *key_source, size_t key_source_size, u32 generation, u32 option);
-    Result GenerateAesKey(void *dst, size_t dst_size, const AccessKey &access_key, const void *key_source, size_t key_source_size);
+
 
 }

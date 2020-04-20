@@ -13,21 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include "spl_types.hpp"
+#include <vapours.hpp>
 
-namespace ams::spl {
+namespace ams::settings::factory {
 
-    HardwareType GetHardwareType();
-    MemoryArrangement GetMemoryArrangement();
-    bool IsDisabledProgramVerification();
-    bool IsDevelopmentHardware();
-    bool IsDevelopmentFunctionEnabled();
-    bool IsMariko();
-    bool IsRecoveryBoot();
-
-    Result GenerateAesKek(AccessKey *access_key, const void *key_source, size_t key_source_size, u32 generation, u32 option);
-    Result GenerateAesKey(void *dst, size_t dst_size, const AccessKey &access_key, const void *key_source, size_t key_source_size);
+    struct SerialNumber {
+        char str[0x18];
+    };
+    static_assert(sizeof(SerialNumber) == 0x18);
+    static_assert(std::is_pod<SerialNumber>::value);
 
 }

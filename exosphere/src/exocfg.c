@@ -115,7 +115,7 @@ unsigned int exosphere_should_allow_writing_to_cal(void) {
     if (exosphere_is_emummc()) {
         return 1;
     } else {
-        return 0;
+        return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC);
     }
 }
 
