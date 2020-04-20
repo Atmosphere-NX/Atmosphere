@@ -31,8 +31,12 @@ namespace ams::jpegdec {
         const u8 *jpeg = in.GetPointer();
         size_t jpeg_size = in.GetSize();
 
-        memset(g_workmem, 0, sizeof(g_workmem));
-        memset(bmp, 0, bmp_size);
+        /* Clear the work memory and out buffer. */
+        std::memset(g_workmem, 0, sizeof(g_workmem));
+        std::memset(bmp, 0, bmp_size);
+
+        /* Clear output memory on decode failure. */
+        auto clear_guard = SCOPE_GUARD { std::memset(bmp, 0, bmp_size); };
 
         R_UNLESS(util::IsAligned(width, 0x10),   capsrv::ResultAlbumOutOfRange());
         R_UNLESS(util::IsAligned(height, 0x4),   capsrv::ResultAlbumOutOfRange());
@@ -62,16 +66,12 @@ namespace ams::jpegdec {
             .bmp_size = bmp_size,
         };
 
-        /* Clear output memory on decode failure. */
-        /* NOTE: Nintendo does not do this. */
-        auto clear_guard = SCOPE_GUARD { std::memset(bmp, 0, bmp_size); };
 
         /* Decode the jpeg. */
         R_TRY(impl::DecodeJpeg(decode_output, decode_input, g_workmem, sizeof(g_workmem)));
         clear_guard.Cancel();
 
         /* Clear the work memory. */
-        /* NOTE: Nintendo does not do this. */
         std::memset(g_workmem, 0, sizeof(g_workmem));
 
         return ResultSuccess();

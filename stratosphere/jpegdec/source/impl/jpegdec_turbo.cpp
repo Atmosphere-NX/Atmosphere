@@ -19,7 +19,7 @@
 
 namespace ams::jpegdec::impl {
 
-    #define CAPSRV_ABORT_UNLESS(expr) {                             \
+    #define CAPSRV_ABORT_UNLESS(expr) do {                          \
         const bool __capsrv_assert_res = (expr);                    \
         AMS_ASSERT(__capsrv_assert_res);                            \
         AMS_ABORT_UNLESS(__capsrv_assert_res);                      \
