@@ -90,5 +90,8 @@
 		}, {
 			"type":	"min_kernel_version",
 			"value":	"0x0030"
+		}, {
+			"type":	"handle_table_size",
+			"value":	16
 		}]
 }

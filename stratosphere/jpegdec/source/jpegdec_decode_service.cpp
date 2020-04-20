@@ -34,14 +34,14 @@ namespace ams::jpegdec {
         memset(g_workmem, 0, sizeof(g_workmem));
         memset(bmp, 0, bmp_size);
 
-        R_UNLESS(util::IsAligned(width, 0x10),   capsrv::ResultOutOfRange());
-        R_UNLESS(util::IsAligned(height, 0x4),   capsrv::ResultOutOfRange());
+        R_UNLESS(util::IsAligned(width, 0x10),   capsrv::ResultAlbumOutOfRange());
+        R_UNLESS(util::IsAligned(height, 0x4),   capsrv::ResultAlbumOutOfRange());
 
-        R_UNLESS(bmp != nullptr,                 capsrv::ResultBufferInsufficient());
-        R_UNLESS(bmp_size >= 4 * width * height, capsrv::ResultBufferInsufficient());
+        R_UNLESS(bmp != nullptr,                 capsrv::ResultAlbumReadBufferShortage());
+        R_UNLESS(bmp_size >= 4 * width * height, capsrv::ResultAlbumReadBufferShortage());
 
-        R_UNLESS(jpeg != nullptr,                capsrv::ResultInvalidFileData());
-        R_UNLESS(jpeg_size != 0,                 capsrv::ResultInvalidFileData());
+        R_UNLESS(jpeg != nullptr,                capsrv::ResultAlbumInvalidFileData());
+        R_UNLESS(jpeg_size != 0,                 capsrv::ResultAlbumInvalidFileData());
 
         impl::DecodeInput decode_input = {
             .jpeg = jpeg,
@@ -62,14 +62,18 @@ namespace ams::jpegdec {
             .bmp_size = bmp_size,
         };
 
-        Result rc = impl::DecodeJpeg(decode_output, decode_input, g_workmem, sizeof(g_workmem));
+        /* Clear output memory on decode failure. */
+        /* NOTE: Nintendo does not do this. */
+        auto clear_guard = SCOPE_GUARD { std::memset(bmp, 0, bmp_size); };
 
-        /* Null output on failure */
-        if (rc.IsFailure())
-            memset(bmp, 0, bmp_size);
+        /* Decode the jpeg. */
+        R_TRY(impl::DecodeJpeg(decode_output, decode_input, g_workmem, sizeof(g_workmem)));
+        clear_guard.Cancel();
 
+        /* Clear the work memory. */
+        /* NOTE: Nintendo does not do this. */
         std::memset(g_workmem, 0, sizeof(g_workmem));
 
-        return rc;
+        return ResultSuccess();
     }
 }

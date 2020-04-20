@@ -23,7 +23,7 @@ extern "C" {
     #define INNER_HEAP_SIZE 0x18000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
-    
+
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
@@ -69,6 +69,7 @@ void __appInit(void) {
 }
 
 void __appExit(void) {
+    /* ... */
 }
 
 namespace {
@@ -85,7 +86,11 @@ int main(int argc, char **argv)
 {
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(jpegdec, Main));
+
+    /* Official jpegdec changes its thread priority to 21 in main. */
+    /* This is because older versions of the sysmodule had priority 20 in npdm. */
     os::ChangeThreadPriority(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_PRIORITY(jpegdec, Main));
+    AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(jpegdec, Main));
 
     /* Create service. */
     R_ASSERT(g_server_manager.RegisterServer<jpegdec::DecodeService>(DecodeServiceName, DecodeMaxSessions));

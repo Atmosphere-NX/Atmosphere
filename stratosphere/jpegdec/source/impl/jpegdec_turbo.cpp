@@ -19,10 +19,25 @@
 
 namespace ams::jpegdec::impl {
 
+    #define CAPSRV_ABORT_UNLESS(expr) {                             \
+        const bool __capsrv_assert_res = (expr);                    \
+        AMS_ASSERT(__capsrv_assert_res);                            \
+        AMS_ABORT_UNLESS(__capsrv_assert_res);                      \
+    } while (0)
+
+    #define CAPSRV_ASSERT(expr) do {                                \
+        const bool __capsrv_assert_res = (expr);                    \
+        AMS_ASSERT(__capsrv_assert_res);                            \
+        R_UNLESS(__capsrv_assert_res, capsrv::ResultAlbumError());  \
+    } while (0)
+
     namespace {
 
-        constexpr const size_t LinebufferCount = 4;
-        constexpr const size_t ColorComponents = 3;
+        constexpr size_t LinebufferCount = 4;
+        constexpr size_t ColorComponents = 3;
+
+        constexpr int ImageSizeHorizonalUnit = 0x10;
+        constexpr int ImageSizeVerticalUnit  = 0x4;
 
         struct RGB {
             u8 r, g, b;
@@ -38,18 +53,18 @@ namespace ams::jpegdec::impl {
     }
 
     Result DecodeJpeg(DecodeOutput &out, const DecodeInput &in, u8 *work, size_t work_size) {
-        AMS_ASSERT(util::IsAligned(in.width, 0x10));
-        AMS_ASSERT(util::IsAligned(in.height, 0x4));
+        CAPSRV_ABORT_UNLESS(util::IsAligned(in.width,  ImageSizeHorizonalUnit));
+        CAPSRV_ABORT_UNLESS(util::IsAligned(in.height, ImageSizeVerticalUnit));
 
-        AMS_ASSERT(out.bmp != nullptr);
-        AMS_ASSERT(out.bmp_size >= 4 * in.width * in.height);
+        CAPSRV_ABORT_UNLESS(out.bmp != nullptr);
+        CAPSRV_ABORT_UNLESS(out.bmp_size >= 4 * in.width * in.height);
 
-        AMS_ASSERT(out.width != nullptr);
-        AMS_ASSERT(out.height != nullptr);
+        CAPSRV_ABORT_UNLESS(out.width != nullptr);
+        CAPSRV_ABORT_UNLESS(out.height != nullptr);
 
         const size_t linebuffer_size = ColorComponents * in.width;
         const size_t total_linebuffer_size = LinebufferCount * linebuffer_size;
-        R_UNLESS(work_size >= total_linebuffer_size, capsrv::ResultOutOfWorkMemory());
+        R_UNLESS(work_size >= total_linebuffer_size, capsrv::ResultInternalJpegWorkMemoryShortage());
 
         jpeg_decompress_struct cinfo;
         std::memset(&cinfo, 0, sizeof(cinfo));
@@ -60,7 +75,7 @@ namespace ams::jpegdec::impl {
         cinfo.err = jpeg_std_error(&jerr);
         jerr.error_exit = JpegErrorExit;
 
-        /* ? */
+        /* TODO: Here Nintendo uses setjmp, on longjmp to error ResultAlbumInvalidFileData is returned.  */
 
         jpeg_create_decompress(&cinfo);
 
@@ -70,27 +85,22 @@ namespace ams::jpegdec::impl {
 
         jpeg_mem_src(&cinfo, in.jpeg, in.jpeg_size);
 
-        int res = jpeg_read_header(&cinfo, true);
+        R_UNLESS(jpeg_read_header(&cinfo, true) == JPEG_HEADER_OK,  capsrv::ResultAlbumInvalidFileData());
 
-        R_UNLESS(res == JPEG_HEADER_OK,             capsrv::ResultInvalidFileData());
-
-        R_UNLESS(cinfo.image_width == in.width,     capsrv::ResultInvalidFileData());
-        R_UNLESS(cinfo.image_height == in.height,   capsrv::ResultInvalidFileData());
+        R_UNLESS(cinfo.image_width  == in.width,    capsrv::ResultAlbumInvalidFileData());
+        R_UNLESS(cinfo.image_height == in.height,   capsrv::ResultAlbumInvalidFileData());
 
         cinfo.out_color_space = JCS_RGB;
         cinfo.dct_method = JDCT_ISLOW;
         cinfo.do_fancy_upsampling = in.fancy_upsampling;
         cinfo.do_block_smoothing = in.block_smoothing;
 
-        res = jpeg_start_decompress(&cinfo);
+        R_UNLESS(jpeg_start_decompress(&cinfo) == TRUE, capsrv::ResultAlbumInvalidFileData());
 
-        R_UNLESS(res == TRUE, capsrv::ResultInvalidFileData());
-
-        R_UNLESS(cinfo.output_width == in.width,    capsrv::ResultInvalidArgument());
-        R_UNLESS(cinfo.output_height == in.height,  capsrv::ResultInvalidArgument());
-
-        R_UNLESS(cinfo.out_color_components == ColorComponents, capsrv::ResultInvalidArgument());
-        R_UNLESS(cinfo.output_components == ColorComponents,    capsrv::ResultInvalidArgument());
+        CAPSRV_ASSERT(cinfo.output_width         == in.width);
+        CAPSRV_ASSERT(cinfo.output_height        == in.height);
+        CAPSRV_ASSERT(cinfo.out_color_components == ColorComponents);
+        CAPSRV_ASSERT(cinfo.output_components    == ColorComponents);
 
         /* Pointer to output. */
         RGBX *bmp = reinterpret_cast<RGBX *>(out.bmp);
@@ -107,11 +117,8 @@ namespace ams::jpegdec::impl {
         while (cinfo.output_scanline < cinfo.output_height) {
             /* Decode scanlines. */
             int parsed = jpeg_read_scanlines(&cinfo, linebuffer, 4);
+            CAPSRV_ASSERT(parsed <= ImageSizeVerticalUnit);
 
-            /* Done! */
-            if (parsed == 0)
-                break;
-            
             /* Line by line */
             for (int index = 0; index < parsed; index++) {
                 u8 *buffer = linebuffer[index];
@@ -130,8 +137,7 @@ namespace ams::jpegdec::impl {
             }
         }
 
-        res = jpeg_finish_decompress(&cinfo);
-        R_UNLESS(res == TRUE, capsrv::ResultInvalidFileData());
+        R_UNLESS(jpeg_finish_decompress(&cinfo) == TRUE, capsrv::ResultAlbumInvalidFileData());
 
         *out.width = cinfo.output_width;
         *out.height = cinfo.output_height;
