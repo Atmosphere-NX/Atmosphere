@@ -292,7 +292,7 @@ namespace ams::kern::arch::arm64 {
                         /* Set the entry. */
                         l2_phys = GetPageTablePhysicalAddress(l2_virt);
                         PteDataSynchronizationBarrier();
-                        *l1_entry = L1PageTableEntry(l2_phys, this->IsKernel(), true);
+                        *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
                         PteDataSynchronizationBarrier();
                         l2_allocated = true;
                     } else {
@@ -319,7 +319,7 @@ namespace ams::kern::arch::arm64 {
                         /* Set the entry. */
                         l3_phys = GetPageTablePhysicalAddress(l3_virt);
                         PteDataSynchronizationBarrier();
-                        *l2_entry = L2PageTableEntry(l3_phys, this->IsKernel(), true);
+                        *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, l3_phys, this->IsKernel(), true);
                         PteDataSynchronizationBarrier();
                         l2_open_count++;
                 } else {
@@ -329,7 +329,7 @@ namespace ams::kern::arch::arm64 {
             MESOSPHERE_ASSERT(l3_virt != Null<KVirtualAddress>);
 
             /* Map the page. */
-            *impl.GetL3EntryFromTable(l3_virt, virt_addr) = L3PageTableEntry(phys_addr, entry_template, false);
+            *impl.GetL3EntryFromTable(l3_virt, virt_addr) = L3PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
             l3_open_count++;
             virt_addr += PageSize;
             phys_addr += PageSize;
@@ -706,6 +706,8 @@ namespace ams::kern::arch::arm64 {
         /* If there's no L1 table, don't bother. */
         L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr);
         if (!l1_entry->IsTable()) {
+            /* Ensure the table is not corrupted. */
+            MESOSPHERE_ABORT_UNLESS(l1_entry->IsBlock() || l1_entry->IsEmpty());
             return merged;
         }
 
@@ -726,7 +728,7 @@ namespace ams::kern::arch::arm64 {
 
                 /* Validate that we can merge. */
                 for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                    if (!impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i)->Is(entry_template | GetInteger(phys_addr + PageSize * i) | PageTableEntry::Type_L3Block)) {
+                    if (!impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i)->Is(entry_template | GetInteger(phys_addr + L3BlockSize * i) | PageTableEntry::Type_L3Block)) {
                         return merged;
                     }
                 }
@@ -748,14 +750,14 @@ namespace ams::kern::arch::arm64 {
 
             /* Validate that we can merge. */
             for (size_t i = 0; i < L2BlockSize / L3ContiguousBlockSize; i++) {
-                if (!impl.GetL3Entry(l2_entry, virt_addr + L3BlockSize * i)->Is(entry_template | GetInteger(phys_addr + L3ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous)) {
+                if (!impl.GetL3Entry(l2_entry, virt_addr + L3ContiguousBlockSize * i)->Is(entry_template | GetInteger(phys_addr + L3ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L3Block)) {
                     return merged;
                 }
             }
 
             /* Merge! */
             PteDataSynchronizationBarrier();
-            *l2_entry = L2PageTableEntry(phys_addr, entry_template, false);
+            *l2_entry = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
 
             /* Note that we updated. */
             this->NoteUpdated();
@@ -769,57 +771,61 @@ namespace ams::kern::arch::arm64 {
                 this->FreePageTable(page_list, l3_table);
             }
         }
-        if (l2_entry->IsBlock()) {
-            /* If it's not contiguous, try to make it so. */
-            if (!l2_entry->IsContiguous()) {
-                virt_addr = util::AlignDown(GetInteger(virt_addr), L2ContiguousBlockSize);
-                KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L2ContiguousBlockSize);
-                const u64 entry_template = l2_entry->GetEntryTemplate();
 
-                /* Validate that we can merge. */
-                for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                    if (!impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i)->Is(entry_template | GetInteger(phys_addr + PageSize * i) | PageTableEntry::Type_L2Block)) {
-                        return merged;
-                    }
-                }
+        /* If the l2 entry is not a block or we can't make it contiguous, we're done. */
+        if (!l2_entry->IsBlock() || !l2_entry->IsContiguousAllowed()) {
+            return merged;
+        }
 
-                /* Merge! */
-                for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                    impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i)->SetContiguous(true);
-                }
-
-                /* Note that we updated. */
-                this->NoteUpdated();
-                merged = true;
-            }
-
-            /* We might be able to upgrade a contiguous set of L2 entries into an L1 block. */
-            virt_addr = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
-            KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L1BlockSize);
+        /* If it's not contiguous, try to make it so. */
+        if (!l2_entry->IsContiguous()) {
+            virt_addr = util::AlignDown(GetInteger(virt_addr), L2ContiguousBlockSize);
+            KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L2ContiguousBlockSize);
             const u64 entry_template = l2_entry->GetEntryTemplate();
 
             /* Validate that we can merge. */
-            for (size_t i = 0; i < L1BlockSize / L2ContiguousBlockSize; i++) {
-                if (!impl.GetL2Entry(l1_entry, virt_addr + L3BlockSize * i)->Is(entry_template | GetInteger(phys_addr + L2ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous)) {
+            for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
+                if (!impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i)->Is(entry_template | GetInteger(phys_addr + L2BlockSize * i) | PageTableEntry::Type_L2Block)) {
                     return merged;
                 }
             }
 
             /* Merge! */
-            PteDataSynchronizationBarrier();
-            *l1_entry = L1PageTableEntry(phys_addr, entry_template, false);
+            for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
+                impl.GetL2Entry(l1_entry, virt_addr + L2BlockSize * i)->SetContiguous(true);
+            }
 
             /* Note that we updated. */
             this->NoteUpdated();
             merged = true;
+        }
 
-            /* Free the L2 table. */
-            KVirtualAddress l2_table = util::AlignDown(reinterpret_cast<uintptr_t>(l2_entry), PageSize);
-            if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
-                this->GetPageTableManager().Close(l2_table, L1BlockSize / L2BlockSize);
-                ClearPageTable(l2_table);
-                this->FreePageTable(page_list, l2_table);
+        /* We might be able to upgrade a contiguous set of L2 entries into an L1 block. */
+        virt_addr = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
+        KPhysicalAddress phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L1BlockSize);
+        const u64 entry_template = l2_entry->GetEntryTemplate();
+
+        /* Validate that we can merge. */
+        for (size_t i = 0; i < L1BlockSize / L2ContiguousBlockSize; i++) {
+            if (!impl.GetL2Entry(l1_entry, virt_addr + L2ContiguousBlockSize * i)->Is(entry_template | GetInteger(phys_addr + L2ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L2Block)) {
+                return merged;
             }
+        }
+
+        /* Merge! */
+        PteDataSynchronizationBarrier();
+        *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+
+        /* Note that we updated. */
+        this->NoteUpdated();
+        merged = true;
+
+        /* Free the L2 table. */
+        KVirtualAddress l2_table = util::AlignDown(reinterpret_cast<uintptr_t>(l2_entry), PageSize);
+        if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
+            this->GetPageTableManager().Close(l2_table, L1BlockSize / L2BlockSize);
+            ClearPageTable(l2_table);
+            this->FreePageTable(page_list, l2_table);
         }
 
         return merged;
@@ -848,7 +854,7 @@ namespace ams::kern::arch::arm64 {
             /* Set the entries in the L2 table. */
             const u64 entry_template = l1_entry->GetEntryTemplate();
             for (size_t i = 0; i < L1BlockSize / L2BlockSize; i++) {
-                *(impl.GetL2EntryFromTable(l2_table, block_virt_addr + L2BlockSize * i)) = L2PageTableEntry(block_phys_addr + L2BlockSize * i, entry_template, true);
+                *(impl.GetL2EntryFromTable(l2_table, block_virt_addr + L2BlockSize * i)) = L2PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L2BlockSize * i, PageTableEntry(entry_template), true);
             }
 
             /* Open references to the L2 table. */
@@ -856,11 +862,12 @@ namespace ams::kern::arch::arm64 {
 
             /* Replace the L1 entry with one to the new table. */
             PteDataSynchronizationBarrier();
-            *l1_entry = L1PageTableEntry(l2_phys, this->IsKernel(), true);
+            *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
             this->NoteUpdated();
         }
 
         /* If we don't have an l1 table, we're done. */
+        MESOSPHERE_ABORT_UNLESS(l1_entry->IsTable() || l1_entry->IsEmpty());
         R_SUCCEED_IF(!l1_entry->IsTable());
 
         /* We want to separate L2 contiguous blocks into L2 blocks, so check that our size permits that. */
@@ -894,7 +901,7 @@ namespace ams::kern::arch::arm64 {
             /* Set the entries in the L3 table. */
             const u64 entry_template = l2_entry->GetEntryTemplate();
             for (size_t i = 0; i < L2BlockSize / L3BlockSize; i++) {
-                *(impl.GetL3EntryFromTable(l3_table, block_virt_addr + L3BlockSize * i)) = L3PageTableEntry(block_phys_addr + L3BlockSize * i, entry_template, true);
+                *(impl.GetL3EntryFromTable(l3_table, block_virt_addr + L3BlockSize * i)) = L3PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L3BlockSize * i, PageTableEntry(entry_template), true);
             }
 
             /* Open references to the L3 table. */
@@ -902,11 +909,12 @@ namespace ams::kern::arch::arm64 {
 
             /* Replace the L2 entry with one to the new table. */
             PteDataSynchronizationBarrier();
-            *l2_entry = L2PageTableEntry(l3_phys, this->IsKernel(), true);
+            *l2_entry = L2PageTableEntry(PageTableEntry::TableTag{}, l3_phys, this->IsKernel(), true);
             this->NoteUpdated();
         }
 
         /* If we don't have an L3 table, we're done. */
+        MESOSPHERE_ABORT_UNLESS(l2_entry->IsTable() || l2_entry->IsEmpty());
         R_SUCCEED_IF(!l2_entry->IsTable());
 
         /* We want to separate L3 contiguous blocks into L2 blocks, so check that our size permits that. */
@@ -942,8 +950,6 @@ namespace ams::kern::arch::arm64 {
     Result KPageTable::ChangePermissions(KProcessAddress virt_addr, size_t num_pages, PageTableEntry entry_template, bool refresh_mapping, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-        auto &impl = this->GetImpl();
-
         /* Separate pages before we change permissions. */
         const size_t size = num_pages * PageSize;
         R_TRY(this->SeparatePages(virt_addr, std::min(GetInteger(virt_addr) & -GetInteger(virt_addr), size), page_list, reuse_ll));
@@ -956,117 +962,163 @@ namespace ams::kern::arch::arm64 {
             merge_guard.Cancel();
         }
 
-        /* Cache initial addresses for use on cleanup. */
-        const KProcessAddress orig_virt_addr = virt_addr;
-        size_t remaining_pages = num_pages;
+        /* ===================================================== */
 
-        /* Begin traversal. */
-        TraversalContext context;
-        TraversalEntry   next_entry;
-        MESOSPHERE_ABORT_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr));
+        /* Define a helper function which will apply our template to entries. */
 
-        /* Continue changing properties until we've changed them for all pages. */
-        while (remaining_pages > 0) {
-            MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(next_entry.phys_addr), next_entry.block_size));
-            MESOSPHERE_ABORT_UNLESS(next_entry.block_size <= remaining_pages * PageSize);
+        enum ApplyOption : u32 {
+            ApplyOption_None           = 0,
+            ApplyOption_FlushDataCache = (1u << 0),
+            ApplyOption_MergeMappings  = (1u << 1),
+        };
 
-            L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr);
-            switch (next_entry.block_size) {
-                case L1BlockSize:
-                    {
-                        /* Clear the entry, if we should. */
-                        if (refresh_mapping) {
-                            *l1_entry = InvalidL1PageTableEntry;
-                            this->NoteUpdated();
-                            if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
-                                cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), L1BlockSize);
-                            }
-                        }
+        auto ApplyEntryTemplate = [this, virt_addr, num_pages, page_list](PageTableEntry entry_template, u32 apply_option) -> void {
+            /* Create work variables for us to use. */
+            KProcessAddress cur_virt_addr = virt_addr;
+            size_t remaining_pages = num_pages;
 
-                        /* Write the updated entry. */
-                        *l1_entry = L1PageTableEntry(next_entry.phys_addr, entry_template, false);
+            auto &impl = this->GetImpl();
+
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   next_entry;
+            MESOSPHERE_ABORT_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_virt_addr));
+
+            /* Continue changing properties until we've changed them for all pages. */
+            while (remaining_pages > 0) {
+                MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(next_entry.phys_addr), next_entry.block_size));
+                MESOSPHERE_ABORT_UNLESS(next_entry.block_size <= remaining_pages * PageSize);
+
+                /* If we should flush entries, do so. */
+                if ((apply_option & ApplyOption_FlushDataCache) != 0) {
+                    if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
+                        cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), next_entry.block_size);
                     }
-                    break;
-                case L2ContiguousBlockSize:
-                case L2BlockSize:
-                    {
-                        /* Get the number of L2 blocks. */
-                        const size_t num_l2_blocks = next_entry.block_size / L2BlockSize;
+                }
 
-                        /* Get the L2 entry. */
-                        KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
-                        MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
-                        const KVirtualAddress  l2_virt = GetPageTableVirtualAddress(l2_phys);
+                /* Apply the entry template. */
+                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_virt_addr);
+                switch (next_entry.block_size) {
+                    case L1BlockSize:
+                        {
+                            /* Write the updated entry. */
+                            *l1_entry = L1PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr, entry_template, false);
+                        }
+                        break;
+                    case L2ContiguousBlockSize:
+                    case L2BlockSize:
+                        {
+                            /* Get the number of L2 blocks. */
+                            const size_t num_l2_blocks = next_entry.block_size / L2BlockSize;
 
-                        /* Clear the entry, if we should. */
-                        if (refresh_mapping) {
+                            /* Get the L2 entry. */
+                            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
+                            MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
+                            const KVirtualAddress l2_virt = GetPageTableVirtualAddress(l2_phys);
+
+                            /* Write the updated entry. */
+                            const bool contig = next_entry.block_size == L2ContiguousBlockSize;
                             for (size_t i = 0; i < num_l2_blocks; i++) {
-                                *impl.GetL2EntryFromTable(l2_virt, virt_addr + L2BlockSize * i) = InvalidL2PageTableEntry;
-                            }
-                            this->NoteUpdated();
-                            if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
-                                cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), next_entry.block_size);
+                                *impl.GetL2EntryFromTable(l2_virt, cur_virt_addr + L2BlockSize * i) = L2PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L2BlockSize * i, entry_template, contig);
                             }
                         }
+                        break;
+                    case L3ContiguousBlockSize:
+                    case L3BlockSize:
+                        {
+                            /* Get the number of L3 blocks. */
+                            const size_t num_l3_blocks = next_entry.block_size / L3BlockSize;
 
-                        /* Write the updated entry. */
-                        const bool contig = next_entry.block_size == L2ContiguousBlockSize;
-                        for (size_t i = 0; i < num_l2_blocks; i++) {
-                            *impl.GetL2EntryFromTable(l2_virt, virt_addr + L2BlockSize * i) = L2PageTableEntry(next_entry.phys_addr + L2BlockSize * i, entry_template, contig);
-                        }
-                    }
-                    break;
-                case L3ContiguousBlockSize:
-                case L3BlockSize:
-                    {
-                        /* Get the number of L3 blocks. */
-                        const size_t num_l3_blocks = next_entry.block_size / L3BlockSize;
+                            /* Get the L2 entry. */
+                            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
+                            MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
+                            const KVirtualAddress l2_virt = GetPageTableVirtualAddress(l2_phys);
+                            L2PageTableEntry *l2_entry = impl.GetL2EntryFromTable(l2_virt, cur_virt_addr);
 
-                        /* Get the L2 entry. */
-                        KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
-                        MESOSPHERE_ABORT_UNLESS(l1_entry->GetTable(l2_phys));
-                        const KVirtualAddress  l2_virt = GetPageTableVirtualAddress(l2_phys);
-                        L2PageTableEntry *l2_entry = impl.GetL2EntryFromTable(l2_virt, virt_addr);
+                            /* Get the L3 entry. */
+                            KPhysicalAddress l3_phys = Null<KPhysicalAddress>;
+                            MESOSPHERE_ABORT_UNLESS(l2_entry->GetTable(l3_phys));
+                            const KVirtualAddress l3_virt = GetPageTableVirtualAddress(l3_phys);
 
-                        /* Get the L3 entry. */
-                        KPhysicalAddress l3_phys = Null<KPhysicalAddress>;
-                        MESOSPHERE_ABORT_UNLESS(l2_entry->GetTable(l3_phys));
-                        const KVirtualAddress  l3_virt = GetPageTableVirtualAddress(l3_phys);
-
-                        /* Clear the entry, if we should. */
-                        if (refresh_mapping) {
+                            /* Write the updated entry. */
+                            const bool contig = next_entry.block_size == L3ContiguousBlockSize;
                             for (size_t i = 0; i < num_l3_blocks; i++) {
-                                *impl.GetL3EntryFromTable(l3_virt, virt_addr + L3BlockSize * i) = InvalidL3PageTableEntry;
-                            }
-                            this->NoteUpdated();
-                            if (IsHeapPhysicalAddress(next_entry.phys_addr)) {
-                                cpu::FlushDataCache(GetVoidPointer(GetHeapVirtualAddress(next_entry.phys_addr)), next_entry.block_size);
+                                *impl.GetL3EntryFromTable(l3_virt, cur_virt_addr + L3BlockSize * i) = L3PageTableEntry(PageTableEntry::BlockTag{}, next_entry.phys_addr + L3BlockSize * i, entry_template, contig);
                             }
                         }
+                        break;
+                    MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                }
 
-                        /* Write the updated entry. */
-                        const bool contig = next_entry.block_size == L3ContiguousBlockSize;
-                        for (size_t i = 0; i < num_l3_blocks; i++) {
-                            *impl.GetL3EntryFromTable(l3_virt, virt_addr + L3BlockSize * i) = L3PageTableEntry(next_entry.phys_addr + L3BlockSize * i, entry_template, contig);
+                /* If our option asks us to, try to merge mappings. */
+                bool merge = ((apply_option & ApplyOption_MergeMappings) != 0) && next_entry.block_size < L1BlockSize;
+                if (merge) {
+                    const size_t larger_align = GetLargerAlignment(next_entry.block_size);
+                    if (util::IsAligned(GetInteger(cur_virt_addr) + next_entry.block_size, larger_align)) {
+                        const uintptr_t aligned_start = util::AlignDown(GetInteger(cur_virt_addr), larger_align);
+                        if (virt_addr <= aligned_start && aligned_start + larger_align - 1 < GetInteger(virt_addr) + (num_pages * PageSize) - 1) {
+                            merge = this->MergePages(cur_virt_addr, page_list);
+                        } else {
+                            merge = false;
                         }
+                    } else {
+                        merge = false;
                     }
+                }
+
+                /* If we merged, correct the traversal to a sane state. */
+                if (merge) {
+                    /* NOTE: Nintendo does not verify the result of this BeginTraversal call. */
+                    MESOSPHERE_ABORT_UNLESS(impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_virt_addr));
+
+                    /* The actual size needs to not take into account the portion of the block before our virtual address. */
+                    const size_t actual_size = next_entry.block_size - (GetInteger(next_entry.phys_addr) & (next_entry.block_size - 1));
+                    remaining_pages -= std::min(remaining_pages, actual_size / PageSize);
+                    cur_virt_addr   += actual_size;
+                } else {
+                    /* If we didn't merge, just advance. */
+                    remaining_pages -= next_entry.block_size / PageSize;
+                    cur_virt_addr   += next_entry.block_size;
+                }
+
+                /* Continue our traversal. */
+                if (remaining_pages == 0) {
                     break;
-                MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                }
+                MESOSPHERE_ABORT_UNLESS(impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context)));
+            }
+        };
+
+
+        /* ===================================================== */
+
+        /* If we don't need to refresh the pages, we can just apply the mappings. */
+        if (!refresh_mapping) {
+            ApplyEntryTemplate(entry_template, ApplyOption_None);
+            this->NoteUpdated();
+        } else {
+            /* We need to refresh the mappings. */
+            /* First, apply the changes without the mapped bit. This will cause all entries to page fault if accessed. */
+            {
+                PageTableEntry unmapped_template = entry_template;
+                unmapped_template.SetMapped(false);
+                ApplyEntryTemplate(unmapped_template, ApplyOption_MergeMappings);
+                this->NoteUpdated();
             }
 
-            /* Advance. */
-            virt_addr       += next_entry.block_size;
-            remaining_pages -= next_entry.block_size / PageSize;
-            if (remaining_pages == 0) {
-                break;
+            /* Next, take and immediately release the scheduler lock. This will force a reschedule. */
+            {
+                KScopedSchedulerLock sl;
             }
-            MESOSPHERE_ABORT_UNLESS(impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context)));
+
+            /* Finally, apply the changes as directed, flushing the mappings before they're applied. */
+            ApplyEntryTemplate(entry_template, ApplyOption_FlushDataCache);
         }
 
         /* We've succeeded, now perform what coalescing we can. */
-        this->MergePages(orig_virt_addr, page_list);
+        this->MergePages(virt_addr, page_list);
         if (num_pages > 1) {
-            this->MergePages(orig_virt_addr + (num_pages - 1) * PageSize, page_list);
+            this->MergePages(virt_addr + (num_pages - 1) * PageSize, page_list);
         }
 
         return ResultSuccess();

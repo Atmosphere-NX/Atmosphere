@@ -30,12 +30,8 @@ namespace ams::kern::arch::arm64 {
     class PageTableEntry {
         public:
             struct InvalidTag{};
-
-            enum ExtensionTag : u64 {
-                ExtensionTag_IsValidBit  = (1ul << 56),
-                ExtensionTag_IsValid     = (ExtensionTag_IsValidBit | (1ul << 0)),
-                ExtensionTag_IsBlockMask = (ExtensionTag_IsValidBit | (1ul << 1)),
-            };
+            struct TableTag{};
+            struct BlockTag{};
 
             enum Permission : u64 {
                 Permission_KernelRWX = ((0ul << 53) | (1ul << 54) | (0ul << 6)),
@@ -68,13 +64,26 @@ namespace ams::kern::arch::arm64 {
                 AccessFlag_Accessed    = (1 << 10),
             };
 
+            enum MappingFlag : u64 {
+                MappingFlag_NotMapped = (0 << 0),
+                MappingFlag_Mapped    = (1 << 0),
+            };
+
+            enum ExtensionFlag : u64 {
+                ExtensionFlag_NotContiguous  = (1ul << 55),
+                ExtensionFlag_Valid          = (1ul << 56),
+
+                ExtensionFlag_ValidAndMapped = (ExtensionFlag_Valid | MappingFlag_Mapped),
+                ExtensionFlag_TestTableMask  = (ExtensionFlag_Valid | (1ul << 1)),
+            };
+
             enum Type : u64 {
                 Type_None    = 0x0,
-                Type_L1Block = 0x1,
-                Type_L1Table = 0x3,
-                Type_L2Block = 0x1,
-                Type_L2Table = 0x3,
-                Type_L3Block = 0x3,
+                Type_L1Block = ExtensionFlag_Valid,
+                Type_L1Table = 0x2,
+                Type_L2Block = ExtensionFlag_Valid,
+                Type_L2Table = 0x2,
+                Type_L3Block = ExtensionFlag_TestTableMask,
             };
 
             enum ContigType : u64 {
@@ -85,17 +94,17 @@ namespace ams::kern::arch::arm64 {
             u64 attributes;
         public:
             /* Take in a raw attribute. */
-            constexpr ALWAYS_INLINE PageTableEntry() : attributes() { /* ... */ }
-            constexpr ALWAYS_INLINE PageTableEntry(u64 attr) : attributes(attr) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry() : attributes() { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry(u64 attr) : attributes(attr) { /* ... */ }
 
-            constexpr ALWAYS_INLINE PageTableEntry(InvalidTag) : attributes(0) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry(InvalidTag) : attributes(0) { /* ... */ }
 
             /* Extend a previous attribute. */
-            constexpr ALWAYS_INLINE PageTableEntry(const PageTableEntry &rhs, u64 new_attr) : attributes(rhs.attributes | new_attr) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry(const PageTableEntry &rhs, u64 new_attr) : attributes(rhs.attributes | new_attr) { /* ... */ }
 
             /* Construct a new attribute. */
-            constexpr ALWAYS_INLINE PageTableEntry(Permission perm, PageAttribute p_a, Shareable share)
-                : attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share) | static_cast<u64>(ExtensionTag_IsValid))
+            constexpr explicit ALWAYS_INLINE PageTableEntry(Permission perm, PageAttribute p_a, Shareable share, MappingFlag m)
+                : attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share) | static_cast<u64>(ExtensionFlag_Valid) | static_cast<u64>(m))
             {
                 /* ... */
             }
@@ -129,7 +138,7 @@ namespace ams::kern::arch::arm64 {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE bool IsContiguousAllowed()       const { return this->GetBits(55, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsContiguousAllowed()       const { return this->GetBits(55, 1) == 0; }
             constexpr ALWAYS_INLINE bool IsUserExecuteNever()        const { return this->GetBits(54, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsPrivilegedExecuteNever()  const { return this->GetBits(53, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsContiguous()              const { return this->GetBits(52, 1) != 0; }
@@ -140,9 +149,10 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE bool IsReadOnly()                const { return this->GetBits(7, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsUserAccessible()          const { return this->GetBits(6, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsNonSecure()               const { return this->GetBits(5, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsBlock()                   const { return (this->attributes & ExtensionTag_IsBlockMask) == ExtensionTag_IsValidBit; }
-            constexpr ALWAYS_INLINE bool IsTable()                   const { return this->GetBits(0, 2) == 0x3; }
-            constexpr ALWAYS_INLINE bool IsEmpty()                   const { return this->GetBits(0, 2) == 0x0; }
+            constexpr ALWAYS_INLINE bool IsBlock()                   const { return (this->attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_Valid; }
+            constexpr ALWAYS_INLINE bool IsTable()                   const { return (this->attributes & ExtensionFlag_TestTableMask) == 2; }
+            constexpr ALWAYS_INLINE bool IsEmpty()                   const { return (this->attributes & ExtensionFlag_TestTableMask) == 0; }
+            constexpr ALWAYS_INLINE bool IsMapped()                  const { return this->GetBits(0, 1) != 0; }
 
             constexpr ALWAYS_INLINE decltype(auto) SetContiguousAllowed(bool en)      { this->SetBit(55, !en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetUserExecuteNever(bool en)       { this->SetBit(54, en); return *this; }
@@ -154,9 +164,10 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE decltype(auto) SetReadOnly(bool en)               { this->SetBit(7, en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetUserAccessible(bool en)         { this->SetBit(6, en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetPageAttribute(PageAttribute a)  { this->SetBitsDirect(2, 3, a); return *this; }
+            constexpr ALWAYS_INLINE decltype(auto) SetMapped(bool m)                  { static_assert(static_cast<u64>(MappingFlag_Mapped == (1 << 0))); this->SetBit(0, m); return *this; }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplate() const {
-                constexpr u64 Mask = (0xFFF0000000000FFFul & ~u64(0x3ul | (0x1ul << 52)));
+                constexpr u64 Mask = (0xFFF0000000000FFFul & ~u64((0x1ul << 52) | ExtensionFlag_TestTableMask));
                 return this->attributes & Mask;
             }
 
@@ -182,22 +193,22 @@ namespace ams::kern::arch::arm64 {
 
     class L1PageTableEntry : public PageTableEntry {
         public:
-            constexpr ALWAYS_INLINE L1PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE L1PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
 
-            constexpr ALWAYS_INLINE L1PageTableEntry(KPhysicalAddress phys_addr, bool pxn)
+            constexpr explicit ALWAYS_INLINE L1PageTableEntry(TableTag, KPhysicalAddress phys_addr, bool pxn)
                 : PageTableEntry((0x3ul << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | 0x3)
             {
                 /* ... */
             }
 
-            constexpr ALWAYS_INLINE L1PageTableEntry(KPhysicalAddress phys_addr, bool is_kernel, bool pxn)
+            constexpr explicit ALWAYS_INLINE L1PageTableEntry(TableTag, KPhysicalAddress phys_addr, bool is_kernel, bool pxn)
                 : PageTableEntry(((is_kernel ? 0x3ul : 0) << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | 0x3)
             {
                 /* ... */
             }
 
-            constexpr ALWAYS_INLINE L1PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | PageTableEntry::ExtensionTag_IsValid)
+            constexpr explicit ALWAYS_INLINE L1PageTableEntry(BlockTag, KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
+                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | PageTableEntry::ExtensionFlag_Valid)
             {
                 /* ... */
             }
@@ -221,28 +232,28 @@ namespace ams::kern::arch::arm64 {
 
             constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
                 /* Check whether this has the same permission/etc as the desired attributes. */
-                return L1PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
+                return L1PageTableEntry(BlockTag{}, this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
             }
     };
 
     class L2PageTableEntry : public PageTableEntry {
         public:
-            constexpr ALWAYS_INLINE L2PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE L2PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
 
-            constexpr ALWAYS_INLINE L2PageTableEntry(KPhysicalAddress phys_addr, bool pxn)
+            constexpr explicit ALWAYS_INLINE L2PageTableEntry(TableTag, KPhysicalAddress phys_addr, bool pxn)
                 : PageTableEntry((0x3ul << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | 0x3)
             {
                 /* ... */
             }
 
-            constexpr ALWAYS_INLINE L2PageTableEntry(KPhysicalAddress phys_addr, bool is_kernel, bool pxn)
+            constexpr explicit ALWAYS_INLINE L2PageTableEntry(TableTag, KPhysicalAddress phys_addr, bool is_kernel, bool pxn)
                 : PageTableEntry(((is_kernel ? 0x3ul : 0) << 60) | (static_cast<u64>(pxn) << 59) | GetInteger(phys_addr) | 0x3)
             {
                 /* ... */
             }
 
-            constexpr ALWAYS_INLINE L2PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | PageTableEntry::ExtensionTag_IsValid)
+            constexpr explicit ALWAYS_INLINE L2PageTableEntry(BlockTag, KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
+                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | PageTableEntry::ExtensionFlag_Valid)
             {
                 /* ... */
             }
@@ -266,21 +277,21 @@ namespace ams::kern::arch::arm64 {
 
             constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
                 /* Check whether this has the same permission/etc as the desired attributes. */
-                return L2PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
+                return L2PageTableEntry(BlockTag{}, this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
             }
     };
 
     class L3PageTableEntry : public PageTableEntry {
         public:
-            constexpr ALWAYS_INLINE L3PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE L3PageTableEntry(InvalidTag) : PageTableEntry(InvalidTag{}) { /* ... */ }
 
-            constexpr ALWAYS_INLINE L3PageTableEntry(KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
-                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | 0x2 | PageTableEntry::ExtensionTag_IsValid)
+            constexpr explicit ALWAYS_INLINE L3PageTableEntry(BlockTag, KPhysicalAddress phys_addr, const PageTableEntry &attr, bool contig)
+                : PageTableEntry(attr, (static_cast<u64>(contig) << 52) | GetInteger(phys_addr) | static_cast<u64>(ExtensionFlag_TestTableMask))
             {
                 /* ... */
             }
 
-            constexpr ALWAYS_INLINE bool IsBlock() const { return (GetRawAttributes() & ExtensionTag_IsBlockMask) == ExtensionTag_IsBlockMask; }
+            constexpr ALWAYS_INLINE bool IsBlock() const { return (GetRawAttributes() & ExtensionFlag_TestTableMask) == ExtensionFlag_TestTableMask; }
 
             constexpr ALWAYS_INLINE KPhysicalAddress GetBlock() const {
                 return this->SelectBits(12, 36);
@@ -288,7 +299,7 @@ namespace ams::kern::arch::arm64 {
 
             constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, bool contig) const {
                 /* Check whether this has the same permission/etc as the desired attributes. */
-                return L3PageTableEntry(this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
+                return L3PageTableEntry(BlockTag{}, this->GetBlock(), rhs, contig).GetRawAttributes() == this->GetRawAttributes();
             }
     };
 

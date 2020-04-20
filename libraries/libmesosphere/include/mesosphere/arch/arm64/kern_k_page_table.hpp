@@ -104,7 +104,7 @@ namespace ams::kern::arch::arm64 {
         private:
             constexpr PageTableEntry GetEntryTemplate(const KPageProperties properties) const {
                 /* Set basic attributes. */
-                PageTableEntry entry;
+                PageTableEntry entry{PageTableEntry::ExtensionFlag_Valid};
                 entry.SetPrivilegedExecuteNever(true);
                 entry.SetAccessFlag(PageTableEntry::AccessFlag_Accessed);
                 entry.SetShareable(PageTableEntry::Shareable_InnerShareable);
@@ -162,6 +162,9 @@ namespace ams::kern::arch::arm64 {
                         break;
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
+
+                /* Set the fault bit based on whether the page is mapped. */
+                entry.SetMapped((properties.perm & KMemoryPermission_NotMapped) == 0);
 
                 return entry;
             }
