@@ -168,23 +168,23 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
         } else if (strcmp(name, EXOSPHERE_BLANK_PRODINFO_SYSMMC_KEY) == 0) {
             sscanf(value, "%d", &tmp);
             if (tmp == 1) {
-                parse_cfg->enable_user_pmu_access = 1;
+                parse_cfg->blank_prodinfo_sysmmc = 1;
             } else if (tmp == 0) {
-                parse_cfg->enable_user_pmu_access = 0;
+                parse_cfg->blank_prodinfo_sysmmc = 0;
             }
         } else if (strcmp(name, EXOSPHERE_BLANK_PRODINFO_EMUMMC_KEY) == 0) {
             sscanf(value, "%d", &tmp);
             if (tmp == 1) {
-                parse_cfg->enable_user_pmu_access = 1;
+                parse_cfg->blank_prodinfo_emummc = 1;
             } else if (tmp == 0) {
-                parse_cfg->enable_user_pmu_access = 0;
+                parse_cfg->blank_prodinfo_emummc = 0;
             }
         } else if (strcmp(name, EXOSPHERE_ALLOW_WRITING_TO_CAL_SYSMMC_KEY) == 0) {
             sscanf(value, "%d", &tmp);
             if (tmp == 1) {
-                parse_cfg->enable_user_pmu_access = 1;
+                parse_cfg->allow_writing_to_cal_sysmmc = 1;
             } else if (tmp == 0) {
-                parse_cfg->enable_user_pmu_access = 0;
+                parse_cfg->allow_writing_to_cal_sysmmc = 0;
             }
         } else {
             return 0;
