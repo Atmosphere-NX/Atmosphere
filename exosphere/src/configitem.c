@@ -290,7 +290,15 @@ uint32_t configitem_get(bool privileged, ConfigItem item, uint64_t *p_outvalue) 
             break;
         case CONFIGITEM_HAS_RCM_BUG_PATCH:
             /* UNOFFICIAL: Gets whether this unit has the RCM bug patched. */
-            *p_outvalue = (int)(fuse_has_rcm_bug_patch());;
+            *p_outvalue = (int)(fuse_has_rcm_bug_patch());
+            break;
+        case CONFIGITEM_SHOULD_BLANK_PRODINFO:
+            /* UNOFFICIAL: Gets whether this unit should simulate a "blanked" PRODINFO. */
+            *p_outvalue = exosphere_should_blank_prodinfo();
+            break;
+        case CONFIGITEM_ALLOW_CAL_WRITES:
+            /* UNOFFICIAL: Gets whether this unit should allow writing to the calibration partition. */
+            *p_outvalue = exosphere_should_allow_writing_to_cal();
             break;
         default:
             result = 2;

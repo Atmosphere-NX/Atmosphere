@@ -27,6 +27,9 @@ static bool g_has_loaded_config = false;
 
 #define EXOSPHERE_CHECK_FLAG(flag) ((g_exosphere_cfg.flags & flag) != 0)
 
+static unsigned int exosphere_is_emummc() {
+    return g_exosphere_cfg.emummc_cfg.base_cfg.magic == MAGIC_EMUMMC_CONFIG && g_exosphere_cfg.emummc_cfg.base_cfg.type != EMUMMC_TYPE_NONE;
+}
 
 /* Read config out of IRAM, return target firmware version. */
 unsigned int exosphere_load_config(void) {
@@ -90,6 +93,30 @@ unsigned int exosphere_should_enable_usermode_pmu_access(void) {
     }
 
     return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS);
+}
+
+unsigned int exosphere_should_blank_prodinfo(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+
+    if (exosphere_is_emummc()) {
+        return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_BLANK_PRODINFO_EMUMMC);
+    } else {
+        return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_BLANK_PRODINFO_SYSMMC);
+    }
+}
+
+unsigned int exosphere_should_allow_writing_to_cal(void) {
+    if (!g_has_loaded_config) {
+        generic_panic();
+    }
+
+    if (exosphere_is_emummc()) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 const exo_emummc_config_t *exosphere_get_emummc_config(void) {
