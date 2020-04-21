@@ -14,9 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../amsmitm_fs_utils.hpp"
+#include "../amsmitm_initialization.hpp"
 #include "fs_shim.h"
 #include "fs_mitm_service.hpp"
 #include "fsmitm_boot0storage.hpp"
+#include "fsmitm_calibration_binary_storage.hpp"
 #include "fsmitm_layered_romfs_storage.hpp"
 #include "fsmitm_save_utils.hpp"
 #include "fsmitm_readonly_layered_filesystem.hpp"
@@ -252,7 +254,6 @@ namespace ams::mitm::fs {
         const bool is_sysmodule = ncm::IsSystemProgramId(this->client_info.program_id);
         const bool is_hbl = this->client_info.override_status.IsHbl();
         const bool can_write_bis = is_sysmodule || (is_hbl && GetSettingsItemBooleanValue("atmosphere", "enable_hbl_bis_write"));
-        const bool can_read_cal  = is_sysmodule || (is_hbl && GetSettingsItemBooleanValue("atmosphere", "enable_hbl_cal_read"));
 
         /* Allow HBL to write to boot1 (safe firm) + package2. */
         /* This is needed to not break compatibility with ChoiDujourNX, which does not check for write access before beginning an update. */
@@ -265,15 +266,8 @@ namespace ams::mitm::fs {
         if (bis_partition_id == FsBisPartitionId_BootPartition1Root) {
             out.SetValue(std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
         } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
-            /* PRODINFO should *never* be writable. */
-            /* If we have permissions, create a read only storage. */
-            if (can_read_cal) {
-                out.SetValue(std::make_shared<IStorageInterface>(new ReadOnlyStorageAdapter(new RemoteStorage(bis_storage))), target_object_id);
-            } else {
-                /* If we can't read cal, return permission denied. */
-                fsStorageClose(&bis_storage);
-                return fs::ResultPermissionDenied();
-            }
+            mitm::EnsureProdInfoInitializedAndKickOffInit();
+            out.SetValue(std::make_shared<IStorageInterface>(new CalibrationBinaryStorage(bis_storage, this->client_info)), target_object_id);
         } else {
             if (can_write_bis || can_write_bis_for_choi_support) {
                 /* We can write, so create a writable storage. */

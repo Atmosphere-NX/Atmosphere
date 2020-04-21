@@ -18,7 +18,8 @@
 
 namespace ams::mitm {
 
-    void StartInitialize();
+    void EnsureProdInfoInitializedAndKickOffInit();
+
     bool IsInitialized();
     void WaitInitialized();
 

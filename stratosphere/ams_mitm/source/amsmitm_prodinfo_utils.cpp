@@ -79,7 +79,7 @@ namespace ams::mitm {
         };
         static_assert(sizeof(CalibrationInfoHeader) == 0x40);
 
-        constexpr inline size_t CalibrationInfoBodySizeMax = 0x8000 - sizeof(CalibrationInfoHeader);
+        constexpr inline size_t CalibrationInfoBodySizeMax = CalibrationBinarySize - sizeof(CalibrationInfoHeader);
 
         struct CalibrationInfo {
             CalibrationInfoHeader header;
@@ -101,14 +101,14 @@ namespace ams::mitm {
                 return *static_cast<const Block *>(static_cast<const void *>(std::addressof(this->body[Block::Offset - sizeof(this->header)])));
             }
         };
-        static_assert(sizeof(CalibrationInfo) == 0x8000);
+        static_assert(sizeof(CalibrationInfo) == CalibrationBinarySize);
 
         struct SecureCalibrationInfoBackup  {
             CalibrationInfo info;
             Sha256Hash hash;
-            u8 pad[0xC000 - sizeof(info) - sizeof(hash)];
+            u8 pad[SecureCalibrationBinaryBackupSize - sizeof(info) - sizeof(hash)];
         };
-        static_assert(sizeof(SecureCalibrationInfoBackup) == 0xC000);
+        static_assert(sizeof(SecureCalibrationInfoBackup) == SecureCalibrationBinaryBackupSize);
 
         bool IsValidSha256Hash(const Sha256Hash &hash, const void *data, size_t data_size) {
             Sha256Hash calc_hash;
@@ -175,7 +175,7 @@ namespace ams::mitm {
                 std::memcpy(block.serial_number.str, BlankSerialNumberString, sizeof(BlankSerialNumberString));
                 block.crc = GetCrc16(std::addressof(block), Block::Size - sizeof(block.crc));
             } else if constexpr (std::is_same<Block, SslCertificateBlock>::value) {
-                std::memset(std::addressof(block), 0, Block::Size);
+                std::memset(std::addressof(block), 0, sizeof(block.ssl_certificate));
             } else if constexpr (Block::IsCrcBlock) {
                 std::memset(std::addressof(block), 0, Block::Size - sizeof(block.crc));
                 block.crc = GetCrc16(std::addressof(block), Block::Size - sizeof(block.crc));
@@ -184,27 +184,6 @@ namespace ams::mitm {
                 std::memset(std::addressof(block), 0, Block::Size);
                 ::ams::crypto::GenerateSha256Hash(std::addressof(block.sha256_hash), sizeof(block.sha256_hash), std::addressof(block), Block::Size - sizeof(block.sha256_hash));
             }
-        }
-
-        void Blank(CalibrationInfo &info) {
-            /* Set header. */
-            info.header.magic       = CalibrationMagic;
-            info.header.body_size   = sizeof(info.body);
-            info.header.crc         = GetCrc16(std::addressof(info.header), OFFSETOF(CalibrationInfoHeader, crc));
-
-            /* Set blocks. */
-            Blank(info.GetBlock<SerialNumberBlock>());
-            Blank(info.GetBlock<SslKeyBlock>());
-            Blank(info.GetBlock<SslCertificateSizeBlock>());
-            Blank(info.GetBlock<SslCertificateBlock>());
-            Blank(info.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>());
-            Blank(info.GetBlock<EcqvBlsAmiiboRootCertificateBlock>());
-            Blank(info.GetBlock<ExtendedSslKeyBlock>());
-            Blank(info.GetBlock<Rsa2048DeviceKeyBlock>());
-            Blank(info.GetBlock<Rsa2048DeviceCertificateBlock>());
-
-            /* Set header hash. */
-            crypto::GenerateSha256Hash(std::addressof(info.header.body_hash), sizeof(info.header.body_hash), std::addressof(info.body), sizeof(info.body));
         }
 
         template<typename Block>
@@ -227,6 +206,27 @@ namespace ams::mitm {
                 static_assert(Block::IsShaBlock);
                 return IsValidSha256Hash(block.sha256_hash, std::addressof(block), size != 0 ? size : Block::Size - sizeof(block.sha256_hash));
             }
+        }
+
+
+        void Blank(CalibrationInfo &info) {
+            /* Set header. */
+            info.header.magic       = CalibrationMagic;
+            info.header.body_size   = sizeof(info.body);
+            info.header.crc         = GetCrc16(std::addressof(info.header), OFFSETOF(CalibrationInfoHeader, crc));
+
+            /* Set blocks. */
+            Blank(info.GetBlock<SerialNumberBlock>());
+            Blank(info.GetBlock<SslCertificateSizeBlock>());
+            Blank(info.GetBlock<SslCertificateBlock>());
+            Blank(info.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>());
+            Blank(info.GetBlock<EcqvBlsAmiiboRootCertificateBlock>());
+            Blank(info.GetBlock<ExtendedSslKeyBlock>());
+            if (IsValid(info.GetBlock<Rsa2048DeviceKeyBlock>()) && !IsBlank(info.GetBlock<Rsa2048DeviceKeyBlock>())) Blank(info.GetBlock<Rsa2048DeviceKeyBlock>());
+            if (IsValid(info.GetBlock<Rsa2048DeviceCertificateBlock>()) && !IsBlank(info.GetBlock<Rsa2048DeviceCertificateBlock>())) Blank(info.GetBlock<Rsa2048DeviceCertificateBlock>());
+
+            /* Set header hash. */
+            crypto::GenerateSha256Hash(std::addressof(info.header.body_hash), sizeof(info.header.body_hash), std::addressof(info.body), sizeof(info.body));
         }
 
         bool IsValidHeader(const CalibrationInfo &cal) {
@@ -256,25 +256,28 @@ namespace ams::mitm {
         }
 
         bool IsValid(const CalibrationInfo &cal) {
-            return IsValidHeader(cal)                                           &&
-                   IsValid(cal.GetBlock<SerialNumberBlock>())                   &&
-                   IsValid(cal.GetBlock<EccB233DeviceCertificateBlock>())       &&
-                   IsValid(cal.GetBlock<SslKeyBlock>())                         &&
-                   IsValid(cal.GetBlock<SslCertificateSizeBlock>())             &&
-                   IsValid(cal.GetBlock<SslCertificateBlock>())                 &&
-                   IsValid(cal.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>()) &&
-                   IsValid(cal.GetBlock<EcqvBlsAmiiboRootCertificateBlock>())   &&
-                   IsValid(cal.GetBlock<ExtendedSslKeyBlock>())                 &&
+            return IsValidHeader(cal)                                                                                                          &&
+                   IsValid(cal.GetBlock<SerialNumberBlock>())                                                                                  &&
+                   IsValid(cal.GetBlock<EccB233DeviceCertificateBlock>())                                                                      &&
+                   IsValid(cal.GetBlock<SslKeyBlock>())                                                                                        &&
+                   IsValid(cal.GetBlock<SslCertificateSizeBlock>())                                                                            &&
+                   cal.GetBlock<SslCertificateSizeBlock>().ssl_certificate_size <= sizeof(cal.GetBlock<SslCertificateBlock>().ssl_certificate) &&
+                   IsValid(cal.GetBlock<SslCertificateBlock>(), cal.GetBlock<SslCertificateSizeBlock>().ssl_certificate_size)                  &&
+                   IsValid(cal.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>())                                                                &&
+                   IsValid(cal.GetBlock<EcqvBlsAmiiboRootCertificateBlock>())                                                                  &&
+                   IsValid(cal.GetBlock<ExtendedSslKeyBlock>())                                                                                &&
                    IsValidSerialNumber(cal);
         }
 
         bool ContainsCorrectDeviceId(const EccB233DeviceCertificateBlock &block, u64 device_id) {
-            static constexpr size_t DeviceIdOffset = 0xB4;
-            char expected_device_id[sizeof("NX0011223344556677")] = {};
-            ON_SCOPE_EXIT { std::memset(expected_device_id, 0, sizeof(expected_device_id)); };
+            static constexpr size_t DeviceIdOffset = 0xC6;
+            char found_device_id_str[sizeof("0011223344556677")] = {};
+            ON_SCOPE_EXIT { std::memset(found_device_id_str, 0, sizeof(found_device_id_str)); };
+            std::memcpy(found_device_id_str, std::addressof(block.device_certificate.data[DeviceIdOffset]), sizeof(found_device_id_str) - 1);
 
-            std::snprintf(expected_device_id, sizeof(expected_device_id), "NX%016lX", device_id);
-            return std::memcmp(expected_device_id, std::addressof(block.device_certificate.data[DeviceIdOffset]), sizeof(expected_device_id) - 1) == 0;
+            static constexpr u64 DeviceIdLowMask = 0x00FFFFFFFFFFFFFFul;
+
+            return (std::strtoul(found_device_id_str, nullptr, 16) & DeviceIdLowMask) == (device_id & DeviceIdLowMask);
         }
 
         bool ContainsCorrectDeviceId(const CalibrationInfo &cal) {
@@ -287,8 +290,6 @@ namespace ams::mitm {
 
         bool IsBlank(const CalibrationInfo &cal) {
             return IsBlank(cal.GetBlock<SerialNumberBlock>())                   ||
-                   IsBlank(cal.GetBlock<EccB233DeviceCertificateBlock>())       ||
-                   IsBlank(cal.GetBlock<SslKeyBlock>())                         ||
                    IsBlank(cal.GetBlock<SslCertificateSizeBlock>())             ||
                    IsBlank(cal.GetBlock<SslCertificateBlock>())                 ||
                    IsBlank(cal.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>()) ||
@@ -303,8 +304,6 @@ namespace ams::mitm {
 
             R_ABORT_UNLESS(fsStorageRead(&calibration_binary_storage, 0, out, sizeof(*out)));
         }
-
-        constexpr inline s64 SecureCalibrationInfoBackupOffset = 3_MB;
 
         constexpr inline const u8 SecureCalibrationBinaryBackupIv[crypto::Aes128CtrDecryptor::IvSize] = {};
 
@@ -505,26 +504,32 @@ namespace ams::mitm {
         }
 
         alignas(os::MemoryPageSize) CalibrationInfo g_calibration_info = {};
+        alignas(os::MemoryPageSize) CalibrationInfo g_blank_calibration_info = {};
         alignas(os::MemoryPageSize) SecureCalibrationInfoBackup g_secure_calibration_info_backup = {};
 
-        std::optional<ams::fs::FileStorage> g_blank_prodinfo_file;
         std::optional<ams::fs::FileStorage> g_prodinfo_backup_file;
+        std::optional<ams::fs::MemoryStorage> g_blank_prodinfo_storage;
         std::optional<ams::fs::MemoryStorage> g_fake_secure_backup_storage;
+
+        bool g_allow_writes     = false;
+        bool g_has_secure_backup = false;
+
+        os::Mutex g_prodinfo_management_lock(false);
 
     }
 
-    void InitializeProdInfoManagement(char *out_name, size_t out_name_size) {
+    void InitializeProdInfoManagement() {
+        std::scoped_lock lk(g_prodinfo_management_lock);
+
         /* First, get our options. */
         const bool should_blank = exosphere::ShouldBlankProdInfo();
         bool allow_writes = exosphere::ShouldAllowWritesToProdInfo();
 
         /* Next, read our prodinfo. */
         ReadStorageCalibrationBinary(std::addressof(g_calibration_info));
-        ON_SCOPE_EXIT { FillWithGarbage(std::addressof(g_calibration_info), sizeof(g_calibration_info)); };
 
         /* Next, check if we have a secure backup. */
         bool has_secure_backup = ReadStorageSecureCalibrationBinaryBackup(std::addressof(g_secure_calibration_info_backup));
-        ON_SCOPE_EXIT { FillWithGarbage(std::addressof(g_secure_calibration_info_backup), sizeof(g_secure_calibration_info_backup)); };
 
         /* Only allow writes if we have a secure backup. */
         if (allow_writes && !has_secure_backup) {
@@ -543,8 +548,31 @@ namespace ams::mitm {
         /* Ensure our preconditions are met. */
         AMS_ABORT_UNLESS(!allow_writes || has_secure_backup);
 
+        /* Set globals. */
+        g_allow_writes      = allow_writes;
+        g_has_secure_backup = has_secure_backup;
+
+        /* If we should blank, do so. */
+        if (should_blank) {
+            g_blank_calibration_info = g_calibration_info;
+            Blank(g_blank_calibration_info);
+            g_blank_prodinfo_storage.emplace(std::addressof(g_blank_calibration_info), sizeof(g_blank_calibration_info));
+        }
+
+        /* Ensure that we have a blank file only if we need one. */
+        AMS_ABORT_UNLESS(should_blank == static_cast<bool>(g_blank_prodinfo_storage));
+    }
+
+    void SaveProdInfoBackupsAndWipeMemory(char *out_name, size_t out_name_size) {
+        std::scoped_lock lk(g_prodinfo_management_lock);
+
+        ON_SCOPE_EXIT {
+            FillWithGarbage(std::addressof(g_calibration_info), sizeof(g_calibration_info));
+            FillWithGarbage(std::addressof(g_secure_calibration_info_backup), sizeof(g_secure_calibration_info_backup));
+        };
+
         /* Save our backup. We always prefer to save a secure copy of data over a non-secure one. */
-        if (has_secure_backup) {
+        if (g_has_secure_backup) {
             GetSerialNumber(out_name, g_secure_calibration_info_backup.info);
             SaveProdInfoBackup(std::addressof(g_prodinfo_backup_file), g_secure_calibration_info_backup.info);
         } else {
@@ -563,17 +591,49 @@ namespace ams::mitm {
         /* Ensure we made our backup. */
         AMS_ABORT_UNLESS(g_prodinfo_backup_file);
 
-        /* If we should blank our prodinfo, do so. */
-        if (should_blank) {
-            Blank(g_calibration_info);
-            SaveProdInfoBackup(std::addressof(g_blank_prodinfo_file), g_calibration_info);
-        }
-
-        /* Ensure that we have a blank file if we need one. */
-        AMS_ABORT_UNLESS(!should_blank || g_blank_prodinfo_file);
-
         /* Setup our memory storage. */
         g_fake_secure_backup_storage.emplace(std::addressof(g_secure_calibration_info_backup), sizeof(g_secure_calibration_info_backup));
+
+        /* Ensure that we have a fake storage. */
+        AMS_ABORT_UNLESS(static_cast<bool>(g_fake_secure_backup_storage));
+    }
+
+    bool ShouldReadBlankCalibrationBinary() {
+        std::scoped_lock lk(g_prodinfo_management_lock);
+        return static_cast<bool>(g_blank_prodinfo_storage);
+    }
+
+    bool IsWriteToCalibrationBinaryAllowed() {
+        std::scoped_lock lk(g_prodinfo_management_lock);
+        return g_allow_writes;
+    }
+
+    void ReadFromBlankCalibrationBinary(s64 offset, void *dst, size_t size) {
+        AMS_ABORT_UNLESS(ShouldReadBlankCalibrationBinary());
+
+        std::scoped_lock lk(g_prodinfo_management_lock);
+        R_ABORT_UNLESS(g_blank_prodinfo_storage->Read(offset, dst, size));
+    }
+
+    void WriteToBlankCalibrationBinary(s64 offset, const void *src, size_t size) {
+        AMS_ABORT_UNLESS(ShouldReadBlankCalibrationBinary());
+
+        std::scoped_lock lk(g_prodinfo_management_lock);
+        R_ABORT_UNLESS(g_blank_prodinfo_storage->Write(offset, src, size));
+    }
+
+    void ReadFromFakeSecureBackupStorage(s64 offset, void *dst, size_t size) {
+        AMS_ABORT_UNLESS(IsWriteToCalibrationBinaryAllowed());
+
+        std::scoped_lock lk(g_prodinfo_management_lock);
+        R_ABORT_UNLESS(g_fake_secure_backup_storage->Read(offset, dst, size));
+    }
+
+    void WriteToFakeSecureBackupStorage(s64 offset, const void *src, size_t size) {
+        AMS_ABORT_UNLESS(IsWriteToCalibrationBinaryAllowed());
+
+        std::scoped_lock lk(g_prodinfo_management_lock);
+        R_ABORT_UNLESS(g_fake_secure_backup_storage->Write(offset, src, size));
     }
 
 }

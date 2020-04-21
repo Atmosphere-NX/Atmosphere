@@ -18,8 +18,22 @@
 
 namespace ams::mitm {
 
-    void InitializeProdInfoManagement(char *out_name, size_t out_name_size);
+    constexpr inline size_t CalibrationBinarySize             = 0x8000;
 
+    constexpr inline s64 SecureCalibrationInfoBackupOffset    = 3_MB;
+    constexpr inline size_t SecureCalibrationBinaryBackupSize = 0xC000;
 
+    void InitializeProdInfoManagement();
+
+    void SaveProdInfoBackupsAndWipeMemory(char *out_name, size_t out_name_size);
+
+    bool ShouldReadBlankCalibrationBinary();
+    bool IsWriteToCalibrationBinaryAllowed();
+
+    void ReadFromBlankCalibrationBinary(s64 offset, void *dst, size_t size);
+    void WriteToBlankCalibrationBinary(s64 offset, const void *src, size_t size);
+
+    void ReadFromFakeSecureBackupStorage(s64 offset, void *dst, size_t size);
+    void WriteToFakeSecureBackupStorage(s64 offset, const void *src, size_t size);
 
 }
