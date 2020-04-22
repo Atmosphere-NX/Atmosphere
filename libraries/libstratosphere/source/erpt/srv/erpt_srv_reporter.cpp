@@ -67,7 +67,7 @@ namespace ams::erpt::srv {
 
     Result Reporter::CollectUniqueReportFields() {
         this->occurrence_tick = os::GetSystemTick();
-        if (hos::GetVersion() >= hos::Version_3_0_0) {
+        if (hos::GetVersion() >= hos::Version_5_0_0) {
             this->steady_clock_internal_offset_seconds = time::GetStandardSteadyClockInternalOffset().GetSeconds();
         } else {
             this->steady_clock_internal_offset_seconds = 0;
