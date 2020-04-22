@@ -87,6 +87,8 @@ namespace ams::os::impl {
                 expected = GetLockCount(rw_lock);
                 do {
                     lock_count = expected;
+                    AMS_ASSERT(GetWriteLocked(lock_count) == 0 || GetThreadHandle(lock_count) != svc::InvalidHandle);
+
                     if (GetWriteLocked(lock_count) != 0 || GetWriteLockWaiterCount(lock_count) != 0) {
                         if (!arbitrated) {
                             IncReadLockWaiterCount(lock_count);
@@ -113,7 +115,7 @@ namespace ams::os::impl {
 
                 const u32 new_handle = GetThreadHandle(GetLockCount(rw_lock));
                 if ((new_handle | svc::HandleWaitMask) == (cur_handle | svc::HandleWaitMask)) {
-                    SetThreadHandle(lock_count, new_handle);
+                    lock_count = GetLockCount(rw_lock);
                     break;
                 }
 
@@ -135,7 +137,7 @@ namespace ams::os::impl {
                 IncReadLockCount(lock_count);
                 SetThreadHandle(lock_count, (GetThreadHandle(lock_count) & svc::HandleWaitMask) ? GetThreadHandle(lock_count) : svc::InvalidHandle);
             } while(!ATOMIC_COMPARE_EXCHANGE_LOCK_COUNT(GetLockCount(rw_lock), expected, lock_count, __ATOMIC_RELEASE, __ATOMIC_RELAXED));
-            if (GetThreadHandle(lock_count)) {
+            if (GetThreadHandle(lock_count) & svc::HandleWaitMask) {
                 R_ABORT_UNLESS(svc::ArbitrateUnlock(GetThreadHandleAddress(GetLockCount(rw_lock))));
             }
         }
@@ -202,7 +204,7 @@ namespace ams::os::impl {
 
                 R_ABORT_UNLESS(svc::ArbitrateLock(GetThreadHandle(lock_count) & ~svc::HandleWaitMask, GetThreadHandleAddress(GetLockCount(rw_lock)), cur_handle));
                 expected = GetLockCount(rw_lock);
-            } while ((GetThreadHandle(GetLockCount(rw_lock)) | svc::HandleWaitMask) != (GetThreadHandle(lock_count) | svc::HandleWaitMask));
+            } while ((GetThreadHandle(GetLockCount(rw_lock)) | svc::HandleWaitMask) != (cur_handle | svc::HandleWaitMask));
 
             do {
                 lock_count = expected;
@@ -228,11 +230,12 @@ namespace ams::os::impl {
         AMS_ASSERT(::ams::svc::GetThreadLocalRegion()->disable_count == 0);
 
         auto *cur_thread = impl::GetCurrentThread();
+        const u32 cur_handle = cur_thread->thread_impl->handle;
         if (rw_lock->owner_thread == cur_thread) {
             AMS_ASSERT(GetWriteLocked(GetLockCount(rw_lock)) == 1);
+            AMS_ASSERT((GetThreadHandle(GetLockCount(rw_lock)) | svc::HandleWaitMask) == (cur_handle | svc::HandleWaitMask));
             IncWriteLockCount(*rw_lock);
         } else {
-            const u32 cur_handle = cur_thread->thread_impl->handle;
             alignas(alignof(u64)) LockCount expected;
             alignas(alignof(u64)) LockCount lock_count;
             bool arbitrated = false;
@@ -269,7 +272,7 @@ namespace ams::os::impl {
                     R_ABORT_UNLESS(svc::ArbitrateLock(GetThreadHandle(lock_count) & ~svc::HandleWaitMask, GetThreadHandleAddress(GetLockCount(rw_lock)), cur_handle));
                     arbitrated = true;
                     expected   = GetLockCount(rw_lock);
-                    if ((GetThreadHandle(lock_count) | svc::HandleWaitMask) != (cur_handle | svc::HandleWaitMask)) {
+                    if ((GetThreadHandle(expected) | svc::HandleWaitMask) != (cur_handle | svc::HandleWaitMask)) {
                         continue;
                     }
                 }
@@ -282,13 +285,8 @@ namespace ams::os::impl {
                         GetReference(rw_lock->cv_write_lock._storage).Wait(GetPointer(GetLockCount(rw_lock).cs_storage));
                         expected   = GetLockCount(rw_lock);
                         lock_count = expected;
-                        if (GetWriteLocked(lock_count) == 1) {
-                            break;
-                        }
                     }
-                    if (GetWriteLocked(lock_count) == 1) {
-                        continue;
-                    }
+                    AMS_ASSERT(GetWriteLocked(lock_count) == 0);
 
                     DecWriteLockWaiterCount(lock_count);
                     SetWriteLocked(lock_count);

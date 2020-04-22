@@ -222,7 +222,7 @@ namespace ams::ldr::caps {
             }
 
             static constexpr util::BitPack32 Encode(u32 app_type) {
-                util::BitPack32 encoded(IdBitsValue);
+                util::BitPack32 encoded{IdBitsValue};
                 encoded.Set<ApplicationType>(app_type);
                 return encoded;
             }
@@ -275,7 +275,7 @@ namespace ams::ldr::caps {
             }
 
             static constexpr util::BitPack32 Encode(bool allow_debug, bool force_debug) {
-                util::BitPack32 encoded(IdBitsValue);
+                util::BitPack32 encoded{IdBitsValue};
                 encoded.Set<AllowDebug>(allow_debug);
                 encoded.Set<ForceDebug>(force_debug);
                 return encoded;
