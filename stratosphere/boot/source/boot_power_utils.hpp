@@ -23,6 +23,7 @@ namespace ams::boot {
     void ShutdownSystem();
 
     /* Atmosphere power utilities. */
+    void SetInitialRebootPayload();
     void RebootForFatalError(ams::FatalErrorContext *ctx);
 
 }

@@ -14,19 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::mitm::bpc {
+namespace ams::settings::factory {
 
-    /* Power utilities. */
-    bool IsRebootManaged();
-    void RebootSystem();
-    void ShutdownSystem();
-
-    /* Atmosphere power utilities. */
-    void SetInitialRebootPayload(const void *payload, size_t payload_size);
-    Result LoadRebootPayload();
-    Result DetectPreferredRebootFunctionality();
-    void RebootForFatalError(const ams::FatalErrorContext *ctx);
+    struct SerialNumber {
+        char str[0x18];
+    };
+    static_assert(sizeof(SerialNumber) == 0x18);
+    static_assert(std::is_pod<SerialNumber>::value);
 
 }

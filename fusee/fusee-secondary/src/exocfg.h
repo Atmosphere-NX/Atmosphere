@@ -31,7 +31,8 @@
 #define EXOSPHERE_FLAG_IS_DEBUGMODE_USER                    (1 << 2u)
 #define EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS  (1 << 3u)
 #define EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS           (1 << 4u)
-#define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
+#define EXOSPHERE_FLAG_BLANK_PRODINFO                       (1 << 5u)
+#define EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC          (1 << 6u)
 
 typedef struct {
     uint32_t magic;
@@ -50,5 +51,18 @@ _Static_assert(sizeof(exosphere_config_t) == 0x20 + sizeof(exo_emummc_config_t),
 #define EXOSPHERE_DEBUGMODE_USER_KEY "debugmode_user"
 #define EXOSPHERE_DISABLE_USERMODE_EXCEPTION_HANDLERS_KEY "disable_user_exception_handlers"
 #define EXOSPHERE_ENABLE_USERMODE_PMU_ACCESS_KEY "enable_user_pmu_access"
+#define EXOSPHERE_BLANK_PRODINFO_SYSMMC_KEY "blank_prodinfo_sysmmc"
+#define EXOSPHERE_BLANK_PRODINFO_EMUMMC_KEY "blank_prodinfo_emummc"
+#define EXOSPHERE_ALLOW_WRITING_TO_CAL_SYSMMC_KEY "allow_writing_to_cal_sysmmc"
+
+typedef struct {
+    int debugmode;
+    int debugmode_user;
+    int disable_user_exception_handlers;
+    int enable_user_pmu_access;
+    int blank_prodinfo_sysmmc;
+    int blank_prodinfo_emummc;
+    int allow_writing_to_cal_sysmmc;
+} exosphere_parse_cfg_t;
 
 #endif

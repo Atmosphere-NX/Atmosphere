@@ -19,6 +19,7 @@
 namespace ams::mitm {
 
     void StartInitialize();
+
     bool IsInitialized();
     void WaitInitialized();
 

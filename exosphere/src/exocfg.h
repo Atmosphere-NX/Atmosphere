@@ -41,6 +41,8 @@
 #define EXOSPHERE_FLAG_IS_DEBUGMODE_USER                    (1 << 2u)
 #define EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS  (1 << 3u)
 #define EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS           (1 << 4u)
+#define EXOSPHERE_FLAG_BLANK_PRODINFO                       (1 << 5u)
+#define EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC          (1 << 6u)
 #define EXOSPHERE_FLAGS_DEFAULT (EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV)
 
 typedef struct {
@@ -60,6 +62,8 @@ unsigned int exosphere_should_override_debugmode_priv(void);
 unsigned int exosphere_should_override_debugmode_user(void);
 unsigned int exosphere_should_disable_usermode_exception_handlers(void);
 unsigned int exosphere_should_enable_usermode_pmu_access(void);
+unsigned int exosphere_should_blank_prodinfo(void);
+unsigned int exosphere_should_allow_writing_to_cal(void);
 
 const exo_emummc_config_t *exosphere_get_emummc_config(void);
 

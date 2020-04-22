@@ -36,6 +36,14 @@ namespace ams {
 
     extern ncm::ProgramId CurrentProgramId;
 
+    void InitializeForBoot() {
+        R_ABORT_UNLESS(amsBpcInitialize());
+    }
+
+    void SetInitialRebootPayload(const void *src, size_t src_size) {
+        R_ABORT_UNLESS(amsBpcSetInitialPayload(src, src_size));
+    }
+
     void WEAK_SYMBOL ExceptionHandler(FatalErrorContext *ctx) {
         R_ABORT_UNLESS(amsBpcInitialize());
         R_ABORT_UNLESS(amsBpcRebootToFatalError(ctx));

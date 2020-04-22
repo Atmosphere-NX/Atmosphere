@@ -14,19 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::mitm::bpc {
+namespace ams::settings::factory {
 
-    /* Power utilities. */
-    bool IsRebootManaged();
-    void RebootSystem();
-    void ShutdownSystem();
+    struct EccP256DeviceCertificate {
+        u8 data[0x180];
+    };
+    static_assert(sizeof(EccP256DeviceCertificate) == 0x180);
+    static_assert(std::is_pod<EccP256DeviceCertificate>::value);
 
-    /* Atmosphere power utilities. */
-    void SetInitialRebootPayload(const void *payload, size_t payload_size);
-    Result LoadRebootPayload();
-    Result DetectPreferredRebootFunctionality();
-    void RebootForFatalError(const ams::FatalErrorContext *ctx);
+    struct EccB233DeviceCertificate {
+        u8 data[0x180];
+    };
+    static_assert(sizeof(EccB233DeviceCertificate) == 0x180);
+    static_assert(std::is_pod<EccB233DeviceCertificate>::value);
+
+    struct Rsa2048DeviceCertificate {
+        u8 data[0x240];
+    };
+    static_assert(sizeof(Rsa2048DeviceCertificate) == 0x240);
+    static_assert(std::is_pod<Rsa2048DeviceCertificate>::value);
 
 }

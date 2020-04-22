@@ -24,6 +24,11 @@ NX_GENERATE_SERVICE_GUARD(amsBpc);
 Result _amsBpcInitialize(void) {
     Handle h;
     Result rc = svcConnectToNamedPort(&h, "bpc:ams"); /* TODO: ams:bpc */
+    while (R_VALUE(rc) == KERNELRESULT(NotFound)) {
+        svcSleepThread(50000000ul);
+        rc = svcConnectToNamedPort(&h, "bpc:ams");
+    }
+
     if (R_SUCCEEDED(rc)) serviceCreate(&g_amsBpcSrv, h);
     return rc;
 }
@@ -42,5 +47,13 @@ Result amsBpcRebootToFatalError(void *ctx) {
     return serviceDispatch(&g_amsBpcSrv, 65000,
         .buffer_attrs = { SfBufferAttr_In | SfBufferAttr_HipcMapAlias | SfBufferAttr_FixedSize },
         .buffers = { { ctx, 0x450 } },
+    );
+}
+
+
+Result amsBpcSetInitialPayload(const void *src, size_t src_size) {
+    return serviceDispatch(&g_amsBpcSrv, 65001,
+        .buffer_attrs = { SfBufferAttr_In | SfBufferAttr_HipcMapAlias },
+        .buffers = { { src, src_size } },
     );
 }

@@ -22,4 +22,8 @@ namespace ams {
     /* Will be called by libstratosphere on crash. */
     void CrashHandler(ThreadExceptionDump *ctx);
 
+    /* API for boot sysmodule. */
+    void InitializeForBoot();
+    void SetInitialRebootPayload(const void *src, size_t src_size);
+
 }

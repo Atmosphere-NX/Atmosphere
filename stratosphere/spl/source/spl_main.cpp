@@ -104,7 +104,7 @@ namespace {
     constexpr size_t          GeneralMaxSessions = 7;
 
     constexpr sm::ServiceName CryptoServiceName = sm::ServiceName::Encode("spl:mig");
-    constexpr size_t          CryptoMaxSessions = 6;
+    constexpr size_t          CryptoMaxSessions = 7;
 
     constexpr sm::ServiceName SslServiceName = sm::ServiceName::Encode("spl:ssl");
     constexpr size_t          SslMaxSessions = 2;

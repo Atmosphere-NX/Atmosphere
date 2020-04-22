@@ -134,38 +134,57 @@ static int emummc_ini_handler(void *user, const char *section, const char *name,
 }
 
 static int exosphere_ini_handler(void *user, const char *section, const char *name, const char *value) {
-    exosphere_config_t *exo_cfg = (exosphere_config_t *)user;
+    exosphere_parse_cfg_t *parse_cfg = (exosphere_parse_cfg_t *)user;
     int tmp = 0;
     if (strcmp(section, "exosphere") == 0) {
-        if (strcmp(name, EXOSPHERE_TARGETFW_KEY) == 0) {
-            sscanf(value, "%ld", &exo_cfg->target_firmware);
-        } else if (strcmp(name, EXOSPHERE_DEBUGMODE_PRIV_KEY) == 0) {
+        if (strcmp(name, EXOSPHERE_DEBUGMODE_PRIV_KEY) == 0) {
             sscanf(value, "%d", &tmp);
-            if (tmp) {
-                exo_cfg->flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
-            } else {
-                exo_cfg->flags &= ~(EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV);
+            if (tmp == 1) {
+                parse_cfg->debugmode = 1;
+            } else if (tmp == 0) {
+                parse_cfg->debugmode = 0;
             }
         } else if (strcmp(name, EXOSPHERE_DEBUGMODE_USER_KEY) == 0) {
             sscanf(value, "%d", &tmp);
-            if (tmp) {
-                exo_cfg->flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
-            } else {
-                exo_cfg->flags &= ~(EXOSPHERE_FLAG_IS_DEBUGMODE_USER);
+            if (tmp == 1) {
+                parse_cfg->debugmode_user = 1;
+            } else if (tmp == 0) {
+                parse_cfg->debugmode_user = 0;
             }
         } else if (strcmp(name, EXOSPHERE_DISABLE_USERMODE_EXCEPTION_HANDLERS_KEY) == 0) {
             sscanf(value, "%d", &tmp);
-            if (tmp) {
-                exo_cfg->flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
-            } else {
-                exo_cfg->flags &= ~(EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS);
+            if (tmp == 1) {
+                parse_cfg->disable_user_exception_handlers = 1;
+            } else if (tmp == 0) {
+                parse_cfg->disable_user_exception_handlers = 0;
             }
         } else if (strcmp(name, EXOSPHERE_ENABLE_USERMODE_PMU_ACCESS_KEY) == 0) {
             sscanf(value, "%d", &tmp);
-            if (tmp) {
-                exo_cfg->flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
-            } else {
-                exo_cfg->flags &= ~(EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS);
+            if (tmp == 1) {
+                parse_cfg->enable_user_pmu_access = 1;
+            } else if (tmp == 0) {
+                parse_cfg->enable_user_pmu_access = 0;
+            }
+        } else if (strcmp(name, EXOSPHERE_BLANK_PRODINFO_SYSMMC_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp == 1) {
+                parse_cfg->blank_prodinfo_sysmmc = 1;
+            } else if (tmp == 0) {
+                parse_cfg->blank_prodinfo_sysmmc = 0;
+            }
+        } else if (strcmp(name, EXOSPHERE_BLANK_PRODINFO_EMUMMC_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp == 1) {
+                parse_cfg->blank_prodinfo_emummc = 1;
+            } else if (tmp == 0) {
+                parse_cfg->blank_prodinfo_emummc = 0;
+            }
+        } else if (strcmp(name, EXOSPHERE_ALLOW_WRITING_TO_CAL_SYSMMC_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp == 1) {
+                parse_cfg->allow_writing_to_cal_sysmmc = 1;
+            } else if (tmp == 0) {
+                parse_cfg->allow_writing_to_cal_sysmmc = 0;
             }
         } else {
             return 0;
@@ -348,15 +367,42 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     exo_cfg.target_firmware = target_firmware;
     memcpy(&exo_cfg.emummc_cfg, exo_emummc_cfg, sizeof(*exo_emummc_cfg));
 
+    const bool is_emummc = exo_emummc_cfg->base_cfg.magic == MAGIC_EMUMMC_CONFIG && exo_emummc_cfg->base_cfg.type != EMUMMC_TYPE_NONE;
+
     if (keygen_type) {
-        exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT | EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
+        exo_cfg.flags = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
     } else {
-        exo_cfg.flags = EXOSPHERE_FLAGS_DEFAULT;
+        exo_cfg.flags = 0;
     }
 
-    if (ini_parse_string(get_loader_ctx()->bct0, exosphere_ini_handler, &exo_cfg) < 0) {
-        fatal_error("[NXBOOT] Failed to parse BCT.ini!\n");
+    /* Setup exosphere parse configuration with defaults. */
+    exosphere_parse_cfg_t parse_cfg = {
+        .debugmode                          = 1,
+        .debugmode_user                     = 0,
+        .disable_user_exception_handlers    = 0,
+        .enable_user_pmu_access             = 0,
+        .blank_prodinfo_sysmmc              = 0,
+        .blank_prodinfo_emummc              = 0,
+        .allow_writing_to_cal_sysmmc        = 0,
+    };
+
+    /* If we have an ini to read, parse it. */
+    char *exosphere_ini = calloc(1, 0x10000);
+    if (read_from_file(exosphere_ini, 0xFFFF, "exosphere.ini")) {
+        if (ini_parse_string(exosphere_ini, exosphere_ini_handler, &parse_cfg) < 0) {
+            fatal_error("[NXBOOT] Failed to parse exosphere.ini!\n");
+        }
     }
+    free(exosphere_ini);
+
+    /* Apply parse config. */
+    if (parse_cfg.debugmode)                           exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
+    if (parse_cfg.debugmode_user)                      exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
+    if (parse_cfg.disable_user_exception_handlers)     exo_cfg.flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
+    if (parse_cfg.enable_user_pmu_access)              exo_cfg.flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
+    if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
 
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");

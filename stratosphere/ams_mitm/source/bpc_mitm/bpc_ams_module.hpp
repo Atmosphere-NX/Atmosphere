@@ -15,18 +15,10 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "../amsmitm_module.hpp"
 
-namespace ams::mitm::bpc {
+namespace ams::mitm::bpc_ams {
 
-    /* Power utilities. */
-    bool IsRebootManaged();
-    void RebootSystem();
-    void ShutdownSystem();
-
-    /* Atmosphere power utilities. */
-    void SetInitialRebootPayload(const void *payload, size_t payload_size);
-    Result LoadRebootPayload();
-    Result DetectPreferredRebootFunctionality();
-    void RebootForFatalError(const ams::FatalErrorContext *ctx);
+    DEFINE_MITM_MODULE_CLASS(0x8000, AMS_GET_SYSTEM_THREAD_PRIORITY(bpc, IpcServer));
 
 }

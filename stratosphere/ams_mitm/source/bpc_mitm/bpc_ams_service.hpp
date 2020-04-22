@@ -22,13 +22,16 @@ namespace ams::mitm::bpc {
     class AtmosphereService final : public sf::IServiceObject {
         private:
             enum class CommandId {
-                RebootToFatalError = 65000,
+                RebootToFatalError      = 65000,
+                SetInitialRebootPayload = 65001,
             };
         private:
             void RebootToFatalError(const ams::FatalErrorContext &ctx);
+            void SetInitialRebootPayload(const ams::sf::InBuffer &payload);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(RebootToFatalError),
+                MAKE_SERVICE_COMMAND_META(SetInitialRebootPayload),
             };
     };
 

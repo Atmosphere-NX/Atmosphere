@@ -16,11 +16,13 @@
 
 #pragma once
 
-#include "settings/settings_types.hpp"
-#include "settings/settings_fwdbg_types.hpp"
-#include "settings/settings_fwdbg_api.hpp"
-#include "settings/system/settings_error_report.hpp"
-#include "settings/system/settings_firmware_version.hpp"
-#include "settings/system/settings_product_model.hpp"
-#include "settings/system/settings_region.hpp"
-#include "settings/system/settings_serial_number.hpp"
+#include <stratosphere/settings/settings_types.hpp>
+#include <stratosphere/settings/settings_fwdbg_types.hpp>
+#include <stratosphere/settings/settings_fwdbg_api.hpp>
+#include <stratosphere/settings/factory/settings_serial_number.hpp>
+#include <stratosphere/settings/factory/settings_device_certificate.hpp>
+#include <stratosphere/settings/system/settings_error_report.hpp>
+#include <stratosphere/settings/system/settings_firmware_version.hpp>
+#include <stratosphere/settings/system/settings_product_model.hpp>
+#include <stratosphere/settings/system/settings_region.hpp>
+#include <stratosphere/settings/system/settings_serial_number.hpp>

@@ -28,6 +28,7 @@ void amsBpcExit(void);
 Service *amsBpcGetServiceSession(void);
 
 Result amsBpcRebootToFatalError(void *ctx);
+Result amsBpcSetInitialPayload(const void *src, size_t src_size);
 
 #ifdef __cplusplus
 }

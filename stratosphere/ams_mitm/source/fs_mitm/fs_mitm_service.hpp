@@ -54,6 +54,11 @@ namespace ams::mitm::fs {
                     return true;
                 }
 
+                /* We want to mitm settings, to intercept CAL0. */
+                if (program_id == ncm::SystemProgramId::Settings) {
+                    return true;
+                }
+
                 /* We want to mitm sdb, to support sd-romfs redirection of common system archives (like system font, etc). */
                 if (program_id == ncm::SystemProgramId::Sdb) {
                     return true;
