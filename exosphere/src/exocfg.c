@@ -100,11 +100,7 @@ unsigned int exosphere_should_blank_prodinfo(void) {
         generic_panic();
     }
 
-    if (exosphere_is_emummc()) {
-        return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_BLANK_PRODINFO_EMUMMC);
-    } else {
-        return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_BLANK_PRODINFO_SYSMMC);
-    }
+    return EXOSPHERE_CHECK_FLAG(EXOSPHERE_FLAG_BLANK_PRODINFO);
 }
 
 unsigned int exosphere_should_allow_writing_to_cal(void) {

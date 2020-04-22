@@ -367,6 +367,8 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     exo_cfg.target_firmware = target_firmware;
     memcpy(&exo_cfg.emummc_cfg, exo_emummc_cfg, sizeof(*exo_emummc_cfg));
 
+    const bool is_emummc = exo_emummc_cfg->base_cfg.magic == MAGIC_EMUMMC_CONFIG && exo_emummc_cfg->base_cfg.type != EMUMMC_TYPE_NONE;
+
     if (keygen_type) {
         exo_cfg.flags = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
     } else {
@@ -394,13 +396,13 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     free(exosphere_ini);
 
     /* Apply parse config. */
-    if (parse_cfg.debugmode)                        exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
-    if (parse_cfg.debugmode_user)                   exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
-    if (parse_cfg.disable_user_exception_handlers)  exo_cfg.flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
-    if (parse_cfg.enable_user_pmu_access)           exo_cfg.flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
-    if (parse_cfg.blank_prodinfo_sysmmc)            exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO_SYSMMC;
-    if (parse_cfg.blank_prodinfo_emummc)            exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO_EMUMMC;
-    if (parse_cfg.allow_writing_to_cal_sysmmc)      exo_cfg.flags |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
+    if (parse_cfg.debugmode)                           exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
+    if (parse_cfg.debugmode_user)                      exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
+    if (parse_cfg.disable_user_exception_handlers)     exo_cfg.flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
+    if (parse_cfg.enable_user_pmu_access)              exo_cfg.flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
+    if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
 
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");
