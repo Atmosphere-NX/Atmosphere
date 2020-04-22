@@ -15,8 +15,19 @@
  */
 
 #pragma once
+#include <vapours.hpp>
 
-#include <stratosphere/capsrv/capsrv_screen_shot_decode_option.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_config.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_decoder_api.hpp>
-#include <stratosphere/capsrv/capsrv_screen_shot_control_api.hpp>
+namespace ams::vi {
+
+    enum LayerStack {
+        LayerStack_Default             =  0,
+        LayerStack_Lcd                 =  1,
+        LayerStack_Screenshot          =  2,
+        LayerStack_Recording           =  3,
+        LayerStack_LastFrame           =  4,
+        LayerStack_Arbitrary           =  5,
+        LayerStack_ApplicationForDebug =  6,
+        LayerStack_Null                = 10,
+    };
+
+}

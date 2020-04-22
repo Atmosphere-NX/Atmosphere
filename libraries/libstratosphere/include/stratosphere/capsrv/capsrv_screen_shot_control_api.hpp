@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2019-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -15,8 +15,16 @@
  */
 
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/vi/vi_layer_stack.hpp>
 
-#include <stratosphere/capsrv/capsrv_screen_shot_decode_option.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_config.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_decoder_api.hpp>
-#include <stratosphere/capsrv/capsrv_screen_shot_control_api.hpp>
+namespace ams::capsrv {
+
+    constexpr inline s32 DefaultCaptureTimeoutMilliSeconds = 100;
+
+    Result InitializeScreenShotControl();
+    void   FinalizeScreenShotControl();
+
+    Result CaptureJpegScreenshot(u64 *out_size, void *dst, size_t dst_size, vi::LayerStack layer_stack, TimeSpan timeout);
+
+}

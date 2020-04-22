@@ -16,7 +16,4 @@
 
 #pragma once
 
-#include <stratosphere/capsrv/capsrv_screen_shot_decode_option.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_config.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_decoder_api.hpp>
-#include <stratosphere/capsrv/capsrv_screen_shot_control_api.hpp>
+#include <stratosphere/vi/vi_layer_stack.hpp>

@@ -102,6 +102,9 @@ int main(int argc, char **argv) {
     /* Parse crashed PID. */
     os::ProcessId crashed_pid = creport::ParseProcessIdArgument(argv[0]);
 
+    /* Initialize the crash report. */
+    g_crash_report.Initialize();
+
     /* Try to debug the crashed process. */
     g_crash_report.BuildReport(crashed_pid, argv[1][0] == '1');
     if (!g_crash_report.IsComplete()) {

@@ -81,6 +81,19 @@ namespace ams::creport {
 
     }
 
+    void CrashReport::Initialize() {
+        /* Initialize the heap. */
+        this->heap_handle = lmem::CreateExpHeap(this->heap_storage, sizeof(this->heap_storage), lmem::CreateOption_None);
+
+        /* Allocate members. */
+        this->module_list   = new (lmem::AllocateFromExpHeap(this->heap_handle, sizeof(ModuleList))) ModuleList;
+        this->thread_list   = new (lmem::AllocateFromExpHeap(this->heap_handle, sizeof(ThreadList))) ThreadList;
+        this->dying_message = static_cast<u8 *>(lmem::AllocateFromExpHeap(this->heap_handle, DyingMessageSizeMax));
+        if (this->dying_message != nullptr) {
+            std::memset(this->dying_message, 0, DyingMessageSizeMax);
+        }
+    }
+
     void CrashReport::BuildReport(os::ProcessId process_id, bool has_extra_info) {
         this->has_extra_info = has_extra_info;
 
@@ -89,12 +102,12 @@ namespace ams::creport {
 
             /* Parse info from the crashed process. */
             this->ProcessExceptions();
-            this->module_list.FindModulesFromThreadInfo(this->debug_handle, this->crashed_thread);
-            this->thread_list.ReadFromProcess(this->debug_handle, this->thread_tls_map, this->Is64Bit());
+            this->module_list->FindModulesFromThreadInfo(this->debug_handle, this->crashed_thread);
+            this->thread_list->ReadFromProcess(this->debug_handle, this->thread_tls_map, this->Is64Bit());
 
             /* Associate module list to threads. */
-            this->crashed_thread.SetModuleList(&this->module_list);
-            this->thread_list.SetModuleList(&this->module_list);
+            this->crashed_thread.SetModuleList(this->module_list);
+            this->thread_list->SetModuleList(this->module_list);
 
             /* Process dying message for applications. */
             if (this->IsApplication()) {
@@ -103,8 +116,13 @@ namespace ams::creport {
 
             /* Nintendo's creport finds extra modules by looking at all threads if application, */
             /* but there's no reason for us not to always go looking. */
-            for (size_t i = 0; i < this->thread_list.GetThreadCount(); i++) {
-                this->module_list.FindModulesFromThreadInfo(this->debug_handle, this->thread_list.GetThreadInfo(i));
+            for (size_t i = 0; i < this->thread_list->GetThreadCount(); i++) {
+                this->module_list->FindModulesFromThreadInfo(this->debug_handle, this->thread_list->GetThreadInfo(i));
+            }
+
+            /* Cache the module base address to send to fatal. */
+            if (this->module_list->GetModuleCount()) {
+                this->module_base_address = this->module_list->GetModuleStartAddress(0);
             }
 
             /* Nintendo's creport saves the report to erpt here, but we'll save to SD card later. */
@@ -133,8 +151,8 @@ namespace ams::creport {
             out->aarch64_ctx.stack_trace[i] = this->crashed_thread.GetStackTrace(i);
         }
 
-        if (this->module_list.GetModuleCount()) {
-            out->aarch64_ctx.SetBaseAddress(this->module_list.GetModuleStartAddress(0));
+        if (this->module_base_address != 0) {
+            out->aarch64_ctx.SetBaseAddress(this->module_base_address);
         }
 
         /* For ams fatal, which doesn't use afsr0, pass program_id instead. */
@@ -194,7 +212,7 @@ namespace ams::creport {
         }
 
         /* Cap userdata size. */
-        userdata_size = std::min(size_t(userdata_size), sizeof(this->dying_message));
+        userdata_size = std::min(size_t(userdata_size), DyingMessageSizeMax);
 
         this->dying_message_address = userdata_address;
         this->dying_message_size = userdata_size;
@@ -253,12 +271,17 @@ namespace ams::creport {
         if (this->dying_message_address == 0 || this->dying_message_address & 0xFFF) {
             return;
         }
-        if (this->dying_message_size > sizeof(this->dying_message)) {
+        if (this->dying_message_size > DyingMessageSizeMax) {
             return;
         }
 
         /* Validate that the current report isn't garbage. */
         if (!IsOpen() || !IsComplete()) {
+            return;
+        }
+
+        /* Verify that we have a dying message buffer. */
+        if (this->dying_message == nullptr) {
             return;
         }
 
@@ -294,7 +317,34 @@ namespace ams::creport {
             {
                 ScopedFile file(file_path);
                 if (file.IsOpen()) {
-                    this->thread_list.DumpBinary(file, this->crashed_thread.GetThreadId());
+                    this->thread_list->DumpBinary(file, this->crashed_thread.GetThreadId());
+                }
+            }
+
+            /* Finalize our heap. */
+            this->module_list->~ModuleList();
+            this->thread_list->~ThreadList();
+            lmem::FreeToExpHeap(this->heap_handle, this->module_list);
+            lmem::FreeToExpHeap(this->heap_handle, this->thread_list);
+            if (this->dying_message != nullptr) {
+                lmem::FreeToExpHeap(this->heap_handle, this->dying_message);
+            }
+            this->module_list   = nullptr;
+            this->thread_list   = nullptr;
+            this->dying_message = nullptr;
+
+            /* Try to take a screenshot. */
+            if (hos::GetVersion() >= hos::Version_9_0_0 && this->IsApplication()) {
+                sm::ScopedServiceHolder<capsrv::InitializeScreenShotControl, capsrv::FinalizeScreenShotControl> capssc_holder;
+                if (capssc_holder) {
+                    u64 jpeg_size;
+                    if (R_SUCCEEDED(capsrv::CaptureJpegScreenshot(std::addressof(jpeg_size), this->heap_storage, sizeof(this->heap_storage), vi::LayerStack_ApplicationForDebug, TimeSpan::FromSeconds(10)))) {
+                        std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.jpg", timestamp, this->process_info.program_id);
+                        ScopedFile file(file_path);
+                        if (file.IsOpen()) {
+                            file.Write(this->heap_storage, jpeg_size);
+                        }
+                    }
                 }
             }
         }
@@ -314,13 +364,13 @@ namespace ams::creport {
         file.WriteFormat("    Process ID:                  %016lx\n", this->process_info.process_id);
         file.WriteFormat("    Process Flags:               %08x\n", this->process_info.flags);
         if (hos::GetVersion() >= hos::Version_5_0_0) {
-            file.WriteFormat("    User Exception Address:      %s\n", this->module_list.GetFormattedAddressString(this->process_info.user_exception_context_address));
+            file.WriteFormat("    User Exception Address:      %s\n", this->module_list->GetFormattedAddressString(this->process_info.user_exception_context_address));
         }
 
         /* Exception Info. */
         file.WriteFormat("Exception Info:\n");
         file.WriteFormat("    Type:                        %s\n", GetDebugExceptionString(this->exception_info.type));
-        file.WriteFormat("    Address:                     %s\n", this->module_list.GetFormattedAddressString(this->exception_info.address));
+        file.WriteFormat("    Address:                     %s\n", this->module_list->GetFormattedAddressString(this->exception_info.address));
         switch (this->exception_info.type) {
             case svc::DebugException_UndefinedInstruction:
                 file.WriteFormat("    Opcode:                      %08x\n", this->exception_info.specific.undefined_instruction.insn);
@@ -328,7 +378,7 @@ namespace ams::creport {
             case svc::DebugException_DataAbort:
             case svc::DebugException_AlignmentFault:
                 if (this->exception_info.specific.raw != this->exception_info.address) {
-                    file.WriteFormat("    Fault Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.raw));
+                    file.WriteFormat("    Fault Address:               %s\n", this->module_list->GetFormattedAddressString(this->exception_info.specific.raw));
                 }
                 break;
             case svc::DebugException_UndefinedSystemCall:
@@ -336,7 +386,7 @@ namespace ams::creport {
                 break;
             case svc::DebugException_UserBreak:
                 file.WriteFormat("    Break Reason:                0x%x\n", this->exception_info.specific.user_break.break_reason);
-                file.WriteFormat("    Break Address:               %s\n", this->module_list.GetFormattedAddressString(this->exception_info.specific.user_break.address));
+                file.WriteFormat("    Break Address:               %s\n", this->module_list->GetFormattedAddressString(this->exception_info.specific.user_break.address));
                 file.WriteFormat("    Break Size:                  0x%lx\n", this->exception_info.specific.user_break.size);
                 break;
             default:
@@ -350,18 +400,18 @@ namespace ams::creport {
         /* Dying Message. */
         if (hos::GetVersion() >= hos::Version_5_0_0 && this->dying_message_size != 0) {
             file.WriteFormat("Dying Message Info:\n");
-            file.WriteFormat("    Address:                     0x%s\n", this->module_list.GetFormattedAddressString(this->dying_message_address));
+            file.WriteFormat("    Address:                     0x%s\n", this->module_list->GetFormattedAddressString(this->dying_message_address));
             file.WriteFormat("    Size:                        0x%016lx\n", this->dying_message_size);
             file.DumpMemory( "    Dying Message:               ", this->dying_message, this->dying_message_size);
         }
 
         /* Module Info. */
         file.WriteFormat("Module Info:\n");
-        this->module_list.SaveToFile(file);
+        this->module_list->SaveToFile(file);
 
         /* Thread Info. */
         file.WriteFormat("Thread Report:\n");
-        this->thread_list.SaveToFile(file);
+        this->thread_list->SaveToFile(file);
     }
 
 }

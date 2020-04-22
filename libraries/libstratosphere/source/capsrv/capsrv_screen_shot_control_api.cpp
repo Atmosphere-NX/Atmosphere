@@ -13,10 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#pragma once
+namespace ams::capsrv {
 
-#include <stratosphere/capsrv/capsrv_screen_shot_decode_option.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_config.hpp>
-#include <stratosphere/capsrv/server/capsrv_server_decoder_api.hpp>
-#include <stratosphere/capsrv/capsrv_screen_shot_control_api.hpp>
+    Result InitializeScreenShotControl() {
+        return ::capsscInitialize();
+    }
+
+    void FinalizeScreenShotControl() {
+        return ::capsscExit();
+    }
+
+    Result CaptureJpegScreenshot(u64 *out_size, void *dst, size_t dst_size, vi::LayerStack layer_stack, TimeSpan timeout) {
+        return ::capsscCaptureJpegScreenShot(out_size, dst, dst_size, static_cast<::ViLayerStack>(layer_stack), timeout.GetNanoSeconds());
+    }
+
+}
