@@ -111,6 +111,12 @@ int main(int argc, char **argv)
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(boot, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(boot, Main));
 
+    /* Perform atmosphere-specific init. */
+    ams::InitializeForBoot();
+
+    /* Set the reboot payload with ams.mitm. */
+    boot::SetInitialRebootPayload();
+
     /* Change voltage from 3.3v to 1.8v for select devices. */
     boot::ChangeGpioVoltageTo1_8v();
 

@@ -266,7 +266,6 @@ namespace ams::mitm::fs {
         if (bis_partition_id == FsBisPartitionId_BootPartition1Root) {
             out.SetValue(std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
         } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
-            mitm::EnsureProdInfoInitializedAndKickOffInit();
             out.SetValue(std::make_shared<IStorageInterface>(new CalibrationBinaryStorage(bis_storage, this->client_info)), target_object_id);
         } else {
             if (can_write_bis || can_write_bis_for_choi_support) {

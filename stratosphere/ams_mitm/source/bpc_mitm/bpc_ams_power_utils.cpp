@@ -97,6 +97,21 @@ namespace ams::mitm::bpc {
         DoRebootToPayload(ctx);
     }
 
+    void SetInitialRebootPayload(const void *payload, size_t payload_size) {
+        /* Clear payload buffer */
+        std::memset(g_reboot_payload, 0xCC, sizeof(g_reboot_payload));
+
+        /* Ensure valid. */
+        AMS_ABORT_UNLESS(payload != nullptr && payload_size <= sizeof(g_reboot_payload));
+
+        /* Copy in payload. */
+        std::memcpy(g_reboot_payload, payload, payload_size);
+
+        /* NOTE: Preferred reboot type will be parsed from settings later on. */
+        g_reboot_type = RebootType::ToPayload;
+
+    }
+
     Result LoadRebootPayload() {
         /* Clear payload buffer */
         std::memset(g_reboot_payload, 0xCC, sizeof(g_reboot_payload));

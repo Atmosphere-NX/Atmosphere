@@ -67,6 +67,10 @@ namespace ams::boot {
         DoRebootToPayload(nullptr);
     }
 
+    void SetInitialRebootPayload() {
+        ::ams::SetInitialRebootPayload(fusee_primary_bin, fusee_primary_bin_size);
+    }
+
     void RebootForFatalError(ams::FatalErrorContext *ctx) {
         DoRebootToPayload(ctx);
     }

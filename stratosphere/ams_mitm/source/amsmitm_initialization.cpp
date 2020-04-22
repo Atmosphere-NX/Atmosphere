@@ -58,9 +58,6 @@ namespace ams::mitm {
         os::ThreadType g_initialize_thread;
         alignas(os::ThreadStackAlignment) u8 g_initialize_thread_stack[InitializeThreadStackSize];
 
-        os::Mutex g_prodinfo_init_lock(false);
-        bool g_initialized_prodinfo;
-
         /* Console-unique data backup and protection. */
         FsFile g_bis_key_file;
 
@@ -175,17 +172,14 @@ namespace ams::mitm {
 
     }
 
-    void EnsureProdInfoInitializedAndKickOffInit() {
-        std::scoped_lock lk(g_prodinfo_init_lock);
-        if (!g_initialized_prodinfo) {
-            mitm::InitializeProdInfoManagement();
+    void StartInitialize() {
+        /* Initialize prodinfo. */
+        mitm::InitializeProdInfoManagement();
 
-            R_ABORT_UNLESS(os::CreateThread(std::addressof(g_initialize_thread), InitializeThreadFunc, nullptr, g_initialize_thread_stack, sizeof(g_initialize_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(mitm, InitializeThread)));
-            os::SetThreadNamePointer(std::addressof(g_initialize_thread), AMS_GET_SYSTEM_THREAD_NAME(mitm, InitializeThread));
-            os::StartThread(std::addressof(g_initialize_thread));
-
-            g_initialized_prodinfo = true;
-        }
+        /* Launch initialize thread. */
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_initialize_thread), InitializeThreadFunc, nullptr, g_initialize_thread_stack, sizeof(g_initialize_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(mitm, InitializeThread)));
+        os::SetThreadNamePointer(std::addressof(g_initialize_thread), AMS_GET_SYSTEM_THREAD_NAME(mitm, InitializeThread));
+        os::StartThread(std::addressof(g_initialize_thread));
     }
 
     bool IsInitialized() {
