@@ -307,6 +307,7 @@ namespace ams::kern::init::loader {
         /* On 10.0.0+, Physically randomize the kernel region. */
         if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
             ttbr1_table.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
+            cpu::StoreEntireCacheForInit();
         }
 
         /* Clear kernel .bss. */

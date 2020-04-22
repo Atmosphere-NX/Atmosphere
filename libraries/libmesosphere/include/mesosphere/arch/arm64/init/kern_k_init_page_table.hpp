@@ -221,14 +221,14 @@ namespace ams::kern::arch::arm64::init {
                 PageTableEntry *src_entry = this->GetMappingEntry(src_virt_addr, block_size);
                 const auto src_saved = *src_entry;
                 for (size_t i = 0; i < num_mappings; i++) {
-                    *src_entry = InvalidPageTableEntry;
+                    src_entry[i] = InvalidPageTableEntry;
                 }
 
                 /* Unmap the target. */
                 PageTableEntry *dst_entry = this->GetMappingEntry(dst_virt_addr, block_size);
                 const auto dst_saved = *dst_entry;
                 for (size_t i = 0; i < num_mappings; i++) {
-                    *dst_entry = InvalidPageTableEntry;
+                    dst_entry[i] = InvalidPageTableEntry;
                 }
 
                 /* Invalidate the entire tlb. */
@@ -237,7 +237,7 @@ namespace ams::kern::arch::arm64::init {
 
                 /* Copy data, if we should. */
                 const u64 negative_block_size_for_mask = static_cast<u64>(-static_cast<s64>(block_size));
-                const u64 offset_mask                  = negative_block_size_for_mask & ((1ul << 36) - 1);
+                const u64 offset_mask                  = negative_block_size_for_mask & ((1ul << 48) - 1);
                 const KVirtualAddress copy_src_addr = KVirtualAddress(src_saved.GetRawAttributesUnsafeForSwap() & offset_mask);
                 const KVirtualAddress copy_dst_addr = KVirtualAddress(dst_saved.GetRawAttributesUnsafeForSwap() & offset_mask);
                 if (block_size && do_copy) {
@@ -250,7 +250,7 @@ namespace ams::kern::arch::arm64::init {
                 }
 
                 /* Swap the mappings. */
-                const u64 attr_preserve_mask  = (negative_block_size_for_mask | 0xFFFF000000000000ul) ^ ((1ul << 36) - 1);
+                const u64 attr_preserve_mask  = (negative_block_size_for_mask | 0xFFFF000000000000ul) ^ ((1ul << 48) - 1);
                 const size_t shift_for_contig = contig ? 4 : 0;
                 size_t advanced_size = 0;
                 const u64 src_attr_val = src_saved.GetRawAttributesUnsafeForSwap() & attr_preserve_mask;
