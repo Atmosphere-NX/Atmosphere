@@ -31,7 +31,8 @@
   + Atmosphere's implementation uses a 32KB heap, which should not be exhaustible.
   + Atmosphere's implementation has a total memory footprint roughly 0x28000 bytes smaller than Nintendo's.
 + A reimplementation was added for the `jpegdec` system module (thanks @Behemoth)!
-  + There are no atmosphere extensions, but as usual the implementation has a very slightly smaller memory footprint than Nintendo's.
+  + This allows two sessions instead of 1, so homebrew can now use it for software jpeg decoding in addition to the OS itself.
+  + As usual the implementation has a very slightly smaller memory footprint than Nintendo's.
 + A bug was fixed that would cause the console to crash when connected to Wi-Fi on versions between 3.0.0 and 4.1.0 inclusive.
 + A bug was fixed that could cause boot to fail sporadically due to cache/tlb mismanagement when doing physical ASLR of the kernel.
 + A number of other minor issues were addressed (and more of Atmosphere was updated to reflect other changes in 10.0.x).
