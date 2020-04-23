@@ -1,5 +1,5 @@
 # Changelog
-## 0.11.2
+## 0.12.0
 + Configuration for exosphere was moved to sd:/exosphere.ini.
   + This is to facilitate BIS protection changes described below.
   + Hopefully having this outside of the Atmosphere folder will prevent accidental deletion, since this now contains important settings.
