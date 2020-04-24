@@ -86,6 +86,14 @@ namespace ams::hos {
         return g_hos_version;
     }
 
+
+    void SetVersionForLibnxInternalDebug(hos::Version debug_version) {
+        std::scoped_lock lk(g_mutex);
+        g_hos_version = debug_version;
+        __atomic_store_n(&g_has_cached, true, __ATOMIC_SEQ_CST);
+        SetVersionForLibnxInternal();
+    }
+
     void SetVersionForLibnxInternal() {
         u32 major = 0, minor = 0, micro = 0;
         switch (hos::GetVersion()) {

@@ -19,5 +19,6 @@
 namespace ams::hos {
 
     void SetVersionForLibnxInternal();
+    void SetVersionForLibnxInternalDebug(hos::Version debug_version);
 
 }

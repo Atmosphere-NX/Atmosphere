@@ -80,7 +80,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(fsInitialize());
         R_ABORT_UNLESS(pmdmntInitialize());
         R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(splFsInitialize());
+        spl::InitializeForFs();
     });
 
     ams::CheckApiVersion();
@@ -88,7 +88,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    splFsExit();
+    spl::Finalize();
     pminfoExit();
     pmdmntExit();
     fsExit();

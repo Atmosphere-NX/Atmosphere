@@ -35,3 +35,4 @@
 #include <vapours/util/util_uuid.hpp>
 #include <vapours/util/util_bounded_map.hpp>
 #include <vapours/util/util_string_util.hpp>
+#include <vapours/util/util_variadic.hpp>

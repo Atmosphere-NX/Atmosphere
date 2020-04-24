@@ -142,7 +142,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(sm::manager::EndInitialDefers());
 
         R_ABORT_UNLESS(ldrPmInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
     });
 
     ams::CheckApiVersion();
@@ -150,7 +150,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    splExit();
+    spl::Finalize();
     ldrPmExit();
     smManagerExit();
     fsprExit();

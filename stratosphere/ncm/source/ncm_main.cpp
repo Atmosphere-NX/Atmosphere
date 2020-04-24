@@ -97,7 +97,7 @@ void __appInit(void) {
 
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
     });
 
     ams::CheckApiVersion();
@@ -105,7 +105,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    splExit();
+    spl::Finalize();
     fsExit();
 }
 

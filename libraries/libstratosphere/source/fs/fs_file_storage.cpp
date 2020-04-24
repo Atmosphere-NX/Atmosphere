@@ -90,6 +90,18 @@ namespace ams::fs {
         }
     }
 
+    Result FileStorageBasedFileSystem::Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const char *path, fs::OpenMode mode) {
+        /* Open the file. */
+        std::unique_ptr<fs::fsa::IFile> base_file;
+        R_TRY(base_file_system->OpenFile(std::addressof(base_file), path, mode));
+
+        /* Set the file. */
+        this->SetFile(std::move(base_file));
+        this->base_file_system = std::move(base_file_system);
+
+        return ResultSuccess();
+    }
+
     Result FileHandleStorage::UpdateSize() {
         R_SUCCEED_IF(this->size != InvalidSize);
         return GetFileSize(std::addressof(this->size), this->handle);

@@ -29,4 +29,6 @@
 #include <vapours/crypto/crypto_rsa_oaep_sha256_decoder.hpp>
 #include <vapours/crypto/crypto_rsa_oaep_sha256_decryptor.hpp>
 #include <vapours/crypto/crypto_rsa_oaep_sha256_encryptor.hpp>
+#include <vapours/crypto/crypto_hmac_sha1_generator.hpp>
+#include <vapours/crypto/crypto_hmac_sha256_generator.hpp>
 #include <vapours/crypto/crypto_csrng.hpp>

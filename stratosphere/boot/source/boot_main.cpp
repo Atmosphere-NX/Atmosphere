@@ -91,7 +91,7 @@ void __appInit(void) {
     /* Initialize services we need (TODO: NCM) */
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
         R_ABORT_UNLESS(pmshellInitialize());
     });
 
@@ -101,7 +101,7 @@ void __appInit(void) {
 void __appExit(void) {
     /* Cleanup services. */
     pmshellExit();
-    splExit();
+    spl::Finalize();
     fsExit();
 }
 

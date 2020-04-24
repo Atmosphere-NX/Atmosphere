@@ -112,6 +112,17 @@ namespace ams::spl {
         Hoag    = 2,
         Iowa    = 3,
         Calcio  = 4,
+        _Five_  = 5,
+    };
+
+    enum SocType {
+        SocType_Erista = 0,
+        SocType_Mariko = 1,
+    };
+
+    enum HardwareState {
+        HardwareState_Development = 0,
+        HardwareState_Production  = 1,
     };
 
     enum MemoryArrangement {
@@ -185,23 +196,23 @@ namespace ams::spl {
 
     enum class ConfigItem : u32 {
         /* Standard config items. */
-        DisableProgramVerification  = 1,
-        DramId                      = 2,
-        SecurityEngineIrqNumber     = 3,
-        Version                     = 4,
-        HardwareType                = 5,
-        IsRetail                    = 6,
-        IsRecoveryBoot              = 7,
-        DeviceId                    = 8,
-        BootReason                  = 9,
-        MemoryMode                  = 10,
-        IsDebugMode                 = 11,
-        KernelConfiguration         = 12,
-        IsChargerHiZModeEnabled     = 13,
-        IsQuest                     = 14,
-        RegulatorType               = 15,
-        DeviceUniqueKeyGeneration   = 16,
-        Package2Hash                = 17,
+        DisableProgramVerification   = 1,
+        DramId                       = 2,
+        SecurityEngineIrqNumber      = 3,
+        FuseVersion                  = 4,
+        HardwareType                 = 5,
+        HardwareState                = 6,
+        IsRecoveryBoot               = 7,
+        DeviceId                     = 8,
+        BootReason                   = 9,
+        MemoryMode                   = 10,
+        IsDevelopmentFunctionEnabled = 11,
+        KernelConfiguration          = 12,
+        IsChargerHiZModeEnabled      = 13,
+        IsQuest                      = 14,
+        RegulatorType                = 15,
+        DeviceUniqueKeyGeneration    = 16,
+        Package2Hash                 = 17,
 
         /* Extension config items for exosphere. */
         ExosphereApiVersion     = 65000,

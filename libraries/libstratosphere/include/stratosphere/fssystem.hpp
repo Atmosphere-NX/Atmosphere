@@ -15,9 +15,10 @@
  */
 
 #pragma once
+#include <stratosphere/fssystem/fssystem_allocator_utility.hpp>
 #include <stratosphere/fssystem/fssystem_utility.hpp>
+#include <stratosphere/fssystem/fssystem_speed_emulation_configuration.hpp>
 #include <stratosphere/fssystem/fssystem_external_code.hpp>
-#include <stratosphere/fssystem/fssystem_acid_sign_key.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system.hpp>
 #include <stratosphere/fssystem/fssystem_partition_file_system_meta.hpp>
 #include <stratosphere/fssystem/fssystem_path_tool.hpp>
@@ -28,6 +29,22 @@
 #include <stratosphere/fssystem/fssystem_directory_redirection_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_directory_savedata_filesystem.hpp>
 #include <stratosphere/fssystem/fssystem_romfs_file_system.hpp>
+#include <stratosphere/fssystem/fssystem_bucket_tree.hpp>
+#include <stratosphere/fssystem/fssystem_bucket_tree_template_impl.hpp>
+#include <stratosphere/fssystem/fssystem_indirect_storage.hpp>
+#include <stratosphere/fssystem/fssystem_indirect_storage_template_impl.hpp>
+#include <stratosphere/fssystem/fssystem_sparse_storage.hpp>
+#include <stratosphere/fssystem/fssystem_nca_header.hpp>
+#include <stratosphere/fssystem/fssystem_nca_file_system_driver.hpp>
+#include <stratosphere/fssystem/fssystem_nca_file_system_driver_impl.hpp>
+#include <stratosphere/fssystem/fssystem_crypto_configuration.hpp>
+#include <stratosphere/fssystem/fssystem_aes_ctr_counter_extended_storage.hpp>
 #include <stratosphere/fssystem/buffers/fssystem_buffer_manager_utils.hpp>
-#include <stratosphere/fssystem/buffers/fssystem_file_system_buddy_heap.hpp>
+#include <stratosphere/fssystem/buffers/fssystem_file_system_buffer_manager.hpp>
 #include <stratosphere/fssystem/fssystem_pooled_buffer.hpp>
+#include <stratosphere/fssystem/fssystem_alignment_matching_storage_impl.hpp>
+#include <stratosphere/fssystem/fssystem_alignment_matching_storage.hpp>
+#include <stratosphere/fssystem/save/fssystem_buffered_storage.hpp>
+#include <stratosphere/fssystem/save/fssystem_hierarchical_integrity_verification_storage.hpp>
+#include <stratosphere/fssystem/fssystem_integrity_romfs_storage.hpp>
+#include <stratosphere/fssystem/fssystem_file_system_proxy_api.hpp>

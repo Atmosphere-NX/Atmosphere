@@ -627,7 +627,7 @@ namespace ams::ncm {
         R_TRY(this->EnsureEnabled());
 
         /* This command is for development hardware only. */
-        AMS_ABORT_UNLESS(spl::IsDevelopmentHardware());
+        AMS_ABORT_UNLESS(spl::IsDevelopment());
 
         /* Close any cached file. */
         this->InvalidateFileCache();

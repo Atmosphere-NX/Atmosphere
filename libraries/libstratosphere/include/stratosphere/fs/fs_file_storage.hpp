@@ -17,11 +17,14 @@
 #include <stratosphere/fs/fs_common.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
 #include <stratosphere/fs/fsa/fs_ifile.hpp>
+#include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
 #include <stratosphere/fs/impl/fs_newable.hpp>
 
 namespace ams::fs {
 
     class FileStorage : public IStorage, public impl::Newable {
+        NON_COPYABLE(FileStorage);
+        NON_MOVEABLE(FileStorage);
         private:
             static constexpr s64 InvalidSize = -1;
         private:
@@ -43,8 +46,25 @@ namespace ams::fs {
             }
 
             virtual ~FileStorage() { /* ... */ }
-        protected:
+        private:
             Result UpdateSize();
+        protected:
+            constexpr FileStorage() : unique_file(), shared_file(), base_file(nullptr), size(InvalidSize) { /* ... */ }
+
+            void SetFile(fs::fsa::IFile *file) {
+                AMS_ASSERT(file != nullptr);
+                AMS_ASSERT(this->base_file == nullptr);
+                this->base_file = file;
+            }
+
+            void SetFile(std::unique_ptr<fs::fsa::IFile> &&file) {
+                AMS_ASSERT(file != nullptr);
+                AMS_ASSERT(this->base_file == nullptr);
+                AMS_ASSERT(this->unique_file == nullptr);
+
+                this->unique_file = std::move(file);
+                this->base_file   = this->unique_file.get();
+            }
         public:
             virtual Result Read(s64 offset, void *buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *buffer, size_t size) override;
@@ -52,6 +72,17 @@ namespace ams::fs {
             virtual Result GetSize(s64 *out_size) override;
             virtual Result SetSize(s64 size) override;
             virtual Result OperateRange(void *dst, size_t dst_size, OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override;
+    };
+
+    class FileStorageBasedFileSystem : public FileStorage {
+        NON_COPYABLE(FileStorageBasedFileSystem);
+        NON_MOVEABLE(FileStorageBasedFileSystem);
+        private:
+            std::shared_ptr<fs::fsa::IFileSystem> base_file_system;
+        public:
+            constexpr FileStorageBasedFileSystem() : FileStorage(), base_file_system(nullptr) { /* ... */ }
+
+            Result Initialize(std::shared_ptr<fs::fsa::IFileSystem> base_file_system, const char *path, fs::OpenMode mode);
     };
 
     class FileHandleStorage : public IStorage, public impl::Newable {
