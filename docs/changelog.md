@@ -30,7 +30,7 @@
   + A slight concern with Nintendo's implementation is that each subscriber object uses 0x448 bytes of memory, and N only reserves 8KB for all allocations in pgl.
   + Atmosphere's implementation uses a 32KB heap, which should not be exhaustible.
   + Atmosphere's implementation has a total memory footprint roughly 0x28000 bytes smaller than Nintendo's.
-+ A reimplementation was added for the `jpegdec` system module (thanks @Behemoth)!
++ A reimplementation was added for the `jpegdec` system module (thanks @HookedBehemoth)!
   + This allows two sessions instead of 1, so homebrew can now use it for software jpeg decoding in addition to the OS itself.
   + As usual the implementation has a very slightly smaller memory footprint than Nintendo's.
 + A bug was fixed that would cause the console to crash when connected to Wi-Fi on versions between 3.0.0 and 4.1.0 inclusive.
