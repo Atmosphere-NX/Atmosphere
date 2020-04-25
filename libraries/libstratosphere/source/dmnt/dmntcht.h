@@ -74,6 +74,8 @@ Result dmntchtGetCheatProcessMappings(MemoryInfo *buffer, u64 max_count, u64 off
 Result dmntchtReadCheatProcessMemory(u64 address, void *buffer, size_t size);
 Result dmntchtWriteCheatProcessMemory(u64 address, const void *buffer, size_t size);
 Result dmntchtQueryCheatProcessMemory(MemoryInfo *mem_info, u64 address);
+Result dmntchtPauseCheatProcess(void);
+Result dmntchtResumeCheatProcess(void);
 
 Result dmntchtGetCheatCount(u64 *out_count);
 Result dmntchtGetCheats(DmntCheatEntry *buffer, u64 max_count, u64 offset, u64 *out_count);
@@ -81,6 +83,9 @@ Result dmntchtGetCheatById(DmntCheatEntry *out_cheat, u32 cheat_id);
 Result dmntchtToggleCheat(u32 cheat_id);
 Result dmntchtAddCheat(DmntCheatDefinition *cheat, bool enabled, u32 *out_cheat_id);
 Result dmntchtRemoveCheat(u32 cheat_id);
+Result dmntchtReadStaticRegister(u64 *out, u8 which);
+Result dmntchtWriteStaticRegister(u8 which, u64 value);
+Result dmntchtResetStaticRegisters();
 
 Result dmntchtGetFrozenAddressCount(u64 *out_count);
 Result dmntchtGetFrozenAddresses(DmntFrozenAddressEntry *buffer, u64 max_count, u64 offset, u64 *out_count);

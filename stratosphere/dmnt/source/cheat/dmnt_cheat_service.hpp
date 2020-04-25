@@ -26,6 +26,8 @@ namespace ams::dmnt::cheat {
                 GetCheatProcessEvent    = 65001,
                 GetCheatProcessMetadata = 65002,
                 ForceOpenCheatProcess   = 65003,
+                PauseCheatProcess       = 65004,
+                ResumeCheatProcess      = 65005,
 
                 /* Interact with Memory */
                 GetCheatProcessMappingCount = 65100,
@@ -33,8 +35,6 @@ namespace ams::dmnt::cheat {
                 ReadCheatProcessMemory      = 65102,
                 WriteCheatProcessMemory     = 65103,
                 QueryCheatProcessMemory     = 65104,
-                BreakCheatProcess           = 65105,
-                ContinueCheatProcess        = 65106,
 
                 /* Interact with Cheats */
                 GetCheatCount        = 65200,
@@ -59,14 +59,14 @@ namespace ams::dmnt::cheat {
             void GetCheatProcessEvent(sf::OutCopyHandle out_event);
             Result GetCheatProcessMetadata(sf::Out<CheatProcessMetadata> out_metadata);
             Result ForceOpenCheatProcess();
+            Result PauseCheatProcess();
+            Result ResumeCheatProcess();
 
             Result GetCheatProcessMappingCount(sf::Out<u64> out_count);
             Result GetCheatProcessMappings(const sf::OutArray<MemoryInfo> &mappings, sf::Out<u64> out_count, u64 offset);
             Result ReadCheatProcessMemory(const sf::OutBuffer &buffer, u64 address, u64 out_size);
             Result WriteCheatProcessMemory(const sf::InBuffer &buffer, u64 address, u64 in_size);
             Result QueryCheatProcessMemory(sf::Out<MemoryInfo> mapping, u64 address);
-            Result BreakCheatProcess();
-            Result ContinueCheatProcess();
 
             Result GetCheatCount(sf::Out<u64> out_count);
             Result GetCheats(const sf::OutArray<CheatEntry> &cheats, sf::Out<u64> out_count, u64 offset);
@@ -90,14 +90,14 @@ namespace ams::dmnt::cheat {
                 MAKE_SERVICE_COMMAND_META(GetCheatProcessEvent),
                 MAKE_SERVICE_COMMAND_META(GetCheatProcessMetadata),
                 MAKE_SERVICE_COMMAND_META(ForceOpenCheatProcess),
+                MAKE_SERVICE_COMMAND_META(PauseCheatProcess),
+                MAKE_SERVICE_COMMAND_META(ResumeCheatProcess),
 
                 MAKE_SERVICE_COMMAND_META(GetCheatProcessMappingCount),
                 MAKE_SERVICE_COMMAND_META(GetCheatProcessMappings),
                 MAKE_SERVICE_COMMAND_META(ReadCheatProcessMemory),
                 MAKE_SERVICE_COMMAND_META(WriteCheatProcessMemory),
                 MAKE_SERVICE_COMMAND_META(QueryCheatProcessMemory),
-                MAKE_SERVICE_COMMAND_META(BreakCheatProcess),
-                MAKE_SERVICE_COMMAND_META(ContinueCheatProcess),
 
                 MAKE_SERVICE_COMMAND_META(GetCheatCount),
                 MAKE_SERVICE_COMMAND_META(GetCheats),

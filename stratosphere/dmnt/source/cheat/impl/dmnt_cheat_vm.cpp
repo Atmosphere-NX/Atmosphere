@@ -247,11 +247,11 @@ namespace ams::dmnt::cheat::impl {
                 this->LogToDebugFile("Reg Idx:   %x\n", opcode->rw_static_reg.idx);
                 this->LogToDebugFile("Stc Idx:   %x\n", opcode->rw_static_reg.static_idx);
                 break;
-            case CheatVmOpcodeType_BreakProcess:
-                this->LogToDebugFile("Opcode: Break Cheat Process\n");
+            case CheatVmOpcodeType_PauseProcess:
+                this->LogToDebugFile("Opcode: Pause Cheat Process\n");
                 break;
-            case CheatVmOpcodeType_ContinueProcess:
-                this->LogToDebugFile("Opcode: Continue Cheat Process\n");
+            case CheatVmOpcodeType_ResumeProcess:
+                this->LogToDebugFile("Opcode: Resume Cheat Process\n");
                 break;
             case CheatVmOpcodeType_DebugLog:
                 this->LogToDebugFile("Opcode: Debug Log\n");
@@ -596,18 +596,18 @@ namespace ams::dmnt::cheat::impl {
                     opcode.rw_static_reg.idx        = (first_dword & 0xF);
                 }
                 break;
-            case CheatVmOpcodeType_BreakProcess:
+            case CheatVmOpcodeType_PauseProcess:
                 {
                     /* FF0????? */
                     /* FF0 = opcode 0xFF0 */
-                    /* Breaks the current process. */
+                    /* Pauses the current process. */
                 }
                 break;
-            case CheatVmOpcodeType_ContinueProcess:
+            case CheatVmOpcodeType_ResumeProcess:
                 {
                     /* FF1????? */
                     /* FF1 = opcode 0xFF1 */
-                    /* Continues the current process. */
+                    /* Resumes the current process. */
                 }
                 break;
             case CheatVmOpcodeType_DebugLog:
@@ -1223,11 +1223,11 @@ namespace ams::dmnt::cheat::impl {
                         this->static_registers[cur_opcode.rw_static_reg.static_idx] = this->registers[cur_opcode.rw_static_reg.idx];
                     }
                     break;
-                case CheatVmOpcodeType_BreakProcess:
-                    dmnt::cheat::impl::BreakCheatProcessUnsafe();
+                case CheatVmOpcodeType_PauseProcess:
+                    dmnt::cheat::impl::PauseCheatProcessUnsafe();
                     break;
-                case CheatVmOpcodeType_ContinueProcess:
-                    dmnt::cheat::impl::ContinueCheatProcessUnsafe();
+                case CheatVmOpcodeType_ResumeProcess:
+                    dmnt::cheat::impl::ResumeCheatProcessUnsafe();
                     break;
                 case CheatVmOpcodeType_DebugLog:
                     {

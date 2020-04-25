@@ -49,8 +49,8 @@ namespace ams::dmnt::cheat::impl {
         CheatVmOpcodeType_DoubleExtendedWidth = 0xF0,
 
         /* Double-extended width opcodes. */
-        CheatVmOpcodeType_BreakProcess    = 0xFF0,
-        CheatVmOpcodeType_ContinueProcess = 0xFF1,
+        CheatVmOpcodeType_PauseProcess = 0xFF0,
+        CheatVmOpcodeType_ResumeProcess = 0xFF1,
         CheatVmOpcodeType_DebugLog = 0xFFF,
     };
 

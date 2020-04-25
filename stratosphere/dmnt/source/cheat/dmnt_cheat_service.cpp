@@ -39,6 +39,14 @@ namespace ams::dmnt::cheat {
         return ResultSuccess();
     }
 
+    Result CheatService::PauseCheatProcess() {
+        return dmnt::cheat::impl::PauseCheatProcess();
+    }
+
+    Result CheatService::ResumeCheatProcess() {
+        return dmnt::cheat::impl::ResumeCheatProcess();
+    }
+
     /* ========================================================================================= */
     /* ===================================  Memory Commands  =================================== */
     /* ========================================================================================= */
@@ -64,14 +72,6 @@ namespace ams::dmnt::cheat {
 
     Result CheatService::QueryCheatProcessMemory(sf::Out<MemoryInfo> mapping, u64 address) {
         return dmnt::cheat::impl::QueryCheatProcessMemory(mapping.GetPointer(), address);
-    }
-
-    Result CheatService::BreakCheatProcess() {
-        return dmnt::cheat::impl::BreakCheatProcess();
-    }
-
-    Result CheatService::ContinueCheatProcess() {
-        return dmnt::cheat::impl::ContinueCheatProcess();
     }
 
     /* ========================================================================================= */

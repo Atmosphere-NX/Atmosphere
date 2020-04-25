@@ -33,6 +33,16 @@
 + A reimplementation was added for the `jpegdec` system module (thanks @HookedBehemoth)!
   + This allows two sessions instead of 1, so homebrew can now use it for software jpeg decoding in addition to the OS itself.
   + As usual the implementation has a very slightly smaller memory footprint than Nintendo's.
++ `dmnt`'s Cheat VM was extended to add three new opcodes.
+  + The first new opcode, "ReadWriteStaticRegister", allows for cheats to read from a bank of 128 read-only static registers, and write to a bank of 128 write-only static registers.
+    + This can be used in concert with new IPC commands that allow a cheat manager to read or write the value of these static registers to have "dynamic" cheats.
+      + As an example, a cheat manager could write a value to a static register that a cheat to control how many of an item to give in a game.
+      + As another example, a cheat manager could read a static register that a cheat writes to to learn how many items a player has.
++ The second and third opcodes are a pair, "PauseProcess" and "ResumeProcess".
+  + Executing pause process in a cheat will pause the game (it will be frozen) until a resume process opcode is used.
+    + These are also available over IPC, for cheat managers or system modules that want to pause or resume the attached cheat process.
+  + This allows a cheat to know that the game won't modify or access data the cheat is accessing.
+    + For example, this can be used to prevent Pokemon from seeing a pokemon a cheat is in the middle of injecting and turning it into a bad egg.
 + A bug was fixed that would cause the console to crash when connected to Wi-Fi on versions between 3.0.0 and 4.1.0 inclusive.
 + A bug was fixed that could cause boot to fail sporadically due to cache/tlb mismanagement when doing physical ASLR of the kernel.
 + A number of other minor issues were addressed (and more of Atmosphere was updated to reflect other changes in 10.0.x).

@@ -265,13 +265,13 @@ namespace ams::dmnt::cheat::impl {
                     return ResultSuccess();
                 }
 
-                Result BreakCheatProcessUnsafe() {
+                Result PauseCheatProcessUnsafe() {
                     this->broken_unsafe = true;
                     this->unsafe_break_event.Clear();
                     return svcBreakDebugProcess(this->GetCheatProcessHandle());
                 }
 
-                Result ContinueCheatProcessUnsafe() {
+                Result ResumeCheatProcessUnsafe() {
                     this->broken_unsafe = false;
                     this->unsafe_break_event.Signal();
                     dmnt::cheat::impl::ContinueCheatProcess(this->GetCheatProcessHandle());
@@ -356,20 +356,20 @@ namespace ams::dmnt::cheat::impl {
                     return svcQueryDebugProcessMemory(mapping, &tmp, this->GetCheatProcessHandle(), address);
                 }
 
-                Result BreakCheatProcess() {
+                Result PauseCheatProcess() {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    return this->BreakCheatProcessUnsafe();
+                    return this->PauseCheatProcessUnsafe();
                 }
 
-                Result ContinueCheatProcess() {
+                Result ResumeCheatProcess() {
                     std::scoped_lock lk(this->cheat_lock);
 
                     R_TRY(this->EnsureCheatProcess());
 
-                    return this->ContinueCheatProcessUnsafe();
+                    return this->ResumeCheatProcessUnsafe();
                 }
 
                 Result GetCheatCount(u64 *out_count) {
@@ -1096,6 +1096,14 @@ namespace ams::dmnt::cheat::impl {
         return GetReference(g_cheat_process_manager).ForceOpenCheatProcess();
     }
 
+    Result PauseCheatProcess() {
+        return GetReference(g_cheat_process_manager).PauseCheatProcess();
+    }
+
+    Result ResumeCheatProcess() {
+        return GetReference(g_cheat_process_manager).ResumeCheatProcess();
+    }
+
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size) {
         return GetReference(g_cheat_process_manager).ReadCheatProcessMemoryUnsafe(process_addr, out_data, size);
     }
@@ -1104,12 +1112,12 @@ namespace ams::dmnt::cheat::impl {
         return GetReference(g_cheat_process_manager).WriteCheatProcessMemoryUnsafe(process_addr, data, size);
     }
 
-    Result BreakCheatProcessUnsafe() {
-        return GetReference(g_cheat_process_manager).BreakCheatProcessUnsafe();
+    Result PauseCheatProcessUnsafe() {
+        return GetReference(g_cheat_process_manager).PauseCheatProcessUnsafe();
     }
 
-    Result ContinueCheatProcessUnsafe() {
-        return GetReference(g_cheat_process_manager).ContinueCheatProcessUnsafe();
+    Result ResumeCheatProcessUnsafe() {
+        return GetReference(g_cheat_process_manager).ResumeCheatProcessUnsafe();
     }
 
     Result GetCheatProcessMappingCount(u64 *out_count) {
@@ -1130,14 +1138,6 @@ namespace ams::dmnt::cheat::impl {
 
     Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address) {
         return GetReference(g_cheat_process_manager).QueryCheatProcessMemory(mapping, address);
-    }
-
-    Result BreakCheatProcess() {
-        return GetReference(g_cheat_process_manager).BreakCheatProcess();
-    }
-
-    Result ContinueCheatProcess() {
-        return GetReference(g_cheat_process_manager).ContinueCheatProcess();
     }
 
     Result GetCheatCount(u64 *out_count) {

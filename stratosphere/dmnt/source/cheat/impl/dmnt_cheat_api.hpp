@@ -24,20 +24,20 @@ namespace ams::dmnt::cheat::impl {
     Handle GetCheatProcessEventHandle();
     Result GetCheatProcessMetadata(CheatProcessMetadata *out);
     Result ForceOpenCheatProcess();
+    Result PauseCheatProcess();
+    Result ResumeCheatProcess();
 
     Result ReadCheatProcessMemoryUnsafe(u64 process_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemoryUnsafe(u64 process_addr, void *data, size_t size);
 
-    Result BreakCheatProcessUnsafe();
-    Result ContinueCheatProcessUnsafe();
+    Result PauseCheatProcessUnsafe();
+    Result ResumeCheatProcessUnsafe();
 
     Result GetCheatProcessMappingCount(u64 *out_count);
     Result GetCheatProcessMappings(MemoryInfo *mappings, size_t max_count, u64 *out_count, u64 offset);
     Result ReadCheatProcessMemory(u64 proc_addr, void *out_data, size_t size);
     Result WriteCheatProcessMemory(u64 proc_addr, const void *data, size_t size);
     Result QueryCheatProcessMemory(MemoryInfo *mapping, u64 address);
-    Result BreakCheatProcess();
-    Result ContinueCheatProcess();
 
     Result GetCheatCount(u64 *out_count);
     Result GetCheats(CheatEntry *cheats, size_t max_count, u64 *out_count, u64 offset);
