@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <string.h>
 
@@ -83,7 +83,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
 
     /* H = aes_ecb_encrypt(zeroes) */
     se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, x, 0x10);
-    
+
     size_t total_size = data_size;
 
     while (data_size >= 0x10) {
@@ -103,7 +103,7 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
     if (data_size & 0xF) {
         gf128_mul(x, x, h);
     }
-        
+
     uint64_t xor_size = total_size << 3;
     xor_size = __builtin_bswap64(xor_size);
 
@@ -113,9 +113,9 @@ static void ghash(void *dst, const void *data, size_t data_size, const void *j_b
     } else {
         p_x[1] ^= xor_size;
     }
-    
+
     gf128_mul(x, x, h);
-    
+
     /* If final output block, XOR with encrypted J block. */
     if (encrypt) {
         se_aes_128_ecb_encrypt_block(KEYSLOT_SWITCH_TEMPKEY, h, 0x10, j_block, 0x10);
@@ -140,22 +140,22 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
             generic_panic();
         }
     }
-    
+
     uint8_t intermediate_buf[0x400] = {0};
-        
+
     /* Unwrap the key */
     unseal_key(KEYSLOT_SWITCH_TEMPKEY, sealed_kek, kek_size, usecase);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, KEYSLOT_SWITCH_TEMPKEY, wrapped_key, key_size);
-    
+
     /* Decrypt the GCM keypair, AES-CTR with CTR = blob[:0x10]. */
     se_aes_ctr_crypt(KEYSLOT_SWITCH_TEMPKEY, intermediate_buf, dst_size, src + 0x10, src_size - 0x10, src, 0x10);
-    
+
     if (!is_personalized) {
         /* Devkit non-personalized keys have no further authentication. */
         memcpy(dst, intermediate_buf, src_size - 0x10);
         memset(intermediate_buf, 0, sizeof(intermediate_buf));
         return src_size - 0x10;
-    } 
+    }
 
     /* J = GHASH(CTR); */
     uint8_t j_block[0x10];
@@ -166,7 +166,7 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     /* It is supposed to be over the ciphertext. */
     uint8_t calc_mac[0x10];
     ghash(calc_mac, intermediate_buf, src_size - 0x20, j_block, true);
-    
+
     /* Const-time memcmp. */
     const uint8_t *src_bytes = src;
     int different = 0;
@@ -184,7 +184,7 @@ size_t gcm_decrypt_key(void *dst, size_t dst_size, const void *src, size_t src_s
     if (out_deviceid_high != NULL) {
         *out_deviceid_high = intermediate_buf[src_size - 0x28];
     }
-        
+
     memcpy(dst, intermediate_buf, src_size - 0x30);
     memset(intermediate_buf, 0, sizeof(intermediate_buf));
     return src_size - 0x30;
@@ -205,9 +205,11 @@ void gcm_encrypt_key(void *dst, size_t dst_size, const void *src, size_t src_siz
     se_generate_random(KEYSLOT_SWITCH_RNGKEY, intermediate_buf, 0x10);
     flush_dcache_range(intermediate_buf, intermediate_buf + 0x10);
 
+    /* Copy in the src. */
+    memcpy(intermediate_buf + 0x10, src, src_size);
+
     /* Write Device ID. */
     write64be(intermediate_buf, src_size + 0x18, fuse_get_device_id() | (deviceid_high << 56));
-
 
     /* J = GHASH(CTR); */
     uint8_t j_block[0x10];
