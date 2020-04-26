@@ -79,6 +79,7 @@
 
 /* More Miscellaneous objects. */
 #include <mesosphere/kern_k_object_name.hpp>
+#include <mesosphere/kern_k_unsafe_memory.hpp>
 #include <mesosphere/kern_k_scoped_resource_reservation.hpp>
 
 /* Supervisor Calls. */
