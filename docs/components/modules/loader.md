@@ -28,6 +28,11 @@ This allows the replacement of applets, system modules, or even games with homeb
 
 In order to prevent an NSO from being loaded even if it exists in the exefs, loader will also check if a stub file exists. If such a file exists, the NSO will not be loaded. The files should be named like `rtld.stub`, `main.stub`, etc. and may be empty.
 
+It is also possible to replace the full exefs partition at once with a PFS0 file. In that case, Atmosphère will load the following file:
+```
+/atmosphere/contents/<program id>/exefs.nsp
+```
+
 ### NSO Patching
 When an NSO is loaded, Atmosphère's reimplementation will search for IPS patch files on the SD card in the following locations.
 ```
