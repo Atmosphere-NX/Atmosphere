@@ -333,9 +333,7 @@ C0TcS5X0
 Code type 0xC1 performs saving or restoring of registers.
 
 #### Encoding
-```
-C10D0Sx0
-```
+`C10D0Sx0`
 
 + D: Destination index.
 + S: Source index.
@@ -353,9 +351,7 @@ C10D0Sx0
 Code type 0xC2 performs saving or restoring of multiple registers using a bitmask.
 
 #### Encoding
-```
-C2x0XXXX
-```
+`C2x0XXXX`
 
 + x: Operand Type, see below.
 + X: 16-bit bitmask, bit i == save or restore register i.
@@ -372,9 +368,7 @@ C2x0XXXX
 Code type 0xC3 reads or writes a static register with a given register.
 
 #### Encoding
-```
-C3000XXx
-```
+`C3000XXx`
 
 + XX: Static register index, 0x00 to 0x7F for reading or 0x80 to 0xFF for writing.
 + x: Register index.
@@ -392,9 +386,7 @@ This reserves an additional 16 opcodes for future use.
 Code type 0xFF0 pauses the current process.
 
 #### Encoding
-```
-FF0?????
-```
+`FF0?????`
 
 ---
 
@@ -402,9 +394,7 @@ FF0?????
 Code type 0xFF1 resumes the current process.
 
 #### Encoding
-```
-FF1?????
-```
+`FF1?????`
 
 ---
 

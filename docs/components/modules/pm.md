@@ -1,5 +1,5 @@
 # pm
-This module is a reimplementation of the Horizon OS's "pm" system module, which is responsible for tracking running processes on the system, and managing resource limits.
+This module is a reimplementation of the Horizon OS's `pm` system module, which is responsible for tracking running processes on the system, and managing resource limits.
 
 ## Extensions
 Atmosphère extends this module with extra IPC commands and memory restriction changes.

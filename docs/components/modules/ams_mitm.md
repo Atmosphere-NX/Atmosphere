@@ -3,8 +3,8 @@ This module provides methods to intercept services provided by other system modu
 
 ## bpc_mitm
 bpc_mitm enables intercepting requests to power control services. It currently intercepts:
-+ "am" system module (to intercept the Reboot/Power buttons in the overlay menu)
-+ "fatal" system module (to simplify payload reboot logic significantly)
++ `am` system module (to intercept the Reboot/Power buttons in the overlay menu)
++ `fatal` system module (to simplify payload reboot logic significantly)
 + Homebrew Loader (to allow homebrew to take advantage of the feature)
 
 ## fs_mitm
@@ -20,7 +20,7 @@ ns_mitm enables intercepting requests to application control services. It curren
 
 ## set_mitm
 set_mitm enables intercepting requests to the system settings service. It currently intercepts:
-+ "ns" system module and games (to allow for overriding game locales)
++ `ns` system module and games (to allow for overriding game locales)
 + All settings requests
 
 ### Firmware Version

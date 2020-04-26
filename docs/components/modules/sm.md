@@ -1,5 +1,5 @@
 # sm
-This module is a reimplementation of the Horizon OS's "sm" system module, which is responsible for service management.
+This module is a reimplementation of the Horizon OS's `sm` system module, which is responsible for service management.
 
 ## Extensions
 Atmosphère extends this module with extra IPC commands and new services.

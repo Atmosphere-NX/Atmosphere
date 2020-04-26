@@ -1,5 +1,5 @@
 # loader
-This module is a reimplementation of the Horizon OS's "ldr" system module, which is responsible for creating processes from executable NSO images and registering their access control.
+This module is a reimplementation of the Horizon OS's `ldr` system module, which is responsible for creating processes from executable NSO images and registering their access control.
 
 ## Extensions
 Atmosphère extends this module to allow executables to be replaced or patched by files stored on the SD card. Note that a few services are required for SD card access and therefore cannot be replaced or patched in this manner.

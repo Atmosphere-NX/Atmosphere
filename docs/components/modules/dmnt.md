@@ -1,5 +1,5 @@
 # dmnt
-This module is a reimplementation of the Horizon OS's "dmnt" system module, which provides a debug monitor.
+This module is a reimplementation of the Horizon OS's `dmnt` system module, which provides a debug monitor.
 
 ## Extensions
 Atmosphère implements an extension to provide cheat code functionality.
