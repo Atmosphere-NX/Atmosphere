@@ -15,7 +15,7 @@ custom_splash = /path/to/your/bootlogo.bmp
 The boot splashscreen must be a BMP file, it must be 720x1280 (1280x720 rotated 90 degrees left/counterclockwise/anti-clockwise) resolution, and be in 32-bit ARGB format. You can use image editing software such as GIMP or Photoshop to export the image in this format.
 
 ### Configuring "nogc" Protection
-"nogc" is a feature provided by Fusée-secondary which disables the Nintendo Switch's Game Card reader. Its purpose is to prevent the reader from being updated when the console has been updated without burning fuses from a firmware lower than 4.0.0, to a newer firmware that is at least 4.0.0 or higher. By default, Atmosphère will protect the Game Card reader automatically, but you are free to change it.
+"nogc" is a feature provided by Fusée-secondary which disables the Nintendo Switch's Game Card reader. Its purpose is to prevent the reader from being updated when the console has been updated, without burning fuses, from a lower firmware version. More specifically, from firmware versions 4.0.0 or 9.0.0 which introduced updates to the Game Card reader's firmware. By default, Atmosphère will protect the Game Card reader automatically, but you are free to change it.
 
 To change its functionality, add the following line to the `stratosphere` section and change the value of `X` according to the following list:
 ```
