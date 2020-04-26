@@ -1,2 +1,0 @@
-# creport
-creport is a reimplementation of Nintendo's crash reporter. Atmosphère's creport catches all error logs that would have been saved to the NAND and instead saves them to the SD card for debugging purposes. This is helpful because the errors no longer go to Nintendo and developers of homebrew can still see the errors to help with the debugging process. creport catches system errors, game crashes, and homebrew crashes.

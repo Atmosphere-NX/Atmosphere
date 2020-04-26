@@ -1,8 +1,22 @@
 # Building Atmosphère
-The process for building Atmosphère is similar to building Fusée Gelée payloads and other Switch apps.
+Building Atmosphère is a very straightforward process that relies almost exclusively on tools provided by the [devkitPro](https://devkitpro.org) organization.
 
-In order to build Atmosphère you must have devkitARM and devkitA64 installed on your computer. You can find instructions on how to install and setup devkitARM and devkitA64 on various OSes [here](https://devkitpro.org/wiki/Getting_Started). You'll need to install the following packages via (dkp-)pacman: switch-dev switch-freetype switch-libjpeg-turbo devkitARM devkitarm-rules
+## Dependencies
++ [devkitA64](https://devkitpro.org)
++ [devkitARM](https://devkitpro.org)
++ [Python 2 or 3](https://www.python.org)
++ [PyCryptodome](https://pypi.org/project/pycryptodome)
 
-sept requires you have python installed with the pycryptodome PyPi packages (`pip install pycryptodome`). You may also want to install the zip package from your package manager of choice to support the `make dist` recipe.
+## Instructions
+Follow the guide located [here](https://switchbrew.org/wiki/Setting_up_Development_Environment) to install and configure all the tools necessary for the build process. 
 
-Once you have finished installing the devkitPro-provided toolchain/libraries, python, and the dependencies, simply clone the Atmosphère repo (clone with the -r flag), change your directory to it and run `make`.
+Install the following packages via (dkp-)pacman:
++ switch-dev
++ switch-freetype
++ switch-libjpeg-turbo
++ devkitARM
++ devkitarm-rules
+
+In order to build [Sept](components/sept.md) the pycryptodome PyPi package is required. You may install this package by running `pip install pycryptodome` under the installed Python environment of your choice. You may also want to install the zip package to support the `make dist` recipe.
+
+Finally, clone the Atmosphère repository and run `make` under its root directory.

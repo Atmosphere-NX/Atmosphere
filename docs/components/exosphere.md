@@ -1,10 +1,18 @@
 # Exosphère
-Exosphère is a reimplementation of Arm's TrustZone (TZ), also known as Secure Monitor (Secure_Monitor.bin). It has the highest privilege mode available on the Switch’s processor, and has access to everything on the console.
-
-Exosphère will potentially play a big role in Jamais Vu and Déja Vu, which are upcoming software exploits for the Switch, allowing one to launch Atmosphère on a Fusée-Gélee patched (ipatched) Switch console, and will also enable one to launch into CFW directly from the Switch itself without the use of any sort of external device, such as a computer or RCM jig, provided they are on a low enough system firmware.
-
-## TrustZone/Secure Monitor
-TrustZone is responsible for all the cryptographic operations on the Switch. The idea behind the way it operates is that all the keys stay in the TrustZone, and userspace only gets "handles" to them. This would make sure that keydata never leaks and is kept secure. It also has a few more responsibilities, such as power management, providing a source of random numbers, and providing access to various pieces of information that are stored in the fuses.
+Exosphère is a customized reimplementation of the Horizon OS's Secure Monitor.
+The Secure Monitor follows the same design principle as Arm's TrustZone and both terms can be used interchangeably in this context. It runs at the highest privilege mode (EL3) available to the main processor and is responsible for all the sensitive cryptographic operations needed by the system as well as power management for each CPU.
 
 ## Extensions
-Exosphère currently only contains one extension, an SMC allowing homebrew to find which version of Atmosphère is currently running, in order to find out what extensions are allowed to be used.
+Exosphère expands the original Secure Monitor design by providing custom SMCs (Secure Monitor Calls) necessary to the homebrew ecosystem. Currently, these are:
++ smc_ams_iram_copy
++ smc_ams_write_address
++ smc_ams_get_emummc_config
+
+## lp0fw
+This is a small, built-in payload that is responsible for waking up the system during a warm boot.
+
+## sc7fw
+This is a small, built-in payload that is responsible for putting the system to sleep during a warm boot.
+
+## rebootstub
+This is a small, built-in payload that provides functionality to reboot the system into any payload of choice.

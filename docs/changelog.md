@@ -1,4 +1,5 @@
 # Changelog
+
 ## 0.12.0
 + Configuration for exosphere was moved to sd:/exosphere.ini.
   + This is to facilitate BIS protection changes described below.
@@ -47,6 +48,7 @@
 + A bug was fixed that could cause boot to fail sporadically due to cache/tlb mismanagement when doing physical ASLR of the kernel.
 + A number of other minor issues were addressed (and more of Atmosphere was updated to reflect other changes in 10.0.x).
 + General system stability improvements to enhance the user's experience.
+
 ## 0.11.1
 + A bug was fixed that could cause owls to flicker under certain circumstances.
   + For those interested in technical details, in 10.0.0 kernelldr/kernel no longer set cpuactlr_el1, assuming that it was set correctly by the secure monitor.
@@ -54,6 +56,7 @@
   + This caused a variety of highly erratic symptoms, including causing basically any game to crash seemingly randomly.
 + A number of other major inaccuracies in exosphere were corrected.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.11.0
 + Support was added for 10.0.0.
   + Exosphere has been updated to reflect the new key import semantics in 10.0.0.
@@ -77,6 +80,7 @@
   + In particular, code implementing the os namespace is significantly more accurate.
   + In addition, Nintendo's allocators were implemented, allowing for identical memory efficiency versus Nintendo's implementations.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.10.5
 + Changes were made to the way fs.mitm builds images when providing a layeredfs romfs.
   + Building romfs metadata previously had a memory cost of about ~4-5x the file table size.
@@ -89,6 +93,7 @@
     + Romfs building can be made even more memory efficient, but unless games show up with even more absurdly huge file tables it seems not worth the speed trade-off.
 + A bug was fixed that caused Atmosphere's fatal error context to not dump TLS for certain processes.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.10.4
 + With major thanks to @Adubbz for his work, the NCM system module has now been re-implemented.
   + This was a major stepping stone towards the goal of having implementations everything in the Switch's package1/package2 firmware.
@@ -111,6 +116,7 @@
 + Atmosphere's fatal error context now dumps 0x100 of TLS.
   + This will make it much easier to fix bugs when an error report is dumped for whatever caused the crash.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.10.3
 + Support was added for 9.2.0.
 + Support was added for redirecting manual html content for games.
@@ -125,6 +131,7 @@
 + `ro` has been updated to reflect changes made in 9.1.0.
 + The temporary auto-migration added in 0.10.0 has been removed, since the transitionary period is well over.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.10.2
 + hbl configuration was made more flexible.
   + Up to eight specific program ids can now be specified to have their own override keys.
@@ -159,6 +166,7 @@
   + For now, users may re-enable this mitm by use of a custom setting (`atmosphere!enable_deprecated_hid_mitm`) to ease the transition process some.
   + Please note: support for this setting may be removed to save memory in a future atmosphere release.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.10.1
 + A bug was fixed that caused memory reallocation to the system pool to work improperly on firmware 5.0.0 and above.
   + Atmosphere was always trying to deallocate memory away from the applet pool and towards the system pool.
@@ -187,6 +195,7 @@
     + Please ensure your homebrew is updated.
 + Random number generation now uses TinyMT instead of XorShift.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.10.0
 + Support was added for 9.1.0
   + **Please note**: The temporary hid-mitm added in Atmosphere 0.9.0 will be removed in Atmosphere 0.10.1.
@@ -251,6 +260,7 @@
   + An off-by-one was fixed that could cause memory corruption in server memory management.
   + ... and too many more bugs fixed to reasonably list them all :)
 + General system stability improvements to enhance the user's experience.
+
 ## 0.9.4
 + Support was added for 9.0.0.
   + **Please note**: 9.0.0 made a number of changes that may cause some issues with homebrew. Details:
@@ -270,6 +280,7 @@
   + Newer hardware uses new, per-firmware device key to generate BIS keys instead of the first device key, so previously the wrong keys were generated as backup.
   + This only affects units manufactured after ~5.0.0.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.9.3
 + Thanks to hexkyz, fusee's boot sequence has been greatly optimized.
   + Memory training is now managed by a separate binary (`fusee-mtc`, loaded by fusee-primary before fusee-secondary).
@@ -293,6 +304,7 @@
   + Incorrect display output ("2000-0000") has been fixed. Fatal will now correctly show 2162-0002 when this occurs.
   + A longstanding bug in how fatal manages the displays has been fixed, and official display init behavior is now matched precisely.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.9.2
 + A number of emummc bugfixes were added (all thanks to @m4xw's hard work). The following is a summary of emummc changes:
   + Support for file-based emummc instances was fixed.
@@ -316,10 +328,12 @@
   + The rewritten modules consistently have lower memory footprints, and should be easier to maintain going forwards.
   + The `sm`, `boot`, `spl`, `ro`, and `loader` modules have been tackled so far.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.9.1
 + Support was added for 8.1.0.
 + Please note, emummc is still considered **beta/experimental** -- this is not the inevitable bugfix update for it, although some number of bugs have been fixed. :)
 + General system stability improvements to enhance the user's experience.
+
 ## 0.9.0
 + Creport output was improved significantly.
   + Thread names are now dumped on crash in addition to 0x100 of TLS from each thread.
@@ -344,6 +358,7 @@
     + This can be set to any arbitrary directory by setting `emummc!emummc_nintendo_path`.
   + To create a backup usable for emummc, users may use tools provided by the [hekate](https://github.com/CTCaer/hekate) project.
   + If, when using emummc, you encounter a bug, *please be sure to report it* -- that's the only way we can fix it. :)
+
 ## 0.8.10
 + A bug was fixed that could cause incorrect system memory allocation on 5.0.0.
   + 5.0.0 should now correctly have an additional 12 MiB allocated for sysmodules.
@@ -360,6 +375,7 @@
     + NAND repair occurs when an unexpected shutdown or error happens during a system update.
     + This fixes a final edge case where AutoRCM might be removed by HOS, which could cause a user to burn fuses.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.9
 + A number of bugs were fixed, including:
   + A data abort was fixed when mounting certain partitions on NAND.
@@ -385,6 +401,7 @@
   + `spl` (Secure Platform Services) is responsible for cryptographic operations, including all communications with the secure monitor (exosphère).
   + In the future, this may be used to provide extensions to the API for interacting with exosphère from userland.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.8
 + Support was added for firmware version 8.0.0.
 + Custom exception handlers were added to stratosphere modules.
@@ -392,6 +409,7 @@
 + A bug was fixed in creport that caused games to hang when crashing under certain circumstances.
 + A bug was fixed that prevented maintenance mode from booting on 7.0.0+.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.7
 + A few bugs were fixed that could cause fatal to fail to show an error under certain circumstances.
 + A bug was fixed that caused an error when launching certain games (e.g. Hellblade: Senua's Sacrifice).
@@ -407,6 +425,7 @@
   + Please note, this feature is **experimental**, and may cause problems. Please use at your own risk (and back up your saves before enabling it), as it still needs testing.
   + This can be enabled by setting `atmosphere!fsmitm_redirect_saves_to_sd` to 1 in `system_settings.ini`.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.6
 + A number of bugs were fixed, including:
   + A case of inverted logic was fixed in fs.mitm which prevented the flags system from working correctly.
@@ -444,6 +463,7 @@
   + fs.mitm will also now cause requests to mount the HtmlDocument content for HBL's title to open the `sdmc:/atmosphere/hbl_html` folder.
     + By default, this just contains a URL whitelist.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.5
 + Support was added for overriding content on a per-title basis, separate from HBL override.
   + This allows for using mods on the same title that one uses to launch HBL.
@@ -465,6 +485,7 @@
 + A bug was fixed that would cause Atmosphère's fatal screen to not show on 1.0.0-2.3.0.
 + A bug was fixed that caused Atmosphère's automatic ProdInfo backups to be corrupt.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.4
 + Support for 7.0.0/7.0.1 was added.
   + This is facilitated through a new payload, `sept`, which can be signed, encrypted, and then loaded by Nintendo's TSEC firmware.
@@ -480,6 +501,7 @@
   + Performing a reboot from the reboot menu now reboots to atmosphere. This can be configured via `system_settings.ini`.
   + Performing a shutdown from the reboot menu now works properly with AutoRCM, and does a real shutdown.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.3
 + A custom warmboot firmware was implemented, which does not perform anti-downgrade fuse checks.
   + This fixes sleep mode when using a downgraded NAND.
@@ -500,6 +522,7 @@
   + Fatal will now use this to reboot to sdmc:/atmosphere/reboot_payload.bin if present, when a vol button is pressed.
   + An example homebrew ("reboot_to_payload") was also written and is now included with Atmosphère.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.2
 + A number of bugs were fixed causing users to sometimes see `Key Derivation Failed!`.
   + KFUSE clock enable timings have been adjusted to allow time to stabilize before TSEC is granted access.
@@ -509,6 +532,7 @@
 + A bug was fixed causing sleep mode to not work with debugmode enabled.
   + As a result, debugmode is now enabled in the default BCT.ini.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.1
 + A bug was fixed causing users to see `Failed to enable SMMU!` if fusee had previously rebooted.
   + This message will still occur sporadically if fusee is not launched from coldboot, but it can never happen twice in a row.
@@ -530,6 +554,7 @@
 + On fatal error, the user can now choose to perform a standard reboot via the power button, or a reboot into RCM via either volume button.
 + A custom message was added to `fatal` for when an Atmosphère API version mismatch is detected (2495-1623).
 + General system stability improvements to enhance the user's experience.
+
 ## 0.8.0
 + A custom `fatal` system module was added.
   + This re-implements and extends Nintendo's fatal module, with the following features:
@@ -563,6 +588,7 @@
   + By default, new keys will automatically be derived without user input.
   + Support is also present for loading new keys from `atmosphere/prod.keys` or `atmosphere/dev.keys`
 + General system stability improvements to enhance the user's experience.
+
 ## 0.7.5
 + DRAM training was added to fusee-secondary, courtesy @hexkyz.
   + This greatly improves the speed of memory accesses during boot, resulting in a boot time that is ~200-400% faster.
@@ -571,6 +597,7 @@
     + This matches the improvement Nintendo added to official creport in 6.1.0.
   + The code region detection heuristic was further improved by checking whether an address points to .rodata or .rwdata, instead of just .text.
   + This means that a crash appears in a loaded NRO (or otherwise discontiguous) code region, creport will be able to detect all active code regions, and not just that one.
+
 ## 0.7.4
 + [libstratosphere](https://github.com/Atmosphere-NX/libstratosphere) has been completely refactored/rewritten, and split into its own, separate submodule.
   + While this is mostly "under the hood" for end-users, the refactor is faster (improving both boot-time and runtime performance), more accurate (many of the internal IPC structures are now bug-for-bug compatible with Nintendo's implementations), and significantly more stable (it fixes a large number of bugs present in the old library).
@@ -591,11 +618,13 @@
   + PM now only gives full FS permissions to the active KIPs. This fixes a potential crash where new processes might be unable to be registered with FS.
 + The `make dist` target now includes the branch in the generated zip name.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.7.3
 + Loader and fs.mitm now try to reload loader.ini before reading it. This allows for changing the override button combination/HBL title id at runtime.
 + Added a MitM between set:sys and qlaunch, used to override the system version string displayed in system settings.
   + The displayed system version will now display `<Actual version> (AMS <x>.<y>.<z>)`.
 + General system stability improvements to enhance the user's experience.
+
 ## 0.7.2
 + Fixed a bug in fs.mitm's LayeredFS read implementation that caused some games to crash when trying to read files.
 + Fixed a bug affecting 1.0.0 that caused games to crash with fatal error 2001-0106 on boot.
