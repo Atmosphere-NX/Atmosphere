@@ -12,7 +12,6 @@ Follow the guide located [here](https://switchbrew.org/wiki/Setting_up_Developme
 
 Install the following packages via (dkp-)pacman:
 + switch-dev
-+ switch-freetype
 + switch-libjpeg-turbo
 + devkitARM
 + devkitarm-rules
