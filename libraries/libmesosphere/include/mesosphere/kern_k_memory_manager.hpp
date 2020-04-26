@@ -35,6 +35,9 @@ namespace ams::kern {
 
                 Pool_Shift = 4,
                 Pool_Mask  = (0xF << Pool_Shift),
+
+                /* Aliases. */
+                Pool_Unsafe = Pool_Application,
             };
 
             enum Direction {
@@ -183,6 +186,23 @@ namespace ams::kern {
                     num_pages -= cur_pages;
                     address += cur_pages * PageSize;
                 }
+            }
+
+            size_t GetSize() {
+                size_t total = 0;
+                for (size_t i = 0; i < this->num_managers; i++) {
+                    total += this->managers[i].GetSize();
+                }
+                return total;
+            }
+
+            size_t GetSize(Pool pool) {
+                constexpr Direction GetSizeDirection = Direction_FromFront;
+                size_t total = 0;
+                for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
+                    total += manager->GetSize();
+                }
+                return total;
             }
         public:
             static size_t CalculateMetadataOverheadSize(size_t region_size) {

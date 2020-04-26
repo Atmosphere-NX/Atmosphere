@@ -21,7 +21,16 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result SetUnsafeLimit(size_t limit) {
+            /* Ensure the size is aligned. */
+            R_UNLESS(util::IsAligned(limit, PageSize), svc::ResultInvalidSize());
 
+            /* Ensure that the size is not bigger than we can accommodate. */
+            R_UNLESS(limit <= Kernel::GetMemoryManager().GetSize(KMemoryManager::Pool_Unsafe), svc::ResultOutOfRange());
+
+            /* Set the size. */
+            return Kernel::GetUnsafeMemory().SetLimitSize(limit);
+        }
 
     }
 
@@ -48,7 +57,7 @@ namespace ams::kern::svc {
     }
 
     Result SetUnsafeLimit64(ams::svc::Size limit) {
-        MESOSPHERE_PANIC("Stubbed SvcSetUnsafeLimit64 was called.");
+        return SetUnsafeLimit(limit);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -74,7 +83,7 @@ namespace ams::kern::svc {
     }
 
     Result SetUnsafeLimit64From32(ams::svc::Size limit) {
-        MESOSPHERE_PANIC("Stubbed SvcSetUnsafeLimit64From32 was called.");
+        return SetUnsafeLimit(limit);
     }
 
 }
