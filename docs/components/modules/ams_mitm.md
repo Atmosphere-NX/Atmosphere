@@ -8,10 +8,10 @@ bpc_mitm enables intercepting requests to power control services. It currently i
 + Homebrew Loader (to allow homebrew to take advantage of the feature)
 
 ## fs_mitm
-fs_mitm enables intercepting file system operations. It can log, deny, delay, replace, or redirect any request made to the file system. It enables LayeredFS to function, which allows for replacement of game assets.
+fs_mitm enables intercepting file system operations. It can deny, delay, replace, or redirect any request made to the file system. It enables LayeredFS to function, which allows for replacement of game assets.
 
 ## hid_mitm
-hid_mitm enables intercepting requests to controller device services. It currently intercepts:
+hid_mitm enables intercepting requests to controller device services. It is currently disabled by default. If enabled, it intercepts:
 + Homebrew Loader (to help homebrew not need to be recompiled due to a breaking change introduced in the past)
 
 ## ns_mitm
