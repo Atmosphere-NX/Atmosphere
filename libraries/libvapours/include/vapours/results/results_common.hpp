@@ -289,6 +289,10 @@ namespace ams::result::impl {
             } else if (::ams::result::impl::AnyIncludes<__VA_ARGS__>(R_CURRENT_RESULT)) { \
                 if (true)
 
+#define R_CATCH_MODULE(__module__) \
+            } else if ((R_CURRENT_RESULT).GetModule() == ::ams::R_NAMESPACE_MODULE_ID(__module__)) { \
+                if (true)
+
 #define R_CONVERT(catch_type, convert_type) \
         R_CATCH(catch_type) { return static_cast<::ams::Result>(convert_type); }
 
