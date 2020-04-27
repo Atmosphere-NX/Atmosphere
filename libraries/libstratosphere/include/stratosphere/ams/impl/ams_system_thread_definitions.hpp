@@ -109,6 +109,9 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, ProcessControlTask);
 
+    /* lm. */
+    AMS_DEFINE_SYSTEM_THREAD(-18, lm, IpcServer);
+
     #undef AMS_DEFINE_SYSTEM_THREAD
 
 }

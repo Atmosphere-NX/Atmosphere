@@ -64,6 +64,7 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000015
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
@@ -90,6 +91,7 @@ dist-no-debug: all
 	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036/exefs.nsp
 	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/exefs.nsp
 	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C/exefs.nsp
+	cp stratosphere/LogManager/LogManager.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000015/exefs.nsp
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags
 	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags/boot2.flag
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags
@@ -139,6 +141,7 @@ dist: dist-no-debug
 	cp stratosphere/spl/spl.elf atmosphere-$(AMSVER)-debug/spl.elf
 	cp stratosphere/erpt/erpt.elf atmosphere-$(AMSVER)-debug/erpt.elf
 	cp stratosphere/jpegdec/jpegdec.elf atmosphere-$(AMSVER)-debug/jpegdec.elf
+	cp stratosphere/LogManager/LogManager.elf atmosphere-$(AMSVER)-debug/LogManager.elf
 	cd atmosphere-$(AMSVER)-debug; zip -r ../atmosphere-$(AMSVER)-debug.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)-debug
 	mv atmosphere-$(AMSVER)-debug.zip out/atmosphere-$(AMSVER)-debug.zip
