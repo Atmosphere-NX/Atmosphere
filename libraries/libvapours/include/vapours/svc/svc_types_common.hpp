@@ -192,10 +192,10 @@ namespace ams::svc {
     };
 
     enum CodeMemoryOperation : u32 {
-        CodeMemoryOperation_MapOwner   = 0,
-        CodeMemoryOperation_MapSlave   = 1,
-        CodeMemoryOperation_UnmapOwner = 2,
-        CodeMemoryOperation_UnmapSlave = 3,
+        CodeMemoryOperation_Map            = 0,
+        CodeMemoryOperation_MapToOwner     = 1,
+        CodeMemoryOperation_Unmap          = 2,
+        CodeMemoryOperation_UnmapFromOwner = 3,
     };
 
     /* Synchronization types. */

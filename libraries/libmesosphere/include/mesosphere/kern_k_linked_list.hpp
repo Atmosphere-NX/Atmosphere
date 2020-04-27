@@ -122,6 +122,16 @@ namespace ams::kern {
         public:
             constexpr KLinkedList() : BaseList() { /* ... */ }
 
+            ~KLinkedList() {
+                /* Erase all elements. */
+                for (auto it = this->begin(); it != this->end(); it = this->erase(it)) {
+                    /* ... */
+                }
+
+                /* Ensure we succeeded. */
+                MESOSPHERE_ASSERT(this->empty());
+            }
+
             /* Iterator accessors. */
             iterator begin() {
                 return iterator(BaseList::begin());
