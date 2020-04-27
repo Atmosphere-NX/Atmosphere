@@ -1,5 +1,5 @@
 /*------------------------------------------------------------------------*/
-/* Unicode handling functions for FatFs R0.13c                            */
+/* Unicode handling functions for FatFs R0.13+                            */
 /*------------------------------------------------------------------------*/
 /* This module will occupy a huge memory in the .const section when the    /
 /  FatFs is configured for LFN with DBCS. If the system has any Unicode    /
@@ -7,7 +7,7 @@
 /  that function to avoid silly memory consumption.                        /
 /-------------------------------------------------------------------------*/
 /*
-/ Copyright (C) 2018, ChaN, all right reserved.
+/ Copyright (C) 2014, ChaN, all right reserved.
 /
 / FatFs module is an open source software. Redistribution and use of FatFs in
 / source and binary forms, with or without modification, are permitted provided
@@ -25,11 +25,7 @@
 
 #include "ff.h"
 
-#if FF_USE_LFN	/* This module will be blanked at non-LFN configuration */
-
-#if FF_DEFINED != 86604	/* Revision ID */
-#error Wrong include file (ff.h).
-#endif
+#if FF_USE_LFN	/* This module will be blanked if non-LFN configuration */
 
 #define MERGE2(a, b) a ## b
 #define CVTBL(tbl, cp) MERGE2(tbl, cp)
@@ -15245,7 +15241,7 @@ WCHAR ff_uni2oem (	/* Returns OEM code character, zero on error */
 	return c;
 }
 
-WCHAR ff_oem2uni (	/* Returns Unicode character, zero on error */
+WCHAR ff_oem2uni (	/* Returns Unicode character in UTF-16, zero on error */
 	WCHAR	oem,	/* OEM code to be converted */
 	WORD	cp		/* Code page for the conversion */
 )
@@ -15312,7 +15308,7 @@ WCHAR ff_uni2oem (	/* Returns OEM code character, zero on error */
 }
 
 
-WCHAR ff_oem2uni (	/* Returns Unicode character, zero on error */
+WCHAR ff_oem2uni (	/* Returns Unicode character in UTF-16, zero on error */
 	WCHAR	oem,	/* OEM code to be converted */
 	WORD	cp		/* Code page for the conversion */
 )
@@ -15411,7 +15407,7 @@ WCHAR ff_uni2oem (	/* Returns OEM code character, zero on error */
 }
 
 
-WCHAR ff_oem2uni (	/* Returns Unicode character, zero on error */
+WCHAR ff_oem2uni (	/* Returns Unicode character in UTF-16, zero on error */
 	WCHAR	oem,	/* OEM code to be converted (DBC if >=0x100) */
 	WORD	cp		/* Code page for the conversion */
 )
