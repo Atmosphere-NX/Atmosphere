@@ -5,6 +5,15 @@ This module is a reimplementation of the Horizon OS's `ldr` system module, which
 Atmosphère extends this module to allow executables to be replaced or patched by files stored on the SD card. Note that a few services are required for SD card access and therefore cannot be replaced or patched in this manner.
 
 ### Exefs Replacement
+Atmosphère's reimplementation allows replacing executable files in the file system.
+
+#### Partition Replacement
+It is possible to replace the full exefs partition at once with a PFS0 file. In that case, Atmosphère will load the following file:
+```
+/atmosphere/contents/<program id>/exefs.nsp
+```
+
+#### File Replacement
 When a process is created, loader will search for several NSO filenames in the program's exefs directory.
 These filenames are, in this order:
   - rtld
@@ -26,19 +35,16 @@ Atmosphère extends this functionality by also searching for these files on the 
 
 This allows the replacement of applets, system modules, or even games with homebrew versions.
 
+##### File Stubbing
 In order to prevent an NSO from being loaded even if it exists in the exefs, loader will also check if a stub file exists. If such a file exists, the NSO will not be loaded. The files should be named like `rtld.stub`, `main.stub`, etc. and may be empty.
-
-It is also possible to replace the full exefs partition at once with a PFS0 file. In that case, Atmosphère will load the following file:
-```
-/atmosphere/contents/<program id>/exefs.nsp
-```
 
 ### NSO Patching
 When an NSO is loaded, Atmosphère's reimplementation will search for IPS patch files on the SD card in the following locations.
 ```
 /atmosphere/exefs_patches/<patchset name>/<nso build id>.ips
 ```
-This organization allows patch sets affecting multiple NSOs to be distributed as a single directory. Patches will be searched for in each patch set directory. The name of each patch file should match the hexadecimal build ID of the NSO to affect, except that trailing zero bytes may be left off. Because the NSO build ID is unique for every NSO, this means patches will only apply to the files they are meant to apply to.
+
+This organization allows patch sets affecting multiple NSOs to be distributed as a single directory and also allows patches from multiple patch sets to be stacked. Patches will be searched for in each patch set directory. The name of each patch file should match the hexadecimal build ID of the NSO to affect, except that trailing zero bytes may be left off. Because the NSO build ID is unique for every NSO, this means patches will only apply to the files they are meant to apply to.
 
 Patch files are accepted in either IPS format or IPS32 format.
 
@@ -46,8 +52,10 @@ Because NSO files are compressed, patch files are not made between the original 
 
 When authoring patches, [hactool](https://github.com/SciresM/hactool) can be used to find an NSO's build ID and to uncompress NSOs. Recent versions of the [ReSwitched IDA loaders](https://github.com/reswitched/loaders) can be used to load uncompressed NSOs into IDA in such a way that you can [apply patches to the input file](https://www.hex-rays.com/products/ida/support/idadoc/1618.shtml). From there, any IPS tool can be used to create the patch between the original NSO and the patched NSO. Note that if the NSO you are patching is larger than 16 MiB, you will have to use a tool that supports IPS32.
 
-### HBL Support
-Atmosphère provides first class support for [hbmenu](https://github.com/switchbrew/nx-hbmenu/releases) and [hbloader](https://github.com/switchbrew/nx-hbloader/releases).
+### Homebrew Support
+Atmosphère provides first class support for  [nx-hbloader](https://github.com/switchbrew/nx-hbloader/releases) and [nx-hbmenu](https://github.com/switchbrew/nx-hbmenu/releases).
+
+Launching of the nx-hbloader process is controlled by configurable button inputs. See [here](../../features/configurations.md) for more detailed information.
 
 In addition, loader has extensions to enable homebrew to launch web applets. This normally requires the application launching the applet to have HTML Manual content inside an installed NCA. Atmosphère's reimplementation will automatically ensure that the commands used to check this succeed, and will redirect the relevant file system to the `/atmosphere/hbl_html/` subdirectory.
 

@@ -2,23 +2,26 @@
 Atmosphère provides a variety of customizable configurations to better adjust to users' needs.
 
 ## BCT.ini
-This is the configuration file used by Fusée.
+This is the configuration file used by fusée.
 This file is located under the `/atmosphere/config/` folder on your SD card and a default template can be found inside the `/atmosphere/config_templates/` folder.
 
 ### Adding a Custom Boot Splashscreen
+Atmosphère provides its own default splashscreen which is displayed at boot time. However, this can be replaced at will.
+
+The boot splashscreen must be a BMP file, it must be 720x1280 (1280x720 rotated 90 degrees left/counterclockwise/anti-clockwise) resolution, and be in 32-bit ARGB format. You can use image editing software such as GIMP or Photoshop to export the image in this format.
+ 
 Add the following lines to BCT.ini and change the value of `custom_splash` to the actual path and filename of your boot splashscreen:
 ```
 [stage2]
 custom_splash = /path/to/your/bootlogo.bmp
 ```
 
-The boot splashscreen must be a BMP file, it must be 720x1280 (1280x720 rotated 90 degrees left/counterclockwise/anti-clockwise) resolution, and be in 32-bit ARGB format. You can use image editing software such as GIMP or Photoshop to export the image in this format.
-
 ### Configuring "nogc" Protection
-"nogc" is a feature provided by Fusée-secondary which disables the Nintendo Switch's Game Card reader. Its purpose is to prevent the reader from being updated when the console has been updated, without burning fuses, from a lower firmware version. More specifically, from firmware versions 4.0.0 or 9.0.0 which introduced updates to the Game Card reader's firmware. By default, Atmosphère will protect the Game Card reader automatically, but you are free to change it.
+"nogc" is a feature provided by fusée-secondary which disables the Nintendo Switch's Game Card reader. Its purpose is to prevent the reader from being updated when the console has been updated, without burning fuses, from a lower firmware version. More specifically, from firmware versions 4.0.0 or 9.0.0 which introduced updates to the Game Card reader's firmware. By default, Atmosphère will protect the Game Card reader automatically, but you are free to change it.
 
 To change its functionality, add the following line to the `stratosphere` section and change the value of `X` according to the following list:
 ```
+[stratosphere]
 nogc = X
 ```
 ```
@@ -29,10 +32,13 @@ nogc = X
 ### NCM opt-in
 Atmosphère provides a reimplementation of the [ncm](../components/modules/ncm.md) system module, but currently this is not enabled by default. If you wish to enable this reimplementation add the following line to the `stratosphere` section:
 ```
+[stratosphere]
 enable_ncm = 1
 ```
 
 ### Logging
+This is an advanced feature aimed at developers trying to debug boot time issues. It enables logging of the fusée stages to be displayed on screen.
+
 Add the following lines to BCT.ini and change the value of `X` according to the following list:
 ```
 [config]
@@ -47,17 +53,23 @@ log_level = X
 5 = DEBUG
 ```
 
+A special level is also provided to prevent prefix creation. To use it, do a bitwise OR with this mask:
+`0x100 = NO_PREFIX`
+
 ## emummc.ini
 This is the configuration file used for the [emummc](../components/emummc.md) component.
-This file is located under the `/emummc/` folder on your SD card.
+This file is located under the `/emuMMC/` folder on your SD card.
+
+Please refer to the project's repository [here](https://github.com/m4xw/emuMMC) for detailed instructions and documentation.
 
 ## exosphere.ini
-This is the configuration file used by Exosphère.
+This is the configuration file used by exosphère.
 This file is located in the root of your SD card and a default template can be found inside the `/atmosphere/config_templates/` folder.
 
 ### Configuring Debugging Modes
 By default, Atmosphère signals to the Horizon kernel that debugging is enabled while leaving usermode debugging disabled, but this can cause undesirable side-effects. If you wish to change this behavior, go to the `exosphere` section and change the value of `X` according to the following list.
 ```
+[exosphere]
 debugmode = X
 debugmode_user = X
 ```
@@ -105,15 +117,15 @@ To invert the behavior of the override key, place an exclamation point in front 
 This file is located under the `/atmosphere/config/` folder on your SD card and a default template can be found inside the `/atmosphere/config_templates/` folder.
 
 ### Settings Format
-Settings are parsed from the `/atmosphere/config/system_settings.ini` file during the boot process. This file is a normal ini file, with some specific interpretations.
+Atmosphère provides a way to override the firmware debug settings used by the system. These can be parsed from the `/atmosphere/config/system_settings.ini` file during the boot process. This file is a normal ini file, with some specific interpretations.
 
-The standard representation of a system setting's identifier takes the form `name!key`. This is represented within `system_settings.ini` as a section `name`, with an entry `key`. For example:
+The standard representation of a setting's identifier takes the form `name!key`. This is represented within `system_settings.ini` as a section `name`, with an entry `key`. For example:
 ```
 [name]
 key = ...
 ```
 
-System settings can have variable types (strings, integral values, byte arrays, etc). To accommodate this, `system_settings.ini` must store values as a `type_identifier!value_store` pair. A number of different types are supported, with identifiers detailed below.
+Settings can have variable types (strings, integral values, byte arrays, etc). To accommodate this, `system_settings.ini` must store values as a `type_identifier!value_store` pair. A number of different types are supported, with identifiers detailed below.
 Please note that a malformed value string will cause a fatal error to occur on boot. A full example of a custom setting is given below (setting `eupld!upload_enabled = 0`), for posterity:
 ```
 [eupld]

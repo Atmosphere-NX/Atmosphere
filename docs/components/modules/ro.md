@@ -1,5 +1,7 @@
 # ro
-This module is a reimplementation of the Horizon OS's `ro` system module, which is responsible for loading dynamic libraries.
+This module is a reimplementation of the Horizon OS's `ro` system module, which is responsible for loading dynamic libraries and was introduced by firmware version `3.0.0`.
+
+Atmosphère's reimplementation backports this module's functionalities to firmware versions lower than `3.0.0` where said functionalities were provided by the `ldr` system module instead.
 
 ## Extensions
 Atmosphère extends this module to allow libraries to be patched by files stored on the SD card.

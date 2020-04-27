@@ -19,7 +19,7 @@ This behavior ensures that cheat codes are only loaded when the user would want 
 
 In cases where `dmnt` has not activated the cheat manager, but the user wants to make it do so anyway, the cheat manager's service API provides a `ForceOpenCheatProcess` command that homebrew can use. This command will cause the cheat manager to try to force itself to attach to the process.
 
-By default, all cheat codes listed in the loaded .txt file will be toggled on. This is configurable by the user, and the default can be set to toggled off by editing the `atmosphere!dmnt_cheats_enabled_by_default` entry to 0 instead of 1.
+By default, all cheat codes listed in the loaded .txt file will be toggled on. This is configurable by the user by editing the `atmosphere!dmnt_cheats_enabled_by_default` [system setting](configurations.md).
 
 Users may use homebrew programs to toggle cheats on and off at runtime via the cheat manager's service API.
 

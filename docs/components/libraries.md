@@ -1,4 +1,4 @@
-# Libraries
+# libraries
 This is a collection of libraries for doing operating system development for the Nintendo Switch.
 
 ## libmesosphere
