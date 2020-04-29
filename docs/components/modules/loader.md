@@ -38,6 +38,21 @@ This allows the replacement of applets, system modules, or even games with homeb
 ##### File Stubbing
 In order to prevent an NSO from being loaded even if it exists in the exefs, loader will also check if a stub file exists. If such a file exists, the NSO will not be loaded. The files should be named like `rtld.stub`, `main.stub`, etc. and may be empty.
 
+##### Technical Semantics
+
+loader's semantics for content override can (as you may observe from reading the above) be complicated to understand. The following is an abbreviated description of the very technical semantics by which loader decides what content to read when trying to read a file for a program id.
+
+* If an external content filesystem exists for the program id, the external content filesystem is used directly with no further redirection.
+* Otherwise, if the program ID is being overridden with [nx-hbloader](https://github.com/switchbrew/nx-hbloader/releases) (see Homebrew Support below), the nsp filesystem for hbl is used directly with no further redirection.
+* Otherwise, if content redirection is enabled for the program ID (controlled by a configurable button combination) and a loose file exists on the SD card, the loose file is used.
+* Otherwise, if a stub file exists, a "Not Found" error is returned.
+* Finally, the "real"/base code file system is used without further redirection.
+
+In addition, there are a few other technical details relevant to Atmosphere's redirection:
+* When overriding with nx-hbloader, the real code filesystem must exist. When "main.npdm" (a program capabilities descriptor file) is read, the content from the real code filesystem is read in order to determine whether an applet or an application is being overridden. This allows nx-hbloader to automatically support both applet and application environments.
+* When overriding applications, the real code filesystem must exist and contain valid content. This is required to perform accurate-to-Nintendo content verification procedures.
+* When programs are launched, both a program id and a "storage id" are specified by the launch requester. When the storage id specified is "none" (normally always invalid), Atmosphere assumes that a custom system module is attempting to be launched. This removes the aforementioned requirement on base content validity; the above procedure is still used to determine how to redirect content, however reads to the "real"/base code file system may return "Not Found" errors if the real/base code file system does not exist.
+
 ### NSO Patching
 When an NSO is loaded, Atmosphère's reimplementation will search for IPS patch files on the SD card in the following locations.
 ```
@@ -53,7 +68,7 @@ Because NSO files are compressed, patch files are not made between the original 
 When authoring patches, [hactool](https://github.com/SciresM/hactool) can be used to find an NSO's build ID and to uncompress NSOs. Recent versions of the [ReSwitched IDA loaders](https://github.com/reswitched/loaders) can be used to load uncompressed NSOs into IDA in such a way that you can [apply patches to the input file](https://www.hex-rays.com/products/ida/support/idadoc/1618.shtml). From there, any IPS tool can be used to create the patch between the original NSO and the patched NSO. Note that if the NSO you are patching is larger than 16 MiB, you will have to use a tool that supports IPS32.
 
 ### Homebrew Support
-Atmosphère provides first class support for  [nx-hbloader](https://github.com/switchbrew/nx-hbloader/releases) and [nx-hbmenu](https://github.com/switchbrew/nx-hbmenu/releases).
+Atmosphère provides first class support for [nx-hbloader](https://github.com/switchbrew/nx-hbloader/releases) and [nx-hbmenu](https://github.com/switchbrew/nx-hbmenu/releases).
 
 Launching of the nx-hbloader process is controlled by configurable button inputs. See [here](../../features/configurations.md) for more detailed information.
 
