@@ -46,6 +46,7 @@ loader's semantics for content override can (as you may observe from reading the
 * Otherwise, if the program ID is being overridden with [nx-hbloader](https://github.com/switchbrew/nx-hbloader/releases) (see Homebrew Support below), the nsp filesystem for hbl is used directly with no further redirection.
 * Otherwise, if content redirection is enabled for the program ID (controlled by a configurable button combination) and a loose file exists on the SD card, the loose file is used.
 * Otherwise, if a stub file exists, a "Not Found" error is returned.
+* Otherwise, if an SD card executable filesystem ("exefs.nsp") exists, it is used without further redirection.
 * Finally, the "real"/base code file system is used without further redirection.
 
 In addition, there are a few other technical details relevant to Atmosphere's redirection:
