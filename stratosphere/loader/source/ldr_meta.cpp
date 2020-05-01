@@ -109,7 +109,7 @@ namespace ams::ldr {
         Result ValidateAcidSignature(Meta *meta) {
             /* Loader did not check signatures prior to 10.0.0. */
             if (hos::GetVersion() < hos::Version_10_0_0) {
-                meta->is_signed = false;
+                meta->is_signed = true;
                 return ResultSuccess();
             }
 
@@ -221,9 +221,9 @@ namespace ams::ldr {
                 R_TRY(fs::OpenFile(std::addressof(file), BaseMetaPath, fs::OpenMode_Read));
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
                 R_TRY(LoadMetaFromFile(file, &g_original_meta_cache));
-                R_TRY(ValidateAcidSignature(&g_original_meta_cache.meta));
+                //R_TRY(ValidateAcidSignature(&g_original_meta_cache.meta));
                 meta->modulus   = g_original_meta_cache.meta.modulus;
-                meta->is_signed = g_original_meta_cache.meta.is_signed;
+               // meta->is_signed = g_original_meta_cache.meta.is_signed;
             }
         }
 
