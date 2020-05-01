@@ -1,10 +1,21 @@
-# Stratosphère
-Stratosphère allows customization of the Horizon OS and Switch kernel. It includes custom sysmodules that extend the kernel and provide new features. It also includes a reimplementation of the loader sysmodules to hook important system actions.
+# stratosphère
+stratosphère provides customization of the Horizon OS at the system level. This includes a reimplementation of several system modules and additional, custom system modules that extend or add a variety of features.
 
-The sysmodules that Stratosphère includes are:
-+ [boot](../modules/boot.md): This module boots the system and initalizes hardware.
-+ [creport](../modules/creport.md): Reimplementation of Nintendo’s crash report system. Dumps all error logs to the SD card instead of saving them to the NAND and sending them to Nintendo.
-+ [fs_mitm](../modules/fs_mitm.md): This module can log, deny, delay, replace, and redirect any request made to the File System.
-+ [loader](../modules/loader.md): Enables modifying the code of binaries that are not stored inside the kernel.
-+ [pm](../modules/pm.md): Reimplementation of Nintendo’s Process Manager.
-+ [sm](../modules/sm.md): Reimplementation of Nintendo’s Service Manager.
+## Modules
+The modules currently provided by stratosphère are:
++ [ams_mitm](modules/ams_mitm.md)
++ [boot](modules/boot.md)
++ [boot2](modules/boot2.md)
++ [creport](modules/creport.md)
++ [dmnt](modules/dmnt.md)
++ [eclct.stub](modules/eclct.stub.md)
++ [erpt](modules/erpt.md)
++ [fatal](modules/fatal.md)
++ [jpegdec](modules/jpegdec.md)
++ [loader](modules/loader.md)
++ [ncm](modules/ncm.md)
++ [pgl](modules/pgl.md)
++ [pm](modules/pm.md)
++ [ro](modules/ro.md)
++ [sm](modules/sm.md)
++ [spl](modules/spl.md)

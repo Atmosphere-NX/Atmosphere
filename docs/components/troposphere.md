@@ -1,2 +1,5 @@
-# Troposphère
-Troposphère contains various application-level modifications to the OS, such as launching homebrew directly from the homemenu or executing cheat/gameshark codes, similar to Luma3DS. Troposphère is not yet implemented in Atmosphère.
+# troposphère
+troposphère provides customization of the Horizon OS at the application level.
+
+## reboot_to_payload
+Sample application to perform a system reboot into a payload of choice.
