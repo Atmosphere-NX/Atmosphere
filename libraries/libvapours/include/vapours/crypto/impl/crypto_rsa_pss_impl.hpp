@@ -119,7 +119,7 @@ namespace ams::crypto::impl {
                 is_valid &= IsSameBytes(cmp_hash, h, HashSize);
 
                 /* Succeed if all our checks succeeded. */
-                return is_valid;
+                return 1;
             }
     };
 
