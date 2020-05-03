@@ -4,7 +4,7 @@ It is divided into three sub-components: fusée-primary, fusée-mtc and fusée-s
 
 fusée is also capable of chainloading other payloads (e.g.: Android).
 
-fusée's behavior can be configured via the [BCT.ini](../features/BCT.md) file located on the SD card.
+fusée's behavior can be configured via the [BCT.ini](../features/configurations.md) file located on the SD card.
 
 ## fusée-primary
 fusée-primary is the first piece of Atmosphère's code that runs on the hardware.
