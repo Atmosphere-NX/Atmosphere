@@ -32,13 +32,13 @@ namespace ams::spl::impl {
 
     /* Crypto. */
     Result GenerateAesKek(AccessKey *out_access_key, const KeySource &key_source, u32 generation, u32 option);
-    Result LoadAesKey(u32 keyslot, const void *owner, const AccessKey &access_key, const KeySource &key_source);
+    Result LoadAesKey(s32 keyslot, const void *owner, const AccessKey &access_key, const KeySource &key_source);
     Result GenerateAesKey(AesKey *out_key, const AccessKey &access_key, const KeySource &key_source);
     Result DecryptAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 option);
-    Result CryptAesCtr(void *dst, size_t dst_size, u32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr);
-    Result ComputeCmac(Cmac *out_cmac, u32 keyslot, const void *owner, const void *data, size_t size);
-    Result AllocateAesKeyslot(u32 *out_keyslot, const void *owner);
-    Result FreeAesKeyslot(u32 keyslot, const void *owner);
+    Result CryptAesCtr(void *dst, size_t dst_size, s32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr);
+    Result ComputeCmac(Cmac *out_cmac, s32 keyslot, const void *owner, const void *data, size_t size);
+    Result AllocateAesKeyslot(s32 *out_keyslot, const void *owner);
+    Result FreeAesKeyslot(s32 keyslot, const void *owner);
 
     /* RSA. */
     Result DecryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
@@ -54,13 +54,13 @@ namespace ams::spl::impl {
     Result ImportDrmKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
     Result DrmExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
     Result UnwrapElicenseKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
-    Result LoadElicenseKey(u32 keyslot, const void *owner, const AccessKey &access_key);
+    Result LoadElicenseKey(s32 keyslot, const void *owner, const AccessKey &access_key);
 
     /* FS */
     Result ImportLotusKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
     Result DecryptLotusMessage(u32 *out_size, void *dst, size_t dst_size, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size);
     Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which);
-    Result LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key);
+    Result LoadTitleKey(s32 keyslot, const void *owner, const AccessKey &access_key);
     Result GetPackage2Hash(void *dst, const size_t size);
 
     /* Manu. */

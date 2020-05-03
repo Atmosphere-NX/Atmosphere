@@ -46,7 +46,7 @@ namespace ams::spl {
         return impl::UnwrapElicenseKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
     }
 
-    Result EsService::LoadElicenseKey(u32 keyslot, AccessKey access_key) {
+    Result EsService::LoadElicenseKey(s32 keyslot, AccessKey access_key) {
         return impl::LoadElicenseKey(keyslot, this, access_key);
     }
 
