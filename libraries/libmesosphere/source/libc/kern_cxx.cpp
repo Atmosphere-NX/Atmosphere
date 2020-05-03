@@ -13,13 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <mesosphere.hpp>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* cxx implementation details to be stubbed here, as needed. */
+void __cxa_pure_virtual() { MESOSPHERE_PANIC("pure virtual function call"); }
 
 #ifdef __cplusplus
 } /* extern "C" */
