@@ -8,10 +8,11 @@ export ATMOSPHERE_LIBRARIES_DIR   := $(ATMOSPHERE_CONFIG_MAKE_DIR)/..
 
 ifeq ($(strip $(ATMOSPHERE_BOARD)),)
 export ATMOSPHERE_BOARD := nx-hac-001
-endif
 
 ifeq ($(strip $(ATMOSPHERE_CPU)),)
 export ATMOSPHERE_CPU   := arm-cortex-a57
+endif
+
 endif
 
 export ATMOSPHERE_DEFINES  := -DATMOSPHERE
@@ -23,6 +24,8 @@ export ATMOSPHERE_ASFLAGS  :=
 
 
 ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
+
+ifeq ($(ATMOSPHERE_CPU),arm-cortex-a57)
 export ATMOSPHERE_ARCH_DIR   := arch/arm64
 export ATMOSPHERE_BOARD_DIR  := board/nintendo/nx
 export ATMOSPHERE_OS_DIR     := os/horizon
@@ -30,6 +33,16 @@ export ATMOSPHERE_OS_DIR     := os/horizon
 export ATMOSPHERE_ARCH_NAME  := arm64
 export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
+else ifeq ($(ATMOSPHERE_CPU),arm7tdmi)
+export ATMOSPHERE_ARCH_DIR   := arch/arm
+export ATMOSPHERE_BOARD_DIR  := board/nintendo/nx_bpmp
+export ATMOSPHERE_OS_DIR     := os/horizon
+
+export ATMOSPHERE_ARCH_NAME  := arm
+export ATMOSPHERE_BOARD_NAME := nintendo_nx
+export ATMOSPHERE_OS_NAME    := horizon
+endif
+
 endif
 
 ifeq ($(ATMOSPHERE_CPU),arm-cortex-a57)
@@ -37,11 +50,19 @@ export ATMOSPHERE_CPU_DIR    := arch/arm64/cpu/cortex_a57
 export ATMOSPHERE_CPU_NAME   := arm_cortex_a57
 endif
 
+ifeq ($(ATMOSPHERE_CPU),arm7tdmi)
+export ATMOSPHERE_CPU_DIR    := arch/arm/cpu/arm7tdmi
+export ATMOSPHERE_CPU_NAME   := arm7tdmi
+endif
+
 
 export ATMOSPHERE_ARCH_MAKE_DIR  := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_ARCH_DIR)
 export ATMOSPHERE_BOARD_MAKE_DIR := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_BOARD_DIR)
 export ATMOSPHERE_OS_MAKE_DIR    := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_OS_DIR)
 export ATMOSPHERE_CPU_MAKE_DIR   := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_CPU_DIR)
+
+export ATMOSPHERE_LIBRARY_DIR := lib_$(ATMOSPHERE_BOARD_NAME)_$(ATMOSPHERE_ARCH_NAME)
+export ATMOSPHERE_BUILD_DIR := build_$(ATMOSPHERE_BOARD_NAME)_$(ATMOSPHERE_ARCH_NAME)
 
 include $(ATMOSPHERE_ARCH_MAKE_DIR)/arch.mk
 include $(ATMOSPHERE_BOARD_MAKE_DIR)/board.mk

@@ -25,6 +25,14 @@
         using ams::svc::arch::arm64::GetThreadLocalRegion;
     }
 
+#elif defined(ATMOSPHERE_ARCH_ARM)
+
+    #include <vapours/svc/arch/arm/svc_thread_local_region.hpp>
+    namespace ams::svc {
+        using ams::svc::arch::arm::ThreadLocalRegion;
+        using ams::svc::arch::arm::GetThreadLocalRegion;
+    }
+
 #else
 
     #error "Unknown architecture for svc::ThreadLocalRegion"

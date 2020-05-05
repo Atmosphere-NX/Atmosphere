@@ -42,7 +42,7 @@ namespace ams::util {
                     }
                 }();
             public:
-                template<size_t _Index, size_t _Count, typename T>
+                template<size_t _Index, size_t _Count, typename T = IntegralStorageType>
                 struct Field {
                     using Type = T;
                     static constexpr size_t Index = _Index;

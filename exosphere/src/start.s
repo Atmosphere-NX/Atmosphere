@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 /* For some reason GAS doesn't know about it, even with .cpu cortex-a57 */
 #define cpuactlr_el1 s3_1_c15_c2_0
 #define cpuectlr_el1 s3_1_c15_c2_1
@@ -109,7 +109,7 @@ __start_cold:
         stp  x3, x4, [x0], #0x10
         cmp  x0, x2
         blo  1b
-    
+
     adr  x19, __start_cold
     adr x20, g_coldboot_crt0_relocation_list
     sub x20, x20, x19
@@ -125,7 +125,7 @@ _post_cold_crt0_reloc:
     bl   get_coldboot_crt0_stack_address
     mov  sp, x0
     mov  fp, #0
-    
+
     /* Relocate Exosphere image to free DRAM, clearing the image in IRAM. */
     ldr x0, =0x80010000
     add x20, x20, x0
@@ -147,7 +147,7 @@ _post_cold_crt0_reloc:
     ldr x1, =0x80010000
     /* Set size in coldboot relocation list. */
     str x21, [x0, #0x8]
-    
+
     bl   coldboot_init
 
     ldr  x16, =__jump_to_main_cold

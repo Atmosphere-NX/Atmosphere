@@ -135,21 +135,21 @@ namespace ams::util {
     }
 
     template<typename T> requires std::integral<T>
-    constexpr ALWAYS_INLINE T LoadBigEndian(T *ptr) {
+    constexpr ALWAYS_INLINE T LoadBigEndian(const T *ptr) {
         return ConvertToBigEndian(*ptr);
     }
 
     template<typename T> requires std::integral<T>
-    constexpr ALWAYS_INLINE T LoadLittleEndian(T *ptr) {
+    constexpr ALWAYS_INLINE T LoadLittleEndian(const T *ptr) {
         return ConvertToLittleEndian(*ptr);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE void StoreBigEndian(T *ptr, T val) {
         *ptr = ConvertToBigEndian(val);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE void StoreLittleEndian(T *ptr, T val) {
         *ptr = ConvertToLittleEndian(val);
     }

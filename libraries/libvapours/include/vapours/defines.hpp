@@ -59,4 +59,6 @@
 #define AMS_LIKELY(expr)   AMS_PREDICT_TRUE(expr, 1.0)
 #define AMS_UNLIKELY(expr) AMS_PREDICT_FALSE(expr, 1.0)
 
+#define AMS_ASSUME(expr) do { if (!static_cast<bool>((expr))) { __builtin_unreachable(); } } while (0)
+
 #define AMS_CURRENT_FUNCTION_NAME __FUNCTION__
