@@ -29,12 +29,14 @@ namespace ams::mitm::bpc {
         bpc::RebootForFatalError(&ctx);
     }
 
-    void AtmosphereService::SetInitialRebootPayload(const ams::sf::InBuffer &payload) {
+    void AtmosphereService::SetRebootPayload(const ams::sf::InBuffer &payload) {
+        /* Set the reboot payload. */
+        bpc::SetRebootPayload(payload.GetPointer(), payload.GetSize());
+
+        /* If this is being called for the first time (by boot sysmodule), */
+        /* Then we should kick off the rest of init. */
         if (!g_set_initial_payload) {
             g_set_initial_payload = true;
-
-            /* Set the initial reboot payload. */
-            bpc::SetInitialRebootPayload(payload.GetPointer(), payload.GetSize());
 
             /* Start the initialization process. */
             ::ams::mitm::StartInitialize();

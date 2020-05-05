@@ -41,7 +41,7 @@ namespace ams {
     }
 
     void SetInitialRebootPayload(const void *src, size_t src_size) {
-        R_ABORT_UNLESS(amsBpcSetInitialPayload(src, src_size));
+        R_ABORT_UNLESS(amsBpcSetRebootPayload(src, src_size));
     }
 
     void WEAK_SYMBOL ExceptionHandler(FatalErrorContext *ctx) {
