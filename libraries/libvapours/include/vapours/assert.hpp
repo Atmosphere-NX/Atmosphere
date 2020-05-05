@@ -32,6 +32,7 @@ namespace ams::diag {
 
     NORETURN NOINLINE void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) __attribute__((format(printf, 6, 7)));
     NORETURN NOINLINE void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value);
+    NORETURN NOINLINE void AbortImpl();
 
 }
 
@@ -42,7 +43,7 @@ namespace ams::diag {
 #define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)
 #else
 #define AMS_CALL_ASSERT_FAIL_IMPL(cond, ...) ::ams::diag::AssertionFailureImpl("", 0, "", "", 0)
-#define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl("", 0, "", "", 0)
+#define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl()
 #endif
 
 #ifdef AMS_ENABLE_ASSERTIONS

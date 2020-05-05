@@ -1,0 +1,4 @@
+%rename link old_link
+
+*link:
+%(old_link) -T %:getenv(TOPDIR /program.ld) --gc-sections --nmagic -nostdlib -nostartfiles

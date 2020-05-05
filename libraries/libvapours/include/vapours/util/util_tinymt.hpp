@@ -242,7 +242,7 @@ namespace ams::util {
                 const u32 first  = (this->GenerateRandomU32() >> Shift1st);
                 const u32 second = (this->GenerateRandomU32() >> Shift2nd);
 
-                return (1.0 * first * (1ul << (32 - Shift2nd)) + second) * (1.0 / (1ul << MantissaBits));
+                return (1.0 * first * (static_cast<u64>(1) << (32 - Shift2nd)) + second) * (1.0 / (static_cast<u64>(1) << MantissaBits));
             }
     };
 
