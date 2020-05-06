@@ -34,19 +34,19 @@ namespace ams::fs {
         s64 file_entry_size;
         s64 body_offset;
     };
-    static_assert(std::is_pod<RomFileSystemInformation>::value);
+    static_assert(util::is_pod<RomFileSystemInformation>::value);
     static_assert(sizeof(RomFileSystemInformation) == 0x50);
 
     struct RomDirectoryInfo {
         /* ... */
     };
-    static_assert(std::is_pod<RomDirectoryInfo>::value);
+    static_assert(util::is_pod<RomDirectoryInfo>::value);
 
     struct RomFileInfo {
         Int64 offset;
         Int64 size;
     };
-    static_assert(std::is_pod<RomFileInfo>::value);
+    static_assert(util::is_pod<RomFileInfo>::value);
 
     namespace RomStringTraits {
 

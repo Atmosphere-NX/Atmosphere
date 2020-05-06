@@ -36,7 +36,7 @@ namespace ams::os {
             };
             util::BitPack32 counter;
         };
-        static_assert(std::is_pod<LockCount>::value);
+        static_assert(util::is_pod<LockCount>::value);
         static_assert(std::is_trivial<LockCount>::value);
 
         union {

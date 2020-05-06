@@ -27,12 +27,12 @@ namespace ams::settings::fwdbg {
         char value[util::AlignUp(SettingsNameLengthMax + 1, alignof(u64))];
     };
 
-    static_assert(std::is_pod<SettingsName>::value && sizeof(SettingsName) > SettingsNameLengthMax);
+    static_assert(util::is_pod<SettingsName>::value && sizeof(SettingsName) > SettingsNameLengthMax);
 
     struct SettingsItemKey : sf::LargeData {
         char value[util::AlignUp(SettingsItemKeyLengthMax + 1, alignof(u64))];
     };
 
-    static_assert(std::is_pod<SettingsItemKey>::value && sizeof(SettingsItemKey) > SettingsItemKeyLengthMax);
+    static_assert(util::is_pod<SettingsItemKey>::value && sizeof(SettingsItemKey) > SettingsItemKeyLengthMax);
 
 }

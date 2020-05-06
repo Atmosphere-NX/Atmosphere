@@ -56,6 +56,6 @@ namespace ams::lr {
         }
     };
 
-    static_assert(std::is_pod<Path>::value && sizeof(Path) == fs::EntryNameLengthMax);
+    static_assert(util::is_pod<Path>::value && sizeof(Path) == fs::EntryNameLengthMax);
 
 }

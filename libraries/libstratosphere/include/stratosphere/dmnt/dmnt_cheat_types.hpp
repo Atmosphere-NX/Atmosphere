@@ -36,7 +36,7 @@ namespace ams::dmnt::cheat {
         u8 main_nso_build_id[0x20];
     };
 
-    static_assert(std::is_pod<CheatProcessMetadata>::value && sizeof(CheatProcessMetadata) == 0x70, "CheatProcessMetadata definition!");
+    static_assert(util::is_pod<CheatProcessMetadata>::value && sizeof(CheatProcessMetadata) == 0x70, "CheatProcessMetadata definition!");
 
     struct CheatDefinition : sf::LargeData, sf::PrefersMapAliasTransferMode {
         char readable_name[0x40];
@@ -50,8 +50,8 @@ namespace ams::dmnt::cheat {
         CheatDefinition definition;
     };
 
-    static_assert(std::is_pod<CheatDefinition>::value, "CheatDefinition");
-    static_assert(std::is_pod<CheatEntry>::value, "CheatEntry");
+    static_assert(util::is_pod<CheatDefinition>::value, "CheatDefinition");
+    static_assert(util::is_pod<CheatEntry>::value, "CheatEntry");
 
     struct FrozenAddressValue {
         u64 value;

@@ -40,7 +40,7 @@ namespace ams::mitm::fs {
                 s64 file_table_size;
                 s64 file_partition_ofs;
             };
-            static_assert(std::is_pod<Header>::value && sizeof(Header) == 0x50);
+            static_assert(util::is_pod<Header>::value && sizeof(Header) == 0x50);
 
             struct DirectoryEntry {
                 u32 parent;
@@ -51,7 +51,7 @@ namespace ams::mitm::fs {
                 u32 name_size;
                 char name[];
             };
-            static_assert(std::is_pod<DirectoryEntry>::value && sizeof(DirectoryEntry) == 0x18);
+            static_assert(util::is_pod<DirectoryEntry>::value && sizeof(DirectoryEntry) == 0x18);
 
             struct FileEntry {
                 u32 parent;
@@ -62,7 +62,7 @@ namespace ams::mitm::fs {
                 u32 name_size;
                 char name[];
             };
-            static_assert(std::is_pod<FileEntry>::value && sizeof(FileEntry) == 0x20);
+            static_assert(util::is_pod<FileEntry>::value && sizeof(FileEntry) == 0x20);
 
             template<typename Entry>
             class TableReader {

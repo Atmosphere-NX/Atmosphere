@@ -102,5 +102,7 @@ int main(int argc, char **argv)
 
     /* Launch all programs off of SYSTEM/the SD. */
     boot2::LaunchPostSdCardBootPrograms();
+
+    return 0;
 }
 

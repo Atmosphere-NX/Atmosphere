@@ -26,7 +26,7 @@ namespace ams::kvdb {
 
     template<class Key>
     class MemoryKeyValueStore {
-        static_assert(std::is_pod<Key>::value, "KeyValueStore Keys must be pod!");
+        static_assert(util::is_pod<Key>::value, "KeyValueStore Keys must be pod!");
         NON_COPYABLE(MemoryKeyValueStore);
         NON_MOVEABLE(MemoryKeyValueStore);
         public:
@@ -49,7 +49,7 @@ namespace ams::kvdb {
                         if constexpr (!std::is_same<Value, void>::value) {
                             AMS_ABORT_UNLESS(sizeof(Value) <= this->value_size);
                             /* Ensure we only get pod. */
-                            static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
+                            static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }
                         return reinterpret_cast<Value *>(this->value);
                     }
@@ -60,7 +60,7 @@ namespace ams::kvdb {
                         if constexpr (!std::is_same<Value, void>::value) {
                             AMS_ABORT_UNLESS(sizeof(Value) <= this->value_size);
                             /* Ensure we only get pod. */
-                            static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
+                            static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
                         }
                         return reinterpret_cast<Value *>(this->value);
                     }
@@ -366,14 +366,14 @@ namespace ams::kvdb {
             template<typename Value>
             Result Set(const Key &key, const Value &value) {
                 /* Only allow setting pod. */
-                static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
+                static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
                 return this->Set(key, &value, sizeof(Value));
             }
 
             template<typename Value>
             Result Set(const Key &key, const Value *value) {
                 /* Only allow setting pod. */
-                static_assert(std::is_pod<Value>::value, "KeyValueStore Values must be pod");
+                static_assert(util::is_pod<Value>::value, "KeyValueStore Values must be pod");
                 return this->Set(key, value, sizeof(Value));
             }
 

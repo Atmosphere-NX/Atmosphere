@@ -42,7 +42,7 @@ namespace ams::kvdb {
                 return header;
             }
         };
-        static_assert(sizeof(ArchiveHeader) == 0xC && std::is_pod<ArchiveHeader>::value, "ArchiveHeader definition!");
+        static_assert(sizeof(ArchiveHeader) == 0xC && util::is_pod<ArchiveHeader>::value, "ArchiveHeader definition!");
 
         struct ArchiveEntryHeader {
             u8 magic[sizeof(ArchiveEntryMagic)];
@@ -62,7 +62,7 @@ namespace ams::kvdb {
                 return header;
             }
         };
-        static_assert(sizeof(ArchiveEntryHeader) == 0xC && std::is_pod<ArchiveEntryHeader>::value, "ArchiveEntryHeader definition!");
+        static_assert(sizeof(ArchiveEntryHeader) == 0xC && util::is_pod<ArchiveEntryHeader>::value, "ArchiveEntryHeader definition!");
 
     }
 

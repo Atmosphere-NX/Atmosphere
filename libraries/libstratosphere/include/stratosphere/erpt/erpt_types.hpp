@@ -108,7 +108,7 @@ namespace ams::erpt {
     };
 
     using ReportFlagSet = util::BitFlagSet<BITSIZEOF(u32), ReportFlag>;
-    static_assert(std::is_pod<ReportFlagSet>::value);
+    static_assert(util::is_pod<ReportFlagSet>::value);
     static_assert(sizeof(ReportFlagSet) == sizeof(u32));
 
     struct ReportInfo {
@@ -149,7 +149,7 @@ namespace ams::erpt {
     };
 
     using AttachmentFlagSet = util::BitFlagSet<BITSIZEOF(u32), AttachmentFlag>;
-    static_assert(std::is_pod<AttachmentFlagSet>::value);
+    static_assert(util::is_pod<AttachmentFlagSet>::value);
     static_assert(sizeof(AttachmentFlagSet) == sizeof(u32));
 
     constexpr inline u32 AttachmentNameSizeMax = 0x20;

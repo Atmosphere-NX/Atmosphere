@@ -104,7 +104,7 @@ namespace ams {
     };
 
     static_assert(sizeof(FatalErrorContext) == 0x450, "sizeof(FatalErrorContext)");
-    static_assert(std::is_pod<FatalErrorContext>::value, "FatalErrorContext");
+    static_assert(util::is_pod<FatalErrorContext>::value, "FatalErrorContext");
 
 #ifdef ATMOSPHERE_GIT_BRANCH
     NX_CONSTEXPR const char *GetGitBranch() {

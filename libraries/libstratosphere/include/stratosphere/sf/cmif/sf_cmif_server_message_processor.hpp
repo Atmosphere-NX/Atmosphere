@@ -63,7 +63,7 @@ namespace ams::sf::cmif {
         }
     };
 
-    static_assert(std::is_pod<ServerMessageRuntimeMetadata>::value, "std::is_pod<ServerMessageRuntimeMetadata>::value");
+    static_assert(util::is_pod<ServerMessageRuntimeMetadata>::value, "util::is_pod<ServerMessageRuntimeMetadata>::value");
     static_assert(sizeof(ServerMessageRuntimeMetadata) == sizeof(u64), "sizeof(ServerMessageRuntimeMetadata)");
 
     class ServerMessageProcessor {

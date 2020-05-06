@@ -24,7 +24,7 @@ namespace ams::svc::codegen::impl {
             static constexpr size_t MaxParameters = 8;
         private:
             static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
-        private:
+        public:
             /* ABI parameters. */
             Abi abi;
 
@@ -102,7 +102,7 @@ namespace ams::svc::codegen::impl {
     };
 
     class ProcedureLayout {
-        private:
+        public:
             Abi abi;
             ParameterLayout input;
             ParameterLayout output;
@@ -205,7 +205,7 @@ namespace ams::svc::codegen::impl {
     };
 
     class SvcInvocationLayout {
-        private:
+        public:
             Abi abi;
             ParameterLayout input;
             ParameterLayout output;

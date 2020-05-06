@@ -65,6 +65,6 @@ namespace ams::mem::impl {
         size_t alloc_size;
         size_t hash;
     };
-    static_assert(std::is_pod<HeapHash>::value);
+    static_assert(util::is_pod<HeapHash>::value);
 
 }

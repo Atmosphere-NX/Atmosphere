@@ -36,7 +36,7 @@ namespace ams::reg {
     }
 
     inline void SetBits(volatile u32 *reg, u32 mask) {
-        *reg |= mask;
+        *reg = *reg | mask;
     }
 
     inline void SetBits(uintptr_t reg, u32 mask) {
@@ -44,7 +44,7 @@ namespace ams::reg {
     }
 
     inline void ClearBits(volatile u32 *reg, u32 mask) {
-        *reg &= ~mask;
+        *reg = *reg & ~mask;
     }
 
     inline void ClearBits(uintptr_t reg, u32 mask) {
@@ -52,7 +52,7 @@ namespace ams::reg {
     }
 
     inline void MaskBits(volatile u32 *reg, u32 mask) {
-        *reg &= mask;
+        *reg = *reg & mask;
     }
 
     inline void MaskBits(uintptr_t reg, u32 mask) {

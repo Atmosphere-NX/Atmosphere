@@ -72,7 +72,7 @@ namespace ams::kern::arch::arm64 {
             SgirTargetListFilter_Reserved      = (3 << 24),
         };
     };
-    static_assert(std::is_pod<GicDistributor>::value);
+    static_assert(util::is_pod<GicDistributor>::value);
     static_assert(sizeof(GicDistributor) == 0x1000);
 
     struct GicCpuInterface {
@@ -98,7 +98,7 @@ namespace ams::kern::arch::arm64 {
         u32 dir;
         u32 _0x1004[1023];
     };
-    static_assert(std::is_pod<GicCpuInterface>::value);
+    static_assert(util::is_pod<GicCpuInterface>::value);
     static_assert(sizeof(GicCpuInterface) == 0x2000);
 
     struct KInterruptController {
@@ -164,11 +164,11 @@ namespace ams::kern::arch::arm64 {
             }
 
             void SetTarget(s32 irq, s32 core_id) const {
-                this->gicd->itargetsr.bytes[irq] |= GetGicMask(core_id);
+                this->gicd->itargetsr.bytes[irq] = this->gicd->itargetsr.bytes[irq] | GetGicMask(core_id);
             }
 
             void ClearTarget(s32 irq, s32 core_id) const {
-                this->gicd->itargetsr.bytes[irq] &= ~GetGicMask(core_id);
+                this->gicd->itargetsr.bytes[irq] = this->gicd->itargetsr.bytes[irq] & ~GetGicMask(core_id);
             }
 
             void SetPriorityLevel(s32 irq, s32 level) const {

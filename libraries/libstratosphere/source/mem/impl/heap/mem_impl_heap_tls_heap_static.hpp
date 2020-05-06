@@ -160,7 +160,7 @@ namespace ams::mem::impl::heap {
 
             template<typename T>
             static ALWAYS_INLINE T *AlignUpPage(T *ptr) {
-                static_assert(std::is_pod<T>::value);
+                static_assert(util::is_pod<T>::value);
                 static_assert(util::IsAligned(PageSize, alignof(T)));
                 return reinterpret_cast<T *>(AlignUpPage(reinterpret_cast<uintptr_t>(ptr)));
             }
@@ -171,7 +171,7 @@ namespace ams::mem::impl::heap {
 
             template<typename T>
             static ALWAYS_INLINE T *AlignDownPage(T *ptr) {
-                static_assert(std::is_pod<T>::value);
+                static_assert(util::is_pod<T>::value);
                 static_assert(util::IsAligned(PageSize, alignof(T)));
                 return reinterpret_cast<T *>(AlignDownPage(reinterpret_cast<uintptr_t>(ptr)));
             }
@@ -182,7 +182,7 @@ namespace ams::mem::impl::heap {
 
             template<typename T>
             static ALWAYS_INLINE T *AlignUpPhysicalPage(T *ptr) {
-                static_assert(std::is_pod<T>::value);
+                static_assert(util::is_pod<T>::value);
                 static_assert(util::IsAligned(PhysicalPageSize, alignof(T)));
                 return reinterpret_cast<T *>(AlignUpPhysicalPage(reinterpret_cast<uintptr_t>(ptr)));
             }
@@ -193,7 +193,7 @@ namespace ams::mem::impl::heap {
 
             template<typename T>
             static ALWAYS_INLINE T *AlignDownPhysicalPage(T *ptr) {
-                static_assert(std::is_pod<T>::value);
+                static_assert(util::is_pod<T>::value);
                 static_assert(util::IsAligned(PhysicalPageSize, alignof(T)));
                 return reinterpret_cast<T *>(AlignDownPhysicalPage(reinterpret_cast<uintptr_t>(ptr)));
             }

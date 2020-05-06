@@ -1042,7 +1042,7 @@ namespace ams::sf::impl {
     };
 
     constexpr Result GetCmifOutHeaderPointer(CmifOutHeader **out_header_ptr, cmif::PointerAndSize &out_raw_data) {
-        CmifOutHeader *header = reinterpret_cast<CmifOutHeader *>(out_raw_data.GetPointer());
+        CmifOutHeader *header = static_cast<CmifOutHeader *>(out_raw_data.GetPointer());
         R_UNLESS(out_raw_data.GetSize() >= sizeof(*header), sf::cmif::ResultInvalidHeaderSize());
         out_raw_data = cmif::PointerAndSize(out_raw_data.GetAddress() + sizeof(*header), out_raw_data.GetSize() - sizeof(*header));
         *out_header_ptr = header;

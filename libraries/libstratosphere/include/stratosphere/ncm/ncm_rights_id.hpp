@@ -25,7 +25,7 @@ namespace ams::ncm {
         u8 reserved[7];
     };
     static_assert(sizeof(RightsId) == 0x18);
-    static_assert(std::is_pod<RightsId>::value);
+    static_assert(util::is_pod<RightsId>::value);
 
     inline bool operator==(const RightsId &lhs, const RightsId &rhs) {
         return std::tie(lhs.id, lhs.key_generation) == std::tie(rhs.id, rhs.key_generation);

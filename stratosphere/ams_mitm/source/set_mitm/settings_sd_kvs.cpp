@@ -42,7 +42,7 @@ namespace ams::settings::fwdbg {
             }
         };
 
-        static_assert(std::is_pod<SdKeyValueStoreEntry>::value);
+        static_assert(util::is_pod<SdKeyValueStoreEntry>::value);
 
         constexpr inline bool operator==(const SdKeyValueStoreEntry &lhs, const SdKeyValueStoreEntry &rhs) {
             if (lhs.HasValue() != rhs.HasValue()) {

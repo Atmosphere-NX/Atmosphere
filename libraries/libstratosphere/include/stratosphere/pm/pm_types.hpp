@@ -97,6 +97,6 @@ namespace ams::pm {
         u32 event;
         os::ProcessId process_id;
     };
-    static_assert(sizeof(ProcessEventInfo) == 0x10 && std::is_pod<ProcessEventInfo>::value, "ProcessEventInfo definition!");
+    static_assert(sizeof(ProcessEventInfo) == 0x10 && util::is_pod<ProcessEventInfo>::value, "ProcessEventInfo definition!");
 
 }

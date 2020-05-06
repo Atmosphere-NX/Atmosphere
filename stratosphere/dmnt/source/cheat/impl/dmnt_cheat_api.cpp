@@ -141,7 +141,7 @@ namespace ams::dmnt::cheat::impl {
                         }
 
                         /* Clear metadata. */
-                        static_assert(std::is_pod<decltype(this->cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
+                        static_assert(util::is_pod<decltype(this->cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
                         std::memset(&this->cheat_process_metadata, 0, sizeof(this->cheat_process_metadata));
 
                         /* Clear cheat list. */

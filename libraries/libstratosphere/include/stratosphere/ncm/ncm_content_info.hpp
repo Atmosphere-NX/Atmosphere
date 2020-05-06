@@ -55,7 +55,7 @@ namespace ams::ncm {
         }
     };
 
-    static_assert(sizeof(std::is_pod<ContentInfo>::value));
+    static_assert(sizeof(util::is_pod<ContentInfo>::value));
     static_assert(sizeof(ContentInfo)  == 0x18);
 
 }

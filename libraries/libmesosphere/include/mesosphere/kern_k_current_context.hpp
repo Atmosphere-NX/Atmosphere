@@ -31,8 +31,10 @@ namespace ams::kern {
         s32 core_id;
         void *exception_stack_top;
     };
-    static_assert(std::is_pod<KCurrentContext>::value);
+    static_assert(std::is_standard_layout<KCurrentContext>::value && std::is_trivially_destructible<KCurrentContext>::value);
     static_assert(sizeof(KCurrentContext) <= cpu::DataCacheLineSize);
+    static_assert(sizeof(std::atomic<KThread *>) == sizeof(KThread *));
+    static_assert(sizeof(std::atomic<KProcess *>) == sizeof(KProcess *));
 
     namespace impl {
 

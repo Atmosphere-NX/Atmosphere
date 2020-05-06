@@ -41,6 +41,6 @@ namespace ams::capsrv {
     };
     static_assert(sizeof(ScreenShotDecodeOption) == 0x20);
     static_assert(sizeof(ScreenShotDecodeOption) == sizeof(::CapsScreenShotDecodeOption));
-    static_assert(std::is_pod<ScreenShotDecodeOption>::value);
+    static_assert(util::is_pod<ScreenShotDecodeOption>::value);
 
 }

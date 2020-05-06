@@ -143,7 +143,7 @@ namespace ams::svc::codegen::impl {
 
     template<size_t N>
     class RegisterAllocator {
-        private:
+        public:
             std::array<bool, N> map;
         public:
             constexpr explicit RegisterAllocator() : map() { /* ... */ }

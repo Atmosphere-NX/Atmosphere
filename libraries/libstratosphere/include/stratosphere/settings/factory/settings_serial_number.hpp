@@ -22,6 +22,6 @@ namespace ams::settings::factory {
         char str[0x18];
     };
     static_assert(sizeof(SerialNumber) == 0x18);
-    static_assert(std::is_pod<SerialNumber>::value);
+    static_assert(util::is_pod<SerialNumber>::value);
 
 }

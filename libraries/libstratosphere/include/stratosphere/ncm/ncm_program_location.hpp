@@ -27,7 +27,7 @@ namespace ams::ncm {
             return { .program_id = program_id, .storage_id = static_cast<u8>(storage_id), };
         }
     };
-    static_assert(sizeof(ProgramLocation) == 0x10 && std::is_pod<ProgramLocation>::value);
+    static_assert(sizeof(ProgramLocation) == 0x10 && util::is_pod<ProgramLocation>::value);
     static_assert(sizeof(ProgramLocation) == sizeof(::NcmProgramLocation) && alignof(ProgramLocation) == alignof(::NcmProgramLocation), "ProgramLocation Libnx Compatibility");
 
 

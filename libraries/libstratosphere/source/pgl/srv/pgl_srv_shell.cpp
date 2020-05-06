@@ -27,7 +27,7 @@ namespace ams::pgl::srv {
             os::ProcessId process_id;
             u32 flags;
         };
-        static_assert(std::is_pod<ProcessData>::value);
+        static_assert(util::is_pod<ProcessData>::value);
 
         enum ProcessDataFlag : u32 {
             ProcessDataFlag_None                        = 0,
