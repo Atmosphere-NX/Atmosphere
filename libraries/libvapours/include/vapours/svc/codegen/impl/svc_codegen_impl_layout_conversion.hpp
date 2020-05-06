@@ -313,11 +313,7 @@ namespace ams::svc::codegen::impl {
                     }
                     for (size_t i = 1; i < num_parameters; i++) {
                         for (size_t j = i; j > 0 && CapturedSvc.GetParameter(map[j-1]).GetLocation(0) > CapturedSvc.GetParameter(map[j]).GetLocation(0); j--) {
-                            /* std::swap is not constexpr until c++20 :( */
-                            /* TODO: std::swap(map[j], map[j-1]); */
-                            const size_t tmp = map[j];
-                            map[j] = map[j-1];
-                            map[j-1] = tmp;
+                            std::swap(map[j], map[j-1]);
                         }
                     }
                     return map;
@@ -376,7 +372,6 @@ namespace ams::svc::codegen::impl {
                             constexpr size_t RegisterSize = SvcAbiType::RegisterSize;
                             constexpr size_t PassedSize   = ProcedureParam.GetTypeSize();
 
-                            /* TODO: C++20 templated lambdas. For now, use GCC extension syntax. */
                             constexpr auto SvcIndexSequence = []<auto CapturedSvcParam, size_t... Is>(std::index_sequence<Is...>) {
                                 return std::index_sequence<CapturedSvcParam.GetLocation(Is).GetIndex()...>{};
                             }.template operator()<SvcParam>(std::make_index_sequence<SvcParam.GetNumLocations()>());

@@ -17,16 +17,14 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
+#include <vapours/util/util_endian.hpp>
 
 namespace ams::util {
 
     template<char A, char B, char C, char D>
     struct FourCC {
-        /* TODO: C++20 std::endian */
-        static constexpr u32 Code = (static_cast<u32>(A) << 0x00) |
-                                    (static_cast<u32>(B) << 0x08) |
-                                    (static_cast<u32>(C) << 0x10) |
-                                    (static_cast<u32>(D) << 0x18);
+        static constexpr u32 Code = IsLittleEndian() ? ((static_cast<u32>(A) << 0x00) | (static_cast<u32>(B) << 0x08) | (static_cast<u32>(C) << 0x10) | (static_cast<u32>(D) << 0x18))
+                                                     : ((static_cast<u32>(A) << 0x18) | (static_cast<u32>(B) << 0x10) | (static_cast<u32>(C) << 0x08) | (static_cast<u32>(D) << 0x00));
 
         static constexpr const char String[] = {A, B, C, D};
 
@@ -36,11 +34,8 @@ namespace ams::util {
 
     template<char A, char B, char C, char D>
     struct ReverseFourCC {
-        /* TODO: C++20 std::endian */
-        static constexpr u32 Code = (static_cast<u32>(A) << 0x18) |
-                                    (static_cast<u32>(B) << 0x10) |
-                                    (static_cast<u32>(C) << 0x08) |
-                                    (static_cast<u32>(D) << 0x00);
+        static constexpr u32 Code = IsLittleEndian() ? ((static_cast<u32>(A) << 0x18) | (static_cast<u32>(B) << 0x10) | (static_cast<u32>(C) << 0x08) | (static_cast<u32>(D) << 0x00))
+                                                     : ((static_cast<u32>(A) << 0x00) | (static_cast<u32>(B) << 0x08) | (static_cast<u32>(C) << 0x10) | (static_cast<u32>(D) << 0x18));
 
         static constexpr const char String[] = {D, C, B, A};
 

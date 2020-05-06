@@ -220,11 +220,7 @@ namespace ams::svc::codegen::impl {
                 }
                 for (size_t i = 1; i < num_parameters; i++) {
                     for (size_t j = i; j > 0 && param_layout.GetParameter(map[j-1]).GetLocation(0) > param_layout.GetParameter(map[j]).GetLocation(0); j--) {
-                        /* std::swap is not constexpr until c++20 :( */
-                        /* TODO: std::swap(map[j], map[j-1]); */
-                        const size_t tmp = map[j];
-                        map[j] = map[j-1];
-                        map[j-1] = tmp;
+                        std::swap(map[j], map[j-1]);
                     }
                 }
 
