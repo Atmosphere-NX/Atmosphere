@@ -48,7 +48,7 @@ namespace ams::kern::init::loader {
             static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
 
             /* 10.0.0 reduced the kernel resource region size by 64K. */
-            if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+            if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
                 resource_region_size -= KernelResourceReduction_10_0_0;
             }
             return resource_region_size;
@@ -118,7 +118,7 @@ namespace ams::kern::init::loader {
             cpu::TranslationControlRegisterAccessor(TcrValue).Store();
 
             /* Perform cpu-specific setup on < 10.0.0. */
-            if (kern::GetTargetFirmware() < kern::TargetFirmware_10_0_0) {
+            if (kern::GetTargetFirmware() < ams::TargetFirmware_10_0_0) {
                 SavedRegisterState saved_registers;
                 SaveRegistersToTpidrEl1(&saved_registers);
                 ON_SCOPE_EXIT { VerifyAndClearTpidrEl1(&saved_registers); };
@@ -305,7 +305,7 @@ namespace ams::kern::init::loader {
         ttbr1_table.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
 
         /* On 10.0.0+, Physically randomize the kernel region. */
-        if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+        if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
             ttbr1_table.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
             cpu::StoreEntireCacheForInit();
         }
@@ -333,7 +333,7 @@ namespace ams::kern::init::loader {
 
     uintptr_t GetFinalPageAllocatorState() {
         g_initial_page_allocator.GetFinalState(std::addressof(g_final_page_allocator_state));
-        if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+        if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
             return reinterpret_cast<uintptr_t>(std::addressof(g_final_page_allocator_state));
         } else {
             return g_final_page_allocator_state.next_address;

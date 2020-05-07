@@ -90,13 +90,13 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
     package2_patch_kernel(kernel, &kernel_size, is_sd_kernel, (void *)&orig_ini1, target_firmware);
 
     /* Ensure we know where embedded INI is if present, and we don't if not. */
-    if ((target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 != NULL) ||
-        (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_800 && orig_ini1 == NULL)) {
+    if ((target_firmware < ATMOSPHERE_TARGET_FIRMWARE_8_0_0 && orig_ini1 != NULL) ||
+        (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_0_0 && orig_ini1 == NULL)) {
         fatal_error("Error: inappropriate kernel embedded ini context");
     }
 
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_800) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_8_0_0) {
         package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
     } else {
         /* On 8.0.0, place INI1 right after kernelldr for our sanity. */

@@ -35,46 +35,9 @@ namespace ams::hos {
                 return;
             }
 
-            switch (exosphere::GetApiInfo().GetTargetFirmware()) {
-                case exosphere::TargetFirmware_100:
-                    g_hos_version = hos::Version_1_0_0;
-                    break;
-                case exosphere::TargetFirmware_200:
-                    g_hos_version = hos::Version_2_0_0;
-                    break;
-                case exosphere::TargetFirmware_300:
-                    g_hos_version = hos::Version_3_0_0;
-                    break;
-                case exosphere::TargetFirmware_400:
-                    g_hos_version = hos::Version_4_0_0;
-                    break;
-                case exosphere::TargetFirmware_500:
-                    g_hos_version = hos::Version_5_0_0;
-                    break;
-                case exosphere::TargetFirmware_600:
-                case exosphere::TargetFirmware_620:
-                    g_hos_version = hos::Version_6_0_0;
-                    break;
-                case exosphere::TargetFirmware_700:
-                    g_hos_version = hos::Version_7_0_0;
-                    break;
-                case exosphere::TargetFirmware_800:
-                    g_hos_version = hos::Version_8_0_0;
-                    break;
-                case exosphere::TargetFirmware_810:
-                    g_hos_version = hos::Version_8_1_0;
-                    break;
-                case exosphere::TargetFirmware_900:
-                    g_hos_version = hos::Version_9_0_0;
-                    break;
-                case exosphere::TargetFirmware_910:
-                    g_hos_version = hos::Version_9_1_0;
-                    break;
-                case exosphere::TargetFirmware_1000:
-                    g_hos_version = hos::Version_10_0_0;
-                    break;
-                AMS_UNREACHABLE_DEFAULT_CASE();
-            }
+            /* Hos version is a direct copy of target firmware, just renamed. */
+            g_hos_version = static_cast<hos::Version>(exosphere::GetApiInfo().GetTargetFirmware());
+            AMS_ABORT_UNLESS(g_hos_version <= hos::Version_Max);
 
             __atomic_store_n(&g_has_cached, true, __ATOMIC_SEQ_CST);
         }
@@ -87,69 +50,10 @@ namespace ams::hos {
     }
 
     void SetVersionForLibnxInternal() {
-        u32 major = 0, minor = 0, micro = 0;
-        switch (hos::GetVersion()) {
-            case hos::Version_1_0_0:
-                major = 1;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_2_0_0:
-                major = 2;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_3_0_0:
-                major = 3;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_4_0_0:
-                major = 4;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_5_0_0:
-                major = 5;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_6_0_0:
-                major = 6;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_7_0_0:
-                major = 7;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_8_0_0:
-                major = 8;
-                minor = 0;
-                micro = 0;
-                break;
-            case hos::Version_8_1_0:
-                major = 8;
-                minor = 1;
-                micro = 0;
-                break;
-            case hos::Version_9_0_0:
-                major = 9;
-                minor = 0;
-                micro = 0;
-            case hos::Version_9_1_0:
-                major = 9;
-                minor = 1;
-                micro = 0;
-                break;
-            case hos::Version_10_0_0:
-                major = 10;
-                minor = 0;
-                micro = 0;
-                break;
-            AMS_UNREACHABLE_DEFAULT_CASE();
-        }
+        const u32 hos_version_val = static_cast<u32>(hos::GetVersion());
+        const u32 major = (hos_version_val >> 24) & 0xFF;
+        const u32 minor = (hos_version_val >> 16) & 0xFF;
+        const u32 micro = (hos_version_val >>  8) & 0xFF;
         hosversionSet(MAKEHOSVERSION(major, minor, micro));
     }
 

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 
 #include "utils.h"
@@ -30,13 +30,13 @@ static void secmon_decrypt_saved_image(void *dst, const void *src, size_t size);
 
 void secmon_restore_to_tzram(const uint32_t target_firmware) {
     /* Newer warmboot binaries clear the untouched keyslots for safety. */
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_500) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
         secmon_clear_unused_keyslots();
     }
 
     /* Decrypt Secure Monitor from DRAM into TZRAM. */
     void *tzram_src = (void *)(0x80010000);
-    void *tzram_dst = (void *)(target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_500 ? 0x7C012000 : 0x7C010000);
+    void *tzram_dst = (void *)(target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0 ? 0x7C012000 : 0x7C010000);
     const size_t tzram_size = 0xE000;
     secmon_decrypt_saved_image(tzram_dst, tzram_src, tzram_size);
 

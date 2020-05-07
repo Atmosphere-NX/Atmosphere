@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "utils.h"
 #include "mmu.h"
 #include "memory_map.h"
@@ -53,7 +53,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
             - warmboot (core 3)
             - cpu_on
     */
-    
+
     if (is_core_active(get_core_id())) {
         panic(0xF7F00009); /* invalid CPU context */
     }
@@ -70,7 +70,7 @@ void __attribute__((noreturn)) warmboot_main(void) {
             clkrst_reboot(CARDEVICE_UARTA);
             uart_init(UART_A, 115200);
         }
-        
+
         if (!configitem_is_retail()) {
             uart_send(UART_A, "OHAYO", 6);
             uart_wait_idle(UART_A, UART_VENDOR_STATE_TX_IDLE);
@@ -87,15 +87,15 @@ void __attribute__((noreturn)) warmboot_main(void) {
         /* Make PMC (2.x+), MC (4.x+) registers secure-only */
         secure_additional_devices();
 
-        if ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400) || 
-           ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_800) && configitem_get_hardware_type() == 0) ||
+        if ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) ||
+           ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_8_0_0) && configitem_get_hardware_type() == 0) ||
            (configitem_is_hiz_mode_enabled())) {
             warmboot_configure_hiz_mode();
         }
 
         clear_user_smc_in_progress();
 
-        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
             setup_4x_mmio();
         }
     }

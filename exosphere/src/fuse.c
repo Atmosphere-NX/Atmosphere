@@ -196,7 +196,7 @@ uint32_t fuse_get_hardware_type(uint32_t target_firmware) {
     uint32_t hardware_type = (((fuse_reserved_odm4 >> 7) & 2) | ((fuse_reserved_odm4 >> 2) & 1));
 
     /* Firmware from versions 1.0.0 to 3.0.2. */
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
         volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
         if (hardware_type >= 1) {
             return (hardware_type > 2) ? 3 : hardware_type - 1;
@@ -205,7 +205,7 @@ uint32_t fuse_get_hardware_type(uint32_t target_firmware) {
         } else {
             return 3;
         }
-    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_700) {      /* Firmware versions from 4.0.0 to 6.2.0. */
+    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {      /* Firmware versions from 4.0.0 to 6.2.0. */
         static const uint32_t types[] = {0,1,4,3};
         hardware_type |= ((fuse_reserved_odm4 >> 14) & 0x3C);
         hardware_type--;
@@ -262,30 +262,39 @@ uint32_t fuse_get_5x_key_generation(void) {
 
 /* Returns the fuse version expected for the firmware. */
 uint32_t fuse_get_expected_fuse_version(uint32_t target_firmware) {
-    static const uint8_t expected_versions[ATMOSPHERE_TARGET_FIRMWARE_COUNT+1] = {
-        [ATMOSPHERE_TARGET_FIRMWARE_100]  = 1,
-        [ATMOSPHERE_TARGET_FIRMWARE_200]  = 2,
-        [ATMOSPHERE_TARGET_FIRMWARE_300]  = 3,
-     /* [ATMOSPHERE_TARGET_FIRMWARE_302]  = 4, */
-        [ATMOSPHERE_TARGET_FIRMWARE_400]  = 5,
-        [ATMOSPHERE_TARGET_FIRMWARE_500]  = 6,
-        [ATMOSPHERE_TARGET_FIRMWARE_600]  = 7,
-        [ATMOSPHERE_TARGET_FIRMWARE_620]  = 8,
-        [ATMOSPHERE_TARGET_FIRMWARE_700]  = 9,
-        [ATMOSPHERE_TARGET_FIRMWARE_800]  = 9,
-        [ATMOSPHERE_TARGET_FIRMWARE_810]  = 10,
-        [ATMOSPHERE_TARGET_FIRMWARE_900]  = 11,
-        [ATMOSPHERE_TARGET_FIRMWARE_910]  = 12,
-        [ATMOSPHERE_TARGET_FIRMWARE_1000] = 13,
-    };
-
-    if (target_firmware > ATMOSPHERE_TARGET_FIRMWARE_COUNT) {
-        generic_panic();
+    if (fuse_get_retail_type() != 0) {
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
+            return 13;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_9_1_0) {
+            return 12;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_9_0_0) {
+            return 11;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
+            return 10;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
+            return 9;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
+            return 8;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_6_0_0) {
+            return 7;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
+            return 6;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
+            return 5;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_3_0_2) {
+            return 4;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
+            return 3;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_2_0_0) {
+            return 2;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_1_0_0) {
+            return 1;
+        } else {
+            return 0;
+        }
+    } else {
+        return (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_3_0_0) ? 1 : 0;
     }
-    if (fuse_get_retail_type() != 0)
-        return expected_versions[target_firmware];
-    else
-        return (target_firmware > ATMOSPHERE_TARGET_FIRMWARE_200) ? 1 : 0;
 }
 
 /* Check for RCM bug patches. */

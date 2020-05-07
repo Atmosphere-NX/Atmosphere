@@ -41,7 +41,11 @@ int mkey_detect_revision(bool is_retail);
 
 unsigned int mkey_get_revision(void);
 unsigned int mkey_get_keyslot(unsigned int revision);
+
+void derive_new_device_keys(bool is_retail, unsigned int keygen_keyslot, unsigned int target_firmware);
 void set_old_devkey(unsigned int revision, const uint8_t *key);
 unsigned int devkey_get_keyslot(unsigned int revision);
+
+
 
 #endif

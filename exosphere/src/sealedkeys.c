@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <string.h>
 
@@ -37,7 +37,7 @@ static const uint8_t g_seal_key_sources[CRYPTOUSECASE_MAX_5X][0x10] = {
 };
 
 bool usecase_is_invalid(unsigned int usecase) {
-    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
         return usecase >= CRYPTOUSECASE_MAX_5X;
     } else {
         return usecase >= CRYPTOUSECASE_MAX;
@@ -59,7 +59,7 @@ void seal_titlekey(void *dst, size_t dst_size, const void *src, size_t src_size)
     if (dst_size != 0x10 || src_size != 0x10) {
         generic_panic();
     }
-    
+
     seal_key_internal(dst, src, g_titlekey_seal_key_source);
 
 }
@@ -68,7 +68,7 @@ void unseal_titlekey(unsigned int keyslot, const void *src, size_t src_size) {
     if (src_size != 0x10) {
         generic_panic();
     }
-    
+
     unseal_key_internal(keyslot, src, g_titlekey_seal_key_source);
 }
 
@@ -77,8 +77,8 @@ void seal_key(void *dst, size_t dst_size, const void *src, size_t src_size, unsi
     if (usecase_is_invalid(usecase) || dst_size != 0x10 || src_size != 0x10) {
         generic_panic();
     }
-    
-    
+
+
     seal_key_internal(dst, src, g_seal_key_sources[usecase]);
 }
 
@@ -86,6 +86,6 @@ void unseal_key(unsigned int keyslot, const void *src, size_t src_size, unsigned
     if (usecase_is_invalid(usecase) || src_size != 0x10) {
         generic_panic();
     }
-    
+
     unseal_key_internal(keyslot, src, g_seal_key_sources[usecase]);
 }

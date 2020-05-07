@@ -26,7 +26,7 @@
 
 /* Physaddr 0x40002EF8 */
 static inline uintptr_t get_nx_bootloader_mailbox_base(unsigned int targetfw) {
-    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_NXBOOTLOADER_MAILBOX) + ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_700) ? (0x000ull) : (0xE00ull));
+    return MMIO_GET_DEVICE_ADDRESS(MMIO_DEVID_NXBOOTLOADER_MAILBOX) + ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) ? (0x000ull) : (0xE00ull));
 }
 
 #define MAILBOX_NX_BOOTLOADER_BASE(targetfw) (get_nx_bootloader_mailbox_base(targetfw))

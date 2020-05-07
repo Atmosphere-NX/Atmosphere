@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "utils.h"
 #include "lp0.h"
 #include "mc.h"
@@ -41,56 +41,56 @@ void lp0_entry_main(warmboot_metadata_t *meta) {
     if (meta->magic != WARMBOOT_MAGIC || target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX) {
         reboot();
     }
-    
+
     /* [4.0.0+] First thing warmboot does is disable BPMP access to memory. */
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400)  {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0)  {
         disable_bpmp_access_to_dram();
     }
-    
+
     /* Configure debugging depending on FUSE_PRODUCTION_MODE */
     misc_configure_device_dbg_settings();
-    
+
     /* Check for downgrade. */
     /* NOTE: We implemented this as "return false" */
     if (fuse_check_downgrade_status()) {
         reboot();
     }
-    
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_300) {
+
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
         /* Nintendo's firmware checks APBDEV_PMC_SECURE_SCRATCH32_0 against a per-warmboot binary value here. */
         /* We won't bother with that. */
         if (false /* APBDEV_PMC_SECURE_SCRATCH32_0 == WARMBOOT_MAGIC_NUMBER */) {
             reboot();
         }
     }
-    
+
     /* TODO: Check that we're running at the correct physical address. */
-    
+
     /* Setup fuses, disable bypass. */
     fuse_configure_fuse_bypass();
-    
+
     /* Configure oscillators/timing in CAR. */
     car_configure_oscillators();
-    
+
     /* Restore RAM configuration. */
     misc_restore_ram_svop();
     emc_configure_pmacro_training();
-    
+
     /* Setup clock output for all devices, working around mbist bug. */
     car_mbist_workaround();
-    
+
     /* Initialize the CPU cluster. */
     cluster_initialize_cpu();
-    
+
     secmon_restore_to_tzram(target_firmware);
-    
+
     /* Power on the CPU cluster. */
     cluster_power_on_cpu();
-    
+
     /* Nintendo clears most of warmboot.bin out of IRAM here. We're not gonna bother. */
     /* memset( ... ); */
-    
-    const uint32_t halt_val = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? 0x40000000 : 0x50000000;
+
+    const uint32_t halt_val = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) ? 0x40000000 : 0x50000000;
     while (true) {
         /* Halt the BPMP. */
         FLOW_CTLR_HALT_COP_EVENTS_0 = halt_val;

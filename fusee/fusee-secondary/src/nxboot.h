@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_NX_BOOT_H
 #define FUSEE_NX_BOOT_H
 
@@ -35,7 +35,7 @@ typedef struct {
 
 #define MAILBOX_NX_BOOTLOADER_BASE_100_620 0x40002E00
 #define MAILBOX_NX_BOOTLOADER_BASE_700     0x40000000
-#define MAILBOX_NX_BOOTLOADER_BASE(targetfw) ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_700) ? (MAILBOX_NX_BOOTLOADER_BASE_700) : (MAILBOX_NX_BOOTLOADER_BASE_100_620))
+#define MAILBOX_NX_BOOTLOADER_BASE(targetfw) ((targetfw >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) ? (MAILBOX_NX_BOOTLOADER_BASE_700) : (MAILBOX_NX_BOOTLOADER_BASE_100_620))
 #define MAKE_MAILBOX_NX_BOOTLOADER_REG(targetfw, n) MAKE_REG32(MAILBOX_NX_BOOTLOADER_BASE(targetfw) + n)
 
 #define MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE(targetfw)  (MAILBOX_NX_BOOTLOADER_BASE(targetfw) + 0x10)

@@ -90,14 +90,14 @@ static void mitigate_jamais_vu(void) {
     }
 
     /* For debugging, make this check always pass. */
-    if ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400 || (get_debug_authentication_status() & 3) == 3)) {
+    if ((exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_4_0_0 || (get_debug_authentication_status() & 3) == 3)) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x50000000;
     } else {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x40000000;
     }
 
     /* Jamais Vu mitigation #2: Ensure the BPMP is halted. */
-    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_400 || (get_debug_authentication_status() & 3) == 3) {
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_4_0_0 || (get_debug_authentication_status() & 3) == 3) {
         /* BPMP should just be plainly halted, in debugging conditions. */
         if (FLOW_CTLR_HALT_COP_EVENTS_0 != 0x50000000) {
             generic_panic();
@@ -167,7 +167,7 @@ static void save_tzram_state(void) {
 
     uint8_t *tzram_encryption_dst = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_ENCRYPTED_TZRAM));
     uint8_t *tzram_encryption_src = (uint8_t *)(LP0_ENTRY_GET_RAM_SEGMENT_ADDRESS(LP0_ENTRY_RAM_SEGMENT_ID_CURRENT_TZRAM));
-    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
         tzram_encryption_src += 0x2000ull;
     }
     uint8_t *tzram_store_address = (uint8_t *)(WARMBOOT_GET_RAM_SEGMENT_ADDRESS(WARMBOOT_RAM_SEGMENT_ID_TZRAM));
@@ -204,7 +204,7 @@ static void save_tzram_state(void) {
     APBDEV_PMC_SEC_DISABLE8_0 = 0x550000;
 
     /* Perform pre-2.0.0 PMC writes. */
-    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_200) {
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_2_0_0) {
         /* TODO: Give these writes appropriate defines in pmc.h */
 
         /* Save Encrypted context location + lock scratch register. */
@@ -272,7 +272,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     notify_pmic_shutdown();
 
     /* Validate that the shutdown has correct context. */
-    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_200) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_2_0_0) {
         mitigate_jamais_vu();
     }
 
@@ -280,7 +280,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
     configure_pmc_for_deep_powerdown();
 
     /* Ensure that BPMP SC7 firmware is active. */
-    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_200) {
+    if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_2_0_0) {
         setup_bpmp_sc7_firmware();
     }
 
@@ -294,7 +294,7 @@ uint32_t cpu_suspend(uint64_t power_state, uint64_t entrypoint, uint64_t argumen
 
     /* Ensure that other cores are already asleep. */
     if (!(APBDEV_PMC_PWRGATE_STATUS_0 & 0xE00)) {
-        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_200) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_2_0_0) {
             call_with_stack_pointer(get_smc_core012_stack_address(), save_se_and_power_down_cpu);
         } else {
             save_se_and_power_down_cpu();

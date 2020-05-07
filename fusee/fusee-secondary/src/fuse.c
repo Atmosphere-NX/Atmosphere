@@ -206,7 +206,7 @@ uint32_t fuse_get_hardware_type(uint32_t target_firmware) {
     uint32_t hardware_type = (((fuse_reserved_odm4 >> 7) & 2) | ((fuse_reserved_odm4 >> 2) & 1));
 
     /* Firmware from versions 1.0.0 to 3.0.2. */
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_400) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
         volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
         if (hardware_type >= 1) {
             return (hardware_type > 2) ? 3 : hardware_type - 1;
@@ -215,7 +215,7 @@ uint32_t fuse_get_hardware_type(uint32_t target_firmware) {
         } else {
             return 3;
         }
-    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_700) {      /* Firmware versions from 4.0.0 to 6.2.0. */
+    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {      /* Firmware versions from 4.0.0 to 6.2.0. */
         static const uint32_t types[] = {0,1,4,3};
         hardware_type |= ((fuse_reserved_odm4 >> 14) & 0x3C);
         hardware_type--;
@@ -260,4 +260,13 @@ void fuse_get_hardware_info(void *dst) {
     hw_info[3] = (uint32_t)(vendor_code);
 
     memcpy(dst, hw_info, 0x10);
+}
+
+/* Get the Key Generation value. */
+uint32_t fuse_get_5x_key_generation(void) {
+    if ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2)) {
+        return (fuse_get_reserved_odm(2) & 0x1F);
+    } else {
+        return 0;
+    }
 }

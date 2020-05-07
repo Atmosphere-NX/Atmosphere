@@ -169,36 +169,23 @@ void set_suspend_for_debug(void) {
 }
 
 void set_version_specific_smcs(void) {
-    switch (exosphere_get_target_firmware()) {
-        case ATMOSPHERE_TARGET_FIRMWARE_100:
-            /* 1.0.0 doesn't have ConfigureCarveout or ReadWriteRegister. */
-            g_smc_priv_table[7].handler = NULL;
-            g_smc_priv_table[8].handler = NULL;
-            /* 1.0.0 doesn't have UnwrapAesWrappedTitlekey. */
-            g_smc_user_table[0x12].handler = NULL;
-            break;
-        case ATMOSPHERE_TARGET_FIRMWARE_200:
-        case ATMOSPHERE_TARGET_FIRMWARE_300:
-        case ATMOSPHERE_TARGET_FIRMWARE_400:
-            /* Do nothing. */
-            break;
-        case ATMOSPHERE_TARGET_FIRMWARE_500:
-        case ATMOSPHERE_TARGET_FIRMWARE_600:
-        case ATMOSPHERE_TARGET_FIRMWARE_620:
-        case ATMOSPHERE_TARGET_FIRMWARE_700:
-        case ATMOSPHERE_TARGET_FIRMWARE_800:
-        case ATMOSPHERE_TARGET_FIRMWARE_810:
-        case ATMOSPHERE_TARGET_FIRMWARE_900:
-        case ATMOSPHERE_TARGET_FIRMWARE_910:
-        case ATMOSPHERE_TARGET_FIRMWARE_1000:
-            /* No more LoadSecureExpModKey. */
-            g_smc_user_table[0xE].handler = NULL;
-            g_smc_user_table[0xC].id = 0xC300D60C;
-            g_smc_user_table[0xC].handler = smc_encrypt_rsa_key_for_import;
-            g_smc_user_table[0xD].handler = smc_decrypt_or_import_rsa_key;
-            break;
-        default:
-            panic_predefined(0xA);
+    const uint32_t target_firmware = exosphere_get_target_firmware();
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
+        /* No more LoadSecureExpModKey. */
+        g_smc_user_table[0xE].handler = NULL;
+        g_smc_user_table[0xC].id = 0xC300D60C;
+        g_smc_user_table[0xC].handler = smc_encrypt_rsa_key_for_import;
+        g_smc_user_table[0xD].handler = smc_decrypt_or_import_rsa_key;
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_2_0_0) {
+        /* Nothing to do. */
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_1_0_0) {
+        /* 1.0.0 doesn't have ConfigureCarveout or ReadWriteRegister. */
+        g_smc_priv_table[7].handler = NULL;
+        g_smc_priv_table[8].handler = NULL;
+        /* 1.0.0 doesn't have UnwrapAesWrappedTitlekey. */
+        g_smc_user_table[0x12].handler = NULL;
+    } else {
+        panic_predefined(0xA);
     }
 }
 
@@ -306,7 +293,7 @@ void call_smc_handler(uint32_t handler_id, smc_args_t *args) {
 #endif
 
     /* Call function. */
-    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_800 ||
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_8_0_0 ||
        (g_smc_tables[handler_id].handlers[smc_id].blacklist_mask & g_smc_blacklist_mask) == 0) {
         args->X[0] = smc_handler(args);
     } else {
@@ -636,7 +623,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
             return 2;
         }
     } else {
-        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_500) {
+        if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
             static const uint8_t mc_whitelist_5x[0xD00/(sizeof(uint32_t) * 8)] = {
                 0x9F, 0x31, 0x30, 0x00, 0xF0, 0xFF, 0xF7, 0x01,
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -687,7 +674,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
                     break;
                 }
             }
-        } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400) {
+        } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
             if (MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) <= address && address < MMIO_GET_DEVICE_PA(MMIO_DEVID_MC) + 0xD00) {
                 /* Memory Controller RW supported only on 4.0.0+ */
                 static const uint8_t mc_whitelist[0x68] = {
@@ -730,7 +717,7 @@ uint32_t smc_read_write_register(smc_args_t *args) {
         /* Return old value. */
         args->X[1] = old_value;
         return 0;
-    } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_400 && (address == 0x7001923C || address == 0x70019298)) {
+    } else if (exosphere_get_target_firmware() >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0 && (address == 0x7001923C || address == 0x70019298)) {
         /* These addresses are not allowed by the whitelist. */
         /* They correspond to SMMU DISABLE for the BPMP, and for APB-DMA. */
         /* However, smcReadWriteRegister returns 0 for these addresses despite not actually performing the write. */
@@ -759,7 +746,7 @@ uint32_t smc_configure_carveout(smc_args_t *args) {
     }
 
     /* Configuration is one-shot, and cannot be done multiple times. */
-    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_300) {
+    if (exosphere_get_target_firmware() < ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
         if (g_configured_carveouts[carveout_id]) {
             return 2;
         }

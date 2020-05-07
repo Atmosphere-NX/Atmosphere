@@ -50,7 +50,7 @@ namespace ams::kern::init {
             static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
 
             /* 10.0.0 reduced the kernel resource region size by 64K. */
-            if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+            if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
                 resource_region_size -= KernelResourceReduction_10_0_0;
             }
             return resource_region_size;
