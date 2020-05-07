@@ -94,27 +94,20 @@ namespace ams::ldr {
 #ifdef LDR_VALIDATE_PROCESS_VERSION
             const MinimumProgramVersion *entries = nullptr;
             size_t num_entries = 0;
-            switch (hos::GetVersion()) {
-                case hos::Version_8_1_0:
-                    entries = g_MinimumProgramVersions810;
-                    num_entries = g_MinimumProgramVersionsCount810;
-                    break;
-                case hos::Version_9_0_0:
-                    entries = g_MinimumProgramVersions900;
-                    num_entries = g_MinimumProgramVersionsCount900;
-                    break;
-                case hos::Version_9_1_0:
-                    entries = g_MinimumProgramVersions910;
-                    num_entries = g_MinimumProgramVersionsCount910;
-                    break;
-                case hos::Version_10_0_0:
-                    entries = g_MinimumProgramVersions1000;
-                    num_entries = g_MinimumProgramVersionsCount1000;
-                    break;
-                default:
-                    entries = nullptr;
-                    num_entries = 0;
-                    break;
+
+            const auto hos_version = hos::GetVersion();
+            if (hos_version >= hos::Version_10_0_0) {
+                entries = g_MinimumProgramVersions1000;
+                num_entries = g_MinimumProgramVersionsCount1000;
+            } else if (hos_version >= hos::Version_9_1_0) {
+                entries = g_MinimumProgramVersions910;
+                num_entries = g_MinimumProgramVersionsCount910;
+            } else if (hos_version >= hos::Version_9_0_0) {
+                entries = g_MinimumProgramVersions900;
+                num_entries = g_MinimumProgramVersionsCount900;
+            } else if (hos_version >= hos::Version_8_1_0) {
+                entries = g_MinimumProgramVersions810;
+                num_entries = g_MinimumProgramVersionsCount810;
             }
 
             for (size_t i = 0; i < num_entries; i++) {
