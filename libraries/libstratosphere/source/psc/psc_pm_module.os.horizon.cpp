@@ -60,7 +60,7 @@ namespace ams::psc {
         R_ABORT_UNLESS(res);
         R_UNLESS(this->initialized, psc::ResultNotInitialized());
 
-        if (hos::GetVersion() >= hos::Version_6_0_0) {
+        if (hos::GetVersion() >= hos::Version_5_1_0) {
             return this->intf->AcknowledgeEx(state);
         } else {
             return this->intf->Acknowledge();

@@ -43,7 +43,7 @@ namespace ams::psc::sf {
                 MAKE_SERVICE_COMMAND_META(GetRequest),
                 MAKE_SERVICE_COMMAND_META(Acknowledge),
                 MAKE_SERVICE_COMMAND_META(Finalize),
-                MAKE_SERVICE_COMMAND_META(AcknowledgeEx, hos::Version_6_0_0), /* TODO: This is really 5.1.0... */
+                MAKE_SERVICE_COMMAND_META(AcknowledgeEx, hos::Version_5_1_0),
             };
     };
 
