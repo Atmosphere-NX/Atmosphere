@@ -119,10 +119,16 @@ static int emummc_ini_handler(void *user, const char *section, const char *name,
         } else if (strcmp(name, EMUMMC_ID_KEY) == 0) {
             sscanf(value, "%lx", &emummc_cfg->id);
         } else if (strcmp(name, EMUMMC_PATH_KEY) == 0) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
             strncpy(emummc_cfg->path, value, sizeof(emummc_cfg->path) - 1);
+#pragma GCC diagnostic pop
             emummc_cfg->path[sizeof(emummc_cfg->path) - 1]  = '\0';
         } else if (strcmp(name, EMUMMC_NINTENDO_PATH_KEY) == 0) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
             strncpy(emummc_cfg->nintendo_path, value, sizeof(emummc_cfg->nintendo_path) - 1);
+#pragma GCC diagnostic pop
             emummc_cfg->nintendo_path[sizeof(emummc_cfg->nintendo_path) - 1]  = '\0';
         } else {
             return 0;
@@ -356,7 +362,10 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
 
     /* Initialize values from emummc config. */
     exo_emummc_config->base_cfg.id         = emummc_cfg.id;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(exo_emummc_config->emu_dir_path, emummc_cfg.nintendo_path, sizeof(exo_emummc_config->emu_dir_path));
+#pragma GCC diagnostic pop
     exo_emummc_config->emu_dir_path[sizeof(exo_emummc_config->emu_dir_path) - 1] = '\0';
 
     if (emummc_cfg.enabled) {
@@ -370,7 +379,10 @@ static bool nxboot_configure_emummc(exo_emummc_config_t *exo_emummc_config) {
             }
         } else if (is_valid_folder(emummc_cfg.path)) {
             exo_emummc_config->base_cfg.type  = EMUMMC_TYPE_FILES;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
             strncpy(exo_emummc_config->file_cfg.path, emummc_cfg.path, sizeof(exo_emummc_config->file_cfg.path));
+#pragma GCC diagnostic pop
             exo_emummc_config->file_cfg.path[sizeof(exo_emummc_config->file_cfg.path) - 1] = '\0';
 
             int num_parts = 0;
