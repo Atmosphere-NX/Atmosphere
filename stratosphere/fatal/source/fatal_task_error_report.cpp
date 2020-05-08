@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <stratosphere.hpp>
 #include "fatal_config.hpp"
 #include "fatal_task_error_report.hpp"
 #include "fatal_scoped_file.hpp"

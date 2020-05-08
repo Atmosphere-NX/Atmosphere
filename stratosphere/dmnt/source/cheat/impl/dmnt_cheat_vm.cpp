@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sys/stat.h>
+#include <stratosphere.hpp>
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_cheat_api.hpp"
 

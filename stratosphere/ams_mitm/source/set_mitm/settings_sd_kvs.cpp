@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "../amsmitm_debug.hpp"
 #include "../amsmitm_fs_utils.hpp"
 #include "settings_sd_kvs.hpp"
