@@ -119,7 +119,7 @@ all: check_rebootstub $(BUILD)
 check_rebootstub:
 	@$(MAKE) -C $(AMS)/exosphere/rebootstub all
 
-$(BUILD):
+$(BUILD): check_rebootstub
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
