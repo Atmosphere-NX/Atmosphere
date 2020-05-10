@@ -6,7 +6,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
     
-    #define INNER_HEAP_SIZE 0x10000
+    #define INNER_HEAP_SIZE 0x20000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -67,7 +67,7 @@ void __appExit(void) {
 
 namespace {
 
-    /* TODO: this domain/domain object amounts work fine, but which ones does N's LogManager actually use? */
+    /* TODO: these domain/domain object amounts work fine, but which ones does N's LogManager actually use? */
 
     struct ServerOptions {
         static constexpr size_t PointerBufferSize = 0;
@@ -76,7 +76,7 @@ namespace {
     };
 
     constexpr sm::ServiceName LmServiceName = sm::ServiceName::Encode("lm");
-    constexpr size_t LmMaxSessions = 30;
+    constexpr size_t LmMaxSessions = 42;
 
     /* lm */
     constexpr size_t NumServers = 1;
@@ -133,6 +133,9 @@ int main(int argc, char **argv) {
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(lm, IpcServer));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(lm, IpcServer));
+
+    /* Clear logs directory. */
+    lm::impl::ClearDebugLogs();
 
     /* Add service to manager. */
     R_ABORT_UNLESS(g_server_manager.RegisterServer<lm::LogService>(LmServiceName, LmMaxSessions));
