@@ -47,6 +47,8 @@ namespace ams::fs {
 
     enum class AesCtrKeyTypeFlag : s32 {
         InternalKeyForSoftwareAes = (1 << 0),
+        InternalKeyForHardwareAes = (1 << 1),
+        ExternalKeyForHardwareAes = (1 << 2),
     };
 
 }

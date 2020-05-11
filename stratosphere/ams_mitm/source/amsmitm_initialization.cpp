@@ -96,7 +96,7 @@ namespace ams::mitm {
             {
                 u64 key_generation = 0;
                 if (hos::GetVersion() >= hos::Version_5_0_0) {
-                    R_ABORT_UNLESS(splGetConfig(SplConfigItem_NewKeyGeneration, &key_generation));
+                    R_ABORT_UNLESS(spl::GetConfig(std::addressof(key_generation), spl::ConfigItem::DeviceUniqueKeyGeneration));
                 }
 
                 u8 bis_keys[4][2][0x10];
@@ -107,15 +107,15 @@ namespace ams::mitm {
                 for (size_t partition = 0; partition < 4; partition++) {
                     if (partition == 0) {
                         for (size_t i = 0; i < 2; i++) {
-                            R_ABORT_UNLESS(splFsGenerateSpecificAesKey(BisKeySources[partition][i], key_generation, i, bis_keys[partition][i]));
+                            R_ABORT_UNLESS(spl::GenerateSpecificAesKey(bis_keys[partition][i], 0x10, BisKeySources[partition][i], 0x10, key_generation, i));
                         }
                     } else {
                         const u32 option = (partition == 3 && spl::IsRecoveryBoot()) ? 0x4 : 0x1;
 
-                        u8 access_key[0x10];
-                        R_ABORT_UNLESS(splCryptoGenerateAesKek(BisKekSource, key_generation, option, access_key));
+                        spl::AccessKey access_key;
+                        R_ABORT_UNLESS(spl::GenerateAesKek(std::addressof(access_key), BisKekSource, 0x10, key_generation, option));
                         for (size_t i = 0; i < 2; i++) {
-                            R_ABORT_UNLESS(splCryptoGenerateAesKey(access_key, BisKeySources[partition][i], bis_keys[partition][i]));
+                            R_ABORT_UNLESS(spl::GenerateAesKey(bis_keys[partition][i], 0x10, access_key, BisKeySources[partition][i], 0x10));
                         }
                     }
                 }

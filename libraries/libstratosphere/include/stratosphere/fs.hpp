@@ -16,6 +16,7 @@
 
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_storage_type.hpp>
 #include <stratosphere/fs/fsa/fs_ifile.hpp>
 #include <stratosphere/fs/fsa/fs_idirectory.hpp>
 #include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
@@ -29,6 +30,7 @@
 #include <stratosphere/fs/fs_remote_storage.hpp>
 #include <stratosphere/fs/fs_file_storage.hpp>
 #include <stratosphere/fs/fs_query_range.hpp>
+#include <stratosphere/fs/fs_speed_emulation.hpp>
 #include <stratosphere/fs/impl/fs_common_mount_name.hpp>
 #include <stratosphere/fs/fs_mount.hpp>
 #include <stratosphere/fs/fs_path_tool.hpp>

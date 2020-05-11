@@ -156,4 +156,14 @@ namespace ams::fs {
     static_assert(sizeof(SaveDataExtraData) == 0x200);
     static_assert(util::is_pod<SaveDataExtraData>::value);
 
+    struct HashSalt {
+        static constexpr size_t Size = 32;
+
+        u8 value[Size];
+    };
+    static_assert(std::is_pod<HashSalt>::value);
+    static_assert(sizeof(HashSalt) == HashSalt::Size);
+
+    using SaveDataHashSalt = std::optional<HashSalt>;
+
 }

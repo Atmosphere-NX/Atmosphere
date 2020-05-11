@@ -101,13 +101,7 @@ namespace ams::ldr {
         }
 
         const u8 *GetAcidSignatureModulus(u32 key_generation) {
-            AMS_ASSERT(key_generation <= fssystem::AcidSignatureKeyGenerationMax);
-            const u32 used_keygen = (key_generation % (fssystem::AcidSignatureKeyGenerationMax + 1));
-            if (IsDevelopmentForAcidSignatureCheck()) {
-                return fssystem::AcidSignatureKeyModulusDev[used_keygen];
-            } else {
-                return fssystem::AcidSignatureKeyModulusProd[used_keygen];
-            }
+            return fssystem::GetAcidSignatureKeyModulus(!IsDevelopmentForAcidSignatureCheck(), key_generation);
         }
 
         Result ValidateAcidSignature(Meta *meta) {
@@ -122,8 +116,8 @@ namespace ams::ldr {
             const size_t sig_size = sizeof(meta->acid->signature);
             const u8 *mod         = GetAcidSignatureModulus(meta->npdm->signature_key_generation);
             const size_t mod_size = fssystem::AcidSignatureKeyModulusSize;
-            const u8 *exp         = fssystem::AcidSignatureKeyExponent;
-            const size_t exp_size = fssystem::AcidSignatureKeyExponentSize;
+            const u8 *exp         = fssystem::GetAcidSignatureKeyPublicExponent();
+            const size_t exp_size = fssystem::AcidSignatureKeyPublicExponentSize;
             const u8 *msg         = meta->acid->modulus;
             const size_t msg_size = meta->acid->size;
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);

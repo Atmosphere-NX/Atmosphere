@@ -208,4 +208,11 @@ namespace ams::util {
         return T(1) << (BITSIZEOF(T) - CountLeadingZeros(x) - 1);
     }
 
+    template<typename T, typename U>
+    constexpr ALWAYS_INLINE T DivideUp(T v, U d) {
+        using Unsigned = typename std::make_unsigned<U>::type;
+        const Unsigned add = static_cast<Unsigned>(d) - 1;
+        return static_cast<T>((v + add) / d);
+    }
+
 }

@@ -35,9 +35,12 @@ namespace ams::fs {
             R_DEFINE_ERROR_RESULT(NotEnoughFreeSpaceBisSystem,      38);
         R_DEFINE_ERROR_RESULT(NotEnoughFreeSpaceSdCard, 39);
 
+    R_DEFINE_ERROR_RESULT(UnsupportedSdkVersion, 50);
+
     R_DEFINE_ERROR_RESULT(MountNameAlreadyExists, 60);
 
-    R_DEFINE_ERROR_RESULT(TargetNotFound,   1002);
+    R_DEFINE_ERROR_RESULT(PartitionNotFound,    1001);
+    R_DEFINE_ERROR_RESULT(TargetNotFound,       1002);
 
     R_DEFINE_ERROR_RANGE(SdCardAccessFailed, 2000, 2499);
         R_DEFINE_ERROR_RESULT(SdCardNotPresent, 2001);
@@ -51,54 +54,93 @@ namespace ams::fs {
     R_DEFINE_ERROR_RESULT(SystemPartitionNotReady, 3100);
 
     R_DEFINE_ERROR_RANGE(AllocationFailure, 3200, 3499);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorA,         3211);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorB,         3212);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInApplicationA,                3213);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInBisA,                        3215);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInBisB,                        3216);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInBisC,                        3217);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInCodeA,                       3218);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInContentA,                    3219);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageA,             3220);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,             3221);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInDataA,                       3222);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInDataB,                       3223);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInDeviceSaveDataA,             3224);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardA,                   3225);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardB,                   3226);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardC,                   3227);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardD,                   3228);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInImageDirectoryA,             3232);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardA,                     3244);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardB,                     3245);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInSystemSaveDataA,             3246);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemA,            3247);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemB,            3248);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,            3249);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA, 3280);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemBuddyHeapA,        3294);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem, 3321);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemA,        3347);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemB,        3348);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemC,        3349);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemMetaA,    3350);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemMetaB,    3351);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemD,            3352);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInSubDirectoryFileSystem,      3355);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterA,                   3365);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterB,                   3366);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInPathNormalizer,              3367);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInDbmRomKeyValueStorage,       3375);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInReadOnlyFileSystemA,         3386);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemE,            3377);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemInterfaceAdapter,  3407);
-        R_DEFINE_ERROR_RESULT(AllocationFailureInNew,                         3420);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorA,           3211);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemAccessorB,           3212);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInApplicationA,                  3213);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisA,                          3215);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisB,                          3216);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBisC,                          3217);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInCodeA,                         3218);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentA,                      3219);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageA,               3220);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInContentStorageB,               3221);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDataA,                         3222);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDataB,                         3223);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDeviceSaveDataA,               3224);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardA,                     3225);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardB,                     3226);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardC,                     3227);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInGameCardD,                     3228);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInImageDirectoryA,               3232);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardA,                       3244);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSdCardB,                       3245);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSystemSaveDataA,               3246);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemA,              3247);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemB,              3248);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,              3249);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA,   3280);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFileSystemCreatorA,         3281);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInStorageOnNcaCreatorA,          3288);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInStorageOnNcaCreatorB,          3289);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemBuddyHeapA,          3294);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemBufferManagerA,      3295);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBlockCacheBufferedStorageA,    3296);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBlockCacheBufferedStorageB,    3297);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInIntegrityVerificationStorageA, 3304);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInIntegrityVerificationStorageB, 3305);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDirectorySaveDataFileSystem,   3321);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInNcaFileSystemDriverI,          3341);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemA,          3347);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemB,          3348);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemC,          3349);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemMetaA,      3350);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemMetaB,      3351);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemD,              3352);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInSubDirectoryFileSystem,        3355);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInNcaReaderA,                    3363);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterA,                     3365);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRegisterB,                     3366);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInPathNormalizer,                3367);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInDbmRomKeyValueStorage,         3375);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemE,              3377);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInReadOnlyFileSystemA,           3386);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInAesCtrCounterExtendedStorageA, 3399);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInAesCtrCounterExtendedStorageB, 3400);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemInterfaceAdapter,    3407);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInBufferedStorageA,              3411);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInIntegrityRomFsStorageA,        3412);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInNew,                           3420);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInMakeUnique,                    3422);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInAllocateShared,                3423);
+        R_DEFINE_ERROR_RESULT(AllocationFailurePooledBufferNotEnoughSize,       3424);
 
     R_DEFINE_ERROR_RANGE(MmcAccessFailed, 3500, 3999);
 
     R_DEFINE_ERROR_RANGE(DataCorrupted, 4000, 4999);
         R_DEFINE_ERROR_RANGE(RomCorrupted, 4001, 4299);
             R_DEFINE_ERROR_RESULT(UnsupportedRomVersion, 4002);
+
+            R_DEFINE_ERROR_RANGE(AesCtrCounterExtendedStorageCorrupted, 4011, 4019);
+                R_DEFINE_ERROR_RESULT(InvalidAesCtrCounterExtendedEntryOffset,  4012);
+                R_DEFINE_ERROR_RESULT(InvalidAesCtrCounterExtendedTableSize,    4013);
+                R_DEFINE_ERROR_RESULT(InvalidAesCtrCounterExtendedGeneration,   4014);
+                R_DEFINE_ERROR_RESULT(InvalidAesCtrCounterExtendedOffset,       4015);
+
+            R_DEFINE_ERROR_RANGE(IndirectStorageCorrupted, 4021, 4029);
+                R_DEFINE_ERROR_RESULT(InvalidIndirectEntryOffset,       4022);
+                R_DEFINE_ERROR_RESULT(InvalidIndirectEntryStorageIndex, 4023);
+                R_DEFINE_ERROR_RESULT(InvalidIndirectStorageSize,       4024);
+                R_DEFINE_ERROR_RESULT(InvalidIndirectVirtualOffset,     4025);
+                R_DEFINE_ERROR_RESULT(InvalidIndirectPhysicalOffset,    4026);
+                R_DEFINE_ERROR_RESULT(InvalidIndirectStorageIndex,      4027);
+
+            R_DEFINE_ERROR_RANGE(BucketTreeCorrupted, 4031, 4039);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeSignature,       4032);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeEntryCount,      4033);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeNodeEntryCount,  4034);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeNodeOffset,      4035);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeEntryOffset,     4036);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeEntrySetOffset,  4037);
 
             R_DEFINE_ERROR_RANGE(RomNcaCorrupted, 4041, 4139);
                 R_DEFINE_ERROR_RANGE(RomNcaFileSystemCorrupted, 4051, 4069);
@@ -154,6 +196,9 @@ namespace ams::fs {
 
         R_DEFINE_ERROR_RANGE(SaveDataCorrupted, 4301, 4499);
         R_DEFINE_ERROR_RANGE(NcaCorrupted, 4501, 4599);
+            R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeA, 4508);
+            R_DEFINE_ERROR_RESULT(NcaBaseStorageOutOfRangeB, 4509);
+
             R_DEFINE_ERROR_RANGE(NcaFileSystemCorrupted, 4511, 4529);
                 R_DEFINE_ERROR_RESULT(InvalidNcaFileSystemType,              4512);
                 R_DEFINE_ERROR_RESULT(InvalidAcidFileSize,                   4513);
@@ -167,12 +212,21 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(InvalidNcaKeyIndex,                    4521);
                 R_DEFINE_ERROR_RESULT(InvalidNcaFsHeaderHashType,            4522);
                 R_DEFINE_ERROR_RESULT(InvalidNcaFsHeaderEncryptionType,      4523);
+                R_DEFINE_ERROR_RESULT(InvalidNcaPatchInfoIndirectSize,       4524);
+                R_DEFINE_ERROR_RESULT(InvalidNcaPatchInfoAesCtrExSize,       4525);
+                R_DEFINE_ERROR_RESULT(InvalidNcaPatchInfoAesCtrExOffset,     4526);
+                R_DEFINE_ERROR_RESULT(InvalidNcaId,                          4527);
+                R_DEFINE_ERROR_RESULT(InvalidNcaHeader,                      4528);
+                R_DEFINE_ERROR_RESULT(InvalidNcaFsHeader,                    4529);
 
             R_DEFINE_ERROR_RANGE(NcaHierarchicalSha256StorageCorrupted, 4531, 4539);
                 R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256BlockSize,       4532);
                 R_DEFINE_ERROR_RESULT(InvalidHierarchicalSha256LayerCount,      4533);
                 R_DEFINE_ERROR_RESULT(HierarchicalSha256BaseStorageTooLarge,    4534);
                 R_DEFINE_ERROR_RESULT(HierarchicalSha256HashVerificationFailed, 4535);
+
+            /* TODO: Range? */
+            R_DEFINE_ERROR_RESULT(InvalidNcaHeader1SignatureKeyGeneration, 4543);
 
         R_DEFINE_ERROR_RANGE(IntegrityVerificationStorageCorrupted, 4601, 4639);
              R_DEFINE_ERROR_RESULT(IncorrectIntegrityVerificationMagic,                4602);
@@ -254,28 +308,51 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(WriteNotPermitted,                       6203);
 
             R_DEFINE_ERROR_RANGE(UnsupportedOperation, 6300, 6399);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,                    6302);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageB,                    6303);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,                 6304);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,                 6305);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,                   6306);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageB,                   6307);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrStorageA,                 6315);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileServiceObjectAdapterA,      6362);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,               6364);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,               6365);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemC,               6366);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileA,                     6367);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileB,                     6368);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateA,    6369);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateB,    6370);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateC,    6371);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileA,                  6372);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileB,                  6373);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemA,           6374);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemB,           6375);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileA,                 6376);
-                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileB,                 6377);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageA,                                6302);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSubStorageB,                                6303);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageA,                             6304);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInMemoryStorageB,                             6305);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageA,                               6306);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileStorageB,                               6307);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInSwitchStorageA,                             6308);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrCounterExtendedStorageA,              6310);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrCounterExtendedStorageB,              6311);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrCounterExtendedStorageC,              6312);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrStorageExternalA,                     6313);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrStorageExternalB,                     6314);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInAesCtrStorageA,                             6315);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInHierarchicalIntegrityVerificationStorageA,  6316);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInHierarchicalIntegrityVerificationStorageB,  6317);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIntegrityVerificationStorageA,              6318);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIntegrityVerificationStorageB,              6319);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIntegrityVerificationStorageC,              6320);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInBlockCacheBufferedStorageA,                 6321);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInBlockCacheBufferedStorageB,                 6322);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInBlockCacheBufferedStorageC,                 6323);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIndirectStorageA,                           6324);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIndirectStorageB,                           6325);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIndirectStorageC,                           6326);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInZeroStorageA,                               6327);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInZeroStorageB,                               6328);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInHierarchicalSha256StorageA,                 6329);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyBlockCacheStorageA,                 6330);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyBlockCacheStorageB,                 6331);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInIntegrityRomFsStorageA    ,                 6332);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInFileServiceObjectAdapterA,                  6362);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemA,                           6364);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemB,                           6365);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileSystemC,                           6366);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileA,                                 6367);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInRomFsFileB,                                 6368);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateA,                6369);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateB,                6370);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileSystemTemplateC,                6371);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileA,                              6372);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInReadOnlyFileB,                              6373);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemA,                       6374);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileSystemB,                       6375);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileA,                             6376);
+                R_DEFINE_ERROR_RESULT(UnsupportedOperationInPartitionFileB,                             6377);
 
             R_DEFINE_ERROR_RANGE(PermissionDenied, 6400, 6449);
 
