@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <stratosphere.hpp>
 #include "fatal_config.hpp"
 #include "fatal_task_error_report.hpp"
 #include "fatal_scoped_file.hpp"
@@ -79,13 +78,13 @@ namespace ams::fatal::srv {
                 std::snprintf(file_path, sizeof(file_path) - 1, "sdmc:/atmosphere/fatal_reports/%011lu_%016lx.log", timestamp, static_cast<u64>(this->context->program_id));
                 ScopedFile file(file_path);
                 if (file.IsOpen()) {
-                    file.WriteFormat(u8"Atmosphère Fatal Report (v1.1):\n");
+                    file.WriteFormat("Atmosphère Fatal Report (v1.1):\n");
                     file.WriteFormat("Result:                          0x%X (2%03d-%04d)\n\n", this->context->result.GetValue(), this->context->result.GetModule(), this->context->result.GetDescription());
                     file.WriteFormat("Program ID:                      %016lx\n", static_cast<u64>(this->context->program_id));
                     if (strlen(this->context->proc_name)) {
                         file.WriteFormat("Process Name:                    %s\n", this->context->proc_name);
                     }
-                    file.WriteFormat(u8"Firmware:                        %s (Atmosphère %u.%u.%u-%s)\n", GetFatalConfig().GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
+                    file.WriteFormat("Firmware:                        %s (Atmosphère %u.%u.%u-%s)\n", GetFatalConfig().GetFirmwareVersion().display_version, ATMOSPHERE_RELEASE_VERSION, ams::GetGitRevision());
 
                     if (this->context->cpu_ctx.architecture == CpuContext::Architecture_Aarch32) {
                         file.WriteFormat("General Purpose Registers:\n");

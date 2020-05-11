@@ -66,6 +66,6 @@ namespace ams::crypto::impl {
             }
     };
 
-    /* static_assert(HashFunction<Sha256Impl>); */
+    static_assert(HashFunction<Sha256Impl>);
 
 }

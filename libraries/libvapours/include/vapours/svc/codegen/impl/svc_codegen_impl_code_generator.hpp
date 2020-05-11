@@ -261,12 +261,11 @@ namespace ams::svc::codegen::impl {
         /* TODO */
     };
 
-    template<typename CodeGenerator, typename MetaCodeHolder>
-    static ALWAYS_INLINE void GenerateCodeForMetaCode(MetaCodeHolder) {
-        constexpr auto MetaCode = UNWRAP_TEMPLATE_CONSTANT(MetaCodeHolder);
+    template<typename CodeGenerator, auto MetaCode>
+    static ALWAYS_INLINE void GenerateCodeForMetaCode() {
         constexpr size_t NumOperations = MetaCode.GetNumOperations();
         static_assert(NumOperations <= 64);
-        #define SVC_CODEGEN_HANDLER(n) do { if constexpr (n < NumOperations) { constexpr auto Operation = MetaCode.GetOperation(n); GenerateCodeForOperation<CodeGenerator>(WRAP_TEMPLATE_CONSTANT(Operation)); } } while (0)
+        #define SVC_CODEGEN_HANDLER(n) do { if constexpr (n < NumOperations) { constexpr auto Operation = MetaCode.GetOperation(n); GenerateCodeForOperation<CodeGenerator, Operation>(); } } while (0)
         SVC_CODEGEN_FOR_I_FROM_0_TO_64(SVC_CODEGEN_HANDLER)
         #undef SVC_CODEGEN_HANDLER
     }

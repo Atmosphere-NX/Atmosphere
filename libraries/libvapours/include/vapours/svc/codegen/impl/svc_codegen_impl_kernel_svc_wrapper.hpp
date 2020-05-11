@@ -319,38 +319,43 @@ namespace ams::svc::codegen::impl {
 
             template<typename... T>
             struct TypeIndexFilter {
-                template<typename UseArrayHolder, typename HeadType, typename... TailType, size_t HeadIndex, size_t... TailIndex>
-                static constexpr auto GetFilteredTupleImpl(UseArrayHolder, std::tuple<HeadType, TailType...>, std::index_sequence<HeadIndex, TailIndex...>) {
-                    constexpr auto UseArray = UNWRAP_TEMPLATE_CONSTANT(UseArrayHolder);
-                    static_assert(sizeof...(TailType) == sizeof...(TailIndex));
-                    static_assert(HeadIndex <= UseArray.size());
 
-                    if constexpr (sizeof...(TailType) == 0) {
-                        if constexpr (!UseArray[HeadIndex]) {
-                            return std::tuple<HeadType>{};
-                        } else {
-                            return std::tuple<>{};
-                        }
-                    } else {
-                        auto tail_tuple = GetFilteredTupleImpl(UseArrayHolder{}, std::tuple<TailType...>{}, std::index_sequence<TailIndex...>{});
-                        if constexpr (!UseArray[HeadIndex]) {
-                            return std::tuple_cat(std::tuple<HeadType>{}, tail_tuple);
-                        } else {
-                            return std::tuple_cat(std::tuple<>{}, tail_tuple);
-                        }
-                    }
-                }
+                template<auto UseArray, typename X, typename Y>
+                struct Helper;
 
-                template<typename UseArrayHolder>
-                static constexpr auto GetFilteredTuple(UseArrayHolder) {
-                    return GetFilteredTupleImpl(UseArrayHolder{}, std::tuple<T...>{}, std::make_index_sequence<sizeof...(T)>());
-                }
+                template<auto UseArray, size_t...Index>
+                struct Helper<UseArray, std::tuple<>, std::index_sequence<Index...>> {
+                    using Type = std::tuple<>;
+                };
+
+                template<auto UseArray, typename HeadType, typename... TailType, size_t HeadIndex, size_t... TailIndex>
+                struct Helper<UseArray, std::tuple<HeadType, TailType...>, std::index_sequence<HeadIndex, TailIndex...>> {
+
+                    using LastHeadType = std::tuple<HeadType>;
+                    using LastNullType = std::tuple<>;
+
+                    using LastType = typename std::conditional<!UseArray[HeadIndex], LastHeadType, LastNullType>::type;
+
+                    using NextTailType = std::tuple<TailType...>;
+                    using NextTailSequence  = std::index_sequence<TailIndex...>;
+
+                    using NextType = typename std::conditional<!UseArray[HeadIndex],
+                                                               decltype(std::tuple_cat(std::declval<LastHeadType>(), std::declval<typename Helper<UseArray, NextTailType, NextTailSequence>::Type>())),
+                                                               decltype(std::tuple_cat(std::declval<LastNullType>(), std::declval<typename Helper<UseArray, NextTailType, NextTailSequence>::Type>()))
+                                                              >::type;
+
+                    using Type = typename std::conditional<sizeof...(TailType) == 0, LastType, NextType>::type;
+
+                };
+
+                template<auto UseArray>
+                using FilteredTupleType = typename Helper<UseArray, std::tuple<T...>, decltype(std::make_index_sequence<sizeof...(T)>())>::Type;
             };
 
-            template<typename AllocatorHolder, typename FirstOperation, typename...OtherOperations>
-            static constexpr auto GetModifiedOperations(AllocatorHolder, std::tuple<FirstOperation, OtherOperations...> ops) {
+            template<auto Allocator, typename FirstOperation, typename...OtherOperations>
+            static constexpr auto GetModifiedOperations(std::tuple<FirstOperation, OtherOperations...> ops) {
                 constexpr size_t ModifyRegister = [] {
-                    auto allocator = UNWRAP_TEMPLATE_CONSTANT(AllocatorHolder);
+                    auto allocator = Allocator;
                     return allocator.AllocateFirstFree();
                 }();
 
@@ -359,13 +364,13 @@ namespace ams::svc::codegen::impl {
                 return std::tuple<ModifiedFirstOperation, OtherOperations..., NewMoveOperation>{};
             }
 
-            template<typename Conversion, typename AllocatorHolder, typename FirstOperation, typename... OtherOperations>
-            static constexpr auto GenerateBeforeOperations(MetaCodeGenerator &mcg, AllocatorHolder, std::tuple<FirstOperation, OtherOperations...> ops) -> RegisterAllocator<UNWRAP_TEMPLATE_CONSTANT(AllocatorHolder).GetRegisterCount()> {
+            template<typename Conversion, auto Allocator, typename FirstOperation, typename... OtherOperations>
+            static constexpr auto GenerateBeforeOperations(MetaCodeGenerator &mcg, std::tuple<FirstOperation, OtherOperations...> ops) -> RegisterAllocator<Allocator.GetRegisterCount()> {
                 constexpr size_t NumOperations = 1 + sizeof...(OtherOperations);
                 using OperationsTuple = decltype(ops);
                 using FilterHelper = TypeIndexFilter<FirstOperation, OtherOperations...>;
 
-                constexpr auto ProcessOperation = []<typename Operation>(MetaCodeGenerator &pr_mcg, auto &allocator, Operation) {
+                constexpr auto ProcessOperation = []<typename Operation>(MetaCodeGenerator &pr_mcg, auto &allocator) {
                     if (Conversion::template CanGenerateCode<Operation, CodeGenerationKind::SvcInvocationToKernelProcedure>(allocator)) {
                         Conversion::template GenerateCode<Operation, CodeGenerationKind::SvcInvocationToKernelProcedure>(pr_mcg, allocator);
                         return true;
@@ -373,12 +378,12 @@ namespace ams::svc::codegen::impl {
                     return false;
                 };
 
-                constexpr auto ProcessResults = [ProcessOperation]<typename... Operations>(std::tuple<Operations...>) {
-                    auto allocator = UNWRAP_TEMPLATE_CONSTANT(AllocatorHolder);
+                constexpr auto ProcessResults = []<auto AllocatorVal, auto ProcessOp, typename... Operations>(std::tuple<Operations...>) {
+                    auto allocator = AllocatorVal;
                     MetaCodeGenerator pr_mcg;
-                    auto use_array = std::array<bool, NumOperations>{ ProcessOperation(pr_mcg, allocator, Operations{})... };
+                    auto use_array = std::array<bool, NumOperations>{ ProcessOp.template operator()<Operations>(pr_mcg, allocator)... };
                     return std::make_tuple(use_array, allocator, pr_mcg);
-                }(OperationsTuple{});
+                }.template operator()<Allocator, ProcessOperation>(OperationsTuple{});
 
                 constexpr auto CanGenerate    = std::get<0>(ProcessResults);
                 constexpr auto AfterAllocator = std::get<1>(ProcessResults);
@@ -388,15 +393,15 @@ namespace ams::svc::codegen::impl {
                     mcg.AddOperationDirectly(GeneratedCode.GetOperation(i));
                 }
 
-                constexpr auto FilteredOperations = FilterHelper::template GetFilteredTuple(WRAP_TEMPLATE_CONSTANT(CanGenerate));
-                static_assert(std::tuple_size<decltype(FilteredOperations)>::value <= NumOperations);
-                if constexpr (std::tuple_size<decltype(FilteredOperations)>::value > 0) {
-                    if constexpr (std::tuple_size<decltype(FilteredOperations)>::value != NumOperations) {
-                        return GenerateBeforeOperations<Conversion>(mcg, WRAP_TEMPLATE_CONSTANT(AfterAllocator), FilteredOperations);
+                using FilteredOperations = typename FilterHelper::FilteredTupleType<CanGenerate>;
+                static_assert(std::tuple_size<FilteredOperations>::value <= NumOperations);
+                if constexpr (std::tuple_size<FilteredOperations>::value > 0) {
+                    if constexpr (std::tuple_size<FilteredOperations>::value != NumOperations) {
+                        return GenerateBeforeOperations<Conversion, AfterAllocator>(mcg, FilteredOperations{});
                     } else {
                         /* No progress was made, so we need to make a change. */
-                        constexpr auto ModifiedOperations = GetModifiedOperations(WRAP_TEMPLATE_CONSTANT(AfterAllocator), FilteredOperations);
-                        return GenerateBeforeOperations<Conversion>(mcg, WRAP_TEMPLATE_CONSTANT(AfterAllocator), ModifiedOperations);
+                        constexpr auto ModifiedOperations = GetModifiedOperations<AfterAllocator>(FilteredOperations{});
+                        return GenerateBeforeOperations<Conversion, AfterAllocator>(mcg, ModifiedOperations);
                     }
                 } else {
                     return AfterAllocator;
@@ -433,7 +438,7 @@ namespace ams::svc::codegen::impl {
 
                 /* Generate code for before operations. */
                 if constexpr (Conversion::NumBeforeOperations > 0) {
-                    allocator = GenerateBeforeOperations<Conversion>(mcg, WRAP_TEMPLATE_CONSTANT(InitialAllocator), typename Conversion::BeforeOperations{});
+                    allocator = GenerateBeforeOperations<Conversion, InitialAllocator>(mcg, typename Conversion::BeforeOperations{});
                 } else {
                     allocator = InitialAllocator;
                 }
@@ -527,8 +532,8 @@ namespace ams::svc::codegen::impl {
 
             static ALWAYS_INLINE void WrapSvcFunction() {
                 /* Generate appropriate assembly. */
-                GenerateCodeForMetaCode<CodeGenerator>(WRAP_TEMPLATE_CONSTANT(BeforeMetaCode));
-                ON_SCOPE_EXIT { GenerateCodeForMetaCode<CodeGenerator>(WRAP_TEMPLATE_CONSTANT(AfterMetaCode)); };
+                GenerateCodeForMetaCode<CodeGenerator, BeforeMetaCode>();
+                ON_SCOPE_EXIT { GenerateCodeForMetaCode<CodeGenerator, AfterMetaCode>(); };
 
                 return reinterpret_cast<void (*)()>(Function)();
             }

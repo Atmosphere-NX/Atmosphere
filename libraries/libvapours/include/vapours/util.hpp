@@ -18,6 +18,7 @@
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
 
+#include <vapours/util/util_type_traits.hpp>
 #include <vapours/util/util_alignment.hpp>
 #include <vapours/util/util_size.hpp>
 #include <vapours/util/util_endian.hpp>

@@ -35,9 +35,6 @@
 
 #define CONST_FOLD(x) (__builtin_constant_p(x) ? (x) : (x))
 
-#define WRAP_TEMPLATE_CONSTANT(...) ([] { using U = union { static constexpr auto GetValue() { return __VA_ARGS__; } }; return U{}; }())
-#define UNWRAP_TEMPLATE_CONSTANT(tpnm) (tpnm::GetValue())
-
 #define CONCATENATE_IMPL(s1, s2) s1##s2
 #define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
 

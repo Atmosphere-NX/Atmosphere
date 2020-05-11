@@ -75,7 +75,7 @@ __libc_fini_array (void)
 {
   size_t count;
   size_t i;
-  
+
   count = __fini_array_end - __fini_array_start;
   for (i = count; i > 0; i--)
     __fini_array_start[i-1] ();
@@ -170,7 +170,7 @@ memmove (void *dst_void,
     }
   else
     {
-      /* Use optimizing algorithm for a non-destructive copy to closely 
+      /* Use optimizing algorithm for a non-destructive copy to closely
          match memcpy. If the size is small or either SRC or DST is unaligned,
          then punt into the byte copy loop.  This should be rare.  */
       if (!TOO_SMALL(length) && !UNALIGNED (src, dst))
@@ -561,7 +561,7 @@ memcmp (const void *m1,
       s2++;
     }
   return 0;
-#else  
+#else
   unsigned char *s1 = (unsigned char *) m1;
   unsigned char *s2 = (unsigned char *) m2;
   unsigned long *a1;
@@ -572,13 +572,13 @@ memcmp (const void *m1,
      not turn up in inner loops.  */
   if (!TOO_SMALL(n) && !UNALIGNED(s1,s2))
     {
-      /* Otherwise, load and compare the blocks of memory one 
+      /* Otherwise, load and compare the blocks of memory one
          word at a time.  */
       a1 = (unsigned long*) s1;
       a2 = (unsigned long*) s2;
       while (n >= LBLOCKSIZE)
         {
-          if (*a1 != *a2) 
+          if (*a1 != *a2)
    	    break;
           a1++;
           a2++;
@@ -703,7 +703,7 @@ strchr (const char *s1,
 /*
 FUNCTION
 	<<strcmp>>---character string compare
-	
+
 INDEX
 	strcmp
 SYNOPSIS
@@ -736,7 +736,7 @@ QUICKREF
 int
 strcmp (const char *s1,
 	const char *s2)
-{ 
+{
 #if defined(PREFER_SIZE_OVER_SPEED) || defined(__OPTIMIZE_SIZE__)
   while (*s1 != '\0' && *s1 == *s2)
     {
@@ -751,7 +751,7 @@ strcmp (const char *s1,
 
   /* If s1 or s2 are unaligned, then compare bytes. */
   if (!UNALIGNED (s1, s2))
-    {  
+    {
       /* If s1 and s2 are word-aligned, compare them a word at a time. */
       a1 = (unsigned long*)s1;
       a2 = (unsigned long*)s2;
@@ -915,7 +915,7 @@ strlen (const char *str)
 /*
 FUNCTION
 	<<strncmp>>---character string compare
-	
+
 INDEX
 	strncmp
 SYNOPSIS
@@ -944,7 +944,7 @@ QUICKREF
 #define UNALIGNED(X, Y) \
   (((long)X & (sizeof (long) - 1)) | ((long)Y & (sizeof (long) - 1)))
 
-int 
+int
 strncmp (const char *s1,
 	const char *s2,
 	size_t n)
@@ -1103,10 +1103,10 @@ strncpy (char *__restrict dst0,
 #endif /* not PREFER_SIZE_OVER_SPEED */
 }
 
-/* 
+/*
 FUNCTION
 	<<strnlen>>---character string length
-	
+
 INDEX
 	strnlen
 SYNOPSIS

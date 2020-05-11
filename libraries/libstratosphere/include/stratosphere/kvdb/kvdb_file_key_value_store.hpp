@@ -38,7 +38,7 @@ namespace ams::kvdb {
                 size_t key_size;
                 size_t value_size;
             };
-            static_assert(std::is_pod<Entry>::value, "FileKeyValueStore::Entry definition!");
+            static_assert(util::is_pod<Entry>::value, "FileKeyValueStore::Entry definition!");
 
             class Cache {
                 private:
@@ -83,13 +83,13 @@ namespace ams::kvdb {
             /* Niceties. */
             template<typename Key>
             Result Get(size_t *out_size, void *out_value, size_t max_out_size, const Key &key) {
-                static_assert(std::is_pod<Key>::value && sizeof(Key) <= MaxKeySize, "Invalid FileKeyValueStore Key!");
+                static_assert(util::is_pod<Key>::value && sizeof(Key) <= MaxKeySize, "Invalid FileKeyValueStore Key!");
                 return this->Get(out_size, out_value, max_out_size, &key, sizeof(Key));
             }
 
             template<typename Key, typename Value>
             Result Get(Value *out_value, const Key &key) {
-                static_assert(std::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
+                static_assert(util::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
                 size_t size = 0;
                 R_TRY(this->Get(&size, out_value, sizeof(Value), key));
                 AMS_ABORT_UNLESS(size >= sizeof(Value));
@@ -103,13 +103,13 @@ namespace ams::kvdb {
 
             template<typename Key>
             Result Set(const Key &key, const void *value, size_t value_size) {
-                static_assert(std::is_pod<Key>::value && sizeof(Key) <= MaxKeySize, "Invalid FileKeyValueStore Key!");
+                static_assert(util::is_pod<Key>::value && sizeof(Key) <= MaxKeySize, "Invalid FileKeyValueStore Key!");
                 return this->Set(&key, sizeof(Key), value, value_size);
             }
 
             template<typename Key, typename Value>
             Result Set(const Key &key, const Value &value) {
-                static_assert(std::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
+                static_assert(util::is_pod<Value>::value && !std::is_pointer<Value>::value, "Invalid FileKeyValueStore Value!");
                 return this->Set(key, &value, sizeof(Value));
             }
 

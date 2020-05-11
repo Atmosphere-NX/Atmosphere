@@ -23,7 +23,7 @@ namespace ams::fs {
         u64 data64[2];
     };
     static_assert(sizeof(RightsId) == 0x10);
-    static_assert(std::is_pod<RightsId>::value);
+    static_assert(util::is_pod<RightsId>::value);
 
     inline bool operator==(const RightsId &lhs, const RightsId &rhs) {
         return std::memcmp(std::addressof(lhs), std::addressof(rhs), sizeof(RightsId)) == 0;

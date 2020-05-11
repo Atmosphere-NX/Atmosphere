@@ -55,7 +55,7 @@ namespace ams::dmnt {
         }
     };
 
-    static_assert(std::is_pod<TargetIOFileHandle>::value && sizeof(TargetIOFileHandle) == sizeof(u64), "TargetIOFileHandle");
+    static_assert(util::is_pod<TargetIOFileHandle>::value && sizeof(TargetIOFileHandle) == sizeof(u64), "TargetIOFileHandle");
 
     class DebugMonitorService final : public sf::IServiceObject {
         private:

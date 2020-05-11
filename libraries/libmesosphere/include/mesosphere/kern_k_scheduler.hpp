@@ -33,8 +33,6 @@ namespace ams::kern {
         NON_COPYABLE(KScheduler);
         NON_MOVEABLE(KScheduler);
         public:
-            using LockType = KAbstractSchedulerLock<KScheduler>;
-
             static constexpr s32 HighestCoreMigrationAllowedPriority = 2;
             static_assert(ams::svc::LowestThreadPriority  >= HighestCoreMigrationAllowedPriority);
             static_assert(ams::svc::HighestThreadPriority <= HighestCoreMigrationAllowedPriority);
@@ -50,9 +48,6 @@ namespace ams::kern {
         private:
             friend class KScopedSchedulerLock;
             friend class KScopedSchedulerLockAndSleep;
-            static bool s_scheduler_update_needed;
-            static LockType s_scheduler_lock;
-            static KSchedulerPriorityQueue s_priority_queue;
         private:
             SchedulingState state;
             bool is_active;
@@ -160,6 +155,12 @@ namespace ams::kern {
             }
 
             NOINLINE u64 UpdateHighestPriorityThread(KThread *thread);
+        public:
+            using LockType = KAbstractSchedulerLock<KScheduler>;
+        private:
+            static bool s_scheduler_update_needed;
+            static KSchedulerPriorityQueue s_priority_queue;
+            static LockType s_scheduler_lock;
     };
 
     class KScopedSchedulerLock : KScopedLock<KScheduler::LockType> {

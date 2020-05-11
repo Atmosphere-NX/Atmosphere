@@ -121,6 +121,8 @@ $(OUTPUT).kip	:	$(OUTPUT).elf
 
 $(OUTPUT).elf	:	$(OFILES)
 
+boot_power_utils.o: fusee_primary.bin.o fusee_primary_bin.h
+
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------

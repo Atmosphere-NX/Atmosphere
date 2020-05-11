@@ -43,6 +43,6 @@ namespace ams::fs {
             return this->Get();
         }
     };
-    static_assert(std::is_pod<Int64>::value);
+    static_assert(util::is_pod<Int64>::value);
 
 }

@@ -52,6 +52,6 @@ namespace ams::pgl {
             };
         }
     };
-    static_assert(sizeof(ContentMetaInfo) == 0x10 && std::is_pod<ContentMetaInfo>::value);
+    static_assert(sizeof(ContentMetaInfo) == 0x10 && util::is_pod<ContentMetaInfo>::value);
 
 }

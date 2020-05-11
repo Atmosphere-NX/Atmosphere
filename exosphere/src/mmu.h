@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_MMU_H
 #define EXOSPHERE_MMU_H
 
@@ -134,7 +134,7 @@
 #define TCR_EL2_RSVD        (BIT(31) | BIT(23))
 #define TCR_EL3_RSVD        (BIT(31) | BIT(23))
 
-static inline void mmu_init_table(uintptr_t *tbl, size_t num_entries) {
+static inline void mmu_init_table(volatile uintptr_t *tbl, size_t num_entries) {
     for(size_t i = 0; i < num_entries / 8; i++) {
         tbl[i] = MMU_PTE_TYPE_FAULT;
     }

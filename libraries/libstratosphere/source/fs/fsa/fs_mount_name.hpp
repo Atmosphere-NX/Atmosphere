@@ -21,6 +21,6 @@ namespace ams::fs {
     struct MountName {
         char str[MountNameLengthMax + 1];
     };
-    static_assert(std::is_pod<MountName>::value);
+    static_assert(util::is_pod<MountName>::value);
 
 }

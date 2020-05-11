@@ -152,7 +152,7 @@ namespace ams::settings {
         return impl::IsValidLanguageCode(lc, std::make_index_sequence<Language_Count>{});
     }
 
-    static_assert(std::is_pod<LanguageCode>::value);
+    static_assert(util::is_pod<LanguageCode>::value);
     static_assert(sizeof(LanguageCode) == sizeof(u64));
 
     /* Not an official type, but convenient. */
@@ -193,7 +193,7 @@ namespace ams::settings {
         }
     };
 
-    static_assert(std::is_pod<FirmwareVersion>::value);
+    static_assert(util::is_pod<FirmwareVersion>::value);
     static_assert(sizeof(FirmwareVersion) == sizeof(::SetSysFirmwareVersion));
 
     constexpr inline bool operator==(const FirmwareVersion &lhs, const FirmwareVersion &rhs) {

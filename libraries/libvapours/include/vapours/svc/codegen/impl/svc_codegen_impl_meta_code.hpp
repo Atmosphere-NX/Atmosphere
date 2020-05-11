@@ -79,7 +79,7 @@ namespace ams::svc::codegen::impl {
 
                 return op;
             }
-        private:
+        public:
             size_t num_operations;
             std::array<Operation, MaxOperations> operations;
         public:
@@ -98,15 +98,13 @@ namespace ams::svc::codegen::impl {
             }
     };
 
-    template<typename _OperationHolder>
+    template<auto Operation>
     static constexpr auto GetOperationParameterSequence() {
-        constexpr auto _Operation = UNWRAP_TEMPLATE_CONSTANT(_OperationHolder);
-        constexpr size_t NumParameters = _Operation.num_parameters;
+        constexpr size_t NumParameters = Operation.num_parameters;
 
-        return []<typename OperationHolder, size_t... Is>(OperationHolder, std::index_sequence<Is...>) {
-            constexpr auto Operation = UNWRAP_TEMPLATE_CONSTANT(OperationHolder);
+        return []<size_t... Is>(std::index_sequence<Is...>) {
             return std::index_sequence<Operation.parameters[Is]...>{};
-        }(_OperationHolder{}, std::make_index_sequence<NumParameters>());
+        }(std::make_index_sequence<NumParameters>());
     }
 
     template<typename CodeGenerator, MetaCode::OperationKind Kind, size_t... Parameters>
@@ -130,10 +128,9 @@ namespace ams::svc::codegen::impl {
         #undef META_CODE_OPERATION_KIND_GENERATE_CODE
     }
 
-    template<typename CodeGenerator, typename OperationHolder>
-    static ALWAYS_INLINE void GenerateCodeForOperation(OperationHolder) {
-        constexpr auto Operation = UNWRAP_TEMPLATE_CONSTANT(OperationHolder);
-        GenerateCodeForOperationImpl<CodeGenerator, Operation.kind>(GetOperationParameterSequence<OperationHolder>());
+    template<typename CodeGenerator, auto Operation>
+    static ALWAYS_INLINE void GenerateCodeForOperation() {
+        GenerateCodeForOperationImpl<CodeGenerator, Operation.kind>(GetOperationParameterSequence<Operation>());
     }
 
     class MetaCodeGenerator {

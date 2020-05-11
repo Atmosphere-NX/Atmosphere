@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sys/stat.h>
-#include <sys/types.h>
+#include <stratosphere.hpp>
 #include "creport_crash_report.hpp"
 #include "creport_utils.hpp"
 
@@ -351,7 +350,7 @@ namespace ams::creport {
     }
 
     void CrashReport::SaveToFile(ScopedFile &file) {
-        file.WriteFormat(u8"Atmosphère Crash Report (v1.5):\n");
+        file.WriteFormat("Atmosphère Crash Report (v1.5):\n");
         file.WriteFormat("Result:                          0x%X (2%03d-%04d)\n\n", this->result.GetValue(), this->result.GetModule(), this->result.GetDescription());
 
         /* Process Info. */

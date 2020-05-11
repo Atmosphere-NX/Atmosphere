@@ -22,18 +22,18 @@ namespace ams::settings::factory {
         u8 data[0x180];
     };
     static_assert(sizeof(EccP256DeviceCertificate) == 0x180);
-    static_assert(std::is_pod<EccP256DeviceCertificate>::value);
+    static_assert(util::is_pod<EccP256DeviceCertificate>::value);
 
     struct EccB233DeviceCertificate {
         u8 data[0x180];
     };
     static_assert(sizeof(EccB233DeviceCertificate) == 0x180);
-    static_assert(std::is_pod<EccB233DeviceCertificate>::value);
+    static_assert(util::is_pod<EccB233DeviceCertificate>::value);
 
     struct Rsa2048DeviceCertificate {
         u8 data[0x240];
     };
     static_assert(sizeof(Rsa2048DeviceCertificate) == 0x240);
-    static_assert(std::is_pod<Rsa2048DeviceCertificate>::value);
+    static_assert(util::is_pod<Rsa2048DeviceCertificate>::value);
 
 }

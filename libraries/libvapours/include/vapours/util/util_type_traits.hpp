@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,16 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
-namespace ams::capsrv::server {
+namespace ams::util {
 
-    struct DecoderWorkMemory {
-        alignas(os::MemoryPageSize) u8 jpeg_decoder_memory[SoftwareJpegDecoderWorkMemorySize];
-    };
-    static_assert(sizeof(DecoderWorkMemory)  == SoftwareJpegDecoderWorkMemorySize);
-    static_assert(alignof(DecoderWorkMemory) == os::MemoryPageSize);
-    static_assert(util::is_pod<DecoderWorkMemory>::value);
+    template<typename T>
+    using is_pod = std::bool_constant<std::is_standard_layout<T>::value && std::is_trivial<T>::value>;
 
 }

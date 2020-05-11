@@ -19,9 +19,8 @@ namespace ams::kern {
 
     namespace {
 
-        /* TODO: C++20 constinit */
-        KLightLock g_object_list_lock;
-        KObjectName::List g_object_list;
+        constinit KLightLock g_object_list_lock;
+        constinit KObjectName::List g_object_list;
 
     }
 

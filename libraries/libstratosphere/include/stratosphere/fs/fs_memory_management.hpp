@@ -42,7 +42,7 @@ namespace ams::fs {
 
         template<typename T>
         std::unique_ptr<T, Deleter> MakeUnique() {
-            static_assert(std::is_pod<T>::value);
+            static_assert(util::is_pod<T>::value);
             return std::unique_ptr<T, Deleter>(static_cast<T *>(::ams::fs::impl::Allocate(sizeof(T))), Deleter(sizeof(T)));
         }
 

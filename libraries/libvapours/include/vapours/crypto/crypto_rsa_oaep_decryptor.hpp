@@ -23,7 +23,7 @@
 
 namespace ams::crypto {
 
-    template<size_t ModulusSize, typename Hash> /* requires HashFunction<Hash> */
+    template<size_t ModulusSize, typename Hash> requires impl::HashFunction<Hash>
     class RsaOaepDecryptor {
         NON_COPYABLE(RsaOaepDecryptor);
         NON_MOVEABLE(RsaOaepDecryptor);

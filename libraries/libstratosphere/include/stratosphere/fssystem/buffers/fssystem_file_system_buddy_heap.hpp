@@ -30,7 +30,7 @@ namespace ams::fssystem {
             class PageList;
 
             struct PageEntry { PageEntry *next; };
-            static_assert(std::is_pod<PageEntry>::value);
+            static_assert(util::is_pod<PageEntry>::value);
             static_assert(sizeof(PageEntry) <= BlockSizeMin);
 
             class PageList : public ::ams::fs::impl::Newable {

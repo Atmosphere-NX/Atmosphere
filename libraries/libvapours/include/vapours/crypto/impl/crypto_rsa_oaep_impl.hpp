@@ -22,7 +22,7 @@
 
 namespace ams::crypto::impl {
 
-    template<typename Hash> /* requires HashFunction<Hash> */
+    template<typename Hash> requires HashFunction<Hash>
     class RsaOaepImpl {
         NON_COPYABLE(RsaOaepImpl);
         NON_MOVEABLE(RsaOaepImpl);

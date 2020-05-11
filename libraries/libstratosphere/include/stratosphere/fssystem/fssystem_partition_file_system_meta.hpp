@@ -29,7 +29,7 @@ namespace ams::fssystem {
                 u32 name_offset;
                 u32 reserved;
             };
-            static_assert(std::is_pod<PartitionEntry>::value);
+            static_assert(util::is_pod<PartitionEntry>::value);
             #pragma pack(pop)
 
             static constexpr const char VersionSignature[] = { 'P', 'F', 'S', '0' };
@@ -52,7 +52,7 @@ namespace ams::fssystem {
                 u64 hash_target_offset;
                 char hash[HashSize];
             };
-            static_assert(std::is_pod<PartitionEntry>::value);
+            static_assert(util::is_pod<PartitionEntry>::value);
             #pragma pack(pop)
 
             static constexpr const char VersionSignature[] = { 'H', 'F', 'S', '0' };

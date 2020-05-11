@@ -77,7 +77,7 @@ namespace ams::sf {
     class Out<std::shared_ptr<ServiceImpl>> : public impl::OutObjectTag {
         static_assert(std::is_base_of<sf::IServiceObject, ServiceImpl>::value, "Out<std::shared_ptr<ServiceImpl>> requires ServiceObject base.");
 
-        template<typename, typename>
+        template<typename>
         friend class Out;
 
         public:
@@ -308,11 +308,7 @@ namespace ams::sf::impl {
                 /* Use insertion sort, which is stable and optimal for small numbers of parameters. */
                 for (size_t i = 1; i < sizeof...(Ts); i++) {
                     for (size_t j = i; j > 0 && values[map[j-1]] > values[map[j]]; j--) {
-                        /* std::swap is not constexpr until c++20 :( */
-                        /* TODO: std::swap(map[j], map[j-1]); */
-                        const size_t tmp = map[j];
-                        map[j] = map[j-1];
-                        map[j-1] = tmp;
+                        std::swap(map[j], map[j-1]);
                     }
                 }
             }
@@ -1042,7 +1038,7 @@ namespace ams::sf::impl {
     };
 
     constexpr Result GetCmifOutHeaderPointer(CmifOutHeader **out_header_ptr, cmif::PointerAndSize &out_raw_data) {
-        CmifOutHeader *header = reinterpret_cast<CmifOutHeader *>(out_raw_data.GetPointer());
+        CmifOutHeader *header = static_cast<CmifOutHeader *>(out_raw_data.GetPointer());
         R_UNLESS(out_raw_data.GetSize() >= sizeof(*header), sf::cmif::ResultInvalidHeaderSize());
         out_raw_data = cmif::PointerAndSize(out_raw_data.GetAddress() + sizeof(*header), out_raw_data.GetSize() - sizeof(*header));
         *out_header_ptr = header;

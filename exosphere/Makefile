@@ -156,6 +156,8 @@ $(OUTPUT).bin	:	$(OUTPUT).elf
 
 $(OUTPUT).elf	:	$(OFILES)
 
+my_libc.o: CFLAGS += -fno-builtin
+
 %.elf:
 	@echo linking $(notdir $@)
 	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@

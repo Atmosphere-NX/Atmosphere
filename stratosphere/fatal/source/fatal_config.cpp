@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "fatal_config.hpp"
 
 namespace ams::fatal::srv {
@@ -77,21 +78,21 @@ namespace ams::fatal::srv {
 
         /* Setup messages. */
         {
-            this->error_msg = u8"Error Code: 2%03d-%04d (0x%x)\n";
+            this->error_msg = "Error Code: 2%03d-%04d (0x%x)\n";
 
-            this->error_desc = u8"An error has occured.\n\n"
-                                 u8"Please press the POWER Button to restart the console normally, or a VOL button\n"
-                                 u8"to reboot to a payload (or RCM, if none is present). If you are unable to\n"
-                                 u8"restart the console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
-                                 u8"If the problem persists, refer to the Nintendo Support Website.\n"
-                                 u8"support.nintendo.com/switch/error\n";
+            this->error_desc = "An error has occured.\n\n"
+                                 "Please press the POWER Button to restart the console normally, or a VOL button\n"
+                                 "to reboot to a payload (or RCM, if none is present). If you are unable to\n"
+                                 "restart the console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
+                                 "If the problem persists, refer to the Nintendo Support Website.\n"
+                                 "support.nintendo.com/switch/error\n";
 
             /* If you're running Atmosphere on a quest unit for some reason, talk to me on discord. */
-            this->quest_desc = u8"Please call 1-800-875-1852 for service.\n\n"
-                                 u8"Also, please be aware that running Atmosphere on a Quest device is not fully\n"
-                                 u8"supported. Perhaps try booting your device without Atmosphere before calling\n"
-                                 u8"an official Nintendo service hotline. If you encounter further issues, please\n"
-                                 u8"contact SciresM#0524 on Discord, or via some other means.\n";
+            this->quest_desc = "Please call 1-800-875-1852 for service.\n\n"
+                                "Also, please be aware that running Atmosphere on a Quest device is not fully\n"
+                                "supported. Perhaps try booting your device without Atmosphere before calling\n"
+                                "an official Nintendo service hotline. If you encounter further issues, please\n"
+                                "contact SciresM#0524 on Discord, or via some other means.\n";
 
             /* TODO: Try to load dynamically? */
             /* FsStorage message_storage; */
