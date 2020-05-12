@@ -15,6 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "secmon_boot.hpp"
+#include "secmon_boot_cache.hpp"
 #include "secmon_boot_functions.hpp"
 
 namespace ams::secmon::boot {
@@ -102,6 +103,32 @@ namespace ams::secmon::boot {
         /* Configure the system counter control register. */
         reg::Write(SYSCTR0 + SYSCTR0_CNTCR, SYSCTR0_REG_BITS_ENUM(CNTCR_HDBG, ENABLE),
                                             SYSCTR0_REG_BITS_ENUM(CNTCR_EN,   ENABLE));
+    }
+
+    void WriteGpuCarveoutMagicNumbers() {
+        /* Define the magic numbers. */
+        constexpr u32 GpuMagicNumber       = 0xC0EDBBCC;
+        constexpr u32 SkuInfo              = 0x83;
+        constexpr u32 HdcpMicroCodeVersion = 0x2;
+        constexpr u32 ChipIdErista         = 0x210;
+        constexpr u32 ChipIdMariko         = 0x214;
+
+        /* Get our pointers. */
+        u32 *gpu_magic  = MemoryRegionDramGpuCarveout.GetEndPointer<u32>() - (0x004 / sizeof(*gpu_magic));
+        u32 *tsec_magic = MemoryRegionDramGpuCarveout.GetEndPointer<u32>() - (0x100 / sizeof(*tsec_magic));
+
+        /* Write the gpu magic number. */
+        gpu_magic[0] = GpuMagicNumber;
+
+        /* Write the tsec magic numbers. */
+        tsec_magic[0] = SkuInfo;
+        tsec_magic[1] = HdcpMicroCodeVersion;
+        tsec_magic[2] = (false /* TODO: IsMariko */) ? ChipIdMariko : ChipIdErista;
+
+        /* Flush the magic numbers. */
+        hw::FlushDataCache(gpu_magic,  1 * sizeof(u32));
+        hw::FlushDataCache(tsec_magic, 3 * sizeof(u32));
+        hw::DataSynchronizationBarrierInnerShareable();
     }
 
 }

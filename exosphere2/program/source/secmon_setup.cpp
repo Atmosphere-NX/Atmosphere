@@ -840,6 +840,16 @@ namespace ams::secmon {
 
     }
 
+    void SetupPmcAndMcSecure() {
+        /* Set the PMC secure. */
+        reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
+
+        /* Set the MC secure. */
+        reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
+                                                                                         SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
+                                                                                         SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
+    }
+
     void SetupCpuCoreContext() {
         /* Get the tsc frequency. */
         const u32 tsc_frequency = reg::Read(MemoryRegionVirtualDeviceSysCtr0.GetAddress() + SYSCTR0_CNTFID0);

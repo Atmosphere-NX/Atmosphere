@@ -27,4 +27,6 @@ namespace ams::secmon::boot {
 
     void EnableTsc(u64 initial_tsc_value);
 
+    void WriteGpuCarveoutMagicNumbers();
+
 }

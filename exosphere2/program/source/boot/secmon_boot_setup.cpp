@@ -15,6 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "secmon_boot.hpp"
+#include "secmon_boot_cache.hpp"
 #include "../secmon_setup.hpp"
 #include "../secmon_key_storage.hpp"
 
@@ -308,6 +309,25 @@ namespace ams::secmon::boot {
 
     }
 
+    namespace {
+
+        using namespace ams::mmu;
+
+        constexpr void UnmapPhysicalIdentityMappingImpl(u64 *l1, u64 *l2, u64 *l3) {
+            /* Invalidate the L3 entries for the tzram and iram boot code regions. */
+            InvalidateL3Entries(l3, MemoryRegionPhysicalTzram.GetAddress(),        MemoryRegionPhysicalTzram.GetSize());
+            InvalidateL3Entries(l3, MemoryRegionPhysicalIramBootCode.GetAddress(), MemoryRegionPhysicalIramBootCode.GetSize());
+
+            /* Unmap the L2 entries corresponding to those L3 entries. */
+            InvalidateL2Entries(l2, MemoryRegionPhysicalIramL2.GetAddress(),  MemoryRegionPhysicalIramL2.GetSize());
+            InvalidateL2Entries(l2, MemoryRegionPhysicalTzramL2.GetAddress(), MemoryRegionPhysicalTzramL2.GetSize());
+
+            /* Unmap the L1 entry corresponding to to those L2 entries. */
+            InvalidateL1Entries(l1, MemoryRegionPhysical.GetAddress(), MemoryRegionPhysical.GetSize());
+        }
+
+    }
+
     void InitializeColdBoot() {
         /* Ensure that the system counters are valid. */
         ValidateSystemCounters();
@@ -332,6 +352,18 @@ namespace ams::secmon::boot {
 
         /* Save a test vector for the SE keyslots. */
         SaveSecurityEngineAesKeySlotTestVector();
+    }
+
+    void UnmapPhysicalIdentityMapping() {
+        /* Get the tables. */
+        u64 * const l1    = MemoryRegionPhysicalTzramL1PageTable.GetPointer<u64>();
+        u64 * const l2_l3 = MemoryRegionPhysicalTzramL2L3PageTable.GetPointer<u64>();
+
+        /* Unmap. */
+        UnmapPhysicalIdentityMappingImpl(l1, l2_l3, l2_l3);
+
+        /* Ensure the mappings are consistent. */
+        secmon::boot::EnsureMappingConsistency();
     }
 
 }

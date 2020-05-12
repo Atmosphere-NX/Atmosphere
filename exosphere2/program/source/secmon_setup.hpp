@@ -31,6 +31,8 @@ namespace ams::secmon {
     void SetupSocSecurity();
     void SetupSocProtections();
 
+    void SetupPmcAndMcSecure();
+
     void Setup1();
 
     void SaveSecurityEngineAesKeySlotTestVector();
