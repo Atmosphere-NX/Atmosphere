@@ -122,6 +122,10 @@ namespace ams::pkg1 {
         constexpr bool IsProgramVerificationDisabled() const {
             return (this->flags1[0] & (1 << 0)) != 0;
         }
+
+        constexpr void SetPackage2Decrypted(bool decrypted) {
+            this->flags |= decrypted ? 0x3 : 0x0;
+        }
     };
     static_assert(util::is_pod<BootConfigSignedData>::value);
     static_assert(sizeof(BootConfigSignedData) == 0x100);

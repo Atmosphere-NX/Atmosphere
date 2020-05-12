@@ -33,4 +33,6 @@ namespace ams::se {
     void EncryptAes128(void *dst, size_t dst_size, int slot, const void *src, size_t src_size);
     void DecryptAes128(void *dst, size_t dst_size, int slot, const void *src, size_t src_size);
 
+    void ComputeAes128Ctr(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
+
 }

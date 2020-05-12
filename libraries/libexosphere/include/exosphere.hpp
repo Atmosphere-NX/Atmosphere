@@ -25,6 +25,7 @@
 #include <exosphere/gic.hpp>
 #include <exosphere/wdt.hpp>
 #include <exosphere/pkg1.hpp>
+#include <exosphere/pkg2.hpp>
 #include <exosphere/tsec.hpp>
 #include <exosphere/se.hpp>
 #include <exosphere/flow.hpp>

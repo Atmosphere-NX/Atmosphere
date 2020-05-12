@@ -33,13 +33,21 @@ namespace ams::se {
             MemoryInterface_Mc  = SE_CRYPTO_CONFIG_MEMIF_MCCIF,
         };
 
-        constexpr inline u32 AesConfigEcb = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,             0),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,  DISABLE),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,     ORIGINAL),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,      MEMORY),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,       MEMORY),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,         BYPASS),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,       DISABLE));
+        constexpr inline u32 AesConfigEcb = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,               0),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,    DISABLE),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,       ORIGINAL),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,        MEMORY),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,         MEMORY),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,           BYPASS),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,         DISABLE));
+
+        constexpr inline u32 AesConfigCtr = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,               1),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,    DISABLE),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,       ORIGINAL),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,        MEMORY),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,     LINEAR_CTR),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,           BOTTOM),
+                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,         DISABLE));
 
         void SetConfig(volatile SecurityEngineRegisters *SE, bool encrypt, SE_CONFIG_DST dst) {
             reg::Write(SE->SE_CONFIG, SE_REG_BITS_ENUM    (CONFIG_ENC_MODE, AESMODE_KEY128),
@@ -68,6 +76,16 @@ namespace ams::se {
         // void UpdateMemoryInterface(volatile SecurityEngineRegisters *SE, MemoryInterface memif) {
         //     reg::ReadWrite(SE->SE_CRYPTO_CONFIG, SE_REG_BITS_VALUE(CRYPTO_CONFIG_MEMIF, memif));
         // }
+
+        void SetCounter(volatile SecurityEngineRegisters *SE, const void *ctr) {
+            const u32 *ctr_32 = reinterpret_cast<const u32 *>(ctr);
+
+            /* Copy the input ctr to the linear CTR registers. */
+            reg::Write(SE->SE_CRYPTO_LINEAR_CTR[0], util::LoadLittleEndian(ctr_32 + 0));
+            reg::Write(SE->SE_CRYPTO_LINEAR_CTR[1], util::LoadLittleEndian(ctr_32 + 1));
+            reg::Write(SE->SE_CRYPTO_LINEAR_CTR[2], util::LoadLittleEndian(ctr_32 + 2));
+            reg::Write(SE->SE_CRYPTO_LINEAR_CTR[3], util::LoadLittleEndian(ctr_32 + 3));
+        }
 
         void SetEncryptedAesKey(int dst_slot, int kek_slot, const void *key, size_t key_size, AesMode mode) {
             AMS_ABORT_UNLESS(key_size <= AesKeySizeMax);
@@ -204,6 +222,52 @@ namespace ams::se {
         SetAesConfig(SE, slot, false, AesConfigEcb);
 
         ExecuteOperationSingleBlock(SE, dst, dst_size, src, src_size);
+    }
+
+    void ComputeAes128Ctr(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
+        /* If nothing to do, succeed. */
+        if (src_size == 0) { return; }
+
+        /* Validate input. */
+        AMS_ABORT_UNLESS(iv_size == AesBlockSize);
+        AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+
+        /* Get the engine. */
+        auto *SE = GetRegisters();
+
+        /* Determine how many full blocks we can operate on. */
+        const size_t num_blocks   = src_size / AesBlockSize;
+        const size_t aligned_size = num_blocks * AesBlockSize;
+        const size_t fractional   = src_size - aligned_size;
+
+        /* Here Nintendo writes 1 to SE_SPARE. It's unclear why they do this, but we will do so as well. */
+        SE->SE_SPARE = 0x1;
+
+        /* Configure for AES-CTR encryption/decryption to memory. */
+        SetConfig(SE, true, SE_CONFIG_DST_MEMORY);
+        SetAesConfig(SE, slot, true, AesConfigCtr);
+
+        /* Set the counter. */
+        SetCounter(SE, iv);
+
+        /* Process as many aligned blocks as we can. */
+        if (aligned_size > 0) {
+            /* Configure the engine to process the right number of blocks. */
+            SetBlockCount(SE, num_blocks);
+
+            /* Execute the operation. */
+            ExecuteOperation(SE, SE_OPERATION_OP_START, dst, dst_size, src, aligned_size);
+
+            /* Synchronize around this point. */
+            hw::DataSynchronizationBarrierInnerShareable();
+        }
+
+        /* Process a single block to output. */
+        if (fractional > 0 && dst_size > aligned_size) {
+            const size_t copy_size = std::min(fractional, dst_size - aligned_size);
+
+            ExecuteOperationSingleBlock(SE, static_cast<u8 *>(dst) + aligned_size, copy_size, static_cast<const u8 *>(src) + aligned_size, fractional);
+        }
     }
 
 }
