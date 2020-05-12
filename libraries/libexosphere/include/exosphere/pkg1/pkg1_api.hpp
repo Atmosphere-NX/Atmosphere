@@ -14,17 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <exosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::secmon::boot {
+namespace ams::pkg1 {
 
-    void ClearIram();
-
-    void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state);
-
-    void LoadBootConfig(const void *src);
-    void VerifyOrClearBootConfig();
-
-    void EnableTsc(u64 initial_tsc_value);
+    bool IsProduction();
+    bool IsProductionForVersionCheck();
+    bool IsProductionForPublicKey();
 
 }

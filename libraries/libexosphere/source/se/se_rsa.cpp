@@ -27,10 +27,7 @@ namespace ams::se {
 
         constinit RsaKeyInfo g_rsa_key_infos[RsaKeySlotCount] = {};
 
-        void ClearRsaKeySlot(int slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL expmod) {
-            /* Get the engine. */
-            auto *SE = GetRegisters();
-
+        void ClearRsaKeySlot(volatile SecurityEngineRegisters *SE, int slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL expmod) {
             constexpr int NumWords = se::RsaSize / sizeof(u32);
             for (int i = 0; i < NumWords; ++i) {
                 /* Select the keyslot word. */
@@ -44,10 +41,7 @@ namespace ams::se {
             }
         }
 
-        void SetRsaKey(int slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL expmod, const void *key, size_t key_size) {
-            /* Get the engine. */
-            auto *SE = GetRegisters();
-
+        void SetRsaKey(volatile SecurityEngineRegisters *SE, int slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL expmod, const void *key, size_t key_size) {
             const int num_words = key_size / sizeof(u32);
             for (int i = 0; i < num_words; ++i) {
                 /* Select the keyslot word. */
@@ -64,6 +58,15 @@ namespace ams::se {
             }
         }
 
+        void GetRsaResult(volatile SecurityEngineRegisters *SE, void *dst, size_t size) {
+            /* Copy out the words. */
+            const int num_words = size / sizeof(u32);
+            for (int i = 0; i < num_words; ++i) {
+                const u32 word = reg::Read(SE->SE_RSA_OUTPUT[i]);
+                util::StoreBigEndian(static_cast<u32 *>(dst) + num_words - 1 - i, word);
+            }
+        }
+
     }
 
     void ClearRsaKeySlot(int slot) {
@@ -73,11 +76,14 @@ namespace ams::se {
         /* Clear the info. */
         g_rsa_key_infos[slot] = {};
 
+        /* Get the engine. */
+        auto *SE = GetRegisters();
+
         /* Clear the modulus. */
-        ClearRsaKeySlot(slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_MODULUS);
+        ClearRsaKeySlot(SE, slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_MODULUS);
 
         /* Clear the exponent. */
-        ClearRsaKeySlot(slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_EXPONENT);
+        ClearRsaKeySlot(SE, slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_EXPONENT);
     }
 
     void LockRsaKeySlot(int slot, u32 flags) {
@@ -117,9 +123,55 @@ namespace ams::se {
         info.modulus_size_val  = (mod_size / 64) - 1;
         info.exponent_size_val = (exp_size /  4);
 
+        /* Get the engine. */
+        auto *SE = GetRegisters();
+
         /* Set the modulus and exponent. */
-        SetRsaKey(slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_MODULUS,  mod, mod_size);
-        SetRsaKey(slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_EXPONENT, exp, exp_size);
+        SetRsaKey(SE, slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_MODULUS,  mod, mod_size);
+        SetRsaKey(SE, slot, SE_RSA_KEYTABLE_ADDR_EXPMOD_SEL_EXPONENT, exp, exp_size);
+    }
+
+    void ModularExponentiate(void *dst, size_t dst_size, int slot, const void *src, size_t src_size) {
+        /* Validate the slot and sizes. */
+        AMS_ABORT_UNLESS(0 <= slot && slot < RsaKeySlotCount);
+        AMS_ABORT_UNLESS(src_size <= RsaSize);
+        AMS_ABORT_UNLESS(dst_size <= RsaSize);
+
+        /* Get the engine. */
+        auto *SE = GetRegisters();
+
+        /* Create a work buffer. */
+        u8 work[RsaSize];
+        util::ClearMemory(work, sizeof(work));
+
+        /* Copy the input into the work buffer (reversing endianness). */
+        const u8 *src_u8 = static_cast<const u8 *>(src);
+        for (size_t i = 0; i < src_size; ++i) {
+            work[src_size - 1 - i] = src_u8[i];
+        }
+
+        /* Flush the work buffer to ensure the SE sees correct results. */
+        hw::FlushDataCache(work, sizeof(work));
+        hw::DataSynchronizationBarrierInnerShareable();
+
+        /* Configure the engine to perform RSA encryption. */
+        reg::Write(SE->SE_CONFIG, SE_REG_BITS_ENUM(CONFIG_ENC_MODE, AESMODE_KEY128),
+                                  SE_REG_BITS_ENUM(CONFIG_DEC_MODE, AESMODE_KEY128),
+                                  SE_REG_BITS_ENUM(CONFIG_ENC_ALG,             RSA),
+                                  SE_REG_BITS_ENUM(CONFIG_DEC_ALG,             NOP),
+                                  SE_REG_BITS_ENUM(CONFIG_DST,             RSA_REG));
+
+        /* Configure the engine to use the keyslot and correct modulus/exp sizes. */
+        const auto &info = g_rsa_key_infos[slot];
+        reg::Write(SE->SE_RSA_CONFIG, SE_REG_BITS_VALUE(RSA_CONFIG_KEY_SLOT, slot));
+        reg::Write(SE->SE_RSA_KEY_SIZE, info.modulus_size_val);
+        reg::Write(SE->SE_RSA_EXP_SIZE, info.exponent_size_val);
+
+        /* Execute the operation. */
+        ExecuteOperation(SE, SE_OPERATION_OP_START, nullptr, 0, work, src_size);
+
+        /* Copy out the result. */
+        GetRsaResult(SE, dst, dst_size);
     }
 
 }

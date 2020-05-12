@@ -90,8 +90,12 @@ namespace ams::pkg1 {
             return static_cast<MemoryMode>(this->flags0[3]);
         }
 
-        bool IsTscInitialValueValid() const {
+        constexpr bool IsInitialTscValueValid() const {
             return (this->flags0[4] & (1 << 0)) != 0;
+        }
+
+        constexpr u64 GetInitialTscValue() const {
+            return this->IsInitialTscValueValid() ? this->initial_tsc_value : 0;
         }
     };
     static_assert(util::is_pod<BootConfigData>::value);

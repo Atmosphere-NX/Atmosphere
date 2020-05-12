@@ -70,6 +70,10 @@ namespace ams::secmon {
             GetConfigurationContext().secmon_cfg.key_generation = generation;
         }
 
+        ALWAYS_INLINE pkg1::BootConfig *GetBootConfigStorage() {
+            return std::addressof(GetConfigurationContext().boot_config);
+        }
+
     }
 
     ALWAYS_INLINE const ConfigurationContext &GetConfigurationContext() {

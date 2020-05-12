@@ -14,17 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <exosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::secmon::boot {
+#include <exosphere/br/impl/br_erista_types.hpp>
+#include <exosphere/br/impl/br_mariko_types.hpp>
 
-    void ClearIram();
+namespace ams::br {
 
-    void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state);
-
-    void LoadBootConfig(const void *src);
-    void VerifyOrClearBootConfig();
-
-    void EnableTsc(u64 initial_tsc_value);
+    struct BootEcid {
+        u32 ecid[4];
+    };
+    static_assert(util::is_pod<BootEcid>::value);
+    static_assert(sizeof(BootEcid) == 0x10);
 
 }

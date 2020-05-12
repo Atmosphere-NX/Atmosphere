@@ -21,6 +21,7 @@
 #include <exosphere/hw.hpp>
 #include <exosphere/util.hpp>
 #include <exosphere/mmu.hpp>
+#include <exosphere/br.hpp>
 #include <exosphere/gic.hpp>
 #include <exosphere/wdt.hpp>
 #include <exosphere/pkg1.hpp>

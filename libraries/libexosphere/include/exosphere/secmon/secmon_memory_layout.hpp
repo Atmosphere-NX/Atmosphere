@@ -271,7 +271,9 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualTzramL2L3PageTable));
     static_assert(MemoryRegionPhysicalTzramNonVolatile.Contains(MemoryRegionPhysicalTzramL2L3PageTable));
 
-    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(0x7C010800, 0xD800);
-    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(0x40032000, 0xC000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(UINT64_C(0x7C010800), 0xD800);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(UINT64_C(0x40032000), 0xC000);
+
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootConfig = MemoryRegion(UINT64_C(0x4003F800), 0x400);
 
 }

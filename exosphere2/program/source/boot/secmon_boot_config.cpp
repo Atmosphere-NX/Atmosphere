@@ -14,9 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "secmon_boot.hpp"
 
 namespace ams::secmon::boot {
 
-    /* TODO */
+    bool VerifyBootConfigSignature(pkg1::BootConfig &bc, const void *mod, size_t mod_size) {
+        return VerifySignature(std::addressof(bc.signature), sizeof(bc.signature), mod, mod_size, std::addressof(bc.signed_data), sizeof(bc.signed_data));
+    }
+
+    bool VerifyBootConfigEcid(const pkg1::BootConfig &bc) {
+        /* Get the ecid. */
+        br::BootEcid ecid;
+        fuse::GetEcid(std::addressof(ecid));
+
+        /* Verify it matches. */
+        return crypto::IsSameBytes(std::addressof(ecid), bc.signed_data.ecid, sizeof(ecid));
+    }
 
 }

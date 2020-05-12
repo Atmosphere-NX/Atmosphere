@@ -118,4 +118,28 @@ namespace ams::fuse {
         return pmic::Regulator_Erista_Max77621;
     }
 
+    void GetEcid(br::BootEcid *out) {
+        /* Get the registers. */
+        const volatile auto &chip = GetChipRegisters();
+
+        /* Read the ecid components. */
+        const u32 vendor    = reg::Read(chip.FUSE_OPT_VENDOR_CODE);
+        const u32 fab       = reg::Read(chip.FUSE_OPT_FAB_CODE);
+        const u32 lot0      = reg::Read(chip.FUSE_OPT_LOT_CODE_0);
+        const u32 lot1      = reg::Read(chip.FUSE_OPT_LOT_CODE_1);
+        const u32 wafer     = reg::Read(chip.FUSE_OPT_WAFER_ID);
+        const u32 x_coord   = reg::Read(chip.FUSE_OPT_X_COORDINATE);
+        const u32 y_coord   = reg::Read(chip.FUSE_OPT_Y_COORDINATE);
+        const u32 reserved  = reg::Read(chip.FUSE_OPT_OPS_RESERVED);
+
+        /* Clear the output. */
+        util::ClearMemory(out, sizeof(*out));
+
+        /* Copy the component bits. */
+        out->ecid[0] = static_cast<u32>((lot1 << 30) | (wafer << 24) | (x_coord << 15) | (y_coord << 6) | (reserved));
+        out->ecid[1] = static_cast<u32>((lot0 << 26) | (lot1 >> 2));
+        out->ecid[2] = static_cast<u32>((fab << 26) | (lot0 >> 6));
+        out->ecid[3] = static_cast<u32>(vendor);
+    }
+
 }
