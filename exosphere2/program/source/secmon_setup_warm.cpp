@@ -122,7 +122,7 @@ namespace ams::secmon {
 
         void EnableMmu() {
             /* Create sctlr value. */
-            util::BitPack32 sctlr = { hw::SctlrEl3::Res1 };
+            util::BitPack64 sctlr = { hw::SctlrEl3::Res1 };
             sctlr.Set<hw::SctlrEl3::M>(1);   /* Globally enable the MMU. */
             sctlr.Set<hw::SctlrEl3::A>(0);   /* Disable alignment fault checking. */
             sctlr.Set<hw::SctlrEl3::C>(1);   /* Globally enable the data and unified caches. */

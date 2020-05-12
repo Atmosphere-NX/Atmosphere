@@ -141,17 +141,79 @@ namespace ams::hw::arch::arm64 {
     #define HW_CPU_GET_DBGWCR3_EL1(value) HW_CPU_GET_SYSREG(dbgwcr3_el1, value)
     #define HW_CPU_SET_DBGWCR3_EL1(value) HW_CPU_SET_SYSREG(dbgwcr3_el1, value)
 
+    #define HW_CPU_GET_CNTFRQ_EL0(value) HW_CPU_GET_SYSREG(cntfrq_el0, value)
+    #define HW_CPU_SET_CNTFRQ_EL0(value) HW_CPU_SET_SYSREG(cntfrq_el0, value)
+
+    #define HW_CPU_GET_CNTHCTL_EL2(value) HW_CPU_GET_SYSREG(cnthctl_el2, value)
+    #define HW_CPU_SET_CNTHCTL_EL2(value) HW_CPU_SET_SYSREG(cnthctl_el2, value)
+
+    #define HW_CPU_GET_ACTLR_EL2(value) HW_CPU_GET_SYSREG(actlr_el2, value)
+    #define HW_CPU_SET_ACTLR_EL2(value) HW_CPU_SET_SYSREG(actlr_el2, value)
+
+    #define HW_CPU_GET_ACTLR_EL3(value) HW_CPU_GET_SYSREG(actlr_el3, value)
+    #define HW_CPU_SET_ACTLR_EL3(value) HW_CPU_SET_SYSREG(actlr_el3, value)
+
+    #define HW_CPU_GET_HCR_EL2(value) HW_CPU_GET_SYSREG(hcr_el2, value)
+    #define HW_CPU_SET_HCR_EL2(value) HW_CPU_SET_SYSREG(hcr_el2, value)
+
+    #define HW_CPU_GET_DACR32_EL2(value) HW_CPU_GET_SYSREG(dacr32_el2, value)
+    #define HW_CPU_SET_DACR32_EL2(value) HW_CPU_SET_SYSREG(dacr32_el2, value)
+
+    #define HW_CPU_GET_SCTLR_EL2(value) HW_CPU_GET_SYSREG(sctlr_el2, value)
+    #define HW_CPU_SET_SCTLR_EL2(value) HW_CPU_SET_SYSREG(sctlr_el2, value)
+
+    #define HW_CPU_GET_SCTLR_EL1(value) HW_CPU_GET_SYSREG(sctlr_el1, value)
+    #define HW_CPU_SET_SCTLR_EL1(value) HW_CPU_SET_SYSREG(sctlr_el1, value)
+
     /* https://developer.arm.com/docs/ddi0488/h/system-control/aarch64-register-descriptions/system-control-register-el3 */
     struct SctlrEl3 {
-        using M   = util::BitPack32::Field< 0, 1>;
-        using A   = util::BitPack32::Field< 1, 1>;
-        using C   = util::BitPack32::Field< 2, 1>;
-        using Sa  = util::BitPack32::Field< 3, 1>;
-        using I   = util::BitPack32::Field<12, 1>;
-        using Wxn = util::BitPack32::Field<19, 1>;
-        using Ee  = util::BitPack32::Field<25, 1>;
+        using M   = util::BitPack64::Field< 0, 1>;
+        using A   = util::BitPack64::Field< 1, 1>;
+        using C   = util::BitPack64::Field< 2, 1>;
+        using Sa  = util::BitPack64::Field< 3, 1>;
+        using I   = util::BitPack64::Field<12, 1>;
+        using Wxn = util::BitPack64::Field<19, 1>;
+        using Ee  = util::BitPack64::Field<25, 1>;
 
-        static constexpr u32 Res1 = 0x30C50830;
+        static constexpr u64 Res1 = 0x30C50830;
+    };
+
+    /*  https://static.docs.arm.com/ddi0487/fb/DDI0487F_b_armv8_arm.pdf */
+    struct SctlrEl2 {
+        using M       = util::BitPack64::Field< 0, 1>;
+        using A       = util::BitPack64::Field< 1, 1>;
+        using C       = util::BitPack64::Field< 2, 1>;
+        using Sa      = util::BitPack64::Field< 3, 1>;
+        using I       = util::BitPack64::Field<12, 1>;
+        using Wxn     = util::BitPack64::Field<19, 1>;
+        using Ee      = util::BitPack64::Field<25, 1>;
+
+        static constexpr u64 Res1 = 0x30C50830;
+    };
+
+    /* https://developer.arm.com/docs/ddi0488/h/system-control/aarch64-register-descriptions/system-control-register-el1 */
+    struct SctlrEl1 {
+        using M       = util::BitPack64::Field< 0, 1>;
+        using A       = util::BitPack64::Field< 1, 1>;
+        using C       = util::BitPack64::Field< 2, 1>;
+        using Sa      = util::BitPack64::Field< 3, 1>;
+        using Sa0     = util::BitPack64::Field< 4, 1>;
+        using Cp15BEn = util::BitPack64::Field< 5, 1>;
+        using Thee    = util::BitPack64::Field< 6, 1>;
+        using Itd     = util::BitPack64::Field< 7, 1>;
+        using Sed     = util::BitPack64::Field< 8, 1>;
+        using Uma     = util::BitPack64::Field< 9, 1>;
+        using I       = util::BitPack64::Field<12, 1>;
+        using Dze     = util::BitPack64::Field<14, 1>;
+        using Uct     = util::BitPack64::Field<15, 1>;
+        using Ntwi    = util::BitPack64::Field<16, 1>;
+        using Ntwe    = util::BitPack64::Field<18, 1>;
+        using Wxn     = util::BitPack64::Field<19, 1>;
+        using E0e     = util::BitPack64::Field<24, 1>;
+        using Ee      = util::BitPack64::Field<25, 1>;
+        using Uci     = util::BitPack64::Field<26, 1>;
+
+        static constexpr u64 Res1 = 0x30D00800;
     };
 
     /* http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0488c/BABGIHHJ.html */
@@ -240,6 +302,29 @@ namespace ams::hw::arch::arm64 {
         using Nsnid = util::BitPack32::Field<2, 2>;
         using Sid   = util::BitPack32::Field<4, 2>;
         using Snid  = util::BitPack32::Field<6, 2>;
+    };
+
+    /* https://developer.arm.com/docs/ddi0595/b/aarch64-system-registers/cnthctl_el2 */
+    struct CnthctlEl2 {
+        using El1PctEn = util::BitPack32::Field<0, 1>;
+        using El1PcEn  = util::BitPack32::Field<1, 1>;
+        using EvntEn   = util::BitPack32::Field<2, 1>;
+        using EvntDir  = util::BitPack32::Field<3, 1>;
+        using EvntI    = util::BitPack32::Field<4, 4>;
+    };
+
+    /* https://developer.arm.com/docs/ddi0488/h/system-control/aarch64-register-descriptions/auxiliary-control-register-el3 */
+    struct ActlrCortexA57 {
+        using Cpuactlr = util::BitPack32::Field<0, 1>;
+        using Cpuectlr = util::BitPack32::Field<1, 1>;
+        using L2ctlr   = util::BitPack32::Field<4, 1>;
+        using L2ectlr  = util::BitPack32::Field<5, 1>;
+        using L2actlr  = util::BitPack32::Field<6, 1>;
+    };
+
+    /* https://developer.arm.com/docs/ddi0488/h/system-control/aarch64-register-descriptions/hypervisor-configuration-register-el2 */
+    struct HcrEl2 {
+        using Rw = util::BitPack64::Field<31, 1>;
     };
 
 }

@@ -16,6 +16,7 @@
 #include <exosphere.hpp>
 #include "secmon_boot.hpp"
 #include "secmon_boot_functions.hpp"
+#include "../smc/secmon_random_cache.hpp"
 #include "../secmon_setup.hpp"
 #include "../secmon_misc.hpp"
 
@@ -56,13 +57,17 @@ namespace ams::secmon {
             /* Setup the SoC security measures. */
             secmon::SetupSocSecurity();
 
-            /* TODO: More init. */
+            /* Setup the Cpu core context. */
+            secmon::SetupCpuCoreContext();
 
             /* Clear the crt0 code that was present in iram. */
             secmon::boot::ClearIram();
 
             /* Alert the bootloader that we're initialized. */
             secmon_params.secmon_state = pkg1::SecureMonitorState_Initialized;
+
+            /* Initialize the random cache. */
+            secmon::smc::FillRandomCache();
         }
     }
 

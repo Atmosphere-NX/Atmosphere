@@ -629,6 +629,99 @@ namespace ams::secmon {
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
         }
 
+        void SetupSecureEl2AndEl1SystemRegisters() {
+            /* Setup actlr_el2 and actlr_el3. */
+            {
+                util::BitPack32 actlr = {};
+
+                actlr.Set<hw::ActlrCortexA57::Cpuactlr>(1); /* Enable access to cpuactlr from lower EL. */
+                actlr.Set<hw::ActlrCortexA57::Cpuectlr>(1); /* Enable access to cpuectlr from lower EL. */
+                actlr.Set<hw::ActlrCortexA57::L2ctlr>(1);   /* Enable access to l2ctlr from lower EL. */
+                actlr.Set<hw::ActlrCortexA57::L2actlr>(1);  /* Enable access to l2actlr from lower EL. */
+                actlr.Set<hw::ActlrCortexA57::L2ectlr>(1);  /* Enable access to l2ectlr from lower EL. */
+
+                HW_CPU_SET_ACTLR_EL3(actlr);
+                HW_CPU_SET_ACTLR_EL2(actlr);
+            }
+
+            /* Setup hcr_el2. */
+            {
+                util::BitPack64 hcr = {};
+
+                hcr.Set<hw::HcrEl2::Rw>(1); /* EL1 is aarch64 mode. */
+
+                HW_CPU_SET_HCR_EL2(hcr);
+            }
+
+            /* Configure all domain access permissions as manager. */
+            HW_CPU_SET_DACR32_EL2(~0u);
+
+            /* Setup sctlr_el1. */
+            {
+                util::BitPack64 sctlr = { hw::SctlrEl1::Res1 };
+
+                sctlr.Set<hw::SctlrEl1::M>(0);       /* Globally disable the MMU. */
+                sctlr.Set<hw::SctlrEl1::A>(0);       /* Disable alignment fault checking. */
+                sctlr.Set<hw::SctlrEl1::C>(0);       /* Globally disable the data and unified caches. */
+                sctlr.Set<hw::SctlrEl1::Sa>(1);      /* Enable stack alignment checking. */
+                sctlr.Set<hw::SctlrEl1::Sa0>(1);     /* Enable el0 stack alignment checking. */
+                sctlr.Set<hw::SctlrEl1::Cp15BEn>(1); /* Enable cp15 barrier operations. */
+                sctlr.Set<hw::SctlrEl1::Thee>(0);    /* Disable ThumbEE. */
+                sctlr.Set<hw::SctlrEl1::Itd>(0);     /* Enable itd instructions. */
+                sctlr.Set<hw::SctlrEl1::Sed>(0);     /* Enable setend instruction. */
+                sctlr.Set<hw::SctlrEl1::Uma>(0);     /* Disable el0 interrupt mask access. */
+                sctlr.Set<hw::SctlrEl1::I>(0);       /* Globally disable the instruction cache. */
+                sctlr.Set<hw::SctlrEl1::Dze>(0);     /* Disable el0 access to dc zva instruction. */
+                sctlr.Set<hw::SctlrEl1::Ntwi>(1);    /* wfi instructions in el0 trap. */
+                sctlr.Set<hw::SctlrEl1::Ntwe>(1);    /* wfe instructions in el0 trap. */
+                sctlr.Set<hw::SctlrEl1::Wxn>(0);     /* Do not force writable pages to be ExecuteNever. */
+                sctlr.Set<hw::SctlrEl1::E0e>(0);     /* Data accesses in el0 are little endian. */
+                sctlr.Set<hw::SctlrEl1::Ee>(0);      /* Exceptions should be little endian. */
+                sctlr.Set<hw::SctlrEl1::Uci>(0);     /* Disable el0 access to dc cvau, dc civac, dc cvac, ic ivau. */
+
+                HW_CPU_SET_SCTLR_EL1(sctlr);
+            }
+
+            /* Setup sctlr_el2. */
+            {
+                util::BitPack64 sctlr = { hw::SctlrEl2::Res1 }; // 0x30C5083
+
+                sctlr.Set<hw::SctlrEl2::M>(0);       /* Globally disable the MMU. */
+                sctlr.Set<hw::SctlrEl2::A>(0);       /* Disable alignment fault checking. */
+                sctlr.Set<hw::SctlrEl2::C>(0);       /* Globally disable the data and unified caches. */
+                sctlr.Set<hw::SctlrEl2::Sa>(1);      /* Enable stack alignment checking. */
+                sctlr.Set<hw::SctlrEl2::I>(0);       /* Globally disable the instruction cache. */
+                sctlr.Set<hw::SctlrEl2::Wxn>(0);     /* Do not force writable pages to be ExecuteNever. */
+                sctlr.Set<hw::SctlrEl2::Ee>(0);      /* Exceptions should be little endian. */
+
+                HW_CPU_SET_SCTLR_EL2(sctlr);
+            }
+
+            /* Ensure instruction consistency. */
+            hw::InstructionSynchronizationBarrier();
+        }
+
+        void SetupNonSecureSystemRegisters(u32 tsc_frequency) {
+            /* Set cntfrq_el0. */
+            HW_CPU_SET_CNTFRQ_EL0(tsc_frequency);
+
+            /* Set cnthctl_el2. */
+            {
+                util::BitPack32 cnthctl = {};
+
+                cnthctl.Set<hw::CnthctlEl2::El1PctEn>(1); /* Do not trap accesses to cntpct_el0. */
+                cnthctl.Set<hw::CnthctlEl2::El1PcEn>(1);  /* Do not trap accesses to cntp_ctl_el0, cntp_cval_el0, and cntp_tval_el0. */
+                cnthctl.Set<hw::CnthctlEl2::EvntEn>(0);   /* Disable the event stream. */
+                cnthctl.Set<hw::CnthctlEl2::EvntDir>(0);  /* Trigger events on 0 -> 1 transition. */
+                cnthctl.Set<hw::CnthctlEl2::EvntI>(0);    /* Select bit0 of cntpct_el0 as the event stream trigger. */
+
+                HW_CPU_SET_CNTHCTL_EL2(cnthctl);
+            }
+
+            /* Ensure instruction consistency. */
+            hw::InstructionSynchronizationBarrier();
+        }
+
     }
 
     void Setup1() {
@@ -744,6 +837,36 @@ namespace ams::secmon {
     }
 
     void SetupSocProtections() {
+
+    }
+
+    void SetupCpuCoreContext() {
+        /* Get the tsc frequency. */
+        const u32 tsc_frequency = reg::Read(MemoryRegionVirtualDeviceSysCtr0.GetAddress() + SYSCTR0_CNTFID0);
+
+        /* Setup the secure EL2/EL1 system registers. */
+        SetupSecureEl2AndEl1SystemRegisters();
+
+        /* Setup the non-secure system registers. */
+        SetupNonSecureSystemRegisters(tsc_frequency);
+
+        /* Reset the cpu flow controller registers. */
+        flow::ResetCpuRegisters(hw::GetCurrentCoreId());
+
+        /* Initialize the core unique gic registers. */
+        gic::InitializeCoreUnique();
+
+        /* Configure cpu fiq. */
+        constexpr int FiqInterruptId = 28;
+        gic::SetPriority      (FiqInterruptId, gic::HighestPriority);
+        gic::SetInterruptGroup(FiqInterruptId, 0);
+        gic::SetEnable        (FiqInterruptId, true);
+
+        /* Restore the cpu's debug registers. */
+        RestoreDebugRegisters();
+    }
+
+    void SetupCpuSErrorDebug() {
 
     }
 
