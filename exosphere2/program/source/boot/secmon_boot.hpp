@@ -20,6 +20,7 @@ namespace ams::secmon::boot {
 
     void MakePageTable();
     void UnmapPhysicalIdentityMapping();
+    void UnmapDram();
 
     void InitializeColdBoot();
 
@@ -29,7 +30,13 @@ namespace ams::secmon::boot {
     bool VerifyBootConfigSignature(pkg1::BootConfig &bc, const void *mod, size_t mod_size);
     bool VerifyBootConfigEcid(const pkg1::BootConfig &bc);
 
+    void CalculatePackage2Hash(se::Sha256Hash *dst, const pkg2::Package2Meta &meta, uintptr_t package2_start);
+
     bool VerifyPackage2Signature(pkg2::Package2Header &header, const void *mod, size_t mod_size);
     void DecryptPackage2(void *dst, size_t dst_size, const void *src, size_t src_size, const void *key, size_t key_size, const void *iv, size_t iv_size, u8 key_generation);
+
+    bool VerifyPackage2Meta(const pkg2::Package2Meta &meta);
+    bool VerifyPackage2Version(const pkg2::Package2Meta &meta);
+    bool VerifyPackage2Payloads(const pkg2::Package2Meta &meta, uintptr_t payload_address);
 
 }

@@ -33,6 +33,10 @@ namespace ams::secmon::boot {
     void VerifyPackage2HeaderSignature(pkg2::Package2Header &header, bool verify);
     void DecryptPackage2Header(pkg2::Package2Meta *dst, const pkg2::Package2Meta &src, bool encrypted);
 
+    void VerifyPackage2Header(const pkg2::Package2Meta &meta);
+
+    void DecryptAndLoadPackage2Payloads(uintptr_t dst, const pkg2::Package2Meta &meta, uintptr_t src, bool encrypted);
+
     void CheckVerifyResult(bool verify_result, pkg1::ErrorInfo error_info, const char *message);
 
 }

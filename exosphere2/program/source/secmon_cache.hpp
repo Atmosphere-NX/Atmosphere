@@ -18,15 +18,6 @@
 
 namespace ams::secmon {
 
-    void SaveBootInfo(const pkg1::SecureMonitorParameters &secmon_params);
-
-    bool IsRecoveryBoot();
-
-    u32 GetRestrictedSmcMask();
-
-    bool IsJtagEnabled();
-
-    void GetPackage2Hash(se::Sha256Hash *out);
-    void SetPackage2Hash(const se::Sha256Hash &hash);
+    #include "secmon_cache.inc"
 
 }

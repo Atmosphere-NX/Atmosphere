@@ -837,7 +837,7 @@ namespace ams::secmon {
     }
 
     void SetupSocProtections() {
-
+        /* TODO */
     }
 
     void SetupPmcAndMcSecure() {
@@ -877,7 +877,21 @@ namespace ams::secmon {
     }
 
     void SetupCpuSErrorDebug() {
+        /* Get whether we should enable SError debug. */
+        const auto &bc_data = secmon::GetBootConfig().data;
+        const bool enabled  = bc_data.IsDevelopmentFunctionEnabled() && bc_data.IsSErrorDebugEnabled();
 
+        /* Get and set scr_el3. */
+        {
+            util::BitPack32 scr;
+            HW_CPU_GET_SCR_EL3(scr);
+
+            scr.Set<hw::ScrEl3::Ea>(enabled ? 0 : 1);
+            HW_CPU_SET_SCR_EL3(scr);
+        }
+
+        /* Prevent reordering instructions around this call. */
+        hw::InstructionSynchronizationBarrier();
     }
 
 }
