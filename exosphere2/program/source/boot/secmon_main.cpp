@@ -26,7 +26,7 @@ namespace ams::secmon {
         /* Set library register addresses. */
         /*   actmon::SetRegisterAddress(MemoryRegionVirtualDeviceActivityMonitor.GetAddress()); */
              clkrst::SetRegisterAddress(MemoryRegionVirtualDeviceClkRst.GetAddress());
-        /* flowctrl::SetRegisterAddress(); */
+               flow::SetRegisterAddress(MemoryRegionVirtualDeviceFlowController.GetAddress());
                fuse::SetRegisterAddress(MemoryRegionVirtualDeviceFuses.GetAddress());
                 gic::SetRegisterAddress(MemoryRegionVirtualDeviceGicDistributor.GetAddress(), MemoryRegionVirtualDeviceGicCpuInterface.GetAddress());
                 i2c::SetRegisterAddress(i2c::Port_1, MemoryRegionVirtualDeviceI2c1.GetAddress());
@@ -68,6 +68,26 @@ namespace ams::secmon {
 
             /* Initialize the random cache. */
             secmon::smc::FillRandomCache();
+        }
+
+        /* Wait for NX Bootloader to finish loading the BootConfig. */
+        secmon::boot::WaitForNxBootloader(secmon_params, pkg1::BootloaderState_LoadedBootConfig);
+        hw::DataSynchronizationBarrierInnerShareable();
+
+        /* Load the bootconfig. */
+        secmon::boot::LoadBootConfig(MemoryRegionPhysicalIramBootConfig.GetPointer());
+
+        /* Verify or clear the boot config. */
+        secmon::boot::VerifyOrClearBootConfig();
+
+        /* Get the boot config. */
+        const auto &bc = secmon::GetBootConfig();
+
+        /* Set the tsc value by the boot config. */
+        {
+            constexpr u64 TscMask = (static_cast<u64>(1) << 55) - 1;
+
+            secmon::boot::EnableTsc(bc.data.GetInitialTscValue() & TscMask);
         }
     }
 

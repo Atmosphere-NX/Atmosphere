@@ -13,18 +13,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <exosphere.hpp>
 
-namespace ams::secmon::boot {
+namespace ams::pkg1 {
 
-    void ClearIram();
+    namespace {
 
-    void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state);
+        bool IsProductionImpl() {
+            return fuse::GetHardwareState() != fuse::HardwareState_Development;
+        }
 
-    void LoadBootConfig(const void *src);
-    void VerifyOrClearBootConfig();
+    }
 
-    void EnableTsc(u64 initial_tsc_value);
+    bool IsProduction() {
+        return IsProductionImpl();
+    }
+
+    bool IsProductionForVersionCheck() {
+        return IsProductionImpl();
+    }
+
+    bool IsProductionForPublicKey() {
+        return IsProductionImpl();
+    }
 
 }

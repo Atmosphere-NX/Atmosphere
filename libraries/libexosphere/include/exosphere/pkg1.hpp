@@ -20,3 +20,4 @@
 #include <exosphere/pkg1/pkg1_error_types.hpp>
 #include <exosphere/pkg1/pkg1_key_generation.hpp>
 #include <exosphere/pkg1/pkg1_se_key_slots.hpp>
+#include <exosphere/pkg1/pkg1_api.hpp>

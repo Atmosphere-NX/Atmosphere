@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/br.hpp>
 #include <exosphere/pmic.hpp>
 
 namespace ams::fuse {
@@ -45,5 +46,6 @@ namespace ams::fuse {
     HardwareType    GetHardwareType();
     HardwareState   GetHardwareState();
     pmic::Regulator GetRegulator();
+    void GetEcid(br::BootEcid *out);
 
 }

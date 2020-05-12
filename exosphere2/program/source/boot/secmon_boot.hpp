@@ -22,4 +22,10 @@ namespace ams::secmon::boot {
 
     void InitializeColdBoot();
 
+    bool VerifySignature(void *sig, size_t sig_size, const void *mod, size_t mod_size, const void *msg, size_t msg_size);
+    bool VerifyHash(const void *hash, uintptr_t msg, size_t msg_size);
+
+    bool VerifyBootConfigSignature(pkg1::BootConfig &bc, const void *mod, size_t mod_size);
+    bool VerifyBootConfigEcid(const pkg1::BootConfig &bc);
+
 }

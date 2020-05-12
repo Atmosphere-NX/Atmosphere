@@ -26,4 +26,6 @@ namespace ams::se {
 
     void SetRsaKey(int slot, const void *mod, size_t mod_size, const void *exp, size_t exp_size);
 
+    void ModularExponentiate(void *dst, size_t dst_size, int slot, const void *src, size_t src_size);
+
 }

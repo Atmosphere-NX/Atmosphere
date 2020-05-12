@@ -14,17 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <exosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::secmon::boot {
+namespace ams::se {
 
-    void ClearIram();
+    constexpr inline int Sha256HashSize = crypto::Sha256Generator::HashSize;
 
-    void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state);
+    union Sha256Hash {
+        u8  bytes[Sha256HashSize / sizeof( u8)];
+        u32 words[Sha256HashSize / sizeof(u32)];
+    };
 
-    void LoadBootConfig(const void *src);
-    void VerifyOrClearBootConfig();
-
-    void EnableTsc(u64 initial_tsc_value);
+    void CalculateSha256(Sha256Hash *dst, const void *src, size_t src_size);
 
 }
