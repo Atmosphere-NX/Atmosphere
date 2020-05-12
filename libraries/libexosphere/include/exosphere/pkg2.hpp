@@ -19,9 +19,9 @@
 namespace ams::pkg2 {
 
     constexpr inline size_t Package2SizeMax  = 8_MB - 16_KB;
-    constexpr inline size_t SegmentAlignment = 4;
+    constexpr inline size_t PayloadAlignment = 4;
 
-    constexpr inline int SegmentCount = 3;
+    constexpr inline int PayloadCount = 3;
 
     constexpr inline int MinimumValidDataVersion  = 0;   /* We allow older package2 to load; this value is currently 0x10 in Nintendo's code. */
     constexpr inline int CurrentBootloaderVersion = 0xD;
@@ -32,7 +32,7 @@ namespace ams::pkg2 {
         u32 package2_size;
         u8  key_generation;
         u8  header_iv_remainder[11];
-        u8  segment_iv[SegmentCount][0x10];
+        u8  payload_ivs[PayloadCount][0x10];
         u8  padding_40[0x10];
         u8  magic[4];
         u32 entrypoint;
@@ -40,11 +40,11 @@ namespace ams::pkg2 {
         u8  package2_version;
         u8  bootloader_version;
         u8  padding_5E[2];
-        u32 segment_sizes[SegmentCount];
+        u32 payload_sizes[PayloadCount];
         u8  padding_6C[4];
-        u32 segment_offsets[SegmentCount];
+        u32 payload_offsets[PayloadCount];
         u8  padding_7C[4];
-        u8  segment_hashes[SegmentCount][crypto::Sha256Generator::HashSize];
+        u8  payload_hashes[PayloadCount][crypto::Sha256Generator::HashSize];
         u8  padding_E0[0x20];
 
         private:
@@ -53,7 +53,7 @@ namespace ams::pkg2 {
             }
         public:
             ALWAYS_INLINE u8 GetKeyGeneration() const {
-                return std::min<u8>(0, (this->key_generation ^ this->header_iv_remainder[1] ^ this->header_iv_remainder[2]) - 1);
+                return static_cast<u8>(std::max<s32>(0, static_cast<s32>(this->key_generation ^ this->header_iv_remainder[1] ^ this->header_iv_remainder[2]) - 1));
             }
 
             ALWAYS_INLINE u32 GetSize() const {

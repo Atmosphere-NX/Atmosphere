@@ -13,20 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <exosphere.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
-namespace ams::secmon {
+namespace ams::util {
 
-    void SaveBootInfo(const pkg1::SecureMonitorParameters &secmon_params);
+    constexpr inline bool HasOverlap(uintptr_t addr0, size_t size0, uintptr_t addr1, size_t size1) {
+        if (addr0 <= addr1) {
+            return addr1 < addr0 + size0;
+        } else {
+            return addr0 < addr1 + size1;
+        }
+    }
 
-    bool IsRecoveryBoot();
-
-    u32 GetRestrictedSmcMask();
-
-    bool IsJtagEnabled();
-
-    void GetPackage2Hash(se::Sha256Hash *out);
-    void SetPackage2Hash(const se::Sha256Hash &hash);
+    constexpr inline bool Contains(uintptr_t addr, size_t size, uintptr_t ptr) {
+        return (addr <= ptr) && (ptr < addr + size);
+    }
 
 }

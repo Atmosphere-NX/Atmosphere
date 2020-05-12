@@ -17,10 +17,18 @@
 #include "secmon_boot.hpp"
 #include "secmon_boot_functions.hpp"
 #include "../smc/secmon_random_cache.hpp"
-#include "../secmon_setup.hpp"
+#include "../secmon_cache.hpp"
+#include "../secmon_cpu_context.hpp"
 #include "../secmon_misc.hpp"
+#include "../secmon_setup.hpp"
 
 namespace ams::secmon {
+
+    namespace {
+
+        constexpr inline const uintptr_t Package2LoadAddress = MemoryRegionDramPackage2Payloads.GetAddress();
+
+    }
 
     void Main() {
         /* Set library register addresses. */
@@ -122,7 +130,7 @@ namespace ams::secmon {
 
         /* Parse and decrypt the package2 header. */
         pkg2::Package2Meta pkg2_meta;
-        const uintptr_t pkg2_segments_start = MemoryRegionDramPackage2.GetAddress() + sizeof(pkg2::Package2Header);
+        const uintptr_t pkg2_payloads_start = MemoryRegionDramPackage2.GetAddress() + sizeof(pkg2::Package2Header);
         {
             /* Read the encrypred header. */
             pkg2::Package2Header encrypted_header;
@@ -143,8 +151,38 @@ namespace ams::secmon {
             secmon::boot::DecryptPackage2Header(std::addressof(pkg2_meta), encrypted_header.meta, !bc.signed_data.IsPackage2EncryptionDisabled());
         }
 
-        /* TODO */
-        AMS_UNUSED(pkg2_segments_start);
+        /* Verify the package2 header. */
+        secmon::boot::VerifyPackage2Header(pkg2_meta);
+
+        /* Save the package2 hash if in recovery boot. */
+        if (secmon::IsRecoveryBoot()) {
+            se::Sha256Hash hash;
+            secmon::boot::CalculatePackage2Hash(std::addressof(hash), pkg2_meta, MemoryRegionDramPackage2.GetAddress());
+            secmon::SetPackage2Hash(hash);
+        }
+
+        /* Verify the package2 payloads. */
+        secmon::boot::CheckVerifyResult(secmon::boot::VerifyPackage2Payloads(pkg2_meta, pkg2_payloads_start), pkg1::ErrorInfo_InvalidPackage2Payload, "package2 payload verification failed");
+
+        /* Decrypt/Move the package2 payloads to the right places. */
+        secmon::boot::DecryptAndLoadPackage2Payloads(Package2LoadAddress, pkg2_meta, pkg2_payloads_start, !bc.signed_data.IsPackage2EncryptionDisabled());
+
+        /* Ensure that the CPU sees correct package2 data. */
+        secmon::FlushEntireDataCache();
+        secmon::EnsureInstructionConsistency();
+
+        /* Set the core's entrypoint and argument. */
+        secmon::SetEntryContext(0, Package2LoadAddress + pkg2_meta.entrypoint, 0);
+
+        /* Unmap DRAM. */
+        secmon::boot::UnmapDram();
+
+        /* Wait for NX bootloader to be done. */
+        secmon::boot::WaitForNxBootloader(secmon_params, pkg1::BootloaderState_Done);
+
+        /* Perform final initialization. */
+        secmon::SetupSocProtections();
+        secmon::SetupCpuSErrorDebug();
     }
 
 }

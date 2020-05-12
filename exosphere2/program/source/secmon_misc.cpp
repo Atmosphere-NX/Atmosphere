@@ -20,7 +20,8 @@ namespace ams::secmon {
 
     namespace {
 
-        pkg1::BctParameters g_bct_params;
+        constinit pkg1::BctParameters g_bct_params = {};
+        constinit se::Sha256Hash g_package2_hash   = {};
 
     }
 
@@ -41,6 +42,14 @@ namespace ams::secmon {
         util::BitPack32 dbg_auth;
         HW_CPU_GET_DBGAUTHSTATUS_EL1(dbg_auth);
         return dbg_auth.Get<hw::DbgAuthStatusEl1::Nsid>() == 3;
+    }
+
+    void GetPackage2Hash(se::Sha256Hash *out) {
+        *out = g_package2_hash;
+    }
+
+    void SetPackage2Hash(const se::Sha256Hash &hash) {
+        g_package2_hash = hash;
     }
 
 }

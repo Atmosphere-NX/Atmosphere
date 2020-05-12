@@ -16,17 +16,11 @@
 #pragma once
 #include <exosphere.hpp>
 
-namespace ams::secmon {
+namespace ams::secmon::boot {
 
-    void SaveBootInfo(const pkg1::SecureMonitorParameters &secmon_params);
-
-    bool IsRecoveryBoot();
-
-    u32 GetRestrictedSmcMask();
-
-    bool IsJtagEnabled();
-
-    void GetPackage2Hash(se::Sha256Hash *out);
-    void SetPackage2Hash(const se::Sha256Hash &hash);
+    extern const u8 BootConfigRsaPublicModulus[se::RsaSize];
+    extern const u8 Package2RsaPublicModulusDevelopment[se::RsaSize];
+    extern const u8 Package2RsaPublicModulusProduction[se::RsaSize];
+    extern const u8 Package2AesKey[se::AesBlockSize];
 
 }

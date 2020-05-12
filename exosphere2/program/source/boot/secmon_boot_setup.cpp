@@ -326,6 +326,11 @@ namespace ams::secmon::boot {
             InvalidateL1Entries(l1, MemoryRegionPhysical.GetAddress(), MemoryRegionPhysical.GetSize());
         }
 
+        constexpr void UnmapDramImpl(u64 *l1, u64 *l2, u64 *l3) {
+            /* Unmap the L1 entry corresponding to to the Dram entries. */
+            InvalidateL1Entries(l1, MemoryRegionDram.GetAddress(), MemoryRegionDram.GetSize());
+        }
+
     }
 
     void InitializeColdBoot() {
@@ -361,6 +366,18 @@ namespace ams::secmon::boot {
 
         /* Unmap. */
         UnmapPhysicalIdentityMappingImpl(l1, l2_l3, l2_l3);
+
+        /* Ensure the mappings are consistent. */
+        secmon::boot::EnsureMappingConsistency();
+    }
+
+    void UnmapDram() {
+        /* Get the tables. */
+        u64 * const l1    = MemoryRegionPhysicalTzramL1PageTable.GetPointer<u64>();
+        u64 * const l2_l3 = MemoryRegionPhysicalTzramL2L3PageTable.GetPointer<u64>();
+
+        /* Unmap. */
+        UnmapDramImpl(l1, l2_l3, l2_l3);
 
         /* Ensure the mappings are consistent. */
         secmon::boot::EnsureMappingConsistency();
