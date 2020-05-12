@@ -89,6 +89,36 @@ namespace ams::secmon {
 
             secmon::boot::EnableTsc(bc.data.GetInitialTscValue() & TscMask);
         }
+
+        /* Wait for NX Bootloader to initialize DRAM. */
+        secmon::boot::WaitForNxBootloader(secmon_params, pkg1::BootloaderState_InitializedDram);
+
+        /* Secure the PMC and MC. */
+        secmon::SetupPmcAndMcSecure();
+
+        /* Copy warmboot to dram. */
+        {
+            /* Define warmboot extents. */
+            const void * const src = MemoryRegionPhysicalIramWarmbootBin.GetPointer();
+                  void * const dst = MemoryRegionVirtualDramSecureDataStoreWarmbootFirmware.GetPointer();
+            const size_t size      = MemoryRegionPhysicalIramWarmbootBin.GetSize();
+
+            /* Ensure we copy the correct data. */
+            hw::FlushDataCache(src, size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Copy warmboot.bin to its secure dram location. */
+            std::memcpy(dst, src, size);
+        }
+
+        /* Unmap the identity mapping. */
+        secmon::boot::UnmapPhysicalIdentityMapping();
+
+        /* Setup the GPU carveout's magic numbers. */
+        secmon::boot::WriteGpuCarveoutMagicNumbers();
+
+        /* Wait for NX bootloader to load Package2. */
+        secmon::boot::WaitForNxBootloader(secmon_params, pkg1::BootloaderState_LoadedPackage2);
     }
 
 }

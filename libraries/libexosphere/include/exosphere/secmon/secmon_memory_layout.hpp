@@ -74,6 +74,9 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionPhysical = MemoryRegion(UINT64_C( 0x40000000), 1_GB);
     constexpr inline const MemoryRegion MemoryRegionDram     = MemoryRegion(UINT64_C( 0x80000000), 2_GB);
 
+    constexpr inline const MemoryRegion MemoryRegionDramGpuCarveout = MemoryRegion(UINT64_C(0x80020000), UINT64_C(0x40000));
+    static_assert(MemoryRegionDram.Contains(MemoryRegionDramGpuCarveout));
+
     constexpr inline const MemoryRegion MemoryRegionDramDefaultKernelCarveout = MemoryRegion(UINT64_C(0x80060000), UINT64_C(0x1FFE0000));
     static_assert(MemoryRegionDram.Contains(MemoryRegionDramDefaultKernelCarveout));
 
@@ -274,6 +277,7 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(UINT64_C(0x7C010800), 0xD800);
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(UINT64_C(0x40032000), 0xC000);
 
-    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootConfig = MemoryRegion(UINT64_C(0x4003F800), 0x400);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramWarmbootBin = MemoryRegion(UINT64_C(0x4003E000), 0x17F0);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootConfig  = MemoryRegion(UINT64_C(0x4003F800), 0x400);
 
 }

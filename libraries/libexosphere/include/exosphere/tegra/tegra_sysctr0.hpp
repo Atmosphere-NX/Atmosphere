@@ -16,7 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 
-#define SYSCTR0_CNTCR    (0x00C)
+#define SYSCTR0_CNTCR    (0x000)
 #define SYSCTR0_CNTCV0   (0x008)
 #define SYSCTR0_CNTCV1   (0x00C)
 #define SYSCTR0_CNTFID0  (0x020)

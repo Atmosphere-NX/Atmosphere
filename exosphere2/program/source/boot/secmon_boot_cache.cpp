@@ -14,9 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "secmon_boot_cache.hpp"
 
 namespace ams::secmon::boot {
 
-    /* TODO */
+    #include "../secmon_cache_impl.inc"
 
 }
