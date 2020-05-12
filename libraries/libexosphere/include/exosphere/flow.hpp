@@ -14,25 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <exosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::secmon {
+namespace ams::flow {
 
-    constexpr inline u64 MemoryAttributeIndexNormal = 0;
-    constexpr inline u64 MemoryAttributeIndexDevice = 1;
+    void SetRegisterAddress(uintptr_t address);
 
-    constexpr inline int KernelCarveoutCount = 2;
-
-    void SetupCpuMemoryControllersEnableMmu();
-    void SetupCpuCoreContext();
-    void SetupCpuSErrorDebug();
-
-    void SetupSocDmaControllers();
-    void SetupSocSecurity();
-    void SetupSocProtections();
-
-    void Setup1();
-
-    void SaveSecurityEngineAesKeySlotTestVector();
+    void ResetCpuRegisters(int core);
 
 }

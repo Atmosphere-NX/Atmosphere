@@ -15,24 +15,12 @@
  */
 #pragma once
 #include <exosphere.hpp>
+#include "secmon_smc_common.hpp"
 
-namespace ams::secmon {
+namespace ams::secmon::smc {
 
-    constexpr inline u64 MemoryAttributeIndexNormal = 0;
-    constexpr inline u64 MemoryAttributeIndexDevice = 1;
-
-    constexpr inline int KernelCarveoutCount = 2;
-
-    void SetupCpuMemoryControllersEnableMmu();
-    void SetupCpuCoreContext();
-    void SetupCpuSErrorDebug();
-
-    void SetupSocDmaControllers();
-    void SetupSocSecurity();
-    void SetupSocProtections();
-
-    void Setup1();
-
-    void SaveSecurityEngineAesKeySlotTestVector();
+    void FillRandomCache();
+    void RefillRandomCache();
+    void GetRandomFromCache(void *dst, size_t size);
 
 }

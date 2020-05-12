@@ -26,6 +26,7 @@
 #include <exosphere/pkg1.hpp>
 #include <exosphere/tsec.hpp>
 #include <exosphere/se.hpp>
+#include <exosphere/flow.hpp>
 #include <exosphere/fuse.hpp>
 #include <exosphere/i2c.hpp>
 #include <exosphere/uart.hpp>

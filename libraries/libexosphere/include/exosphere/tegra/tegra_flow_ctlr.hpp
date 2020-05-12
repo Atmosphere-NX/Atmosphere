@@ -20,6 +20,21 @@
 #define FLOW_CTLR_FLOW_DBG_QUAL        (0x050)
 #define FLOW_CTLR_BPMP_CLUSTER_CONTROL (0x098)
 
+#define FLOW_CTLR_CPU0_CSR             (0x008)
+#define FLOW_CTLR_CPU1_CSR             (0x018)
+#define FLOW_CTLR_CPU2_CSR             (0x020)
+#define FLOW_CTLR_CPU3_CSR             (0x028)
+
+#define FLOW_CTLR_HALT_CPU0_EVENTS     (0x000)
+#define FLOW_CTLR_HALT_CPU1_EVENTS     (0x014)
+#define FLOW_CTLR_HALT_CPU2_EVENTS     (0x01C)
+#define FLOW_CTLR_HALT_CPU3_EVENTS     (0x024)
+
+#define FLOW_CTLR_CC4_CORE0_CTRL       (0x06C)
+#define FLOW_CTLR_CC4_CORE1_CTRL       (0x070)
+#define FLOW_CTLR_CC4_CORE2_CTRL       (0x074)
+#define FLOW_CTLR_CC4_CORE3_CTRL       (0x078)
+
 #define FLOW_REG_BITS_MASK(NAME)                                      REG_NAMED_BITS_MASK    (FLOW_CTLR, NAME)
 #define FLOW_REG_BITS_VALUE(NAME, VALUE)                              REG_NAMED_BITS_VALUE   (FLOW_CTLR, NAME, VALUE)
 #define FLOW_REG_BITS_ENUM(NAME, ENUM)                                REG_NAMED_BITS_ENUM    (FLOW_CTLR, NAME, ENUM)
