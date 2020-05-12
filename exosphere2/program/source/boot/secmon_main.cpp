@@ -119,6 +119,32 @@ namespace ams::secmon {
 
         /* Wait for NX bootloader to load Package2. */
         secmon::boot::WaitForNxBootloader(secmon_params, pkg1::BootloaderState_LoadedPackage2);
+
+        /* Parse and decrypt the package2 header. */
+        pkg2::Package2Meta pkg2_meta;
+        const uintptr_t pkg2_segments_start = MemoryRegionDramPackage2.GetAddress() + sizeof(pkg2::Package2Header);
+        {
+            /* Read the encrypred header. */
+            pkg2::Package2Header encrypted_header;
+
+            const auto *dram_header = MemoryRegionDramPackage2.GetPointer<pkg2::Package2Header>();
+            hw::FlushDataCache(dram_header, sizeof(*dram_header));
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            std::memcpy(std::addressof(encrypted_header), dram_header, sizeof(encrypted_header));
+
+            /* Atmosphere extension: support plaintext package2, identified by all-zeroes signature and decrypted header. */
+            secmon::boot::UpdateBootConfigForPackage2Header(encrypted_header);
+
+            /* Verify the package2 header's signature. */
+            secmon::boot::VerifyPackage2HeaderSignature(encrypted_header, !bc.signed_data.IsPackage2SignatureVerificationDisabled());
+
+            /* Decrypt the package2 header. */
+            secmon::boot::DecryptPackage2Header(std::addressof(pkg2_meta), encrypted_header.meta, !bc.signed_data.IsPackage2EncryptionDisabled());
+        }
+
+        /* TODO */
+        AMS_UNUSED(pkg2_segments_start);
     }
 
 }

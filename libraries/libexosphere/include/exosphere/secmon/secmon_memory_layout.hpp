@@ -80,6 +80,9 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionDramDefaultKernelCarveout = MemoryRegion(UINT64_C(0x80060000), UINT64_C(0x1FFE0000));
     static_assert(MemoryRegionDram.Contains(MemoryRegionDramDefaultKernelCarveout));
 
+    constexpr inline const MemoryRegion MemoryRegionDramPackage2 = MemoryRegion(UINT64_C(0xA9800000), UINT64_C(0x07FC0000));
+    static_assert(MemoryRegionDram.Contains(MemoryRegionDramPackage2));
+
     constexpr inline const MemoryRegion MemoryRegionPhysicalIram  = MemoryRegion(UINT64_C(0x40000000), 0x40000);
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzram = MemoryRegion(UINT64_C(0x7C010000), 0x10000);
     static_assert(MemoryRegionPhysical.Contains(MemoryRegionPhysicalIram));

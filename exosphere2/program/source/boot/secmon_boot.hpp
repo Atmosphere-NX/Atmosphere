@@ -29,4 +29,7 @@ namespace ams::secmon::boot {
     bool VerifyBootConfigSignature(pkg1::BootConfig &bc, const void *mod, size_t mod_size);
     bool VerifyBootConfigEcid(const pkg1::BootConfig &bc);
 
+    bool VerifyPackage2Signature(pkg2::Package2Header &header, const void *mod, size_t mod_size);
+    void DecryptPackage2(void *dst, size_t dst_size, const void *src, size_t src_size, const void *key, size_t key_size, const void *iv, size_t iv_size, u8 key_generation);
+
 }
