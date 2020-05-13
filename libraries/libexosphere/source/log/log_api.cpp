@@ -40,14 +40,51 @@ namespace ams::log {
             }
         }();
 
+        ALWAYS_INLINE void SetupUart() {
+            if constexpr (UartLogPort == uart::Port_ReservedDebug) {
+                /* Logging to the debug port. */
+                pinmux::SetupUartA();
+                clkrst::EnableUartAClock();
+            } else if constexpr (UartLogPort == uart::Port_LeftJoyCon) {
+                /* Logging to left joy-con (e.g. with Joyless). */
+                pinmux::SetupUartB();
+                clkrst::EnableUartBClock();
+            } else if constexpr (UartLogPort == uart::Port_RightJoyCon) {
+                /* Logging to right joy-con (e.g. with Joyless). */
+                pinmux::SetupUartC();
+                clkrst::EnableUartCClock();
+            } else {
+                __builtin_unreachable();
+            }
+        }
+
     }
 
     void Initialize() {
+        /* Initialize pinmux and clock for the target uart port. */
+        SetupUart();
+
         /* Initialize the target uart port. */
         uart::Initialize(UartLogPort, 115200, UartPortFlags);
 
         /* Note that we've initialized. */
         g_initialized_uart = true;
+    }
+
+    void Finalize() {
+        g_initialized_uart = false;
+    }
+
+    void SendText(const void *text, size_t size) {
+        if (g_initialized_uart) {
+            uart::SendText(UartLogPort, text, size);
+        }
+    }
+
+    void Flush() {
+        if (g_initialized_uart) {
+            uart::WaitFlush(UartLogPort);
+        }
     }
 
 }

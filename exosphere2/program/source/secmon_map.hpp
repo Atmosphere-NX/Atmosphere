@@ -18,6 +18,6 @@
 
 namespace ams::secmon {
 
-    /* TODO */
+    void UnmapTzram();
 
 }

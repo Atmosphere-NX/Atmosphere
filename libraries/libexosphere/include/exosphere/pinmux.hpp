@@ -16,12 +16,14 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::log {
+namespace ams::pinmux {
 
-    void Initialize();
-    void Finalize();
+    void SetRegisterAddress(uintptr_t pinmux_address, uintptr_t gpio_address);
 
-    void SendText(const void *text, size_t size);
-    void Flush();
+    void SetupUartA();
+    void SetupUartB();
+    void SetupUartC();
+    void SetupI2c1();
+    void SetupI2c5();
 
 }

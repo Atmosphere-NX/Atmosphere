@@ -28,6 +28,17 @@ namespace ams::secmon {
             InvalidateL3Entries(l3, boot_code, boot_code_size);
         }
 
+        constexpr void UnmapTzramImpl(u64 *l1, u64 *l2, u64 *l3) {
+            /* Unmap the L3 entries corresponding to tzram. */
+            InvalidateL3Entries(l3, MemoryRegionPhysicalTzram.GetAddress(),   MemoryRegionPhysicalTzram.GetSize());
+
+            /* Unmap the L2 entries corresponding to those L3 entries. */
+            InvalidateL2Entries(l2, MemoryRegionPhysicalTzramL2.GetAddress(), MemoryRegionPhysicalTzramL2.GetSize());
+
+            /* Unmap the L1 entry corresponding to to those L2 entries. */
+            InvalidateL1Entries(l1, MemoryRegionPhysical.GetAddress(),        MemoryRegionPhysical.GetSize());
+        }
+
     }
 
     void UnmapBootCode() {
@@ -44,6 +55,18 @@ namespace ams::secmon {
 
         /* Unmap. */
         UnmapBootCodeImpl(l1, l2_l3, l2_l3, boot_code, boot_code_size);
+
+        /* Ensure the mappings are consistent. */
+        secmon::EnsureMappingConsistency();
+    }
+
+    void UnmapTzram() {
+        /* Get the tables. */
+        u64 * const l1    = MemoryRegionVirtualTzramL1PageTable.GetPointer<u64>();
+        u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
+
+        /* Unmap. */
+        UnmapTzramImpl(l1, l2_l3, l2_l3);
 
         /* Ensure the mappings are consistent. */
         secmon::EnsureMappingConsistency();

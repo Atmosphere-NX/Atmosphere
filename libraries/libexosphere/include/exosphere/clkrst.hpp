@@ -26,5 +26,8 @@ namespace ams::clkrst {
     void EnableUartBClock();
     void EnableUartCClock();
     void EnableActmonClock();
+    void EnableI2c1Clock();
+
+    void DisableI2c1Clock();
 
 }

@@ -39,4 +39,8 @@ namespace ams::uart {
 
     void Initialize(Port port, int baud_rate, u32 flags);
 
+    void SendText(Port port, const void *data, size_t size);
+
+    void WaitFlush(Port port);
+
 }

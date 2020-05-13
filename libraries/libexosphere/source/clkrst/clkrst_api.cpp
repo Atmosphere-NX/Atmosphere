@@ -49,13 +49,13 @@ namespace ams::clkrst {
             reg::ReadWrite(g_register_address + param.reset_offset,   REG_BITS_VALUE(param.index, 1, 0));
         }
 
-        // void DisableClock(const ClockParameters &param) {
-        //     /* Hold reset. */
-        //     reg::ReadWrite(g_register_address + param.reset_offset,   REG_BITS_VALUE(param.index, 1, 1));
-        //
-        //     /* Disable clock. */
-        //     reg::ReadWrite(g_register_address + param.clk_enb_offset, REG_BITS_VALUE(param.index, 1, 0));
-        // }
+        void DisableClock(const ClockParameters &param) {
+            /* Hold reset. */
+            reg::ReadWrite(g_register_address + param.reset_offset,   REG_BITS_VALUE(param.index, 1, 1));
+
+            /* Disable clock. */
+            reg::ReadWrite(g_register_address + param.clk_enb_offset, REG_BITS_VALUE(param.index, 1, 0));
+        }
 
         #define DEFINE_CLOCK_PARAMETERS(_VARNAME_, _REG_, _NAME_, _CLK_, _DIV_)                        \
             constexpr inline const ClockParameters _VARNAME_ = {                                       \
@@ -70,6 +70,8 @@ namespace ams::clkrst {
         DEFINE_CLOCK_PARAMETERS(UartAClock,  L,  UARTA, PLLP_OUT0, 0);
         DEFINE_CLOCK_PARAMETERS(UartBClock,  L,  UARTB, PLLP_OUT0, 0);
         DEFINE_CLOCK_PARAMETERS(UartCClock,  H,  UARTC, PLLP_OUT0, 0);
+        DEFINE_CLOCK_PARAMETERS(I2c1Clock,   L,   I2C1,     CLK_M, 0);
+        DEFINE_CLOCK_PARAMETERS(I2c5Clock,   H,   I2C5,     CLK_M, 0);
         DEFINE_CLOCK_PARAMETERS(ActmonClock, V, ACTMON,     CLK_M, 0);
 
     }
@@ -96,6 +98,18 @@ namespace ams::clkrst {
 
     void EnableActmonClock() {
         EnableClock(ActmonClock);
+    }
+
+    void EnableI2c1Clock() {
+        EnableClock(I2c1Clock);
+    }
+
+    void EnableI2c5Clock() {
+        EnableClock(I2c1Clock);
+    }
+
+    void DisableI2c1Clock() {
+        DisableClock(I2c1Clock);
     }
 
 }

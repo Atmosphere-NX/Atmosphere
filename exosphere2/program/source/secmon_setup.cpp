@@ -16,9 +16,12 @@
 #include <exosphere.hpp>
 #include "secmon_setup.hpp"
 #include "secmon_error.hpp"
+#include "secmon_map.hpp"
 #include "secmon_cpu_context.hpp"
 #include "secmon_interrupt_handler.hpp"
 #include "secmon_misc.hpp"
+#include "smc/secmon_smc_power_management.hpp"
+#include "smc/secmon_smc_se_lock.hpp"
 
 namespace ams::secmon {
 
@@ -887,9 +890,56 @@ namespace ams::secmon {
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
         }
 
+        void ValidateResetExpected() {
+            /* We're coming out of reset, so check that we expected to come out of reset. */
+            if (!IsResetExpected()) {
+                secmon::SetError(pkg1::ErrorInfo_UnexpectedReset);
+                AMS_ABORT("unexpected reset");
+            }
+            SetResetExpected(false);
+        }
+
         void ActmonInterruptHandler() {
             SetError(pkg1::ErrorInfo_ActivityMonitorInterrupt);
             AMS_ABORT("actmon observed bpmp wakeup");
+        }
+
+        void ExitChargerHiZMode() {
+            /* Setup I2c-1. */
+            pinmux::SetupI2c1();
+            clkrst::EnableI2c1Clock();
+
+            /* Initialize I2c-1. */
+            i2c::Initialize(i2c::Port_1);
+
+            /* Exit Hi-Z mode. */
+            charger::ExitHiZMode();
+
+            /* Disable clock to I2c-1. */
+            clkrst::DisableI2c1Clock();
+        }
+
+        bool IsExitLp0() {
+            return reg::Read(MC + MC_SECURITY_CFG3) == 0;
+        }
+
+        void LogExitLp0() {
+            /* NOTE: Nintendo only does this on dev, but we will always do it. */
+            if (true /* !pkg1::IsProduction() */) {
+                log::Initialize();
+                log::SendText("OHAYO\n", 6);
+                log::Flush();
+            }
+        }
+
+        void SetupForLp0Exit() {
+            /* Exit HiZ mode in charger, if we need to. */
+            if (smc::IsChargerHiZModeEnabled()) {
+                ExitChargerHiZMode();
+            }
+
+            /* Unlock the security engine. */
+            secmon::smc::UnlockSecurityEngine();
         }
 
     }
@@ -901,6 +951,14 @@ namespace ams::secmon {
         /* Initialize uart for logging. */
         log::Initialize();
 
+        /* Initialize the security engine. */
+        se::Initialize();
+
+        /* Initialize the gic. */
+        gic::InitializeCommon();
+    }
+
+    void Setup1ForWarmboot() {
         /* Initialize the security engine. */
         se::Initialize();
 
@@ -1007,7 +1065,36 @@ namespace ams::secmon {
     }
 
     void SetupSocSecurityWarmboot() {
-        /* ... */
+        /* Check that we're allowed to continue. */
+        ValidateResetExpected();
+
+        /* Unmap the tzram identity mapping. */
+        UnmapTzram();
+
+        /* If we're exiting LP0, there's a little more work for us to do. */
+        if (IsExitLp0()) {
+            /* Log that we're exiting LP0. */
+            LogExitLp0();
+
+            /* Perform initial setup. */
+            Setup1ForWarmboot();
+
+            /* Setup the Soc security. */
+            SetupSocSecurity();
+
+            /* Set the PMC and MC as secure-only. */
+            SetupPmcAndMcSecure();
+
+            /* Perform Lp0-exit specific init. */
+            SetupForLp0Exit();
+
+            /* Setup the Soc protections. */
+            SetupSocProtections();
+        }
+
+        /* Perform remaining CPU initialization. */
+        SetupCpuCoreContext();
+        SetupCpuSErrorDebug();
     }
 
     void SetupSocProtections() {

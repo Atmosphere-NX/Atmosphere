@@ -58,6 +58,28 @@ namespace ams::uart {
             }
         }
 
+        constexpr inline u32 LockBit = (1 << 6);
+
+        void Lock(volatile UartRegisters *reg) {
+            while (true) {
+                if (reg->mie != 0) {
+                    continue;
+                }
+
+                reg->irda_csr = LockBit;
+
+                if (reg->mie == 0) {
+                    break;
+                }
+
+                reg->irda_csr = 0;
+            }
+        }
+
+        void Unlock(volatile UartRegisters *reg) {
+            reg->irda_csr = 0;
+        }
+
     }
 
     void SetRegisterAddress(uintptr_t address) {
@@ -108,6 +130,38 @@ namespace ams::uart {
 
         /* Set scratch register to 0. */
         uart->spr = 0;
+    }
+
+    void SendText(Port port, const void *data, size_t size) {
+        /* Get the registers. */
+        auto *uart = GetRegisters(port);
+
+        /* Get pointer to data. */
+        const u8 *p = static_cast<const u8 *>(data);
+
+        /* Lock the uart registers. */
+        Lock(uart);
+        ON_SCOPE_EXIT { Unlock(uart); };
+
+        /* Send each byte. */
+        for (size_t i = 0; i < size; ++i) {
+            WaitFifoNotFull(uart);
+
+            if (p[i] == '\n') {
+                *reinterpret_cast<volatile u8 *>(std::addressof(uart->thr)) = '\r';
+                WaitFifoNotFull(uart);
+            }
+
+            *reinterpret_cast<volatile u8 *>(std::addressof(uart->thr)) = p[i];
+        }
+    }
+
+    void WaitFlush(Port port) {
+        /* Get the registers. */
+        auto *uart = GetRegisters(port);
+
+        /* Wait for idle. */
+        WaitIdle(uart, UART_VENDOR_STATE_TX_IDLE);
     }
 
 }

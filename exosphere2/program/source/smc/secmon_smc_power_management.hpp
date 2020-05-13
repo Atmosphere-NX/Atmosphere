@@ -24,4 +24,7 @@ namespace ams::secmon::smc {
 
     SmcResult SmcSuspendCpu(const SmcArguments &args);
 
+    bool IsChargerHiZModeEnabled();
+    void SetChargerHiZModeEnabled(bool en);
+
 }
