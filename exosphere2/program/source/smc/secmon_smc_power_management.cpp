@@ -19,6 +19,12 @@
 
 namespace ams::secmon::smc {
 
+    namespace {
+
+        constinit bool g_charger_hi_z_mode_enabled = false;
+
+    }
+
     SmcResult SmcPowerOffCpu(const SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
@@ -32,6 +38,14 @@ namespace ams::secmon::smc {
     SmcResult SmcSuspendCpu(const SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
+    }
+
+    bool IsChargerHiZModeEnabled() {
+        return g_charger_hi_z_mode_enabled;
+    }
+
+    void SetChargerHiZModeEnabled(bool en) {
+        g_charger_hi_z_mode_enabled = en;
     }
 
 }

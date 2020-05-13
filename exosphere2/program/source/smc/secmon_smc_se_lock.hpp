@@ -14,14 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <exosphere.hpp>
+#include "secmon_smc_common.hpp"
 
-namespace ams::log {
+namespace ams::secmon::smc {
 
-    void Initialize();
-    void Finalize();
-
-    void SendText(const void *text, size_t size);
-    void Flush();
+    bool TryLockSecurityEngine();
+    void UnlockSecurityEngine();
+    bool IsSecurityEngineLocked();
 
 }

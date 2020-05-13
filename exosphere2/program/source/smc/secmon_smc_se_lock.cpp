@@ -13,15 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
+#include <exosphere.hpp>
+#include "../secmon_error.hpp"
+#include "secmon_smc_se_lock.hpp"
 
-namespace ams::log {
+namespace ams::secmon::smc {
 
-    void Initialize();
-    void Finalize();
+    namespace {
 
-    void SendText(const void *text, size_t size);
-    void Flush();
+        constinit std::atomic_bool g_is_locked = false;
+
+    }
+
+    bool TryLockSecurityEngine() {
+        bool value = false;
+        return g_is_locked.compare_exchange_strong(value, true);
+    }
+
+    void UnlockSecurityEngine() {
+        g_is_locked = false;
+    }
+
+    bool IsSecurityEngineLocked() {
+        return g_is_locked;
+    }
 
 }

@@ -22,6 +22,7 @@
 #include <exosphere/util.hpp>
 #include <exosphere/mmu.hpp>
 #include <exosphere/br.hpp>
+#include <exosphere/charger.hpp>
 #include <exosphere/gic.hpp>
 #include <exosphere/wdt.hpp>
 #include <exosphere/pkg1.hpp>
@@ -32,6 +33,7 @@
 #include <exosphere/fuse.hpp>
 #include <exosphere/i2c.hpp>
 #include <exosphere/uart.hpp>
+#include <exosphere/pinmux.hpp>
 #include <exosphere/pmic.hpp>
 #include <exosphere/log.hpp>
 #include <exosphere/clkrst.hpp>

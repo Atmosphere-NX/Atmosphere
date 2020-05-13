@@ -16,12 +16,10 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::log {
+namespace ams::charger {
 
-    void Initialize();
-    void Finalize();
-
-    void SendText(const void *text, size_t size);
-    void Flush();
+    bool IsHiZMode();
+    void EnterHiZMode();
+    void ExitHiZMode();
 
 }
