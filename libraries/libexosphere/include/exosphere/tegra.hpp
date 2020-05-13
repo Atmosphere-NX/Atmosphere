@@ -19,6 +19,7 @@
 #include <exosphere/tegra/tegra_ahb_arbc.hpp>
 #include <exosphere/tegra/tegra_apb_misc.hpp>
 #include <exosphere/tegra/tegra_avp_cache.hpp>
+#include <exosphere/tegra/tegra_clkrst.hpp>
 #include <exosphere/tegra/tegra_emc.hpp>
 #include <exosphere/tegra/tegra_evp.hpp>
 #include <exosphere/tegra/tegra_flow_ctlr.hpp>

@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "clkrst_registers.hpp"
 
 namespace ams::clkrst {
 
@@ -68,9 +67,10 @@ namespace ams::clkrst {
                 .clk_div        = _DIV_,                                                               \
             }
 
-        DEFINE_CLOCK_PARAMETERS(UartAClock, L, UARTA, PLLP_OUT0, 0);
-        DEFINE_CLOCK_PARAMETERS(UartBClock, L, UARTB, PLLP_OUT0, 0);
-        DEFINE_CLOCK_PARAMETERS(UartCClock, H, UARTC, PLLP_OUT0, 0);
+        DEFINE_CLOCK_PARAMETERS(UartAClock,  L,  UARTA, PLLP_OUT0, 0);
+        DEFINE_CLOCK_PARAMETERS(UartBClock,  L,  UARTB, PLLP_OUT0, 0);
+        DEFINE_CLOCK_PARAMETERS(UartCClock,  H,  UARTC, PLLP_OUT0, 0);
+        DEFINE_CLOCK_PARAMETERS(ActmonClock, V, ACTMON,     CLK_M, 0);
 
     }
 
@@ -94,5 +94,8 @@ namespace ams::clkrst {
         EnableClock(UartAClock);
     }
 
+    void EnableActmonClock() {
+        EnableClock(ActmonClock);
+    }
 
 }

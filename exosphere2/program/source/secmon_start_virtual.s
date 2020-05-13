@@ -15,7 +15,7 @@
  */
 
 .section    .text._ZN3ams6secmon5StartEv, "ax", %progbits
-.align      6
+.align      4
 .global     _ZN3ams6secmon5StartEv
 _ZN3ams6secmon5StartEv:
     /* Set SPSEL 1 stack pointer to the core 0 exception stack address. */
@@ -35,11 +35,101 @@ _ZN3ams6secmon5StartEv:
     bl _ZN3ams6secmon4MainEv
 
     /* Set the stack pointer to the core 3 exception stack address. */
-    ldr  x20, =0x1F01FB000
+    ldr  x20, =0x1F01F9000
     mov  sp, x20
 
-    /* TODO: JumpToLowerExceptionLevel */
+    /* Unmap the boot code region. */
+    bl _ZN3ams6secmon13UnmapBootCodeEv
+
+    /* Jump to lower exception level. */
+    b _ZN3ams6secmon25JumpToLowerExceptionLevelEv
+
+.section    .text._ZN3ams6secmon20StartWarmbootVirtualEv, "ax", %progbits
+.align      4
+.global     _ZN3ams6secmon20StartWarmbootVirtualEv
+_ZN3ams6secmon20StartWarmbootVirtualEv:
+    /* Set the stack pointer to the shared warmboot stack address. */
+    ldr x20, =0x1F01F67C0
+    mov sp, x20
+
+    /* Perform final warmboot setup. */
+    bl _ZN3ams6secmon24SetupSocSecurityWarmbootEv
+
+    /* Jump to lower exception level. */
+    b _ZN3ams6secmon25JumpToLowerExceptionLevelEv
+
+.section    .text._ZN3ams6secmon25JumpToLowerExceptionLevelEv, "ax", %progbits
+.align      4
+.global     _ZN3ams6secmon25JumpToLowerExceptionLevelEv
+_ZN3ams6secmon25JumpToLowerExceptionLevelEv:
+    /* Get the EntryContext. */
+    sub sp, sp, #0x10
+    mov x0, sp
+    bl _ZN3ams6secmon15GetEntryContextEPNS0_12EntryContextE
+
+    /* Load the entrypoint and argument from the context. */
+    ldr x19, [sp, #0x00]
+    ldr x0,  [sp, #0x08]
+
+    /* Set the exception return address. */
+    msr elr_el3, x0
+
+    /* Get the core exception stack. */
+    bl _ZN3ams6secmon28GetCoreExceptionStackVirtualEv
+    mov sp, x0
+
+    /* Release our exclusive access to the common warmboot stack. */
+    bl _ZN3ams6secmon26ReleaseCommonWarmbootStackEv
+
+    /* Configure SPSR_EL3. */
+    mov x0, #0x3C5
+    msr spsr_el3, x0
+
+    /* Set x0 to the entry argument. */
+    mov x0, x19
+
+    /* Ensure instruction reordering doesn't happen around this point. */
+    isb
+
+    /* Return to lower level. */
+    eret
+
+    /* Infinite loop, though we should never get here. */
     1: b 1b
+
+.section    .text._ZN3ams6secmon28GetCoreExceptionStackVirtualEv, "ax", %progbits
+.align      4
+.global     _ZN3ams6secmon28GetCoreExceptionStackVirtualEv
+_ZN3ams6secmon28GetCoreExceptionStackVirtualEv:
+    /* Get the current core id. */
+    mrs x0, mpidr_el1
+    and x0, x0, #3
+
+    /* Jump to the appropriate core's stack handler. */
+    cmp x0, #3
+    b.eq 3f
+
+    cmp x0, #2
+    b.eq 2f
+
+    cmp x1, #1
+    b.eq 1f
+
+    /* cmp x0, #0 */
+    /* b.eq 0f    */
+
+    0:
+        ldr x0, =0x1F01F6F00
+        ret
+    1:
+        ldr x0, =0x1F01F6F80
+        ret
+    2:
+        ldr x0, =0x1F01F7000
+        ret
+    3:
+        ldr x0, =0x1F01F9000
+        ret
 
 .section    .text._ZN3ams6secmon25AcquireCommonSmcStackLockEv, "ax", %progbits
 .align      4
@@ -72,6 +162,37 @@ _ZN3ams6secmon25ReleaseCommonSmcStackLockEv:
 
     /* Release the spinlock. */
     stlr wzr, [x0]
+
+    /* Return. */
+    ret
+    ret
+
+.section    .text._ZN3ams6secmon26ReleaseCommonWarmbootStackEv, "ax", %progbits
+.align      4
+.global     _ZN3ams6secmon26ReleaseCommonWarmbootStackEv
+_ZN3ams6secmon26ReleaseCommonWarmbootStackEv:
+    /* Get the virtual address of the lock. */
+    ldr x0, =_ZN3ams6secmon23CommonWarmbootStackLockE
+    ldr x1, =(0x1F00C0000 - 0x07C012000)
+    add x1, x1, x0
+
+    /* Get the bakery value for our core. */
+    mrs  x0, mpidr_el1
+    and  x0, x0, #3
+    ldrb w2, [x1, x0]
+
+    /* Clear our ticket number. */
+    and  w2, w2, #(~0x7F)
+    strb w2, [x1, x0]
+
+    /* Flush the cache. */
+    dc civac, x1
+
+    /* Synchronize data for all cores. */
+    dsb sy
+
+    /* Send an event. */
+    sev
 
     /* Return. */
     ret

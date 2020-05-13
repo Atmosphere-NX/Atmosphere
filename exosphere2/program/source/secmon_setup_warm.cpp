@@ -203,4 +203,8 @@ namespace ams::secmon {
         }
     }
 
+    void SetupSocDmaControllersCpuMemoryControllersEnableMmuWarmboot() {
+        /* TODO */
+    }
+
 }
