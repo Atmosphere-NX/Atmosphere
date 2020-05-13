@@ -95,10 +95,11 @@ _start_warm:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
 
     /* Acquire exclusive access to the common warmboot stack. */
+    bl _ZN3ams6secmon26AcquireCommonWarmbootStackEv
 
     /* Set the stack pointer to the common warmboot stack address. */
     msr  spsel, #1
-    ldr x20, =0x1F01F67C0
+    ldr x20, =0x7C0107C0
     mov sp, x20
 
     /* Perform warmboot setup. */
@@ -108,3 +109,104 @@ _start_warm:
     b _ZN3ams6secmon20StartWarmbootVirtualEv
 
 
+/* void ams::secmon::AcquireCommonWarmbootStack() { */
+/* NOTE: This implements critical section enter via https://en.wikipedia.org/wiki/Lamport%27s_bakery_algorithm */
+/* This algorithm is used because the MMU is not awake yet, so exclusive load/store instructions are not usable. */
+/* NOTE: Nintendo attempted to implement this algorithm themselves, but did not really understand how it works. */
+/* They use the same ticket number for all cores; this can lead to starvation and other problems. */
+.section    .warmboot.text._ZN3ams6secmon26AcquireCommonWarmbootStackEv, "ax", %progbits
+.align      4
+.global     _ZN3ams6secmon26AcquireCommonWarmbootStackEv
+_ZN3ams6secmon26AcquireCommonWarmbootStackEv:
+    /* BakeryLock *lock = std::addressof(secmon::CommonWarmBootStackLock); */
+    ldr x0, =_ZN3ams6secmon23CommonWarmbootStackLockE
+
+    /* const u32 id = GetCurrentCoreId(); */
+    mrs x8, mpidr_el1
+    and x8, x8, #3
+
+    /* lock->customers[id].is_entering = true; */
+    ldrb w2, [x0, x8]
+    orr  w2, w2, #~0x7F
+    strb w2, [x0, x8]
+
+    /* const u8 ticket_0 = lock->customers[0].ticket_number; */
+    ldrb w4, [x0, #0]
+    and  w4, w4, #0x7F
+
+    /* const u8 ticket_1 = lock->customers[1].ticket_number; */
+    ldrb w5, [x0, #1]
+    and  w5, w5, #0x7F
+
+    /* const u8 ticket_2 = lock->customers[2].ticket_number; */
+    ldrb w6, [x0, #2]
+    and  w6, w6, #0x7F
+
+    /* const u8 ticket_3 = lock->customers[3].ticket_number; */
+    ldrb w7, [x0, #3]
+    and  w7, w7, #0x7F
+
+    /* u8 biggest_ticket = std::max(std::max(ticket_0, ticket_1), std::max(ticket_2, ticket_3)) */
+    cmp  w4, w5
+    csel w2, w4, w5, hi
+    cmp  w6, w7
+    csel w3, w6, w7, hi
+    cmp  w2, w3
+    csel w2, w2, w3, hi
+
+    /* NOTE: The biggest a ticket can ever be is 4, so the general increment is safe and 7-bit increment is not needed. */
+    /* lock->customers[id] = { .is_entering = false, .ticket_number = ++biggest_ticket }; */
+    add  w2, w2, #1
+    strb w2, [x0, x8]
+
+    /* Ensure instructions aren't reordered around this point. */
+    /* hw::DataSynchronizationBarrier(); */
+    dsb  sy
+
+    /* hw::SendEvent(); */
+    sev
+
+    /* for (unsigned int i = 0; i < 4; ++i) { */
+    mov  w3, #0
+1:
+    /*     hw::SendEventLocal(); */
+    sevl
+
+    /*     do { */
+2:
+    /*         hw::WaitForEvent(); */
+    wfe
+    /*     while (lock->customers[i].is_entering); */
+    ldrb w4, [x0, x3]
+    tbnz w4, #7, 2b
+
+    /*     u8 their_ticket; */
+
+    /*     hw::SendEventLocal(); */
+    sevl
+
+    /*    do { */
+2:
+    /*         hw::WaitForEvent(); */
+    wfe
+    /*         their_ticket = lock->customers[i].ticket_number; */
+    ldrb w4, [x0, x3]
+    ands w4, w4, #0x7F
+    /*         if (their_ticket == 0) { break; } */
+    b.eq 3f
+    /*    while ((their_ticket > my_ticket) || (their_ticket == my_ticket && id > i)); */
+    cmp  w2, w4
+    b.hi 2b
+    ccmp w8, w3, #0, eq
+    b.hi 2b
+
+    /* } */
+3:
+    add w3, w3, #1
+    cmp w3, #4
+    b.ne 1b
+
+    /* hw::DataMemoryBarrier(); */
+    dmb sy
+
+    ret

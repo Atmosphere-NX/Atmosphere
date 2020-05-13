@@ -26,7 +26,11 @@ namespace ams::secmon {
 
     namespace {
 
+        constexpr inline uintptr_t MC = MemoryRegionPhysicalDeviceMemoryController.GetAddress();
+
         using namespace ams::mmu;
+
+        constexpr inline PageTableMappingAttribute MappingAttributesEl3SecureRwCode = AddMappingAttributeIndex(PageTableMappingAttributes_El3SecureRwCode, MemoryAttributeIndexNormal);
 
         void SetupCpuCommonControllers() {
             /* Set cpuactlr_el1. */
@@ -146,6 +150,69 @@ namespace ams::secmon {
             hw::InstructionSynchronizationBarrier();
         }
 
+        bool IsExitLp0() {
+            return reg::Read(MC + MC_SECURITY_CFG3) == 0;
+        }
+
+        constexpr void AddPhysicalTzramIdentityMappingImpl(u64 *l1, u64 *l2, u64 *l3) {
+            /* Define extents. */
+            const uintptr_t start_address = MemoryRegionPhysicalTzram.GetAddress();
+            const size_t size             = MemoryRegionPhysicalTzram.GetSize();
+            const uintptr_t end_address   = start_address + size;
+
+            /* Flush cache for the L3 page table entries. */
+            {
+                const uintptr_t start = GetL3EntryIndex(start_address);
+                const uintptr_t end   = GetL3EntryIndex(end_address);
+                for (uintptr_t i = start; i < end; i += hw::DataCacheLineSize / sizeof(*l3)) {
+                    if (!std::is_constant_evaluated()) { hw::FlushDataCacheLine(l3 + i); }
+                }
+            }
+
+            /* Flush cache for the L2 page table entry. */
+            if (!std::is_constant_evaluated()) { hw::FlushDataCacheLine(l2 + GetL2EntryIndex(start_address)); }
+
+            /* Flush cache for the L1 page table entry. */
+            if (!std::is_constant_evaluated()) { hw::FlushDataCacheLine(l1 + GetL1EntryIndex(start_address)); }
+
+            /* Add the L3 mappings. */
+            SetL3BlockEntry(l3, start_address, start_address, size, MappingAttributesEl3SecureRwCode);
+
+            /* Add the L2 entry for the physical tzram region. */
+            SetL2TableEntry(l2, MemoryRegionPhysicalTzramL2.GetAddress(), MemoryRegionPhysicalTzramL2L3PageTable.GetAddress(), PageTableTableAttributes_El3SecureCode);
+
+            /* Add the L1 entry for the physical region. */
+            SetL1TableEntry(l1, MemoryRegionPhysical.GetAddress(), MemoryRegionPhysicalTzramL2L3PageTable.GetAddress(), PageTableTableAttributes_El3SecureCode);
+            static_assert(GetL1EntryIndex(MemoryRegionPhysical.GetAddress()) == 1);
+
+            /* Invalidate the data cache for the L3 page table entries. */
+            {
+                const uintptr_t start = GetL3EntryIndex(start_address);
+                const uintptr_t end   = GetL3EntryIndex(end_address);
+                for (uintptr_t i = start; i < end; i += hw::DataCacheLineSize / sizeof(*l3)) {
+                    if (!std::is_constant_evaluated()) { hw::InvalidateDataCacheLine(l3 + i); }
+                }
+            }
+
+            /* Flush cache for the L2 page table entry. */
+            if (!std::is_constant_evaluated()) { hw::InvalidateDataCacheLine(l2 + GetL2EntryIndex(start_address)); }
+
+            /* Flush cache for the L1 page table entry. */
+            if (!std::is_constant_evaluated()) { hw::InvalidateDataCacheLine(l1 + GetL1EntryIndex(start_address)); }
+        }
+
+        void AddPhysicalTzramIdentityMapping() {
+            /* Get page table extents. */
+            u64 * const l1    = MemoryRegionPhysicalTzramL1PageTable.GetPointer<u64>();
+            u64 * const l2_l3 = MemoryRegionPhysicalTzramL2L3PageTable.GetPointer<u64>();
+
+            /* Add the mapping. */
+            AddPhysicalTzramIdentityMappingImpl(l1, l2_l3, l2_l3);
+
+            /* Ensure that mappings are consistent. */
+            setup::EnsureMappingConsistency();
+        }
+
     }
 
     void SetupCpuMemoryControllersEnableMmu() {
@@ -204,7 +271,16 @@ namespace ams::secmon {
     }
 
     void SetupSocDmaControllersCpuMemoryControllersEnableMmuWarmboot() {
-        /* TODO */
+        /* If this is being called from lp0 exit, we want to setup the soc dma controllers. */
+        if (IsExitLp0()) {
+            SetupSocDmaControllers();
+        }
+
+        /* Add a physical TZRAM identity map. */
+        AddPhysicalTzramIdentityMapping();
+
+        /* Initialize cpu memory controllers and the MMU. */
+        SetupCpuMemoryControllersEnableMmu();
     }
 
 }
