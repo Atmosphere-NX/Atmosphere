@@ -18,6 +18,7 @@
 #include "secmon_error.hpp"
 #include "secmon_cpu_context.hpp"
 #include "secmon_interrupt_handler.hpp"
+#include "secmon_misc.hpp"
 
 namespace ams::secmon {
 
@@ -28,6 +29,8 @@ namespace ams::secmon {
         constexpr inline const uintptr_t FLOW_CTLR = secmon::MemoryRegionVirtualDeviceFlowController.GetAddress();
         constexpr inline const uintptr_t PMC       = secmon::MemoryRegionVirtualDevicePmc.GetAddress();
         constexpr inline const uintptr_t MC        = secmon::MemoryRegionVirtualDeviceMemoryController.GetAddress();
+        constexpr inline const uintptr_t EVP       = secmon::MemoryRegionVirtualDeviceExceptionVectors.GetAddress();
+        constexpr inline const uintptr_t CLK_RST   = secmon::MemoryRegionVirtualDeviceClkRst.GetAddress();
 
         alignas(8) constinit u8 g_se_aes_key_slot_test_vector[se::AesBlockSize] = {};
 
@@ -621,7 +624,7 @@ namespace ams::secmon {
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_PTC_FLUSH, 0);
+            reg::Write(MC + MC_SMMU_TLB_FLUSH, 0);
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Enable the SMMU, and read TLB_CONFIG to ensure the enable takes. */
@@ -722,6 +725,173 @@ namespace ams::secmon {
             hw::InstructionSynchronizationBarrier();
         }
 
+        void SetupGpuCarveout() {
+            /* Configure carveout 2. */
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_BOM,                           static_cast<u32>(MemoryRegionDramGpuCarveout.GetAddress() >> 0));
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_BOM_HI,                        static_cast<u32>(MemoryRegionDramGpuCarveout.GetAddress() >> BITSIZEOF(u32)));
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_SIZE_128KB,                    MemoryRegionDramGpuCarveout.GetSize() / 128_KB);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_ACCESS0,                0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_ACCESS1,                0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_ACCESS2,                MC_REG_BITS_ENUM (CLIENT_ACCESS2_GPUSRD,  ENABLE),
+                                                                                 MC_REG_BITS_ENUM (CLIENT_ACCESS2_GPUSWR,  ENABLE),
+                                                                                 MC_REG_BITS_ENUM (CLIENT_ACCESS2_TSECSRD, ENABLE));
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_ACCESS3,                0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_ACCESS4,                MC_REG_BITS_ENUM (CLIENT_ACCESS4_GPUSRD2, ENABLE),
+                                                                                 MC_REG_BITS_ENUM (CLIENT_ACCESS4_GPUSWR2, ENABLE));
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_FORCE_INTERNAL_ACCESS0, 0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_FORCE_INTERNAL_ACCESS1, 0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_FORCE_INTERNAL_ACCESS2, 0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_FORCE_INTERNAL_ACCESS3, 0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CLIENT_FORCE_INTERNAL_ACCESS4, 0);
+            reg::Write(MC + MC_SECURITY_CARVEOUT2_CFG0,                          MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_IS_WPR,                                 DISABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_FORCE_APERTURE_ID_MATCH,                 ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_ALLOW_APERTURE_ID_MISMATCH,             DISABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_TZ_GLOBAL_RD_EN,                        DISABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_TZ_GLOBAL_WR_EN,                        DISABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_SEND_CFG_TO_GPU,                         ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL3, ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL2, ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL1, ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL0, ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL3,  ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL2,  ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL1,  ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL0,  ENABLE_CHECKS),
+                                                                                 MC_REG_BITS_VALUE(SECURITY_CARVEOUT_CFG0_APERTURE_ID,                                   2),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL3,                     ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL2,                     ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL1,                    DISABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL0,                    DISABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL3,                      ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL2,                      ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL1,                      ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL0,                      ENABLED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_ADDRESS_TYPE,                  UNTRANSLATED_ONLY),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_LOCK_MODE,                                LOCKED),
+                                                                                 MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_PROTECT_MODE,                     LOCKBIT_SECURE));
+        }
+
+        void DisableArc() {
+            /* Configure IRAM top/bottom to point to memory ends (disabling redirection). */
+            reg::Write(MC + MC_IRAM_BOM, (~0u) & MC_IRAM_BOM_WRITE_MASK);
+            reg::Write(MC + MC_IRAM_TOM, ( 0u) & MC_IRAM_TOM_WRITE_MASK);
+
+            /* Lock the IRAM aperture. */
+            reg::Write(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, DISABLED));
+
+            /* Disable the ARC clock gate override. */
+            reg::ReadWrite(CLK_RST + CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD, CLK_RST_REG_BITS_ENUM(LVL2_CLK_GATE_OVRD_ARC_CLK_OVR_ON, OFF));
+
+            /* Rea IRAM REG CTRL to make sure our writes take. */
+            reg::Read(MC + MC_IRAM_REG_CTRL);
+        }
+
+        void FinalizeCarveoutSecureScratchRegisters() {
+            /* Define carveout scratch values. */
+            constexpr uintptr_t WarmbootCarveoutAddress = MemoryRegionDram.GetAddress();
+            constexpr size_t    WarmbootCarveoutSize    = 128_KB;
+
+            #define MC_ENABLE_CLIENT_ACCESS(INDEX, WHICH) MC_REG_BITS_ENUM(CLIENT_ACCESS##INDEX##_##WHICH, ENABLE)
+
+            constexpr u32 WarmbootCarveoutClientAccess0     = reg::Encode(MC_ENABLE_CLIENT_ACCESS(0, AVPCARM7R),
+                                                          MC_ENABLE_CLIENT_ACCESS(0, PPCSAHBSLVR));
+
+            constexpr u32 WarmbootCarveoutClientAccess1     = reg::Encode(MC_ENABLE_CLIENT_ACCESS(1, AVPCARM7W));
+
+            #undef MC_ENABLE_CLIENT_ACCESS
+
+            constexpr u32 WarmbootCarveoutForceInternalAccess0     = reg::Encode(MC_REG_BITS_ENUM(CLIENT_ACCESS0_AVPCARM7R,   ENABLE),
+                                                                 MC_REG_BITS_ENUM(CLIENT_ACCESS0_PPCSAHBSLVR, ENABLE));
+
+            constexpr u32 WarmbootCarveoutForceInternalAccess1     = reg::Encode(MC_REG_BITS_ENUM(CLIENT_ACCESS1_AVPCARM7W, ENABLE));
+
+            constexpr u32 WarmbootCarveoutConfig = reg::Encode(MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_IS_WPR,                                 DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_FORCE_APERTURE_ID_MATCH,                DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_ALLOW_APERTURE_ID_MISMATCH,             DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_TZ_GLOBAL_RD_EN,                        DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_TZ_GLOBAL_WR_EN,                        DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_SEND_CFG_TO_GPU,                        DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL3, ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL2, ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL1, ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_WRITE_CHECK_ACCESS_LEVEL0, ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL3,  ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL2,  ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL1,  ENABLE_CHECKS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_DISABLE_READ_CHECK_ACCESS_LEVEL0,  ENABLE_CHECKS),
+                                                               MC_REG_BITS_VALUE(SECURITY_CARVEOUT_CFG0_APERTURE_ID,                                   0),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL3,                    DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL2,                    DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL1,                    DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_WRITE_ACCESS_LEVEL0,                     ENABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL3,                     DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL2,                     DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL1,                     DISABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_READ_ACCESS_LEVEL0,                      ENABLED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_ADDRESS_TYPE,                        ANY_ADDRESS),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_LOCK_MODE,                              UNLOCKED),
+                                                               MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_PROTECT_MODE,                     LOCKBIT_SECURE));
+
+            /* Save the carveout values into secure scratch. */
+
+            /* Save MC_SECURITY_CARVEOUT4_BOM. */
+            reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH51, REG_BITS_VALUE( 0, 15, WarmbootCarveoutAddress >> 17));
+
+            /* Save MC_SECURITY_CARVEOUT4_BOM_HI. */
+            reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH16, REG_BITS_VALUE(30,  2, WarmbootCarveoutAddress >> 32));
+
+            /* Save MC_SECURITY_CARVEOUT4_SIZE_128KB. */
+            reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH55, REG_BITS_VALUE(12, 12, WarmbootCarveoutSize / 128_KB));
+
+            /* Save MC_SECURITY_CARVEOUT4_CLIENT_ACCESS. */
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH74, WarmbootCarveoutClientAccess0);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH75, WarmbootCarveoutClientAccess1);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH76, 0);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH77, 0);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH78, 0);
+
+            /* Save MC_SECURITY_CARVEOUT4_FORCE_INTERNAL_ACCESS. */
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH99,  WarmbootCarveoutForceInternalAccess0);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH100, WarmbootCarveoutForceInternalAccess1);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH101, 0);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH102, 0);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH103, 0);
+
+            /* Save MC_SECURITY_CARVEOUT4_CFG0. */
+            reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH39, REG_BITS_VALUE(0, 27, WarmbootCarveoutConfig));
+        }
+
+        void EnableBpmpSmmu() {
+            /* Define the ASID contents. */
+            constexpr int       BpmpAsid    = 1;
+            constexpr uintptr_t BpmpAsidPde = MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
+
+            /* Configure the ASID. */
+            reg::Write(MC + MC_SMMU_PTB_ASID, MC_REG_BITS_VALUE(SMMU_PTB_ASID_CURRENT_ASID,  BpmpAsid));
+
+            reg::Write(MC + MC_SMMU_PTB_DATA, MC_REG_BITS_VALUE(SMMU_PTB_DATA_ASID_PDE_BASE,  BpmpAsidPde / 4_KB),
+                                              MC_REG_BITS_ENUM (SMMU_PTB_DATA_ASID_NONSECURE,            DISABLE),
+                                              MC_REG_BITS_ENUM (SMMU_PTB_DATA_ASID_WRITABLE,             DISABLE),
+                                              MC_REG_BITS_ENUM (SMMU_PTB_DATA_ASID_READABLE,             DISABLE));
+
+            /* Configure the BPMP and PPCS1 to use the asid. */
+            reg::Write(MC + MC_SMMU_AVPC_ASID,  MC_REG_BITS_ENUM(SMMU_AVPC_ASID_AVPC_SMMU_ENABLE, ENABLE),   MC_REG_BITS_VALUE(SMMU_AVPC_ASID_AVPC_ASID,   BpmpAsid));
+            reg::Write(MC + MC_SMMU_PPCS1_ASID, MC_REG_BITS_ENUM(SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE, ENABLE), MC_REG_BITS_VALUE(SMMU_PPCS1_ASID_PPCS1_ASID, BpmpAsid));
+
+            /* Flush the entire page table cache, and read TLB_CONFIG to ensure the flush takes. */
+            reg::Write(MC + MC_SMMU_PTC_FLUSH, 0);
+            reg::Read (MC + MC_SMMU_TLB_CONFIG);
+
+            /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */
+            reg::Write(MC + MC_SMMU_TLB_FLUSH, 0);
+            reg::Read (MC + MC_SMMU_TLB_CONFIG);
+        }
+
+        void ActmonInterruptHandler() {
+            SetError(pkg1::ErrorInfo_ActivityMonitorInterrupt);
+            AMS_ABORT("actmon observed bpmp wakeup");
+        }
+
     }
 
     void Setup1() {
@@ -783,7 +953,7 @@ namespace ams::secmon {
         SetupSmmu();
 
         /* Clear the cpu reset vector. */
-        reg::Write(secmon::MemoryRegionVirtualDeviceExceptionVectors.GetAddress() + EVP_CPU_RESET_VECTOR, 0);
+        reg::Write(EVP + EVP_CPU_RESET_VECTOR, 0);
 
         /* Configure the SB registers to our start address. */
         constexpr u32 ResetVectorLow  = static_cast<u32>((PhysicalTzramProgramResetVector >> 0));
@@ -836,8 +1006,51 @@ namespace ams::secmon {
         }
     }
 
+    void SetupSocSecurityWarmboot() {
+        /* ... */
+    }
+
     void SetupSocProtections() {
-        /* TODO */
+        /* Setup the GPU carveout. */
+        SetupGpuCarveout();
+
+        /* Disable the ARC. */
+        DisableArc();
+
+        /* Finalize and lock the carveout scratch registers. */
+        FinalizeCarveoutSecureScratchRegisters();
+        pmc::LockSecureRegister(pmc::SecureRegister_Carveout);
+
+        /* Clear all the BPMP exception vectors to a fixed value. */
+        constexpr u32 BpmpExceptionVector = 0x7D000000;
+        reg::Write(EVP + EVP_COP_RESET_VECTOR,          BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_UNDEF_VECTOR,          BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_SWI_VECTOR,            BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_PREFETCH_ABORT_VECTOR, BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_DATA_ABORT_VECTOR,     BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_RSVD_VECTOR,           BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_IRQ_VECTOR,            BpmpExceptionVector);
+        reg::Write(EVP + EVP_COP_FIQ_VECTOR,            BpmpExceptionVector);
+
+        /* Turn on the SMMU for the BPMP. */
+        EnableBpmpSmmu();
+
+        /* Wait until the flow controller reports that the BPMP is halted. */
+        while (!reg::HasValue(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP))) {
+            util::WaitMicroSeconds(1);
+        }
+
+        /* If JTAG is disabled, disable JTAG. */
+        if (!secmon::IsJtagEnabled()) {
+            reg::Write(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
+                                                              FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_JTAG,       DISABLED));
+
+            /* If version is above 4.0.0, turn on the activity monitor to prevent booting up the bpmp. */
+            if (GetTargetFirmware() >= TargetFirmware_4_0_0) {
+                clkrst::EnableActmonClock();
+                actmon::StartMonitoringBpmp(ActmonInterruptHandler);
+            }
+        }
     }
 
     void SetupPmcAndMcSecure() {

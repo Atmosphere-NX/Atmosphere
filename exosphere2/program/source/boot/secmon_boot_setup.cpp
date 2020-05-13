@@ -361,8 +361,8 @@ namespace ams::secmon::boot {
 
     void UnmapPhysicalIdentityMapping() {
         /* Get the tables. */
-        u64 * const l1    = MemoryRegionPhysicalTzramL1PageTable.GetPointer<u64>();
-        u64 * const l2_l3 = MemoryRegionPhysicalTzramL2L3PageTable.GetPointer<u64>();
+        u64 * const l1    = MemoryRegionVirtualTzramL1PageTable.GetPointer<u64>();
+        u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
 
         /* Unmap. */
         UnmapPhysicalIdentityMappingImpl(l1, l2_l3, l2_l3);
@@ -373,8 +373,8 @@ namespace ams::secmon::boot {
 
     void UnmapDram() {
         /* Get the tables. */
-        u64 * const l1    = MemoryRegionPhysicalTzramL1PageTable.GetPointer<u64>();
-        u64 * const l2_l3 = MemoryRegionPhysicalTzramL2L3PageTable.GetPointer<u64>();
+        u64 * const l1    = MemoryRegionVirtualTzramL1PageTable.GetPointer<u64>();
+        u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
 
         /* Unmap. */
         UnmapDramImpl(l1, l2_l3, l2_l3);
