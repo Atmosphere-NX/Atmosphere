@@ -100,6 +100,11 @@ namespace ams::secmon::boot {
                 /* Map the IRAM SC7 firmware region. */
                 SetL3BlockEntry(l3, MemoryRegionVirtualIramSc7Firmware.GetAddress(), MemoryRegionPhysicalIramSc7Firmware.GetAddress(), MemoryRegionVirtualIramSc7Firmware.GetSize(), MappingAttributesEl3NonSecureDevice);
 
+                /* Map the Debug region. */
+                /* NOTE: This region is reserved for debug. By default it will be the last 0x8000 bytes of IRAM, but this is subject to change. */
+                /*       If you are doing development work for exosphere, feel free to locally change this to whatever is useful. */
+                SetL3BlockEntry(l3, MemoryRegionVirtualDebug.GetAddress(), MemoryRegionPhysicalIram.GetEndAddress() - 0x8000, 0x8000, MappingAttributesEl3SecureDevice);
+
                 /* Map the TZRAM ro alias region. */
                 SetL3BlockEntry(l3, MemoryRegionVirtualTzramReadOnlyAlias.GetAddress(), MemoryRegionPhysicalTzramReadOnlyAlias.GetAddress(), MemoryRegionVirtualTzramReadOnlyAlias.GetSize(), MappingAttributesEl3SecureRoData);
 
