@@ -12,10 +12,10 @@ MEMORY
     /* However, we can't know for sure how big warmboot is, so we'll just say it's 2K. */
     warmboot_text : ORIGIN = ORIGIN(tzram) + 10K, LENGTH = 2K
 
-    main            : ORIGIN = 0x1F00C0000, LENGTH = 48K
-    tzram_boot_code : ORIGIN = 0x1F01C0800, LENGTH = 6K
+    main       : ORIGIN = 0x1F00C0000, LENGTH = 48K
+    tzram_boot : ORIGIN = 0x1F01C0000, LENGTH = 8K
 
-    glob      : ORIGIN = 0x040032000, LENGTH = 64K
+    glob       : ORIGIN = 0x040032000, LENGTH = 64K
 }
 
 SECTIONS
@@ -88,6 +88,17 @@ SECTIONS
     __bootcode_end__ = ABSOLUTE(.);
 
     __program_start__ = ABSOLUTE(.);
+
+    .tzram_boot_volatile_data : {
+		KEEP (*(.volatile_keys .volatile_keys.*))
+    } >tzram_boot AT>glob
+
+    .tzram_boot_volatile_data.fill : {
+        FILL(0x00000000);
+        . = ORIGIN(tzram_boot) + 0x7FF;
+        BYTE(0x00);
+    } >tzram_boot AT>glob
+
     .tzram_boot_code :
     {
         KEEP(secmon_main.o(.text*))
@@ -96,23 +107,20 @@ SECTIONS
         KEEP(secmon_boot_config.o(.text*))
         KEEP(secmon_boot_setup.o(.text*))
         KEEP(secmon_package2.o(.text*))
-        KEEP(secmon_key_data.o(.text*))
         secmon_main.o(.rodata*)
         secmon_boot_functions.o(.rodata*)
         secmon_boot_cache.o(.rodata*)
         secmon_boot_config.o(.rodata*)
         secmon_boot_setup.o(.rodata*)
         secmon_package2.o(.rodata*)
-        secmon_key_data.o(.rodata*)
         secmon_main.o(.data*)
         secmon_boot_functions.o(.data*)
         secmon_boot_cache.o(.data*)
         secmon_boot_config.o(.data*)
         secmon_boot_setup.o(.data*)
         secmon_package2.o(.data*)
-        secmon_key_data.o(.data*)
         . = ALIGN(8);
-    } >tzram_boot_code AT>glob
+    } >tzram_boot AT>glob
 
     .tzram_boot_code.bss :
     {
@@ -123,16 +131,15 @@ SECTIONS
         secmon_boot_config.o(.bss* COMMON)
         secmon_boot_setup.o(.bss* COMMON)
         secmon_package2.o(.bss* COMMON)
-        secmon_key_data.o(.bss* COMMON)
         __boot_bss_end__ = ABSOLUTE(.);
-    } >tzram_boot_code AT>glob
+    } >tzram_boot AT>glob
 
     .tzram_boot_code.fill :
     {
         FILL(0x00000000);
-        . = ORIGIN(tzram_boot_code) + LENGTH(tzram_boot_code) - 1;
+        . = ORIGIN(tzram_boot) + LENGTH(tzram_boot) - 1;
         BYTE(0x00);
-    } > tzram_boot_code AT>glob
+    } > tzram_boot AT>glob
 
     .vectors :
     {
@@ -155,7 +162,7 @@ SECTIONS
         KEEP(tsec_*.o(.data*))
     } >warmboot_text AT>glob
 
-	.text :
+	.text ORIGIN(main) + SIZEOF(.vectors) + SIZEOF(.warmboot) :
 	{
 		*(.text.unlikely .text.*_unlikely .text.unlikely.*)
 		*(.text.exit .text.exit.*)
