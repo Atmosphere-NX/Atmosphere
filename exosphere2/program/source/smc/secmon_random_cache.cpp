@@ -83,11 +83,8 @@ namespace ams::secmon::smc {
     }
 
     void GetRandomFromCache(void *dst, size_t size) {
-        u8 * const cache = GetRandomBytesCache();
-        u8 * cur_dst     = static_cast<u8 *>(dst);
-
         /* Copy out the requested size. */
-        std::memcpy(dst, cache + g_random_offset_low, size);
+        std::memcpy(dst, GetRandomBytesCache() + g_random_offset_low, size);
 
         /* Advance. */
         g_random_offset_low += size;
