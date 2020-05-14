@@ -218,7 +218,7 @@ namespace ams::secmon {
     static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSc7Firmware));
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDebug = MemoryRegion(UINT64_C(0x1F0160000), 0x10000);
-    static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualIramSc7Firmware));
+    static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDebug));
 
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramBootCode  = MemoryRegion(UINT64_C(0x1F01C0000), 0x2000);
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramBootCode = MemoryRegion( UINT64_C(0x7C010000), 0x2000);
