@@ -96,12 +96,12 @@ namespace ams::secmon::smc {
 
     }
 
-    SmcResult SmcPowerOffCpu(const SmcArguments &args) {
+    SmcResult SmcPowerOffCpu(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcPowerOnCpu(const SmcArguments &args) {
+    SmcResult SmcPowerOnCpu(SmcArguments &args) {
         /* Get and validate the core to power on. */
         const int which_core = args.r[1];
         if (!(0 <= which_core && which_core < NumCores)) {
@@ -128,7 +128,7 @@ namespace ams::secmon::smc {
         return SmcResult::PsciSuccess;
     }
 
-    SmcResult SmcSuspendCpu(const SmcArguments &args) {
+    SmcResult SmcSuspendCpu(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

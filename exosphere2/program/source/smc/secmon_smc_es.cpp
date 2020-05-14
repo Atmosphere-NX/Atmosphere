@@ -19,12 +19,12 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcPrepareEsDeviceUniqueKey(const SmcArguments &args) {
+    SmcResult SmcPrepareEsDeviceUniqueKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcPrepareEsCommonKey(const SmcArguments &args) {
+    SmcResult SmcPrepareEsCommonKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

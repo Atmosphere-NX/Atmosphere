@@ -19,10 +19,10 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcPowerOffCpu(const SmcArguments &args);
-    SmcResult SmcPowerOnCpu(const SmcArguments &args);
+    SmcResult SmcPowerOffCpu(SmcArguments &args);
+    SmcResult SmcPowerOnCpu(SmcArguments &args);
 
-    SmcResult SmcSuspendCpu(const SmcArguments &args);
+    SmcResult SmcSuspendCpu(SmcArguments &args);
 
     bool IsChargerHiZModeEnabled();
     void SetChargerHiZModeEnabled(bool en);

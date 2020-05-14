@@ -19,32 +19,32 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcGenerateAesKek(const SmcArguments &args) {
+    SmcResult SmcGenerateAesKek(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcLoadAesKey(const SmcArguments &args) {
+    SmcResult SmcLoadAesKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcComputeAes(const SmcArguments &args) {
+    SmcResult SmcComputeAes(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcGenerateSpecificAesKey(const SmcArguments &args) {
+    SmcResult SmcGenerateSpecificAesKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcComputeCmac(const SmcArguments &args) {
+    SmcResult SmcComputeCmac(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcLoadPreparedAesKey(const SmcArguments &args) {
+    SmcResult SmcLoadPreparedAesKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

@@ -13,17 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <exosphere.hpp>
-#include "secmon_smc_common.hpp"
 
-namespace ams::secmon::smc {
+#define __ACCESS_TABLE_NAME__    McAccessTable
+#define __ACCESS_TABLE_ADDRESS__ MemoryRegionPhysicalDeviceMemoryController.GetAddress()
+#define __ACCESS_TABLE_INC__     "secmon_mc_access_table_data.inc"
 
-    SmcResult SmcDecryptDeviceUniqueData(SmcArguments &args);
-    SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args);
+#include "secmon_define_access_table.inc"
 
-    /* Legacy APIs. */
-    SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args);
-    SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args);
-
-}
+#undef __ACCESS_TABLE_INC__
+#undef __ACCESS_TABLE_ADDRESS__
+#undef __ACCESS_TABLE_NAME__

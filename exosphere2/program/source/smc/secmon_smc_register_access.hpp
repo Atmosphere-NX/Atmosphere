@@ -19,6 +19,6 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcReadWriteRegister(const SmcArguments &args);
+    SmcResult SmcReadWriteRegister(SmcArguments &args);
 
 }

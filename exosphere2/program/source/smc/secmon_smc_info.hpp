@@ -49,11 +49,11 @@ namespace ams::secmon::smc {
         ExosphereAllowCalWrites = 65006,
     };
 
-    SmcResult SmcGetConfigUser(const SmcArguments &args);
-    SmcResult SmcGetConfigKern(const SmcArguments &args);
-    SmcResult SmcSetConfig(const SmcArguments &args);
+    SmcResult SmcGetConfigUser(SmcArguments &args);
+    SmcResult SmcGetConfigKern(SmcArguments &args);
+    SmcResult SmcSetConfig(SmcArguments &args);
 
     /* This is an atmosphere extension smc. */
-    SmcResult SmcGetEmummcConfig(const SmcArguments &args);
+    SmcResult SmcGetEmummcConfig(SmcArguments &args);
 
 }

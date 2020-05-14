@@ -19,6 +19,6 @@
 
 namespace ams::secmon::smc {
 
-    using SmcHandler = SmcResult (*)(const SmcArguments &args);
+    using SmcHandler = SmcResult (*)(SmcArguments &args);
 
 }

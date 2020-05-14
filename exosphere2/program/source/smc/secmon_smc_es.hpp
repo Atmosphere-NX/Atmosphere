@@ -26,7 +26,7 @@ namespace ams::secmon::smc {
         EsKeyType_Count      = 2,
     };
 
-    SmcResult SmcPrepareEsDeviceUniqueKey(const SmcArguments &args);
-    SmcResult SmcPrepareEsCommonKey(const SmcArguments &args);
+    SmcResult SmcPrepareEsDeviceUniqueKey(SmcArguments &args);
+    SmcResult SmcPrepareEsCommonKey(SmcArguments &args);
 
 }

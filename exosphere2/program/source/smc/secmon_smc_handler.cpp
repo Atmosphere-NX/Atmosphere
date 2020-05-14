@@ -207,7 +207,7 @@ namespace ams::secmon::smc {
             return (info.restriction_mask & secmon::GetRestrictedSmcMask()) != 0;
         }
 
-        SmcResult InvokeSmcHandler(const HandlerInfo &info, const SmcArguments &args) {
+        SmcResult InvokeSmcHandler(const HandlerInfo &info, SmcArguments &args) {
             /* Check if the smc is restricted. */
             if (AMS_UNLIKELY(IsHandlerRestricted(info))) {
                 return SmcResult::NotPermitted;

@@ -13,17 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <exosphere.hpp>
-#include "secmon_smc_common.hpp"
 
-namespace ams::secmon::smc {
+using __ACCESS_TABLE_NAME__ = AccessTable<__ACCESS_TABLE_ADDRESS__, [] {
+        /* Declare a table. */
+        std::array<u8, 0x80> table = {};
 
-    SmcResult SmcDecryptDeviceUniqueData(SmcArguments &args);
-    SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args);
+        /* Declare a helper. */
+        auto SetRegisterAllowed = [&](uintptr_t reg) { SetRegisterTableAllowed(table, reg); };
 
-    /* Legacy APIs. */
-    SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args);
-    SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args);
+        /* Populate the table. */
+        #include __ACCESS_TABLE_INC__
 
-}
+        return table;
+}()>;
+
+static_assert(__ACCESS_TABLE_NAME__::Address >= __ACCESS_TABLE_ADDRESS__);
