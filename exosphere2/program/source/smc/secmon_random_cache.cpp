@@ -86,17 +86,15 @@ namespace ams::secmon::smc {
         u8 * const cache = GetRandomBytesCache();
         u8 * cur_dst     = static_cast<u8 *>(dst);
 
-        /* NOTE: Nintendo does not do bounds checking here, and does not do multiple reads when the get would wrap around. */
-        while (size > 0) {
-            const size_t copy_size = std::min(size, static_cast<size_t>(GetRandomBytesCacheSize() - g_random_offset_low));
-            std::memcpy(cur_dst, cache + g_random_offset_low, copy_size);
+        /* Copy out the requested size. */
+        std::memcpy(dst, cache + g_random_offset_low, size);
 
-            cur_dst += copy_size;
-            size    -= copy_size;
+        /* Advance. */
+        g_random_offset_low += size;
 
-            if (g_random_offset_low + copy_size >= GetRandomBytesCacheSize()) {
-                g_random_offset_low = 0;
-            }
+        /* Ensure that at all times g_random_offset_low is not within 0x38 bytes of the end of the pool. */
+        if (g_random_offset_low + MaxRandomBytes >= GetRandomBytesCacheSize()) {
+            g_random_offset_low = 0;
         }
     }
 
