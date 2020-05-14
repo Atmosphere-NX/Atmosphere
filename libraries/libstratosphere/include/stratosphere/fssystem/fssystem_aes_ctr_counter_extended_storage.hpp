@@ -57,7 +57,7 @@ namespace ams::fssystem {
             };
             static_assert(sizeof(Entry)  == 0x10);
             static_assert(alignof(Entry) == 4);
-            static_assert(std::is_pod<Entry>::value);
+            static_assert(util::is_pod<Entry>::value);
         public:
             static constexpr s64 QueryHeaderStorageSize() {
                 return BucketTree::QueryHeaderStorageSize();

@@ -161,7 +161,7 @@ namespace ams::fs {
 
         u8 value[Size];
     };
-    static_assert(std::is_pod<HashSalt>::value);
+    static_assert(util::is_pod<HashSalt>::value);
     static_assert(sizeof(HashSalt) == HashSalt::Size);
 
     using SaveDataHashSalt = std::optional<HashSalt>;

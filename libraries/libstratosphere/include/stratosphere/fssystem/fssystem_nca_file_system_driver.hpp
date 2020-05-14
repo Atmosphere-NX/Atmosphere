@@ -55,7 +55,7 @@ namespace ams::fssystem {
         DecryptAesCtrFunction decrypt_aes_ctr_external;
         bool is_plaintext_header_available;
     };
-    static_assert(std::is_pod<NcaCryptoConfiguration>::value);
+    static_assert(util::is_pod<NcaCryptoConfiguration>::value);
 
     constexpr inline bool IsInvalidKeyTypeValue(s32 key_type) {
         return key_type < 0;

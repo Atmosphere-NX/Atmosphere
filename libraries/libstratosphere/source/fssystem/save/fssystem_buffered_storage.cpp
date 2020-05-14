@@ -31,7 +31,7 @@ namespace ams::fssystem::save {
                 void *buffer;
                 size_t size;
             };
-            static_assert(std::is_pod<FetchParameter>::value);
+            static_assert(util::is_pod<FetchParameter>::value);
         private:
             BufferedStorage *buffered_storage;
             std::pair<uintptr_t, size_t> memory_range;

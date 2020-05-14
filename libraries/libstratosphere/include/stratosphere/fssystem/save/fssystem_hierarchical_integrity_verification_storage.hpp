@@ -31,7 +31,7 @@ namespace ams::fssystem::save {
         s32 block_order;
         u8 reserved[4];
     };
-    static_assert(std::is_pod<HierarchicalIntegrityVerificationLevelInformation>::value);
+    static_assert(util::is_pod<HierarchicalIntegrityVerificationLevelInformation>::value);
     static_assert(sizeof(HierarchicalIntegrityVerificationLevelInformation) == 0x18);
     static_assert(alignof(HierarchicalIntegrityVerificationLevelInformation) == 0x4);
 
@@ -52,7 +52,7 @@ namespace ams::fssystem::save {
             return this->info[this->max_layers - 2].size;
         }
     };
-    static_assert(std::is_pod<HierarchicalIntegrityVerificationInformation>::value);
+    static_assert(util::is_pod<HierarchicalIntegrityVerificationInformation>::value);
 
     struct HierarchicalIntegrityVerificationMetaInformation {
         u32 magic;
@@ -62,14 +62,14 @@ namespace ams::fssystem::save {
 
         /* TODO: Format */
     };
-    static_assert(std::is_pod<HierarchicalIntegrityVerificationMetaInformation>::value);
+    static_assert(util::is_pod<HierarchicalIntegrityVerificationMetaInformation>::value);
 
     struct HierarchicalIntegrityVerificationSizeSet {
         s64 control_size;
         s64 master_hash_size;
         s64 layered_hash_sizes[IntegrityMaxLayerCount - 1];
     };
-    static_assert(std::is_pod<HierarchicalIntegrityVerificationSizeSet>::value);
+    static_assert(util::is_pod<HierarchicalIntegrityVerificationSizeSet>::value);
 
     class HierarchicalIntegrityVerificationStorageControlArea {
         NON_COPYABLE(HierarchicalIntegrityVerificationStorageControlArea);
@@ -80,7 +80,7 @@ namespace ams::fssystem::save {
             struct InputParam {
                 size_t level_block_size[IntegrityMaxLayerCount - 1];
             };
-            static_assert(std::is_pod<InputParam>::value);
+            static_assert(util::is_pod<InputParam>::value);
         private:
             fs::SubStorage storage;
             HierarchicalIntegrityVerificationMetaInformation meta;

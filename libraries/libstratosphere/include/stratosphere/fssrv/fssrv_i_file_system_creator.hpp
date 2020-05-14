@@ -73,6 +73,6 @@ namespace ams::fssrv::fscreator {
         IStorageOnNcaCreator *storage_on_nca_creator;
         /* TODO: More creators. */
     };
-    static_assert(std::is_pod<FileSystemCreatorInterfaces>::value);
+    static_assert(util::is_pod<FileSystemCreatorInterfaces>::value);
 
 }

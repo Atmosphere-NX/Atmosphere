@@ -32,7 +32,7 @@ namespace ams::fssystem::save {
     struct FileSystemBufferManagerSet {
         IBufferManager *buffers[IntegrityMaxLayerCount];
     };
-    static_assert(std::is_pod<FileSystemBufferManagerSet>::value);
+    static_assert(util::is_pod<FileSystemBufferManagerSet>::value);
 
     class BlockCacheBufferedStorage : public ::ams::fs::IStorage {
         NON_COPYABLE(BlockCacheBufferedStorage);
@@ -54,7 +54,7 @@ namespace ams::fssystem::save {
                 uintptr_t memory_address;
                 size_t memory_size;
             };
-            static_assert(std::is_pod<CacheEntry>::value);
+            static_assert(util::is_pod<CacheEntry>::value);
 
             enum Flag : s32 {
                 Flag_KeepBurstMode = (1 << 8),

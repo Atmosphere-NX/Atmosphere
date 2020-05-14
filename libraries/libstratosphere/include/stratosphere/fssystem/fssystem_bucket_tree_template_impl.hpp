@@ -22,7 +22,7 @@ namespace ams::fssystem {
 
     template<typename EntryType>
     Result BucketTree::ScanContinuousReading(ContinuousReadingInfo *out_info, const ContinuousReadingParam<EntryType> &param) const {
-        static_assert(std::is_pod<ContinuousReadingParam<EntryType>>::value);
+        static_assert(util::is_pod<ContinuousReadingParam<EntryType>>::value);
 
         /* Validate our preconditions. */
         AMS_ASSERT(this->IsInitialized());
@@ -149,7 +149,7 @@ namespace ams::fssystem {
 
     template<typename EntryType>
     Result BucketTree::Visitor::ScanContinuousReading(ContinuousReadingInfo *out_info, s64 offset, size_t size) const {
-        static_assert(std::is_pod<EntryType>::value);
+        static_assert(util::is_pod<EntryType>::value);
         AMS_ASSERT(this->IsValid());
 
         /* Create our parameters. */

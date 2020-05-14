@@ -23,7 +23,7 @@ namespace ams::fssystem {
         u8 value[Size];
     };
     static_assert(sizeof(Hash) == Hash::Size);
-    static_assert(std::is_pod<Hash>::value);
+    static_assert(util::is_pod<Hash>::value);
 
     using NcaDigest = Hash;
 
@@ -70,7 +70,7 @@ namespace ams::fssystem {
             u32 reserved;
         };
         static_assert(sizeof(FsInfo) == 0x10);
-        static_assert(std::is_pod<FsInfo>::value);
+        static_assert(util::is_pod<FsInfo>::value);
 
         static constexpr u32 Magic0 = util::FourCC<'N','C','A','0'>::Code;
         static constexpr u32 Magic1 = util::FourCC<'N','C','A','1'>::Code;
@@ -124,7 +124,7 @@ namespace ams::fssystem {
         u8 GetProperKeyGeneration() const;
     };
     static_assert(sizeof(NcaHeader) == NcaHeader::Size);
-    static_assert(std::is_pod<NcaHeader>::value);
+    static_assert(util::is_pod<NcaHeader>::value);
 
     struct NcaBucketInfo {
         static constexpr size_t HeaderSize = 0x10;
@@ -132,7 +132,7 @@ namespace ams::fssystem {
         s64 size;
         u8 header[HeaderSize];
     };
-    static_assert(std::is_pod<NcaBucketInfo>::value);
+    static_assert(util::is_pod<NcaBucketInfo>::value);
 
     struct NcaPatchInfo {
         static constexpr size_t Size   = 0x40;
@@ -148,7 +148,7 @@ namespace ams::fssystem {
         bool HasIndirectTable() const;
         bool HasAesCtrExTable() const;
     };
-    static_assert(std::is_pod<NcaPatchInfo>::value);
+    static_assert(util::is_pod<NcaPatchInfo>::value);
 
     union NcaAesCtrUpperIv {
         u64 value;
@@ -157,7 +157,7 @@ namespace ams::fssystem {
             u32 secure_value;
         } part;
     };
-    static_assert(std::is_pod<NcaAesCtrUpperIv>::value);
+    static_assert(util::is_pod<NcaAesCtrUpperIv>::value);
 
     struct NcaSparseInfo {
         NcaBucketInfo bucket;
@@ -179,7 +179,7 @@ namespace ams::fssystem {
             return sparse_upper_iv;
         }
     };
-    static_assert(std::is_pod<NcaSparseInfo>::value);
+    static_assert(util::is_pod<NcaSparseInfo>::value);
 
     struct NcaFsHeader {
         static constexpr size_t Size           = 0x200;
@@ -189,7 +189,7 @@ namespace ams::fssystem {
             s64 offset;
             s64 size;
         };
-        static_assert(std::is_pod<Region>::value);
+        static_assert(util::is_pod<Region>::value);
 
         enum class FsType : u8 {
             RomFs       = 0,
@@ -221,7 +221,7 @@ namespace ams::fssystem {
                 s32 hash_layer_count;
                 Region hash_layer_region[HashLayerCountMax];
             } hierarchical_sha256_data;
-            static_assert(std::is_pod<HierarchicalSha256Data>::value);
+            static_assert(util::is_pod<HierarchicalSha256Data>::value);
 
             struct IntegrityMetaInfo {
                 static const size_t MasterHashOffset;
@@ -249,7 +249,7 @@ namespace ams::fssystem {
 
                 Hash master_hash;
             } integrity_meta_info;
-            static_assert(std::is_pod<IntegrityMetaInfo>::value);
+            static_assert(util::is_pod<IntegrityMetaInfo>::value);
 
             u8 padding[NcaPatchInfo::Offset - HashDataOffset];
         };
@@ -266,7 +266,7 @@ namespace ams::fssystem {
         u8 pad[0x88];
     };
     static_assert(sizeof(NcaFsHeader) == NcaFsHeader::Size);
-    static_assert(std::is_pod<NcaFsHeader>::value);
+    static_assert(util::is_pod<NcaFsHeader>::value);
     static_assert(offsetof(NcaFsHeader, patch_info) == NcaPatchInfo::Offset);
 
     inline constexpr const size_t NcaFsHeader::HashData::HierarchicalSha256Data::MasterHashOffset = offsetof(NcaFsHeader, hash_data.hierarchical_sha256_data.fs_data_master_hash);

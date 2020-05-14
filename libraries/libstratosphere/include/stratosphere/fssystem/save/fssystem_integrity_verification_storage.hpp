@@ -35,7 +35,7 @@ namespace ams::fssystem::save {
             struct BlockHash {
                 u8 hash[HashSize];
             };
-            static_assert(std::is_pod<BlockHash>::value);
+            static_assert(util::is_pod<BlockHash>::value);
         private:
             fs::SubStorage hash_storage;
             fs::SubStorage data_storage;

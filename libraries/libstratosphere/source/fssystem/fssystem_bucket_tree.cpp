@@ -21,7 +21,7 @@ namespace ams::fssystem {
 
         using Node = impl::BucketTreeNode<const s64 *>;
         static_assert(sizeof(Node) == sizeof(BucketTree::NodeHeader));
-        static_assert(std::is_pod<Node>::value);
+        static_assert(util::is_pod<Node>::value);
 
         constexpr inline s32 NodeHeaderSize = sizeof(BucketTree::NodeHeader);
 

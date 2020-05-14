@@ -50,7 +50,7 @@ namespace ams::fs {
         std::unique_ptr<ArrayT, Deleter> MakeUnique(size_t size) {
             using T = typename std::remove_extent<ArrayT>::type;
 
-            static_assert(std::is_pod<ArrayT>::value);
+            static_assert(util::is_pod<ArrayT>::value);
             static_assert(std::is_array<ArrayT>::value);
 
             const size_t alloc_size = sizeof(T) * size;
