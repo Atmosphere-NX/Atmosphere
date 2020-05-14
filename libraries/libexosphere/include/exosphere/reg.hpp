@@ -18,14 +18,18 @@
 
 namespace ams::reg {
 
-    using BitsValue = std::tuple<u32, u32, u32>;
-    using BitsMask  = std::tuple<u32, u32>;
+    using BitsValue = std::tuple<u16, u16, u32>;
+    using BitsMask  = std::tuple<u16, u16>;
 
-    constexpr ALWAYS_INLINE u32 GetOffset(const BitsMask v)  { return std::get<0>(v); }
-    constexpr ALWAYS_INLINE u32 GetOffset(const BitsValue v) { return std::get<0>(v); }
-    constexpr ALWAYS_INLINE u32 GetWidth(const BitsMask v)   { return std::get<1>(v); }
-    constexpr ALWAYS_INLINE u32 GetWidth(const BitsValue v)  { return std::get<1>(v); }
-    constexpr ALWAYS_INLINE u32 GetValue(const BitsValue v)  { return std::get<2>(v); }
+    constexpr ALWAYS_INLINE u32 GetOffset(const BitsMask v)  { return static_cast<u32>(std::get<0>(v)); }
+    constexpr ALWAYS_INLINE u32 GetOffset(const BitsValue v) { return static_cast<u32>(std::get<0>(v)); }
+    constexpr ALWAYS_INLINE u32 GetWidth(const BitsMask v)   { return static_cast<u32>(std::get<1>(v)); }
+    constexpr ALWAYS_INLINE u32 GetWidth(const BitsValue v)  { return static_cast<u32>(std::get<1>(v)); }
+    constexpr ALWAYS_INLINE u32 GetValue(const BitsValue v)  { return static_cast<u32>(std::get<2>(v)); }
+
+    constexpr ALWAYS_INLINE ::ams::reg::BitsValue GetValue(const BitsMask m, const u32 v) {
+        return ::ams::reg::BitsValue{GetOffset(m), GetWidth(m), v};
+    }
 
     constexpr ALWAYS_INLINE u32 EncodeMask(const BitsMask v) {
         return (~0u >> (BITSIZEOF(u32) - GetWidth(v))) << GetOffset(v);
@@ -137,6 +141,8 @@ namespace ams::reg {
 
     #define REG_BITS_MASK(OFFSET, WIDTH)         ::ams::reg::BitsMask{OFFSET, WIDTH}
     #define REG_BITS_VALUE(OFFSET, WIDTH, VALUE) ::ams::reg::BitsValue{OFFSET, WIDTH, VALUE}
+
+    #define REG_BITS_VALUE_FROM_MASK(MASK, VALUE) ::ams::reg::GetValue(MASK, VALUE)
 
     #define REG_NAMED_BITS_MASK(PREFIX, NAME)         REG_BITS_MASK(PREFIX##_##NAME##_OFFSET, PREFIX##_##NAME##_WIDTH)
     #define REG_NAMED_BITS_VALUE(PREFIX, NAME, VALUE) REG_BITS_VALUE(PREFIX##_##NAME##_OFFSET, PREFIX##_##NAME##_WIDTH, VALUE)
