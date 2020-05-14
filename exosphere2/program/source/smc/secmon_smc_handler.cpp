@@ -228,6 +228,21 @@ namespace ams::secmon::smc {
 
         /* Set the invocation result. */
         args.r[0] = static_cast<u64>(InvokeSmcHandler(info, args));
+
+/* TODO: For debugging. Remove this when exo2 is complete. */
+#if 1
+        if (args.r[0] == static_cast<u64>(SmcResult::NotImplemented)) {
+            *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress())            = 0xBBBBBBBB;
+            *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x10)     = static_cast<u32>(info.function_id);
+            for (size_t i = 0; i < sizeof(args) / sizeof(u32); ++i) {
+                ((volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x20))[i] = reinterpret_cast<u32 *>(std::addressof(args))[i];
+            }
+            *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
+            *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
+
+            util::WaitMicroSeconds(1000);
+        }
+#endif
     }
 
 }

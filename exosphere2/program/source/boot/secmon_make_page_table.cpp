@@ -125,7 +125,7 @@ namespace ams::secmon::boot {
                 SetL3BlockEntry(l3, MemoryRegionVirtualTzramConfigurationData.GetAddress(), MemoryRegionPhysicalTzramConfigurationData.GetAddress(), MemoryRegionVirtualTzramConfigurationData.GetSize(), MappingAttributesEl3SecureRwData);
 
                 /* Map the page tables. */
-                SetL3BlockEntry(l3, util::AlignDown(MemoryRegionVirtualTzramL1PageTable.GetAddress(), PageSize), util::AlignDown(MemoryRegionPhysicalTzramL1PageTable.GetAddress(), PageSize), PageSize, MappingAttributesEl3SecureDevice);
+                SetL3BlockEntry(l3, util::AlignDown(MemoryRegionVirtualTzramL1PageTable.GetAddress(), PageSize), util::AlignDown(MemoryRegionPhysicalTzramL1PageTable.GetAddress(), PageSize), PageSize, MappingAttributesEl3SecureRwData);
                 SetL3BlockEntry(l3, MemoryRegionVirtualTzramL2L3PageTable.GetAddress(), MemoryRegionPhysicalTzramL2L3PageTable.GetAddress(), MemoryRegionVirtualTzramL2L3PageTable.GetSize(), MappingAttributesEl3SecureRwData);
             }
         }

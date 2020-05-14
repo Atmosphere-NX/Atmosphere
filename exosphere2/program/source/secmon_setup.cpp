@@ -52,7 +52,7 @@ namespace ams::secmon {
         constinit const se::StickyBits ExpectedSeStickyBits = {
             .se_security            = (1 << 0), /* SE_HARD_SETTING */
             .tzram_security         = 0,
-            .crypto_security_perkey = 0,
+            .crypto_security_perkey = (1 << pkg1::AesKeySlot_UserEnd) - 1,
             .crypto_keytable_access = {
                 (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  0: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
                 (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  1: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
@@ -60,15 +60,15 @@ namespace ams::secmon {
                 (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  3: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
                 (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  4: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
                 (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  5: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  6: Unused  keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
-                (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  7: Unused  keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /*  6: Unused  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /*  7: Unused  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
                 (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  8: Temp    keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
                 (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  9: SmcTemp keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
                 (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 10: Wrap1   keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
                 (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 11: Wrap2   keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
                 (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 12: DMaster keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
                 (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 13: Master  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /* 14: Unused  keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 14: Unused  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
                 (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 13: Device  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
             },
             .rsa_security_perkey = 0,

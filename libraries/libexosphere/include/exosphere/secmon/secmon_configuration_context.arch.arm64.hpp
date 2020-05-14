@@ -30,17 +30,17 @@ namespace ams::secmon {
             EmummcConfiguration emummc_cfg;
             u8 _raw_emummc_config[0x120];
         };
-        union {
-            u8 _misc_data[0x400 - sizeof(_raw_exosphere_config) - sizeof(_raw_emummc_config)];
-        };
         u8 sealed_device_keys[pkg1::KeyGeneration_Max][se::AesBlockSize];
         u8 sealed_master_keys[pkg1::KeyGeneration_Max][se::AesBlockSize];
         pkg1::BootConfig boot_config;
         u8 rsa_private_exponents[4][se::RsaSize];
+        union {
+            u8 _misc_data[0xFC0 - sizeof(_raw_exosphere_config) - sizeof(_raw_emummc_config) - sizeof(sealed_device_keys) - sizeof(sealed_master_keys) - sizeof(boot_config) - sizeof(rsa_private_exponents)];
+        };
+        /* u8 l1_page_table[0x40]; */
     };
-    static_assert(sizeof(ConfigurationContext) == 0x1000);
+    static_assert(sizeof(ConfigurationContext) == 0xFC0);
     static_assert(util::is_pod<ConfigurationContext>::value);
-    static_assert(offsetof(ConfigurationContext, sealed_device_keys) == 0x400);
 
     namespace impl {
 
