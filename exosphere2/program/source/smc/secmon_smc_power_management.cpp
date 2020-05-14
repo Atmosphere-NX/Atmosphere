@@ -54,7 +54,7 @@ namespace ams::secmon::smc {
             /* Wait until nothing is being powergated. */
             int timeout = 5000;
             while (true) {
-                if (reg::HasValue(APBDEV_PMC_PWRGATE_TOGGLE, PMC_REG_BITS_ENUM(PWRGATE_TOGGLE_START, DISABLE))) {
+                if (reg::HasValue(PMC + APBDEV_PMC_PWRGATE_TOGGLE, PMC_REG_BITS_ENUM(PWRGATE_TOGGLE_START, DISABLE))) {
                     break;
                 }
 
