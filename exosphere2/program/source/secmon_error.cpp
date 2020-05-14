@@ -19,6 +19,26 @@
 namespace ams::diag {
 
     void AbortImpl() {
+        /* TODO: This is here for debugging. Remove this when exo2 is working. */
+#if 1
+        {
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x00) = 0xDDDDDDDD;
+
+            u64 temp_reg;
+            __asm__ __volatile__("mov %0, lr" : "=r"(temp_reg) :: "memory");
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x10) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x14) = static_cast<u32>(temp_reg >> 32);
+
+
+            __asm__ __volatile__("mov %0, sp" : "=r"(temp_reg) :: "memory");
+            for (int i = 0; i < 0x100; i += 4) {
+                *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x20 + i) = *(volatile u32 *)(temp_reg + i);
+            }
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
+        }
+#endif
+
         secmon::SetError(pkg1::ErrorInfo_UnknownAbort);
         secmon::ErrorReboot();
     }
@@ -36,6 +56,42 @@ namespace ams::secmon {
     }
 
     NORETURN void ErrorReboot() {
+        /* TODO: This is here for debugging. Remove this when exo2 is working. */
+#if 1
+        {
+            u64 temp_reg;
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x00) = 0x5A5A5A5A;
+
+            __asm__ __volatile__("mrs %0, esr_el3" : "=r"(temp_reg) :: "memory");
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x08) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x0C) = static_cast<u32>(temp_reg >> 32);
+
+            __asm__ __volatile__("mrs %0, elr_el3" : "=r"(temp_reg) :: "memory");
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x18) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x1C) = static_cast<u32>(temp_reg >> 32);
+
+            __asm__ __volatile__("mrs %0, far_el3" : "=r"(temp_reg) :: "memory");
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x18) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x1C) = static_cast<u32>(temp_reg >> 32);
+
+            __asm__ __volatile__("mov %0, lr" : "=r"(temp_reg) :: "memory");
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x20) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x24) = static_cast<u32>(temp_reg >> 32);
+
+            __asm__ __volatile__("mov %0, sp" : "=r"(temp_reg) :: "memory");
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x30) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x34) = static_cast<u32>(temp_reg >> 32);
+
+            for (int i = 0; i < 0x100; i += 4) {
+                *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x40 + i) = *(volatile u32 *)(temp_reg + i);
+            }
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
+
+            util::WaitMicroSeconds(1000);
+        }
+#endif
+
         /* Lockout the security engine. */
         se::Lockout();
 

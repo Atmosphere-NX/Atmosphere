@@ -44,8 +44,8 @@ namespace ams::se {
             if (!TestRegister(SE->SE_CRYPTO_KEYTABLE_ACCESS[i], bits.crypto_keytable_access[i])) { return false; }
         }
 
-        /* Test RSA_SCEURITY_PERKEY */
-        if (!TestRegister(SE->SE_CRYPTO_SECURITY_PERKEY, bits.rsa_security_perkey)) { return false; }
+        /* Test RSA_SECURITY_PERKEY */
+        if (!TestRegister(SE->SE_RSA_SECURITY_PERKEY, bits.rsa_security_perkey)) { return false; }
 
         /* Check RSA_KEYTABLE_ACCESS. */
         for (int i = 0; i < RsaKeySlotCount; ++i) {

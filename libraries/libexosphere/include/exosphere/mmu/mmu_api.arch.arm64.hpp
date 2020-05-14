@@ -201,22 +201,29 @@ namespace ams::mmu::arch::arm64 {
         return ((address >> L3EntryShift) & TableEntryIndexMask);
     }
 
-    constexpr ALWAYS_INLINE void SetTableImpl(u64 *table, u64 index, u64 value) {
-        /* Ensure (for constexpr validation purposes) that the entry we set is clear. */
-        if (table[index]) {
-            __builtin_unreachable();
-        }
-
-        /* Set the value. */
+    constexpr ALWAYS_INLINE void SetTableEntryImpl(volatile u64 *table, u64 index, u64 value) {
+        /* Write the value. */
         table[index] = value;
     }
 
+    constexpr ALWAYS_INLINE void SetTableEntry(u64 *table, u64 index, u64 value) {
+        /* Ensure (for constexpr validation purposes) that the entry we set is clear. */
+        if (std::is_constant_evaluated()) {
+            if (table[index]) {
+                __builtin_unreachable();
+            }
+        }
+
+        /* Set the value. */
+        SetTableEntryImpl(table, index, value);
+    }
+
     constexpr void SetL1TableEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, PageTableTableAttribute attr) {
-        SetTableImpl(table, GetL1EntryIndex(virt_addr), MakeTableEntry(phys_addr & TableEntryMask, attr));
+        SetTableEntry(table, GetL1EntryIndex(virt_addr), MakeTableEntry(phys_addr & TableEntryMask, attr));
     }
 
     constexpr void SetL2TableEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, PageTableTableAttribute attr) {
-        SetTableImpl(table, GetL2EntryIndex(virt_addr), MakeTableEntry(phys_addr & TableEntryMask, attr));
+        SetTableEntry(table, GetL2EntryIndex(virt_addr), MakeTableEntry(phys_addr & TableEntryMask, attr));
     }
 
     constexpr void SetL1BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
@@ -224,7 +231,7 @@ namespace ams::mmu::arch::arm64 {
         const u64 count = (size >> L1EntryShift);
 
         for (u64 i = 0; i < count; ++i) {
-            SetTableImpl(table, start + i, MakeL1BlockEntry((phys_addr & L1EntryMask) + (i << L1EntryShift), attr));
+            SetTableEntry(table, start + i, MakeL1BlockEntry((phys_addr & L1EntryMask) + (i << L1EntryShift), attr));
         }
     }
 
@@ -233,7 +240,7 @@ namespace ams::mmu::arch::arm64 {
         const u64 count = (size >> L2EntryShift);
 
         for (u64 i = 0; i < count; ++i) {
-            SetTableImpl(table, start + i, MakeL2BlockEntry((phys_addr & L2EntryMask) + (i << L2EntryShift), attr));
+            SetTableEntry(table, start + i, MakeL2BlockEntry((phys_addr & L2EntryMask) + (i << L2EntryShift), attr));
         }
     }
 
@@ -242,11 +249,11 @@ namespace ams::mmu::arch::arm64 {
         const u64 count = (size >> L3EntryShift);
 
         for (u64 i = 0; i < count; ++i) {
-            SetTableImpl(table, start + i, MakeL3BlockEntry((phys_addr & L3EntryMask) + (i << L3EntryShift), attr));
+            SetTableEntry(table, start + i, MakeL3BlockEntry((phys_addr & L3EntryMask) + (i << L3EntryShift), attr));
         }
     }
 
-    constexpr void InvalidateL1Entries(u64 *table, uintptr_t virt_addr, size_t size) {
+    constexpr void InvalidateL1Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
         const u64 start = GetL1EntryIndex(virt_addr);
         const u64 count = (size >> L1EntryShift);
         const u64 end   = start + count;
@@ -256,7 +263,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void InvalidateL2Entries(u64 *table, uintptr_t virt_addr, size_t size) {
+    constexpr void InvalidateL2Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
         const u64 start = GetL2EntryIndex(virt_addr);
         const u64 count = (size >> L2EntryShift);
         const u64 end   = start + count;
@@ -266,7 +273,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void InvalidateL3Entries(u64 *table, uintptr_t virt_addr, size_t size) {
+    constexpr void InvalidateL3Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
         const u64 start = GetL3EntryIndex(virt_addr);
         const u64 count = (size >> L3EntryShift);
         const u64 end   = start + count;

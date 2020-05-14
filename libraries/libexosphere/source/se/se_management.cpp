@@ -62,12 +62,6 @@ namespace ams::se {
     void SetPerKeySecure() {
         auto *SE = GetRegisters();
 
-        /* Clear AES PerKey security. */
-        SE->SE_CRYPTO_SECURITY_PERKEY = 0;
-
-        /* Clear RSA PerKey security. */
-        SE->SE_RSA_SECURITY_PERKEY   = 0;
-
         /* Update PERKEY_SETTING to secure. */
         reg::ReadWrite(SE->SE_SE_SECURITY, SE_REG_BITS_ENUM(SECURITY_PERKEY_SETTING, SECURE));
     }

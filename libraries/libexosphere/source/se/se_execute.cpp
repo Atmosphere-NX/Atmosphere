@@ -101,14 +101,14 @@ namespace ams::se {
     void ExecuteOperationSingleBlock(volatile SecurityEngineRegisters *SE, void *dst, size_t dst_size, const void *src, size_t src_size) {
         /* Validate sizes. */
         AMS_ABORT_UNLESS(dst_size <= AesBlockSize);
-        AMS_ABORT_UNLESS(src_size == AesBlockSize);
+        AMS_ABORT_UNLESS(src_size <= AesBlockSize);
 
         /* Set the block count to 1. */
         reg::Write(SE->SE_CRYPTO_LAST_BLOCK, 0);
 
         /* Create an aligned buffer. */
         util::AlignedBuffer<hw::DataCacheLineSize, AesBlockSize> aligned;
-        std::memcpy(aligned, src, AesBlockSize);
+        std::memcpy(aligned, src, src_size);
         hw::FlushDataCache(aligned, AesBlockSize);
         hw::DataSynchronizationBarrierInnerShareable();
 

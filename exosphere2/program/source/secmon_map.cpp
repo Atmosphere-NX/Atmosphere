@@ -21,6 +21,9 @@ namespace ams::secmon {
 
     namespace {
 
+        constexpr inline const uintptr_t BootCodeAddress = MemoryRegionVirtualTzramBootCode.GetAddress();
+        constexpr inline const size_t    BootCodeSize    = MemoryRegionVirtualTzramBootCode.GetSize();
+
         using namespace ams::mmu;
 
         constexpr void UnmapBootCodeImpl(u64 *l1, u64 *l2, u64 *l3, uintptr_t boot_code, size_t boot_code_size) {
@@ -39,6 +42,20 @@ namespace ams::secmon {
             InvalidateL1Entries(l1, MemoryRegionPhysical.GetAddress(),        MemoryRegionPhysical.GetSize());
         }
 
+        void ClearLow(uintptr_t address, size_t size) {
+            /* Clear the low part. */
+            util::ClearMemory(reinterpret_cast<void *>(address), size / 2);
+        }
+
+        void ClearHigh(uintptr_t address, size_t size) {
+            /* Clear the high part. */
+            util::ClearMemory(reinterpret_cast<void *>(address + size / 2), size / 2);
+        }
+
+    }
+
+    void ClearBootCodeHigh() {
+        ClearHigh(BootCodeAddress, BootCodeSize);
     }
 
     void UnmapBootCode() {
@@ -46,15 +63,11 @@ namespace ams::secmon {
         u64 * const l1    = MemoryRegionVirtualTzramL1PageTable.GetPointer<u64>();
         u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
 
-        /* Get the boot code region. */
-        const uintptr_t boot_code   = MemoryRegionVirtualTzramBootCode.GetAddress();
-        const size_t boot_code_size = MemoryRegionVirtualTzramBootCode.GetSize();
-
-        /* Clear the boot code. */
-        util::ClearMemory(reinterpret_cast<void *>(boot_code), boot_code_size);
+        /* Clear the low boot code region; high was already cleared by a previous call. */
+        ClearLow(BootCodeAddress, BootCodeSize);
 
         /* Unmap. */
-        UnmapBootCodeImpl(l1, l2_l3, l2_l3, boot_code, boot_code_size);
+        UnmapBootCodeImpl(l1, l2_l3, l2_l3, BootCodeAddress, BootCodeSize);
 
         /* Ensure the mappings are consistent. */
         secmon::EnsureMappingConsistency();

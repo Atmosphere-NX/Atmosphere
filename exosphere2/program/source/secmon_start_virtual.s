@@ -24,7 +24,7 @@ _ZN3ams6secmon5StartEv:
     mov  sp, x20
 
     /* Set SPSEL 0 stack pointer to a temporary location in volatile memory. */
-    msr  spsel, #1
+    msr  spsel, #0
     ldr  x20, =0x1F01C0800
     mov  sp, x20
 
@@ -34,16 +34,19 @@ _ZN3ams6secmon5StartEv:
     /* Invoke main. */
     bl _ZN3ams6secmon4MainEv
 
+    /* Clear boot code high. */
+    bl _ZN3ams6secmon17ClearBootCodeHighEv
+
     /* Set the stack pointer to the core 3 exception stack address. */
     ldr  x20, =0x1F01F9000
     mov  sp, x20
 
+    /* Unmap the boot code region (and clear the low part). */
+    bl _ZN3ams6secmon13UnmapBootCodeEv
+
     /* Initialize the random cache. */
     /* NOTE: Nintendo does this much earlier, but we reuse volatile space. */
     bl _ZN3ams6secmon3smc15FillRandomCacheEv
-
-    /* Unmap the boot code region. */
-    bl _ZN3ams6secmon13UnmapBootCodeEv
 
     /* Jump to lower exception level. */
     b _ZN3ams6secmon25JumpToLowerExceptionLevelEv
@@ -168,7 +171,6 @@ _ZN3ams6secmon25ReleaseCommonSmcStackLockEv:
     stlr wzr, [x0]
 
     /* Return. */
-    ret
     ret
 
 .section    .text._ZN3ams6secmon26ReleaseCommonWarmbootStackEv, "ax", %progbits
