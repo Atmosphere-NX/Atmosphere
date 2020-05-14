@@ -17,7 +17,6 @@
 #include "../secmon_error.hpp"
 #include "../secmon_key_storage.hpp"
 #include "secmon_boot.hpp"
-#include "secmon_boot_key_data.hpp"
 
 namespace ams::secmon::boot {
 

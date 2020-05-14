@@ -38,6 +38,10 @@ _ZN3ams6secmon5StartEv:
     ldr  x20, =0x1F01F9000
     mov  sp, x20
 
+    /* Initialize the random cache. */
+    /* NOTE: Nintendo does this much earlier, but we reuse volatile space. */
+    bl _ZN3ams6secmon3smc15FillRandomCacheEv
+
     /* Unmap the boot code region. */
     bl _ZN3ams6secmon13UnmapBootCodeEv
 

@@ -73,9 +73,6 @@ namespace ams::secmon {
 
             /* Alert the bootloader that we're initialized. */
             secmon_params.secmon_state = pkg1::SecureMonitorState_Initialized;
-
-            /* Initialize the random cache. */
-            secmon::smc::FillRandomCache();
         }
 
         /* Wait for NX Bootloader to finish loading the BootConfig. */
@@ -129,7 +126,7 @@ namespace ams::secmon {
         secmon::boot::WaitForNxBootloader(secmon_params, pkg1::BootloaderState_LoadedPackage2);
 
         /* Parse and decrypt the package2 header. */
-        pkg2::Package2Meta pkg2_meta;
+        pkg2::Package2Meta &pkg2_meta = secmon::boot::GetEphemeralPackage2Meta();
         const uintptr_t pkg2_payloads_start = MemoryRegionDramPackage2.GetAddress() + sizeof(pkg2::Package2Header);
         {
             /* Read the encrypred header. */

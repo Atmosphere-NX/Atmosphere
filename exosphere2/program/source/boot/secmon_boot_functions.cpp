@@ -18,7 +18,6 @@
 #include "secmon_boot.hpp"
 #include "secmon_boot_cache.hpp"
 #include "secmon_boot_functions.hpp"
-#include "secmon_boot_key_data.hpp"
 
 namespace ams::secmon::boot {
 
@@ -27,7 +26,7 @@ namespace ams::secmon::boot {
         constexpr inline uintptr_t SYSCTR0 = MemoryRegionVirtualDeviceSysCtr0.GetAddress();
 
         NOINLINE void DecryptPayload(uintptr_t dst, uintptr_t src, size_t size, const void *iv, size_t iv_size, u8 key_generation) {
-            secmon::boot::DecryptPackage2(reinterpret_cast<void *>(dst), size, reinterpret_cast<void *>(src), size, Package2AesKey, util::size(Package2AesKey), iv, iv_size, key_generation);
+            secmon::boot::DecryptPackage2(reinterpret_cast<void *>(dst), size, reinterpret_cast<void *>(src), size, secmon::boot::GetPackage2AesKey(), crypto::AesEncryptor128::KeySize, iv, iv_size, key_generation);
         }
 
     }
@@ -74,7 +73,7 @@ namespace ams::secmon::boot {
         /* Determine if the bc is valid for the device. */
         bool valid_for_device = false;
         {
-            const bool valid_signature = secmon::boot::VerifyBootConfigSignature(*bc, BootConfigRsaPublicModulus, util::size(BootConfigRsaPublicModulus));
+            const bool valid_signature = secmon::boot::VerifyBootConfigSignature(*bc, secmon::boot::GetBootConfigRsaModulus(), se::RsaSize);
             if (valid_signature) {
                 valid_for_device = secmon::boot::VerifyBootConfigEcid(*bc);
             }
@@ -138,10 +137,10 @@ namespace ams::secmon::boot {
     }
 
     void VerifyPackage2HeaderSignature(pkg2::Package2Header &header, bool verify) {
-        if (pkg1::IsProductionForPublicKey()) {
-            CheckVerifyResult(secmon::boot::VerifyPackage2Signature(header, Package2RsaPublicModulusProduction,  util::size(Package2RsaPublicModulusProduction)),  pkg1::ErrorInfo_InvalidPackage2Signature, "package2 header sign verification failed");
-        } else if (verify) {
-            CheckVerifyResult(secmon::boot::VerifyPackage2Signature(header, Package2RsaPublicModulusDevelopment, util::size(Package2RsaPublicModulusDevelopment)), pkg1::ErrorInfo_InvalidPackage2Signature, "package2 header sign verification failed");
+        const u8 * const mod  = secmon::boot::GetPackage2RsaModulus(pkg1::IsProductionForPublicKey());
+        const size_t mod_size = se::RsaSize;
+        if (verify) {
+            CheckVerifyResult(secmon::boot::VerifyPackage2Signature(header, mod, mod_size), pkg1::ErrorInfo_InvalidPackage2Signature, "package2 header sign verification failed");
         }
     }
 
@@ -150,7 +149,7 @@ namespace ams::secmon::boot {
             constexpr int IvSize = 0x10;
 
             /* Decrypt the header. */
-            DecryptPackage2(dst, sizeof(*dst), std::addressof(src), sizeof(src), Package2AesKey, util::size(Package2AesKey), std::addressof(src), IvSize, src.GetKeyGeneration());
+            DecryptPackage2(dst, sizeof(*dst), std::addressof(src), sizeof(src), secmon::boot::GetPackage2AesKey(), crypto::AesEncryptor128::KeySize, std::addressof(src), IvSize, src.GetKeyGeneration());
 
             /* Copy back the iv, which encodes encrypted metadata. */
             std::memcpy(dst, std::addressof(src), IvSize);
