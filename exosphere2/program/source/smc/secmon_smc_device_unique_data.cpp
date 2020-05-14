@@ -19,23 +19,23 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcDecryptDeviceUniqueData(const SmcArguments &args) {
+    SmcResult SmcDecryptDeviceUniqueData(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcReencryptDeviceUniqueData(const SmcArguments &args) {
+    SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
     /* Legacy APIs. */
-    SmcResult SmcDecryptAndImportEsDeviceKey(const SmcArguments &args) {
+    SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcDecryptAndImportLotusKey(const SmcArguments &args) {
+    SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

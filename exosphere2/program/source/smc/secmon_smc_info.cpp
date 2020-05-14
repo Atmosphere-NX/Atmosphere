@@ -19,23 +19,23 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcGetConfigUser(const SmcArguments &args) {
+    SmcResult SmcGetConfigUser(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcGetConfigKern(const SmcArguments &args) {
+    SmcResult SmcGetConfigKern(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcSetConfig(const SmcArguments &args) {
+    SmcResult SmcSetConfig(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
     /* This is an atmosphere extension smc. */
-    SmcResult SmcGetEmummcConfig(const SmcArguments &args) {
+    SmcResult SmcGetEmummcConfig(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

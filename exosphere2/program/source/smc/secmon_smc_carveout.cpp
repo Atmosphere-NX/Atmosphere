@@ -19,7 +19,7 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcSetKernelCarveoutRegion(const SmcArguments &args) {
+    SmcResult SmcSetKernelCarveoutRegion(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

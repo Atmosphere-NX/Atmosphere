@@ -19,7 +19,7 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcGenerateRandomBytes(const SmcArguments &args);
-    SmcResult SmcGenerateRandomBytesNonBlocking(const SmcArguments &args);
+    SmcResult SmcGenerateRandomBytes(SmcArguments &args);
+    SmcResult SmcGenerateRandomBytesNonBlocking(SmcArguments &args);
 
 }

@@ -19,6 +19,6 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcShowError(const SmcArguments &args);
+    SmcResult SmcShowError(SmcArguments &args);
 
 }

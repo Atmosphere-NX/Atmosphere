@@ -19,12 +19,12 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcGetResult(const SmcArguments &args) {
+    SmcResult SmcGetResult(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcGetResultData(const SmcArguments &args) {
+    SmcResult SmcGetResultData(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

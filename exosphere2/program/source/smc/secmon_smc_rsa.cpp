@@ -19,12 +19,12 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcModularExponentiate(const SmcArguments &args) {
+    SmcResult SmcModularExponentiate(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcModularExponentiateByStorageKey(const SmcArguments &args) {
+    SmcResult SmcModularExponentiateByStorageKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

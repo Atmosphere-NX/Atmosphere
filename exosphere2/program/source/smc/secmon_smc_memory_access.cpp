@@ -20,12 +20,12 @@
 namespace ams::secmon::smc {
 
     /* This is an atmosphere extension smc. */
-    SmcResult SmcIramCopy(const SmcArguments &args) {
+    SmcResult SmcIramCopy(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }
 
-    SmcResult SmcWriteAddress(const SmcArguments &args) {
+    SmcResult SmcWriteAddress(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

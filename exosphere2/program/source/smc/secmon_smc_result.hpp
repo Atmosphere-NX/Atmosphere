@@ -25,7 +25,7 @@ namespace ams::secmon::smc {
     void CancelAsyncOperation(u64 async_key);
     void EndAsyncOperation();
 
-    SmcResult SmcGetResult(const SmcArguments &args);
-    SmcResult SmcGetResultData(const SmcArguments &args);
+    SmcResult SmcGetResult(SmcArguments &args);
+    SmcResult SmcGetResultData(SmcArguments &args);
 
 }
