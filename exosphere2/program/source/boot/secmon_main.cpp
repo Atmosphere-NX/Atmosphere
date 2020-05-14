@@ -32,19 +32,19 @@ namespace ams::secmon {
 
     void Main() {
         /* Set library register addresses. */
-             actmon::SetRegisterAddress(MemoryRegionVirtualDeviceActivityMonitor.GetAddress());
-             clkrst::SetRegisterAddress(MemoryRegionVirtualDeviceClkRst.GetAddress());
-               flow::SetRegisterAddress(MemoryRegionVirtualDeviceFlowController.GetAddress());
-               fuse::SetRegisterAddress(MemoryRegionVirtualDeviceFuses.GetAddress());
-                gic::SetRegisterAddress(MemoryRegionVirtualDeviceGicDistributor.GetAddress(), MemoryRegionVirtualDeviceGicCpuInterface.GetAddress());
-                i2c::SetRegisterAddress(i2c::Port_1, MemoryRegionVirtualDeviceI2c1.GetAddress());
-                i2c::SetRegisterAddress(i2c::Port_5, MemoryRegionVirtualDeviceI2c5.GetAddress());
-             pinmux::SetRegisterAddress(MemoryRegionVirtualDeviceApbMisc.GetAddress(), MemoryRegionVirtualDeviceGpio.GetAddress());
-                pmc::SetRegisterAddress(MemoryRegionVirtualDevicePmc.GetAddress());
-                 se::SetRegisterAddress(MemoryRegionVirtualDeviceSecurityEngine.GetAddress());
-               uart::SetRegisterAddress(MemoryRegionVirtualDeviceUart.GetAddress());
-                wdt::SetRegisterAddress(MemoryRegionVirtualDeviceTimer.GetAddress());
-               util::SetRegisterAddress(MemoryRegionVirtualDeviceTimer.GetAddress());
+        actmon::SetRegisterAddress(MemoryRegionVirtualDeviceActivityMonitor.GetAddress());
+        clkrst::SetRegisterAddress(MemoryRegionVirtualDeviceClkRst.GetAddress());
+          flow::SetRegisterAddress(MemoryRegionVirtualDeviceFlowController.GetAddress());
+          fuse::SetRegisterAddress(MemoryRegionVirtualDeviceFuses.GetAddress());
+           gic::SetRegisterAddress(MemoryRegionVirtualDeviceGicDistributor.GetAddress(), MemoryRegionVirtualDeviceGicCpuInterface.GetAddress());
+           i2c::SetRegisterAddress(i2c::Port_1, MemoryRegionVirtualDeviceI2c1.GetAddress());
+           i2c::SetRegisterAddress(i2c::Port_5, MemoryRegionVirtualDeviceI2c5.GetAddress());
+        pinmux::SetRegisterAddress(MemoryRegionVirtualDeviceApbMisc.GetAddress(), MemoryRegionVirtualDeviceGpio.GetAddress());
+           pmc::SetRegisterAddress(MemoryRegionVirtualDevicePmc.GetAddress());
+            se::SetRegisterAddress(MemoryRegionVirtualDeviceSecurityEngine.GetAddress());
+          uart::SetRegisterAddress(MemoryRegionVirtualDeviceUart.GetAddress());
+           wdt::SetRegisterAddress(MemoryRegionVirtualDeviceTimer.GetAddress());
+          util::SetRegisterAddress(MemoryRegionVirtualDeviceTimer.GetAddress());
 
         /* Get the secure monitor parameters. */
         auto &secmon_params = *reinterpret_cast<pkg1::SecureMonitorParameters *>(MemoryRegionVirtualDeviceBootloaderParams.GetAddress());

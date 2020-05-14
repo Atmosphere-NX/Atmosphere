@@ -174,15 +174,15 @@ namespace ams::mmu::arch::arm64 {
     }
 
     constexpr u64 MakeL1BlockEntry(u64 address, PageTableMappingAttribute attr) {
-        return address | static_cast<u64>(attr) | 0x1ul;
+        return address | static_cast<u64>(attr) | static_cast<u64>(PageTableMappingAttribute_AccessFlagAccessed) | 0x1ul;
     }
 
     constexpr u64 MakeL2BlockEntry(u64 address, PageTableMappingAttribute attr) {
-        return address | static_cast<u64>(attr) | 0x1ul;
+        return address | static_cast<u64>(attr) | static_cast<u64>(PageTableMappingAttribute_AccessFlagAccessed) | 0x1ul;
     }
 
     constexpr u64 MakeL3BlockEntry(u64 address, PageTableMappingAttribute attr) {
-        return address | static_cast<u64>(attr) | 0x3ul;
+        return address | static_cast<u64>(attr) | static_cast<u64>(PageTableMappingAttribute_AccessFlagAccessed) | 0x3ul;
     }
 
     constexpr uintptr_t GetL2Offset(uintptr_t address) {

@@ -95,7 +95,7 @@ _start:
     ERRATUM_INVALIDATE_BTB_AT_BOOT
 
     /* Set the stack pointer to a temporary location. */
-    ldr x20, =0x7C010800
+    ldr x20, =0x7C020000
     mov sp, x20
 
     /* Call our init array functions. */
