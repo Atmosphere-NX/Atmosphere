@@ -104,14 +104,10 @@ namespace ams::secmon::smc {
     SmcResult SmcPowerOnCpu(SmcArguments &args) {
         /* Get and validate the core to power on. */
         const int which_core = args.r[1];
-        if (!(0 <= which_core && which_core < NumCores)) {
-            return SmcResult::PsciInvalidParameters;
-        }
+        SMC_R_UNLESS(0 <= which_core && which_core < NumCores, PsciInvalidParameters);
 
         /* Ensure the core isn't already on. */
-        if (IsCoreOn(which_core)) {
-            return SmcResult::PsciAlreadyOn;
-        }
+        SMC_R_UNLESS(!IsCoreOn(which_core), PsciAlreadyOn);
 
         /* Save the entry context. */
         SetEntryContext(which_core, args.r[2], args.r[3]);

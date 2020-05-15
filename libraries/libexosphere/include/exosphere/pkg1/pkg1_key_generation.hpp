@@ -44,4 +44,12 @@ namespace ams::pkg1 {
     constexpr inline const int OldMasterKeyCount       = KeyGeneration_Count - 1;
     constexpr inline const int OldDeviceMasterKeyCount = KeyGeneration_Count - KeyGeneration_4_0_0;
 
+    constexpr bool IsValidDeviceUniqueKeyGeneration(int generation) {
+        return generation == KeyGeneration_1_0_0 || (KeyGeneration_4_0_0 <= generation && generation <= KeyGeneration_Current);
+    }
+
+    constexpr bool IsValidKeyGeneration(int generation) {
+        return KeyGeneration_Min <= generation && generation <= KeyGeneration_Current;
+    }
+
 }

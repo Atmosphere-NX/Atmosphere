@@ -53,4 +53,8 @@ namespace ams::pkg1 {
         RsaKeySlot_PrivateKey = 1,
     };
 
+    constexpr bool IsUserAesKeySlot(int slot) {
+        return AesKeySlot_UserStart <= slot && slot < AesKeySlot_UserEnd;
+    }
+
 }

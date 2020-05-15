@@ -39,40 +39,32 @@ namespace ams::secmon::smc {
     }
 
     SmcResult LockSecurityEngineAndInvoke(SmcArguments &args, SmcHandler impl) {
-        /* Try to lock the SE. */
-        if (!TryLockSecurityEngine()) {
-            return SmcResult::Busy;
-        }
+        /* Try to lock the security engine. */
+        SMC_R_UNLESS(TryLockSecurityEngine(), Busy);
         ON_SCOPE_EXIT { UnlockSecurityEngine(); };
 
         return impl(args);
     }
 
     SmcResult LockSecurityEngineAndInvokeAsync(SmcArguments &args, SmcHandler impl, GetResultHandler result_handler) {
-        SmcResult result = SmcResult::Busy;
-
         /* Try to lock the security engine. */
-        if (TryLockSecurityEngine()) {
-            /* Try to start an async operation. */
-            if (const u64 async_key = BeginAsyncOperation(result_handler); async_key != InvalidAsyncKey) {
-                /* Invoke the operation. */
-                result = impl(args);
+        SMC_R_UNLESS(TryLockSecurityEngine(), Busy);
+        auto se_guard = SCOPE_GUARD { UnlockSecurityEngine(); };
 
-                /* If the operation was successful, return the key. */
-                if (result == SmcResult::Success) {
-                    args.r[1] = async_key;
-                    return SmcResult::Success;
-                }
+        /* Try to start an async operation. */
+        const u64 async_key = BeginAsyncOperation(result_handler);
+        SMC_R_UNLESS(async_key != InvalidAsyncKey, Busy);
+        auto async_guard = SCOPE_GUARD { CancelAsyncOperation(async_key); };
 
-                /* Otherwise, cancel the async operation. */
-                CancelAsyncOperation(async_key);
-            }
+        /* Try to invoke the operation. */
+        SMC_R_TRY(impl(args));
 
-            /* We failed to invoke the async op, so unlock the security engine. */
-            UnlockSecurityEngine();
-        }
+        /* We succeeded! Cancel our guards, and return the async key to our caller. */
+        async_guard.Cancel();
+        se_guard.Cancel();
 
-        return result;
+        args.r[1] = async_key;
+        return SmcResult::Success;
     }
 
 }
