@@ -150,39 +150,34 @@ namespace ams::secmon::smc {
         const u32       value   = args.r[3];
 
         /* Validate that the address is aligned. */
-        if (!util::IsAligned(address, alignof(u32))) {
-            return SmcResult::InvalidArgument;
-        }
+        SMC_R_UNLESS(util::IsAligned(address, alignof(u32)), InvalidArgument);
 
         /* Find the access table. */
         const AccessTableEntry * const entry = GetAccessTableEntry(address);
 
-        /* If we have no table, don't perform the write. */
-        if (entry == nullptr) {
+        /* If we have a table, perform the write. */
+        if (entry != nullptr) {
+            /* Get the address to read or write. */
+            const uintptr_t virtual_address = entry->virtual_address + (address - entry->address);
+            u32 out = 0;
+
+            if (mask != ~static_cast<u32>(0)) {
+                out = reg::Read(virtual_address);
+            }
+            if (mask != static_cast<u32>(0)) {
+                reg::Write(virtual_address, (out & ~mask) | (value & mask));
+            }
+
+            args.r[1] = out;
+        } else {
             /* For no clearly discernable reason, SmcReadWriteRegister returns success despite not doing the read/write */
             /* when accessing the SMMU controls for the BPMP and for APB-DMA. */
             /* This is "probably" to fuck with hackers who got access to the SMC and are trying to get control of the */
             /* BPMP to exploit jamais vu, deja vu, or other related DMA/wake-from-sleep vulnerabilities. */
-            constexpr uintptr_t MC = MemoryRegionVirtualDeviceMemoryController.GetAddress();
-            if (address == (MC + MC_SMMU_AVPC_ASID) || address == (MC + MC_SMMU_PPCS1_ASID)) {
-                return SmcResult::Success;
-            }
-
-            return SmcResult::InvalidArgument;
+            constexpr uintptr_t MC = MemoryRegionPhysicalDeviceMemoryController.GetAddress();
+            SMC_R_UNLESS((address == (MC + MC_SMMU_AVPC_ASID) || address == (MC + MC_SMMU_PPCS1_ASID)), InvalidArgument);
         }
 
-        /* Get the address to read or write. */
-        const uintptr_t virtual_address = entry->virtual_address + (address - entry->address);
-        u32 out = 0;
-
-        if (mask != ~static_cast<u32>(0)) {
-            out = reg::Read(virtual_address);
-        }
-        if (mask != static_cast<u32>(0)) {
-            reg::Write(virtual_address, (out & ~mask) | (value & mask));
-        }
-
-        args.r[1] = out;
         return SmcResult::Success;
     }
 

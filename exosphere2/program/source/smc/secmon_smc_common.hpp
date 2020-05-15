@@ -35,6 +35,12 @@ namespace ams::secmon::smc {
         PsciAlreadyOn         = static_cast<u32>(-4),
     };
 
+    #define SMC_R_SUCCEEEDED(res) (res == SmcResult::Success)
+    #define SMC_R_FAILED(res)     (res != SmcResult::Success)
+
+    #define SMC_R_TRY(res_expr)     ({ const auto _tmp_r_try_rc = (res_expr); if (SMC_R_FAILED(_tmp_r_try_rc)) { return _tmp_r_try_rc; } })
+    #define SMC_R_UNLESS(cond, RES) ({ if (!(cond)) { return SmcResult::RES; }})
+
     struct SmcArguments {
         u64 r[8];
     };

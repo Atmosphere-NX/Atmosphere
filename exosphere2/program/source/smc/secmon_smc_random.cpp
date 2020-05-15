@@ -26,10 +26,7 @@ namespace ams::secmon::smc {
         SmcResult GenerateRandomBytesImpl(SmcArguments &args) {
             /* Validate the input size. */
             const size_t size = args.r[1];
-
-            if (size > MaxRandomBytes) {
-                return SmcResult::InvalidArgument;
-            }
+            SMC_R_UNLESS(size <= MaxRandomBytes, InvalidArgument);
 
             /* Create a buffer that the se can generate bytes into. */
             util::AlignedBuffer<hw::DataCacheLineSize, MaxRandomBytes> buffer;
@@ -69,11 +66,7 @@ namespace ams::secmon::smc {
         } else {
             /* Otherwise, we'll retrieve some bytes from the cache. */
             const size_t size = args.r[1];
-
-            /* Validate the input size. */
-            if (size > MaxRandomBytes) {
-                return SmcResult::InvalidArgument;
-            }
+            SMC_R_UNLESS(size <= MaxRandomBytes, InvalidArgument);
 
             /* Get random bytes from the cache. */
             GetRandomFromCache(std::addressof(args.r[1]), size);
