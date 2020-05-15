@@ -64,6 +64,13 @@ namespace ams::se {
             reg::Write(SE->SE_OPERATION, SE_REG_BITS_VALUE(OPERATION_OP, op));
         }
 
+        void EnsureOperationStarted(volatile SecurityEngineRegisters *SE) {
+            /* Read the operation register to make sure our write takes. */
+            reg::Read(SE->SE_OPERATION);
+
+            hw::DataSynchronizationBarrierInnerShareable();
+        }
+
         void WaitForOperationComplete(volatile SecurityEngineRegisters *SE) {
             /* Spin until the operation is done. */
             while (reg::HasValue(SE->SE_INT_STATUS, SE_REG_BITS_ENUM(INT_STATUS_SE_OP_DONE, CLEAR))) { /* ... */ }
@@ -124,6 +131,18 @@ namespace ams::se {
         std::memcpy(dst, aligned, dst_size);
     }
 
+    void StartOperationRaw(volatile SecurityEngineRegisters *SE, SE_OPERATION_OP op, u32 out_ll_address, u32 in_ll_address) {
+        /* Configure the linked list addresses. */
+        reg::Write(SE->SE_IN_LL_ADDR,  in_ll_address);
+        reg::Write(SE->SE_OUT_LL_ADDR, out_ll_address);
+
+        /* Start the operation. */
+        StartOperation(SE, op);
+
+        /* Ensure the operation is started. */
+        EnsureOperationStarted(SE);
+    }
+
     void ValidateAesOperationResult(volatile SecurityEngineRegisters *SE) {
         /* Ensure no error occurred. */
         AMS_ABORT_UNLESS(reg::HasValue(SE->SE_INT_STATUS, SE_REG_BITS_ENUM(INT_STATUS_ERR_STAT, CLEAR)));
@@ -132,7 +151,11 @@ namespace ams::se {
         AMS_ABORT_UNLESS(reg::HasValue(SE->SE_STATUS, SE_REG_BITS_ENUM(STATUS_STATE, IDLE)));
 
         /* Ensure there is no error status. */
-        AMS_ABORT_UNLESS(reg::Read(SE->SE_ERR_STATUS)                                        == 0);
+        AMS_ABORT_UNLESS(reg::Read(SE->SE_ERR_STATUS) == 0);
+    }
+
+    void ValidateAesOperationResult() {
+        return ValidateAesOperationResult(GetRegisters());
     }
 
 }

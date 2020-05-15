@@ -20,4 +20,7 @@ namespace ams::secmon {
 
     void UnmapTzram();
 
+    uintptr_t MapSmcUserPage(uintptr_t address);
+    void UnmapSmcUserPage();
+
 }

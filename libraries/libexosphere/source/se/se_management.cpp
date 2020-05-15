@@ -105,4 +105,12 @@ namespace ams::se {
         }
     }
 
+    void SetDoneHandler(volatile SecurityEngineRegisters *SE, DoneHandler handler) {
+        /* Set the done handler. */
+        g_done_handler = handler;
+
+        /* Configure to trigger an interrupt when done. */
+        reg::Write(SE->SE_INT_ENABLE, SE_REG_BITS_ENUM(INT_ENABLE_SE_OP_DONE, ENABLE));
+    }
+
 }

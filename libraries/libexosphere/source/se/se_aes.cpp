@@ -33,21 +33,37 @@ namespace ams::se {
             MemoryInterface_Mc  = SE_CRYPTO_CONFIG_MEMIF_MCCIF,
         };
 
-        constexpr inline u32 AesConfigEcb = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,               0),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,    DISABLE),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,       ORIGINAL),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,        MEMORY),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,         MEMORY),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,           BYPASS),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,         DISABLE));
+        constexpr inline u32 AesConfigEcb        = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,                     0),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,          DISABLE),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,             ORIGINAL),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,              MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,               MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,                 BYPASS),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,               DISABLE));
 
-        constexpr inline u32 AesConfigCtr = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,               1),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,    DISABLE),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,       ORIGINAL),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,        MEMORY),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,     LINEAR_CTR),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,           BOTTOM),
-                                                        SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,         DISABLE));
+        constexpr inline u32 AesConfigCtr        = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,                     1),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,          DISABLE),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,             ORIGINAL),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,              MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,           LINEAR_CTR),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,                 BOTTOM),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,               DISABLE));
+
+        constexpr inline u32 AesConfigCbcEncrypt = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,                     0),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,          DISABLE),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,             ORIGINAL),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,         INIT_AESOUT),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,               MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,                    TOP),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,               DISABLE));
+
+        constexpr inline u32 AesConfigCbcDecrypt = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,                     0),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,          DISABLE),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,             ORIGINAL),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,    INIT_PREV_MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,               MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,                 BOTTOM),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,               DISABLE));
 
         void SetConfig(volatile SecurityEngineRegisters *SE, bool encrypt, SE_CONFIG_DST dst) {
             reg::Write(SE->SE_CONFIG, SE_REG_BITS_ENUM    (CONFIG_ENC_MODE, AESMODE_KEY128),
@@ -73,9 +89,9 @@ namespace ams::se {
             reg::ReadWrite(SE->SE_CONFIG, REG_BITS_VALUE(16, 16, mode));
         }
 
-        // void UpdateMemoryInterface(volatile SecurityEngineRegisters *SE, MemoryInterface memif) {
-        //     reg::ReadWrite(SE->SE_CRYPTO_CONFIG, SE_REG_BITS_VALUE(CRYPTO_CONFIG_MEMIF, memif));
-        // }
+        void UpdateMemoryInterface(volatile SecurityEngineRegisters *SE, MemoryInterface memif) {
+            reg::ReadWrite(SE->SE_CRYPTO_CONFIG, SE_REG_BITS_VALUE(CRYPTO_CONFIG_MEMIF, memif));
+        }
 
         void SetCounter(volatile SecurityEngineRegisters *SE, const void *ctr) {
             const u32 *ctr_32 = reinterpret_cast<const u32 *>(ctr);
@@ -85,6 +101,25 @@ namespace ams::se {
             reg::Write(SE->SE_CRYPTO_LINEAR_CTR[1], util::LoadLittleEndian(ctr_32 + 1));
             reg::Write(SE->SE_CRYPTO_LINEAR_CTR[2], util::LoadLittleEndian(ctr_32 + 2));
             reg::Write(SE->SE_CRYPTO_LINEAR_CTR[3], util::LoadLittleEndian(ctr_32 + 3));
+        }
+
+        void SetAesKeyIv(volatile SecurityEngineRegisters *SE, int slot, const void *iv, size_t iv_size) {
+            AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+            AMS_ABORT_UNLESS(iv_size <= AesBlockSize);
+
+            /* Set each iv word in order. */
+            const u32 *iv_u32  = static_cast<const u32 *>(iv);
+            const int num_words = iv_size / sizeof(u32);
+            for (int i = 0; i < num_words; ++i) {
+                /* Select the keyslot. */
+                reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT,         slot),
+                                                        SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_KEYIV_SEL,          IV),
+                                                        SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_IV_SEL,    ORIGINAL_IV),
+                                                        SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_WORD,            i));
+
+                /* Set the key word. */
+                SE->SE_CRYPTO_KEYTABLE_DATA = *(iv_u32++);
+            }
         }
 
         void SetEncryptedAesKey(int dst_slot, int kek_slot, const void *key, size_t key_size, AesMode mode) {
@@ -131,6 +166,29 @@ namespace ams::se {
 
             /* Execute the operation. */
             ExecuteOperationSingleBlock(SE, dst, dst_size, src, src_size);
+        }
+
+        void ComputeAes128Async(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, DoneHandler handler, u32 config, bool encrypt, volatile SecurityEngineRegisters *SE) {
+            /* If nothing to decrypt, succeed. */
+            if (size == 0) { return; }
+
+            /* Validate input. */
+            AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+
+            /* Configure for the specific operation. */
+            SetConfig(SE, encrypt, SE_CONFIG_DST_MEMORY);
+            SetAesConfig(SE, slot, encrypt, config);
+            UpdateMemoryInterface(SE, MemoryInterface_Mc);
+
+            /* Configure the number of blocks. */
+            const int num_blocks = size / AesBlockSize;
+            SetBlockCount(SE, num_blocks);
+
+            /* Set the done handler. */
+            SetDoneHandler(SE, handler);
+
+            /* Start the raw operation. */
+            StartOperationRaw(SE, SE_OPERATION_OP_START, out_ll_address, in_ll_address);
         }
 
     }
@@ -268,6 +326,51 @@ namespace ams::se {
 
             ExecuteOperationSingleBlock(SE, static_cast<u8 *>(dst) + aligned_size, copy_size, static_cast<const u8 *>(src) + aligned_size, fractional);
         }
+    }
+
+    void EncryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler) {
+        /* Validate the iv. */
+        AMS_ABORT_UNLESS(iv_size == AesBlockSize);
+
+        /* Get the registers. */
+        volatile auto *SE = GetRegisters();
+
+        /* Set the iv. */
+        SetAesKeyIv(SE, slot, iv, iv_size);
+
+        /* Perform the asynchronous aes operation. */
+        ComputeAes128Async(out_ll_address, slot, in_ll_address, size, handler, AesConfigCbcEncrypt, true, SE);
+    }
+
+    void DecryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler) {
+        /* Validate the iv. */
+        AMS_ABORT_UNLESS(iv_size == AesBlockSize);
+
+        /* Get the registers. */
+        volatile auto *SE = GetRegisters();
+
+        /* Set the iv. */
+        SetAesKeyIv(SE, slot, iv, iv_size);
+
+        /* Perform the asynchronous aes operation. */
+        ComputeAes128Async(out_ll_address, slot, in_ll_address, size, handler, AesConfigCbcDecrypt, false, SE);
+    }
+
+    void ComputeAes128CtrAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler) {
+        /* Validate the iv. */
+        AMS_ABORT_UNLESS(iv_size == AesBlockSize);
+
+        /* Get the registers. */
+        volatile auto *SE = GetRegisters();
+
+        /* Here Nintendo writes 1 to SE_SPARE. It's unclear why they do this, but we will do so as well. */
+        SE->SE_SPARE = 0x1;
+
+        /* Set the counter. */
+        SetCounter(SE, iv);
+
+        /* Perform the asynchronous aes operation. */
+        ComputeAes128Async(out_ll_address, slot, in_ll_address, size, handler, AesConfigCtr, true, SE);
     }
 
 }

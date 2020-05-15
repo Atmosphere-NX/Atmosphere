@@ -36,6 +36,8 @@ namespace ams::gic {
     void SetSpiTargetCpu(int interrupt_id, u32 cpu_mask);
     void SetSpiMode(int interrupt_id, InterruptMode mode);
 
+    void SetPending(int interrupt_id);
+
     int GetInterruptRequestId();
     void SetEndOfInterrupt(int interrupt_id);
 

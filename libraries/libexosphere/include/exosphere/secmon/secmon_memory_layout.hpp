@@ -73,6 +73,7 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionVirtual  = MemoryRegion(UINT64_C(0x1F0000000), 2_MB);
     constexpr inline const MemoryRegion MemoryRegionPhysical = MemoryRegion(UINT64_C( 0x40000000), 1_GB);
     constexpr inline const MemoryRegion MemoryRegionDram     = MemoryRegion(UINT64_C( 0x80000000), 2_GB);
+    constexpr inline const MemoryRegion MemoryRegionDramHigh = MemoryRegion(MemoryRegionDram.GetEndAddress(), 2_GB);
 
     constexpr inline const MemoryRegion MemoryRegionDramGpuCarveout = MemoryRegion(UINT64_C(0x80020000), UINT64_C(0x40000));
     static_assert(MemoryRegionDram.Contains(MemoryRegionDramGpuCarveout));

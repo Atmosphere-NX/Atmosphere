@@ -20,6 +20,7 @@
 #include "secmon_cpu_context.hpp"
 #include "secmon_interrupt_handler.hpp"
 #include "secmon_misc.hpp"
+#include "smc/secmon_random_cache.hpp"
 #include "smc/secmon_smc_power_management.hpp"
 #include "smc/secmon_smc_se_lock.hpp"
 
@@ -937,6 +938,9 @@ namespace ams::secmon {
             if (smc::IsChargerHiZModeEnabled()) {
                 ExitChargerHiZMode();
             }
+
+            /* Refill the random cache, which is volatile and thus wiped on warmboot. */
+            smc::FillRandomCache();
 
             /* Unlock the security engine. */
             secmon::smc::UnlockSecurityEngine();
