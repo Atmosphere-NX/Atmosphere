@@ -45,7 +45,9 @@ namespace ams::pkg1 {
         u32 secmon_start_time;
         u32 secmon_end_time;
         BctParameters bct_params;
-        u8 reserved[0xD8];
+        u32 deprecated_boot_reason_value;
+        u8  deprecated_boot_reason_state;
+        u8 reserved[0xD3];
         u32 bootloader_state;
         u32 secmon_state;
         u8 reserved2[0x100];

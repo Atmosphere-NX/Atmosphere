@@ -45,6 +45,14 @@ namespace ams::secmon {
         EmummcType type;
         u32 id;
         u32 fs_version;
+
+        constexpr bool IsValid() const {
+            return this->magic == Magic;
+        }
+
+        constexpr bool IsEmummcActive() const {
+            return this->IsValid() && this->type != EmummcType_None;
+        }
     };
     static_assert(util::is_pod<EmummcBaseConfiguration>::value);
     static_assert(sizeof(EmummcBaseConfiguration) == 0x10);
@@ -66,6 +74,14 @@ namespace ams::secmon {
             EmummcFileConfiguration file_cfg;
         };
         EmummcFilePath emu_dir_path;
+
+        constexpr bool IsValid() const {
+            return this->base_cfg.IsValid();
+        }
+
+        constexpr bool IsEmummcActive() const {
+            return this->base_cfg.IsEmummcActive();
+        }
     };
     static_assert(util::is_pod<EmummcConfiguration>::value);
     static_assert(sizeof(EmummcConfiguration) <= 0x200);
