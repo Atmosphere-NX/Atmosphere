@@ -1018,7 +1018,7 @@ namespace ams::secmon {
         constexpr u32 ResetVectorHigh = static_cast<u32>((PhysicalTzramProgramResetVector >> BITSIZEOF(u32)));
 
         /* Write our reset vector to the secure boot registers. */
-        reg::Write(secmon::MemoryRegionVirtualDeviceSystem.GetAddress() + SB_AA64_RESET_LOW,  ResetVectorLow);
+        reg::Write(secmon::MemoryRegionVirtualDeviceSystem.GetAddress() + SB_AA64_RESET_LOW,  ResetVectorLow | 1);
         reg::Write(secmon::MemoryRegionVirtualDeviceSystem.GetAddress() + SB_AA64_RESET_HIGH, ResetVectorHigh);
 
         /* Disable non-secure writes to the reset vector. */
