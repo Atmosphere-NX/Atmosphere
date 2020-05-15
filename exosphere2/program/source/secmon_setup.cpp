@@ -1194,4 +1194,13 @@ namespace ams::secmon {
         hw::InstructionSynchronizationBarrier();
     }
 
+    void SetKernelCarveoutRegion(int index, uintptr_t address, size_t size) {
+        /* Configure the carveout. */
+        auto &carveout = g_kernel_carveouts[index];
+        carveout.address = address;
+        carveout.size    = size;
+
+        SetupKernelCarveouts();
+    }
+
 }

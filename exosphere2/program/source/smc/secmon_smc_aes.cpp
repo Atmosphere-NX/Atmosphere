@@ -111,7 +111,7 @@ namespace ams::secmon::smc {
             u8 kek_source[AesKeySize];
             std::memcpy(kek_source, std::addressof(args.r[1]), AesKeySize);
 
-            const int generation = std::min<int>(args.r[3] - 1, pkg1::KeyGeneration_1_0_0);
+            const int generation = std::max<int>(static_cast<int>(args.r[3]) - 1, pkg1::KeyGeneration_1_0_0);
 
             const util::BitPack32 option = { static_cast<u32>(args.r[4]) };
             const bool is_device_unique  = option.Get<GenerateAesKekOption::IsDeviceUnique>();

@@ -242,7 +242,7 @@ namespace ams::secmon::smc {
 
             util::WaitMicroSeconds(1000);
         }
-        if (args.r[0] != static_cast<u64>(SmcResult::Success)) {
+        if (args.r[0] != static_cast<u64>(SmcResult::Success) && info.function_id != 0xC3000007 /* generate aes key fails during SetupKekAccessKeys */) {
             *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress())            = 0xCCCCCCCC;
             *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x10)     = static_cast<u32>(info.function_id);
             for (size_t i = 0; i < sizeof(args) / sizeof(u32); ++i) {
