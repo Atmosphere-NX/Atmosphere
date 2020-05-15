@@ -36,6 +36,8 @@ namespace ams::diag {
             }
             *(volatile u32 *)(secmon::MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
             *(volatile u32 *)(secmon::MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
+
+            util::WaitMicroSeconds(1000);
         }
 #endif
 
@@ -67,8 +69,8 @@ namespace ams::secmon {
             *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x0C) = static_cast<u32>(temp_reg >> 32);
 
             __asm__ __volatile__("mrs %0, elr_el3" : "=r"(temp_reg) :: "memory");
-            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x18) = static_cast<u32>(temp_reg >>  0);
-            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x1C) = static_cast<u32>(temp_reg >> 32);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x10) = static_cast<u32>(temp_reg >>  0);
+            *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x14) = static_cast<u32>(temp_reg >> 32);
 
             __asm__ __volatile__("mrs %0, far_el3" : "=r"(temp_reg) :: "memory");
             *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x18) = static_cast<u32>(temp_reg >>  0);

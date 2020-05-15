@@ -29,4 +29,6 @@ namespace ams::secmon {
     void GetPackage2Hash(se::Sha256Hash *out);
     void SetPackage2Hash(const se::Sha256Hash &hash);
 
+    u32 GetDeprecatedBootReason();
+
 }

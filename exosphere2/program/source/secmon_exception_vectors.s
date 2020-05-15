@@ -211,7 +211,7 @@ _ZN3ams6secmon25HandleSmcExceptionCore012Ev:
 
     /* Restore our core-specific stack. */
     ldp x29, x30, [sp], #0x10
-    mov x30, sp
+    mov sp, x30
 
     /* Release our exclusive access to the common smc stack. */
     stp x0, x1, [sp, #-0x10]!

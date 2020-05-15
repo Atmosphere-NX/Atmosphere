@@ -31,21 +31,77 @@ namespace ams::fuse {
         HardwareType_Undefined = 0xF,
     };
 
+    enum SocType {
+        SocType_Erista    = 0,
+        SocType_Mariko    = 1,
+        SocType_Undefined = 0xF,
+    };
+
     enum HardwareState {
         HardwareState_Development = 0,
         HardwareState_Production  = 1,
         HardwareState_Undefined   = 2,
     };
 
+    enum DramId {
+        DramId_IcosaSamsung4GB    =  0,
+        DramId_IcosaHynix4GB      =  1,
+        DramId_IcosaMicron4GB     =  2,
+        DramId_CopperSamsung4GB   =  3,
+        DramId_IcosaSamsung6GB    =  4,
+        DramId_CopperHynix4GB     =  5,
+        DramId_CopperMicron4GB    =  6,
+        DramId_IowaX1X2Samsung4GB =  7,
+        DramId_IowaSansung4GB     =  8,
+        DramId_IowaSamsung8GB     =  9,
+        DramId_IowaHynix4GB       = 10,
+        DramId_IowaMicron4GB      = 11,
+        DramId_HoagSamsung4GB     = 12,
+        DramId_HoagSamsung8GB     = 13,
+        DramId_HoagHynix4GB       = 14,
+        DramId_HoagMicron4GB      = 15,
+        DramId_IowaSamsung4GBY    = 16,
+        DramId_IowaSamsung1y4GBX  = 17,
+        DramId_IowaSamsung1y8GBX  = 18,
+        DramId_HoagSamsung1y4GBX  = 19,
+        DramId_IowaSamsung1y4GBY  = 20,
+        DramId_IowaSamsung1y8GBY  = 21,
+        DramId_IowaSamsung1y4GBA  = 22,
+        DramId_FiveSamsung1y8GBX  = 23,
+        DramId_FiveSamsung1y4GBX  = 24,
+
+        DramId_Count,
+    };
+
+    enum QuestState {
+        QuestState_Disabled = 0,
+        QuestState_Enabled  = 1,
+    };
+
     void SetRegisterAddress(uintptr_t address);
     void SetWriteSecureOnly();
     void Lockout();
 
+    void Activate();
+    void Deactivate();
+    void Reload();
+
+    u32 ReadWord(int address);
+
     u32 GetOdmWord(int index);
 
+    DramId GetDramId();
+
+    void            GetEcid(br::BootEcid *out);
     HardwareType    GetHardwareType();
     HardwareState   GetHardwareState();
+    u64             GetDeviceId();
+    QuestState      GetQuestState();
     pmic::Regulator GetRegulator();
-    void GetEcid(br::BootEcid *out);
+    int             GetDeviceUniqueKeyGeneration();
+
+    SocType         GetSocType();
+    int             GetExpectedFuseVersion(TargetFirmware target_fw);
+    bool            HasRcmVulnerabilityPatch();
 
 }

@@ -24,9 +24,7 @@ namespace ams::secmon::smc {
         template<size_t N>
         constexpr void SetRegisterTableAllowed(std::array<u8, N> &arr, uintptr_t reg) {
             /* All registers should be four byte aligned. */
-            if (reg % sizeof(u32) != 0) {
-                __builtin_unreachable();
-            }
+            AMS_ASSUME(reg % sizeof(u32) == 0);
 
             /* Reduce the register to an index. */
             reg /= sizeof(u32);
@@ -36,24 +34,18 @@ namespace ams::secmon::smc {
             const auto mask  = (1u << (reg % BITSIZEOF(u8)));
 
             /* Check that the permission bit isn't already set. */
-            if ((arr[index] & mask) != 0) {
-                __builtin_unreachable();
-            }
+            AMS_ASSUME((arr[index] & mask) == 0);
 
             /* Set the permission bit. */
             arr[index] |= mask;
 
             /* Ensure that indices are set in sorted order. */
             for (auto i = (reg % BITSIZEOF(u8)) + 1; i < 8; ++i) {
-                if ((arr[index] & (1u << i)) != 0) {
-                    __builtin_unreachable();
-                }
+                AMS_ASSUME((arr[index] & (1u << i)) == 0);
             }
 
             for (auto i = index + 1; i < arr.size(); ++i) {
-                if (arr[i] != 0) {
-                    __builtin_unreachable();
-                }
+                AMS_ASSUME(arr[i] == 0);
             }
         }
 
@@ -72,7 +64,7 @@ namespace ams::secmon::smc {
             }
 
             /* All empty perm table is disallowed. */
-            __builtin_unreachable();
+            AMS_ASSUME(false);
         }
 
 

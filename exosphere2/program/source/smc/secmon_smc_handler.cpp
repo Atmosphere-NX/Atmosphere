@@ -128,7 +128,7 @@ namespace ams::secmon::smc {
             { 0xC4000001, Restriction_SafeModeNotAllowed, SmcSuspendCpu                     },
             { 0x84000002, Restriction_SafeModeNotAllowed, SmcPowerOffCpu                    },
             { 0xC4000003, Restriction_SafeModeNotAllowed, SmcPowerOnCpu                     },
-            { 0xC3000002, Restriction_Normal,             SmcGetConfigKern                  },
+            { 0xC3000004, Restriction_Normal,             SmcGetConfigKern                  },
             { 0xC3000005, Restriction_Normal,             SmcGenerateRandomBytesNonBlocking },
             { 0xC3000006, Restriction_Normal,             SmcShowError                      },
             { 0xC3000007, Restriction_Normal,             SmcSetKernelCarveoutRegion        },
@@ -233,6 +233,17 @@ namespace ams::secmon::smc {
 #if 1
         if (args.r[0] == static_cast<u64>(SmcResult::NotImplemented)) {
             *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress())            = 0xBBBBBBBB;
+            *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x10)     = static_cast<u32>(info.function_id);
+            for (size_t i = 0; i < sizeof(args) / sizeof(u32); ++i) {
+                ((volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x20))[i] = reinterpret_cast<u32 *>(std::addressof(args))[i];
+            }
+            *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
+            *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
+
+            util::WaitMicroSeconds(1000);
+        }
+        if (args.r[0] != static_cast<u64>(SmcResult::Success)) {
+            *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress())            = 0xCCCCCCCC;
             *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x10)     = static_cast<u32>(info.function_id);
             for (size_t i = 0; i < sizeof(args) / sizeof(u32); ++i) {
                 ((volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x20))[i] = reinterpret_cast<u32 *>(std::addressof(args))[i];

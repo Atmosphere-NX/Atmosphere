@@ -34,7 +34,7 @@ namespace ams::secmon::smc {
         IsDevelopmentFunctionEnabled  = 11,
         KernelConfiguration           = 12,
         IsChargerHiZModeEnabled       = 13,
-        IsQuest                       = 14,
+        QuestState                    = 14,
         RegulatorType                 = 15,
         DeviceUniqueKeyGeneration     = 16,
         Package2Hash                  = 17,

@@ -65,6 +65,8 @@ namespace ams::secmon {
         constexpr bool EnableUserModePerformanceCounterAccess() const { return (this->flags & SecureMonitorConfigurationFlag_EnableUserModePerformanceCounterAccess) != 0; }
         constexpr bool ShouldUseBlankCalibrationBinary()        const { return (this->flags & SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary)        != 0; }
         constexpr bool AllowWritingToCalibrationBinarySysmmc()  const { return (this->flags & SecureMonitorConfigurationFlag_AllowWritingToCalibrationBinarySysmmc)  != 0; }
+
+        constexpr bool IsDevelopmentFunctionEnabled(bool for_kern) const { return for_kern ? this->IsDevelopmentFunctionEnabledForKernel() : this->IsDevelopmentFunctionEnabledForUser(); }
     };
     static_assert(util::is_pod<SecureMonitorConfiguration>::value);
     static_assert(sizeof(SecureMonitorConfiguration) == 0x80);

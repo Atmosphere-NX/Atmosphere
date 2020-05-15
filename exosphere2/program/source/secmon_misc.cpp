@@ -23,11 +23,18 @@ namespace ams::secmon {
         constinit pkg1::BctParameters g_bct_params = {};
         constinit se::Sha256Hash g_package2_hash   = {};
 
+        constinit u32 g_deprecated_boot_reason_value = {};
+        constinit u8  g_deprecated_boot_reason_state = {};
+
     }
 
     void SaveBootInfo(const pkg1::SecureMonitorParameters &secmon_params) {
         /* Save the BCT parameters. */
         g_bct_params = secmon_params.bct_params;
+
+        /* Save the deprecated boot reason. */
+        g_deprecated_boot_reason_value = secmon_params.deprecated_boot_reason_value;
+        g_deprecated_boot_reason_state = secmon_params.deprecated_boot_reason_state;
     }
 
     bool IsRecoveryBoot() {
@@ -50,6 +57,10 @@ namespace ams::secmon {
 
     void SetPackage2Hash(const se::Sha256Hash &hash) {
         g_package2_hash = hash;
+    }
+
+    u32 GetDeprecatedBootReason() {
+        return (static_cast<u32>(g_deprecated_boot_reason_state) << 24) | (g_deprecated_boot_reason_value & 0x00FFFFFF);
     }
 
 }
