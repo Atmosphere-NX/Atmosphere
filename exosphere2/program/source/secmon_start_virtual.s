@@ -59,6 +59,9 @@ _ZN3ams6secmon20StartWarmbootVirtualEv:
     ldr x20, =0x1F01F67C0
     mov sp, x20
 
+    /* Setup X18 to point to the global context. */
+    ldr  x18, =0x1F01FA000
+
     /* Perform final warmboot setup. */
     bl _ZN3ams6secmon24SetupSocSecurityWarmbootEv
 
