@@ -38,4 +38,41 @@ namespace ams::secmon::smc {
         return g_is_locked;
     }
 
+    SmcResult LockSecurityEngineAndInvoke(SmcArguments &args, SmcHandler impl) {
+        /* Try to lock the SE. */
+        if (!TryLockSecurityEngine()) {
+            return SmcResult::Busy;
+        }
+        ON_SCOPE_EXIT { UnlockSecurityEngine(); };
+
+        return impl(args);
+    }
+
+    SmcResult LockSecurityEngineAndInvokeAsync(SmcArguments &args, SmcHandler impl, GetResultHandler result_handler) {
+        SmcResult result = SmcResult::Busy;
+
+        /* Try to lock the security engine. */
+        if (TryLockSecurityEngine()) {
+            /* Try to start an async operation. */
+            if (const u64 async_key = BeginAsyncOperation(result_handler); async_key != InvalidAsyncKey) {
+                /* Invoke the operation. */
+                result = impl(args);
+
+                /* If the operation was successful, return the key. */
+                if (result == SmcResult::Success) {
+                    args.r[1] = async_key;
+                    return SmcResult::Success;
+                }
+
+                /* Otherwise, cancel the async operation. */
+                CancelAsyncOperation(async_key);
+            }
+
+            /* We failed to invoke the async op, so unlock the security engine. */
+            UnlockSecurityEngine();
+        }
+
+        return result;
+    }
+
 }

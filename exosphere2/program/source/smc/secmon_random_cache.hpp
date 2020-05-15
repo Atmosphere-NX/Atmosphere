@@ -19,6 +19,8 @@
 
 namespace ams::secmon::smc {
 
+    constexpr inline size_t MaxRandomBytes  = sizeof(SmcArguments) - sizeof(SmcArguments{}.r[0]);
+
     void FillRandomCache();
     void RefillRandomCache();
     void GetRandomFromCache(void *dst, size_t size);
