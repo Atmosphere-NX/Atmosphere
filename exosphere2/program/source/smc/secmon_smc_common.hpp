@@ -22,7 +22,7 @@ namespace ams::secmon::smc {
         Success               = 0,
         NotImplemented        = 1,
         InvalidArgument       = 2,
-        InProgress            = 3,
+        Busy                  = 3,
         NoAsyncOperation      = 4,
         InvalidAsyncOperation = 5,
         NotPermitted          = 6,

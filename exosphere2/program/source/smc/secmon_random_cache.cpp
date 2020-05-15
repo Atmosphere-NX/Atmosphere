@@ -21,8 +21,6 @@ namespace ams::secmon::smc {
 
     namespace {
 
-        constexpr inline size_t MaxRandomBytes  = sizeof(SmcArguments) - sizeof(SmcArguments{}.r[0]);
-
         constinit int g_random_offset_low  = 0;
         constinit int g_random_offset_high = 0;
 

@@ -16,11 +16,16 @@
 #pragma once
 #include <exosphere.hpp>
 #include "secmon_smc_common.hpp"
+#include "secmon_smc_handler.hpp"
+#include "secmon_smc_result.hpp"
 
 namespace ams::secmon::smc {
 
     bool TryLockSecurityEngine();
     void UnlockSecurityEngine();
     bool IsSecurityEngineLocked();
+
+    SmcResult LockSecurityEngineAndInvoke(SmcArguments &args, SmcHandler impl);
+    SmcResult LockSecurityEngineAndInvokeAsync(SmcArguments &args, SmcHandler impl, GetResultHandler result_handler);
 
 }
