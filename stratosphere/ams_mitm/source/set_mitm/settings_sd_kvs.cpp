@@ -313,7 +313,7 @@ namespace ams::settings::fwdbg {
 
             /* Control whether RO should ease its validation of NROs. */
             /* (note: this is normally not necessary, and ips patches can be used.) */
-            R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x1"));
 
             /* Atmosphere custom settings. */
 
