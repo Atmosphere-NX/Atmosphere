@@ -14,22 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <exosphere.hpp>
+#include "secmon_smc_common.hpp"
 
-namespace ams::se {
+namespace ams::secmon::smc {
 
-    void SetRegisterAddress(uintptr_t address);
+    class UserPageMapper {
+        private:
+            uintptr_t physical_address;
+            uintptr_t virtual_address;
+        public:
+            constexpr UserPageMapper(uintptr_t phys) : physical_address(util::AlignDown(phys, 4_KB)), virtual_address() { /* ... */ }
 
-    void Initialize();
-
-    void SetSecure(bool secure);
-    void SetTzramSecure();
-    void SetPerKeySecure();
-
-    void Lockout();
-
-    void HandleInterrupt();
-
-    void ValidateAesOperationResult();
+            bool Map();
+            void *GetPointerTo(uintptr_t phys, size_t size) const;
+            bool CopyToUser(uintptr_t dst_phys, const void *src, size_t size) const;
+            bool CopyFromUser(void *dst, uintptr_t src_phys, size_t size) const;
+    };
 
 }

@@ -47,11 +47,23 @@ namespace ams::secmon::smc {
             KeyType_Count,
         };
 
+        enum CipherMode {
+            CipherMode_CbcEncryption = 0,
+            CipherMode_CbcDecryption = 1,
+            CipherMode_Ctr           = 2,
+            CipherMode_Cmac          = 3,
+        };
+
         struct GenerateAesKekOption {
             using IsDeviceUnique = util::BitPack32::Field<0,  1, bool>;
             using KeyTypeIndex   = util::BitPack32::Field<1,  4, KeyType>;
             using SealKeyIndex   = util::BitPack32::Field<5,  3, SealKey>;
             using Reserved       = util::BitPack32::Field<8, 24, u32>;
+        };
+
+        struct ComputeAesOption {
+            using KeySlot         = util::BitPack32::Field<0, 3, int>;
+            using CipherModeIndex = util::BitPack32::Field<4, 2, CipherMode>;
         };
 
         constexpr const u8 SealKeySources[SealKey_Count][AesKeySize] = {
@@ -80,6 +92,40 @@ namespace ams::secmon::smc {
             [SealKey_LoadSslKey]                  = { 0xFD, 0x6A, 0x25, 0xE5, 0xD8, 0x38, 0x7F, 0x91, 0x49, 0xDA, 0xF8, 0x59, 0xA8, 0x28, 0xE6, 0x75 },
             [SealKey_LoadEsClientCertKey]         = { 0x89, 0x96, 0x43, 0x9A, 0x7C, 0xD5, 0x59, 0x55, 0x24, 0xD5, 0x24, 0x18, 0xAB, 0x6C, 0x04, 0x61 },
         };
+
+        constexpr uintptr_t LinkedListAddressMinimum   = secmon::MemoryRegionDram.GetAddress();
+        constexpr size_t    LinkedListAddressRangeSize = 4_MB - 2_KB;
+        constexpr uintptr_t LinkedListAddressMaximum   = LinkedListAddressMinimum + LinkedListAddressRangeSize;
+
+        constexpr size_t    LinkedListSize = 12;
+
+        constexpr bool IsValidLinkedListAddress(uintptr_t address) {
+            return LinkedListAddressMinimum <= address && address <= (LinkedListAddressMaximum - LinkedListSize);
+        }
+
+        constinit bool g_is_compute_aes_completed = false;
+
+        void SecurityEngineDoneHandler() {
+            /* Check that the compute succeeded. */
+            se::ValidateAesOperationResult();
+
+            /* End the asynchronous operation. */
+            g_is_compute_aes_completed = true;
+            EndAsyncOperation();
+        }
+
+        SmcResult GetComputeAesResult(void *dst, size_t size) {
+            /* Arguments are unused. */
+            AMS_UNUSED(dst);
+            AMS_UNUSED(size);
+
+            /* Check that the operation is completed. */
+            SMC_R_UNLESS(g_is_compute_aes_completed, Busy);
+
+            /* Unlock the security engine and succeed. */
+            UnlockSecurityEngine();
+            return SmcResult::Success;
+        }
 
         int PrepareMasterKey(int generation) {
             if (generation == GetKeyGeneration()) {
@@ -199,6 +245,42 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult ComputeAesImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 iv[se::AesBlockSize];
+
+            const util::BitPack32 option = { static_cast<u32>(args.r[1]) };
+            std::memcpy(iv, std::addressof(args.r[2]), sizeof(iv));
+            const u32 input_address  = args.r[4];
+            const u32 output_address = args.r[5];
+            const u32 size           = args.r[6];
+
+            const int  slot        = option.Get<ComputeAesOption::KeySlot>();
+            const auto cipher_mode = option.Get<ComputeAesOption::CipherModeIndex>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(pkg1::IsUserAesKeySlot(slot),             InvalidArgument);
+            SMC_R_UNLESS(util::IsAligned(size, se::AesBlockSize),  InvalidArgument);
+            SMC_R_UNLESS(IsValidLinkedListAddress(input_address),  InvalidArgument);
+            SMC_R_UNLESS(IsValidLinkedListAddress(output_address), InvalidArgument);
+
+            /* We're starting an aes operation, so reset the completion status. */
+            g_is_compute_aes_completed = false;
+
+            /* Dispatch the correct aes operation asynchronously. */
+            switch (cipher_mode) {
+                case CipherMode_CbcEncryption: se::EncryptAes128CbcAsync(output_address, slot, input_address, size, iv, sizeof(iv), SecurityEngineDoneHandler); break;
+                case CipherMode_CbcDecryption: se::DecryptAes128CbcAsync(output_address, slot, input_address, size, iv, sizeof(iv), SecurityEngineDoneHandler); break;
+                case CipherMode_Ctr:           se::ComputeAes128CtrAsync(output_address, slot, input_address, size, iv, sizeof(iv), SecurityEngineDoneHandler); break;
+                case CipherMode_Cmac:
+                    return SmcResult::NotImplemented;
+                default:
+                    return SmcResult::InvalidArgument;
+            }
+
+            return SmcResult::Success;
+        }
+
     }
 
     SmcResult SmcGenerateAesKek(SmcArguments &args) {
@@ -210,8 +292,7 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcComputeAes(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvokeAsync(args, ComputeAesImpl, GetComputeAesResult);
     }
 
     SmcResult SmcGenerateSpecificAesKey(SmcArguments &args) {

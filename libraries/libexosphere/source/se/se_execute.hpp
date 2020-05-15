@@ -23,6 +23,9 @@ namespace ams::se {
     void ExecuteOperation(volatile SecurityEngineRegisters *SE, SE_OPERATION_OP op, void *dst, size_t dst_size, const void *src, size_t src_size);
     void ExecuteOperationSingleBlock(volatile SecurityEngineRegisters *SE, void *dst, size_t dst_size, const void *src, size_t src_size);
 
+    void StartOperationRaw(volatile SecurityEngineRegisters *SE, SE_OPERATION_OP op, u32 out_ll_address, u32 in_ll_address);
+    void SetDoneHandler(volatile SecurityEngineRegisters *SE, DoneHandler handler);
+
     void ValidateAesOperationResult(volatile SecurityEngineRegisters *SE);
 
 }

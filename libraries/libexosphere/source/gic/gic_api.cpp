@@ -206,6 +206,10 @@ namespace ams::gic {
         ReadWrite(g_distributor_address + offsetof(GicDistributor, icfgr), 2, interrupt_id, static_cast<u32>(mode) << 1);
     }
 
+    void SetPending(int interrupt_id) {
+        Write(g_distributor_address + offsetof(GicDistributor, ispendr), 1, interrupt_id, 1);
+    }
+
     int GetInterruptRequestId() {
         return reg::Read(GetCpuInterface()->iar);
     }
