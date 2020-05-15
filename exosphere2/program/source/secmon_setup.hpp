@@ -23,6 +23,8 @@ namespace ams::secmon {
 
     constexpr inline int KernelCarveoutCount = 2;
 
+    constexpr size_t CarveoutSizeMax = 512_MB - 128_KB;
+
     void SetupCpuMemoryControllersEnableMmu();
     void SetupCpuCoreContext();
     void SetupCpuSErrorDebug();
@@ -36,5 +38,7 @@ namespace ams::secmon {
     void Setup1();
 
     void SaveSecurityEngineAesKeySlotTestVector();
+
+    void SetKernelCarveoutRegion(int index, uintptr_t address, size_t size);
 
 }
