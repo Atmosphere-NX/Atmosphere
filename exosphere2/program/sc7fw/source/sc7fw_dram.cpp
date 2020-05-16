@@ -168,7 +168,7 @@ namespace ams::sc7fw {
         /* Request that DPD3 pads power down. */
         constexpr u32 EristaDpd3Mask = 0x0FFFFFFF;
         constexpr u32 MarikoDpd3Mask = 0x0FFF9FFF;
-        if (true /* TODO: IsErista */) {
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
             RequestAllPadsPowerDown(APBDEV_PMC_IO_DPD3_REQ, EristaDpd3Mask);
         } else {
             RequestAllPadsPowerDown(APBDEV_PMC_IO_DPD3_REQ, MarikoDpd3Mask);
