@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/fuse.hpp>
 #include <exosphere/secmon/secmon_emummc_context.hpp>
 
 namespace ams::secmon {
@@ -48,16 +49,31 @@ namespace ams::secmon {
     struct SecureMonitorConfiguration {
         ams::TargetFirmware target_firmware;
         s32 key_generation;
+        u8  hardware_type;
+        u8  soc_type;
+        u8  hardware_state;
+        u8  pad_0B[1];
         u32 flags;
-        u32 reserved[(0x80 - 0x0C) / sizeof(u32)];
+        u32 reserved[(0x80 - 0x10) / sizeof(u32)];
 
         constexpr void CopyFrom(const SecureMonitorStorageConfiguration &storage) {
             this->target_firmware = storage.target_firmware;
             this->flags           = storage.flags;
         }
 
+        void SetFuseInfo() {
+            this->hardware_type  = fuse::GetHardwareType();
+            this->soc_type       = fuse::GetSocType();
+            this->hardware_state = fuse::GetHardwareState();
+        }
+
         constexpr ams::TargetFirmware GetTargetFirmware() const { return this->target_firmware; }
         constexpr int GetKeyGeneration() const { return this->key_generation; }
+        constexpr fuse::HardwareType  GetHardwareType()  const { return static_cast<fuse::HardwareType>(this->hardware_type); }
+        constexpr fuse::SocType       GetSocType()       const { return static_cast<fuse::SocType>(this->soc_type); }
+        constexpr fuse::HardwareState GetHardwareState() const { return static_cast<fuse::HardwareState>(this->hardware_state); }
+
+        constexpr bool IsProduction() const { return this->GetHardwareState() != fuse::HardwareState_Development; }
 
         constexpr bool IsDevelopmentFunctionEnabledForKernel()  const { return (this->flags & SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel)  != 0; }
         constexpr bool IsDevelopmentFunctionEnabledForUser()    const { return (this->flags & SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForUser)    != 0; }
