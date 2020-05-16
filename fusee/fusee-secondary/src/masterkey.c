@@ -182,8 +182,6 @@ void derive_new_device_keys(bool is_retail, unsigned int keygen_keyslot, unsigne
             set_old_devkey(relative_revision, work_buffer);
         }
     }
-    set_aes_keyslot_flags(KEYSLOT_SWITCH_DEVICEKEY, 0xFF);
-    clear_aes_keyslot(keygen_keyslot);
 }
 
 void set_old_devkey(unsigned int revision, const uint8_t *key) {
