@@ -200,7 +200,7 @@ namespace ams::fuse {
 
     void GetEcid(br::BootEcid *out) {
         /* Get the registers. */
-        const volatile auto &chip = GetChipRegisters();
+        volatile auto &chip = GetChipRegisters();
 
         /* Read the ecid components. */
         const u32 vendor    = reg::Read(chip.FUSE_OPT_VENDOR_CODE)  & ((1u <<  4) - 1);
@@ -224,7 +224,7 @@ namespace ams::fuse {
 
     u64 GetDeviceId() {
         /* Get the registers. */
-        const volatile auto &chip = GetChipRegisters();
+        volatile auto &chip = GetChipRegisters();
 
         /* Read the device id components. */
         /* NOTE: Device ID is "basically" just an alternate encoding of Ecid. */
