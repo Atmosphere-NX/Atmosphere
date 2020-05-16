@@ -181,7 +181,7 @@ namespace ams::se {
             u8 prev = 0;
             for (int i = AesBlockSize - 1; i >= 0; --i) {
                 const u8 top = (subkey[i] >> 7);
-                subkey[i] = ((subkey[i] << 1) | top);
+                subkey[i] = ((subkey[i] << 1) | prev);
                 prev = top;
             }
 
@@ -220,7 +220,7 @@ namespace ams::se {
                 ExpandSubkey(subkey);
 
                 /* Account for last block. */
-                if (last_block_size) {
+                if (last_block_size != AesBlockSize) {
                     ExpandSubkey(subkey);
                 }
             }
