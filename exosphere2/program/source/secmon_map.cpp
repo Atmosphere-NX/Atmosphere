@@ -101,7 +101,7 @@ namespace ams::secmon {
     }
 
     uintptr_t MapSmcUserPage(uintptr_t address) {
-        if (g_smc_user_page_physical_address != 0) {
+        if (g_smc_user_page_physical_address == 0) {
             if (!(MemoryRegionDram.GetAddress() <= address && address <= MemoryRegionDramHigh.GetEndAddress() - MemoryRegionVirtualSmcUserPage.GetSize())) {
                 return 0;
             }

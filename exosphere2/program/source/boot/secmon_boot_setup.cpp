@@ -166,7 +166,7 @@ namespace ams::secmon::boot {
                 se::DecryptAes128(work_block, se::AesBlockSize, slot, is_prod ? MasterKeyVectorsProd[i] : MasterKeyVectorsDev[i], se::AesBlockSize);
 
                 /* Set the old master key. */
-                SetMasterKey(generation - 1, work_block, se::AesBlockSize);
+                SetMasterKey(i - 1, work_block, se::AesBlockSize);
 
                 /* Set the old master key into a temporary keyslot. */
                 se::SetAesKey(pkg1::AesKeySlot_Temporary, work_block, se::AesBlockSize);
