@@ -19,12 +19,14 @@
 #include "../secmon_misc.hpp"
 #include "secmon_smc_aes.hpp"
 #include "secmon_smc_se_lock.hpp"
+#include "secmon_user_page_mapper.hpp"
 
 namespace ams::secmon::smc {
 
     namespace {
 
-        constexpr inline auto AesKeySize = se::AesBlockSize;
+        constexpr inline auto   AesKeySize  = se::AesBlockSize;
+        constexpr inline size_t CmacSizeMax = 4_KB;
 
         enum SealKey {
             SealKey_LoadAesKey                  = 0,
@@ -52,6 +54,22 @@ namespace ams::secmon::smc {
             CipherMode_CbcDecryption = 1,
             CipherMode_Ctr           = 2,
             CipherMode_Cmac          = 3,
+        };
+
+        enum SpecificAesKey {
+            SpecificAesKey_CalibrationEncryption0 = 0,
+            SpecificAesKey_CalibrationEncryption1 = 1,
+
+            SpecificAesKey_Count,
+        };
+
+        enum SecureData {
+            SecureData_Calibration                = 0,
+            SecureData_SafeMode                   = 1,
+            SecureData_UserSystemProperEncryption = 2,
+            SecureData_UserSystem                 = 3,
+
+            SecureData_Count,
         };
 
         struct GenerateAesKekOption {
@@ -92,6 +110,54 @@ namespace ams::secmon::smc {
             [SealKey_LoadSslKey]                  = { 0xFD, 0x6A, 0x25, 0xE5, 0xD8, 0x38, 0x7F, 0x91, 0x49, 0xDA, 0xF8, 0x59, 0xA8, 0x28, 0xE6, 0x75 },
             [SealKey_LoadEsClientCertKey]         = { 0x89, 0x96, 0x43, 0x9A, 0x7C, 0xD5, 0x59, 0x55, 0x24, 0xD5, 0x24, 0x18, 0xAB, 0x6C, 0x04, 0x61 },
         };
+
+        constexpr const u8 CalibrationKeySource[AesKeySize] = {
+            0xE2, 0xD6, 0xB8, 0x7A, 0x11, 0x9C, 0xB8, 0x80, 0xE8, 0x22, 0x88, 0x8A, 0x46, 0xFB, 0xA1, 0x95
+        };
+
+        constexpr const u8 SecureDataSource[AesKeySize] = {
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+
+        constexpr const u8 SecureDataCounters[][AesKeySize] = {
+            [SecureData_Calibration]                = { 0x3C, 0xD5, 0x92, 0xEC, 0x68, 0x31, 0x4A, 0x06, 0xD4, 0x1B, 0x0C, 0xD9, 0xF6, 0x2E, 0xD9, 0xE9 },
+            [SecureData_SafeMode]                   = { 0x50, 0x81, 0xCF, 0x77, 0x18, 0x11, 0xD7, 0x0D, 0x13, 0x29, 0x60, 0xED, 0x4B, 0x21, 0x3E, 0xFC },
+            [SecureData_UserSystemProperEncryption] = { 0x98, 0xCB, 0x4C, 0xEB, 0x15, 0xF1, 0x4A, 0x5A, 0x7A, 0x86, 0xB6, 0xF1, 0x94, 0x66, 0xF4, 0x9D },
+        };
+
+        constexpr const u8 SecureDataTweaks[][AesKeySize] = {
+            [SecureData_Calibration]                = { 0xAC, 0xCA, 0x9A, 0xCA, 0xFF, 0x2E, 0xB9, 0x22, 0xCC, 0x1F, 0x4F, 0xAD, 0xDD, 0x77, 0x21, 0x1E },
+            [SecureData_SafeMode]                   = { 0x6E, 0xF8, 0x2A, 0x1A, 0xE0, 0x4F, 0xC3, 0x20, 0x08, 0x7B, 0xBA, 0x50, 0xC0, 0xCD, 0x7B, 0x39 },
+            [SecureData_UserSystemProperEncryption] = { 0x6D, 0x02, 0x56, 0x2D, 0xF4, 0x3D, 0x0A, 0x15, 0xB1, 0x34, 0x5C, 0xC2, 0x84, 0x4C, 0xD4, 0x28 },
+        };
+
+        constexpr const u8 *GetSecureDataCounter(SecureData which) {
+            switch (which) {
+                case SecureData_Calibration:
+                    return SecureDataCounters[SecureData_Calibration];
+                case SecureData_SafeMode:
+                    return SecureDataCounters[SecureData_SafeMode];
+                case SecureData_UserSystem:
+                case SecureData_UserSystemProperEncryption:
+                    return SecureDataCounters[SecureData_UserSystemProperEncryption];
+                default:
+                    return nullptr;
+            }
+        }
+
+        constexpr const u8 *GetSecureDataTweak(SecureData which) {
+            switch (which) {
+                case SecureData_Calibration:
+                    return SecureDataTweaks[SecureData_Calibration];
+                case SecureData_SafeMode:
+                    return SecureDataTweaks[SecureData_SafeMode];
+                case SecureData_UserSystem:
+                case SecureData_UserSystemProperEncryption:
+                    return SecureDataTweaks[SecureData_UserSystemProperEncryption];
+                default:
+                    return nullptr;
+            }
+        }
 
         constexpr uintptr_t LinkedListAddressMinimum   = secmon::MemoryRegionDram.GetAddress();
         constexpr size_t    LinkedListAddressRangeSize = 4_MB - 2_KB;
@@ -150,6 +216,20 @@ namespace ams::secmon::smc {
             LoadDeviceMasterKey(Slot, generation);
 
             return Slot;
+        }
+
+        void GetSecureDataImpl(u8 *dst, SecureData which, bool tweak) {
+            /* Compute the appropriate AES-CTR. */
+            se::ComputeAes128Ctr(dst, AesKeySize, pkg1::AesKeySlot_Device, SecureDataSource, AesKeySize, GetSecureDataCounter(which), AesKeySize);
+
+            /* Tweak, if we should. */
+            if (tweak) {
+                const u8 * const tweak = GetSecureDataTweak(which);
+
+                for (size_t i = 0; i < AesKeySize; ++i) {
+                    dst[i] ^= tweak[i];
+                }
+            }
         }
 
         SmcResult GenerateAesKekImpl(SmcArguments &args) {
@@ -281,6 +361,85 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult GenerateSpecificAesKeyImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 key_source[AesKeySize];
+            std::memcpy(key_source, std::addressof(args.r[1]), sizeof(key_source));
+
+            const int generation = GetTargetFirmware() >= TargetFirmware_4_0_0 ? std::max<int>(static_cast<int>(args.r[3]) - 1, pkg1::KeyGeneration_1_0_0) : pkg1::KeyGeneration_1_0_0;
+            const auto which     = static_cast<SpecificAesKey>(args.r[4]);
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(pkg1::IsValidKeyGeneration(generation), InvalidArgument);
+            SMC_R_UNLESS(which < SpecificAesKey_Count,           InvalidArgument);
+
+            /* Generate the specific aes key. */
+            u8 output_key[AesKeySize];
+            if (fuse::GetPatchVersion() >= fuse::PatchVersion_Odnx02A2) {
+                const int slot = PrepareDeviceMasterKey(generation);
+                se::SetEncryptedAesKey128(pkg1::AesKeySlot_Smc, slot, CalibrationKeySource, sizeof(CalibrationKeySource));
+                se::DecryptAes128(output_key, sizeof(output_key), pkg1::AesKeySlot_Smc, key_source, sizeof(key_source));
+            } else {
+                GetSecureDataImpl(output_key, SecureData_Calibration, which == SpecificAesKey_CalibrationEncryption1);
+            }
+
+            /* Copy the key to output. */
+            std::memcpy(std::addressof(args.r[1]), output_key, sizeof(output_key));
+            return SmcResult::Success;
+        }
+
+        SmcResult ComputeCmacImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            const int      slot          = args.r[1];
+            const uintptr_t data_address = args.r[2];
+            const uintptr_t data_size    = args.r[3];
+
+            /* Declare buffer for user data. */
+            alignas(8) u8 user_data[CmacSizeMax];
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(pkg1::IsUserAesKeySlot(slot),   InvalidArgument);
+            SMC_R_UNLESS(data_size <= sizeof(user_data), InvalidArgument);
+
+            /* Map the user data, and copy to stack. */
+            {
+                UserPageMapper mapper(data_address);
+                SMC_R_UNLESS(mapper.Map(),                                            InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(user_data, data_address, data_size), InvalidArgument);
+            }
+
+            /* Ensure the SE sees consistent data. */
+            hw::FlushDataCache(user_data, data_size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Compute the mac. */
+            {
+                u8 mac[se::AesBlockSize];
+                se::ComputeAes128Cmac(mac, sizeof(mac), slot, user_data, data_size);
+
+                std::memcpy(std::addressof(args.r[1]), mac, sizeof(mac));
+            }
+
+            return SmcResult::Success;
+        }
+
+        SmcResult GetSecureDataImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            const auto which = static_cast<SecureData>(args.r[1]);
+
+            /* Validate arguments/conditions. */
+            SMC_R_UNLESS(fuse::GetPatchVersion() < fuse::PatchVersion_Odnx02A2, NotImplemented);
+            SMC_R_UNLESS(which < SecureData_Count,                              NotImplemented);
+
+            /* Use a temporary buffer. */
+            u8 secure_data[AesKeySize];
+            GetSecureDataImpl(secure_data, which, false);
+
+            /* Copy out. */
+            std::memcpy(std::addressof(args.r[1]), secure_data, sizeof(secure_data));
+            return SmcResult::Success;
+        }
+
     }
 
     SmcResult SmcGenerateAesKek(SmcArguments &args) {
@@ -296,18 +455,22 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcGenerateSpecificAesKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, GenerateSpecificAesKeyImpl);
     }
 
     SmcResult SmcComputeCmac(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, ComputeCmacImpl);
     }
 
     SmcResult SmcLoadPreparedAesKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
+    }
+
+    /* 'Tis the last rose of summer, / Left blooming alone;    */
+    /* Oh! who would inhabit         / This bleak world alone? */
+    SmcResult SmcGetSecureData(SmcArguments &args) {
+        return LockSecurityEngineAndInvoke(args, GetSecureDataImpl);
     }
 
 }
