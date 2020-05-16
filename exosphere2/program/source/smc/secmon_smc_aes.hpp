@@ -26,4 +26,6 @@ namespace ams::secmon::smc {
     SmcResult SmcComputeCmac(SmcArguments &args);
     SmcResult SmcLoadPreparedAesKey(SmcArguments &args);
 
+    SmcResult SmcGetSecureData(SmcArguments &args);
+
 }

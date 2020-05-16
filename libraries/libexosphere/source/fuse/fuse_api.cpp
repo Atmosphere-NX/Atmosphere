@@ -281,6 +281,11 @@ namespace ams::fuse {
         }
     }
 
+    PatchVersion GetPatchVersion() {
+        const auto patch_version = reg::Read(GetChipRegisters().FUSE_SOC_SPEEDO_1_CALIB);
+        return static_cast<PatchVersion>(static_cast<int>(GetSocType() << 12) | patch_version);
+    }
+
     QuestState GetQuestState() {
         return static_cast<QuestState>(util::BitPack32{GetOdmWord(4)}.Get<OdmWord4::QuestState>());
     }

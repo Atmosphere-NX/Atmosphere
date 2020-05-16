@@ -43,6 +43,10 @@ namespace ams::fuse {
         HardwareState_Undefined   = 2,
     };
 
+    enum PatchVersion {
+        PatchVersion_Odnx02A2 = (SocType_Erista << 12) | 0x07F,
+    };
+
     enum DramId {
         DramId_IcosaSamsung4GB    =  0,
         DramId_IcosaHynix4GB      =  1,
@@ -96,6 +100,7 @@ namespace ams::fuse {
     HardwareType    GetHardwareType();
     HardwareState   GetHardwareState();
     u64             GetDeviceId();
+    PatchVersion    GetPatchVersion();
     QuestState      GetQuestState();
     pmic::Regulator GetRegulator();
     int             GetDeviceUniqueKeyGeneration();

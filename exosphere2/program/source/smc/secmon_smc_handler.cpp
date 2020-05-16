@@ -140,7 +140,11 @@ namespace ams::secmon::smc {
             { 0xF0000201, Restriction_None,               SmcIramCopy          },
             { 0xF0000002, Restriction_None,               SmcReadWriteRegister },
             { 0xF0000003, Restriction_None,               SmcWriteAddress      },
-            { 0xF0000003, Restriction_None,               SmcGetEmummcConfig   },
+            { 0xF0000404, Restriction_None,               SmcGetEmummcConfig   },
+        };
+
+        constexpr const HandlerInfo GetSecureDataHandlerInfo = {
+            0x67891234, Restriction_None, SmcGetSecureData
         };
 
         constinit HandlerTable g_handler_tables[] = {
@@ -163,6 +167,11 @@ namespace ams::secmon::smc {
                 InvalidSmcError(id);
             }
 
+            /* Provide support for legacy SmcGetSecureData. */
+            if (id == GetSecureDataHandlerInfo.function_id) {
+                return g_handler_tables[HandlerType_User];
+            }
+
             /* Check if we're a user SMC. */
             if (type == HandlerType_User) {
                 /* Nintendo uses OEM SMCs. */
@@ -181,6 +190,11 @@ namespace ams::secmon::smc {
         }
 
         const HandlerInfo &GetHandlerInfo(const HandlerTable &table, u64 id) {
+            /* Provide support for legacy SmcGetSecureData. */
+            if (id == GetSecureDataHandlerInfo.function_id) {
+                return GetSecureDataHandlerInfo;
+            }
+
             /* Get and check the index. */
             const auto index = util::BitPack64{id}.Get<SmcFunctionId::FunctionId>();
             if (AMS_UNLIKELY(index >= table.count)) {

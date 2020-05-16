@@ -49,6 +49,14 @@ namespace ams::se {
                                                                SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,                 BOTTOM),
                                                                SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,               DISABLE));
 
+        constexpr inline u32 AesConfigCmac       = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,                     0),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,          DISABLE),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,             ORIGINAL),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,         INIT_AESOUT),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,               MEMORY),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,                    TOP),
+                                                               SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,                ENABLE));
+
         constexpr inline u32 AesConfigCbcEncrypt = reg::Encode(SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,                     0),
                                                                SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,          DISABLE),
                                                                SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,             ORIGINAL),
@@ -117,7 +125,7 @@ namespace ams::se {
                                                         SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_IV_SEL,    ORIGINAL_IV),
                                                         SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_WORD,            i));
 
-                /* Set the key word. */
+                /* Set the iv word. */
                 SE->SE_CRYPTO_KEYTABLE_DATA = *(iv_u32++);
             }
         }
@@ -166,6 +174,107 @@ namespace ams::se {
 
             /* Execute the operation. */
             ExecuteOperationSingleBlock(SE, dst, dst_size, src, src_size);
+        }
+
+        void ExpandSubkey(u8 *subkey) {
+            /* Shift everything left one bit. */
+            u8 prev = 0;
+            for (int i = AesBlockSize - 1; i >= 0; --i) {
+                const u8 top = (subkey[i] >> 7);
+                subkey[i] = ((subkey[i] << 1) | top);
+                prev = top;
+            }
+
+            /* And xor with Rb if necessary. */
+            if (prev != 0) {
+                subkey[AesBlockSize - 1] ^= 0x87;
+            }
+        }
+
+        void GetCmacResult(volatile SecurityEngineRegisters *SE, void *dst, size_t dst_size) {
+            const int num_words = dst_size / sizeof(u32);
+            for (int i = 0; i < num_words; ++i) {
+                reg::Write(static_cast<u32 *>(dst) + i, reg::Read(SE->SE_HASH_RESULT[i]));
+            }
+        }
+
+        void ComputeAesCmac(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, AesMode mode) {
+            /* Validate input. */
+            AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+
+            /* Get the engine. */
+            auto *SE = GetRegisters();
+
+            /* Determine mac extents. */
+            const int num_blocks         = util::DivideUp(src_size, AesBlockSize);
+            const size_t last_block_size = (src_size == 0) ? 0 : (src_size - ((num_blocks - 1) * AesBlockSize));
+
+            /* Create subkey. */
+            u8 subkey[AesBlockSize];
+            {
+                /* Encrypt zeroes. */
+                std::memset(subkey, 0, sizeof(subkey));
+                EncryptAes(subkey, sizeof(subkey), slot, subkey, sizeof(subkey), mode);
+
+                /* Expand. */
+                ExpandSubkey(subkey);
+
+                /* Account for last block. */
+                if (last_block_size) {
+                    ExpandSubkey(subkey);
+                }
+            }
+
+            /* Configure for AES-CMAC. */
+            SetConfig(SE, true, SE_CONFIG_DST_HASH_REG);
+            SetAesConfig(SE, slot, true, AesConfigCmac);
+            UpdateAesMode(SE, mode);
+
+            /* Set the IV to zero. */
+            for (int i = 0; i < 4; ++i) {
+                /* Select the keyslot. */
+                reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT,         slot),
+                                                        SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_KEYIV_SEL,          IV),
+                                                        SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_IV_SEL,    ORIGINAL_IV),
+                                                        SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_WORD,            i));
+
+                /* Set the iv word. */
+                SE->SE_CRYPTO_KEYTABLE_DATA = 0;
+            }
+
+            /* Handle blocks before the last. */
+            if (num_blocks > 1) {
+                SetBlockCount(SE, num_blocks - 1);
+                ExecuteOperation(SE, SE_OPERATION_OP_START, nullptr, 0, src, src_size);
+                reg::ReadWrite(SE->SE_CRYPTO_CONFIG, SE_REG_BITS_ENUM(CRYPTO_CONFIG_IV_SELECT, UPDATED));
+            }
+
+            /* Handle the last block. */
+            {
+                SetBlockCount(SE, 1);
+
+                /* Create the last block. */
+                u8 last_block[AesBlockSize];
+                if (last_block_size < sizeof(last_block)) {
+                    std::memset(last_block, 0, sizeof(last_block));
+                    last_block[last_block_size] = 0x80;
+                }
+                std::memcpy(last_block, static_cast<const u8 *>(src) + src_size - last_block_size, last_block_size);
+
+                /* Xor with the subkey. */
+                for (size_t i = 0; i < AesBlockSize; ++i) {
+                    last_block[i] ^= subkey[i];
+                }
+
+                /* Ensure the SE sees correct data. */
+                hw::FlushDataCache(last_block, sizeof(last_block));
+                hw::DataSynchronizationBarrierInnerShareable();
+
+                ExecuteOperation(SE, SE_OPERATION_OP_START, nullptr, 0, last_block, sizeof(last_block));
+            }
+
+            /* Get the output. */
+            GetCmacResult(SE, dst, dst_size);
         }
 
         void ComputeAes128Async(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, DoneHandler handler, u32 config, bool encrypt, volatile SecurityEngineRegisters *SE) {
@@ -326,6 +435,14 @@ namespace ams::se {
 
             ExecuteOperationSingleBlock(SE, static_cast<u8 *>(dst) + aligned_size, copy_size, static_cast<const u8 *>(src) + aligned_size, fractional);
         }
+    }
+
+    void ComputeAes128Cmac(void *dst, size_t dst_size, int slot, const void *src, size_t src_size) {
+        return ComputeAesCmac(dst, dst_size, slot, src, src_size, AesMode_Aes128);
+    }
+
+    void ComputeAes256Cmac(void *dst, size_t dst_size, int slot, const void *src, size_t src_size) {
+        return ComputeAesCmac(dst, dst_size, slot, src, src_size, AesMode_Aes256);
     }
 
     void EncryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler) {
