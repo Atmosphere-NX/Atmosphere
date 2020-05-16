@@ -100,4 +100,20 @@ namespace ams::secmon {
         return GetSecmonConfiguration().GetKeyGeneration();
     }
 
+    ALWAYS_INLINE fuse::HardwareType GetHardwareType() {
+        return GetSecmonConfiguration().GetHardwareType();
+    }
+
+    ALWAYS_INLINE fuse::SocType GetSocType() {
+        return GetSecmonConfiguration().GetSocType();
+    }
+
+    ALWAYS_INLINE fuse::HardwareState GetHardwareState() {
+        return GetSecmonConfiguration().GetHardwareState();
+    }
+
+    ALWAYS_INLINE bool IsProduction() {
+        return GetSecmonConfiguration().IsProduction();
+    }
+
 }

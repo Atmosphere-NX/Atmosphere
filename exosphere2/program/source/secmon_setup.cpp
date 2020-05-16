@@ -94,6 +94,9 @@ namespace ams::secmon {
                 /* If we don't have a valid storage context, we can just use the default one. */
                 ctx.secmon_cfg = DefaultSecureMonitorConfiguration;
             }
+
+            /* Cache the fuse info for quick access. */
+            ctx.secmon_cfg.SetFuseInfo();
         }
 
         void GenerateSecurityEngineAesKeySlotTestVector(void *dst, size_t size) {
@@ -387,7 +390,7 @@ namespace ams::secmon {
                                    SLAVE_SECURITY_REG_BITS_ENUM(2, DDS,    ENABLE),
                                    SLAVE_SECURITY_REG_BITS_ENUM(2, DP2,    ENABLE));
 
-                const auto hw_type = fuse::GetHardwareType();
+                const auto hw_type = GetHardwareType();
 
                 /* Switch Lite can't use HDMI, so set CEC to secure on hoag. */
                 if (hw_type == fuse::HardwareType_Hoag) {

@@ -245,7 +245,7 @@ namespace ams::secmon::boot {
 
         void DeriveAllKeys() {
             /* Determine whether we're prod. */
-            const bool is_prod = fuse::GetHardwareState() != fuse::HardwareState_Development;
+            const bool is_prod = IsProduction();
 
             /* Get the ephemeral work block. */
             u8 * const work_block = se::GetEphemeralWorkBlock();
