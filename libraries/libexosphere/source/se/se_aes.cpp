@@ -327,9 +327,12 @@ namespace ams::se {
 
         /* Set non per-key flags. */
         if ((flags & ~KeySlotLockFlags_PerKey) != 0) {
-            /* TODO: KeySlotLockFlags_DstKeyTableOnly is Mariko-only. How should we handle this? */
-            /* TODO: Mariko bit support. */
-            reg::ReadWrite(SE->SE_CRYPTO_KEYTABLE_ACCESS[slot], REG_BITS_VALUE(0, 7, ~flags));
+            /* KeySlotLockFlags_DstKeyTableOnly is Mariko-only. */
+            if (fuse::GetSocType() == fuse::SocType_Mariko) {
+                reg::ReadWrite(SE->SE_CRYPTO_KEYTABLE_ACCESS[slot], REG_BITS_VALUE(0, 7, ~flags), REG_BITS_VALUE(7, 1, ((flags & KeySlotLockFlags_DstKeyTableOnly) != 0) ? 1 : 0));
+            } else {
+                reg::ReadWrite(SE->SE_CRYPTO_KEYTABLE_ACCESS[slot], REG_BITS_VALUE(0, 7, ~flags));
+            }
         }
 
         /* Set per-key flag. */

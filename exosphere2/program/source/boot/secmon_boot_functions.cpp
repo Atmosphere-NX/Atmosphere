@@ -29,6 +29,17 @@ namespace ams::secmon::boot {
             secmon::boot::DecryptPackage2(reinterpret_cast<void *>(dst), size, reinterpret_cast<void *>(src), size, secmon::boot::GetPackage2AesKey(), crypto::AesEncryptor128::KeySize, iv, iv_size, key_generation);
         }
 
+        u32 GetChipId() {
+            constexpr u32 ChipIdErista         = 0x210;
+            constexpr u32 ChipIdMariko         = 0x214;
+
+            switch (GetSocType()) {
+                case fuse::SocType_Erista: return ChipIdErista;
+                case fuse::SocType_Mariko: return ChipIdMariko;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
     }
 
     void CheckVerifyResult(bool verify_result, pkg1::ErrorInfo error_info, const char *message) {
@@ -103,8 +114,6 @@ namespace ams::secmon::boot {
         constexpr u32 GpuMagicNumber       = 0xC0EDBBCC;
         constexpr u32 SkuInfo              = 0x83;
         constexpr u32 HdcpMicroCodeVersion = 0x2;
-        constexpr u32 ChipIdErista         = 0x210;
-        constexpr u32 ChipIdMariko         = 0x214;
 
         /* Get our pointers. */
         u32 *gpu_magic  = MemoryRegionDramGpuCarveout.GetEndPointer<u32>() - (0x004 / sizeof(*gpu_magic));
@@ -116,7 +125,7 @@ namespace ams::secmon::boot {
         /* Write the tsec magic numbers. */
         tsec_magic[0] = SkuInfo;
         tsec_magic[1] = HdcpMicroCodeVersion;
-        tsec_magic[2] = (false /* TODO: IsMariko */) ? ChipIdMariko : ChipIdErista;
+        tsec_magic[2] = GetChipId();
 
         /* Flush the magic numbers. */
         hw::FlushDataCache(gpu_magic,  1 * sizeof(u32));
