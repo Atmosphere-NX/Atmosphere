@@ -599,25 +599,34 @@ namespace ams::dmnt::cheat::impl {
                 /* Atomically wait (and clear) signal for new process. */
                 this_ptr->debug_events_event.Wait();
                 while (true) {
-                    while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), std::numeric_limits<u64>::max()))) {
+                    Handle cheat_process_handle = this_ptr->GetCheatProcessHandle();
+                    while (cheat_process_handle != svc::InvalidHandle && R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), std::numeric_limits<u64>::max()))) {
                         this_ptr->cheat_lock.Lock();
                         ON_SCOPE_EXIT { this_ptr->cheat_lock.Unlock(); };
+                        {
+                            ON_SCOPE_EXIT { cheat_process_handle = this_ptr->GetCheatProcessHandle(); };
 
-                        /* If we did an unsafe break, wait until we're not broken. */
-                        if (this_ptr->broken_unsafe) {
-                            this_ptr->cheat_lock.Unlock();
-                            this_ptr->unsafe_break_event.Wait();
-                            this_ptr->cheat_lock.Lock();
-                            if (this_ptr->GetCheatProcessHandle() != svc::InvalidHandle) {
-                                continue;
-                            } else {
-                                break;
+                            /* If we did an unsafe break, wait until we're not broken. */
+                            if (this_ptr->broken_unsafe) {
+                                this_ptr->cheat_lock.Unlock();
+                                this_ptr->unsafe_break_event.Wait();
+                                this_ptr->cheat_lock.Lock();
+                                if (this_ptr->GetCheatProcessHandle() != svc::InvalidHandle) {
+                                    continue;
+                                } else {
+                                    break;
+                                }
                             }
-                        }
 
-                        /* Handle any pending debug events. */
-                        if (this_ptr->HasActiveCheatProcess()) {
-                            dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle());
+                            /* Handle any pending debug events. */
+                            if (this_ptr->HasActiveCheatProcess()) {
+                                R_TRY_CATCH(dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle())) {
+                                    R_CATCH(svc::ResultProcessTerminated) {
+                                        this_ptr->CloseActiveCheatProcess();
+                                        break;
+                                    }
+                                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+                            }
                         }
                     }
 

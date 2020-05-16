@@ -40,7 +40,7 @@ namespace ams {
 
     namespace result {
 
-        bool CallFatalOnResultAssertion = true;
+        bool CallFatalOnResultAssertion = false;
 
     }
 
