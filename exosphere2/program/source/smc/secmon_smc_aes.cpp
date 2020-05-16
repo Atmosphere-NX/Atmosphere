@@ -26,7 +26,7 @@ namespace ams::secmon::smc {
     namespace {
 
         constexpr inline auto   AesKeySize  = se::AesBlockSize;
-        constexpr inline size_t CmacSizeMax = 4_KB;
+        constexpr inline size_t CmacSizeMax = 1_KB;
 
         enum SealKey {
             SealKey_LoadAesKey                  = 0,

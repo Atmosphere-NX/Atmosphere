@@ -86,7 +86,7 @@ namespace ams::secmon {
     }
 
     void LoadMasterKey(int slot, int generation) {
-        const int index = std::min(0, generation - pkg1::KeyGeneration_Min);
+        const int index = std::max(0, generation - pkg1::KeyGeneration_Min);
         se::SetEncryptedAesKey128(slot, pkg1::AesKeySlot_RandomForKeyStorageWrap, GetMasterKeyStorage(index), se::AesBlockSize);
     }
 
@@ -96,7 +96,7 @@ namespace ams::secmon {
     }
 
     void LoadDeviceMasterKey(int slot, int generation) {
-        const int index = std::min(0, generation - pkg1::KeyGeneration_4_0_0);
+        const int index = std::max(0, generation - pkg1::KeyGeneration_4_0_0);
         se::SetEncryptedAesKey128(slot, pkg1::AesKeySlot_RandomForKeyStorageWrap, GetDeviceMasterKeyStorage(index), se::AesBlockSize);
     }
 

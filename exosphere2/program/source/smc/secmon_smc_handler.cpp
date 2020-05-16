@@ -231,9 +231,48 @@ namespace ams::secmon::smc {
             return info.handler(args);
         }
 
+        constinit std::atomic<int> g_logged = 0;
+
+        constexpr int LogMin = 0x100;
+        constexpr int LogMax = 0x120;
+
+        constexpr size_t LogBufSize = 0x5000;
+
+        void DebugLog(SmcArguments &args) {
+            const int current = g_logged.fetch_add(1);
+
+            if (current == 0) {
+                std::memset(MemoryRegionVirtualDebug.GetPointer<void>(), 0xCC, LogBufSize);
+            }
+
+            if (current < LogMin) {
+                return;
+            }
+
+
+            const int ind = current - LogMin;
+            const int ofs = (ind * sizeof(args)) % LogBufSize;
+
+            for (size_t i = 0; i < sizeof(args) / sizeof(u32); ++i) {
+                ((volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + ofs))[i] = reinterpret_cast<u32 *>(std::addressof(args))[i];
+            }
+
+            if (current >= LogMax) {
+                *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
+                *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
+
+                util::WaitMicroSeconds(1000);
+            }
+
+        }
+
     }
 
     void HandleSmc(int type, SmcArguments &args) {
+        if (type == HandlerType_User) {
+            DebugLog(args);
+        }
+
         /* Get the table. */
         const auto &table = GetHandlerTable(static_cast<HandlerType>(type), args.r[0]);
 
@@ -242,6 +281,10 @@ namespace ams::secmon::smc {
 
         /* Set the invocation result. */
         args.r[0] = static_cast<u64>(InvokeSmcHandler(info, args));
+
+        if (type == HandlerType_User) {
+            DebugLog(args);
+        }
 
 /* TODO: For debugging. Remove this when exo2 is complete. */
 #if 1
