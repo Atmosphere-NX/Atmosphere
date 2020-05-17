@@ -18,6 +18,7 @@
 #include "../secmon_key_storage.hpp"
 #include "../secmon_misc.hpp"
 #include "secmon_smc_aes.hpp"
+#include "secmon_smc_device_unique_data.hpp"
 #include "secmon_smc_se_lock.hpp"
 #include "secmon_user_page_mapper.hpp"
 
@@ -25,17 +26,19 @@ namespace ams::secmon::smc {
 
     namespace {
 
-        constexpr inline auto   AesKeySize  = se::AesBlockSize;
-        constexpr inline size_t CmacSizeMax = 1_KB;
+        constexpr inline auto   AesKeySize              = se::AesBlockSize;
+        constexpr inline size_t CmacSizeMax             = 1_KB;
+        constexpr inline size_t DeviceUniqueDataSizeMin = 0x130;
+        constexpr inline size_t DeviceUniqueDataSizeMax = 0x240;
 
         enum SealKey {
             SealKey_LoadAesKey                  = 0,
             SealKey_DecryptDeviceUniqueData     = 1,
-            SealKey_LoadLotusKey                = 2,
-            SealKey_LoadEsDeviceKey             = 3,
+            SealKey_ImportLotusKey              = 2,
+            SealKey_ImportEsDeviceKey           = 3,
             SealKey_ReencryptDeviceUniqueData   = 4,
-            SealKey_LoadSslKey                  = 5,
-            SealKey_LoadEsClientCertKey         = 6,
+            SealKey_ImportSslKey                = 5,
+            SealKey_ImportEsClientCertKey       = 6,
 
             SealKey_Count,
         };
@@ -63,6 +66,30 @@ namespace ams::secmon::smc {
             SpecificAesKey_Count,
         };
 
+        enum DeviceUniqueData {
+            DeviceUniqueData_DecryptDeviceUniqueData = 0,
+            DeviceUniqueData_ImportLotusKey          = 1,
+            DeviceUniqueData_ImportEsDeviceKey       = 2,
+            DeviceUniqueData_ImportSslKey            = 3,
+            DeviceUniqueData_ImportEsClientCertKey   = 4,
+
+            DeviceUniqueData_Count,
+        };
+
+        /* Ensure that our "subtract one" simplification is valid for the cases we care about. */
+        static_assert(DeviceUniqueData_ImportLotusKey        - 1 == ImportRsaKey_Lotus);
+        static_assert(DeviceUniqueData_ImportEsDeviceKey     - 1 == ImportRsaKey_EsDrmCert);
+        static_assert(DeviceUniqueData_ImportSslKey          - 1 == ImportRsaKey_Ssl);
+        static_assert(DeviceUniqueData_ImportEsClientCertKey - 1 == ImportRsaKey_EsClientCert);
+
+        constexpr ImportRsaKey ConvertToImportRsaKey(DeviceUniqueData data) {
+            /* Not necessary, but if this is invoked at compile-time this will force a compile-time error. */
+            AMS_ASSUME(data != DeviceUniqueData_DecryptDeviceUniqueData);
+            AMS_ASSUME(data <  DeviceUniqueData_Count);
+
+            return static_cast<ImportRsaKey>(static_cast<int>(data) - 1);
+        }
+
         enum SecureData {
             SecureData_Calibration                = 0,
             SecureData_SafeMode                   = 1,
@@ -84,14 +111,19 @@ namespace ams::secmon::smc {
             using CipherModeIndex = util::BitPack32::Field<4, 2, CipherMode>;
         };
 
+        struct DecryptDeviceUniqueDataOption {
+            using DeviceUniqueDataIndex = util::BitPack32::Field<0,  3, DeviceUniqueData>;
+            using Reserved              = util::BitPack32::Field<3, 29, u32>;
+        };
+
         constexpr const u8 SealKeySources[SealKey_Count][AesKeySize] = {
             [SealKey_LoadAesKey]                  = { 0xF4, 0x0C, 0x16, 0x26, 0x0D, 0x46, 0x3B, 0xE0, 0x8C, 0x6A, 0x56, 0xE5, 0x82, 0xD4, 0x1B, 0xF6 },
             [SealKey_DecryptDeviceUniqueData]     = { 0x7F, 0x54, 0x2C, 0x98, 0x1E, 0x54, 0x18, 0x3B, 0xBA, 0x63, 0xBD, 0x4C, 0x13, 0x5B, 0xF1, 0x06 },
-            [SealKey_LoadLotusKey]                = { 0xC7, 0x3F, 0x73, 0x60, 0xB7, 0xB9, 0x9D, 0x74, 0x0A, 0xF8, 0x35, 0x60, 0x1A, 0x18, 0x74, 0x63 },
-            [SealKey_LoadEsDeviceKey]             = { 0x0E, 0xE0, 0xC4, 0x33, 0x82, 0x66, 0xE8, 0x08, 0x39, 0x13, 0x41, 0x7D, 0x04, 0x64, 0x2B, 0x6D },
+            [SealKey_ImportLotusKey]              = { 0xC7, 0x3F, 0x73, 0x60, 0xB7, 0xB9, 0x9D, 0x74, 0x0A, 0xF8, 0x35, 0x60, 0x1A, 0x18, 0x74, 0x63 },
+            [SealKey_ImportEsDeviceKey]           = { 0x0E, 0xE0, 0xC4, 0x33, 0x82, 0x66, 0xE8, 0x08, 0x39, 0x13, 0x41, 0x7D, 0x04, 0x64, 0x2B, 0x6D },
             [SealKey_ReencryptDeviceUniqueData]   = { 0xE1, 0xA8, 0xAA, 0x6A, 0x2D, 0x9C, 0xDE, 0x43, 0x0C, 0xDE, 0xC6, 0x17, 0xF6, 0xC7, 0xF1, 0xDE },
-            [SealKey_LoadSslKey]                  = { 0x74, 0x20, 0xF6, 0x46, 0x77, 0xB0, 0x59, 0x2C, 0xE8, 0x1B, 0x58, 0x64, 0x47, 0x41, 0x37, 0xD9 },
-            [SealKey_LoadEsClientCertKey]         = { 0xAA, 0x19, 0x0F, 0xFA, 0x4C, 0x30, 0x3B, 0x2E, 0xE6, 0xD8, 0x9A, 0xCF, 0xE5, 0x3F, 0xB3, 0x4B },
+            [SealKey_ImportSslKey]                = { 0x74, 0x20, 0xF6, 0x46, 0x77, 0xB0, 0x59, 0x2C, 0xE8, 0x1B, 0x58, 0x64, 0x47, 0x41, 0x37, 0xD9 },
+            [SealKey_ImportEsClientCertKey]       = { 0xAA, 0x19, 0x0F, 0xFA, 0x4C, 0x30, 0x3B, 0x2E, 0xE6, 0xD8, 0x9A, 0xCF, 0xE5, 0x3F, 0xB3, 0x4B },
         };
 
         constexpr const u8 KeyTypeSources[KeyType_Count][AesKeySize] = {
@@ -104,11 +136,19 @@ namespace ams::secmon::smc {
         constexpr const u8 SealKeyMasks[SealKey_Count][AesKeySize] = {
             [SealKey_LoadAesKey]                  = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
             [SealKey_DecryptDeviceUniqueData]     = { 0xA2, 0xAB, 0xBF, 0x9C, 0x92, 0x2F, 0xBB, 0xE3, 0x78, 0x79, 0x9B, 0xC0, 0xCC, 0xEA, 0xA5, 0x74 },
-            [SealKey_LoadLotusKey]                = { 0x57, 0xE2, 0xD9, 0x45, 0xE4, 0x92, 0xF4, 0xFD, 0xC3, 0xF9, 0x86, 0x38, 0x89, 0x78, 0x9F, 0x3C },
-            [SealKey_LoadEsDeviceKey]             = { 0xE5, 0x4D, 0x9A, 0x02, 0xF0, 0x4F, 0x5F, 0xA8, 0xAD, 0x76, 0x0A, 0xF6, 0x32, 0x95, 0x59, 0xBB },
+            [SealKey_ImportLotusKey]              = { 0x57, 0xE2, 0xD9, 0x45, 0xE4, 0x92, 0xF4, 0xFD, 0xC3, 0xF9, 0x86, 0x38, 0x89, 0x78, 0x9F, 0x3C },
+            [SealKey_ImportEsDeviceKey]           = { 0xE5, 0x4D, 0x9A, 0x02, 0xF0, 0x4F, 0x5F, 0xA8, 0xAD, 0x76, 0x0A, 0xF6, 0x32, 0x95, 0x59, 0xBB },
             [SealKey_ReencryptDeviceUniqueData]   = { 0x59, 0xD9, 0x31, 0xF4, 0xA7, 0x97, 0xB8, 0x14, 0x40, 0xD6, 0xA2, 0x60, 0x2B, 0xED, 0x15, 0x31 },
-            [SealKey_LoadSslKey]                  = { 0xFD, 0x6A, 0x25, 0xE5, 0xD8, 0x38, 0x7F, 0x91, 0x49, 0xDA, 0xF8, 0x59, 0xA8, 0x28, 0xE6, 0x75 },
-            [SealKey_LoadEsClientCertKey]         = { 0x89, 0x96, 0x43, 0x9A, 0x7C, 0xD5, 0x59, 0x55, 0x24, 0xD5, 0x24, 0x18, 0xAB, 0x6C, 0x04, 0x61 },
+            [SealKey_ImportSslKey]                = { 0xFD, 0x6A, 0x25, 0xE5, 0xD8, 0x38, 0x7F, 0x91, 0x49, 0xDA, 0xF8, 0x59, 0xA8, 0x28, 0xE6, 0x75 },
+            [SealKey_ImportEsClientCertKey]       = { 0x89, 0x96, 0x43, 0x9A, 0x7C, 0xD5, 0x59, 0x55, 0x24, 0xD5, 0x24, 0x18, 0xAB, 0x6C, 0x04, 0x61 },
+        };
+
+        constexpr const SealKey DeviceUniqueDataToSealKey[DeviceUniqueData_Count] = {
+            [DeviceUniqueData_DecryptDeviceUniqueData] = SealKey_DecryptDeviceUniqueData,
+            [DeviceUniqueData_ImportLotusKey]          = SealKey_ImportLotusKey,
+            [DeviceUniqueData_ImportEsDeviceKey]       = SealKey_ImportEsDeviceKey,
+            [DeviceUniqueData_ImportSslKey]            = SealKey_ImportSslKey,
+            [DeviceUniqueData_ImportEsClientCertKey]   = SealKey_ImportEsClientCertKey,
         };
 
         constexpr const u8 CalibrationKeySource[AesKeySize] = {
@@ -392,7 +432,7 @@ namespace ams::secmon::smc {
             /* Decode arguments. */
             const int      slot          = args.r[1];
             const uintptr_t data_address = args.r[2];
-            const uintptr_t data_size    = args.r[3];
+            const size_t    data_size    = args.r[3];
 
             /* Declare buffer for user data. */
             alignas(8) u8 user_data[CmacSizeMax];
@@ -423,6 +463,81 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult DecryptDeviceUniqueDataImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key[se::AesBlockSize];
+            u8 key_source[se::AesBlockSize];
+
+            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+            const uintptr_t data_address = args.r[4];
+            const size_t    data_size    = args.r[5];
+            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
+
+            const auto mode     = option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>();
+            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+            switch (mode) {
+                case DeviceUniqueData_DecryptDeviceUniqueData:
+                    {
+                        SMC_R_UNLESS(data_size < DeviceUniqueDataSizeMax, InvalidArgument);
+                    }
+                    break;
+                case DeviceUniqueData_ImportLotusKey:
+                case DeviceUniqueData_ImportEsDeviceKey:
+                case DeviceUniqueData_ImportSslKey:
+                case DeviceUniqueData_ImportEsClientCertKey:
+                    {
+                        SMC_R_UNLESS(DeviceUniqueDataSizeMin <= data_size && data_size <= DeviceUniqueDataSizeMax, InvalidArgument);
+                    }
+                    break;
+                default:
+                    return SmcResult::InvalidArgument;
+            }
+
+            /* Decrypt the device unique data. */
+            u8 work_buffer[DeviceUniqueDataSizeMax];
+            ON_SCOPE_EXIT { crypto::ClearMemory(work_buffer, sizeof(work_buffer)); };
+            {
+                /* Map and copy in the encrypted data. */
+                UserPageMapper mapper(data_address);
+                SMC_R_UNLESS(mapper.Map(),                                              InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(work_buffer, data_address, data_size), InvalidArgument);
+
+                /* Determine the seal key to use. */
+                const auto seal_key_type         = DeviceUniqueDataToSealKey[mode];
+                const u8 * const seal_key_source = SealKeySources[seal_key_type];
+
+                /* Decrypt the data. */
+                if (!DecryptDeviceUniqueData(work_buffer, data_size, nullptr, seal_key_source, se::AesBlockSize, access_key, sizeof(access_key), key_source, sizeof(key_source), work_buffer, data_size)) {
+                    return SmcResult::InvalidArgument;
+                }
+
+                /* Either output the key, or import it. */
+                switch (mode) {
+                    case DeviceUniqueData_DecryptDeviceUniqueData:
+                        {
+                            SMC_R_UNLESS(mapper.CopyToUser(data_address, work_buffer, data_size), InvalidArgument);
+                        }
+                        break;
+                    case DeviceUniqueData_ImportLotusKey:
+                    case DeviceUniqueData_ImportSslKey:
+                        ImportRsaKeyExponent(ConvertToImportRsaKey(mode), work_buffer, se::RsaSize);
+                        break;
+                    case DeviceUniqueData_ImportEsDeviceKey:
+                    case DeviceUniqueData_ImportEsClientCertKey:
+                        ImportRsaKeyExponent(ConvertToImportRsaKey(mode), work_buffer, se::RsaSize);
+                        ImportRsaKeyModulusProvisionally(ConvertToImportRsaKey(mode), work_buffer + se::RsaSize, se::RsaSize);
+                        break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
+
+            return SmcResult::Success;
+        }
+
         SmcResult GetSecureDataImpl(SmcArguments &args) {
             /* Decode arguments. */
             const auto which = static_cast<SecureData>(args.r[1]);
@@ -442,6 +557,7 @@ namespace ams::secmon::smc {
 
     }
 
+    /* Aes functionality. */
     SmcResult SmcGenerateAesKek(SmcArguments &args) {
         return LockSecurityEngineAndInvoke(args, GenerateAesKekImpl);
     }
@@ -463,6 +579,27 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcLoadPreparedAesKey(SmcArguments &args) {
+        /* TODO */
+        return SmcResult::NotImplemented;
+    }
+
+    /* Device unique data functionality. */
+    SmcResult SmcDecryptDeviceUniqueData(SmcArguments &args) {
+        return LockSecurityEngineAndInvoke(args, DecryptDeviceUniqueDataImpl);
+    }
+
+    SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args) {
+        /* TODO */
+        return SmcResult::NotImplemented;
+    }
+
+    /* Legacy APIs. */
+    SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args) {
+        /* TODO */
+        return SmcResult::NotImplemented;
+    }
+
+    SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
     }

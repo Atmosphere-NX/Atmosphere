@@ -13,11 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <vapours.hpp>
+#include <exosphere.hpp>
 
 namespace ams::crypto::impl {
-
-#ifdef ATMOSPHERE_IS_STRATOSPHERE
 
     namespace {
 
@@ -35,24 +33,9 @@ namespace ams::crypto::impl {
     template<size_t KeySize>
     void AesImpl<KeySize>::Initialize(const void *key, size_t key_size, bool is_encrypt) {
         static_assert(IsSupportedKeySize(KeySize));
-        AMS_ASSERT(key_size == KeySize);
 
-        if constexpr (KeySize == 16) {
-            /* Aes 128. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes128Context));
-            aes128ContextCreate(reinterpret_cast<Aes128Context *>(this->round_keys), key, is_encrypt);
-        } else if constexpr (KeySize == 24) {
-            /* Aes 192. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes192Context));
-            aes192ContextCreate(reinterpret_cast<Aes192Context *>(this->round_keys), key, is_encrypt);
-        } else if constexpr (KeySize == 32) {
-            /* Aes 256. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes256Context));
-            aes256ContextCreate(reinterpret_cast<Aes256Context *>(this->round_keys), key, is_encrypt);
-        } else {
-            /* Invalid key size. */
-            static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);
-        }
+        /* Set the security engine keyslot. */
+        this->slot = *static_cast<const int *>(key);
     }
 
     template<size_t KeySize>
@@ -63,16 +46,13 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes128Context));
-            aes128EncryptBlock(reinterpret_cast<const Aes128Context *>(this->round_keys), dst, src);
+            se::EncryptAes128(dst, dst_size, this->slot, src, src_size);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes192Context));
-            aes192EncryptBlock(reinterpret_cast<const Aes192Context *>(this->round_keys), dst, src);
+            /* TODO: se::EncryptAes192(dst, dst_size, this->slot, src, src_size); */
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes256Context));
-            aes256EncryptBlock(reinterpret_cast<const Aes256Context *>(this->round_keys), dst, src);
+            /* TODO: se::EncryptAes256(dst, dst_size, this->slot, src, src_size); */
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);
@@ -87,16 +67,13 @@ namespace ams::crypto::impl {
 
         if constexpr (KeySize == 16) {
             /* Aes 128. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes128Context));
-            aes128DecryptBlock(reinterpret_cast<const Aes128Context *>(this->round_keys), dst, src);
+            se::DecryptAes128(dst, dst_size, this->slot, src, src_size);
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes192Context));
-            aes192DecryptBlock(reinterpret_cast<const Aes192Context *>(this->round_keys), dst, src);
+            /* TODO: se::DecryptAes192(dst, dst_size, this->slot, src, src_size); */
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
-            static_assert(sizeof(this->round_keys) == sizeof(::Aes256Context));
-            aes256DecryptBlock(reinterpret_cast<const Aes256Context *>(this->round_keys), dst, src);
+            /* TODO: se::DecryptAes256(dst, dst_size, this->slot, src, src_size); */
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);
@@ -108,13 +85,5 @@ namespace ams::crypto::impl {
     template class AesImpl<16>;
     template class AesImpl<24>;
     template class AesImpl<32>;
-
-#else
-
-    /* NOTE: Exosphere defines this in libexosphere. */
-
-    /* TODO: Non-EL0 implementation. */
-
-#endif
 
 }

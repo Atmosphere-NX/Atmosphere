@@ -19,6 +19,7 @@
 
 namespace ams::secmon::smc {
 
+    /* General Aes functionality. */
     SmcResult SmcGenerateAesKek(SmcArguments &args);
     SmcResult SmcLoadAesKey(SmcArguments &args);
     SmcResult SmcComputeAes(SmcArguments &args);
@@ -26,6 +27,15 @@ namespace ams::secmon::smc {
     SmcResult SmcComputeCmac(SmcArguments &args);
     SmcResult SmcLoadPreparedAesKey(SmcArguments &args);
 
+    /* Device unique data functionality. */
+    SmcResult SmcDecryptDeviceUniqueData(SmcArguments &args);
+    SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args);
+
+    /* Legacy device unique data functionality. */
+    SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args);
+    SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args);
+
+    /* The last rose of summer. */
     SmcResult SmcGetSecureData(SmcArguments &args);
 
 }

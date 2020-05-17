@@ -18,9 +18,11 @@
 
 namespace ams::secmon {
 
+    /* NOTE: Lotus and EsDrmCert are switched here versus official enum, */
+    /*       however, this considerably simplifies logic. */
     enum ImportRsaKey {
-        ImportRsaKey_EsDrmCert    = 0,
-        ImportRsaKey_Lotus        = 1,
+        ImportRsaKey_Lotus        = 0,
+        ImportRsaKey_EsDrmCert    = 1,
         ImportRsaKey_Ssl          = 2,
         ImportRsaKey_EsClientCert = 3,
 
