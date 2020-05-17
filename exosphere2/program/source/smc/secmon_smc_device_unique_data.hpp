@@ -19,11 +19,6 @@
 
 namespace ams::secmon::smc {
 
-    SmcResult SmcDecryptDeviceUniqueData(SmcArguments &args);
-    SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args);
-
-    /* Legacy APIs. */
-    SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args);
-    SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args);
+    bool DecryptDeviceUniqueData(void *dst, size_t dst_size, u8 *out_device_id_high, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size);
 
 }
