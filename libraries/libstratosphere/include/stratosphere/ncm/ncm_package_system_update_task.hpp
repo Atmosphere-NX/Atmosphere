@@ -34,9 +34,10 @@ namespace ams::ncm {
             std::optional<ContentMetaKey> GetSystemUpdateMetaKey();
         protected:
             virtual Result PrepareInstallContentMetaData() override;
+            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) override;
+            InstallTaskDataBase &GetInstallData() { return this->data; } /* Atmosphere extension. */
         private:
             virtual Result PrepareDependency() override;
-            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out, const ContentMetaKey &key) override;
 
             Result GetContentInfoOfContentMeta(ContentInfo *out, const ContentMetaKey &key);
     };
