@@ -26,8 +26,8 @@ namespace ams::secmon::smc {
         constexpr inline size_t DeviceUniqueDataDeviceIdSize  = sizeof(u64);
         constexpr inline size_t DeviceUniqueDataPaddingSize   = se::AesBlockSize - DeviceUniqueDataDeviceIdSize;
 
-        constexpr inline size_t DeviceUniqueDataOuterMetaSize = DeviceUniqueDataIvSize;
-        constexpr inline size_t DeviceUniqueDataInnerMetaSize = DeviceUniqueDataMacSize + DeviceUniqueDataDeviceIdSize + DeviceUniqueDataPaddingSize;
+        constexpr inline size_t DeviceUniqueDataOuterMetaSize = DeviceUniqueDataIvSize + DeviceUniqueDataMacSize;
+        constexpr inline size_t DeviceUniqueDataInnerMetaSize = DeviceUniqueDataPaddingSize + DeviceUniqueDataDeviceIdSize;
         constexpr inline size_t DeviceUniqueDataTotalMetaSize = DeviceUniqueDataOuterMetaSize + DeviceUniqueDataInnerMetaSize;
 
         void PrepareDeviceUniqueDataKey(const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size) {
@@ -39,6 +39,21 @@ namespace ams::secmon::smc {
 
             /* Derive the actual device unique data key. */
             se::SetEncryptedAesKey128(pkg1::AesKeySlot_Smc, pkg1::AesKeySlot_Smc, key_source, key_source_size);
+        }
+
+        void ComputeAes128Ctr(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
+            /* Ensure that the SE sees consistent data. */
+            hw::FlushDataCache(src, src_size);
+            hw::FlushDataCache(dst, dst_size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Use the security engine to transform the data. */
+            se::ComputeAes128Ctr(dst, dst_size, slot, src, src_size, iv, iv_size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Ensure the CPU sees consistent data. */
+            hw::FlushDataCache(dst, dst_size);
+            hw::DataSynchronizationBarrierInnerShareable();
         }
 
         void ComputeGmac(void *dst, size_t dst_size, const void *data, size_t data_size, const void *iv, size_t iv_size) {
@@ -68,8 +83,8 @@ namespace ams::secmon::smc {
 
     bool DecryptDeviceUniqueData(void *dst, size_t dst_size, u8 *out_device_id_high, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size) {
         /* Determine how much decrypted data there will be. */
-        const size_t enc_size = src_size - DeviceUniqueDataInnerMetaSize;
-        const size_t dec_size = src_size - DeviceUniqueDataOuterMetaSize;
+        const size_t enc_size = src_size - DeviceUniqueDataOuterMetaSize;
+        const size_t dec_size = enc_size - DeviceUniqueDataInnerMetaSize;
 
         /* Ensure that our sizes are allowed. */
         AMS_ABORT_UNLESS(src_size > DeviceUniqueDataTotalMetaSize);
@@ -94,7 +109,7 @@ namespace ams::secmon::smc {
             std::memcpy(temp_iv, iv, sizeof(temp_iv));
 
             /* Decrypt the data. */
-            se::ComputeAes128Ctr(dst, dst_size, pkg1::AesKeySlot_Smc, enc, enc_size, temp_iv, DeviceUniqueDataIvSize);
+            ComputeAes128Ctr(dst, dst_size, pkg1::AesKeySlot_Smc, enc, enc_size, temp_iv, DeviceUniqueDataIvSize);
 
             /* Compute the gmac. */
             ComputeGmac(calc_mac, DeviceUniqueDataMacSize, dst, enc_size, temp_iv, DeviceUniqueDataIvSize);
