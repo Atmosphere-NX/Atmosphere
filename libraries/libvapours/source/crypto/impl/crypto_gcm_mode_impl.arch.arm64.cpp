@@ -188,7 +188,7 @@ namespace ams::crypto::impl {
         if (this->aad_remaining > 0) {
             while (aad_size > 0) {
                 /* Copy in a byte of the aad to our partial block. */
-                this->block_x.block_8[BlockSize - 1 - this->aad_remaining] ^= *(cur_aad++);
+                this->block_x.block_8[this->aad_remaining] ^= *(cur_aad++);
 
                 /* Note that we consumed a byte. */
                 --aad_size;
@@ -205,7 +205,7 @@ namespace ams::crypto::impl {
         while (aad_size >= BlockSize) {
             /* Xor the current aad into our work block. */
             for (size_t i = 0; i < BlockSize; ++i) {
-                this->block_x.block_8[BlockSize - 1 - i] ^= *(cur_aad++);
+                this->block_x.block_8[i] ^= *(cur_aad++);
             }
 
             /* Multiply the blocks in our galois field. */
@@ -222,7 +222,7 @@ namespace ams::crypto::impl {
 
             /* Xor the data in. */
             for (size_t i = 0; i < aad_size; ++i) {
-                this->block_x.block_8[BlockSize - 1 - i] ^= *(cur_aad++);
+                this->block_x.block_8[i] ^= *(cur_aad++);
             }
         }
     }
@@ -285,7 +285,7 @@ namespace ams::crypto::impl {
         GaloisFieldMult(std::addressof(this->block_x), std::addressof(this->block_x), std::addressof(this->h_mult_blocks[0]));
 
         /* If we need to do an encryption, do so. */
-        {
+        if (encrypt) {
             /* Encrypt the iv. */
             u8 enc_result[BlockSize];
             this->ProcessBlock(enc_result, std::addressof(this->block_ek0), this->block_cipher);
