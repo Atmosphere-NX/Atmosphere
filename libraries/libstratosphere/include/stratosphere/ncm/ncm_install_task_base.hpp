@@ -139,10 +139,11 @@ namespace ams::ncm {
             Result CountInstallContentMetaData(s32 *out_count);
             Result GetInstallContentMetaData(InstallContentMeta *out_content_meta, s32 index);
             Result DeleteInstallContentMetaData(const ContentMetaKey *keys, s32 num_keys);
+            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) = 0;
 
             virtual Result PrepareDependency();
             Result PrepareSystemUpdateDependency();
-            Result PrepareContentMetaIfLatest(const ContentMetaKey &key);
+            virtual Result PrepareContentMetaIfLatest(const ContentMetaKey &key); /* NOTE: This is not virtual in Nintendo's code. We do so to facilitate downgrades. */
             u32 GetConfig() const { return this->config; }
             Result WriteContentMetaToPlaceHolder(InstallContentInfo *out_install_content_info, ContentStorage *storage, const InstallContentMetaInfo &meta_info, std::optional<bool> is_temporary);
 
@@ -163,7 +164,6 @@ namespace ams::ncm {
             Result VerifyAllNotCommitted(const StorageContentMetaKey *keys, s32 num_keys);
 
             virtual Result PrepareInstallContentMetaData() = 0;
-            virtual Result GetInstallContentMetaInfo(InstallContentMetaInfo *out_info, const ContentMetaKey &key) = 0;
             virtual Result GetLatestVersion(std::optional<u32> *out_version, u64 id) { return ncm::ResultContentMetaNotFound(); }
 
             virtual Result OnExecuteComplete() { return ResultSuccess(); }
