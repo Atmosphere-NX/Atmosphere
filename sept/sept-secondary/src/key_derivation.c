@@ -63,11 +63,11 @@ void load_keys(const uint8_t *se_state) {
     /* Clear keyslot 0xB. */
     clear_aes_keyslot(0xB);
 
-    /* Copy master key out of state keyslot 0xC into keyslot 0xC. */
-    set_aes_keyslot(0xC, se_state + 0x30 + (0xC * 0x20), 0x10);
+    /* Copy firmware device key out of state keyslot 0xE into keyslot 0xC. */
+    set_aes_keyslot(0xC, se_state + 0x30 + (0xE * 0x20), 0x10);
 
-    /* Copy firmware device key out of state keyslot 0xE into keyslot 0xD. */
-    set_aes_keyslot(0xD, se_state + 0x30 + (0xE * 0x20), 0x10);
+    /* Copy master key out of state keyslot 0xC into keyslot 0xD. */
+    set_aes_keyslot(0xD, se_state + 0x30 + (0xC * 0x20), 0x10);
 
     /* Clear keyslot 0xE. */
     clear_aes_keyslot(0xE);
@@ -77,5 +77,5 @@ void load_keys(const uint8_t *se_state) {
 
     /* Set keyslot flags properly in preparation for secmon. */
     set_aes_keyslot_flags(0xE, 0x15);
-    set_aes_keyslot_flags(0xD, 0x15);
+    set_aes_keyslot_flags(0xC, 0x15);
 }
