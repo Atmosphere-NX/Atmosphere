@@ -442,7 +442,7 @@ static void copy_warmboot_bin_to_dram() {
         const uint32_t target_fw = exosphere_get_target_firmware();
         if (target_fw >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
             warmboot_src = (uint8_t *)0x4003E000;
-        } else if (target_fw >= ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
+        } else if (target_fw >= ATMOSPHERE_TARGET_FIRMWARE_6_0_0) {
             warmboot_src = (uint8_t *)0x4003D800;
         } else if (target_fw >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
             warmboot_src = (uint8_t *)0x4003B000;
