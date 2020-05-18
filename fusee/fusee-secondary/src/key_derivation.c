@@ -227,9 +227,9 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
         case ATMOSPHERE_TARGET_FIRMWARE_8_1_0:
         case ATMOSPHERE_TARGET_FIRMWARE_9_0_0:
             decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
-            decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
-            decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
-            decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
+            decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed,    0x10);
+            decrypt_data_into_keyslot(0xD, 0xC, masterkey_seed,    0x10);
+            decrypt_data_into_keyslot(0xC, 0xC, masterkey_4x_seed, 0x10);
             break;
         default:
             return -1;
@@ -237,12 +237,6 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
 
     /* Setup master key revision, derive older master keys for use. */
     return mkey_detect_revision(fuse_get_retail_type() != 0);
-}
-
-/* Sets final keyslot flags, for handover to TZ/Exosphere. Setting these will prevent the BPMP from using the device key or master key. */
-void finalize_nx_keydata(uint32_t target_firmware) {
-    set_aes_keyslot_flags(0xC, 0xFF);
-    set_aes_keyslot_flags((target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY), 0xFF);
 }
 
 static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool should_mask, uint32_t target_firmware, uint32_t generation) {
