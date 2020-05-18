@@ -37,7 +37,7 @@ namespace ams::ncm {
             const auto key = reader.GetKey();
 
             /* Obtain a list of suitable storage ids. */
-            auto storage_list = GetStorageList(this->GetInstallStorage());
+            const auto storage_list = GetStorageList(this->GetInstallStorage());
 
             /* Iterate over storage ids. */
             for (s32 i = 0; i < storage_list.Count(); i++) {
