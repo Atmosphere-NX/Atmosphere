@@ -233,8 +233,8 @@ namespace ams::secmon::smc {
 
         constinit std::atomic<int> g_logged = 0;
 
-        constexpr int LogMin = 0x100;
-        constexpr int LogMax = 0x120;
+        constexpr int LogMin = 0x200;
+        constexpr int LogMax = 0x400;
 
         constexpr size_t LogBufSize = 0x5000;
 
@@ -269,12 +269,12 @@ namespace ams::secmon::smc {
     }
 
     void HandleSmc(int type, SmcArguments &args) {
-        if (type == HandlerType_User) {
-            DebugLog(args);
-        }
-
         /* Get the table. */
         const auto &table = GetHandlerTable(static_cast<HandlerType>(type), args.r[0]);
+
+        if (std::addressof(table) == std::addressof(g_handler_tables[HandlerType_User])) {
+            DebugLog(args);
+        }
 
         /* Get the handler info. */
         const auto &info = GetHandlerInfo(table, args.r[0]);
@@ -282,7 +282,7 @@ namespace ams::secmon::smc {
         /* Set the invocation result. */
         args.r[0] = static_cast<u64>(InvokeSmcHandler(info, args));
 
-        if (type == HandlerType_User) {
+        if (std::addressof(table) == std::addressof(g_handler_tables[HandlerType_User])) {
             DebugLog(args);
         }
 
