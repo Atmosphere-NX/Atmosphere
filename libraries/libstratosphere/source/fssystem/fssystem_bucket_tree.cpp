@@ -130,12 +130,12 @@ namespace ams::fssystem {
     }
 
     Result BucketTree::NodeHeader::Verify(s32 node_index, size_t node_size, size_t entry_size) const {
-        R_UNLESS(this->index == node_index,                                  fs::ResultInvalidArgument());
-        R_UNLESS(entry_size == 0 || node_size < entry_size + NodeHeaderSize, fs::ResultInvalidSize());
+        R_UNLESS(this->index == node_index,                                   fs::ResultInvalidBucketTreeNodeIndex());
+        R_UNLESS(entry_size != 0 && node_size >= entry_size + NodeHeaderSize, fs::ResultInvalidSize());
 
         const size_t max_entry_count = (node_size - NodeHeaderSize) / entry_size;
         R_UNLESS(this->count > 0 && static_cast<size_t>(this->count) <= max_entry_count, fs::ResultInvalidBucketTreeNodeEntryCount());
-        R_UNLESS(this->offset > 0,                                                       fs::ResultInvalidBucketTreeNodeOffset());
+        R_UNLESS(this->offset >= 0,                                                      fs::ResultInvalidBucketTreeNodeOffset());
 
         return ResultSuccess();
     }
@@ -440,7 +440,7 @@ namespace ams::fssystem {
         /* Create the node, and find. */
         StorageNode node(sizeof(s64), header.count);
         node.Find(buffer, virtual_address);
-        R_UNLESS(node.GetIndex() >= 0, fs::ResultOutOfRange());
+        R_UNLESS(node.GetIndex() >= 0, fs::ResultInvalidBucketTreeVirtualOffset());
 
         /* Return the index. */
         *out_index = this->tree->GetEntrySetIndex(header.index, node.GetIndex());
@@ -485,7 +485,7 @@ namespace ams::fssystem {
         const auto entry_size       = this->tree->entry_size;
         const auto entry_set_size   = this->tree->node_size;
         const auto entry_set_offset = entry_set_index * static_cast<s64>(entry_set_size);
-        fs::SubStorage &storage = tree->node_storage;
+        fs::SubStorage &storage = tree->entry_storage;
 
         /* Read the entry set. */
         R_TRY(storage.Read(entry_set_offset, buffer, entry_set_size));
@@ -517,7 +517,7 @@ namespace ams::fssystem {
         const auto entry_size       = this->tree->entry_size;
         const auto entry_set_size   = this->tree->node_size;
         const auto entry_set_offset = entry_set_index * static_cast<s64>(entry_set_size);
-        fs::SubStorage &storage = tree->node_storage;
+        fs::SubStorage &storage = tree->entry_storage;
 
         /* Read and validate the entry_set. */
         EntrySetHeader entry_set;

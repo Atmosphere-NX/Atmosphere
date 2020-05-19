@@ -141,6 +141,8 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(InvalidBucketTreeNodeOffset,      4035);
                 R_DEFINE_ERROR_RESULT(InvalidBucketTreeEntryOffset,     4036);
                 R_DEFINE_ERROR_RESULT(InvalidBucketTreeEntrySetOffset,  4037);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeNodeIndex,       4038);
+                R_DEFINE_ERROR_RESULT(InvalidBucketTreeVirtualOffset,   4039);
 
             R_DEFINE_ERROR_RANGE(RomNcaCorrupted, 4041, 4139);
                 R_DEFINE_ERROR_RANGE(RomNcaFileSystemCorrupted, 4051, 4069);

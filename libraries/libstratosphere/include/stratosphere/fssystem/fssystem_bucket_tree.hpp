@@ -126,7 +126,7 @@ namespace ams::fssystem {
                         this->allocator = nullptr;
                     }
 
-                    void FillSzero(size_t node_size) const {
+                    void FillZero(size_t node_size) const {
                         if (this->header) {
                             std::memset(this->header, 0, node_size);
                         }
@@ -298,7 +298,7 @@ namespace ams::fssystem {
             }
 
             bool IsValid() const { return this->entry_index >= 0; }
-            bool CanMoveNext() const { return this->IsValid() && (this->entry_index + 1 < this->entry_set.info.count || this->entry_set.info.index + 1 < this->entry_set.info.count); }
+            bool CanMoveNext() const { return this->IsValid() && (this->entry_index + 1 < this->entry_set.info.count || this->entry_set.info.index + 1 < this->entry_set_count); }
             bool CanMovePrevious() const { return this->IsValid() && (this->entry_index > 0 || this->entry_set.info.index > 0); }
 
             Result MoveNext();
