@@ -22,7 +22,6 @@
 #include "secmon_smc_carveout.hpp"
 #include "secmon_smc_device_unique_data.hpp"
 #include "secmon_smc_error.hpp"
-#include "secmon_smc_es.hpp"
 #include "secmon_smc_info.hpp"
 #include "secmon_smc_memory_access.hpp"
 #include "secmon_smc_power_management.hpp"
@@ -120,7 +119,7 @@ namespace ams::secmon::smc {
             { 0xC300060F, Restriction_DeviceUniqueDataNotAllowed, SmcModularExponentiateByStorageKey },
             { 0xC3000610, Restriction_SafeModeNotAllowed,         SmcPrepareEsDeviceUniqueKey        },
             { 0xC3000011, Restriction_SafeModeNotAllowed,         SmcLoadPreparedAesKey              },
-            { 0xC3000012, Restriction_SafeModeNotAllowed,         SmcPrepareEsCommonKey              }
+            { 0xC3000012, Restriction_SafeModeNotAllowed,         SmcPrepareEsCommonTitleKey         }
         };
 
         constinit HandlerInfo g_kern_handlers[] = {
@@ -233,8 +232,8 @@ namespace ams::secmon::smc {
 
         constinit std::atomic<int> g_logged = 0;
 
-        constexpr int LogMin = 0x4000;
-        constexpr int LogMax = 0x4200;
+        constexpr int LogMin = 0x1000000;
+        constexpr int LogMax = 0x1000000;
 
         constexpr size_t LogBufSize = 0x5000;
 

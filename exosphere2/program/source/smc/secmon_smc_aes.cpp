@@ -155,6 +155,15 @@ namespace ams::secmon::smc {
             0xE2, 0xD6, 0xB8, 0x7A, 0x11, 0x9C, 0xB8, 0x80, 0xE8, 0x22, 0x88, 0x8A, 0x46, 0xFB, 0xA1, 0x95
         };
 
+        constexpr const u8 EsCommonKeySources[EsCommonKeyType_Count][AesKeySize] = {
+            [EsCommonKeyType_TitleKey]   = { 0x1E, 0xDC, 0x7B, 0x3B, 0x60, 0xE6, 0xB4, 0xD8, 0x78, 0xB8, 0x17, 0x15, 0x98, 0x5E, 0x62, 0x9B },
+            [EsCommonKeyType_ArchiveKey] = { 0x3B, 0x78, 0xF2, 0x61, 0x0F, 0x9D, 0x5A, 0xE2, 0x7B, 0x4E, 0x45, 0xAF, 0xCB, 0x0B, 0x67, 0x4D },
+        };
+
+        constexpr const u8 EsSealKeySource[AesKeySize] = {
+            0xCB, 0xB7, 0x6E, 0x38, 0xA1, 0xCB, 0x77, 0x0F, 0xB2, 0xA5, 0xB2, 0x9D, 0xD8, 0x56, 0x9F, 0x76
+        };
+
         constexpr const u8 SecureDataSource[AesKeySize] = {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
         };
@@ -463,6 +472,51 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult LoadPreparedAesKeyImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key[AesKeySize];
+
+            const int slot = args.r[1];
+            std::memcpy(access_key, std::addressof(args.r[2]), sizeof(access_key));
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(pkg1::IsUserAesKeySlot(slot), InvalidArgument);
+
+            /* Derive the seal key. */
+            se::SetEncryptedAesKey128(pkg1::AesKeySlot_Smc, pkg1::AesKeySlot_RandomForUserWrap, EsSealKeySource, sizeof(EsSealKeySource));
+
+            /* Unseal the key. */
+            se::SetEncryptedAesKey128(slot, pkg1::AesKeySlot_Smc, access_key, sizeof(access_key));
+
+            return SmcResult::Success;
+        }
+
+        SmcResult PrepareEsCommonTitleKeyImpl(SmcArguments &args) {
+            /* Declare variables. */
+            u8 key_source[se::AesBlockSize];
+            u8 key[se::AesBlockSize];
+            u8 access_key[se::AesBlockSize];
+
+            /* Decode arguments. */
+            std::memcpy(key_source, std::addressof(args.r[1]), sizeof(key_source));
+            const int generation = GetTargetFirmware() >= TargetFirmware_3_0_0 ? std::max(0, static_cast<int>(args.r[3]) - 1) : 0;
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(pkg1::IsValidKeyGeneration(generation), InvalidArgument);
+            SMC_R_UNLESS(generation <= GetKeyGeneration(),       InvalidArgument);
+
+            /* Derive the key. */
+            DecryptWithEsCommonKey(key, sizeof(key), key_source, sizeof(key_source), EsCommonKeyType_TitleKey, generation);
+
+            /* Prepare the aes key. */
+            PrepareEsAesKey(access_key, sizeof(access_key), key, sizeof(key));
+
+            /* Copy the access key to output. */
+            std::memcpy(std::addressof(args.r[1]), access_key, sizeof(access_key));
+
+            return SmcResult::Success;
+        }
+
         SmcResult DecryptDeviceUniqueDataImpl(SmcArguments &args) {
             /* Decode arguments. */
             u8 access_key[se::AesBlockSize];
@@ -530,6 +584,7 @@ namespace ams::secmon::smc {
                     case DeviceUniqueData_ImportEsClientCertKey:
                         ImportRsaKeyExponent(ConvertToImportRsaKey(mode), work_buffer, se::RsaSize);
                         ImportRsaKeyModulusProvisionally(ConvertToImportRsaKey(mode), work_buffer + se::RsaSize, se::RsaSize);
+                        CommitRsaKeyModulus(ConvertToImportRsaKey(mode));
                         break;
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
@@ -579,8 +634,11 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcLoadPreparedAesKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, LoadPreparedAesKeyImpl);
+    }
+
+    SmcResult SmcPrepareEsCommonTitleKey(SmcArguments &args) {
+        return LockSecurityEngineAndInvoke(args, PrepareEsCommonTitleKeyImpl);
     }
 
     /* Device unique data functionality. */
@@ -602,6 +660,35 @@ namespace ams::secmon::smc {
     SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
+    }
+
+    /* Es encryption utilities. */
+    void DecryptWithEsCommonKey(void *dst, size_t dst_size, const void *src, size_t src_size, EsCommonKeyType type, int generation) {
+        /* Validate pre-conditions. */
+        AMS_ABORT_UNLESS(dst_size == AesKeySize);
+        AMS_ABORT_UNLESS(src_size == AesKeySize);
+        AMS_ABORT_UNLESS(0 <= type && type < EsCommonKeyType_Count);
+
+        /* Prepare the master key for the generation. */
+        const int slot = PrepareMasterKey(generation);
+
+        /* Derive the es common key. */
+        se::SetEncryptedAesKey128(pkg1::AesKeySlot_Smc, slot, EsCommonKeySources[type], AesKeySize);
+
+        /* Decrypt the input using the common key. */
+        se::DecryptAes128(dst, dst_size, pkg1::AesKeySlot_Smc, src, src_size);
+    }
+
+    void PrepareEsAesKey(void *dst, size_t dst_size, const void *src, size_t src_size) {
+        /* Validate pre-conditions. */
+        AMS_ABORT_UNLESS(dst_size == AesKeySize);
+        AMS_ABORT_UNLESS(src_size == AesKeySize);
+
+        /* Derive the seal key. */
+        se::SetEncryptedAesKey128(pkg1::AesKeySlot_Smc, pkg1::AesKeySlot_RandomForUserWrap, EsSealKeySource, sizeof(EsSealKeySource));
+
+        /* Seal the key. */
+        se::EncryptAes128(dst, dst_size, pkg1::AesKeySlot_Smc, src, src_size);
     }
 
     /* 'Tis the last rose of summer, / Left blooming alone;    */

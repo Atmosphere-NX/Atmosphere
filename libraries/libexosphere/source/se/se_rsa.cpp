@@ -67,6 +67,10 @@ namespace ams::se {
             }
         }
 
+        void WaitForInputReadComplete(volatile SecurityEngineRegisters *SE) {
+            while (reg::HasValue(SE->SE_INT_STATUS, SE_REG_BITS_ENUM(INT_STATUS_IN_DONE, CLEAR))) { /* ... */ }
+        }
+
     }
 
     void ClearRsaKeySlot(int slot) {
@@ -172,6 +176,55 @@ namespace ams::se {
 
         /* Copy out the result. */
         GetRsaResult(SE, dst, dst_size);
+    }
+
+    void ModularExponentiateAsync(int slot, const void *src, size_t src_size, DoneHandler handler) {
+        /* Validate the slot and size. */
+        AMS_ABORT_UNLESS(0 <= slot && slot < RsaKeySlotCount);
+        AMS_ABORT_UNLESS(src_size <= RsaSize);
+
+        /* Get the engine. */
+        auto *SE = GetRegisters();
+
+        /* Create a work buffer. */
+        u8 work[RsaSize];
+        util::ClearMemory(work, sizeof(work));
+
+        /* Copy the input into the work buffer (reversing endianness). */
+        const u8 *src_u8 = static_cast<const u8 *>(src);
+        for (size_t i = 0; i < src_size; ++i) {
+            work[src_size - 1 - i] = src_u8[i];
+        }
+
+        /* Flush the work buffer to ensure the SE sees correct results. */
+        hw::FlushDataCache(work, sizeof(work));
+        hw::DataSynchronizationBarrierInnerShareable();
+
+        /* Configure the engine to perform RSA encryption. */
+        reg::Write(SE->SE_CONFIG, SE_REG_BITS_ENUM(CONFIG_ENC_MODE, AESMODE_KEY128),
+                                  SE_REG_BITS_ENUM(CONFIG_DEC_MODE, AESMODE_KEY128),
+                                  SE_REG_BITS_ENUM(CONFIG_ENC_ALG,             RSA),
+                                  SE_REG_BITS_ENUM(CONFIG_DEC_ALG,             NOP),
+                                  SE_REG_BITS_ENUM(CONFIG_DST,             RSA_REG));
+
+        /* Configure the engine to use the keyslot and correct modulus/exp sizes. */
+        const auto &info = g_rsa_key_infos[slot];
+        reg::Write(SE->SE_RSA_CONFIG, SE_REG_BITS_VALUE(RSA_CONFIG_KEY_SLOT, slot));
+        reg::Write(SE->SE_RSA_KEY_SIZE, info.modulus_size_val);
+        reg::Write(SE->SE_RSA_EXP_SIZE, info.exponent_size_val);
+
+        /* Set the done handler. */
+        SetDoneHandler(SE, handler);
+
+        /* Trigger the input operation. */
+        StartInputOperation(SE, work, src_size);
+
+        /* Wait for input to be read by the se. */
+        WaitForInputReadComplete(SE);
+    }
+
+    void GetRsaResult(void *dst, size_t dst_size) {
+        GetRsaResult(GetRegisters(), dst, dst_size);
     }
 
 }

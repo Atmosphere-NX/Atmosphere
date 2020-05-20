@@ -13,20 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <exosphere.hpp>
-#include "../secmon_error.hpp"
-#include "secmon_smc_es.hpp"
+#pragma once
+#include <vapours.hpp>
 
-namespace ams::secmon::smc {
+namespace ams::se {
 
-    SmcResult SmcPrepareEsDeviceUniqueKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
-    }
-
-    SmcResult SmcPrepareEsCommonKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
-    }
+    size_t DecodeRsaOaepSha256(void *dst, size_t dst_size, void *src, size_t src_size, const void *label_digest, size_t label_digest_size);
 
 }

@@ -131,6 +131,25 @@ namespace ams::se {
         std::memcpy(dst, aligned, dst_size);
     }
 
+    void StartInputOperation(volatile SecurityEngineRegisters *SE, const void *src, size_t src_size) {
+        /* Set the linked list entry. */
+        LinkedListEntry src_entry;
+        SetLinkedListEntry(std::addressof(src_entry), src, src_size);
+
+        /* Ensure the linked list entry data is seen correctly. */
+        hw::FlushDataCache(std::addressof(src_entry), sizeof(src_entry));
+        hw::DataSynchronizationBarrierInnerShareable();
+
+        /* Configure the linked list addresses. */
+        reg::Write(SE->SE_IN_LL_ADDR,  static_cast<u32>(GetPhysicalAddress(std::addressof(src_entry))));
+
+        /* Start the operation. */
+        StartOperation(SE, SE_OPERATION_OP_START);
+
+        /* Ensure the operation is started. */
+        EnsureOperationStarted(SE);
+    }
+
     void StartOperationRaw(volatile SecurityEngineRegisters *SE, SE_OPERATION_OP op, u32 out_ll_address, u32 in_ll_address) {
         /* Configure the linked list addresses. */
         reg::Write(SE->SE_IN_LL_ADDR,  in_ll_address);
