@@ -16,6 +16,7 @@
 #include <exosphere.hpp>
 #include "../secmon_error.hpp"
 #include "../secmon_misc.hpp"
+#include "secmon_page_mapper.hpp"
 #include "secmon_smc_info.hpp"
 #include "secmon_smc_power_management.hpp"
 
@@ -284,8 +285,58 @@ namespace ams::secmon::smc {
 
     /* This is an atmosphere extension smc. */
     SmcResult SmcGetEmummcConfig(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        /* Decode arguments. */
+        const auto mmc               = static_cast<EmummcMmc>(args.r[1]);
+        const uintptr_t user_address = args.r[2];
+        const uintptr_t user_offset  = user_address % 4_KB;
+
+        /* Validate arguments. */
+        /* NOTE: In the future, configuration for non-NAND storage may be implemented. */
+        SMC_R_UNLESS(mmc == EmummcMmc_Nand,                             NotImplemented);
+        SMC_R_UNLESS(user_offset + 2 * sizeof(EmummcFilePath) <= 4_KB, InvalidArgument);
+
+        /* Get the emummc config. */
+        const auto &cfg = GetEmummcConfiguration();
+        static_assert(sizeof(cfg.file_cfg)     == sizeof(EmummcFilePath));
+        static_assert(sizeof(cfg.emu_dir_path) == sizeof(EmummcFilePath));
+
+        /* Clear the output. */
+        constexpr size_t InlineOutputSize = sizeof(args) - sizeof(args.r[0]);
+        u8 * const inline_output = static_cast<u8 *>(static_cast<void *>(std::addressof(args.r[1])));
+        std::memset(inline_output, 0, InlineOutputSize);
+
+        /* Copy out the configuration. */
+        {
+            /* Map the user output page. */
+            AtmosphereUserPageMapper mapper(user_address);
+            SMC_R_UNLESS(mapper.Map(), InvalidArgument);
+
+            /* Copy the base configuration. */
+            static_assert(sizeof(cfg.base_cfg) <= InlineOutputSize);
+            std::memcpy(inline_output, std::addressof(cfg.base_cfg), sizeof(cfg.base_cfg));
+
+            /* Copy out type-specific data. */
+            switch (cfg.base_cfg.type) {
+                case EmummcType_None:
+                    /* No additional configuration needs to be copied. */
+                    break;
+                case EmummcType_Partition:
+                    /* Copy the partition config. */
+                    static_assert(sizeof(cfg.base_cfg) + sizeof(cfg.partition_cfg) <= InlineOutputSize);
+                    std::memcpy(inline_output + sizeof(cfg.base_cfg), std::addressof(cfg.partition_cfg), sizeof(cfg.partition_cfg));
+                    break;
+                case EmummcType_File:
+                    /* Copy the file config. */
+                    SMC_R_UNLESS(mapper.CopyToUser(user_address, std::addressof(cfg.file_cfg), sizeof(cfg.file_cfg)), InvalidArgument);
+                    break;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            /* Copy the redirection directory path to the user page. */
+            SMC_R_UNLESS(mapper.CopyToUser(user_address + sizeof(EmummcFilePath), std::addressof(cfg.emu_dir_path), sizeof(cfg.emu_dir_path)), InvalidArgument);
+        }
+
+        return SmcResult::Success;
     }
 
     /* For exosphere's usage. */

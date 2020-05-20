@@ -233,8 +233,8 @@ namespace ams::secmon::smc {
 
         constinit std::atomic<int> g_logged = 0;
 
-        constexpr int LogMin = 0x200;
-        constexpr int LogMax = 0x400;
+        constexpr int LogMin = 0x4000;
+        constexpr int LogMax = 0x4200;
 
         constexpr size_t LogBufSize = 0x5000;
 
