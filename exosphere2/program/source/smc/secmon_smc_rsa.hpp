@@ -22,4 +22,6 @@ namespace ams::secmon::smc {
     SmcResult SmcModularExponentiate(SmcArguments &args);
     SmcResult SmcModularExponentiateByStorageKey(SmcArguments &args);
 
+    SmcResult SmcPrepareEsDeviceUniqueKey(SmcArguments &args);
+
 }

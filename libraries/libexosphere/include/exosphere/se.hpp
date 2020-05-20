@@ -20,6 +20,7 @@
 #include <exosphere/se/se_management.hpp>
 #include <exosphere/se/se_aes.hpp>
 #include <exosphere/se/se_hash.hpp>
+#include <exosphere/se/se_oaep.hpp>
 #include <exosphere/se/se_rsa.hpp>
 #include <exosphere/se/se_rng.hpp>
 #include <exosphere/se/se_suspend.hpp>

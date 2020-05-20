@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/se/se_common.hpp>
 
 namespace ams::se {
 
@@ -27,5 +28,8 @@ namespace ams::se {
     void SetRsaKey(int slot, const void *mod, size_t mod_size, const void *exp, size_t exp_size);
 
     void ModularExponentiate(void *dst, size_t dst_size, int slot, const void *src, size_t src_size);
+    void ModularExponentiateAsync(int slot, const void *src, size_t src_size, DoneHandler handler);
+
+    void GetRsaResult(void *dst, size_t dst_size);
 
 }
