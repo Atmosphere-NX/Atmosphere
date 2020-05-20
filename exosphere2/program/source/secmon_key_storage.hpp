@@ -36,6 +36,7 @@ namespace ams::secmon {
 
     bool LoadRsaKey(int slot, ImportRsaKey which);
     void LoadProvisionalRsaKey(int slot, ImportRsaKey which);
+    void LoadProvisionalRsaPublicKey(int slot, ImportRsaKey which);
 
     void SetMasterKey(int generation, const void *src, size_t size);
     void LoadMasterKey(int slot, int generation);
