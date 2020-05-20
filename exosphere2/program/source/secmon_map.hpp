@@ -18,9 +18,17 @@
 
 namespace ams::secmon {
 
+    size_t GetPhysicalMemorySize();
+
     void UnmapTzram();
 
     uintptr_t MapSmcUserPage(uintptr_t address);
     void UnmapSmcUserPage();
+
+    uintptr_t MapAtmosphereIramPage(uintptr_t address);
+    void UnmapAtmosphereIramPage();
+
+    uintptr_t MapAtmosphereUserPage(uintptr_t address);
+    void UnmapAtmosphereUserPage();
 
 }

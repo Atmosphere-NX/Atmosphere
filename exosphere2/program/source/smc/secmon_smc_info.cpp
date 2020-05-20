@@ -97,12 +97,6 @@ namespace ams::secmon::smc {
             return pkg1::MemoryMode_Auto;
         }
 
-        pkg1::MemorySize GetPhysicalMemorySize() {
-            const auto dram_id = fuse::GetDramId();
-            AMS_ABORT_UNLESS(dram_id < fuse::DramId_Count);
-            return DramIdToMemorySize[dram_id];
-        }
-
         pkg1::MemorySize GetAvailableMemorySize(pkg1::MemorySize size) {
             return std::min(GetPhysicalMemorySize(), size);
         }
@@ -292,6 +286,13 @@ namespace ams::secmon::smc {
     SmcResult SmcGetEmummcConfig(SmcArguments &args) {
         /* TODO */
         return SmcResult::NotImplemented;
+    }
+
+    /* For exosphere's usage. */
+    pkg1::MemorySize GetPhysicalMemorySize() {
+        const auto dram_id = fuse::GetDramId();
+        AMS_ABORT_UNLESS(dram_id < fuse::DramId_Count);
+        return DramIdToMemorySize[dram_id];
     }
 
 }

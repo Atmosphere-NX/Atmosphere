@@ -16,7 +16,7 @@
 #include <exosphere.hpp>
 #include "../secmon_error.hpp"
 #include "secmon_smc_result.hpp"
-#include "secmon_user_page_mapper.hpp"
+#include "secmon_page_mapper.hpp"
 
 namespace ams::secmon::smc {
 
