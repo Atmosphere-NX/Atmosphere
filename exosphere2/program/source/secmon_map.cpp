@@ -209,7 +209,7 @@ namespace ams::secmon {
         /* Hold the lock. */
         lock_guard.Cancel();
 
-        return true;
+        return MemoryRegionVirtualAtmosphereIramPage.GetAddress();
     }
 
     void UnmapAtmosphereIramPage() {
@@ -260,7 +260,7 @@ namespace ams::secmon {
         /* Hold the lock. */
         lock_guard.Cancel();
 
-        return true;
+        return MemoryRegionVirtualAtmosphereUserPage.GetAddress();
     }
 
     void UnmapAtmosphereUserPage() {
