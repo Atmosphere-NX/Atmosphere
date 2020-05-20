@@ -56,4 +56,7 @@ namespace ams::secmon::smc {
     /* This is an atmosphere extension smc. */
     SmcResult SmcGetEmummcConfig(SmcArguments &args);
 
+    /* For other parts of exosphere. */
+    pkg1::MemorySize GetPhysicalMemorySize();
+
 }

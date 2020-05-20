@@ -20,7 +20,7 @@
 #include "secmon_smc_aes.hpp"
 #include "secmon_smc_device_unique_data.hpp"
 #include "secmon_smc_se_lock.hpp"
-#include "secmon_user_page_mapper.hpp"
+#include "secmon_page_mapper.hpp"
 
 namespace ams::secmon::smc {
 

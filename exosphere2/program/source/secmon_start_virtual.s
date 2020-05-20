@@ -148,20 +148,8 @@ _ZN3ams6secmon25AcquireCommonSmcStackLockEv:
     /* Get the address of the lock. */
     ldr x0, =_ZN3ams6secmon18CommonSmcStackLockE
 
-    /* Prepare to try to take the spinlock. */
-    mov w1, #1
-    sevl
-    prfm pstl1keep, [x0]
-
-1:  /* Repeatedly try to take the lock. */
-    wfe
-    ldaxr w2, [x0]
-    cbnz  w2, 1b
-    stxr  w2, w1, [x0]
-    cbnz  w2, 1b
-
-    /* Return. */
-    ret
+    /* Take the lock. */
+    b _ZN3ams6secmon15AcquireSpinLockERj
 
 .section    .text._ZN3ams6secmon25ReleaseCommonSmcStackLockEv, "ax", %progbits
 .align      4
@@ -170,11 +158,8 @@ _ZN3ams6secmon25ReleaseCommonSmcStackLockEv:
     /* Get the address of the lock. */
     ldr x0, =_ZN3ams6secmon18CommonSmcStackLockE
 
-    /* Release the spinlock. */
-    stlr wzr, [x0]
-
-    /* Return. */
-    ret
+    /* Release the lock. */
+    b _ZN3ams6secmon15ReleaseSpinLockERj
 
 .section    .text._ZN3ams6secmon26ReleaseCommonWarmbootStackEv, "ax", %progbits
 .align      4
