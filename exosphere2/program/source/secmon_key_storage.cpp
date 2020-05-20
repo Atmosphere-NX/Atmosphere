@@ -20,6 +20,8 @@ namespace ams::secmon {
 
     namespace {
 
+        constexpr const u8 RsaPublicKey[] = { 0x00, 0x01, 0x00, 0x01 };
+
         constinit u8 g_rsa_moduli[ImportRsaKey_Count][se::RsaSize] = {};
         constinit bool g_rsa_modulus_committed[ImportRsaKey_Count] = {};
 
@@ -78,6 +80,10 @@ namespace ams::secmon {
 
     void LoadProvisionalRsaKey(int slot, ImportRsaKey which) {
         se::SetRsaKey(slot, GetRsaKeyModulus(which), se::RsaSize, GetRsaKeyPrivateExponent(which), se::RsaSize);
+    }
+
+    void LoadProvisionalRsaPublicKey(int slot, ImportRsaKey which) {
+        se::SetRsaKey(slot, GetRsaKeyModulus(which), se::RsaSize, RsaPublicKey, sizeof(RsaPublicKey));
     }
 
     void SetMasterKey(int generation, const void *src, size_t size) {

@@ -25,11 +25,23 @@ namespace ams::secmon::smc {
 
     namespace {
 
+        struct ModularExponentiateByStorageKeyOption {
+            using Mode     = util::BitPack32::Field<0,  2, u32>;
+            using Reserved = util::BitPack32::Field<2, 30, u32>;
+        };
+
         struct PrepareEsDeviceUniqueKeyOption {
             using KeyGeneration = util::BitPack32::Field<0,  6, int>;
             using Type          = util::BitPack32::Field<6,  1, EsCommonKeyType>;
             using Reserved      = util::BitPack32::Field<7, 25, u32>;
         };
+
+        constexpr const u8 ModularExponentiateByStorageKeyTable[] = {
+            static_cast<u8>(ImportRsaKey_Lotus),
+            static_cast<u8>(ImportRsaKey_Ssl),
+            static_cast<u8>(ImportRsaKey_EsClientCert),
+        };
+        constexpr size_t ModularExponentiateByStorageKeyTableSize = util::size(ModularExponentiateByStorageKeyTable);
 
         class PrepareEsDeviceUniqueKeyAsyncArguments {
             private:
@@ -56,10 +68,14 @@ namespace ams::secmon::smc {
                     std::memcpy(this->msg, m, sizeof(this->msg));
                 }
 
-                void GetMessage(void *dst, size_t dst_size) const { std::memcpy(dst, this->msg, sizeof(this->msg)); }
+                const u8 *GetMessage() const { return this->msg; }
         };
 
-        constinit bool g_exp_mod_completed = false;
+        constinit SmcResult    g_exp_mod_result    = SmcResult::Success;
+
+        constinit bool         g_test_exp_mod_public = false;
+        constinit int          g_test_exp_mod_slot   = pkg1::RsaKeySlot_Temporary;
+        constinit ImportRsaKey g_test_exp_mod_key    = {};
 
         constinit union {
             ModularExponentiateByStorageKeyAsyncArguments modular_exponentiate_by_storage_key;
@@ -76,8 +92,153 @@ namespace ams::secmon::smc {
 
         void SecurityEngineDoneHandler() {
             /* End the asynchronous operation. */
-            g_exp_mod_completed = true;
+            g_exp_mod_result = SmcResult::Success;
             EndAsyncOperation();
+        }
+
+        void TestRsaPublicKey(ImportRsaKey which, int slot, const void *mod, size_t mod_size, se::DoneHandler handler) {
+            /* Declare a buffer for our test message. */
+            u8 msg[se::RsaSize];
+            std::memset(msg, 'D', sizeof(msg));
+
+            /* Provisionally import the modulus. */
+            ImportRsaKeyModulusProvisionally(which, mod, mod_size);
+
+            /* Load the provisional public key into the slot. */
+            LoadProvisionalRsaPublicKey(slot, which);
+
+            /* Perform the test exponentiation. */
+            se::ModularExponentiateAsync(slot, msg, sizeof(msg), handler);
+        }
+
+        void TestRsaPrivateKey(ImportRsaKey which, int slot, se::DoneHandler handler) {
+            /* Get the result of the public key test. */
+            u8 msg[se::RsaSize];
+            se::GetRsaResult(msg, sizeof(msg));
+
+            /* Load the provisional private key into the slot. */
+            LoadProvisionalRsaKey(slot, which);
+
+            /* Perform the test exponentiation. */
+            se::ModularExponentiateAsync(slot, msg, sizeof(msg), handler);
+        }
+
+        void VerifyTestRsaKeyResult(ImportRsaKey which) {
+            /* Get the result of the test. */
+            u8 msg[se::RsaSize];
+            se::GetRsaResult(msg, sizeof(msg));
+
+            /* Validate the result. */
+            const bool is_valid = (msg[0] == 'D') & (crypto::IsSameBytes(msg, msg + 1, sizeof(msg) - 1));
+
+            /* If the test passes, the key is no longer provisional. */
+            if (is_valid) {
+                CommitRsaKeyModulus(which);
+            }
+        }
+
+        void TestRsaKeyDoneHandler() {
+            if (g_test_exp_mod_public) {
+                /* If we're testing the public key, we still have another exponentiation to do to test the private key. */
+                g_test_exp_mod_public = false;
+
+                /* Test the private key. */
+                TestRsaPrivateKey(g_test_exp_mod_key, g_test_exp_mod_slot, TestRsaKeyDoneHandler);
+            } else {
+                /* We're testing the private key, so validate the result. */
+                VerifyTestRsaKeyResult(g_test_exp_mod_key);
+
+                /* If the test passed, we can proceed to perform the intended exponentiation. */
+                if (LoadRsaKey(g_test_exp_mod_slot, g_test_exp_mod_key)) {
+                    se::ModularExponentiateAsync(pkg1::RsaKeySlot_Temporary, GetModularExponentiateByStorageKeyAsyncArguments().GetMessage(), se::RsaSize, SecurityEngineDoneHandler);
+                } else {
+                    /* The test failed, so end the asynchronous operation. */
+                    g_exp_mod_result = SmcResult::InvalidArgument;
+                    EndAsyncOperation();
+                }
+            }
+        }
+
+        SmcResult ModularExponentiateImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            const uintptr_t msg_address = args.r[1];
+            const uintptr_t exp_address = args.r[2];
+            const uintptr_t mod_address = args.r[3];
+            const size_t    exp_size    = args.r[4];
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(util::IsAligned(exp_size, sizeof(u32)), InvalidArgument);
+            SMC_R_UNLESS(exp_size <= se::RsaSize, InvalidArgument);
+
+            /* Copy the message and modulus from the user. */
+            alignas(8) u8 msg[se::RsaSize];
+            alignas(8) u8 exp[se::RsaSize];
+            alignas(8) u8 mod[se::RsaSize];
+            {
+                UserPageMapper mapper(msg_address);
+                SMC_R_UNLESS(mapper.Map(),                                       InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(msg, msg_address, sizeof(msg)), InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(exp, exp_address, exp_size),    InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(mod, mod_address, sizeof(mod)), InvalidArgument);
+            }
+
+            /* We're performing an operation, so set the result to busy. */
+            g_exp_mod_result = SmcResult::Busy;
+
+            /* Load the key into the temporary keyslot. */
+            se::SetRsaKey(pkg1::RsaKeySlot_Temporary, mod, sizeof(mod), exp, exp_size);
+
+            /* Begin the asynchronous exponentiation. */
+            se::ModularExponentiateAsync(pkg1::RsaKeySlot_Temporary, msg, sizeof(msg), SecurityEngineDoneHandler);
+
+            return SmcResult::Success;
+        }
+
+        SmcResult ModularExponentiateByStorageKeyImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            const uintptr_t msg_address = args.r[1];
+            const uintptr_t mod_address = args.r[2];
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+
+            const auto mode       = option.Get<ModularExponentiateByStorageKeyOption::Mode>();
+            const auto reserved   = option.Get<PrepareEsDeviceUniqueKeyOption::Reserved>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0,                                   InvalidArgument);
+            SMC_R_UNLESS(mode < ModularExponentiateByStorageKeyTableSize, InvalidArgument);
+
+            /* Convert the mode to an import key. */
+            const auto import_key = static_cast<ImportRsaKey>(ModularExponentiateByStorageKeyTable[mode]);
+
+            /* Copy the message and modulus from the user. */
+            alignas(8) u8 msg[se::RsaSize];
+            alignas(8) u8 mod[se::RsaSize];
+            {
+                UserPageMapper mapper(msg_address);
+                SMC_R_UNLESS(mapper.Map(),                                       InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(msg, msg_address, sizeof(msg)), InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(mod, mod_address, sizeof(mod)), InvalidArgument);
+            }
+
+            /* We're performing an operation, so set the result to busy. */
+            g_exp_mod_result = SmcResult::Busy;
+
+            /* In the ideal case, the key pair is already verified. If it is, we can use it directly. */
+            if (LoadRsaKey(pkg1::RsaKeySlot_Temporary, import_key)) {
+                se::ModularExponentiateAsync(pkg1::RsaKeySlot_Temporary, msg, sizeof(msg), SecurityEngineDoneHandler);
+            } else {
+                /* Set the async arguments. */
+                GetModularExponentiateByStorageKeyAsyncArguments().Set(msg, sizeof(msg));
+
+                /* Test the rsa key. */
+                g_test_exp_mod_slot   = pkg1::RsaKeySlot_Temporary;
+                g_test_exp_mod_key    = import_key;
+                g_test_exp_mod_public = true;
+
+                TestRsaPublicKey(import_key, pkg1::RsaKeySlot_Temporary, mod, sizeof(mod), TestRsaKeyDoneHandler);
+            }
+
+            return SmcResult::Success;
         }
 
         SmcResult PrepareEsDeviceUniqueKeyImpl(SmcArguments &args) {
@@ -109,8 +270,8 @@ namespace ams::secmon::smc {
                 SMC_R_UNLESS(mapper.CopyFromUser(mod, mod_address, sizeof(mod)), InvalidArgument);
             }
 
-            /* We're performing an operation, so the operation is not completed. */
-            g_exp_mod_completed = false;
+            /* We're performing an operation, so set the result to busy. */
+            g_exp_mod_result = SmcResult::Busy;
 
             /* Set the async arguments. */
             GetPrepareEsDeviceUniqueKeyAsyncArguments().Set(generation, type, label_digest);
@@ -124,6 +285,20 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult GetModularExponentiateResult(void *dst, size_t dst_size) {
+            /* Validate state. */
+            SMC_R_TRY(g_exp_mod_result);
+            SMC_R_UNLESS(dst_size == se::RsaSize, InvalidArgument);
+
+            /* We want to relinquish our security engine lock at the end of scope. */
+            ON_SCOPE_EXIT { UnlockSecurityEngine(); };
+
+            /* Get the result of the exponentiation. */
+            se::GetRsaResult(dst, se::RsaSize);
+
+            return SmcResult::Success;
+        }
+
         SmcResult GetPrepareEsDeviceUniqueKeyResult(void *dst, size_t dst_size) {
             /* Declare variables. */
             u8 key_source[se::AesBlockSize];
@@ -131,7 +306,7 @@ namespace ams::secmon::smc {
             u8 access_key[se::AesBlockSize];
 
             /* Validate state. */
-            SMC_R_UNLESS(g_exp_mod_completed,                       Busy);
+            SMC_R_TRY(g_exp_mod_result);
             SMC_R_UNLESS(dst_size == sizeof(access_key), InvalidArgument);
 
             /* We want to relinquish our security engine lock at the end of scope. */
@@ -168,13 +343,11 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcModularExponentiate(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvokeAsync(args, ModularExponentiateImpl, GetModularExponentiateResult);
     }
 
     SmcResult SmcModularExponentiateByStorageKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvokeAsync(args, ModularExponentiateByStorageKeyImpl, GetModularExponentiateResult);
     }
 
     SmcResult SmcPrepareEsDeviceUniqueKey(SmcArguments &args) {
