@@ -191,6 +191,20 @@ _ZN3ams6secmon26ReleaseCommonWarmbootStackEv:
     /* Return. */
     ret
 
+.section    .text._ZN3ams6secmon19PivotStackAndInvokeEPvPFvvE, "ax", %progbits
+.align      4
+.global     _ZN3ams6secmon19PivotStackAndInvokeEPvPFvvE
+_ZN3ams6secmon19PivotStackAndInvokeEPvPFvvE:
+    /* Pivot to use the provided stack pointer. */
+    mov  sp, x0
+
+    /* Release our lock on the common smc stack. */
+    mov  x19, x1
+    bl   _ZN3ams6secmon25ReleaseCommonSmcStackLockEv
+
+    /* Invoke the function with the new stack. */
+    br   x19
+
 .section    .data._ZN3ams6secmon18CommonSmcStackLockE, "aw", %progbits
 .global     _ZN3ams6secmon18CommonSmcStackLockE
 _ZN3ams6secmon18CommonSmcStackLockE:

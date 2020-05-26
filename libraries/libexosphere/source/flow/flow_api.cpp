@@ -34,6 +34,18 @@ namespace ams::flow {
             { FLOW_CTLR_CPU3_CSR, FLOW_CTLR_HALT_CPU3_EVENTS, FLOW_CTLR_CC4_CORE3_CTRL, },
         };
 
+        constexpr u32 GetHaltCpuEventsValue(bool resume_on_irq) {
+            if (resume_on_irq) {
+                return reg::Encode(FLOW_REG_BITS_ENUM(HALT_CPUN_EVENTS_FLOW_MODE, WAITEVENT),
+                                   FLOW_REG_BITS_ENUM(HALT_CPUN_EVENTS_LIC_IRQN,     ENABLE),
+                                   FLOW_REG_BITS_ENUM(HALT_CPUN_EVENTS_LIC_FIQN,     ENABLE),
+                                   FLOW_REG_BITS_ENUM(HALT_CPUN_EVENTS_GIC_IRQN,     ENABLE),
+                                   FLOW_REG_BITS_ENUM(HALT_CPUN_EVENTS_GIC_FIQN,     ENABLE));
+            } else {
+                return reg::Encode(FLOW_REG_BITS_ENUM(HALT_CPUN_EVENTS_FLOW_MODE, WAITEVENT));
+            }
+        }
+
     }
 
     void SetRegisterAddress(uintptr_t address) {
@@ -46,6 +58,22 @@ namespace ams::flow {
         const auto &offsets = FlowControllerRegisterOffsets[core];
         reg::Write(g_register_address + offsets.cpu_csr,         0);
         reg::Write(g_register_address + offsets.halt_cpu_events, 0);
+    }
+
+    void SetCpuCsr(int core, u32 enable_ext) {
+        reg::Write(g_register_address + FlowControllerRegisterOffsets[core].cpu_csr, FLOW_REG_BITS_ENUM (CPUN_CSR_INTR_FLAG,               TRUE),
+                                                                                     FLOW_REG_BITS_ENUM (CPUN_CSR_EVENT_FLAG,              TRUE),
+                                                                                     FLOW_REG_BITS_VALUE(CPUN_CSR_ENABLE_EXT,        enable_ext),
+                                                                                     FLOW_REG_BITS_VALUE(CPUN_CSR_WAIT_WFI_BITMAP, (1u << core)),
+                                                                                     FLOW_REG_BITS_ENUM (CPUN_CSR_ENABLE,                ENABLE));
+    }
+
+    void SetHaltCpuEvents(int core, bool resume_on_irq) {
+        reg::Write(g_register_address + FlowControllerRegisterOffsets[core].halt_cpu_events, GetHaltCpuEventsValue(resume_on_irq));
+    }
+
+    void SetCc4Ctrl(int core, u32 value) {
+        reg::Write(g_register_address + FlowControllerRegisterOffsets[core].cc4_core_ctrl, value);
     }
 
 }

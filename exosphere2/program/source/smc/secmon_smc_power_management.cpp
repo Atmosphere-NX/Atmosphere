@@ -14,11 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "../secmon_cache.hpp"
 #include "../secmon_cpu_context.hpp"
 #include "../secmon_error.hpp"
 #include "secmon_smc_power_management.hpp"
 
+namespace ams::secmon {
+
+    /* Declare assembly functionality. */
+    void *GetCoreExceptionStackVirtual();
+
+}
+
 namespace ams::secmon::smc {
+
+    /* Declare assembly power-management functionality. */
+    void PivotStackAndInvoke(void *stack, void (*function)());
+    void FinalizePowerOff();
 
     namespace {
 
@@ -94,11 +106,44 @@ namespace ams::secmon::smc {
                                                                         REG_BITS_VALUE(which_core + 0x10, 1, 1)); /* CORERESETn */
         }
 
+        void PowerOffCpu() {
+            /* Get the current core id. */
+            const auto core_id = hw::GetCurrentCoreId();
+
+            /* Configure the flow controller to prepare for shutting down the current core. */
+            flow::SetCpuCsr(core_id, FLOW_CTLR_CPUN_CSR_ENABLE_EXT_DISABLE);
+            flow::SetHaltCpuEvents(core_id, false);
+            flow::SetCc4Ctrl(core_id, 0);
+
+            /* Save the core's context for restoration on next power-on. */
+            SaveDebugRegisters();
+            SetCoreOff();
+
+            /* Ensure there are no pending memory transactions prior to our power-down. */
+            FlushEntireDataCache();
+
+            /* Finalize our powerdown and wait for an interrupt. */
+            FinalizePowerOff();
+        }
+
     }
 
     SmcResult SmcPowerOffCpu(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        /* Get the current core id. */
+        const auto core_id = hw::GetCurrentCoreId();
+
+        /* Note that we're expecting a reset for the current core. */
+        SetResetExpected(true);
+
+        /* If we're on the final core, shut down directly. Otherwise, invoke with special stack. */
+        if (core_id == NumCores - 1) {
+            PowerOffCpu();
+        } else {
+            PivotStackAndInvoke(GetCoreExceptionStackVirtual(), PowerOffCpu);
+        }
+
+        /* This code will never be reached. */
+        __builtin_unreachable();
     }
 
     SmcResult SmcPowerOnCpu(SmcArguments &args) {
