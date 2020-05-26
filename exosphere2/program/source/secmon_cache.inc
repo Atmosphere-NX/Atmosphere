@@ -15,6 +15,7 @@
  */
 
 void FlushEntireDataCache();
+void FlushEntireDataCacheLocal();
 void InvalidateEntireDataCache();
 
 void EnsureMappingConsistency();

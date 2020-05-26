@@ -268,6 +268,25 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult SetConfig(SmcArguments &args) {
+            switch (static_cast<ConfigItem>(args.r[1])) {
+                case ConfigItem::IsChargerHiZModeEnabled:
+                    /* Configure the HiZ mode. */
+                    SetChargerHiZModeEnabled(static_cast<bool>(args.r[3]));
+                    break;
+                case ConfigItem::ExosphereNeedsReboot:
+                    /* TODO */
+                    return SmcResult::NotImplemented;
+                case ConfigItem::ExosphereNeedsShutdown:
+                    /* TODO */
+                    return SmcResult::NotImplemented;
+                default:
+                    return SmcResult::InvalidArgument;
+            }
+
+            return SmcResult::Success;
+        }
+
     }
 
     SmcResult SmcGetConfigUser(SmcArguments &args) {
@@ -279,8 +298,7 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcSetConfig(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return SetConfig(args);
     }
 
     /* This is an atmosphere extension smc. */

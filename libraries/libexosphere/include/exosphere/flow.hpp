@@ -22,4 +22,8 @@ namespace ams::flow {
 
     void ResetCpuRegisters(int core);
 
+    void SetCpuCsr(int core, u32 enable_ext);
+    void SetHaltCpuEvents(int core, bool resume_on_irq);
+    void SetCc4Ctrl(int core, u32 value);
+
 }
