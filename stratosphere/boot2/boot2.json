@@ -14,7 +14,7 @@
     "filesystem_access":    {
         "permissions":    "0xFFFFFFFFFFFFFFFF"
     },
-    "service_host": [],
+    "service_host": ["*"],
     "service_access": ["fsp-srv", "gpio", "htc", "lr", "pm:bm", "pm:shell", "pm:info", "set:sys"],
     "kernel_capabilities": [
         {
