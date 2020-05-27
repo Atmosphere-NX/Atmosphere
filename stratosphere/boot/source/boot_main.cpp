@@ -35,6 +35,7 @@ extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
+    u32 __nx_fs_num_sessions = 1;
 
     /* TODO: Evaluate to what extent this can be reduced further. */
     #define INNER_HEAP_SIZE 0x20000
