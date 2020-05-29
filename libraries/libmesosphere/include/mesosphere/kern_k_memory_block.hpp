@@ -170,6 +170,8 @@ namespace ams::kern {
         KMemoryAttribute_IpcLocked      = ams::svc::MemoryAttribute_IpcLocked,
         KMemoryAttribute_DeviceShared   = ams::svc::MemoryAttribute_DeviceShared,
         KMemoryAttribute_Uncached       = ams::svc::MemoryAttribute_Uncached,
+
+        KMemoryAttribute_AnyLocked      = 0x80,
     };
 
     struct KMemoryInfo {

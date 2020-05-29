@@ -126,6 +126,8 @@ namespace ams::kern {
 
             constexpr const char *GetName() const { return this->name; }
 
+            constexpr ams::svc::ProgramId GetProgramId() const { return this->program_id; }
+
             constexpr u64 GetProcessId() const { return this->process_id; }
 
             constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }
@@ -163,8 +165,13 @@ namespace ams::kern {
             constexpr KHandleTable &GetHandleTable() { return this->handle_table; }
             constexpr const KHandleTable &GetHandleTable() const { return this->handle_table; }
 
+            size_t GetUsedNonSystemUserPhysicalMemorySize() const;
+            size_t GetTotalNonSystemUserPhysicalMemorySize() const;
+
             Result CreateThreadLocalRegion(KProcessAddress *out);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
+
+            constexpr KProcessAddress GetProcessLocalRegionAddress() const { return this->plr_address; }
 
             void AddCpuTime(s64 diff) { this->cpu_time += diff; }
             void IncrementScheduledCount() { ++this->schedule_count; }

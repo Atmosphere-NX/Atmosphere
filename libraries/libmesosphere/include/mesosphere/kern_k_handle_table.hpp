@@ -147,7 +147,11 @@ namespace ams::kern {
                 if constexpr (std::is_same<T, KAutoObject>::value) {
                     return this->GetObjectImpl(handle);
                 } else {
-                    return this->GetObjectImpl(handle)->DynamicCast<T*>();
+                    if (auto *obj = this->GetObjectImpl(handle); obj != nullptr) {
+                        return obj->DynamicCast<T*>();
+                    } else {
+                        return nullptr;
+                    }
                 }
             }
 
@@ -177,7 +181,11 @@ namespace ams::kern {
                 if constexpr (std::is_same<T, KAutoObject>::value) {
                     return obj;
                 } else {
-                    return obj->DynamicCast<T*>();
+                    if (auto *obj = this->GetObjectImpl(handle); obj != nullptr) {
+                        return obj->DynamicCast<T*>();
+                    } else {
+                        return nullptr;
+                    }
                 }
             }
 

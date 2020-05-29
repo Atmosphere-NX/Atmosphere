@@ -56,6 +56,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.QueryInfo(out_info, out_page_info, addr);
             }
 
+            Result UnmapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
+                return this->page_table.UnmapMemory(dst_address, src_address, size);
+            }
+
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
                 return this->page_table.MapIo(phys_addr, size, perm);
             }
@@ -108,6 +112,8 @@ namespace ams::kern::arch::arm64 {
             size_t GetStackRegionSize()     const { return this->page_table.GetStackRegionSize(); }
             size_t GetKernelMapRegionSize() const { return this->page_table.GetKernelMapRegionSize(); }
             size_t GetAliasCodeRegionSize() const { return this->page_table.GetAliasCodeRegionSize(); }
+
+            size_t GetNormalMemorySize() const { return this->page_table.GetNormalMemorySize(); }
 
             KPhysicalAddress GetHeapPhysicalAddress(KVirtualAddress address) const {
                 /* TODO: Better way to convert address type? */

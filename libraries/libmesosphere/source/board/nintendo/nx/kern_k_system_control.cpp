@@ -389,4 +389,12 @@ namespace ams::kern::board::nintendo::nx {
         }
     }
 
+    /* Constant calculations. */
+    size_t KSystemControl::CalculateRequiredSecureMemorySize(size_t size, u32 pool) {
+        if (pool == KMemoryManager::Pool_Applet) {
+            return 0;
+        }
+        return size;
+    }
+
 }

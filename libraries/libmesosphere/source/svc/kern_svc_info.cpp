@@ -34,6 +34,10 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_AslrRegionSize:
                 case ams::svc::InfoType_StackRegionAddress:
                 case ams::svc::InfoType_StackRegionSize:
+                case ams::svc::InfoType_ProgramId:
+                case ams::svc::InfoType_InitialProcessIdRange:
+                case ams::svc::InfoType_UserExceptionContextAddress:
+                case ams::svc::InfoType_TotalNonSystemMemorySize:
                     {
                         /* These info types don't support non-zero subtypes. */
                         R_UNLESS(info_subtype == 0,  svc::ResultInvalidCombination());
@@ -66,6 +70,18 @@ namespace ams::kern::svc {
                                 break;
                             case ams::svc::InfoType_StackRegionSize:
                                 *out = process->GetPageTable().GetStackRegionSize();
+                                break;
+                            case ams::svc::InfoType_ProgramId:
+                                *out = process->GetProgramId();
+                                break;
+                            case ams::svc::InfoType_InitialProcessIdRange:
+                                /* TODO: Detect exactly 4.0.0 target firmware, do the right thing. */
+                                return svc::ResultInvalidEnumValue();
+                            case ams::svc::InfoType_UserExceptionContextAddress:
+                                *out = GetInteger(process->GetProcessLocalRegionAddress());
+                                break;
+                            case ams::svc::InfoType_TotalNonSystemMemorySize:
+                                *out = process->GetTotalNonSystemUserPhysicalMemorySize();
                                 break;
                             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                         }

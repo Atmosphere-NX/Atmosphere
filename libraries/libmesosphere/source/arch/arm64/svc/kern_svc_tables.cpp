@@ -30,7 +30,7 @@ namespace ams::kern::svc {
                     private:                                                                                                              \
                         using Impl = ::ams::svc::codegen::KernelSvcWrapper<::ams::kern::svc::NAME##64, ::ams::kern::svc::NAME##64From32>; \
                     public:                                                                                                               \
-                        static NOINLINE void Call64() { return Impl::Call64(); }                                                          \
+                        static NOINLINE void       Call64() { return Impl::Call64(); }                                                    \
                         static NOINLINE void Call64From32() { return Impl::Call64From32(); }                                              \
                 };
         #else
@@ -51,28 +51,45 @@ namespace ams::kern::svc {
 
         #pragma GCC pop_options
 
+        constexpr const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32Impl = [] {
+            std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+
+            #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
+                table[ID] = NAME::Call64From32;
+            AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
+            #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+
+            return table;
+        }();
+
+        constexpr const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64Impl = [] {
+            std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+
+            #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
+                table[ID] = NAME::Call64;
+            AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
+            #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+
+            return table;
+        }();
+
+        constexpr bool IsValidSvcTable(const std::array<SvcTableEntry, NumSupervisorCalls> &table) {
+            for (size_t i = 0; i < NumSupervisorCalls; i++) {
+                if (table[i] != nullptr) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static_assert(IsValidSvcTable(SvcTable64Impl));
+        static_assert(IsValidSvcTable(SvcTable64From32Impl));
+
     }
 
-    const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32 = [] {
-        std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+    constinit const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64       = SvcTable64Impl;
 
-        #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
-            table[ID] = NAME::Call64From32;
-        AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
-        #undef AMS_KERN_SVC_SET_TABLE_ENTRY
-
-        return table;
-    }();
-
-    const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64 = [] {
-        std::array<SvcTableEntry, NumSupervisorCalls> table = {};
-
-        #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
-            table[ID] = NAME::Call64;
-        AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
-        #undef AMS_KERN_SVC_SET_TABLE_ENTRY
-
-        return table;
-    }();
+    constinit const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32 = SvcTable64From32Impl;
 
 }
