@@ -29,6 +29,7 @@ namespace ams::secmon {
     namespace {
 
         constexpr inline const uintptr_t TIMER     = secmon::MemoryRegionVirtualDeviceTimer.GetAddress();
+        constexpr inline const uintptr_t SYSTEM    = secmon::MemoryRegionVirtualDeviceSystem.GetAddress();
         constexpr inline const uintptr_t APB_MISC  = secmon::MemoryRegionVirtualDeviceApbMisc.GetAddress();
         constexpr inline const uintptr_t FLOW_CTLR = secmon::MemoryRegionVirtualDeviceFlowController.GetAddress();
         constexpr inline const uintptr_t PMC       = secmon::MemoryRegionVirtualDevicePmc.GetAddress();
@@ -784,12 +785,12 @@ namespace ams::secmon {
             reg::Write(MC + MC_IRAM_TOM, ( 0u) & MC_IRAM_TOM_WRITE_MASK);
 
             /* Lock the IRAM aperture. */
-            reg::Write(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, DISABLED));
+            reg::ReadWrite(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, DISABLED));
 
             /* Disable the ARC clock gate override. */
             reg::ReadWrite(CLK_RST + CLK_RST_CONTROLLER_LVL2_CLK_GATE_OVRD, CLK_RST_REG_BITS_ENUM(LVL2_CLK_GATE_OVRD_ARC_CLK_OVR_ON, OFF));
 
-            /* Rea IRAM REG CTRL to make sure our writes take. */
+            /* Read IRAM REG CTRL to make sure our writes take. */
             reg::Read(MC + MC_IRAM_REG_CTRL);
         }
 
@@ -1125,6 +1126,9 @@ namespace ams::secmon {
         reg::Write(EVP + EVP_COP_RSVD_VECTOR,           BpmpExceptionVector);
         reg::Write(EVP + EVP_COP_IRQ_VECTOR,            BpmpExceptionVector);
         reg::Write(EVP + EVP_COP_FIQ_VECTOR,            BpmpExceptionVector);
+
+        /* Disable arbitration for the bpmp. */
+        reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
 
         /* Turn on the SMMU for the BPMP. */
         EnableBpmpSmmu();
