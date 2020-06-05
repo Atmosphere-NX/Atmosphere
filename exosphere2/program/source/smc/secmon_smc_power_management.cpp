@@ -111,7 +111,7 @@ namespace ams::secmon::smc {
             const auto core_id = hw::GetCurrentCoreId();
 
             /* Configure the flow controller to prepare for shutting down the current core. */
-            flow::SetCpuCsr(core_id, FLOW_CTLR_CPUN_CSR_ENABLE_EXT_DISABLE);
+            flow::SetCpuCsr(core_id, FLOW_CTLR_CPUN_CSR_ENABLE_EXT_POWERGATE_CPU_ONLY);
             flow::SetHaltCpuEvents(core_id, false);
             flow::SetCc4Ctrl(core_id, 0);
 

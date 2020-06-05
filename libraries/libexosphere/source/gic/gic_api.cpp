@@ -124,7 +124,11 @@ namespace ams::gic {
             const int word  = i / scale;
             const int bit   = (i % scale) * width;
 
-            reg::ReadWrite(address + sizeof(u32) * word, REG_BITS_VALUE(bit, width, value));
+            const u32 mask = ((1u << width) - 1) << bit;
+
+            const uintptr_t reg_addr = address + sizeof(u32) * word;
+            const u32 old = reg::Read(reg_addr) & ~mask;
+            reg::Write(reg_addr, old | ((value << bit) & mask));
         }
 
         void Write(uintptr_t address, int width, int i, u32 value) {
