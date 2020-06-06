@@ -9,31 +9,18 @@ endif
 
 COMPONENTS := fusee stratosphere mesosphere exosphere thermosphere troposphere libraries
 
+dist-no-debug: all
+dist: dist-no-debug
 all: $(COMPONENTS)
-
-thermosphere:
-	$(MAKE) -C thermosphere all
-
-exosphere: thermosphere
-	$(MAKE) -C exosphere all
-
-stratosphere: exosphere libraries
-	$(MAKE) -C stratosphere all
-
-mesosphere: exosphere libraries
-	$(MAKE) -C mesosphere all
-
-troposphere: stratosphere
-	$(MAKE) -C troposphere all
-
-sept: exosphere
-	$(MAKE) -C sept all
-
 fusee: exosphere mesosphere stratosphere sept
-	$(MAKE) -C $@ all
+stratosphere: exosphere libraries
+mesosphere: exosphere libraries
+troposphere: stratosphere
+exosphere: thermosphere
+sept: exosphere
 
-libraries:
-	$(MAKE) -C libraries all
+$(COMPONENTS):
+	$(MAKE) -C $@ all
 
 clean:
 	$(MAKE) -C fusee clean
@@ -142,6 +129,5 @@ dist: dist-no-debug
 	cd atmosphere-$(AMSVER)-debug; zip -r ../atmosphere-$(AMSVER)-debug.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)-debug
 	mv atmosphere-$(AMSVER)-debug.zip out/atmosphere-$(AMSVER)-debug.zip
-
 
 .PHONY: $(TOPTARGETS) $(COMPONENTS)
