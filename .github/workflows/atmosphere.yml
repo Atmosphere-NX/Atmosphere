@@ -1,0 +1,45 @@
+name: Atmosphere CI
+
+on:
+  push:
+    branches: [ master ]
+
+  pull_request:
+    branches: [ master ]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-test-dist-no-debug:
+    name: Build Test (dist-no-debug)
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout master branch
+      uses: actions/checkout@v2
+
+    - name: Download dkp-pacman
+      run: wget https://github.com/devkitPro/pacman/releases/download/devkitpro-pacman-1.0.1/devkitpro-pacman.deb
+
+    - name: Install dkp-pacman
+      run: sudo dpkg --install devkitpro-pacman.deb
+
+    - name: Delete downloaded dkp-pacman
+      run: rm -rf devkitpro-pacman.deb
+
+    - name: Update packages from dkp-pacman to latest
+      run: sudo dkp-pacman --sync --refresh --sysupgrade --noconfirm
+
+    - name: Install packages required for build from dkp-pacman
+      run: sudo dkp-pacman --sync --noconfirm devkitARM devkitA64 devkit-env general-tools switch-tools libnx switch-libjpeg-turbo
+
+    - name: Install pycryptodome for python2 (Yes, python2 is still used in an actively developed project in 2020)
+      run: pip install pycryptodome
+
+    - name: Build target dist-no-debug
+      run: |
+          source /etc/profile.d/devkit-env.sh
+          make --directory=$GITHUB_WORKSPACE --file=$GITHUB_WORKSPACE/Makefile dist-no-debug

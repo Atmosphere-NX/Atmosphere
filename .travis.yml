@@ -1,0 +1,33 @@
+language: cpp
+os: linux
+dist: bionic
+compiler: gcc
+
+python:
+  - "2.7"
+
+jobs:
+  include:
+    - stage: "Build Test (dist-no-debug)"
+
+      before_install:
+      - wget https://github.com/devkitPro/pacman/releases/download/devkitpro-pacman-1.0.1/devkitpro-pacman.deb
+
+      install:
+      - sudo dpkg --install devkitpro-pacman.deb
+      - sudo dkp-pacman --sync --refresh --sysupgrade --noconfirm
+      - sudo dkp-pacman --sync --noconfirm devkitARM devkitA64 devkit-env general-tools switch-tools libnx switch-libjpeg-turbo
+      - pip install --upgrade pip
+      - pip install pycryptodome
+
+      before_script:
+      - source /etc/profile.d/devkit-env.sh
+      - rm -rf devkitpro-pacman.deb
+      - git checkout master
+
+      script:
+      - make dist-no-debug
+
+branches:
+  only:
+  - master
