@@ -274,16 +274,6 @@ namespace ams::secmon::smc {
             DebugLog(args);
         }
 
-        if (args.r[0] == 0xC4000001) {
-            *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress())            = 0xFFFFFFFF;
-            *(volatile u32 *)(MemoryRegionVirtualDebug.GetAddress() + 0x10)     = static_cast<u32>(hw::GetCurrentCoreId());
-
-            *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x50) = 0x02;
-            *(volatile u32 *)(MemoryRegionVirtualDevicePmc.GetAddress() + 0x00) = 0x10;
-
-            util::WaitMicroSeconds(1000);
-        }
-
         /* Get the handler info. */
         const auto &info = GetHandlerInfo(table, args.r[0]);
 
