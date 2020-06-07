@@ -122,7 +122,7 @@ _ZN3ams6secmon28GetCoreExceptionStackVirtualEv:
     cmp x0, #2
     b.eq 2f
 
-    cmp x1, #1
+    cmp x0, #1
     b.eq 1f
 
     /* cmp x0, #0 */
