@@ -157,9 +157,3 @@ void max77620_config_default()
 	}
 	i2c_send_byte(I2C_5, MAX77620_I2C_ADDR, MAX77620_REG_SD_CFG2, 4);
 }
-
-void max77620_low_battery_monitor_config()
-{
-	i2c_send_byte(I2C_5, MAX77620_I2C_ADDR, MAX77620_REG_CNFGGLBL1,
-		MAX77620_CNFGGLBL1_LBDAC_EN | MAX77620_CNFGGLBL1_LBHYST_N | MAX77620_CNFGGLBL1_LBDAC_N);
-}

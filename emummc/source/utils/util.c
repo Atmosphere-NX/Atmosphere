@@ -96,7 +96,7 @@ u64 get_tmr_us()
 void msleep(u64 milliseconds)
 {
 	u64 now = get_tmr_ms();
-	while (get_tmr_ms() - now < milliseconds)
+	while (((u64)get_tmr_ms() - now) < milliseconds)
 		;
 	//svcSleepThread(1000000 * milliseconds);
 }
@@ -105,7 +105,7 @@ void msleep(u64 milliseconds)
 void usleep(u64 microseconds)
 {
 	u64 now = get_tmr_us();
-	while (get_tmr_us() - now < microseconds)
+	while (((u64)get_tmr_us() - now) < microseconds)
 		;
 	//svcSleepThread(1000 * microseconds);
 }
