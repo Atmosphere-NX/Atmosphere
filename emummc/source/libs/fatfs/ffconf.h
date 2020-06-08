@@ -15,7 +15,7 @@
 /  and optional writing functions as well. */
 
 
-#define FF_FS_MINIMIZE	0
+#define FF_FS_MINIMIZE	2
 /* This option defines minimization level to remove some basic API functions.
 /
 /   0: Basic functions are fully enabled.
@@ -41,8 +41,13 @@
 #define FF_USE_MKFS		0
 /* This option switches f_mkfs() function. (0:Disable or 1:Enable) */
 
+#define FF_FASTFS 1
 
+#ifdef FF_FASTFS
+#define FF_USE_FASTSEEK	1
+#else
 #define FF_USE_FASTSEEK	0
+#endif
 /* This option switches fast seek function. (0:Disable or 1:Enable) */
 
 
@@ -50,7 +55,7 @@
 /* This option switches f_expand function. (0:Disable or 1:Enable) */
 
 
-#define FF_USE_CHMOD	1
+#define FF_USE_CHMOD	0
 /* This option switches attribute manipulation functions, f_chmod() and f_utime().
 /  (0:Disable or 1:Enable) Also FF_FS_READONLY needs to be 0 to enable this option. */
 
@@ -239,7 +244,7 @@
 #define FF_FS_NORTC		1
 #define FF_NORTC_MON	1
 #define FF_NORTC_MDAY	1
-#define FF_NORTC_YEAR	2019
+#define FF_NORTC_YEAR	2020
 /* The option FF_FS_NORTC switches timestamp function. If the system does not have
 /  any RTC function or valid timestamp is not needed, set FF_FS_NORTC = 1 to disable
 /  the timestamp function. Every object modified by FatFs will have a fixed timestamp

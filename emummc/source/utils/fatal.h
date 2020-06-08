@@ -29,8 +29,12 @@ enum FatalReason
     Fatal_UnknownVersion,
     Fatal_BadResult,
     Fatal_GetConfig,
+    Fatal_OpenAccessor,
     Fatal_CloseAccessor,
     Fatal_IoMapping,
+    Fatal_FatfsMount,
+    Fatal_FatfsFileOpen,
+    Fatal_FatfsMemExhaustion,
     Fatal_Max
 };
 

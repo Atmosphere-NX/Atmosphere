@@ -34,7 +34,6 @@
 #define MERGE2(a, b) a ## b
 #define CVTBL(tbl, cp) MERGE2(tbl, cp)
 
-
 /*------------------------------------------------------------------------*/
 /* Code Conversion Tables                                                 */
 /*------------------------------------------------------------------------*/
@@ -622,6 +621,5 @@ DWORD ff_wtoupper (	/* Returns up-converted code point */
 
 	return uni;
 }
-
 
 #endif /* #if FF_USE_LFN */

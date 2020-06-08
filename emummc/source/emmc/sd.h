@@ -1,8 +1,8 @@
 /*
  *  include/linux/mmc/sd.h
  *
- *  Copyright (C) 2005-2007 Pierre Ossman, All Rights Reserved.
- *  Copyright (C) 2018 CTCaer
+ *  Copyright (c) 2005-2007 Pierre Ossman, All Rights Reserved.
+ *  Copyright (c) 2018 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,7 +40,9 @@
 #define SD_ROCR_S18A        SD_OCR_S18R  /* 1.8V switching accepted by card */
 #define SD_OCR_XPC          (1 << 28)    /* SDXC power control */
 #define SD_OCR_CCS          (1 << 30)    /* Card Capacity Status */
+#define SD_OCR_VDD_27_34    (0x7F << 15) /* VDD voltage 2.7 ~ 3.4 */
 #define SD_OCR_VDD_32_33    (1 << 20)	 /* VDD voltage 3.2 ~ 3.3 */
+#define SD_OCR_VDD_18       (1 << 7)	 /* VDD voltage 1.8 */
 
 /*
 * SD_SWITCH argument format:
@@ -103,6 +105,11 @@
 #define SD_SET_CURRENT_LIMIT_400	1
 #define SD_SET_CURRENT_LIMIT_600	2
 #define SD_SET_CURRENT_LIMIT_800	3
+
+#define SD_MAX_CURRENT_200 (1 << SD_SET_CURRENT_LIMIT_200)
+#define SD_MAX_CURRENT_400 (1 << SD_SET_CURRENT_LIMIT_400)
+#define SD_MAX_CURRENT_600 (1 << SD_SET_CURRENT_LIMIT_600)
+#define SD_MAX_CURRENT_800 (1 << SD_SET_CURRENT_LIMIT_800)
 
 /*
 * SD_SWITCH mode
