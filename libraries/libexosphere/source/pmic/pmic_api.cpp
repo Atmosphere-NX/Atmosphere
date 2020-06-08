@@ -25,13 +25,17 @@ namespace ams::pmic {
         constexpr inline int I2cAddressMarikoMax77812_A = 0x31;
         constexpr inline int I2cAddressMarikoMax77812_B = 0x33;
 
+        constexpr inline int I2cAddressMax77620Pmic     = 0x3C;
 
+        /* https://github.com/Atmosphere-NX/Atmosphere/blob/master/emummc/source/power/max77620.h */
         /* https://github.com/Atmosphere-NX/Atmosphere/blob/master/emummc/source/power/max7762x.h */
         /* TODO: Find datasheet, link to it instead. */
         /* NOTE: Tentatively, Max77620 "mostly" matches https://datasheets.maximintegrated.com/en/ds/MAX77863.pdf. */
         /*       This does not contain Max77621 documentation, though. */
-        constexpr inline int Max77620RegisterGpio0   = 0x36;
-        constexpr inline int Max77620RegisterAmeGpio = 0x40;
+        constexpr inline int Max77620RegisterOnOffStat  = 0x15;
+        constexpr inline int Max77620RegisterGpio0      = 0x36;
+        constexpr inline int Max77620RegisterAmeGpio    = 0x40;
+        constexpr inline int Max77620RegisterOnOffCnfg1 = 0x41;
 
         constexpr inline int Max77621RegisterVOut     = 0x00;
         constexpr inline int Max77621RegisterVOutDvc  = 0x01;
@@ -108,6 +112,10 @@ namespace ams::pmic {
             }
         }
 
+        u8 GetPmicOnOffStat() {
+            return i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffStat);
+        }
+
     }
 
     void EnableVddCpu(Regulator regulator) {
@@ -130,6 +138,21 @@ namespace ams::pmic {
                 return DisableVddCpuMariko(regulator);
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
+    }
+
+    void EnableSleep() {
+        /* Get the current onoff cfg. */
+        u8 cnfg = i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1);
+
+        /* Set SlpEn. */
+        cnfg |= (1 << 2);
+
+        /* Write the new cfg. */
+        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1, cnfg);
+    }
+
+    bool IsAcOk() {
+        return (GetPmicOnOffStat() & (1 << 1)) != 0;
     }
 
 }

@@ -76,4 +76,8 @@ namespace ams::flow {
         reg::Write(g_register_address + FlowControllerRegisterOffsets[core].cc4_core_ctrl, value);
     }
 
+    void ClearL2FlushControl() {
+        reg::Write(g_register_address + FLOW_CTLR_L2FLUSH_CONTROL, 0);
+    }
+
 }

@@ -224,6 +224,32 @@ namespace ams::pmc {
         LockSecureRegister(SecureRegister_Srk);
     }
 
+    void EnableWakeEventDetection() {
+        /* Get the address. */
+        const uintptr_t address = g_register_address;
+
+        /* Wait 75us, then enable event detection, then wait another 75us. */
+        util::WaitMicroSeconds(75);
+        reg::ReadWrite(address + APBDEV_PMC_CNTRL2,  PMC_REG_BITS_ENUM(CNTRL2_WAKE_DET_EN, ENABLE));
+        util::WaitMicroSeconds(75);
+
+        /* Enable all wake events. */
+        reg::Write(address + APBDEV_PMC_WAKE_STATUS,  0xFFFFFFFFu);
+        reg::Write(address + APBDEV_PMC_WAKE2_STATUS, 0xFFFFFFFFu);
+        util::WaitMicroSeconds(75);
+    }
+
+    void ConfigureForSc7Entry() {
+        /* Get the address. */
+        const uintptr_t address = g_register_address;
+
+        /* Configure the bootrom to perform a warmboot. */
+        reg::Write(address + APBDEV_PMC_SCRATCH0, 0x1);
+
+        /* Enable the TSC multiplier. */
+        reg::ReadWrite(address + APBDEV_PMC_DPD_ENABLE, PMC_REG_BITS_ENUM(DPD_ENABLE_TSC_MULT_EN, ENABLE));
+    }
+
     void LockSecureRegister(SecureRegister reg) {
         /* Get the address. */
         const uintptr_t address = g_register_address;

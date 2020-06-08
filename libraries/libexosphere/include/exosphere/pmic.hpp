@@ -29,5 +29,7 @@ namespace ams::pmic {
 
     void EnableVddCpu(Regulator regulator);
     void DisableVddCpu(Regulator regulator);
+    void EnableSleep();
+    bool IsAcOk();
 
 }
