@@ -13,14 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_WARMBOOT_BIN_SE_H
 #define EXOSPHERE_WARMBOOT_BIN_SE_H
 
 #define SE_BASE 0x70012000
 #define MAKE_SE_REG(n) MAKE_REG32(SE_BASE + n)
 
-#define KEYSLOT_SWITCH_LP0TZRAMKEY 0x2
+#define KEYSLOT_SWITCH_LP0TZRAMKEK 0x2
+#define KEYSLOT_SWITCH_LP0TZRAMKEY 0x3
 #define KEYSLOT_SWITCH_SRKGENKEY 0x8
 #define KEYSLOT_SWITCH_PACKAGE2KEY 0x8
 #define KEYSLOT_SWITCH_TEMPKEY 0x9
@@ -169,6 +170,8 @@ void se_verify_flags_cleared(void);
 void clear_aes_keyslot(unsigned int keyslot);
 void clear_rsa_keyslot(unsigned int keyslot);
 void clear_aes_keyslot_iv(unsigned int keyslot);
+
+void decrypt_data_into_keyslot_256(unsigned int keyslot_dst, unsigned int keyslot_src, const void *wrapped_key, size_t wrapped_key_size);
 
 void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
 void se_aes_256_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
