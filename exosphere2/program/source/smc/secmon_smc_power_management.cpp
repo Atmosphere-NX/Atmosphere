@@ -17,6 +17,7 @@
 #include "../secmon_cache.hpp"
 #include "../secmon_cpu_context.hpp"
 #include "../secmon_error.hpp"
+#include "../secmon_misc.hpp"
 #include "secmon_smc_power_management.hpp"
 #include "secmon_smc_se_lock.hpp"
 
@@ -152,11 +153,137 @@ namespace ams::secmon::smc {
         }
 
         void ValidateSocStateForSuspend() {
+            /* Validate that all other cores are off. */
+            AMS_ABORT_UNLESS(reg::HasValue(PMC + APBDEV_PMC_PWRGATE_STATUS, PMC_REG_BITS_VALUE(PWRGATE_STATUS_CE123, 0)));
+
+            /* Validate that the bpmp is appropriately halted. */
+            AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) != reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
+                                                                                             FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, IsJtagEnabled(), ENABLED, DISABLED)));
+
             /* TODO */
         }
 
+        void GenerateCryptographicallyRandomBytes(void * const dst, int size) {
+            /* Flush the region we're about to fill to ensure consistency with the SE. */
+            hw::FlushDataCache(dst, size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Generate random bytes. */
+            se::GenerateRandomBytes(dst, size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Flush to ensure the CPU sees consistent data for the region. */
+            hw::FlushDataCache(dst, size);
+            hw::DataSynchronizationBarrierInnerShareable();
+        }
+
         void SaveSecureContextForErista() {
-            /* TODO */
+            /* Generate a random key source. */
+            util::AlignedBuffer<hw::DataCacheLineSize, se::AesBlockSize> key_source;
+            GenerateCryptographicallyRandomBytes(key_source, se::AesBlockSize);
+
+            const u32 * const key_source_32 = reinterpret_cast<const u32 *>(static_cast<u8 *>(key_source));
+
+            /* Ensure that the key source registers are not locked. */
+            AMS_ABORT_UNLESS(pmc::GetSecureRegisterLockState(pmc::SecureRegister_KeySourceReadWrite) != pmc::LockState::Locked);
+
+            /* Write the key source, lock writes to the key source, and verify that the key source is write-locked. */
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH24, key_source_32[0]);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH25, key_source_32[1]);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH26, key_source_32[2]);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH27, key_source_32[3]);
+            pmc::LockSecureRegister(pmc::SecureRegister_KeySourceWrite);
+            AMS_ABORT_UNLESS(pmc::GetSecureRegisterLockState(pmc::SecureRegister_KeySourceWrite) == pmc::LockState::Locked);
+
+            /* Verify the key source is correct in registers, and read-lock the key source registers. */
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH24) == key_source_32[0]);
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH25) == key_source_32[1]);
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH26) == key_source_32[2]);
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH27) == key_source_32[3]);
+            pmc::LockSecureRegister(pmc::SecureRegister_KeySourceRead);
+
+            /* Ensure that the key source registers are locked. */
+            AMS_ABORT_UNLESS(pmc::GetSecureRegisterLockState(pmc::SecureRegister_KeySourceReadWrite) == pmc::LockState::Locked);
+
+            /* Generate a random kek into keyslot 2. */
+            se::SetRandomKey(pkg1::AesKeySlot_TzramSaveKek);
+
+            /* Verify that the se is in a validate state, context save, and validate again. */
+            {
+                se::ValidateErrStatus();
+                ON_SCOPE_EXIT { se::ValidateErrStatus(); };
+
+                {
+                    /* Transition to non-secure mode for the duration of the context save operation. */
+                    se::SetSecure(false);
+                    ON_SCOPE_EXIT { se::SetSecure(true); };
+
+                    /* Get a pointer to the context storage. */
+                    se::Context * const context = MemoryRegionVirtualDramSecureDataStoreSecurityEngineState.GetPointer<se::Context>();
+                    static_assert(MemoryRegionVirtualDramSecureDataStoreSecurityEngineState.GetSize() == sizeof(*context));
+
+                    /* Save the context. */
+                    se::SaveContext(context);
+
+                    /* Ensure that the cpu sees consistent data. */
+                    hw::FlushDataCache(context, sizeof(*context));
+                    hw::DataSynchronizationBarrierInnerShareable();
+
+                    /* Write the context pointer to pmc scratch, so that the bootrom will restore it on wake. */
+                    reg::Write(PMC + APBDEV_PMC_SCRATCH43, MemoryRegionPhysicalDramSecureDataStoreSecurityEngineState.GetAddress());
+                }
+            }
+
+            /* Clear keyslot 3, and then derive the save key. */
+            se::ClearAesKeySlot(pkg1::AesKeySlot_TzramSaveKey);
+            se::SetEncryptedAesKey256(pkg1::AesKeySlot_TzramSaveKey, pkg1::AesKeySlot_TzramSaveKek, key_source, sizeof(key_source));
+
+            /* Declare a temporary block to be used as both iv and mac. */
+            u32 temp_block[se::AesBlockSize / sizeof(u32)] = {};
+
+            /* Ensure that the SE sees consistent data for tzram. */
+            const void * const tzram_save_src = MemoryRegionVirtualTzramReadOnlyAlias.GetPointer<u8>() + MemoryRegionVirtualTzramVolatileData.GetSize() + MemoryRegionVirtualTzramVolatileStack.GetSize();
+                  void * const tzram_save_dst = MemoryRegionVirtualIramSc7Work.GetPointer<void>();
+            constexpr size_t TzramSaveSize    = MemoryRegionVirtualDramSecureDataStoreTzram.GetSize();
+
+            hw::FlushDataCache(tzram_save_src, TzramSaveSize);
+            hw::FlushDataCache(tzram_save_dst, TzramSaveSize);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Encrypt tzram using our random key. */
+            se::EncryptAes256Cbc(tzram_save_dst, TzramSaveSize, pkg1::AesKeySlot_TzramSaveKey, tzram_save_src, TzramSaveSize, temp_block, se::AesBlockSize);
+            hw::FlushDataCache(tzram_save_dst, TzramSaveSize);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Copy the data from work space to the secure storage destination. */
+            void * const tzram_store_dst = MemoryRegionVirtualDramSecureDataStoreTzram.GetPointer<void>();
+            std::memcpy(tzram_store_dst, tzram_save_dst, TzramSaveSize);
+            hw::FlushDataCache(tzram_store_dst, TzramSaveSize);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Compute cmac of tzram into our temporary block. */
+            se::ComputeAes256Cmac(temp_block, se::AesBlockSize, pkg1::AesKeySlot_TzramSaveKey, tzram_save_src, TzramSaveSize);
+
+            /* Ensure that the cmac registers are not locked. */
+            AMS_ABORT_UNLESS(pmc::GetSecureRegisterLockState(pmc::SecureRegister_CmacReadWrite) != pmc::LockState::Locked);
+
+            /* Write the cmac, lock writes to the cmac, and verify that the cmac is write-locked. */
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH112, temp_block[0]);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH113, temp_block[1]);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH114, temp_block[2]);
+            reg::Write(PMC + APBDEV_PMC_SECURE_SCRATCH115, temp_block[3]);
+            pmc::LockSecureRegister(pmc::SecureRegister_CmacWrite);
+            AMS_ABORT_UNLESS(pmc::GetSecureRegisterLockState(pmc::SecureRegister_CmacWrite) == pmc::LockState::Locked);
+
+            /* Verify the key source is correct in registers, and read-lock the key source registers. */
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH112) == temp_block[0]);
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH113) == temp_block[1]);
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH114) == temp_block[2]);
+            AMS_ABORT_UNLESS(reg::Read(PMC + APBDEV_PMC_SECURE_SCRATCH115) == temp_block[3]);
+            pmc::LockSecureRegister(pmc::SecureRegister_CmacRead);
+
+            /* Ensure that the key source registers are locked. */
+            AMS_ABORT_UNLESS(pmc::GetSecureRegisterLockState(pmc::SecureRegister_CmacReadWrite) == pmc::LockState::Locked);
         }
 
         void SaveSecureContextForMariko() {

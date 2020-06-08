@@ -21,7 +21,8 @@ namespace ams::pkg1 {
     enum AesKeySlot {
         AesKeySlot_UserStart                = 0,
 
-        AesKeySlot_TzramSave                = 2,
+        AesKeySlot_TzramSaveKek             = 2,
+        AesKeySlot_TzramSaveKey             = 3,
 
         AesKeySlot_UserLast                 = 5,
         AesKeySlot_UserEnd                  = AesKeySlot_UserLast + 1,

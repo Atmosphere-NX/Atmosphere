@@ -51,5 +51,6 @@ namespace ams::se {
     static_assert(util::is_pod<StickyBits>::value);
 
     bool ValidateStickyBits(const StickyBits &bits);
+    void SaveContext(Context *dst);
 
 }
