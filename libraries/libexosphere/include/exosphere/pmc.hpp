@@ -42,8 +42,8 @@ namespace ams::pmc {
     void LockSecureRegister(SecureRegister reg);
 
     enum class LockState {
-        Locked         = 0,
-        NotLocked        = 1,
+        Locked          = 0,
+        NotLocked       = 1,
         PartiallyLocked = 2,
     };
 

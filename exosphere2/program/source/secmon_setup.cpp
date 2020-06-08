@@ -1007,7 +1007,7 @@ namespace ams::secmon {
         se::InitializeRandom();
         se::SetRandomKey(pkg1::AesKeySlot_Temporary);
         se::GenerateSrk();
-        se::SetRandomKey(pkg1::AesKeySlot_TzramSave);
+        se::SetRandomKey(pkg1::AesKeySlot_TzramSaveKek);
 
         /* Initialize pmc secure scratch. */
         pmc::InitializeRandomScratch();
