@@ -21,7 +21,8 @@ export TOPDIR	:=	$(CURDIR)
 export DEPSDIR  :=  $(CURDIR)/$(BUILD)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
+			$(TOPDIR)/sc7fw
 
 CFILES      :=	$(foreach dir,$(SOURCES),$(filter-out $(notdir $(wildcard $(dir)/*.arch.*.c)) $(notdir $(wildcard $(dir)/*.board.*.c)) $(notdir $(wildcard $(dir)/*.os.*.c)), \
                                                       $(notdir $(wildcard $(dir)/*.c))))
@@ -40,6 +41,8 @@ SFILES      :=	$(foreach dir,$(SOURCES),$(filter-out $(notdir $(wildcard $(dir)/
 SFILES      +=  $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.arch.$(ATMOSPHERE_ARCH_NAME).s)))
 SFILES      +=  $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.board.$(ATMOSPHERE_BOARD_NAME).s)))
 SFILES      +=  $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.os.$(ATMOSPHERE_OS_NAME).s)))
+
+BINFILES    := sc7fw.bin
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -71,16 +74,20 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib -L$(dir)/$(ATMOSPHERE_L
 #---------------------------------------------------------------------------------
 all: $(BUILD) check_libexo
 
-$(BUILD): check_libexo
+$(BUILD): check_libexo check_sc7fw
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 check_libexo:
 	@$(MAKE) --no-print-directory -C ../../libraries/libexosphere arm64
 
+check_sc7fw:
+	@$(MAKE) -C $(TOPDIR)/sc7fw all
+
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
+	@$(MAKE) -C $(TOPDIR)/sc7fw clean
 	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf *.lz4
 
 #---------------------------------------------------------------------------------
