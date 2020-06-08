@@ -21,6 +21,7 @@ namespace ams::log {
 
         constexpr inline uart::Port UartLogPort = uart::Port_ReservedDebug;
         constinit bool g_initialized_uart = false;
+        constinit bool g_logging_enabled  = false;
 
         constexpr inline u32 UartPortFlags = [] {
             if constexpr (UartLogPort == uart::Port_ReservedDebug) {
@@ -75,14 +76,18 @@ namespace ams::log {
         g_initialized_uart = false;
     }
 
+    void SetDebugLogEnabled(bool en) {
+        g_logging_enabled = en;
+    }
+
     void SendText(const void *text, size_t size) {
-        if (g_initialized_uart) {
+        if (g_initialized_uart && g_logging_enabled) {
             uart::SendText(UartLogPort, text, size);
         }
     }
 
     void Flush() {
-        if (g_initialized_uart) {
+        if (g_initialized_uart && g_logging_enabled) {
             uart::WaitFlush(UartLogPort);
         }
     }

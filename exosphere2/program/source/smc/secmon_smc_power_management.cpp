@@ -157,7 +157,7 @@ namespace ams::secmon::smc {
             AMS_ABORT_UNLESS(reg::HasValue(PMC + APBDEV_PMC_PWRGATE_STATUS, PMC_REG_BITS_VALUE(PWRGATE_STATUS_CE123, 0)));
 
             /* Validate that the bpmp is appropriately halted. */
-            AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) != reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
+            AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) == reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
                                                                                              FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, IsJtagEnabled(), ENABLED, DISABLED)));
 
             /* TODO */
@@ -236,7 +236,7 @@ namespace ams::secmon::smc {
 
             /* Clear keyslot 3, and then derive the save key. */
             se::ClearAesKeySlot(pkg1::AesKeySlot_TzramSaveKey);
-            se::SetEncryptedAesKey256(pkg1::AesKeySlot_TzramSaveKey, pkg1::AesKeySlot_TzramSaveKek, key_source, sizeof(key_source));
+            se::SetEncryptedAesKey256(pkg1::AesKeySlot_TzramSaveKey, pkg1::AesKeySlot_TzramSaveKek, key_source, se::AesBlockSize);
 
             /* Declare a temporary block to be used as both iv and mac. */
             u32 temp_block[se::AesBlockSize / sizeof(u32)] = {};
@@ -319,6 +319,9 @@ namespace ams::secmon::smc {
             /* Disable activity monitor bpmp monitoring, so that we don't panic upon bpmp wake. */
             actmon::StopMonitoringBpmp();
 
+            /* Set BPMP reset. */
+            reg::Write(CLK_RST + CLK_RST_CONTROLLER_RST_DEV_L_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_COP_RST, ENABLE));
+
             /* Load the bpmp firmware. */
             void * const sc7fw_load_address = MemoryRegionVirtualIramSc7Firmware.GetPointer<void>();
             std::memcpy(sc7fw_load_address, sc7fw_bin, sc7fw_bin_size);
@@ -350,6 +353,12 @@ namespace ams::secmon::smc {
             /* NOTE: Nintendo only does this on dev, but we will always do it. */
             if (true /* !pkg1::IsProduction() */) {
                 log::SendText("OYASUMI\n", 8);
+            }
+
+            /* If we're on erista, configure the bootrom to allow our custom warmboot firmware. */
+            if (GetSocType() == fuse::SocType_Erista) {
+                reg::Write(PMC + APBDEV_PMC_SCRATCH31, 0x2202E012);
+                reg::Write(PMC + APBDEV_PMC_SCRATCH32, 0x6001DC28);
             }
 
             /* Finalize our powerdown and wait for an interrupt. */

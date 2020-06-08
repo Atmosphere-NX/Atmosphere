@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef EXOSPHERE_WARMBOOT_BIN_PMC_H
 #define EXOSPHERE_WARMBOOT_BIN_PMC_H
 
@@ -39,6 +39,10 @@
 #define APBDEV_PMC_SEC_DISABLE2_0           MAKE_PMC_REG(0x2C4)
 #define APBDEV_PMC_WEAK_BIAS_0              MAKE_PMC_REG(0x2C8)
 #define APBDEV_PMC_SECURE_SCRATCH21_0       MAKE_PMC_REG(0x334)
+#define APBDEV_PMC_SECURE_SCRATCH24_0       MAKE_PMC_REG(0x340)
+#define APBDEV_PMC_SECURE_SCRATCH25_0       MAKE_PMC_REG(0x344)
+#define APBDEV_PMC_SECURE_SCRATCH26_0       MAKE_PMC_REG(0x348)
+#define APBDEV_PMC_SECURE_SCRATCH27_0       MAKE_PMC_REG(0x34C)
 #define APBDEV_PMC_SECURE_SCRATCH32_0       MAKE_PMC_REG(0x360)
 #define APBDEV_PMC_SECURE_SCRATCH34_0       MAKE_PMC_REG(0x368)
 #define APBDEV_PMC_SECURE_SCRATCH35_0       MAKE_PMC_REG(0x36C)

@@ -44,7 +44,7 @@ namespace ams::se {
             }
 
             /* Execute the operation. */
-            ExecuteOperation(SE, SE_OPERATION_OP_CTX_SAVE, dst, dst_size, src, src_size);
+            ExecuteOperation(SE, SE_OPERATION_OP_CTX_SAVE, temp, dst_size, src, src_size);
 
             /* Copy output from the operation, if any. */
             if (dst_size > 0) {

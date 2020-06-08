@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
 
 #include "utils.h"
@@ -56,7 +56,7 @@ void se_verify_flags_cleared(void) {
 
 void clear_aes_keyslot(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         reboot();
     }
@@ -70,7 +70,7 @@ void clear_aes_keyslot(unsigned int keyslot) {
 
 void clear_rsa_keyslot(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_RSA_MAX) {
         reboot();
     }
@@ -90,7 +90,7 @@ void clear_rsa_keyslot(unsigned int keyslot) {
 
 void clear_aes_keyslot_iv(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         reboot();
     }
@@ -101,6 +101,20 @@ void clear_aes_keyslot_iv(unsigned int keyslot) {
     }
 }
 
+void decrypt_data_into_keyslot_256(unsigned int keyslot_dst, unsigned int keyslot_src, const void *wrapped_key, size_t wrapped_key_size) {
+    volatile tegra_se_t *se = se_get_regs();
+
+    if (keyslot_dst >= KEYSLOT_AES_MAX || keyslot_src >= KEYSLOT_AES_MAX || wrapped_key_size > KEYSIZE_AES_MAX) {
+        reboot();
+    }
+
+    se->SE_CONFIG = (0x202 << 16) | (ALG_AES_DEC | DST_KEYTAB);
+    se->SE_CRYPTO_CONFIG = keyslot_src << 24;
+    se->SE_CRYPTO_LAST_BLOCK = 0;
+    se->SE_CRYPTO_KEYTABLE_DST = keyslot_dst << 8;
+
+    trigger_se_blocking_op(OP_START, NULL, 0, wrapped_key, wrapped_key_size);
+}
 
 void trigger_se_blocking_op(unsigned int op, void *dst, size_t dst_size, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
@@ -148,7 +162,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
 
 void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config_high) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
         reboot();
     }
@@ -161,7 +175,7 @@ void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, 
 
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
         reboot();
     }
@@ -185,7 +199,7 @@ void shift_left_xor_rb(uint8_t *key) {
 
 void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size, unsigned int config_high) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         reboot();
     }
@@ -239,7 +253,7 @@ void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size,
 
 void se_aes_256_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || src_size < 0x10) {
         reboot();
     }

@@ -42,6 +42,8 @@
 #define APBDEV_PMC_WAKE_DELAY           (0x0E0)
 #define APBDEV_PMC_PWR_DET_VAL          (0x0E4)
 #define APBDEV_PMC_CRYPTO_OP            (0x0F4)
+#define APBDEV_PMC_SCRATCH31            (0x118)
+#define APBDEV_PMC_SCRATCH32            (0x11C)
 #define APBDEV_PMC_WAKE2_MASK           (0x160)
 #define APBDEV_PMC_WAKE2_LVL            (0x164)
 #define APBDEV_PMC_WAKE2_STATUS         (0x168)

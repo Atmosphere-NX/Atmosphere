@@ -695,7 +695,7 @@ namespace ams::secmon {
 
             /* Setup sctlr_el2. */
             {
-                util::BitPack64 sctlr = { hw::SctlrEl2::Res1 }; // 0x30C5083
+                util::BitPack64 sctlr = { hw::SctlrEl2::Res1 };
 
                 sctlr.Set<hw::SctlrEl2::M>(0);       /* Globally disable the MMU. */
                 sctlr.Set<hw::SctlrEl2::A>(0);       /* Disable alignment fault checking. */
@@ -1086,6 +1086,9 @@ namespace ams::secmon {
 
             /* Perform initial setup. */
             Setup1ForWarmboot();
+
+            /* Generate a random srk. */
+            se::GenerateSrk();
 
             /* Setup the Soc security. */
             SetupSocSecurity();

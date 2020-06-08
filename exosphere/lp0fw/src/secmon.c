@@ -57,6 +57,20 @@ void secmon_restore_to_tzram(const uint32_t target_firmware) {
 }
 
 void secmon_decrypt_saved_image(void *dst, const void *src, size_t size) {
+    /* Derive the key used for context save. */
+    {
+        const uint32_t key_source[4] = { APBDEV_PMC_SECURE_SCRATCH24_0, APBDEV_PMC_SECURE_SCRATCH25_0, APBDEV_PMC_SECURE_SCRATCH26_0, APBDEV_PMC_SECURE_SCRATCH27_0 };
+
+        clear_aes_keyslot(KEYSLOT_SWITCH_LP0TZRAMKEY);
+        decrypt_data_into_keyslot_256(KEYSLOT_SWITCH_LP0TZRAMKEY, KEYSLOT_SWITCH_LP0TZRAMKEK, key_source, sizeof(key_source));
+
+        clear_aes_keyslot(KEYSLOT_SWITCH_LP0TZRAMKEK);
+        APBDEV_PMC_SECURE_SCRATCH24_0 = 0;
+        APBDEV_PMC_SECURE_SCRATCH25_0 = 0;
+        APBDEV_PMC_SECURE_SCRATCH26_0 = 0;
+        APBDEV_PMC_SECURE_SCRATCH27_0 = 0;
+    }
+
     /* First, AES-256-CBC decrypt the image into TZRAM. */
     se_aes_256_cbc_decrypt(KEYSLOT_SWITCH_LP0TZRAMKEY, dst, size, src, size);
 
@@ -85,7 +99,7 @@ void secmon_decrypt_saved_image(void *dst, const void *src, size_t size) {
 bool secmon_should_clear_aes_keyslot(unsigned int keyslot) {
     /* We'll just compare keyslot against a hardcoded list of keys. */
     static const uint8_t saved_keyslots[6] = {
-        KEYSLOT_SWITCH_LP0TZRAMKEY,
+        KEYSLOT_SWITCH_LP0TZRAMKEK,
         KEYSLOT_SWITCH_SESSIONKEY,
         KEYSLOT_SWITCH_RNGKEY,
         KEYSLOT_SWITCH_MASTERKEY,
