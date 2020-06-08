@@ -20,6 +20,8 @@
 #include "secmon_smc_power_management.hpp"
 #include "secmon_smc_se_lock.hpp"
 
+#include "sc7fw_bin.h"
+
 namespace ams::secmon {
 
     /* Declare assembly functionality. */
@@ -35,9 +37,12 @@ namespace ams::secmon::smc {
 
     namespace {
 
-        constexpr inline uintptr_t PMC     = MemoryRegionVirtualDevicePmc.GetAddress();
-        constexpr inline uintptr_t GPIO    = MemoryRegionVirtualDeviceGpio.GetAddress();
-        constexpr inline uintptr_t CLK_RST = MemoryRegionVirtualDeviceClkRst.GetAddress();
+        constexpr inline const uintptr_t PMC       = MemoryRegionVirtualDevicePmc.GetAddress();
+        constexpr inline const uintptr_t APB_MISC  = MemoryRegionVirtualDeviceApbMisc.GetAddress();
+        constexpr inline const uintptr_t GPIO      = MemoryRegionVirtualDeviceGpio.GetAddress();
+        constexpr inline const uintptr_t CLK_RST   = MemoryRegionVirtualDeviceClkRst.GetAddress();
+        constexpr inline const uintptr_t EVP       = secmon::MemoryRegionVirtualDeviceExceptionVectors.GetAddress();
+        constexpr inline const uintptr_t FLOW_CTLR = MemoryRegionVirtualDeviceFlowController.GetAddress();
 
         constexpr inline uintptr_t CommonSmcStackTop = MemoryRegionVirtualTzramVolatileData.GetEndAddress() - (0x80 * (NumCores - 1));
 
@@ -150,8 +155,75 @@ namespace ams::secmon::smc {
             /* TODO */
         }
 
-        void SaveSecureContextAndSuspend() {
+        void SaveSecureContextForErista() {
             /* TODO */
+        }
+
+        void SaveSecureContextForMariko() {
+            /* TODO */
+        }
+
+        void SaveSecureContext() {
+            const auto soc_type = GetSocType();
+            if (soc_type == fuse::SocType_Erista) {
+                SaveSecureContextForErista();
+            } else /* if (soc_type == fuse::SocType_Mariko) */ {
+                SaveSecureContextForMariko();
+            }
+        }
+
+        void LoadAndStartSc7BpmpFirmware() {
+            /* Set the PMC as insecure, so that the BPMP firmware can access it. */
+            reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, DISABLE));
+
+            /* Set the exception vectors for the bpmp. RESET should point to RESET, all others should point to generic exception/panic. */
+            constexpr const u32 Sc7FirmwareResetVector = static_cast<u32>(MemoryRegionPhysicalIramSc7Firmware.GetAddress() + 0x0);
+            constexpr const u32 Sc7FirmwarePanicVector = static_cast<u32>(MemoryRegionPhysicalIramSc7Firmware.GetAddress() + 0x4);
+
+            reg::Write(EVP + EVP_COP_RESET_VECTOR,          Sc7FirmwareResetVector);
+            reg::Write(EVP + EVP_COP_UNDEF_VECTOR,          Sc7FirmwarePanicVector);
+            reg::Write(EVP + EVP_COP_SWI_VECTOR,            Sc7FirmwarePanicVector);
+            reg::Write(EVP + EVP_COP_PREFETCH_ABORT_VECTOR, Sc7FirmwarePanicVector);
+            reg::Write(EVP + EVP_COP_DATA_ABORT_VECTOR,     Sc7FirmwarePanicVector);
+            reg::Write(EVP + EVP_COP_RSVD_VECTOR,           Sc7FirmwarePanicVector);
+            reg::Write(EVP + EVP_COP_IRQ_VECTOR,            Sc7FirmwarePanicVector);
+            reg::Write(EVP + EVP_COP_FIQ_VECTOR,            Sc7FirmwarePanicVector);
+
+            /* Disable activity monitor bpmp monitoring, so that we don't panic upon bpmp wake. */
+            actmon::StopMonitoringBpmp();
+
+            /* Load the bpmp firmware. */
+            void * const sc7fw_load_address = MemoryRegionVirtualIramSc7Firmware.GetPointer<void>();
+            std::memcpy(sc7fw_load_address, sc7fw_bin, sc7fw_bin_size);
+            hw::FlushDataCache(sc7fw_load_address, sc7fw_bin_size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Ensure that the bpmp firmware was loaded. */
+            AMS_ABORT_UNLESS(crypto::IsSameBytes(sc7fw_load_address, sc7fw_bin, sc7fw_bin_size));
+
+            /* Clear BPMP reset. */
+            reg::Write(CLK_RST + CLK_RST_CONTROLLER_RST_DEV_L_CLR, CLK_RST_REG_BITS_ENUM(RST_DEV_L_CLR_CLR_COP_RST, ENABLE));
+
+            /* Start the bpmp. */
+            reg::Write(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_NONE));
+        }
+
+        void SaveSecureContextAndSuspend() {
+            /* Ensure there are no pending memory transactions before we continue */
+            FlushEntireDataCache();
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Save all secure context (security engine state + tzram). */
+            SaveSecureContext();
+
+            /* Load and start the sc7 firmware on the bpmp. */
+            LoadAndStartSc7BpmpFirmware();
+
+            /* Log our suspension. */
+            /* NOTE: Nintendo only does this on dev, but we will always do it. */
+            if (true /* !pkg1::IsProduction() */) {
+                log::SendText("OYASUMI\n", 8);
+            }
 
             /* Finalize our powerdown and wait for an interrupt. */
             FinalizePowerOff();
