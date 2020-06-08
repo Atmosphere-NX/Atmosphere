@@ -21,14 +21,19 @@ namespace ams::secmon::smc {
 
     namespace {
 
-        constexpr inline size_t DeviceUniqueDataIvSize        = se::AesBlockSize;
-        constexpr inline size_t DeviceUniqueDataMacSize       = se::AesBlockSize;
-        constexpr inline size_t DeviceUniqueDataDeviceIdSize  = sizeof(u64);
-        constexpr inline size_t DeviceUniqueDataPaddingSize   = se::AesBlockSize - DeviceUniqueDataDeviceIdSize;
+        void GenerateIv(void *dst, size_t dst_size) {
+            /* Flush the region we're about to fill to ensure consistency with the SE. */
+            hw::FlushDataCache(dst, dst_size);
+            hw::DataSynchronizationBarrierInnerShareable();
 
-        constexpr inline size_t DeviceUniqueDataOuterMetaSize = DeviceUniqueDataIvSize + DeviceUniqueDataMacSize;
-        constexpr inline size_t DeviceUniqueDataInnerMetaSize = DeviceUniqueDataPaddingSize + DeviceUniqueDataDeviceIdSize;
-        constexpr inline size_t DeviceUniqueDataTotalMetaSize = DeviceUniqueDataOuterMetaSize + DeviceUniqueDataInnerMetaSize;
+            /* Generate random bytes. */
+            se::GenerateRandomBytes(dst, dst_size);
+            hw::DataSynchronizationBarrierInnerShareable();
+
+            /* Flush to ensure the CPU sees consistent data for the region. */
+            hw::FlushDataCache(dst, dst_size);
+            hw::DataSynchronizationBarrierInnerShareable();
+        }
 
         void PrepareDeviceUniqueDataKey(const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size) {
             /* Derive the seal key. */
@@ -77,6 +82,10 @@ namespace ams::secmon::smc {
         constexpr u8 GetDeviceIdHigh(u64 device_id) {
             /* Get the top byte. */
             return static_cast<u8>(device_id >> (BITSIZEOF(u64) - BITSIZEOF(u8)));
+        }
+
+        constexpr u64 EncodeDeviceId(u8 device_id_high, u64 device_id_low) {
+            return (static_cast<u64>(device_id_high) << (BITSIZEOF(u64) - BITSIZEOF(u8))) | device_id_low;
         }
 
     }
@@ -141,6 +150,52 @@ namespace ams::secmon::smc {
         }
 
         return true;
+    }
+
+    void EncryptDeviceUniqueData(void *dst, size_t dst_size, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size, u8 device_id_high) {
+        /* Determine metadata locations. */
+        u8 * const dst_iv   = static_cast<u8 *>(dst);
+        u8 * const dst_data = dst_iv + DeviceUniqueDataIvSize;
+        u8 * const dst_pad  = dst_data + src_size;
+        u8 * const dst_did  = dst_pad + DeviceUniqueDataPaddingSize;
+        u8 * const dst_mac  = dst_did + DeviceUniqueDataDeviceIdSize;
+
+        /* Verify that our sizes are okay. */
+        const size_t enc_size = src_size + DeviceUniqueDataInnerMetaSize;
+        const size_t res_size = src_size + DeviceUniqueDataTotalMetaSize;
+        AMS_ABORT_UNLESS(res_size <= dst_size);
+
+        /* Layout the image as expected. */
+        {
+            /* Generate a random iv. */
+            util::AlignedBuffer<hw::DataCacheLineSize, DeviceUniqueDataIvSize> iv;
+            GenerateIv(iv, DeviceUniqueDataIvSize);
+
+            /* Move the data to the output image. */
+            std::memmove(dst_data, src, src_size);
+
+            /* Copy the iv. */
+            std::memcpy(dst_iv, iv, DeviceUniqueDataIvSize);
+
+            /* Clear the padding. */
+            std::memset(dst_pad, 0, DeviceUniqueDataPaddingSize);
+
+            /* Store the device id. */
+            util::StoreBigEndian(reinterpret_cast<u64 *>(dst_did), EncodeDeviceId(device_id_high, fuse::GetDeviceId()));
+        }
+
+        /* Encrypt and mac. */
+        {
+
+            /* Prepare the key used to encrypt the data. */
+            PrepareDeviceUniqueDataKey(seal_key_source, seal_key_source_size, access_key, access_key_size, key_source, key_source_size);
+
+            /* Compute the gmac. */
+            ComputeGmac(dst_mac, DeviceUniqueDataMacSize, dst_data, enc_size, dst_iv, DeviceUniqueDataIvSize);
+
+            /* Encrypt the data. */
+            ComputeAes128Ctr(dst_data, enc_size, pkg1::AesKeySlot_Smc, dst_data, enc_size, dst_iv, DeviceUniqueDataIvSize);
+        }
     }
 
 }

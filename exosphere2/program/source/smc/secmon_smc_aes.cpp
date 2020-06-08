@@ -517,22 +517,7 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
-        SmcResult DecryptDeviceUniqueDataImpl(SmcArguments &args) {
-            /* Decode arguments. */
-            u8 access_key[se::AesBlockSize];
-            u8 key_source[se::AesBlockSize];
-
-            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
-            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
-            const uintptr_t data_address = args.r[4];
-            const size_t    data_size    = args.r[5];
-            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
-
-            const auto mode     = option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>();
-            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
-
-            /* Validate arguments. */
-            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+        SmcResult ValidateDeviceUniqueDataSize(DeviceUniqueData mode, size_t data_size) {
             switch (mode) {
                 case DeviceUniqueData_DecryptDeviceUniqueData:
                     {
@@ -551,8 +536,29 @@ namespace ams::secmon::smc {
                     return SmcResult::InvalidArgument;
             }
 
+            return SmcResult::Success;
+        }
+
+        SmcResult DecryptDeviceUniqueDataImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key[se::AesBlockSize];
+            u8 key_source[se::AesBlockSize];
+
+            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+            const uintptr_t data_address = args.r[4];
+            const size_t    data_size    = args.r[5];
+            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
+
+            const auto mode     = option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>();
+            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+            SMC_R_TRY(ValidateDeviceUniqueDataSize(mode, data_size));
+
             /* Decrypt the device unique data. */
-            u8 work_buffer[DeviceUniqueDataSizeMax];
+            alignas(8) u8 work_buffer[DeviceUniqueDataSizeMax];
             ON_SCOPE_EXIT { crypto::ClearMemory(work_buffer, sizeof(work_buffer)); };
             {
                 /* Map and copy in the encrypted data. */
@@ -588,6 +594,69 @@ namespace ams::secmon::smc {
                         break;
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
+            }
+
+            return SmcResult::Success;
+        }
+
+        SmcResult ReencryptDeviceUniqueDataImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key_dec[se::AesBlockSize];
+            u8 access_key_enc[se::AesBlockSize];
+            u8 key_source_dec[se::AesBlockSize];
+            u8 key_source_enc[se::AesBlockSize];
+
+            const uintptr_t access_key_dec_address = args.r[1];
+            const uintptr_t access_key_enc_address = args.r[2];
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+            const uintptr_t data_address = args.r[4];
+            const size_t    data_size    = args.r[5];
+            const uintptr_t key_source_dec_address = args.r[6];
+            const uintptr_t key_source_enc_address = args.r[7];
+
+            const auto mode     = option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>();
+            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+            SMC_R_TRY(ValidateDeviceUniqueDataSize(mode, data_size));
+
+            /* Decrypt the device unique data. */
+            alignas(8) u8 work_buffer[DeviceUniqueDataSizeMax];
+            ON_SCOPE_EXIT { crypto::ClearMemory(work_buffer, sizeof(work_buffer)); };
+            {
+                /* Map and copy in the encrypted data. */
+                UserPageMapper mapper(data_address);
+                SMC_R_UNLESS(mapper.Map(),                                                                        InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(work_buffer, data_address, data_size),                           InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(access_key_dec, access_key_dec_address, sizeof(access_key_dec)), InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(access_key_enc, access_key_enc_address, sizeof(access_key_enc)), InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(key_source_dec, key_source_dec_address, sizeof(key_source_dec)), InvalidArgument);
+                SMC_R_UNLESS(mapper.CopyFromUser(key_source_enc, key_source_enc_address, sizeof(key_source_enc)), InvalidArgument);
+
+                /* Decrypt the data. */
+                u8 device_id_high;
+                {
+                    /* Determine the seal key to use. */
+                    const u8 * const seal_key_source = SealKeySources[SealKey_ReencryptDeviceUniqueData];
+
+                    if (!DecryptDeviceUniqueData(work_buffer, data_size, std::addressof(device_id_high), seal_key_source, se::AesBlockSize, access_key_dec, sizeof(access_key_dec), key_source_dec, sizeof(key_source_dec), work_buffer, data_size)) {
+                        return SmcResult::InvalidArgument;
+                    }
+                }
+
+                /* Reencrypt the data. */
+                {
+                    /* Determine the seal key to use. */
+                    const auto seal_key_type         = DeviceUniqueDataToSealKey[mode];
+                    const u8 * const seal_key_source = SealKeySources[seal_key_type];
+
+                    /* Encrypt the data. */
+                    EncryptDeviceUniqueData(work_buffer, data_size, seal_key_source, se::AesBlockSize, access_key_enc, sizeof(access_key_enc), key_source_enc, sizeof(key_source_enc), work_buffer, data_size - DeviceUniqueDataTotalMetaSize, device_id_high);
+                }
+
+                /* Copy the reencrypted data back to user. */
+                SMC_R_UNLESS(mapper.CopyToUser(data_address, work_buffer, data_size), InvalidArgument);
             }
 
             return SmcResult::Success;
@@ -647,8 +716,7 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcReencryptDeviceUniqueData(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, ReencryptDeviceUniqueDataImpl);
     }
 
     /* Legacy APIs. */
