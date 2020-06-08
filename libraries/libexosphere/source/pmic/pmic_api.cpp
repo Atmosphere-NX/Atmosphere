@@ -145,10 +145,15 @@ namespace ams::pmic {
         u8 cnfg = i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1);
 
         /* Set SlpEn. */
-        cnfg |= (1 << 2);
+        cnfg |= MAX77620_ONOFFCNFG1_SLPEN;
 
         /* Write the new cfg. */
         i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1, cnfg);
+    }
+
+    void PowerOff() {
+        /* Write power-off to onoff cfg. */
+        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1, MAX77620_ONOFFCNFG1_PWR_OFF);
     }
 
     bool IsAcOk() {

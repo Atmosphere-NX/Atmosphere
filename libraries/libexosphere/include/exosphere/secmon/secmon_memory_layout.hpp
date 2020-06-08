@@ -287,4 +287,6 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramWarmbootBin = MemoryRegion(UINT64_C(0x4003E000), 0x17F0);
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootConfig  = MemoryRegion(UINT64_C(0x4003F800), 0x400);
 
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramRebootStub = MemoryRegion(UINT64_C(0x4003F000), 0x1000);
+
 }

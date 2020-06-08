@@ -140,7 +140,7 @@ namespace ams::mmu::arch::arm64 {
 
     constexpr inline u64 MemoryRegionAttributeWidth = 8;
 
-    constexpr PageTableMappingAttribute AddMappingAttributeIndex(PageTableMappingAttribute attr, int index) {
+    constexpr ALWAYS_INLINE PageTableMappingAttribute AddMappingAttributeIndex(PageTableMappingAttribute attr, int index) {
         return static_cast<PageTableMappingAttribute>(attr | (static_cast<typename std::underlying_type<PageTableMappingAttribute>::type>(index) << 2));
     }
 
@@ -169,35 +169,35 @@ namespace ams::mmu::arch::arm64 {
     constexpr inline u64 EntryBlock = 0x1ul;
     constexpr inline u64 EntryPage  = 0x3ul;
 
-    constexpr u64 MakeTableEntry(u64 address, PageTableTableAttribute attr) {
+    constexpr ALWAYS_INLINE u64 MakeTableEntry(u64 address, PageTableTableAttribute attr) {
         return address | static_cast<u64>(attr) | 0x3ul;
     }
 
-    constexpr u64 MakeL1BlockEntry(u64 address, PageTableMappingAttribute attr) {
+    constexpr ALWAYS_INLINE u64 MakeL1BlockEntry(u64 address, PageTableMappingAttribute attr) {
         return address | static_cast<u64>(attr) | static_cast<u64>(PageTableMappingAttribute_AccessFlagAccessed) | 0x1ul;
     }
 
-    constexpr u64 MakeL2BlockEntry(u64 address, PageTableMappingAttribute attr) {
+    constexpr ALWAYS_INLINE u64 MakeL2BlockEntry(u64 address, PageTableMappingAttribute attr) {
         return address | static_cast<u64>(attr) | static_cast<u64>(PageTableMappingAttribute_AccessFlagAccessed) | 0x1ul;
     }
 
-    constexpr u64 MakeL3BlockEntry(u64 address, PageTableMappingAttribute attr) {
+    constexpr ALWAYS_INLINE u64 MakeL3BlockEntry(u64 address, PageTableMappingAttribute attr) {
         return address | static_cast<u64>(attr) | static_cast<u64>(PageTableMappingAttribute_AccessFlagAccessed) | 0x3ul;
     }
 
-    constexpr uintptr_t GetL2Offset(uintptr_t address) {
+    constexpr ALWAYS_INLINE uintptr_t GetL2Offset(uintptr_t address) {
         return address & ((1ul << L2EntryShift) - 1);
     }
 
-    constexpr u64 GetL1EntryIndex(uintptr_t address) {
+    constexpr ALWAYS_INLINE u64 GetL1EntryIndex(uintptr_t address) {
         return ((address >> L1EntryShift) & TableEntryIndexMask);
     }
 
-    constexpr u64 GetL2EntryIndex(uintptr_t address) {
+    constexpr ALWAYS_INLINE u64 GetL2EntryIndex(uintptr_t address) {
         return ((address >> L2EntryShift) & TableEntryIndexMask);
     }
 
-    constexpr u64 GetL3EntryIndex(uintptr_t address) {
+    constexpr ALWAYS_INLINE u64 GetL3EntryIndex(uintptr_t address) {
         return ((address >> L3EntryShift) & TableEntryIndexMask);
     }
 
@@ -218,15 +218,15 @@ namespace ams::mmu::arch::arm64 {
         SetTableEntryImpl(table, index, value);
     }
 
-    constexpr void SetL1TableEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, PageTableTableAttribute attr) {
+    constexpr ALWAYS_INLINE void SetL1TableEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, PageTableTableAttribute attr) {
         SetTableEntry(table, GetL1EntryIndex(virt_addr), MakeTableEntry(phys_addr & TableEntryMask, attr));
     }
 
-    constexpr void SetL2TableEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, PageTableTableAttribute attr) {
+    constexpr ALWAYS_INLINE void SetL2TableEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, PageTableTableAttribute attr) {
         SetTableEntry(table, GetL2EntryIndex(virt_addr), MakeTableEntry(phys_addr & TableEntryMask, attr));
     }
 
-    constexpr void SetL1BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
+    constexpr ALWAYS_INLINE void SetL1BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
         const u64 start = GetL1EntryIndex(virt_addr);
         const u64 count = (size >> L1EntryShift);
 
@@ -235,7 +235,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void SetL2BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
+    constexpr ALWAYS_INLINE void SetL2BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
         const u64 start = GetL2EntryIndex(virt_addr);
         const u64 count = (size >> L2EntryShift);
 
@@ -244,7 +244,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void SetL3BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
+    constexpr ALWAYS_INLINE void SetL3BlockEntry(u64 *table, uintptr_t virt_addr, uintptr_t phys_addr, size_t size, PageTableMappingAttribute attr) {
         const u64 start = GetL3EntryIndex(virt_addr);
         const u64 count = (size >> L3EntryShift);
 
@@ -253,7 +253,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void InvalidateL1Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
+    constexpr ALWAYS_INLINE void InvalidateL1Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
         const u64 start = GetL1EntryIndex(virt_addr);
         const u64 count = (size >> L1EntryShift);
         const u64 end   = start + count;
@@ -263,7 +263,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void InvalidateL2Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
+    constexpr ALWAYS_INLINE void InvalidateL2Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
         const u64 start = GetL2EntryIndex(virt_addr);
         const u64 count = (size >> L2EntryShift);
         const u64 end   = start + count;
@@ -273,7 +273,7 @@ namespace ams::mmu::arch::arm64 {
         }
     }
 
-    constexpr void InvalidateL3Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
+    constexpr ALWAYS_INLINE void InvalidateL3Entries(volatile u64 *table, uintptr_t virt_addr, size_t size) {
         const u64 start = GetL3EntryIndex(virt_addr);
         const u64 count = (size >> L3EntryShift);
         const u64 end   = start + count;

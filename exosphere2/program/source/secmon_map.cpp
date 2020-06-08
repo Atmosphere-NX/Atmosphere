@@ -171,6 +171,10 @@ namespace ams::secmon {
             return;
         }
 
+        /* Ensure that the page is no longer in cache. */
+        hw::FlushDataCache(MemoryRegionVirtualSmcUserPage.GetPointer<void>(), MemoryRegionVirtualSmcUserPage.GetSize());
+        hw::DataSynchronizationBarrierInnerShareable();
+
         u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
 
         UnmapSmcUserPageImpl(l2_l3);
@@ -217,6 +221,10 @@ namespace ams::secmon {
         if (g_ams_iram_page_physical_address == 0) {
             return;
         }
+
+        /* Ensure that the page is no longer in cache. */
+        hw::FlushDataCache(MemoryRegionVirtualAtmosphereIramPage.GetPointer<void>(), MemoryRegionVirtualAtmosphereIramPage.GetSize());
+        hw::DataSynchronizationBarrierInnerShareable();
 
         /* Unmap the page. */
         u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
@@ -268,6 +276,10 @@ namespace ams::secmon {
         if (g_ams_user_page_physical_address == 0) {
             return;
         }
+
+        /* Ensure that the page is no longer in cache. */
+        hw::FlushDataCache(MemoryRegionVirtualAtmosphereUserPage.GetPointer<void>(), MemoryRegionVirtualAtmosphereUserPage.GetSize());
+        hw::DataSynchronizationBarrierInnerShareable();
 
         /* Unmap the page. */
         u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();

@@ -15,9 +15,8 @@
  */
 #pragma once
 #include <exosphere.hpp>
-#include "secmon_smc_common.hpp"
 
-namespace ams::secmon::smc {
+namespace ams::secmon {
 
     namespace impl {
 
@@ -29,8 +28,12 @@ namespace ams::secmon::smc {
                 constexpr PageMapperImpl(uintptr_t phys) : physical_address(util::AlignDown(phys, 4_KB)), virtual_address() { /* ... */ }
 
                 void *GetPointerTo(uintptr_t phys, size_t size) const;
-                bool CopyToUser(uintptr_t dst_phys, const void *src, size_t size) const;
-                bool CopyFromUser(void *dst, uintptr_t src_phys, size_t size) const;
+
+                bool CopyToMapping(uintptr_t dst_phys, const void *src, size_t size) const;
+                bool CopyFromMapping(void *dst, uintptr_t src_phys, size_t size) const;
+
+                ALWAYS_INLINE bool CopyToUser(uintptr_t dst_phys, const void *src, size_t size) const { return CopyToMapping(dst_phys, src, size); }
+                ALWAYS_INLINE bool CopyFromUser(void *dst, uintptr_t src_phys, size_t size) const { return CopyFromMapping(dst, src_phys, size); }
 
                 template<auto F>
                 bool MapImpl() {

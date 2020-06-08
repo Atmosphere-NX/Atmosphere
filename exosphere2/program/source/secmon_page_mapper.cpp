@@ -14,10 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "../secmon_map.hpp"
+#include "secmon_map.hpp"
 #include "secmon_page_mapper.hpp"
 
-namespace ams::secmon::smc {
+namespace ams::secmon {
 
     namespace impl {
 
@@ -35,7 +35,7 @@ namespace ams::secmon::smc {
             return reinterpret_cast<void *>(phys + (this->virtual_address - this->physical_address));
         }
 
-        bool PageMapperImpl::CopyToUser(uintptr_t dst_phys, const void *src, size_t size) const {
+        bool PageMapperImpl::CopyToMapping(uintptr_t dst_phys, const void *src, size_t size) const {
             void * const dst = this->GetPointerTo(dst_phys, size);
             if (dst == nullptr) {
                 return false;
@@ -45,7 +45,7 @@ namespace ams::secmon::smc {
             return true;
         }
 
-        bool PageMapperImpl::CopyFromUser(void *dst, uintptr_t src_phys, size_t size) const {
+        bool PageMapperImpl::CopyFromMapping(void *dst, uintptr_t src_phys, size_t size) const {
             const void * const src = this->GetPointerTo(src_phys, size);
             if (src == nullptr) {
                 return false;

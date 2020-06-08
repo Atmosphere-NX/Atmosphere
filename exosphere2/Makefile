@@ -11,6 +11,7 @@ clean: $(CLEAN_TARGETS)
 exosphere.bin: program.lz4 boot_code.lz4
 	$(MAKE) -C loader_stub
 	@cp loader_stub/loader_stub.bin exosphere.bin
+	@printf LENY >> exosphere.bin
 	@echo "Built exosphere.bin..."
 
 program.lz4: check_libexo
@@ -32,7 +33,6 @@ program-clean:
 	@rm -f program.lz4
 
 boot_code-clean:
-	$(MAKE) -C boot_code clean
 	@rm -f boot_code.lz4
 
 .PHONY: all clean $(CLEAN_TARGETS)

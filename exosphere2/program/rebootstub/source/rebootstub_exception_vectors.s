@@ -13,24 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
 
-namespace ams::pmic {
+.section    .vectors, "ax", %progbits
+.align      3
+.global     reset
+reset:
+    b _ZN3ams10rebootstub4MainEv
 
-    enum Regulator {
-        /* Erista regulators. */
-        Regulator_Erista_Max77621   = 0, /* Device code 0x3A000001 */
-
-        /* Mariko regulators. */
-        Regulator_Mariko_Max77812_A = 1, /* Device code 0x3A000002 */
-        Regulator_Mariko_Max77812_B = 2, /* Device code 0x3A000006 */
-    };
-
-    void EnableVddCpu(Regulator regulator);
-    void DisableVddCpu(Regulator regulator);
-    void EnableSleep();
-    void PowerOff();
-    bool IsAcOk();
-
-}
+.global     _ZN3ams10rebootstub10RebootTypeE
+_ZN3ams10rebootstub10RebootTypeE:
+.word 0x00000001
