@@ -18,6 +18,7 @@
 #include "../secmon_cpu_context.hpp"
 #include "../secmon_error.hpp"
 #include "secmon_smc_power_management.hpp"
+#include "secmon_smc_se_lock.hpp"
 
 namespace ams::secmon {
 
@@ -35,7 +36,26 @@ namespace ams::secmon::smc {
     namespace {
 
         constexpr inline uintptr_t PMC     = MemoryRegionVirtualDevicePmc.GetAddress();
+        constexpr inline uintptr_t GPIO    = MemoryRegionVirtualDeviceGpio.GetAddress();
         constexpr inline uintptr_t CLK_RST = MemoryRegionVirtualDeviceClkRst.GetAddress();
+
+        constexpr inline uintptr_t CommonSmcStackTop = MemoryRegionVirtualTzramVolatileData.GetEndAddress() - (0x80 * (NumCores - 1));
+
+        enum PowerStateType {
+            PowerStateType_StandBy   = 0,
+            PowerStateType_PowerDown = 1,
+        };
+
+        enum PowerStateId {
+            PowerStateId_Sc7 = 27,
+        };
+
+        /* http://infocenter.arm.com/help/topic/com.arm.doc.den0022d/Power_State_Coordination_Interface_PDD_v1_1_DEN0022D.pdf Page 46 */
+        struct SuspendCpuPowerState {
+            using StateId    = util::BitPack32::Field< 0, 16, PowerStateId>;
+            using StateType  = util::BitPack32::Field<16,  1, PowerStateType>;
+            using PowerLevel = util::BitPack32::Field<24,  2, u32>;
+        };
 
         constinit bool g_charger_hi_z_mode_enabled = false;
 
@@ -126,6 +146,95 @@ namespace ams::secmon::smc {
             FinalizePowerOff();
         }
 
+        void ValidateSocStateForSuspend() {
+            /* TODO */
+        }
+
+        void SaveSecureContextAndSuspend() {
+            /* TODO */
+
+            /* Finalize our powerdown and wait for an interrupt. */
+            FinalizePowerOff();
+        }
+
+        SmcResult SuspendCpuImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            const util::BitPack32 power_state = { static_cast<u32>(args.r[1]) };
+            const uintptr_t       entry_point = args.r[2];
+            const uintptr_t       context_id  = args.r[3];
+
+            const auto state_type = power_state.Get<SuspendCpuPowerState::StateType>();
+            const auto state_id   = power_state.Get<SuspendCpuPowerState::StateId>();
+
+            const auto core_id = hw::GetCurrentCoreId();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(state_type == PowerStateType_PowerDown, PsciDenied);
+            SMC_R_UNLESS(state_id   == PowerStateId_Sc7,         PsciDenied);
+
+            /* Orchestrate charger transition to Hi-Z mode if needed. */
+            if (IsChargerHiZModeEnabled()) {
+                /* Ensure we can do comms over i2c-1. */
+                clkrst::EnableI2c1Clock();
+
+                /* If the charger isn't in hi-z mode, perform a transition. */
+                if (!charger::IsHiZMode()) {
+                    charger::EnterHiZMode();
+
+                    /* Wait up to 50ms for the transition to complete. */
+                    const auto start_time = util::GetMicroSeconds();
+                    auto current_time = start_time;
+                    while ((current_time - start_time) <= 50'000) {
+                        if (auto intr_status = reg::Read(GPIO + 0x634); (intr_status & 1) == 0) {
+                            /* Wait 256 us to ensure the transition completes. */
+                            util::WaitMicroSeconds(256);
+                            break;
+                        }
+                        current_time = util::GetMicroSeconds();
+                    }
+                }
+
+                /* Disable i2c-1, since we're done communicating over it. */
+                clkrst::DisableI2c1Clock();
+            }
+
+            /* Enable wake event detection. */
+            pmc::EnableWakeEventDetection();
+
+            /* Ensure that i2c-5 is usable for communicating with the pmic. */
+            clkrst::EnableI2c5Clock();
+            i2c::Initialize(i2c::Port_5);
+
+            /* Orchestrate sleep entry with the pmic. */
+            pmic::EnableSleep();
+
+            /* Ensure that the soc is in a state valid for us to suspend. */
+            ValidateSocStateForSuspend();
+
+            /* Configure the pmc for sc7 entry. */
+            pmc::ConfigureForSc7Entry();
+
+            /* Configure the flow controller for sc7 entry. */
+            flow::SetCc4Ctrl(core_id, 0);
+            flow::SetHaltCpuEvents(core_id, false);
+            flow::ClearL2FlushControl();
+            flow::SetCpuCsr(core_id, FLOW_CTLR_CPUN_CSR_ENABLE_EXT_POWERGATE_CPU_TURNOFF_CPURAIL);
+
+            /* Save the entry context. */
+            SetEntryContext(core_id, entry_point, context_id);
+
+            /* Configure the cpu context for reset. */
+            SaveDebugRegisters();
+            SetCoreOff();
+            SetResetExpected(true);
+
+            /* Switch to use the common smc stack (all other cores are off), and perform suspension. */
+            PivotStackAndInvoke(reinterpret_cast<void *>(CommonSmcStackTop), SaveSecureContextAndSuspend);
+
+            /* This code will never be reached. */
+            __builtin_unreachable();
+        }
+
     }
 
     SmcResult SmcPowerOffCpu(SmcArguments &args) {
@@ -170,8 +279,7 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcSuspendCpu(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, SuspendCpuImpl);
     }
 
     bool IsChargerHiZModeEnabled() {

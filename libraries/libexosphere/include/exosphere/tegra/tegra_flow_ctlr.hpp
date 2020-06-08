@@ -18,6 +18,7 @@
 
 
 #define FLOW_CTLR_FLOW_DBG_QUAL        (0x050)
+#define FLOW_CTLR_L2FLUSH_CONTROL      (0x094)
 #define FLOW_CTLR_BPMP_CLUSTER_CONTROL (0x098)
 
 #define FLOW_CTLR_CPU0_CSR             (0x008)

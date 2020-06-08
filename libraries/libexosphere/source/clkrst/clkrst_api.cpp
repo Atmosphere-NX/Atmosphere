@@ -105,7 +105,7 @@ namespace ams::clkrst {
     }
 
     void EnableI2c5Clock() {
-        EnableClock(I2c1Clock);
+        EnableClock(I2c5Clock);
     }
 
     void DisableI2c1Clock() {

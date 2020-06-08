@@ -36,6 +36,8 @@ namespace ams::pmc {
     void SetRegisterAddress(uintptr_t address);
 
     void InitializeRandomScratch();
+    void EnableWakeEventDetection();
+    void ConfigureForSc7Entry();
 
     void LockSecureRegister(SecureRegister reg);
 
