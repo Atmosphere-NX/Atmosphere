@@ -35,6 +35,7 @@
 #include <exosphere/uart.hpp>
 #include <exosphere/pinmux.hpp>
 #include <exosphere/pmic.hpp>
+#include <exosphere/rtc.hpp>
 #include <exosphere/log.hpp>
 #include <exosphere/clkrst.hpp>
 #include <exosphere/actmon.hpp>

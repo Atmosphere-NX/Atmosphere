@@ -16,7 +16,8 @@
 #include <exosphere.hpp>
 #include "../secmon_error.hpp"
 #include "../secmon_misc.hpp"
-#include "secmon_page_mapper.hpp"
+#include "../secmon_page_mapper.hpp"
+#include "../secmon_user_power_management.hpp"
 #include "secmon_smc_info.hpp"
 #include "secmon_smc_power_management.hpp"
 
@@ -269,17 +270,40 @@ namespace ams::secmon::smc {
         }
 
         SmcResult SetConfig(SmcArguments &args) {
+            const auto soc_type = GetSocType();
+
             switch (static_cast<ConfigItem>(args.r[1])) {
                 case ConfigItem::IsChargerHiZModeEnabled:
                     /* Configure the HiZ mode. */
                     SetChargerHiZModeEnabled(static_cast<bool>(args.r[3]));
                     break;
                 case ConfigItem::ExosphereNeedsReboot:
-                    /* TODO */
-                    return SmcResult::NotImplemented;
+                    if (soc_type == fuse::SocType_Erista) {
+                        switch (static_cast<UserRebootType>(args.r[3])) {
+                            case UserRebootType_None:
+                                break;
+                            case UserRebootType_ToRcm:
+                                PerformUserRebootToRcm();
+                                break;
+                            case UserRebootType_ToPayload:
+                                PerformUserRebootToPayload();
+                                break;
+                            default:
+                                return SmcResult::InvalidArgument;
+                        }
+                    } else /* if (soc_type == fuse::SocType_Mariko) */ {
+                        return SmcResult::NotImplemented;
+                    }
+                    break;
                 case ConfigItem::ExosphereNeedsShutdown:
-                    /* TODO */
-                    return SmcResult::NotImplemented;
+                    if (soc_type == fuse::SocType_Erista) {
+                        if (args.r[3] != 0) {
+                            PerformUserShutDown();
+                        }
+                    } else /* if (soc_type == fuse::SocType_Mariko) */ {
+                        return SmcResult::NotImplemented;
+                    }
+                    break;
                 default:
                     return SmcResult::InvalidArgument;
             }

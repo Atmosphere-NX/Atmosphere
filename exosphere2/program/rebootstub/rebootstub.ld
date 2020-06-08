@@ -4,14 +4,14 @@ ENTRY(reset)
 MEMORY
 {
     NULL   : ORIGIN = 0,          LENGTH = 4K
-    sc7fw  : ORIGIN = 0x40003000, LENGTH = 4K
+    rebootstub  : ORIGIN = 0x4003F000, LENGTH = 4K
 }
 
 
 SECTIONS
 {
 	/* =========== CODE section =========== */
-	PROVIDE(__start__ = ORIGIN(sc7fw));
+	PROVIDE(__start__ = ORIGIN(rebootstub));
 	. = __start__;
 	__code_start = . ;
 
@@ -19,7 +19,7 @@ SECTIONS
 	{
 		KEEP (*(.vectors .vectors.*))
 		. = ALIGN(8);
-	} >sc7fw
+	} >rebootstub
 
 	.text :
 	{
@@ -29,26 +29,26 @@ SECTIONS
 		*(.text.hot .text.hot.*)
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 		. = ALIGN(8);
-	} >sc7fw
+	} >rebootstub
 
 	.init :
 	{
 		KEEP( *(.init) )
 		. = ALIGN(8);
-	} >sc7fw
+	} >rebootstub
 
 	.plt :
 	{
 		*(.plt)
 		*(.iplt)
 		. = ALIGN(8);
-	} >sc7fw
+	} >rebootstub
 
 	.fini :
 	{
 		KEEP( *(.fini) )
 		. = ALIGN(8);
-	} >sc7fw
+	} >rebootstub
 
 
 	/* =========== RODATA section =========== */
@@ -59,30 +59,30 @@ SECTIONS
 	{
 		*(.rodata .rodata.* .gnu.linkonce.r.*)
 		. = ALIGN(8);
-	} >sc7fw
+	} >rebootstub
 
-	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } >sc7fw
-	.eh_frame         : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } >sc7fw
-	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } >sc7fw
-	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } >sc7fw
+	.eh_frame_hdr     : { __eh_frame_hdr_start = .; *(.eh_frame_hdr) *(.eh_frame_entry .eh_frame_entry.*) __eh_frame_hdr_end = .; } >rebootstub
+	.eh_frame         : ONLY_IF_RO { KEEP (*(.eh_frame)) *(.eh_frame.*) } >rebootstub
+	.gcc_except_table : ONLY_IF_RO { *(.gcc_except_table .gcc_except_table.*) } >rebootstub
+	.gnu_extab        : ONLY_IF_RO { *(.gnu_extab*) } >rebootstub
 
-	.hash              : { *(.hash) } >sc7fw
+	.hash              : { *(.hash) } >rebootstub
 
 	/* =========== DATA section =========== */
 	. = ALIGN(8);
 	__data_start = . ;
 
-	.eh_frame : ONLY_IF_RW { KEEP (*(.eh_frame)) *(.eh_frame.*) } >sc7fw
-	.gcc_except_table : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) } >sc7fw
-	.gnu_extab : ONLY_IF_RW { *(.gnu_extab*) } >sc7fw
-	.exception_ranges : ONLY_IF_RW { *(.exception_ranges .exception_ranges*) } >sc7fw
+	.eh_frame : ONLY_IF_RW { KEEP (*(.eh_frame)) *(.eh_frame.*) } >rebootstub
+	.gcc_except_table : ONLY_IF_RW { *(.gcc_except_table .gcc_except_table.*) } >rebootstub
+	.gnu_extab : ONLY_IF_RW { *(.gnu_extab*) } >rebootstub
+	.exception_ranges : ONLY_IF_RW { *(.exception_ranges .exception_ranges*) } >rebootstub
 
 	.preinit_array ALIGN(8) :
 	{
 		PROVIDE (__preinit_array_start = .);
 		KEEP (*(.preinit_array))
 		PROVIDE (__preinit_array_end = .);
-	} >sc7fw
+	} >rebootstub
 
 	.init_array ALIGN(8) :
 	{
@@ -90,7 +90,7 @@ SECTIONS
 		KEEP (*(SORT(.init_array.*)))
 		KEEP (*(.init_array))
 		PROVIDE (__init_array_end = .);
-	} >sc7fw
+	} >rebootstub
 
 	.fini_array ALIGN(8) :
 	{
@@ -98,7 +98,7 @@ SECTIONS
 		KEEP (*(.fini_array))
 		KEEP (*(SORT(.fini_array.*)))
 		PROVIDE (__fini_array_end = .);
-	} >sc7fw
+	} >rebootstub
 
 	.ctors ALIGN(8) :
 	{
@@ -106,7 +106,7 @@ SECTIONS
 		KEEP (*(EXCLUDE_FILE (*crtend.o) .ctors))
 		KEEP (*(SORT(.ctors.*)))
 		KEEP (*(.ctors))
-	} >sc7fw
+	} >rebootstub
 
 	.dtors ALIGN(8) :
 	{
@@ -114,12 +114,12 @@ SECTIONS
 		KEEP (*(EXCLUDE_FILE (*crtend.o) .dtors))
 		KEEP (*(SORT(.dtors.*)))
 		KEEP (*(.dtors))
-	} >sc7fw
+	} >rebootstub
 
 	__got_start__ = .;
 
-	.got            : { *(.got) *(.igot) } >sc7fw
-	.got.plt        : { *(.got.plt)  *(.igot.plt) } >sc7fw
+	.got            : { *(.got) *(.igot) } >rebootstub
+	.got.plt        : { *(.got.plt)  *(.igot.plt) } >rebootstub
 
 	__got_end__ = .;
 
@@ -127,7 +127,7 @@ SECTIONS
 	{
 		*(.data .data.* .gnu.linkonce.d.*)
 		SORT(CONSTRUCTORS)
-	} >sc7fw
+	} >rebootstub
 
 	__bss_start__ = .;
 	.bss ALIGN(8) :
@@ -136,7 +136,7 @@ SECTIONS
 		*(.bss .bss.* .gnu.linkonce.b.*)
 		*(COMMON)
 		. = ALIGN(16);
-	} >sc7fw
+	} >rebootstub
 	__bss_end__ = .;
 
 	__end__ = ABSOLUTE(.) ;

@@ -16,10 +16,10 @@
 #include <exosphere.hpp>
 #include "../secmon_error.hpp"
 #include "../secmon_key_storage.hpp"
+#include "../secmon_page_mapper.hpp"
 #include "secmon_smc_aes.hpp"
 #include "secmon_smc_rsa.hpp"
 #include "secmon_smc_se_lock.hpp"
-#include "secmon_page_mapper.hpp"
 
 namespace ams::secmon::smc {
 

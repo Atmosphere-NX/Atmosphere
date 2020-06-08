@@ -1,0 +1,7 @@
+%rename link old_link
+
+*link:
+%(old_link) -T %:getenv(TOPDIR /rebootstub.ld) --gc-sections --nmagic -nostdlib -nostartfiles
+
+*startfile:
+crti%O%s crtbegin%O%s

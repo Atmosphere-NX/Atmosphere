@@ -43,11 +43,13 @@ namespace ams::hw::arch::arm64 {
     }
 
     ALWAYS_INLINE void InvalidateTlb(uintptr_t address) {
-        __asm__ __volatile__("tlbi vae3is, %[address]" :: [address]"r"(address) : "memory");
+        const uintptr_t page_index = address / 4_KB;
+        __asm__ __volatile__("tlbi vae3is, %[page_index]" :: [page_index]"r"(page_index) : "memory");
     }
 
     ALWAYS_INLINE void InvalidateTlbLastLevel(uintptr_t address) {
-        __asm__ __volatile__("tlbi vale3is, %[address]" :: [address]"r"(address) : "memory");
+        const uintptr_t page_index = address / 4_KB;
+        __asm__ __volatile__("tlbi vale3is, %[page_index]" :: [page_index]"r"(page_index) : "memory");
     }
 
     void FlushDataCache(const void *ptr, size_t size);
