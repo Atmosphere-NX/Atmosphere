@@ -26,7 +26,7 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcWriteAddress(SmcArguments &args) {
-        /* TODO */
+        /* NOTE: This smc was deprecated in Atmosphère 0.13.0. */
         return SmcResult::NotImplemented;
     }
 
