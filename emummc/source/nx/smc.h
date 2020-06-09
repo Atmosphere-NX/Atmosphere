@@ -78,12 +78,10 @@ Result smcCopyFromIram(void *dst_addr, uintptr_t iram_addr, u32 size);
 
 Result smcReadWriteRegister(u32 phys_addr, u32 value, u32 mask);
 
-Result smcWriteAddress8(void *dst_addr, u8 val);
-Result smcWriteAddress16(void *dst_addr, u16 val);
-Result smcWriteAddress32(void *dst_addr, u32 val);
-Result smcWriteAddress64(void *dst_addr, u64 val);
-
 Result smcGetEmummcConfig(exo_emummc_mmc_t mmc_id, exo_emummc_config_t *out_cfg, void *out_paths);
+
+Result smcGenerateRandomBytes(void *dst, u32 size);
+u64 smcGenerateRandomU64(void);
 
 #ifdef __cplusplus
 }

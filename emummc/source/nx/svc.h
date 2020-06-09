@@ -107,6 +107,104 @@ Result svcSetProcessMemoryPermission(Handle proc, u64 addr, u64 size, u32 perm);
 Result svcSetMemoryPermission(void* addr, u64 size, u32 perm);
 
 /**
+ * @brief Creates a thread.
+ * @return Result code.
+ * @note Syscall number 0x08.
+ */
+Result svcCreateThread(Handle* out, void* entry, void* arg, void* stack_top, int prio, int cpuid);
+
+/**
+ * @brief Starts a freshly created thread.
+ * @return Result code.
+ * @note Syscall number 0x09.
+ */
+Result svcStartThread(Handle handle);
+
+/**
+ * @brief Exits the current thread.
+ * @note Syscall number 0x0A.
+ */
+void __attribute__((noreturn)) svcExitThread(void);
+
+/**
+ * @brief Closes a handle, decrementing the reference count of the corresponding kernel object.
+ * This might result in the kernel freeing the object.
+ * @param handle Handle to close.
+ * @return Result code.
+ * @note Syscall number 0x16.
+ */
+Result svcCloseHandle(Handle handle);
+
+/**
+ * @brief Waits on one or more synchronization objects, optionally with a timeout.
+ * @return Result code.
+ * @note Syscall number 0x18.
+ * @note \p handleCount must not be greater than \ref MAX_WAIT_OBJECTS. This is a Horizon kernel limitation.
+ * @note This is the raw syscall, which can be cancelled by \ref svcCancelSynchronization or other means. \ref waitHandles or \ref waitMultiHandle should normally be used instead.
+ */
+Result svcWaitSynchronization(s32* index, const Handle* handles, s32 handleCount, u64 timeout);
+
+/**
+ * @brief Waits on a single synchronization object, optionally with a timeout.
+ * @return Result code.
+ * @note Wrapper for \ref svcWaitSynchronization.
+ * @note This is the raw syscall, which can be cancelled by \ref svcCancelSynchronization or other means. \ref waitSingleHandle should normally be used instead.
+ */
+static inline Result svcWaitSynchronizationSingle(Handle handle, u64 timeout) {
+    s32 tmp;
+    return svcWaitSynchronization(&tmp, &handle, 1, timeout);
+}
+
+/**
+ * @brief Creates an IPC session.
+ * @return Result code.
+ * @note Syscall number 0x40.
+ * @warning This is a privileged syscall. Use \ref envIsSyscallHinted to check if it is available.
+ */
+Result svcCreateSession(Handle *server_handle, Handle *client_handle, u32 unk0, u64 unk1);//unk* are normally 0?
+
+/**
+ * @brief Sends an IPC synchronization request to a session.
+ * @return Result code.
+ * @note Syscall number 0x21.
+ */
+Result svcSendSyncRequest(Handle session);
+
+/**
+ * @brief Performs IPC input/output.
+ * @return Result code.
+ * @note Syscall number 0x43.
+ * @warning This is a privileged syscall. Use \ref envIsSyscallHinted to check if it is available.
+ */
+Result svcReplyAndReceive(s32* index, const Handle* handles, s32 handleCount, Handle replyTarget, u64 timeout);
+
+/**
+ * @brief Maps the src address from the supplied process handle into the current process.
+ * @param[in] dst Address to which map the memory in the current process.
+ * @param[in] proc Process handle.
+ * @param[in] src Source mapping address.
+ * @param[in] size Size of the memory.
+ * @return Result code.
+ * @remark This allows mapping code and rodata with RW- permission.
+ * @note Syscall number 0x74.
+ * @warning This is a privileged syscall. Use \ref envIsSyscallHinted to check if it is available.
+ */
+Result svcMapProcessMemory(void* dst, Handle proc, u64 src, u64 size);
+
+/**
+ * @brief Undoes the effects of \ref svcMapProcessMemory.
+ * @param[in] dst Destination mapping address
+ * @param[in] proc Process handle.
+ * @param[in] src Address of the memory in the process.
+ * @param[in] size Size of the memory.
+ * @return Result code.
+ * @remark This allows mapping code and rodata with RW- permission.
+ * @note Syscall number 0x75.
+ * @warning This is a privileged syscall. Use \ref envIsSyscallHinted to check if it is available.
+ */
+Result svcUnmapProcessMemory(void* dst, Handle proc, u64 src, u64 size);
+
+/**
  * @brief Calls a secure monitor function (TrustZone, EL3).
  * @param regs Arguments to pass to the secure monitor.
  * @return Return value from the secure monitor.
