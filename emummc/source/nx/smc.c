@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "smc.h"
+#include "../utils/fatal.h"
 
 void smcRebootToRcm(void)
 {
@@ -117,45 +118,6 @@ Result smcReadWriteRegister(u32 phys_addr, u32 value, u32 mask)
     return rc;
 }
 
-static Result _smcWriteAddress(void *dst_addr, u64 val, u32 size)
-{
-    SecmonArgs args;
-    args.X[0] = 0xF0000003;     /* smcAmsWriteAddress */
-    args.X[1] = (u64)dst_addr;  /* DRAM address */
-    args.X[2] = val;            /* value */
-    args.X[3] = size;           /* Amount to write */
-    Result rc = svcCallSecureMonitor(&args);
-    if (rc == 0)
-    {
-        if (args.X[0] != 0)
-        {
-            /* SPL result n = SMC result n */
-            rc = (26u | ((u32)args.X[0] << 9u));
-        }
-    }
-    return rc;
-}
-
-Result smcWriteAddress8(void *dst_addr, u8 val)
-{
-    return _smcWriteAddress(dst_addr, val, 1);
-}
-
-Result smcWriteAddress16(void *dst_addr, u16 val)
-{
-    return _smcWriteAddress(dst_addr, val, 2);
-}
-
-Result smcWriteAddress32(void *dst_addr, u32 val)
-{
-    return _smcWriteAddress(dst_addr, val, 4);
-}
-
-Result smcWriteAddress64(void *dst_addr, u64 val)
-{
-    return _smcWriteAddress(dst_addr, val, 8);
-}
-
 Result smcGetEmummcConfig(exo_emummc_mmc_t mmc_id, exo_emummc_config_t *out_cfg, void *out_paths)
 {
     SecmonArgs args;
@@ -177,4 +139,38 @@ Result smcGetEmummcConfig(exo_emummc_mmc_t mmc_id, exo_emummc_config_t *out_cfg,
     }
     return rc;
 
+}
+
+Result smcGenerateRandomBytes(void *dst, u32 size)
+{
+    SecmonArgs args;
+    args.X[0] = 0xC3000006;     /* smcGenerateRandomBytes */
+    args.X[1] = size;
+    Result rc = svcCallSecureMonitor(&args);
+    if (rc == 0)
+    {
+        if (args.X[0] != 0)
+        {
+            /* SPL result n = SMC result n */
+            rc = (26u | ((u32)args.X[0] << 9u));
+        }
+        if (rc == 0)
+        {
+            memcpy(dst, &args.X[1], size);
+        }
+    }
+    return rc;
+}
+
+u64 smcGenerateRandomU64(void)
+{
+    u64 random;
+
+    Result rc = smcGenerateRandomBytes(&random, sizeof(random));
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    return random;
 }

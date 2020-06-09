@@ -55,6 +55,10 @@ typedef volatile unsigned int vu32;
 typedef u32 Handle; ///< Kernel object handle.
 typedef u32 Result; ///< Function error code result type.
 
+#define INVALID_HANDLE ((Handle) 0)
+#define CUR_PROCESS_HANDLE ((Handle) 0xFFFF8001)
+
+
 #ifndef __cplusplus
 typedef int bool;
 #define true  1

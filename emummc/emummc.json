@@ -128,6 +128,8 @@
                 "svcUnmapDeviceAddressSpace": "0x5c",
                 "svcGetSystemInfo": "0x6f",
                 "svcSetProcessMemoryPermission": "0x73",
+                "svcMapProcessMemory": "0x74",
+                "svcUnmapProcessMemory": "0x75",
                 "svcCallSecureMonitor": "0x7f"
             }
         }

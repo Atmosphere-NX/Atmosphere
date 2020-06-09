@@ -38,6 +38,12 @@ void usleep(u64 ticks);
 void msleep(u64 milliseconds);
 void exec_cfg(u32 *base, const cfg_op_t *ops, u32 num_ops);
 
+static inline void *armGetTls(void) {
+    void *ret;
+    __asm__ __volatile__("MRS %x[data], TPIDRRO_EL0" : [data]"=r"(ret));
+    return ret;
+}
+
 extern volatile emuMMC_ctx_t emuMMC_ctx;
 
 #endif
