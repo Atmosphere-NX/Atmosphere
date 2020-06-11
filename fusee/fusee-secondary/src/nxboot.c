@@ -58,13 +58,13 @@
 #include "sept_secondary_01_enc.h"
 #include "sept_secondary_dev_00_enc.h"
 #include "sept_secondary_dev_01_enc.h"
-#include "lp0fw_bin.h"
+#include "warmboot_bin.h"
 #include "emummc_kip.h"
 #undef u8
 #undef u32
 
-extern const uint8_t lp0fw_bin[];
-extern const uint32_t lp0fw_bin_size;
+extern const uint8_t warmboot_bin[];
+extern const uint32_t warmboot_bin_size;
 
 static const uint8_t retail_pkc_modulus[0x100] = {
     0xF7, 0x86, 0x47, 0xAB, 0x71, 0x89, 0x81, 0xB5, 0xCF, 0x0C, 0xB0, 0xE8, 0x48, 0xA7, 0xFD, 0xAD,
@@ -891,14 +891,14 @@ uint32_t nxboot_main(void) {
         }
     } else {
         /* Use Atmosphere's warmboot firmware implementation. */
-        warmboot_fw_size = lp0fw_bin_size;
+        warmboot_fw_size = warmboot_bin_size;
         warmboot_fw = malloc(warmboot_fw_size);
 
         if (warmboot_fw == NULL) {
             fatal_error("[NXBOOT] Out of memory!\n");
         }
 
-        memcpy(warmboot_fw, lp0fw_bin, warmboot_fw_size);
+        memcpy(warmboot_fw, warmboot_bin, warmboot_fw_size);
 
         if (warmboot_fw_size == 0) {
             fatal_error("[NXBOOT] Could not read the warmboot firmware from Package1!\n");

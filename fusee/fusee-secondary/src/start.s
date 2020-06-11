@@ -157,15 +157,15 @@ _content_headers:
 .asciz "Loader"
 .align 5
 
-/* lp0fw content header */
-.word __lp0fw_bin_start__
-.word __lp0fw_bin_size__
+/* warmboot content header */
+.word __warmboot_bin_start__
+.word __warmboot_bin_size__
 .byte CONTENT_TYPE_WBT
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
-.asciz "lp0fw"
+.asciz "warmboot"
 .align 5
 
 /* pm content header */

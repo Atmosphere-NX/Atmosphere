@@ -1,9 +1,9 @@
-TARGETS := exosphere.bin program.lz4
-CLEAN_TARGETS := exosphere-clean program-clean boot_code-clean
+TARGETS := exosphere.bin warmboot.bin program.lz4
+CLEAN_TARGETS := exosphere-clean program-clean boot_code-clean warmboot-clean
 
 SUBFOLDERS := $(MODULES)
 
-all: exosphere.bin
+all: exosphere.bin warmboot.bin
 
 clean: $(CLEAN_TARGETS)
 	@rm -f exosphere.bin
@@ -14,15 +14,16 @@ exosphere.bin: program.lz4 boot_code.lz4
 	@printf LENY >> exosphere.bin
 	@echo "Built exosphere.bin..."
 
-program.lz4: check_libexo
+program.lz4:
 	$(MAKE) -C program
 	@cp program/program.lz4 program.lz4
 	@cp program/boot_code.lz4 boot_code.lz4
 
-boot_code.lz4: program.lz4
+warmboot.bin:
+	$(MAKE) -C warmboot
+	@cp warmboot/warmboot.bin warmboot.bin
 
-check_libexo:
-	@$(MAKE) --no-print-directory -C ../libraries/libexosphere
+boot_code.lz4: program.lz4
 
 exosphere-clean:
 	$(MAKE) -C loader_stub clean
@@ -31,6 +32,10 @@ exosphere-clean:
 program-clean:
 	$(MAKE) -C program clean
 	@rm -f program.lz4
+
+warmboot-clean:
+	$(MAKE) -C warmboot clean
+	@rm -f warmboot.bin
 
 boot_code-clean:
 	@rm -f boot_code.lz4

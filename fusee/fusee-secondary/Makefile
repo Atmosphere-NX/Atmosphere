@@ -87,7 +87,7 @@ export TOPDIR	:=	$(CURDIR)
 export KIPDIRS	:= $(AMS)/stratosphere/loader $(AMS)/stratosphere/ncm $(AMS)/stratosphere/pm $(AMS)/stratosphere/sm $(AMS)/stratosphere/boot $(AMS)/stratosphere/spl $(AMS)/stratosphere/ams_mitm
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere $(AMS)/exosphere/lp0fw $(AMS)/exosphere/rebootstub \
+			$(AMS)/exosphere2 $(AMS)/exosphere2/warmboot $(AMS)/exosphere2/program/rebootstub \
 			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/sept/sept-primary \
 			$(AMS)/sept/sept-secondary $(AMS)/emummc $(AMS)/mesosphere/kernel_ldr $(KIPDIRS)
 
@@ -98,7 +98,7 @@ CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 KIPFILES 	:=	loader.kip ncm.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
-				exosphere.bin lp0fw.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
+				exosphere.bin warmboot.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
 				sept-primary.bin sept-secondary_00.enc sept-secondary_01.enc emummc.kip \
 				sept-secondary_dev_00.enc sept-secondary_dev_01.enc kernel_ldr.bin $(KIPFILES)
 
@@ -137,7 +137,7 @@ check_fusee_primary:
 	@$(MAKE) -C $(AMS)/fusee/fusee-primary all
 
 check_exosphere:
-	@$(MAKE) -C $(AMS)/exosphere all
+	@$(MAKE) -C $(AMS)/exosphere2 all
 
 check_sept:
 	@$(MAKE) -C $(AMS)/sept all
@@ -166,7 +166,7 @@ $(BUILD): check_fusee_primary check_exosphere check_sept check_emummc check_ther
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(AMS)/fusee/fusee-primary clean
-	@$(MAKE) -C $(AMS)/exosphere clean
+	@$(MAKE) -C $(AMS)/exosphere2 clean
 	@$(MAKE) -C $(AMS)/thermosphere clean
 	@$(MAKE) -C $(AMS)/libraries clean
 	@$(MAKE) -C $(AMS)/mesosphere clean
