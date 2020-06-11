@@ -14,24 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <exosphere.hpp>
 
-namespace ams::pmic {
+namespace ams::warmboot {
 
-    enum Regulator {
-        /* Erista regulators. */
-        Regulator_Erista_Max77621   = 0, /* Device code 0x3A000001 */
+    struct Metadata {
+        static constexpr u32 Magic = util::FourCC<'W','B','T','0'>::Code;
 
-        /* Mariko regulators. */
-        Regulator_Mariko_Max77812_A = 1, /* Device code 0x3A000002 */
-        Regulator_Mariko_Max77812_B = 2, /* Device code 0x3A000006 */
+        u32 magic;
+        ams::TargetFirmware target_firmware;
+        u32 reserved[2];
     };
-
-    void SetEnBit(Regulator regulator);
-    void EnableVddCpu(Regulator regulator);
-    void DisableVddCpu(Regulator regulator);
-    void EnableSleep();
-    void PowerOff();
-    bool IsAcOk();
+    static_assert(util::is_pod<Metadata>::value);
+    static_assert(sizeof(Metadata) == 0x10);
 
 }

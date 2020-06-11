@@ -109,4 +109,7 @@ namespace ams::fuse {
     int             GetExpectedFuseVersion(TargetFirmware target_fw);
     bool            HasRcmVulnerabilityPatch();
 
+    bool IsOdmProductionMode();
+    void ConfigureFuseBypass();
+
 }

@@ -23,6 +23,7 @@ namespace ams::se {
     constexpr inline size_t AesBlockSize = crypto::AesEncryptor128::BlockSize;
 
     void ClearAesKeySlot(int slot);
+    void ClearAesKeyIv(int slot);
     void LockAesKeySlot(int slot, u32 flags);
 
     void SetAesKey(int slot, const void *key, size_t key_size);
@@ -40,6 +41,8 @@ namespace ams::se {
 
     void EncryptAes128Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
     void EncryptAes256Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
+    void DecryptAes128Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
+    void DecryptAes256Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size);
 
     void EncryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler);
     void DecryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler);

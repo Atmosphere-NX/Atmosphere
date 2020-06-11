@@ -87,6 +87,10 @@ namespace ams::reg {
     template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
     ALWAYS_INLINE bool HasValue(uintptr_t reg, const Values... values) { return Read(reg, (EncodeMask(values) | ...)) == Encode(values...); }
 
+    ALWAYS_INLINE u32 GetValue(volatile u32 *reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
+    ALWAYS_INLINE u32 GetValue(volatile u32 &reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
+    ALWAYS_INLINE u32 GetValue(uintptr_t reg,     const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
+
     ALWAYS_INLINE void ReadWrite(volatile u32 *reg, u32 val, u32 mask) { *reg = (*reg & (~mask)) | (val & mask); }
     ALWAYS_INLINE void ReadWrite(volatile u32 &reg, u32 val, u32 mask) {  reg = ( reg & (~mask)) | (val & mask); }
     ALWAYS_INLINE void ReadWrite(uintptr_t reg, u32 val, u32 mask) { ReadWrite(reinterpret_cast<volatile u32 *>(reg), val, mask); }

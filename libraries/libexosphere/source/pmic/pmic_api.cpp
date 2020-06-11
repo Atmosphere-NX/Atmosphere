@@ -60,6 +60,10 @@ namespace ams::pmic {
             i2c::SendByte(i2c::Port_5, I2cAddressEristaMax77621, Max77620RegisterGpio0 + gpio, MAX77620_CNFG_GPIO_DRV_PUSHPULL | MAX77620_CNFG_GPIO_OUTPUT_VAL_HIGH);
         }
 
+        void SetEnBitErista() {
+            i2c::SendByte(i2c::Port_5, I2cAddressEristaMax77621, Max77621RegisterVOut, MAX77621_VOUT_ENABLE);
+        }
+
         void EnableVddCpuErista() {
             /* Enable GPIO 5. */
             /* TODO: What does this control? */
@@ -85,6 +89,11 @@ namespace ams::pmic {
                 case Regulator_Mariko_Max77812_B: return I2cAddressMarikoMax77812_B;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
+        }
+
+        void SetEnBitMariko(Regulator regulator) {
+            /* Set EN_M3_LPM to enable BUCK Master 3 low power mode. */
+            i2c::SendByte(i2c::Port_5, GetI2cAddressForMarikoMax77812(regulator), Max77812RegisterEnCtrl, 0x40);
         }
 
         void EnableVddCpuMariko(Regulator regulator) {
@@ -116,6 +125,17 @@ namespace ams::pmic {
             return i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffStat);
         }
 
+    }
+
+    void SetEnBit(Regulator regulator) {
+        switch (regulator) {
+            case Regulator_Erista_Max77621:
+                return SetEnBitErista();
+            case Regulator_Mariko_Max77812_A:
+            case Regulator_Mariko_Max77812_B:
+                return SetEnBitMariko(regulator);
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
     }
 
     void EnableVddCpu(Regulator regulator) {

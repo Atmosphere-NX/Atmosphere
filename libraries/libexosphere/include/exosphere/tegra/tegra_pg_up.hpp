@@ -16,22 +16,8 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::pmic {
+#define PG_UP(x) (0x60000000 + x)
 
-    enum Regulator {
-        /* Erista regulators. */
-        Regulator_Erista_Max77621   = 0, /* Device code 0x3A000001 */
+#define PG_UP_TAG       (0x000)
 
-        /* Mariko regulators. */
-        Regulator_Mariko_Max77812_A = 1, /* Device code 0x3A000002 */
-        Regulator_Mariko_Max77812_B = 2, /* Device code 0x3A000006 */
-    };
-
-    void SetEnBit(Regulator regulator);
-    void EnableVddCpu(Regulator regulator);
-    void DisableVddCpu(Regulator regulator);
-    void EnableSleep();
-    void PowerOff();
-    bool IsAcOk();
-
-}
+#define PG_UP_TAG_PID_COP 0xAAAAAAAA

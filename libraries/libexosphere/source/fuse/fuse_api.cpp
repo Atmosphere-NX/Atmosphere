@@ -20,6 +20,11 @@ namespace ams::fuse {
 
     namespace {
 
+        struct BypassEntry {
+            u32 offset;
+            u32 value;
+        };
+
         struct OdmWord2 {
             using DeviceUniqueKeyGeneration = util::BitPack32::Field<0,  5, int>;
             using Reserved                  = util::BitPack32::Field<5, 27, int>;
@@ -135,6 +140,12 @@ namespace ams::fuse {
 
         constexpr inline int NumFuseIncrements = util::size(FuseVersionIncrementFirmwares);
 
+        constexpr const BypassEntry FuseBypassEntries[] = {
+            /* Don't configure any fuse bypass entries. */
+        };
+
+        constexpr inline int NumFuseBypassEntries = util::size(FuseBypassEntries);
+
         /* Verify that the fuse version increment list is sorted. */
         static_assert([] {
             for (size_t i = 0; i < util::size(FuseVersionIncrementFirmwares) - 1; ++i) {
@@ -169,7 +180,7 @@ namespace ams::fuse {
     }
 
     void Lockout() {
-        reg::Write(GetRegisters().FUSE_DISABLEREGPROGRAM, FUSE_REG_BITS_ENUM(DISABLEREGPROGRAM_DISABLEREGPROGRAM_VAL, ENABLE));
+        reg::Write(GetRegisters().FUSE_DISABLEREGPROGRAM, FUSE_REG_BITS_ENUM(DISABLEREGPROGRAM_VAL, ENABLE));
     }
 
     u32 ReadWord(int address) {
@@ -365,6 +376,51 @@ namespace ams::fuse {
         }
 
         return g_has_rcm_bug_patch;
+    }
+
+    bool IsOdmProductionMode() {
+        return reg::HasValue(GetChipRegisters().FUSE_SECURITY_MODE, FUSE_REG_BITS_ENUM(SECURITY_MODE_SECURITY_MODE, ENABLED));
+    }
+
+    void ConfigureFuseBypass() {
+        /* Make the fuse registers visible. */
+        clkrst::SetFuseVisibility(true);
+
+        /* Only perform bypass configuration if fuse programming is allowed. */
+        if (!reg::HasValue(GetRegisters().FUSE_DISABLEREGPROGRAM, FUSE_REG_BITS_ENUM(DISABLEREGPROGRAM_VAL, DISABLE))) {
+            return;
+        }
+
+        /* Enable software writes to fuses. */
+        reg::ReadWrite(GetRegisters().FUSE_WRITE_ACCESS_SW, FUSE_REG_BITS_ENUM(WRITE_ACCESS_SW_CTRL,   READWRITE),
+                                                            FUSE_REG_BITS_ENUM(WRITE_ACCESS_SW_STATUS,     WRITE));
+
+        /* Enable fuse bypass. */
+        reg::Write(GetRegisters().FUSE_FUSEBYPASS, FUSE_REG_BITS_ENUM(FUSEBYPASS_VAL, ENABLE));
+
+        /* Override fuses. */
+        for (const auto &entry : FuseBypassEntries) {
+            reg::Write(g_register_address + entry.offset, entry.value);
+        }
+
+        /* Disable software writes to fuses. */
+        reg::ReadWrite(GetRegisters().FUSE_WRITE_ACCESS_SW, FUSE_REG_BITS_ENUM(WRITE_ACCESS_SW_CTRL, READONLY));
+
+        /* NOTE: Here, NVidia almost certainly intends to *disable* fuse bypass, but they write enable instead... */
+        reg::Write(GetRegisters().FUSE_FUSEBYPASS, FUSE_REG_BITS_ENUM(FUSEBYPASS_VAL, ENABLE));
+
+        /* NOTE: Here, NVidia intends to disable fuse programming. However, they fuck up -- and *clear* the disable bit. */
+        /* It should be noted that this is a sticky bit, and thus software clears have no effect. */
+        reg::ReadWrite(GetRegisters().FUSE_DISABLEREGPROGRAM, FUSE_REG_BITS_ENUM(DISABLEREGPROGRAM_VAL, DISABLE));
+
+        /* Configure FUSE_PRIVATEKEYDISABLE_TZ_STICKY_BIT. */
+        constexpr const uintptr_t PMC = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
+        const bool key_invisible = reg::HasValue(PMC + APBDEV_PMC_SECURE_SCRATCH21, FUSE_REG_BITS_ENUM(PRIVATEKEYDISABLE_TZ_STICKY_BIT_VAL, KEY_INVISIBLE));
+
+        reg::ReadWrite(GetRegisters().FUSE_PRIVATEKEYDISABLE, FUSE_REG_BITS_ENUM_SEL(PRIVATEKEYDISABLE_TZ_STICKY_BIT_VAL, key_invisible, KEY_INVISIBLE, KEY_VISIBLE));
+
+        /* Write-lock PMC_SECURE_SCRATCH21. */
+        reg::ReadWrite(PMC + APBDEV_PMC_SEC_DISABLE2, PMC_REG_BITS_ENUM(SEC_DISABLE2_WRITE21, ON));
     }
 
 }
