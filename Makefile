@@ -15,7 +15,7 @@ thermosphere:
 	$(MAKE) -C thermosphere all
 
 exosphere: thermosphere
-	$(MAKE) -C exosphere2 all
+	$(MAKE) -C exosphere all
 
 stratosphere: exosphere libraries
 	$(MAKE) -C stratosphere all
@@ -120,11 +120,11 @@ dist: dist-no-debug
 	cp sept/sept-primary/sept-primary.elf atmosphere-$(AMSVER)-debug/sept-primary.elf
 	cp sept/sept-secondary/sept-secondary.elf atmosphere-$(AMSVER)-debug/sept-secondary.elf
 	cp sept/sept-secondary/key_derivation/key_derivation.elf atmosphere-$(AMSVER)-debug/sept-secondary-key-derivation.elf
-	cp exosphere2/loader_stub/loader_stub.elf atmosphere-$(AMSVER)-debug/exosphere-loader-stub.elf
-	cp exosphere2/program/program.elf atmosphere-$(AMSVER)-debug/exosphere-program.elf
-	cp exosphere2/warmboot/warmboot.elf atmosphere-$(AMSVER)-debug/exosphere-warmboot.elf
-	cp exosphere2/program/sc7fw/sc7fw.elf atmosphere-$(AMSVER)-debug/exosphere-sc7fw.elf
-	cp exosphere2/program/rebootstub/rebootstub.elf atmosphere-$(AMSVER)-debug/exosphere-rebootstub.elf
+	cp exosphere/loader_stub/loader_stub.elf atmosphere-$(AMSVER)-debug/exosphere-loader-stub.elf
+	cp exosphere/program/program.elf atmosphere-$(AMSVER)-debug/exosphere-program.elf
+	cp exosphere/warmboot/warmboot.elf atmosphere-$(AMSVER)-debug/exosphere-warmboot.elf
+	cp exosphere/program/sc7fw/sc7fw.elf atmosphere-$(AMSVER)-debug/exosphere-sc7fw.elf
+	cp exosphere/program/rebootstub/rebootstub.elf atmosphere-$(AMSVER)-debug/exosphere-rebootstub.elf
 	cp mesosphere/kernel_ldr/kernel_ldr.elf atmosphere-$(AMSVER)-debug/kernel_ldr.elf
 	cp stratosphere/ams_mitm/ams_mitm.elf atmosphere-$(AMSVER)-debug/ams_mitm.elf
 	cp stratosphere/boot/boot.elf atmosphere-$(AMSVER)-debug/boot.elf

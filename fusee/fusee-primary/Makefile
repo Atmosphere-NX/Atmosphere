@@ -77,7 +77,7 @@ export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere2/program/rebootstub
+			$(AMS)/exosphere/program/rebootstub
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -117,7 +117,7 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 all: check_rebootstub $(BUILD)
 
 check_rebootstub:
-	@$(MAKE) -C $(AMS)/exosphere2/program/rebootstub all
+	@$(MAKE) -C $(AMS)/exosphere/program/rebootstub all
 
 $(BUILD): check_rebootstub
 	@[ -d $@ ] || mkdir -p $@
@@ -126,7 +126,7 @@ $(BUILD): check_rebootstub
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(AMS)/exosphere2/program/rebootstub clean
+	@$(MAKE) -C $(AMS)/exosphere/program/rebootstub clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 
