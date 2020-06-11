@@ -87,7 +87,7 @@ export TOPDIR	:=	$(CURDIR)
 export KIPDIRS	:= $(AMS)/stratosphere/loader $(AMS)/stratosphere/ncm $(AMS)/stratosphere/pm $(AMS)/stratosphere/sm $(AMS)/stratosphere/boot $(AMS)/stratosphere/spl $(AMS)/stratosphere/ams_mitm
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere2 $(AMS)/exosphere2/warmboot $(AMS)/exosphere2/program/rebootstub \
+			$(AMS)/exosphere $(AMS)/exosphere/warmboot $(AMS)/exosphere/program/rebootstub \
 			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/sept/sept-primary \
 			$(AMS)/sept/sept-secondary $(AMS)/emummc $(AMS)/mesosphere/kernel_ldr $(KIPDIRS)
 
@@ -137,7 +137,7 @@ check_fusee_primary:
 	@$(MAKE) -C $(AMS)/fusee/fusee-primary all
 
 check_exosphere:
-	@$(MAKE) -C $(AMS)/exosphere2 all
+	@$(MAKE) -C $(AMS)/exosphere all
 
 check_sept:
 	@$(MAKE) -C $(AMS)/sept all
@@ -166,7 +166,7 @@ $(BUILD): check_fusee_primary check_exosphere check_sept check_emummc check_ther
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(AMS)/fusee/fusee-primary clean
-	@$(MAKE) -C $(AMS)/exosphere2 clean
+	@$(MAKE) -C $(AMS)/exosphere clean
 	@$(MAKE) -C $(AMS)/thermosphere clean
 	@$(MAKE) -C $(AMS)/libraries clean
 	@$(MAKE) -C $(AMS)/mesosphere clean
