@@ -308,6 +308,37 @@ namespace ams::se {
             ExecuteOperation(SE, SE_OPERATION_OP_START, dst, dst_size, src, aligned_size);
         }
 
+        void DecryptAesCbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size, AesMode mode) {
+            /* If nothing to decrypt, succeed. */
+            if (src_size == 0) { return; }
+
+            /* Validate input. */
+            AMS_ABORT_UNLESS(iv_size == AesBlockSize);
+            AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+
+            /* Get the engine. */
+            auto *SE = GetRegisters();
+
+            /* Determine extents. */
+            const size_t num_blocks   = src_size / AesBlockSize;
+            const size_t aligned_size = num_blocks * AesBlockSize;
+            AMS_ABORT_UNLESS(src_size == aligned_size);
+
+            /* Configure for aes-cbc encryption. */
+            SetConfig(SE, false, SE_CONFIG_DST_MEMORY);
+            SetAesConfig(SE, slot, false, AesConfigCbcDecrypt);
+            UpdateAesMode(SE, mode);
+
+            /* Set the iv. */
+            SetAesKeyIv(SE, slot, iv, iv_size);
+
+            /* Set the block count. */
+            SetBlockCount(SE, num_blocks);
+
+            /* Execute the operation. */
+            ExecuteOperation(SE, SE_OPERATION_OP_START, dst, dst_size, src, aligned_size);
+        }
+
         void ComputeAes128Async(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, DoneHandler handler, u32 config, bool encrypt, volatile SecurityEngineRegisters *SE) {
             /* If nothing to decrypt, succeed. */
             if (size == 0) { return; }
@@ -345,6 +376,35 @@ namespace ams::se {
             reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT, slot), SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_WORD, i));
 
             /* Write the data. */
+            SE->SE_CRYPTO_KEYTABLE_DATA = 0;
+        }
+    }
+
+    void ClearAesKeyIv(int slot) {
+        /* Validate the key slot. */
+        AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+
+        /* Get the engine. */
+        auto *SE = GetRegisters();
+
+        /* Set each iv word in order. */
+        for (int i = 0; i < 4; ++i) {
+            /* Select the keyslot original iv. */
+            reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT,         slot),
+                                                    SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_KEYIV_SEL,          IV),
+                                                    SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_IV_SEL,    ORIGINAL_IV),
+                                                    SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_WORD,            i));
+
+            /* Set the iv word. */
+            SE->SE_CRYPTO_KEYTABLE_DATA = 0;
+
+            /* Select the keyslot updated iv. */
+            reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT,         slot),
+                                                    SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_KEYIV_SEL,          IV),
+                                                    SE_REG_BITS_ENUM (CRYPTO_KEYTABLE_ADDR_KEYIV_IV_SEL,     UPDATED_IV),
+                                                    SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_WORD,            i));
+
+            /* Set the iv word. */
             SE->SE_CRYPTO_KEYTABLE_DATA = 0;
         }
     }
@@ -485,6 +545,14 @@ namespace ams::se {
 
     void EncryptAes256Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
         return EncryptAesCbc(dst, dst_size, slot, src, src_size, iv, iv_size, AesMode_Aes256);
+    }
+
+    void DecryptAes128Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
+        return DecryptAesCbc(dst, dst_size, slot, src, src_size, iv, iv_size, AesMode_Aes128);
+    }
+
+    void DecryptAes256Cbc(void *dst, size_t dst_size, int slot, const void *src, size_t src_size, const void *iv, size_t iv_size) {
+        return DecryptAesCbc(dst, dst_size, slot, src, src_size, iv, iv_size, AesMode_Aes256);
     }
 
     void EncryptAes128CbcAsync(u32 out_ll_address, int slot, u32 in_ll_address, u32 size, const void *iv, size_t iv_size, DoneHandler handler) {

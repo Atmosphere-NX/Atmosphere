@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "pinmux_registers.hpp"
 
 namespace ams::pinmux {
 

@@ -13,25 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
 
-namespace ams::pmic {
+.section    .text._ZN3ams8warmboot5StartEv, "ax", %progbits
+.align      3
+.global     _ZN3ams8warmboot5StartEv
+_ZN3ams8warmboot5StartEv:
+    /* Set CPSR_cf and CPSR_cf. */
+    msr cpsr_f, #0xC0
+    msr cpsr_cf, #0xD3
 
-    enum Regulator {
-        /* Erista regulators. */
-        Regulator_Erista_Max77621   = 0, /* Device code 0x3A000001 */
+    /* Set the stack pointer. */
+    ldr sp, =__stack_top__
 
-        /* Mariko regulators. */
-        Regulator_Mariko_Max77812_A = 1, /* Device code 0x3A000002 */
-        Regulator_Mariko_Max77812_B = 2, /* Device code 0x3A000006 */
-    };
+    /* Set our link register to the exception handler. */
+    ldr lr, =_ZN3ams8warmboot16ExceptionHandlerEv
 
-    void SetEnBit(Regulator regulator);
-    void EnableVddCpu(Regulator regulator);
-    void DisableVddCpu(Regulator regulator);
-    void EnableSleep();
-    void PowerOff();
-    bool IsAcOk();
+    /* Invoke main. */
+    ldr r0, =_metadata
+    bl _ZN3ams8warmboot4MainEPKNS0_8MetadataE
 
-}
+    /* Infinite loop. */
+    1: b 1b

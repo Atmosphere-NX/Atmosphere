@@ -26,6 +26,8 @@
 #include <exosphere/tegra/tegra_ictlr.hpp>
 #include <exosphere/tegra/tegra_mc.hpp>
 #include <exosphere/tegra/tegra_mselect.hpp>
+#include <exosphere/tegra/tegra_pinmux.hpp>
+#include <exosphere/tegra/tegra_pg_up.hpp>
 #include <exosphere/tegra/tegra_pmc.hpp>
 #include <exosphere/tegra/tegra_sb.hpp>
 #include <exosphere/tegra/tegra_sysctr0.hpp>
