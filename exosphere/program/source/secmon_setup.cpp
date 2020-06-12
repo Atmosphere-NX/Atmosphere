@@ -949,7 +949,9 @@ namespace ams::secmon {
 
         void SetupForLp0Exit() {
             /* Exit HiZ mode in charger, if we need to. */
-            if (smc::IsChargerHiZModeEnabled()) {
+            const auto target_fw = GetTargetFirmware();
+            const bool force_exit_hiz_mode = (target_fw < TargetFirmware_4_0_0) || (target_fw < TargetFirmware_8_0_0 && fuse::GetHardwareType() == fuse::HardwareType_Icosa);
+            if (force_exit_hiz_mode || smc::IsChargerHiZModeEnabled()) {
                 ExitChargerHiZMode();
             }
 
