@@ -791,8 +791,8 @@ namespace ams::secmon {
 
         void DisableArc() {
             /* Configure IRAM top/bottom to point to memory ends (disabling redirection). */
-            reg::Write(MC + MC_IRAM_BOM, (~0u) & MC_IRAM_BOM_WRITE_MASK);
-            reg::Write(MC + MC_IRAM_TOM, ( 0u) & MC_IRAM_TOM_WRITE_MASK);
+            reg::Write(MC + MC_IRAM_BOM, MC_REG_BITS_VALUE(IRAM_BOM_IRAM_BOM, (~0u)));
+            reg::Write(MC + MC_IRAM_TOM, MC_REG_BITS_VALUE(IRAM_TOM_IRAM_TOM, ( 0u)));
 
             /* Lock the IRAM aperture. */
             reg::ReadWrite(MC + MC_IRAM_REG_CTRL, MC_REG_BITS_ENUM(IRAM_REG_CTRL_IRAM_CFG_WRITE_ACCESS, DISABLED));
