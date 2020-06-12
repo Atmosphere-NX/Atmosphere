@@ -135,14 +135,12 @@ namespace ams::secmon::boot {
 
     void UpdateBootConfigForPackage2Header(const pkg2::Package2Header &header) {
         /* Check for all-zeroes signature. */
-        bool is_decrypted = header.signature[0] == 0;
-        is_decrypted &= crypto::IsSameBytes(header.signature, header.signature + 1, sizeof(header.signature) - 1);
+        const bool is_unsigned = header.signature[0] == 0 && crypto::IsSameBytes(header.signature, header.signature + 1, sizeof(header.signature) - 1);
+        secmon::impl::GetBootConfigStorage()->signed_data.SetPackage2SignatureVerificationDisabled(is_unsigned);
 
         /* Check for valid magic. */
-        is_decrypted &= crypto::IsSameBytes(header.meta.magic, pkg2::Package2Meta::Magic::String, sizeof(header.meta.magic));
-
-        /* Set the setting in boot config. */
-        secmon::impl::GetBootConfigStorage()->signed_data.SetPackage2Decrypted(is_decrypted);
+        const bool is_decrypted = crypto::IsSameBytes(header.meta.magic, pkg2::Package2Meta::Magic::String, sizeof(header.meta.magic));
+        secmon::impl::GetBootConfigStorage()->signed_data.SetPackage2EncryptionDisabled(is_decrypted);
     }
 
     void VerifyPackage2HeaderSignature(pkg2::Package2Header &header, bool verify) {

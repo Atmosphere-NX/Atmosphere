@@ -123,8 +123,12 @@ namespace ams::pkg1 {
             return (this->flags1[0] & (1 << 0)) != 0;
         }
 
-        constexpr void SetPackage2Decrypted(bool decrypted) {
-            this->flags |= decrypted ? 0x3 : 0x0;
+        constexpr void SetPackage2SignatureVerificationDisabled(bool decrypted) {
+            this->flags |= decrypted ? (1 << 1) : (0 << 0);
+        }
+
+        constexpr void SetPackage2EncryptionDisabled(bool decrypted) {
+            this->flags |= decrypted ? (1 << 0) : (0 << 0);
         }
     };
     static_assert(util::is_pod<BootConfigSignedData>::value);
