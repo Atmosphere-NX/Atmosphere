@@ -28,7 +28,7 @@ namespace ams::secmon::smc {
     constexpr inline size_t DeviceUniqueDataInnerMetaSize = DeviceUniqueDataPaddingSize + DeviceUniqueDataDeviceIdSize;
     constexpr inline size_t DeviceUniqueDataTotalMetaSize = DeviceUniqueDataOuterMetaSize + DeviceUniqueDataInnerMetaSize;
 
-    bool DecryptDeviceUniqueData(void *dst, size_t dst_size, u8 *out_device_id_high, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size);
+    bool DecryptDeviceUniqueData(void *dst, size_t dst_size, u8 *out_device_id_high, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size, bool enforce_device_unique);
     void EncryptDeviceUniqueData(void *dst, size_t dst_size, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size, u8 device_id_high);
 
 }

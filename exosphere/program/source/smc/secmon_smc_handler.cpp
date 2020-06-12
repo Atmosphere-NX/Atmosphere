@@ -122,6 +122,15 @@ namespace ams::secmon::smc {
             { 0xC3000012, Restriction_SafeModeNotAllowed,         SmcPrepareEsCommonTitleKey         }
         };
 
+        /* Deprecated handlerss. */
+        constexpr inline const HandlerInfo DecryptAndImportEsDeviceKeyHandlerInfo = {
+              0xC300100C, Restriction_DeviceUniqueDataNotAllowed, SmcDecryptAndImportEsDeviceKey
+        };
+
+        constexpr inline const HandlerInfo DecryptAndImportLotusKeyHandlerInfo = {
+              0xC300100E, Restriction_DeviceUniqueDataNotAllowed, SmcDecryptAndImportLotusKey
+        };
+
         constinit HandlerInfo g_kern_handlers[] = {
             { 0x00000000, Restriction_SafeModeNotAllowed, nullptr },
             { 0xC4000001, Restriction_SafeModeNotAllowed, SmcSuspendCpu                     },
@@ -264,6 +273,15 @@ namespace ams::secmon::smc {
 
         }
 
+    }
+
+    void ConfigureSmcHandlersForTargetFirmware() {
+        const auto target_fw = GetTargetFirmware();
+
+        if (target_fw < TargetFirmware_5_0_0) {
+            g_user_handlers[DecryptAndImportEsDeviceKeyHandlerInfo.function_id & 0xFF] = DecryptAndImportEsDeviceKeyHandlerInfo;
+            g_user_handlers[DecryptAndImportLotusKeyHandlerInfo.function_id & 0xFF]    = DecryptAndImportLotusKeyHandlerInfo;
+        }
     }
 
     void HandleSmc(int type, SmcArguments &args) {

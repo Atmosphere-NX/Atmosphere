@@ -17,6 +17,7 @@
 #include "secmon_boot.hpp"
 #include "secmon_boot_functions.hpp"
 #include "../smc/secmon_random_cache.hpp"
+#include "../smc/secmon_smc_handler.hpp"
 #include "../secmon_cache.hpp"
 #include "../secmon_cpu_context.hpp"
 #include "../secmon_misc.hpp"
@@ -180,6 +181,9 @@ namespace ams::secmon {
         /* Perform final initialization. */
         secmon::SetupSocProtections();
         secmon::SetupCpuSErrorDebug();
+
+        /* Configure the smc handler tables to reflect the current target firmware. */
+        secmon::smc::ConfigureSmcHandlersForTargetFirmware();
     }
 
 }

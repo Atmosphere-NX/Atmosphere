@@ -21,4 +21,6 @@ namespace ams::secmon::smc {
 
     using SmcHandler = SmcResult (*)(SmcArguments &args);
 
+    void ConfigureSmcHandlersForTargetFirmware();
+
 }

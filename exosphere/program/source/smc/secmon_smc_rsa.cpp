@@ -43,6 +43,16 @@ namespace ams::secmon::smc {
         };
         constexpr size_t ModularExponentiateByStorageKeyTableSize = util::size(ModularExponentiateByStorageKeyTable);
 
+        consteval u32 GetModeForImportRsaKey(ImportRsaKey import_key) {
+            for (size_t i = 0; i < ModularExponentiateByStorageKeyTableSize; ++i) {
+                if (static_cast<ImportRsaKey>(ModularExponentiateByStorageKeyTable[i]) == import_key) {
+                    return i;
+                }
+            }
+
+            AMS_ASSUME(false);
+        }
+
         class PrepareEsDeviceUniqueKeyAsyncArguments {
             private:
                 int generation;
@@ -200,7 +210,7 @@ namespace ams::secmon::smc {
             const uintptr_t mod_address = args.r[2];
             const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
 
-            const auto mode       = option.Get<ModularExponentiateByStorageKeyOption::Mode>();
+            const auto mode       = GetTargetFirmware() >= TargetFirmware_5_0_0 ? option.Get<ModularExponentiateByStorageKeyOption::Mode>() : GetModeForImportRsaKey(ImportRsaKey_Lotus);
             const auto reserved   = option.Get<PrepareEsDeviceUniqueKeyOption::Reserved>();
 
             /* Validate arguments. */
@@ -250,7 +260,7 @@ namespace ams::secmon::smc {
             std::memcpy(label_digest, std::addressof(args.r[3]), sizeof(label_digest));
             const util::BitPack32 option = { static_cast<u32>(args.r[7]) };
 
-            const auto generation = GetTargetFirmware() >= TargetFirmware_3_0_0 ? std::max(0, option.Get<PrepareEsDeviceUniqueKeyOption::KeyGeneration>() - 1) : 0;
+            const auto generation = GetTargetFirmware() >= TargetFirmware_3_0_0 ? std::max<int>(pkg1::KeyGeneration_1_0_0, option.Get<PrepareEsDeviceUniqueKeyOption::KeyGeneration>() - 1) : pkg1::KeyGeneration_1_0_0;
             const auto type       = option.Get<PrepareEsDeviceUniqueKeyOption::Type>();
             const auto reserved   = option.Get<PrepareEsDeviceUniqueKeyOption::Reserved>();
 
