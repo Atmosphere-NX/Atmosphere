@@ -231,7 +231,7 @@ namespace ams::secmon::smc {
 
         SmcResult InvokeSmcHandler(const HandlerInfo &info, SmcArguments &args) {
             /* Check if the smc is restricted. */
-            if (GetTargetFirmware() >= TargetFirmware_4_0_0 && AMS_UNLIKELY(IsHandlerRestricted(info))) {
+            if (GetTargetFirmware() >= TargetFirmware_8_0_0 && AMS_UNLIKELY(IsHandlerRestricted(info))) {
                 return SmcResult::NotPermitted;
             }
 
