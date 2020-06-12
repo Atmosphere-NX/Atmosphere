@@ -124,11 +124,11 @@ namespace ams::secmon::smc {
 
         /* Deprecated handlerss. */
         constexpr inline const HandlerInfo DecryptAndImportEsDeviceKeyHandlerInfo = {
-              0xC300100C, Restriction_DeviceUniqueDataNotAllowed, SmcDecryptAndImportEsDeviceKey
+              0xC300100C, Restriction_Normal, SmcDecryptAndImportEsDeviceKey
         };
 
         constexpr inline const HandlerInfo DecryptAndImportLotusKeyHandlerInfo = {
-              0xC300100E, Restriction_DeviceUniqueDataNotAllowed, SmcDecryptAndImportLotusKey
+              0xC300100E, Restriction_SafeModeNotAllowed, SmcDecryptAndImportLotusKey
         };
 
         constinit HandlerInfo g_kern_handlers[] = {
@@ -231,7 +231,7 @@ namespace ams::secmon::smc {
 
         SmcResult InvokeSmcHandler(const HandlerInfo &info, SmcArguments &args) {
             /* Check if the smc is restricted. */
-            if (AMS_UNLIKELY(IsHandlerRestricted(info))) {
+            if (GetTargetFirmware() >= TargetFirmware_4_0_0 && AMS_UNLIKELY(IsHandlerRestricted(info))) {
                 return SmcResult::NotPermitted;
             }
 
