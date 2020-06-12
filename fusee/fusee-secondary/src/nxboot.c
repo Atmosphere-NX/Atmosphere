@@ -598,8 +598,8 @@ static void nxboot_move_bootconfig() {
     fclose(bcfile);
 
     /* Select the actual BootConfig size and destination address. */
-    bootconfig_addr = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_6_0_0) ? 0x4003D000 : 0x4003F800;
-    bootconfig_size = (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) ? 0x3000 : 0x1000;
+    bootconfig_addr = 0x4003F800;
+    bootconfig_size = 0x800;
 
     /* Copy the BootConfig into IRAM. */
     memset((void *)bootconfig_addr, 0, bootconfig_size);
@@ -870,7 +870,9 @@ uint32_t nxboot_main(void) {
     /* Initialize Boot Reason on older firmware versions. */
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Initializing Boot Reason...\n");
-        nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE(target_firmware));
+        nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE);
+    } else {
+        memset((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE, 0, 0x200);
     }
 
     /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation. */
@@ -919,15 +921,7 @@ uint32_t nxboot_main(void) {
     }
 
     /* Select the right address for the warmboot firmware. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-        warmboot_memaddr = (void *)0x8000D000;
-    } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_6_0_0) {
-        warmboot_memaddr = (void *)0x4003B000;
-    } else if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-        warmboot_memaddr = (void *)0x4003D800;
-    } else {
-        warmboot_memaddr = (void *)0x4003E000;
-    }
+    warmboot_memaddr = (void *)0x4003E000;
 
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Copying warmboot firmware...\n");
 

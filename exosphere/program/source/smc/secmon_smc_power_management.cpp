@@ -348,7 +348,9 @@ namespace ams::secmon::smc {
             SaveSecureContext();
 
             /* Load and start the sc7 firmware on the bpmp. */
-            LoadAndStartSc7BpmpFirmware();
+            if (GetTargetFirmware() >= TargetFirmware_2_0_0) {
+                LoadAndStartSc7BpmpFirmware();
+            }
 
             /* Log our suspension. */
             /* NOTE: Nintendo only does this on dev, but we will always do it. */
