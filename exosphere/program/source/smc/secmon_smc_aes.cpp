@@ -572,7 +572,7 @@ namespace ams::secmon::smc {
                 const u8 * const seal_key_source = SealKeySources[seal_key_type];
 
                 /* Decrypt the data. */
-                if (!DecryptDeviceUniqueData(work_buffer, data_size, nullptr, seal_key_source, se::AesBlockSize, access_key, sizeof(access_key), key_source, sizeof(key_source), work_buffer, data_size, enforce_device_unique)) {
+                if (!DecryptDeviceUniqueData(work_buffer, data_size, nullptr, seal_key_source, se::AesBlockSize, access_key, se::AesBlockSize, key_source, se::AesBlockSize, work_buffer, data_size, enforce_device_unique)) {
                     return SmcResult::InvalidArgument;
                 }
 

@@ -14,10 +14,12 @@ exosphere.bin: program.lz4 boot_code.lz4
 	@printf LENY >> exosphere.bin
 	@echo "Built exosphere.bin..."
 
-program.lz4:
-	$(MAKE) -C program
+program.lz4: build_program
 	@cp program/program.lz4 program.lz4
 	@cp program/boot_code.lz4 boot_code.lz4
+
+build_program:
+	$(MAKE) -C program
 
 warmboot.bin:
 	$(MAKE) -C warmboot
@@ -40,4 +42,4 @@ warmboot-clean:
 boot_code-clean:
 	@rm -f boot_code.lz4
 
-.PHONY: all clean $(CLEAN_TARGETS)
+.PHONY: all clean build_program $(CLEAN_TARGETS)
