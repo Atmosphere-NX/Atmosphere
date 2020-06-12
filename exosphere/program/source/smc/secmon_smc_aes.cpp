@@ -114,6 +114,9 @@ namespace ams::secmon::smc {
         struct DecryptDeviceUniqueDataOption {
             using DeviceUniqueDataIndex = util::BitPack32::Field<0,  3, DeviceUniqueData>;
             using Reserved              = util::BitPack32::Field<3, 29, u32>;
+
+            /* Legacy. */
+            using EnforceDeviceUnique   = util::BitPack32::Field<0,  1, bool>;
         };
 
         constexpr const u8 SealKeySources[SealKey_Count][AesKeySize] = {
@@ -499,7 +502,7 @@ namespace ams::secmon::smc {
 
             /* Decode arguments. */
             std::memcpy(key_source, std::addressof(args.r[1]), sizeof(key_source));
-            const int generation = GetTargetFirmware() >= TargetFirmware_3_0_0 ? std::max(0, static_cast<int>(args.r[3]) - 1) : 0;
+            const int generation = GetTargetFirmware() >= TargetFirmware_3_0_0 ? std::max<int>(pkg1::KeyGeneration_1_0_0, static_cast<int>(args.r[3]) - 1) : pkg1::KeyGeneration_1_0_0;
 
             /* Validate arguments. */
             SMC_R_UNLESS(pkg1::IsValidKeyGeneration(generation), InvalidArgument);
@@ -517,11 +520,23 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
-        SmcResult ValidateDeviceUniqueDataSize(DeviceUniqueData mode, size_t data_size) {
+        constexpr size_t GetDiscountedMinimumDeviceUniqueDataSize(bool enforce_device_unique) {
+            if (enforce_device_unique) {
+                return 0;
+            } else {
+                return DeviceUniqueDataTotalMetaSize - DeviceUniqueDataIvSize;
+            }
+        }
+
+        SmcResult ValidateDeviceUniqueDataSize(DeviceUniqueData mode, size_t data_size, bool enforce_device_unique) {
+            /* Determine the discounted size towards the minimum. */
+            const size_t discounted_size = GetDiscountedMinimumDeviceUniqueDataSize(enforce_device_unique);
+            SMC_R_UNLESS(enforce_device_unique || fuse::GetPatchVersion() < fuse::PatchVersion_Odnx02A2, InvalidArgument);
+
             switch (mode) {
                 case DeviceUniqueData_DecryptDeviceUniqueData:
                     {
-                        SMC_R_UNLESS(data_size < DeviceUniqueDataSizeMax, InvalidArgument);
+                        SMC_R_UNLESS(DeviceUniqueDataTotalMetaSize - discounted_size < data_size && data_size <= DeviceUniqueDataSizeMax, InvalidArgument);
                     }
                     break;
                 case DeviceUniqueData_ImportLotusKey:
@@ -529,7 +544,7 @@ namespace ams::secmon::smc {
                 case DeviceUniqueData_ImportSslKey:
                 case DeviceUniqueData_ImportEsClientCertKey:
                     {
-                        SMC_R_UNLESS(DeviceUniqueDataSizeMin <= data_size && data_size <= DeviceUniqueDataSizeMax, InvalidArgument);
+                        SMC_R_UNLESS(DeviceUniqueDataSizeMin - discounted_size <= data_size && data_size <= DeviceUniqueDataSizeMax, InvalidArgument);
                     }
                     break;
                 default:
@@ -539,23 +554,9 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
-        SmcResult DecryptDeviceUniqueDataImpl(SmcArguments &args) {
-            /* Decode arguments. */
-            u8 access_key[se::AesBlockSize];
-            u8 key_source[se::AesBlockSize];
-
-            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
-            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
-            const uintptr_t data_address = args.r[4];
-            const size_t    data_size    = args.r[5];
-            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
-
-            const auto mode     = option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>();
-            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
-
+        SmcResult DecryptDeviceUniqueDataImpl(const u8 *access_key, const u8 *key_source, const DeviceUniqueData mode, const uintptr_t data_address, const size_t data_size, bool enforce_device_unique) {
             /* Validate arguments. */
-            SMC_R_UNLESS(reserved == 0, InvalidArgument);
-            SMC_R_TRY(ValidateDeviceUniqueDataSize(mode, data_size));
+            SMC_R_TRY(ValidateDeviceUniqueDataSize(mode, data_size, enforce_device_unique));
 
             /* Decrypt the device unique data. */
             alignas(8) u8 work_buffer[DeviceUniqueDataSizeMax];
@@ -571,7 +572,7 @@ namespace ams::secmon::smc {
                 const u8 * const seal_key_source = SealKeySources[seal_key_type];
 
                 /* Decrypt the data. */
-                if (!DecryptDeviceUniqueData(work_buffer, data_size, nullptr, seal_key_source, se::AesBlockSize, access_key, sizeof(access_key), key_source, sizeof(key_source), work_buffer, data_size)) {
+                if (!DecryptDeviceUniqueData(work_buffer, data_size, nullptr, seal_key_source, se::AesBlockSize, access_key, sizeof(access_key), key_source, sizeof(key_source), work_buffer, data_size, enforce_device_unique)) {
                     return SmcResult::InvalidArgument;
                 }
 
@@ -599,6 +600,89 @@ namespace ams::secmon::smc {
             return SmcResult::Success;
         }
 
+        SmcResult DecryptDeviceUniqueDataImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key[se::AesBlockSize];
+            u8 key_source[se::AesBlockSize];
+
+            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+            const uintptr_t data_address = args.r[4];
+            const size_t    data_size    = args.r[5];
+            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
+
+            const auto mode     = GetTargetFirmware() >= TargetFirmware_5_0_0 ? option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>() : DeviceUniqueData_DecryptDeviceUniqueData;
+            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
+
+            const bool enforce_device_unique = GetTargetFirmware() >= TargetFirmware_5_0_0 ? true : option.Get<DecryptDeviceUniqueDataOption::EnforceDeviceUnique>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+
+            /* Decrypt the device unique data. */
+            return DecryptDeviceUniqueDataImpl(access_key, key_source, mode, data_address, data_size, enforce_device_unique);
+        }
+
+        SmcResult DecryptAndImportEsDeviceKeyImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key[se::AesBlockSize];
+            u8 key_source[se::AesBlockSize];
+
+            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+            const uintptr_t data_address = args.r[4];
+            const size_t    data_size    = args.r[5];
+            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
+
+            const auto mode     = DeviceUniqueData_ImportEsDeviceKey;
+            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
+
+            const bool enforce_device_unique = option.Get<DecryptDeviceUniqueDataOption::EnforceDeviceUnique>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+
+            /* Ensure that the key is exactly the correct size. */
+            if (enforce_device_unique) {
+                SMC_R_UNLESS(data_size == util::AlignUp(2 * se::RsaSize + sizeof(u32), se::AesBlockSize) + DeviceUniqueDataTotalMetaSize, InvalidArgument);
+            } else {
+                SMC_R_UNLESS(data_size == util::AlignUp(2 * se::RsaSize + sizeof(u32), se::AesBlockSize) + DeviceUniqueDataIvSize,        InvalidArgument);
+            }
+
+            /* Decrypt the device unique data. */
+            return DecryptDeviceUniqueDataImpl(access_key, key_source, mode, data_address, data_size, enforce_device_unique);
+        }
+
+        SmcResult DecryptAndImportLotusKeyImpl(SmcArguments &args) {
+            /* Decode arguments. */
+            u8 access_key[se::AesBlockSize];
+            u8 key_source[se::AesBlockSize];
+
+            std::memcpy(access_key, std::addressof(args.r[1]), sizeof(access_key));
+            const util::BitPack32 option = { static_cast<u32>(args.r[3]) };
+            const uintptr_t data_address = args.r[4];
+            const size_t    data_size    = args.r[5];
+            std::memcpy(key_source, std::addressof(args.r[6]), sizeof(key_source));
+
+            const auto mode     = DeviceUniqueData_ImportLotusKey;
+            const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
+
+            const bool enforce_device_unique = option.Get<DecryptDeviceUniqueDataOption::EnforceDeviceUnique>();
+
+            /* Validate arguments. */
+            SMC_R_UNLESS(reserved == 0, InvalidArgument);
+
+            /* Ensure that the key is exactly the correct size. */
+            if (enforce_device_unique) {
+                SMC_R_UNLESS(data_size == se::RsaSize + DeviceUniqueDataTotalMetaSize, InvalidArgument);
+            } else {
+                SMC_R_UNLESS(data_size == se::RsaSize + DeviceUniqueDataIvSize,        InvalidArgument);
+            }
+
+            /* Decrypt the device unique data. */
+            return DecryptDeviceUniqueDataImpl(access_key, key_source, mode, data_address, data_size, enforce_device_unique);
+        }
+
         SmcResult ReencryptDeviceUniqueDataImpl(SmcArguments &args) {
             /* Decode arguments. */
             u8 access_key_dec[se::AesBlockSize];
@@ -617,9 +701,11 @@ namespace ams::secmon::smc {
             const auto mode     = option.Get<DecryptDeviceUniqueDataOption::DeviceUniqueDataIndex>();
             const auto reserved = option.Get<DecryptDeviceUniqueDataOption::Reserved>();
 
+            const bool enforce_device_unique = true;
+
             /* Validate arguments. */
             SMC_R_UNLESS(reserved == 0, InvalidArgument);
-            SMC_R_TRY(ValidateDeviceUniqueDataSize(mode, data_size));
+            SMC_R_TRY(ValidateDeviceUniqueDataSize(mode, data_size, enforce_device_unique));
 
             /* Decrypt the device unique data. */
             alignas(8) u8 work_buffer[DeviceUniqueDataSizeMax];
@@ -640,7 +726,7 @@ namespace ams::secmon::smc {
                     /* Determine the seal key to use. */
                     const u8 * const seal_key_source = SealKeySources[SealKey_ReencryptDeviceUniqueData];
 
-                    if (!DecryptDeviceUniqueData(work_buffer, data_size, std::addressof(device_id_high), seal_key_source, se::AesBlockSize, access_key_dec, sizeof(access_key_dec), key_source_dec, sizeof(key_source_dec), work_buffer, data_size)) {
+                    if (!DecryptDeviceUniqueData(work_buffer, data_size, std::addressof(device_id_high), seal_key_source, se::AesBlockSize, access_key_dec, sizeof(access_key_dec), key_source_dec, sizeof(key_source_dec), work_buffer, data_size, enforce_device_unique)) {
                         return SmcResult::InvalidArgument;
                     }
                 }
@@ -721,13 +807,11 @@ namespace ams::secmon::smc {
 
     /* Legacy APIs. */
     SmcResult SmcDecryptAndImportEsDeviceKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, DecryptAndImportEsDeviceKeyImpl);
     }
 
     SmcResult SmcDecryptAndImportLotusKey(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        return LockSecurityEngineAndInvoke(args, DecryptAndImportLotusKeyImpl);
     }
 
     /* Es encryption utilities. */

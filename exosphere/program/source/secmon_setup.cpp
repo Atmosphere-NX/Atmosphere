@@ -584,6 +584,11 @@ namespace ams::secmon {
                                                                                  MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_LOCK_MODE,                                LOCKED),
                                                                                  MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_PROTECT_MODE,                     LOCKBIT_SECURE));
 
+            /* If we're cold-booting and on 1.0.0, alter the default carveout size. */
+            if (g_is_cold_boot && GetTargetFirmware() <= TargetFirmware_1_0_0) {
+                g_kernel_carveouts[0].size = 200 * 128_KB;
+            }
+
             /* Configure the two kernel carveouts. */
             SetupKernelCarveouts();
 
@@ -599,10 +604,15 @@ namespace ams::secmon {
             reg::Write(MC + MC_SMMU_TRANSLATION_ENABLE_3, ~0u);
             reg::Write(MC + MC_SMMU_TRANSLATION_ENABLE_4, ~0u);
 
-            /* Configure ASIDs 1-3 as secure, and all others as non-secure. */
-            reg::Write(MC + MC_SMMU_ASID_SECURITY,   MC_REG_BITS_ENUM(SMMU_ASID_SECURITY_SECURE_ASIDS_1, SECURE),
-                                                     MC_REG_BITS_ENUM(SMMU_ASID_SECURITY_SECURE_ASIDS_2, SECURE),
-                                                     MC_REG_BITS_ENUM(SMMU_ASID_SECURITY_SECURE_ASIDS_3, SECURE));
+            /* On modern firmware, configure ASIDs 1-3 as secure, and all others as non-secure. */
+            if (GetTargetFirmware() >= TargetFirmware_4_0_0) {
+                reg::Write(MC + MC_SMMU_ASID_SECURITY,   MC_REG_BITS_ENUM(SMMU_ASID_SECURITY_SECURE_ASIDS_1, SECURE),
+                                                         MC_REG_BITS_ENUM(SMMU_ASID_SECURITY_SECURE_ASIDS_2, SECURE),
+                                                         MC_REG_BITS_ENUM(SMMU_ASID_SECURITY_SECURE_ASIDS_3, SECURE));
+            } else {
+                /* Legacy firmware accesses the MC directly, though, and so correspondingly we must allow ASIDs to be edited by non-secure world. */
+                reg::Write(MC + MC_SMMU_ASID_SECURITY, 0);
+            }
 
             reg::Write(MC + MC_SMMU_ASID_SECURITY_1, 0);
             reg::Write(MC + MC_SMMU_ASID_SECURITY_2, 0);
@@ -1115,6 +1125,11 @@ namespace ams::secmon {
         /* Disable the ARC. */
         DisableArc();
 
+        /* Further protections are applied only on 4.0.0+. */
+        if (GetTargetFirmware() < TargetFirmware_4_0_0) {
+            return;
+        }
+
         /* Finalize and lock the carveout scratch registers. */
         FinalizeCarveoutSecureScratchRegisters();
         pmc::LockSecureRegister(pmc::SecureRegister_Carveout);
@@ -1155,13 +1170,19 @@ namespace ams::secmon {
     }
 
     void SetupPmcAndMcSecure() {
-        /* Set the PMC secure. */
-        reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
+        const auto target_fw = GetTargetFirmware();
 
-        /* Set the MC secure. */
-        reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
-                                                                                         SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
-                                                                                         SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
+        if (target_fw >= TargetFirmware_2_0_0) {
+            /* Set the PMC secure. */
+            reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
+        }
+
+        if (target_fw >= TargetFirmware_4_0_0) {
+            /* Set the MC secure. */
+            reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
+                                                                                             SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
+                                                                                             SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
+        }
     }
 
     void SetupCpuCoreContext() {

@@ -90,13 +90,13 @@ namespace ams::secmon::smc {
 
     }
 
-    bool DecryptDeviceUniqueData(void *dst, size_t dst_size, u8 *out_device_id_high, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size) {
+    bool DecryptDeviceUniqueData(void *dst, size_t dst_size, u8 *out_device_id_high, const void *seal_key_source, size_t seal_key_source_size, const void *access_key, size_t access_key_size, const void *key_source, size_t key_source_size, const void *src, size_t src_size, bool enforce_device_unique) {
         /* Determine how much decrypted data there will be. */
-        const size_t enc_size = src_size - DeviceUniqueDataOuterMetaSize;
+        const size_t enc_size = src_size - (enforce_device_unique ? DeviceUniqueDataOuterMetaSize : DeviceUniqueDataIvSize);
         const size_t dec_size = enc_size - DeviceUniqueDataInnerMetaSize;
 
         /* Ensure that our sizes are allowed. */
-        AMS_ABORT_UNLESS(src_size > DeviceUniqueDataTotalMetaSize);
+        AMS_ABORT_UNLESS(src_size > (enforce_device_unique ? DeviceUniqueDataTotalMetaSize : DeviceUniqueDataIvSize));
         AMS_ABORT_UNLESS(dst_size >= enc_size);
 
         /* Determine the extents of the data. */
@@ -119,6 +119,11 @@ namespace ams::secmon::smc {
 
             /* Decrypt the data. */
             ComputeAes128Ctr(dst, dst_size, pkg1::AesKeySlot_Smc, enc, enc_size, temp_iv, DeviceUniqueDataIvSize);
+
+            /* If we're not enforcing device unique, there's no mac/device id. */
+            if (!enforce_device_unique) {
+                return true;
+            }
 
             /* Compute the gmac. */
             ComputeGmac(calc_mac, DeviceUniqueDataMacSize, dst, enc_size, temp_iv, DeviceUniqueDataIvSize);

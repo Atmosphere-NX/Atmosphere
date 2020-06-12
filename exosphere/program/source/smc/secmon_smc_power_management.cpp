@@ -157,8 +157,9 @@ namespace ams::secmon::smc {
             AMS_ABORT_UNLESS(reg::HasValue(PMC + APBDEV_PMC_PWRGATE_STATUS, PMC_REG_BITS_VALUE(PWRGATE_STATUS_CE123, 0)));
 
             /* Validate that the bpmp is appropriately halted. */
+            const bool jtag = IsJtagEnabled() || GetTargetFirmware() < TargetFirmware_4_0_0;
             AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) == reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
-                                                                                             FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, IsJtagEnabled(), ENABLED, DISABLED)));
+                                                                                             FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, jtag, ENABLED, DISABLED)));
 
             /* TODO */
         }
@@ -300,6 +301,9 @@ namespace ams::secmon::smc {
         }
 
         void LoadAndStartSc7BpmpFirmware() {
+            /* Set BPMP reset. */
+            reg::Write(CLK_RST + CLK_RST_CONTROLLER_RST_DEV_L_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_COP_RST, ENABLE));
+
             /* Set the PMC as insecure, so that the BPMP firmware can access it. */
             reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, DISABLE));
 
@@ -318,9 +322,6 @@ namespace ams::secmon::smc {
 
             /* Disable activity monitor bpmp monitoring, so that we don't panic upon bpmp wake. */
             actmon::StopMonitoringBpmp();
-
-            /* Set BPMP reset. */
-            reg::Write(CLK_RST + CLK_RST_CONTROLLER_RST_DEV_L_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_COP_RST, ENABLE));
 
             /* Load the bpmp firmware. */
             void * const sc7fw_load_address = MemoryRegionVirtualIramSc7Firmware.GetPointer<void>();
@@ -417,7 +418,9 @@ namespace ams::secmon::smc {
             pmic::EnableSleep();
 
             /* Ensure that the soc is in a state valid for us to suspend. */
-            ValidateSocStateForSuspend();
+            if (GetTargetFirmware() >= TargetFirmware_2_0_0) {
+                ValidateSocStateForSuspend();
+            }
 
             /* Configure the pmc for sc7 entry. */
             pmc::ConfigureForSc7Entry();
