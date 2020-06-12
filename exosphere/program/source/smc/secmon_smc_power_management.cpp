@@ -162,6 +162,11 @@ namespace ams::secmon::smc {
             AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) == reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
                                                                                              FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, jtag, ENABLED, DISABLED)));
 
+            /* Further validations aren't guaranteed on < 6.0.0. */
+            if (GetTargetFirmware() < TargetFirmware_6_0_0) {
+                return;
+            }
+
             /* Validate that USB2, APB-DMA, AHB-DMA are held in reset. */
             AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_RST_DEVICES_H, CLK_RST_REG_BITS_ENUM(RST_DEVICES_H_SWR_USB2_RST,   ENABLE),
                                                                                        CLK_RST_REG_BITS_ENUM(RST_DEVICES_H_SWR_APBDMA_RST, ENABLE),
