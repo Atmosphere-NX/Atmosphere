@@ -954,11 +954,7 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_INFO, u8"[NXBOOT] Reading Exosphère...\n");
 
     /* Select the right address for Exosphère. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-        exosphere_memaddr = (void *)0x4002D000;
-    } else {
-        exosphere_memaddr = (void *)0x40030000;
-    }
+    exosphere_memaddr = (void *)0x40030000;
 
     /* Copy Exosphère to a good location or read it directly to it. */
     if (loader_ctx->exosphere_path[0] != '\0') {
