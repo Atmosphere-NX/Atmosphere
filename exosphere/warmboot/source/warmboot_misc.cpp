@@ -39,8 +39,8 @@ namespace ams::warmboot {
             const bool jtag_sts = reg::HasValue(PMC + APBDEV_PMC_STICKY_BITS, PMC_REG_BITS_ENUM(STICKY_BITS_JTAG_STS, ENABLE));
 
             reg::ReadWrite(SYSTEM + SB_PFCFG, SB_REG_BITS_ENUM_SEL(PFCFG_DBGEN,   jtag_sts, ENABLE, DISABLE),
-                                              SB_REG_BITS_ENUM_SEL(PFCFG_NIDEN,   jtag_sts, ENABLE, DISABLE),
                                               SB_REG_BITS_ENUM_SEL(PFCFG_SPNIDEN, jtag_sts, ENABLE, DISABLE),
+                                              SB_REG_BITS_ENUM    (PFCFG_NIDEN,   ENABLE),
                                               SB_REG_BITS_ENUM    (PFCFG_SPIDEN,  DISABLE));
 
             reg::ReadWrite(APB_MISC + APB_MISC_PP_CONFIG_CTL, APB_MISC_REG_BITS_ENUM_SEL(PP_CONFIG_CTL_JTAG, jtag_sts, ENABLE, DISABLE));

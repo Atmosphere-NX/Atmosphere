@@ -21,9 +21,11 @@ program.lz4: build_program
 build_program:
 	$(MAKE) -C program
 
-warmboot.bin:
-	$(MAKE) -C warmboot
+warmboot.bin: build_warmboot
 	@cp warmboot/warmboot.bin warmboot.bin
+
+build_warmboot:
+	$(MAKE) -C warmboot
 
 boot_code.lz4: program.lz4
 

@@ -81,10 +81,9 @@ namespace ams::warmboot {
         PowerOnCpu();
 
         /* Halt ourselves. */
-        const bool disable_jtag = metadata->target_firmware >= TargetFirmware_4_0_0;
         while (true) {
-            reg::Write(secmon::MemoryRegionPhysicalDeviceFlowController.GetAddress() + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
-                                                                                                                  FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, disable_jtag, DISABLED, ENABLED));
+            reg::Write(secmon::MemoryRegionPhysicalDeviceFlowController.GetAddress() + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
+                                                                                                                  FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_JTAG,        ENABLED));
         }
     }
 
