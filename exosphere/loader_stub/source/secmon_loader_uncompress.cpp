@@ -36,7 +36,7 @@ namespace ams::secmon::loader {
                 void Uncompress() {
                     while (true) {
                         /* Read a control byte. */
-                        u8 control = this->ReadByte();
+                        const u8 control = this->ReadByte();
 
                         /* Copy what it specifies we should copy. */
                         this->Copy(this->GetCopySize(control >> 4));

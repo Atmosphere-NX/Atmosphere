@@ -21,7 +21,7 @@ namespace ams::se {
     constexpr inline int Sha256HashSize = crypto::Sha256Generator::HashSize;
 
     union Sha256Hash {
-        u8  bytes[Sha256HashSize / sizeof( u8)];
+        u8  bytes[Sha256HashSize / sizeof(u8) ];
         u32 words[Sha256HashSize / sizeof(u32)];
     };
 

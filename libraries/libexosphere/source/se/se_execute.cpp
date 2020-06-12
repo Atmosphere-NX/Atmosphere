@@ -26,6 +26,7 @@ namespace ams::se {
             u32 size;
         };
         static_assert(util::is_pod<LinkedListEntry>::value);
+        static_assert(sizeof(LinkedListEntry) == 0xC);
 
         uintptr_t GetPhysicalAddress(const void *ptr) {
             const uintptr_t virt_address = reinterpret_cast<uintptr_t>(ptr);
