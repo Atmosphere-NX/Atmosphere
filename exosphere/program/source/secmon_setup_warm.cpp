@@ -238,22 +238,18 @@ namespace ams::secmon {
         /* Set MSELECT config to set WRAP_TO_INCR_SLAVE0(APC) | WRAP_TO_INCR_SLAVE1(PCIe) | WRAP_TO_INCR_SLAVE2(GPU) */
         /* and clear ERR_RESP_EN_SLAVE1(PCIe) | ERR_RESP_EN_SLAVE2(GPU) */
         {
-            auto mselect_cfg = reg::Read(MSELECT(MSELECT_CONFIG));
-            mselect_cfg &= ~(1u << 24); /* Clear ERR_RESP_EN_SLAVE1(PCIe)  */
-            mselect_cfg &= ~(1u << 25); /* Clear ERR_RESP_EN_SLAVE2(GPU)   */
-            mselect_cfg |=  (1u << 27); /* Set   WRAP_TO_INCR_SLAVE0(APC)  */
-            mselect_cfg |=  (1u << 28); /* Set   WRAP_TO_INCR_SLAVE1(PCIe) */
-            mselect_cfg |=  (1u << 29); /* Set   WRAP_TO_INCR_SLAVE2(GPU)  */
-            reg::Write(MSELECT(MSELECT_CONFIG), mselect_cfg);
+            reg::ReadWrite(MSELECT(MSELECT_CONFIG), MSELECT_REG_BITS_ENUM(CONFIG_ERR_RESP_EN_SLAVE1,  DISABLE),
+                                                    MSELECT_REG_BITS_ENUM(CONFIG_ERR_RESP_EN_SLAVE2,  DISABLE),
+                                                    MSELECT_REG_BITS_ENUM(CONFIG_WRAP_TO_INCR_SLAVE0,  ENABLE),
+                                                    MSELECT_REG_BITS_ENUM(CONFIG_WRAP_TO_INCR_SLAVE1,  ENABLE),
+                                                    MSELECT_REG_BITS_ENUM(CONFIG_WRAP_TO_INCR_SLAVE2,  ENABLE));
         }
 
         /* Disable USB, USB2, AHB-DMA from arbitration. */
         {
-            auto arb_dis = reg::Read(AHB_ARBC(AHB_ARBITRATION_DISABLE));
-            arb_dis |= (1u <<  5); /* Disable AHB-DMA */
-            arb_dis |= (1u <<  6); /* Disable USB */
-            arb_dis |= (1u << 18); /* Disable USB2 */
-            reg::Write(AHB_ARBC(AHB_ARBITRATION_DISABLE), arb_dis);
+            reg::ReadWrite(AHB_ARBC(AHB_ARBITRATION_DISABLE), AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_AHBDMA, DISABLE),
+                                                              AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_USB,    DISABLE),
+                                                              AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_USB2,   DISABLE));
         }
 
         /* Select high priority group with priority 7. */

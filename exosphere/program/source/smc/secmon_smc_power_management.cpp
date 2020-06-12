@@ -44,6 +44,7 @@ namespace ams::secmon::smc {
         constexpr inline const uintptr_t CLK_RST   = MemoryRegionVirtualDeviceClkRst.GetAddress();
         constexpr inline const uintptr_t EVP       = secmon::MemoryRegionVirtualDeviceExceptionVectors.GetAddress();
         constexpr inline const uintptr_t FLOW_CTLR = MemoryRegionVirtualDeviceFlowController.GetAddress();
+        constexpr inline const uintptr_t AHB_ARBC  = MemoryRegionVirtualDeviceSystem.GetAddress();
 
         constexpr inline uintptr_t CommonSmcStackTop = MemoryRegionVirtualTzramVolatileData.GetEndAddress() - (0x80 * (NumCores - 1));
 
@@ -157,11 +158,42 @@ namespace ams::secmon::smc {
             AMS_ABORT_UNLESS(reg::HasValue(PMC + APBDEV_PMC_PWRGATE_STATUS, PMC_REG_BITS_VALUE(PWRGATE_STATUS_CE123, 0)));
 
             /* Validate that the bpmp is appropriately halted. */
-            const bool jtag = IsJtagEnabled() || GetTargetFirmware() < TargetFirmware_4_0_0;
+            const bool jtag = IsJtagEnabled();
             AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) == reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
                                                                                              FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, jtag, ENABLED, DISABLED)));
 
-            /* TODO */
+            /* Validate that USB2, APB-DMA, AHB-DMA are held in reset. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_RST_DEVICES_H, CLK_RST_REG_BITS_ENUM(RST_DEVICES_H_SWR_USB2_RST,   ENABLE),
+                                                                                       CLK_RST_REG_BITS_ENUM(RST_DEVICES_H_SWR_APBDMA_RST, ENABLE),
+                                                                                       CLK_RST_REG_BITS_ENUM(RST_DEVICES_H_SWR_AHBDMA_RST, ENABLE)));
+
+            /* Validate that USBD is held in reset. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_RST_DEVICES_L, CLK_RST_REG_BITS_ENUM(RST_DEVICES_L_SWR_USBD_RST, ENABLE)));
+
+            /* Validate that AHB-DMA, USB, USB2, COP are not allowed to arbitrate on the AHB. */
+            AMS_ABORT_UNLESS(reg::HasValue(AHB_ARBC + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP,    DISABLE),
+                                                                               AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_AHBDMA, DISABLE),
+                                                                               AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_USB,    DISABLE),
+                                                                               AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_USB2,   DISABLE)));
+
+            /* Validate that the GPIO controller has clock enabled. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_CLK_OUT_ENB_L, CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_L_CLK_ENB_GPIO, ENABLE)));
+
+            /* Validate that both FUSE and KFUSE have clock enabled. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_CLK_OUT_ENB_H, CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_H_CLK_ENB_FUSE,  ENABLE),
+                                                                                       CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_H_CLK_ENB_KFUSE, ENABLE)));
+
+            /* Validate that all of IRAM has clock enabled. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_CLK_OUT_ENB_U, CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_U_CLK_ENB_IRAMA, ENABLE),
+                                                                                       CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_U_CLK_ENB_IRAMB, ENABLE),
+                                                                                       CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_U_CLK_ENB_IRAMC, ENABLE),
+                                                                                       CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_U_CLK_ENB_IRAMD, ENABLE)));
+
+            /* Validate that ACTMON has clock enabled. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_CLK_OUT_ENB_V, CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_V_CLK_ENB_ACTMON, ENABLE)));
+
+            /* Validate that ENTROPY has clock enabled. */
+            AMS_ABORT_UNLESS(reg::HasValue(CLK_RST + CLK_RST_CONTROLLER_CLK_OUT_ENB_W, CLK_RST_REG_BITS_ENUM(CLK_OUT_ENB_W_CLK_ENB_ENTROPY, ENABLE)));
         }
 
         void GenerateCryptographicallyRandomBytes(void * const dst, int size) {

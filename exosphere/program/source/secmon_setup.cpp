@@ -1125,8 +1125,8 @@ namespace ams::secmon {
         /* Disable the ARC. */
         DisableArc();
 
-        /* Further protections are applied only on 4.0.0+. */
-        if (GetTargetFirmware() < TargetFirmware_4_0_0) {
+        /* Further protections aren't applied on <= 1.0.0. */
+        if (GetTargetFirmware() <= TargetFirmware_1_0_0) {
             return;
         }
 
@@ -1156,16 +1156,16 @@ namespace ams::secmon {
             util::WaitMicroSeconds(1);
         }
 
+        /* Enable clock to the activity monitor. */
+        clkrst::EnableActmonClock();
+
         /* If JTAG is disabled, disable JTAG. */
         if (!secmon::IsJtagEnabled()) {
             reg::Write(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
                                                               FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_JTAG,       DISABLED));
 
-            /* If version is above 4.0.0, turn on the activity monitor to prevent booting up the bpmp. */
-            if (GetTargetFirmware() >= TargetFirmware_4_0_0) {
-                clkrst::EnableActmonClock();
-                actmon::StartMonitoringBpmp(ActmonInterruptHandler);
-            }
+            /* Turn on the activity monitor to prevent booting up the bpmp. */
+            actmon::StartMonitoringBpmp(ActmonInterruptHandler);
         }
     }
 
