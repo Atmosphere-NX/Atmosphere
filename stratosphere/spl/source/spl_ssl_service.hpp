@@ -44,7 +44,7 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_4_0_0, hos::Version_4_0_0),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_4_0_0, hos::Version_4_1_0),
                 MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKey,           hos::Version_5_0_0),
                 MAKE_SERVICE_COMMAND_META(ImportSslKey,                   hos::Version_5_0_0),
                 MAKE_SERVICE_COMMAND_META(SslExpMod,                      hos::Version_5_0_0),

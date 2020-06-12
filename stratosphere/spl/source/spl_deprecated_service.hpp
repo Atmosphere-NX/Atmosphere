@@ -114,7 +114,7 @@ namespace ams::spl {
 
                 MAKE_SERVICE_COMMAND_META(LoadTitleKey),
 
-                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKeyDeprecated, hos::Version_2_0_0, hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKeyDeprecated, hos::Version_2_0_0, hos::Version_2_3_0),
                 MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKey,           hos::Version_3_0_0),
 
                 MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot              /* Atmosphere extension: This was added in hos::Version_2_0_0, but is allowed on older firmware by atmosphere. */),
