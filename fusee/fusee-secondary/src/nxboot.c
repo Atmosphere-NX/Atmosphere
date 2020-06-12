@@ -236,6 +236,7 @@ static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
+        CHECK_NCA("34728c771299443420820d8ae490ea41", 10_0_4);
         CHECK_NCA("5b1df84f88c3334335bbb45d8522cbb4", 10_0_3);
         CHECK_NCA("e951bc9dedcd54f65ffd83d4d050f9e0", 10_0_2);
         CHECK_NCA("36ab1acf0c10a2beb9f7d472685f9a89", 10_0_1);
