@@ -48,7 +48,7 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,          hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,              hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent, hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(ImportLotusKeyDeprecated,    hos::Version_4_0_0, hos::Version_4_0_0),
+                MAKE_SERVICE_COMMAND_META(ImportLotusKeyDeprecated,    hos::Version_4_0_0, hos::Version_4_1_0),
                 MAKE_SERVICE_COMMAND_META(ImportLotusKey,              hos::Version_5_0_0),
                 MAKE_SERVICE_COMMAND_META(DecryptLotusMessage),
                 MAKE_SERVICE_COMMAND_META(GenerateSpecificAesKey),
