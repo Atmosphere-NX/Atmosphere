@@ -33,22 +33,22 @@
 void __init();
 void __initheap(void);
 void setup_hooks(void);
-void setup_nintendo_paths(void);
 void __libc_init_array(void);
+void setup_nintendo_paths(void);
 void hook_function(uintptr_t source, uintptr_t target);
 
 void *__stack_top;
 uintptr_t text_base;
 size_t fs_code_size;
+u8 *fs_rw_mapping = NULL;
+Handle self_proc_handle = 0;
 char inner_heap[INNER_HEAP_SIZE];
 size_t inner_heap_size = INNER_HEAP_SIZE;
-Handle self_proc_handle = 0;
-u8 *fs_rw_mapping = NULL;
+
 extern char _start;
 extern char __argdata__;
 
 // Nintendo Path
-// TODO
 static char nintendo_path[0x80] = "Nintendo";
 
 // 1.0.0 requires special path handling because it has separate album and contents paths.
@@ -63,6 +63,7 @@ static const fs_offsets_t *fs_offsets;
 // Defined by linkerscript
 #define INJECTED_SIZE ((uintptr_t)&__argdata__ - (uintptr_t)&_start)
 #define INJECT_OFFSET(type, offset) (type)(text_base + INJECTED_SIZE + offset)
+#define FS_CODE_BASE INJECT_OFFSET(uintptr_t, 0)
 
 #define GENERATE_ADD(register, register_target, value) (0x91000000 | value << 10 | register << 5 | register_target)
 #define GENERATE_ADRP(register, page_addr) (0x90000000 | ((((page_addr) >> 12) & 0x3) << 29) | ((((page_addr) >> 12) & 0x1FFFFC) << 3) | ((register) & 0x1F))
@@ -230,7 +231,7 @@ static void _map_fs_rw(void) {
 
     do {
         fs_rw_mapping = (u8 *)(smcGenerateRandomU64() & 0xFFFFFF000ull);
-        rc = svcMapProcessMemory(fs_rw_mapping, self_proc_handle, INJECT_OFFSET(u64, 0), fs_code_size);
+        rc = svcMapProcessMemory(fs_rw_mapping, self_proc_handle, FS_CODE_BASE, fs_code_size);
     } while (rc == 0xDC01 || rc == 0xD401);
 
     if (rc != 0)
@@ -240,7 +241,7 @@ static void _map_fs_rw(void) {
 }
 
 static void _unmap_fs_rw(void) {
-    Result rc = svcUnmapProcessMemory(fs_rw_mapping, self_proc_handle, INJECT_OFFSET(u64, 0), fs_code_size);
+    Result rc = svcUnmapProcessMemory(fs_rw_mapping, self_proc_handle, FS_CODE_BASE, fs_code_size);
     if (rc != 0)
     {
         fatal_abort(Fatal_BadResult);
@@ -250,7 +251,7 @@ static void _unmap_fs_rw(void) {
 }
 
 static void _write32(uintptr_t source, u32 value) {
-    *((u32 *)(fs_rw_mapping + (source - INJECT_OFFSET(u64, 0)))) = value;
+    *((u32 *)(fs_rw_mapping + (source - FS_CODE_BASE))) = value;
 }
 
 void hook_function(uintptr_t source, uintptr_t target)
@@ -412,7 +413,7 @@ void __init()
     text_base = meminfo.addr;
 
     // Get code size
-    svcQueryMemory(&meminfo, &pageinfo, INJECT_OFFSET(u64, 0));
+    svcQueryMemory(&meminfo, &pageinfo, FS_CODE_BASE);
     fs_code_size = meminfo.size;
 
     load_emummc_ctx();
