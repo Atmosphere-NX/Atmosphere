@@ -1,12 +1,17 @@
 # Planned Features
 atmosphère has a number of features that are either works-in-progress or planned. Please note that while time-estimates are given, they are loose, and things may be completed sooner or later than advertised.
 
-The following descriptions were last updated in late April of 2020.
+The following descriptions were last updated on June 15th, 2020.
 
 ## system updater api
 * **Description**: A planned extension api for stratosphere (tenatively `ams:su`), this will provide an interface for homebrew to safely install system upgrades or downgrades. This will allow for much more easily transitioning safely between different versions of the operating system.
-* **Development Status**: Under active development by SciresM
-* **Estimated Time**: May 2020
+* **Development Status**: Backend/implementation completed; final stages (user-facing ipc api) to be written by SciresM.
+* **Estimated Time**: June 2020
+
+## ams-on-mariko
+* **Description**: Atmosphere cannot run as-is on Mariko hardware. A large number of changes are needed in many components. Although exosphere's rewrite laid most groundwork on the secure monitor side, there is still work to do there -- and additional work is needed on the bootloader and stratosphere sides as well. Mariko support will also require further design thought; atmosphere's debugging design heavily relies on reboot-to-payload and (more generally) the ability to perform warmboot bootrom hax at will. This is not possible on Mariko, and will require a new design/software support for whatever solution is chosen.
+* **Development Status**: Planned.
+* **Estimated Time**: Summer 2020
 
 ## settings reimplementation
 * **Description**: A planned reimplementation of the settings system module, and with it a removal of the settings mitm. This will greatly simplify atmosphère's boot process, and will allow much more flexible control over the various system settings.
@@ -17,11 +22,6 @@ The following descriptions were last updated in late April of 2020.
 * **Description**: mesosphère is a reimplementation of the Horizon operating system's Kernel. It aims to provide an open-source reference for Nintendo's code.
 * **Development Status**: Under semi-active development by SciresM; temporarily on pause while the System Updater API is completed.
 * **Estimated Time**: Mid-to-Late 2020
-
-## exosphere re-write
-* **Description**: exosphère, atmosphère's reimplementation of Horizon's Secure Monitor, was the first component authored for the project in early 2018. It is written in C, and in a style very different from the rest of atmosphère's code. In addition, exosphère was written to conform to constraints that no longer apply in an environment where it is not launched from the web browser, and where using a custom firmware image to orchestrate wake-from-sleep is possible. exosphère currently uses all but 1 KB of the space available to it, putting it at risk of breaking as future firmware updates are supported. A re-write will solve these issues.
-* **Development Status**: Planned.
-* **Estimated Time**: 2020-2021.
 
 ## tma reimplementation
 * **Description** tma ("target manager agent") is a system module that manages communication between the Switch and a client PC. Atmosphere's implementation will allow homebrew on the switch to communicate with a connected PC to do various operations such as exchanging data or interacting with files. It will also serve as the communicator for Atmosphère's planned debugger. This will also include PC-side software for interacting with the Switch.
