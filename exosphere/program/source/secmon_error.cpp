@@ -16,12 +16,17 @@
 #include <exosphere.hpp>
 #include "secmon_error.hpp"
 
+namespace {
+
+    constexpr bool SaveSystemStateForDebug = false;
+
+}
+
 namespace ams::diag {
 
-    void AbortImpl() {
-        /* TODO: This is here for debugging. Remove this when exo2 is working. */
-#if 1
-        {
+    namespace {
+
+        ALWAYS_INLINE void SaveSystemStateForDebugAbort() {
             *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x00) = 0xDDDDDDDD;
 
             u64 temp_reg;
@@ -39,7 +44,14 @@ namespace ams::diag {
 
             util::WaitMicroSeconds(1000);
         }
-#endif
+
+    }
+
+    void AbortImpl() {
+        /* Perform any necessary (typically none) debugging. */
+        if constexpr (SaveSystemStateForDebug) {
+            SaveSystemStateForDebugAbort();
+        }
 
         secmon::SetError(pkg1::ErrorInfo_UnknownAbort);
         secmon::ErrorReboot();
@@ -49,18 +61,11 @@ namespace ams::diag {
 
 namespace ams::secmon {
 
-    void SetError(pkg1::ErrorInfo info) {
-        const uintptr_t address = secmon::MemoryRegionVirtualDevicePmc.GetAddress() + PKG1_SECURE_MONITOR_PMC_ERROR_SCRATCH;
+    namespace {
 
-        if (reg::Read(address) == pkg1::ErrorInfo_None) {
-            reg::Write(address, info);
-        }
-    }
+        constexpr inline uintptr_t PMC = MemoryRegionVirtualDevicePmc.GetAddress();
 
-    NORETURN void ErrorReboot() {
-        /* TODO: This is here for debugging. Remove this when exo2 is working. */
-#if 1
-        {
+        ALWAYS_INLINE void SaveSystemStateForDebugErrorReboot() {
             u64 temp_reg;
             *(volatile u32 *)(secmon::MemoryRegionVirtualDebug.GetAddress() + 0x00) = 0x5A5A5A5A;
 
@@ -92,14 +97,31 @@ namespace ams::secmon {
 
             util::WaitMicroSeconds(1000);
         }
-#endif
+
+    }
+
+    void SetError(pkg1::ErrorInfo info) {
+        const uintptr_t address = secmon::MemoryRegionVirtualDevicePmc.GetAddress() + PKG1_SECURE_MONITOR_PMC_ERROR_SCRATCH;
+
+        if (reg::Read(address) == pkg1::ErrorInfo_None) {
+            reg::Write(address, info);
+        }
+    }
+
+    NORETURN void ErrorReboot() {
+        /* Perform any necessary (typically none) debugging. */
+        if constexpr (SaveSystemStateForDebug) {
+            SaveSystemStateForDebugErrorReboot();
+        }
 
         /* Lockout the security engine. */
         se::Lockout();
 
-        /* TODO: Lockout fuses. */
+        /* Lockout fuses. */
+        fuse::Lockout();
 
-        /* TODO: Disable SE Crypto Operations. */
+        /* Disable crypto operations after reboot. */
+        reg::Write(PMC + APBDEV_PMC_CRYPTO_OP, 0);
 
         while (true) {
             wdt::Reboot();
