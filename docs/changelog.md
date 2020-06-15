@@ -1,4 +1,28 @@
 # Changelog
+## 0.13.0
++ `exosphère`, atmosphère's secure monitor re-implementation, was completely re-written.
+  + `exosphère` was the first component authored for the project in early 2018. It is written in C, and in a style very different from the rest of atmosphère's code.
+    + This has made the codebase difficult to maintain as time has gone on.
+  + `exosphère` was also written to conform to constraints and assumptions that simply no longer apply when cfw is not launched from the web browser, and when warmboothax is possible.
+  + Even beyond these issues, `exosphère` used all but 1KB of the 64KB of space available to it. This was a problem for a few reasons:
+    + Each new system update added requires additional space to support (to add new keys and reflect various changes); 10.0.0 support used up 3 of the 4KB we had left.
+    + atmosphère will want to have software support for mariko hardware, and this is not possible to fit in 1 KB.
+  + The `exosphère` rewrite (which was codenamed `exosphère2` during development) solves these problems.
+  + The new codebase is C++20 written in atmosphère's style.
+    + This solves the maintainability problem, and should make understanding how the secure monitor works *much* easier for those interested in using the code as a reference implementation.
+  + In addition, the new implementation currently uses ~59.5 of the 64KB available.
+    + Several potential code changes are planned that can save/grant access to an additional ~2-3 KB if needed.
+      + Unlike the first codebase, the new `exosphère` actually already has space allocated for future keys/etc. It is currently expected that the reserved space will never be required.
+    + The previous implementation chose not to implement a number of "unimportant" secure monitor functions due to space concerns. The new code has enough breathing room that it can implement them without worries. :)
+  + Finally, the groundwork for mariko support has been laid -- there are only a few minor changes needed for the new secure monitor implementation to work on both erista and mariko hardware.
+    + **Please note**: `exosphère` is only one of many components, and many more need changes to support running on mariko hardware.
+      + Software-side support for executing on mariko hardware is expected some time during Summer 2020, though it should also be noted that this is not a hard deadline.
+  + **Please note**: The new `exosphère` binary is not abi-compatible with the old one. Users who boot using hekate should wait for it to update before running 0.13.0 (or boot fusee-primary via hekate).
++ atmosphère's api for target firmware was changed. All minor/micro system versions are now recognized, instead of only major versions.
+  + This was required in order to support firmware version 5.1.0, which made breaking changes to certain IPC APIs that caused atmosphère 0.12.0 to abort.
+  + **Please note**: this is (unavoidably) a breaking change. System modules using atmosphere-libs will need to update to understand what firmware version they are running.
++ For those interested in atmosphère's future development plans, the project's [roadmap](https://github.com/Atmosphere-NX/Atmosphere/blob/f68d33b70aed8954cc2c539e5934bcaf37ba51da/docs/roadmap.md) was updated.
++ General system stability improvements to enhance the user's experience.
 
 ## 0.12.0
 + Configuration for exosphere was moved to sd:/exosphere.ini.
