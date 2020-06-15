@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, lz4
+import sys, lz4, lz4.block
 from struct import unpack as up
 
 def lz4_compress(data):
