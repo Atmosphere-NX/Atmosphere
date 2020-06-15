@@ -40,7 +40,7 @@ namespace ams::hos {
 
             /* Ensure that this is a hos version we can sanely *try* to run. */
             /* To be friendly, we will only require that we recognize the major and minor versions. */
-            /* We can consider only recognizing major in the future, but micro seems safe to ignore as
+            /* We can consider only recognizing major in the future, but micro seems safe to ignore as */
             /* there are no breaking IPC changes in minor updates. */
             {
                 constexpr u32 MaxMajor = (static_cast<u32>(hos::Version_Max) >> 24) & 0xFF;
