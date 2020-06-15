@@ -325,7 +325,7 @@ namespace ams::secmon::smc {
         }
 
         void SaveSecureContextForMariko() {
-            /* TODO */
+            /* TODO: Implement this when adding ams-on-mariko support. */
         }
 
         void SaveSecureContext() {

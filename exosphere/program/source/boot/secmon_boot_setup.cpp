@@ -60,7 +60,12 @@ namespace ams::secmon::boot {
             reg::ReadWrite(pmc + APBDEV_PMC_SECURE_SCRATCH21, REG_BITS_VALUE(4, 1, 1));
 
             /* Write the warmboot key. */
-            /* TODO */
+            /* TODO: This is necessary for mariko. We should decide how to handle this. */
+            /* In particular, mariko will need to support loading older-than-expected warmboot firmware. */
+            /* We could hash the warmboot firmware and use a lookup table, or require bootloader to provide */
+            /* The warmboot key as a parameter. The latter is a better solution, but it would be nice to take */
+            /* care of it here. Perhaps we should read the number of anti-downgrade fuses burnt, and translate that */
+            /* to the warmboot key? To be decided during the process of implementing ams-on-mariko support. */
         }
 
         /* This function derives the master kek and device keys using the tsec root key. */

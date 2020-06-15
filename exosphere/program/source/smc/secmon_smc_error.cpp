@@ -20,8 +20,21 @@
 namespace ams::secmon::smc {
 
     SmcResult SmcShowError(SmcArguments &args) {
-        /* TODO */
-        return SmcResult::NotImplemented;
+        /* Decode arguments. */
+        const u32 r = ((args.r[1] >> 8) & 0xF);
+        const u32 g = ((args.r[1] >> 4) & 0xF);
+        const u32 b = ((args.r[1] >> 0) & 0xF);
+
+        const u32 rgb = (b << 8) | (g << 4) | (r << 0);
+
+        /* Set the error info. */
+        SetError(pkg1::MakeKernelPanicResetInfo(rgb));
+
+        /* Reboot. */
+        ErrorReboot();
+
+        /* This point will never be reached. */
+        __builtin_unreachable();
     }
 
 }
