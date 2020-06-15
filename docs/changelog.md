@@ -21,6 +21,9 @@
 + atmosphère's api for target firmware was changed. All minor/micro system versions are now recognized, instead of only major versions.
   + This was required in order to support firmware version 5.1.0, which made breaking changes to certain IPC APIs that caused atmosphère 0.12.0 to abort.
   + **Please note**: this is (unavoidably) a breaking change. System modules using atmosphere-libs will need to update to understand what firmware version they are running.
++ `emummc` was updated to include the new changes.
+  + `emummc` now uses an updated/improved/faster SDMMC driver.
+  + File-based emummc is now almost as fast as raw partition-based emummc.
 + For those interested in atmosphère's future development plans, the project's [roadmap](https://github.com/Atmosphere-NX/Atmosphere/blob/f68d33b70aed8954cc2c539e5934bcaf37ba51da/docs/roadmap.md) was updated.
 + General system stability improvements to enhance the user's experience.
 
