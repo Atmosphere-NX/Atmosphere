@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "../amsmitm_debug.hpp"
 #include "../amsmitm_fs_utils.hpp"
 #include "settings_sd_kvs.hpp"
@@ -42,7 +43,7 @@ namespace ams::settings::fwdbg {
             }
         };
 
-        static_assert(std::is_pod<SdKeyValueStoreEntry>::value);
+        static_assert(util::is_pod<SdKeyValueStoreEntry>::value);
 
         constexpr inline bool operator==(const SdKeyValueStoreEntry &lhs, const SdKeyValueStoreEntry &rhs) {
             if (lhs.HasValue() != rhs.HasValue()) {
@@ -312,7 +313,7 @@ namespace ams::settings::fwdbg {
 
             /* Control whether RO should ease its validation of NROs. */
             /* (note: this is normally not necessary, and ips patches can be used.) */
-            R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x1"));
 
             /* Atmosphere custom settings. */
 

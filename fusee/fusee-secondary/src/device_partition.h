@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_DEVICE_PARTITION_H
 #define FUSEE_DEVICE_PARTITION_H
 
@@ -50,6 +50,7 @@ typedef struct device_partition_t {
     device_partition_cipher_t read_cipher; /* Cipher for read operations. */
     device_partition_cipher_t write_cipher; /* Cipher for write operations. */
     DevicePartitionCryptoMode crypto_mode; /* Mode to use for cryptographic operations. */
+    size_t crypto_sector_size;
 
     device_partition_initializer_t initializer; /* Initializer. */
     device_partition_finalizer_t finalizer; /* Finalizer. */
@@ -65,7 +66,7 @@ typedef struct device_partition_t {
     uint8_t __attribute__((aligned(16))) keys[DEVPART_KEY_MAX][DEVPART_KEY_MAX_SIZE]; /* Key. */
     uint8_t __attribute__((aligned(16))) iv[DEVPART_IV_MAX_SIZE]; /* IV. */
     bool initialized;
-    
+
     char *emu_file_path;     /* Emulated device file path. */
     bool emu_use_file;
 } device_partition_t;

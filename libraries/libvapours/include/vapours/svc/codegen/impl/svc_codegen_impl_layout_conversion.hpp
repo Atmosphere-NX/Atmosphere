@@ -304,9 +304,8 @@ namespace ams::svc::codegen::impl {
             static constexpr auto DetermineConversionOperations() {
                 [[maybe_unused]] constexpr auto Procedure      = LayoutForKernel;
                 [[maybe_unused]] constexpr ParameterLayout Svc = Input ? LayoutForSvc.GetInputLayout() : LayoutForSvc.GetOutputLayout();
-                [[maybe_unused]] constexpr std::array<size_t, Svc.GetNumParameters()> ParameterMap = []<typename SvcHolder>(SvcHolder){
+                [[maybe_unused]] constexpr std::array<size_t, Svc.GetNumParameters()> ParameterMap = []<auto CapturedSvc>(){
                     /* We want to iterate over the parameters in sorted order. */
-                    constexpr ParameterLayout CapturedSvc = UNWRAP_TEMPLATE_CONSTANT(SvcHolder);
                     std::array<size_t, CapturedSvc.GetNumParameters()> map{};
                     const size_t num_parameters = CapturedSvc.GetNumParameters();
                     for (size_t i = 0; i < num_parameters; i++) {
@@ -314,15 +313,11 @@ namespace ams::svc::codegen::impl {
                     }
                     for (size_t i = 1; i < num_parameters; i++) {
                         for (size_t j = i; j > 0 && CapturedSvc.GetParameter(map[j-1]).GetLocation(0) > CapturedSvc.GetParameter(map[j]).GetLocation(0); j--) {
-                            /* std::swap is not constexpr until c++20 :( */
-                            /* TODO: std::swap(map[j], map[j-1]); */
-                            const size_t tmp = map[j];
-                            map[j] = map[j-1];
-                            map[j-1] = tmp;
+                            std::swap(map[j], map[j-1]);
                         }
                     }
                     return map;
-                }(WRAP_TEMPLATE_CONSTANT(Svc));
+                }.template operator()<Svc>();
 
                 if constexpr (ParameterIndex >= Svc.GetNumParameters()) {
                     /* Base case: we're done. */
@@ -377,16 +372,13 @@ namespace ams::svc::codegen::impl {
                             constexpr size_t RegisterSize = SvcAbiType::RegisterSize;
                             constexpr size_t PassedSize   = ProcedureParam.GetTypeSize();
 
-                            /* TODO: C++20 templated lambdas. For now, use GCC extension syntax. */
-                            constexpr auto SvcIndexSequence = []<typename SvcParamWrapper, size_t... Is>(SvcParamWrapper, std::index_sequence<Is...>) {
-                                constexpr Parameter CapturedSvcParam = UNWRAP_TEMPLATE_CONSTANT(SvcParamWrapper);
+                            constexpr auto SvcIndexSequence = []<auto CapturedSvcParam, size_t... Is>(std::index_sequence<Is...>) {
                                 return std::index_sequence<CapturedSvcParam.GetLocation(Is).GetIndex()...>{};
-                            }(WRAP_TEMPLATE_CONSTANT(SvcParam), std::make_index_sequence<SvcParam.GetNumLocations()>());
+                            }.template operator()<SvcParam>(std::make_index_sequence<SvcParam.GetNumLocations()>());
 
-                            constexpr auto OperationValue = []<typename ProcedureLocWrapper, size_t... Is>(ProcedureLocWrapper, std::index_sequence<Is...>) {
-                                constexpr Location CapturedProcedureLoc = UNWRAP_TEMPLATE_CONSTANT(ProcedureLocWrapper);
+                            constexpr auto OperationValue = []<auto CapturedProcedureLoc, size_t... Is>(std::index_sequence<Is...>) {
                                 return LayoutConversionBase::OperationScatter<RegisterSize, PassedSize, StackIndex * KernelAbiType::RegisterSize, CapturedProcedureLoc.GetIndex(), Is...>{};
-                            }(WRAP_TEMPLATE_CONSTANT(ProcedureLoc), SvcIndexSequence);
+                            }.template operator()<ProcedureLoc>(SvcIndexSequence);
 
                             constexpr auto cur_op = std::make_tuple(OperationValue);
 

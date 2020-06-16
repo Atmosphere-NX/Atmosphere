@@ -20,27 +20,17 @@
 
 namespace ams::util {
 
-    /* TODO: C++20 std::endian */
-
     constexpr bool IsLittleEndian() {
-        #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-            return true;
-        #else
-            return false;
-        #endif
+        return std::endian::native == std::endian::little;
     }
 
     constexpr bool IsBigEndian() {
-        #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-            return true;
-        #else
-            return false;
-        #endif
+        return std::endian::native == std::endian::big;
     }
 
     static_assert(IsLittleEndian() ^ IsBigEndian());
 
-    template<typename U> /* requires unsigned_integral<U> */
+    template<typename U> requires std::unsigned_integral<U>
     constexpr ALWAYS_INLINE U SwapBytes(const U u) {
         static_assert(BITSIZEOF(u8) == 8);
         constexpr U ByteMask = 0xFFu;
@@ -53,7 +43,6 @@ namespace ams::util {
                     ((u & (ByteMask << 16)) << 24) |
                     ((u & (ByteMask <<  8)) << 40) |
                     ((u & (ByteMask <<  0)) << 56);
-
         } else if constexpr (std::is_same<U, u32>::value) {
             return  ((u & (ByteMask << 24)) >> 24) |
                     ((u & (ByteMask << 16)) >>  8) |
@@ -85,14 +74,14 @@ namespace ams::util {
                 ((u & (ByteMask <<  0)) << 40);
     }
 
-    template<typename T> /* requires integral<T> */
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE void SwapBytes(T *ptr) {
         using U = typename std::make_unsigned<T>::type;
 
-        *ptr = static_cast<T>(SwapBytes(static_cast<U>(*ptr)));
+        *ptr = static_cast<T>(SwapBytes<U>(static_cast<U>(*ptr)));
     }
 
-    template<typename T> /* requires integral<T> */
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T ConvertToBigEndian(const T val) {
         using U = typename std::make_unsigned<T>::type;
 
@@ -100,23 +89,23 @@ namespace ams::util {
             return static_cast<T>(static_cast<U>(val));
         } else {
             static_assert(IsLittleEndian());
-            return static_cast<T>(SwapBytes(static_cast<U>(val)));
+            return static_cast<T>(SwapBytes<U>(static_cast<U>(val)));
         }
     }
 
-    template<typename T> /* requires integral<T> */
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T ConvertToLittleEndian(const T val) {
         using U = typename std::make_unsigned<T>::type;
 
         if constexpr (IsBigEndian()) {
-            return static_cast<T>(SwapBytes(static_cast<U>(val)));
+            return static_cast<T>(SwapBytes<U>(static_cast<U>(val)));
         } else {
             static_assert(IsLittleEndian());
             return static_cast<T>(static_cast<U>(val));
         }
     }
 
-    template<typename T> /* requires integral<T> */
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T ConvertToBigEndian48(const T val) {
         using U = typename std::make_unsigned<T>::type;
         static_assert(sizeof(T) == sizeof(u64));
@@ -130,7 +119,7 @@ namespace ams::util {
         }
     }
 
-    template<typename T> /* requires integral<T> */
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T ConvertToLittleEndian48(const T val) {
         using U = typename std::make_unsigned<T>::type;
         static_assert(sizeof(T) == sizeof(u64));
@@ -144,24 +133,24 @@ namespace ams::util {
         }
     }
 
-    template<typename T> /* requires integral<T> */
-    constexpr ALWAYS_INLINE T LoadBigEndian(T *ptr) {
-        return ConvertToBigEndian(*ptr);
+    template<typename T> requires std::integral<T>
+    constexpr ALWAYS_INLINE T LoadBigEndian(const T *ptr) {
+        return ConvertToBigEndian<T>(*ptr);
     }
 
-    template<typename T> /* requires integral<T> */
-    constexpr ALWAYS_INLINE T LoadLittleEndian(T *ptr) {
-        return ConvertToLittleEndian(*ptr);
+    template<typename T> requires std::integral<T>
+    constexpr ALWAYS_INLINE T LoadLittleEndian(const T *ptr) {
+        return ConvertToLittleEndian<T>(*ptr);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE void StoreBigEndian(T *ptr, T val) {
-        *ptr = ConvertToBigEndian(val);
+        *ptr = ConvertToBigEndian<T>(val);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE void StoreLittleEndian(T *ptr, T val) {
-        *ptr = ConvertToLittleEndian(val);
+        *ptr = ConvertToLittleEndian<T>(val);
     }
 
 }

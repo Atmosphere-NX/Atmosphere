@@ -32,4 +32,12 @@ namespace ams::hos {
         hos::SetVersionForLibnxInternal();
     }
 
+    void InitializeForStratosphereDebug(hos::Version debug_version) {
+        /* Initialize the global os resource managers. This *must* be done before anything else in stratosphere. */
+        os::InitializeForStratosphereInternal();
+
+        /* Initialize hos::Version API. */
+        hos::SetVersionForLibnxInternalDebug(debug_version);
+    }
+
 }

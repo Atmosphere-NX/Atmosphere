@@ -13,7 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include <stratosphere.hpp>
 
 namespace ams::kvdb {
@@ -42,7 +41,7 @@ namespace ams::kvdb {
                 return header;
             }
         };
-        static_assert(sizeof(ArchiveHeader) == 0xC && std::is_pod<ArchiveHeader>::value, "ArchiveHeader definition!");
+        static_assert(sizeof(ArchiveHeader) == 0xC && util::is_pod<ArchiveHeader>::value, "ArchiveHeader definition!");
 
         struct ArchiveEntryHeader {
             u8 magic[sizeof(ArchiveEntryMagic)];
@@ -62,7 +61,7 @@ namespace ams::kvdb {
                 return header;
             }
         };
-        static_assert(sizeof(ArchiveEntryHeader) == 0xC && std::is_pod<ArchiveEntryHeader>::value, "ArchiveEntryHeader definition!");
+        static_assert(sizeof(ArchiveEntryHeader) == 0xC && util::is_pod<ArchiveEntryHeader>::value, "ArchiveEntryHeader definition!");
 
     }
 

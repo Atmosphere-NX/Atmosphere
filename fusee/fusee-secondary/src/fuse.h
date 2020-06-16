@@ -219,6 +219,7 @@ uint32_t fuse_get_dram_id(void);
 uint32_t fuse_get_hardware_type(uint32_t target_firmware);
 uint32_t fuse_get_retail_type(void);
 void fuse_get_hardware_info(void *dst);
+uint32_t fuse_get_5x_key_generation(void);
 
 uint32_t fuse_hw_read(uint32_t addr);
 void fuse_hw_write(uint32_t value, uint32_t addr);

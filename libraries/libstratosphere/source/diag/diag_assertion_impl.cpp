@@ -132,4 +132,8 @@ namespace ams::diag {
         AbortWithValue(value);
     }
 
+    NORETURN WEAK_SYMBOL void AbortImpl() {
+        AbortWithValue(0);
+    }
+
 }

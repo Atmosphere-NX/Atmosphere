@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "pm_boot_mode_service.hpp"
 #include "pm_debug_monitor_service.hpp"
 #include "pm_info_service.hpp"
@@ -142,7 +143,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(sm::manager::EndInitialDefers());
 
         R_ABORT_UNLESS(ldrPmInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
     });
 
     ams::CheckApiVersion();
@@ -150,7 +151,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    splExit();
+    spl::Finalize();
     ldrPmExit();
     smManagerExit();
     fsprExit();

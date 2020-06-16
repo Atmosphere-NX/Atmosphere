@@ -23,19 +23,14 @@ namespace ams::kern {
 
     class KThread;
 
-    /*
-        TODO: C++20
+    template<typename T>
+    concept KSchedulerLockable = !std::is_reference<T>::value && requires(T) {
+        { T::DisableScheduling()                    } -> std::same_as<void>;
+        { T::EnableScheduling(std::declval<u64>())  } -> std::same_as<void>;
+        { T::UpdateHighestPriorityThreads()         } -> std::convertible_to<u64>;
+    };
 
-        template<typename T>
-        concept KSchedulerLockable = !std::is_reference<T>::value && requires {
-            { T::DisableScheduling()                    } -> std::same_as<void>;
-            { T::EnableScheduling(std::declval<u64>())  } -> std::same_as<void>;
-            { T::UpdateHighestPriorityThreads()         } -> std::convertible_to<u64>;
-        };
-
-    */
-
-    template<typename SchedulerType> /* TODO C++20: requires KSchedulerLockable<SchedulerType> */
+    template<typename SchedulerType> requires KSchedulerLockable<SchedulerType>
     class KAbstractSchedulerLock {
         private:
             KAlignedSpinLock spin_lock;

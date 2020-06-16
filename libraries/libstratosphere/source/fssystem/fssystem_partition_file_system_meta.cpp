@@ -24,7 +24,7 @@ namespace ams::fssystem {
         u32 name_table_size;
         u32 reserved;
     };
-    static_assert(std::is_pod<PartitionFileSystemMeta::PartitionFileSystemHeader>::value);
+    static_assert(util::is_pod<PartitionFileSystemMeta::PartitionFileSystemHeader>::value);
     static_assert(sizeof(PartitionFileSystemMeta::PartitionFileSystemHeader) == 0x10);
 
     template <typename Format>

@@ -186,7 +186,7 @@ namespace ams::kvdb {
 
     template<class Key, size_t Capacity>
     class FileKeyValueCache {
-        static_assert(std::is_pod<Key>::value, "FileKeyValueCache Key must be pod!");
+        static_assert(util::is_pod<Key>::value, "FileKeyValueCache Key must be pod!");
         static_assert(sizeof(Key) <= FileKeyValueStore::MaxKeySize, "FileKeyValueCache Key is too big!");
         public:
             using LeastRecentlyUsedList = impl::LruList<Key, Capacity>;

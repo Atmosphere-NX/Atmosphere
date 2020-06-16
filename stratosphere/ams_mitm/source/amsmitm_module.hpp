@@ -19,21 +19,25 @@
 namespace ams::mitm {
 
     /* TODO: C++20 Concepts will make this a lot less stupid. */
-    class ModuleBase {};
+    template<typename T>
+    concept IsModule = requires(T, void *arg) {
+        { T::ThreadPriority      } -> std::convertible_to<s32>;
+        { T::StackSize           } -> std::convertible_to<size_t>;
+        { T::Stack               } -> std::convertible_to<void *>;
+        { T::ThreadFunction(arg) } -> std::same_as<void>;
+    };
 
-    #define DEFINE_MITM_MODULE_CLASS(ss, prio) class MitmModule : public ::ams::mitm::ModuleBase { \
-        public:                                                                                    \
-            static constexpr s32 ThreadPriority = prio;                                            \
-            static constexpr size_t StackSize = ss;                                                \
-            alignas(os::ThreadStackAlignment) static inline u8 Stack[StackSize];                   \
-        public:                                                                                    \
-            static void ThreadFunction(void *);                                                    \
+    #define DEFINE_MITM_MODULE_CLASS(ss, prio) class MitmModule {                \
+        public:                                                                  \
+            static constexpr s32 ThreadPriority = prio;                          \
+            static constexpr size_t StackSize = ss;                              \
+            alignas(os::ThreadStackAlignment) static inline u8 Stack[StackSize]; \
+        public:                                                                  \
+            static void ThreadFunction(void *);                                  \
     }
 
-    template<class M>
+    template<class M> requires IsModule<M>
     struct ModuleTraits {
-        static_assert(std::is_base_of<ModuleBase, M>::value, "Mitm Modules must inherit from ams::mitm::Module");
-
         static constexpr void *Stack = &M::Stack[0];
         static constexpr size_t StackSize = M::StackSize;
 

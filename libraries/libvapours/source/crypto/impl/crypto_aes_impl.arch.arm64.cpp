@@ -111,6 +111,8 @@ namespace ams::crypto::impl {
 
 #else
 
+    /* NOTE: Exosphere defines this in libexosphere. */
+
     /* TODO: Non-EL0 implementation. */
 
 #endif

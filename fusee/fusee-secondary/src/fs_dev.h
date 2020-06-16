@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_FS_DEV_H
 #define FUSEE_FS_DEV_H
 
@@ -21,11 +21,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "device_partition.h"
+#include "key_derivation.h"
 
 int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool initialize_immediately);
 int fsdev_register_device(const char *name);
 int fsdev_unregister_device(const char *name);
 int fsdev_unmount_device(const char *name);         /* also unregisters. */
+
+int fsdev_register_keys(const char *name, unsigned int target_firmware, BisPartition part);
 
 int fsdev_set_attr(const char *file, int attr, int mask);       /* Non-standard function to set file DOS attributes. */
 int fsdev_get_attr(const char *file);                           /* Non-standard function to get file DOS attributes. */

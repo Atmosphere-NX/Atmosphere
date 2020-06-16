@@ -185,10 +185,7 @@ namespace ams::kern {
             T *obj;
         private:
             constexpr ALWAYS_INLINE void Swap(KScopedAutoObject &rhs) {
-                /* TODO: C++20 constexpr std::swap */
-                T *tmp = rhs.obj;
-                rhs.obj = this->obj;
-                this->obj = tmp;
+                std::swap(this->obj, rhs.obj);
             }
         public:
             constexpr ALWAYS_INLINE KScopedAutoObject() : obj(nullptr) { /* ... */ }

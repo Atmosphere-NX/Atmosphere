@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
 
 #include "utils.h"
@@ -60,7 +60,7 @@ void se_verify_flags_cleared(void) {
 /* Set the flags for an AES keyslot. */
 void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }
@@ -79,7 +79,7 @@ void set_aes_keyslot_flags(unsigned int keyslot, unsigned int flags) {
 /* Set the flags for an RSA keyslot. */
 void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_RSA_MAX) {
         generic_panic();
     }
@@ -98,7 +98,7 @@ void set_rsa_keyslot_flags(unsigned int keyslot, unsigned int flags) {
 
 void clear_aes_keyslot(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }
@@ -112,7 +112,7 @@ void clear_aes_keyslot(unsigned int keyslot) {
 
 void clear_rsa_keyslot(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_RSA_MAX) {
         generic_panic();
     }
@@ -132,7 +132,7 @@ void clear_rsa_keyslot(unsigned int keyslot) {
 
 void set_aes_keyslot(unsigned int keyslot, const void *key, size_t key_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || key_size > KEYSIZE_AES_MAX) {
         generic_panic();
     }
@@ -145,7 +145,7 @@ void set_aes_keyslot(unsigned int keyslot, const void *key, size_t key_size) {
 
 void set_rsa_keyslot(unsigned int keyslot, const void  *modulus, size_t modulus_size, const void *exponent, size_t exp_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_RSA_MAX || modulus_size > KEYSIZE_RSA_MAX || exp_size > KEYSIZE_RSA_MAX) {
         generic_panic();
     }
@@ -166,7 +166,7 @@ void set_rsa_keyslot(unsigned int keyslot, const void  *modulus, size_t modulus_
 
 void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || iv_size > 0x10) {
         generic_panic();
     }
@@ -179,7 +179,7 @@ void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size) {
 
 void clear_aes_keyslot_iv(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }
@@ -198,7 +198,7 @@ void set_se_ctr(const void *ctr) {
 
 void decrypt_data_into_keyslot(unsigned int keyslot_dst, unsigned int keyslot_src, const void *wrapped_key, size_t wrapped_key_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot_dst >= KEYSLOT_AES_MAX || keyslot_src >= KEYSLOT_AES_MAX || wrapped_key_size > KEYSIZE_AES_MAX) {
         generic_panic();
     }
@@ -235,7 +235,7 @@ void se_synchronous_exp_mod(unsigned int keyslot, void *dst, size_t dst_size, co
 
 void se_get_exp_mod_output(void *buf, size_t size) {
     size_t num_dwords = (size >> 2);
-    
+
     if (num_dwords < 1) {
         return;
     }
@@ -351,7 +351,7 @@ void se_perform_aes_block_operation(void *dst, size_t dst_size, const void *src,
 
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || ctr_size != 0x10) {
         generic_panic();
     }
@@ -382,7 +382,7 @@ void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const vo
 
 void se_aes_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, unsigned int config_high) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
         generic_panic();
     }
@@ -403,7 +403,7 @@ void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_si
 
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || dst_size != 0x10 || src_size != 0x10) {
         generic_panic();
     }
@@ -444,14 +444,24 @@ void aes_128_xts_nintendo_get_tweak(uint8_t *tweak, size_t sector) {
     }
 }
 
-void aes_128_xts_nintendo_xor_with_tweak(unsigned int keyslot, size_t sector, uint8_t *dst, const uint8_t *src, size_t size) {
+void aes_128_xts_nintendo_xor_with_tweak(unsigned int keyslot, size_t sector, uint8_t *dst, const uint8_t *src, size_t size, size_t crypto_sector_size) {
     if ((size & 0xF) || size == 0) {
         generic_panic();
     }
+
+    unsigned int sector_scale = crypto_sector_size / size;
+    unsigned int real_sector  = sector / sector_scale;
+
     uint8_t tweak[0x10];
-    aes_128_xts_nintendo_get_tweak(tweak, sector);
+    aes_128_xts_nintendo_get_tweak(tweak, real_sector);
     se_aes_128_ecb_encrypt_block(keyslot, tweak, sizeof(tweak), tweak, sizeof(tweak));
-    
+
+    unsigned int num_pre_blocks   = ((sector % sector_scale) * size) / 0x10;
+
+    for (unsigned int pre = 0; pre < num_pre_blocks; pre++) {
+        shift_left_xor_rb_le(tweak);
+    }
+
     for (unsigned int block = 0; block < (size >> 4); block++) {
         for (unsigned int i = 0; i < 0x10; i++) {
             dst[(block << 4) | i] = src[(block << 4) | i] ^ tweak[i];
@@ -460,16 +470,16 @@ void aes_128_xts_nintendo_xor_with_tweak(unsigned int keyslot, size_t sector, ui
     }
 }
 
-void aes_128_xts_nintendo_crypt_sector(unsigned int keyslot_1, unsigned int keyslot_2, size_t sector, bool encrypt, void *dst, const void *src, size_t size) {
+void aes_128_xts_nintendo_crypt_sector(unsigned int keyslot_1, unsigned int keyslot_2, size_t sector, bool encrypt, void *dst, const void *src, size_t size, size_t crypto_sector_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
-    if ((size & 0xF) || size == 0) {
+
+    if ((size & 0xF) || size == 0 || crypto_sector_size < size || (crypto_sector_size % size) != 0) {
         generic_panic();
     }
-            
+
     /* XOR. */
-    aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, src, size);
-    
+    aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, src, size, crypto_sector_size);
+
     /* Encrypt/Decrypt. */
     if (encrypt) {
         se->SE_CONFIG = (ALG_AES_ENC | DST_MEMORY);
@@ -480,38 +490,39 @@ void aes_128_xts_nintendo_crypt_sector(unsigned int keyslot_1, unsigned int keys
     }
     se->SE_CRYPTO_LAST_BLOCK = (size >> 4) - 1;
     trigger_se_blocking_op(OP_START, dst, size, src, size);
-    
+
     /* XOR. */
-    aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, dst, size);
+    aes_128_xts_nintendo_xor_with_tweak(keyslot_2, sector, dst, dst, size, crypto_sector_size);
 }
 
 /* Encrypt with AES-XTS (Nintendo's custom tweak). */
-void se_aes_128_xts_nintendo_encrypt(unsigned int keyslot_1, unsigned int keyslot_2, size_t base_sector, void *dst, const void *src, size_t size, unsigned int sector_size) {
-    if ((size & 0xF) || size == 0) {
+void se_aes_128_xts_nintendo_encrypt(unsigned int keyslot_1, unsigned int keyslot_2, size_t base_sector, void *dst, const void *src, size_t size, unsigned int sector_size, unsigned int crypto_sector_size) {
+    if ((size & 0xF) || size == 0 || crypto_sector_size < sector_size || (crypto_sector_size % sector_size) != 0) {
         generic_panic();
     }
     size_t sector = base_sector;
     for (size_t ofs = 0; ofs < size; ofs += sector_size) {
-        aes_128_xts_nintendo_crypt_sector(keyslot_1, keyslot_2, sector, true, dst + ofs, src + ofs, sector_size);
+        aes_128_xts_nintendo_crypt_sector(keyslot_1, keyslot_2, sector, true, dst + ofs, src + ofs, sector_size, crypto_sector_size);
         sector++;
     }
 }
 
 /* Decrypt with AES-XTS (Nintendo's custom tweak). */
-void se_aes_128_xts_nintendo_decrypt(unsigned int keyslot_1, unsigned int keyslot_2, size_t base_sector, void *dst, const void *src, size_t size, unsigned int sector_size) {
-    if ((size & 0xF) || size == 0) {
+void se_aes_128_xts_nintendo_decrypt(unsigned int keyslot_1, unsigned int keyslot_2, size_t base_sector, void *dst, const void *src, size_t size, unsigned int sector_size, unsigned int crypto_sector_size) {
+    if ((size & 0xF) || size == 0 || crypto_sector_size < sector_size || (crypto_sector_size % sector_size) != 0) {
         generic_panic();
     }
+
     size_t sector = base_sector;
     for (size_t ofs = 0; ofs < size; ofs += sector_size) {
-        aes_128_xts_nintendo_crypt_sector(keyslot_1, keyslot_2, sector, false, dst + ofs, src + ofs, sector_size);
+        aes_128_xts_nintendo_crypt_sector(keyslot_1, keyslot_2, sector, false, dst + ofs, src + ofs, sector_size, crypto_sector_size);
         sector++;
     }
 }
 
 void se_compute_aes_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size, unsigned int config_high) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }
@@ -568,7 +579,7 @@ void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size,
 
 void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX || src_size < 0x10) {
         generic_panic();
     }
@@ -583,7 +594,7 @@ void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, co
 /* SHA256 Implementation. */
 void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     /* Setup config for SHA256, size = BITS(src_size) */
     se->SE_CONFIG = (ENCMODE_SHA256 | ALG_SHA | DST_HASHREG);
     se->SE_SHA_CONFIG = 1;
@@ -608,7 +619,7 @@ void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
 /* RNG API */
 void se_initialize_rng(unsigned int keyslot) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }
@@ -628,7 +639,7 @@ void se_initialize_rng(unsigned int keyslot) {
 
 void se_generate_random(unsigned int keyslot, void *dst, size_t size) {
     volatile tegra_se_t *se = se_get_regs();
-    
+
     if (keyslot >= KEYSLOT_AES_MAX) {
         generic_panic();
     }

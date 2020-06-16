@@ -676,7 +676,7 @@ namespace ams::kern::arch::arm64::init {
             }
 
             ALWAYS_INLINE void InitializeFromState(uintptr_t state_val) {
-                if (kern::GetTargetFirmware() >= kern::TargetFirmware_10_0_0) {
+                if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
                     this->state = *reinterpret_cast<State *>(state_val);
                 } else {
                     this->state.next_address = state_val;

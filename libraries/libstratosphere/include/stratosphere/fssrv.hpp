@@ -15,5 +15,13 @@
  */
 
 #pragma once
-#include "fssrv/fssrv_sf_path.hpp"
-#include "fssrv/fssrv_path_normalizer.hpp"
+#include <stratosphere/fssrv/fssrv_sf_path.hpp>
+#include <stratosphere/fssrv/fssrv_path_normalizer.hpp>
+#include <stratosphere/fssrv/fssrv_nca_crypto_configuration.hpp>
+#include <stratosphere/fssrv/fssrv_memory_resource_from_standard_allocator.hpp>
+#include <stratosphere/fssrv/fssrv_memory_resource_from_exp_heap.hpp>
+#include <stratosphere/fssrv/fssrv_i_file_system_creator.hpp>
+#include <stratosphere/fssrv/fscreator/fssrv_partition_file_system_creator.hpp>
+#include <stratosphere/fssrv/fscreator/fssrv_rom_file_system_creator.hpp>
+#include <stratosphere/fssrv/fscreator/fssrv_storage_on_nca_creator.hpp>
+#include <stratosphere/fssrv/fssrv_file_system_proxy_api.hpp>

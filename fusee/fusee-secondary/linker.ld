@@ -228,8 +228,8 @@ SECTIONS
     PROVIDE(__fusee_primary_bin_size__ = fusee_primary_bin_end - fusee_primary_bin);
     PROVIDE(__loader_kip_start__ = loader_kip - __start__);
     PROVIDE(__loader_kip_size__ = loader_kip_end - loader_kip);
-    PROVIDE(__lp0fw_bin_start__ = lp0fw_bin - __start__);
-    PROVIDE(__lp0fw_bin_size__ = lp0fw_bin_end - lp0fw_bin);
+    PROVIDE(__warmboot_bin_start__ = warmboot_bin - __start__);
+    PROVIDE(__warmboot_bin_size__ = warmboot_bin_end - warmboot_bin);
     PROVIDE(__ncm_kip_start__ = ncm_kip - __start__);
     PROVIDE(__ncm_kip_size__ = ncm_kip_end - ncm_kip);
     PROVIDE(__pm_kip_start__ = pm_kip - __start__);

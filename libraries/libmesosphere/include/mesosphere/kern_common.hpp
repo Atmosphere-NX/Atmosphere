@@ -20,23 +20,7 @@ namespace ams::kern {
 
     constexpr size_t PageSize = 4_KB;
 
-    enum TargetFirmware : u32 {
-        TargetFirmware_1_0_0  = ATMOSPHERE_TARGET_FIRMWARE_100,
-        TargetFirmware_2_0_0  = ATMOSPHERE_TARGET_FIRMWARE_200,
-        TargetFirmware_3_0_0  = ATMOSPHERE_TARGET_FIRMWARE_300,
-        TargetFirmware_4_0_0  = ATMOSPHERE_TARGET_FIRMWARE_400,
-        TargetFirmware_5_0_0  = ATMOSPHERE_TARGET_FIRMWARE_500,
-        TargetFirmware_6_0_0  = ATMOSPHERE_TARGET_FIRMWARE_600,
-        TargetFirmware_6_2_0  = ATMOSPHERE_TARGET_FIRMWARE_620,
-        TargetFirmware_7_0_0  = ATMOSPHERE_TARGET_FIRMWARE_700,
-        TargetFirmware_8_0_0  = ATMOSPHERE_TARGET_FIRMWARE_800,
-        TargetFirmware_8_1_0  = ATMOSPHERE_TARGET_FIRMWARE_810,
-        TargetFirmware_9_0_0  = ATMOSPHERE_TARGET_FIRMWARE_900,
-        TargetFirmware_9_1_0  = ATMOSPHERE_TARGET_FIRMWARE_910,
-        TargetFirmware_10_0_0 = ATMOSPHERE_TARGET_FIRMWARE_1000,
-    };
-
-    TargetFirmware GetTargetFirmware();
+    ams::TargetFirmware GetTargetFirmware();
 
 }
 

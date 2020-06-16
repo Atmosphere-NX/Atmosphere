@@ -13,10 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 #include <sys/stat.h>
+#include "lib/fatfs/ff.h"
 #include "fs_utils.h"
+#include "fs_dev.h"
 
 size_t get_file_size(const char *filename) {
     struct stat st;
@@ -54,7 +56,7 @@ bool is_valid_folder(const char *path) {
     if (stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -63,6 +65,29 @@ bool is_valid_file(const char *path) {
     if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
         return true;
     }
-    
+
     return false;
+}
+
+bool is_valid_concatenation_file(const char *path) {
+    if (is_valid_file(path)) {
+        return true;
+    } else if (is_valid_folder(path)) {
+        /* Check if the archive bit is set. */
+        int rc = fsdev_get_attr(path);
+
+        /* Failed to get file DOS attributes. */
+        if (rc == -1) {
+            return false;
+        }
+
+        /* Check if our path is not a directory (it should be if we're in this code, though...). */
+        if (!(rc & AM_DIR)) {
+            return false;
+        }
+
+        return (rc & AM_ARC) != 0;
+    } else {
+        return false;
+    }
 }

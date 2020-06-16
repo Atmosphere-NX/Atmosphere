@@ -24,7 +24,7 @@ namespace ams::svc::codegen::impl {
             static constexpr size_t MaxParameters = 8;
         private:
             static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
-        private:
+        public:
             /* ABI parameters. */
             Abi abi;
 
@@ -102,7 +102,7 @@ namespace ams::svc::codegen::impl {
     };
 
     class ProcedureLayout {
-        private:
+        public:
             Abi abi;
             ParameterLayout input;
             ParameterLayout output;
@@ -205,7 +205,7 @@ namespace ams::svc::codegen::impl {
     };
 
     class SvcInvocationLayout {
-        private:
+        public:
             Abi abi;
             ParameterLayout input;
             ParameterLayout output;
@@ -220,11 +220,7 @@ namespace ams::svc::codegen::impl {
                 }
                 for (size_t i = 1; i < num_parameters; i++) {
                     for (size_t j = i; j > 0 && param_layout.GetParameter(map[j-1]).GetLocation(0) > param_layout.GetParameter(map[j]).GetLocation(0); j--) {
-                        /* std::swap is not constexpr until c++20 :( */
-                        /* TODO: std::swap(map[j], map[j-1]); */
-                        const size_t tmp = map[j];
-                        map[j] = map[j-1];
-                        map[j-1] = tmp;
+                        std::swap(map[j], map[j-1]);
                     }
                 }
 

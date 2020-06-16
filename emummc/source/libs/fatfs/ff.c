@@ -1,10 +1,25 @@
+/*
+ * Copyright (c) 2018 naehrwert
+ * Copyright (c) 2018-2019 CTCaer
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*----------------------------------------------------------------------------/
-/  FatFs - Generic FAT Filesystem Module  R0.13c (p3)                         /
+/  FatFs - Generic FAT Filesystem Module  R0.13c (p4)                         /
 /-----------------------------------------------------------------------------/
 /
 / Copyright (C) 2018, ChaN, all right reserved.
-/ Copyright (c) 2018 naehrwert
-/ Copyright (C) 2018-2019 CTCaer
 /
 / FatFs module is an open source software. Redistribution and use of FatFs in
 / source and binary forms, with or without modification, are permitted provided
@@ -515,7 +530,7 @@ static WCHAR LfnBuf[FF_MAX_LFN + 1];		/* LFN working buffer */
 #define FREE_NAMBUF()	ff_memfree(lfn)
 #endif
 #define LEAVE_MKFS(res)	{ if (!work) ff_memfree(buf); return res; }
-#define MAX_MALLOC	0x8000	/* Must be >=FF_MAX_SS */
+#define MAX_MALLOC	0x4000	/* Must be >=FF_MAX_SS */
 
 #else
 #error Wrong setting of FF_USE_LFN
@@ -3879,6 +3894,109 @@ FRESULT f_read (
 
 
 
+#ifdef FF_FASTFS
+/*-----------------------------------------------------------------------*/
+/* Fast Read Aligned Sized File Without a Cache                         */
+/*-----------------------------------------------------------------------*/
+#if FF_USE_FASTSEEK
+FRESULT f_read_fast (
+	FIL* fp,			/* Pointer to the file object */
+	const void* buff,	/* Pointer to the data to be written */
+	UINT btr			/* Number of bytes to read */
+)
+{
+	FRESULT res;
+	FATFS *fs;
+	UINT csize_bytes;
+	DWORD clst;
+	DWORD wbytes;
+	UINT count;
+	FSIZE_t work_sector = 0;
+	FSIZE_t sector_base = 0;
+	BYTE *wbuff = (BYTE*)buff;
+
+	res = validate(&fp->obj, &fs);			/* Check validity of the file object */
+	if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) {
+		EFSPRINTF("FOV");
+		LEAVE_FF(fs, res);	/* Check validity */
+	}
+
+	if (!(fp->flag & FA_READ)) LEAVE_FF(fs, FR_DENIED); /* Check access mode */
+	FSIZE_t remain = fp->obj.objsize - fp->fptr;
+	if (btr > remain) btr = (UINT)remain;		/* Truncate btr by remaining bytes */
+
+	csize_bytes = fs->csize * SS(fs);
+	DWORD csect = (UINT)((fp->fptr / SS(fs)) & (fs->csize - 1));	/* Sector offset in the cluster */
+
+	/* If inside a cluster, read the sectors and align to cluster. */
+	if (csect) {
+		wbytes = MIN(btr, (fs->csize - csect) * SS(fs));
+		f_read(fp, wbuff, wbytes, (void *)0);
+		wbuff += wbytes;
+		btr -= wbytes;
+		if (!btr)
+			goto out;
+	}
+
+	if (!fp->fptr) {	/* On the top of the file? */
+		clst = fp->obj.sclust;	/* Follow from the origin */
+	} else {
+		if (fp->cltbl) clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
+		else { EFSPRINTF("CLTBL"); ABORT(fs, FR_CLTBL_NO_INIT); }
+	}
+
+	if (clst < 2) { EFSPRINTF("CCHK"); ABORT(fs, FR_INT_ERR); }
+	else if (clst == 0xFFFFFFFF) { EFSPRINTF("DSKC"); ABORT(fs, FR_DISK_ERR); }
+
+	fp->clust = clst;	/* Set working cluster */
+
+	wbytes = MIN(btr, csize_bytes);
+	sector_base = clst2sect(fs, fp->clust);
+	count = wbytes / SS(fs);
+	fp->fptr += wbytes;
+	btr -= wbytes;
+
+	if (!btr) {	/* Final cluster/sectors read. */
+		if (disk_read(fs->pdrv, wbuff, sector_base, count) != RES_OK) ABORT(fs, FR_DISK_ERR);
+		goto out;
+	}
+
+	while (btr) {
+		clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
+
+		if (clst < 2) { EFSPRINTF("CCHK2"); ABORT(fs, FR_INT_ERR); }
+		else if (clst == 0xFFFFFFFF) { EFSPRINTF("DSKC"); ABORT(fs, FR_DISK_ERR); }
+
+		fp->clust = clst;
+
+		work_sector = clst2sect(fs, fp->clust);
+		wbytes = MIN(btr, csize_bytes);
+		if ((work_sector - sector_base) == count) count += wbytes / SS(fs);
+		else {
+			if (disk_read(fs->pdrv, wbuff, sector_base, count) != RES_OK) ABORT(fs, FR_DISK_ERR);
+			wbuff += count * SS(fs);
+
+			sector_base = work_sector;
+			count = wbytes / SS(fs);
+		}
+
+		fp->fptr += wbytes;
+		btr -= wbytes;
+
+		if (!btr) {	/* Final cluster/sectors read. */
+			if (disk_read(fs->pdrv, wbuff, sector_base, count) != RES_OK) ABORT(fs, FR_DISK_ERR);
+		}
+	}
+
+out:
+	LEAVE_FF(fs, FR_OK);
+}
+#endif
+#endif
+
+
+
+
 #if !FF_FS_READONLY
 /*-----------------------------------------------------------------------*/
 /* Write File                                                            */
@@ -4014,6 +4132,117 @@ FRESULT f_write (
 
 	LEAVE_FF(fs, FR_OK);
 }
+
+
+
+
+#ifdef FF_FASTFS
+/*-----------------------------------------------------------------------*/
+/* Fast Write Aligned Sized File Without a Cache                         */
+/*-----------------------------------------------------------------------*/
+#if FF_USE_FASTSEEK
+FRESULT f_write_fast (
+	FIL* fp,			/* Pointer to the file object */
+	const void* buff,	/* Pointer to the data to be written */
+	UINT btw			/* Number of bytes to write */
+)
+{
+	FRESULT res;
+	FATFS *fs;
+	UINT csize_bytes;
+	DWORD clst;
+	DWORD wbytes;
+	UINT count;
+	FSIZE_t work_sector = 0;
+	FSIZE_t sector_base = 0;
+	BYTE *wbuff = (BYTE*)buff;
+
+	res = validate(&fp->obj, &fs);			/* Check validity of the file object */
+	if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) {
+		EFSPRINTF("FOV");
+		LEAVE_FF(fs, res);	/* Check validity */
+	}
+
+	if (!(fp->flag & FA_WRITE)) LEAVE_FF(fs, FR_DENIED);	/* Check access mode */
+	/* Check fptr wrap-around (file size cannot reach 4 GiB at FAT volume) */
+	if ((!FF_FS_EXFAT || fs->fs_type != FS_EXFAT) && (DWORD)(fp->fptr + btw) < (DWORD)fp->fptr) {
+		btw = (UINT)(0xFFFFFFFF - (DWORD)fp->fptr);
+	}
+
+	csize_bytes = fs->csize * SS(fs);
+	DWORD csect = (UINT)((fp->fptr / SS(fs)) & (fs->csize - 1));	/* Sector offset in the cluster */
+
+	/* If inside a cluster, write the sectors and align to cluster. */
+	if (csect) {
+		wbytes = MIN(btw, (fs->csize - csect) * SS(fs));
+		f_write(fp, wbuff, wbytes, (void *)0);
+		/* Ensure flushing of it. FatFS is not notified for next write if raw. */
+		f_sync(fp);
+		wbuff += wbytes;
+		btw -= wbytes;
+		if (!btw)
+			goto out;
+	}
+
+	if (!fp->fptr) {	/* On the top of the file? */
+		clst = fp->obj.sclust;	/* Follow from the origin */
+	} else {
+		if (fp->cltbl) clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
+		else { EFSPRINTF("CLTBL"); ABORT(fs, FR_CLTBL_NO_INIT); }
+	}
+
+	if (clst < 2) { EFSPRINTF("CCHK"); ABORT(fs, FR_INT_ERR); }
+	else if (clst == 0xFFFFFFFF) { EFSPRINTF("DSKC"); ABORT(fs, FR_DISK_ERR); }
+
+	fp->clust = clst;	/* Set working cluster */
+
+	wbytes = MIN(btw, csize_bytes);
+	sector_base = clst2sect(fs, fp->clust);
+	count = wbytes / SS(fs);
+	fp->fptr += wbytes;
+	btw -= wbytes;
+
+	if (!btw) {	/* Final cluster/sectors write. */
+		if (disk_write(fs->pdrv, wbuff, sector_base, count) != RES_OK) ABORT(fs, FR_DISK_ERR);
+		fp->flag &= (BYTE)~FA_DIRTY;
+		goto out;
+	}
+
+	while (btw) {
+		clst = clmt_clust(fp, fp->fptr);	/* Get cluster# from the CLMT */
+
+		if (clst < 2) { EFSPRINTF("CCHK2"); ABORT(fs, FR_INT_ERR); }
+		else if (clst == 0xFFFFFFFF) { EFSPRINTF("DSKC"); ABORT(fs, FR_DISK_ERR); }
+
+		fp->clust = clst;
+
+		work_sector = clst2sect(fs, fp->clust);
+		wbytes = MIN(btw, csize_bytes);
+		if ((work_sector - sector_base) == count) count += wbytes / SS(fs);
+		else {
+			if (disk_write(fs->pdrv, wbuff, sector_base, count) != RES_OK) ABORT(fs, FR_DISK_ERR);
+			wbuff += count * SS(fs);
+
+			sector_base = work_sector;
+			count = wbytes / SS(fs);
+		}
+
+		fp->fptr += wbytes;
+		btw -= wbytes;
+
+		if (!btw) {	/* Final cluster/sectors write. */
+			if (disk_write(fs->pdrv, wbuff, sector_base, count) != RES_OK) ABORT(fs, FR_DISK_ERR);
+			fp->flag &= (BYTE)~FA_DIRTY;
+		}
+	}
+
+out:
+	fp->flag |= FA_MODIFIED;	/* Set file change flag */
+
+	LEAVE_FF(fs, FR_OK);
+}
+#endif
+#endif
 
 
 
@@ -4231,9 +4460,9 @@ FRESULT f_getcwd (
 	TCHAR *tp = buff;
 #if FF_VOLUMES >= 2
 	UINT vl;
-#endif
 #if FF_STR_VOLUME_ID
 	const char *vp;
+#endif
 #endif
 	FILINFO fno;
 	DEF_NAMBUF
@@ -4471,6 +4700,37 @@ FRESULT f_lseek (
 
 	LEAVE_FF(fs, res);
 }
+
+
+
+#ifdef FF_FASTFS
+#if FF_USE_FASTSEEK
+/*-----------------------------------------------------------------------*/
+/* Seek File Read/Write Pointer                                          */
+/*-----------------------------------------------------------------------*/
+
+DWORD *f_expand_cltbl (
+	FIL* fp,		/* Pointer to the file object */
+	UINT tblsz,		/* Size of table */
+	DWORD *tbl,		/* Table pointer */
+	FSIZE_t ofs		/* File pointer from top of file */
+)
+{
+	if (fp->flag & FA_WRITE) f_lseek(fp, ofs);	/* Expand file if write is enabled */
+	fp->cltbl = (DWORD *)tbl;
+	fp->cltbl[0] = tblsz;
+	if (f_lseek(fp, CREATE_LINKMAP)) {	/* Create cluster link table */
+		fp->cltbl = (void *)0;
+		EFSPRINTF("CLTBLSZ");
+		return (void *)0;
+	}
+	f_lseek(fp, 0);
+
+	return fp->cltbl;
+}
+#endif
+#endif
+
 
 
 
@@ -4714,7 +4974,7 @@ FRESULT f_getfree (
 	/* Get logical drive */
 	res = find_volume(&path, &fs, 0);
 	if (res == FR_OK) {
-		*fatfs = fs;				/* Return ptr to the fs object */
+		if (fatfs) *fatfs = fs;	/* Return ptr to the fs object */
 		/* If free_clst is valid, return it without full FAT scan */
 		if (fs->free_clst <= fs->n_fatent - 2) {
 			*nclst = fs->free_clst;

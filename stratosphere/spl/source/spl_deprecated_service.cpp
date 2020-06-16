@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "spl_api_impl.hpp"
 #include "spl_deprecated_service.hpp"
 
@@ -30,7 +31,7 @@ namespace ams::spl {
         return impl::GenerateAesKek(out_access_key.GetPointer(), key_source, generation, option);
     }
 
-    Result DeprecatedService::LoadAesKey(u32 keyslot, AccessKey access_key, KeySource key_source) {
+    Result DeprecatedService::LoadAesKey(s32 keyslot, AccessKey access_key, KeySource key_source) {
         return impl::LoadAesKey(keyslot, this, access_key, key_source);
     }
 
@@ -70,15 +71,15 @@ namespace ams::spl {
         return impl::DecryptAesKey(out_key.GetPointer(), key_source, generation, option);
     }
 
-    Result DeprecatedService::CryptAesCtrDeprecated(const sf::OutBuffer &out_buf, u32 keyslot, const sf::InBuffer &in_buf, IvCtr iv_ctr) {
+    Result DeprecatedService::CryptAesCtrDeprecated(const sf::OutBuffer &out_buf, s32 keyslot, const sf::InBuffer &in_buf, IvCtr iv_ctr) {
         return impl::CryptAesCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
     }
 
-    Result DeprecatedService::CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, u32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
+    Result DeprecatedService::CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
         return impl::CryptAesCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
     }
 
-    Result DeprecatedService::ComputeCmac(sf::Out<Cmac> out_cmac, u32 keyslot, const sf::InPointerBuffer &in_buf) {
+    Result DeprecatedService::ComputeCmac(sf::Out<Cmac> out_cmac, s32 keyslot, const sf::InPointerBuffer &in_buf) {
         return impl::ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize());
     }
 
@@ -94,7 +95,7 @@ namespace ams::spl {
         return impl::UnwrapTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
     }
 
-    Result DeprecatedService::LoadTitleKey(u32 keyslot, AccessKey access_key) {
+    Result DeprecatedService::LoadTitleKey(s32 keyslot, AccessKey access_key) {
         return impl::LoadTitleKey(keyslot, this, access_key);
     }
 
@@ -106,11 +107,11 @@ namespace ams::spl {
         return impl::UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, generation);
     }
 
-    Result DeprecatedService::AllocateAesKeyslot(sf::Out<u32> out_keyslot) {
+    Result DeprecatedService::AllocateAesKeyslot(sf::Out<s32> out_keyslot) {
         return impl::AllocateAesKeyslot(out_keyslot.GetPointer(), this);
     }
 
-    Result DeprecatedService::FreeAesKeyslot(u32 keyslot) {
+    Result DeprecatedService::FreeAesKeyslot(s32 keyslot) {
         return impl::FreeAesKeyslot(keyslot, this);
     }
 

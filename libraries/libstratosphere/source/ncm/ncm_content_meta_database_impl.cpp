@@ -451,7 +451,7 @@ namespace ams::ncm {
 
         /* Ensure this type of key has an owner. */
         R_UNLESS(key.type == ContentMetaType::Application || key.type == ContentMetaType::Patch || key.type == ContentMetaType::AddOnContent, ncm::ResultInvalidContentMetaKey());
-    
+
         /* Applications are their own owner. */
         if (key.type == ContentMetaType::Application) {
             out_id.SetValue({key.id});

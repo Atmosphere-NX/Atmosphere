@@ -28,7 +28,7 @@ namespace ams::spl {
             virtual Result ImportLotusKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
             virtual Result DecryptLotusMessage(sf::Out<u32> out_size, const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest);
             virtual Result GenerateSpecificAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
-            virtual Result LoadTitleKey(u32 keyslot, AccessKey access_key);
+            virtual Result LoadTitleKey(s32 keyslot, AccessKey access_key);
             virtual Result GetPackage2Hash(const sf::OutPointerBuffer &dst);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
@@ -48,7 +48,7 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,          hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,              hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent, hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(ImportLotusKeyDeprecated,    hos::Version_4_0_0, hos::Version_4_0_0),
+                MAKE_SERVICE_COMMAND_META(ImportLotusKeyDeprecated,    hos::Version_4_0_0, hos::Version_4_1_0),
                 MAKE_SERVICE_COMMAND_META(ImportLotusKey,              hos::Version_5_0_0),
                 MAKE_SERVICE_COMMAND_META(DecryptLotusMessage),
                 MAKE_SERVICE_COMMAND_META(GenerateSpecificAesKey),

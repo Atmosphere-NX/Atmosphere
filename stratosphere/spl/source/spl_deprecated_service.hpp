@@ -63,7 +63,7 @@ namespace ams::spl {
             virtual Result GetConfig(sf::Out<u64> out, u32 which);
             virtual Result ExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod);
             virtual Result GenerateAesKek(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option);
-            virtual Result LoadAesKey(u32 keyslot, AccessKey access_key, KeySource key_source);
+            virtual Result LoadAesKey(s32 keyslot, AccessKey access_key, KeySource key_source);
             virtual Result GenerateAesKey(sf::Out<AesKey> out_key, AccessKey access_key, KeySource key_source);
             virtual Result SetConfig(u32 which, u64 value);
             virtual Result GenerateRandomBytes(const sf::OutPointerBuffer &out);
@@ -73,17 +73,17 @@ namespace ams::spl {
             virtual Result GenerateSpecificAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 which);
             virtual Result DecryptRsaPrivateKey(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
             virtual Result DecryptAesKey(sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option);
-            virtual Result CryptAesCtrDeprecated(const sf::OutBuffer &out_buf, u32 keyslot, const sf::InBuffer &in_buf, IvCtr iv_ctr);
-            virtual Result CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, u32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr);
-            virtual Result ComputeCmac(sf::Out<Cmac> out_cmac, u32 keyslot, const sf::InPointerBuffer &in_buf);
+            virtual Result CryptAesCtrDeprecated(const sf::OutBuffer &out_buf, s32 keyslot, const sf::InBuffer &in_buf, IvCtr iv_ctr);
+            virtual Result CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr);
+            virtual Result ComputeCmac(sf::Out<Cmac> out_cmac, s32 keyslot, const sf::InPointerBuffer &in_buf);
             virtual Result ImportEsKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
             virtual Result UnwrapTitleKeyDeprecated(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest);
             virtual Result UnwrapTitleKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation);
-            virtual Result LoadTitleKey(u32 keyslot, AccessKey access_key);
+            virtual Result LoadTitleKey(s32 keyslot, AccessKey access_key);
             virtual Result UnwrapCommonTitleKeyDeprecated(sf::Out<AccessKey> out_access_key, KeySource key_source);
             virtual Result UnwrapCommonTitleKey(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation);
-            virtual Result AllocateAesKeyslot(sf::Out<u32> out_keyslot);
-            virtual Result FreeAesKeyslot(u32 keyslot);
+            virtual Result AllocateAesKeyslot(sf::Out<s32> out_keyslot);
+            virtual Result FreeAesKeyslot(s32 keyslot);
             virtual void GetAesKeyslotAvailableEvent(sf::OutCopyHandle out_hnd);
             virtual Result SetBootReason(BootReasonValue boot_reason);
             virtual Result GetBootReason(sf::Out<BootReasonValue> out);
@@ -114,12 +114,12 @@ namespace ams::spl {
 
                 MAKE_SERVICE_COMMAND_META(LoadTitleKey),
 
-                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKeyDeprecated, hos::Version_2_0_0, hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKeyDeprecated, hos::Version_2_0_0, hos::Version_2_3_0),
                 MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKey,           hos::Version_3_0_0),
 
-                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_2_0_0),
+                MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot              /* Atmosphere extension: This was added in hos::Version_2_0_0, but is allowed on older firmware by atmosphere. */),
+                MAKE_SERVICE_COMMAND_META(FreeAesKeyslot                  /* Atmosphere extension: This was added in hos::Version_2_0_0, but is allowed on older firmware by atmosphere. */),
+                MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent     /* Atmosphere extension: This was added in hos::Version_2_0_0, but is allowed on older firmware by atmosphere. */),
 
                 MAKE_SERVICE_COMMAND_META(SetBootReason,                  hos::Version_3_0_0),
                 MAKE_SERVICE_COMMAND_META(GetBootReason,                  hos::Version_3_0_0),

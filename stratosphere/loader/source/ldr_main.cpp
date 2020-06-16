@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <stratosphere.hpp>
 #include "ldr_development_manager.hpp"
 #include "ldr_loader_service.hpp"
 
@@ -75,7 +75,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(fsInitialize());
         lr::Initialize();
         R_ABORT_UNLESS(fsldrInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
     });
 
     ams::CheckApiVersion();
@@ -83,7 +83,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    splExit();
+    spl::Finalize();
     fsldrExit();
     lr::Finalize();
     fsExit();
@@ -121,9 +121,9 @@ int main(int argc, char **argv)
 
     /* Configure development. */
     /* NOTE: Nintendo really does call the getter function three times instead of caching the value. */
-    ldr::SetDevelopmentForAcidProductionCheck(spl::IsDevelopmentHardware());
-    ldr::SetDevelopmentForAntiDowngradeCheck(spl::IsDevelopmentHardware());
-    ldr::SetDevelopmentForAcidSignatureCheck(spl::IsDevelopmentHardware());
+    ldr::SetDevelopmentForAcidProductionCheck(spl::IsDevelopment());
+    ldr::SetDevelopmentForAntiDowngradeCheck(spl::IsDevelopment());
+    ldr::SetDevelopmentForAcidSignatureCheck(spl::IsDevelopment());
 
     /* Add services to manager. */
     R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::pm::ProcessManagerInterface>(ProcessManagerServiceName, ProcessManagerMaxSessions)));

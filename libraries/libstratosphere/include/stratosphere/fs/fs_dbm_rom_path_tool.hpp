@@ -26,7 +26,7 @@ namespace ams::fs {
             size_t length;
             const RomPathChar *path;
         };
-        static_assert(std::is_pod<RomEntryName>::value);
+        static_assert(util::is_pod<RomEntryName>::value);
 
         constexpr void InitializeRomEntryName(RomEntryName *entry) {
             AMS_ABORT_UNLESS(entry != nullptr);

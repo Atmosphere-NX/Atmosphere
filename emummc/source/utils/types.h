@@ -31,29 +31,32 @@
 #define BIT(n) (1U<<(n))
 #endif
 
-typedef signed char s8;
-typedef short s16;
-typedef short SHORT;
-typedef int s32;
-typedef int INT;
-typedef long LONG;
-typedef long long int s64;
-typedef unsigned char u8;
-typedef unsigned char BYTE;
-typedef unsigned short u16;
-typedef unsigned short WORD;
-typedef unsigned short WCHAR;
-typedef unsigned int u32;
-typedef unsigned int UINT;
-typedef unsigned long DWORD;
-typedef unsigned long long QWORD;
-typedef unsigned long long int u64;
-typedef volatile unsigned char vu8;
-typedef volatile unsigned short vu16;
-typedef volatile unsigned int vu32;
+typedef int8_t s8;
+typedef int16_t s16;
+typedef int16_t SHORT;
+typedef int32_t s32;
+typedef int32_t INT;
+typedef int64_t LONG;
+typedef int64_t s64;
+typedef uint8_t u8;
+typedef uint8_t BYTE;
+typedef uint16_t u16;
+typedef uint16_t WORD;
+typedef uint16_t WCHAR;
+typedef uint32_t u32;
+typedef uint32_t UINT;
+typedef uint32_t DWORD;
+typedef uint64_t QWORD;
+typedef uint64_t u64;
+typedef volatile uint8_t vu8;
+typedef volatile uint16_t vu16;
+typedef volatile uint32_t vu32;
 
 typedef u32 Handle; ///< Kernel object handle.
 typedef u32 Result; ///< Function error code result type.
+
+#define INVALID_HANDLE ((Handle) 0)
+#define CUR_PROCESS_HANDLE ((Handle) 0xFFFF8001)
 
 #ifndef __cplusplus
 typedef int bool;

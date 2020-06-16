@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "dmnt_cheat_api.hpp"
 #include "dmnt_cheat_vm.hpp"
 #include "dmnt_cheat_debug_events_manager.hpp"
@@ -141,7 +142,7 @@ namespace ams::dmnt::cheat::impl {
                         }
 
                         /* Clear metadata. */
-                        static_assert(std::is_pod<decltype(this->cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
+                        static_assert(util::is_pod<decltype(this->cheat_process_metadata)>::value, "CheatProcessMetadata definition!");
                         std::memset(&this->cheat_process_metadata, 0, sizeof(this->cheat_process_metadata));
 
                         /* Clear cheat list. */
@@ -598,25 +599,34 @@ namespace ams::dmnt::cheat::impl {
                 /* Atomically wait (and clear) signal for new process. */
                 this_ptr->debug_events_event.Wait();
                 while (true) {
-                    while (R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), std::numeric_limits<u64>::max()))) {
+                    Handle cheat_process_handle = this_ptr->GetCheatProcessHandle();
+                    while (cheat_process_handle != svc::InvalidHandle && R_SUCCEEDED(svcWaitSynchronizationSingle(this_ptr->GetCheatProcessHandle(), std::numeric_limits<u64>::max()))) {
                         this_ptr->cheat_lock.Lock();
                         ON_SCOPE_EXIT { this_ptr->cheat_lock.Unlock(); };
+                        {
+                            ON_SCOPE_EXIT { cheat_process_handle = this_ptr->GetCheatProcessHandle(); };
 
-                        /* If we did an unsafe break, wait until we're not broken. */
-                        if (this_ptr->broken_unsafe) {
-                            this_ptr->cheat_lock.Unlock();
-                            this_ptr->unsafe_break_event.Wait();
-                            this_ptr->cheat_lock.Lock();
-                            if (this_ptr->GetCheatProcessHandle() != svc::InvalidHandle) {
-                                continue;
-                            } else {
-                                break;
+                            /* If we did an unsafe break, wait until we're not broken. */
+                            if (this_ptr->broken_unsafe) {
+                                this_ptr->cheat_lock.Unlock();
+                                this_ptr->unsafe_break_event.Wait();
+                                this_ptr->cheat_lock.Lock();
+                                if (this_ptr->GetCheatProcessHandle() != svc::InvalidHandle) {
+                                    continue;
+                                } else {
+                                    break;
+                                }
                             }
-                        }
 
-                        /* Handle any pending debug events. */
-                        if (this_ptr->HasActiveCheatProcess()) {
-                            dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle());
+                            /* Handle any pending debug events. */
+                            if (this_ptr->HasActiveCheatProcess()) {
+                                R_TRY_CATCH(dmnt::cheat::impl::ContinueCheatProcess(this_ptr->GetCheatProcessHandle())) {
+                                    R_CATCH(svc::ResultProcessTerminated) {
+                                        this_ptr->CloseActiveCheatProcess();
+                                        break;
+                                    }
+                                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+                            }
                         }
                     }
 

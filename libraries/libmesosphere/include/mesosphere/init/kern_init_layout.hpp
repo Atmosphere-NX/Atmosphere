@@ -32,7 +32,7 @@ namespace ams::kern::init {
         u32 init_array_offset;
         u32 init_array_end_offset;
     };
-    static_assert(std::is_pod<KernelLayout>::value);
+    static_assert(util::is_pod<KernelLayout>::value);
     static_assert(sizeof(KernelLayout) == 0x30);
 
 }

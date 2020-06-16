@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "pm_resource_manager.hpp"
 
 namespace ams::pm::resource {
@@ -219,8 +220,8 @@ namespace ams::pm::resource {
             R_ABORT_UNLESS(svc::GetResourceLimitLimitValue(&total_threads_available, GetResourceLimitHandle(ResourceLimitGroup_System), svc::LimitableResource_ThreadCountMax));
 
             /* See how many threads we're expecting. */
-            const s64 total_threads_allocated = g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] -
-                                                       g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] -
+            const s64 total_threads_allocated = g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_ThreadCountMax] +
+                                                       g_resource_limits[ResourceLimitGroup_Application][svc::LimitableResource_ThreadCountMax] +
                                                        g_resource_limits[ResourceLimitGroup_Applet][svc::LimitableResource_ThreadCountMax];
 
             /* Ensure we don't over-commit threads. */

@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "boot_boot_reason.hpp"
 #include "boot_change_voltage.hpp"
 #include "boot_check_battery.hpp"
@@ -34,6 +35,7 @@ extern "C" {
     extern u32 __start__;
 
     u32 __nx_applet_type = AppletType_None;
+    u32 __nx_fs_num_sessions = 1;
 
     /* TODO: Evaluate to what extent this can be reduced further. */
     #define INNER_HEAP_SIZE 0x20000
@@ -91,7 +93,7 @@ void __appInit(void) {
     /* Initialize services we need (TODO: NCM) */
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
         R_ABORT_UNLESS(pmshellInitialize());
     });
 
@@ -101,7 +103,7 @@ void __appInit(void) {
 void __appExit(void) {
     /* Cleanup services. */
     pmshellExit();
-    splExit();
+    spl::Finalize();
     fsExit();
 }
 

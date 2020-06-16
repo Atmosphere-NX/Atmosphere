@@ -51,7 +51,7 @@ namespace ams::fs {
     struct UserId {
         u64 data[2];
     };
-    static_assert(std::is_pod<UserId>::value);
+    static_assert(util::is_pod<UserId>::value);
 
     constexpr inline bool operator<(const UserId &lhs, const UserId &rhs) {
         if (lhs.data[0] < rhs.data[0]) {
@@ -92,7 +92,7 @@ namespace ams::fs {
         bool pseudo;
         u8 reserved[0x1A];
     };
-    static_assert(std::is_pod<SaveDataCreationInfo>::value);
+    static_assert(util::is_pod<SaveDataCreationInfo>::value);
     static_assert(sizeof(SaveDataCreationInfo) == 0x40);
 
     struct SaveDataAttribute {
@@ -154,6 +154,16 @@ namespace ams::fs {
         u8 unused[0x190];
     };
     static_assert(sizeof(SaveDataExtraData) == 0x200);
-    static_assert(std::is_pod<SaveDataExtraData>::value);
+    static_assert(util::is_pod<SaveDataExtraData>::value);
+
+    struct HashSalt {
+        static constexpr size_t Size = 32;
+
+        u8 value[Size];
+    };
+    static_assert(util::is_pod<HashSalt>::value);
+    static_assert(sizeof(HashSalt) == HashSalt::Size);
+
+    using SaveDataHashSalt = std::optional<HashSalt>;
 
 }

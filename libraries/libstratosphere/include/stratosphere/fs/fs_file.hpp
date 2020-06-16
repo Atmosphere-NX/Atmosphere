@@ -34,7 +34,7 @@ namespace ams::fs {
         return !(lhs == rhs);
     }
 
-    static_assert(std::is_pod<ReadOption>::value && sizeof(ReadOption) == sizeof(u32));
+    static_assert(util::is_pod<ReadOption>::value && sizeof(ReadOption) == sizeof(u32));
 
     struct WriteOption {
         u32 value;
@@ -58,7 +58,7 @@ namespace ams::fs {
         return !(lhs == rhs);
     }
 
-    static_assert(std::is_pod<WriteOption>::value && sizeof(WriteOption) == sizeof(u32));
+    static_assert(util::is_pod<WriteOption>::value && sizeof(WriteOption) == sizeof(u32));
 
     struct FileHandle {
         void *handle;

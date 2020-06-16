@@ -43,7 +43,7 @@ namespace ams::fssrv::sf {
         }
     };
 
-    static_assert(std::is_pod<Path>::value && sizeof(Path) == FS_MAX_PATH);
+    static_assert(util::is_pod<Path>::value && sizeof(Path) == FS_MAX_PATH);
 
     using FspPath = Path;
 

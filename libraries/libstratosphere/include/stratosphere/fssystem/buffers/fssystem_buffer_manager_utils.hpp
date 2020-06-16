@@ -87,4 +87,40 @@ namespace ams::fssystem::buffers {
             }
     };
 
+    template<typename IsValidBufferFunction>
+    Result AllocateBufferUsingBufferManagerContext(std::pair<uintptr_t, size_t> *out, fssystem::IBufferManager *buffer_manager, size_t size, const IBufferManager::BufferAttribute attribute, IsValidBufferFunction is_valid_buffer, const char *func_name) {
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(buffer_manager != nullptr);
+        AMS_ASSERT(func_name != nullptr);
+
+        /* Clear the output. */
+        *out = std::pair<uintptr_t, size_t>(0, 0);
+
+        /* Get the context. */
+        auto context = GetBufferManagerContext();
+
+        auto AllocateBufferImpl = [=]() -> Result {
+            auto buffer = buffer_manager->AllocateBuffer(size, attribute);
+            if (!is_valid_buffer(buffer)) {
+                if (buffer.first != 0) {
+                    buffer_manager->DeallocateBuffer(buffer.first, buffer.second);
+                }
+                return fs::ResultBufferAllocationFailed();
+            }
+            *out = buffer;
+            return ResultSuccess();
+        };
+
+        if (context == nullptr || !context->IsNeedBlocking()) {
+            /* If there's no context (or we don't need to block), just allocate the buffer. */
+            R_TRY(AllocateBufferImpl());
+        } else {
+            /* Otherwise, try to allocate repeatedly. */
+            R_TRY(DoContinuouslyUntilBufferIsAllocated(AllocateBufferImpl, func_name));
+        }
+
+        AMS_ASSERT(out->first != 0);
+        return ResultSuccess();
+    }
+
 }

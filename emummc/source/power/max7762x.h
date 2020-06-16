@@ -24,16 +24,16 @@
 * Switch Power domains (max77620):
 * Name  | Usage         | uV step | uV min | uV default | uV max  | Init
 *-------+---------------+---------+--------+------------+---------+------------------
-*  sd0  | core          | 12500   | 600000 |  625000    | 1400000 | 1.125V (pkg1.1)
+*  sd0  | SoC           | 12500   | 600000 |  625000    | 1400000 | 1.125V (pkg1.1)
 *  sd1  | SDRAM         | 12500   | 600000 | 1125000    | 1125000 | 1.1V   (pkg1.1)
 *  sd2  | ldo{0-1, 7-8} | 12500   | 600000 | 1325000    | 1350000 | 1.325V (pcv)
 *  sd3  | 1.8V general  | 12500   | 600000 | 1800000    | 1800000 |
 *  ldo0 | Display Panel | 25000   | 800000 | 1200000    | 1200000 | 1.2V   (pkg1.1)
 *  ldo1 | XUSB, PCIE    | 25000   | 800000 | 1050000    | 1050000 | 1.05V  (pcv)
 *  ldo2 | SDMMC1        | 50000   | 800000 | 1800000    | 3300000 |
-*  ldo3 | GC ASIC       | 50000   | 800000 | 3100000    | 3100000 | 3.1V  (pcv)
+*  ldo3 | GC ASIC       | 50000   | 800000 | 3100000    | 3100000 | 3.1V   (pcv)
 *  ldo4 | RTC           | 12500   | 800000 |  850000    |  850000 |
-*  ldo5 | GC ASIC       | 50000   | 800000 | 1800000    | 1800000 | 1.8V  (pcv)
+*  ldo5 | GC ASIC       | 50000   | 800000 | 1800000    | 1800000 | 1.8V   (pcv)
 *  ldo6 | Touch, ALS    | 50000   | 800000 | 2900000    | 2900000 | 2.9V
 *  ldo7 | XUSB          | 50000   | 800000 | 1050000    | 1050000 |
 *  ldo8 | XUSB, DC      | 50000   | 800000 | 1050000    | 1050000 |
@@ -71,6 +71,8 @@
 /* MAX77621_VOUT */
 #define MAX77621_VOUT_ENABLE  (1 << 7)
 #define MAX77621_VOUT_MASK    0x7F
+#define  MAX77621_VOUT_0_95V  0x37
+#define  MAX77621_VOUT_1_09V  0x4F
 
 /* MAX77621_VOUT_DVC_DVS */
 #define MAX77621_DVS_VOUT_MASK 0x7F
@@ -111,6 +113,5 @@ int max77620_regulator_set_voltage(u32 id, u32 mv);
 int max77620_regulator_enable(u32 id, int enable);
 int max77620_regulator_set_volt_and_flags(u32 id, u32 mv, u8 flags);
 void max77620_config_default();
-void max77620_low_battery_monitor_config();
 
 #endif

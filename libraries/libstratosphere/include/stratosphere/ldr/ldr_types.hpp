@@ -35,7 +35,7 @@ namespace ams::ldr {
         u32 aci_fah_size;
         u8 ac_buffer[0x3E0];
     };
-    static_assert(std::is_pod<ProgramInfo>::value && sizeof(ProgramInfo) == 0x400, "ProgramInfo definition!");
+    static_assert(util::is_pod<ProgramInfo>::value && sizeof(ProgramInfo) == 0x400, "ProgramInfo definition!");
 
     enum ProgramInfoFlag {
         ProgramInfoFlag_SystemModule        = (0 << 0),
@@ -71,7 +71,7 @@ namespace ams::ldr {
     inline bool operator!=(const PinId &lhs, const PinId &rhs) {
         return lhs.value != rhs.value;
     }
-    static_assert(sizeof(PinId) == sizeof(u64) && std::is_pod<PinId>::value, "PinId definition!");
+    static_assert(sizeof(PinId) == sizeof(u64) && util::is_pod<PinId>::value, "PinId definition!");
 
     /* Import ModuleInfo from libnx. */
     using ModuleInfo = ::LoaderModuleInfo;
@@ -142,7 +142,7 @@ namespace ams::ldr {
             };
         };
     };
-    static_assert(sizeof(NsoHeader) == 0x100 && std::is_pod<NsoHeader>::value, "NsoHeader definition!");
+    static_assert(sizeof(NsoHeader) == 0x100 && util::is_pod<NsoHeader>::value, "NsoHeader definition!");
 
     /* NPDM types. */
     struct Aci {
@@ -160,7 +160,7 @@ namespace ams::ldr {
         u32 kac_size;
         u8  reserved_38[0x8];
     };
-    static_assert(sizeof(Aci) == 0x40 && std::is_pod<Aci>::value, "Aci definition!");
+    static_assert(sizeof(Aci) == 0x40 && util::is_pod<Aci>::value, "Aci definition!");
 
     struct Acid {
         static constexpr u32 Magic = util::FourCC<'A','C','I','D'>::Code;
@@ -199,7 +199,7 @@ namespace ams::ldr {
         u32 kac_size;
         u8  reserved_238[0x8];
     };
-    static_assert(sizeof(Acid) == 0x240 && std::is_pod<Acid>::value, "Acid definition!");
+    static_assert(sizeof(Acid) == 0x240 && util::is_pod<Acid>::value, "Acid definition!");
 
     struct Npdm {
         static constexpr u32 Magic = util::FourCC<'M','E','T','A'>::Code;
@@ -239,6 +239,6 @@ namespace ams::ldr {
         u32 acid_offset;
         u32 acid_size;
     };
-    static_assert(sizeof(Npdm) == 0x80 && std::is_pod<Npdm>::value, "Npdm definition!");
+    static_assert(sizeof(Npdm) == 0x80 && util::is_pod<Npdm>::value, "Npdm definition!");
 
 }

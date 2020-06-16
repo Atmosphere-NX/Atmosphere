@@ -1,29 +1,30 @@
 # Atmosphère
-Atmosphère is a work-in-progress customized firmware for the Nintendo Switch. Atmosphère consists of several different components, each in charge of performing different system functions of the Nintendo Switch.
+Atmosphère is a work-in-progress customized firmware for the Nintendo Switch. Its design principle consists of a multi-layered approach where each layer replaces/modifies a different component of the Nintendo Switch's system.
 
-The components of Atmosphère are:
-+ [Fusée](../docs/components/fusee/fusee.md), a custom bootloader.
-+ [Exosphère](../docs/components/exosphere.md), a fully-featured custom secure monitor.
-+ [Stratosphère](../docs/components/stratosphere.md), a set of custom system modules.
-+ [Thermosphère](../docs/components/thermosphere.md), a hypervisor-based emuNAND implementation. This component has not been implemented yet.
-+ [Troposphère](../docs/components/troposphere.md), Application-level patches to the Horizon OS. This component has also not been implemented yet.
+## Components
+Atmosphère provides six core components, mimicking to some degree the various layers of the Earth's atmosphere:
++ [fusée](components/fusee.md)
++ [exosphère](components/exosphere.md)
++ [thermosphère](components/thermosphere.md)
++ [mesosphère](components/mesosphere.md)
++ [stratosphère](components/stratosphere.md)
++ [troposphère](components/troposphere.md)
 
-### Modules
-The Stratosphère component of Atmosphère contains various modules. These have a `.kip` extension. They provide custom features, extend existing features, or replace Nintendo sysmodules.
+Additionally, Atmosphère also provides the following secondary components:
++ [emummc](components/emummc.md)
++ [sept](components/sept.md)
++ [libraries](components/libraries.md)
 
-Stratosphère's modules include:
-+ [boot](../docs/modules/boot.md)
-+ [creport](../docs/modules/creport.md)
-+ [fs_mitm](../docs/modules/fs_mitm.md)
-+ [loader](../docs/modules/loader.md)
-+ [pm](../docs/modules/pm.md)
-+ [sm](../docs/modules/sm.md)
+## Features
+Atmosphère provides several original features which add or expand functionalities for the customized firmware environment:
++ [Cheats](features/cheats.md)
++ [Configurations](features/configurations.md)
 
-### Building Atmosphère
-A guide to building Atmosphère can be found [here](../docs/building.md).
+## Building Atmosphère
+A guide to building Atmosphère can be found [here](building.md).
 
-### Upcoming Features
-A list of planned features for Atmosphère can be found [here](../docs/roadmap.md).
+## Upcoming Features
+A list of planned features for Atmosphère can be found [here](roadmap.md).
 
-### Release History
-A changelog of previous versions of Atmosphère can be found [here](../docs/changelog.md).
+## Release History
+A changelog of previous versions of Atmosphère can be found [here](changelog.md).

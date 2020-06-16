@@ -42,8 +42,19 @@ namespace ams::fs {
 
         template<typename T>
         std::unique_ptr<T, Deleter> MakeUnique() {
-            static_assert(std::is_pod<T>::value);
+            static_assert(util::is_pod<T>::value);
             return std::unique_ptr<T, Deleter>(static_cast<T *>(::ams::fs::impl::Allocate(sizeof(T))), Deleter(sizeof(T)));
+        }
+
+        template<typename ArrayT>
+        std::unique_ptr<ArrayT, Deleter> MakeUnique(size_t size) {
+            using T = typename std::remove_extent<ArrayT>::type;
+
+            static_assert(util::is_pod<ArrayT>::value);
+            static_assert(std::is_array<ArrayT>::value);
+
+            const size_t alloc_size = sizeof(T) * size;
+            return std::unique_ptr<ArrayT, Deleter>(static_cast<T *>(::ams::fs::impl::Allocate(alloc_size)), Deleter(alloc_size));
         }
 
     }

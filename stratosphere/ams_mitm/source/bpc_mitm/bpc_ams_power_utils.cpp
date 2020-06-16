@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "bpc_ams_power_utils.hpp"
 #include "../amsmitm_fs_utils.hpp"
 
@@ -97,7 +98,7 @@ namespace ams::mitm::bpc {
         DoRebootToPayload(ctx);
     }
 
-    void SetInitialRebootPayload(const void *payload, size_t payload_size) {
+    void SetRebootPayload(const void *payload, size_t payload_size) {
         /* Clear payload buffer */
         std::memset(g_reboot_payload, 0xCC, sizeof(g_reboot_payload));
 
@@ -107,9 +108,8 @@ namespace ams::mitm::bpc {
         /* Copy in payload. */
         std::memcpy(g_reboot_payload, payload, payload_size);
 
-        /* NOTE: Preferred reboot type will be parsed from settings later on. */
+        /* NOTE: Preferred reboot type may be overrwritten when parsed from settings during boot. */
         g_reboot_type = RebootType::ToPayload;
-
     }
 
     Result LoadRebootPayload() {

@@ -18,8 +18,10 @@
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
 
+#include <vapours/util/util_type_traits.hpp>
 #include <vapours/util/util_alignment.hpp>
 #include <vapours/util/util_size.hpp>
+#include <vapours/util/util_aligned_buffer.hpp>
 #include <vapours/util/util_endian.hpp>
 #include <vapours/util/util_scope_guard.hpp>
 #include <vapours/util/util_specialization_of.hpp>
@@ -34,4 +36,6 @@
 #include <vapours/util/util_tinymt.hpp>
 #include <vapours/util/util_uuid.hpp>
 #include <vapours/util/util_bounded_map.hpp>
+#include <vapours/util/util_overlap.hpp>
 #include <vapours/util/util_string_util.hpp>
+#include <vapours/util/util_variadic.hpp>

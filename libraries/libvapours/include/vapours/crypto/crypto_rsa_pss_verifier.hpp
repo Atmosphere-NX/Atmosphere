@@ -23,7 +23,7 @@
 
 namespace ams::crypto {
 
-    template<size_t _ModulusSize, typename Hash> /* requires HashFunction<Hash> */
+    template<size_t _ModulusSize, typename Hash> requires impl::HashFunction<Hash>
     class RsaPssVerifier {
         NON_COPYABLE(RsaPssVerifier);
         NON_MOVEABLE(RsaPssVerifier);

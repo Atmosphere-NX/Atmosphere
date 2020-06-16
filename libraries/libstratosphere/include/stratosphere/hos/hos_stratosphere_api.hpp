@@ -20,5 +20,6 @@
 namespace ams::hos {
 
     void InitializeForStratosphere();
+    void InitializeForStratosphereDebug(hos::Version debug_version);
 
 }

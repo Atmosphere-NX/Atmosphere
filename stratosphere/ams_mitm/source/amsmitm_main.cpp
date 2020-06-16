@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "amsmitm_initialization.hpp"
 #include "amsmitm_module_management.hpp"
 #include "bpc_mitm/bpc_ams_power_utils.hpp"
@@ -80,7 +81,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(fsInitialize());
         R_ABORT_UNLESS(pmdmntInitialize());
         R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(splFsInitialize());
+        spl::InitializeForFs();
     });
 
     ams::CheckApiVersion();
@@ -88,7 +89,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
-    splFsExit();
+    spl::Finalize();
     pminfoExit();
     pmdmntExit();
     fsExit();

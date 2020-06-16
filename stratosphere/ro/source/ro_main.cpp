@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "ro_debug_monitor.hpp"
 #include "ro_service.hpp"
 
@@ -63,7 +64,7 @@ void __appInit(void) {
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(setsysInitialize());
         R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(splInitialize());
+        spl::Initialize();
         if (hos::GetVersion() < hos::Version_3_0_0) {
             R_ABORT_UNLESS(pminfoInitialize());
         }
@@ -79,6 +80,7 @@ void __appExit(void) {
     if (hos::GetVersion() < hos::Version_3_0_0) {
         pminfoExit();
     }
+
     setsysExit();
 }
 
@@ -113,9 +115,9 @@ int main(int argc, char **argv)
 
     /* Initialize Debug config. */
     {
-        ON_SCOPE_EXIT { splExit(); };
+        ON_SCOPE_EXIT { spl::Finalize(); };
 
-        ro::SetDevelopmentHardware(spl::IsDevelopmentHardware());
+        ro::SetDevelopmentHardware(spl::IsDevelopment());
         ro::SetDevelopmentFunctionEnabled(spl::IsDevelopmentFunctionEnabled());
     }
 

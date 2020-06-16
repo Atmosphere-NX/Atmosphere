@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_SE_H
 #define FUSEE_SE_H
 
@@ -26,8 +26,8 @@
 #define KEYSLOT_SWITCH_TEMPKEY 0x9
 #define KEYSLOT_SWITCH_SESSIONKEY 0xA
 #define KEYSLOT_SWITCH_RNGKEY 0xB
-#define KEYSLOT_SWITCH_MASTERKEY 0xC
-#define KEYSLOT_SWITCH_DEVICEKEY 0xD
+#define KEYSLOT_SWITCH_MASTERKEY 0xD
+#define KEYSLOT_SWITCH_DEVICEKEY 0xC
 
 /* This keyslot was added in 4.0.0. */
 #define KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY 0xD
@@ -182,8 +182,8 @@ void set_aes_keyslot_iv(unsigned int keyslot, const void *iv, size_t iv_size);
 void set_se_ctr(const void *ctr);
 
 /* Secure AES API */
-void se_aes_128_xts_nintendo_decrypt(unsigned int keyslot_1, unsigned int keyslot_2, unsigned int base_sector, void *dst, const void *src, size_t size, unsigned int sector_size);
-void se_aes_128_xts_nintendo_encrypt(unsigned int keyslot_1, unsigned int keyslot_2, unsigned int base_sector, void *dst, const void *src, size_t size, unsigned int sector_size);
+void se_aes_128_xts_nintendo_decrypt(unsigned int keyslot_1, unsigned int keyslot_2, unsigned int base_sector, void *dst, const void *src, size_t size, unsigned int sector_size, unsigned int crypto_sector_size);
+void se_aes_128_xts_nintendo_encrypt(unsigned int keyslot_1, unsigned int keyslot_2, unsigned int base_sector, void *dst, const void *src, size_t size, unsigned int sector_size, unsigned int crypto_sector_size);
 void se_compute_aes_128_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
 void se_compute_aes_256_cmac(unsigned int keyslot, void *cmac, size_t cmac_size, const void *data, size_t data_size);
 void se_aes_128_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);

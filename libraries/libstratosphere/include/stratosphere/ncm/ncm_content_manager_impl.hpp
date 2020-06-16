@@ -65,7 +65,7 @@ namespace ams::ncm {
         u32 flags;
         fs::SaveDataSpaceId space_id;
     };
-    static_assert(std::is_pod<SystemSaveDataInfo>::value);
+    static_assert(util::is_pod<SystemSaveDataInfo>::value);
 
     class ContentManagerImpl final : public IContentManager {
         private:

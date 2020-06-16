@@ -64,7 +64,7 @@ namespace ams::pgl {
         constexpr sm::ServiceName ShellServiceName = sm::ServiceName::Encode("pgl");
         constexpr size_t          ShellMaxSessions = 8; /* Official maximum is 8. */
 
-        /* TODO: C++20 constinit */ pgl::srv::ShellInterface g_shell_interface;
+        constinit pgl::srv::ShellInterface g_shell_interface;
 
         ALWAYS_INLINE std::shared_ptr<pgl::srv::ShellInterface> GetSharedPointerToShellInterface() {
             return ams::sf::ServiceObjectTraits<pgl::srv::ShellInterface>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_shell_interface));

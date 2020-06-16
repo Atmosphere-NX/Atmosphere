@@ -35,7 +35,7 @@ namespace ams::fssystem {
                 Position next_dir;
                 Position next_file;
             };
-            static_assert(std::is_pod<FindPosition>::value);
+            static_assert(util::is_pod<FindPosition>::value);
 
             using DirectoryInfo = RomDirectoryInfo;
             using FileInfo      = RomFileInfo;
@@ -63,13 +63,13 @@ namespace ams::fssystem {
                 Position dir;
                 Position file;
             };
-            static_assert(std::is_pod<RomDirectoryEntry>::value);
+            static_assert(util::is_pod<RomDirectoryEntry>::value);
 
             struct RomFileEntry {
                 Position next;
                 FileInfo info;
             };
-            static_assert(std::is_pod<RomFileEntry>::value);
+            static_assert(util::is_pod<RomFileEntry>::value);
 
             static constexpr inline u32 MaxKeyLength = RomPathTool::MaxPathLength;
 
@@ -115,7 +115,7 @@ namespace ams::fssystem {
                     return RomPathTool::IsEqualPath(reinterpret_cast<const RomPathChar *>(aux_lhs), reinterpret_cast<const RomPathChar *>(aux_rhs), aux_lhs_size / sizeof(RomPathChar));
                 }
             };
-            static_assert(std::is_pod<RomEntryKey>::value);
+            static_assert(util::is_pod<RomEntryKey>::value);
 
             struct EntryKey {
                 RomEntryKey key;
@@ -132,7 +132,7 @@ namespace ams::fssystem {
                     return hash;
                 }
             };
-            static_assert(std::is_pod<EntryKey>::value);
+            static_assert(util::is_pod<EntryKey>::value);
 
             using DirectoryEntryMapTable = EntryMapTable<DirectoryBucketStorage, DirectoryEntryStorage, RomEntryKey, EntryKey, RomDirectoryEntry>;
             using FileEntryMapTable      = EntryMapTable<FileBucketStorage, FileEntryStorage, RomEntryKey, EntryKey, RomFileEntry>;

@@ -142,7 +142,7 @@ namespace ams::crypto::impl {
                 u64 _block[IvSize / sizeof(u64)] = {};
                 util::StoreBigEndian(std::addressof(_block[(IvSize / sizeof(u64)) - 1]), count);
 
-                u16 acc;
+                u16 acc = 0;
                 const u8 *block = reinterpret_cast<const u8 *>(_block);
                 for (s32 i = IvSize - 1; i >= 0; --i) {
                     acc += (this->counter[i] + block[i]);

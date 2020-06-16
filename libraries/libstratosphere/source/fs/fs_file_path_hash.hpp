@@ -23,7 +23,7 @@ namespace ams::fs::impl {
     struct FilePathHash : public Newable {
         u8 data[FilePathHashSize];
     };
-    static_assert(std::is_pod<FilePathHash>::value);
+    static_assert(util::is_pod<FilePathHash>::value);
 
     inline bool operator==(const FilePathHash &lhs, const FilePathHash &rhs) {
         return std::memcmp(lhs.data, rhs.data, FilePathHashSize) == 0;

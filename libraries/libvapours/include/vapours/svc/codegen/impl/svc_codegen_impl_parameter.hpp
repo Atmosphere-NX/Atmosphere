@@ -27,7 +27,7 @@ namespace ams::svc::codegen::impl {
     class Location {
         private:
             static constexpr size_t InvalidIndex = std::numeric_limits<size_t>::max();
-        private:
+        public:
             Storage storage;
             size_t index;
         public:
@@ -75,7 +75,7 @@ namespace ams::svc::codegen::impl {
             static constexpr size_t MaxLocations = 8;
             static constexpr size_t IdentifierLengthMax = 0x40;
             class Identifier {
-                private:
+                public:
                     char name[IdentifierLengthMax];
                     size_t index;
                 public:
@@ -99,7 +99,7 @@ namespace ams::svc::codegen::impl {
                         return !(*this == rhs);
                     }
             };
-        private:
+        public:
             Identifier identifier;
             ArgumentType type;
             size_t type_size;

@@ -37,7 +37,7 @@ namespace ams::fssystem {
                 BucketIndex ind;
                 Position pos;
             };
-            static_assert(std::is_pod<FindIndex>::value);
+            static_assert(util::is_pod<FindIndex>::value);
         private:
             static constexpr inline Position InvalidPosition = ~Position();
 
@@ -47,7 +47,7 @@ namespace ams::fssystem {
                 Position next;
                 u32 size;
             };
-            static_assert(std::is_pod<Element>::value);
+            static_assert(util::is_pod<Element>::value);
         private:
             s64 bucket_offset;
             u32 bucket_count;

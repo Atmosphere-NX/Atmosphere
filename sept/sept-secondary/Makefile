@@ -77,7 +77,7 @@ export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere/rebootstub \
+			$(AMS)/exosphere/program/rebootstub \
 			$(TOPDIR)/key_derivation
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
@@ -118,7 +118,7 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 all: check_rebootstub check_key_derivation $(BUILD)
 
 check_rebootstub:
-	@$(MAKE) -C $(AMS)/exosphere/rebootstub all
+	@$(MAKE) -C $(AMS)/exosphere/program/rebootstub all
 
 check_key_derivation:
 	@$(MAKE) -C key_derivation
@@ -138,7 +138,7 @@ endif
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(AMS)/exosphere/rebootstub clean
+	@$(MAKE) -C $(AMS)/exosphere/program/rebootstub clean
 	@$(MAKE) -C key_derivation clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET)_*.enc $(TARGET).elf
 

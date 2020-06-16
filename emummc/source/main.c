@@ -33,19 +33,22 @@
 void __init();
 void __initheap(void);
 void setup_hooks(void);
-void setup_nintendo_paths(void);
 void __libc_init_array(void);
+void setup_nintendo_paths(void);
 void hook_function(uintptr_t source, uintptr_t target);
 
 void *__stack_top;
 uintptr_t text_base;
+size_t fs_code_size;
+u8 *fs_rw_mapping = NULL;
+Handle self_proc_handle = 0;
 char inner_heap[INNER_HEAP_SIZE];
 size_t inner_heap_size = INNER_HEAP_SIZE;
+
 extern char _start;
 extern char __argdata__;
 
 // Nintendo Path
-// TODO
 static char nintendo_path[0x80] = "Nintendo";
 
 // 1.0.0 requires special path handling because it has separate album and contents paths.
@@ -60,6 +63,7 @@ static const fs_offsets_t *fs_offsets;
 // Defined by linkerscript
 #define INJECTED_SIZE ((uintptr_t)&__argdata__ - (uintptr_t)&_start)
 #define INJECT_OFFSET(type, offset) (type)(text_base + INJECTED_SIZE + offset)
+#define FS_CODE_BASE INJECT_OFFSET(uintptr_t, 0)
 
 #define GENERATE_ADD(register, register_target, value) (0x91000000 | value << 10 | register << 5 | register_target)
 #define GENERATE_ADRP(register, page_addr) (0x90000000 | ((((page_addr) >> 12) & 0x3) << 29) | ((((page_addr) >> 12) & 0x1FFFFC) << 3) | ((register) & 0x1F))
@@ -148,15 +152,117 @@ void __initheap(void)
     fake_heap_end = (char *)addr + size;
 }
 
+static void _receive_process_handle_thread(void *_session_handle) {
+    Result rc;
+
+    // Convert the argument to a handle we can use.
+    Handle session_handle = (Handle)(uintptr_t)_session_handle;
+
+    // Receive the request from the client thread.
+    memset(armGetTls(), 0, 0x10);
+    s32 idx = 0;
+    rc = svcReplyAndReceive(&idx, &session_handle, 1, INVALID_HANDLE, UINT64_MAX);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    // Set the process handle.
+    self_proc_handle = ((u32 *)armGetTls())[3];
+
+    // Close the session.
+    svcCloseHandle(session_handle);
+
+    // Terminate ourselves.
+    svcExitThread();
+
+    // This code will never execute.
+    while (true);
+}
+
+static void _init_process_handle(void) {
+    Result rc;
+    u8 temp_thread_stack[0x1000];
+
+    // Create a new session to transfer our process handle to ourself
+    Handle server_handle, client_handle;
+    rc = svcCreateSession(&server_handle, &client_handle, 0, 0);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    // Create a new thread to receive our handle.
+    Handle thread_handle;
+    rc = svcCreateThread(&thread_handle, _receive_process_handle_thread, (void *)(uintptr_t)server_handle, temp_thread_stack + sizeof(temp_thread_stack), 0x20, 3);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    // Start the new thread.
+    rc = svcStartThread(thread_handle);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    // Send the message.
+    static const u32 SendProcessHandleMessage[4] = { 0x00000000, 0x80000000, 0x00000002, CUR_PROCESS_HANDLE };
+    memcpy(armGetTls(), SendProcessHandleMessage, sizeof(SendProcessHandleMessage));
+    svcSendSyncRequest(client_handle);
+
+    // Close the session handle.
+    svcCloseHandle(client_handle);
+
+    // Wait for the thread to be done.
+    rc = svcWaitSynchronizationSingle(thread_handle, UINT64_MAX);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    // Close the thread handle.
+    svcCloseHandle(thread_handle);
+}
+
+static void _map_fs_rw(void) {
+    Result rc;
+
+    do {
+        fs_rw_mapping = (u8 *)(smcGenerateRandomU64() & 0xFFFFFF000ull);
+        rc = svcMapProcessMemory(fs_rw_mapping, self_proc_handle, FS_CODE_BASE, fs_code_size);
+    } while (rc == 0xDC01 || rc == 0xD401);
+
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+}
+
+static void _unmap_fs_rw(void) {
+    Result rc = svcUnmapProcessMemory(fs_rw_mapping, self_proc_handle, FS_CODE_BASE, fs_code_size);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+
+    fs_rw_mapping = NULL;
+}
+
+static void _write32(uintptr_t source, u32 value) {
+    *((u32 *)(fs_rw_mapping + (source - FS_CODE_BASE))) = value;
+}
+
 void hook_function(uintptr_t source, uintptr_t target)
 {
     u32 branch_opcode = GENERATE_BRANCH(source, target);
-    smcWriteAddress32((void *)source, branch_opcode);
+    _write32(source, branch_opcode);
 }
 
 void write_nop(uintptr_t source)
 {
-    smcWriteAddress32((void *)source, GENERATE_NOP());
+    _write32(source, GENERATE_NOP());
 }
 
 void write_adrp_add(int reg, uintptr_t pc, uintptr_t add_rel_offset, intptr_t destination)
@@ -167,8 +273,8 @@ void write_adrp_add(int reg, uintptr_t pc, uintptr_t add_rel_offset, intptr_t de
     uint32_t opcode_adrp = GENERATE_ADRP(reg, offset);
     uint32_t opcode_add = GENERATE_ADD(reg, reg, (destination & 0x00000FFF));
 
-    smcWriteAddress32((void *)pc, opcode_adrp);
-    smcWriteAddress32((void *)add_opcode_location, opcode_add);
+    _write32(pc, opcode_adrp);
+    _write32(add_opcode_location, opcode_add);
 }
 
 void setup_hooks(void)
@@ -306,14 +412,21 @@ void __init()
 
     text_base = meminfo.addr;
 
+    // Get code size
+    svcQueryMemory(&meminfo, &pageinfo, FS_CODE_BASE);
+    fs_code_size = meminfo.size;
+
     load_emummc_ctx();
 
     fs_offsets = get_fs_offsets(emuMMC_ctx.fs_ver);
 
+    _init_process_handle();
+    _map_fs_rw();
     setup_hooks();
     populate_function_pointers();
     write_nops();
     setup_nintendo_paths();
+    _unmap_fs_rw();
 
     clock_enable_i2c5();
     i2c_init();

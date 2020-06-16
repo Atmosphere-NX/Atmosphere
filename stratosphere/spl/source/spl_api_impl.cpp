@@ -13,9 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "spl_api_impl.hpp"
-
 #include "spl_ctr_drbg.hpp"
+#include "spl_key_slot_cache.hpp"
 
 namespace ams::spl::impl {
 
@@ -34,21 +35,161 @@ namespace ams::spl::impl {
 
         constexpr size_t WorkBufferSizeMax = 0x800;
 
-        constexpr size_t MaxAesKeyslots = 6;
-        constexpr size_t MaxAesKeyslotsDeprecated = 4;
+        constexpr s32 MaxPhysicalAesKeyslots = 6;
+        constexpr s32 MaxPhysicalAesKeyslotsDeprecated = 4;
 
-        /* Max Keyslots helper. */
-        inline size_t GetMaxKeyslots() {
-            return (hos::GetVersion() >= hos::Version_6_0_0) ? MaxAesKeyslots : MaxAesKeyslotsDeprecated;
+        constexpr s32 MaxVirtualAesKeyslots = 9;
+
+        /* Keyslot management. */
+        KeySlotCache g_keyslot_cache;
+        std::optional<KeySlotCacheEntry> g_keyslot_cache_entry[MaxPhysicalAesKeyslots];
+
+        inline s32 GetMaxPhysicalKeyslots() {
+            return (hos::GetVersion() >= hos::Version_6_0_0) ? MaxPhysicalAesKeyslots : MaxPhysicalAesKeyslotsDeprecated;
+        }
+
+        constexpr s32 VirtualKeySlotMin = 16;
+        constexpr s32 VirtualKeySlotMax = VirtualKeySlotMin + MaxVirtualAesKeyslots - 1;
+
+        constexpr inline bool IsVirtualKeySlot(s32 keyslot) {
+            return VirtualKeySlotMin <= keyslot && keyslot <= VirtualKeySlotMax;
+        }
+
+        inline bool IsPhysicalKeySlot(s32 keyslot) {
+            return keyslot < GetMaxPhysicalKeyslots();
+        }
+
+        constexpr inline s32 GetVirtualKeySlotIndex(s32 keyslot) {
+            AMS_ASSERT(IsVirtualKeySlot(keyslot));
+            return keyslot - VirtualKeySlotMin;
+        }
+
+        constexpr inline s32 MakeVirtualKeySlot(s32 index) {
+            const s32 virt_slot = index + VirtualKeySlotMin;
+            AMS_ASSERT(IsVirtualKeySlot(virt_slot));
+            return virt_slot;
+        }
+
+        void InitializeKeySlotCache() {
+            for (s32 i = 0; i < MaxPhysicalAesKeyslots; i++) {
+                g_keyslot_cache_entry[i].emplace(i);
+                g_keyslot_cache.AddEntry(std::addressof(g_keyslot_cache_entry[i].value()));
+            }
+        }
+
+        enum class KeySlotContentType {
+            None      = 0,
+            AesKey    = 1,
+            TitleKey  = 2,
+        };
+
+        struct KeySlotContents {
+            KeySlotContentType type;
+            union {
+                struct {
+                    AccessKey access_key;
+                    KeySource key_source;
+                } aes_key;
+                struct {
+                    AccessKey access_key;
+                } title_key;
+            };
+        };
+
+        const void *g_keyslot_owners[MaxVirtualAesKeyslots];
+        KeySlotContents g_keyslot_contents[MaxVirtualAesKeyslots];
+        KeySlotContents g_physical_keyslot_contents_for_backwards_compatibility[MaxPhysicalAesKeyslots];
+
+        void ClearPhysicalKeyslot(s32 keyslot) {
+            AMS_ASSERT(IsPhysicalKeySlot(keyslot));
+
+            AccessKey access_key = {};
+            KeySource key_source = {};
+            smc::LoadAesKey(keyslot, access_key, key_source);
+        }
+
+        s32 GetPhysicalKeySlot(s32 keyslot, bool load) {
+            s32 phys_slot = -1;
+            KeySlotContents *contents = nullptr;
+
+            if (hos::GetVersion() == hos::Version_1_0_0 && IsPhysicalKeySlot(keyslot)) {
+                /* On 1.0.0, we allow the use of physical keyslots. */
+                phys_slot = keyslot;
+                contents = std::addressof(g_physical_keyslot_contents_for_backwards_compatibility[phys_slot]);
+
+                /* If the physical slot is already loaded, we're good. */
+                if (g_keyslot_cache.FindPhysical(phys_slot)) {
+                    return phys_slot;
+                }
+            } else {
+                /* This should be a virtual keyslot. */
+                AMS_ASSERT(IsVirtualKeySlot(keyslot));
+
+                /* Try to find a physical slot in the cache. */
+                if (g_keyslot_cache.Find(std::addressof(phys_slot), keyslot)) {
+                    return phys_slot;
+                }
+
+                /* Allocate a physical slot. */
+                phys_slot = g_keyslot_cache.Allocate(keyslot);
+                contents = std::addressof(g_keyslot_contents[GetVirtualKeySlotIndex(keyslot)]);
+            }
+
+            /* Ensure the contents of the keyslot. */
+            if (load) {
+                switch (contents->type) {
+                    case KeySlotContentType::None:
+                        ClearPhysicalKeyslot(phys_slot);
+                        break;
+                    case KeySlotContentType::AesKey:
+                        R_ABORT_UNLESS(smc::ConvertResult(smc::LoadAesKey(phys_slot, contents->aes_key.access_key, contents->aes_key.key_source)));
+                        break;
+                    case KeySlotContentType::TitleKey:
+                        R_ABORT_UNLESS(smc::ConvertResult(smc::LoadTitleKey(phys_slot, contents->title_key.access_key)));
+                        break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
+
+            return phys_slot;
+        }
+
+        Result LoadVirtualAesKey(s32 keyslot, const AccessKey &access_key, const KeySource &key_source) {
+            /* Ensure we can load into the slot. */
+            const s32 phys_slot = GetPhysicalKeySlot(keyslot, false);
+            R_TRY(smc::ConvertResult(smc::LoadAesKey(phys_slot, access_key, key_source)));
+
+            /* Update our contents. */
+            const s32 index = GetVirtualKeySlotIndex(keyslot);
+
+            g_keyslot_contents[index].type               = KeySlotContentType::AesKey;
+            g_keyslot_contents[index].aes_key.access_key = access_key;
+            g_keyslot_contents[index].aes_key.key_source = key_source;
+
+            return ResultSuccess();
+        }
+
+        Result LoadVirtualTitleKey(s32 keyslot, const AccessKey &access_key) {
+            /* Ensure we can load into the slot. */
+            const s32 phys_slot = GetPhysicalKeySlot(keyslot, false);
+            R_TRY(smc::ConvertResult(smc::LoadTitleKey(phys_slot, access_key)));
+
+            /* Update our contents. */
+            const s32 index = GetVirtualKeySlotIndex(keyslot);
+
+            g_keyslot_contents[index].type                 = KeySlotContentType::TitleKey;
+            g_keyslot_contents[index].title_key.access_key = access_key;
+
+            return ResultSuccess();
         }
 
         /* Type definitions. */
         class ScopedAesKeyslot {
             private:
-                u32 slot;
+                s32 slot;
                 bool has_slot;
             public:
-                ScopedAesKeyslot() : slot(0), has_slot(false) {
+                ScopedAesKeyslot() : slot(-1), has_slot(false) {
                     /* ... */
                 }
                 ~ScopedAesKeyslot() {
@@ -57,7 +198,7 @@ namespace ams::spl::impl {
                     }
                 }
 
-                u32 GetKeyslot() const {
+                u32 GetKeySlot() const {
                     return this->slot;
                 }
 
@@ -106,7 +247,6 @@ namespace ams::spl::impl {
 
         os::Mutex g_async_op_lock(false);
 
-        const void *g_keyslot_owners[MaxAesKeyslots];
         BootReasonValue g_boot_reason;
         bool g_boot_reason_set;
 
@@ -201,14 +341,21 @@ namespace ams::spl::impl {
         }
 
         /* Internal Keyslot utility. */
-        Result ValidateAesKeyslot(u32 keyslot, const void *owner) {
-            R_UNLESS(keyslot < GetMaxKeyslots(), spl::ResultInvalidKeyslot());
-            R_UNLESS((g_keyslot_owners[keyslot] == owner || hos::GetVersion() == hos::Version_1_0_0), spl::ResultInvalidKeyslot());
+        Result ValidateAesKeyslot(s32 keyslot, const void *owner) {
+            /* Allow the use of physical keyslots on 1.0.0. */
+            if (hos::GetVersion() == hos::Version_1_0_0) {
+                R_SUCCEED_IF(IsPhysicalKeySlot(keyslot));
+            }
+
+            R_UNLESS(IsVirtualKeySlot(keyslot), spl::ResultInvalidKeyslot());
+
+            const s32 index = GetVirtualKeySlotIndex(keyslot);
+            R_UNLESS(g_keyslot_owners[index] == owner, spl::ResultInvalidKeyslot());
             return ResultSuccess();
         }
 
         /* Helper to do a single AES block decryption. */
-        smc::Result DecryptAesBlock(u32 keyslot, void *dst, const void *src) {
+        smc::Result DecryptAesBlock(s32 keyslot, void *dst, const void *src) {
             struct DecryptAesBlockLayout {
                 SeCryptContext crypt_ctx;
                 u8 in_block[AES_BLOCK_SIZE] __attribute__((aligned(AES_BLOCK_SIZE)));
@@ -230,7 +377,7 @@ namespace ams::spl::impl {
                 std::scoped_lock lk(g_async_op_lock);
                 smc::AsyncOperationKey op_key;
                 const IvCtr iv_ctr = {};
-                const u32 mode = smc::GetCryptAesMode(smc::CipherMode::CbcDecrypt, keyslot);
+                const u32 mode = smc::GetCryptAesMode(smc::CipherMode::CbcDecrypt, GetPhysicalKeySlot(keyslot, true));
                 const u32 dst_ll_addr = g_se_mapped_work_buffer_addr + offsetof(DecryptAesBlockLayout, crypt_ctx.out);
                 const u32 src_ll_addr = g_se_mapped_work_buffer_addr + offsetof(DecryptAesBlockLayout, crypt_ctx.in);
 
@@ -362,6 +509,8 @@ namespace ams::spl::impl {
         InitializeSeEvents();
         /* Initialize DAS for the SE. */
         InitializeDeviceAddressSpace();
+        /* Initialize the keyslot cache. */
+        InitializeKeySlotCache();
     }
 
     /* General. */
@@ -473,14 +622,12 @@ namespace ams::spl::impl {
         return smc::ConvertResult(smc::GenerateAesKek(out_access_key, key_source, generation, option));
     }
 
-    Result LoadAesKey(u32 keyslot, const void *owner, const AccessKey &access_key, const KeySource &key_source) {
+    Result LoadAesKey(s32 keyslot, const void *owner, const AccessKey &access_key, const KeySource &key_source) {
         R_TRY(ValidateAesKeyslot(keyslot, owner));
-        return smc::ConvertResult(smc::LoadAesKey(keyslot, access_key, key_source));
+        return LoadVirtualAesKey(keyslot, access_key, key_source);
     }
 
     Result GenerateAesKey(AesKey *out_key, const AccessKey &access_key, const KeySource &key_source) {
-        smc::Result smc_rc;
-
         static constexpr KeySource s_generate_aes_key_source = {
             .data = {0x89, 0x61, 0x5E, 0xE0, 0x5C, 0x31, 0xB6, 0x80, 0x5F, 0xE5, 0x8F, 0x3D, 0xA2, 0x4F, 0x7A, 0xA8}
         };
@@ -488,12 +635,9 @@ namespace ams::spl::impl {
         ScopedAesKeyslot keyslot_holder;
         R_TRY(keyslot_holder.Allocate());
 
-        smc_rc = smc::LoadAesKey(keyslot_holder.GetKeyslot(), access_key, s_generate_aes_key_source);
-        if (smc_rc == smc::Result::Success) {
-            smc_rc = DecryptAesBlock(keyslot_holder.GetKeyslot(), out_key, &key_source);
-        }
+        R_TRY(LoadVirtualAesKey(keyslot_holder.GetKeySlot(), access_key, s_generate_aes_key_source));
 
-        return smc::ConvertResult(smc_rc);
+        return smc::ConvertResult(DecryptAesBlock(keyslot_holder.GetKeySlot(), out_key, &key_source));
     }
 
     Result DecryptAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 option) {
@@ -507,7 +651,7 @@ namespace ams::spl::impl {
         return GenerateAesKey(out_key, access_key, key_source);
     }
 
-    Result CryptAesCtr(void *dst, size_t dst_size, u32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr) {
+    Result CryptAesCtr(void *dst, size_t dst_size, s32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr) {
         R_TRY(ValidateAesKeyslot(keyslot, owner));
 
         /* Succeed immediately if there's nothing to crypt. */
@@ -554,7 +698,7 @@ namespace ams::spl::impl {
         {
             std::scoped_lock lk(g_async_op_lock);
             smc::AsyncOperationKey op_key;
-            const u32 mode = smc::GetCryptAesMode(smc::CipherMode::Ctr, keyslot);
+            const u32 mode = smc::GetCryptAesMode(smc::CipherMode::Ctr, GetPhysicalKeySlot(keyslot, true));
             const u32 dst_ll_addr = g_se_mapped_work_buffer_addr + offsetof(SeCryptContext, out);
             const u32 src_ll_addr = g_se_mapped_work_buffer_addr + offsetof(SeCryptContext, in);
 
@@ -572,26 +716,22 @@ namespace ams::spl::impl {
         return ResultSuccess();
     }
 
-    Result ComputeCmac(Cmac *out_cmac, u32 keyslot, const void *owner, const void *data, size_t size) {
+    Result ComputeCmac(Cmac *out_cmac, s32 keyslot, const void *owner, const void *data, size_t size) {
         R_TRY(ValidateAesKeyslot(keyslot, owner));
 
         R_UNLESS(size <= WorkBufferSizeMax, spl::ResultInvalidSize());
 
         std::memcpy(g_work_buffer, data, size);
-        return smc::ConvertResult(smc::ComputeCmac(out_cmac, keyslot, g_work_buffer, size));
+        return smc::ConvertResult(smc::ComputeCmac(out_cmac, GetPhysicalKeySlot(keyslot, true), g_work_buffer, size));
     }
 
-    Result AllocateAesKeyslot(u32 *out_keyslot, const void *owner) {
-        if (hos::GetVersion() <= hos::Version_1_0_0) {
-            /* On 1.0.0, keyslots were kind of a wild west. */
-            *out_keyslot = 0;
-            return ResultSuccess();
-        }
-
-        for (size_t i = 0; i < GetMaxKeyslots(); i++) {
-            if (g_keyslot_owners[i] == 0) {
-                g_keyslot_owners[i] = owner;
-                *out_keyslot = static_cast<u32>(i);
+    Result AllocateAesKeyslot(s32 *out_keyslot, const void *owner) {
+        /* Find a virtual keyslot. */
+        for (s32 i = 0; i < MaxVirtualAesKeyslots; i++) {
+            if (g_keyslot_owners[i] == nullptr) {
+                g_keyslot_owners[i]   = owner;
+                g_keyslot_contents[i] = { .type = KeySlotContentType::None };
+                *out_keyslot = MakeVirtualKeySlot(i);
                 return ResultSuccess();
             }
         }
@@ -600,22 +740,24 @@ namespace ams::spl::impl {
         return spl::ResultOutOfKeyslots();
     }
 
-    Result FreeAesKeyslot(u32 keyslot, const void *owner) {
-        if (hos::GetVersion() <= hos::Version_1_0_0) {
-            /* On 1.0.0, keyslots were kind of a wild west. */
-            return ResultSuccess();
-        }
+    Result FreeAesKeyslot(s32 keyslot, const void *owner) {
+        /* Only virtual keyslots can be freed. */
+        R_UNLESS(IsVirtualKeySlot(keyslot), spl::ResultInvalidKeyslot());
 
+        /* Ensure the keyslot is owned. */
         R_TRY(ValidateAesKeyslot(keyslot, owner));
 
-        /* Clear the keyslot. */
-        {
-            AccessKey access_key = {};
-            KeySource key_source = {};
-
-            smc::LoadAesKey(keyslot, access_key, key_source);
+        /* Clear the physical keyslot, if we're cached. */
+        s32 phys_slot;
+        if (g_keyslot_cache.Release(std::addressof(phys_slot), keyslot)) {
+            ClearPhysicalKeyslot(phys_slot);
         }
-        g_keyslot_owners[keyslot] = nullptr;
+
+        /* Clear the virtual keyslot. */
+        const auto index               = GetVirtualKeySlotIndex(keyslot);
+        g_keyslot_owners[index]        = nullptr;
+        g_keyslot_contents[index].type = KeySlotContentType::None;
+
         os::SignalSystemEvent(std::addressof(g_se_keyslot_available_event));
         return ResultSuccess();
     }
@@ -701,7 +843,7 @@ namespace ams::spl::impl {
         return UnwrapEsRsaOaepWrappedKey(out_access_key, base, base_size, mod, mod_size, label_digest, label_digest_size, generation, smc::EsKeyType::ElicenseKey);
     }
 
-    Result LoadElicenseKey(u32 keyslot, const void *owner, const AccessKey &access_key) {
+    Result LoadElicenseKey(s32 keyslot, const void *owner, const AccessKey &access_key) {
         /* Right now, this is just literally the same function as LoadTitleKey in N's impl. */
         return LoadTitleKey(keyslot, owner, access_key);
     }
@@ -730,9 +872,9 @@ namespace ams::spl::impl {
         return smc::ConvertResult(smc::GenerateSpecificAesKey(out_key, key_source, generation, which));
     }
 
-    Result LoadTitleKey(u32 keyslot, const void *owner, const AccessKey &access_key) {
+    Result LoadTitleKey(s32 keyslot, const void *owner, const AccessKey &access_key) {
         R_TRY(ValidateAesKeyslot(keyslot, owner));
-        return smc::ConvertResult(smc::LoadTitleKey(keyslot, access_key));
+        return LoadVirtualTitleKey(keyslot, access_key);
     }
 
     Result GetPackage2Hash(void *dst, const size_t size) {
@@ -783,9 +925,9 @@ namespace ams::spl::impl {
 
     /* Helper. */
     Result FreeAesKeyslots(const void *owner) {
-        for (size_t i = 0; i < GetMaxKeyslots(); i++) {
-            if (g_keyslot_owners[i] == owner) {
-                FreeAesKeyslot(i, owner);
+        for (s32 slot = VirtualKeySlotMin; slot <= VirtualKeySlotMax; ++slot) {
+            if (g_keyslot_owners[GetVirtualKeySlotIndex(slot)] == owner) {
+                FreeAesKeyslot(slot, owner);
             }
         }
         return ResultSuccess();

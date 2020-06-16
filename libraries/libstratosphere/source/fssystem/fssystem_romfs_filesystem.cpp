@@ -37,7 +37,7 @@ namespace ams::fssystem {
                 virtual ~RomFsFile() { /* ... */ }
             public:
                 virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override {
-                    R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=]() -> Result {
+                    R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
                         size_t read_size = 0;
                         R_TRY(this->DryRead(std::addressof(read_size), offset, size, option, fs::OpenMode_Read));
 
@@ -84,7 +84,7 @@ namespace ams::fssystem {
                                     operate_size = this->GetSize() - offset;
                                 }
 
-                                R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=]() -> Result {
+                                R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
                                     R_TRY(this->parent->GetBaseStorage()->OperateRange(dst, dst_size, op_id, this->start + offset, operate_size, src, src_size));
                                     return ResultSuccess();
                                 }, AMS_CURRENT_FUNCTION_NAME));
@@ -113,7 +113,7 @@ namespace ams::fssystem {
                 virtual ~RomFsDirectory() override { /* ... */ }
             public:
                 virtual Result ReadImpl(s64 *out_count, fs::DirectoryEntry *out_entries, s64 max_entries) {
-                    R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=]() -> Result {
+                    R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
                         return this->ReadImpl(out_count, std::addressof(this->current_find), out_entries, max_entries);
                     }, AMS_CURRENT_FUNCTION_NAME));
                     return ResultSuccess();
@@ -278,7 +278,7 @@ namespace ams::fssystem {
     }
 
     Result RomFsFileSystem::GetFileInfo(RomFileTable::FileInfo *out, const char *path) {
-        R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=]() -> Result {
+        R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
             R_TRY_CATCH(this->rom_file_table.OpenFile(out, path)) {
                 R_CONVERT(fs::ResultDbmNotFound,         fs::ResultPathNotFound());
             } R_END_TRY_CATCH;
@@ -325,7 +325,7 @@ namespace ams::fssystem {
     }
 
     Result RomFsFileSystem::GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) {
-        R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=]() -> Result {
+        R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
             RomDirectoryInfo dir_info;
 
             R_TRY_CATCH(this->rom_file_table.GetDirectoryInformation(std::addressof(dir_info), path)) {

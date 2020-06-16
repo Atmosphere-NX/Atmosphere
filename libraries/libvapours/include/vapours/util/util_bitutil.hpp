@@ -30,11 +30,9 @@ namespace ams::util {
 
     }
 
-    template <typename T>
+    template <typename T> requires std::integral<T>
     class BitsOf {
         private:
-            static_assert(std::is_integral<T>::value);
-
             static constexpr ALWAYS_INLINE int GetLsbPos(T v) {
                 return __builtin_ctzll(static_cast<u64>(v));
             }
@@ -78,69 +76,68 @@ namespace ams::util {
             }
     };
 
-    template<typename T = u64, typename ...Args>
+    template<typename T = u64, typename ...Args> requires std::integral<T>
     constexpr ALWAYS_INLINE T CombineBits(Args... args) {
         return (... | (T(1u) << args));
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T ResetLeastSignificantOneBit(T x) {
         return x & (x - 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T SetLeastSignificantZeroBit(T x) {
         return x | (x + 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T LeastSignificantOneBit(T x) {
         return x & ~(x - 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T LeastSignificantZeroBit(T x) {
         return ~x & (x + 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T ResetTrailingOnes(T x) {
         return x & (x + 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T SetTrailingZeros(T x) {
         return x | (x - 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T MaskTrailingZeros(T x) {
         return (~x) & (x - 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T MaskTrailingOnes(T x) {
         return ~((~x) | (x + 1));
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T MaskTrailingZerosAndLeastSignificantOneBit(T x) {
         return x ^ (x - 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T MaskTrailingOnesAndLeastSignificantZeroBit(T x) {
         return x ^ (x + 1);
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE int PopCount(T x) {
         /* TODO: C++20 std::bit_cast */
         using U = typename std::make_unsigned<T>::type;
         U u = static_cast<U>(x);
 
-        /* TODO: C++20 std::is_constant_evaluated */
-        if (false) {
+        if (std::is_constant_evaluated()) {
             /* https://en.wikipedia.org/wiki/Hamming_weight */
             constexpr U m1 = U(-1) / 0x03;
             constexpr U m2 = U(-1) / 0x05;
@@ -168,10 +165,9 @@ namespace ams::util {
         }
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE int CountLeadingZeros(T x) {
-        /* TODO: C++20 std::is_constant_evaluated */
-        if (false) {
+        if (std::is_constant_evaluated()) {
             for (size_t i = 0; i < impl::Log2<BITSIZEOF(T)>; ++i) {
                 const size_t shift = (0x1 << i);
                 x |= x >> shift;
@@ -195,21 +191,28 @@ namespace ams::util {
         }
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE bool IsPowerOfTwo(T x) {
         return x > 0 && ResetLeastSignificantOneBit(x) == 0;
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T CeilingPowerOfTwo(T x) {
         AMS_ASSERT(x > 0);
         return T(1) << (BITSIZEOF(T) - CountLeadingZeros(T(x - 1)));
     }
 
-    template<typename T>
+    template<typename T> requires std::integral<T>
     constexpr ALWAYS_INLINE T FloorPowerOfTwo(T x) {
         AMS_ASSERT(x > 0);
         return T(1) << (BITSIZEOF(T) - CountLeadingZeros(x) - 1);
+    }
+
+    template<typename T, typename U>
+    constexpr ALWAYS_INLINE T DivideUp(T v, U d) {
+        using Unsigned = typename std::make_unsigned<U>::type;
+        const Unsigned add = static_cast<Unsigned>(d) - 1;
+        return static_cast<T>((v + add) / d);
     }
 
 }

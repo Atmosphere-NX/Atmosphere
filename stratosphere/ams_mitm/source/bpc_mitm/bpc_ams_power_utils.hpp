@@ -24,7 +24,7 @@ namespace ams::mitm::bpc {
     void ShutdownSystem();
 
     /* Atmosphere power utilities. */
-    void SetInitialRebootPayload(const void *payload, size_t payload_size);
+    void SetRebootPayload(const void *payload, size_t payload_size);
     Result LoadRebootPayload();
     Result DetectPreferredRebootFunctionality();
     void RebootForFatalError(const ams::FatalErrorContext *ctx);

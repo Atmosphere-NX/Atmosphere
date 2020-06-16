@@ -13,9 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <stratosphere/reg.hpp>
-
+#include <stratosphere.hpp>
 #include "gpio_utils.hpp"
 
 namespace ams::gpio {

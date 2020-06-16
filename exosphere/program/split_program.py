@@ -1,0 +1,33 @@
+#!/usr/bin/env python
+import sys, lz4
+from struct import unpack as up
+
+def lz4_compress(data):
+    return lz4.block.compress(data, 'high_compression', store_size=False)
+
+def split_binary(data):
+    A, B, START, BOOT_CODE_START, BOOT_CODE_END, PROGRAM_START, C, D = up('<QQQQQQQQ', data[:0x40])
+    assert A == 0xAAAAAAAAAAAAAAAA
+    assert B == 0xBBBBBBBBBBBBBBBB
+    assert C == 0xCCCCCCCCCCCCCCCC
+    assert D == 0xDDDDDDDDDDDDDDDD
+    data = data[0x40:]
+
+    boot_code = data[BOOT_CODE_START - START:BOOT_CODE_END - BOOT_CODE_START]
+    program   = data[PROGRAM_START   - START:]
+    return [('boot_code.lz4', lz4_compress(boot_code)), ('program.lz4', lz4_compress(program))]
+
+def main(argc, argv):
+    if argc != 3:
+        print 'Usage: %s in outdir' % argv[0]
+        return 1
+    with open(argv[1], 'rb') as f:
+        data = f.read()
+    assert len(data) >= 0x40
+    for (fn, fdata) in split_binary(data):
+        with open('%s/%s' % (argv[2], fn), 'wb') as f:
+            f.write(fdata)
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(len(sys.argv), sys.argv))

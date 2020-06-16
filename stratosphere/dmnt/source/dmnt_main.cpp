@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "dmnt_service.hpp"
 #include "cheat/dmnt_cheat_service.hpp"
 #include "cheat/impl/dmnt_cheat_api.hpp"
@@ -39,7 +40,7 @@ namespace ams {
 
     namespace result {
 
-        bool CallFatalOnResultAssertion = true;
+        bool CallFatalOnResultAssertion = false;
 
     }
 

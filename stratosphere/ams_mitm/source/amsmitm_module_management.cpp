@@ -54,7 +54,7 @@ namespace ams::mitm {
                 .main = Traits::ThreadFunction,
                 .stack_mem = Traits::Stack,
                 .priority = Traits::ThreadPriority,
-                .stack_size = Traits::StackSize,
+                .stack_size = static_cast<u32>(Traits::StackSize),
             };
         }
 

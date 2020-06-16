@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -121,7 +121,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
     fsdev_device_t *device = fsdev_find_device(name);
     FRESULT rc;
     char drname[40];
-    
+
     if (device != NULL) {
         errno = EEXIST; /* Device already exists */
         return -1;
@@ -170,7 +170,7 @@ int fsdev_mount_device(const char *name, const device_partition_t *devpart, bool
         VolumeStr[device - g_fsdev_devices] = FKNAM;
         return fsdev_convert_rc(NULL, rc);
     }
-    
+
     device->setup = true;
     device->registered = false;
 
@@ -289,6 +289,20 @@ int fsdev_unmount_device(const char *name) {
     return ret;
 }
 
+int fsdev_register_keys(const char *name, unsigned int target_firmware, BisPartition part) {
+    fsdev_device_t *device = fsdev_find_device(name);
+
+    if (device == NULL) {
+        errno = ENOENT;
+        return -1;
+    }
+
+    derive_bis_key(device->devpart.keys, part, target_firmware);
+
+    return 0;
+}
+
+
 int fsdev_unmount_all(void) {
     for (size_t i = 0; i < FF_VOLUMES; i++) {
         int ret = fsdev_unmount_device(g_fsdev_devices[i].name);
@@ -403,7 +417,7 @@ static void fsdev_filinfo_to_st(struct stat *st, const FILINFO *info) {
     date.tm_sec  = (info->ftime << 1) & 63;
     date.tm_min  = (info->ftime >> 5) & 63;
     date.tm_hour = (info->ftime >> 11) & 31;
-    
+
     date.tm_isdst = 0;
 
     st->st_atime = st->st_mtime = st->st_ctime = mktime(&date);

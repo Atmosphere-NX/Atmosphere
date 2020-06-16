@@ -61,7 +61,7 @@ namespace ams::sf::cmif {
             return this->handler;
         }
     };
-    static_assert(std::is_pod<ServiceCommandMeta>::value && sizeof(ServiceCommandMeta) == 0x10, "sizeof(ServiceCommandMeta)");
+    static_assert(util::is_pod<ServiceCommandMeta>::value && sizeof(ServiceCommandMeta) == 0x18, "sizeof(ServiceCommandMeta)");
 
     namespace impl {
 

@@ -51,7 +51,7 @@ Result amsBpcRebootToFatalError(void *ctx) {
 }
 
 
-Result amsBpcSetInitialPayload(const void *src, size_t src_size) {
+Result amsBpcSetRebootPayload(const void *src, size_t src_size) {
     return serviceDispatch(&g_amsBpcSrv, 65001,
         .buffer_attrs = { SfBufferAttr_In | SfBufferAttr_HipcMapAlias },
         .buffers = { { src, src_size } },

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_FS_UTILS_H
 #define FUSEE_FS_UTILS_H
 
@@ -23,8 +23,8 @@
 #include "sdmmc/sdmmc.h"
 #include "utils.h"
 
-sdmmc_t g_sd_sdmmc;
-sdmmc_device_t g_sd_device;
+extern sdmmc_t g_sd_sdmmc;
+extern sdmmc_device_t g_sd_device;
 
 bool mount_sd(void);
 void unmount_sd(void);

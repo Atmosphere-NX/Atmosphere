@@ -117,6 +117,8 @@
                 "svcReplyAndReceiveWithUserBuffer": "0x44",
                 "svcCreateEvent": "0x45",
                 "svcReadWriteRegister": "0x4E",
+                "svcMapTransferMemory": "0x51",
+                "svcUnmapTransferMemory": "0x52",
                 "svcCreateInterruptEvent": "0x53",
                 "svcQueryIoMapping": "0x55",
                 "svcCreateDeviceAddressSpace": "0x56",
@@ -126,6 +128,8 @@
                 "svcUnmapDeviceAddressSpace": "0x5c",
                 "svcGetSystemInfo": "0x6f",
                 "svcSetProcessMemoryPermission": "0x73",
+                "svcMapProcessMemory": "0x74",
+                "svcUnmapProcessMemory": "0x75",
                 "svcCallSecureMonitor": "0x7f"
             }
         }

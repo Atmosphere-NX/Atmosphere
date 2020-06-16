@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "boot_boot_reason.hpp"
 #include "boot_pmic_driver.hpp"
 #include "boot_rtc_driver.hpp"
@@ -20,19 +21,6 @@
 namespace ams::boot {
 
     namespace {
-
-        /* Types. */
-        struct BootReasonValue {
-            union {
-                struct {
-                    u8 power_intr;
-                    u8 rtc_intr;
-                    u8 nv_erc;
-                    u8 boot_reason;
-                };
-                u32 value;
-            };
-        };
 
         /* Globals. */
         u32 g_boot_reason = 0;
@@ -89,12 +77,14 @@ namespace ams::boot {
 
         /* Set boot reason for SPL. */
         if (hos::GetVersion() >= hos::Version_3_0_0) {
-            BootReasonValue boot_reason_value;
-            boot_reason_value.power_intr = power_intr;
-            boot_reason_value.rtc_intr = rtc_intr & ~rtc_intr_m;
-            boot_reason_value.nv_erc = nv_erc;
+            spl::BootReasonValue boot_reason_value = {};
+
+            boot_reason_value.power_intr  = power_intr;
+            boot_reason_value.rtc_intr    = rtc_intr & ~rtc_intr_m;
+            boot_reason_value.nv_erc      = nv_erc;
             boot_reason_value.boot_reason = g_boot_reason;
-            R_ABORT_UNLESS(splSetBootReason(boot_reason_value.value));
+
+            R_ABORT_UNLESS(spl::SetBootReason(boot_reason_value));
         }
 
         g_detected_boot_reason = true;

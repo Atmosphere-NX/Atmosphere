@@ -65,7 +65,7 @@ namespace ams::kern {
                         Node *next;
                         u8 buffer[PageSize - sizeof(Node *)];
                     };
-                    static_assert(std::is_pod<Node>::value);
+                    static_assert(util::is_pod<Node>::value);
                 private:
                     Node *root;
                 public:

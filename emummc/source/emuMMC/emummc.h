@@ -28,6 +28,7 @@ extern "C" {
 #include <stdio.h>
 #include <string.h>
 
+#include "../emmc/nx_sd.h"
 #include "../emmc/sdmmc.h"
 #include "../soc/i2c.h"
 #include "../soc/gpio.h"
@@ -55,15 +56,17 @@ uint64_t sdmmc_wrapper_controller_close(int mmc_id);
 uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned int sector, unsigned int num_sectors);
 uint64_t sdmmc_wrapper_write(int mmc_id, unsigned int sector, unsigned int num_sectors, void *buf, uint64_t bufSize);
 
-// TODO: check if FatFS internal buffers are good (perf wise) to have a x16 alignment.
 typedef struct _file_based_ctxt
 {
+	FATFS sd_fs;
 	uint64_t parts;
 	uint64_t part_size;
-	FATFS *sd_fs;
 	FIL fp_boot0;
+	DWORD clmt_boot0[0x400];
 	FIL fp_boot1;
+	DWORD clmt_boot1[0x400];
 	FIL fp_gpp[32];
+	DWORD clmt_gpp[0x8000];
 } file_based_ctxt;
 
 #ifdef __cplusplus

@@ -44,7 +44,7 @@ typedef struct _emuMMC_ctx_t
     enum FS_VER fs_ver;
     enum emuMMC_Type EMMC_Type;
     enum emuMMC_Type SD_Type;
-    
+
     /* Partition based */
     u64 EMMC_StoragePartitionOffset;
     u64 SD_StoragePartitionOffset;

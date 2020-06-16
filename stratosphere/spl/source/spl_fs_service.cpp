@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 #include "spl_api_impl.hpp"
 #include "spl_fs_service.hpp"
 
@@ -34,7 +35,7 @@ namespace ams::spl {
         return impl::GenerateSpecificAesKey(out_key.GetPointer(), key_source, generation, which);
     }
 
-    Result FsService::LoadTitleKey(u32 keyslot, AccessKey access_key) {
+    Result FsService::LoadTitleKey(s32 keyslot, AccessKey access_key) {
         return impl::LoadTitleKey(keyslot, this, access_key);
     }
 

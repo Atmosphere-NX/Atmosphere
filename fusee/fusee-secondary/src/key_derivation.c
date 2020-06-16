@@ -15,6 +15,7 @@
  */
 
 #include <stdio.h>
+#include "lib/log.h"
 #include "key_derivation.h"
 #include "masterkey.h"
 #include "se.h"
@@ -143,29 +144,16 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     }
 
     /* Do 6.2.0+ keygen. */
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_620) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
         uint32_t desired_keyblob;
-        switch (target_firmware) {
-            case ATMOSPHERE_TARGET_FIRMWARE_620:
-                desired_keyblob = MASTERKEY_REVISION_620;
-                break;
-            case ATMOSPHERE_TARGET_FIRMWARE_700:
-            case ATMOSPHERE_TARGET_FIRMWARE_800:
-                desired_keyblob = MASTERKEY_REVISION_700_800;
-                break;
-            case ATMOSPHERE_TARGET_FIRMWARE_810:
-                desired_keyblob = MASTERKEY_REVISION_810;
-                /* Fallthrough */
-            case ATMOSPHERE_TARGET_FIRMWARE_900:
-                desired_keyblob = MASTERKEY_REVISION_900;
-                /* Fallthrough */
-            case ATMOSPHERE_TARGET_FIRMWARE_910:
-            case ATMOSPHERE_TARGET_FIRMWARE_1000:
-                desired_keyblob = MASTERKEY_REVISION_910_CURRENT;
-                break;
-            default:
-                fatal_error("Unknown target firmware: %02x!", target_firmware);
-                break;
+
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
+            /* NOTE: We load in the current key for all >= 8.1.0 firmwares to reduce sept binaries. */
+            desired_keyblob = MASTERKEY_REVISION_910_CURRENT;
+        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
+            desired_keyblob = MASTERKEY_REVISION_700_800;
+        } else {
+            desired_keyblob = MASTERKEY_REVISION_620;
         }
 
         /* Try emulation result. */
@@ -173,8 +161,8 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
             void *tsec_root_key = (void *)((uintptr_t)tsec_root_keys + 0x10 * (rev - MASTERKEY_REVISION_620));
             if (memcmp(tsec_root_key, zeroes, 0x10) != 0) {
                 /* We got a valid key from emulation. */
-                set_aes_keyslot(0xC, tsec_root_key, 0x10);
-                se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
+                set_aes_keyslot(0xD, tsec_root_key, 0x10);
+                se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
                 memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
             }
         }
@@ -191,8 +179,8 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
             fclose(extkey_file);
             for (unsigned int rev = MASTERKEY_REVISION_620; rev < MASTERKEY_REVISION_MAX; rev++) {
                 if (memcmp(extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], zeroes, 0x10) != 0) {
-                    set_aes_keyslot(0xC, extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], 0x10);
-                    se_aes_ecb_decrypt_block(0xC, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
+                    set_aes_keyslot(0xD, extkeys.tsec_root_keys[rev - MASTERKEY_REVISION_620], 0x10);
+                    se_aes_ecb_decrypt_block(0xD, work_buffer, 0x10, new_master_kek_seeds[rev - MASTERKEY_REVISION_620], 0x10);
                     memcpy(g_dec_keyblobs[rev].master_kek, work_buffer, 0x10);
                 } else {
                     memcpy(g_dec_keyblobs[rev].master_kek, extkeys.master_keks[rev], 0x10);
@@ -210,55 +198,26 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     clear_aes_keyslot(0xE);
 
     /* Get needed data. */
-    set_aes_keyslot(0xC, g_dec_keyblobs[available_revision].master_kek, 0x10);
+    set_aes_keyslot(0xD, g_dec_keyblobs[available_revision].master_kek, 0x10);
 
     /* Also set the Package1 key for the revision that is stored on the eMMC boot0 partition. */
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_620) {
+    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
         load_package1_key(available_revision);
     }
 
     /* Derive keys for Exosphere, lock critical keyslots. */
-    switch (target_firmware) {
-        case ATMOSPHERE_TARGET_FIRMWARE_100:
-        case ATMOSPHERE_TARGET_FIRMWARE_200:
-        case ATMOSPHERE_TARGET_FIRMWARE_300:
-            decrypt_data_into_keyslot(0xD, 0xF, devicekey_seed, 0x10);
-            decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
-            break;
-        case ATMOSPHERE_TARGET_FIRMWARE_400:
-            decrypt_data_into_keyslot(0xD, 0xF, devicekey_4x_seed, 0x10);
-            decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
-            decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
-            decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
-            break;
-        case ATMOSPHERE_TARGET_FIRMWARE_500:
-        case ATMOSPHERE_TARGET_FIRMWARE_600:
-        case ATMOSPHERE_TARGET_FIRMWARE_620:
-        case ATMOSPHERE_TARGET_FIRMWARE_700:
-        case ATMOSPHERE_TARGET_FIRMWARE_800:
-        case ATMOSPHERE_TARGET_FIRMWARE_810:
-        case ATMOSPHERE_TARGET_FIRMWARE_900:
-            decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
-            decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed, 0x10);
-            decrypt_data_into_keyslot(0xE, 0xC, masterkey_4x_seed, 0x10);
-            decrypt_data_into_keyslot(0xC, 0xC, masterkey_seed, 0x10);
-            break;
-        default:
-            return -1;
-    }
+    decrypt_data_into_keyslot(0xA, 0xF, devicekey_4x_seed, 0x10);
+    decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed,    0x10);
+    decrypt_data_into_keyslot(0xC, 0xD, masterkey_4x_seed, 0x10);
+    decrypt_data_into_keyslot(0xD, 0xD, masterkey_seed,    0x10);
 
     /* Setup master key revision, derive older master keys for use. */
     return mkey_detect_revision(fuse_get_retail_type() != 0);
 }
 
-/* Sets final keyslot flags, for handover to TZ/Exosphere. Setting these will prevent the BPMP from using the device key or master key. */
-void finalize_nx_keydata(uint32_t target_firmware) {
-    set_aes_keyslot_flags(0xC, 0xFF);
-    set_aes_keyslot_flags((target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY), 0xFF);
-}
+static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool should_mask, uint32_t target_firmware, uint32_t generation) {
+    unsigned int keyslot = devkey_get_keyslot(generation);
 
-static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool should_mask, uint32_t target_firmware) {
-    unsigned int keyslot = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY);
     if (fuse_get_bootrom_patch_version() < 0x7F) {
         /* On dev units, use a fixed "all-zeroes" seed. */
         /* Yes, this data really is all-zero in actual TrustZone .rodata. */
@@ -281,7 +240,7 @@ static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool s
     }
 }
 
-static void generate_personalized_aes_key_for_bis(void *dst, const void *wrapped_kek, const void *wrapped_key, uint32_t target_firmware) {
+static void generate_personalized_aes_key_for_bis(void *dst, const void *wrapped_kek, const void *wrapped_key, uint32_t target_firmware, uint32_t generation) {
     static const uint8_t AL16 kek_source[0x10] = {
         0x4D, 0x87, 0x09, 0x86, 0xC4, 0x5D, 0x20, 0x72, 0x2F, 0xBA, 0x10, 0x53, 0xDA, 0x92, 0xE8, 0xA9
     };
@@ -289,7 +248,7 @@ static void generate_personalized_aes_key_for_bis(void *dst, const void *wrapped
         0x89, 0x61, 0x5E, 0xE0, 0x5C, 0x31, 0xB6, 0x80, 0x5F, 0xE5, 0x8F, 0x3D, 0xA2, 0x4F, 0x7A, 0xA8
     };
 
-    unsigned int keyslot = (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_400) ? (KEYSLOT_SWITCH_4XOLDDEVICEKEY) : (KEYSLOT_SWITCH_DEVICEKEY);
+    unsigned int keyslot = devkey_get_keyslot(generation);
     /* Derive kek. */
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, keyslot, kek_source, 0x10);
     decrypt_data_into_keyslot(KEYSLOT_SWITCH_TEMPKEY, KEYSLOT_SWITCH_TEMPKEY, wrapped_kek, 0x10);
@@ -314,16 +273,18 @@ void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmwa
         }
     };
 
+    const uint32_t bis_key_generation = fuse_get_5x_key_generation();
+
     static const uint8_t AL16 bis_kek_source[0x10] = {0x34, 0xC1, 0xA0, 0xC4, 0x82, 0x58, 0xF8, 0xB4, 0xFA, 0x9E, 0x5E, 0x6A, 0xDA, 0xFC, 0x7E, 0x4F};
     switch (partition_id) {
         case BisPartition_Calibration:
-            generate_specific_aes_key(dst, key_source_for_bis[partition_id][0], false, target_firmware);
-            generate_specific_aes_key(dst + 0x10, key_source_for_bis[partition_id][1], false, target_firmware);
+            generate_specific_aes_key(dst, key_source_for_bis[partition_id][0], false, target_firmware, bis_key_generation);
+            generate_specific_aes_key(dst + 0x10, key_source_for_bis[partition_id][1], false, target_firmware, bis_key_generation);
             break;
         case BisPartition_Safe:
         case BisPartition_UserSystem:
-            generate_personalized_aes_key_for_bis(dst, bis_kek_source, key_source_for_bis[partition_id][0], target_firmware);
-            generate_personalized_aes_key_for_bis(dst + 0x10, bis_kek_source, key_source_for_bis[partition_id][1], target_firmware);
+            generate_personalized_aes_key_for_bis(dst, bis_kek_source, key_source_for_bis[partition_id][0], target_firmware, bis_key_generation);
+            generate_personalized_aes_key_for_bis(dst + 0x10, bis_kek_source, key_source_for_bis[partition_id][1], target_firmware, bis_key_generation);
             break;
         default:
             generic_panic();

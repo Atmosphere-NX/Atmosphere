@@ -31,7 +31,7 @@ namespace ams::spl {
             virtual Result ImportDrmKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
             virtual Result DrmExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod);
             virtual Result UnwrapElicenseKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation);
-            virtual Result LoadElicenseKey(u32 keyslot, AccessKey access_key);
+            virtual Result LoadElicenseKey(s32 keyslot, AccessKey access_key);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GetConfig),
@@ -50,9 +50,9 @@ namespace ams::spl {
                 MAKE_SERVICE_COMMAND_META(AllocateAesKeyslot,             hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(FreeAesKeyslot,                 hos::Version_2_0_0),
                 MAKE_SERVICE_COMMAND_META(GetAesKeyslotAvailableEvent,    hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_4_0_0, hos::Version_4_0_0),
+                MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKeyDeprecated, hos::Version_4_0_0, hos::Version_4_1_0),
                 MAKE_SERVICE_COMMAND_META(DecryptRsaPrivateKey,           hos::Version_5_0_0),
-                MAKE_SERVICE_COMMAND_META(ImportEsKeyDeprecated,          hos::Version_4_0_0, hos::Version_4_0_0),
+                MAKE_SERVICE_COMMAND_META(ImportEsKeyDeprecated,          hos::Version_4_0_0, hos::Version_4_1_0),
                 MAKE_SERVICE_COMMAND_META(ImportEsKey,                    hos::Version_5_0_0),
                 MAKE_SERVICE_COMMAND_META(UnwrapTitleKey),
                 MAKE_SERVICE_COMMAND_META(UnwrapCommonTitleKey,           hos::Version_2_0_0),

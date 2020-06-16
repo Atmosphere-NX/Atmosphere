@@ -6,8 +6,7 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-#PRECOMPILED_HEADERS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/include/mesosphere.hpp
-PRECOMPILED_HEADERS :=
+PRECOMPILED_HEADERS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/include/mesosphere.hpp
 
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror -fno-non-call-exceptions
@@ -121,6 +120,8 @@ $(OUTPUT)	:	$(OFILES)
 $(filter-out kern_svc_tables.o, $(OFILES))	:	$(GCH_FILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
+
+kern_libc_generic.o: CFLAGS += -fno-builtin
 
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin

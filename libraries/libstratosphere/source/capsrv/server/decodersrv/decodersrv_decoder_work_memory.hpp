@@ -23,6 +23,6 @@ namespace ams::capsrv::server {
     };
     static_assert(sizeof(DecoderWorkMemory)  == SoftwareJpegDecoderWorkMemorySize);
     static_assert(alignof(DecoderWorkMemory) == os::MemoryPageSize);
-    static_assert(std::is_pod<DecoderWorkMemory>::value);
+    static_assert(util::is_pod<DecoderWorkMemory>::value);
 
 }

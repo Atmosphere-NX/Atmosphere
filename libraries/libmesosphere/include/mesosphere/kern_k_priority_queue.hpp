@@ -18,39 +18,34 @@
 
 namespace ams::kern {
 
-    /*
-        TODO: C++20
+    template<typename T>
+    concept KPriorityQueueAffinityMask = !std::is_reference<T>::value && requires (T &t) {
+        { t.GetAffinityMask() } -> std::convertible_to<u64>;
+        { t.SetAffinityMask(std::declval<u64>()) };
 
-        template<typename T>
-        concept KPriorityQueueAffinityMask = !std::is_reference<T>::value && requires (T &t) {
-            { t.GetAffinityMask() } -> std::convertible_to<u64>;
-            { t.SetAffinityMask(std::declval<u64>()) };
+        { t.GetAffinity(std::declval<int32_t>()) } -> std::same_as<bool>;
+        { t.SetAffinity(std::declval<int32_t>(), std::declval<bool>()) };
+        { t.SetAll() };
+    };
 
-            { t.GetAffinity(std::declval<int32_t>()) } -> std::same_as<bool>;
-            { t.SetAffinity(std::declval<int32_t>(), std::declval<bool>()) };
-            { t.SetAll() };
-        };
+    template<typename T>
+    concept KPriorityQueueMember = !std::is_reference<T>::value && requires (T &t) {
+        { typename T::QueueEntry() };
+        { (typename T::QueueEntry()).Initialize() };
+        { (typename T::QueueEntry()).SetPrev(std::addressof(t)) };
+        { (typename T::QueueEntry()).SetNext(std::addressof(t)) };
+        { (typename T::QueueEntry()).GetNext() }             -> std::same_as<T*>;
+        { (typename T::QueueEntry()).GetPrev() }             -> std::same_as<T*>;
+        { t.GetPriorityQueueEntry(std::declval<s32>()) } -> std::same_as<typename T::QueueEntry &>;
 
-        template<typename T>
-        concept KPriorityQueueMember = !std::is_reference<T>::value && requires (T &t) {
-            { typename T::QueueEntry() };
-            { (typename T::QueueEntry()).Initialize() };
-            { (typename T::QueueEntry()).SetPrev(std::addressof(t)) };
-            { (typename T::QueueEntry()).SetNext(std::addressof(t)) };
-            { (typename T::QueueEntry()).GetNext() }             -> std::same_as<T*>;
-            { (typename T::QueueEntry()).GetPrev() }             -> std::same_as<T*>;
-            { t.GetPriorityQueueEntry(std::declval<s32>()) } -> std::same_as<typename T::QueueEntry &>;
+        { t.GetAffinityMask() };
+        { typename std::remove_cvref<decltype(t.GetAffinityMask())>::type() } -> KPriorityQueueAffinityMask;
 
-            { t.GetAffinityMask() };
-            { typename std::remove_cvref<decltype(t.GetAffinityMask())>::type() } -> KPriorityQueueAffinityMask;
+        { t.GetActiveCore() }   -> std::convertible_to<s32>;
+        { t.GetPriority() }     -> std::convertible_to<s32>;
+    };
 
-            { t.GetActiveCore() }   -> std::convertible_to<s32>;
-            { t.GetPriority() }     -> std::convertible_to<s32>;
-        };
-    */
-
-
-    template<typename Member, size_t _NumCores, int LowestPriority, int HighestPriority> /* TODO C++20: requires KPriorityQueueMember<Member> */
+    template<typename Member, size_t _NumCores, int LowestPriority, int HighestPriority> requires KPriorityQueueMember<Member>
     class KPriorityQueue {
         public:
             using AffinityMaskType = typename std::remove_cv<typename std::remove_reference<decltype(std::declval<Member>().GetAffinityMask())>::type>::type;
