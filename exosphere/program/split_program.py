@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, lz4
+import sys, lz4 ,lz4.block
 from struct import unpack as up
 
 def lz4_compress(data):
@@ -19,7 +19,7 @@ def split_binary(data):
 
 def main(argc, argv):
     if argc != 3:
-        print 'Usage: %s in outdir' % argv[0]
+        print ('Usage: %s in outdir' % argv[0])
         return 1
     with open(argv[1], 'rb') as f:
         data = f.read()
@@ -30,4 +30,4 @@ def main(argc, argv):
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main(len(sys.argv), sys.argv))
+    sys.exit(main(len(sys.argv), sys.argv))    
