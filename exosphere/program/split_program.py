@@ -19,7 +19,7 @@ def split_binary(data):
 
 def main(argc, argv):
     if argc != 3:
-        print 'Usage: %s in outdir' % argv[0]
+        print ('Usage: %s in outdir' % argv[0])
         return 1
     with open(argv[1], 'rb') as f:
         data = f.read()
