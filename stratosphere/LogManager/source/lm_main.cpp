@@ -1,8 +1,8 @@
 #include "lm_service.hpp"
 
 extern "C" {
-
     extern u32 __start__;
+
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
     
@@ -13,7 +13,6 @@ extern "C" {
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
-
 }
 
 namespace ams {
@@ -22,7 +21,7 @@ namespace ams {
 
     namespace result {
 
-        /* Fatal is launched way later after we are launched, so disable this. */
+        /* Fatal is launched after we are launched, so disable this. */
         bool CallFatalOnResultAssertion = false;
 
     }
@@ -51,15 +50,19 @@ void __appInit(void) {
         R_ABORT_UNLESS(pminfoInitialize());
         R_ABORT_UNLESS(fsInitialize());
         R_ABORT_UNLESS(pscmInitialize());
+        R_ABORT_UNLESS(setsysInitialize());
     });
 
     R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
+
     ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    /* Cleanup services. */
     fs::Unmount("sdmc");
+
+    /* Cleanup services. */
+    setsysExit();
     pscmExit();
     fsExit();
     pminfoExit();
@@ -67,8 +70,7 @@ void __appExit(void) {
 
 namespace {
 
-    /* TODO: these domain/domain object amounts work fine, but which ones does N's LogManager actually use? */
-
+    /* TODO: these domain/domain object amounts work fine, but which ones does N actually use? */
     struct ServerOptions {
         static constexpr size_t PointerBufferSize = 0;
         static constexpr size_t MaxDomains = 0x40;
@@ -143,5 +145,6 @@ int main(int argc, char **argv) {
     /* Loop forever, servicing our services. */
     lm::StartAndLoopProcess();
  
+    /* Cleanup */
     return 0;
 }

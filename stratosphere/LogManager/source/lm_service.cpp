@@ -2,38 +2,52 @@
 
 namespace ams::lm {
 
-    void Logger::WriteQueuedPackets() {
-        impl::WriteLogPackets(this->queued_packets);
+    namespace {
+
+        bool SaveDebugLogs() {
+            /* Get whether we should actually save logs. */
+            u8 save_debug_logs = 0;
+            if (settings::fwdbg::GetSettingsItemValue(&save_debug_logs, sizeof(save_debug_logs), "atmosphere", "logmanager_save_debug_logs") != sizeof(save_debug_logs)) {
+                return false;
+            }
+
+            return save_debug_logs != 0;
+        }
+
     }
 
     void Logger::Log(const sf::InAutoSelectBuffer &buf) {
-        impl::LogPacketBuffer log_packet_buf(this->program_id, buf.GetPointer(), buf.GetSize());
+        /* Don't log unless we should do it. */
+        if(SaveDebugLogs()) {
+            impl::LogPacketBuffer log_packet_buf(this->program_id, buf.GetPointer(), buf.GetSize());
 
-        /* Check if there's a queue already started. */
-        const bool has_queued_packets = !this->queued_packets.empty();
+            /* Check if there's a queue already started. */
+            const bool has_queued_packets = !this->queued_packets.empty();
 
-        if(log_packet_buf.IsHead() && log_packet_buf.IsTail()) {
-            /* Single packet to be logged - ensure the queue is empty, push it alone on the queue and log it. */
-            this->queued_packets.clear();
-            this->queued_packets.push_back(std::move(log_packet_buf));
-            impl::WriteLogPackets(this->queued_packets);
-        }
-        else if(log_packet_buf.IsHead()) {
-            /* This is the initial packet of a queue - ensure the queue is empty and push it. */
-            this->queued_packets.clear();
-            this->queued_packets.push_back(std::move(log_packet_buf));
-        }
-        else if(log_packet_buf.IsTail()) {
-            /* This is the last packet of the queue - push it and log the queue. */
-            this->queued_packets.push_back(std::move(log_packet_buf));
-            impl::WriteLogPackets(this->queued_packets);
-        }
-        else if(has_queued_packets) {
-            /* Another packet of the queue - push it. */
-            this->queued_packets.push_back(std::move(log_packet_buf));
-        }
-        else {
-            /* Invalid packet - but lm always must succeed on this call. */
+            if(log_packet_buf.IsHead() && log_packet_buf.IsTail()) {
+                /* Single packet to be logged - ensure the queue is empty, push it alone on the queue and log it. */
+                this->queued_packets.clear();
+                this->queued_packets.push_back(std::move(log_packet_buf));
+                impl::WriteLogPackets(this->queued_packets);
+            }
+            else if(log_packet_buf.IsHead()) {
+                /* This is the initial packet of a queue - ensure the queue is empty and push it. */
+                this->queued_packets.clear();
+                this->queued_packets.push_back(std::move(log_packet_buf));
+            }
+            else if(log_packet_buf.IsTail()) {
+                /* This is the last packet of the queue - push it and log the queue. */
+                this->queued_packets.push_back(std::move(log_packet_buf));
+                impl::WriteLogPackets(this->queued_packets);
+            }
+            else if(has_queued_packets) {
+                /* Another packet of the queue - push it. */
+                this->queued_packets.push_back(std::move(log_packet_buf));
+            }
+            else {
+                /* Invalid packet - but lm must succeed on this call. */
+                /* This shouldn't happen at all... */
+            }
         }
     }
 

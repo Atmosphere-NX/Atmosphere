@@ -44,7 +44,7 @@ namespace ams::lm::impl {
             std::snprintf(process_dir, sizeof(process_dir), "%s/0x%016lX", DebugLogDirectory, program_id);
             fs::CreateDirectory(process_dir);
             
-            /* Use current system tick as the binary log file's name. */
+            /* Use current system tick as the binary log's identifier / file name. */
             const LogInfo info = {
                 .log_id = os::GetSystemTick().GetInt64Value(),
                 .program_id = program_id,
@@ -52,13 +52,14 @@ namespace ams::lm::impl {
 
             /* Generate binary log path. */
             /* All current log packets will be written to the same file. */
+            /* Binary log files might contain several packets, but they all must start with a head packet and end with a tail packet. */
             char bin_log_path[FS_MAX_PATH] = {};
             std::snprintf(bin_log_path, sizeof(bin_log_path), "%s/0x%016lX.bin", process_dir, info.log_id);
 
             /* Ensure the file exists. */
             fs::CreateFile(bin_log_path, 0);
 
-            /* Now, open the file. */
+            /* Open the file. */
             fs::FileHandle bin_log_file;
             R_TRY(fs::OpenFile(&bin_log_file, bin_log_path, fs::OpenMode_Write | fs::OpenMode_AllowAppend));
             ON_SCOPE_EXIT { fs::CloseFile(bin_log_file); };

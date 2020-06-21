@@ -7,9 +7,9 @@ namespace ams::lm::impl {
     constexpr const char DebugLogDirectory[] = "sdmc:/atmosphere/debug_logs";
 
     enum LogPacketFlags : u8 {
-        LogPacketFlags_Head = BIT(0),
-        LogPacketFlags_Tail = BIT(1),
-        LogPacketFlags_LittleEndian = BIT(2), /* Is this used anywhere? */
+        LogPacketFlags_Head = BIT(0), /* Head -> a packet list is being sent, with this packet being the initial one. */
+        LogPacketFlags_Tail = BIT(1), /* Tail -> this is the final packet of the packet list. */
+        LogPacketFlags_LittleEndian = BIT(2),
     };
 
     struct LogPacketHeader {
@@ -22,12 +22,10 @@ namespace ams::lm::impl {
         u32 payload_size;
 
         inline constexpr bool IsHead() const {
-            /* Head -> a packet list is being sent, with this packet being the initial one. */
             return this->flags & LogPacketFlags_Head;
         }
 
         inline constexpr bool IsTail() const {
-            /* Tail -> this is the final packet of the packet list. */
             return this->flags & LogPacketFlags_Tail;
         }
 
@@ -35,7 +33,7 @@ namespace ams::lm::impl {
     static_assert(sizeof(LogPacketHeader) == 0x18, "LogPacketHeader definition");
 
     struct LogInfo {
-        s64 log_id;
+        s64 log_id; /* This is the system tick value when the log was saved. */
         u64 program_id;
     };
 
@@ -67,14 +65,6 @@ namespace ams::lm::impl {
             }
             auto header = this->GetHeader();
             return sizeof(LogPacketHeader) + header->payload_size;
-        }
-
-        inline size_t GetPacketBufferSize() const {
-            if(this->buf == nullptr) {
-                return 0;
-            }
-            /* We also send the program ID in the buffer, so include sizeof(u64). */
-            return this->GetPacketSize() + sizeof(u64);
         }
 
         inline bool ValidatePacket() const {

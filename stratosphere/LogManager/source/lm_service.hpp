@@ -16,8 +16,6 @@ namespace ams::lm {
             u64 program_id;
             LogDestination destination;
             std::vector<impl::LogPacketBuffer> queued_packets;
-
-            void WriteQueuedPackets();
         public:
             Logger(u64 program_id) : program_id(program_id), destination(LogDestination::TMA), queued_packets() {}
 
