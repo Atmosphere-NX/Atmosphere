@@ -78,9 +78,29 @@ namespace ams::mitm::sysupdater {
             return info.version >= MinimumVersionForExFatDriver && ((info.attributes & ncm::ContentMetaAttribute_IncludesExFatDriver) != 0);
         }
 
+        Result FormatUserPackagePath(ncm::Path *out, const ncm::Path &user_path) {
+            /* Ensure that the user path is valid. */
+            R_UNLESS(user_path.str[0] == '/', fs::ResultInvalidPath());
+
+            /* Print as @Sdcard:<user_path>/ */
+            std::snprintf(out->str, sizeof(out->str), "%s:%s/", ams::fs::impl::SdCardFileSystemMountName, user_path.str);
+
+            /* Normalize, if the user provided an ending / */
+            const size_t len = std::strlen(out->str);
+            if (out->str[len - 1] == '/' && out->str[len - 2] == '/') {
+                out->str[len - 1] = '\x00';
+            }
+
+            return ResultSuccess();
+        }
+
     }
 
-    Result SystemUpdateService::GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &package_root) {
+    Result SystemUpdateService::GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &path) {
+        /* Adjust the path. */
+        ncm::Path package_root;
+        R_TRY(FormatUserPackagePath(std::addressof(package_root), path));
+
         /* Create a new update information. */
         UpdateInformation update_info = {};
 
@@ -115,15 +135,14 @@ namespace ams::mitm::sysupdater {
             /* Create a reader. */
             const auto reader = ncm::PackagedContentMetaReader(content_meta_buffer.Get(), content_meta_buffer.GetSize());
 
+            /* Get the version from the header. */
+            update_info.version = reader.GetHeader()->version;
+
             /* Iterate over infos to find the system update info. */
             for (size_t i = 0; i < reader.GetContentMetaCount(); ++i) {
                 const auto &meta_info = *reader.GetContentMetaInfo(i);
 
                 switch (meta_info.type) {
-                    case ncm::ContentMetaType::SystemUpdate:
-                        /* Set the version. */
-                        update_info.version = meta_info.version;
-                        break;
                     case ncm::ContentMetaType::BootImagePackage:
                         /* Detect exFAT support. */
                         update_info.exfat_supported |= IsExFatDriverSupported(meta_info);

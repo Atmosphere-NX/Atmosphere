@@ -82,6 +82,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(fsInitialize());
         R_ABORT_UNLESS(pmdmntInitialize());
         R_ABORT_UNLESS(pminfoInitialize());
+        ncm::Initialize();
         spl::InitializeForFs();
     });
 
@@ -97,6 +98,7 @@ void __appInit(void) {
 void __appExit(void) {
     /* Cleanup services. */
     spl::Finalize();
+    ncm::Finalize();
     pminfoExit();
     pmdmntExit();
     fsExit();

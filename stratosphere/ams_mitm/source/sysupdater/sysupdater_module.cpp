@@ -27,7 +27,13 @@ namespace ams::mitm::sysupdater {
 
         constexpr size_t MaxServers = 1;
         constexpr size_t MaxSessions = SystemUpdateMaxSessions;
-        using ServerOptions = sf::hipc::DefaultServerManagerOptions;
+
+        struct ServerOptions {
+            static constexpr size_t PointerBufferSize = 1_KB;
+            static constexpr size_t MaxDomains = 0;
+            static constexpr size_t MaxDomainObjects = 0;
+        };
+
         sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
 
     }
