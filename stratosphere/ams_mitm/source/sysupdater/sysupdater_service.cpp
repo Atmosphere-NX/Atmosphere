@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "sysupdater_service.hpp"
+#include "sysupdater_fs_utils.hpp"
 
 namespace ams::mitm::sysupdater {
 
@@ -22,6 +23,104 @@ namespace ams::mitm::sysupdater {
 
         /* ExFat NCAs prior to 2.0.0 do not actually include the exfat driver, and don't boot. */
         constexpr inline u32 MinimumVersionForExFatDriver = 65536;
+
+        template<typename F>
+        Result ForEachFileInDirectory(const char *root_path, F f) {
+            /* Open the directory. */
+            fs::DirectoryHandle dir;
+            R_TRY(fs::OpenDirectory(std::addressof(dir), root_path, fs::OpenDirectoryMode_File));
+            ON_SCOPE_EXIT { fs::CloseDirectory(dir); };
+
+            while (true) {
+                /* Read the current entry. */
+                s64 count;
+                fs::DirectoryEntry entry;
+                R_TRY(fs::ReadDirectory(std::addressof(count), std::addressof(entry), dir, 1));
+                if (count == 0) {
+                    break;
+                }
+
+                /* Invoke our handler on the entry. */
+                bool done;
+                R_TRY(f(std::addressof(done), entry));
+                R_SUCCEED_IF(done);
+            }
+
+            return ResultSuccess();
+        }
+
+        Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *package_root_path, const char *entry_path) {
+            char package_path[ams::fs::EntryNameLengthMax];
+
+            const size_t path_len = std::snprintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
+            AMS_ABORT_UNLESS(path_len < ams::fs::EntryNameLengthMax);
+
+            return ams::fs::ConvertToFsCommonPath(dst, dst_size, package_path);
+        }
+
+        Result LoadContentMeta(ncm::AutoBuffer *out, const char *package_root_path, const fs::DirectoryEntry &entry) {
+            AMS_ABORT_UNLESS(PathView(entry.name).HasSuffix(".cnmt.nca"));
+
+            char path[ams::fs::EntryNameLengthMax];
+            R_TRY(ConvertToFsCommonPath(path, sizeof(path), package_root_path, entry.name));
+
+            return ncm::ReadContentMetaPath(out, path);
+        }
+
+        Result ReadContentMetaPath(ncm::AutoBuffer *out, const char *package_root, const ncm::ContentInfo &content_info) {
+            /* Get the .cnmt.nca path for the info. */
+            char cnmt_nca_name[ncm::ContentIdStringLength + 10];
+            ncm::GetStringFromContentId(cnmt_nca_name, sizeof(cnmt_nca_name), content_info.GetId());
+            std::memcpy(cnmt_nca_name + ncm::ContentIdStringLength, ".cnmt.nca", std::strlen(".cnmt.nca"));
+            cnmt_nca_name[sizeof(cnmt_nca_name) - 1] = '\x00';
+
+            /* Create a new path. */
+            ncm::Path content_path;
+            R_TRY(ConvertToFsCommonPath(content_path.str, sizeof(content_path.str), package_root, cnmt_nca_name));
+
+            /* Read the content meta path. */
+            return ncm::ReadContentMetaPath(out, content_path.str);
+        }
+
+        Result GetSystemUpdateUpdateContentInfoFromPackage(ncm::ContentInfo *out, const char *package_root) {
+            bool found_system_update = false;
+
+            /* Iterate over all files to find the system update meta. */
+            R_TRY(ForEachFileInDirectory(package_root, [&](bool *done, const fs::DirectoryEntry &entry) -> Result {
+                /* Don't early terminate by default. */
+                *done = false;
+
+                /* We have nothing to list if we're not looking at a meta. */
+                R_SUCCEED_IF(!PathView(entry.name).HasSuffix(".cnmt.nca"));
+
+                /* Read the content meta path, and build. */
+                ncm::AutoBuffer package_meta;
+                R_TRY(LoadContentMeta(std::addressof(package_meta), package_root, entry));
+
+                /* Create a reader. */
+                const auto reader = ncm::PackagedContentMetaReader(package_meta.Get(), package_meta.GetSize());
+
+                /* If we find a system update, we're potentially done. */
+                if (reader.GetHeader()->type == ncm::ContentMetaType::SystemUpdate) {
+                    /* Try to parse a content id from the name. */
+                    auto content_id = ncm::GetContentIdFromString(entry.name, sizeof(entry.name));
+                    R_UNLESS(content_id, ncm::ResultInvalidPackageFormat());
+
+                    /* We're done. */
+                    *done = true;
+                    found_system_update = true;
+
+                    *out = ncm::ContentInfo::Make(*content_id, entry.file_size, ncm::ContentType::Meta);
+                }
+
+                return ResultSuccess();
+            }));
+
+            /* If we didn't find anything, error. */
+            R_UNLESS(found_system_update, ncm::ResultSystemUpdateNotFoundInPackage());
+
+            return ResultSuccess();
+        }
 
         Result ActivateSystemUpdateContentMetaDatabase() {
             /* TODO: Don't use gamecard db. */
@@ -62,18 +161,6 @@ namespace ams::mitm::sysupdater {
             return ncm::ResultContentInfoNotFound();
         }
 
-        Result ReadContentMetaPath(ncm::AutoBuffer *out, const char *package_root, const ncm::ContentInfo &content_info) {
-            /* Get the content id string for the info. */
-            auto content_id_str = ncm::GetContentIdString(content_info.GetId());
-
-            /* Create a new path. */
-            ncm::Path content_path;
-            std::snprintf(content_path.str, sizeof(content_path.str), "%s/%s.cnmt.nca", package_root, content_id_str.data);
-
-            /* Read the content meta path. */
-            return ncm::ReadContentMetaPath(out, content_path.str);
-        }
-
         bool IsExFatDriverSupported(const ncm::ContentMetaInfo &info) {
             return info.version >= MinimumVersionForExFatDriver && ((info.attributes & ncm::ContentMetaAttribute_IncludesExFatDriver) != 0);
         }
@@ -106,27 +193,9 @@ namespace ams::mitm::sysupdater {
 
         /* Parse the update. */
         {
-            /* Activate the package database. */
-            R_TRY(ActivateSystemUpdateContentMetaDatabase());
-            ON_SCOPE_EXIT { InactivateSystemUpdateContentMetaDatabase(); };
-
-            /* Open the package database. */
-            ncm::ContentMetaDatabase package_db;
-            R_TRY(OpenSystemUpdateContentMetaDatabase(std::addressof(package_db)));
-
-            /* Cleanup and build the content meta database. */
-            ncm::ContentMetaDatabaseBuilder builder(std::addressof(package_db));
-            R_TRY(builder.Cleanup());
-            R_TRY(builder.BuildFromPackage(package_root.str));
-
-            /* Get the key for the SystemUpdate. */
-            ncm::ContentMetaKey key;
-            auto list_count = package_db.ListContentMeta(std::addressof(key), 1, ncm::ContentMetaType::SystemUpdate);
-            R_UNLESS(list_count.written > 0, ncm::ResultSystemUpdateNotFoundInPackage());
-
-            /* Get the content info for the key. */
+            /* Get the content info for the system update. */
             ncm::ContentInfo content_info;
-            R_TRY(GetContentInfoOfContentMeta(std::addressof(content_info), package_db, key));
+            R_TRY(GetSystemUpdateUpdateContentInfoFromPackage(std::addressof(content_info), package_root.str));
 
             /* Read the content meta. */
             ncm::AutoBuffer content_meta_buffer;
