@@ -18,6 +18,6 @@
 
 namespace ams::mitm::sysupdater {
 
-    Result MountContentMeta(const char *mount_name, const char *path);
+    Result MountSdCardContentMeta(const char *mount_name, const char *path);
 
 }
