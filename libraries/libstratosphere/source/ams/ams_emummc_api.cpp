@@ -86,22 +86,17 @@ namespace ams::emummc {
                 const Storage storage = static_cast<Storage>(g_exo_config.base_cfg.type);
                 g_is_emummc = g_exo_config.base_cfg.magic == StorageMagic && storage != Storage_Emmc;
 
-                /* Format paths. Ignore string format warnings. */
-                #pragma GCC diagnostic push
-                #pragma GCC diagnostic ignored "-Wformat-truncation"
-                {
-                    if (storage == Storage_SdFile) {
-                        std::snprintf(g_exo_config.file_cfg.path, sizeof(g_exo_config.file_cfg.path), "/%s", paths->file_path);
-                    }
-
-                    std::snprintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/%s", paths->nintendo_path);
-
-                    /* If we're emummc, implement default nintendo redirection path. */
-                    if (g_is_emummc && std::strcmp(g_exo_config.emu_dir_path, "/") == 0) {
-                        std::snprintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/emummc/Nintendo_%04x", g_exo_config.base_cfg.id);
-                    }
+                /* Format paths. */
+                if (storage == Storage_SdFile) {
+                    std::snprintf(g_exo_config.file_cfg.path, sizeof(g_exo_config.file_cfg.path), "/%s", paths->file_path);
                 }
-                #pragma GCC diagnostic pop
+
+                std::snprintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/%s", paths->nintendo_path);
+
+                /* If we're emummc, implement default nintendo redirection path. */
+                if (g_is_emummc && std::strcmp(g_exo_config.emu_dir_path, "/") == 0) {
+                    std::snprintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/emummc/Nintendo_%04x", g_exo_config.base_cfg.id);
+                }
             }
 
             g_has_cached = true;

@@ -237,10 +237,7 @@ namespace ams::patcher {
             }
 
             /* Print the path for this directory. */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
             std::snprintf(path + patches_dir_path_len, sizeof(path) - patches_dir_path_len, "/%s", entry.name);
-#pragma GCC diagnostic pop
             const size_t patch_dir_path_len = patches_dir_path_len + 1 + std::strlen(entry.name);
 
             /* Open the patch directory. */

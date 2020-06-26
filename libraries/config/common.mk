@@ -17,8 +17,10 @@ endif
 
 export ATMOSPHERE_DEFINES  := -DATMOSPHERE
 export ATMOSPHERE_SETTINGS := -fPIE -g
-export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv \
-                          -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-stack-protector
+export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv  \
+                              -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-stack-protector \
+                              -Wno-format-truncation
+
 export ATMOSPHERE_CXXFLAGS := -fno-rtti -fno-exceptions -std=gnu++20
 export ATMOSPHERE_ASFLAGS  :=
 
