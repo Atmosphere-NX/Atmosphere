@@ -90,12 +90,15 @@ static void _check_and_display_atmosphere_fatal_error(void) {
             char filepath[0x40];
             snprintf(filepath, sizeof(filepath) - 1, "/atmosphere/fatal_errors/report_%016llx.bin", ctx.report_identifier);
             filepath[sizeof(filepath)-1] = 0;
-            write_to_file(&ctx, sizeof(ctx), filepath);
-            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"Report saved to %s\n", filepath);
+            if (write_to_file(&ctx, sizeof(ctx), filepath) != sizeof(ctx)) {
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Failed to save report to the SD card!\n");
+            } else {
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Report saved to %s\n", filepath);
+            }
         }
 
         /* Display error. */
-        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nPress POWER to reboot\n");
     }
 
     /* Wait for button and reboot. */
