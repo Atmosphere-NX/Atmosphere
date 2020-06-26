@@ -17,6 +17,7 @@
 #include "../amsmitm_initialization.hpp"
 #include "sysupdater_module.hpp"
 #include "sysupdater_service.hpp"
+#include "sysupdater_async_impl.hpp"
 
 namespace ams::mitm::sysupdater {
 
