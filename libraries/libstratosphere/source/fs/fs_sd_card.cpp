@@ -43,10 +43,9 @@ namespace ams::fs {
 
     }
 
-
     Result MountSdCard(const char *name) {
         /* Validate the mount name. */
-        R_TRY(impl::CheckMountName(name));
+        R_TRY(impl::CheckMountNameAllowingReserved(name));
 
         /* Open the SD card. This uses libnx bindings. */
         FsFileSystem fs;

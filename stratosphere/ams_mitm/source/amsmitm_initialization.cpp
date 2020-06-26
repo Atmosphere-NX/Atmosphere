@@ -139,6 +139,9 @@ namespace ams::mitm {
             /* Open global SD card file system, so that other threads can begin using the SD. */
             mitm::fs::OpenGlobalSdCardFileSystem();
 
+            /* Mount the sd card at a convenient mountpoint. */
+            ams::fs::MountSdCard(ams::fs::impl::SdCardFileSystemMountName);
+
             /* Initialize the reboot manager (load a payload off the SD). */
             /* Discard result, since it doesn't need to succeed. */
             mitm::bpc::LoadRebootPayload();
