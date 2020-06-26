@@ -15,23 +15,10 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "../amsmitm_module.hpp"
 
-namespace ams::mitm::bpc {
+namespace ams::mitm::sysupdater {
 
-    class AtmosphereService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                RebootToFatalError = 65000,
-                SetRebootPayload   = 65001,
-            };
-        private:
-            void RebootToFatalError(const ams::FatalErrorContext &ctx);
-            void SetRebootPayload(const ams::sf::InBuffer &payload);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RebootToFatalError),
-                MAKE_SERVICE_COMMAND_META(SetRebootPayload),
-            };
-    };
+    DEFINE_MITM_MODULE_CLASS(0x8000, AMS_GET_SYSTEM_THREAD_PRIORITY(mitm_sysupdater, IpcServer));
 
 }

@@ -18,7 +18,6 @@
 
 namespace ams::mitm {
 
-    /* TODO: C++20 Concepts will make this a lot less stupid. */
     template<typename T>
     concept IsModule = requires(T, void *arg) {
         { T::ThreadPriority      } -> std::convertible_to<s32>;
