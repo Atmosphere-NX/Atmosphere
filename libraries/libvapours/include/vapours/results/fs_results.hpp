@@ -78,6 +78,8 @@ namespace ams::fs {
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemA,              3247);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemB,              3248);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFsFileSystemC,              3249);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemProxyCoreImplD,      3256);
+        R_DEFINE_ERROR_RESULT(AllocationFailureInFileSystemProxyCoreImplE,      3257);
         R_DEFINE_ERROR_RESULT(AllocationFailureInPartitionFileSystemCreatorA,   3280);
         R_DEFINE_ERROR_RESULT(AllocationFailureInRomFileSystemCreatorA,         3281);
         R_DEFINE_ERROR_RESULT(AllocationFailureInStorageOnNcaCreatorA,          3288);

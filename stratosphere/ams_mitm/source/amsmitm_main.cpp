@@ -88,8 +88,8 @@ void __appInit(void) {
     /* Initialize fssystem library. */
     fssystem::InitializeForFileSystemProxy();
 
-    /* Configure ncm to use fssystem library to mount content. */
-    ncm::SetMountContentMetaFunction(mitm::sysupdater::MountContentMeta);
+    /* Configure ncm to use fssystem library to mount content from the sd card. */
+    ncm::SetMountContentMetaFunction(mitm::sysupdater::MountSdCardContentMeta);
 
     ams::CheckApiVersion();
 }
