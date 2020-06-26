@@ -37,8 +37,10 @@
 #include <vapours/results/kvdb_results.hpp>
 #include <vapours/results/loader_results.hpp>
 #include <vapours/results/lr_results.hpp>
-#include <vapours/results/os_results.hpp>
 #include <vapours/results/ncm_results.hpp>
+#include <vapours/results/nim_results.hpp>
+#include <vapours/results/ns_results.hpp>
+#include <vapours/results/os_results.hpp>
 #include <vapours/results/pgl_results.hpp>
 #include <vapours/results/pm_results.hpp>
 #include <vapours/results/psc_results.hpp>

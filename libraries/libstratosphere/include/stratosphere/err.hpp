@@ -13,17 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 
-namespace ams::sf {
-
-    /* Helper structs for serialization of buffers. */
-    struct LargeData{};
-
-    struct PrefersMapAliasTransferMode{};
-
-    struct PrefersPointerTransferMode{};
-
-    struct PrefersAutoSelectTransferMode{};
-
-}
+#include <stratosphere/err/err_error_context.hpp>

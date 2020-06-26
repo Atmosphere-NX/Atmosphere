@@ -27,16 +27,24 @@ namespace ams::mitm::sysupdater {
         ncm::FirmwareVariationId firmware_variation_ids[FirmwareVariationCountMax];
     };
 
+    struct UpdateValidationInfo {
+        ncm::ContentMetaKey invalid_key;
+        ncm::ContentId invalid_content_id;
+    };
+
     class SystemUpdateService final : public sf::IServiceObject {
         private:
             enum class CommandId {
                 GetUpdateInformation = 0,
+                ValidateUpdate       = 1,
             };
         private:
             Result GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &path);
+            Result ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
                 MAKE_SERVICE_COMMAND_META(GetUpdateInformation),
+                MAKE_SERVICE_COMMAND_META(ValidateUpdate),
             };
     };
 

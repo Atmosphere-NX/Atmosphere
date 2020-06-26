@@ -122,6 +122,159 @@ namespace ams::mitm::sysupdater {
             return ResultSuccess();
         }
 
+        Result ValidateSystemUpdate(Result *out_result, UpdateValidationInfo *out_info, const ncm::PackagedContentMetaReader &update_reader, const char *package_root) {
+            /* Clear output. */
+            *out_result = ResultSuccess();
+
+            /* We want to track all content the update requires. */
+            const size_t num_content_metas = update_reader.GetContentMetaCount();
+            bool content_meta_valid[num_content_metas] = {};
+
+            /* Allocate a buffer to use for validation. */
+            size_t data_buffer_size = 1_MB;
+            void *data_buffer;
+            do {
+                data_buffer = std::malloc(data_buffer_size);
+                if (data_buffer != nullptr) {
+                    break;
+                }
+
+                data_buffer_size /= 2;
+            } while (data_buffer_size >= 16_KB);
+            R_UNLESS(data_buffer != nullptr, fs::ResultAllocationFailureInNew());
+
+            ON_SCOPE_EXIT { std::free(data_buffer); };
+
+            /* Declare helper for result validation. */
+            auto ValidateResult = [&] ALWAYS_INLINE_LAMBDA (Result result) -> Result {
+                *out_result = result;
+                return result;
+            };
+
+            /* Iterate over all files to find all content metas. */
+            R_TRY(ForEachFileInDirectory(package_root, [&](bool *done, const fs::DirectoryEntry &entry) -> Result {
+                /* Clear output. */
+                *out_info = {};
+
+                /* Don't early terminate by default. */
+                *done = false;
+
+                /* We have nothing to list if we're not looking at a meta. */
+                R_SUCCEED_IF(!PathView(entry.name).HasSuffix(".cnmt.nca"));
+
+                /* Read the content meta path, and build. */
+                ncm::AutoBuffer package_meta;
+                R_TRY(LoadContentMeta(std::addressof(package_meta), package_root, entry));
+
+                /* Create a reader. */
+                const auto reader = ncm::PackagedContentMetaReader(package_meta.Get(), package_meta.GetSize());
+
+                /* Get the key for the reader. */
+                const auto key = reader.GetKey();
+
+                /* Check if we need to validate this content. */
+                bool need_validate = false;
+                size_t validation_index = 0;
+                for (size_t i = 0; i < num_content_metas; ++i) {
+                    if (update_reader.GetContentMetaInfo(i)->ToKey() == key) {
+                        need_validate = true;
+                        validation_index = i;
+                        break;
+                    }
+                }
+
+                /* If we don't need to validate, continue. */
+                R_SUCCEED_IF(!need_validate);
+
+                /* We're validating. */
+                out_info->invalid_key = key;
+
+                /* Validate all contents. */
+                for (size_t i = 0; i < reader.GetContentCount(); ++i) {
+                    const auto *content_info = reader.GetContentInfo(i);
+                    const auto &content_id   = content_info->GetId();
+                    const s64 content_size   = content_info->info.GetSize();
+                    out_info->invalid_content_id = content_id;
+
+                    /* Get the content id string. */
+                    auto content_id_str = ncm::GetContentIdString(content_id);
+
+                    /* Open the file. */
+                    fs::FileHandle file;
+                    {
+                        char path[fs::EntryNameLengthMax];
+                        std::snprintf(path, sizeof(path), "%s%s%s", package_root, content_id_str.data, content_info->GetType() == ncm::ContentType::Meta ? ".cnmt.nca" : ".nca");
+                        if (R_FAILED(ValidateResult(fs::OpenFile(std::addressof(file), path, ams::fs::OpenMode_Read)))) {
+                            *done = true;
+                            return ResultSuccess();
+                        }
+                    }
+                    ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+                    /* Validate the file size is correct. */
+                    s64 file_size;
+                    if (R_FAILED(ValidateResult(fs::GetFileSize(std::addressof(file_size), file)))) {
+                        *done = true;
+                        return ResultSuccess();
+                    }
+                    if (file_size != content_size) {
+                        *out_result = ncm::ResultInvalidContentHash();
+                        *done = true;
+                        return ResultSuccess();
+                    }
+
+                    /* Read and hash the file in chunks. */
+                    crypto::Sha256Generator sha;
+                    sha.Initialize();
+
+                    s64 ofs = 0;
+                    while (ofs < content_size) {
+                        const size_t cur_size = std::min(static_cast<size_t>(content_size - ofs), data_buffer_size);
+                        if (R_FAILED(ValidateResult(fs::ReadFile(file, ofs, data_buffer, cur_size)))) {
+                            *done = true;
+                            return ResultSuccess();
+                        }
+
+                        sha.Update(data_buffer, cur_size);
+
+                        ofs += cur_size;
+                    }
+
+                    /* Get the hash. */
+                    ncm::Digest calc_digest;
+                    sha.GetHash(std::addressof(calc_digest), sizeof(calc_digest));
+
+                    /* Validate the hash. */
+                    if (std::memcmp(std::addressof(calc_digest), std::addressof(content_info->digest), sizeof(ncm::Digest)) != 0) {
+                        *out_result = ncm::ResultInvalidContentHash();
+                        *done = true;
+                        return ResultSuccess();
+                    }
+                }
+
+                /* Mark the relevant content as validated. */
+                content_meta_valid[validation_index] = true;
+                *out_info = {};
+
+                return ResultSuccess();
+            }));
+
+            /* If we're otherwise going to succeed, ensure that every content was found. */
+            if (R_SUCCEEDED(*out_result)) {
+                for (size_t i = 0; i < num_content_metas; ++i) {
+                    if (!content_meta_valid[i]) {
+                        *out_result = fs::ResultPathNotFound();
+                        *out_info = {
+                            .invalid_key = update_reader.GetContentMetaInfo(i)->ToKey(),
+                        };
+                        break;
+                    }
+                }
+            }
+
+            return ResultSuccess();
+        }
+
         Result ActivateSystemUpdateContentMetaDatabase() {
             /* TODO: Don't use gamecard db. */
             return ncm::ActivateContentMetaDatabase(ncm::StorageId::GameCard);
@@ -243,5 +396,30 @@ namespace ams::mitm::sysupdater {
         out.SetValue(update_info);
         return ResultSuccess();
     }
+
+    Result SystemUpdateService::ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path) {
+        /* Adjust the path. */
+        ncm::Path package_root;
+        R_TRY(FormatUserPackagePath(std::addressof(package_root), path));
+
+        /* Parse the update. */
+        {
+            /* Get the content info for the system update. */
+            ncm::ContentInfo content_info;
+            R_TRY(GetSystemUpdateUpdateContentInfoFromPackage(std::addressof(content_info), package_root.str));
+
+            /* Read the content meta. */
+            ncm::AutoBuffer content_meta_buffer;
+            R_TRY(ReadContentMetaPath(std::addressof(content_meta_buffer), package_root.str, content_info));
+
+            /* Create a reader. */
+            const auto reader = ncm::PackagedContentMetaReader(content_meta_buffer.Get(), content_meta_buffer.GetSize());
+
+            /* Validate the update. */
+            R_TRY(ValidateSystemUpdate(out_validate_result.GetPointer(), out_validate_info.GetPointer(), reader, package_root.str));
+        }
+
+        return ResultSuccess();
+    };
 
 }

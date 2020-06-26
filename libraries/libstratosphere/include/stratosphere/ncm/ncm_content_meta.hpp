@@ -45,7 +45,7 @@ namespace ams::ncm {
             };
         }
 
-        constexpr ContentMetaKey ToKey() {
+        constexpr ContentMetaKey ToKey() const {
             return ContentMetaKey::Make(this->id, this->version, this->type);
         }
     };

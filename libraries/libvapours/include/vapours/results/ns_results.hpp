@@ -13,17 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
+#include <vapours/results/results_common.hpp>
 
-namespace ams::sf {
+namespace ams::ns {
 
-    /* Helper structs for serialization of buffers. */
-    struct LargeData{};
+    R_DEFINE_NAMESPACE_RESULT_MODULE(16);
 
-    struct PrefersMapAliasTransferMode{};
-
-    struct PrefersPointerTransferMode{};
-
-    struct PrefersAutoSelectTransferMode{};
+    R_DEFINE_ERROR_RESULT(Canceled,             90);
+    R_DEFINE_ERROR_RESULT(OutOfMaxRunningTask, 110);
 
 }
