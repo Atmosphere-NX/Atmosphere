@@ -101,7 +101,16 @@ namespace ams::fssystem {
             }
 
             if (needs_operate) {
-                R_TRY(func(std::addressof(this->data_storage[cur_entry.storage_index]), cur_entry.GetPhysicalOffset() + data_offset, cur_offset, cur_size));
+                /* Get the current data storage's size. */
+                s64 cur_data_storage_size;
+                R_TRY(this->data_storage[cur_entry.storage_index].GetSize(std::addressof(cur_data_storage_size)));
+
+                /* Ensure that we remain within range. */
+                const auto cur_entry_phys_offset = cur_entry.GetPhysicalOffset();
+                R_UNLESS(0 <= cur_entry_phys_offset && cur_entry_phys_offset <= cur_data_storage_size, fs::ResultIndirectStorageCorrupted());
+                R_UNLESS(cur_entry_phys_offset + data_offset + cur_size <= cur_data_storage_size,      fs::ResultIndirectStorageCorrupted());
+
+                R_TRY(func(std::addressof(this->data_storage[cur_entry.storage_index]), cur_entry_phys_offset + data_offset, cur_offset, cur_size));
             }
 
             cur_offset += cur_size;

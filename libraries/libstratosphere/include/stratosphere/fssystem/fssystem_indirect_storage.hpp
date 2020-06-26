@@ -133,7 +133,7 @@ namespace ams::fssystem {
 
             virtual Result GetSize(s64 *out) override {
                 AMS_ASSERT(out != nullptr);
-                *out = this->table.GetSize();
+                *out = this->table.GetEnd();
                 return ResultSuccess();
             }
 
