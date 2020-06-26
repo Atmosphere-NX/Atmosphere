@@ -26,12 +26,18 @@ namespace ams::ncm {
             return impl::PathView(name).HasSuffix(".cnmt");
         }
 
+        Result MountContentMetaByRemoteFileSystemProxy(const char *mount_name, const char *path) {
+            return fs::MountContent(mount_name, path, fs::ContentType_Meta);
+        }
+
+        constinit MountContentMetaFunction g_mount_content_meta_func = MountContentMetaByRemoteFileSystemProxy;
+
     }
 
     Result ReadContentMetaPath(AutoBuffer *out, const char *path) {
         /* Mount the content. */
         auto mount_name = impl::CreateUniqueMountName();
-        R_TRY(fs::MountContent(mount_name.str, path, fs::ContentType_Meta));
+        R_TRY(g_mount_content_meta_func(mount_name.str, path));
         ON_SCOPE_EXIT { fs::Unmount(mount_name.str); };
 
         /* Open the root directory. */
@@ -154,6 +160,10 @@ namespace ams::ncm {
         /* Output the content meta info buffer. */
         *out_meta_infos = std::move(buffer);
         return ResultSuccess();
+    }
+
+    void SetMountContentMetaFunction(MountContentMetaFunction func) {
+        g_mount_content_meta_func = func;
     }
 
 }

@@ -13,25 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
+#include "sysupdater_fs_utils.hpp"
 
-namespace ams::mitm::bpc {
+namespace ams::mitm::sysupdater {
 
-    class AtmosphereService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                RebootToFatalError = 65000,
-                SetRebootPayload   = 65001,
-            };
-        private:
-            void RebootToFatalError(const ams::FatalErrorContext &ctx);
-            void SetRebootPayload(const ams::sf::InBuffer &payload);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RebootToFatalError),
-                MAKE_SERVICE_COMMAND_META(SetRebootPayload),
-            };
-    };
+    Result MountContentMeta(const char *mount_name, const char *path) {
+        /* TODO: Implement */
+        AMS_ABORT();
+    }
 
 }

@@ -157,6 +157,7 @@ namespace ams::mitm {
 
             /* Connect to set:sys. */
             sm::DoWithSession([]() {
+                R_ABORT_UNLESS(setInitialize());
                 R_ABORT_UNLESS(setsysInitialize());
             });
 

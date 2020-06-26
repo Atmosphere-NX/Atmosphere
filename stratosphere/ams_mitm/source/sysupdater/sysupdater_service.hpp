@@ -16,21 +16,27 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::mitm::bpc {
+namespace ams::mitm::sysupdater {
 
-    class AtmosphereService final : public sf::IServiceObject {
+    constexpr inline size_t FirmwareVariationCountMax = 16;
+
+    struct UpdateInformation {
+        u32 version;
+        bool exfat_supported;
+        u32 firmware_variation_count;
+        ncm::FirmwareVariationId firmware_variation_ids[FirmwareVariationCountMax];
+    };
+
+    class SystemUpdateService final : public sf::IServiceObject {
         private:
             enum class CommandId {
-                RebootToFatalError = 65000,
-                SetRebootPayload   = 65001,
+                GetUpdateInformation = 0,
             };
         private:
-            void RebootToFatalError(const ams::FatalErrorContext &ctx);
-            void SetRebootPayload(const ams::sf::InBuffer &payload);
+            Result GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &path);
         public:
             DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RebootToFatalError),
-                MAKE_SERVICE_COMMAND_META(SetRebootPayload),
+                MAKE_SERVICE_COMMAND_META(GetUpdateInformation),
             };
     };
 

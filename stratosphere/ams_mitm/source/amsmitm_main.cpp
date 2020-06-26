@@ -17,6 +17,7 @@
 #include "amsmitm_initialization.hpp"
 #include "amsmitm_module_management.hpp"
 #include "bpc_mitm/bpc_ams_power_utils.hpp"
+#include "sysupdater/sysupdater_fs_utils.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -83,6 +84,12 @@ void __appInit(void) {
         R_ABORT_UNLESS(pminfoInitialize());
         spl::InitializeForFs();
     });
+
+    /* Initialize fssystem library. */
+    fssystem::InitializeForFileSystemProxy();
+
+    /* Configure ncm to use fssystem library to mount content. */
+    ncm::SetMountContentMetaFunction(mitm::sysupdater::MountContentMeta);
 
     ams::CheckApiVersion();
 }
