@@ -13,19 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::ns {
+namespace ams::os::impl {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(16);
+    class TransferMemoryImpl {
+        public:
+            static Result Create(Handle *out, void *address, size_t size, MemoryPermission perm);
+            static void Close(Handle handle);
 
-    R_DEFINE_ERROR_RESULT(Canceled,                           90);
-    R_DEFINE_ERROR_RESULT(OutOfMaxRunningTask,               110);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotSetup,                270);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotPrepared,             280);
-    R_DEFINE_ERROR_RESULT(CardUpdateAlreadySetup,            290);
-    R_DEFINE_ERROR_RESULT(PrepareCardUpdateAlreadyRequested, 460);
+            static Result Map(void **out, Handle handle, void *address, size_t size, MemoryPermission owner_perm);
+            static void Unmap(Handle handle, void *address, size_t size);
+    };
 
 }

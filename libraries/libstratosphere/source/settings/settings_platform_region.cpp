@@ -13,19 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "impl/settings_platform_region_impl.hpp"
 
-#pragma once
-#include <vapours/results/results_common.hpp>
+namespace ams::settings::system {
 
-namespace ams::ns {
-
-    R_DEFINE_NAMESPACE_RESULT_MODULE(16);
-
-    R_DEFINE_ERROR_RESULT(Canceled,                           90);
-    R_DEFINE_ERROR_RESULT(OutOfMaxRunningTask,               110);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotSetup,                270);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotPrepared,             280);
-    R_DEFINE_ERROR_RESULT(CardUpdateAlreadySetup,            290);
-    R_DEFINE_ERROR_RESULT(PrepareCardUpdateAlreadyRequested, 460);
+    PlatformRegion GetPlatformRegion() {
+        if (hos::GetVersion() >= hos::Version_9_0_0) {
+            s32 region = 0;
+            R_ABORT_UNLESS(settings::impl::GetPlatformRegion(std::addressof(region)));
+            return static_cast<PlatformRegion>(region);
+        } else {
+            return PlatformRegion_Global;
+        }
+    }
 
 }
