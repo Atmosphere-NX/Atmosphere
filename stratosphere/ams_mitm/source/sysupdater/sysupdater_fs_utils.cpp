@@ -55,10 +55,10 @@ namespace ams::mitm::sysupdater {
         }
 
         Result ParseMountName(const char **path, std::shared_ptr<ams::fs::fsa::IFileSystem> *out) {
-            /* The equivalent function here supports all the common mount names; we'll only support the SD card. */
-            if (const auto sd_mount_len = strnlen(ams::fs::impl::SdCardFileSystemMountName, ams::fs::MountNameLengthMax); std::strncmp(*path, ams::fs::impl::SdCardFileSystemMountName, sd_mount_len) == 0) {
-                /* Open an sd card fs. */
-                *path += sd_mount_len;
+            /* The equivalent function here supports all the common mount names; we'll only support the SD card, system content storage. */
+            if (const auto mount_len = strnlen(ams::fs::impl::SdCardFileSystemMountName, ams::fs::MountNameLengthMax); std::strncmp(*path, ams::fs::impl::SdCardFileSystemMountName, mount_len) == 0) {
+                /* Advance the path. */
+                *path += mount_len;
 
                 /* Open the SD card. This uses libnx bindings. */
                 FsFileSystem fs;
@@ -67,6 +67,20 @@ namespace ams::mitm::sysupdater {
                 /* Allocate a new filesystem wrapper. */
                 auto fsa = std::make_shared<ams::fs::RemoteFileSystem>(fs);
                 R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInSdCardA());
+
+                /* Set the output fs. */
+                *out = std::move(fsa);
+            } else if (const auto mount_len = strnlen(ams::fs::impl::ContentStorageSystemMountName, ams::fs::MountNameLengthMax); std::strncmp(*path, ams::fs::impl::ContentStorageSystemMountName, mount_len) == 0) {
+                /* Advance the path. */
+                *path += mount_len;
+
+                /* Open the system content storage. This uses libnx bindings. */
+                FsFileSystem fs;
+                R_TRY(fsOpenContentStorageFileSystem(std::addressof(fs), FsContentStorageId_System));
+
+                /* Allocate a new filesystem wrapper. */
+                auto fsa = std::make_shared<ams::fs::RemoteFileSystem>(fs);
+                R_UNLESS(fsa != nullptr, fs::ResultAllocationFailureInContentStorageA());
 
                 /* Set the output fs. */
                 *out = std::move(fsa);
