@@ -70,6 +70,11 @@ namespace ams::os {
                 return h;
             }
 
+            void Detach() {
+                const Handle h = this->Move();
+                AMS_UNUSED(h);
+            }
+
             void Reset(Handle h) {
                 ManagedHandle(h).Swap(*this);
             }

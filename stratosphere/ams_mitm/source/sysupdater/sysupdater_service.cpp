@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "sysupdater_service.hpp"
+#include "sysupdater_async_impl.hpp"
 #include "sysupdater_fs_utils.hpp"
 
 namespace ams::mitm::sysupdater {
@@ -275,45 +276,6 @@ namespace ams::mitm::sysupdater {
             return ResultSuccess();
         }
 
-        Result ActivateSystemUpdateContentMetaDatabase() {
-            /* TODO: Don't use gamecard db. */
-            return ncm::ActivateContentMetaDatabase(ncm::StorageId::GameCard);
-        }
-
-        void InactivateSystemUpdateContentMetaDatabase() {
-            /* TODO: Don't use gamecard db. */
-            ncm::InactivateContentMetaDatabase(ncm::StorageId::GameCard);
-        }
-
-        Result OpenSystemUpdateContentMetaDatabase(ncm::ContentMetaDatabase *out) {
-            /* TODO: Don't use gamecard db. */
-            return ncm::OpenContentMetaDatabase(out, ncm::StorageId::GameCard);
-        }
-
-        Result GetContentInfoOfContentMeta(ncm::ContentInfo *out, ncm::ContentMetaDatabase &db, const ncm::ContentMetaKey &key) {
-            s32 ofs = 0;
-            while (true) {
-                /* List content infos. */
-                s32 count;
-                ncm::ContentInfo info;
-                R_TRY(db.ListContentInfo(std::addressof(count), std::addressof(info), 1, key, ofs++));
-
-                /* No content infos left to list. */
-                if (count == 0) {
-                    break;
-                }
-
-                /* Check if the info is for meta content. */
-                if (info.GetType() == ncm::ContentType::Meta) {
-                    *out = info;
-                    return ResultSuccess();
-                }
-            }
-
-            /* Not found. */
-            return ncm::ResultContentInfoNotFound();
-        }
-
         bool IsExFatDriverSupported(const ncm::ContentMetaInfo &info) {
             return info.version >= MinimumVersionForExFatDriver && ((info.attributes & ncm::ContentMetaAttribute_IncludesExFatDriver) != 0);
         }
@@ -332,6 +294,25 @@ namespace ams::mitm::sysupdater {
             }
 
             return ResultSuccess();
+        }
+
+        const char *GetFirmwareVariationSettingName(settings::system::PlatformRegion region) {
+            switch (region) {
+                case settings::system::PlatformRegion_Global: return "firmware_variation";
+                case settings::system::PlatformRegion_China:  return "t_firmware_variation";
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+
+        ncm::FirmwareVariationId GetFirmwareVariationId() {
+            /* Get the firmware variation setting name. */
+            const char * const setting_name = GetFirmwareVariationSettingName(settings::system::GetPlatformRegion());
+
+            /* Retrieve the firmware variation id. */
+            ncm::FirmwareVariationId id = {};
+            settings::fwdbg::GetSettingsItemValue(std::addressof(id.value), sizeof(u8), "ns.systemupdate", setting_name);
+
+            return id;
         }
 
     }
@@ -421,5 +402,116 @@ namespace ams::mitm::sysupdater {
 
         return ResultSuccess();
     };
+
+    Result SystemUpdateService::SetupUpdate(sf::MoveHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
+        return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, GetFirmwareVariationId());
+    }
+
+    Result SystemUpdateService::SetupUpdateWithVariation(sf::MoveHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+        return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, firmware_variation_id);
+    }
+
+    Result SystemUpdateService::RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<std::shared_ptr<IAsyncResult>> out_async) {
+        /* Ensure the update is setup but not prepared. */
+        R_UNLESS(this->setup_update,      ns::ResultCardUpdateNotSetup());
+        R_UNLESS(!this->requested_update, ns::ResultPrepareCardUpdateAlreadyRequested());
+
+        /* Create the async result. */
+        auto async_result = std::make_shared<AsyncPrepareSdCardUpdateImpl>(std::addressof(*this->update_task));
+        R_UNLESS(async_result != nullptr, ns::ResultOutOfMaxRunningTask());
+
+        /* Run the task. */
+        R_TRY(async_result->Run());
+
+        /* We prepared the task! */
+        this->requested_update = true;
+        out_event_handle.SetValue(async_result->GetEvent().GetReadableHandle());
+        out_async.SetValue(std::move(async_result));
+
+        return ResultSuccess();
+    }
+
+    Result SystemUpdateService::GetPrepareUpdateProgress(sf::Out<SystemUpdateProgress> out) {
+        /* Ensure the update is setup. */
+        R_UNLESS(this->setup_update, ns::ResultCardUpdateNotSetup());
+
+        /* Get the progress. */
+        auto install_progress = this->update_task->GetProgress();
+        out.SetValue({ .current_size = install_progress.installed_size, .total_size = install_progress.total_size });
+        return ResultSuccess();
+    }
+
+    Result SystemUpdateService::HasPreparedUpdate(sf::Out<bool> out) {
+        /* Ensure the update is setup. */
+        R_UNLESS(this->setup_update, ns::ResultCardUpdateNotSetup());
+
+        out.SetValue(this->update_task->GetProgress().state == ncm::InstallProgressState::Downloaded);
+        return ResultSuccess();
+    }
+
+    Result SystemUpdateService::ApplyPreparedUpdate() {
+        /* Ensure the update is setup. */
+        R_UNLESS(this->setup_update, ns::ResultCardUpdateNotSetup());
+
+        /* Ensure the update is prepared. */
+        R_UNLESS(this->update_task->GetProgress().state == ncm::InstallProgressState::Downloaded, ns::ResultCardUpdateNotPrepared());
+
+        /* Apply the task. */
+        R_TRY(this->apply_manager.ApplyPackageTask(std::addressof(*this->update_task)));
+
+        return ResultSuccess();
+    }
+
+    Result SystemUpdateService::SetupUpdateImpl(os::ManagedHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+        /* Ensure we don't already have an update set up. */
+        R_UNLESS(!this->setup_update, ns::ResultCardUpdateAlreadySetup());
+
+        /* Destroy any existing update tasks. */
+        nim::SystemUpdateTaskId id;
+        auto count = nim::ListSystemUpdateTask(std::addressof(id), 1);
+        if (count > 0) {
+            R_TRY(nim::DestroySystemUpdateTask(id));
+        }
+
+        /* Initialize the update task. */
+        R_TRY(InitializeUpdateTask(transfer_memory, transfer_memory_size, path, exfat, firmware_variation_id));
+
+        /* The update is now set up. */
+        this->setup_update = true;
+        return ResultSuccess();
+    }
+
+    Result SystemUpdateService::InitializeUpdateTask(os::ManagedHandle &transfer_memory_handle, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+        /* Map the transfer memory. */
+        const size_t tmem_buffer_size = static_cast<size_t>(transfer_memory_size);
+        this->update_transfer_memory.emplace(tmem_buffer_size, transfer_memory_handle.Get(), true);
+
+        void *tmem_buffer;
+        R_TRY(this->update_transfer_memory->Map(std::addressof(tmem_buffer), os::MemoryPermission_None));
+        auto tmem_guard = SCOPE_GUARD {
+            this->update_transfer_memory->Unmap();
+            this->update_transfer_memory = std::nullopt;
+        };
+
+        /* Now that the memory is mapped, the input handle is managed and can be released. */
+        transfer_memory_handle.Detach();
+
+        /* Adjust the package root. */
+        ncm::Path package_root;
+        R_TRY(FormatUserPackagePath(std::addressof(package_root), path));
+
+        /* Ensure that we can create an update context. */
+        R_TRY(fs::EnsureDirectoryRecursively("@Sdcard:/atmosphere/update/"));
+        const char *context_path = "@Sdcard:/atmosphere/update/cup.ctx";
+
+        /* Create and initialize the update task. */
+        this->update_task.emplace();
+        R_TRY(this->update_task->Initialize(package_root.str, context_path, tmem_buffer, tmem_buffer_size, exfat, firmware_variation_id));
+
+        /* We successfully setup the update. */
+        tmem_guard.Cancel();
+
+        return ResultSuccess();
+    }
 
 }

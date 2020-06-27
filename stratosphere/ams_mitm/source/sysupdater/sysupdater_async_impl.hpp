@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "sysupdater_i_async_result.hpp"
 #include "sysupdater_thread_allocator.hpp"
 
 namespace ams::mitm::sysupdater {
@@ -58,18 +59,18 @@ namespace ams::mitm::sysupdater {
             }
     };
 
-    class AsyncBase {
+    class AsyncBase : public IAsyncBase {
         public:
             virtual ~AsyncBase() { /* ... */ }
 
-            Result Cancel() {
+            static Result ToAsyncResult(Result result);
+
+            virtual Result Cancel() override final {
                 this->CancelImpl();
                 return ResultSuccess();
             }
 
-            static Result ToAsyncResult(Result result);
-
-            virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) {
+            virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) override {
                 *out = {};
                 return ResultSuccess();
             }
@@ -77,12 +78,27 @@ namespace ams::mitm::sysupdater {
             virtual void CancelImpl() = 0;
     };
 
-    class AsyncResultBase : public AsyncBase {
+    class AsyncResultBase : public IAsyncResult {
         public:
-            Result Get() {
+            virtual ~AsyncResultBase() { /* ... */ }
+
+            static Result ToAsyncResult(Result result) { return AsyncBase::ToAsyncResult(result); }
+
+            virtual Result Cancel() override final {
+                this->CancelImpl();
+                return ResultSuccess();
+            }
+
+            virtual Result Get() override final {
                 return ToAsyncResult(this->GetImpl());
             }
+
+            virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) override {
+                *out = {};
+                return ResultSuccess();
+            }
         private:
+            virtual void CancelImpl() = 0;
             virtual Result GetImpl() = 0;
     };
 

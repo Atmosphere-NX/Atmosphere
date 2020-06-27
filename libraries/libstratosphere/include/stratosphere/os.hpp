@@ -29,6 +29,7 @@
 #include <stratosphere/os/os_condition_variable.hpp>
 #include <stratosphere/os/os_sdk_mutex.hpp>
 #include <stratosphere/os/os_rw_lock.hpp>
+#include <stratosphere/os/os_transfer_memory.hpp>
 #include <stratosphere/os/os_semaphore.hpp>
 #include <stratosphere/os/os_event.hpp>
 #include <stratosphere/os/os_system_event.hpp>

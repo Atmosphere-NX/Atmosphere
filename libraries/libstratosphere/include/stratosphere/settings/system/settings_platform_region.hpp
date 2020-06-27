@@ -15,17 +15,17 @@
  */
 
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <vapours.hpp>
+#include <stratosphere/settings/settings_types.hpp>
 
-namespace ams::ns {
+namespace ams::settings::system {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(16);
+    enum PlatformRegion {
+        PlatformRegion_Invalid = 0,
+        PlatformRegion_Global  = 1,
+        PlatformRegion_China   = 2,
+    };
 
-    R_DEFINE_ERROR_RESULT(Canceled,                           90);
-    R_DEFINE_ERROR_RESULT(OutOfMaxRunningTask,               110);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotSetup,                270);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotPrepared,             280);
-    R_DEFINE_ERROR_RESULT(CardUpdateAlreadySetup,            290);
-    R_DEFINE_ERROR_RESULT(PrepareCardUpdateAlreadyRequested, 460);
+    PlatformRegion GetPlatformRegion();
 
 }

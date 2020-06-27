@@ -23,6 +23,7 @@
 #include <stratosphere/settings/factory/settings_device_certificate.hpp>
 #include <stratosphere/settings/system/settings_error_report.hpp>
 #include <stratosphere/settings/system/settings_firmware_version.hpp>
+#include <stratosphere/settings/system/settings_platform_region.hpp>
 #include <stratosphere/settings/system/settings_product_model.hpp>
 #include <stratosphere/settings/system/settings_region.hpp>
 #include <stratosphere/settings/system/settings_serial_number.hpp>

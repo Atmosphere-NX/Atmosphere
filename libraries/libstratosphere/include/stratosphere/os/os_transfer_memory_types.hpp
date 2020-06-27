@@ -15,17 +15,29 @@
  */
 
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <vapours.hpp>
+#include <stratosphere/os/impl/os_internal_critical_section.hpp>
 
-namespace ams::ns {
+namespace ams::os {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(16);
+    struct TransferMemoryType {
+        enum State {
+            State_NotInitialized = 0,
+            State_Created        = 1,
+            State_Mapped         = 2,
+            State_Detached       = 3,
+        };
 
-    R_DEFINE_ERROR_RESULT(Canceled,                           90);
-    R_DEFINE_ERROR_RESULT(OutOfMaxRunningTask,               110);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotSetup,                270);
-    R_DEFINE_ERROR_RESULT(CardUpdateNotPrepared,             280);
-    R_DEFINE_ERROR_RESULT(CardUpdateAlreadySetup,            290);
-    R_DEFINE_ERROR_RESULT(PrepareCardUpdateAlreadyRequested, 460);
+        u8 state;
+        bool handle_managed;
+        bool allocated;
+
+        void *address;
+        size_t size;
+        Handle handle;
+
+        mutable impl::InternalCriticalSectionStorage cs_transfer_memory;
+    };
+    static_assert(std::is_trivial<TransferMemoryType>::value);
 
 }

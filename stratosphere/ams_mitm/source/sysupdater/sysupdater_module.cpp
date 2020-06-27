@@ -27,7 +27,7 @@ namespace ams::mitm::sysupdater {
         constexpr size_t          SystemUpdateMaxSessions = 1;
 
         constexpr size_t MaxServers = 1;
-        constexpr size_t MaxSessions = SystemUpdateMaxSessions;
+        constexpr size_t MaxSessions = SystemUpdateMaxSessions + 3;
 
         struct ServerOptions {
             static constexpr size_t PointerBufferSize = 1_KB;
@@ -36,6 +36,8 @@ namespace ams::mitm::sysupdater {
         };
 
         sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
+
+        constinit sysupdater::SystemUpdateService g_system_update_service_object;
 
     }
 
@@ -48,7 +50,7 @@ namespace ams::mitm::sysupdater {
         ON_SCOPE_EXIT { nim::FinalizeForNetworkInstallManager(); };
 
         /* Register ams:su. */
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<sysupdater::SystemUpdateService>(SystemUpdateServiceName, SystemUpdateMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<sysupdater::SystemUpdateService>(SystemUpdateServiceName, SystemUpdateMaxSessions, sf::ServiceObjectTraits<sysupdater::SystemUpdateService>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_system_update_service_object)))));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();
