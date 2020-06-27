@@ -65,8 +65,8 @@ namespace ams::mitm::sysupdater {
         private:
             Result GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &path);
             Result ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path);
-            Result SetupUpdate(sf::MoveHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat);
-            Result SetupUpdateWithVariation(sf::MoveHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
+            Result SetupUpdate(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat);
+            Result SetupUpdateWithVariation(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
             Result RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<std::shared_ptr<IAsyncResult>> out_async);
             Result GetPrepareUpdateProgress(sf::Out<SystemUpdateProgress> out);
             Result HasPreparedUpdate(sf::Out<bool> out);

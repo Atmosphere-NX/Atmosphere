@@ -403,11 +403,11 @@ namespace ams::mitm::sysupdater {
         return ResultSuccess();
     };
 
-    Result SystemUpdateService::SetupUpdate(sf::MoveHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
+    Result SystemUpdateService::SetupUpdate(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat) {
         return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, GetFirmwareVariationId());
     }
 
-    Result SystemUpdateService::SetupUpdateWithVariation(sf::MoveHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
+    Result SystemUpdateService::SetupUpdateWithVariation(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id) {
         return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, firmware_variation_id);
     }
 
