@@ -838,13 +838,7 @@ uint32_t nxboot_main(void) {
 
     /* Derive new device keys. */
     {
-        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
-            derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
-        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-            derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY, target_firmware);
-        } else {
-            /* No new keys to derive */
-        }
+        derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
     }
 
     /* Set the system partition's keys. */

@@ -19,34 +19,35 @@
 namespace ams::pkg1 {
 
     enum AesKeySlot {
-        AesKeySlot_UserStart                = 0,
+        AesKeySlot_UserStart                      = 0,
 
-        AesKeySlot_TzramSaveKek             = 2,
-        AesKeySlot_TzramSaveKey             = 3,
+        AesKeySlot_TzramSaveKek                   = 2,
+        AesKeySlot_TzramSaveKey                   = 3,
 
-        AesKeySlot_UserLast                 = 5,
-        AesKeySlot_UserEnd                  = AesKeySlot_UserLast + 1,
+        AesKeySlot_UserLast                       = 5,
+        AesKeySlot_UserEnd                        = AesKeySlot_UserLast + 1,
 
-        AesKeySlot_SecmonStart              = 8,
+        AesKeySlot_SecmonStart                    = 8,
 
-        AesKeySlot_Temporary                =  8,
-        AesKeySlot_Smc                      =  9,
-        AesKeySlot_RandomForUserWrap        = 10,
-        AesKeySlot_RandomForKeyStorageWrap  = 11,
-        AesKeySlot_DeviceMaster             = 12,
-        AesKeySlot_Master                   = 13,
-        AesKeySlot_Device                   = 15,
+        AesKeySlot_Temporary                      =  8,
+        AesKeySlot_Smc                            =  9,
+        AesKeySlot_RandomForUserWrap              = 10,
+        AesKeySlot_RandomForKeyStorageWrap        = 11,
+        AesKeySlot_DeviceMaster                   = 12,
+        AesKeySlot_Master                         = 13,
+        AesKeySlot_Device                         = 15,
 
-        AesKeySlot_SecmonEnd                = 16,
+        AesKeySlot_SecmonEnd                      = 16,
 
         /* Used only during boot. */
-        AesKeySlot_Tsec                     = 12,
-        AesKeySlot_TsecRoot                 = 13,
-        AesKeySlot_SecureBoot               = 14,
-        AesKeySlot_SecureStorage            = 15,
+        AesKeySlot_Tsec                           = 12,
+        AesKeySlot_TsecRoot                       = 13,
+        AesKeySlot_SecureBoot                     = 14,
+        AesKeySlot_SecureStorage                  = 15,
 
-        AesKeySlot_MasterKek                = 13,
-        AesKeySlot_DeviceMasterKeySourceKek = 14,
+        AesKeySlot_DeviceMasterKeySourceKekErista = 10,
+        AesKeySlot_MasterKek                      = 13,
+        AesKeySlot_DeviceMasterKeySourceKekMariko = 14,
     };
 
     enum RsaKeySlot {

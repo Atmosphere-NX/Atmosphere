@@ -218,6 +218,9 @@ namespace ams::secmon::boot {
             /* Get the current key generation. */
             const int current_generation = secmon::GetKeyGeneration();
 
+            /* Get the kek slot. */
+            const int kek_slot = fuse::GetSocType() == fuse::SocType_Mariko ? pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko : pkg1::AesKeySlot_DeviceMasterKeySourceKekErista;
+
             /* Iterate for all generations. */
             for (int i = 0; i < pkg1::OldDeviceMasterKeyCount; ++i) {
                 const int generation = pkg1::KeyGeneration_4_0_0 + i;
@@ -229,7 +232,7 @@ namespace ams::secmon::boot {
                 se::SetEncryptedAesKey128(pkg1::AesKeySlot_Temporary, pkg1::AesKeySlot_Temporary, is_prod ? DeviceMasterKekSourcesProd[i] : DeviceMasterKekSourcesDev[i], se::AesBlockSize);
 
                 /* Decrypt the device master key source into the work block. */
-                se::DecryptAes128(work_block, se::AesBlockSize, pkg1::AesKeySlot_DeviceMasterKeySourceKek, DeviceMasterKeySourceSources[i], se::AesBlockSize);
+                se::DecryptAes128(work_block, se::AesBlockSize, kek_slot, DeviceMasterKeySourceSources[i], se::AesBlockSize);
 
                 /* If we're decrypting the current device master key, decrypt into the keyslot. */
                 if (generation == current_generation) {
@@ -244,8 +247,8 @@ namespace ams::secmon::boot {
             }
 
             /* Clear and lock the Device Master Key Source Kek. */
-            se::ClearAesKeySlot(pkg1::AesKeySlot_DeviceMasterKeySourceKek);
-            se::LockAesKeySlot(pkg1::AesKeySlot_DeviceMasterKeySourceKek, se::KeySlotLockFlags_AllLockKek);
+            se::ClearAesKeySlot(pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko);
+            se::LockAesKeySlot(pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko, se::KeySlotLockFlags_AllLockKek);
         }
 
         void DeriveAllKeys() {
