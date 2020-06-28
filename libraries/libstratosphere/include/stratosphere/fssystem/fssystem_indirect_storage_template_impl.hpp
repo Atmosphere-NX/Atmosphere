@@ -64,10 +64,25 @@ namespace ams::fssystem {
 
                 /* Process a base storage entry. */
                 if (cr_info.CanDo()) {
+                    /* Ensure that we can process. */
                     R_UNLESS(cur_entry.storage_index == 0, fs::ResultInvalidIndirectEntryStorageIndex());
 
-                    const auto data_offset = cur_offset - cur_entry_offset;
-                    R_TRY(func(std::addressof(this->data_storage[0]), cur_entry.GetPhysicalOffset() + data_offset, cur_offset, static_cast<s64>(cr_info.GetReadSize())));
+                    /* Get the current data storage's size. */
+                    s64 cur_data_storage_size;
+                    R_TRY(this->data_storage[0].GetSize(std::addressof(cur_data_storage_size)));
+
+                    /* Ensure that we remain within range. */
+                    const auto data_offset           = cur_offset - cur_entry_offset;
+                    const auto cur_entry_phys_offset = cur_entry.GetPhysicalOffset();
+                    const auto cur_size              = static_cast<s64>(cr_info.GetReadSize());
+                    R_UNLESS(0 <= cur_entry_phys_offset && cur_entry_phys_offset <= cur_data_storage_size, fs::ResultInvalidIndirectEntryOffset());
+                    R_UNLESS(cur_entry_phys_offset + data_offset + cur_size <= cur_data_storage_size,      fs::ResultInvalidIndirectStorageSize());
+
+                    /* Operate. */
+                    R_TRY(func(std::addressof(this->data_storage[0]), cur_entry_phys_offset + data_offset, cur_offset, cur_size));
+
+                    /* Mark as done. */
+                    cr_info.Done();
                 }
             }
 
