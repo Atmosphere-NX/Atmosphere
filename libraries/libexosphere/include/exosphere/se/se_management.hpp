@@ -18,7 +18,7 @@
 
 namespace ams::se {
 
-    void SetRegisterAddress(uintptr_t address);
+    void SetRegisterAddress(uintptr_t address, uintptr_t address2);
 
     void Initialize();
 

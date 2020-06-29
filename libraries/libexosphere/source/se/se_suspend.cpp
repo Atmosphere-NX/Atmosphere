@@ -20,6 +20,10 @@ namespace ams::se {
 
     namespace {
 
+        constexpr inline size_t SE1ContextSaveOperationCount = 133;
+        constexpr inline size_t SE2ContextSaveOperationCount = 646;
+        static_assert(((SE1ContextSaveOperationCount - 2) + 1) * se::AesBlockSize == sizeof(se::Context));
+
         constinit const u8 FixedPattern[AesBlockSize] = {
             0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
         };
@@ -62,6 +66,44 @@ namespace ams::se {
 
             /* Execute the operation. */
             ExecuteContextSaveOperation(SE, dst, AesBlockSize, nullptr, 0);
+        }
+
+        void ConfigureForAutomaticContextSave(volatile SecurityEngineRegisters *SE) {
+            /* Configure the engine to do RNG encryption. */
+            reg::Write(SE->SE_CONFIG,  SE_REG_BITS_ENUM(CONFIG_ENC_MODE, AESMODE_KEY128),
+                                       SE_REG_BITS_ENUM(CONFIG_DEC_MODE, AESMODE_KEY128),
+                                       SE_REG_BITS_ENUM(CONFIG_ENC_ALG,             RNG),
+                                       SE_REG_BITS_ENUM(CONFIG_DEC_ALG,             NOP),
+                                       SE_REG_BITS_ENUM(CONFIG_DST,              MEMORY));
+
+            reg::Write(SE->SE_CRYPTO_CONFIG, SE_REG_BITS_ENUM (CRYPTO_CONFIG_MEMIF,              AHB),
+                                             SE_REG_BITS_VALUE(CRYPTO_CONFIG_CTR_CNTN,             0),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_KEYSCH_BYPASS,  DISABLE),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_CORE_SEL,       ENCRYPT),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_IV_SELECT,     ORIGINAL),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_VCTRAM_SEL,      MEMORY),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_INPUT_SEL,       RANDOM),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_XOR_POS,         BYPASS),
+                                             SE_REG_BITS_ENUM (CRYPTO_CONFIG_HASH_ENB,       DISABLE));
+        }
+
+        void WaitAutomaticContextSaveDone(volatile SecurityEngineRegisters *SE) {
+            /* Wait for operation. */
+            while (!reg::HasValue(SE->SE_INT_STATUS, SE_REG_BITS_ENUM(INT_STATUS_SE_OP_DONE, ACTIVE))) { /* ... */ }
+
+            /* Wait for the engine to be idle. */
+            while (!reg::HasValue(SE->SE_STATUS, SE_REG_BITS_ENUM(STATUS_STATE, IDLE))) { /* ... */ }
+
+            /* Wait for the memory interface to be idle. */
+            while (!reg::HasValue(SE->SE_STATUS, SE_REG_BITS_ENUM(STATUS_MEM_INTERFACE, IDLE))) { /* ... */ }
+        }
+
+        void ValidateErrStatus(volatile SecurityEngineRegisters *SE) {
+            /* Ensure there is no error status. */
+            AMS_ABORT_UNLESS(reg::Read(SE->SE_ERR_STATUS) == 0);
+
+            /* Ensure no error occurred. */
+            AMS_ABORT_UNLESS(reg::HasValue(SE->SE_INT_STATUS, SE_REG_BITS_ENUM(INT_STATUS_ERR_STAT, CLEAR)));
         }
 
     }
@@ -237,15 +279,76 @@ namespace ams::se {
         }
     }
 
+    void ConfigureAutomaticContextSave() {
+        /* Get registers. */
+        auto *SE  = GetRegisters();
+        auto *SE2 = GetRegisters2();
+
+        /* Automatic context save is supported only on mariko. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            /* Configure SE1 to do automatic context save. */
+            reg::Write(SE->SE_CTX_SAVE_AUTO,  SE_REG_BITS_ENUM(CTX_SAVE_AUTO_ENABLE, YES),
+                                              SE_REG_BITS_ENUM(CTX_SAVE_AUTO_LOCK,   YES));
+
+            /* Configure SE2 to do automatic context save. */
+            reg::Write(SE2->SE_CTX_SAVE_AUTO, SE_REG_BITS_ENUM(CTX_SAVE_AUTO_ENABLE, YES),
+                                              SE_REG_BITS_ENUM(CTX_SAVE_AUTO_LOCK,   YES));
+        }
+    }
+
+    void SaveContextAutomatic() {
+        /* Get registers. */
+        auto *SE  = GetRegisters();
+        auto *SE2 = GetRegisters2();
+
+        /* Ensure there's no error status before or after we save context. */
+        ValidateErrStatus();
+        ON_SCOPE_EXIT { ValidateErrStatus(); };
+
+        /* Perform atomic context save. */
+        {
+            /* Check that context save has not already been performed. */
+            AMS_ABORT_UNLESS(reg::HasValue(SE->SE_CTX_SAVE_AUTO,  SE_REG_BITS_VALUE(CTX_SAVE_AUTO_CURR_CNT, 0)));
+            AMS_ABORT_UNLESS(reg::HasValue(SE2->SE_CTX_SAVE_AUTO, SE_REG_BITS_VALUE(CTX_SAVE_AUTO_CURR_CNT, 0)));
+
+            /* Configure SE1 to do context save. */
+            ConfigureForAutomaticContextSave(SE);
+            ConfigureForAutomaticContextSave(SE2);
+
+            /* Start the context save operation. */
+            reg::Write(SE->SE_OPERATION,  SE_REG_BITS_ENUM(OPERATION_OP, CTX_SAVE));
+            reg::Write(SE2->SE_OPERATION, SE_REG_BITS_ENUM(OPERATION_OP, CTX_SAVE));
+
+            /* Wait for the context save operation to complete. */
+            WaitAutomaticContextSaveDone(SE);
+            WaitAutomaticContextSaveDone(SE2);
+
+            /* Check that the correct sizes were written. */
+            AMS_ABORT_UNLESS(reg::HasValue(SE->SE_CTX_SAVE_AUTO,  SE_REG_BITS_VALUE(CTX_SAVE_AUTO_CURR_CNT, SE1ContextSaveOperationCount)));
+            AMS_ABORT_UNLESS(reg::HasValue(SE2->SE_CTX_SAVE_AUTO, SE_REG_BITS_VALUE(CTX_SAVE_AUTO_CURR_CNT, SE2ContextSaveOperationCount)));
+        }
+    }
+
+    void SaveTzramAutomatic() {
+        /* Get registers. */
+        auto *SE  = GetRegisters();
+
+        /* Begin save-to-shadow-tzram operation. */
+        reg::Write(SE->SE_TZRAM_OPERATION, SE_REG_BITS_ENUM(TZRAM_OPERATION_MODE,     SAVE),
+                                           SE_REG_BITS_ENUM(TZRAM_OPERATION_REQ,  INITIATE));
+
+        /* Wait for operation to complete. */
+        while (reg::HasValue(SE->SE_TZRAM_OPERATION, SE_REG_BITS_ENUM(TZRAM_OPERATION_BUSY, YES))) { /* ... */ }
+    }
+
     void ValidateErrStatus() {
-        /* Get the registers. */
-        auto *SE = GetRegisters();
+        /* Ensure SE has no error status. */
+        ValidateErrStatus(GetRegisters());
 
-        /* Ensure there is no error status. */
-        AMS_ABORT_UNLESS(reg::Read(SE->SE_ERR_STATUS) == 0);
-
-        /* Ensure no error occurred. */
-        AMS_ABORT_UNLESS(reg::HasValue(SE->SE_INT_STATUS, SE_REG_BITS_ENUM(INT_STATUS_ERR_STAT, CLEAR)));
+        /* If on mariko, ensure SE2 has no error status. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            ValidateErrStatus(GetRegisters2());
+        }
     }
 
 }

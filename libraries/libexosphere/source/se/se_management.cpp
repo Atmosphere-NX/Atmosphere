@@ -20,7 +20,8 @@ namespace ams::se {
 
     namespace {
 
-        constinit uintptr_t g_register_address = secmon::MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
+        constinit uintptr_t g_register_address  = secmon::MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
+        constinit uintptr_t g_register2_address = secmon::MemoryRegionPhysicalDeviceSecurityEngine2.GetAddress();
         constinit DoneHandler g_done_handler   = nullptr;
 
     }
@@ -29,8 +30,13 @@ namespace ams::se {
         return reinterpret_cast<volatile SecurityEngineRegisters *>(g_register_address);
     }
 
-    void SetRegisterAddress(uintptr_t address) {
-        g_register_address = address;
+    volatile SecurityEngineRegisters *GetRegisters2() {
+        return reinterpret_cast<volatile SecurityEngineRegisters *>(g_register2_address);
+    }
+
+    void SetRegisterAddress(uintptr_t address, uintptr_t address2) {
+        g_register_address  = address;
+        g_register2_address = address2;
     }
 
     void Initialize() {

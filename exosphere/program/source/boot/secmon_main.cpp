@@ -42,7 +42,7 @@ namespace ams::secmon {
            i2c::SetRegisterAddress(i2c::Port_5, MemoryRegionVirtualDeviceI2c5.GetAddress());
         pinmux::SetRegisterAddress(MemoryRegionVirtualDeviceApbMisc.GetAddress(), MemoryRegionVirtualDeviceGpio.GetAddress());
            pmc::SetRegisterAddress(MemoryRegionVirtualDevicePmc.GetAddress());
-            se::SetRegisterAddress(MemoryRegionVirtualDeviceSecurityEngine.GetAddress());
+            se::SetRegisterAddress(MemoryRegionVirtualDeviceSecurityEngine.GetAddress(), MemoryRegionVirtualDeviceSecurityEngine2.GetAddress());
           uart::SetRegisterAddress(MemoryRegionVirtualDeviceUart.GetAddress());
            wdt::SetRegisterAddress(MemoryRegionVirtualDeviceTimer.GetAddress());
           util::SetRegisterAddress(MemoryRegionVirtualDeviceTimer.GetAddress());

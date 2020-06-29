@@ -19,6 +19,7 @@
 namespace ams::se {
 
     volatile SecurityEngineRegisters *GetRegisters();
+    volatile SecurityEngineRegisters *GetRegisters2();
 
     void ExecuteOperation(volatile SecurityEngineRegisters *SE, SE_OPERATION_OP op, void *dst, size_t dst_size, const void *src, size_t src_size);
     void ExecuteOperationSingleBlock(volatile SecurityEngineRegisters *SE, void *dst, size_t dst_size, const void *src, size_t src_size);

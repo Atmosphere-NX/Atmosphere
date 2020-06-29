@@ -325,7 +325,11 @@ namespace ams::secmon::smc {
         }
 
         void SaveSecureContextForMariko() {
-            /* TODO: Implement this when adding ams-on-mariko support. */
+            /* Save security engine context to TZRAM SE carveout (inaccessible to cpu). */
+            se::SaveContextAutomatic();
+
+            /* Save TZRAM to shadow-TZRAM in always-on power domain. */
+            se::SaveTzramAutomatic();
         }
 
         void SaveSecureContext() {
