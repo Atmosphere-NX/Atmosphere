@@ -1,7 +1,7 @@
 # Planned Features
 atmosphère has a number of features that are either works-in-progress or planned. Please note that while time-estimates are given, they are loose, and things may be completed sooner or later than advertised.
 
-The following descriptions were last updated on June 28th, 2020.
+The following descriptions were last updated on June 29th, 2020.
 
 ## system updater homebrew
 * **Description**: A user homebrew making use of the new system updater api, so that users can actually use the new api in practice.
@@ -9,7 +9,7 @@ The following descriptions were last updated on June 28th, 2020.
 * **Completion Time**: June-July 2020
 
 ## ams-on-mariko
-* **Description**: Atmosphere cannot run as-is on Mariko hardware. A large number of changes are needed in many components. Although exosphere's rewrite laid most groundwork on the secure monitor side, there is still work to do there -- and additional work is needed on the bootloader and stratosphere sides as well. Mariko support will also require further design thought; atmosphere's debugging design heavily relies on reboot-to-payload and (more generally) the ability to perform warmboot bootrom hax at will. This is not possible on Mariko, and will require a new design/software support for whatever solution is chosen.
+* **Description**: Atmosphere cannot run as-is on Mariko hardware. A large number of changes are needed in many components. Although secure monitor support is complete in exosphere, additional work is needed on the bootloader and stratosphere sides as well. Mariko support will also require further design thought; atmosphere's debugging design heavily relies on reboot-to-payload and (more generally) the ability to perform warmboot bootrom hax at will. This is not possible on Mariko, and will require a new design/software support for whatever solution is chosen.
 * **Development Status**: Planned.
 * **Estimated Time**: Summer 2020
 
