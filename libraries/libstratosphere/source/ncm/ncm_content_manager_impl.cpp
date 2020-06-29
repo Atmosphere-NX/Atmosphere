@@ -275,7 +275,7 @@ namespace ams::ncm {
     }
 
     Result ContentManagerImpl::BuildContentMetaDatabase(StorageId storage_id) {
-        if (hos::GetVersion() <= hos::Version_4_0_0) {
+        if (hos::GetVersion() < hos::Version_5_0_0) {
             /* Temporarily activate the database. */
             R_TRY(this->ActivateContentMetaDatabase(storage_id));
             ON_SCOPE_EXIT { this->InactivateContentMetaDatabase(storage_id); };
