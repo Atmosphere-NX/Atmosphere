@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018-2020 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <stratosphere.hpp>
 #include "lm_service.hpp"
 
 namespace ams::lm {
@@ -57,9 +73,10 @@ namespace ams::lm {
     }
 
     void LogService::OpenLogger(const sf::ClientProcessId &client_pid, sf::Out<std::shared_ptr<Logger>> out_logger) {
-        u64 program_id = 0;
         /* Apparently lm succeeds on many/all commands, so we will succeed on them too. */
-        pminfoGetProgramId(&program_id, static_cast<u64>(client_pid.GetValue()));
+        ncm::ProgramId program_id;
+        pm::info::GetProgramId(&program_id, client_pid.GetValue());
+        
         auto logger = std::make_shared<Logger>(program_id);
         out_logger.SetValue(std::move(logger));
     }
@@ -68,7 +85,7 @@ namespace ams::lm {
         out_event.SetValue(impl::GetLogEventHandle());
     }
 
-    void LogService::AtmosphereGetLastLogInfo(sf::Out<s64> out_log_id, sf::Out<u64> out_program_id) {
+    void LogService::AtmosphereGetLastLogInfo(sf::Out<s64> out_log_id, sf::Out<ncm::ProgramId> out_program_id) {
         const auto info = impl::GetLastLogInfo();
         out_log_id.SetValue(info.log_id);
         out_program_id.SetValue(info.program_id);

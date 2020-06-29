@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2018-2020 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <stratosphere.hpp>
 #include "lm_logging.hpp"
 
 namespace ams::lm::impl {
@@ -41,7 +57,7 @@ namespace ams::lm::impl {
 
             /* Ensure process's directory for debug logs exists. */
             char process_dir[FS_MAX_PATH] = {};
-            std::snprintf(process_dir, sizeof(process_dir), "%s/0x%016lX", DebugLogDirectory, program_id);
+            std::snprintf(process_dir, sizeof(process_dir), "%s/0x%016lX", DebugLogDirectory, static_cast<u64>(program_id));
             fs::CreateDirectory(process_dir);
             
             /* Use current system tick as the binary log's identifier / file name. */

@@ -1,5 +1,21 @@
+/*
+ * Copyright (c) 2018-2020 Atmosphère-NX
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #pragma once
+#include <stratosphere.hpp>
 #include "../lm_types.hpp"
 
 namespace ams::lm::impl {
@@ -34,19 +50,19 @@ namespace ams::lm::impl {
 
     struct LogInfo {
         s64 log_id; /* This is the system tick value when the log was saved. */
-        u64 program_id;
+        ncm::ProgramId program_id;
     };
 
     /* Store log packet buffers as a unique_ptr, so that they automatically get disposed after they're used. */
 
     struct LogPacketBuffer {
-        u64 program_id;
+        ncm::ProgramId program_id;
         std::unique_ptr<u8[]> buf;
         size_t buf_size;
 
         LogPacketBuffer() : program_id(0), buf(nullptr), buf_size(0) {}
 
-        LogPacketBuffer(u64 program_id, const void *buf, size_t size) : program_id(program_id), buf(std::make_unique<u8[]>(size)), buf_size(size) {
+        LogPacketBuffer(ncm::ProgramId program_id, const void *buf, size_t size) : program_id(program_id), buf(std::make_unique<u8[]>(size)), buf_size(size) {
             if(this->buf != nullptr) {
                 std::memcpy(this->buf.get(), buf, size);
             }
@@ -92,7 +108,7 @@ namespace ams::lm::impl {
             return header->IsTail();
         }
 
-        inline u64 GetProgramId() const {
+        inline ncm::ProgramId GetProgramId() const {
             return this->program_id;
         }
 

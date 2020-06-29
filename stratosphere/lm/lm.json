@@ -3,14 +3,14 @@
     "title_id": "0x0100000000000015",
     "title_id_range_min": "0x0100000000000015",
     "title_id_range_max": "0x0100000000000015",
-    "main_thread_stack_size": "0x00004000",
-    "main_thread_priority": 10,
+    "main_thread_stack_size": "0x00003000",
+    "main_thread_priority": 38,
     "default_cpu_id": 3,
     "process_category": 0,
     "is_retail": true,
     "pool_partition": 2,
     "is_64_bit": true,
-    "address_space_type": 1,
+    "address_space_type": 3,
     "filesystem_access": {
         "permissions": "0xFFFFFFFFFFFFFFFF"
     },
@@ -21,7 +21,7 @@
             "type": "kernel_flags",
             "value": {
                 "highest_thread_priority": 63,
-                "lowest_thread_priority": 8,
+                "lowest_thread_priority": 24,
                 "lowest_cpu_id": 3,
                 "highest_cpu_id": 3
             }
@@ -92,6 +92,10 @@
             "type": "min_kernel_version",
             "value": "0x0030"
         },
+        {
+			"type":	"handle_table_size",
+			"value":	64
+		},
         {
             "type": "debug_flags",
             "value": {
