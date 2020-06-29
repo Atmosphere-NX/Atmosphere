@@ -20,6 +20,10 @@ namespace ams::fuse {
 
     namespace {
 
+        static constexpr SocType SocType_CommonInternal = static_cast<SocType>(-1);
+        static_assert(SocType_CommonInternal != SocType_Erista);
+        static_assert(SocType_CommonInternal != SocType_Mariko);
+
         struct BypassEntry {
             u32 offset;
             u32 value;
@@ -40,6 +44,11 @@ namespace ams::fuse {
             using FormatVersion  = util::BitPack32::Field<QuestState::Next,     1, int>;
             using Reserved       = util::BitPack32::Field<FormatVersion::Next,  4, int>;
             using HardwareType3  = util::BitPack32::Field<Reserved::Next,       4, int>;
+        };
+
+        struct OdmWord28 {
+            using Regulator = util::BitPack32::Field<0,  1, int>;
+            using Reserved  = util::BitPack32::Field<1, 31, int>;
         };
 
         constexpr ALWAYS_INLINE int GetHardwareStateValue(const util::BitPack32 odm_word4) {
@@ -73,8 +82,16 @@ namespace ams::fuse {
             return GetRegisterRegion()->fuse;
         }
 
-        ALWAYS_INLINE volatile FuseChipRegisters &GetChipRegisters() {
-            return GetRegisterRegion()->chip;
+        ALWAYS_INLINE volatile FuseChipRegistersCommon &GetChipRegistersCommon() {
+            return GetRegisterRegion()->chip_common;
+        }
+
+        ALWAYS_INLINE volatile FuseChipRegistersErista &GetChipRegistersErista() {
+            return GetRegisterRegion()->chip_erista;
+        }
+
+        ALWAYS_INLINE volatile FuseChipRegistersMariko &GetChipRegistersMariko() {
+            return GetRegisterRegion()->chip_mariko;
         }
 
         bool IsIdle() {
@@ -85,6 +102,31 @@ namespace ams::fuse {
             while (!IsIdle()) { /* ... */ }
         }
 
+        u32 GetOdmWordImpl(int index, fuse::SocType soc_type) {
+            if (index < 8) {
+                volatile auto &chip = GetChipRegistersCommon();
+                return chip.FUSE_RESERVED_ODM_0[index - 0];
+            } else if (soc_type == SocType_Mariko) {
+                volatile auto &chip = GetChipRegistersMariko();
+                if (index < 22) {
+                    return chip.FUSE_RESERVED_ODM_8[index - 8];
+                } else if (index < 25) {
+                    return chip.FUSE_RESERVED_ODM_22[index - 22];
+                } else if (index < 26) {
+                    return chip.FUSE_RESERVED_ODM_25[index - 25];
+                } else if (index < 29) {
+                    return chip.FUSE_RESERVED_ODM_26[index - 26];
+                } else if (index < 30) {
+                    return chip.FUSE_RESERVED_ODM_29[index - 29];
+                }
+            }
+            AMS_ABORT("Invalid ODM fuse read");
+        }
+
+        u32 GetCommonOdmWord(int index) {
+            return GetOdmWordImpl(index, SocType_CommonInternal);
+        }
+
         bool IsNewFuseFormat() {
             /* On mariko, this should always be true. */
             if (GetSocType() != SocType_Erista) {
@@ -92,7 +134,7 @@ namespace ams::fuse {
             }
 
             /* Require that the format version be non-zero in odm4. */
-            if (util::BitPack32{GetOdmWord(4)}.Get<OdmWord4::FormatVersion>() == 0) {
+            if (util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::FormatVersion>() == 0) {
                 return false;
             }
 
@@ -100,8 +142,8 @@ namespace ams::fuse {
             constexpr u32 NewFuseFormatMagic0 = 0x8E61ECAE;
             constexpr u32 NewFuseFormatMagic1 = 0xF2BA3BB2;
 
-            const u32 w0 = GetOdmWord(0);
-            const u32 w1 = GetOdmWord(1);
+            const u32 w0 = GetCommonOdmWord(0);
+            const u32 w1 = GetCommonOdmWord(1);
 
             return w0 == NewFuseFormatMagic0 && w1 == NewFuseFormatMagic1;
         }
@@ -206,12 +248,12 @@ namespace ams::fuse {
     }
 
     u32 GetOdmWord(int index) {
-        return GetChipRegisters().FUSE_RESERVED_ODM[index];
+        return GetOdmWordImpl(index, GetSocType());
     }
 
     void GetEcid(br::BootEcid *out) {
         /* Get the registers. */
-        volatile auto &chip = GetChipRegisters();
+        volatile auto &chip = GetChipRegistersCommon();
 
         /* Read the ecid components. */
         const u32 vendor    = reg::Read(chip.FUSE_OPT_VENDOR_CODE)  & ((1u <<  4) - 1);
@@ -235,7 +277,7 @@ namespace ams::fuse {
 
     u64 GetDeviceId() {
         /* Get the registers. */
-        volatile auto &chip = GetChipRegisters();
+        volatile auto &chip = GetChipRegistersCommon();
 
         /* Read the device id components. */
         /* NOTE: Device ID is "basically" just an alternate encoding of Ecid. */
@@ -258,12 +300,12 @@ namespace ams::fuse {
     }
 
     DramId GetDramId() {
-        return static_cast<DramId>(util::BitPack32{GetOdmWord(4)}.Get<OdmWord4::DramId>());
+        return static_cast<DramId>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::DramId>());
     }
 
     HardwareType GetHardwareType() {
         /* Read the odm word. */
-        const util::BitPack32 odm_word4 = { GetOdmWord(4) };
+        const util::BitPack32 odm_word4 = { GetCommonOdmWord(4) };
 
         /* Get the value. */
         const auto value = GetHardwareTypeValue(odm_word4);
@@ -280,7 +322,7 @@ namespace ams::fuse {
 
     HardwareState GetHardwareState() {
         /* Read the odm word. */
-        const util::BitPack32 odm_word4 = { GetOdmWord(4) };
+        const util::BitPack32 odm_word4 = { GetCommonOdmWord(4) };
 
         /* Get the value. */
         const auto value = GetHardwareStateValue(odm_word4);
@@ -293,22 +335,28 @@ namespace ams::fuse {
     }
 
     PatchVersion GetPatchVersion() {
-        const auto patch_version = reg::Read(GetChipRegisters().FUSE_SOC_SPEEDO_1_CALIB);
+        const auto patch_version = reg::Read(GetChipRegistersCommon().FUSE_SOC_SPEEDO_1_CALIB);
         return static_cast<PatchVersion>(static_cast<int>(GetSocType() << 12) | patch_version);
     }
 
     QuestState GetQuestState() {
-        return static_cast<QuestState>(util::BitPack32{GetOdmWord(4)}.Get<OdmWord4::QuestState>());
+        return static_cast<QuestState>(util::BitPack32{GetCommonOdmWord(4)}.Get<OdmWord4::QuestState>());
     }
 
     pmic::Regulator GetRegulator() {
-        /* TODO: How should mariko be handled? This reads from ODM word 28 in fuses (not present in erista...). */
-        return pmic::Regulator_Erista_Max77621;
+        if (GetSocType() == SocType_Mariko) {
+            /* Read the odm word. */
+            const util::BitPack32 odm_word28 = { GetOdmWordImpl(28, SocType_Mariko) };
+
+            return static_cast<pmic::Regulator>(odm_word28.Get<OdmWord28::Regulator>() + 1);
+        } else /* if (GetSocType() == SocType_Erista) */ {
+            return pmic::Regulator_Erista_Max77621;
+        }
     }
 
     int GetDeviceUniqueKeyGeneration() {
         if (IsNewFuseFormat()) {
-            return util::BitPack32{GetOdmWord(2)}.Get<OdmWord2::DeviceUniqueKeyGeneration>();
+            return util::BitPack32{GetCommonOdmWord(2)}.Get<OdmWord2::DeviceUniqueKeyGeneration>();
         } else {
             return 0;
         }
@@ -344,13 +392,13 @@ namespace ams::fuse {
                 }
 
                 /* Some patched units use XUSB in RCM. */
-                if (reg::Read(GetChipRegisters().FUSE_RESERVED_SW) & 0x80) {
+                if (reg::Read(GetChipRegistersCommon().FUSE_RESERVED_SW) & 0x80) {
                     g_has_rcm_bug_patch = true;
                     break;
                 }
 
                 /* Other units have a proper ipatch instead. */
-                u32 word_count = reg::Read(GetChipRegisters().FUSE_FIRST_BOOTROM_PATCH_SIZE) & 0x7F;
+                u32 word_count = reg::Read(GetChipRegistersCommon().FUSE_FIRST_BOOTROM_PATCH_SIZE) & 0x7F;
                 u32 word_addr  = 191;
 
                 while (word_count && !g_has_rcm_bug_patch) {
@@ -379,7 +427,7 @@ namespace ams::fuse {
     }
 
     bool IsOdmProductionMode() {
-        return reg::HasValue(GetChipRegisters().FUSE_SECURITY_MODE, FUSE_REG_BITS_ENUM(SECURITY_MODE_SECURITY_MODE, ENABLED));
+        return reg::HasValue(GetChipRegistersCommon().FUSE_SECURITY_MODE, FUSE_REG_BITS_ENUM(SECURITY_MODE_SECURITY_MODE, ENABLED));
     }
 
     void ConfigureFuseBypass() {
