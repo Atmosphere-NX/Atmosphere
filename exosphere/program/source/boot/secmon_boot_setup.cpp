@@ -68,12 +68,56 @@ namespace ams::secmon::boot {
             /* to the warmboot key? To be decided during the process of implementing ams-on-mariko support. */
         }
 
+        constinit const u8 DeviceMasterKeySourceKekSource[se::AesBlockSize] = {
+            0x0C, 0x91, 0x09, 0xDB, 0x93, 0x93, 0x07, 0x81, 0x07, 0x3C, 0xC4, 0x16, 0x22, 0x7C, 0x6C, 0x28
+        };
+
         /* This function derives the master kek and device keys using the tsec root key. */
-        /* NOTE: Exosphere does not use this in practice, and expects the bootloader to set up keys already. */
-        /* NOTE: This function is currently not implemented. If implemented, it will only be a reference implementation. */
-        [[maybe_unused]]
-        void DeriveMasterKekAndDeviceKey() {
-            /* TODO: Decide whether to implement this. */
+        void DeriveMasterKekAndDeviceKeyErista(bool is_prod) {
+            /* NOTE: Exosphere does not use this in practice, and expects the bootloader to set up keys already. */
+            /* NOTE: This function is currently not implemented. If implemented, it will only be a reference implementation. */
+            if constexpr (false) {
+                /* TODO: Consider implementing this as a reference. */
+            }
+        }
+
+        constinit const u8 MarikoMasterKekSourceProd[se::AesBlockSize] = {
+            0x0E, 0x44, 0x0C, 0xED, 0xB4, 0x36, 0xC0, 0x3F, 0xAA, 0x1D, 0xAE, 0xBF, 0x62, 0xB1, 0x09, 0x82
+        };
+
+        constinit const u8 MarikoMasterKekSourceDev[se::AesBlockSize] = {
+            0xF9, 0x37, 0xCF, 0x9A, 0xBD, 0x86, 0xBB, 0xA9, 0x9C, 0x9E, 0x03, 0xC4, 0xFC, 0xBC, 0x3B, 0xCE
+        };
+
+        void DeriveMasterKekAndDeviceKeyMariko(bool is_prod) {
+            /* Clear all keyslots other than KEK and SBK in SE1. */
+            for (int i = 0; i < pkg1::AesKeySlot_Count; ++i) {
+                if (i != pkg1::AesKeySlot_MarikoKek && i != pkg1::AesKeySlot_SecureBoot) {
+                    se::ClearAesKeySlot(i);
+                }
+            }
+
+            /* Clear all keyslots in SE2. */
+            for (int i = 0; i < pkg1::AesKeySlot_Count; ++i) {
+                se::ClearAesKeySlot2(i);
+            }
+
+            /* Derive the master kek. */
+            se::SetEncryptedAesKey128(pkg1::AesKeySlot_MasterKek, pkg1::AesKeySlot_MarikoKek, is_prod ? MarikoMasterKekSourceProd : MarikoMasterKekSourceDev, se::AesBlockSize);
+
+            /* Derive the device master key source kek. */
+            se::SetEncryptedAesKey128(pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko, pkg1::AesKeySlot_SecureBoot, DeviceMasterKeySourceKekSource, se::AesBlockSize);
+
+            /* Clear the KEK, now that we're done using it. */
+            se::ClearAesKeySlot(pkg1::AesKeySlot_MarikoKek);
+        }
+
+        void DeriveMasterKekAndDeviceKey(bool is_prod) {
+            if (GetSocType() == fuse::SocType_Mariko) {
+                DeriveMasterKekAndDeviceKeyMariko(is_prod);
+            } else /* if (GetSocType() == fuse::SocType_Erista) */ {
+                DeriveMasterKekAndDeviceKeyErista(is_prod);
+            }
         }
 
         void SetupRandomKey(int slot, se::KeySlotLockFlags flags) {
@@ -219,7 +263,7 @@ namespace ams::secmon::boot {
             const int current_generation = secmon::GetKeyGeneration();
 
             /* Get the kek slot. */
-            const int kek_slot = fuse::GetSocType() == fuse::SocType_Mariko ? pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko : pkg1::AesKeySlot_DeviceMasterKeySourceKekErista;
+            const int kek_slot = GetSocType() == fuse::SocType_Mariko ? pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko : pkg1::AesKeySlot_DeviceMasterKeySourceKekErista;
 
             /* Iterate for all generations. */
             for (int i = 0; i < pkg1::OldDeviceMasterKeyCount; ++i) {
@@ -251,10 +295,7 @@ namespace ams::secmon::boot {
             se::LockAesKeySlot(pkg1::AesKeySlot_DeviceMasterKeySourceKekMariko, se::KeySlotLockFlags_AllLockKek);
         }
 
-        void DeriveAllKeys() {
-            /* Determine whether we're prod. */
-            const bool is_prod = IsProduction();
-
+        void DeriveAllKeys(bool is_prod) {
             /* Get the ephemeral work block. */
             u8 * const work_block = se::GetEphemeralWorkBlock();
             ON_SCOPE_EXIT { util::ClearMemory(work_block, se::AesBlockSize); };
@@ -303,16 +344,18 @@ namespace ams::secmon::boot {
             /* Initialize the rng. */
             se::InitializeRandom();
 
+            /* Determine whether we're production. */
+            const bool is_prod = IsProduction();
+
             /* Derive the master kek and device key. */
-            if constexpr (false) {
-                DeriveMasterKekAndDeviceKey();
-            }
+            /* NOTE: This is a no-op on erista, because fusee will have set up keys. */
+            DeriveMasterKekAndDeviceKey(is_prod);
 
             /* Lock the device key as only usable as a kek. */
             se::LockAesKeySlot(pkg1::AesKeySlot_Device, se::KeySlotLockFlags_AllLockKek);
 
             /* Derive all keys. */
-            DeriveAllKeys();
+            DeriveAllKeys(is_prod);
         }
 
     }
@@ -350,6 +393,9 @@ namespace ams::secmon::boot {
 
         /* Set the security engine to Per Key Secure. */
         se::SetPerKeySecure();
+
+        /* Set the security engine to Context Save Secure. */
+        se::SetContextSaveSecure();
 
         /* Setup the PMC registers. */
         SetupPmcRegisters();

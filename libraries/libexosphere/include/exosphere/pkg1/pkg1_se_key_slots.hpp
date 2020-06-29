@@ -37,7 +37,8 @@ namespace ams::pkg1 {
         AesKeySlot_Master                         = 13,
         AesKeySlot_Device                         = 15,
 
-        AesKeySlot_SecmonEnd                      = 16,
+        AesKeySlot_Count                          = 16,
+        AesKeySlot_SecmonEnd                      = AesKeySlot_Count,
 
         /* Used only during boot. */
         AesKeySlot_Tsec                           = 12,
@@ -48,6 +49,10 @@ namespace ams::pkg1 {
         AesKeySlot_DeviceMasterKeySourceKekErista = 10,
         AesKeySlot_MasterKek                      = 13,
         AesKeySlot_DeviceMasterKeySourceKekMariko = 14,
+
+        /* Mariko only keyslots, used during boot. */
+        AesKeySlot_MarikoKek                      = 12,
+        AesKeySlot_MarikoBek                      = 13,
     };
 
     enum RsaKeySlot {

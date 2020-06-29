@@ -25,6 +25,7 @@ namespace ams::se {
     void SetSecure(bool secure);
     void SetTzramSecure();
     void SetPerKeySecure();
+    void SetContextSaveSecure();
 
     void Lockout();
 

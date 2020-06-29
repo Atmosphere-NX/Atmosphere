@@ -44,31 +44,50 @@ namespace ams::se {
             reg::Write(SE->SE_RNG_CONFIG, SE_REG_BITS_ENUM(RNG_CONFIG_SRC, ENTROPY), SE_REG_BITS_VALUE(RNG_CONFIG_MODE, mode));
         }
 
-    }
+        void InitializeRandom(volatile SecurityEngineRegisters *SE) {
+            /* Lock the entropy source. */
+            reg::Write(SE->SE_RNG_SRC_CONFIG, SE_REG_BITS_ENUM(RNG_SRC_CONFIG_RO_ENTROPY_SOURCE,      ENABLE),
+                                              SE_REG_BITS_ENUM(RNG_SRC_CONFIG_RO_ENTROPY_SOURCE_LOCK, ENABLE));
 
-    void InitializeRandom() {
-        /* Get the engine. */
-        auto *SE = GetRegisters();
+            /* Set the reseed interval to force a reseed every 70000 blocks. */
+            SE->SE_RNG_RESEED_INTERVAL = RngReseedInterval;
 
-        /* Lock the entropy source. */
-        reg::Write(SE->SE_RNG_SRC_CONFIG, SE_REG_BITS_ENUM(RNG_SRC_CONFIG_RO_ENTROPY_SOURCE,      ENABLE),
-                                          SE_REG_BITS_ENUM(RNG_SRC_CONFIG_RO_ENTROPY_SOURCE_LOCK, ENABLE));
+            /* Initialize the DRBG. */
+            {
+                u8 dummy_buf[AesBlockSize];
 
-        /* Set the reseed interval to force a reseed every 70000 blocks. */
-        SE->SE_RNG_RESEED_INTERVAL = RngReseedInterval;
+                /* Configure the engine to force drbg instantiation by writing random to memory. */
+                ConfigRng(SE, SE_CONFIG_DST_MEMORY, SE_RNG_CONFIG_MODE_FORCE_INSTANTIATION);
 
-        /* Initialize the DRBG. */
-        {
-            u8 dummy_buf[AesBlockSize];
+                /* Configure to do a single RNG block operation to trigger DRBG init. */
+                SE->SE_CRYPTO_LAST_BLOCK = 0;
 
-            /* Configure the engine to force drbg instantiation by writing random to memory. */
-            ConfigRng(SE, SE_CONFIG_DST_MEMORY, SE_RNG_CONFIG_MODE_FORCE_INSTANTIATION);
+                /* Execute the operation. */
+                ExecuteOperation(SE, SE_OPERATION_OP_START, dummy_buf, sizeof(dummy_buf), nullptr, 0);
+            }
+        }
 
-            /* Configure to do a single RNG block operation to trigger DRBG init. */
+        void GenerateSrk(volatile SecurityEngineRegisters *SE) {
+            /* Configure the RNG to output to SRK and force a reseed. */
+            ConfigRng(SE, SE_CONFIG_DST_SRK, SE_RNG_CONFIG_MODE_FORCE_RESEED);
+
+            /* Configure a single block operation. */
             SE->SE_CRYPTO_LAST_BLOCK = 0;
 
             /* Execute the operation. */
-            ExecuteOperation(SE, SE_OPERATION_OP_START, dummy_buf, sizeof(dummy_buf), nullptr, 0);
+            ExecuteOperation(SE, SE_OPERATION_OP_START, nullptr, 0, nullptr, 0);
+        }
+
+    }
+
+    void InitializeRandom() {
+        /* Initialize random for SE1. */
+        InitializeRandom(GetRegisters());
+
+        /* If we have SE2, initialize random for SE2. */
+        /* NOTE: Nintendo's implementation of this is incorrect. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            InitializeRandom(GetRegisters2());
         }
     }
 
@@ -130,17 +149,14 @@ namespace ams::se {
     }
 
     void GenerateSrk() {
-        /* Get the engine. */
-        auto *SE = GetRegisters();
+        /* Generate SRK for SE1. */
+        GenerateSrk(GetRegisters());
 
-        /* Configure the RNG to output to SRK and force a reseed. */
-        ConfigRng(SE, SE_CONFIG_DST_SRK, SE_RNG_CONFIG_MODE_FORCE_RESEED);
-
-        /* Configure a single block operation. */
-        SE->SE_CRYPTO_LAST_BLOCK = 0;
-
-        /* Execute the operation. */
-        ExecuteOperation(SE, SE_OPERATION_OP_START, nullptr, 0, nullptr, 0);
+        /* If we have SE2, generate SRK for SE2. */
+        /* NOTE: Nintendo's implementation of this is incorrect. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            GenerateSrk(GetRegisters2());
+        }
     }
 
 }

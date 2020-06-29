@@ -24,6 +24,18 @@ namespace ams::se {
         constinit uintptr_t g_register2_address = secmon::MemoryRegionPhysicalDeviceSecurityEngine2.GetAddress();
         constinit DoneHandler g_done_handler   = nullptr;
 
+        void SetSecure(volatile SecurityEngineRegisters *SE, bool secure) {
+            /* Set the security software setting. */
+            if (secure) {
+                reg::ReadWrite(SE->SE_SE_SECURITY, SE_REG_BITS_ENUM(SECURITY_SOFT_SETTING, SECURE));
+            } else {
+                reg::ReadWrite(SE->SE_SE_SECURITY,  SE_REG_BITS_ENUM(SECURITY_SOFT_SETTING, NONSECURE));
+            }
+
+            /* Read the status register to force an update. */
+            reg::Read(SE->SE_SE_SECURITY);
+        }
+
     }
 
     volatile SecurityEngineRegisters *GetRegisters() {
@@ -45,17 +57,13 @@ namespace ams::se {
     }
 
     void SetSecure(bool secure) {
-        auto *SE = GetRegisters();
+        /* Set security for SE1. */
+        SetSecure(GetRegisters(), secure);
 
-        /* Set the security software setting. */
-        if (secure) {
-            reg::ReadWrite(SE->SE_SE_SECURITY, SE_REG_BITS_ENUM(SECURITY_SOFT_SETTING, SECURE));
-        } else {
-            reg::ReadWrite(SE->SE_SE_SECURITY, SE_REG_BITS_ENUM(SECURITY_SOFT_SETTING, NONSECURE));
+        /* If SE2 is present, set security for SE2. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            SetSecure(GetRegisters2(), secure);
         }
-
-        /* Read the status register to force an update. */
-        reg::Read(SE->SE_SE_SECURITY);
     }
 
     void SetTzramSecure() {
@@ -70,6 +78,18 @@ namespace ams::se {
 
         /* Update PERKEY_SETTING to secure. */
         reg::ReadWrite(SE->SE_SE_SECURITY, SE_REG_BITS_ENUM(SECURITY_PERKEY_SETTING, SECURE));
+    }
+
+
+    void SetContextSaveSecure() {
+        /* Context save lock to trustzone secure is only available on mariko. */
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            auto *SE  = GetRegisters();
+            auto *SE2 = GetRegisters2();
+
+            reg::ReadWrite(SE->SE_SE_SECURITY,  SE_REG_BITS_ENUM(SECURITY_CTX_SAVE_TZ_LOCK, SECURE));
+            reg::ReadWrite(SE2->SE_SE_SECURITY, SE_REG_BITS_ENUM(SECURITY_CTX_SAVE_TZ_LOCK, SECURE));
+        }
     }
 
     void Lockout() {
