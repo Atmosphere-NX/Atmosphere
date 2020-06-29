@@ -81,6 +81,9 @@ namespace ams::secmon::boot {
             }
         }
 
+        /* NOTE: These are just latest-master-kek encrypted with BEK. */
+        /* We can get away with only including latest because exosphere supports newer-than-expected master key in engine. */
+        /* TODO: Update on next change of keys. */
         constinit const u8 MarikoMasterKekSourceProd[se::AesBlockSize] = {
             0x0E, 0x44, 0x0C, 0xED, 0xB4, 0x36, 0xC0, 0x3F, 0xAA, 0x1D, 0xAE, 0xBF, 0x62, 0xB1, 0x09, 0x82
         };
