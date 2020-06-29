@@ -33,8 +33,6 @@ namespace ams::secmon {
             u32 mdcr_el2;
             u32 mdcr_el3;
             u32 spsr_el3;
-            u64 dbgbvcr_el1[12];
-            u64 dbgwvcr_el1[ 8];
         };
 
         struct CoreContext {
@@ -61,30 +59,6 @@ namespace ams::secmon {
             HW_CPU_GET_MDCR_EL2       (dr.mdcr_el2);
             HW_CPU_GET_MDCR_EL3       (dr.mdcr_el3);
             HW_CPU_GET_SPSR_EL3       (dr.spsr_el3);
-
-            /* Save debug breakpoints. */
-            HW_CPU_GET_DBGBVR0_EL1(dr.dbgbvcr_el1[ 0]);
-            HW_CPU_GET_DBGBCR0_EL1(dr.dbgbvcr_el1[ 1]);
-            HW_CPU_GET_DBGBVR1_EL1(dr.dbgbvcr_el1[ 2]);
-            HW_CPU_GET_DBGBCR1_EL1(dr.dbgbvcr_el1[ 3]);
-            HW_CPU_GET_DBGBVR2_EL1(dr.dbgbvcr_el1[ 4]);
-            HW_CPU_GET_DBGBCR2_EL1(dr.dbgbvcr_el1[ 5]);
-            HW_CPU_GET_DBGBVR3_EL1(dr.dbgbvcr_el1[ 6]);
-            HW_CPU_GET_DBGBCR3_EL1(dr.dbgbvcr_el1[ 7]);
-            HW_CPU_GET_DBGBVR4_EL1(dr.dbgbvcr_el1[ 8]);
-            HW_CPU_GET_DBGBCR4_EL1(dr.dbgbvcr_el1[ 9]);
-            HW_CPU_GET_DBGBVR5_EL1(dr.dbgbvcr_el1[10]);
-            HW_CPU_GET_DBGBCR5_EL1(dr.dbgbvcr_el1[11]);
-
-            /* Save debug watchpoints. */
-            HW_CPU_GET_DBGWVR0_EL1(dr.dbgwvcr_el1[0]);
-            HW_CPU_GET_DBGWCR0_EL1(dr.dbgwvcr_el1[1]);
-            HW_CPU_GET_DBGWVR1_EL1(dr.dbgwvcr_el1[2]);
-            HW_CPU_GET_DBGWCR1_EL1(dr.dbgwvcr_el1[3]);
-            HW_CPU_GET_DBGWVR2_EL1(dr.dbgwvcr_el1[4]);
-            HW_CPU_GET_DBGWCR2_EL1(dr.dbgwvcr_el1[5]);
-            HW_CPU_GET_DBGWVR3_EL1(dr.dbgwvcr_el1[6]);
-            HW_CPU_GET_DBGWCR3_EL1(dr.dbgwvcr_el1[7]);
         }
 
         void RestoreDebugRegisters(const DebugRegisters &dr) {
@@ -100,30 +74,6 @@ namespace ams::secmon {
             HW_CPU_SET_MDCR_EL2       (dr.mdcr_el2);
             HW_CPU_SET_MDCR_EL3       (dr.mdcr_el3);
             HW_CPU_SET_SPSR_EL3       (dr.spsr_el3);
-
-            /* Restore debug breakpoints. */
-            HW_CPU_SET_DBGBVR0_EL1(dr.dbgbvcr_el1[ 0]);
-            HW_CPU_SET_DBGBCR0_EL1(dr.dbgbvcr_el1[ 1]);
-            HW_CPU_SET_DBGBVR1_EL1(dr.dbgbvcr_el1[ 2]);
-            HW_CPU_SET_DBGBCR1_EL1(dr.dbgbvcr_el1[ 3]);
-            HW_CPU_SET_DBGBVR2_EL1(dr.dbgbvcr_el1[ 4]);
-            HW_CPU_SET_DBGBCR2_EL1(dr.dbgbvcr_el1[ 5]);
-            HW_CPU_SET_DBGBVR3_EL1(dr.dbgbvcr_el1[ 6]);
-            HW_CPU_SET_DBGBCR3_EL1(dr.dbgbvcr_el1[ 7]);
-            HW_CPU_SET_DBGBVR4_EL1(dr.dbgbvcr_el1[ 8]);
-            HW_CPU_SET_DBGBCR4_EL1(dr.dbgbvcr_el1[ 9]);
-            HW_CPU_SET_DBGBVR5_EL1(dr.dbgbvcr_el1[10]);
-            HW_CPU_SET_DBGBCR5_EL1(dr.dbgbvcr_el1[11]);
-
-            /* Restore debug watchpoints. */
-            HW_CPU_SET_DBGWVR0_EL1(dr.dbgwvcr_el1[0]);
-            HW_CPU_SET_DBGWCR0_EL1(dr.dbgwvcr_el1[1]);
-            HW_CPU_SET_DBGWVR1_EL1(dr.dbgwvcr_el1[2]);
-            HW_CPU_SET_DBGWCR1_EL1(dr.dbgwvcr_el1[3]);
-            HW_CPU_SET_DBGWVR2_EL1(dr.dbgwvcr_el1[4]);
-            HW_CPU_SET_DBGWCR2_EL1(dr.dbgwvcr_el1[5]);
-            HW_CPU_SET_DBGWVR3_EL1(dr.dbgwvcr_el1[6]);
-            HW_CPU_SET_DBGWCR3_EL1(dr.dbgwvcr_el1[7]);
         }
 
         constinit CoreContext g_core_contexts[NumCores] = {};
