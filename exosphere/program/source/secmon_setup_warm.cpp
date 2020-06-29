@@ -264,6 +264,13 @@ namespace ams::secmon {
         {
             reg::Write(AHB_ARBC(AHB_GIZMO_TZRAM), (1u << 7));
         }
+
+        /* NOTE: This is Mariko only in Nintendo's firmware. */
+        /* Still, it seems to have no adverse effects on Erista... */
+        /* TODO: Find a way to get access to SocType this early (fuse driver isn't alive yet), only write on mariko? */
+        {
+            reg::ReadWrite(AHB_ARBC(AHB_AHB_SPARE_REG), AHB_REG_BITS_VALUE(AHB_SPARE_REG_AHB_SPARE_REG, 0xE0000));
+        }
     }
 
     void SetupSocDmaControllersCpuMemoryControllersEnableMmuWarmboot() {
