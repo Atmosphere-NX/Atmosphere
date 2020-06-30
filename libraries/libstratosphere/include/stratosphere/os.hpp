@@ -35,7 +35,8 @@
 #include <stratosphere/os/os_system_event.hpp>
 #include <stratosphere/os/os_interrupt_event.hpp>
 #include <stratosphere/os/os_timer_event.hpp>
-#include <stratosphere/os/os_thread_local_storage_api.hpp>
+#include <stratosphere/os/os_thread_local_storage.hpp>
+#include <stratosphere/os/os_sdk_thread_local_storage.hpp>
 #include <stratosphere/os/os_thread.hpp>
 #include <stratosphere/os/os_message_queue.hpp>
 #include <stratosphere/os/os_waitable.hpp>

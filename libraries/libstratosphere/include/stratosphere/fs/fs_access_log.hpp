@@ -13,19 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <stratosphere/sf/sf_common.hpp>
+#include <vapours.hpp>
 
-namespace ams::os {
+namespace ams::fs {
 
-    struct ThreadType;
+    enum AccessLogMode : u32 {
+        AccessLogMode_None   = 0,
+        AccessLogMode_Log    = 1,
+        AccessLogMode_SdCard = 2,
+    };
 
-}
+    Result GetGlobalAccessLogMode(u32 *out);
+    Result SetGlobalAccessLogMode(u32 mode);
 
-namespace ams::sf {
-
-    u8 GetFsInlineContext(os::ThreadType *thread);
-    u8 SetFsInlineContext(os::ThreadType *thread, u8 ctx);
+    void SetLocalAccessLog(bool enabled);
+    void SetLocalSystemAccessLogForDebug(bool enabled);
 
 }

@@ -32,7 +32,7 @@ namespace ams::fs::impl {
             Result Read(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries);
             Result GetEntryCount(s64 *out);
 
-            FileSystemAccessor &GetParent() const { return this->parent; }
+            FileSystemAccessor *GetParent() const { return std::addressof(this->parent); }
     };
 
 }

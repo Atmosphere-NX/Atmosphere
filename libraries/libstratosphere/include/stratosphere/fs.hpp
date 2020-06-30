@@ -16,7 +16,13 @@
 
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/impl/fs_result_utils.hpp>
+#include <stratosphere/fs/fs_context.hpp>
+#include <stratosphere/fs/fs_result_config.hpp>
 #include <stratosphere/fs/fs_storage_type.hpp>
+#include <stratosphere/fs/fs_priority.hpp>
+#include <stratosphere/fs/impl/fs_priority_utils.hpp>
+#include <stratosphere/fs/fs_access_log.hpp>
 #include <stratosphere/fs/fsa/fs_ifile.hpp>
 #include <stratosphere/fs/fsa/fs_idirectory.hpp>
 #include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
@@ -54,3 +60,4 @@
 #include <stratosphere/fs/fs_sd_card.hpp>
 #include <stratosphere/fs/fs_signed_system_partition.hpp>
 #include <stratosphere/fs/fs_system_data.hpp>
+#include <stratosphere/fs/impl/fs_access_log_impl.hpp>

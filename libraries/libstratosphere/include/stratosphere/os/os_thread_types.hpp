@@ -57,6 +57,12 @@ namespace ams::os {
         size_t stack_size;
         ThreadFunction function;
         void *argument;
+
+        /* NOTE: Here, Nintendo stores the TLS array. This is handled by libnx in our case. */
+        /* However, we need to access certain values in other threads' TLS (Nintendo uses a hardcoded layout for SDK tls members...) */
+        /* These members are tls slot holders in sdk code, but just normal thread type members under our scheme. */
+        uintptr_t atomic_sf_inline_context;
+
         mutable impl::InternalCriticalSectionStorage cs_thread;
         mutable impl::InternalConditionVariableStorage cv_thread;
 
