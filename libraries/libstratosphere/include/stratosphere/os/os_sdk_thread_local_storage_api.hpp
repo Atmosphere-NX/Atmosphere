@@ -15,17 +15,12 @@
  */
 
 #pragma once
-#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/os/os_common_types.hpp>
+#include <stratosphere/os/os_memory_common.hpp>
+#include <stratosphere/os/os_thread_local_storage_common.hpp>
 
 namespace ams::os {
 
-    struct ThreadType;
-
-}
-
-namespace ams::sf {
-
-    u8 GetFsInlineContext(os::ThreadType *thread);
-    u8 SetFsInlineContext(os::ThreadType *thread, u8 ctx);
+    Result SdkAllocateTlsSlot(TlsSlot *out, TlsDestructor destructor);
 
 }

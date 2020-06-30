@@ -86,6 +86,9 @@ void __appInit(void) {
         spl::InitializeForFs();
     });
 
+    /* Disable auto-abort in fs operations. */
+    fs::SetEnabledAutoAbort(false);
+
     /* Initialize fssystem library. */
     fssystem::InitializeForFileSystemProxy();
 

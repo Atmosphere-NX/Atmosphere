@@ -29,8 +29,8 @@ namespace ams::fs {
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
         size_t read_size;
-        R_TRY(ReadFile(std::addressof(read_size), handle, offset, buffer, size, option));
-        R_UNLESS(read_size == size, fs::ResultOutOfRange());
+        AMS_FS_R_TRY(ReadFile(std::addressof(read_size), handle, offset, buffer, size, option));
+        AMS_FS_R_UNLESS(read_size == size, fs::ResultOutOfRange());
         return ResultSuccess();
     }
 
@@ -39,7 +39,8 @@ namespace ams::fs {
     }
 
     Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
-        return Get(handle)->Read(out, offset, buffer, size, option);
+        AMS_FS_R_TRY(Get(handle)->Read(out, offset, buffer, size, option));
+        return ResultSuccess();
     }
 
     Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size) {
@@ -47,19 +48,23 @@ namespace ams::fs {
     }
 
     Result GetFileSize(s64 *out, FileHandle handle) {
-        return Get(handle)->GetSize(out);
+        AMS_FS_R_TRY(Get(handle)->GetSize(out));
+        return ResultSuccess();
     }
 
     Result FlushFile(FileHandle handle) {
-        return Get(handle)->Flush();
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG(Get(handle)->Flush(), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_NONE));
+        return ResultSuccess();
     }
 
     Result WriteFile(FileHandle handle, s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) {
-        return Get(handle)->Write(offset, buffer, size, option);
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG(Get(handle)->Write(offset, buffer, size, option), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_WRITE_FILE(option), offset, size));
+        return ResultSuccess();
     }
 
     Result SetFileSize(FileHandle handle, s64 size) {
-        return Get(handle)->SetSize(size);
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG(Get(handle)->SetSize(size), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_SIZE, size));
+        return ResultSuccess();
     }
 
     int GetFileOpenMode(FileHandle handle) {
@@ -67,11 +72,12 @@ namespace ams::fs {
     }
 
     void CloseFile(FileHandle handle) {
-        delete Get(handle);
+        AMS_FS_IMPL_ACCESS_LOG((delete Get(handle), ResultSuccess()), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_NONE);
     }
 
     Result QueryRange(QueryRangeInfo *out, FileHandle handle, s64 offset, s64 size) {
-        return Get(handle)->OperateRange(out, sizeof(*out), OperationId::QueryRange, offset, size, nullptr, 0);
+        AMS_FS_R_TRY(Get(handle)->OperateRange(out, sizeof(*out), OperationId::QueryRange, offset, size, nullptr, 0));
+        return ResultSuccess();
     }
 
 }

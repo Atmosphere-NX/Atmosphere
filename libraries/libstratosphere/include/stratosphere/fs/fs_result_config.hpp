@@ -13,19 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <stratosphere/sf/sf_common.hpp>
+#include <vapours.hpp>
 
-namespace ams::os {
+namespace ams::fs {
 
-    struct ThreadType;
-
-}
-
-namespace ams::sf {
-
-    u8 GetFsInlineContext(os::ThreadType *thread);
-    u8 SetFsInlineContext(os::ThreadType *thread, u8 ctx);
+    void SetEnabledAutoAbort(bool enabled);
+    void SetResultHandledByApplication(bool application);
 
 }

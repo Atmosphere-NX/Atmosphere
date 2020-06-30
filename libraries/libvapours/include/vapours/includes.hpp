@@ -25,6 +25,7 @@
 #include <cstring>
 #include <climits>
 #include <cctype>
+#include <cinttypes>
 
 /* C++ headers. */
 #include <type_traits>

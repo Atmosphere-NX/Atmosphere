@@ -1000,7 +1000,7 @@ namespace ams::ncm {
     Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version) {
         AutoBuffer meta;
         {
-            /* TODO: fs::ScopedAutoAbortDisabler aad; */
+            fs::ScopedAutoAbortDisabler aad;
             R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
         }
 

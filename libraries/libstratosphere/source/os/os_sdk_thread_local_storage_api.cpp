@@ -13,19 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#pragma once
-#include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere.hpp>
 
 namespace ams::os {
 
-    struct ThreadType;
-
-}
-
-namespace ams::sf {
-
-    u8 GetFsInlineContext(os::ThreadType *thread);
-    u8 SetFsInlineContext(os::ThreadType *thread, u8 ctx);
+    /* TODO: Nintendo reserves half the TLS slots for SDK usage. */
+    /* We don't have that ability...how should this work? */
+    Result SdkAllocateTlsSlot(TlsSlot *out, TlsDestructor destructor) {
+        return os::AllocateTlsSlot(out, destructor);
+    }
 
 }

@@ -71,7 +71,7 @@ namespace ams::fs::impl {
             void SetPathBasedFileDataCacheAttachable(bool en) { this->path_cache_attachable = en; }
             void SetMultiCommitSupported(bool en) { this->multi_commit_supported = en; }
 
-            bool IsAccessLogEnabled() const { return this->access_log_enabled; }
+            bool IsEnabledAccessLog() const { return this->access_log_enabled; }
             bool IsFileDataCacheAttachable() const { return this->data_cache_attachable; }
             bool IsPathBasedFileDataCacheAttachable() const { return this->path_cache_attachable; }
 

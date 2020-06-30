@@ -86,7 +86,7 @@ namespace ams::ncm {
     Result ReadVariationContentMetaInfoList(s32 *out_count, std::unique_ptr<ContentMetaInfo[]> *out_meta_infos, const Path &path, FirmwareVariationId firmware_variation_id) {
         AutoBuffer meta;
         {
-            /* TODO: fs::ScopedAutoAbortDisabler aad; */
+            fs::ScopedAutoAbortDisabler aad;
             R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
         }
 
