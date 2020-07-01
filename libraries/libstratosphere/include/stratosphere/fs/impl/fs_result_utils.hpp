@@ -44,6 +44,13 @@ namespace ams::fs::impl {
         AMS_FS_R_CHECK_ABORT_IMPL(__tmp_fs_result, true);   \
     })
 
+#define AMS_FS_ABORT_UNLESS_WITH_RESULT(__EXPR__, __RESULT__) \
+    ({                                                        \
+        if (!(__EXPR__)) {                                    \
+            AMS_FS_R_ABORT_UNLESS((__RESULT__));              \
+        }                                                     \
+    })
+
 #define AMS_FS_R_THROW(__RESULT__)                          \
     ({                                                      \
         const ::ams::Result __tmp_fs_result = (__RESULT__); \

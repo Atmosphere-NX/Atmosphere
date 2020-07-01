@@ -24,6 +24,7 @@ namespace ams::fs::impl {
 
     bool IsWindowsDrive(const char *name);
     bool IsReservedMountName(const char *name);
+    bool IsValidMountName(const char *name);
     Result CheckMountName(const char *name);
     Result CheckMountNameAllowingReserved(const char *name);
 
