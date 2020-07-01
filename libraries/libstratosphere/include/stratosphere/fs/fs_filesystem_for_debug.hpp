@@ -16,15 +16,17 @@
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
 #include <stratosphere/fs/fs_filesystem.hpp>
-#include <stratosphere/fs/fs_filesystem_for_debug.hpp>
 
 namespace ams::fs {
 
-    /* Common utilities. */
-    Result EnsureDirectoryRecursively(const char *path);
-    Result EnsureParentDirectoryRecursively(const char *path);
+    using FileTimeStampRaw = ::FsTimeStampRaw;
 
-    Result HasFile(bool *out, const char *path);
-    Result HasDirectory(bool *out, const char *path);
+    namespace impl {
+
+        Result GetFileTimeStampRawForDebug(FileTimeStampRaw *out, const char *path);
+
+    }
+
+    Result GetFileTimeStampRawForDebug(FileTimeStampRaw *out, const char *path);
 
 }

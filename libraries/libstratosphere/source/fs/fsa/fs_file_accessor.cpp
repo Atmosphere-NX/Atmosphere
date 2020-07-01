@@ -29,8 +29,8 @@ namespace ams::fs::impl {
 
     FileAccessor::~FileAccessor() {
         /* Ensure that all files are flushed. */
-        if (R_FAILED(this->write_result)) {
-            AMS_ABORT_UNLESS(this->write_state != WriteState::NeedsFlush);
+        if (R_SUCCEEDED(this->write_result)) {
+            AMS_FS_ABORT_UNLESS_WITH_RESULT(this->write_state != WriteState::NeedsFlush, fs::ResultNeedFlush());
         }
         this->impl.reset();
 
@@ -40,6 +40,7 @@ namespace ams::fs::impl {
     }
 
     Result FileAccessor::ReadWithCacheAccessLog(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option, bool use_path_cache, bool use_data_cache) {
+        /* TODO */
         AMS_ABORT();
     }
 
@@ -48,10 +49,12 @@ namespace ams::fs::impl {
     }
 
     Result FileAccessor::Read(size_t *out, s64 offset, void *buf, size_t size, const ReadOption &option) {
-        /* Fail after a write fails. */
-        R_TRY(this->write_result);
+        /* Get a handle to this file for use in logging. */
+        FileHandle handle = { this };
 
-        /* TODO: Logging. */
+        /* Fail after a write fails. */
+        R_UNLESS(R_SUCCEEDED(this->write_result), AMS_FS_IMPL_ACCESS_LOG_WITH_NAME(this->write_result, handle, "ReadFile", AMS_FS_IMPL_ACCESS_LOG_FORMAT_READ_FILE(out, offset, size)));
+
         /* TODO: Support cache. */
         const bool use_path_cache = this->parent != nullptr && this->file_path_hash != nullptr;
         const bool use_data_cache = /* TODO */false && this->parent != nullptr && this->parent->IsFileDataCacheAttachable();
@@ -60,7 +63,7 @@ namespace ams::fs::impl {
             /* TODO */
             return this->ReadWithCacheAccessLog(out, offset, buf, size, option, use_path_cache, use_data_cache);
         } else {
-            return this->ReadWithoutCacheAccessLog(out, offset, buf, size, option);
+            return AMS_FS_IMPL_ACCESS_LOG_WITH_NAME(this->ReadWithoutCacheAccessLog(out, offset, buf, size, option), handle, "ReadFile", AMS_FS_IMPL_ACCESS_LOG_FORMAT_READ_FILE(out, offset, size));
         }
     }
 

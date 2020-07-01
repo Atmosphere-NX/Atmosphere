@@ -120,49 +120,49 @@ namespace ams::fs::impl {
         return impl::Find(out_accessor, mount_name.str);
     }
 
+    Result Unmount(const char *name) {
+        impl::FileSystemAccessor *accessor;
+        R_TRY(impl::Find(std::addressof(accessor), name));
+
+        if (accessor->IsFileDataCacheAttachable()) {
+            /* TODO: Data cache purge */
+        }
+
+        impl::Unregister(name);
+        return ResultSuccess();
+    }
+
 }
 
 namespace ams::fs {
 
     namespace {
 
-        Result UnmountImpl(const char *name) {
-            impl::FileSystemAccessor *accessor;
-            R_TRY(impl::Find(std::addressof(accessor), name));
-
-            if (accessor->IsFileDataCacheAttachable()) {
-                /* TODO: Data cache purge */
-            }
-
-            impl::Unregister(name);
-            return ResultSuccess();
-        }
-
     }
 
     Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *src) {
         /* Ensure neither argument is nullptr. */
-        R_UNLESS(dst != nullptr, fs::ResultNullptrArgument());
-        R_UNLESS(src != nullptr, fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(dst != nullptr, fs::ResultNullptrArgument());
+        AMS_FS_R_UNLESS(src != nullptr, fs::ResultNullptrArgument());
 
         /* Get the mount name and sub path for the path. */
         MountName mount_name;
         const char *sub_path;
-        R_TRY(impl::GetMountNameAndSubPath(std::addressof(mount_name), std::addressof(sub_path), src));
+        AMS_FS_R_TRY(impl::GetMountNameAndSubPath(std::addressof(mount_name), std::addressof(sub_path), src));
 
         impl::FileSystemAccessor *accessor;
-        R_TRY(impl::Find(std::addressof(accessor), mount_name.str));
-        R_TRY(accessor->GetCommonMountName(dst, dst_size));
+        AMS_FS_R_TRY(impl::Find(std::addressof(accessor), mount_name.str));
+        AMS_FS_R_TRY(accessor->GetCommonMountName(dst, dst_size));
 
         const auto mount_name_len = strnlen(dst, dst_size);
         const auto common_path_len = std::snprintf(dst + mount_name_len, dst_size - mount_name_len, "%s", sub_path);
 
-        R_UNLESS(static_cast<size_t>(common_path_len) < dst_size - mount_name_len, fs::ResultTooLongPath());
+        AMS_FS_R_UNLESS(static_cast<size_t>(common_path_len) < dst_size - mount_name_len, fs::ResultTooLongPath());
         return ResultSuccess();
     }
 
     void Unmount(const char *mount_name) {
-        R_ABORT_UNLESS(UnmountImpl(mount_name));
+        AMS_FS_R_ABORT_UNLESS(AMS_FS_IMPL_ACCESS_LOG_UNMOUNT(impl::Unmount(mount_name), mount_name, AMS_FS_IMPL_ACCESS_LOG_FORMAT_MOUNT, mount_name));
     }
 
 }

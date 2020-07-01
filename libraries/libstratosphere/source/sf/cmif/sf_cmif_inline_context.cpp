@@ -38,9 +38,6 @@ namespace ams::sf {
         }
 
         InlineContext GetInlineContext() {
-            /* Get current thread. */
-            os::ThreadType * const cur_thread = os::GetCurrentThread();
-
             /* Get the context. */
             uintptr_t thread_context = GetAtomicSfInlineContext()->load();
 
@@ -62,7 +59,7 @@ namespace ams::sf {
             std::memcpy(std::addressof(new_context_value), std::addressof(ctx), sizeof(ctx));
 
             /* Get the old context. */
-            uintptr_t old_context_value = GetAtomicSfInlineContext()->exchange(new_context_value);
+            uintptr_t old_context_value = GetAtomicSfInlineContext(cur_thread)->exchange(new_context_value);
 
             /* Convert and copy it out. */
             InlineContext old_ctx;

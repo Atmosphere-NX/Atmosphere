@@ -25,30 +25,39 @@ namespace ams::fs {
             return reinterpret_cast<impl::FileAccessor *>(handle.handle);
         }
 
+        Result ReadFileImpl(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
+            R_TRY(Get(handle)->Read(out, offset, buffer, size, option));
+            return ResultSuccess();
+        }
+
     }
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
         size_t read_size;
-        AMS_FS_R_TRY(ReadFile(std::addressof(read_size), handle, offset, buffer, size, option));
+        AMS_FS_R_TRY(ReadFileImpl(std::addressof(read_size), handle, offset, buffer, size, option));
         AMS_FS_R_UNLESS(read_size == size, fs::ResultOutOfRange());
         return ResultSuccess();
     }
 
     Result ReadFile(FileHandle handle, s64 offset, void *buffer, size_t size) {
-        return ReadFile(handle, offset, buffer, size, ReadOption());
+        size_t read_size;
+        AMS_FS_R_TRY(ReadFileImpl(std::addressof(read_size), handle, offset, buffer, size, ReadOption()));
+        AMS_FS_R_UNLESS(read_size == size, fs::ResultOutOfRange());
+        return ResultSuccess();
     }
 
     Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) {
-        AMS_FS_R_TRY(Get(handle)->Read(out, offset, buffer, size, option));
+        AMS_FS_R_TRY(ReadFileImpl(out, handle, offset, buffer, size, option));
         return ResultSuccess();
     }
 
     Result ReadFile(size_t *out, FileHandle handle, s64 offset, void *buffer, size_t size) {
-        return ReadFile(out, handle, offset, buffer, size, ReadOption());
+        AMS_FS_R_TRY(ReadFileImpl(out, handle, offset, buffer, size, ReadOption()));
+        return ResultSuccess();
     }
 
     Result GetFileSize(s64 *out, FileHandle handle) {
-        AMS_FS_R_TRY(Get(handle)->GetSize(out));
+        AMS_FS_R_TRY(AMS_FS_IMPL_ACCESS_LOG(Get(handle)->GetSize(out), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_GET_FILE_SIZE(out)));
         return ResultSuccess();
     }
 
@@ -68,7 +77,9 @@ namespace ams::fs {
     }
 
     int GetFileOpenMode(FileHandle handle) {
-        return Get(handle)->GetOpenMode();
+        const int mode = Get(handle)->GetOpenMode();
+        AMS_FS_IMPL_ACCESS_LOG(ResultSuccess(), handle, AMS_FS_IMPL_ACCESS_LOG_FORMAT_OPEN_MODE, static_cast<u32>(mode));
+        return mode;
     }
 
     void CloseFile(FileHandle handle) {
