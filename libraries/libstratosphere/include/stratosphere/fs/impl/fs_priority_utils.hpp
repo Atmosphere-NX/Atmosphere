@@ -37,10 +37,10 @@ namespace ams::fs::impl {
         AMS_ASSERT(out != nullptr);
 
         switch (priority) {
-            case PriorityRaw_Normal:     *out = TlsIoPriority_Normal;
-            case PriorityRaw_Realtime:   *out = TlsIoPriority_Realtime;
-            case PriorityRaw_Low:        *out = TlsIoPriority_Low;
-            case PriorityRaw_Background: *out = TlsIoPriority_Background;
+            case PriorityRaw_Normal:     *out = TlsIoPriority_Normal;     break;
+            case PriorityRaw_Realtime:   *out = TlsIoPriority_Realtime;   break;
+            case PriorityRaw_Low:        *out = TlsIoPriority_Low;        break;
+            case PriorityRaw_Background: *out = TlsIoPriority_Background; break;
             default: return fs::ResultInvalidArgument();
         }
 
@@ -51,10 +51,10 @@ namespace ams::fs::impl {
         AMS_ASSERT(out != nullptr);
 
         switch (static_cast<TlsIoPriority>(tls_io)) {
-            case TlsIoPriority_Normal:     *out = PriorityRaw_Normal;
-            case TlsIoPriority_Realtime:   *out = PriorityRaw_Realtime;
-            case TlsIoPriority_Low:        *out = PriorityRaw_Low;
-            case TlsIoPriority_Background: *out = PriorityRaw_Background;
+            case TlsIoPriority_Normal:     *out = PriorityRaw_Normal;     break;
+            case TlsIoPriority_Realtime:   *out = PriorityRaw_Realtime;   break;
+            case TlsIoPriority_Low:        *out = PriorityRaw_Low;        break;
+            case TlsIoPriority_Background: *out = PriorityRaw_Background; break;
             default: return fs::ResultInvalidArgument();
         }
 

@@ -130,7 +130,7 @@ namespace ams::fs {
 
     PriorityRaw GetPriorityRawOnCurrentThreadInternal() {
         fs::PriorityRaw priority_raw;
-        AMS_FS_R_ABORT_UNLESS(GetPriorityRawImpl(std::addressof(priority_raw), os::GetCurrentThread()));
+        R_ABORT_UNLESS(GetPriorityRawImpl(std::addressof(priority_raw), os::GetCurrentThread()));
         return priority_raw;
 
     }

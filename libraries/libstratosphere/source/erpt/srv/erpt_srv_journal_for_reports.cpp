@@ -98,7 +98,7 @@ namespace ams::erpt::srv {
     }
 
     s64 JournalForReports::GetMaxReportSize() {
-        s64 max_size;
+        s64 max_size = 0;
         for (auto it = s_record_list.begin(); it != s_record_list.end(); it++) {
             max_size = std::max(max_size, it->info.report_size);
         }
