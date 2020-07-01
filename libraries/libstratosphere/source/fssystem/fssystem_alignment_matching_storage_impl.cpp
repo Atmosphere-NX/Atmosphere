@@ -73,6 +73,8 @@ namespace ams::fssystem {
             core_size   = (size < buffer_round_up_difference) ? 0 : util::AlignDown(size - buffer_round_up_difference, data_alignment);
             buffer_gap  = buffer_round_up_difference;
             offset_gap  = GetRoundDownDifference(offset, data_alignment);
+
+            covered_offset = offset;
         }
 
         /* Read the core portion. */

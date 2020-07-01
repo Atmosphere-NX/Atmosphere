@@ -75,6 +75,7 @@ namespace ams::erpt::srv {
         auto file_guard = SCOPE_GUARD { if (mode == StreamMode_Write) { fs::CloseFile(this->file_handle); } };
 
         std::strncpy(this->file_name, path, sizeof(this->file_name));
+        this->file_name[sizeof(this->file_name) - 1] = '\x00';
 
         this->buffer = reinterpret_cast<u8 *>(Allocate(buffer_size));
         R_UNLESS(this->buffer != nullptr, erpt::ResultOutOfMemory());

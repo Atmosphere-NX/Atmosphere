@@ -183,8 +183,8 @@ namespace ams::fs::impl {
             return g_access_log_manager_printer_callback_manager;
         }
 
-        const char *GetPriorityRawName() {
-            return fs::impl::IdString().ToString(fs::GetPriorityRawOnCurrentThreadInternal());
+        const char *GetPriorityRawName(fs::impl::IdString &id_string) {
+            return id_string.ToString(fs::GetPriorityRawOnCurrentThreadInternal());
         }
 
         Result OutputAccessLogToSdCardImpl(const char *log, size_t size) {
@@ -405,28 +405,32 @@ namespace ams::fs::impl {
     void OutputAccessLog(Result result, os::Tick start, os::Tick end, const char *name, fs::FileHandle handle, const char *fmt, ...) {
         std::va_list vl;
         va_start(vl, fmt);
-        OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle.handle, fmt, vl);
+        fs::impl::IdString id_string;
+        OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle.handle, fmt, vl);
         va_end(vl);
     }
 
     void OutputAccessLog(Result result, os::Tick start, os::Tick end, const char *name, fs::DirectoryHandle handle, const char *fmt, ...) {
         std::va_list vl;
         va_start(vl, fmt);
-        OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle.handle, fmt, vl);
+        fs::impl::IdString id_string;
+        OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle.handle, fmt, vl);
         va_end(vl);
     }
 
     void OutputAccessLog(Result result, os::Tick start, os::Tick end, const char *name, fs::impl::IdentifyAccessLogHandle handle, const char *fmt, ...) {
         std::va_list vl;
         va_start(vl, fmt);
-        OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle.handle, fmt, vl);
+        fs::impl::IdString id_string;
+        OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle.handle, fmt, vl);
         va_end(vl);
     }
 
     void OutputAccessLog(Result result, os::Tick start, os::Tick end, const char *name, const void *handle, const char *fmt, ...) {
         std::va_list vl;
         va_start(vl, fmt);
-        OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle, fmt, vl);
+        fs::impl::IdString id_string;
+        OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle, fmt, vl);
         va_end(vl);
     }
 
@@ -441,7 +445,8 @@ namespace ams::fs::impl {
         if (R_FAILED(result)) {
             std::va_list vl;
             va_start(vl, fmt);
-            OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle.handle, fmt, vl);
+            fs::impl::IdString id_string;
+            OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle.handle, fmt, vl);
             va_end(vl);
         }
     }
@@ -450,7 +455,8 @@ namespace ams::fs::impl {
         if (R_FAILED(result)) {
             std::va_list vl;
             va_start(vl, fmt);
-            OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle.handle, fmt, vl);
+            fs::impl::IdString id_string;
+            OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle.handle, fmt, vl);
             va_end(vl);
         }
     }
@@ -459,7 +465,8 @@ namespace ams::fs::impl {
         if (R_FAILED(result)) {
             std::va_list vl;
             va_start(vl, fmt);
-            OutputAccessLog(result, GetPriorityRawName(), start, end, name, handle, fmt, vl);
+            fs::impl::IdString id_string;
+            OutputAccessLog(result, GetPriorityRawName(id_string), start, end, name, handle, fmt, vl);
             va_end(vl);
         }
     }
