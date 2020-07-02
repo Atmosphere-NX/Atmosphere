@@ -33,11 +33,11 @@ namespace ams::uart {
         }
 
         void WaitSymbols(int baud, u32 num) {
-            util::WaitMicroSeconds(util::DivideUp(1'000'000, baud) * num);
+            util::WaitMicroSeconds(util::DivideUp(num * 1'000'000, baud));
         }
 
         void WaitCycles(int baud, u32 num) {
-            util::WaitMicroSeconds(util::DivideUp(1'000'000, 16 * baud) * num);
+            util::WaitMicroSeconds(util::DivideUp(num * 1'000'000, 16 * baud));
         }
 
         ALWAYS_INLINE void WaitFifoNotFull(volatile UartRegisters *uart) {
@@ -60,26 +60,6 @@ namespace ams::uart {
 
         constexpr inline u32 LockBit = (1 << 6);
 
-        void Lock(volatile UartRegisters *reg) {
-            while (true) {
-                if (reg->mie != 0) {
-                    continue;
-                }
-
-                reg->irda_csr = LockBit;
-
-                if (reg->mie == 0) {
-                    break;
-                }
-
-                reg->irda_csr = 0;
-            }
-        }
-
-        void Unlock(volatile UartRegisters *reg) {
-            reg->irda_csr = 0;
-        }
-
     }
 
     void SetRegisterAddress(uintptr_t address) {
@@ -97,7 +77,13 @@ namespace ams::uart {
         constexpr u32 UartClock = 408000000;
         const     u32 divisor = (UartClock + (baud_rate * 16) / 2) / (baud_rate * 16);
 
-        /* Disable DLAB and all interrupts. */
+        /* Wait for idle state. */
+        WaitIdle(uart, UART_VENDOR_STATE_TX_IDLE);
+
+        /* Wait 100 us. */
+        util::WaitMicroSeconds(100);
+
+        /* Disable interrupts. */
         uart->lcr = uart->lcr & ~UART_LCR_DLAB;
         uart->ier = 0;
         uart->mcr = 0;
@@ -128,8 +114,8 @@ namespace ams::uart {
         /* Wait for idle state. */
         WaitIdle(uart, UART_VENDOR_STATE_TX_IDLE | UART_VENDOR_STATE_RX_IDLE);
 
-        /* Set scratch register to 0. */
-        uart->spr = 0;
+        /* Wait 100 us. */
+        util::WaitMicroSeconds(100);
     }
 
     void SendText(Port port, const void *data, size_t size) {
@@ -138,10 +124,6 @@ namespace ams::uart {
 
         /* Get pointer to data. */
         const u8 *p = static_cast<const u8 *>(data);
-
-        /* Lock the uart registers. */
-        Lock(uart);
-        ON_SCOPE_EXIT { Unlock(uart); };
 
         /* Send each byte. */
         for (size_t i = 0; i < size; ++i) {

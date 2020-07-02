@@ -48,7 +48,12 @@ namespace ams::secmon::boot {
             const auto pmc = MemoryRegionVirtualDevicePmc.GetAddress();
 
             /* Set the physical address of the warmboot binary to scratch 1. */
-            reg::Write(pmc + APBDEV_PMC_SCRATCH1, static_cast<u32>(MemoryRegionPhysicalDramSecureDataStoreWarmbootFirmware.GetAddress()));
+            if (GetSocType() == fuse::SocType_Mariko) {
+                reg::Write(pmc + APBDEV_PMC_SECURE_SCRATCH119, static_cast<u32>(MemoryRegionPhysicalDramSecureDataStoreWarmbootFirmware.GetAddress()));
+            } else /* if (GetSocType() == fuse::SocType_Erista) */ {
+                reg::Write(pmc + APBDEV_PMC_SCRATCH1, static_cast<u32>(MemoryRegionPhysicalDramSecureDataStoreWarmbootFirmware.GetAddress()));
+            }
+
 
             /* Configure logging by setting bits 18-19 of scratch 20. */
             reg::ReadWrite(pmc + APBDEV_PMC_SCRATCH20, REG_BITS_VALUE(18, 2, 0));
@@ -66,6 +71,7 @@ namespace ams::secmon::boot {
             /* The warmboot key as a parameter. The latter is a better solution, but it would be nice to take */
             /* care of it here. Perhaps we should read the number of anti-downgrade fuses burnt, and translate that */
             /* to the warmboot key? To be decided during the process of implementing ams-on-mariko support. */
+            reg::Write(pmc + APBDEV_PMC_SECURE_SCRATCH32, 0x129);
         }
 
         constinit const u8 DeviceMasterKeySourceKekSource[se::AesBlockSize] = {
@@ -90,6 +96,10 @@ namespace ams::secmon::boot {
 
         constinit const u8 MarikoMasterKekSourceDev[se::AesBlockSize] = {
             0xF9, 0x37, 0xCF, 0x9A, 0xBD, 0x86, 0xBB, 0xA9, 0x9C, 0x9E, 0x03, 0xC4, 0xFC, 0xBC, 0x3B, 0xCE
+        };
+
+        constinit const u8 MasterKeySource[se::AesBlockSize] = {
+            0xD8, 0xA2, 0x41, 0x0A, 0xC6, 0xC5, 0x90, 0x01, 0xC6, 0x1D, 0x6A, 0x26, 0x7C, 0x51, 0x3F, 0x3C
         };
 
         void DeriveMasterKekAndDeviceKeyMariko(bool is_prod) {
@@ -120,6 +130,14 @@ namespace ams::secmon::boot {
                 DeriveMasterKekAndDeviceKeyMariko(is_prod);
             } else /* if (GetSocType() == fuse::SocType_Erista) */ {
                 DeriveMasterKekAndDeviceKeyErista(is_prod);
+            }
+        }
+
+        void DeriveMasterKey() {
+            if (GetSocType() == fuse::SocType_Mariko) {
+                se::SetEncryptedAesKey128(pkg1::AesKeySlot_Master, pkg1::AesKeySlot_MasterKek, MasterKeySource, se::AesBlockSize);
+            } else /* if (GetSocType() == fuse::SocType_Erista) */ {
+                /* Nothing to do here; erista bootloader will have derived master key already. */
             }
         }
 
@@ -312,6 +330,9 @@ namespace ams::secmon::boot {
             /* Derive the master keys. */
             DeriveAllMasterKeys(is_prod, work_block);
 
+            /* Lock the master key as a kek. */
+            se::LockAesKeySlot(pkg1::AesKeySlot_Master, se::KeySlotLockFlags_AllLockKek);
+
             /* Derive the device master keys. */
             DeriveAllDeviceMasterKeys(is_prod, work_block);
 
@@ -357,7 +378,10 @@ namespace ams::secmon::boot {
             /* Lock the device key as only usable as a kek. */
             se::LockAesKeySlot(pkg1::AesKeySlot_Device, se::KeySlotLockFlags_AllLockKek);
 
-            /* Derive all keys. */
+            /* Derive the master key. */
+            DeriveMasterKey();
+
+            /* Derive all other keys. */
             DeriveAllKeys(is_prod);
         }
 

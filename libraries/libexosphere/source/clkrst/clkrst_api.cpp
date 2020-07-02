@@ -38,7 +38,7 @@ namespace ams::clkrst {
             reg::ReadWrite(g_register_address + param.clk_enb_offset, REG_BITS_VALUE(param.index, 1, 0));
 
             /* Set the clock source. */
-            if (param.clk_src != 0) {
+            if (param.clk_src_offset != 0) {
                 reg::Write(g_register_address + param.clk_src_offset, (param.clk_src << 29) | (param.clk_div << 0));
             }
 
@@ -89,11 +89,11 @@ namespace ams::clkrst {
     }
 
     void EnableUartBClock() {
-        EnableClock(UartAClock);
+        EnableClock(UartBClock);
     }
 
     void EnableUartCClock() {
-        EnableClock(UartAClock);
+        EnableClock(UartCClock);
     }
 
     void EnableActmonClock() {

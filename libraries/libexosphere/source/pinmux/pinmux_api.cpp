@@ -104,7 +104,7 @@ namespace ams::pinmux {
         /* Get the registers. */
         const uintptr_t PINMUX = g_pinmux_address;
 
-        /* Configure Uart-B. */
+        /* Configure Uart-C. */
         reg::Write(PINMUX + PINMUX_AUX_UART3_TX,  PINMUX_REG_BITS_ENUM(AUX_UART3_PM,       UARTC),
                                                   PINMUX_REG_BITS_ENUM(AUX_PUPD,            NONE),
                                                   PINMUX_REG_BITS_ENUM(AUX_TRISTATE, PASSTHROUGH),
@@ -114,13 +114,13 @@ namespace ams::pinmux {
 
         reg::Write(PINMUX + PINMUX_AUX_UART3_RX,  PINMUX_REG_BITS_ENUM(AUX_UART3_PM,       UARTC),
                                                   PINMUX_REG_BITS_ENUM(AUX_PUPD,            NONE),
-                                                  PINMUX_REG_BITS_ENUM(AUX_TRISTATE, PASSTHROUGH),
+                                                  PINMUX_REG_BITS_ENUM(AUX_TRISTATE,    TRISTATE),
                                                   PINMUX_REG_BITS_ENUM(AUX_E_INPUT,       ENABLE),
                                                   PINMUX_REG_BITS_ENUM(AUX_LOCK,         DISABLE),
                                                   PINMUX_REG_BITS_ENUM(AUX_E_OD,         DISABLE));
 
         reg::Write(PINMUX + PINMUX_AUX_UART3_RTS, PINMUX_REG_BITS_ENUM(AUX_UART3_PM,       UARTC),
-                                                  PINMUX_REG_BITS_ENUM(AUX_PUPD,            NONE),
+                                                  PINMUX_REG_BITS_ENUM(AUX_PUPD,       PULL_DOWN),
                                                   PINMUX_REG_BITS_ENUM(AUX_TRISTATE, PASSTHROUGH),
                                                   PINMUX_REG_BITS_ENUM(AUX_E_INPUT,      DISABLE),
                                                   PINMUX_REG_BITS_ENUM(AUX_LOCK,         DISABLE),
@@ -128,13 +128,16 @@ namespace ams::pinmux {
 
         reg::Write(PINMUX + PINMUX_AUX_UART3_CTS, PINMUX_REG_BITS_ENUM(AUX_UART3_PM,       UARTC),
                                                   PINMUX_REG_BITS_ENUM(AUX_PUPD,            NONE),
-                                                  PINMUX_REG_BITS_ENUM(AUX_TRISTATE, PASSTHROUGH),
+                                                  PINMUX_REG_BITS_ENUM(AUX_TRISTATE,    TRISTATE),
                                                   PINMUX_REG_BITS_ENUM(AUX_E_INPUT,       ENABLE),
                                                   PINMUX_REG_BITS_ENUM(AUX_LOCK,         DISABLE),
                                                   PINMUX_REG_BITS_ENUM(AUX_E_OD,         DISABLE));
 
         /* Configure GPIO for Uart-C. */
-        reg::ReadWrite(g_gpio_address + 0x00C, REG_BITS_VALUE(1, 4, 0));
+        reg::ReadWrite(g_gpio_address + 0x118, REG_BITS_VALUE(0, 1, 1));
+        reg::Read(g_gpio_address + 0x118);
+        reg::ReadWrite(g_gpio_address + 0x00C, REG_BITS_VALUE(1, 1, 0));
+        reg::Read(g_gpio_address + 0x00C);
     }
 
     void SetupI2c1() {
