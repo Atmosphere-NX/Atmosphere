@@ -22,20 +22,12 @@
 
 namespace ams::lr {
 
-    class ILocationResolverManager : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                OpenLocationResolver                = 0,
-                OpenRegisteredLocationResolver      = 1,
-                RefreshLocationResolver             = 2,
-                OpenAddOnContentLocationResolver    = 3,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) = 0;
-            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out) = 0;
-            virtual Result RefreshLocationResolver(ncm::StorageId storage_id) = 0;
-            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out) = 0;
-    };
+    #define AMS_LR_I_LOCATION_RESOLVER_MANAGER_INTERFACE_INFO(C, H)                                                                                                             \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, OpenLocationResolver,             (sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id))                     \
+        AMS_SF_METHOD_INFO(C, H, 1, Result, OpenRegisteredLocationResolver,   (sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out))                                      \
+        AMS_SF_METHOD_INFO(C, H, 2, Result, RefreshLocationResolver,          (ncm::StorageId storage_id))                                                                      \
+        AMS_SF_METHOD_INFO(C, H, 3, Result, OpenAddOnContentLocationResolver, (sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out),                hos::Version_2_0_0)
+
+    AMS_SF_DEFINE_INTERFACE(ILocationResolverManager, AMS_LR_I_LOCATION_RESOLVER_MANAGER_INTERFACE_INFO)
 
 }

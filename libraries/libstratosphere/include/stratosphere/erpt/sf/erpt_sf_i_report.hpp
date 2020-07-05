@@ -19,33 +19,15 @@
 
 namespace ams::erpt::sf {
 
-    class IReport : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                Open     = 0,
-                Read     = 1,
-                SetFlags = 2,
-                GetFlags = 3,
-                Close    = 4,
-                GetSize  = 5,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result Open(const ReportId &report_id) = 0;
-            virtual Result Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer) = 0;
-            virtual Result SetFlags(ReportFlagSet flags) = 0;
-            virtual Result GetFlags(ams::sf::Out<ReportFlagSet> out) = 0;
-            virtual Result Close() = 0;
-            virtual Result GetSize(ams::sf::Out<s64> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(Open),
-                MAKE_SERVICE_COMMAND_META(Read),
-                MAKE_SERVICE_COMMAND_META(SetFlags),
-                MAKE_SERVICE_COMMAND_META(GetFlags),
-                MAKE_SERVICE_COMMAND_META(Close),
-                MAKE_SERVICE_COMMAND_META(GetSize),
-            };
-    };
+    #define AMS_ERPT_I_REPORT_INTERFACE_INFO(C, H)                                                                           \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, Open,     (const ReportId &report_id))                                         \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, Read,     (ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)) \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, SetFlags, (ReportFlagSet flags))                                               \
+        AMS_SF_METHOD_INFO(C, H,  3, Result, GetFlags, (ams::sf::Out<ReportFlagSet> out))                                   \
+        AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    ())                                                                  \
+        AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out))
+
+
+    AMS_SF_DEFINE_INTERFACE(IReport, AMS_ERPT_I_REPORT_INTERFACE_INFO)
 
 }

@@ -22,24 +22,11 @@
 
 namespace ams::erpt::sf {
 
-    class ISession : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                OpenReport     = 0,
-                OpenManager    = 1,
-                OpenAttachment = 2,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result OpenReport(ams::sf::Out<std::shared_ptr<erpt::sf::IReport>> out) = 0;
-            virtual Result OpenManager(ams::sf::Out<std::shared_ptr<erpt::sf::IManager>> out) = 0;
-            virtual Result OpenAttachment(ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(OpenReport),
-                MAKE_SERVICE_COMMAND_META(OpenManager),
-                MAKE_SERVICE_COMMAND_META(OpenAttachment, hos::Version_8_0_0),
-            };
-    };
+    #define AMS_ERPT_I_SESSION_INTERFACE_INFO(C, H)                                                                                           \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, OpenReport,     (ams::sf::Out<std::shared_ptr<erpt::sf::IReport>>     out))                     \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, OpenManager,    (ams::sf::Out<std::shared_ptr<erpt::sf::IManager>>    out))                     \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, OpenAttachment, (ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out), hos::Version_8_0_0)
+
+    AMS_SF_DEFINE_INTERFACE(ISession, AMS_ERPT_I_SESSION_INTERFACE_INFO)
 
 }

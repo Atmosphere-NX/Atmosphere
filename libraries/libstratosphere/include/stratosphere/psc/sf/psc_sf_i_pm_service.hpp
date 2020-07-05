@@ -20,18 +20,9 @@
 
 namespace ams::psc::sf {
 
-    class IPmService : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                Initialize = 0,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result Initialize(ams::sf::Out<std::shared_ptr<psc::sf::IPmModule>> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(Initialize),
-            };
-    };
+    #define AMS_PSC_I_PM_SERVICE_INTERFACE_INFO(C, H)                                                            \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, Initialize, (ams::sf::Out<std::shared_ptr<psc::sf::IPmModule>> out))
+
+    AMS_SF_DEFINE_INTERFACE(IPmService, AMS_PSC_I_PM_SERVICE_INTERFACE_INFO)
 
 }

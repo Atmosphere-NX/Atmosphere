@@ -20,59 +20,23 @@
 
 namespace ams::ncm {
 
-    class IContentManager : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                CreateContentStorage                = 0,
-                CreateContentMetaDatabase           = 1,
-                VerifyContentStorage                = 2,
-                VerifyContentMetaDatabase           = 3,
-                OpenContentStorage                  = 4,
-                OpenContentMetaDatabase             = 5,
-                CloseContentStorageForcibly         = 6,
-                CloseContentMetaDatabaseForcibly    = 7,
-                CleanupContentMetaDatabase          = 8,
-                ActivateContentStorage              = 9,
-                InactivateContentStorage            = 10,
-                ActivateContentMetaDatabase         = 11,
-                InactivateContentMetaDatabase       = 12,
-                InvalidateRightsIdCache             = 13,
-                GetMemoryReport                     = 14,
-            };
-        public:
-            virtual Result CreateContentStorage(StorageId storage_id) = 0;
-            virtual Result CreateContentMetaDatabase(StorageId storage_id) = 0;
-            virtual Result VerifyContentStorage(StorageId storage_id) = 0;
-            virtual Result VerifyContentMetaDatabase(StorageId storage_id) = 0;
-            virtual Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id) = 0;
-            virtual Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id) = 0;
-            virtual Result CloseContentStorageForcibly(StorageId storage_id) = 0;
-            virtual Result CloseContentMetaDatabaseForcibly(StorageId storage_id) = 0;
-            virtual Result CleanupContentMetaDatabase(StorageId storage_id) = 0;
-            virtual Result ActivateContentStorage(StorageId storage_id) = 0;
-            virtual Result InactivateContentStorage(StorageId storage_id) = 0;
-            virtual Result ActivateContentMetaDatabase(StorageId storage_id) = 0;
-            virtual Result InactivateContentMetaDatabase(StorageId storage_id) = 0;
-            virtual Result InvalidateRightsIdCache() = 0;
-            virtual Result GetMemoryReport(sf::Out<MemoryReport> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(CreateContentStorage),
-                MAKE_SERVICE_COMMAND_META(CreateContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(VerifyContentStorage),
-                MAKE_SERVICE_COMMAND_META(VerifyContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(OpenContentStorage),
-                MAKE_SERVICE_COMMAND_META(OpenContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(CloseContentStorageForcibly,      hos::Version_1_0_0, hos::Version_1_0_0),
-                MAKE_SERVICE_COMMAND_META(CloseContentMetaDatabaseForcibly, hos::Version_1_0_0, hos::Version_1_0_0),
-                MAKE_SERVICE_COMMAND_META(CleanupContentMetaDatabase),
-                MAKE_SERVICE_COMMAND_META(ActivateContentStorage,           hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(InactivateContentStorage,         hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(ActivateContentMetaDatabase,      hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(InactivateContentMetaDatabase,    hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(InvalidateRightsIdCache,          hos::Version_9_0_0),
-                MAKE_SERVICE_COMMAND_META(GetMemoryReport,                  hos::Version_10_0_0),
-            };
-    };
+    #define AMS_NCM_I_CONTENT_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                         \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, CreateContentStorage,             (StorageId storage_id))                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, CreateContentMetaDatabase,        (StorageId storage_id))                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, VerifyContentStorage,             (StorageId storage_id))                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  3, Result, VerifyContentMetaDatabase,        (StorageId storage_id))                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  4, Result, OpenContentStorage,               (sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id))                                              \
+        AMS_SF_METHOD_INFO(C, H,  5, Result, OpenContentMetaDatabase,          (sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id))                                         \
+        AMS_SF_METHOD_INFO(C, H,  6, Result, CloseContentStorageForcibly,      (StorageId storage_id),                                                     hos::Version_1_0_0, hos::Version_1_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  7, Result, CloseContentMetaDatabaseForcibly, (StorageId storage_id),                                                     hos::Version_1_0_0, hos::Version_1_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  8, Result, CleanupContentMetaDatabase,       (StorageId storage_id))                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  9, Result, ActivateContentStorage,           (StorageId storage_id),                                                     hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 10, Result, InactivateContentStorage,         (StorageId storage_id),                                                     hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 11, Result, ActivateContentMetaDatabase,      (StorageId storage_id),                                                     hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 12, Result, InactivateContentMetaDatabase,    (StorageId storage_id),                                                     hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 13, Result, InvalidateRightsIdCache,          (),                                                                         hos::Version_9_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 14, Result, GetMemoryReport,                  (sf::Out<MemoryReport> out),                                                hos::Version_10_0_0)
+
+    AMS_SF_DEFINE_INTERFACE(IContentManager, AMS_NCM_I_CONTENT_MANAGER_INTERFACE_INFO);
 
 }

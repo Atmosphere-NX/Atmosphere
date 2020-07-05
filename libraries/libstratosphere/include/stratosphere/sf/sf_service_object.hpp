@@ -38,7 +38,7 @@ namespace ams::sf {
     };
 
     /* Utility. */
-    #define SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), c)
+    #define AMS_SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), c)
 
     template<typename T>
     struct ServiceObjectTraits {

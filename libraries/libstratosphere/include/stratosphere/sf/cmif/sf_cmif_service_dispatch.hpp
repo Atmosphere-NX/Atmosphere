@@ -114,7 +114,7 @@ namespace ams::sf::cmif {
             explicit constexpr ServiceDispatchTable(Entries... entries) : impl::ServiceDispatchTableImpl<sizeof...(Entries)>(entries...) { /* ... */ }
     };
 
-    #define DEFINE_SERVICE_DISPATCH_TABLE \
+    #define AMS_SF_CMIF_IMPL_DEFINE_SERVICE_DISPATCH_TABLE \
     template<typename ServiceImpl> \
     static constexpr inline ::ams::sf::cmif::ServiceDispatchTable s_CmifServiceDispatchTable
 

@@ -1148,18 +1148,16 @@ namespace ams::sf::impl {
 
 }
 
-namespace ams::sf {
+namespace ams::sf::impl {
 
-    template <auto CommandId, auto CommandImpl, hos::Version Low = hos::Version_Min, hos::Version High = hos::Version_Max>
-    inline static constexpr cmif::ServiceCommandMeta MakeServiceCommandMeta() {
+    template<hos::Version Low, hos::Version High, u32 CommandId, auto CommandImpl>
+    consteval inline cmif::ServiceCommandMeta MakeServiceCommandMeta() {
         return {
-            .hosver_low = Low,
+            .hosver_low  = Low,
             .hosver_high = High,
-            .cmd_id = static_cast<u32>(CommandId),
-            .handler = ::ams::sf::impl::InvokeServiceCommandImpl<CommandImpl>,
+            .cmd_id      = static_cast<u32>(CommandId),
+            .handler     = ::ams::sf::impl::InvokeServiceCommandImpl<CommandImpl>,
         };
     }
 
 }
-
-#define MAKE_SERVICE_COMMAND_META(Name, ...) ::ams::sf::MakeServiceCommandMeta<ServiceImpl::CommandId::Name, &ServiceImpl::Name, ##__VA_ARGS__>()
