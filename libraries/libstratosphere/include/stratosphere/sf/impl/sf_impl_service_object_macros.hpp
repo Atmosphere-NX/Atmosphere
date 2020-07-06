@@ -92,10 +92,15 @@ namespace ams::sf::impl {
 
     #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)                                                                                            \
         template<typename ...Arguments>                                                                                                                                                                        \
+            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                                                                                                 \
+        RETURN Invoke##NAME##ByCommandTable (Arguments &&... args) {                                                                                                                                           \
+            return this->cmd_table->NAME(this, std::forward<Arguments>(args)...);                                                                                                                              \
+        }                                                                                                                                                                                                      \
+        template<typename ...Arguments>                                                                                                                                                                        \
             requires (::ams::sf::impl::Invokable<AMS_SF_IMPL_HELPER_FUNCTION_NAME(CLASSNAME, NAME), Arguments...> &&                                                                                           \
                       std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>)                                                                                               \
-        RETURN NAME (Arguments &&... args) {                                                                                                                                                                   \
-            return this->cmd_table->NAME(this, std::forward<Arguments>(args)...);                                                                                                                              \
+        ALWAYS_INLINE RETURN NAME (Arguments &&... args) {                                                                                                                                                     \
+            return this->Invoke##NAME##ByCommandTable(std::forward<Arguments>(args)...);                                                                                                                       \
         }                                                                                                                                                                                                      \
         template<typename ...Arguments>                                                                                                                                                                        \
             requires (::ams::sf::impl::Invokable<AMS_SF_IMPL_HELPER_FUNCTION_NAME(CLASSNAME, NAME), Arguments...> &&                                                                                           \
@@ -130,13 +135,13 @@ namespace ams::sf::impl {
             static constexpr auto Value = static_cast<AMS_SF_IMPL_FUNCTION_POINTER_TYPE(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)>(&ImplHolder::NAME##Invoker<Arguments...>);    \
         };
 
-    #define AMS_SF_IMPL_DEFINE_INTERFACE_SERVICE_COMMAND_META_HOLDER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)                            \
-        template<typename ServiceImpl, typename A> struct NAME##ServiceCommandMetaHolder;                                                                        \
-                                                                                                                                                                 \
-        template<typename ServiceImpl, typename ...Arguments>                                                                                                    \
-            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                                                   \
-        struct NAME##ServiceCommandMetaHolder<ServiceImpl, std::tuple<Arguments...>> {                                                                           \
-            static constexpr auto Value = ::ams::sf::impl::MakeServiceCommandMeta<VERSION_MIN, VERSION_MAX, CMD_ID, ServiceImpl::template NAME<Arguments...>>(); \
+    #define AMS_SF_IMPL_DEFINE_INTERFACE_SERVICE_COMMAND_META_HOLDER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)                                                                                      \
+        template<typename ServiceImpl, typename A> struct NAME##ServiceCommandMetaHolder;                                                                                                                                  \
+                                                                                                                                                                                                                           \
+        template<typename ServiceImpl, typename ...Arguments>                                                                                                                                                              \
+            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                                                                                                             \
+        struct NAME##ServiceCommandMetaHolder<ServiceImpl, std::tuple<Arguments...>> {                                                                                                                                     \
+            static constexpr auto Value = ::ams::sf::impl::MakeServiceCommandMeta<VERSION_MIN, VERSION_MAX, CMD_ID, &ServiceImpl::template Invoke##NAME##ByCommandTable<Arguments...>, RETURN, CLASSNAME, Arguments...>(); \
         };
 
     #define AMS_SF_IMPL_DEFINE_INTERFACE_COMMAND_POINTER_TABLE_MEMBER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX) \
@@ -144,6 +149,9 @@ namespace ams::sf::impl {
 
     #define AMS_SF_IMPL_DEFINE_CMIF_SERVICE_COMMAND_META_TABLE_ENTRY(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX) \
         NAME##ServiceCommandMetaHolder<ServiceImpl, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>::Value,
+
+    template<typename T>
+    struct Print;
 
     #define AMS_SF_IMPL_DEFINE_CLASS(BASECLASS, CLASSNAME, CMD_MACRO)                                                                       \
         class CLASSNAME : public BASECLASS {                                                                                                \
@@ -195,7 +203,7 @@ namespace ams::sf::impl {
                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_SERVICE_COMMAND_META_HOLDER)                                              \
             public:                                                                                                                         \
                 template<typename T> requires (!std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T>)                                              \
-                using Impl = typename ImplGenerator<CLASSNAME, T>::ImplHolder;                                                              \
+                using ImplHolder = typename ImplGenerator<CLASSNAME, T>::ImplHolder;                                                        \
                                                                                                                                             \
                 AMS_SF_CMIF_IMPL_DEFINE_SERVICE_DISPATCH_TABLE {                                                                            \
                     CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_CMIF_SERVICE_COMMAND_META_TABLE_ENTRY)                                          \

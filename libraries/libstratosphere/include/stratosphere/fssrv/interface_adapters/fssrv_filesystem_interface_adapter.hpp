@@ -14,13 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "../../fs/fs_common.hpp"
-#include "../../fs/fs_file.hpp"
-#include "../../fs/fs_directory.hpp"
-#include "../../fs/fs_filesystem.hpp"
-#include "../../fs/fs_query_range.hpp"
-#include "../../fssrv/fssrv_sf_path.hpp"
-#include "../../fssystem/fssystem_utility.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_file.hpp>
+#include <stratosphere/fs/fs_directory.hpp>
+#include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/fs/fs_query_range.hpp>
+#include <stratosphere/fssystem/fssystem_utility.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_path.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_ifile.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_idirectory.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_ifilesystem.hpp>
 
 namespace ams::fs::fsa {
 
@@ -34,17 +37,8 @@ namespace ams::fssrv::impl {
 
     class FileSystemInterfaceAdapter;
 
-    class FileInterfaceAdapter final : public ams::sf::IServiceObject {
+    class FileInterfaceAdapter final {
         NON_COPYABLE(FileInterfaceAdapter);
-        public:
-            enum class CommandId {
-                Read         = 0,
-                Write        = 1,
-                Flush        = 2,
-                SetSize      = 3,
-                GetSize      = 4,
-                OperateRange = 5,
-            };
         private:
             std::shared_ptr<FileSystemInterfaceAdapter> parent_filesystem;
             std::unique_ptr<fs::fsa::IFile> base_file;
@@ -62,27 +56,11 @@ namespace ams::fssrv::impl {
             Result SetSize(s64 size);
             Result GetSize(ams::sf::Out<s64> out);
             Result OperateRange(ams::sf::Out<fs::FileQueryRangeInfo> out, s32 op_id, s64 offset, s64 size);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* 1.0.0- */
-                MAKE_SERVICE_COMMAND_META(Read),
-                MAKE_SERVICE_COMMAND_META(Write),
-                MAKE_SERVICE_COMMAND_META(Flush),
-                MAKE_SERVICE_COMMAND_META(SetSize),
-                MAKE_SERVICE_COMMAND_META(GetSize),
-
-                /* 4.0.0- */
-                MAKE_SERVICE_COMMAND_META(OperateRange, hos::Version_4_0_0),
-            };
     };
+    static_assert(fssrv::sf::IsIFile<FileInterfaceAdapter>);
 
-    class DirectoryInterfaceAdapter final : public ams::sf::IServiceObject {
+    class DirectoryInterfaceAdapter final {
         NON_COPYABLE(DirectoryInterfaceAdapter);
-        public:
-            enum class CommandId {
-                Read          = 0,
-                GetEntryCount = 1,
-            };
         private:
             std::shared_ptr<FileSystemInterfaceAdapter> parent_filesystem;
             std::unique_ptr<fs::fsa::IDirectory> base_dir;
@@ -94,39 +72,11 @@ namespace ams::fssrv::impl {
             /* Command API */
             Result Read(ams::sf::Out<s64> out, const ams::sf::OutBuffer &out_entries);
             Result GetEntryCount(ams::sf::Out<s64> out);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(Read),
-                MAKE_SERVICE_COMMAND_META(GetEntryCount),
-            };
     };
+    static_assert(fssrv::sf::IsIDirectory<DirectoryInterfaceAdapter>);
 
-    class FileSystemInterfaceAdapter final : public std::enable_shared_from_this<FileSystemInterfaceAdapter>, public ams::sf::IServiceObject {
+    class FileSystemInterfaceAdapter final : public std::enable_shared_from_this<FileSystemInterfaceAdapter> {
         NON_COPYABLE(FileSystemInterfaceAdapter);
-        public:
-            enum class CommandId {
-                /* 1.0.0+ */
-                CreateFile                  = 0,
-                DeleteFile                  = 1,
-                CreateDirectory             = 2,
-                DeleteDirectory             = 3,
-                DeleteDirectoryRecursively  = 4,
-                RenameFile                  = 5,
-                RenameDirectory             = 6,
-                GetEntryType                = 7,
-                OpenFile                    = 8,
-                OpenDirectory               = 9,
-                Commit                      = 10,
-                GetFreeSpaceSize            = 11,
-                GetTotalSpaceSize           = 12,
-
-                /* 3.0.0+ */
-                CleanDirectoryRecursively   = 13,
-                GetFileTimeStampRaw         = 14,
-
-                /* 4.0.0+ */
-                QueryEntry                  = 15,
-            };
         private:
             std::shared_ptr<fs::fsa::IFileSystem> base_fs;
             std::unique_lock<fssystem::SemaphoreAdapter> mount_count_semaphore;
@@ -153,8 +103,8 @@ namespace ams::fssrv::impl {
             Result RenameFile(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path);
             Result RenameDirectory(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path);
             Result GetEntryType(ams::sf::Out<u32> out, const fssrv::sf::Path &path);
-            Result OpenFile(ams::sf::Out<std::shared_ptr<FileInterfaceAdapter>> out, const fssrv::sf::Path &path, u32 mode);
-            Result OpenDirectory(ams::sf::Out<std::shared_ptr<DirectoryInterfaceAdapter>> out, const fssrv::sf::Path &path, u32 mode);
+            Result OpenFile(ams::sf::Out<std::shared_ptr<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode);
+            Result OpenDirectory(ams::sf::Out<std::shared_ptr<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode);
             Result Commit();
             Result GetFreeSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path);
             Result GetTotalSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path);
@@ -163,30 +113,6 @@ namespace ams::fssrv::impl {
             Result GetFileTimeStampRaw(ams::sf::Out<fs::FileTimeStampRaw> out, const fssrv::sf::Path &path);
 
             Result QueryEntry(const ams::sf::OutBuffer &out_buf, const ams::sf::InBuffer &in_buf, s32 query_id, const fssrv::sf::Path &path);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* 1.0.0- */
-                MAKE_SERVICE_COMMAND_META(CreateFile),
-                MAKE_SERVICE_COMMAND_META(DeleteFile),
-                MAKE_SERVICE_COMMAND_META(CreateDirectory),
-                MAKE_SERVICE_COMMAND_META(DeleteDirectory),
-                MAKE_SERVICE_COMMAND_META(DeleteDirectoryRecursively),
-                MAKE_SERVICE_COMMAND_META(RenameFile),
-                MAKE_SERVICE_COMMAND_META(RenameDirectory),
-                MAKE_SERVICE_COMMAND_META(GetEntryType),
-                MAKE_SERVICE_COMMAND_META(OpenFile),
-                MAKE_SERVICE_COMMAND_META(OpenDirectory),
-                MAKE_SERVICE_COMMAND_META(Commit),
-                MAKE_SERVICE_COMMAND_META(GetFreeSpaceSize),
-                MAKE_SERVICE_COMMAND_META(GetTotalSpaceSize),
-
-                /* 3.0.0- */
-                MAKE_SERVICE_COMMAND_META(CleanDirectoryRecursively, hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(GetFileTimeStampRaw,       hos::Version_3_0_0),
-
-                /* 4.0.0- */
-                MAKE_SERVICE_COMMAND_META(QueryEntry,                hos::Version_4_0_0),
-            };
     };
 
 }

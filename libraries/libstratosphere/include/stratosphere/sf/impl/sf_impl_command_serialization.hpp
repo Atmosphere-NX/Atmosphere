@@ -368,22 +368,13 @@ namespace ams::sf::impl {
         size_t out_object_index;
     };
 
-    template<auto MemberFunction>
+    template<auto MemberFunction, typename Return, typename Class, typename... Arguments>
     struct CommandMetaInfo {
-        private:
-            template<typename R, typename C, typename... A>
-            static R GetReturnTypeImpl(R(C::*)(A...));
-
-            template<typename R, typename C, typename... A>
-            static C *GetClassTypePointerImpl(R(C::*)(A...));
-
-            template<typename R, typename C, typename... A>
-            static std::tuple<typename std::decay<A>::type...> GetArgsImpl(R(C::*)(A...));
         public:
-            using ReturnType        = decltype(GetReturnTypeImpl(MemberFunction));
-            using ClassTypePointer  = decltype(GetClassTypePointerImpl(MemberFunction));
-            using ArgsType          = decltype(GetArgsImpl(MemberFunction));
-            using ClassType         = typename std::remove_pointer<ClassTypePointer>::type;
+            using ReturnType        = Return;
+            using ClassType         = Class;
+            using ClassTypePointer  = ClassType *;
+            using ArgsType          = std::tuple<typename std::decay<Arguments>::type...>;
 
             static constexpr bool ReturnsResult = std::is_same<ReturnType, Result>::value;
             static constexpr bool ReturnsVoid   = std::is_same<ReturnType, void>::value;
@@ -1045,9 +1036,9 @@ namespace ams::sf::impl {
         return ResultSuccess();
     }
 
-    template<auto ServiceCommandImpl>
+    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
     constexpr Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
-        using CommandMeta = CommandMetaInfo<ServiceCommandImpl>;
+        using CommandMeta = CommandMetaInfo<ServiceCommandImpl, Return, ClassType, Arguments...>;
         using ImplProcessorType = HipcCommandProcessor<CommandMeta>;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
@@ -1113,7 +1104,7 @@ namespace ams::sf::impl {
             }
 
             if constexpr (CommandMeta::ReturnsResult) {
-                const auto command_result = std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(args...); }, args_tuple);
+                const auto command_result = std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(std::forward<Arguments>(args)...); }, args_tuple);
                 if (R_FAILED(command_result)) {
                     cmif::PointerAndSize out_raw_data;
                     ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
@@ -1121,7 +1112,7 @@ namespace ams::sf::impl {
                     return command_result;
                 }
             } else {
-                std::apply([=](auto&&... args) { (this_ptr->*ServiceCommandImpl)(args...); }, args_tuple);
+                std::apply([=](auto&&... args) { (this_ptr->*ServiceCommandImpl)(std::forward<Arguments>(args)...); }, args_tuple);
             }
         }
 
@@ -1150,13 +1141,13 @@ namespace ams::sf::impl {
 
 namespace ams::sf::impl {
 
-    template<hos::Version Low, hos::Version High, u32 CommandId, auto CommandImpl>
+    template<hos::Version Low, hos::Version High, u32 CommandId, auto CommandImpl, typename Return, typename ClassType, typename... Arguments>
     consteval inline cmif::ServiceCommandMeta MakeServiceCommandMeta() {
         return {
             .hosver_low  = Low,
             .hosver_high = High,
             .cmd_id      = static_cast<u32>(CommandId),
-            .handler     = ::ams::sf::impl::InvokeServiceCommandImpl<CommandImpl>,
+            .handler     = ::ams::sf::impl::InvokeServiceCommandImpl<CommandImpl, Return, ClassType, Arguments...>,
         };
     }
 
