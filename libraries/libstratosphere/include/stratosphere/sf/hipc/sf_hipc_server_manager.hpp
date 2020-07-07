@@ -164,7 +164,7 @@ namespace ams::sf::hipc {
             }
 
             template<typename Interface, typename ServiceImpl>
-            static constexpr inline std::shared_ptr<Service> MakeSharedMitm(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &client_info) {
+            static constexpr inline std::shared_ptr<Interface> MakeSharedMitm(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &client_info) {
                 return sf::MakeShared<Interface, ServiceImpl>(std::forward<std::shared_ptr<::Service>>(s), client_info);
             }
 
@@ -212,7 +212,8 @@ namespace ams::sf::hipc {
                 return ResultSuccess();
             }
 
-            template<typename Interface, typename ServiceImpl, auto MakeShared = MakeSharedMitm<Interface, ServiceImpl>> requires (sf::IsMitmServiceObject<Interface>)
+            template<typename Interface, typename ServiceImpl, auto MakeShared = MakeSharedMitm<Interface, ServiceImpl>>
+                requires (sf::IsMitmServiceObject<Interface> && sf::IsMitmServiceImpl<ServiceImpl>)
             Result RegisterMitmServer(sm::ServiceName service_name) {
                 /* Install mitm service. */
                 Handle port_handle;

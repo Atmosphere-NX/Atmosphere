@@ -37,7 +37,7 @@ namespace ams::mitm::bpc_ams {
         {
             Handle bpcams_h;
             R_ABORT_UNLESS(svcManageNamedPort(&bpcams_h, AtmosphereServiceName.name, AtmosphereMaxSessions));
-            g_server_manager.RegisterServer<bpc::AtmosphereService>(bpcams_h);
+            g_server_manager.RegisterServer<bpc::impl::IAtmosphereInterface, bpc::AtmosphereService>(bpcams_h);
         }
 
         /* Loop forever, servicing our services. */

@@ -35,9 +35,9 @@ namespace ams::mitm::fs {
 
         os::Mutex g_data_storage_lock(false);
         os::Mutex g_storage_cache_lock(false);
-        std::unordered_map<u64, std::weak_ptr<IStorageInterface>> g_storage_cache;
+        std::unordered_map<u64, std::weak_ptr<ams::fssrv::sf::IStorage>> g_storage_cache;
 
-        std::shared_ptr<IStorageInterface> GetStorageCacheEntry(ncm::ProgramId program_id) {
+        std::shared_ptr<ams::fssrv::sf::IStorage> GetStorageCacheEntry(ncm::ProgramId program_id) {
             std::scoped_lock lk(g_storage_cache_lock);
 
             auto it = g_storage_cache.find(static_cast<u64>(program_id));
@@ -48,7 +48,7 @@ namespace ams::mitm::fs {
             return it->second.lock();
         }
 
-        void SetStorageCacheEntry(ncm::ProgramId program_id, std::shared_ptr<IStorageInterface> *new_intf) {
+        void SetStorageCacheEntry(ncm::ProgramId program_id, std::shared_ptr<ams::fssrv::sf::IStorage> *new_intf) {
             std::scoped_lock lk(g_storage_cache_lock);
 
             auto it = g_storage_cache.find(static_cast<u64>(program_id));
@@ -69,7 +69,17 @@ namespace ams::mitm::fs {
             return (tmp != 0);
         }
 
-        Result OpenHblWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type) {
+        template<typename... Arguments>
+        constexpr ALWAYS_INLINE auto MakeSharedFileSystem(Arguments &&... args) {
+            return sf::MakeShared<ams::fssrv::sf::IFileSystem, ams::fssrv::impl::FileSystemInterfaceAdapter>(std::forward<Arguments>(args)...);
+        }
+
+        template<typename... Arguments>
+        constexpr ALWAYS_INLINE auto MakeSharedStorage(Arguments &&... args) {
+            return sf::MakeShared<ams::fssrv::sf::IStorage, ams::fssrv::impl::StorageInterfaceAdapter>(std::forward<Arguments>(args)...);
+        }
+
+        Result OpenHblWebContentFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type) {
             /* Verify eligibility. */
             bool is_hbl;
             R_UNLESS(R_SUCCEEDED(pm::info::IsHblProgramId(&is_hbl, program_id)), sm::mitm::ResultShouldForwardToSession());
@@ -88,11 +98,11 @@ namespace ams::mitm::fs {
             const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&sd_fs.s)};
             std::unique_ptr<fs::fsa::IFileSystem> sd_ifs = std::make_unique<fs::RemoteFileSystem>(sd_fs);
 
-            out.SetValue(std::make_shared<IFileSystemInterface>(std::make_shared<fs::ReadOnlyFileSystem>(std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir)), false), target_object_id);
+            out.SetValue(MakeSharedFileSystem(std::make_shared<fs::ReadOnlyFileSystem>(std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_ifs), AtmosphereHblWebContentDir)), false), target_object_id);
             return ResultSuccess();
         }
 
-        Result OpenProgramSpecificWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
+        Result OpenProgramSpecificWebContentFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id) {
             /* Directory must exist. */
             {
                 FsDir d;
@@ -132,13 +142,13 @@ namespace ams::mitm::fs {
                     new_fs = std::make_shared<fs::ReadOnlyFileSystem>(std::move(subdir_fs));
                 }
 
-                out.SetValue(std::make_shared<IFileSystemInterface>(std::move(new_fs), false), target_object_id);
+                out.SetValue(MakeSharedFileSystem(std::move(new_fs), false), target_object_id);
             }
 
             return ResultSuccess();
         }
 
-        Result OpenWebContentFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
+        Result OpenWebContentFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> &out, ncm::ProgramId client_program_id, ncm::ProgramId program_id, FsFileSystemType filesystem_type, Service *fwd, const fssrv::sf::Path *path, bool with_id, bool try_program_specific) {
             /* Check first that we're a web applet opening web content. */
             R_UNLESS(ncm::IsWebAppletId(client_program_id),             sm::mitm::ResultShouldForwardToSession());
             R_UNLESS(filesystem_type == FsFileSystemType_ContentManual, sm::mitm::ResultShouldForwardToSession());
@@ -155,15 +165,15 @@ namespace ams::mitm::fs {
 
     }
 
-    Result FsMitmService::OpenFileSystemWithPatch(sf::Out<std::shared_ptr<IFileSystemInterface>> out, ncm::ProgramId program_id, u32 _filesystem_type) {
+    Result FsMitmService::OpenFileSystemWithPatch(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type) {
         return OpenWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), this->forward_service.get(), nullptr, false, this->client_info.override_status.IsProgramSpecific());
     }
 
-    Result FsMitmService::OpenFileSystemWithId(sf::Out<std::shared_ptr<IFileSystemInterface>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type) {
+    Result FsMitmService::OpenFileSystemWithId(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type) {
         return OpenWebContentFileSystem(out, this->client_info.program_id, program_id, static_cast<FsFileSystemType>(_filesystem_type), this->forward_service.get(), std::addressof(path), true, this->client_info.override_status.IsProgramSpecific());
     }
 
-    Result FsMitmService::OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out) {
+    Result FsMitmService::OpenSdCardFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out) {
         /* We only care about redirecting this for NS/emummc. */
         R_UNLESS(this->client_info.program_id == ncm::SystemProgramId::Ns, sm::mitm::ResultShouldForwardToSession());
         R_UNLESS(emummc::IsActive(),                                       sm::mitm::ResultShouldForwardToSession());
@@ -175,11 +185,11 @@ namespace ams::mitm::fs {
 
         /* Return output filesystem. */
         std::shared_ptr<fs::fsa::IFileSystem> redir_fs = std::make_shared<fssystem::DirectoryRedirectionFileSystem>(std::make_shared<RemoteFileSystem>(sd_fs), "/Nintendo", emummc::GetNintendoDirPath());
-        out.SetValue(std::make_shared<IFileSystemInterface>(std::move(redir_fs), false), target_object_id);
+        out.SetValue(MakeSharedFileSystem(std::move(redir_fs), false), target_object_id);
         return ResultSuccess();
     }
 
-    Result FsMitmService::OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 _space_id, const fs::SaveDataAttribute &attribute) {
+    Result FsMitmService::OpenSaveDataFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, u8 _space_id, const fs::SaveDataAttribute &attribute) {
         /* We only want to intercept saves for games, right now. */
         const bool is_game_or_hbl = this->client_info.override_status.IsHbl() || ncm::IsApplicationId(this->client_info.program_id);
         R_UNLESS(is_game_or_hbl, sm::mitm::ResultShouldForwardToSession());
@@ -240,11 +250,11 @@ namespace ams::mitm::fs {
         }
 
         /* Set output. */
-        out.SetValue(std::make_shared<IFileSystemInterface>(std::move(dirsave_ifs), false), target_object_id);
+        out.SetValue(MakeSharedFileSystem(std::move(dirsave_ifs), false), target_object_id);
         return ResultSuccess();
     }
 
-    Result FsMitmService::OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 _bis_partition_id) {
+    Result FsMitmService::OpenBisStorage(sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out, u32 _bis_partition_id) {
         const ::FsBisPartitionId bis_partition_id = static_cast<::FsBisPartitionId>(_bis_partition_id);
 
         /* Try to open a storage for the partition. */
@@ -265,23 +275,23 @@ namespace ams::mitm::fs {
 
         /* Set output storage. */
         if (bis_partition_id == FsBisPartitionId_BootPartition1Root) {
-            out.SetValue(std::make_shared<IStorageInterface>(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
+            out.SetValue(MakeSharedStorage(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
         } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
-            out.SetValue(std::make_shared<IStorageInterface>(new CalibrationBinaryStorage(bis_storage, this->client_info)), target_object_id);
+            out.SetValue(MakeSharedStorage(new CalibrationBinaryStorage(bis_storage, this->client_info)), target_object_id);
         } else {
             if (can_write_bis || can_write_bis_for_choi_support) {
                 /* We can write, so create a writable storage. */
-                out.SetValue(std::make_shared<IStorageInterface>(new RemoteStorage(bis_storage)), target_object_id);
+                out.SetValue(MakeSharedStorage(new RemoteStorage(bis_storage)), target_object_id);
             } else {
                 /* We can only read, so create a readable storage. */
-                out.SetValue(std::make_shared<IStorageInterface>(new ReadOnlyStorageAdapter(new RemoteStorage(bis_storage))), target_object_id);
+                out.SetValue(MakeSharedStorage(new ReadOnlyStorageAdapter(new RemoteStorage(bis_storage))), target_object_id);
             }
         }
 
         return ResultSuccess();
     }
 
-    Result FsMitmService::OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<IStorageInterface>> out) {
+    Result FsMitmService::OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out) {
         /* Only mitm if we should override contents for the current process. */
         R_UNLESS(this->client_info.override_status.IsProgramSpecific(),     sm::mitm::ResultShouldForwardToSession());
 
@@ -298,7 +308,7 @@ namespace ams::mitm::fs {
 
         /* Try to get a storage from the cache. */
         {
-            std::shared_ptr<IStorageInterface> cached_storage = GetStorageCacheEntry(this->client_info.program_id);
+            std::shared_ptr<ams::fssrv::sf::IStorage> cached_storage = GetStorageCacheEntry(this->client_info.program_id);
             if (cached_storage != nullptr) {
                 out.SetValue(std::move(cached_storage), target_object_id);
                 return ResultSuccess();
@@ -307,18 +317,18 @@ namespace ams::mitm::fs {
 
         /* Make a new layered romfs, and cache to storage. */
         {
-            std::shared_ptr<IStorageInterface> new_storage_intf = nullptr;
+            std::shared_ptr<ams::fssrv::sf::IStorage> new_storage_intf = nullptr;
 
             /* Create the layered storage. */
             FsFile data_file;
             if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, this->client_info.program_id, "romfs.bin", OpenMode_Read))) {
                 auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), this->client_info.program_id);
                 layered_storage->BeginInitialize();
-                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+                new_storage_intf = MakeSharedStorage(layered_storage);
             } else {
                 auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, this->client_info.program_id);
                 layered_storage->BeginInitialize();
-                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+                new_storage_intf = MakeSharedStorage(layered_storage);
             }
 
             SetStorageCacheEntry(this->client_info.program_id, &new_storage_intf);
@@ -328,7 +338,7 @@ namespace ams::mitm::fs {
         return ResultSuccess();
     }
 
-    Result FsMitmService::OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::DataId _data_id, u8 storage_id) {
+    Result FsMitmService::OpenDataStorageByDataId(sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out, ncm::DataId _data_id, u8 storage_id) {
         /* Only mitm if we should override contents for the current process. */
         R_UNLESS(this->client_info.override_status.IsProgramSpecific(), sm::mitm::ResultShouldForwardToSession());
 
@@ -348,7 +358,7 @@ namespace ams::mitm::fs {
 
         /* Try to get a storage from the cache. */
         {
-            std::shared_ptr<IStorageInterface> cached_storage = GetStorageCacheEntry(data_id);
+            std::shared_ptr<ams::fssrv::sf::IStorage> cached_storage = GetStorageCacheEntry(data_id);
             if (cached_storage != nullptr) {
                 out.SetValue(std::move(cached_storage), target_object_id);
                 return ResultSuccess();
@@ -357,18 +367,18 @@ namespace ams::mitm::fs {
 
         /* Make a new layered romfs, and cache to storage. */
         {
-            std::shared_ptr<IStorageInterface> new_storage_intf = nullptr;
+            std::shared_ptr<ams::fssrv::sf::IStorage> new_storage_intf = nullptr;
 
             /* Create the layered storage. */
             FsFile data_file;
             if (R_SUCCEEDED(OpenAtmosphereSdFile(&data_file, data_id, "romfs.bin", OpenMode_Read))) {
                 auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), std::make_unique<ReadOnlyStorageAdapter>(new FileStorage(new RemoteFile(data_file))), data_id);
                 layered_storage->BeginInitialize();
-                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+                new_storage_intf = MakeSharedStorage(layered_storage);
             } else {
                 auto layered_storage = std::make_shared<LayeredRomfsStorage>(std::make_unique<ReadOnlyStorageAdapter>(new RemoteStorage(data_storage)), nullptr, data_id);
                 layered_storage->BeginInitialize();
-                new_storage_intf = std::make_shared<IStorageInterface>(layered_storage);
+                new_storage_intf = MakeSharedStorage(layered_storage);
             }
 
             SetStorageCacheEntry(data_id, &new_storage_intf);

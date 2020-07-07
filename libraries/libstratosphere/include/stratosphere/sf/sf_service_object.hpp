@@ -29,22 +29,26 @@ namespace ams::sf {
     concept IsServiceObject = std::derived_from<T, IServiceObject>;
 
     class IMitmServiceObject : public IServiceObject {
+        public:
+            virtual ~IMitmServiceObject() { /* ... */ }
+    };
+
+    class MitmServiceImplBase {
         protected:
             std::shared_ptr<::Service> forward_service;
             sm::MitmProcessInfo client_info;
         public:
-            IMitmServiceObject(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : forward_service(std::move(s)), client_info(c) { /* ... */ }
-
-            virtual ~IMitmServiceObject() { /* ... */ }
-
-            static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id);
+            MitmServiceImplBase(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : forward_service(std::move(s)), client_info(c) { /* ... */ }
     };
 
     template<typename T>
     concept IsMitmServiceObject = IsServiceObject<T> && std::derived_from<T, IMitmServiceObject>;
 
-    /* Utility. */
-    #define AMS_SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), c)
+    template<typename T>
+    concept IsMitmServiceImpl = requires (std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) {
+        { T(std::forward<std::shared_ptr<::Service>>(s), c) };
+        { T::ShouldMitm(c) } -> std::same_as<bool>;
+    };
 
     template<typename Interface, typename Impl, typename... Arguments> requires std::constructible_from<Impl, Arguments...>
     constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplHolder<Impl>> MakeShared(Arguments &&... args) {

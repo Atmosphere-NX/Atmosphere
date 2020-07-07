@@ -18,12 +18,19 @@
 
 namespace ams::mitm::bpc {
 
-    class BpcMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                ShutdownSystem = 0,
-                RebootSystem   = 1,
-            };
+    namespace impl {
+
+        #define AMS_BPC_MITM_INTERFACE_INFO(C, H)                   \
+            AMS_SF_METHOD_INFO(C, H, 0, Result, ShutdownSystem, ()) \
+            AMS_SF_METHOD_INFO(C, H, 1, Result, RebootSystem,   ())
+
+        AMS_SF_DEFINE_MITM_INTERFACE(IBpcMitmInterface, AMS_BPC_MITM_INTERFACE_INFO)
+
+    }
+
+    class BpcMitmService : public sf::MitmServiceImplBase {
+        public:
+            using MitmServiceImplBase::MitmServiceImplBase;
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
@@ -36,16 +43,10 @@ namespace ams::mitm::bpc {
                        client_info.override_status.IsHbl();
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(BpcMitmService) { /* ... */ }
-        protected:
             /* Overridden commands. */
             Result ShutdownSystem();
             Result RebootSystem();
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ShutdownSystem),
-                MAKE_SERVICE_COMMAND_META(RebootSystem),
-            };
     };
+    static_assert(impl::IsIBpcMitmInterface<BpcMitmService>);
 
 }

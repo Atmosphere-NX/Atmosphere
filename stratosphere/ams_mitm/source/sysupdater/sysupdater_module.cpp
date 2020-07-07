@@ -50,7 +50,7 @@ namespace ams::mitm::sysupdater {
         ON_SCOPE_EXIT { nim::FinalizeForNetworkInstallManager(); };
 
         /* Register ams:su. */
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<sysupdater::SystemUpdateService>(SystemUpdateServiceName, SystemUpdateMaxSessions, sf::ServiceObjectTraits<sysupdater::SystemUpdateService>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_system_update_service_object)))));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<sysupdater::impl::ISystemUpdateInterface, sysupdater::SystemUpdateService>(SystemUpdateServiceName, SystemUpdateMaxSessions, sf::GetSharedPointerTo<sysupdater::impl::ISystemUpdateInterface>(g_system_update_service_object))));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

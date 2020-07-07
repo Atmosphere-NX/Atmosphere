@@ -18,13 +18,20 @@
 
 namespace ams::mitm::ns {
 
-    class NsAmMitmService : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                GetApplicationContentPath      = 21,
-                ResolveApplicationContentPath  = 23,
-                GetRunningApplicationProgramId = 92,
-            };
+    namespace impl {
+
+        #define AMS_NS_AM_MITM_INTERFACE_INFO(C, H)                                                                                                                                   \
+            AMS_SF_METHOD_INFO(C, H, 21, Result, GetApplicationContentPath,      (const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type))                     \
+            AMS_SF_METHOD_INFO(C, H, 23, Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type))                                                    \
+            AMS_SF_METHOD_INFO(C, H, 92, Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                    hos::Version_6_0_0)
+
+        AMS_SF_DEFINE_MITM_INTERFACE(IAmMitmInterface, AMS_NS_AM_MITM_INTERFACE_INFO)
+
+    }
+
+    class NsAmMitmService : public sf::MitmServiceImplBase {
+        public:
+            using MitmServiceImplBase::MitmServiceImplBase;
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
@@ -33,18 +40,11 @@ namespace ams::mitm::ns {
                 return ncm::IsWebAppletId(client_info.program_id);
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(NsAmMitmService) { /* ... */ }
-        protected:
             /* Actual command API. */
             Result GetApplicationContentPath(const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type);
             Result ResolveApplicationContentPath(ncm::ProgramId application_id, u8 content_type);
             Result GetRunningApplicationProgramId(sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetApplicationContentPath),
-                MAKE_SERVICE_COMMAND_META(ResolveApplicationContentPath),
-                MAKE_SERVICE_COMMAND_META(GetRunningApplicationProgramId, hos::Version_6_0_0),
-            };
     };
+    static_assert(impl::IsIAmMitmInterface<NsAmMitmService>);
 
 }

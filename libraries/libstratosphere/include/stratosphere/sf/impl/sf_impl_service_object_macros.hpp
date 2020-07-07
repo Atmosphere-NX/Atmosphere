@@ -180,7 +180,9 @@ namespace ams::sf::impl {
             public:                                                                                                                         \
                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION)                                                                \
             private:                                                                                                                        \
-                template<typename S, typename T> requires (std::same_as<CLASSNAME, S> && !std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T>)    \
+                template<typename S, typename T>                                                                                            \
+                    requires ((std::same_as<CLASSNAME, S> && !std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T>) &&                             \
+                              (::ams::sf::IsMitmServiceObject<S> == ::ams::sf::IsMitmServiceImpl<T>))                                       \
                 struct ImplGenerator {                                                                                                      \
                     public:                                                                                                                 \
                         class ImplHolder : public S {                                                                                       \
@@ -195,6 +197,9 @@ namespace ams::sf::impl {
                                 }                                                                                                           \
                                 ALWAYS_INLINE T &GetImpl() { return this->impl; }                                                           \
                                 ALWAYS_INLINE const T &GetImpl() const { return this->impl; }                                               \
+                                                                                                                                            \
+                                template<typename U = S> requires ::ams::sf::IsMitmServiceObject<S> && std::same_as<U, S>                   \
+                                static ALWAYS_INLINE bool ShouldMitm(os::ProcessId p, ncm::ProgramId r) { return T::ShouldMitm(p, r); }     \
                             private:                                                                                                        \
                                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER)                                        \
                             public:                                                                                                         \
