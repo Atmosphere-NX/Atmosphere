@@ -19,7 +19,7 @@
 
 namespace ams::lr {
 
-    class RemoteRegisteredLocationResolverImpl : public IRegisteredLocationResolver {
+    class RemoteRegisteredLocationResolverImpl {
         private:
             ::LrRegisteredLocationResolver srv;
         public:
@@ -28,74 +28,75 @@ namespace ams::lr {
             ~RemoteRegisteredLocationResolverImpl() { ::serviceClose(&srv.s); }
         public:
             /* Actual commands. */
-            virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrRegLrResolveProgramPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
+            Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
+                return ::lrRegLrResolveProgramPath(std::addressof(this->srv), static_cast<u64>(id), out->str);
             }
 
-            virtual Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) override {
+            Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
+            Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result UnregisterProgramPath(ncm::ProgramId id) override {
+            Result UnregisterProgramPath(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id) override {
+            Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
+            Result RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) override {
+            Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override {
+            Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
+            Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result UnregisterHtmlDocumentPath(ncm::ProgramId id) override {
+            Result UnregisterHtmlDocumentPath(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override {
+            Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
+            Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result Refresh() override {
+            Result Refresh() {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids) override {
+            Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
     };
+    static_assert(lr::IsIRegisteredLocationResolver<RemoteRegisteredLocationResolverImpl>);
 
 }

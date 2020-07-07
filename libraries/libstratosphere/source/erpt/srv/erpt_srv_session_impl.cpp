@@ -21,34 +21,34 @@
 
 namespace ams::erpt::srv {
 
-    Result SessionImpl::OpenReport(ams::sf::Out<std::shared_ptr<erpt::sf::IReport>> out) {
-        /* Create an interface. */
-        auto intf = std::shared_ptr<ReportImpl>(new (std::nothrow) ReportImpl);
-        R_UNLESS(intf != nullptr, erpt::ResultOutOfMemory());
+    namespace {
 
-        /* Return it. */
-        out.SetValue(std::move(intf));
-        return ResultSuccess();
+        template<typename Interface, typename Impl>
+        ALWAYS_INLINE Result OpenInterface(ams::sf::Out<std::shared_ptr<Interface>> &out) {
+            /* Define holder type. */
+            using Holder = typename Interface::ImplHolder<Impl>;
+
+            /* Create an interface holder. */
+            auto intf = std::shared_ptr<Holder>(new (std::nothrow) Holder);
+            R_UNLESS(intf != nullptr, erpt::ResultOutOfMemory());
+
+            /* Return it. */
+            out.SetValue(std::move(intf));
+            return ResultSuccess();
+        }
+
+    }
+
+    Result SessionImpl::OpenReport(ams::sf::Out<std::shared_ptr<erpt::sf::IReport>> out) {
+        return OpenInterface<erpt::sf::IReport, ReportImpl>(out);
     }
 
     Result SessionImpl::OpenManager(ams::sf::Out<std::shared_ptr<erpt::sf::IManager>> out) {
-        /* Create an interface. */
-        auto intf = std::shared_ptr<ManagerImpl>(new (std::nothrow) ManagerImpl);
-        R_UNLESS(intf != nullptr, erpt::ResultOutOfMemory());
-
-        /* Return it. */
-        out.SetValue(std::move(intf));
-        return ResultSuccess();
+        return OpenInterface<erpt::sf::IManager, ManagerImpl>(out);
     }
 
     Result SessionImpl::OpenAttachment(ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out) {
-        /* Create an interface. */
-        auto intf = std::shared_ptr<AttachmentImpl>(new (std::nothrow) AttachmentImpl);
-        R_UNLESS(intf != nullptr, erpt::ResultOutOfMemory());
-
-        /* Return it. */
-        out.SetValue(std::move(intf));
-        return ResultSuccess();
+        return OpenInterface<erpt::sf::IAttachment, AttachmentImpl>(out);
     }
 
 }

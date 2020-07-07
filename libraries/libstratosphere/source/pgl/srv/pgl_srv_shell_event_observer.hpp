@@ -56,23 +56,10 @@ namespace ams::pgl::srv {
             Result PopEventInfo(pm::ProcessEventInfo *out);
 
             virtual void Notify(const pm::ProcessEventInfo &info) override final;
-    };
 
-    class EventObserverInterface final : public pgl::sf::IEventObserver {
-        private:
-            TYPED_STORAGE(ShellEventObserver) observer;
-        public:
-            EventObserverInterface() {
-                std::memset(std::addressof(this->observer), 0, sizeof(this->observer));
-                new (GetPointer(this->observer)) ShellEventObserver;
-            }
-
-            ~EventObserverInterface() {
-                GetReference(this->observer).~ShellEventObserver();
-            }
-        public:
-            virtual Result GetProcessEventHandle(ams::sf::OutCopyHandle out) override final;
-            virtual Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) override final;
+            Result GetProcessEventHandle(ams::sf::OutCopyHandle out);
+            Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out);
     };
+    static_assert(pgl::sf::IsIEventObserver<ShellEventObserver>);
 
 }

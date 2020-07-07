@@ -18,28 +18,29 @@
 
 namespace ams::pgl {
 
-    class RemoteEventObserver final : public pgl::sf::IEventObserver {
+    class RemoteEventObserver final {
         NON_COPYABLE(RemoteEventObserver);
         NON_MOVEABLE(RemoteEventObserver);
         private:
             ::PglEventObserver observer;
         public:
             constexpr RemoteEventObserver(const ::PglEventObserver &o) : observer(o) { /* ... */ }
-            virtual ~RemoteEventObserver() override {
+            ~RemoteEventObserver() {
                 ::pglEventObserverClose(std::addressof(this->observer));
             }
 
-            virtual Result GetProcessEventHandle(ams::sf::OutCopyHandle out) override {
+            Result GetProcessEventHandle(ams::sf::OutCopyHandle out) {
                 ::Event ev;
                 R_TRY(::pglEventObserverGetProcessEvent(std::addressof(this->observer), std::addressof(ev)));
                 out.SetValue(ev.revent);
                 return ResultSuccess();
             }
 
-            virtual Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) override {
+            Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
                 static_assert(sizeof(*out.GetPointer()) == sizeof(::PmProcessEventInfo));
                 return  ::pglEventObserverGetProcessEventInfo(std::addressof(this->observer), reinterpret_cast<::PmProcessEventInfo *>(out.GetPointer()));
             }
     };
+    static_assert(pgl::sf::IsIEventObserver<RemoteEventObserver>);
 
 }

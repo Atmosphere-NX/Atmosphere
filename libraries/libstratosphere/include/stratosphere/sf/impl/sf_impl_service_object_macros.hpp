@@ -126,13 +126,21 @@ namespace ams::sf::impl {
             return this->impl.NAME(std::forward<Arguments>(args)...);                                                       \
         }
 
+    #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL_PTR(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)    \
+        template<typename ...Arguments>                                                                                         \
+            requires (std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)> &&              \
+                      std::same_as<RETURN, decltype(impl->NAME(std::declval<Arguments>()...))>)                                 \
+        RETURN NAME (Arguments &&... args) {                                                                                    \
+            return this->impl->NAME(std::forward<Arguments>(args)...);                                                          \
+        }
+
     #define AMS_SF_IMPL_DEFINE_INTERFACE_IMPL_FUNCTION_POINTER_HOLDER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)                                                                  \
         template<typename A> struct NAME##FunctionPointerHolder;                                                                                                                                        \
                                                                                                                                                                                                         \
         template<typename ...Arguments>                                                                                                                                                                 \
             requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                                                                                          \
         struct NAME##FunctionPointerHolder<std::tuple<Arguments...>> {                                                                                                                                  \
-            static constexpr auto Value = static_cast<AMS_SF_IMPL_FUNCTION_POINTER_TYPE(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)>(&ImplHolder::NAME##Invoker<Arguments...>);    \
+            static constexpr auto Value = static_cast<AMS_SF_IMPL_FUNCTION_POINTER_TYPE(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)>(&NAME##Invoker<Arguments...>);                \
         };
 
     #define AMS_SF_IMPL_DEFINE_INTERFACE_SERVICE_COMMAND_META_HOLDER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)                                                                                      \
@@ -185,6 +193,8 @@ namespace ams::sf::impl {
                                 {                                                                                                           \
                                     /* ... */                                                                                               \
                                 }                                                                                                           \
+                                ALWAYS_INLINE T &GetImpl() { return this->impl; }                                                           \
+                                ALWAYS_INLINE const T &GetImpl() const { return this->impl; }                                               \
                             private:                                                                                                        \
                                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER)                                        \
                             public:                                                                                                         \
@@ -198,12 +208,38 @@ namespace ams::sf::impl {
                         };                                                                                                                  \
                         static_assert(Is##CLASSNAME<ImplHolder>);                                                                           \
                                                                                                                                             \
+                        class ImplPointer : public S {                                                                                      \
+                            private:                                                                                                        \
+                                T *impl;                                                                                                    \
+                            public:                                                                                                         \
+                                constexpr ImplPointer(T *t)                                                                                 \
+                                    : S(std::addressof(CommandPointerTableImpl)), impl(t)                                                   \
+                                {                                                                                                           \
+                                    /* ... */                                                                                               \
+                                }                                                                                                           \
+                                ALWAYS_INLINE T &GetImpl() { return *this->impl; }                                                          \
+                                ALWAYS_INLINE const T &GetImpl() const { return *this->impl; }                                              \
+                            private:                                                                                                        \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER)                                        \
+                            public:                                                                                                         \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL_PTR)                                       \
+                            private:                                                                                                        \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_IMPL_FUNCTION_POINTER_HOLDER)                             \
+                            public:                                                                                                         \
+                                static constexpr CommandPointerTable CommandPointerTableImpl = {                                            \
+                                    CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_COMMAND_POINTER_TABLE_MEMBER)                         \
+                                };                                                                                                          \
+                        };                                                                                                                  \
+                        static_assert(Is##CLASSNAME<ImplHolder>);                                                                           \
                 };                                                                                                                          \
             private:                                                                                                                        \
                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_SERVICE_COMMAND_META_HOLDER)                                              \
             public:                                                                                                                         \
                 template<typename T> requires (!std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T>)                                              \
                 using ImplHolder = typename ImplGenerator<CLASSNAME, T>::ImplHolder;                                                        \
+                                                                                                                                            \
+                template<typename T> requires (!std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T>)                                              \
+                using ImplPointer = typename ImplGenerator<CLASSNAME, T>::ImplPointer;                                                      \
                                                                                                                                             \
                 AMS_SF_CMIF_IMPL_DEFINE_SERVICE_DISPATCH_TABLE {                                                                            \
                     CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_CMIF_SERVICE_COMMAND_META_TABLE_ENTRY)                                          \

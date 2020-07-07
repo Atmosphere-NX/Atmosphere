@@ -18,7 +18,7 @@
 
 namespace ams::lr {
 
-    class RemoteLocationResolverImpl : public ILocationResolver {
+    class RemoteLocationResolverImpl {
         private:
             ::LrLocationResolver srv;
         public:
@@ -27,121 +27,122 @@ namespace ams::lr {
             ~RemoteLocationResolverImpl() { ::serviceClose(&srv.s); }
         public:
             /* Actual commands. */
-            virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveProgramPath(std::addressof(this->srv), id.value, out->str);
+            Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) {
+                return ::lrLrResolveProgramPath(std::addressof(this->srv), id.value, out->str);
             }
 
-            virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectProgramPath(std::addressof(this->srv), id.value, path.str);
+            Result RedirectProgramPath(const Path &path, ncm::ProgramId id) {
+                return ::lrLrRedirectProgramPath(std::addressof(this->srv), id.value, path.str);
             }
 
-            virtual Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveApplicationControlPath(std::addressof(this->srv), id.value, out->str);
+            Result ResolveApplicationControlPath(sf::Out<Path> out, ncm::ProgramId id) {
+                return ::lrLrResolveApplicationControlPath(std::addressof(this->srv), id.value, out->str);
             }
 
-            virtual Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, out->str);
+            Result ResolveApplicationHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) {
+                return ::lrLrResolveApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, out->str);
             }
 
-            virtual Result ResolveDataPath(sf::Out<Path> out, ncm::DataId id) override {
-                return lrLrResolveDataPath(std::addressof(this->srv), id.value, out->str);
+            Result ResolveDataPath(sf::Out<Path> out, ncm::DataId id) {
+                return ::lrLrResolveDataPath(std::addressof(this->srv), id.value, out->str);
             }
 
-            virtual Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectApplicationControlPath(std::addressof(this->srv), id.value, 0, path.str);
+            Result RedirectApplicationControlPathDeprecated(const Path &path, ncm::ProgramId id) {
+                return ::lrLrRedirectApplicationControlPath(std::addressof(this->srv), id.value, 0, path.str);
             }
 
-            virtual Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
-                return lrLrRedirectApplicationControlPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
+            Result RedirectApplicationControlPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+                return ::lrLrRedirectApplicationControlPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
             }
 
-            virtual Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, 0, path.str);
+            Result RedirectApplicationHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) {
+                return ::lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, 0, path.str);
             }
 
-            virtual Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
-                return lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
+            Result RedirectApplicationHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+                return ::lrLrRedirectApplicationHtmlDocumentPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
             }
 
-            virtual Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) override {
-                return lrLrResolveApplicationLegalInformationPath(std::addressof(this->srv), id.value, out->str);
+            Result ResolveApplicationLegalInformationPath(sf::Out<Path> out, ncm::ProgramId id) {
+                return ::lrLrResolveApplicationLegalInformationPath(std::addressof(this->srv), id.value, out->str);
             }
 
-            virtual Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) override {
-                return lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), id.value, 0, path.str);
+            Result RedirectApplicationLegalInformationPathDeprecated(const Path &path, ncm::ProgramId id) {
+                return ::lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), id.value, 0, path.str);
             }
 
-            virtual Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
-                return lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
+            Result RedirectApplicationLegalInformationPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
+                return ::lrLrRedirectApplicationLegalInformationPath(std::addressof(this->srv), id.value, owner_id.value, path.str);
             }
 
-            virtual Result Refresh() override {
-                return lrLrRefresh(std::addressof(this->srv));
+            Result Refresh() {
+                return ::lrLrRefresh(std::addressof(this->srv));
             }
 
-            virtual Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) override {
+            Result RedirectApplicationProgramPathDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
+            Result RedirectApplicationProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result ClearApplicationRedirectionDeprecated() override {
+            Result ClearApplicationRedirectionDeprecated() {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) override {
+            Result ClearApplicationRedirection(const sf::InArray<ncm::ProgramId> &excluding_ids) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result EraseProgramRedirection(ncm::ProgramId id) override {
-                return lrLrEraseProgramRedirection(std::addressof(this->srv), id.value);
+            Result EraseProgramRedirection(ncm::ProgramId id) {
+                return ::lrLrEraseProgramRedirection(std::addressof(this->srv), id.value);
             }
 
-            virtual Result EraseApplicationControlRedirection(ncm::ProgramId id) override {
+            Result EraseApplicationControlRedirection(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) override {
+            Result EraseApplicationHtmlDocumentRedirection(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result EraseApplicationLegalInformationRedirection(ncm::ProgramId id) override {
+            Result EraseApplicationLegalInformationRedirection(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) override {
+            Result ResolveProgramPathForDebug(sf::Out<Path> out, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) override {
+            Result RedirectProgramPathForDebug(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) override {
+            Result RedirectApplicationProgramPathForDebugDeprecated(const Path &path, ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override {
+            Result RedirectApplicationProgramPathForDebug(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            virtual Result EraseProgramRedirectionForDebug(ncm::ProgramId id) override {
+            Result EraseProgramRedirectionForDebug(ncm::ProgramId id) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
     };
+    static_assert(lr::IsILocationResolver<RemoteLocationResolverImpl>);
 
 }

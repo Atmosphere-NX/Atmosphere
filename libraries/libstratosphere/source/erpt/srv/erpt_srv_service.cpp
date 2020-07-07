@@ -42,7 +42,7 @@ namespace ams::erpt::srv {
         class ErrorReportServiceManager : public ams::sf::hipc::ServerManager<ErrorReportNumServers, ErrorReportServerOptions, ErrorReportMaxSessions> {
             private:
                 os::ThreadType thread;
-                std::shared_ptr<erpt::srv::ContextImpl> context_session_object;
+                std::shared_ptr<erpt::sf::IContext> context_session_object;
             private:
                 static void ThreadFunction(void *_this) {
                     reinterpret_cast<ErrorReportServiceManager *>(_this)->SetupAndLoopProcess();
@@ -51,14 +51,14 @@ namespace ams::erpt::srv {
                 void SetupAndLoopProcess();
             public:
                 ErrorReportServiceManager(erpt::srv::ContextImpl *c)
-                    : context_session_object(ams::sf::ServiceObjectTraits<erpt::srv::ContextImpl>::SharedPointerHelper::GetEmptyDeleteSharedPointer(c))
+                    : context_session_object(ams::sf::GetSharedPointerTo<erpt::sf::IContext, erpt::srv::ContextImpl>(c))
                 {
                     /* ... */
                 }
 
                 Result Initialize() {
-                    R_ABORT_UNLESS(this->RegisterServer<erpt::srv::ContextImpl>(ErrorReportContextServiceName, ErrorReportContextSessions, this->context_session_object));
-                    R_ABORT_UNLESS(this->RegisterServer<erpt::srv::SessionImpl>(ErrorReportReportServiceName, ErrorReportReportSessions));
+                    R_ABORT_UNLESS((this->RegisterServer<erpt::sf::IContext, erpt::srv::ContextImpl>(ErrorReportContextServiceName, ErrorReportContextSessions, this->context_session_object)));
+                    R_ABORT_UNLESS((this->RegisterServer<erpt::sf::ISession, erpt::srv::SessionImpl>(ErrorReportReportServiceName, ErrorReportReportSessions)));
 
                     this->ResumeProcessing();
 
@@ -117,7 +117,7 @@ namespace ams::erpt::srv {
             }
         }
 
-        erpt::srv::ContextImpl g_context_object;
+        constinit erpt::srv::ContextImpl g_context_object;
         ErrorReportServiceManager g_erpt_server_manager(std::addressof(g_context_object));
 
     }

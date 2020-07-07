@@ -30,10 +30,10 @@ namespace ams::lr {
         /* No existing resolver is present, create one. */
         if (!resolver) {
             if (storage_id == ncm::StorageId::Host) {
-                AMS_ABORT_UNLESS(this->location_resolvers.Insert(storage_id, std::make_shared<RedirectOnlyLocationResolverImpl>()));
+                AMS_ABORT_UNLESS(this->location_resolvers.Insert(storage_id, sf::MakeShared<ILocationResolver, RedirectOnlyLocationResolverImpl>()));
             } else {
-                auto content_resolver = std::make_shared<ContentLocationResolverImpl>(storage_id);
-                R_TRY(content_resolver->Refresh());
+                auto content_resolver = sf::MakeShared<ILocationResolver, ContentLocationResolverImpl>(storage_id);
+                R_TRY(content_resolver->GetImpl().Refresh());
                 AMS_ABORT_UNLESS(this->location_resolvers.Insert(storage_id, std::move(content_resolver)));
             }
 
@@ -51,7 +51,7 @@ namespace ams::lr {
 
         /* No existing resolver is present, create one. */
         if (!this->registered_location_resolver) {
-            this->registered_location_resolver = std::make_shared<RegisteredLocationResolverImpl>();
+            this->registered_location_resolver = sf::MakeShared<IRegisteredLocationResolver, RegisteredLocationResolverImpl>();
         }
 
         /* Copy the output interface. */
@@ -79,7 +79,7 @@ namespace ams::lr {
 
         /* No existing resolver is present, create one. */
         if (!this->add_on_content_location_resolver) {
-            this->add_on_content_location_resolver = std::make_shared<AddOnContentLocationResolverImpl>();
+            this->add_on_content_location_resolver = sf::MakeShared<IAddOnContentLocationResolver, AddOnContentLocationResolverImpl>();
         }
 
         /* Copy the output interface. */

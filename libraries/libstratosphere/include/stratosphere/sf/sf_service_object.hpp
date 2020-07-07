@@ -25,6 +25,9 @@ namespace ams::sf {
             virtual ~IServiceObject() { /* ... */ }
     };
 
+    template<typename T>
+    concept IsServiceObject = std::derived_from<T, IServiceObject>;
+
     class IMitmServiceObject : public IServiceObject {
         protected:
             std::shared_ptr<::Service> forward_service;
@@ -37,26 +40,25 @@ namespace ams::sf {
             static bool ShouldMitm(os::ProcessId process_id, ncm::ProgramId program_id);
     };
 
+    template<typename T>
+    concept IsMitmServiceObject = IsServiceObject<T> && std::derived_from<T, IMitmServiceObject>;
+
     /* Utility. */
     #define AMS_SF_MITM_SERVICE_OBJECT_CTOR(cls) cls(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c) : ::ams::sf::IMitmServiceObject(std::forward<std::shared_ptr<::Service>>(s), c)
 
-    template<typename T>
-    struct ServiceObjectTraits {
-        static_assert(std::is_base_of<ams::sf::IServiceObject, T>::value, "ServiceObjectTraits requires ServiceObject");
+    template<typename Interface, typename Impl, typename... Arguments> requires std::constructible_from<Impl, Arguments...>
+    constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplHolder<Impl>> MakeShared(Arguments &&... args) {
+        return std::make_shared<typename Interface::ImplHolder<Impl>>(std::forward<Arguments>(args)...);
+    }
 
-        static constexpr bool IsMitmServiceObject = std::is_base_of<IMitmServiceObject, T>::value;
+    template<typename Interface, typename Impl>
+    constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplPointer<Impl>> GetSharedPointerTo(Impl *impl) {
+        return std::make_shared<typename Interface::ImplPointer<Impl>>(impl);
+    }
 
-        struct SharedPointerHelper {
-
-            static constexpr void EmptyDelete(T *) { /* Empty deleter, for fake shared pointer. */ }
-
-            static constexpr std::shared_ptr<T> GetEmptyDeleteSharedPointer(T *srv_obj) {
-                return std::shared_ptr<T>(srv_obj, EmptyDelete);
-            }
-
-        };
-    };
-
-
+    template<typename Interface, typename Impl>
+    constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplPointer<Impl>> GetSharedPointerTo(Impl &impl) {
+        return GetSharedPointerTo<Interface, Impl>(std::addressof(impl));
+    }
 
 }
