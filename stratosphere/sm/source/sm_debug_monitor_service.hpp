@@ -13,20 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 #include <stratosphere.hpp>
 
 namespace ams::sm {
 
     /* Service definition. */
-    class ManagerService final {
+    class DebugMonitorService final {
         public:
-            Result RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
-            Result UnregisterProcess(os::ProcessId process_id);
-            void AtmosphereEndInitDefers();
-            void AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
-            Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
+            Result AtmosphereGetRecord(sf::Out<ServiceRecord> record, ServiceName service);
+            void AtmosphereListRecords(const sf::OutArray<ServiceRecord> &records, sf::Out<u64> out_count, u64 offset);
+            void AtmosphereGetRecordSize(sf::Out<u64> record_size);
     };
-    static_assert(sm::impl::IsIManagerInterface<ManagerService>);
+    static_assert(sm::impl::IsIDebugMonitorInterface<DebugMonitorService>);
 
 }

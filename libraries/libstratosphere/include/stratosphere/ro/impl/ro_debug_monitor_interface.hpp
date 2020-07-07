@@ -13,23 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/ro/ro_types.hpp>
+#include <stratosphere/sf.hpp>
 
-namespace ams::ro {
+namespace ams::ro::impl {
 
-    class DebugMonitorService final : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                GetProcessModuleInfo = 0,
-            };
-        private:
-            /* Actual commands. */
-            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetProcessModuleInfo),
-            };
-    };
+    #define AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                                       \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessModuleInfo, (sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id))
+
+    AMS_SF_DEFINE_INTERFACE(IDebugMonitorInterface, AMS_RO_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
 
 }

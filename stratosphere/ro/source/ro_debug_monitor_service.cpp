@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "ro_debug_monitor.hpp"
+#include "ro_debug_monitor_service.hpp"
 #include "impl/ro_service_impl.hpp"
 
 namespace ams::ro {

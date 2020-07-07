@@ -35,10 +35,10 @@ namespace ams::ro::impl {
     void   UnregisterProcess(size_t context_id);
 
     /* Service implementations. */
-    Result LoadNrr(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type);
-    Result UnloadNrr(size_t context_id, u64 nrr_address);
-    Result LoadNro(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
-    Result UnloadNro(size_t context_id, u64 nro_address);
+    Result RegisterModuleInfo(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type);
+    Result UnregisterModuleInfo(size_t context_id, u64 nrr_address);
+    Result MapManualLoadModuleMemory(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
+    Result UnmapManualLoadModuleMemory(size_t context_id, u64 nro_address);
 
     /* Debug service implementations. */
     Result GetProcessModuleInfo(u32 *out_count, LoaderModuleInfo *out_infos, size_t max_out_count, os::ProcessId process_id);

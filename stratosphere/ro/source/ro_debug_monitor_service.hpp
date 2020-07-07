@@ -16,17 +16,12 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::sm {
+namespace ams::ro {
 
-    /* Service definition. */
-    class ManagerService final {
+    class DebugMonitorService final {
         public:
-            Result RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
-            Result UnregisterProcess(os::ProcessId process_id);
-            void AtmosphereEndInitDefers();
-            void AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
-            Result AtmosphereRegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
+            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
     };
-    static_assert(sm::impl::IsIManagerInterface<ManagerService>);
+    static_assert(ro::impl::IsIDebugMonitorInterface<DebugMonitorService>);
 
 }
