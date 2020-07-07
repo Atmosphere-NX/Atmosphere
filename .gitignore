@@ -38,6 +38,9 @@
 *.x86_64
 *.hex
 
+# Deko3d shaders
+*.dksh
+
 # Switch Executables
 *.nso
 *.nro
