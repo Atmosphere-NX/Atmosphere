@@ -15,8 +15,15 @@
  */
 
 #pragma once
-
+#include <vapours.hpp>
 #include <stratosphere/fatal/fatal_types.hpp>
+#include <stratosphere/sf.hpp>
 
-#include <stratosphere/fatal/impl/fatal_i_service.hpp>
-#include <stratosphere/fatal/impl/fatal_i_private_service.hpp>
+namespace ams::fatal::impl {
+
+    #define AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO(C, H)                            \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, GetFatalEvent, (sf::OutCopyHandle out_h))
+
+    AMS_SF_DEFINE_INTERFACE(IPrivateService, AMS_FATAL_I_PRIVATE_SERVICE_INTERFACE_INFO)
+
+}
