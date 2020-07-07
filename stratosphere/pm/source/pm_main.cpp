@@ -196,14 +196,14 @@ int main(int argc, char **argv)
     /* NOTE: Extra sessions have been added to pm:bm and pm:info to facilitate access by the rest of stratosphere. */
     /* Also Note: PM was rewritten in 5.0.0, so the shell and dmnt services are different before/after. */
     if (hos::GetVersion() >= hos::Version_5_0_0) {
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::shell::ShellService>(ShellServiceName, ShellMaxSessions)));
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::dmnt::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IShellInterface, pm::ShellService>(ShellServiceName, ShellMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IDebugMonitorInterface, pm::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
     } else {
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::shell::ShellServiceDeprecated>(ShellServiceName, ShellMaxSessions)));
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::dmnt::DebugMonitorServiceDeprecated>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IDeprecatedShellInterface, pm::ShellService>(ShellServiceName, ShellMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IDeprecatedDebugMonitorInterface, pm::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
     }
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::bm::BootModeService>(BootModeServiceName, BootModeMaxSessions)));
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::info::InformationService>(InformationServiceName, InformationMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IBootModeInterface, pm::BootModeService>(BootModeServiceName, BootModeMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IInformationInterface, pm::InformationService>(InformationServiceName, InformationMaxSessions)));
 
     /* Loop forever, servicing our services. */
     g_server_manager.LoopProcess();

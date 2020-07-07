@@ -15,13 +15,16 @@
  */
 
 #pragma once
-
+#include <vapours.hpp>
 #include <stratosphere/pm/pm_types.hpp>
-#include <stratosphere/pm/pm_boot_mode_api.hpp>
-#include <stratosphere/pm/pm_info_api.hpp>
-#include <stratosphere/pm/pm_shell_api.hpp>
-#include <stratosphere/pm/pm_dmnt_api.hpp>
-#include <stratosphere/pm/impl/pm_boot_mode_interface.hpp>
-#include <stratosphere/pm/impl/pm_debug_monitor_interface.hpp>
-#include <stratosphere/pm/impl/pm_information_interface.hpp>
-#include <stratosphere/pm/impl/pm_shell_interface.hpp>
+#include <stratosphere/sf.hpp>
+
+namespace ams::pm::impl {
+
+    #define AMS_PM_I_BOOT_MODE_INTERFACE_INTERFACE_INFO(C, H)                     \
+        AMS_SF_METHOD_INFO(C, H, 0, void, GetBootMode,        (sf::Out<u32> out)) \
+        AMS_SF_METHOD_INFO(C, H, 1, void, SetMaintenanceBoot, ())
+
+    AMS_SF_DEFINE_INTERFACE(IBootModeInterface, AMS_PM_I_BOOT_MODE_INTERFACE_INTERFACE_INFO)
+
+}

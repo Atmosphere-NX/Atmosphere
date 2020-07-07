@@ -16,23 +16,13 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pm::bm {
+namespace ams::pm {
 
-    class BootModeService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                GetBootMode        = 0,
-                SetMaintenanceBoot = 1,
-            };
-        private:
-            /* Actual command implementations. */
+    class BootModeService final {
+        public:
             void GetBootMode(sf::Out<u32> out);
             void SetMaintenanceBoot();
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetBootMode),
-                MAKE_SERVICE_COMMAND_META(SetMaintenanceBoot),
-            };
     };
+    static_assert(pm::impl::IsIBootModeInterface<BootModeService>);
 
 }

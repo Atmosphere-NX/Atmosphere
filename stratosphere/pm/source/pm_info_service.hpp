@@ -16,18 +16,10 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pm::info {
+namespace ams::pm {
 
-    class InformationService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                GetProgramId                 = 0,
-
-                AtmosphereGetProcessId     = 65000,
-                AtmosphereHasLaunchedProgram = 65001,
-                AtmosphereGetProcessInfo = 65002,
-            };
-        private:
+    class InformationService final {
+        public:
             /* Actual command implementations. */
             Result GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id);
 
@@ -35,14 +27,7 @@ namespace ams::pm::info {
             Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
             Result AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
             Result AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetProgramId),
-
-                MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessId),
-                MAKE_SERVICE_COMMAND_META(AtmosphereHasLaunchedProgram),
-                MAKE_SERVICE_COMMAND_META(AtmosphereGetProcessInfo),
-            };
     };
+    static_assert(pm::impl::IsIInformationInterface<InformationService>);
 
 }
