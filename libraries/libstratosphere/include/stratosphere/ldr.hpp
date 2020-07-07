@@ -19,3 +19,6 @@
 #include <stratosphere/ldr/ldr_types.hpp>
 #include <stratosphere/ldr/ldr_shell_api.hpp>
 #include <stratosphere/ldr/ldr_pm_api.hpp>
+#include <stratosphere/ldr/impl/ldr_process_manager_interface.hpp>
+#include <stratosphere/ldr/impl/ldr_debug_monitor_interface.hpp>
+#include <stratosphere/ldr/impl/ldr_shell_interface.hpp>
