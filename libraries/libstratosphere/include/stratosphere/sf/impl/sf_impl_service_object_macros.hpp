@@ -111,11 +111,18 @@ namespace ams::sf::impl {
             }(::ams::sf::impl::TypeTag<AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>{}, std::forward<Arguments>(args)...);                                                                                \
         }
 
-    #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX) \
-        template<typename ...Arguments>                                                                                     \
-            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>              \
-        static RETURN NAME##Invoker (CLASSNAME *_this, Arguments &&... args) {                                              \
-            return static_cast<ImplHolder *>(_this)->NAME(std::forward<Arguments>(args)...);                                \
+    #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER_HOLDER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX) \
+        template<typename ...Arguments>                                                                                            \
+            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                     \
+        static RETURN NAME##Invoker (CLASSNAME *_this, Arguments &&... args) {                                                     \
+            return static_cast<ImplHolder *>(_this)->NAME(std::forward<Arguments>(args)...);                                       \
+        }
+
+    #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER_POINTER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX) \
+        template<typename ...Arguments>                                                                                             \
+            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                      \
+        static RETURN NAME##Invoker (CLASSNAME *_this, Arguments &&... args) {                                                      \
+            return static_cast<ImplPointer *>(_this)->NAME(std::forward<Arguments>(args)...);                                       \
         }
 
     #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)    \
@@ -201,7 +208,7 @@ namespace ams::sf::impl {
                                 template<typename U = S> requires ::ams::sf::IsMitmServiceObject<S> && std::same_as<U, S>                   \
                                 static ALWAYS_INLINE bool ShouldMitm(os::ProcessId p, ncm::ProgramId r) { return T::ShouldMitm(p, r); }     \
                             private:                                                                                                        \
-                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER)                                        \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER_HOLDER)                                 \
                             public:                                                                                                         \
                                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL)                                           \
                             private:                                                                                                        \
@@ -225,7 +232,7 @@ namespace ams::sf::impl {
                                 ALWAYS_INLINE T &GetImpl() { return *this->impl; }                                                          \
                                 ALWAYS_INLINE const T &GetImpl() const { return *this->impl; }                                              \
                             private:                                                                                                        \
-                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER)                                        \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER_POINTER)                                \
                             public:                                                                                                         \
                                 CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL_PTR)                                       \
                             private:                                                                                                        \
