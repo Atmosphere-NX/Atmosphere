@@ -783,6 +783,9 @@ namespace dbk {
         this->AddButton(RebootButtonId, "Reboot", x + HorizontalGap + ButtonWidth + ButtonHorizontalGap, y + WindowHeight - BottomGap - ButtonHeight, ButtonWidth, ButtonHeight);
         this->SetButtonEnabled(ShutdownButtonId, false);
         this->SetButtonEnabled(RebootButtonId, false);
+
+        /* Prevent the home button from being pressed during installation. */
+        hiddbgDeactivateHomeButton();
     }
 
     void InstallUpdateMenu::MarkForReboot() {

@@ -41,12 +41,18 @@ extern "C" {
         if (R_FAILED(rc = plInitialize(PlServiceType_User))) {
             fatalThrow(rc);
         }
+
+        if (R_FAILED(rc = hiddbgInitialize())) {
+            fatalThrow(rc);
+        }
+
     }
 
     void userAppExit(void) {
-        romfsExit();
+        hiddbgExit();
         plExit();
         spsmExit();
+        romfsExit();
         amssuExit();
     }
 
