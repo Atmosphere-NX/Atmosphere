@@ -18,14 +18,12 @@
 
 namespace ams::spl {
 
-    class RsaService : public CryptoService {
+    class DeviceUniqueDataService : public CryptoService {
         public:
-            RsaService() : CryptoService() { /* ... */ }
-            virtual ~RsaService() { /* ... */ }
-        protected:
             /* Actual commands. */
-            virtual Result DecryptRsaPrivateKeyDeprecated(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
-            virtual Result DecryptRsaPrivateKey(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
+            Result DecryptDeviceUniqueDataDeprecated(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
+            Result DecryptDeviceUniqueData(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
     };
+    static_assert(spl::impl::IsIDeviceUniqueDataInterface<DeviceUniqueDataService>);
 
 }

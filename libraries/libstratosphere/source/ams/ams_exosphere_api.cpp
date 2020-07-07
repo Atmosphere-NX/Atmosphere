@@ -21,7 +21,7 @@ namespace ams::exosphere {
 
     ApiInfo GetApiInfo() {
         u64 exosphere_cfg;
-        if (spl::smc::GetConfig(&exosphere_cfg, 1, SplConfigItem_ExosphereApiVersion) != spl::smc::Result::Success) {
+        if (spl::smc::GetConfig(&exosphere_cfg, 1, spl::ConfigItem::ExosphereApiVersion) != spl::smc::Result::Success) {
             R_ABORT_UNLESS(ResultNotPresent());
         }
 
@@ -29,15 +29,15 @@ namespace ams::exosphere {
     }
 
     void ForceRebootToRcm() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsReboot, 1)));
+        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 1)));
     }
 
     void ForceRebootToIramPayload() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsReboot, 2)));
+        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsReboot, 2)));
     }
 
     void ForceShutdown() {
-        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(SplConfigItem_ExosphereNeedsShutdown, 1)));
+        R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::SetConfig(spl::ConfigItem::ExosphereNeedsShutdown, 1)));
     }
 
     void CopyToIram(uintptr_t iram_dst, const void *dram_src, size_t size) {
@@ -52,7 +52,7 @@ namespace ams::exosphere {
 
         inline u64 GetU64ConfigItem(spl::ConfigItem cfg) {
             u64 tmp;
-            R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::GetConfig(std::addressof(tmp), 1, static_cast<::SplConfigItem>(cfg))));
+            R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::GetConfig(std::addressof(tmp), 1, cfg)));
             return tmp;
         }
 

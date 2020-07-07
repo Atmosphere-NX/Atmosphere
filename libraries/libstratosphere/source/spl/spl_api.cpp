@@ -63,7 +63,7 @@ namespace ams::spl {
             auto is_event_initialized = false;
             while (true) {
                 R_TRY_CATCH(static_cast<::ams::Result>(f())) {
-                    R_CATCH(spl::ResultOutOfKeyslots) {
+                    R_CATCH(spl::ResultOutOfKeySlots) {
                         if (!is_event_initialized) {
                             GetAesKeySlotAvailableEvent(std::addressof(event));
                             is_event_initialized = true;

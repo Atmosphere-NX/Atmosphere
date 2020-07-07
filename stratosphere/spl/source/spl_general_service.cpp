@@ -20,15 +20,15 @@
 namespace ams::spl {
 
     Result GeneralService::GetConfig(sf::Out<u64> out, u32 which) {
-        return impl::GetConfig(out.GetPointer(), static_cast<SplConfigItem>(which));
+        return impl::GetConfig(out.GetPointer(), static_cast<spl::ConfigItem>(which));
     }
 
-    Result GeneralService::ExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod) {
-        return impl::ExpMod(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), exp.GetPointer(), exp.GetSize(), mod.GetPointer(), mod.GetSize());
+    Result GeneralService::ModularExponentiate(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod) {
+        return impl::ModularExponentiate(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), exp.GetPointer(), exp.GetSize(), mod.GetPointer(), mod.GetSize());
     }
 
     Result GeneralService::SetConfig(u32 which, u64 value) {
-        return impl::SetConfig(static_cast<SplConfigItem>(which), value);
+        return impl::SetConfig(static_cast<spl::ConfigItem>(which), value);
     }
 
     Result GeneralService::GenerateRandomBytes(const sf::OutPointerBuffer &out) {

@@ -21,7 +21,7 @@ namespace ams::spl {
 
     CryptoService::~CryptoService() {
         /* Free any keyslots this service is using. */
-        impl::FreeAesKeyslots(this);
+        impl::DeallocateAllAesKeySlots(this);
     }
 
     Result CryptoService::GenerateAesKek(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option) {
@@ -40,24 +40,25 @@ namespace ams::spl {
         return impl::DecryptAesKey(out_key.GetPointer(), key_source, generation, option);
     }
 
-    Result CryptoService::CryptAesCtr(const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
-        return impl::CryptAesCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
+    Result CryptoService::ComputeCtr(const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr) {
+        return impl::ComputeCtr(out_buf.GetPointer(), out_buf.GetSize(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize(), iv_ctr);
     }
 
     Result CryptoService::ComputeCmac(sf::Out<Cmac> out_cmac, s32 keyslot, const sf::InPointerBuffer &in_buf) {
         return impl::ComputeCmac(out_cmac.GetPointer(), keyslot, this, in_buf.GetPointer(), in_buf.GetSize());
     }
 
-    Result CryptoService::AllocateAesKeyslot(sf::Out<s32> out_keyslot) {
-        return impl::AllocateAesKeyslot(out_keyslot.GetPointer(), this);
+    Result CryptoService::AllocateAesKeySlot(sf::Out<s32> out_keyslot) {
+        return impl::AllocateAesKeySlot(out_keyslot.GetPointer(), this);
     }
 
-    Result CryptoService::FreeAesKeyslot(s32 keyslot) {
-        return impl::FreeAesKeyslot(keyslot, this);
+    Result CryptoService::DeallocateAesKeySlot(s32 keyslot) {
+        return impl::DeallocateAesKeySlot(keyslot, this);
     }
 
-    void CryptoService::GetAesKeyslotAvailableEvent(sf::OutCopyHandle out_hnd) {
-        out_hnd.SetValue(impl::GetAesKeyslotAvailableEventHandle());
+    Result CryptoService::GetAesKeySlotAvailableEvent(sf::OutCopyHandle out_hnd) {
+        out_hnd.SetValue(impl::GetAesKeySlotAvailableEventHandle());
+        return ResultSuccess();
     }
 
 }

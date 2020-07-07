@@ -13,16 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include "spl_device_unique_data_service.hpp"
+#include <vapours.hpp>
+#include <stratosphere/sf.hpp>
+#include <stratosphere/spl/spl_types.hpp>
 
-namespace ams::spl {
+namespace ams::spl::impl {
 
-    class ManuService : public DeviceUniqueDataService {
-        public:
-            /* Actual commands. */
-            Result ReencryptDeviceUniqueData(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option);
-    };
-    static_assert(spl::impl::IsIManuInterface<ManuService>);
+    #define AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO(C, H)                                  \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, GenerateRandomBytes, (const sf::OutBuffer &out))
+
+    AMS_SF_DEFINE_INTERFACE(IRandomInterface, AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO)
 
 }

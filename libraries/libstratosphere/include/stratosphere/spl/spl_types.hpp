@@ -22,35 +22,34 @@ namespace ams::spl {
     namespace smc {
 
         enum class FunctionId : u32 {
-            SetConfig                     = 0xC3000401,
-            GetConfig                     = 0xC3000002,
-            CheckStatus                   = 0xC3000003,
-            GetResult                     = 0xC3000404,
-            ExpMod                        = 0xC3000E05,
-            GenerateRandomBytes           = 0xC3000006,
-            GenerateAesKek                = 0xC3000007,
-            LoadAesKey                    = 0xC3000008,
-            CryptAes                      = 0xC3000009,
-            GenerateSpecificAesKey        = 0xC300000A,
-            ComputeCmac                   = 0xC300040B,
-            ReEncryptRsaPrivateKey        = 0xC300D60C,
-            DecryptOrImportRsaPrivateKey  = 0xC300100D,
+            SetConfig                         = 0xC3000401,
+            GetConfig                         = 0xC3000002,
+            GetResult                         = 0xC3000003,
+            GetResultData                     = 0xC3000404,
+            ModularExponentiate               = 0xC3000E05,
+            GenerateRandomBytes               = 0xC3000006,
+            GenerateAesKek                    = 0xC3000007,
+            LoadAesKey                        = 0xC3000008,
+            ComputeAes                        = 0xC3000009,
+            GenerateSpecificAesKey            = 0xC300000A,
+            ComputeCmac                       = 0xC300040B,
+            ReencryptDeviceUniqueData         = 0xC300D60C,
+            DecryptDeviceUniqueData           = 0xC300100D,
 
-            SecureExpMod                  = 0xC300060F,
-            UnwrapTitleKey                = 0xC3000610,
-            LoadTitleKey                  = 0xC3000011,
-            UnwrapCommonTitleKey          = 0xC3000012,
+            ModularExponentiateWithStorageKey = 0xC300060F,
+            PrepareEsDeviceUniqueKey          = 0xC3000610,
+            LoadPreparedAesKey                = 0xC3000011,
+            PrepareCommonEsTitleKey           = 0xC3000012,
 
             /* Deprecated functions. */
-            ImportEsKey                   = 0xC300100C,
-            DecryptRsaPrivateKey          = 0xC300100D,
-            ImportSecureExpModKey         = 0xC300100E,
+            LoadEsDeviceKey                   = 0xC300100C,
+            DecryptAndStoreGcKey              = 0xC300100E,
 
             /* Atmosphere functions. */
-            AtmosphereIramCopy            = 0xF0000201,
-            AtmosphereReadWriteRegister   = 0xF0000002,
-            AtmosphereWriteAddress        = 0xF0000003,
-            AtmosphereGetEmummcConfig     = 0xF0000404,
+            AtmosphereIramCopy                = 0xF0000201,
+            AtmosphereReadWriteRegister       = 0xF0000002,
+
+            AtmosphereGetEmummcConfig         = 0xF0000404,
         };
 
         enum class Result {
@@ -61,6 +60,7 @@ namespace ams::spl {
             NoAsyncOperation      = 4,
             InvalidAsyncOperation = 5,
             NotPermitted          = 6,
+            NotInitialized        = 7,
         };
 
         constexpr inline ::ams::Result ConvertResult(Result smc_result) {
@@ -69,11 +69,10 @@ namespace ams::spl {
 
             /* Convert to the list of known SecureMonitorErrors. */
             const auto converted = R_MAKE_NAMESPACE_RESULT(::ams::spl, static_cast<u32>(smc_result));
-            if (spl::ResultSecureMonitorError::Includes(converted)) {
-                return converted;
-            }
+            R_UNLESS(spl::ResultSecureMonitorError::Includes(converted), spl::ResultUnknownSecureMonitorError());
 
-            return spl::ResultUnknownSecureMonitorError();
+            /* Return the error. */
+            return converted;
         }
 
         enum class CipherMode {
@@ -82,23 +81,23 @@ namespace ams::spl {
             Ctr        = 2,
         };
 
-        enum class DecryptOrImportMode {
-            DecryptRsaPrivateKey = 0,
-            ImportLotusKey       = 1,
-            ImportEsKey          = 2,
-            ImportSslKey         = 3,
-            ImportDrmKey         = 4,
+        enum class DeviceUniqueDataMode {
+            DecryptDeviceUniqueData         = 0,
+            DecryptAndStoreGcKey            = 1,
+            DecryptAndStoreEsDeviceKey      = 2,
+            DecryptAndStoreSslKey           = 3,
+            DecryptAndStoreDrmDeviceCertKey = 4,
         };
 
-        enum class SecureExpModMode {
-            Lotus = 0,
-            Ssl   = 1,
-            Drm   = 2,
+        enum class ModularExponentiateWithStorageKeyMode {
+            Gc            = 0,
+            Ssl           = 1,
+            DrmDeviceCert = 2,
         };
 
-        enum class EsKeyType {
-            TitleKey    = 0,
-            ElicenseKey = 1,
+        enum class EsCommonKeyType {
+            TitleKey   = 0,
+            ArchiveKey = 1,
         };
 
         struct AsyncOperationKey {
@@ -196,23 +195,23 @@ namespace ams::spl {
 
     enum class ConfigItem : u32 {
         /* Standard config items. */
-        DisableProgramVerification   = 1,
-        DramId                       = 2,
-        SecurityEngineIrqNumber      = 3,
-        FuseVersion                  = 4,
-        HardwareType                 = 5,
-        HardwareState                = 6,
-        IsRecoveryBoot               = 7,
-        DeviceId                     = 8,
-        BootReason                   = 9,
-        MemoryMode                   = 10,
-        IsDevelopmentFunctionEnabled = 11,
-        KernelConfiguration          = 12,
-        IsChargerHiZModeEnabled      = 13,
-        IsQuest                      = 14,
-        RegulatorType                = 15,
-        DeviceUniqueKeyGeneration    = 16,
-        Package2Hash                 = 17,
+        DisableProgramVerification    = 1,
+        DramId                        = 2,
+        SecurityEngineInterruptNumber = 3,
+        FuseVersion                   = 4,
+        HardwareType                  = 5,
+        HardwareState                 = 6,
+        IsRecoveryBoot                = 7,
+        DeviceId                      = 8,
+        BootReason                    = 9,
+        MemoryMode                    = 10,
+        IsDevelopmentFunctionEnabled  = 11,
+        KernelConfiguration           = 12,
+        IsChargerHiZModeEnabled       = 13,
+        QuestState                    = 14,
+        RegulatorType                 = 15,
+        DeviceUniqueKeyGeneration     = 16,
+        Package2Hash                  = 17,
 
         /* Extension config items for exosphere. */
         ExosphereApiVersion     = 65000,
