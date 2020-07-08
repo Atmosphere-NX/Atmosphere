@@ -593,7 +593,7 @@ namespace ams::ncm {
             R_UNLESS(std::memcmp(hash, content_info->digest.data, crypto::Sha256Generator::HashSize) == 0, ncm::ResultInvalidContentHash());
         }
 
-        if (!(this->config & InstallConfig_IgnoreTicket)) {
+        if (hos::GetVersion() >= hos::Version_2_0_0 && !(this->config & InstallConfig_IgnoreTicket)) {
             ncm::RightsId rights_id;
             {
                 /* Open the content storage and obtain the rights id. */
