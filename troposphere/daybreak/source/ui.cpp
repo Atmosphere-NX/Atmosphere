@@ -13,6 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -382,6 +383,12 @@ namespace dbk {
 
         /* Close the directory. */
         closedir(dir);
+
+        /* Sort the file entries. */
+        std::sort(m_file_entries.begin(), m_file_entries.end(), [](const FileEntry &a, const FileEntry &b) {
+            return strncmp(a.name, b.name, sizeof(a.name)) < 0;
+        });
+
         return 0;
     }
 
@@ -866,10 +873,11 @@ namespace dbk {
             /* Apply the prepared update. */
             if (R_FAILED(rc = amssuApplyPreparedUpdate())) {
                 this->LogText("Failed to apply update.\nResult: 0x%08x\n", rc);
+            } else {
+                /* Log success. */
+                this->LogText("Update applied successfully.\n");
             }
 
-            /* Log success. */
-            this->LogText("Update applied successfully.\n");
             this->MarkForReboot();
             return rc;
         }
