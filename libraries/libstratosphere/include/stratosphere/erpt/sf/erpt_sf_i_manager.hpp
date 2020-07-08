@@ -19,33 +19,15 @@
 
 namespace ams::erpt::sf {
 
-    class IManager : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                GetReportList             = 0,
-                GetEvent                  = 1,
-                CleanupReports            = 2,
-                DeleteReport              = 3,
-                GetStorageUsageStatistics = 4,
-                GetAttachmentList         = 5,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result GetReportList(const ams::sf::OutBuffer &out_list, ReportType type_filter) = 0;
-            virtual Result GetEvent(ams::sf::OutCopyHandle out) = 0;
-            virtual Result CleanupReports() = 0;
-            virtual Result DeleteReport(const ReportId &report_id) = 0;
-            virtual Result GetStorageUsageStatistics(ams::sf::Out<StorageUsageStatistics> out) = 0;
-            virtual Result GetAttachmentList(const ams::sf::OutBuffer &out_buf, const ReportId &report_id) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetReportList),
-                MAKE_SERVICE_COMMAND_META(GetEvent),
-                MAKE_SERVICE_COMMAND_META(CleanupReports,            hos::Version_4_0_0),
-                MAKE_SERVICE_COMMAND_META(DeleteReport,              hos::Version_5_0_0),
-                MAKE_SERVICE_COMMAND_META(GetStorageUsageStatistics, hos::Version_5_0_0),
-                MAKE_SERVICE_COMMAND_META(GetAttachmentList,         hos::Version_8_0_0),
-            };
-    };
+    #define AMS_ERPT_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                          \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, GetReportList,             (const ams::sf::OutBuffer &out_list, ReportType type_filter))                       \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, GetEvent,                  (ams::sf::OutCopyHandle out))                                                       \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, CleanupReports,            (),                                                             hos::Version_4_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  3, Result, DeleteReport,              (const ReportId &report_id),                                    hos::Version_5_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  4, Result, GetStorageUsageStatistics, (ams::sf::Out<StorageUsageStatistics> out),                     hos::Version_5_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  5, Result, GetAttachmentList,         (const ams::sf::OutBuffer &out_buf, const ReportId &report_id), hos::Version_8_0_0)
+
+
+    AMS_SF_DEFINE_INTERFACE(IManager, AMS_ERPT_I_MANAGER_INTERFACE_INFO)
 
 }

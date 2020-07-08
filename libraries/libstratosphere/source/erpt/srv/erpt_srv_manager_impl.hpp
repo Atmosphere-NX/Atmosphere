@@ -18,7 +18,7 @@
 
 namespace ams::erpt::srv {
 
-    class ManagerImpl final : public erpt::sf::IManager, public util::IntrusiveListBaseNode<ManagerImpl> {
+    class ManagerImpl final : public util::IntrusiveListBaseNode<ManagerImpl> {
         private:
             os::SystemEvent system_event;
         public:
@@ -29,12 +29,13 @@ namespace ams::erpt::srv {
         public:
             static Result NotifyAll();
         public:
-            virtual Result GetReportList(const ams::sf::OutBuffer &out_list, ReportType type_filter) override final;
-            virtual Result GetEvent(ams::sf::OutCopyHandle out) override final;
-            virtual Result CleanupReports() override final;
-            virtual Result DeleteReport(const ReportId &report_id) override final;
-            virtual Result GetStorageUsageStatistics(ams::sf::Out<StorageUsageStatistics> out) override final;
-            virtual Result GetAttachmentList(const ams::sf::OutBuffer &out_buf, const ReportId &report_id) override final;
+            Result GetReportList(const ams::sf::OutBuffer &out_list, ReportType type_filter);
+            Result GetEvent(ams::sf::OutCopyHandle out);
+            Result CleanupReports();
+            Result DeleteReport(const ReportId &report_id);
+            Result GetStorageUsageStatistics(ams::sf::Out<StorageUsageStatistics> out);
+            Result GetAttachmentList(const ams::sf::OutBuffer &out_buf, const ReportId &report_id);
     };
+    static_assert(erpt::sf::IsIManager<ManagerImpl>);
 
 }

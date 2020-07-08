@@ -19,36 +19,36 @@
 
 namespace ams::spl {
 
-    Result EsService::ImportEsKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
-        return impl::ImportEsKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
+    Result EsService::LoadEsDeviceKeyDeprecated(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option) {
+        return impl::LoadEsDeviceKey(src.GetPointer(), src.GetSize(), access_key, key_source, option);
     }
 
-    Result EsService::ImportEsKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-        return impl::ImportEsKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DecryptOrImportMode::ImportEsKey));
+    Result EsService::LoadEsDeviceKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
+        return impl::LoadEsDeviceKey(src.GetPointer(), src.GetSize(), access_key, key_source, static_cast<u32>(smc::DeviceUniqueDataMode::DecryptAndStoreEsDeviceKey));
     }
 
-    Result EsService::UnwrapTitleKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
-        return impl::UnwrapTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
+    Result EsService::PrepareEsTitleKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
+        return impl::PrepareEsTitleKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
     }
 
-    Result EsService::UnwrapCommonTitleKey(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
-        return impl::UnwrapCommonTitleKey(out_access_key.GetPointer(), key_source, generation);
+    Result EsService::PrepareCommonEsTitleKey(sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation) {
+        return impl::PrepareCommonEsTitleKey(out_access_key.GetPointer(), key_source, generation);
     }
 
-    Result EsService::ImportDrmKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-        return impl::ImportDrmKey(src.GetPointer(), src.GetSize(), access_key, key_source);
+    Result EsService::DecryptAndStoreDrmDeviceCertKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
+        return impl::DecryptAndStoreDrmDeviceCertKey(src.GetPointer(), src.GetSize(), access_key, key_source);
     }
 
-    Result EsService::DrmExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod) {
-        return impl::DrmExpMod(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize());
+    Result EsService::ModularExponentiateWithDrmDeviceCertKey(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod) {
+        return impl::ModularExponentiateWithDrmDeviceCertKey(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize());
     }
 
-    Result EsService::UnwrapElicenseKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
-        return impl::UnwrapElicenseKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
+    Result EsService::PrepareEsArchiveKey(sf::Out<AccessKey> out_access_key, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod, const sf::InPointerBuffer &label_digest, u32 generation) {
+        return impl::PrepareEsArchiveKey(out_access_key.GetPointer(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize(), label_digest.GetPointer(), label_digest.GetSize(), generation);
     }
 
-    Result EsService::LoadElicenseKey(s32 keyslot, AccessKey access_key) {
-        return impl::LoadElicenseKey(keyslot, this, access_key);
+    Result EsService::LoadPreparedAesKey(s32 keyslot, AccessKey access_key) {
+        return impl::LoadPreparedAesKey(keyslot, this, access_key);
     }
 
 }

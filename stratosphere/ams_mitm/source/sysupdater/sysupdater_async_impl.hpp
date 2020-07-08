@@ -15,7 +15,6 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "sysupdater_i_async_result.hpp"
 #include "sysupdater_thread_allocator.hpp"
 
 namespace ams::mitm::sysupdater {
@@ -59,18 +58,18 @@ namespace ams::mitm::sysupdater {
             }
     };
 
-    class AsyncBase : public IAsyncBase {
+    class AsyncBase {
         public:
             virtual ~AsyncBase() { /* ... */ }
 
             static Result ToAsyncResult(Result result);
 
-            virtual Result Cancel() override final {
+            Result Cancel() {
                 this->CancelImpl();
                 return ResultSuccess();
             }
 
-            virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) override {
+            virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) {
                 *out = {};
                 return ResultSuccess();
             }
@@ -78,29 +77,17 @@ namespace ams::mitm::sysupdater {
             virtual void CancelImpl() = 0;
     };
 
-    class AsyncResultBase : public IAsyncResult {
+    class AsyncResultBase : public AsyncBase {
         public:
             virtual ~AsyncResultBase() { /* ... */ }
 
-            static Result ToAsyncResult(Result result) { return AsyncBase::ToAsyncResult(result); }
-
-            virtual Result Cancel() override final {
-                this->CancelImpl();
-                return ResultSuccess();
-            }
-
-            virtual Result Get() override final {
+            Result Get() {
                 return ToAsyncResult(this->GetImpl());
             }
-
-            virtual Result GetErrorContext(sf::Out<err::ErrorContext> out) override {
-                *out = {};
-                return ResultSuccess();
-            }
         private:
-            virtual void CancelImpl() = 0;
             virtual Result GetImpl() = 0;
     };
+    static_assert(ns::impl::IsIAsyncResult<AsyncResultBase>);
 
     /* NOTE: Based off of ns AsyncPrepareCardUpdateImpl. */
     /* We don't implement the RequestServer::ManagedStop details, as we don't implement stoppable request list. */

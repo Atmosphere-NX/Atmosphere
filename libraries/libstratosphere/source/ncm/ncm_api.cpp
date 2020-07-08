@@ -27,7 +27,7 @@ namespace ams::ncm {
     void Initialize() {
         AMS_ASSERT(g_content_manager == nullptr);
         R_ABORT_UNLESS(ncmInitialize());
-        g_content_manager = std::make_shared<RemoteContentManagerImpl>();
+        g_content_manager = sf::MakeShared<IContentManager, RemoteContentManagerImpl>();
     }
 
     void Finalize() {

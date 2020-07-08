@@ -17,11 +17,11 @@
 
 namespace ams::spl::smc {
 
-    Result SetConfig(SplConfigItem which, const u64 *value, size_t num_qwords) {
+    Result SetConfig(spl::ConfigItem which, const u64 *value, size_t num_qwords) {
         SecmonArgs args;
 
         args.X[0] = static_cast<u64>(FunctionId::SetConfig);
-        args.X[1] = which;
+        args.X[1] = static_cast<u64>(which);
         args.X[2] = 0;
         for (size_t i = 0; i < std::min(size_t(4), num_qwords); i++) {
             args.X[3 + i] = value[i];
@@ -31,11 +31,11 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result GetConfig(u64 *out, size_t num_qwords, SplConfigItem which) {
+    Result GetConfig(u64 *out, size_t num_qwords, spl::ConfigItem which) {
         SecmonArgs args;
 
         args.X[0] = static_cast<u64>(FunctionId::GetConfig);
-        args.X[1] = which;
+        args.X[1] = static_cast<u64>(which);
         svcCallSecureMonitor(&args);
 
         for (size_t i = 0; i < std::min(size_t(4), num_qwords); i++) {
@@ -44,10 +44,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result CheckStatus(Result *out, AsyncOperationKey op) {
+    Result GetResult(Result *out, AsyncOperationKey op) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::CheckStatus);
+        args.X[0] = static_cast<u64>(FunctionId::GetResult);
         args.X[1] = op.value;
         svcCallSecureMonitor(&args);
 
@@ -55,10 +55,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result GetResult(Result *out, void *out_buf, size_t out_buf_size, AsyncOperationKey op) {
+    Result GetResultData(Result *out, void *out_buf, size_t out_buf_size, AsyncOperationKey op) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::GetResult);
+        args.X[0] = static_cast<u64>(FunctionId::GetResultData);
         args.X[1] = op.value;
         args.X[2] = reinterpret_cast<u64>(out_buf);
         args.X[3] = out_buf_size;
@@ -68,10 +68,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result ExpMod(AsyncOperationKey *out_op, const void *base, const void *exp, size_t exp_size, const void *mod) {
+    Result ModularExponentiate(AsyncOperationKey *out_op, const void *base, const void *exp, size_t exp_size, const void *mod) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::ExpMod);
+        args.X[0] = static_cast<u64>(FunctionId::ModularExponentiate);
         args.X[1] = reinterpret_cast<u64>(base);
         args.X[2] = reinterpret_cast<u64>(exp);
         args.X[3] = reinterpret_cast<u64>(mod);
@@ -124,10 +124,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result CryptAes(AsyncOperationKey *out_op, u32 mode, const IvCtr &iv_ctr, u32 dst_addr, u32 src_addr, size_t size) {
+    Result ComputeAes(AsyncOperationKey *out_op, u32 mode, const IvCtr &iv_ctr, u32 dst_addr, u32 src_addr, size_t size) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::CryptAes);
+        args.X[0] = static_cast<u64>(FunctionId::ComputeAes);
         args.X[1] = mode;
         args.X[2] = iv_ctr.data64[0];
         args.X[3] = iv_ctr.data64[1];
@@ -169,10 +169,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result ReEncryptRsaPrivateKey(void *data, size_t size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option) {
+    Result ReencryptDeviceUniqueData(void *data, size_t size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::ReEncryptRsaPrivateKey);
+        args.X[0] = static_cast<u64>(FunctionId::ReencryptDeviceUniqueData);
         args.X[1] = reinterpret_cast<u64>(&access_key_dec);
         args.X[2] = reinterpret_cast<u64>(&access_key_enc);
         args.X[3] = option;
@@ -185,10 +185,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result DecryptOrImportRsaPrivateKey(void *data, size_t size, const AccessKey &access_key, const KeySource &source, DecryptOrImportMode mode) {
+    Result DecryptDeviceUniqueData(void *data, size_t size, const AccessKey &access_key, const KeySource &source, DeviceUniqueDataMode mode) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::DecryptOrImportRsaPrivateKey);
+        args.X[0] = static_cast<u64>(FunctionId::DecryptDeviceUniqueData);
         args.X[1] = access_key.data64[0];
         args.X[2] = access_key.data64[1];
         args.X[3] = static_cast<u32>(mode);
@@ -201,10 +201,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result SecureExpMod(AsyncOperationKey *out_op, const void *base, const void *mod, SecureExpModMode mode) {
+    Result ModularExponentiateWithStorageKey(AsyncOperationKey *out_op, const void *base, const void *mod, ModularExponentiateWithStorageKeyMode mode) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::SecureExpMod);
+        args.X[0] = static_cast<u64>(FunctionId::ModularExponentiateWithStorageKey);
         args.X[1] = reinterpret_cast<u64>(base);
         args.X[2] = reinterpret_cast<u64>(mod);
         args.X[3] = static_cast<u32>(mode);
@@ -214,10 +214,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result UnwrapTitleKey(AsyncOperationKey *out_op, const void *base, const void *mod, const void *label_digest, size_t label_digest_size, u32 option) {
+    Result PrepareEsDeviceUniqueKey(AsyncOperationKey *out_op, const void *base, const void *mod, const void *label_digest, size_t label_digest_size, u32 option) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::UnwrapTitleKey);
+        args.X[0] = static_cast<u64>(FunctionId::PrepareEsDeviceUniqueKey);
         args.X[1] = reinterpret_cast<u64>(base);
         args.X[2] = reinterpret_cast<u64>(mod);
         std::memset(&args.X[3], 0, 4 * sizeof(args.X[3]));
@@ -229,10 +229,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result LoadTitleKey(u32 keyslot, const AccessKey &access_key) {
+    Result LoadPreparedAesKey(u32 keyslot, const AccessKey &access_key) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::LoadTitleKey);
+        args.X[0] = static_cast<u64>(FunctionId::LoadPreparedAesKey);
         args.X[1] = keyslot;
         args.X[2] = access_key.data64[0];
         args.X[3] = access_key.data64[1];
@@ -241,10 +241,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result UnwrapCommonTitleKey(AccessKey *out, const KeySource &source, u32 generation) {
+    Result PrepareCommonEsTitleKey(AccessKey *out, const KeySource &source, u32 generation) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::UnwrapCommonTitleKey);
+        args.X[0] = static_cast<u64>(FunctionId::PrepareCommonEsTitleKey);
         args.X[1] = source.data64[0];
         args.X[2] = source.data64[1];
         args.X[3] = generation;
@@ -257,10 +257,10 @@ namespace ams::spl::smc {
 
 
     /* Deprecated functions. */
-    Result ImportEsKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
+    Result LoadEsDeviceKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::ImportEsKey);
+        args.X[0] = static_cast<u64>(FunctionId::LoadEsDeviceKey);
         args.X[1] = access_key.data64[0];
         args.X[2] = access_key.data64[1];
         args.X[3] = option;
@@ -273,10 +273,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result DecryptRsaPrivateKey(size_t *out_size, void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
+    Result DecryptDeviceUniqueData(size_t *out_size, void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::DecryptRsaPrivateKey);
+        args.X[0] = static_cast<u64>(FunctionId::DecryptDeviceUniqueData);
         args.X[1] = access_key.data64[0];
         args.X[2] = access_key.data64[1];
         args.X[3] = option;
@@ -290,10 +290,10 @@ namespace ams::spl::smc {
         return static_cast<Result>(args.X[0]);
     }
 
-    Result ImportSecureExpModKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
+    Result DecryptAndStoreGcKey(const void *data, size_t size, const AccessKey &access_key, const KeySource &source, u32 option) {
         SecmonArgs args;
 
-        args.X[0] = static_cast<u64>(FunctionId::ImportSecureExpModKey);
+        args.X[0] = static_cast<u64>(FunctionId::DecryptAndStoreGcKey);
         args.X[1] = access_key.data64[0];
         args.X[2] = access_key.data64[1];
         args.X[3] = option;
@@ -345,19 +345,6 @@ namespace ams::spl::smc {
         svcCallSecureMonitor(&args);
 
         *out_value = static_cast<uint32_t>(args.X[1]);
-        return static_cast<Result>(args.X[0]);
-    }
-
-    Result AtmosphereWriteAddress(void *dst, const void *src, size_t size) {
-        AMS_ABORT_UNLESS(size <= sizeof(u64));
-
-        SecmonArgs args;
-        args.X[0] = static_cast<u64>(FunctionId::AtmosphereWriteAddress);
-        args.X[1] = reinterpret_cast<uintptr_t>(dst);
-        __builtin_memcpy(&args.X[1], src, size);
-        args.X[3] = size;
-        svcCallSecureMonitor(&args);
-
         return static_cast<Result>(args.X[0]);
     }
 

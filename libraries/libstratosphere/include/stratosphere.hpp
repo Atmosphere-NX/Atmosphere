@@ -55,6 +55,7 @@
 #include <stratosphere/map.hpp>
 #include <stratosphere/ncm.hpp>
 #include <stratosphere/nim.hpp>
+#include <stratosphere/ns.hpp>
 #include <stratosphere/patcher.hpp>
 #include <stratosphere/pgl.hpp>
 #include <stratosphere/psc.hpp>

@@ -19,11 +19,18 @@
 
 namespace ams::mitm::hid {
 
-    class HidMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                SetSupportedNpadStyleSet = 100,
-            };
+    namespace {
+
+        #define AMS_HID_MITM_INTERFACE_INFO(C, H) \
+            AMS_SF_METHOD_INFO(C, H, 100, Result, SetSupportedNpadStyleSet, (const sf::ClientAppletResourceUserId &client_aruid, u32 style_set))
+
+        AMS_SF_DEFINE_MITM_INTERFACE(IHidMitmInterface, AMS_HID_MITM_INTERFACE_INFO)
+
+    }
+
+    class HidMitmService : public sf::MitmServiceImplBase {
+        public:
+            using MitmServiceImplBase::MitmServiceImplBase;
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* TODO: Remove in Atmosphere 0.10.2. */
@@ -33,14 +40,9 @@ namespace ams::mitm::hid {
                 return client_info.override_status.IsHbl();
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(HidMitmService) { /* ... */ }
-        protected:
             /* Overridden commands. */
             Result SetSupportedNpadStyleSet(const sf::ClientAppletResourceUserId &client_aruid, u32 style_set);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(SetSupportedNpadStyleSet),
-            };
     };
+    static_assert(IsIHidMitmInterface<HidMitmService>);
 
 }

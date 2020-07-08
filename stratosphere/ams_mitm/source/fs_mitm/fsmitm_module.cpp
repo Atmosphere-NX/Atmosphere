@@ -78,7 +78,7 @@ namespace ams::mitm::fs {
 
     void MitmModule::ThreadFunction(void *arg) {
         /* Create fs mitm. */
-        R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<FsMitmService>(MitmServiceName));
+        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<IFsMitmInterface, FsMitmService>(MitmServiceName)));
 
         /* Process for the server. */
         ProcessForServerOnAllThreads();

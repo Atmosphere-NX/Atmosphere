@@ -19,15 +19,16 @@ namespace ams::sf::hipc {
 
     namespace impl {
 
-        class HipcManager : public IServiceObject {
-            private:
-                enum class CommandId {
-                    ConvertCurrentObjectToDomain = 0,
-                    CopyFromCurrentDomain        = 1,
-                    CloneCurrentObject           = 2,
-                    QueryPointerBufferSize       = 3,
-                    CloneCurrentObjectEx         = 4,
-                };
+        #define AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO(C, H)                                                                                 \
+            AMS_SF_METHOD_INFO(C, H, 0, Result, ConvertCurrentObjectToDomain, (ams::sf::Out<ams::sf::cmif::DomainObjectId> out))                     \
+            AMS_SF_METHOD_INFO(C, H, 1, Result, CopyFromCurrentDomain,        (ams::sf::OutMoveHandle out, ams::sf::cmif::DomainObjectId object_id)) \
+            AMS_SF_METHOD_INFO(C, H, 2, Result, CloneCurrentObject,           (ams::sf::OutMoveHandle out))                                          \
+            AMS_SF_METHOD_INFO(C, H, 3, void,   QueryPointerBufferSize,       (ams::sf::Out<u16> out))                                               \
+            AMS_SF_METHOD_INFO(C, H, 4, Result, CloneCurrentObjectEx,         (ams::sf::OutMoveHandle out, u32 tag))
+
+        AMS_SF_DEFINE_INTERFACE(IHipcManager, AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO)
+
+        class HipcManager final {
             private:
                 ServerDomainSessionManager *manager;
                 ServerSession *session;
@@ -150,16 +151,8 @@ namespace ams::sf::hipc {
                 Result CloneCurrentObjectEx(sf::OutMoveHandle out, u32 tag) {
                     return this->CloneCurrentObjectImpl(out.GetHandlePointer(), this->manager->GetSessionManagerByTag(tag));
                 }
-
-            public:
-                DEFINE_SERVICE_DISPATCH_TABLE {
-                    MAKE_SERVICE_COMMAND_META(ConvertCurrentObjectToDomain),
-                    MAKE_SERVICE_COMMAND_META(CopyFromCurrentDomain),
-                    MAKE_SERVICE_COMMAND_META(CloneCurrentObject),
-                    MAKE_SERVICE_COMMAND_META(QueryPointerBufferSize),
-                    MAKE_SERVICE_COMMAND_META(CloneCurrentObjectEx),
-                };
         };
+        static_assert(IsIHipcManager<HipcManager>);
 
     }
 
@@ -168,7 +161,7 @@ namespace ams::sf::hipc {
         /* Note: This is safe, as no additional references to the hipc manager can ever be stored. */
         /* The shared pointer to stack object is definitely gross, though. */
         impl::HipcManager hipc_manager(this, session);
-        return this->DispatchRequest(cmif::ServiceObjectHolder(std::move(ServiceObjectTraits<impl::HipcManager>::SharedPointerHelper::GetEmptyDeleteSharedPointer(&hipc_manager))), session, in_message, out_message);
+        return this->DispatchRequest(cmif::ServiceObjectHolder(sf::GetSharedPointerTo<impl::IHipcManager>(hipc_manager)), session, in_message, out_message);
     }
 
 }

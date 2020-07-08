@@ -114,7 +114,7 @@ namespace ams::sf::cmif {
             explicit constexpr ServiceDispatchTable(Entries... entries) : impl::ServiceDispatchTableImpl<sizeof...(Entries)>(entries...) { /* ... */ }
     };
 
-    #define DEFINE_SERVICE_DISPATCH_TABLE \
+    #define AMS_SF_CMIF_IMPL_DEFINE_SERVICE_DISPATCH_TABLE \
     template<typename ServiceImpl> \
     static constexpr inline ::ams::sf::cmif::ServiceDispatchTable s_CmifServiceDispatchTable
 
@@ -127,23 +127,21 @@ namespace ams::sf::cmif {
         }
     };
 
-    template<typename T>
+    template<typename T> requires sf::IsServiceObject<T>
     struct ServiceDispatchTraits {
-        static_assert(std::is_base_of<sf::IServiceObject, T>::value, "ServiceObjects must derive from sf::IServiceObject");
-
         using ProcessHandlerType = decltype(ServiceDispatchMeta::ProcessHandler);
 
         static constexpr inline auto DispatchTable = T::template s_CmifServiceDispatchTable<T>;
         using DispatchTableType = decltype(DispatchTable);
 
-        static constexpr ProcessHandlerType ProcessHandlerImpl = ServiceObjectTraits<T>::IsMitmServiceObject ? (&impl::ServiceDispatchTableBase::ProcessMessageForMitm<DispatchTableType>)
-                                                                                                             : (&impl::ServiceDispatchTableBase::ProcessMessage<DispatchTableType>);
+        static constexpr ProcessHandlerType ProcessHandlerImpl = sf::IsMitmServiceObject<T> ? (&impl::ServiceDispatchTableBase::ProcessMessageForMitm<DispatchTableType>)
+                                                                                            : (&impl::ServiceDispatchTableBase::ProcessMessage<DispatchTableType>);
 
         static constexpr inline ServiceDispatchMeta Meta{&DispatchTable, ProcessHandlerImpl};
     };
 
     template<typename T>
-    NX_CONSTEXPR const ServiceDispatchMeta *GetServiceDispatchMeta() {
+    constexpr ALWAYS_INLINE const ServiceDispatchMeta *GetServiceDispatchMeta() {
         return &ServiceDispatchTraits<T>::Meta;
     }
 

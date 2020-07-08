@@ -20,19 +20,20 @@ namespace ams::erpt::srv {
 
     class Attachment;
 
-    class AttachmentImpl final : public erpt::sf::IAttachment {
+    class AttachmentImpl final {
         private:
             Attachment *attachment;
         public:
             AttachmentImpl();
             ~AttachmentImpl();
         public:
-            virtual Result Open(const AttachmentId &attachment_id) override final;
-            virtual Result Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer) override final;
-            virtual Result SetFlags(AttachmentFlagSet flags) override final;
-            virtual Result GetFlags(ams::sf::Out<AttachmentFlagSet> out) override final;
-            virtual Result Close() override final;
-            virtual Result GetSize(ams::sf::Out<s64> out) override final;
+            Result Open(const AttachmentId &attachment_id);
+            Result Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer);
+            Result SetFlags(AttachmentFlagSet flags);
+            Result GetFlags(ams::sf::Out<AttachmentFlagSet> out);
+            Result Close();
+            Result GetSize(ams::sf::Out<s64> out);
     };
+    static_assert(erpt::sf::IsIAttachment<AttachmentImpl>);
 
 }

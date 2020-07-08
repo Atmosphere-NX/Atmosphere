@@ -20,19 +20,20 @@ namespace ams::erpt::srv {
 
     class Report;
 
-    class ReportImpl final : public erpt::sf::IReport {
+    class ReportImpl final {
         private:
             Report *report;
         public:
             ReportImpl();
             ~ReportImpl();
         public:
-            virtual Result Open(const ReportId &report_id) override final;
-            virtual Result Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer) override final;
-            virtual Result SetFlags(ReportFlagSet flags) override final;
-            virtual Result GetFlags(ams::sf::Out<ReportFlagSet> out) override final;
-            virtual Result Close() override final;
-            virtual Result GetSize(ams::sf::Out<s64> out) override final;
+            Result Open(const ReportId &report_id);
+            Result Read(ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer);
+            Result SetFlags(ReportFlagSet flags);
+            Result GetFlags(ams::sf::Out<ReportFlagSet> out);
+            Result Close();
+            Result GetSize(ams::sf::Out<s64> out);
     };
+    static_assert(erpt::sf::IsIReport<ReportImpl>);
 
 }

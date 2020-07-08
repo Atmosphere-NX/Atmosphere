@@ -14,22 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include "spl_crypto_service.hpp"
 
-namespace ams::ro {
+namespace ams::spl {
 
-    class DebugMonitorService final : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                GetProcessModuleInfo = 0,
-            };
-        private:
-            /* Actual commands. */
-            Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
+    class DeviceUniqueDataService : public CryptoService {
         public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetProcessModuleInfo),
-            };
+            /* Actual commands. */
+            Result DecryptDeviceUniqueDataDeprecated(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option);
+            Result DecryptDeviceUniqueData(const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source);
     };
+    static_assert(spl::impl::IsIDeviceUniqueDataInterface<DeviceUniqueDataService>);
 
 }

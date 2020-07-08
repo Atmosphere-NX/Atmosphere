@@ -18,39 +18,19 @@
 
 namespace ams::fatal::srv {
 
-    class UserService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                ThrowFatal               = 0,
-                ThrowFatalWithPolicy     = 1,
-                ThrowFatalWithCpuContext = 2,
-            };
-        private:
-            /* Actual commands. */
+    class Service final {
+        public:
             Result ThrowFatal(Result error, const sf::ClientProcessId &client_pid);
             Result ThrowFatalWithPolicy(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy);
             Result ThrowFatalWithCpuContext(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ThrowFatal),
-                MAKE_SERVICE_COMMAND_META(ThrowFatalWithPolicy),
-                MAKE_SERVICE_COMMAND_META(ThrowFatalWithCpuContext),
-            };
     };
+    static_assert(fatal::impl::IsIService<Service>);
 
-    class PrivateService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                GetFatalEvent = 0,
-            };
-        private:
-            /* Actual commands. */
-            Result GetFatalEvent(sf::OutCopyHandle out_h);
+    class PrivateService final {
         public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetFatalEvent),
-            };
+            Result GetFatalEvent(sf::OutCopyHandle out_h);
     };
+    static_assert(fatal::impl::IsIPrivateService<PrivateService>);
 
 }
 

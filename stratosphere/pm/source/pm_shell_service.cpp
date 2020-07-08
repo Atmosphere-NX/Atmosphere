@@ -17,59 +17,63 @@
 #include "pm_shell_service.hpp"
 #include "impl/pm_process_manager.hpp"
 
-namespace ams::pm::shell {
+namespace ams::pm {
 
     /* Overrides for libstratosphere pm::shell commands. */
-    Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
-        return impl::LaunchProgram(out_process_id, loc, launch_flags);
+    namespace shell {
+
+        Result LaunchProgram(os::ProcessId *out_process_id, const ncm::ProgramLocation &loc, u32 launch_flags) {
+            return impl::LaunchProgram(out_process_id, loc, launch_flags);
+        }
+
     }
 
     /* Service command implementations. */
-    Result ShellServiceBase::LaunchProgram(sf::Out<os::ProcessId> out_process_id, const ncm::ProgramLocation &loc, u32 flags) {
+    Result ShellService::LaunchProgram(sf::Out<os::ProcessId> out_process_id, const ncm::ProgramLocation &loc, u32 flags) {
         return pm::shell::LaunchProgram(out_process_id.GetPointer(), loc, flags);
     }
 
-    Result ShellServiceBase::TerminateProcess(os::ProcessId process_id) {
+    Result ShellService::TerminateProcess(os::ProcessId process_id) {
         return impl::TerminateProcess(process_id);
     }
 
-    Result ShellServiceBase::TerminateProgram(ncm::ProgramId program_id) {
+    Result ShellService::TerminateProgram(ncm::ProgramId program_id) {
         return impl::TerminateProgram(program_id);
     }
 
-    void ShellServiceBase::GetProcessEventHandle(sf::OutCopyHandle out) {
+    void ShellService::GetProcessEventHandle(sf::OutCopyHandle out) {
         R_ABORT_UNLESS(impl::GetProcessEventHandle(out.GetHandlePointer()));
     }
 
-    void ShellServiceBase::GetProcessEventInfo(sf::Out<ProcessEventInfo> out) {
+    void ShellService::GetProcessEventInfo(sf::Out<ProcessEventInfo> out) {
         R_ABORT_UNLESS(impl::GetProcessEventInfo(out.GetPointer()));
     }
 
-    Result ShellServiceBase::CleanupProcess(os::ProcessId process_id) {
+    Result ShellService::CleanupProcess(os::ProcessId process_id) {
         return impl::CleanupProcess(process_id);
     }
 
-    Result ShellServiceBase::ClearExceptionOccurred(os::ProcessId process_id) {
+    Result ShellService::ClearExceptionOccurred(os::ProcessId process_id) {
         return impl::ClearExceptionOccurred(process_id);
     }
 
-    void ShellServiceBase::NotifyBootFinished() {
+    void ShellService::NotifyBootFinished() {
         R_ABORT_UNLESS(impl::NotifyBootFinished());
     }
 
-    Result ShellServiceBase::GetApplicationProcessIdForShell(sf::Out<os::ProcessId> out) {
+    Result ShellService::GetApplicationProcessIdForShell(sf::Out<os::ProcessId> out) {
         return impl::GetApplicationProcessId(out.GetPointer());
     }
 
-    Result ShellServiceBase::BoostSystemMemoryResourceLimit(u64 boost_size) {
+    Result ShellService::BoostSystemMemoryResourceLimit(u64 boost_size) {
         return impl::BoostSystemMemoryResourceLimit(boost_size);
     }
 
-    Result ShellServiceBase::BoostApplicationThreadResourceLimit() {
+    Result ShellService::BoostApplicationThreadResourceLimit() {
         return impl::BoostApplicationThreadResourceLimit();
     }
 
-    void ShellServiceBase::GetBootFinishedEventHandle(sf::OutCopyHandle out) {
+    void ShellService::GetBootFinishedEventHandle(sf::OutCopyHandle out) {
         R_ABORT_UNLESS(impl::GetBootFinishedEventHandle(out.GetHandlePointer()));
     }
 

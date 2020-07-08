@@ -22,21 +22,10 @@
 
 namespace ams::pgl::sf {
 
-    class IEventObserver : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                GetProcessEventHandle = 0,
-                GetProcessEventInfo   = 1,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result GetProcessEventHandle(ams::sf::OutCopyHandle out) = 0;
-            virtual Result GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetProcessEventHandle),
-                MAKE_SERVICE_COMMAND_META(GetProcessEventInfo),
-            };
-    };
+    #define AMS_PGL_I_EVENT_OBSERVER_INTERFACE_INFO(C, H)                                                    \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, GetProcessEventHandle, (ams::sf::OutCopyHandle out))             \
+        AMS_SF_METHOD_INFO(C, H, 1, Result, GetProcessEventInfo,   (ams::sf::Out<pm::ProcessEventInfo> out))
+
+    AMS_SF_DEFINE_INTERFACE(IEventObserver, AMS_PGL_I_EVENT_OBSERVER_INTERFACE_INFO);
 
 }

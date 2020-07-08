@@ -22,109 +22,38 @@
 
 namespace ams::ncm {
 
-    class IContentStorage : public sf::IServiceObject {
-        NON_COPYABLE(IContentStorage);
-        NON_MOVEABLE(IContentStorage);
-        protected:
-            enum class CommandId {
-                GeneratePlaceHolderId                     = 0,
-                CreatePlaceHolder                         = 1,
-                DeletePlaceHolder                         = 2,
-                HasPlaceHolder                            = 3,
-                WritePlaceHolder                          = 4,
-                Register                                  = 5,
-                Delete                                    = 6,
-                Has                                       = 7,
-                GetPath                                   = 8,
-                GetPlaceHolderPath                        = 9,
-                CleanupAllPlaceHolder                     = 10,
-                ListPlaceHolder                           = 11,
-                GetContentCount                           = 12,
-                ListContentId                             = 13,
-                GetSizeFromContentId                      = 14,
-                DisableForcibly                           = 15,
-                RevertToPlaceHolder                       = 16,
-                SetPlaceHolderSize                        = 17,
-                ReadContentIdFile                         = 18,
-                GetRightsIdFromPlaceHolderIdDeprecated    = 19,
-                GetRightsIdFromPlaceHolderId              = 19,
-                GetRightsIdFromContentIdDeprecated        = 20,
-                GetRightsIdFromContentId                  = 20,
-                WriteContentForDebug                      = 21,
-                GetFreeSpaceSize                          = 22,
-                GetTotalSpaceSize                         = 23,
-                FlushPlaceHolder                          = 24,
-                GetSizeFromPlaceHolderId                  = 25,
-                RepairInvalidFileAttribute                = 26,
-                GetRightsIdFromPlaceHolderIdWithCache     = 27,
-            };
-        public:
-            IContentStorage() { /* ... */ }
-        public:
-            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) = 0;
-            virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) = 0;
-            virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) = 0;
-            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) = 0;
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) = 0;
-            virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) = 0;
-            virtual Result Delete(ContentId content_id) = 0;
-            virtual Result Has(sf::Out<bool> out, ContentId content_id) = 0;
-            virtual Result GetPath(sf::Out<Path> out, ContentId content_id) = 0;
-            virtual Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) = 0;
-            virtual Result CleanupAllPlaceHolder() = 0;
-            virtual Result ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) = 0;
-            virtual Result GetContentCount(sf::Out<s32> out_count) = 0;
-            virtual Result ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 start_offset) = 0;
-            virtual Result GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) = 0;
-            virtual Result DisableForcibly() = 0;
-            virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) = 0;
-            virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) = 0;
-            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) = 0;
-            virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
-            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
-            virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) = 0;
-            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) = 0;
-            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) = 0;
-            virtual Result GetFreeSpaceSize(sf::Out<s64> out_size) = 0;
-            virtual Result GetTotalSpaceSize(sf::Out<s64> out_size) = 0;
-            virtual Result FlushPlaceHolder() = 0;
-            virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) = 0;
-            virtual Result RepairInvalidFileAttribute() = 0;
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GeneratePlaceHolderId),
-                MAKE_SERVICE_COMMAND_META(CreatePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(DeletePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(HasPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(WritePlaceHolder),
-                MAKE_SERVICE_COMMAND_META(Register),
-                MAKE_SERVICE_COMMAND_META(Delete),
-                MAKE_SERVICE_COMMAND_META(Has),
-                MAKE_SERVICE_COMMAND_META(GetPath),
-                MAKE_SERVICE_COMMAND_META(GetPlaceHolderPath),
-                MAKE_SERVICE_COMMAND_META(CleanupAllPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(ListPlaceHolder),
-                MAKE_SERVICE_COMMAND_META(GeneratePlaceHolderId),
-                MAKE_SERVICE_COMMAND_META(GetContentCount),
-                MAKE_SERVICE_COMMAND_META(ListContentId),
-                MAKE_SERVICE_COMMAND_META(GetSizeFromContentId),
-                MAKE_SERVICE_COMMAND_META(DisableForcibly),
-                MAKE_SERVICE_COMMAND_META(RevertToPlaceHolder,                       hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(SetPlaceHolderSize,                        hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(ReadContentIdFile,                         hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderIdDeprecated,    hos::Version_2_0_0, hos::Version_2_3_0),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderId,              hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromContentIdDeprecated,        hos::Version_2_0_0, hos::Version_2_3_0),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromContentId,                  hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(WriteContentForDebug,                      hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(GetFreeSpaceSize,                          hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(GetTotalSpaceSize,                         hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(FlushPlaceHolder,                          hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(GetSizeFromPlaceHolderId,                  hos::Version_4_0_0),
-                MAKE_SERVICE_COMMAND_META(RepairInvalidFileAttribute,                hos::Version_4_0_0),
-                MAKE_SERVICE_COMMAND_META(GetRightsIdFromPlaceHolderIdWithCache,     hos::Version_8_0_0),
-            };
-    };
+    #define AMS_NCM_I_CONTENT_STORAGE_INTERFACE_INFO(C, H)                                                                                                                                                                     \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, GeneratePlaceHolderId,                  (sf::Out<PlaceHolderId> out))                                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, CreatePlaceHolder,                      (PlaceHolderId placeholder_id, ContentId content_id, s64 size))                                                                           \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, DeletePlaceHolder,                      (PlaceHolderId placeholder_id))                                                                                                           \
+        AMS_SF_METHOD_INFO(C, H,  3, Result, HasPlaceHolder,                         (sf::Out<bool> out, PlaceHolderId placeholder_id))                                                                                        \
+        AMS_SF_METHOD_INFO(C, H,  4, Result, WritePlaceHolder,                       (PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data))                                                                            \
+        AMS_SF_METHOD_INFO(C, H,  5, Result, Register,                               (PlaceHolderId placeholder_id, ContentId content_id))                                                                                     \
+        AMS_SF_METHOD_INFO(C, H,  6, Result, Delete,                                 (ContentId content_id))                                                                                                                   \
+        AMS_SF_METHOD_INFO(C, H,  7, Result, Has,                                    (sf::Out<bool> out, ContentId content_id))                                                                                                \
+        AMS_SF_METHOD_INFO(C, H,  8, Result, GetPath,                                (sf::Out<Path> out, ContentId content_id))                                                                                                \
+        AMS_SF_METHOD_INFO(C, H,  9, Result, GetPlaceHolderPath,                     (sf::Out<Path> out, PlaceHolderId placeholder_id))                                                                                        \
+        AMS_SF_METHOD_INFO(C, H, 10, Result, CleanupAllPlaceHolder,                  ())                                                                                                                                       \
+        AMS_SF_METHOD_INFO(C, H, 11, Result, ListPlaceHolder,                        (sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf))                                                                     \
+        AMS_SF_METHOD_INFO(C, H, 12, Result, GetContentCount,                        (sf::Out<s32> out_count))                                                                                                                 \
+        AMS_SF_METHOD_INFO(C, H, 13, Result, ListContentId,                          (sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 start_offset))                                                       \
+        AMS_SF_METHOD_INFO(C, H, 14, Result, GetSizeFromContentId,                   (sf::Out<s64> out_size, ContentId content_id))                                                                                            \
+        AMS_SF_METHOD_INFO(C, H, 15, Result, DisableForcibly,                        ())                                                                                                                                       \
+        AMS_SF_METHOD_INFO(C, H, 16, Result, RevertToPlaceHolder,                    (PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id),               hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 17, Result, SetPlaceHolderSize,                     (PlaceHolderId placeholder_id, s64 size),                                                         hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 18, Result, ReadContentIdFile,                      (sf::OutBuffer buf, ContentId content_id, s64 offset),                                            hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 19, Result, GetRightsIdFromPlaceHolderIdDeprecated, (sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id),                         hos::Version_2_0_0, hos::Version_2_3_0) \
+        AMS_SF_METHOD_INFO(C, H, 19, Result, GetRightsIdFromPlaceHolderId,           (sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id),                             hos::Version_3_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 20, Result, GetRightsIdFromContentIdDeprecated,     (sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id),                                 hos::Version_2_0_0, hos::Version_2_3_0) \
+        AMS_SF_METHOD_INFO(C, H, 20, Result, GetRightsIdFromContentId,               (sf::Out<ncm::RightsId> out_rights_id, ContentId content_id),                                     hos::Version_3_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 21, Result, WriteContentForDebug,                   (ContentId content_id, s64 offset, sf::InBuffer data),                                            hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 22, Result, GetFreeSpaceSize,                       (sf::Out<s64> out_size),                                                                          hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 23, Result, GetTotalSpaceSize,                      (sf::Out<s64> out_size),                                                                          hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 24, Result, FlushPlaceHolder,                       (),                                                                                               hos::Version_3_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 25, Result, GetSizeFromPlaceHolderId,               (sf::Out<s64> out, PlaceHolderId placeholder_id),                                                 hos::Version_4_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 26, Result, RepairInvalidFileAttribute,             (),                                                                                               hos::Version_4_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 27, Result, GetRightsIdFromPlaceHolderIdWithCache,  (sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id), hos::Version_8_0_0)
+
+    AMS_SF_DEFINE_INTERFACE(IContentStorage, AMS_NCM_I_CONTENT_STORAGE_INTERFACE_INFO)
 
 }

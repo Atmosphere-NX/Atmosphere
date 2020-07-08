@@ -16,4 +16,7 @@
 
 #pragma once
 
-#include "fatal/fatal_types.hpp"
+#include <stratosphere/fatal/fatal_types.hpp>
+
+#include <stratosphere/fatal/impl/fatal_i_service.hpp>
+#include <stratosphere/fatal/impl/fatal_i_private_service.hpp>

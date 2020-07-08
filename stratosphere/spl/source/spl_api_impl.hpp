@@ -22,9 +22,9 @@ namespace ams::spl::impl {
     void Initialize();
 
     /* General. */
-    Result GetConfig(u64 *out, SplConfigItem which);
-    Result ExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *exp, size_t exp_size, const void *mod, size_t mod_size);
-    Result SetConfig(SplConfigItem which, u64 value);
+    Result GetConfig(u64 *out, spl::ConfigItem which);
+    Result ModularExponentiate(void *out, size_t out_size, const void *base, size_t base_size, const void *exp, size_t exp_size, const void *mod, size_t mod_size);
+    Result SetConfig(spl::ConfigItem which, u64 value);
     Result GenerateRandomBytes(void *out, size_t size);
     Result IsDevelopment(bool *out);
     Result SetBootReason(BootReasonValue boot_reason);
@@ -35,39 +35,39 @@ namespace ams::spl::impl {
     Result LoadAesKey(s32 keyslot, const void *owner, const AccessKey &access_key, const KeySource &key_source);
     Result GenerateAesKey(AesKey *out_key, const AccessKey &access_key, const KeySource &key_source);
     Result DecryptAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 option);
-    Result CryptAesCtr(void *dst, size_t dst_size, s32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr);
+    Result ComputeCtr(void *dst, size_t dst_size, s32 keyslot, const void *owner, const void *src, size_t src_size, const IvCtr &iv_ctr);
     Result ComputeCmac(Cmac *out_cmac, s32 keyslot, const void *owner, const void *data, size_t size);
-    Result AllocateAesKeyslot(s32 *out_keyslot, const void *owner);
-    Result FreeAesKeyslot(s32 keyslot, const void *owner);
+    Result AllocateAesKeySlot(s32 *out_keyslot, const void *owner);
+    Result DeallocateAesKeySlot(s32 keyslot, const void *owner);
 
     /* RSA. */
-    Result DecryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+    Result DecryptDeviceUniqueData(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
 
     /* SSL */
-    Result ImportSslKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
-    Result SslExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
+    Result DecryptAndStoreSslClientCertKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
+    Result ModularExponentiateWithSslClientCertKey(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
 
     /* ES */
-    Result ImportEsKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
-    Result UnwrapTitleKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
-    Result UnwrapCommonTitleKey(AccessKey *out_access_key, const KeySource &key_source, u32 generation);
-    Result ImportDrmKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
-    Result DrmExpMod(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
-    Result UnwrapElicenseKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
-    Result LoadElicenseKey(s32 keyslot, const void *owner, const AccessKey &access_key);
+    Result LoadEsDeviceKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+    Result PrepareEsTitleKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
+    Result PrepareCommonEsTitleKey(AccessKey *out_access_key, const KeySource &key_source, u32 generation);
+    Result DecryptAndStoreDrmDeviceCertKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source);
+    Result ModularExponentiateWithDrmDeviceCertKey(void *out, size_t out_size, const void *base, size_t base_size, const void *mod, size_t mod_size);
+    Result PrepareEsArchiveKey(AccessKey *out_access_key, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size, u32 generation);
+    Result LoadPreparedAesKey(s32 keyslot, const void *owner, const AccessKey &access_key);
 
     /* FS */
-    Result ImportLotusKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
-    Result DecryptLotusMessage(u32 *out_size, void *dst, size_t dst_size, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size);
+    Result DecryptAndStoreGcKey(const void *src, size_t src_size, const AccessKey &access_key, const KeySource &key_source, u32 option);
+    Result DecryptGcMessage(u32 *out_size, void *dst, size_t dst_size, const void *base, size_t base_size, const void *mod, size_t mod_size, const void *label_digest, size_t label_digest_size);
     Result GenerateSpecificAesKey(AesKey *out_key, const KeySource &key_source, u32 generation, u32 which);
-    Result LoadTitleKey(s32 keyslot, const void *owner, const AccessKey &access_key);
+    Result LoadPreparedAesKey(s32 keyslot, const void *owner, const AccessKey &access_key);
     Result GetPackage2Hash(void *dst, const size_t size);
 
     /* Manu. */
-    Result ReEncryptRsaPrivateKey(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);
+    Result ReencryptDeviceUniqueData(void *dst, size_t dst_size, const void *src, size_t src_size, const AccessKey &access_key_dec, const KeySource &source_dec, const AccessKey &access_key_enc, const KeySource &source_enc, u32 option);
 
     /* Helper. */
-    Result FreeAesKeyslots(const void *owner);
-    Handle GetAesKeyslotAvailableEventHandle();
+    Result DeallocateAllAesKeySlots(const void *owner);
+    Handle GetAesKeySlotAvailableEventHandle();
 
 }

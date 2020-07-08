@@ -60,6 +60,4 @@ namespace ams::hos {
         Version_Max     = ::ams::TargetFirmware_Max,
     };
 
-
-
 }

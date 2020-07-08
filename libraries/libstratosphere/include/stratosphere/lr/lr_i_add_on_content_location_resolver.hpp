@@ -19,34 +19,14 @@
 
 namespace ams::lr {
 
-    class IAddOnContentLocationResolver : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                ResolveAddOnContentPath                  = 0,
-                RegisterAddOnContentStorageDeprecated    = 1,
-                RegisterAddOnContentStorage              = 1,
-                UnregisterAllAddOnContentPath            = 2,
-                RefreshApplicationAddOnContent           = 3,
-                UnregisterApplicationAddOnContent        = 4,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id) = 0;
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::DataId id, ncm::StorageId storage_id) = 0;
-            virtual Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) = 0;
-            virtual Result UnregisterAllAddOnContentPath() = 0;
-            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids) = 0;
-            virtual Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(ResolveAddOnContentPath,               hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorageDeprecated, hos::Version_2_0_0, hos::Version_8_1_0),
-                MAKE_SERVICE_COMMAND_META(RegisterAddOnContentStorage,           hos::Version_9_0_0),
-                MAKE_SERVICE_COMMAND_META(UnregisterAllAddOnContentPath,         hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(RefreshApplicationAddOnContent,        hos::Version_9_0_0),
-                MAKE_SERVICE_COMMAND_META(UnregisterApplicationAddOnContent,     hos::Version_9_0_0),
-            };
-    };
+    #define AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO(C, H)                                                                                                                                 \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, ResolveAddOnContentPath,               (sf::Out<Path> out, ncm::DataId id),                                            hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterAddOnContentStorageDeprecated, (ncm::DataId id, ncm::StorageId storage_id),                                    hos::Version_2_0_0, hos::Version_8_1_1) \
+        AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterAddOnContentStorage,           (ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id), hos::Version_9_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 2, Result, UnregisterAllAddOnContentPath,         (),                                                                             hos::Version_2_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 3, Result, RefreshApplicationAddOnContent,        (const sf::InArray<ncm::ApplicationId> &ids),                                   hos::Version_9_0_0)                     \
+        AMS_SF_METHOD_INFO(C, H, 4, Result, UnregisterApplicationAddOnContent,     (ncm::ApplicationId id),                                                        hos::Version_9_0_0)
 
+    AMS_SF_DEFINE_INTERFACE(IAddOnContentLocationResolver, AMS_LR_I_ADD_ON_CONTENT_LOCATION_RESOLVER_INTERFACE_INFO)
 
 }

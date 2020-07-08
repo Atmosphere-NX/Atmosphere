@@ -14,20 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "sm_dmnt_service.hpp"
+#include "sm_debug_monitor_service.hpp"
 #include "impl/sm_service_manager.hpp"
 
 namespace ams::sm {
 
-    Result DmntService::AtmosphereGetRecord(sf::Out<ServiceRecord> record, ServiceName service) {
+    Result DebugMonitorService::AtmosphereGetRecord(sf::Out<ServiceRecord> record, ServiceName service) {
         return impl::GetServiceRecord(record.GetPointer(), service);
     }
 
-    void DmntService::AtmosphereListRecords(const sf::OutArray<ServiceRecord> &records, sf::Out<u64> out_count, u64 offset) {
+    void DebugMonitorService::AtmosphereListRecords(const sf::OutArray<ServiceRecord> &records, sf::Out<u64> out_count, u64 offset) {
         R_ABORT_UNLESS(impl::ListServiceRecords(records.GetPointer(), out_count.GetPointer(), offset, records.GetSize()));
     }
 
-    void DmntService::AtmosphereGetRecordSize(sf::Out<u64> record_size) {
+    void DebugMonitorService::AtmosphereGetRecordSize(sf::Out<u64> record_size) {
         record_size.SetValue(sizeof(ServiceRecord));
     }
 

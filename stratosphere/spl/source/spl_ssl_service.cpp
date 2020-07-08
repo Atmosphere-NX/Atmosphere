@@ -19,12 +19,12 @@
 
 namespace ams::spl {
 
-    Result SslService::ImportSslKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
-        return impl::ImportSslKey(src.GetPointer(), src.GetSize(), access_key, key_source);
+    Result SslService::DecryptAndStoreSslClientCertKey(const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source) {
+        return impl::DecryptAndStoreSslClientCertKey(src.GetPointer(), src.GetSize(), access_key, key_source);
     }
 
-    Result SslService::SslExpMod(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod) {
-        return impl::SslExpMod(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize());
+    Result SslService::ModularExponentiateWithSslClientCertKey(const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod) {
+        return impl::ModularExponentiateWithSslClientCertKey(out.GetPointer(), out.GetSize(), base.GetPointer(), base.GetSize(), mod.GetPointer(), mod.GetSize());
     }
 
 }

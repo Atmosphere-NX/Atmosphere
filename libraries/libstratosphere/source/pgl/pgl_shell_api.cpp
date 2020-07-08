@@ -79,7 +79,7 @@ namespace ams::pgl {
         ::PglEventObserver obs;
         R_TRY(::pglGetEventObserver(std::addressof(obs)));
 
-        auto remote_observer = std::make_shared<RemoteEventObserver>(obs);
+        auto remote_observer = ams::sf::MakeShared<pgl::sf::IEventObserver, RemoteEventObserver>(obs);
         AMS_ABORT_UNLESS(remote_observer != nullptr);
 
         *out = pgl::EventObserver(remote_observer);

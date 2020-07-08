@@ -184,7 +184,7 @@ namespace ams::fs {
         /* Get the space size. */
         auto get_size_impl = [&]() -> Result {
             R_UNLESS(sub_path == nullptr || std::strcmp(sub_path, "/") == 0, fs::ResultInvalidMountName());
-            R_TRY(accessor->GetFreeSpaceSize(out, path));
+            R_TRY(accessor->GetFreeSpaceSize(out, "/"));
             return ResultSuccess();
         };
 
@@ -214,7 +214,7 @@ namespace ams::fs {
         /* Get the space size. */
         auto get_size_impl = [&]() -> Result {
             R_UNLESS(sub_path == nullptr || std::strcmp(sub_path, "/") == 0, fs::ResultInvalidMountName());
-            R_TRY(accessor->GetTotalSpaceSize(out, path));
+            R_TRY(accessor->GetTotalSpaceSize(out, "/"));
             return ResultSuccess();
         };
 

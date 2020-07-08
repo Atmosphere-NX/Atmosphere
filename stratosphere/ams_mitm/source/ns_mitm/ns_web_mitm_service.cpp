@@ -37,13 +37,13 @@ namespace ams::mitm::ns {
         return nswebGetRunningApplicationProgramId(this->srv.get(), reinterpret_cast<u64 *>(out.GetPointer()), static_cast<u64>(application_id));
     }
 
-    Result NsWebMitmService::GetDocumentInterface(sf::Out<std::shared_ptr<NsDocumentService>> out) {
+    Result NsWebMitmService::GetDocumentInterface(sf::Out<std::shared_ptr<impl::IDocumentInterface>> out) {
         /* Open a document interface. */
         NsDocumentInterface doc;
         R_TRY(nsGetDocumentInterfaceFwd(this->forward_service.get(), &doc));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&doc.s)};
 
-        out.SetValue(std::make_shared<NsDocumentService>(this->client_info, std::make_unique<NsDocumentInterface>(doc)), target_object_id);
+        out.SetValue(sf::MakeShared<impl::IDocumentInterface, NsDocumentService>(this->client_info, std::make_unique<NsDocumentInterface>(doc)), target_object_id);
         return ResultSuccess();
     }
 

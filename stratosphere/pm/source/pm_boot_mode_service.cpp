@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "pm_boot_mode_service.hpp"
 
-namespace ams::pm::bm {
+namespace ams::pm {
 
     namespace {
 
@@ -26,12 +26,16 @@ namespace ams::pm::bm {
     }
 
     /* Override of weakly linked boot_mode_api functions. */
-    BootMode GetBootMode() {
-        return g_boot_mode;
-    }
+    namespace bm {
 
-    void SetMaintenanceBoot() {
-        g_boot_mode = BootMode::Maintenance;
+        BootMode GetBootMode() {
+            return g_boot_mode;
+        }
+
+        void SetMaintenanceBoot() {
+            g_boot_mode = BootMode::Maintenance;
+        }
+
     }
 
     /* Service command implementations. */

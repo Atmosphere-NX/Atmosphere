@@ -21,7 +21,7 @@
 
 namespace ams::lr {
 
-    class RegisteredLocationResolverImpl : public IRegisteredLocationResolver {
+    class RegisteredLocationResolverImpl {
         private:
             static constexpr size_t MaxRegisteredLocationsDeprecated = 0x10;
             static constexpr size_t MaxRegisteredLocations           = 0x20;
@@ -49,20 +49,21 @@ namespace ams::lr {
             ~RegisteredLocationResolverImpl();
         public:
             /* Actual commands. */
-            virtual Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result UnregisterProgramPath(ncm::ProgramId id) override;
-            virtual Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id) override;
-            virtual Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result UnregisterHtmlDocumentPath(ncm::ProgramId id) override;
-            virtual Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id) override;
-            virtual Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id) override;
-            virtual Result Refresh() override;
-            virtual Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids) override;
+            Result ResolveProgramPath(sf::Out<Path> out, ncm::ProgramId id);
+            Result RegisterProgramPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RegisterProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result UnregisterProgramPath(ncm::ProgramId id);
+            Result RedirectProgramPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RedirectProgramPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result ResolveHtmlDocumentPath(sf::Out<Path> out, ncm::ProgramId id);
+            Result RegisterHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RegisterHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result UnregisterHtmlDocumentPath(ncm::ProgramId id);
+            Result RedirectHtmlDocumentPathDeprecated(const Path &path, ncm::ProgramId id);
+            Result RedirectHtmlDocumentPath(const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id);
+            Result Refresh();
+            Result RefreshExcluding(const sf::InArray<ncm::ProgramId> &ids);
     };
+    static_assert(lr::IsIRegisteredLocationResolver<RegisteredLocationResolverImpl>);
 
 }

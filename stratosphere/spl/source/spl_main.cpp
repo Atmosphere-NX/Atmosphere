@@ -138,18 +138,18 @@ int main(int argc, char **argv)
     spl::impl::Initialize();
 
     /* Create services. */
-    R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::RandomService>(RandomServiceName, RandomMaxSessions));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::IRandomInterface, spl::RandomService>(RandomServiceName, RandomMaxSessions)));
     if (hos::GetVersion() >= hos::Version_4_0_0) {
-        R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::GeneralService>(GeneralServiceName, GeneralMaxSessions));
-        R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::CryptoService>(CryptoServiceName, CryptoMaxSessions));
-        R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::SslService>(SslServiceName, SslMaxSessions));
-        R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::EsService>(EsServiceName, EsMaxSessions));
-        R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::FsService>(FsServiceName, FsMaxSessions));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::IGeneralInterface, spl::GeneralService>(GeneralServiceName, GeneralMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::ICryptoInterface,  spl::CryptoService>(CryptoServiceName, CryptoMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::ISslInterface,     spl::SslService>(SslServiceName, SslMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::IEsInterface,      spl::EsService>(EsServiceName, EsMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::IFsInterface,      spl::FsService>(FsServiceName, FsMaxSessions)));
         if (hos::GetVersion() >= hos::Version_5_0_0) {
-            R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::ManuService>(ManuServiceName, ManuMaxSessions));
+            R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::IManuInterface, spl::ManuService>(ManuServiceName, ManuMaxSessions)));
         }
     } else {
-        R_ABORT_UNLESS(g_server_manager.RegisterServer<spl::DeprecatedService>(DeprecatedServiceName, DeprecatedMaxSessions));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<spl::impl::IDeprecatedGeneralInterface, spl::DeprecatedService>(DeprecatedServiceName, DeprecatedMaxSessions)));
     }
 
     /* Loop forever, servicing our services. */

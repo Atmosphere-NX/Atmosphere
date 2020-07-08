@@ -14,9 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "../../fs/fs_common.hpp"
-#include "../../fs/fs_query_range.hpp"
-#include "../../fssystem/fssystem_utility.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_query_range.hpp>
+#include <stratosphere/fssystem/fssystem_utility.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_istorage.hpp>
 
 namespace ams::fs {
 
@@ -26,17 +27,8 @@ namespace ams::fs {
 
 namespace ams::fssrv::impl {
 
-    class StorageInterfaceAdapter final : public ams::sf::IServiceObject {
+    class StorageInterfaceAdapter final {
         NON_COPYABLE(StorageInterfaceAdapter);
-        public:
-            enum class CommandId {
-                Read         = 0,
-                Write        = 1,
-                Flush        = 2,
-                SetSize      = 3,
-                GetSize      = 4,
-                OperateRange = 5,
-            };
         private:
             /* TODO: Nintendo uses fssystem::AsynchronousAccessStorage here. */
             std::shared_ptr<fs::IStorage> base_storage;
@@ -53,7 +45,7 @@ namespace ams::fssrv::impl {
             ~StorageInterfaceAdapter();
         private:
             std::optional<std::shared_lock<os::ReadWriteLock>> AcquireCacheInvalidationReadLock();
-        private:
+        public:
             /* Command API. */
             Result Read(s64 offset, const ams::sf::OutNonSecureBuffer &buffer, s64 size);
             Result Write(s64 offset, const ams::sf::InNonSecureBuffer &buffer, s64 size);
@@ -61,18 +53,7 @@ namespace ams::fssrv::impl {
             Result SetSize(s64 size);
             Result GetSize(ams::sf::Out<s64> out);
             Result OperateRange(ams::sf::Out<fs::StorageQueryRangeInfo> out, s32 op_id, s64 offset, s64 size);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                /* 1.0.0- */
-                MAKE_SERVICE_COMMAND_META(Read),
-                MAKE_SERVICE_COMMAND_META(Write),
-                MAKE_SERVICE_COMMAND_META(Flush),
-                MAKE_SERVICE_COMMAND_META(SetSize),
-                MAKE_SERVICE_COMMAND_META(GetSize),
-
-                /* 4.0.0- */
-                MAKE_SERVICE_COMMAND_META(OperateRange, hos::Version_4_0_0),
-            };
     };
+    static_assert(fssrv::sf::IsIStorage<StorageInterfaceAdapter>);
 
 }

@@ -23,52 +23,22 @@
 
 namespace ams::pgl::sf {
 
-    class IShellInterface : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                LaunchProgram                         = 0,
-                TerminateProcess                      = 1,
-                LaunchProgramFromHost                 = 2,
-                GetHostContentMetaInfo                = 4,
-                GetApplicationProcessId               = 5,
-                BoostSystemMemoryResourceLimit        = 6,
-                IsProcessTracked                      = 7,
-                EnableApplicationCrashReport          = 8,
-                IsApplicationCrashReportEnabled       = 9,
-                EnableApplicationAllThreadDumpOnCrash = 10,
-                TriggerApplicationSnapShotDumper      = 12,
-                GetShellEventObserver                 = 20,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result LaunchProgram(ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) = 0;
-            virtual Result TerminateProcess(os::ProcessId process_id) = 0;
-            virtual Result LaunchProgramFromHost(ams::sf::Out<os::ProcessId> out, const ams::sf::InBuffer &content_path, u32 pm_flags) = 0;
-            virtual Result GetHostContentMetaInfo(ams::sf::Out<pgl::ContentMetaInfo> out, const ams::sf::InBuffer &content_path) = 0;
-            virtual Result GetApplicationProcessId(ams::sf::Out<os::ProcessId> out) = 0;
-            virtual Result BoostSystemMemoryResourceLimit(u64 size) = 0;
-            virtual Result IsProcessTracked(ams::sf::Out<bool> out, os::ProcessId process_id) = 0;
-            virtual Result EnableApplicationCrashReport(bool enabled) = 0;
-            virtual Result IsApplicationCrashReportEnabled(ams::sf::Out<bool> out) = 0;
-            virtual Result EnableApplicationAllThreadDumpOnCrash(bool enabled) = 0;
-            virtual Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg) = 0;
+    #define AMS_PGL_I_SHELL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                          \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, LaunchProgram,                         (ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags)) \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, TerminateProcess,                      (os::ProcessId process_id))                                                                     \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, LaunchProgramFromHost,                 (ams::sf::Out<os::ProcessId> out, const ams::sf::InBuffer &content_path, u32 pm_flags))         \
+        AMS_SF_METHOD_INFO(C, H,  4, Result, GetHostContentMetaInfo,                (ams::sf::Out<pgl::ContentMetaInfo> out, const ams::sf::InBuffer &content_path))                \
+        AMS_SF_METHOD_INFO(C, H,  5, Result, GetApplicationProcessId,               (ams::sf::Out<os::ProcessId> out))                                                              \
+        AMS_SF_METHOD_INFO(C, H,  6, Result, BoostSystemMemoryResourceLimit,        (u64 size))                                                                                     \
+        AMS_SF_METHOD_INFO(C, H,  7, Result, IsProcessTracked,                      (ams::sf::Out<bool> out, os::ProcessId process_id))                                             \
+        AMS_SF_METHOD_INFO(C, H,  8, Result, EnableApplicationCrashReport,          (bool enabled))                                                                                 \
+        AMS_SF_METHOD_INFO(C, H,  9, Result, IsApplicationCrashReportEnabled,       (ams::sf::Out<bool> out))                                                                       \
+        AMS_SF_METHOD_INFO(C, H, 10, Result, EnableApplicationAllThreadDumpOnCrash, (bool enabled))                                                                                 \
+        AMS_SF_METHOD_INFO(C, H, 12, Result, TriggerApplicationSnapShotDumper,      (SnapShotDumpType dump_type, const ams::sf::InBuffer &arg))                                     \
+        AMS_SF_METHOD_INFO(C, H, 20, Result, GetShellEventObserver,                 (ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out))
 
-            virtual Result GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(LaunchProgram),
-                MAKE_SERVICE_COMMAND_META(TerminateProcess),
-                MAKE_SERVICE_COMMAND_META(LaunchProgramFromHost),
-                MAKE_SERVICE_COMMAND_META(GetHostContentMetaInfo),
-                MAKE_SERVICE_COMMAND_META(GetApplicationProcessId),
-                MAKE_SERVICE_COMMAND_META(BoostSystemMemoryResourceLimit),
-                MAKE_SERVICE_COMMAND_META(IsProcessTracked),
-                MAKE_SERVICE_COMMAND_META(EnableApplicationCrashReport),
-                MAKE_SERVICE_COMMAND_META(IsApplicationCrashReportEnabled),
-                MAKE_SERVICE_COMMAND_META(EnableApplicationAllThreadDumpOnCrash),
-                MAKE_SERVICE_COMMAND_META(TriggerApplicationSnapShotDumper),
-                MAKE_SERVICE_COMMAND_META(GetShellEventObserver),
-            };
-    };
+    AMS_SF_DEFINE_INTERFACE(IShellInterface, AMS_PGL_I_SHELL_INTERFACE_INTERFACE_INFO);
+
+
 
 }

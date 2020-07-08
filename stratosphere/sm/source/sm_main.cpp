@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "sm_user_service.hpp"
 #include "sm_manager_service.hpp"
-#include "sm_dmnt_service.hpp"
+#include "sm_debug_monitor_service.hpp"
 #include "impl/sm_service_manager.hpp"
 
 extern "C" {
@@ -101,14 +101,14 @@ int main(int argc, char **argv)
     {
         Handle sm_h;
         R_ABORT_UNLESS(svcManageNamedPort(&sm_h, "sm:", 0x40));
-        g_server_manager.RegisterServer<sm::UserService>(sm_h);
+        g_server_manager.RegisterServer<sm::impl::IUserInterface, sm::UserService>(sm_h);
     }
 
     /* Create sm:m manually. */
     {
         Handle smm_h;
         R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smm_h, sm::ServiceName::Encode("sm:m"), 1));
-        g_server_manager.RegisterServer<sm::ManagerService>(smm_h);
+        g_server_manager.RegisterServer<sm::impl::IManagerInterface, sm::ManagerService>(smm_h);
     }
 
     /*===== ATMOSPHERE EXTENSION =====*/
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
     {
         Handle smdmnt_h;
         R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smdmnt_h, sm::ServiceName::Encode("sm:dmnt"), 1));
-        g_server_manager.RegisterServer<sm::DmntService>(smdmnt_h);
+        g_server_manager.RegisterServer<sm::impl::IDebugMonitorInterface, sm::DebugMonitorService>(smdmnt_h);
     }
 
     /*================================*/

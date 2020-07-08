@@ -18,21 +18,11 @@
 
 namespace ams::spl {
 
-    class RandomService final : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                GenerateRandomBytes = 0,
-            };
+    class RandomService final {
         public:
-            RandomService() { /* ... */ }
-            virtual ~RandomService() { /* ... */ }
-        private:
             /* Actual commands. */
-            virtual Result GenerateRandomBytes(const sf::OutBuffer &out);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GenerateRandomBytes),
-            };
+            Result GenerateRandomBytes(const sf::OutBuffer &out);
     };
+    static_assert(spl::impl::IsIRandomInterface<RandomService>);
 
 }

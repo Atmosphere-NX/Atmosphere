@@ -66,13 +66,13 @@ namespace ams::pgl::srv {
         this->event.Signal();
     }
 
-    Result EventObserverInterface::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
-        out.SetValue(GetReference(this->observer).GetEvent().GetReadableHandle());
+    Result ShellEventObserver::GetProcessEventHandle(ams::sf::OutCopyHandle out) {
+        out.SetValue(this->GetEvent().GetReadableHandle());
         return ResultSuccess();
     }
 
-    Result EventObserverInterface::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
-        return GetReference(this->observer).PopEventInfo(out.GetPointer());
+    Result ShellEventObserver::GetProcessEventInfo(ams::sf::Out<pm::ProcessEventInfo> out) {
+        return this->PopEventInfo(out.GetPointer());
     }
 
 }

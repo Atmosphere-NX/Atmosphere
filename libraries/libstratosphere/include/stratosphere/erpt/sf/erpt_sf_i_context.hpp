@@ -22,48 +22,20 @@
 
 namespace ams::erpt::sf {
 
-    class IContext : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                SubmitContext                            = 0,
-                CreateReport                             = 1,
-                SetInitialLaunchSettingsCompletionTime   = 2,
-                ClearInitialLaunchSettingsCompletionTime = 3,
-                UpdatePowerOnTime                        = 4,
-                UpdateAwakeTime                          = 5,
-                SubmitMultipleCategoryContext            = 6,
-                UpdateApplicationLaunchTime              = 7,
-                ClearApplicationLaunchTime               = 8,
-                SubmitAttachment                         = 9,
-                CreateReportWithAttachments              = 10,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &str_buffer) = 0;
-            virtual Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &str_buffer, const ams::sf::InBuffer &meta_buffer) = 0;
-            virtual Result SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) = 0;
-            virtual Result ClearInitialLaunchSettingsCompletionTime() = 0;
-            virtual Result UpdatePowerOnTime() = 0;
-            virtual Result UpdateAwakeTime() = 0;
-            virtual Result SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer) = 0;
-            virtual Result UpdateApplicationLaunchTime() = 0;
-            virtual Result ClearApplicationLaunchTime() = 0;
-            virtual Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) = 0;
-            virtual Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &str_buffer, const ams::sf::InBuffer &attachment_ids_buffer) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(SubmitContext),
-                MAKE_SERVICE_COMMAND_META(CreateReport),
-                MAKE_SERVICE_COMMAND_META(SetInitialLaunchSettingsCompletionTime,   hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(ClearInitialLaunchSettingsCompletionTime, hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(UpdatePowerOnTime,                        hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(UpdateAwakeTime,                          hos::Version_3_0_0),
-                MAKE_SERVICE_COMMAND_META(SubmitMultipleCategoryContext,            hos::Version_5_0_0),
-                MAKE_SERVICE_COMMAND_META(UpdateApplicationLaunchTime,              hos::Version_6_0_0),
-                MAKE_SERVICE_COMMAND_META(ClearApplicationLaunchTime,               hos::Version_6_0_0),
-                MAKE_SERVICE_COMMAND_META(SubmitAttachment,                         hos::Version_8_0_0),
-                MAKE_SERVICE_COMMAND_META(CreateReportWithAttachments,              hos::Version_8_0_0),
-            };
-    };
+    #define AMS_ERPT_I_CONTEXT_INTERFACE_INFO(C, H)                                                                                                                                                                                                              \
+        AMS_SF_METHOD_INFO(C, H,  0, Result, SubmitContext,                             (const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &str_buffer))                                                                                             \
+        AMS_SF_METHOD_INFO(C, H,  1, Result, CreateReport,                              (ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &str_buffer, const ams::sf::InBuffer &meta_buffer))                               \
+        AMS_SF_METHOD_INFO(C, H,  2, Result, SetInitialLaunchSettingsCompletionTime,    (const time::SteadyClockTimePoint &time_point),                                                                                                     hos::Version_3_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  3, Result, ClearInitialLaunchSettingsCompletionTime,  (),                                                                                                                                                 hos::Version_3_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  4, Result, UpdatePowerOnTime,                         (),                                                                                                                                                 hos::Version_3_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  5, Result, UpdateAwakeTime,                           (),                                                                                                                                                 hos::Version_3_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  6, Result, SubmitMultipleCategoryContext,             (const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer),                                                               hos::Version_5_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  7, Result, UpdateApplicationLaunchTime,               (),                                                                                                                                                 hos::Version_6_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  8, Result, ClearApplicationLaunchTime,                (),                                                                                                                                                 hos::Version_6_0_0) \
+        AMS_SF_METHOD_INFO(C, H,  9, Result, SubmitAttachment,                          (ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data),                               hos::Version_8_0_0) \
+        AMS_SF_METHOD_INFO(C, H, 10, Result, CreateReportWithAttachments,               (ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &str_buffer, const ams::sf::InBuffer &attachment_ids_buffer), hos::Version_8_0_0)
+
+
+    AMS_SF_DEFINE_INTERFACE(IContext, AMS_ERPT_I_CONTEXT_INTERFACE_INFO)
 
 }

@@ -16,8 +16,12 @@
 
 #pragma once
 
-#include "pm/pm_types.hpp"
-#include "pm/pm_boot_mode_api.hpp"
-#include "pm/pm_info_api.hpp"
-#include "pm/pm_shell_api.hpp"
-#include "pm/pm_dmnt_api.hpp"
+#include <stratosphere/pm/pm_types.hpp>
+#include <stratosphere/pm/pm_boot_mode_api.hpp>
+#include <stratosphere/pm/pm_info_api.hpp>
+#include <stratosphere/pm/pm_shell_api.hpp>
+#include <stratosphere/pm/pm_dmnt_api.hpp>
+#include <stratosphere/pm/impl/pm_boot_mode_interface.hpp>
+#include <stratosphere/pm/impl/pm_debug_monitor_interface.hpp>
+#include <stratosphere/pm/impl/pm_information_interface.hpp>
+#include <stratosphere/pm/impl/pm_shell_interface.hpp>

@@ -66,12 +66,8 @@ namespace ams::pgl {
 
         constinit pgl::srv::ShellInterface g_shell_interface;
 
-        ALWAYS_INLINE std::shared_ptr<pgl::srv::ShellInterface> GetSharedPointerToShellInterface() {
-            return ams::sf::ServiceObjectTraits<pgl::srv::ShellInterface>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_shell_interface));
-        }
-
         void RegisterServiceSession() {
-            R_ABORT_UNLESS(g_server_manager.RegisterServer<pgl::srv::ShellInterface>(ShellServiceName, ShellMaxSessions, GetSharedPointerToShellInterface()));
+            R_ABORT_UNLESS((g_server_manager.RegisterServer<pgl::sf::IShellInterface, pgl::srv::ShellInterface>(ShellServiceName, ShellMaxSessions, ams::sf::GetSharedPointerTo<pgl::sf::IShellInterface>(g_shell_interface))));
         }
 
         void LoopProcess() {

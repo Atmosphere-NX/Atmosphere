@@ -28,13 +28,14 @@ namespace ams::spl {
         R_DEFINE_ERROR_RESULT(SecureMonitorNoAsyncOperation,      4);
         R_DEFINE_ERROR_RESULT(SecureMonitorInvalidAsyncOperation, 5);
         R_DEFINE_ERROR_RESULT(SecureMonitorNotPermitted,          6);
+        R_DEFINE_ERROR_RESULT(SecureMonitorNotInitialized,        7);
 
     R_DEFINE_ERROR_RESULT(InvalidSize,                  100);
     R_DEFINE_ERROR_RESULT(UnknownSecureMonitorError,    101);
     R_DEFINE_ERROR_RESULT(DecryptionFailed,             102);
 
-    R_DEFINE_ERROR_RESULT(OutOfKeyslots,                104);
-    R_DEFINE_ERROR_RESULT(InvalidKeyslot,               105);
+    R_DEFINE_ERROR_RESULT(OutOfKeySlots,                104);
+    R_DEFINE_ERROR_RESULT(InvalidKeySlot,               105);
     R_DEFINE_ERROR_RESULT(BootReasonAlreadySet,         106);
     R_DEFINE_ERROR_RESULT(BootReasonNotSet,             107);
     R_DEFINE_ERROR_RESULT(InvalidArgument,              108);
