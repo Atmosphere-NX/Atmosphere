@@ -125,6 +125,13 @@ namespace ams::sf::impl {
             return static_cast<ImplPointer *>(_this)->NAME(std::forward<Arguments>(args)...);                                       \
         }
 
+    #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER_SHARED_POINTER(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX) \
+        template<typename ...Arguments>                                                                                                    \
+            requires std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)>                             \
+        static RETURN NAME##Invoker (CLASSNAME *_this, Arguments &&... args) {                                                             \
+            return static_cast<ImplSharedPointer *>(_this)->NAME(std::forward<Arguments>(args)...);                                        \
+        }
+
     #define AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL(CLASSNAME, CMD_ID, RETURN, NAME, ARGS, VERSION_MIN, VERSION_MAX)    \
         template<typename ...Arguments>                                                                                     \
             requires (std::same_as<std::tuple<Arguments...>, AMS_SF_IMPL_HELPER_FUNCTION_ARGS(CLASSNAME, NAME)> &&          \
@@ -242,6 +249,29 @@ namespace ams::sf::impl {
                                     CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_COMMAND_POINTER_TABLE_MEMBER)                         \
                                 };                                                                                                          \
                         };                                                                                                                  \
+                                                                                                                                            \
+                        class ImplSharedPointer : public S {                                                                                \
+                            private:                                                                                                        \
+                                std::shared_ptr<T> impl;                                                                                    \
+                            public:                                                                                                         \
+                                constexpr ImplSharedPointer(std::shared_ptr<T> &&t)                                                         \
+                                    : S(std::addressof(CommandPointerTableImpl)), impl(std::move(t))                                        \
+                                {                                                                                                           \
+                                    /* ... */                                                                                               \
+                                }                                                                                                           \
+                                ALWAYS_INLINE T &GetImpl() { return *this->impl; }                                                          \
+                                ALWAYS_INLINE const T &GetImpl() const { return *this->impl; }                                              \
+                            private:                                                                                                        \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_INVOKER_SHARED_POINTER)                         \
+                            public:                                                                                                         \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DECLARE_INTERFACE_FUNCTION_IMPL_PTR)                                       \
+                            private:                                                                                                        \
+                                CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_IMPL_FUNCTION_POINTER_HOLDER)                             \
+                            public:                                                                                                         \
+                                static constexpr CommandPointerTable CommandPointerTableImpl = {                                            \
+                                    CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_INTERFACE_COMMAND_POINTER_TABLE_MEMBER)                         \
+                                };                                                                                                          \
+                        };                                                                                                                  \
                         static_assert(Is##CLASSNAME<ImplHolder>);                                                                           \
                 };                                                                                                                          \
             private:                                                                                                                        \
@@ -252,6 +282,10 @@ namespace ams::sf::impl {
                                                                                                                                             \
                 template<typename T> requires (!std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T>)                                              \
                 using ImplPointer = typename ImplGenerator<CLASSNAME, T>::ImplPointer;                                                      \
+                                                                                                                                            \
+                template<typename T> requires (!std::same_as<CLASSNAME, T>&& Is##CLASSNAME<T> &&                                            \
+                                               std::derived_from<T, std::enable_shared_from_this<T>>)                                       \
+                using ImplSharedPointer = typename ImplGenerator<CLASSNAME, T>::ImplSharedPointer;                                          \
                                                                                                                                             \
                 AMS_SF_CMIF_IMPL_DEFINE_SERVICE_DISPATCH_TABLE {                                                                            \
                     CMD_MACRO(CLASSNAME, AMS_SF_IMPL_DEFINE_CMIF_SERVICE_COMMAND_META_TABLE_ENTRY)                                          \

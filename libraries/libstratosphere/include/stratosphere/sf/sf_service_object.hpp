@@ -50,9 +50,16 @@ namespace ams::sf {
         { T::ShouldMitm(c) } -> std::same_as<bool>;
     };
 
-    template<typename Interface, typename Impl, typename... Arguments> requires std::constructible_from<Impl, Arguments...>
+    template<typename Interface, typename Impl, typename... Arguments>
+        requires std::constructible_from<Impl, Arguments...>
     constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplHolder<Impl>> MakeShared(Arguments &&... args) {
         return std::make_shared<typename Interface::ImplHolder<Impl>>(std::forward<Arguments>(args)...);
+    }
+
+    template<typename Interface, typename Impl, typename... Arguments>
+        requires (std::constructible_from<Impl, Arguments...> && std::derived_from<Impl, std::enable_shared_from_this<Impl>>)
+    constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplSharedPointer<Impl>> MakeShared(Arguments &&... args) {
+        return std::make_shared<typename Interface::ImplSharedPointer<Impl>>(std::make_shared<Impl>(std::forward<Arguments>(args)...));
     }
 
     template<typename Interface, typename Impl>
