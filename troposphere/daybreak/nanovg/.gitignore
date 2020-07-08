@@ -1,3 +1,6 @@
+# deko3d shaders
+*.dksh
+
 # Prerequisites
 *.d
 
@@ -37,9 +40,6 @@
 *.i*86
 *.x86_64
 *.hex
-
-# Deko3d shaders
-*.dksh
 
 # Switch Executables
 *.nso
