@@ -1,12 +1,7 @@
 # Planned Features
 atmosphère has a number of features that are either works-in-progress or planned. Please note that while time-estimates are given, they are loose, and things may be completed sooner or later than advertised.
 
-The following descriptions were last updated on June 29th, 2020.
-
-## system updater homebrew
-* **Description**: A user homebrew making use of the new system updater api, so that users can actually use the new api in practice.
-* **Development Status**: Initial revision complete, pending re-write by Adubbz.
-* **Completion Time**: June-July 2020
+The following descriptions were last updated on July 7th, 2020.
 
 ## ams-on-mariko
 * **Description**: Atmosphere cannot run as-is on Mariko hardware. A large number of changes are needed in many components. Although secure monitor support is complete in exosphere, additional work is needed on the bootloader and stratosphere sides as well. Mariko support will also require further design thought; atmosphere's debugging design heavily relies on reboot-to-payload and (more generally) the ability to perform warmboot bootrom hax at will. This is not possible on Mariko, and will require a new design/software support for whatever solution is chosen.
@@ -53,6 +48,10 @@ The following descriptions were last updated on June 29th, 2020.
 The following features were previously included under the planned features section and are now complete.
 
 Please note that this is not an exhaustive list of features present in atmosphère, and only serves to indicate what from the above has been completed.
+
+## system updater homebrew
+* **Description**: A user homebrew making use of the new system updater api, so that users can actually use the new api in practice.
+* **Completion Time**: July 2020
 
 ## system updater api
 * **Description**: A planned extension api for stratosphere (tenatively `ams:su`), this will provide an interface for homebrew to safely install system upgrades or downgrades. This will allow for much more easily transitioning safely between different versions of the operating system.
