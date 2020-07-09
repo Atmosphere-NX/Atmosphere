@@ -89,7 +89,33 @@ namespace ams::kern {
         if (this->IsLight()) {
             return !this->light_session_list.empty();
         } else {
-            return this->session_list.empty();
+            return !this->session_list.empty();
+        }
+    }
+
+    void KServerPort::EnqueueSession(KServerSession *session) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(!this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Add the session to our queue. */
+        this->session_list.push_back(*session);
+        if (this->session_list.size() == 1) {
+            this->NotifyAvailable();
+        }
+    }
+
+    void KServerPort::EnqueueSession(KLightServerSession *session) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Add the session to our queue. */
+        this->light_session_list.push_back(*session);
+        if (this->light_session_list.size() == 1) {
+            this->NotifyAvailable();
         }
     }
 

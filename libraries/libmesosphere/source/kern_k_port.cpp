@@ -34,11 +34,41 @@ namespace ams::kern {
     }
 
     void KPort::OnClientClosed() {
-        MESOSPHERE_UNIMPLEMENTED();
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock sl;
+
+        if (this->state == State::Normal) {
+            this->state = State::ClientClosed;
+        }
     }
 
     void KPort::OnServerClosed() {
-        MESOSPHERE_UNIMPLEMENTED();
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock sl;
+
+        if (this->state == State::Normal) {
+            this->state = State::ServerClosed;
+        }
+    }
+
+    Result KPort::EnqueueSession(KServerSession *session) {
+        KScopedSchedulerLock sl;
+
+        R_UNLESS(this->state == State::Normal, svc::ResultPortClosed());
+
+        this->server.EnqueueSession(session);
+        return ResultSuccess();
+    }
+
+    Result KPort::EnqueueSession(KLightServerSession *session) {
+        KScopedSchedulerLock sl;
+
+        R_UNLESS(this->state == State::Normal, svc::ResultPortClosed());
+
+        this->server.EnqueueSession(session);
+        return ResultSuccess();
     }
 
 }

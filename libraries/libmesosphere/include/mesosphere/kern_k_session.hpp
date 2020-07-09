@@ -51,12 +51,21 @@ namespace ams::kern {
 
             virtual ~KSession() { /* ... */ }
 
+            void Initialize(KClientPort *client_port, uintptr_t name);
+            virtual void Finalize() override;
+
             virtual bool IsInitialized() const override { return this->initialized; }
             virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->process); }
 
             static void PostDestroy(uintptr_t arg);
 
-            /* TODO: This is a placeholder definition. */
+            void OnServerClosed();
+            void OnClientClosed();
+
+            bool IsServerClosed() const { return this->state != State::Normal; }
+            bool IsClientClosed() const { return this->state != State::Normal; }
+
+            Result OnRequest(KSessionRequest *request) { return this->server.OnRequest(request); }
 
             KClientSession &GetClientSession() { return this->client; }
             KServerSession &GetServerSession() { return this->server; }

@@ -39,6 +39,7 @@ namespace ams::kern {
             constexpr const KSession *GetParent() const { return this->parent; }
 
             /* TODO: More of KClientSession. */
+            void OnServerClosed();
     };
 
 }

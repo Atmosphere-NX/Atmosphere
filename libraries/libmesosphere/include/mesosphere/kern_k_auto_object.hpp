@@ -177,10 +177,12 @@ namespace ams::kern {
             }
     };
 
-    template<typename T>
+    template<typename T> requires std::derived_from<T, KAutoObject>
     class KScopedAutoObject {
-        static_assert(std::is_base_of<KAutoObject, T>::value);
         NON_COPYABLE(KScopedAutoObject);
+        private:
+            template<typename U>
+            friend class KScopedAutoObject;
         private:
             T *obj;
         private:
@@ -202,12 +204,32 @@ namespace ams::kern {
                 this->obj = nullptr;
             }
 
-            constexpr ALWAYS_INLINE KScopedAutoObject(KScopedAutoObject &&rhs) {
-                this->obj = rhs.obj;
-                rhs.obj = nullptr;
+            template<typename U>
+            constexpr ALWAYS_INLINE KScopedAutoObject(KScopedAutoObject<U> &&rhs) {
+                if constexpr (std::same_as<T, U>) {
+                    this->obj = rhs.obj;
+                    rhs.obj = nullptr;
+                } else {
+                    T *derived = rhs.obj->template DynamicCast<T *>();
+                    if (derived == nullptr) {
+                        rhs.obj->Close();
+                    }
+
+                    this->obj = derived;
+                    rhs.obj = nullptr;
+                }
             }
 
-            constexpr ALWAYS_INLINE KScopedAutoObject &operator=(KScopedAutoObject &&rhs) {
+            template<typename U>
+            constexpr ALWAYS_INLINE KScopedAutoObject &operator=(KScopedAutoObject<U> &&rhs) {
+                if constexpr (!std::same_as<T, U>) {
+                    T *derived = rhs.obj->template DynamicCast<T *>();
+                    if (derived == nullptr) {
+                        rhs.obj->Close();
+                    }
+                    rhs.obj = nullptr;
+                }
+
                 rhs.Swap(*this);
                 return *this;
             }

@@ -77,12 +77,47 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result ConnectToNamedPort(ams::svc::Handle *out, KUserPointer<const char *> user_name) {
+            /* Copy the provided name from user memory to kernel memory. */
+            char name[KObjectName::NameLengthMax] = {};
+            R_TRY(user_name.CopyStringTo(name, sizeof(name)));
+
+            /* Validate that name is valid. */
+            R_UNLESS(name[sizeof(name) - 1] == '\x00', svc::ResultOutOfRange());
+
+            MESOSPHERE_LOG("%s: ConnectToNamedPort(%s) was called\n", GetCurrentProcess().GetName(), name);
+
+            /* Get the current handle table. */
+            auto &handle_table = GetCurrentProcess().GetHandleTable();
+
+            /* Find the client port. */
+            auto port = KObjectName::Find<KClientPort>(name);
+            R_UNLESS(port.IsNotNull(), svc::ResultNotFound());
+
+            /* Reserve a handle for the port. */
+            /* NOTE: Nintendo really does write directly to the output handle here. */
+            R_TRY(handle_table.Reserve(out));
+            auto handle_guard = SCOPE_GUARD { handle_table.Unreserve(*out); };
+
+            /* Create a session. */
+            KClientSession *session;
+            R_TRY(port->CreateSession(std::addressof(session)));
+
+            /* Register the session in the table, close the extra reference. */
+            handle_table.Register(*out, session);
+            session->Close();
+
+            /* We succeeded. */
+            handle_guard.Cancel();
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result ConnectToNamedPort64(ams::svc::Handle *out_handle, KUserPointer<const char *> name) {
-        MESOSPHERE_PANIC("Stubbed SvcConnectToNamedPort64 was called.");
+        return ConnectToNamedPort(out_handle, name);
     }
 
     Result CreatePort64(ams::svc::Handle *out_server_handle, ams::svc::Handle *out_client_handle, int32_t max_sessions, bool is_light, ams::svc::Address name) {
@@ -100,7 +135,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result ConnectToNamedPort64From32(ams::svc::Handle *out_handle, KUserPointer<const char *> name) {
-        MESOSPHERE_PANIC("Stubbed SvcConnectToNamedPort64From32 was called.");
+        return ConnectToNamedPort(out_handle, name);
     }
 
     Result CreatePort64From32(ams::svc::Handle *out_server_handle, ams::svc::Handle *out_client_handle, int32_t max_sessions, bool is_light, ams::svc::Address name) {
