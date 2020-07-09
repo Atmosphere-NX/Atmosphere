@@ -439,6 +439,52 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::UnlockMemory(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr, const KPageGroup *pg) {
+        /* Validate basic preconditions. */
+        MESOSPHERE_ASSERT((attr_mask & lock_attr) == lock_attr);
+        MESOSPHERE_ASSERT((attr      & lock_attr) == lock_attr);
+
+        /* Validate the unlock request. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the state. */
+        KMemoryState old_state;
+        KMemoryPermission old_perm;
+        KMemoryAttribute old_attr;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), addr, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
+
+        /* Check the page group. */
+        if (pg != nullptr) {
+            R_UNLESS(this->IsValidPageGroup(*pg, addr, num_pages), svc::ResultInvalidMemoryRegion());
+        }
+
+        /* Decide on new perm and attr. */
+        new_perm = (new_perm != KMemoryPermission_None) ? new_perm : old_perm;
+        KMemoryAttribute new_attr = static_cast<KMemoryAttribute>(old_attr & ~lock_attr);
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* Update permission, if we need to. */
+        if (new_perm != old_perm) {
+            /* We're going to perform an update, so create a helper. */
+            KScopedPageTableUpdater updater(this);
+
+            const KPageProperties properties = { new_perm, false, (old_attr & KMemoryAttribute_Uncached) != 0, false };
+            R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
+        }
+
+        /* Apply the memory block updates. */
+        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr);
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::QueryInfoImpl(KMemoryInfo *out_info, ams::svc::PageInfo *out_page, KProcessAddress address) const {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(out_info != nullptr);
@@ -1086,7 +1132,7 @@ namespace ams::kern {
 
     Result KPageTableBase::MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
         /* Ensure that the page group isn't null. */
-        AMS_ASSERT(out != nullptr);
+        MESOSPHERE_ASSERT(out != nullptr);
 
         /* Make sure that the region we're mapping is valid for the table. */
         const size_t size = num_pages * PageSize;
@@ -1105,6 +1151,15 @@ namespace ams::kern {
         out->Open();
 
         return ResultSuccess();
+    }
+
+    Result KPageTableBase::UnlockForIpcUserBuffer(KProcessAddress address, size_t size) {
+        return this->UnlockMemory(address, size,
+                                  KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
+                                  KMemoryPermission_None, KMemoryPermission_None,
+                                  KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                  KMemoryPermission_UserReadWrite,
+                                  KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked, nullptr);
     }
 
 }

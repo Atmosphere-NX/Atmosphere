@@ -92,6 +92,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MakeAndOpenPageGroup(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
             }
 
+            Result UnlockForIpcUserBuffer(KProcessAddress address, size_t size) {
+                return this->page_table.UnlockForIpcUserBuffer(address, size);
+            }
+
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }
