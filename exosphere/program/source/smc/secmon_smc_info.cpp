@@ -262,6 +262,11 @@ namespace ams::secmon::smc {
                     /* Get whether this unit should allow writing to the calibration partition. */
                     args.r[1] = (GetEmummcConfiguration().IsEmummcActive() || GetSecmonConfiguration().AllowWritingToCalibrationBinarySysmmc());
                     break;
+                case ConfigItem::ExosphereEmummcType:
+                    /* Get what kind of emummc this unit has active. */
+                    /* NOTE: This may return values other than 1 in the future. */
+                    args.r[1] = (GetEmummcConfiguration().IsEmummcActive() ? 1 : 0);
+                    break;
                 default:
                     return SmcResult::InvalidArgument;
             }

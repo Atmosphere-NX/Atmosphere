@@ -221,6 +221,7 @@ namespace ams::spl {
         ExosphereHasRcmBugPatch = 65004,
         ExosphereBlankProdInfo  = 65005,
         ExosphereAllowCalWrites = 65006,
+        ExosphereEmummcType     = 65007,
     };
 
 }
@@ -233,3 +234,4 @@ constexpr inline SplConfigItem SplConfigItem_ExosphereGitCommitHash  = static_ca
 constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch = static_cast<SplConfigItem>(65004);
 constexpr inline SplConfigItem SplConfigItem_ExosphereBlankProdInfo  = static_cast<SplConfigItem>(65005);
 constexpr inline SplConfigItem SplConfigItem_ExosphereAllowCalWrites = static_cast<SplConfigItem>(65006);
+constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType     = static_cast<SplConfigItem>(65007);
