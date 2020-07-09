@@ -26,6 +26,10 @@ namespace dbk {
 
     namespace {
 
+        static constexpr u32 ExosphereApiVersionConfigItem = 65000;
+        static constexpr u32 ExosphereHasRcmBugPatch       = 65004;
+        static constexpr u32 ExosphereEmummcType           = 65007;
+
         u32 g_screen_width;
         u32 g_screen_height;
 
@@ -313,6 +317,132 @@ namespace dbk {
         return m_prev_menu;
     }
 
+    ErrorMenu::ErrorMenu(const char *text, const char *subtext, Result rc) : Menu(nullptr), m_text{}, m_subtext{}, m_result_text{}, m_rc(rc) {
+        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - window_height / 2.0f;
+
+        /* Copy the input text. */
+        strncpy(m_text, text, sizeof(m_text)-1);
+        strncpy(m_subtext, subtext, sizeof(m_subtext)-1);
+
+        /* Copy result text if there is a result. */
+        if (R_FAILED(rc)) {
+            snprintf(m_result_text, sizeof(m_result_text)-1, "Result: 0x%08x", rc);
+        }
+
+        const float button_y = y + TitleGap + SubTextHeight + VerticalGap + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        this->AddButton(ExitButtonId, "Exit", x + HorizontalGap, button_y, ButtonWidth, ButtonHeight);
+        this->SetButtonSelected(ExitButtonId, true);
+    }
+
+    void ErrorMenu::Update(u64 ns) {
+        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+
+        /* Go back if B is pressed. */
+        if (k_down & KEY_B) {
+            g_exit_requested = true;
+            return;
+        }
+
+        /* Take action if a button has been activated. */
+        if (const Button *activated_button = this->GetActivatedButton(); activated_button != nullptr) {
+            switch (activated_button->id) {
+                case ExitButtonId:
+                    g_exit_requested = true;
+                    break;
+            }
+        }
+
+        this->UpdateButtons();
+
+        /* Fallback on selecting the exfat button. */
+        if (const Button *selected_button = this->GetSelectedButton(); k_down && selected_button == nullptr) {
+            this->SetButtonSelected(ExitButtonId, true);
+        }
+    }
+
+    void ErrorMenu::Draw(NVGcontext *vg, u64 ns) {
+        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - window_height / 2.0f;
+
+        DrawWindow(vg, m_text, x, y, WindowWidth, window_height);
+        DrawText(vg, x + HorizontalGap, y + TitleGap, WindowWidth - HorizontalGap * 2.0f, m_subtext);
+
+        /* Draw the result if there is one. */
+        if (R_FAILED(m_rc)) {
+            DrawText(vg, x + HorizontalGap, y + TitleGap + SubTextHeight, WindowWidth - HorizontalGap * 2.0f, m_result_text);
+        }
+
+        this->DrawButtons(vg, ns);
+    }
+
+    WarningMenu::WarningMenu(std::shared_ptr<Menu> prev_menu, std::shared_ptr<Menu> next_menu, const char *text, const char *subtext, Result rc) : Menu(prev_menu), m_next_menu(next_menu), m_text{}, m_subtext{}, m_result_text{}, m_rc(rc) {
+        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - window_height / 2.0f;
+
+        /* Copy the input text. */
+        strncpy(m_text, text, sizeof(m_text)-1);
+        strncpy(m_subtext, subtext, sizeof(m_subtext)-1);
+
+        /* Copy result text if there is a result. */
+        if (R_FAILED(rc)) {
+            snprintf(m_result_text, sizeof(m_result_text)-1, "Result: 0x%08x", rc);
+        }
+
+        const float button_y = y + TitleGap + SubTextHeight + VerticalGap + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        this->AddButton(BackButtonId, "Back", x + HorizontalGap, button_y, ButtonWidth, ButtonHeight);
+        this->AddButton(ContinueButtonId, "Continue", x + HorizontalGap + ButtonWidth + ButtonHorizontalGap, button_y, ButtonWidth, ButtonHeight);
+        this->SetButtonSelected(ContinueButtonId, true);
+    }
+
+    void WarningMenu::Update(u64 ns) {
+        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+
+        /* Go back if B is pressed. */
+        if (k_down & KEY_B) {
+            ReturnToPreviousMenu();
+            return;
+        }
+
+        /* Take action if a button has been activated. */
+        if (const Button *activated_button = this->GetActivatedButton(); activated_button != nullptr) {
+            switch (activated_button->id) {
+                case BackButtonId:
+                    ReturnToPreviousMenu();
+                    return;
+                case ContinueButtonId:
+                    ChangeMenu(m_next_menu);
+                    return;
+            }
+        }
+
+        this->UpdateButtons();
+
+        /* Fallback on selecting the exfat button. */
+        if (const Button *selected_button = this->GetSelectedButton(); k_down && selected_button == nullptr) {
+            this->SetButtonSelected(ContinueButtonId, true);
+        }
+    }
+
+    void WarningMenu::Draw(NVGcontext *vg, u64 ns) {
+        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - window_height / 2.0f;
+
+        DrawWindow(vg, m_text, x, y, WindowWidth, window_height);
+        DrawText(vg, x + HorizontalGap, y + TitleGap, WindowWidth - HorizontalGap * 2.0f, m_subtext);
+
+        /* Draw the result if there is one. */
+        if (R_FAILED(m_rc)) {
+            DrawText(vg, x + HorizontalGap, y + TitleGap + SubTextHeight, WindowWidth - HorizontalGap * 2.0f, m_result_text);
+        }
+
+        this->DrawButtons(vg, ns);
+    }
+
     MainMenu::MainMenu() : Menu(nullptr) {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
@@ -333,11 +463,42 @@ namespace dbk {
         if (const Button *activated_button = this->GetActivatedButton(); activated_button != nullptr) {
             switch (activated_button->id) {
                 case InstallButtonId:
-                    ChangeMenu(std::make_shared<FileMenu>(g_current_menu, "/"));
-                    break;
+                {
+                    const auto file_menu = std::make_shared<FileMenu>(g_current_menu, "/");
+
+                    Result rc = 0;
+                    u64 hardware_type;
+                    u64 has_rcm_bug_patch;
+                    u64 is_emummc;
+
+                    if (R_FAILED(rc = splGetConfig(SplConfigItem_HardwareType, &hardware_type))) {
+                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to get hardware type.", rc));
+                        return;
+                    }
+
+                    if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereHasRcmBugPatch), &has_rcm_bug_patch))) {
+                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to check RCM bug status.", rc));
+                        return;
+                    }
+
+                    if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereEmummcType), &is_emummc))) {
+                        ChangeMenu(std::make_shared<ErrorMenu>("An error has occurred", "Failed to chech emuMMC status.", rc));
+                        return;
+                    }
+
+                    /* Warn if we're working with a patched unit. */
+                    const bool is_erista = hardware_type == 0 || hardware_type == 1;
+                    if (is_erista && has_rcm_bug_patch && !is_emummc) {
+                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, file_menu, "Warning: Patched unit detected", "You may burn fuses or render your switch inoperable."));
+                    } else {
+                        ChangeMenu(file_menu);
+                    }
+
+                    return;
+                }
                 case ExitButtonId:
                     g_exit_requested = true;
-                    break;
+                    return;
             }
         }
 
@@ -737,9 +898,18 @@ namespace dbk {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
-        this->AddButton(Fat32ButtonId, "FAT32", x + ButtonHorizontalInset, y + TitleGap, ButtonWidth, ButtonHeight);
-        this->AddButton(ExFatButtonId, "exFAT", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
-        this->SetButtonSelected(ExFatButtonId, true);
+        this->AddButton(Fat32ButtonId, "Install (FAT32)", x + ButtonHorizontalInset, y + TitleGap, ButtonWidth, ButtonHeight);
+        this->AddButton(ExFatButtonId, "Install (exFAT/FAT32)", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
+
+        /* Set the default selected button based on the user's current install. We aren't particularly concerned if fsIsExFatSupported fails. */
+        bool exfat_supported = false;
+        fsIsExFatSupported(&exfat_supported);
+
+        if (exfat_supported) {
+            this->SetButtonSelected(ExFatButtonId, true);
+        } else {
+            this->SetButtonSelected(Fat32ButtonId, true);
+        }
     }
 
     void ChooseExfatMenu::Update(u64 ns) {
@@ -930,15 +1100,40 @@ namespace dbk {
     }
 
     void InitializeMenu(u32 screen_width, u32 screen_height) {
+        Result rc = 0;
+
         /* Set the screen width and height. */
         g_screen_width = screen_width;
         g_screen_height = screen_height;
 
-        /* Change the current menu to the main menu. */
-        g_current_menu = std::make_shared<MainMenu>();
-
         /* Mark as initialized. */
         g_initialized = true;
+
+        /* Attempt to get the exosphere version. */
+        u64 version;
+        if (R_FAILED(rc = splGetConfig(static_cast<SplConfigItem>(ExosphereApiVersionConfigItem), &version))) {
+            ChangeMenu(std::make_shared<ErrorMenu>("Atmosphere not found", "Daybreak requires Atmosphere to be installed.", rc));
+            return;
+        }
+
+        const u32 version_micro = (version >> 40) & 0xff;
+        const u32 version_minor = (version >> 48) & 0xff;
+        const u32 version_major = (version >> 56) & 0xff;
+
+        /* Validate the exosphere version. */
+        const bool ams_supports_sysupdate_api = version_major >= 0 && version_minor >= 14 && version_micro >= 0;
+        if (!ams_supports_sysupdate_api) {
+            ChangeMenu(std::make_shared<ErrorMenu>("Outdated Atmosphere version", "Daybreak requires Atmosphere 0.14.0 or later.", rc));
+            return;
+        }
+
+        /* Initialize ams:su. */
+        if (R_FAILED(rc = amssuInitialize())) {
+            fatalThrow(rc);
+        }
+
+        /* Change the current menu to the main menu. */
+        g_current_menu = std::make_shared<MainMenu>();
     }
 
     void UpdateMenu(u64 ns) {

@@ -32,6 +32,7 @@ namespace dbk {
     void DrawWindow(NVGcontext *vg, const char *title, float x, float y, float w, float h);
     void DrawButton(NVGcontext *vg, const char *text, float x, float y, float w, float h, ButtonStyle style, u64 ns);
     void DrawTextBackground(NVGcontext *vg, float x, float y, float w, float h);
+    void DrawText(NVGcontext *vg, float x, float y, float w, const char *text);
     void DrawProgressText(NVGcontext *vg, float x, float y, float progress);
     void DrawProgressBar(NVGcontext *vg, float x, float y, float w, float h, float progress);
     void DrawTextBlock(NVGcontext *vg, const char *text, float x, float y, float w, float h);

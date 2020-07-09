@@ -82,6 +82,58 @@ namespace dbk {
             virtual void Draw(NVGcontext *vg, u64 ns) = 0;
     };
 
+    class ErrorMenu : public Menu {
+        private:
+            static constexpr u32 ExitButtonId = 0;
+
+            static constexpr float WindowWidth           = 600.0f;
+            static constexpr float WindowHeight          = 214.0f;
+            static constexpr float TitleGap              = 90.0f;
+            static constexpr float SubTextHeight         = 24.0f;
+            static constexpr float HorizontalGap         = 20.0f;
+            static constexpr float VerticalGap           = 20.0f;
+            static constexpr float ButtonHeight          = 60.0f;
+            static constexpr float ButtonHorizontalGap   = 10.0f;
+            static constexpr float ButtonWidth           = (WindowWidth - HorizontalGap * 2.0f);
+        private:
+            char m_text[0x100];
+            char m_subtext[0x100];
+            char m_result_text[0x20];
+            Result m_rc;
+        public:
+            ErrorMenu(const char *text, const char *subtext, Result rc = 0);
+
+            virtual void Update(u64 ns) override;
+            virtual void Draw(NVGcontext *vg, u64 ns) override;
+    };
+
+    class WarningMenu : public Menu {
+        private:
+            static constexpr u32 BackButtonId     = 0;
+            static constexpr u32 ContinueButtonId = 1;
+
+            static constexpr float WindowWidth           = 600.0f;
+            static constexpr float WindowHeight          = 214.0f;
+            static constexpr float TitleGap              = 90.0f;
+            static constexpr float SubTextHeight         = 24.0f;
+            static constexpr float HorizontalGap         = 20.0f;
+            static constexpr float VerticalGap           = 20.0f;
+            static constexpr float ButtonHeight          = 60.0f;
+            static constexpr float ButtonHorizontalGap   = 10.0f;
+            static constexpr float ButtonWidth           = (WindowWidth - HorizontalGap * 2.0f) / 2.0f - ButtonHorizontalGap;
+        private:
+            std::shared_ptr<Menu> m_next_menu;
+            char m_text[0x100];
+            char m_subtext[0x100];
+            char m_result_text[0x20];
+            Result m_rc;
+        public:
+            WarningMenu(std::shared_ptr<Menu> prev_menu, std::shared_ptr<Menu> next_menu, const char *text, const char *subtext, Result rc = 0);
+
+            virtual void Update(u64 ns) override;
+            virtual void Draw(NVGcontext *vg, u64 ns) override;
+    };
+
     class MainMenu : public Menu {
         private:
             static constexpr u32 InstallButtonId = 0;
@@ -148,8 +200,8 @@ namespace dbk {
             static constexpr float BottomGap             = 20.0f;
             static constexpr float HorizontalGap         = 20.0f;
             static constexpr float TextAreaHeight        = 410.0f;
-            static constexpr float TextHorizontalInset   = 6.0f;
-            static constexpr float TextVerticalInset     = 6.0f;
+            static constexpr float TextHorizontalInset   = 8.0f;
+            static constexpr float TextVerticalInset     = 8.0f;
             static constexpr float ButtonHeight          = 60.0f;
             static constexpr float ButtonHorizontalGap   = 10.0f;
             static constexpr float ButtonWidth           = (WindowWidth - HorizontalGap * 2.0f) / 2.0f - ButtonHorizontalGap;
@@ -211,8 +263,8 @@ namespace dbk {
             static constexpr float ProgressBarHeight     = 30.0f;
             static constexpr float VerticalGap           = 10.0f;
             static constexpr float TextAreaHeight        = 320.0f;
-            static constexpr float TextHorizontalInset   = 6.0f;
-            static constexpr float TextVerticalInset     = 6.0f;
+            static constexpr float TextHorizontalInset   = 8.0f;
+            static constexpr float TextVerticalInset     = 8.0f;
             static constexpr float ButtonHeight          = 60.0f;
             static constexpr float ButtonHorizontalGap   = 10.0f;
             static constexpr float ButtonWidth           = (WindowWidth - HorizontalGap * 2.0f) / 2.0f - ButtonHorizontalGap;
