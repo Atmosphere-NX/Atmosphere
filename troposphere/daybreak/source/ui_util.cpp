@@ -30,9 +30,9 @@ namespace dbk {
             /* Calculate the rgb values for the breathing colour effect. */
             const double t = static_cast<double>(ns) / 1'000'000'000.0d;
             const float d = -0.5 * cos(3.0f*t) + 0.5f;
-            const int r2 = 83 + (float)(144 - 83) * (d * 0.7f + 0.3f);
-            const int g2 = 71 + (float)(185 - 71) * (d * 0.7f + 0.3f);
-            const int b2 = 185 + (float)(217 - 185) * (d * 0.7f + 0.3f);
+            const int r2 = 83 + (float)(128 - 83) * (d * 0.7f + 0.3f);
+            const int g2 = 71 + (float)(126 - 71) * (d * 0.7f + 0.3f);
+            const int b2 = 185 + (float)(230 - 185) * (d * 0.7f + 0.3f);
             return nvgRGB(r2, g2, b2);
         }
 
@@ -135,6 +135,16 @@ namespace dbk {
         nvgFill(vg);
     }
 
+    void DrawText(NVGcontext *vg, float x, float y, float w, const char *text) {
+        nvgFontSize(vg, 20.0f);
+        nvgFontFace(vg, SwitchStandardFont);
+        nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+        nvgFillColor(vg, nvgRGB(0, 0, 0));
+
+        const float tw = nvgTextBounds(vg, 0, 0, text, nullptr, nullptr);
+        nvgText(vg, x + w * 0.5f - tw * 0.5f, y, text, nullptr);
+    }
+
     void DrawProgressText(NVGcontext *vg, float x, float y, float progress) {
         char progress_text[32] = {};
         snprintf(progress_text, sizeof(progress_text)-1, "%d%% complete", static_cast<int>(progress * 100.0f));
@@ -155,7 +165,7 @@ namespace dbk {
 
         /* Draw the progress bar fill. */
         if (progress > 0.0f) {
-            NVGpaint progress_fill_paint = nvgLinearGradient(vg, x, y + 0.5f * h, x + w, y + 0.5f * h, nvgRGB(83, 71, 185), nvgRGB(144, 185, 217));
+            NVGpaint progress_fill_paint = nvgLinearGradient(vg, x, y + 0.5f * h, x + w, y + 0.5f * h, nvgRGB(83, 71, 185), nvgRGB(128, 126, 230));
             nvgBeginPath(vg);
             nvgRoundedRect(vg, x, y, WindowCornerRadius + (w - WindowCornerRadius) * progress, h, WindowCornerRadius);
             nvgFillPaint(vg, progress_fill_paint);
@@ -171,6 +181,7 @@ namespace dbk {
         /* Configure the text. */
         nvgFontSize(vg, 18.0f);
         nvgFontFace(vg, SwitchStandardFont);
+        nvgTextLineHeight(vg, 1.3f);
         nvgTextAlign(vg, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
         nvgFillColor(vg, nvgRGB(0, 0, 0));
 
