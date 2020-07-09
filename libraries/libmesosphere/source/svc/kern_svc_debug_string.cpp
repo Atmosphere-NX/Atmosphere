@@ -21,20 +21,29 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result OutputDebugString(KUserPointer<const char *> debug_str, size_t len) {
+            /* Succeed immediately if there's nothing to output. */
+            R_SUCCEED_IF(len == 0);
 
+            /* Ensure that the data being output is in range. */
+            R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(debug_str.GetUnsafePointer()), len), svc::ResultInvalidCurrentMemory());
+
+            /* Output the string. */
+            return KDebugLog::PrintUserString(debug_str, len);
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result OutputDebugString64(KUserPointer<const char *> debug_str, ams::svc::Size len) {
-        MESOSPHERE_PANIC("Stubbed SvcOutputDebugString64 was called.");
+        return OutputDebugString(debug_str, len);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result OutputDebugString64From32(KUserPointer<const char *> debug_str, ams::svc::Size len) {
-        MESOSPHERE_PANIC("Stubbed SvcOutputDebugString64From32 was called.");
+        return OutputDebugString(debug_str, len);
     }
 
 }

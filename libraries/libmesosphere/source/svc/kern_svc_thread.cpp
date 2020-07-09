@@ -21,7 +21,25 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result GetThreadPriority(int32_t *out_priority, ams::svc::Handle thread_handle) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
 
+            /* Get the thread's priority. */
+            *out_priority = thread->GetPriority();
+            return ResultSuccess();
+        }
+
+        Result GetThreadId(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the thread's id. */
+            *out_thread_id = thread->GetId();
+            return ResultSuccess();
+        }
 
     }
 
@@ -44,7 +62,7 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadPriority64(int32_t *out_priority, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadPriority64 was called.");
+        return GetThreadPriority(out_priority, thread_handle);
     }
 
     Result SetThreadPriority64(ams::svc::Handle thread_handle, int32_t priority) {
@@ -60,7 +78,7 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadId64(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadId64 was called.");
+        return GetThreadId(out_thread_id, thread_handle);
     }
 
     Result GetDebugFutureThreadInfo64(ams::svc::lp64::LastThreadContext *out_context, uint64_t *thread_id, ams::svc::Handle debug_handle, int64_t ns) {
@@ -98,7 +116,7 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadPriority64From32(int32_t *out_priority, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadPriority64From32 was called.");
+        return GetThreadPriority(out_priority, thread_handle);
     }
 
     Result SetThreadPriority64From32(ams::svc::Handle thread_handle, int32_t priority) {
@@ -114,7 +132,7 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadId64From32(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadId64From32 was called.");
+        return GetThreadId(out_thread_id, thread_handle);
     }
 
     Result GetDebugFutureThreadInfo64From32(ams::svc::ilp32::LastThreadContext *out_context, uint64_t *thread_id, ams::svc::Handle debug_handle, int64_t ns) {
