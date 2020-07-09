@@ -29,6 +29,8 @@ namespace ams::kern {
             constexpr KClientSession() : parent() { /* ... */ }
             virtual ~KClientSession() { /* ... */ }
 
+            virtual void Destroy() override;
+
             void Initialize(KSession *parent) {
                 /* Set member variables. */
                 this->parent = parent;

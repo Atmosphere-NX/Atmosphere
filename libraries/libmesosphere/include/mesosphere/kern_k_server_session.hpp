@@ -36,6 +36,8 @@ namespace ams::kern {
             constexpr KServerSession() : parent(), request_list(), current_request(), lock() { /* ... */ }
             virtual ~KServerSession() { /* ... */ }
 
+            virtual void Destroy() override;
+
             void Initialize(KSession *p) { this->parent = p; }
 
             constexpr const KSession *GetParent() const { return this->parent; }

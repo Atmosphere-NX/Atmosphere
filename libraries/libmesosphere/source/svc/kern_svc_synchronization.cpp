@@ -21,14 +21,18 @@ namespace ams::kern::svc {
 
     namespace {
 
-
+        Result CloseHandle(ams::svc::Handle handle) {
+            /* Remove the handle. */
+            R_UNLESS(GetCurrentProcess().GetHandleTable().Remove(handle), svc::ResultInvalidHandle());
+            return ResultSuccess();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result CloseHandle64(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcCloseHandle64 was called.");
+        return CloseHandle(handle);
     }
 
     Result ResetSignal64(ams::svc::Handle handle) {
@@ -50,7 +54,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result CloseHandle64From32(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcCloseHandle64From32 was called.");
+        return CloseHandle(handle);
     }
 
     Result ResetSignal64From32(ams::svc::Handle handle) {

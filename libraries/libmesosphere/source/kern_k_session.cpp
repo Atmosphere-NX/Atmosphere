@@ -21,6 +21,9 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Increment reference count. */
+        /* Because reference count is one on creation, this will result */
+        /* in a reference count of two. Thus, when both server and client are closed */
+        /* this object will be destroyed. */
         this->Open();
 
         /* Create our sub sessions. */

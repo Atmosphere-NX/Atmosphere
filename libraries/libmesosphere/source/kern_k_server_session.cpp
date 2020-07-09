@@ -17,6 +17,16 @@
 
 namespace ams::kern {
 
+    void KServerSession::Destroy() {
+        MESOSPHERE_ASSERT_THIS();
+
+        this->parent->OnServerClosed();
+
+        /* TODO: this->CleanupRequests(); */
+
+        this->parent->Close();
+    }
+
     Result KServerSession::OnRequest(KSessionRequest *request) {
         MESOSPHERE_UNIMPLEMENTED();
     }

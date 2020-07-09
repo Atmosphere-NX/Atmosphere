@@ -17,6 +17,13 @@
 
 namespace ams::kern {
 
+    void KClientSession::Destroy() {
+        MESOSPHERE_ASSERT_THIS();
+
+        this->parent->OnClientClosed();
+        this->parent->Close();
+    }
+
     void KClientSession::OnServerClosed() {
         MESOSPHERE_ASSERT_THIS();
     }
