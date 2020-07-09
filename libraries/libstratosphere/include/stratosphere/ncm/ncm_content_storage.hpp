@@ -145,7 +145,7 @@ namespace ams::ncm {
             Result GetRightsId(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id) {
                 AMS_ASSERT(this->interface != nullptr);
 
-                auto vers = hos::GetVersion();
+                const auto vers = hos::GetVersion();
                 if (vers >= hos::Version_3_0_0) {
                     return this->interface->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id);
                 } else {
@@ -158,7 +158,7 @@ namespace ams::ncm {
             Result GetRightsId(ncm::RightsId *out_rights_id, ContentId content_id) {
                 AMS_ASSERT(this->interface != nullptr);
 
-                auto vers = hos::GetVersion();
+                const auto vers = hos::GetVersion();
                 if (vers >= hos::Version_3_0_0) {
                     return this->interface->GetRightsIdFromContentId(out_rights_id, content_id);
                 } else {
