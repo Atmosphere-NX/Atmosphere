@@ -21,7 +21,7 @@ namespace ams::os::impl {
 
     class WaitableManagerHorizonImpl {
         public:
-            static constexpr size_t MaximumHandleCount = static_cast<size_t>(ArgumentHandleCountMax);
+            static constexpr size_t MaximumHandleCount = static_cast<size_t>(ams::svc::ArgumentHandleCountMax);
         private:
             Handle handle;
         private:
