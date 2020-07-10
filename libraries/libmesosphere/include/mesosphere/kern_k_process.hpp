@@ -192,6 +192,22 @@ namespace ams::kern {
 
             void SetPreemptionState();
 
+            Result SignalToAddress(KProcessAddress address) {
+                return this->cond_var.SignalToAddress(address);
+            }
+
+            Result WaitForAddress(ams::svc::Handle handle, KProcessAddress address, u32 tag) {
+                return this->cond_var.WaitForAddress(handle, address, tag);
+            }
+
+            void SignalConditionVariable(uintptr_t cv_key, int32_t count) {
+                return this->cond_var.Signal(cv_key, count);
+            }
+
+            Result WaitConditionVariable(KProcessAddress address, uintptr_t cv_key, u32 tag, s64 ns) {
+                return this->cond_var.Wait(address, cv_key, tag, ns);
+            }
+
             static void Switch(KProcess *cur_process, KProcess *next_process) {
                 /* Set the current process pointer. */
                 SetCurrentProcess(next_process);

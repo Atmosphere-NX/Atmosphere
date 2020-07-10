@@ -21,7 +21,9 @@ namespace ams::kern::svc {
 
     namespace {
 
-
+        void SignalProcessWideKey(uintptr_t cv_key, int32_t count) {
+            return GetCurrentProcess().SignalConditionVariable(util::AlignDown(cv_key, sizeof(u32)), count);
+        }
 
     }
 
@@ -32,7 +34,7 @@ namespace ams::kern::svc {
     }
 
     void SignalProcessWideKey64(ams::svc::Address cv_key, int32_t count) {
-        MESOSPHERE_PANIC("Stubbed SvcSignalProcessWideKey64 was called.");
+        return SignalProcessWideKey(cv_key, count);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -42,7 +44,7 @@ namespace ams::kern::svc {
     }
 
     void SignalProcessWideKey64From32(ams::svc::Address cv_key, int32_t count) {
-        MESOSPHERE_PANIC("Stubbed SvcSignalProcessWideKey64From32 was called.");
+        return SignalProcessWideKey(cv_key, count);
     }
 
 }

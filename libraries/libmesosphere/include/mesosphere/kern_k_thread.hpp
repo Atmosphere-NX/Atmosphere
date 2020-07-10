@@ -282,6 +282,15 @@ namespace ams::kern {
 
             constexpr uintptr_t GetConditionVariableKey() const { return this->condvar_key; }
 
+            constexpr void SetupForConditionVariableCompare(uintptr_t cv_key, int priority) {
+                this->condvar_key = cv_key;
+                this->priority    = priority;
+            }
+
+            void ClearConditionVariable() {
+                this->cond_var = nullptr;
+            }
+
             constexpr s32 GetIdealCore() const { return this->ideal_core_id; }
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }

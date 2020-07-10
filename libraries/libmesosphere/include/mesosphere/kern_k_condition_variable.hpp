@@ -64,6 +64,8 @@ namespace ams::kern {
 
                 this->tree.insert(*thread);
             }
+        private:
+            KThread *SignalImpl(KThread *thread);
     };
 
 }
