@@ -439,6 +439,67 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::LockMemoryAndOpen(KPageGroup *out_pg, KPhysicalAddress *out_paddr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr) {
+        /* Validate basic preconditions. */
+        MESOSPHERE_ASSERT((attr_mask & lock_attr) == lock_attr);
+        MESOSPHERE_ASSERT((attr      & lock_attr) == lock_attr);
+
+        /* Validate the lock request. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check that the output page group is empty, if it exists. */
+        if (out_pg) {
+            MESOSPHERE_ASSERT(out_pg->GetNumPages() == 0);
+        }
+
+        /* Check the state. */
+        KMemoryState old_state;
+        KMemoryPermission old_perm;
+        KMemoryAttribute old_attr;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), addr, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
+
+        /* Get the physical address, if we're supposed to. */
+        if (out_paddr != nullptr) {
+            MESOSPHERE_ABORT_UNLESS(this->GetPhysicalAddress(out_paddr, addr));
+        }
+
+        /* Make the page group, if we're supposed to. */
+        if (out_pg != nullptr) {
+            R_TRY(this->MakePageGroup(*out_pg, addr, num_pages));
+        }
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* Decide on new perm and attr. */
+        new_perm = (new_perm != KMemoryPermission_None) ? new_perm : old_perm;
+        KMemoryAttribute new_attr = static_cast<KMemoryAttribute>(old_attr | lock_attr);
+
+        /* Update permission, if we need to. */
+        if (new_perm != old_perm) {
+            /* We're going to perform an update, so create a helper. */
+            KScopedPageTableUpdater updater(this);
+
+            const KPageProperties properties = { new_perm, false, (old_attr & KMemoryAttribute_Uncached) != 0, true };
+            R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
+        }
+
+        /* Apply the memory block updates. */
+        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr);
+
+        /* If we have an output group, open. */
+        if (out_pg) {
+            out_pg->Open();
+        }
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::UnlockMemory(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr, const KPageGroup *pg) {
         /* Validate basic preconditions. */
         MESOSPHERE_ASSERT((attr_mask & lock_attr) == lock_attr);
@@ -1211,6 +1272,15 @@ namespace ams::kern {
         out->Open();
 
         return ResultSuccess();
+    }
+
+    Result KPageTableBase::LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
+        return this->LockMemoryAndOpen(nullptr, out, address, size,
+                                        KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
+                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
+                                        KMemoryAttribute_All, KMemoryAttribute_None,
+                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
+                                        KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked);
     }
 
     Result KPageTableBase::UnlockForIpcUserBuffer(KProcessAddress address, size_t size) {

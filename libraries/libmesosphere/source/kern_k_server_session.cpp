@@ -44,16 +44,41 @@ namespace ams::kern {
         this->parent->Close();
     }
 
-    Result KServerSession::OnRequest(KSessionRequest *request) {
-        MESOSPHERE_UNIMPLEMENTED();
-    }
-
     Result KServerSession::ReceiveRequest(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr) {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
     Result KServerSession::SendReply(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr) {
         MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KServerSession::OnRequest(KSessionRequest *request) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Ensure that we can handle new requests. */
+        R_UNLESS(!this->parent->IsServerClosed(), svc::ResultSessionClosed());
+
+        /* If there's no event, this is synchronous, so we should check for thread termination. */
+        if (request->GetEvent() == nullptr) {
+            KThread *thread = request->GetThread();
+            R_UNLESS(!thread->IsTerminationRequested(), svc::ResultTerminationRequested());
+            thread->SetState(KThread::ThreadState_Waiting);
+        }
+
+        /* Get whether we're empty. */
+        const bool was_empty = this->request_list.empty();
+
+        /* Add the request to the list. */
+        request->Open();
+        this->request_list.push_back(*request);
+
+        /* If we were empty, signal. */
+        if (was_empty) {
+            this->NotifyAvailable();
+        }
+
+        return ResultSuccess();
     }
 
     bool KServerSession::IsSignaledImpl() const {

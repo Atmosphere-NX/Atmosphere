@@ -28,4 +28,50 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
     }
 
+    Result KClientSession::SendSyncRequest(uintptr_t address, size_t size) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Create a session request. */
+        KSessionRequest *request = KSessionRequest::Create();
+        R_UNLESS(request != nullptr, svc::ResultOutOfResource());
+        ON_SCOPE_EXIT { request->Close(); };
+
+        /* Initialize the request. */
+        request->Initialize(nullptr, address, size);
+
+        /* Send the request. */
+        {
+            KScopedSchedulerLock sl;
+
+            GetCurrentThread().SetSyncedObject(nullptr, ResultSuccess());
+
+            R_TRY(this->parent->OnRequest(request));
+        }
+
+        /* Get the result. */
+        KSynchronizationObject *dummy;
+        return GetCurrentThread().GetWaitResult(std::addressof(dummy));
+    }
+
+    Result KClientSession::SendAsyncRequest(KWritableEvent *event, uintptr_t address, size_t size) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Create a session request. */
+        KSessionRequest *request = KSessionRequest::Create();
+        R_UNLESS(request != nullptr, svc::ResultOutOfResource());
+        ON_SCOPE_EXIT { request->Close(); };
+
+        /* Initialize the request. */
+        request->Initialize(event, address, size);
+
+        /* Send the request. */
+        {
+            KScopedSchedulerLock sl;
+
+            R_TRY(this->parent->OnRequest(request));
+        }
+
+        return ResultSuccess();
+    }
+
 }

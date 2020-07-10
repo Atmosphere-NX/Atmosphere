@@ -21,6 +21,19 @@ namespace ams::kern::svc {
 
     namespace {
 
+        ALWAYS_INLINE Result SendSyncRequestImpl(uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
+            /* Get the client session. */
+            KScopedAutoObject session = GetCurrentProcess().GetHandleTable().GetObject<KClientSession>(session_handle);
+            R_UNLESS(session.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the parent, and persist a reference to it until we're done. */
+            KScopedAutoObject parent = session->GetParent();
+            MESOSPHERE_ASSERT(parent.IsNotNull());
+
+            /* Send the request. */
+            return session->SendSyncRequest(message, buffer_size);
+        }
+
         ALWAYS_INLINE Result ReplyAndReceiveImpl(int32_t *out_index, uintptr_t message, size_t buffer_size, KPhysicalAddress message_paddr, KSynchronizationObject **objs, int32_t num_objects, ams::svc::Handle reply_target, int64_t timeout_ns) {
             /* Reply to the target, if one is specified. */
             if (reply_target != ams::svc::InvalidHandle) {
@@ -102,6 +115,35 @@ namespace ams::kern::svc {
             return ReplyAndReceiveImpl(out_index, message, buffer_size, message_paddr, objs, num_handles, reply_target, timeout_ns);
         }
 
+        ALWAYS_INLINE Result SendSyncRequest(ams::svc::Handle session_handle) {
+            return SendSyncRequestImpl(0, 0, session_handle);
+        }
+
+        ALWAYS_INLINE Result SendSyncRequestWithUserBuffer(uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
+            /* Validate that the message buffer is page aligned and does not overflow. */
+            R_UNLESS(util::IsAligned(message, PageSize),     svc::ResultInvalidAddress());
+            R_UNLESS(buffer_size > 0,                        svc::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(buffer_size, PageSize), svc::ResultInvalidSize());
+            R_UNLESS(message < message + buffer_size,        svc::ResultInvalidCurrentMemory());
+
+            /* Get the process page table. */
+            auto &page_table = GetCurrentProcess().GetPageTable();
+
+            /* Lock the mesage buffer. */
+            R_TRY(page_table.LockForIpcUserBuffer(nullptr, message, buffer_size));
+
+            /* Ensure that even if we fail, we unlock the message buffer when done. */
+            auto unlock_guard = SCOPE_GUARD { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+
+            /* Send the request. */
+            MESOSPHERE_ASSERT(message != 0);
+            R_TRY(SendSyncRequestImpl(message, buffer_size, session_handle));
+
+            /* We sent the request successfully, so cancel our guard and check the unlock result. */
+            unlock_guard.Cancel();
+            return page_table.UnlockForIpcUserBuffer(message, buffer_size);
+        }
+
         ALWAYS_INLINE Result ReplyAndReceive(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
             return ReplyAndReceiveImpl(out_index, 0, 0, Null<KPhysicalAddress>, handles, num_handles, reply_target, timeout_ns);
         }
@@ -111,11 +153,11 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SendSyncRequest64(ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendSyncRequest64 was called.");
+        return SendSyncRequest(session_handle);
     }
 
     Result SendSyncRequestWithUserBuffer64(ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendSyncRequestWithUserBuffer64 was called.");
+        return SendSyncRequestWithUserBuffer(message_buffer, message_buffer_size, session_handle);
     }
 
     Result SendAsyncRequestWithUserBuffer64(ams::svc::Handle *out_event_handle, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
@@ -133,11 +175,11 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result SendSyncRequest64From32(ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendSyncRequest64From32 was called.");
+        return SendSyncRequest(session_handle);
     }
 
     Result SendSyncRequestWithUserBuffer64From32(ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendSyncRequestWithUserBuffer64From32 was called.");
+        return SendSyncRequestWithUserBuffer(message_buffer, message_buffer_size, session_handle);
     }
 
     Result SendAsyncRequestWithUserBuffer64From32(ams::svc::Handle *out_event_handle, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
