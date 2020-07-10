@@ -283,6 +283,27 @@ namespace ams::kern {
             return ResultSuccess();
         }
 
+        constexpr ALWAYS_INLINE Result GetMapAliasTestStateAndAttributeMask(u32 &out_state, u32 &out_attr_mask, KMemoryState state) {
+            switch (state) {
+                case KMemoryState_Ipc:
+                    out_state     = KMemoryState_FlagCanUseIpc;
+                    out_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                    break;
+                case KMemoryState_NonSecureIpc:
+                    out_state     = KMemoryState_FlagCanUseNonSecureIpc;
+                    out_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                    break;
+                case KMemoryState_NonDeviceIpc:
+                    out_state     = KMemoryState_FlagCanUseNonDeviceIpc;
+                    out_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                    break;
+                default:
+                    return svc::ResultInvalidCombination();
+            }
+
+            return ResultSuccess();
+        }
+
         ALWAYS_INLINE void CleanupSpecialData(KProcess &dst_process, u32 *dst_msg_ptr, size_t dst_buffer_size) {
             /* Parse the message. */
             const ipc::MessageBuffer dst_msg(dst_msg_ptr, dst_buffer_size);
@@ -650,11 +671,83 @@ namespace ams::kern {
         }
 
         ALWAYS_INLINE Result ProcessSendMessageReceiveMapping(KProcessPageTable &dst_page_table, KProcessAddress client_address, KProcessAddress server_address, size_t size, KMemoryState src_state) {
-            MESOSPHERE_UNIMPLEMENTED();
+            /* If the size is zero, there's nothing to process. */
+            R_SUCCEED_IF(size == 0);
+
+            /* Get the memory state and attribute mask to test. */
+            u32 test_state;
+            u32 test_attr_mask;
+            R_TRY(GetMapAliasTestStateAndAttributeMask(test_state, test_attr_mask, src_state));
+
+            /* Determine buffer extents. */
+            KProcessAddress aligned_dst_start = util::AlignDown(GetInteger(client_address), PageSize);
+            KProcessAddress aligned_dst_end   = util::AlignUp(GetInteger(client_address) + size, PageSize);
+            KProcessAddress mapping_dst_start = util::AlignUp(GetInteger(client_address), PageSize);
+            KProcessAddress mapping_dst_end   = util::AlignDown(GetInteger(client_address) + size, PageSize);
+
+            KProcessAddress mapping_src_end   = util::AlignDown(GetInteger(server_address) + size, PageSize);
+
+            /* If the start of the buffer is unaligned, handle that. */
+            if (aligned_dst_start != mapping_dst_start) {
+                MESOSPHERE_ASSERT(client_address < mapping_dst_start);
+                const size_t copy_size = std::min<size_t>(size, mapping_dst_start - client_address);
+                R_TRY(dst_page_table.CopyMemoryFromUserToLinear(client_address, copy_size,
+                                                                test_state, test_state,
+                                                                KMemoryPermission_UserReadWrite,
+                                                                test_attr_mask, KMemoryAttribute_None,
+                                                                server_address));
+            }
+
+            /* If the end of the buffer is unaligned, handle that. */
+            if (mapping_dst_end < aligned_dst_end && (aligned_dst_start == mapping_dst_start || aligned_dst_start < mapping_dst_end)) {
+                const size_t copy_size = client_address + size - mapping_dst_end;
+                R_TRY(dst_page_table.CopyMemoryFromUserToLinear(mapping_dst_end, copy_size,
+                                                                test_state, test_state,
+                                                                KMemoryPermission_UserReadWrite,
+                                                                test_attr_mask, KMemoryAttribute_None,
+                                                                mapping_src_end));
+            }
+
+            return ResultSuccess();
         }
 
         ALWAYS_INLINE Result ProcessSendMessagePointerDescriptors(int &offset, int &pointer_key, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, const ReceiveList &dst_recv_list, bool dst_user) {
-            MESOSPHERE_UNIMPLEMENTED();
+            /* Get the offset at the start of processing. */
+            const int cur_offset = offset;
+
+            /* Get the pointer desc. */
+            ipc::MessageBuffer::PointerDescriptor src_desc(src_msg, cur_offset);
+            offset += ipc::MessageBuffer::PointerDescriptor::GetDataSize() / sizeof(u32);
+
+            /* Extract address/size. */
+            const uintptr_t src_pointer = src_desc.GetAddress();
+            const size_t recv_size      = src_desc.GetSize();
+            uintptr_t recv_pointer      = 0;
+
+            /* Process the buffer, if it has a size. */
+            if (recv_size > 0) {
+                /* If using indexing, set index. */
+                if (dst_recv_list.IsIndex()) {
+                    pointer_key = src_desc.GetIndex();
+                }
+
+                /* Get the buffer. */
+                dst_recv_list.GetBuffer(recv_pointer, recv_size, pointer_key);
+                R_UNLESS(recv_pointer != 0, svc::ResultOutOfResource());
+
+                /* Perform the pointer data copy. */
+                const KMemoryPermission dst_perm = static_cast<KMemoryPermission>(dst_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite : KMemoryPermission_UserReadWrite);
+                R_TRY(dst_page_table.CopyMemoryFromUserToLinear(recv_pointer, recv_size,
+                                                                KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                dst_perm,
+                                                                KMemoryAttribute_Uncached, KMemoryAttribute_None,
+                                                                src_pointer));
+            }
+
+            /* Set the output descriptor. */
+            dst_msg.Set(cur_offset, ipc::MessageBuffer::PointerDescriptor(reinterpret_cast<void *>(recv_pointer), recv_size, src_desc.GetIndex()));
+
+            return ResultSuccess();
         }
 
         ALWAYS_INLINE Result SendMessage(uintptr_t src_message_buffer, size_t src_buffer_size, KPhysicalAddress src_message_paddr, KThread &dst_thread, uintptr_t dst_message_buffer, size_t dst_buffer_size, KServerSession *session, KSessionRequest *request) {
