@@ -53,6 +53,7 @@ namespace ams::kern {
             void OnClientClosed();
         private:
             bool IsSignaledImpl() const;
+            void CleanupRequests();
     };
 
 }

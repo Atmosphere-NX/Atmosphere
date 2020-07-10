@@ -62,17 +62,65 @@ namespace ams::kern {
                     void Initialize() { /* ... */ }
                     void Finalize();
 
-                    size_t GetSendCount() const { return this->num_send; }
-                    size_t GetReceiveCount() const { return this->num_recv; }
-                    size_t GetExchangeCount() const { return this->num_exch; }
+                    constexpr size_t GetSendCount() const { return this->num_send; }
+                    constexpr size_t GetReceiveCount() const { return this->num_recv; }
+                    constexpr size_t GetExchangeCount() const { return this->num_exch; }
 
                     Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
                     Result PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
                     Result PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
 
-                    /* TODO: More functionality. */
+                    constexpr KProcessAddress GetSendClientAddress(size_t i) const { return GetSendMapping(i).GetClientAddress(); }
+                    constexpr KProcessAddress GetSendServerAddress(size_t i) const { return GetSendMapping(i).GetServerAddress(); }
+                    constexpr size_t          GetSendSize(size_t i)          const { return GetSendMapping(i).GetSize(); }
+                    constexpr KMemoryState    GetSendMemoryState(size_t i)   const { return GetSendMapping(i).GetMemoryState(); }
+
+                    constexpr KProcessAddress GetReceiveClientAddress(size_t i) const { return GetReceiveMapping(i).GetClientAddress(); }
+                    constexpr KProcessAddress GetReceiveServerAddress(size_t i) const { return GetReceiveMapping(i).GetServerAddress(); }
+                    constexpr size_t          GetReceiveSize(size_t i)          const { return GetReceiveMapping(i).GetSize(); }
+                    constexpr KMemoryState    GetReceiveMemoryState(size_t i)   const { return GetReceiveMapping(i).GetMemoryState(); }
+
+                    constexpr KProcessAddress GetExchangeClientAddress(size_t i) const { return GetExchangeMapping(i).GetClientAddress(); }
+                    constexpr KProcessAddress GetExchangeServerAddress(size_t i) const { return GetExchangeMapping(i).GetServerAddress(); }
+                    constexpr size_t          GetExchangeSize(size_t i)          const { return GetExchangeMapping(i).GetSize(); }
+                    constexpr KMemoryState    GetExchangeMemoryState(size_t i)   const { return GetExchangeMapping(i).GetMemoryState(); }
                 private:
                     Result PushMap(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state, size_t index);
+
+                    constexpr const Mapping &GetSendMapping(size_t i) const {
+                        MESOSPHERE_ASSERT(i < this->num_send);
+
+                        const size_t index = i;
+                        if (index < NumStaticMappings) {
+                            return this->static_mappings[index];
+                        } else {
+                            return this->mappings[index - NumStaticMappings];
+                        }
+                    }
+
+                    constexpr const Mapping &GetReceiveMapping(size_t i) const {
+                        MESOSPHERE_ASSERT(i < this->num_recv);
+
+                        const size_t index = this->num_send + i;
+                        if (index < NumStaticMappings) {
+                            return this->static_mappings[index];
+                        } else {
+                            return this->mappings[index - NumStaticMappings];
+                        }
+                    }
+
+                    constexpr const Mapping &GetExchangeMapping(size_t i) const {
+                        MESOSPHERE_ASSERT(i < this->num_exch);
+
+                        const size_t index = this->num_send + this->num_recv + i;
+                        if (index < NumStaticMappings) {
+                            return this->static_mappings[index];
+                        } else {
+                            return this->mappings[index - NumStaticMappings];
+                        }
+                    }
+
+
             };
         private:
             SessionMappings mappings;
@@ -128,23 +176,23 @@ namespace ams::kern {
 
             static void PostDestroy(uintptr_t arg) { /* ... */ }
 
-            KThread *GetThread() const { return this->thread; }
-            KWritableEvent *GetEvent() const { return this->event; }
-            uintptr_t GetAddress() const { return this->address; }
-            size_t GetSize() const { return this->size; }
-            KProcess *GetServerProcess() const { return this->server; }
+            constexpr KThread *GetThread() const { return this->thread; }
+            constexpr KWritableEvent *GetEvent() const { return this->event; }
+            constexpr uintptr_t GetAddress() const { return this->address; }
+            constexpr size_t GetSize() const { return this->size; }
+            constexpr KProcess *GetServerProcess() const { return this->server; }
 
             void SetServerProcess(KProcess *process) {
                 this->server = process;
                 this->server->Open();
             }
 
-            void ClearThread() { this->thread = nullptr; }
-            void ClearEvent()  { this->event  = nullptr; }
+            constexpr void ClearThread() { this->thread = nullptr; }
+            constexpr void ClearEvent()  { this->event  = nullptr; }
 
-            size_t GetSendCount() const { return this->mappings.GetSendCount(); }
-            size_t GetReceiveCount() const { return this->mappings.GetReceiveCount(); }
-            size_t GetExchangeCount() const { return this->mappings.GetExchangeCount(); }
+            constexpr size_t GetSendCount() const { return this->mappings.GetSendCount(); }
+            constexpr size_t GetReceiveCount() const { return this->mappings.GetReceiveCount(); }
+            constexpr size_t GetExchangeCount() const { return this->mappings.GetExchangeCount(); }
 
             Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
                 return this->mappings.PushSend(client, server, size, state);
@@ -158,7 +206,20 @@ namespace ams::kern {
                 return this->mappings.PushExchange(client, server, size, state);
             }
 
-            /* TODO: More functionality. */
+            constexpr KProcessAddress GetSendClientAddress(size_t i) const { return this->mappings.GetSendClientAddress(i); }
+            constexpr KProcessAddress GetSendServerAddress(size_t i) const { return this->mappings.GetSendServerAddress(i); }
+            constexpr size_t          GetSendSize(size_t i)          const { return this->mappings.GetSendSize(i);          }
+            constexpr KMemoryState    GetSendMemoryState(size_t i)   const { return this->mappings.GetSendMemoryState(i);   }
+
+            constexpr KProcessAddress GetReceiveClientAddress(size_t i) const { return this->mappings.GetReceiveClientAddress(i); }
+            constexpr KProcessAddress GetReceiveServerAddress(size_t i) const { return this->mappings.GetReceiveServerAddress(i); }
+            constexpr size_t          GetReceiveSize(size_t i)          const { return this->mappings.GetReceiveSize(i);          }
+            constexpr KMemoryState    GetReceiveMemoryState(size_t i)   const { return this->mappings.GetReceiveMemoryState(i);   }
+
+            constexpr KProcessAddress GetExchangeClientAddress(size_t i) const { return this->mappings.GetExchangeClientAddress(i);  }
+            constexpr KProcessAddress GetExchangeServerAddress(size_t i) const { return this->mappings.GetExchangeServerAddress(i);  }
+            constexpr size_t          GetExchangeSize(size_t i)          const { return this->mappings.GetExchangeSize(i);           }
+            constexpr KMemoryState    GetExchangeMemoryState(size_t i)   const { return this->mappings.GetExchangeMemoryState(i);    }
     };
 
 }

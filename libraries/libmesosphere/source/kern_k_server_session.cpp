@@ -251,6 +251,96 @@ namespace ams::kern {
             return ResultSuccess();
         }
 
+
+        ALWAYS_INLINE void CleanupSpecialData(KProcess &dst_process, u32 *dst_msg_ptr, size_t dst_buffer_size) {
+            /* Parse the message. */
+            const ipc::MessageBuffer dst_msg(dst_msg_ptr, dst_buffer_size);
+            const ipc::MessageBuffer::MessageHeader dst_header(dst_msg);
+            const ipc::MessageBuffer::SpecialHeader dst_special_header(dst_msg, dst_header);
+
+            /* Check that the size is big enough. */
+            if (ipc::MessageBuffer::GetMessageBufferSize(dst_header, dst_special_header) > dst_buffer_size) {
+                return;
+            }
+
+            /* Set the special header. */
+            int offset = dst_msg.Set(dst_special_header);
+
+            /* Clear the process id, if needed. */
+            if (dst_special_header.GetHasProcessId()) {
+                offset = dst_msg.SetProcessId(offset, 0);
+            }
+
+            /* Clear handles, as relevant. */
+            auto &dst_handle_table = dst_process.GetHandleTable();
+            for (auto i = 0; i < (dst_special_header.GetCopyHandleCount() + dst_special_header.GetMoveHandleCount()); ++i) {
+                const ams::svc::Handle handle = dst_msg.GetHandle(offset);
+
+                if (handle != ams::svc::InvalidHandle) {
+                    dst_handle_table.Remove(handle);
+                }
+
+                offset = dst_msg.SetHandle(offset, ams::svc::InvalidHandle);
+            }
+        }
+
+        ALWAYS_INLINE Result CleanupServerMap(KSessionRequest *request, KProcess *server_process) {
+            /* If there's no server process, there's nothing to clean up. */
+            R_SUCCEED_IF(server_process == nullptr);
+
+            /* Get the page table. */
+            auto &server_page_table = server_process->GetPageTable();
+
+            /* Cleanup Send mappings. */
+            for (size_t i = 0; i < request->GetSendCount(); ++i) {
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i), server_process));
+            }
+
+            /* Cleanup Receive mappings. */
+            for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i), server_process));
+            }
+
+            /* Cleanup Exchange mappings. */
+            for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
+                R_TRY(server_page_table.CleanupForIpcServer(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i), server_process));
+            }
+
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result CleanupClientMap(KSessionRequest *request, KProcessPageTable *client_page_table) {
+            /* If there's no client page table, there's nothing to clean up. */
+            R_SUCCEED_IF(client_page_table == nullptr);
+
+            /* Cleanup Send mappings. */
+            for (size_t i = 0; i < request->GetSendCount(); ++i) {
+                R_TRY(client_page_table->CleanupForIpcClient(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i)));
+            }
+
+            /* Cleanup Receive mappings. */
+            for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
+                R_TRY(client_page_table->CleanupForIpcClient(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
+            }
+
+            /* Cleanup Exchange mappings. */
+            for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
+                R_TRY(client_page_table->CleanupForIpcClient(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
+            }
+
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result CleanupMap(KSessionRequest *request, KProcess *server_process, KProcessPageTable *client_page_table) {
+            /* Cleanup the server map. */
+            R_TRY(CleanupServerMap(request, server_process));
+
+            /* Cleanup the client map. */
+            R_TRY(CleanupClientMap(request, client_page_table));
+
+            return ResultSuccess();
+        }
+
         ALWAYS_INLINE Result ProcessReceiveMessageMapAliasDescriptors(int &offset, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, KSessionRequest *request, KMemoryPermission perm, bool send) {
             /* Get the offset at the start of processing. */
             const int cur_offset = offset;
@@ -380,8 +470,21 @@ namespace ams::kern {
 
             /* Set up a guard to make sure that we end up in a clean state on error. */
             auto cleanup_guard = SCOPE_GUARD {
-                /* TODO */
-                MESOSPHERE_UNIMPLEMENTED();
+                /* Cleanup mappings. */
+                CleanupMap(request, std::addressof(dst_process), std::addressof(src_page_table));
+
+                /* Cleanup special data. */
+                if (src_header.GetHasSpecialHeader()) {
+                    CleanupSpecialData(dst_process, dst_msg_ptr, dst_buffer_size);
+                }
+
+                /* Cleanup the header if the receive list isn't broken. */
+                if (!recv_list_broken) {
+                    dst_msg.Set(dst_header);
+                    if (dst_header.GetHasSpecialHeader()) {
+                        dst_msg.Set(dst_special_header);
+                    }
+                }
             };
 
             /* Process any special data. */
@@ -464,12 +567,6 @@ namespace ams::kern {
                 }
             }
 
-            /* TODO: Remove this when done, as these variables will be used by unimplemented stuff above. */
-            static_cast<void>(dst_page_table);
-            static_cast<void>(dst_user);
-            static_cast<void>(src_user);
-            static_cast<void>(pointer_key);
-
             /* We succeeded! */
             cleanup_guard.Cancel();
             return ResultSuccess();
@@ -495,7 +592,7 @@ namespace ams::kern {
 
         this->parent->OnServerClosed();
 
-        /* TODO: this->CleanupRequests(); */
+        this->CleanupRequests();
 
         this->parent->Close();
     }
@@ -543,8 +640,57 @@ namespace ams::kern {
 
         /* Handle cleanup on receive failure. */
         if (R_FAILED(result)) {
-            /* TODO */
-            MESOSPHERE_UNIMPLEMENTED();
+            /* Cache the result to return it to the client. */
+            const Result result_for_client = result;
+
+            /* Clear the current request. */
+            {
+                KScopedSchedulerLock sl;
+                MESOSPHERE_ASSERT(this->current_request == request);
+                this->current_request = nullptr;
+                if (!this->request_list.empty()) {
+                    this->NotifyAvailable();
+                }
+            }
+
+            /* Reply to the client. */
+            {
+                /* After we reply, close our reference to the request. */
+                ON_SCOPE_EXIT { request->Close(); };
+
+                /* Get the event to check whether the request is async. */
+                if (KWritableEvent *event = request->GetEvent(); event != nullptr) {
+                    /* The client sent an async request. */
+                    KProcess *client = client_thread->GetOwnerProcess();
+                    auto &client_pt  = client->GetPageTable();
+
+                    /* Send the async result. */
+                    if (R_FAILED(result_for_client)) {
+                        ReplyAsyncError(client, client_message, client_buffer_size, result_for_client);
+                    }
+
+                    /* Unlock the client buffer. */
+                    /* NOTE: Nintendo does not check the result of this. */
+                    client_pt.UnlockForIpcUserBuffer(client_message, client_buffer_size);
+
+                    /* Signal the event. */
+                    event->Signal();
+                } else {
+                    /* Set the thread as runnable. */
+                    KScopedSchedulerLock sl;
+                    if (client_thread->GetState() == KThread::ThreadState_Waiting) {
+                        client_thread->SetSyncedObject(nullptr, result_for_client);
+                        client_thread->SetState(KThread::ThreadState_Runnable);
+                    }
+                }
+            }
+
+            /* Set the server result. */
+            if (recv_list_broken) {
+                return svc::ResultReceiveListBroken();
+            } else {
+                return svc::ResultNotFound();
+            }
         }
 
         return result;
@@ -601,6 +747,74 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         return this->IsSignaledImpl();
+    }
+
+    void KServerSession::CleanupRequests() {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedLightLock lk(this->lock);
+
+        /* Clean up any pending requests. */
+        while (true) {
+            /* Get the next request. */
+            KSessionRequest *request = nullptr;
+            {
+                KScopedSchedulerLock sl;
+
+                if (this->current_request) {
+                    /* Choose the current request if we have one. */
+                    request = this->current_request;
+                    this->current_request = nullptr;
+                } else if (!this->request_list.empty()) {
+                    /* Pop the request from the front of the list. */
+                    request = std::addressof(this->request_list.front());
+                    this->request_list.pop_front();
+                }
+            }
+
+            /* If there's no request, we're done. */
+            if (request == nullptr) {
+                break;
+            }
+
+            /* Close a reference to the request once it's cleaned up. */
+            ON_SCOPE_EXIT { request->Close(); };
+
+            /* Extract relevant information from the request. */
+            const uintptr_t client_message  = request->GetAddress();
+            const size_t client_buffer_size = request->GetSize();
+            KThread *client_thread          = request->GetThread();
+            KWritableEvent *event           = request->GetEvent();
+
+            KProcess *server_process             = request->GetServerProcess();
+            KProcess *client_process             = (client_thread != nullptr) ? client_thread->GetOwnerProcess() : nullptr;
+            KProcessPageTable *client_page_table = (client_process != nullptr) ? std::addressof(client_process->GetPageTable()) : nullptr;
+
+            /* Cleanup the mappings. */
+            Result result = CleanupMap(request, server_process, client_page_table);
+
+            /* If there's a client thread, update it. */
+            if (client_thread != nullptr) {
+                if (event != nullptr) {
+                    /* We need to reply async. */
+                    ReplyAsyncError(client_process, client_message, client_buffer_size, (R_SUCCEEDED(result) ? svc::ResultSessionClosed() : result));
+
+                    /* Unlock the client buffer. */
+                    /* NOTE: Nintendo does not check the result of this. */
+                    client_page_table->UnlockForIpcUserBuffer(client_message, client_buffer_size);
+
+                    /* Signal the event. */
+                    event->Signal();
+                } else {
+                    /* Set the thread as runnable. */
+                    KScopedSchedulerLock sl;
+                    if (client_thread->GetState() == KThread::ThreadState_Waiting) {
+                        client_thread->SetSyncedObject(nullptr, (R_SUCCEEDED(result) ? svc::ResultSessionClosed() : result));
+                        client_thread->SetState(KThread::ThreadState_Runnable);
+                    }
+                }
+            }
+        }
     }
 
     void KServerSession::OnClientClosed() {
@@ -677,7 +891,7 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT(request->GetExchangeCount() == 0);
 
                 /* Get the process and page table. */
-                KProcess *client_process = thread->GetOwner();
+                KProcess *client_process = thread->GetOwnerProcess();
                 auto &client_pt = client_process->GetPageTable();
 
                 /* Reply to the request. */
