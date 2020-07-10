@@ -123,8 +123,22 @@ namespace ams::kern {
 
             /* Copy the process ID. */
             if (src_special_header.GetHasProcessId()) {
-                /* TODO: Atmosphere mitm extension support. */
-                offset = dst_msg.SetProcessId(offset, src_process.GetId());
+                /* NOTE: Atmosphere extends the official kernel here to enable the mitm api. */
+                /* If building the kernel without this support, just set the following to false. */
+                constexpr bool EnableProcessIdPassthroughForAtmosphere = true;
+
+                if constexpr (EnableProcessIdPassthroughForAtmosphere) {
+                    constexpr u64 PassthroughProcessIdMask  = UINT64_C(0xFFFF000000000000);
+                    constexpr u64 PassthroughProcessIdValue = UINT64_C(0xFFFE000000000000);
+                    static_assert((PassthroughProcessIdMask & PassthroughProcessIdValue) == PassthroughProcessIdValue);
+
+                    const u64 src_process_id_value = src_msg.GetProcessId(offset);
+                    const bool is_passthrough = (src_process_id_value & PassthroughProcessIdMask) == PassthroughProcessIdValue;
+
+                    offset = dst_msg.SetProcessId(offset, is_passthrough ? (src_process_id_value & ~PassthroughProcessIdMask) : src_process.GetId());
+                } else {
+                    offset = dst_msg.SetProcessId(offset, src_process.GetId());
+                }
             }
 
             /* Prepare to process handles. */
