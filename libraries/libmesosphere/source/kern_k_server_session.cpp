@@ -25,6 +25,8 @@ namespace ams::kern {
 
     namespace {
 
+        constexpr inline size_t PointerTransferBufferAlignment = 0x10;
+
         class ReceiveList {
             private:
                 u32 data[ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountMax * ipc::MessageBuffer::ReceiveListEntry::GetDataSize() / sizeof(u32)];
@@ -57,6 +59,60 @@ namespace ams::kern {
 
                 constexpr bool IsIndex() const {
                     return this->recv_list_count > ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset;
+                }
+
+                void GetBuffer(uintptr_t &out, size_t size, int &key) const {
+                    switch (this->recv_list_count) {
+                        case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_None:
+                            {
+                                out = 0;
+                            }
+                            break;
+                        case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer:
+                            {
+                                const uintptr_t buf = util::AlignUp(this->msg_buffer_end, PointerTransferBufferAlignment);
+
+                                if ((buf < buf + size) && (buf + size <= this->msg_buffer_space_end)) {
+                                    out = buf;
+                                    key = buf + size - this->msg_buffer_end;
+                                } else {
+                                    out = 0;
+                                }
+                            }
+                            break;
+                        case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToSingleBuffer:
+                            {
+                                const ipc::MessageBuffer::ReceiveListEntry entry(this->data[0], this->data[1]);
+                                const uintptr_t buf = util::AlignUp(entry.GetAddress() + key, PointerTransferBufferAlignment);
+
+                                const uintptr_t entry_addr = entry.GetAddress();
+                                const size_t entry_size    = entry.GetSize();
+
+                                if ((buf < buf + size) && (entry_addr < entry_addr + entry_size) && (buf + size <= entry_addr + entry_size)) {
+                                    out = buf;
+                                    key = buf + size - entry_addr;
+                                } else {
+                                    out = 0;
+                                }
+                            }
+                            break;
+                        default:
+                            {
+                                if (key < this->recv_list_count - ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset) {
+                                    const ipc::MessageBuffer::ReceiveListEntry entry(this->data[2 * key + 0], this->data[2 * key + 1]);
+
+                                    const uintptr_t entry_addr = entry.GetAddress();
+                                    const size_t entry_size    = entry.GetSize();
+
+                                    if ((entry_addr < entry_addr + entry_size) && (entry_size >= size)) {
+                                        out = entry_addr;
+                                    }
+                                } else {
+                                    out = 0;
+                                }
+                            }
+                            break;
+                    }
                 }
         };
 
@@ -134,6 +190,54 @@ namespace ams::kern {
             }
 
             return result;
+        }
+
+        ALWAYS_INLINE Result ProcessReceiveMessagePointerDescriptors(int &offset, int &pointer_key, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, const ReceiveList &dst_recv_list, bool dst_user) {
+            /* Get the offset at the start of processing. */
+            const int cur_offset = offset;
+
+            /* Get the pointer desc. */
+            ipc::MessageBuffer::PointerDescriptor src_desc(src_msg, cur_offset);
+            offset += ipc::MessageBuffer::PointerDescriptor::GetDataSize() / sizeof(u32);
+
+            /* Extract address/size. */
+            const uintptr_t src_pointer = src_desc.GetAddress();
+            const size_t recv_size      = src_desc.GetSize();
+            uintptr_t recv_pointer      = 0;
+
+            /* There's nothing to do if there's no size. */
+            if (recv_size > 0) {
+                /* If using indexing, set index. */
+                if (dst_recv_list.IsIndex()) {
+                    pointer_key = src_desc.GetIndex();
+                }
+
+                /* Get the buffer. */
+                dst_recv_list.GetBuffer(recv_pointer, recv_size, pointer_key);
+                R_UNLESS(recv_pointer != 0, svc::ResultOutOfResource());
+
+                /* Perform the pointer data copy. */
+                if (dst_user) {
+                    R_TRY(src_page_table.CopyMemoryFromLinearToLinearWithoutCheckDestination(dst_page_table, recv_pointer, recv_size,
+                                                                                             KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                                             static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
+                                                                                             KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                                                                             src_pointer,
+                                                                                             KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                                             KMemoryPermission_UserRead,
+                                                                                             KMemoryAttribute_Uncached, KMemoryAttribute_None));
+                } else {
+                    R_TRY(src_page_table.CopyMemoryFromLinearToUser(recv_pointer, recv_size, src_pointer,
+                                                                    KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                    KMemoryPermission_UserRead,
+                                                                    KMemoryAttribute_Uncached, KMemoryAttribute_None));
+                }
+            }
+
+            /* Set the output descriptor. */
+            dst_msg.Set(cur_offset, ipc::MessageBuffer::PointerDescriptor(reinterpret_cast<void *>(recv_pointer), recv_size, src_desc.GetIndex()));
+
+            return ResultSuccess();
         }
 
         ALWAYS_INLINE Result ReceiveMessage(bool &recv_list_broken, uintptr_t dst_message_buffer, size_t dst_buffer_size, KPhysicalAddress dst_message_paddr, KThread &src_thread, uintptr_t src_message_buffer, size_t src_buffer_size, KServerSession *session, KSessionRequest *request) {
@@ -233,7 +337,10 @@ namespace ams::kern {
 
             /* Process any pointer buffers. */
             for (auto i = 0; i < src_header.GetPointerCount(); ++i) {
-                MESOSPHERE_UNIMPLEMENTED();
+                /* After we process, make sure we track whether the receive list is broken. */
+                ON_SCOPE_EXIT { if (offset > dst_recv_list_idx) { recv_list_broken = true; } };
+
+                R_TRY(ProcessReceiveMessagePointerDescriptors(offset, pointer_key, dst_page_table, src_page_table, dst_msg, src_msg, dst_recv_list, dst_user && dst_header.GetReceiveListCount() == ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer));
             }
 
             /* Process any map alias buffers. */
@@ -271,7 +378,7 @@ namespace ams::kern {
                     if (fast_size < raw_size) {
                         R_TRY(src_page_table.CopyMemoryFromLinearToLinear(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
                                                                           KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_UserRead),
+                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
                                                                           KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
                                                                           src_message_buffer + max_fast_size,
                                                                           KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,

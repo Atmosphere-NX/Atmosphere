@@ -351,7 +351,7 @@ namespace ams::svc::ipc {
 
                     ALWAYS_INLINE ReceiveListEntry(u32 a, u32 b) : data{util::BitPack32{a}, util::BitPack32{b}} { /* ... */ }
 
-                    constexpr ALWAYS_INLINE uintptr_t GetAddress() {
+                    constexpr ALWAYS_INLINE uintptr_t GetAddress() const {
                         const u64 address = (static_cast<u64>(this->data[1].Get<AddressHigh>()) << AddressLow::Count) | this->data[0].Get<AddressLow>();
                         return address;
                     }
