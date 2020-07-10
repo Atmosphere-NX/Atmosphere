@@ -128,6 +128,11 @@ namespace ams::kern {
             size_t GetSize() const { return this->size; }
             KProcess *GetServerProcess() const { return this->server; }
 
+            void SetServerProcess(KProcess *process) {
+                this->server = process;
+                this->server->Open();
+            }
+
             void ClearThread() { this->thread = nullptr; }
             void ClearEvent()  { this->event  = nullptr; }
 

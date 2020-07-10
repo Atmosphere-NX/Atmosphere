@@ -155,21 +155,7 @@ namespace ams::kern {
                 }
             }
 
-            template<typename T = KAutoObject>
-            ALWAYS_INLINE KScopedAutoObject<T> GetObjectForIpc(ams::svc::Handle handle) const {
-                static_assert(!std::is_base_of<KInterruptEvent, T>::value);
-
-                /* Handle pseudo-handles. */
-                if constexpr (std::is_base_of<T, KProcess>::value) {
-                    if (handle == ams::svc::PseudoHandle::CurrentProcess) {
-                        return GetCurrentProcessPointer();
-                    }
-                } else if constexpr (std::is_base_of<T, KThread>::value) {
-                    if (handle == ams::svc::PseudoHandle::CurrentThread) {
-                        return GetCurrentThreadPointer();
-                    }
-                }
-
+            ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpcWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
                 KScopedSpinLock lk(this->lock);
@@ -178,15 +164,20 @@ namespace ams::kern {
                 if (obj->DynamicCast<KInterruptEvent *>() != nullptr) {
                     return nullptr;
                 }
-                if constexpr (std::is_same<T, KAutoObject>::value) {
-                    return obj;
-                } else {
-                    if (auto *obj = this->GetObjectImpl(handle); obj != nullptr) {
-                        return obj->DynamicCast<T*>();
-                    } else {
-                        return nullptr;
-                    }
+
+                return obj;
+            }
+
+            ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpc(ams::svc::Handle handle, KThread *cur_thread) const {
+                /* Handle pseudo-handles. */
+                if (handle == ams::svc::PseudoHandle::CurrentProcess) {
+                    return static_cast<KAutoObject *>(static_cast<void *>(cur_thread->GetOwnerProcess()));
                 }
+                if (handle == ams::svc::PseudoHandle::CurrentThread) {
+                    return static_cast<KAutoObject *>(cur_thread);
+                }
+
+                return GetObjectForIpcWithoutPseudoHandle(handle);
             }
 
             ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectByIndex(ams::svc::Handle *out_handle, size_t index) const {

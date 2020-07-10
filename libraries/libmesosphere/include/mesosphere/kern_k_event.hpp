@@ -46,6 +46,8 @@ namespace ams::kern {
 
             static void PostDestroy(uintptr_t arg);
 
+            virtual KProcess *GetOwner() const override { return this->owner; }
+
             KReadableEvent &GetReadableEvent() { return this->readable_event; }
             KWritableEvent &GetWritableEvent() { return this->writable_event; }
     };

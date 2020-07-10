@@ -439,34 +439,34 @@ namespace ams::svc::ipc {
                 return index + (spc.GetHeaderSize() / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE s32 SetHandle(s32 index, const ::ams::svc::Handle &hnd) {
+            ALWAYS_INLINE s32 SetHandle(s32 index, const ::ams::svc::Handle &hnd) const {
                 static_assert(util::IsAligned(sizeof(hnd), sizeof(*this->buffer)));
                 __builtin_memcpy(this->buffer + index, std::addressof(hnd), sizeof(hnd));
                 return index + (sizeof(hnd) / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE s32 SetProcessId(s32 index, const u64 pid) {
+            ALWAYS_INLINE s32 SetProcessId(s32 index, const u64 pid) const {
                 static_assert(util::IsAligned(sizeof(pid), sizeof(*this->buffer)));
                 __builtin_memcpy(this->buffer + index, std::addressof(pid), sizeof(pid));
                 return index + (sizeof(pid) / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE s32 Set(s32 index, const MapAliasDescriptor &desc) {
+            ALWAYS_INLINE s32 Set(s32 index, const MapAliasDescriptor &desc) const {
                 __builtin_memcpy(this->buffer + index, desc.GetData(), desc.GetDataSize());
                 return index + (desc.GetDataSize() / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE s32 Set(s32 index, const PointerDescriptor &desc) {
+            ALWAYS_INLINE s32 Set(s32 index, const PointerDescriptor &desc) const {
                 __builtin_memcpy(this->buffer + index, desc.GetData(), desc.GetDataSize());
                 return index + (desc.GetDataSize() / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE s32 Set(s32 index, const ReceiveListEntry &desc) {
+            ALWAYS_INLINE s32 Set(s32 index, const ReceiveListEntry &desc) const {
                 __builtin_memcpy(this->buffer + index, desc.GetData(), desc.GetDataSize());
                 return index + (desc.GetDataSize() / sizeof(*this->buffer));
             }
 
-            ALWAYS_INLINE s32 Set(s32 index, const u32 val) {
+            ALWAYS_INLINE s32 Set(s32 index, const u32 val) const {
                 static_assert(util::IsAligned(sizeof(val), sizeof(*this->buffer)));
                 __builtin_memcpy(this->buffer + index, std::addressof(val), sizeof(val));
                 return index + (sizeof(val) / sizeof(*this->buffer));
@@ -521,7 +521,7 @@ namespace ams::svc::ipc {
                 }
             }
 
-            static constexpr ALWAYS_INLINE s32 GetMessageBufferSize(const MessageHeader &hdr, const SpecialHeader &spc) {
+            static constexpr ALWAYS_INLINE size_t GetMessageBufferSize(const MessageHeader &hdr, const SpecialHeader &spc) {
                 /* Get the size of the plain message. */
                 size_t msg_size = GetReceiveListIndex(hdr, spc) * sizeof(util::BitPack32);
 
