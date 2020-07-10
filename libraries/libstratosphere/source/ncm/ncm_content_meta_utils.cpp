@@ -130,7 +130,7 @@ namespace ams::ncm {
             } else {
                 /* Check if the current variation refers to base. */
                 const FirmwareVariationInfo *cur_variation_info = extended_data_reader.GetFirmwareVariationInfo(i);
-                const bool cur_refers_to_base = cur_variation_info->refer_to_base || extended_data_reader.GetHeader()->version == 1;
+                const bool cur_refers_to_base = extended_data_reader.GetHeader()->version == 1 || cur_variation_info->refer_to_base;
 
                 /* We force referral to base on unsupported variation only if all supported variations refer to base. */
                 force_refer_to_base &= cur_refers_to_base;
@@ -150,7 +150,7 @@ namespace ams::ncm {
         const FirmwareVariationInfo *variation_info = extended_data_reader.GetFirmwareVariationInfo(*firmware_variation_index);
 
         /* Refer to base if variation info says we should, or if version is 1. */
-        const bool refer_to_base = variation_info->refer_to_base || extended_data_reader.GetHeader()->version == 1;
+        const bool refer_to_base = extended_data_reader.GetHeader()->version == 1 || variation_info->refer_to_base;
         R_UNLESS(!refer_to_base, ReadMetaInfoListFromBase());
 
         /* Output the content meta count. */
