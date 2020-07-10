@@ -42,13 +42,13 @@ namespace ams::kern {
         MESOSPHERE_TODO("Do useful debug operation here.");
     }
 
-    KSynchronizationObject::iterator KSynchronizationObject::AddWaiterThread(KThread *thread) {
+    KSynchronizationObject::iterator KSynchronizationObject::RegisterWaitingThread(KThread *thread) {
         MESOSPHERE_ASSERT_THIS();
 
         return this->thread_list.insert(this->thread_list.end(), *thread);
     }
 
-    KSynchronizationObject::iterator KSynchronizationObject::RemoveWaiterThread(KSynchronizationObject::iterator it) {
+    KSynchronizationObject::iterator KSynchronizationObject::UnregisterWaitingThread(KSynchronizationObject::iterator it) {
         MESOSPHERE_ASSERT_THIS();
 
         return this->thread_list.erase(it);

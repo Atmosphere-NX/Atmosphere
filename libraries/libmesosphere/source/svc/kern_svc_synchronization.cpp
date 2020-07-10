@@ -27,6 +27,58 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result WaitSynchronizationImpl(int32_t *out_index, KSynchronizationObject **objs, int32_t num_handles, int64_t timeout_ns) {
+            /* Convert the timeout from nanoseconds to ticks. */
+            s64 timeout;
+            if (timeout_ns > 0) {
+                u64 ticks = KHardwareTimer::GetTick();
+                ticks += ams::svc::Tick(TimeSpan::FromNanoSeconds(timeout_ns));
+                ticks += 2;
+
+                timeout = ticks;
+            } else {
+                timeout = timeout_ns;
+            }
+
+            return Kernel::GetSynchronization().Wait(out_index, objs, num_handles, timeout);
+        }
+
+        Result WaitSynchronization(int32_t *out_index, KUserPointer<const ams::svc::Handle *> user_handles, int32_t num_handles, int64_t timeout_ns) {
+            /* Ensure number of handles is valid. */
+            R_UNLESS(0 <= num_handles && num_handles <= ams::svc::ArgumentHandleCountMax, svc::ResultOutOfRange());
+
+            /* Get the synchronization context. */
+            auto &handle_table = GetCurrentProcess().GetHandleTable();
+            KSynchronizationObject **objs = GetCurrentThread().GetSynchronizationObjectBuffer();
+            ams::svc::Handle *handles = GetCurrentThread().GetHandleBuffer();
+
+            /* Copy user handles. */
+            if (num_handles > 0) {
+                /* Ensure that we can try to get the handles. */
+                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(user_handles.GetUnsafePointer()), num_handles * sizeof(ams::svc::Handle)), svc::ResultInvalidPointer());
+
+                /* Get the handles. */
+                R_TRY(user_handles.CopyArrayTo(handles, num_handles));
+
+                /* Convert the handles to objects. */
+                R_UNLESS(handle_table.GetMultipleObjects<KSynchronizationObject>(objs, handles, num_handles), svc::ResultInvalidHandle());
+            }
+
+            /* Ensure handles are closed when we're done. */
+            ON_SCOPE_EXIT {
+                for (auto i = 0; i < num_handles; ++i) {
+                    objs[i]->Close();
+                }
+            };
+
+            /* Wait on the objects. */
+            R_TRY_CATCH(WaitSynchronizationImpl(out_index, objs, num_handles, timeout_ns)) {
+                R_CONVERT(svc::ResultSessionClosed, ResultSuccess())
+            } R_END_TRY_CATCH;
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -39,8 +91,10 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcResetSignal64 was called.");
     }
 
-    Result WaitSynchronization64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t numHandles, int64_t timeout_ns) {
-        MESOSPHERE_PANIC("Stubbed SvcWaitSynchronization64 was called.");
+    Result WaitSynchronization64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
+        Result result = WaitSynchronization(out_index, handles, num_handles, timeout_ns);
+        MESOSPHERE_LOG("WaitSynchronization returned %08x\n", result.GetValue());
+        return result;
     }
 
     Result CancelSynchronization64(ams::svc::Handle handle) {
@@ -61,8 +115,8 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcResetSignal64From32 was called.");
     }
 
-    Result WaitSynchronization64From32(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t numHandles, int64_t timeout_ns) {
-        MESOSPHERE_PANIC("Stubbed SvcWaitSynchronization64From32 was called.");
+    Result WaitSynchronization64From32(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
+        return WaitSynchronization(out_index, handles, num_handles, timeout_ns);
     }
 
     Result CancelSynchronization64From32(ams::svc::Handle handle) {

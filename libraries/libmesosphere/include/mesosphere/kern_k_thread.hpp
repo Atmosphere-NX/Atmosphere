@@ -113,8 +113,8 @@ namespace ams::kern {
         private:
             static constexpr size_t PriorityInheritanceCountMax = 10;
             union SyncObjectBuffer {
-                KSynchronizationObject *sync_objects[ams::svc::MaxWaitSynchronizationHandleCount];
-                ams::svc::Handle        handles[ams::svc::MaxWaitSynchronizationHandleCount * (sizeof(KSynchronizationObject *) / sizeof(ams::svc::Handle))];
+                KSynchronizationObject *sync_objects[ams::svc::ArgumentHandleCountMax];
+                ams::svc::Handle        handles[ams::svc::ArgumentHandleCountMax * (sizeof(KSynchronizationObject *) / sizeof(ams::svc::Handle))];
 
                 constexpr SyncObjectBuffer() : sync_objects() { /* ... */ }
             };
@@ -310,9 +310,24 @@ namespace ams::kern {
             constexpr KThread *GetLockOwner() const { return this->lock_owner; }
 
             constexpr void SetSyncedObject(KSynchronizationObject *obj, Result wait_res) {
+                MESOSPHERE_ASSERT_THIS();
+
                 this->synced_object = obj;
                 this->wait_result = wait_res;
             }
+
+            constexpr Result GetWaitResult(KSynchronizationObject **out) const {
+                MESOSPHERE_ASSERT_THIS();
+
+                *out = this->synced_object;
+                return this->wait_result;
+            }
+
+            bool IsWaitCancelled() const { return this->wait_cancelled; }
+            void ClearWaitCancelled() { this->wait_cancelled = false; }
+
+            void ClearCancellable() { this->cancellable = false; }
+            void SetCancellable() { this->cancellable = true; }
 
             bool HasWaiters() const { return !this->waiter_list.empty(); }
 
@@ -324,6 +339,9 @@ namespace ams::kern {
 
             constexpr KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
             constexpr void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
+
+            constexpr KSynchronizationObject **GetSynchronizationObjectBuffer() { return std::addressof(this->sync_object_buffer.sync_objects[0]); }
+            constexpr ams::svc::Handle *GetHandleBuffer() { return std::addressof(this->sync_object_buffer.handles[sizeof(this->sync_object_buffer.sync_objects) / sizeof(ams::svc::Handle) - ams::svc::ArgumentHandleCountMax]); }
 
             constexpr u16 GetUserPreemptionState() const { return *GetPointer<u16>(this->tls_address + 0x100); }
             constexpr void SetKernelPreemptionState(u16 state) const { *GetPointer<u16>(this->tls_address + 0x100 + sizeof(u16)) = state; }
