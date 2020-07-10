@@ -41,6 +41,9 @@ namespace ams::kern {
             void EnqueueSession(KServerSession *session);
             void EnqueueSession(KLightServerSession *session);
 
+            KServerSession *AcceptSession();
+            KLightServerSession *AcceptLightSession();
+
             constexpr const KPort *GetParent() const { return this->parent; }
 
             bool IsLight() const;

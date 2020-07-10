@@ -119,4 +119,36 @@ namespace ams::kern {
         }
     }
 
+    KServerSession *KServerPort::AcceptSession() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(!this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Return the first session in the list. */
+        if (this->session_list.empty()) {
+            return nullptr;
+        }
+
+        KServerSession *session = std::addressof(this->session_list.front());
+        this->session_list.pop_front();
+        return session;
+    }
+
+    KLightServerSession *KServerPort::AcceptLightSession() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Return the first session in the list. */
+        if (this->light_session_list.empty()) {
+            return nullptr;
+        }
+
+        KLightServerSession *session = std::addressof(this->light_session_list.front());
+        this->light_session_list.pop_front();
+        return session;
+    }
+
 }

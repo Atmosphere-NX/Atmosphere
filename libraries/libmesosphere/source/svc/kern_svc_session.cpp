@@ -21,7 +21,36 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result AcceptSession(ams::svc::Handle *out, ams::svc::Handle port_handle) {
+            /* Get the current handle table. */
+            auto &handle_table = GetCurrentProcess().GetHandleTable();
 
+            /* Get the server port. */
+            KScopedAutoObject port = handle_table.GetObject<KServerPort>(port_handle);
+            R_UNLESS(port.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Reserve an entry for the new session. */
+            R_TRY(handle_table.Reserve(out));
+            auto handle_guard = SCOPE_GUARD { handle_table.Unreserve(*out); };
+
+            /* Accept the session. */
+            KAutoObject *session;
+            if (port->IsLight()) {
+                session = port->AcceptLightSession();
+            } else {
+                session = port->AcceptSession();
+            }
+
+            /* Ensure we accepted successfully. */
+            R_UNLESS(session != nullptr, svc::ResultNotFound());
+
+            /* Register the session. */
+            handle_table.Register(*out, session);
+            handle_guard.Cancel();
+            session->Close();
+
+            return ResultSuccess();
+        }
 
     }
 
@@ -32,7 +61,7 @@ namespace ams::kern::svc {
     }
 
     Result AcceptSession64(ams::svc::Handle *out_handle, ams::svc::Handle port) {
-        MESOSPHERE_PANIC("Stubbed SvcAcceptSession64 was called.");
+        return AcceptSession(out_handle, port);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -42,7 +71,7 @@ namespace ams::kern::svc {
     }
 
     Result AcceptSession64From32(ams::svc::Handle *out_handle, ams::svc::Handle port) {
-        MESOSPHERE_PANIC("Stubbed SvcAcceptSession64From32 was called.");
+        return AcceptSession(out_handle, port);
     }
 
 }

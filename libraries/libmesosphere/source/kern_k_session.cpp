@@ -43,7 +43,7 @@ namespace ams::kern {
         this->process->Open();
 
         /* Set our port. */
-        this->port = port;
+        this->port = client_port;
         if (this->port != nullptr) {
             this->port->Open();
         }
