@@ -81,6 +81,11 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        void ExitThread() {
+            GetCurrentThread().Exit();
+            MESOSPHERE_PANIC("Process survived call to exit");
+        }
+
         Result GetThreadPriority(int32_t *out_priority, ams::svc::Handle thread_handle) {
             /* Get the thread from its handle. */
             KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
@@ -114,7 +119,7 @@ namespace ams::kern::svc {
     }
 
     void ExitThread64() {
-        MESOSPHERE_PANIC("Stubbed SvcExitThread64 was called.");
+        return ExitThread();
     }
 
     void SleepThread64(int64_t ns) {
@@ -168,7 +173,7 @@ namespace ams::kern::svc {
     }
 
     void ExitThread64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcExitThread64From32 was called.");
+        return ExitThread();
     }
 
     void SleepThread64From32(int64_t ns) {

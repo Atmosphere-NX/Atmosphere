@@ -153,8 +153,109 @@ namespace ams::kern::svc {
             return page_table.UnlockForIpcUserBuffer(message, buffer_size);
         }
 
+        ALWAYS_INLINE Result SendAsyncRequestWithUserBufferImpl(ams::svc::Handle *out_event_handle, uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
+            /* Get the process and handle table. */
+            auto &process      = GetCurrentProcess();
+            auto &handle_table = process.GetHandleTable();
+
+            /* Reserve a new event from the process resource limit. */
+            KScopedResourceReservation event_reservation(std::addressof(process), ams::svc::LimitableResource_EventCountMax);
+            R_UNLESS(event_reservation.Succeeded(), svc::ResultLimitReached());
+
+            /* Get the client session. */
+            KScopedAutoObject session = GetCurrentProcess().GetHandleTable().GetObject<KClientSession>(session_handle);
+            R_UNLESS(session.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the parent, and persist a reference to it until we're done. */
+            KScopedAutoObject parent = session->GetParent();
+            MESOSPHERE_ASSERT(parent.IsNotNull());
+
+            /* Create a new event. */
+            KEvent *event = KEvent::Create();
+            R_UNLESS(event != nullptr, svc::ResultOutOfResource());
+
+            /* Initialize the event. */
+            event->Initialize();
+
+            /* Commit our reservation. */
+            event_reservation.Commit();
+
+            /* At end of scope, kill the standing references to the sub events. */
+            ON_SCOPE_EXIT {
+                event->GetReadableEvent().Close();
+                event->GetWritableEvent().Close();
+            };
+
+            /* Register the event. */
+            R_TRY(KEvent::Register(event));
+
+            /* Add the readable event to the handle table. */
+            R_TRY(handle_table.Add(out_event_handle, std::addressof(event->GetReadableEvent())));
+
+            /* Ensure that if we fail to send the request, we close the readable handle. */
+            auto read_guard = SCOPE_GUARD { handle_table.Remove(*out_event_handle); };
+
+            /* Send the async request. */
+            R_TRY(session->SendAsyncRequest(std::addressof(event->GetWritableEvent()), message, buffer_size));
+
+            /* We succeeded. */
+            read_guard.Cancel();
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result SendAsyncRequestWithUserBuffer(ams::svc::Handle *out_event_handle, uintptr_t message, size_t buffer_size, ams::svc::Handle session_handle) {
+            /* Validate that the message buffer is page aligned and does not overflow. */
+            R_UNLESS(util::IsAligned(message, PageSize),     svc::ResultInvalidAddress());
+            R_UNLESS(buffer_size > 0,                        svc::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(buffer_size, PageSize), svc::ResultInvalidSize());
+            R_UNLESS(message < message + buffer_size,        svc::ResultInvalidCurrentMemory());
+
+            /* Get the process page table. */
+            auto &page_table = GetCurrentProcess().GetPageTable();
+
+            /* Lock the mesage buffer. */
+            R_TRY(page_table.LockForIpcUserBuffer(nullptr, message, buffer_size));
+
+            /* Ensure that if we fail, we unlock the message buffer. */
+            auto unlock_guard = SCOPE_GUARD { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+
+            /* Send the request. */
+            MESOSPHERE_ASSERT(message != 0);
+            R_TRY(SendAsyncRequestWithUserBufferImpl(out_event_handle, message, buffer_size, session_handle));
+
+            /* We sent the request successfully. */
+            unlock_guard.Cancel();
+            return ResultSuccess();
+        }
+
         ALWAYS_INLINE Result ReplyAndReceive(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
             return ReplyAndReceiveImpl(out_index, 0, 0, Null<KPhysicalAddress>, handles, num_handles, reply_target, timeout_ns);
+        }
+
+        ALWAYS_INLINE Result ReplyAndReceiveWithUserBuffer(int32_t *out_index, uintptr_t message, size_t buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
+            /* Validate that the message buffer is page aligned and does not overflow. */
+            R_UNLESS(util::IsAligned(message, PageSize),     svc::ResultInvalidAddress());
+            R_UNLESS(buffer_size > 0,                        svc::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(buffer_size, PageSize), svc::ResultInvalidSize());
+            R_UNLESS(message < message + buffer_size,        svc::ResultInvalidCurrentMemory());
+
+            /* Get the process page table. */
+            auto &page_table = GetCurrentProcess().GetPageTable();
+
+            /* Lock the mesage buffer, getting its physical address. */
+            KPhysicalAddress message_paddr;
+            R_TRY(page_table.LockForIpcUserBuffer(std::addressof(message_paddr), message, buffer_size));
+
+            /* Ensure that even if we fail, we unlock the message buffer when done. */
+            auto unlock_guard = SCOPE_GUARD { page_table.UnlockForIpcUserBuffer(message, buffer_size); };
+
+            /* Send the request. */
+            MESOSPHERE_ASSERT(message != 0);
+            R_TRY(ReplyAndReceiveImpl(out_index, message, buffer_size, message_paddr, handles, num_handles, reply_target, timeout_ns));
+
+            /* We sent the request successfully, so cancel our guard and check the unlock result. */
+            unlock_guard.Cancel();
+            return page_table.UnlockForIpcUserBuffer(message, buffer_size);
         }
 
     }
@@ -170,7 +271,7 @@ namespace ams::kern::svc {
     }
 
     Result SendAsyncRequestWithUserBuffer64(ams::svc::Handle *out_event_handle, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendAsyncRequestWithUserBuffer64 was called.");
+        return SendAsyncRequestWithUserBuffer(out_event_handle, message_buffer, message_buffer_size, session_handle);
     }
 
     Result ReplyAndReceive64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
@@ -178,7 +279,7 @@ namespace ams::kern::svc {
     }
 
     Result ReplyAndReceiveWithUserBuffer64(int32_t *out_index, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-        MESOSPHERE_PANIC("Stubbed SvcReplyAndReceiveWithUserBuffer64 was called.");
+        return ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -192,7 +293,7 @@ namespace ams::kern::svc {
     }
 
     Result SendAsyncRequestWithUserBuffer64From32(ams::svc::Handle *out_event_handle, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendAsyncRequestWithUserBuffer64From32 was called.");
+        return SendAsyncRequestWithUserBuffer(out_event_handle, message_buffer, message_buffer_size, session_handle);
     }
 
     Result ReplyAndReceive64From32(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
@@ -200,7 +301,7 @@ namespace ams::kern::svc {
     }
 
     Result ReplyAndReceiveWithUserBuffer64From32(int32_t *out_index, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
-        MESOSPHERE_PANIC("Stubbed SvcReplyAndReceiveWithUserBuffer64From32 was called.");
+        return ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns);
     }
 
 }

@@ -441,8 +441,8 @@ namespace ams::kern {
 
     Result KPageTableBase::LockMemoryAndOpen(KPageGroup *out_pg, KPhysicalAddress *out_paddr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, KMemoryPermission new_perm, u32 lock_attr) {
         /* Validate basic preconditions. */
-        MESOSPHERE_ASSERT((attr_mask & lock_attr) == lock_attr);
-        MESOSPHERE_ASSERT((attr      & lock_attr) == lock_attr);
+        MESOSPHERE_ASSERT((lock_attr & attr) == 0);
+        MESOSPHERE_ASSERT((lock_attr & (KMemoryAttribute_IpcLocked | KMemoryAttribute_DeviceShared)) == 0);
 
         /* Validate the lock request. */
         const size_t num_pages = size / PageSize;
