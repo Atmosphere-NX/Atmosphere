@@ -669,7 +669,7 @@ namespace dbk {
 
         /* Determine the selected path. */
         char current_path[FS_MAX_PATH] = {};
-        snprintf(current_path, sizeof(current_path)-1, "%s%s", m_root, entry.name);
+        snprintf(current_path, sizeof(current_path)-1, "%s%s/", m_root, entry.name);
 
         /* Determine if the chosen path is the bottom level. */
         Result rc = 0;
@@ -872,7 +872,7 @@ namespace dbk {
                         ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
                     } else {
                         g_use_exfat = false;
-                        ChangeMenu(std::make_shared<InstallUpdateMenu>(g_current_menu));
+                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
                     }
 
                     return;
@@ -899,7 +899,7 @@ namespace dbk {
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
         this->AddButton(Fat32ButtonId, "Install (FAT32)", x + ButtonHorizontalInset, y + TitleGap, ButtonWidth, ButtonHeight);
-        this->AddButton(ExFatButtonId, "Install (exFAT/FAT32)", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
+        this->AddButton(ExFatButtonId, "Install (FAT32 + exFAT)", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
 
         /* Set the default selected button based on the user's current install. We aren't particularly concerned if fsIsExFatSupported fails. */
         bool exfat_supported = false;
@@ -932,7 +932,7 @@ namespace dbk {
                     break;
             }
 
-            ChangeMenu(std::make_shared<InstallUpdateMenu>(g_current_menu));
+            ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
         }
 
         this->UpdateButtons();
