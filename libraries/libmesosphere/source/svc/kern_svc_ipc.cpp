@@ -37,8 +37,17 @@ namespace ams::kern::svc {
         ALWAYS_INLINE Result ReplyAndReceiveImpl(int32_t *out_index, uintptr_t message, size_t buffer_size, KPhysicalAddress message_paddr, KSynchronizationObject **objs, int32_t num_objects, ams::svc::Handle reply_target, int64_t timeout_ns) {
             /* Reply to the target, if one is specified. */
             if (reply_target != ams::svc::InvalidHandle) {
-                /* TODO */
-                MESOSPHERE_UNIMPLEMENTED();
+                KScopedAutoObject session = GetCurrentProcess().GetHandleTable().GetObject<KServerSession>(reply_target);
+                R_UNLESS(session.IsNotNull(), svc::ResultInvalidHandle());
+
+                /* If we fail to reply, we want to set the output index to -1. */
+                auto reply_idx_guard = SCOPE_GUARD { *out_index = -1; };
+
+                /* Send the reply. */
+                R_TRY(session->SendReply(message, buffer_size, message_paddr));
+
+                /* Cancel our guard. */
+                reply_idx_guard.Cancel();
             }
 
             /* Receive a message. */
