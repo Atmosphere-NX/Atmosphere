@@ -669,7 +669,7 @@ namespace dbk {
 
         /* Determine the selected path. */
         char current_path[FS_MAX_PATH] = {};
-        snprintf(current_path, sizeof(current_path)-1, "%s%s", m_root, entry.name);
+        snprintf(current_path, sizeof(current_path)-1, "%s%s/", m_root, entry.name);
 
         /* Determine if the chosen path is the bottom level. */
         Result rc = 0;
