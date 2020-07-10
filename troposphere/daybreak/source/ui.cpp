@@ -872,7 +872,7 @@ namespace dbk {
                         ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
                     } else {
                         g_use_exfat = false;
-                        ChangeMenu(std::make_shared<InstallUpdateMenu>(g_current_menu));
+                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
                     }
 
                     return;
@@ -898,8 +898,8 @@ namespace dbk {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
-        this->AddButton(Fat32ButtonId, "Install (FAT32)", x + ButtonHorizontalInset, y + TitleGap, ButtonWidth, ButtonHeight);
-        this->AddButton(ExFatButtonId, "Install (exFAT/FAT32)", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
+        this->AddButton(Fat32ButtonId, "FAT32", x + ButtonHorizontalInset, y + TitleGap, ButtonWidth, ButtonHeight);
+        this->AddButton(ExFatButtonId, "FAT32 + exFAT", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
 
         /* Set the default selected button based on the user's current install. We aren't particularly concerned if fsIsExFatSupported fails. */
         bool exfat_supported = false;
@@ -932,7 +932,7 @@ namespace dbk {
                     break;
             }
 
-            ChangeMenu(std::make_shared<InstallUpdateMenu>(g_current_menu));
+            ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
         }
 
         this->UpdateButtons();
