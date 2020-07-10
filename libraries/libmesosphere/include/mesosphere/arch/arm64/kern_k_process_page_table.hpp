@@ -128,6 +128,17 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.CopyMemoryFromLinearToLinearWithoutCheckDestination(dst_page_table.page_table, dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr, src_addr, src_state_mask, src_state, src_test_perm, src_attr_mask, src_attr);
             }
 
+            Result SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KProcessPageTable &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send) {
+                return this->page_table.SetupForIpc(out_dst_addr, size, src_addr, src_page_table.page_table, test_perm, dst_state, send);
+            }
+
+            Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process) {
+                return this->page_table.CleanupForIpcServer(address, size, dst_state, server_process);
+            }
+
+            Result CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state) {
+                return this->page_table.CleanupForIpcClient(address, size, dst_state);
+            }
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);

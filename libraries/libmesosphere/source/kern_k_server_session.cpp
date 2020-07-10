@@ -205,7 +205,7 @@ namespace ams::kern {
             const size_t recv_size      = src_desc.GetSize();
             uintptr_t recv_pointer      = 0;
 
-            /* There's nothing to do if there's no size. */
+            /* Process the buffer, if it has a size. */
             if (recv_size > 0) {
                 /* If using indexing, set index. */
                 if (dst_recv_list.IsIndex()) {
@@ -236,6 +236,64 @@ namespace ams::kern {
 
             /* Set the output descriptor. */
             dst_msg.Set(cur_offset, ipc::MessageBuffer::PointerDescriptor(reinterpret_cast<void *>(recv_pointer), recv_size, src_desc.GetIndex()));
+
+            return ResultSuccess();
+        }
+
+        constexpr ALWAYS_INLINE Result GetMapAliasMemoryState(KMemoryState &out, ipc::MessageBuffer::MapAliasDescriptor::Attribute attr) {
+            switch (attr) {
+                case ipc::MessageBuffer::MapAliasDescriptor::Attribute_Ipc:          out = KMemoryState_Ipc;          break;
+                case ipc::MessageBuffer::MapAliasDescriptor::Attribute_NonSecureIpc: out = KMemoryState_NonSecureIpc; break;
+                case ipc::MessageBuffer::MapAliasDescriptor::Attribute_NonDeviceIpc: out = KMemoryState_NonDeviceIpc; break;
+                default: return svc::ResultInvalidCombination();
+            }
+
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result ProcessReceiveMessageMapAliasDescriptors(int &offset, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, KSessionRequest *request, KMemoryPermission perm, bool send) {
+            /* Get the offset at the start of processing. */
+            const int cur_offset = offset;
+
+            /* Get the map alias descriptor. */
+            ipc::MessageBuffer::MapAliasDescriptor src_desc(src_msg, cur_offset);
+            offset += ipc::MessageBuffer::MapAliasDescriptor::GetDataSize() / sizeof(u32);
+
+            /* Extract address/size. */
+            const KProcessAddress src_address = src_desc.GetAddress();
+            const size_t size                 = src_desc.GetSize();
+            KProcessAddress dst_address       = 0;
+
+            /* Determine the result memory state. */
+            KMemoryState dst_state;
+            R_TRY(GetMapAliasMemoryState(dst_state, src_desc.GetAttribute()));
+
+            /* Process the buffer, if it has a size. */
+            if (size > 0) {
+                /* Set up the source pages for ipc. */
+                R_TRY(dst_page_table.SetupForIpc(std::addressof(dst_address), size, src_address, src_page_table, perm, dst_state, send));
+
+                /* Ensure that we clean up on failure. */
+                auto setup_guard = SCOPE_GUARD {
+                    dst_page_table.CleanupForIpcServer(dst_address, size, dst_state, request->GetServerProcess());
+                    src_page_table.CleanupForIpcClient(src_address, size, dst_state);
+                };
+
+                /* Push the appropriate mapping. */
+                if (perm == KMemoryPermission_UserRead) {
+                    R_TRY(request->PushSend(src_address, dst_address, size, dst_state));
+                } else if (send) {
+                    R_TRY(request->PushExchange(src_address, dst_address, size, dst_state));
+                } else {
+                    R_TRY(request->PushReceive(src_address, dst_address, size, dst_state));
+                }
+
+                /* We successfully pushed the mapping. */
+                setup_guard.Cancel();
+            }
+
+            /* Set the output descriptor. */
+            dst_msg.Set(cur_offset, ipc::MessageBuffer::MapAliasDescriptor(GetVoidPointer(dst_address), size, src_desc.GetAttribute()));
 
             return ResultSuccess();
         }
@@ -345,7 +403,16 @@ namespace ams::kern {
 
             /* Process any map alias buffers. */
             for (auto i = 0; i < src_header.GetMapAliasCount(); ++i) {
-                MESOSPHERE_UNIMPLEMENTED();
+                /* After we process, make sure we track whether the receive list is broken. */
+                ON_SCOPE_EXIT { if (offset > dst_recv_list_idx) { recv_list_broken = true; } };
+
+                /* We process in order send, recv, exch. Buffers after send (recv/exch) are ReadWrite. */
+                const KMemoryPermission perm = (i >= src_header.GetSendCount()) ? KMemoryPermission_UserReadWrite : KMemoryPermission_UserRead;
+
+                /* Buffer is send if it is send or exch. */
+                const bool send = (i < src_header.GetSendCount()) || (i >= src_header.GetSendCount() + src_header.GetReceiveCount());
+
+                R_TRY(ProcessReceiveMessageMapAliasDescriptors(offset, dst_page_table, src_page_table, dst_msg, src_msg, request, perm, send));
             }
 
             /* Process any raw data. */

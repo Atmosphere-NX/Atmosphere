@@ -1316,4 +1316,16 @@ namespace ams::kern {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    Result KPageTableBase::SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
 }

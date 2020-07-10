@@ -66,7 +66,13 @@ namespace ams::kern {
                     size_t GetReceiveCount() const { return this->num_recv; }
                     size_t GetExchangeCount() const { return this->num_exch; }
 
+                    Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
+                    Result PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
+                    Result PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
+
                     /* TODO: More functionality. */
+                private:
+                    Result PushMap(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state, size_t index);
             };
         private:
             SessionMappings mappings;
@@ -139,6 +145,18 @@ namespace ams::kern {
             size_t GetSendCount() const { return this->mappings.GetSendCount(); }
             size_t GetReceiveCount() const { return this->mappings.GetReceiveCount(); }
             size_t GetExchangeCount() const { return this->mappings.GetExchangeCount(); }
+
+            Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
+                return this->mappings.PushSend(client, server, size, state);
+            }
+
+            Result PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
+                return this->mappings.PushReceive(client, server, size, state);
+            }
+
+            Result PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
+                return this->mappings.PushExchange(client, server, size, state);
+            }
 
             /* TODO: More functionality. */
     };
