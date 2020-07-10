@@ -687,9 +687,9 @@ namespace ams::kern {
 
             /* Set the server result. */
             if (recv_list_broken) {
-                return svc::ResultReceiveListBroken();
+                result = svc::ResultReceiveListBroken();
             } else {
-                return svc::ResultNotFound();
+                result = svc::ResultNotFound();
             }
         }
 
