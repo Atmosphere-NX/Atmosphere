@@ -104,6 +104,31 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.UnlockForIpcUserBuffer(address, size);
             }
 
+            Result CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+                return this->page_table.CopyMemoryFromLinearToUser(dst_addr, size, src_addr, src_state_mask, src_state, src_test_perm, src_attr_mask, src_attr);
+            }
+
+            Result CopyMemoryFromLinearToKernel(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+                return this->page_table.CopyMemoryFromLinearToKernel(dst_addr, size, src_addr, src_state_mask, src_state, src_test_perm, src_attr_mask, src_attr);
+            }
+
+            Result CopyMemoryFromUserToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
+                return this->page_table.CopyMemoryFromUserToLinear(dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr, src_addr);
+            }
+
+            Result CopyMemoryFromKernelToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
+                return this->page_table.CopyMemoryFromKernelToLinear(dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr, src_addr);
+            }
+
+            Result CopyMemoryFromLinearToLinear(KProcessPageTable &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+                return this->page_table.CopyMemoryFromLinearToLinear(dst_page_table.page_table, dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr, src_addr, src_state_mask, src_state, src_test_perm, src_attr_mask, src_attr);
+            }
+
+            Result CopyMemoryFromLinearToLinearWithoutCheckDestination(KProcessPageTable &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+                return this->page_table.CopyMemoryFromLinearToLinearWithoutCheckDestination(dst_page_table.page_table, dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr, src_addr, src_state_mask, src_state, src_test_perm, src_attr_mask, src_attr);
+            }
+
+
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }

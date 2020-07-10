@@ -242,8 +242,52 @@ namespace ams::kern {
             }
 
             /* Process any raw data. */
-            if (src_header.GetRawCount()) {
-                MESOSPHERE_UNIMPLEMENTED();
+            if (const auto raw_count = src_header.GetRawCount(); raw_count != 0) {
+                /* After we process, make sure we track whether the receive list is broken. */
+                ON_SCOPE_EXIT { if (offset + raw_count > dst_recv_list_idx) { recv_list_broken = true; } };
+
+                /* Get the offset and size. */
+                const size_t offset_words = offset * sizeof(u32);
+                const size_t raw_size     = raw_count * sizeof(u32);
+
+                /* Fast case is TLS -> TLS, do raw memcpy if we can. */
+                if (!dst_user && !src_user) {
+                    std::memcpy(dst_msg_ptr + offset, src_msg_ptr + offset, raw_size);
+                } else if (dst_user) {
+                    /* Determine how much fast size we can copy. */
+                    const size_t max_fast_size = std::min<size_t>(offset_words + raw_size, PageSize);
+                    const size_t fast_size     = max_fast_size - offset_words;
+
+                    /* Determine the source permission. User buffer should be unmapped + read, TLS should be user readable. */
+                    const KMemoryPermission src_perm = static_cast<KMemoryPermission>(src_user ? KMemoryPermission_NotMapped | KMemoryPermission_KernelRead : KMemoryPermission_UserRead);
+
+                    /* Perform the fast part of the copy. */
+                    R_TRY(src_page_table.CopyMemoryFromLinearToKernel(reinterpret_cast<uintptr_t>(dst_msg_ptr) + offset_words, fast_size, src_message_buffer + offset_words,
+                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      src_perm,
+                                                                      KMemoryAttribute_Uncached, KMemoryAttribute_None));
+
+                    /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
+                    if (fast_size < raw_size) {
+                        R_TRY(src_page_table.CopyMemoryFromLinearToLinear(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
+                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_UserRead),
+                                                                          KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                                                          src_message_buffer + max_fast_size,
+                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                          src_perm,
+                                                                          KMemoryAttribute_Uncached, KMemoryAttribute_None));
+                    }
+                } else /* if (src_user) */ {
+                    /* The source is a user buffer, so it should be unmapped + readable. */
+                    constexpr KMemoryPermission SourcePermission = static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelRead);
+
+                    /* Copy the memory. */
+                    R_TRY(src_page_table.CopyMemoryFromLinearToUser(dst_message_buffer + offset_words, raw_size, src_message_buffer + offset_words,
+                                                                    KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                    SourcePermission,
+                                                                    KMemoryAttribute_Uncached, KMemoryAttribute_None));
+                }
             }
 
             /* TODO: Remove this when done, as these variables will be used by unimplemented stuff above. */

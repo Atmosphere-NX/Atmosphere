@@ -1292,4 +1292,28 @@ namespace ams::kern {
                                   KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked, nullptr);
     }
 
+    Result KPageTableBase::CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CopyMemoryFromLinearToKernel(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CopyMemoryFromUserToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CopyMemoryFromKernelToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CopyMemoryFromLinearToLinear(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KPageTableBase::CopyMemoryFromLinearToLinearWithoutCheckDestination(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
 }
