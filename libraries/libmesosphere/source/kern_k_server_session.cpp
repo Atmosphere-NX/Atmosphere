@@ -265,7 +265,6 @@ namespace ams::kern {
             return ResultSuccess();
         }
 
-
         ALWAYS_INLINE void CleanupSpecialData(KProcess &dst_process, u32 *dst_msg_ptr, size_t dst_buffer_size) {
             /* Parse the message. */
             const ipc::MessageBuffer dst_msg(dst_msg_ptr, dst_buffer_size);
@@ -296,6 +295,52 @@ namespace ams::kern {
 
                 offset = dst_msg.SetHandle(offset, ams::svc::InvalidHandle);
             }
+        }
+
+        ALWAYS_INLINE Result CleanupServerHandles(uintptr_t message, size_t buffer_size, KPhysicalAddress message_paddr) {
+            /* Server is assumed to be current thread. */
+            const KThread &thread = GetCurrentThread();
+
+            /* Get the linear message pointer. */
+            u32 *msg_ptr;
+            if (message) {
+                msg_ptr = GetPointer<u32>(KPageTable::GetHeapVirtualAddress(message_paddr));
+            } else {
+                msg_ptr     = static_cast<ams::svc::ThreadLocalRegion *>(thread.GetThreadLocalRegionHeapAddress())->message_buffer;
+                buffer_size = sizeof(ams::svc::ThreadLocalRegion{}.message_buffer);
+                message     = GetInteger(thread.GetThreadLocalRegionAddress());
+            }
+
+            /* Parse the message. */
+            const ipc::MessageBuffer msg(msg_ptr, buffer_size);
+            const ipc::MessageBuffer::MessageHeader header(msg);
+            const ipc::MessageBuffer::SpecialHeader special_header(msg, header);
+
+            /* Check that the size is big enough. */
+            R_UNLESS(ipc::MessageBuffer::GetMessageBufferSize(header, special_header) <= buffer_size, svc::ResultInvalidCombination());
+
+            /* If there's a special header, there may be move handles we need to close. */
+            if (header.GetHasSpecialHeader()) {
+                /* Determine the offset to the start of handles. */
+                auto offset = msg.GetSpecialDataIndex(header, special_header);
+                if (special_header.GetHasProcessId()) {
+                    offset += sizeof(u64) / sizeof(u32);
+                }
+                if (auto copy_count = special_header.GetCopyHandleCount(); copy_count > 0) {
+                    offset += (sizeof(ams::svc::Handle) * copy_count) / sizeof(u32);
+                }
+
+                /* Get the handle table. */
+                auto &handle_table = thread.GetOwnerProcess()->GetHandleTable();
+
+                /* Close the handles. */
+                for (auto i = 0; i < special_header.GetMoveHandleCount(); ++i) {
+                    handle_table.Remove(msg.GetHandle(offset));
+                    offset += sizeof(ams::svc::Handle) / sizeof(u32);
+                }
+            }
+
+            return ResultSuccess();
         }
 
         ALWAYS_INLINE Result CleanupServerMap(KSessionRequest *request, KProcess *server_process) {
@@ -586,6 +631,10 @@ namespace ams::kern {
             return ResultSuccess();
         }
 
+        ALWAYS_INLINE Result SendMessage(uintptr_t src_message_buffer, size_t src_buffer_size, KPhysicalAddress src_message_paddr, KThread &dst_thread, uintptr_t dst_message_buffer, size_t dst_buffer_size, KServerSession *session, KSessionRequest *request) {
+            MESOSPHERE_UNIMPLEMENTED();
+        }
+
         ALWAYS_INLINE void ReplyAsyncError(KProcess *to_process, uintptr_t to_msg_buf, size_t to_msg_buf_size, Result result) {
             /* Convert the buffer to a physical address. */
             KPhysicalAddress phys_addr;
@@ -710,8 +759,100 @@ namespace ams::kern {
         return result;
     }
 
-    Result KServerSession::SendReply(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr) {
-        MESOSPHERE_UNIMPLEMENTED();
+    Result KServerSession::SendReply(uintptr_t server_message, uintptr_t server_buffer_size, KPhysicalAddress server_message_paddr) {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Lock the session. */
+        KScopedLightLock lk(this->lock);
+
+        /* Get the request. */
+        KSessionRequest *request;
+        {
+            KScopedSchedulerLock sl;
+
+            /* Get the current request. */
+            request = this->current_request;
+            R_UNLESS(request != nullptr, svc::ResultInvalidState());
+
+            /* Clear the current request, since we're processing it. */
+            this->current_request = nullptr;
+            if (!this->request_list.empty()) {
+                this->NotifyAvailable();
+            }
+        }
+
+        /* Close reference to the request once we're done processing it. */
+        ON_SCOPE_EXIT { request->Close(); };
+
+        /* Extract relevant information from the request. */
+        const uintptr_t client_message  = request->GetAddress();
+        const size_t client_buffer_size = request->GetSize();
+        KThread *client_thread          = request->GetThread();
+        KWritableEvent *event           = request->GetEvent();
+
+        /* Check whether we're closed. */
+        const bool closed = (client_thread == nullptr || this->parent->IsClientClosed());
+
+        Result result;
+        if (!closed) {
+            /* If we're not closed, send the reply. */
+            result = SendMessage(server_message, server_buffer_size, server_message_paddr, *client_thread, client_message, client_buffer_size, this, request);
+        } else {
+            /* Otherwise, we'll need to do some cleanup. */
+            KProcess *server_process             = request->GetServerProcess();
+            KProcess *client_process             = (client_thread != nullptr) ? client_thread->GetOwnerProcess() : nullptr;
+            KProcessPageTable *client_page_table = (client_process != nullptr) ? std::addressof(client_process->GetPageTable()) : nullptr;
+
+            /* Cleanup server handles. */
+            result = CleanupServerHandles(server_message, server_buffer_size, server_message_paddr);
+
+            /* Cleanup mappings. */
+            Result cleanup_map_result = CleanupMap(request, server_process, client_page_table);
+
+            /* If we successfully cleaned up handles, use the map cleanup result as our result. */
+            if (R_SUCCEEDED(result)) {
+                result = cleanup_map_result;
+            }
+        }
+
+        /* Select a result for the client. */
+        Result client_result = result;
+        if (closed && R_SUCCEEDED(result)) {
+            result        = svc::ResultSessionClosed();
+            client_result = svc::ResultSessionClosed();
+        } else {
+            result = ResultSuccess();
+        }
+
+        /* If there's a client thread, update it. */
+        if (client_thread != nullptr) {
+            if (event != nullptr) {
+                /* Get the client process/page table. */
+                KProcess *client_process             = client_thread->GetOwnerProcess();
+                KProcessPageTable *client_page_table = std::addressof(client_process->GetPageTable());
+
+                /* If we need to, reply with an async error. */
+                if (R_FAILED(client_result)) {
+                    ReplyAsyncError(client_process, client_message, client_buffer_size, client_result);
+                }
+
+                /* Unlock the client buffer. */
+                /* NOTE: Nintendo does not check the result of this. */
+                client_page_table->UnlockForIpcUserBuffer(client_message, client_buffer_size);
+
+                /* Signal the event. */
+                event->Signal();
+            } else {
+                /* Set the thread as runnable. */
+                KScopedSchedulerLock sl;
+                if (client_thread->GetState() == KThread::ThreadState_Waiting) {
+                    client_thread->SetSyncedObject(nullptr, client_result);
+                    client_thread->SetState(KThread::ThreadState_Runnable);
+                }
+            }
+        }
+
+        return result;
     }
 
     Result KServerSession::OnRequest(KSessionRequest *request) {
