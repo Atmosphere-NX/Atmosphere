@@ -314,7 +314,10 @@ namespace ams::kern {
             KThread *RemoveWaiterByKey(s32 *out_num_waiters, KProcessAddress key);
 
             constexpr KProcessAddress GetAddressKey() const { return this->arbiter_key; }
+            constexpr u32 GetAddressKeyValue() const { return this->arbiter_value; }
             constexpr void SetAddressKey(KProcessAddress key) { this->arbiter_key = key; }
+            constexpr void SetAddressKey(KProcessAddress key, u32 val) { this->arbiter_key = key; this->arbiter_value = val; }
+
             constexpr void SetLockOwner(KThread *owner) { this->lock_owner = owner; }
             constexpr KThread *GetLockOwner() const { return this->lock_owner; }
 

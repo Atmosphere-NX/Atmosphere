@@ -21,14 +21,99 @@ namespace ams::kern {
 
         constinit KThread g_cv_compare_thread;
 
+        ALWAYS_INLINE bool ReadFromUser(u32 *out, KProcessAddress address) {
+            return UserspaceAccess::CopyMemoryFromUserSize32Bit(out, GetVoidPointer(address));
+        }
+
+        ALWAYS_INLINE bool WriteToUser(KProcessAddress address, const u32 *p) {
+            return UserspaceAccess::CopyMemoryToUserSize32Bit(GetVoidPointer(address), p);
+        }
+
     }
 
     Result KConditionVariable::SignalToAddress(KProcessAddress addr) {
-        MESOSPHERE_UNIMPLEMENTED();
+        KThread *owner_thread = std::addressof(GetCurrentThread());
+
+        /* Signal the address. */
+        {
+            KScopedSchedulerLock sl;
+
+            /* Remove waiter thread. */
+            s32 num_waiters;
+            KThread *next_owner_thread = owner_thread->RemoveWaiterByKey(std::addressof(num_waiters), addr);
+
+            /* Determine the next tag. */
+            u32 next_value = 0;
+            if (next_owner_thread) {
+                next_value = next_owner_thread->GetAddressKeyValue();
+                if (num_waiters > 1) {
+                    next_value |= ams::svc::HandleWaitMask;
+                }
+
+                next_owner_thread->SetSyncedObject(nullptr, ResultSuccess());
+                next_owner_thread->Wakeup();
+            }
+
+            /* Write the value to userspace. */
+            if (!WriteToUser(addr, std::addressof(next_value))) {
+                if (next_owner_thread) {
+                    next_owner_thread->SetSyncedObject(nullptr, svc::ResultInvalidCurrentMemory());
+                }
+
+                return svc::ResultInvalidCurrentMemory();
+            }
+        }
+
+        return ResultSuccess();
     }
 
     Result KConditionVariable::WaitForAddress(ams::svc::Handle handle, KProcessAddress addr, u32 value) {
-        MESOSPHERE_UNIMPLEMENTED();
+        KThread *cur_thread = std::addressof(GetCurrentThread());
+
+        /* Wait for the address. */
+        {
+            KScopedAutoObject<KThread> owner_thread;
+            MESOSPHERE_ASSERT(owner_thread.IsNull());
+            {
+                KScopedSchedulerLock sl;
+                cur_thread->SetSyncedObject(nullptr, ResultSuccess());
+
+                /* Check if the thread should terminate. */
+                R_UNLESS(!cur_thread->IsTerminationRequested(), svc::ResultTerminationRequested());
+
+                {
+                    /* Read the tag from userspace. */
+                    u32 test_tag;
+                    R_UNLESS(ReadFromUser(std::addressof(test_tag), addr), svc::ResultInvalidCurrentMemory());
+
+                    /* If the tag isn't the handle (with wait mask), we're done. */
+                    R_SUCCEED_IF(test_tag != (handle | ams::svc::HandleWaitMask));
+
+                    /* Get the lock owner thread. */
+                    owner_thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(handle);
+                    R_UNLESS(owner_thread.IsNotNull(), svc::ResultInvalidHandle());
+
+                    /* Update the lock. */
+                    cur_thread->SetAddressKey(addr, value);
+                    owner_thread->AddWaiter(cur_thread);
+                    cur_thread->SetState(KThread::ThreadState_Waiting);
+                }
+            }
+            MESOSPHERE_ASSERT(owner_thread.IsNotNull());
+        }
+
+        /* Remove the thread as a waiter from the lock owner. */
+        {
+            KScopedSchedulerLock sl;
+            KThread *owner_thread = cur_thread->GetLockOwner();
+            if (owner_thread != nullptr) {
+                owner_thread->RemoveWaiter(cur_thread);
+            }
+        }
+
+        /* Get the wait result. */
+        KSynchronizationObject *dummy;
+        return cur_thread->GetWaitResult(std::addressof(dummy));
     }
 
     KThread *KConditionVariable::SignalImpl(KThread *thread) {
