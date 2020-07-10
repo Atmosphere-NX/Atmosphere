@@ -26,6 +26,8 @@ namespace ams::kern::svc {
             ON_SCOPE_EXIT{ MESOSPHERE_LOG("GetInfo returned %016lx\n", *out); };
 
             switch (info_type) {
+                case ams::svc::InfoType_CoreMask:
+                case ams::svc::InfoType_PriorityMask:
                 case ams::svc::InfoType_AliasRegionAddress:
                 case ams::svc::InfoType_AliasRegionSize:
                 case ams::svc::InfoType_HeapRegionAddress:
@@ -47,6 +49,12 @@ namespace ams::kern::svc {
                         R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
 
                         switch (info_type) {
+                            case ams::svc::InfoType_CoreMask:
+                                *out = process->GetCoreMask();
+                                break;
+                            case ams::svc::InfoType_PriorityMask:
+                                *out = process->GetPriorityMask();
+                                break;
                             case ams::svc::InfoType_AliasRegionAddress:
                                 *out = GetInteger(process->GetPageTable().GetAliasRegionStart());
                                 break;

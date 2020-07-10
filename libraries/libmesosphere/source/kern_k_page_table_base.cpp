@@ -498,7 +498,67 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::UnmapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
+    Result KPageTableBase::MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Validate that the source address's state is valid. */
+        KMemoryState src_state;
+        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Validate that the dst address's state is valid. */
+        R_TRY(this->CheckMemoryState(dst_address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+        /* Create an update allocator for the source. */
+        KMemoryBlockManagerUpdateAllocator src_allocator(this->memory_block_slab_manager);
+        R_TRY(src_allocator.GetResult());
+
+        /* Create an update allocator for the destination. */
+        KMemoryBlockManagerUpdateAllocator dst_allocator(this->memory_block_slab_manager);
+        R_TRY(dst_allocator.GetResult());
+
+        /* Map the memory. */
+        {
+            /* Determine the number of pages being operated on. */
+            const size_t num_pages = size / PageSize;
+
+            /* Create page groups for the memory being unmapped. */
+            KPageGroup pg(this->block_info_manager);
+
+            /* Create the page group representing the source. */
+            R_TRY(this->MakePageGroup(pg, src_address, num_pages));
+
+            /* We're going to perform an update, so create a helper. */
+            KScopedPageTableUpdater updater(this);
+
+            /* Reprotect the source as kernel-read/not mapped. */
+            const KMemoryPermission new_src_perm = static_cast<KMemoryPermission>(KMemoryPermission_KernelRead | KMemoryPermission_NotMapped);
+            const KMemoryAttribute  new_src_attr = static_cast<KMemoryAttribute>(KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked);
+            const KPageProperties src_properties = { new_src_perm, false, false, false };
+            R_TRY(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, src_properties, OperationType_ChangePermissions, false));
+
+            /* Ensure that we unprotect the source pages on failure. */
+            auto unprot_guard = SCOPE_GUARD {
+                const KPageProperties unprotect_properties = { KMemoryPermission_UserReadWrite, false, false, false };
+                MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, unprotect_properties, OperationType_ChangePermissions, true));
+            };
+
+            /* Map the alias pages. */
+            const KPageProperties dst_map_properties = { KMemoryPermission_UserReadWrite, false, false, false };
+            R_TRY(this->MapPageGroupImpl(updater.GetPageList(), dst_address, pg, dst_map_properties, false));
+
+            /* We successfully mapped the alias pages, so we don't need to unprotect the src pages on failure. */
+            unprot_guard.Cancel();
+
+            /* Apply the memory block updates. */
+            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state, new_src_perm, new_src_attr);
+            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::UnmapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
         /* Lock the table. */
         KScopedLightLock lk(this->general_lock);
 

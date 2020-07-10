@@ -56,7 +56,11 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.QueryInfo(out_info, out_page_info, addr);
             }
 
-            Result UnmapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
+            Result MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
+                return this->page_table.MapMemory(dst_address, src_address, size);
+            }
+
+            Result UnmapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
                 return this->page_table.UnmapMemory(dst_address, src_address, size);
             }
 

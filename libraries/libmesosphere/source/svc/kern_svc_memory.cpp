@@ -21,6 +21,33 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result MapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
+            /* Log the call parameters for debugging. */
+            MESOSPHERE_LOG("MapMemory(%zx, %zx, %zx)\n", dst_address, src_address, size);
+
+            /* Validate that addresses are page aligned. */
+            R_UNLESS(util::IsAligned(dst_address, PageSize), svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(src_address, PageSize), svc::ResultInvalidAddress());
+
+            /* Validate that size is positive and page aligned. */
+            R_UNLESS(size > 0,                        svc::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(size, PageSize), svc::ResultInvalidSize());
+
+            /* Ensure that neither mapping overflows. */
+            R_UNLESS(src_address < src_address + size, svc::ResultInvalidCurrentMemory());
+            R_UNLESS(dst_address < dst_address + size, svc::ResultInvalidCurrentMemory());
+
+            /* Get the page table we're operating on. */
+            auto &page_table = GetCurrentProcess().GetPageTable();
+
+            /* Ensure that the memory we're mapping is in range. */
+            R_UNLESS(page_table.Contains(src_address, size),                       svc::ResultInvalidCurrentMemory());
+            R_UNLESS(page_table.CanContain(dst_address, size, KMemoryState_Stack), svc::ResultInvalidMemoryRegion());
+
+            /* Map the memory. */
+            return page_table.MapMemory(dst_address, src_address, size);
+        }
+
         Result UnmapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
             /* Log the call parameters for debugging. */
             MESOSPHERE_LOG("UnmapMemory(%zx, %zx, %zx)\n", dst_address, src_address, size);
@@ -61,7 +88,7 @@ namespace ams::kern::svc {
     }
 
     Result MapMemory64(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapMemory64 was called.");
+        return MapMemory(dst_address, src_address, size);
     }
 
     Result UnmapMemory64(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
@@ -79,7 +106,7 @@ namespace ams::kern::svc {
     }
 
     Result MapMemory64From32(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapMemory64From32 was called.");
+        return MapMemory(dst_address, src_address, size);
     }
 
     Result UnmapMemory64From32(ams::svc::Address dst_address, ams::svc::Address src_address, ams::svc::Size size) {
