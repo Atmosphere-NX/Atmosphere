@@ -844,7 +844,7 @@ namespace ams::kern {
             }
 
             /* Handle any exchange buffers. */
-            for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
+            for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
                 R_TRY(ProcessSendMessageReceiveMapping(dst_page_table, request->GetExchangeClientAddress(i), request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
             }
 
