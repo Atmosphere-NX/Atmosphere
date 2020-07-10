@@ -173,4 +173,19 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
+    void KThreadContext::CloneFpuStatus() {
+        u64 pcr, psr;
+        cpu::InstructionMemoryBarrier();
+        if (IsFpuEnabled()) {
+            __asm__ __volatile__("mrs %[pcr], fpcr" : [pcr]"=r"(pcr) :: "memory");
+            __asm__ __volatile__("mrs %[psr], fpsr" : [psr]"=r"(psr) :: "memory");
+        } else {
+            pcr = GetCurrentThread().GetContext().GetFpcr();
+            psr = GetCurrentThread().GetContext().GetFpsr();
+        }
+
+        this->SetFpcr(pcr);
+        this->SetFpsr(psr);
+    }
+
 }

@@ -64,7 +64,7 @@ namespace ams::kern {
             size_t                      system_resource_num_pages{};
             size_t                      memory_release_hint{};
             State                       state{};
-            KLightLock                  lock{};
+            KLightLock                  state_lock{};
             KLightLock                  list_lock{};
             KConditionVariable          cond_var{};
             KAddressArbiter             address_arbiter{};
@@ -133,7 +133,10 @@ namespace ams::kern {
             constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }
             constexpr u64 GetPriorityMask() const { return this->capabilities.GetPriorityMask(); }
 
+            constexpr s32 GetIdealCoreId() const { return this->ideal_core_id; }
             constexpr void SetIdealCoreId(s32 core_id) { this->ideal_core_id = core_id; }
+
+            constexpr bool CheckThreadPriority(s32 prio) const { return ((1ul << prio) & this->GetPriorityMask()) != 0; }
 
             constexpr bool Is64Bit() const { return this->flags & ams::svc::CreateProcessFlag_Is64Bit; }
 
@@ -158,6 +161,9 @@ namespace ams::kern {
             bool ReserveResource(ams::svc::LimitableResource which, s64 value, s64 timeout);
             void ReleaseResource(ams::svc::LimitableResource which, s64 value);
             void ReleaseResource(ams::svc::LimitableResource which, s64 value, s64 hint);
+
+            constexpr KLightLock &GetStateLock() { return this->state_lock; }
+            constexpr KLightLock &GetListLock() { return this->list_lock; }
 
             constexpr KProcessPageTable &GetPageTable() { return this->page_table; }
             constexpr const KProcessPageTable &GetPageTable() const { return this->page_table; }

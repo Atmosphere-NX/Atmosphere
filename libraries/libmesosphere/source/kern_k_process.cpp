@@ -306,7 +306,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock ourselves, to prevent concurrent access. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(this->state_lock);
 
         /* Validate that we're in a state where we can initialize. */
         const auto state = this->state;

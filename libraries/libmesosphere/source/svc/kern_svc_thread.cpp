@@ -21,6 +21,66 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsValidCoreId(int32_t core_id) {
+            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumCores));
+        }
+
+        Result CreateThread(ams::svc::Handle *out, ams::svc::ThreadFunc f, uintptr_t arg, uintptr_t stack_bottom, int32_t priority, int32_t core_id) {
+            /* Adjust core id, if it's the default magic. */
+            KProcess &process = GetCurrentProcess();
+            if (core_id == ams::svc::IdealCoreUseProcessValue) {
+                core_id = process.GetIdealCoreId();
+            }
+
+            /* Validate arguments. */
+            R_UNLESS(IsValidCoreId(core_id),                          svc::ResultInvalidCoreId());
+            R_UNLESS(((1ul << core_id) & process.GetCoreMask()) != 0, svc::ResultInvalidCoreId());
+
+            R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
+            R_UNLESS(process.CheckThreadPriority(priority),                                                     svc::ResultInvalidPriority());
+
+            /* Reserve a new session from the process resource limit (waiting up to 100ms). */
+            KScopedResourceReservation thread_reservation(std::addressof(process), ams::svc::LimitableResource_ThreadCountMax, 1, KHardwareTimer::GetTick() + ams::svc::Tick(TimeSpan::FromMilliSeconds(100)));
+            R_UNLESS(thread_reservation.Succeeded(), svc::ResultLimitReached());
+
+            /* Create the thread. */
+            KScopedAutoObject thread = KThread::Create();
+            R_UNLESS(thread.IsNotNull(), svc::ResultOutOfResource());
+
+            /* Initialize the thread. */
+            {
+                KScopedLightLock lk(process.GetStateLock());
+                R_TRY(KThread::InitializeUserThread(thread.GetPointerUnsafe(), reinterpret_cast<KThreadFunction>(static_cast<uintptr_t>(f)), arg, stack_bottom, priority, core_id, std::addressof(process)));
+            }
+
+            /* Commit the thread reservation. */
+            thread_reservation.Commit();
+
+            /* Clone the current fpu status to the new thread. */
+            thread->GetContext().CloneFpuStatus();
+
+            /* Register the new thread. */
+            R_TRY(KThread::Register(thread.GetPointerUnsafe()));
+
+            /* Add the thread to the handle table. */
+            R_TRY(process.GetHandleTable().Add(out, thread.GetPointerUnsafe()));
+
+            return ResultSuccess();
+        }
+
+        Result StartThread(ams::svc::Handle thread_handle) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Try to start the thread. */
+            R_TRY(thread->Run());
+
+            /* If we succeeded, persist a reference to the thread. */
+            thread->Open();
+            return ResultSuccess();
+        }
+
         Result GetThreadPriority(int32_t *out_priority, ams::svc::Handle thread_handle) {
             /* Get the thread from its handle. */
             KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
@@ -46,11 +106,11 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CreateThread64(ams::svc::Handle *out_handle, ams::svc::ThreadFunc func, ams::svc::Address arg, ams::svc::Address stack_bottom, int32_t priority, int32_t core_id) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateThread64 was called.");
+        return CreateThread(out_handle, func, arg, stack_bottom, priority, core_id);
     }
 
     Result StartThread64(ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcStartThread64 was called.");
+        return StartThread(thread_handle);
     }
 
     void ExitThread64() {
@@ -100,11 +160,11 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateThread64From32(ams::svc::Handle *out_handle, ams::svc::ThreadFunc func, ams::svc::Address arg, ams::svc::Address stack_bottom, int32_t priority, int32_t core_id) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateThread64From32 was called.");
+        return CreateThread(out_handle, func, arg, stack_bottom, priority, core_id);
     }
 
     Result StartThread64From32(ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcStartThread64From32 was called.");
+        return StartThread(thread_handle);
     }
 
     void ExitThread64From32() {
