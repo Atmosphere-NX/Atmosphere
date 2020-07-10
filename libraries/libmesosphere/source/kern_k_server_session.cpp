@@ -48,6 +48,34 @@ namespace ams::kern {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    Result KServerSession::ReceiveRequest(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KServerSession::SendReply(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    bool KServerSession::IsSignaledImpl() const {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* If the client is closed, we're always signaled. */
+        if (this->parent->IsClientClosed()) {
+            return true;
+        }
+
+        /* Otherwise, we're signaled if we have a request and aren't handling one. */
+        return !this->request_list.empty() && this->current_request == nullptr;
+    }
+
+    bool KServerSession::IsSignaled() const {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        return this->IsSignaledImpl();
+    }
+
     void KServerSession::OnClientClosed() {
         MESOSPHERE_ASSERT_THIS();
 

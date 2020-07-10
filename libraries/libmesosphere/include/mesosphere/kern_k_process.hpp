@@ -123,6 +123,7 @@ namespace ams::kern {
             virtual ~KProcess() { /* ... */ }
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            void Exit();
 
             constexpr const char *GetName() const { return this->name; }
 

@@ -21,6 +21,11 @@ namespace ams::kern::svc {
 
     namespace {
 
+        void ExitProcess() {
+            GetCurrentProcess().Exit();
+            MESOSPHERE_PANIC("Process survived call to exit");
+        }
+
         Result GetProcessId(u64 *out_process_id, ams::svc::Handle handle) {
             /* Get the object from the handle table. */
             KScopedAutoObject obj = GetCurrentProcess().GetHandleTable().GetObject<KAutoObject>(handle);
@@ -54,7 +59,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     void ExitProcess64() {
-        MESOSPHERE_PANIC("Stubbed SvcExitProcess64 was called.");
+        return ExitProcess();
     }
 
     Result GetProcessId64(uint64_t *out_process_id, ams::svc::Handle process_handle) {
@@ -84,7 +89,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     void ExitProcess64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcExitProcess64From32 was called.");
+        return ExitProcess();
     }
 
     Result GetProcessId64From32(uint64_t *out_process_id, ams::svc::Handle process_handle) {

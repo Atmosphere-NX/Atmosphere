@@ -157,6 +157,10 @@ namespace ams::kern {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    void KProcess::Exit() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
     Result KProcess::CreateThreadLocalRegion(KProcessAddress *out) {
         KThreadLocalPage *tlp = nullptr;
         KProcessAddress   tlr = Null<KProcessAddress>;
