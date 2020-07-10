@@ -64,7 +64,7 @@ namespace ams::ncm {
     };
 
     struct SystemUpdateMetaExtendedDataHeader {
-        u32 unk;                      // Always seems to be set to 2
+        u32 version;
         u32 firmware_variation_count;
     };
 

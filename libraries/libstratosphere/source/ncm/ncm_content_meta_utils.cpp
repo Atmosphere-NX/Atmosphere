@@ -94,8 +94,7 @@ namespace ams::ncm {
         PackagedContentMetaReader reader(meta.Get(), meta.GetSize());
 
         /* Define a helper to output the base meta infos. */
-        /* TODO: C++20 ALWAYS_INLINE_LAMBDA */
-        const auto ReadMetaInfoListFromBase = [&]() -> Result {
+        const auto ReadMetaInfoListFromBase = [&] ALWAYS_INLINE_LAMBDA () -> Result {
             /* Output the base content meta info count. */
             *out_count = reader.GetContentMetaCount();
 
@@ -119,22 +118,39 @@ namespace ams::ncm {
         SystemUpdateMetaExtendedDataReader extended_data_reader(reader.GetExtendedData(), reader.GetExtendedDataSize());
         std::optional<s32> firmware_variation_index = std::nullopt;
 
+        /* NOTE: Atmosphere extension to support downgrading. */
+        /* If all firmware variations refer to base, don't require the current variation be present. */
+        bool force_refer_to_base = true;
+
         /* Find the input firmware variation id. */
         for (size_t i = 0; i < extended_data_reader.GetFirmwareVariationCount(); i++) {
             if (*extended_data_reader.GetFirmwareVariationId(i) == firmware_variation_id) {
                 firmware_variation_index = i;
                 break;
+            } else {
+                /* Check if the current variation refers to base. */
+                const FirmwareVariationInfo *cur_variation_info = extended_data_reader.GetFirmwareVariationInfo(i);
+                const bool cur_refers_to_base = cur_variation_info->refer_to_base || extended_data_reader.GetHeader()->version == 1;
+
+                /* We force referral to base on unsupported variation only if all supported variations refer to base. */
+                force_refer_to_base &= cur_refers_to_base;
             }
         }
 
         /* We couldn't find the input firmware variation id. */
-        R_UNLESS(firmware_variation_index, ncm::ResultInvalidFirmwareVariation());
+        if (!firmware_variation_index) {
+            /* Unless we can force a referral to base, the firmware isn't supported. */
+            R_UNLESS(force_refer_to_base, ncm::ResultInvalidFirmwareVariation());
+
+            /* Force a referral to base. */
+            return ReadMetaInfoListFromBase();
+        }
 
         /* Obtain the variation info. */
         const FirmwareVariationInfo *variation_info = extended_data_reader.GetFirmwareVariationInfo(*firmware_variation_index);
 
-        /* Refer to base if variation info says we should, or if unk is 1 (unk is usually 2, probably a version). */
-        const bool refer_to_base = variation_info->refer_to_base || extended_data_reader.GetHeader()->unk == 1;
+        /* Refer to base if variation info says we should, or if version is 1. */
+        const bool refer_to_base = variation_info->refer_to_base || extended_data_reader.GetHeader()->version == 1;
         R_UNLESS(!refer_to_base, ReadMetaInfoListFromBase());
 
         /* Output the content meta count. */
