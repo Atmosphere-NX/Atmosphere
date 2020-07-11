@@ -30,6 +30,20 @@ namespace dbk {
         static constexpr u32 ExosphereHasRcmBugPatch       = 65004;
         static constexpr u32 ExosphereEmummcType           = 65007;
 
+        /* Insets of content within windows. */
+        static constexpr float HorizontalInset       = 20.0f;
+        static constexpr float BottomInset           = 20.0f;
+
+        /* Insets of content within text areas. */
+        static constexpr float TextHorizontalInset   = 8.0f;
+        static constexpr float TextVerticalInset     = 8.0f;
+
+        static constexpr float ButtonHeight          = 60.0f;
+        static constexpr float ButtonHorizontalGap   = 10.0f;
+
+        static constexpr float VerticalGap           = 10.0f;
+
+
         u32 g_screen_width;
         u32 g_screen_height;
 
@@ -46,6 +60,8 @@ namespace dbk {
 
         /* Update install state. */
         char g_update_path[FS_MAX_PATH];
+        bool g_reset_to_factory = false;
+        bool g_exfat_supported = false;
         bool g_use_exfat = false;
 
         constexpr u32 MaxTapMovement = 20;
@@ -306,7 +322,7 @@ namespace dbk {
         char tmp[0x100];
         va_list args;
         va_start(args, format);
-        vsnprintf(tmp, sizeof(tmp)-1, format, args);
+        vsnprintf(tmp, sizeof(tmp), format, args);
         va_end(args);
 
         /* Append the text to the log buffer. */
@@ -317,22 +333,42 @@ namespace dbk {
         return m_prev_menu;
     }
 
-    ErrorMenu::ErrorMenu(const char *text, const char *subtext, Result rc) : Menu(nullptr), m_text{}, m_subtext{}, m_result_text{}, m_rc(rc) {
-        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
-        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
-        const float y = g_screen_height / 2.0f - window_height / 2.0f;
-
+    AlertMenu::AlertMenu(std::shared_ptr<Menu> prev_menu, const char *text, const char *subtext, Result rc) : Menu(prev_menu), m_text{}, m_subtext{}, m_result_text{}, m_rc(rc){
         /* Copy the input text. */
         strncpy(m_text, text, sizeof(m_text)-1);
         strncpy(m_subtext, subtext, sizeof(m_subtext)-1);
 
         /* Copy result text if there is a result. */
         if (R_FAILED(rc)) {
-            snprintf(m_result_text, sizeof(m_result_text)-1, "Result: 0x%08x", rc);
+            snprintf(m_result_text, sizeof(m_result_text), "Result: 0x%08x", rc);
+        }
+    }
+
+    void AlertMenu::Draw(NVGcontext *vg, u64 ns) {
+        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - window_height / 2.0f;
+
+        DrawWindow(vg, m_text, x, y, WindowWidth, window_height);
+        DrawText(vg, x + HorizontalInset, y + TitleGap, WindowWidth - HorizontalInset * 2.0f, m_subtext);
+
+        /* Draw the result if there is one. */
+        if (R_FAILED(m_rc)) {
+            DrawText(vg, x + HorizontalInset, y + TitleGap + SubTextHeight, WindowWidth - HorizontalInset * 2.0f, m_result_text);
         }
 
-        const float button_y = y + TitleGap + SubTextHeight + VerticalGap + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
-        this->AddButton(ExitButtonId, "Exit", x + HorizontalGap, button_y, ButtonWidth, ButtonHeight);
+        this->DrawButtons(vg, ns);
+    }
+
+    ErrorMenu::ErrorMenu(const char *text, const char *subtext, Result rc) : AlertMenu(nullptr, text, subtext, rc)  {
+        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - window_height / 2.0f;
+        const float button_y = y + TitleGap + SubTextHeight + VerticalGap * 2.0f + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float button_width = WindowWidth - HorizontalInset * 2.0f;
+
+        /* Add buttons. */
+        this->AddButton(ExitButtonId, "Exit", x + HorizontalInset, button_y, button_width, ButtonHeight);
         this->SetButtonSelected(ExitButtonId, true);
     }
 
@@ -362,39 +398,15 @@ namespace dbk {
         }
     }
 
-    void ErrorMenu::Draw(NVGcontext *vg, u64 ns) {
+    WarningMenu::WarningMenu(std::shared_ptr<Menu> prev_menu, std::shared_ptr<Menu> next_menu, const char *text, const char *subtext, Result rc) : AlertMenu(prev_menu, text, subtext, rc), m_next_menu(next_menu) {
         const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - window_height / 2.0f;
 
-        DrawWindow(vg, m_text, x, y, WindowWidth, window_height);
-        DrawText(vg, x + HorizontalGap, y + TitleGap, WindowWidth - HorizontalGap * 2.0f, m_subtext);
-
-        /* Draw the result if there is one. */
-        if (R_FAILED(m_rc)) {
-            DrawText(vg, x + HorizontalGap, y + TitleGap + SubTextHeight, WindowWidth - HorizontalGap * 2.0f, m_result_text);
-        }
-
-        this->DrawButtons(vg, ns);
-    }
-
-    WarningMenu::WarningMenu(std::shared_ptr<Menu> prev_menu, std::shared_ptr<Menu> next_menu, const char *text, const char *subtext, Result rc) : Menu(prev_menu), m_next_menu(next_menu), m_text{}, m_subtext{}, m_result_text{}, m_rc(rc) {
-        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
-        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
-        const float y = g_screen_height / 2.0f - window_height / 2.0f;
-
-        /* Copy the input text. */
-        strncpy(m_text, text, sizeof(m_text)-1);
-        strncpy(m_subtext, subtext, sizeof(m_subtext)-1);
-
-        /* Copy result text if there is a result. */
-        if (R_FAILED(rc)) {
-            snprintf(m_result_text, sizeof(m_result_text)-1, "Result: 0x%08x", rc);
-        }
-
-        const float button_y = y + TitleGap + SubTextHeight + VerticalGap + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
-        this->AddButton(BackButtonId, "Back", x + HorizontalGap, button_y, ButtonWidth, ButtonHeight);
-        this->AddButton(ContinueButtonId, "Continue", x + HorizontalGap + ButtonWidth + ButtonHorizontalGap, button_y, ButtonWidth, ButtonHeight);
+        const float button_y = y + TitleGap + SubTextHeight + VerticalGap * 2.0f + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
+        const float button_width = (WindowWidth - HorizontalInset * 2.0f) / 2.0f - ButtonHorizontalGap;
+        this->AddButton(BackButtonId, "Back", x + HorizontalInset, button_y, button_width, ButtonHeight);
+        this->AddButton(ContinueButtonId, "Continue", x + HorizontalInset + button_width + ButtonHorizontalGap, button_y, button_width, ButtonHeight);
         this->SetButtonSelected(ContinueButtonId, true);
     }
 
@@ -427,28 +439,12 @@ namespace dbk {
         }
     }
 
-    void WarningMenu::Draw(NVGcontext *vg, u64 ns) {
-        const float window_height = WindowHeight + (R_FAILED(m_rc) ? SubTextHeight : 0.0f);
-        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
-        const float y = g_screen_height / 2.0f - window_height / 2.0f;
-
-        DrawWindow(vg, m_text, x, y, WindowWidth, window_height);
-        DrawText(vg, x + HorizontalGap, y + TitleGap, WindowWidth - HorizontalGap * 2.0f, m_subtext);
-
-        /* Draw the result if there is one. */
-        if (R_FAILED(m_rc)) {
-            DrawText(vg, x + HorizontalGap, y + TitleGap + SubTextHeight, WindowWidth - HorizontalGap * 2.0f, m_result_text);
-        }
-
-        this->DrawButtons(vg, ns);
-    }
-
     MainMenu::MainMenu() : Menu(nullptr) {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
-        this->AddButton(InstallButtonId, "Install", x + ButtonHorizontalPadding, y + TitleGap, WindowWidth - ButtonHorizontalPadding * 2, ButtonHeight);
-        this->AddButton(ExitButtonId, "Exit", x + ButtonHorizontalPadding, y + TitleGap + ButtonHeight + ButtonVerticalGap, WindowWidth - ButtonHorizontalPadding * 2, ButtonHeight);
+        this->AddButton(InstallButtonId, "Install", x + HorizontalInset, y + TitleGap, WindowWidth - HorizontalInset * 2, ButtonHeight);
+        this->AddButton(ExitButtonId, "Exit", x + HorizontalInset, y + TitleGap + ButtonHeight + VerticalGap, WindowWidth - HorizontalInset * 2, ButtonHeight);
         this->SetButtonSelected(InstallButtonId, true);
     }
 
@@ -669,7 +665,8 @@ namespace dbk {
 
         /* Determine the selected path. */
         char current_path[FS_MAX_PATH] = {};
-        snprintf(current_path, sizeof(current_path)-1, "%s%s/", m_root, entry.name);
+        const int path_len = snprintf(current_path, sizeof(current_path), "%s%s/", m_root, entry.name);
+        DBK_ABORT_UNLESS(path_len >= 0 && path_len < static_cast<int>(sizeof(current_path)));
 
         /* Determine if the chosen path is the bottom level. */
         Result rc = 0;
@@ -681,7 +678,7 @@ namespace dbk {
         /* Show exfat settings or the next file menu. */
         if (bottom_level) {
             /* Set the update path. */
-            snprintf(g_update_path, sizeof(g_update_path)-1, "%s", current_path);
+            snprintf(g_update_path, sizeof(g_update_path), "%s", current_path);
 
             /* Change the menu. */
             ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
@@ -758,10 +755,11 @@ namespace dbk {
     ValidateUpdateMenu::ValidateUpdateMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu), m_has_drawn(false), m_has_info(false), m_has_validated(false) {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
+        const float button_width = (WindowWidth - HorizontalInset * 2.0f) / 2.0f - ButtonHorizontalGap;
 
         /* Add buttons. */
-        this->AddButton(BackButtonId, "Back", x + HorizontalGap, y + WindowHeight - BottomGap - ButtonHeight, ButtonWidth, ButtonHeight);
-        this->AddButton(ContinueButtonId, "Continue", x + HorizontalGap + ButtonWidth + ButtonHorizontalGap, y + WindowHeight - BottomGap - ButtonHeight, ButtonWidth, ButtonHeight);
+        this->AddButton(BackButtonId, "Back", x + HorizontalInset, y + WindowHeight - BottomInset - ButtonHeight, button_width, ButtonHeight);
+        this->AddButton(ContinueButtonId, "Continue", x + HorizontalInset + button_width + ButtonHorizontalGap, y + WindowHeight - BottomInset - ButtonHeight, button_width, ButtonHeight);
         this->SetButtonEnabled(BackButtonId, false);
         this->SetButtonEnabled(ContinueButtonId, false);
 
@@ -868,13 +866,13 @@ namespace dbk {
                         break;
                     }
 
-                    if (m_update_info.exfat_supported) {
-                        ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
-                    } else {
+                    /* Check if exfat is supported. */
+                    g_exfat_supported = m_update_info.exfat_supported;
+                    if (!g_exfat_supported) {
                         g_use_exfat = false;
-                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
                     }
 
+                    ChangeMenu(std::make_shared<ChooseResetMenu>(g_current_menu));
                     return;
             }
         }
@@ -887,19 +885,75 @@ namespace dbk {
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
         DrawWindow(vg, "Update information", x, y, WindowWidth, WindowHeight);
-        DrawTextBackground(vg, x + HorizontalGap, y + TitleGap, WindowWidth - HorizontalGap * 2.0f, TextAreaHeight);
-        DrawTextBlock(vg, m_log_buffer, x + HorizontalGap + TextHorizontalInset, y + TitleGap + TextVerticalInset, WindowWidth - (HorizontalGap + TextHorizontalInset) * 2.0f, TextAreaHeight - TextVerticalInset * 2.0f);
+        DrawTextBackground(vg, x + HorizontalInset, y + TitleGap, WindowWidth - HorizontalInset * 2.0f, TextAreaHeight);
+        DrawTextBlock(vg, m_log_buffer, x + HorizontalInset + TextHorizontalInset, y + TitleGap + TextVerticalInset, WindowWidth - (HorizontalInset + TextHorizontalInset) * 2.0f, TextAreaHeight - TextVerticalInset * 2.0f);
 
         this->DrawButtons(vg, ns);
         m_has_drawn = true;
     }
 
-    ChooseExfatMenu::ChooseExfatMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu) {
+    ChooseResetMenu::ChooseResetMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu) {
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
+        const float button_width = (WindowWidth - HorizontalInset * 2.0f) / 2.0f - ButtonHorizontalGap;
+
+        /* Add buttons. */
+        this->AddButton(ResetToFactorySettingsButtonId, "Reset to factory settings", x + HorizontalInset, y + TitleGap, button_width, ButtonHeight);
+        this->AddButton(PreserveSettingsButtonId, "Preserve settings", x + HorizontalInset + button_width + ButtonHorizontalGap, y + TitleGap, button_width, ButtonHeight);
+        this->SetButtonSelected(PreserveSettingsButtonId, true);
+    }
+
+    void ChooseResetMenu::Update(u64 ns) {
+        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+
+        /* Go back if B is pressed. */
+        if (k_down & KEY_B) {
+            ReturnToPreviousMenu();
+            return;
+        }
+
+        /* Take action if a button has been activated. */
+        if (const Button *activated_button = this->GetActivatedButton(); activated_button != nullptr) {
+            switch (activated_button->id) {
+                case ResetToFactorySettingsButtonId:
+                    g_reset_to_factory = true;
+                    break;
+                case PreserveSettingsButtonId:
+                    g_reset_to_factory = false;
+                    break;
+            }
+
+            if (g_exfat_supported) {
+                ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
+            } else {
+                ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
+            }
+        }
+
+        this->UpdateButtons();
+
+        /* Fallback on selecting the exfat button. */
+        if (const Button *selected_button = this->GetSelectedButton(); k_down && selected_button == nullptr) {
+            this->SetButtonSelected(PreserveSettingsButtonId, true);
+        }
+    }
+
+    void ChooseResetMenu::Draw(NVGcontext *vg, u64 ns) {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
-        this->AddButton(Fat32ButtonId, "Install (FAT32)", x + ButtonHorizontalInset, y + TitleGap, ButtonWidth, ButtonHeight);
-        this->AddButton(ExFatButtonId, "Install (FAT32 + exFAT)", x + ButtonHorizontalInset + ButtonWidth + ButtonHorizontalGap, y + TitleGap, ButtonWidth, ButtonHeight);
+        DrawWindow(vg, "Select settings mode", x, y, WindowWidth, WindowHeight);
+        this->DrawButtons(vg, ns);
+    }
+
+    ChooseExfatMenu::ChooseExfatMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu) {
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
+        const float button_width = (WindowWidth - HorizontalInset * 2.0f) / 2.0f - ButtonHorizontalGap;
+
+        /* Add buttons. */
+        this->AddButton(Fat32ButtonId, "Install (FAT32)", x + HorizontalInset, y + TitleGap, button_width, ButtonHeight);
+        this->AddButton(ExFatButtonId, "Install (FAT32 + exFAT)", x + HorizontalInset + button_width + ButtonHorizontalGap, y + TitleGap, button_width, ButtonHeight);
 
         /* Set the default selected button based on the user's current install. We aren't particularly concerned if fsIsExFatSupported fails. */
         bool exfat_supported = false;
@@ -954,10 +1008,11 @@ namespace dbk {
     InstallUpdateMenu::InstallUpdateMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu), m_install_state(InstallState::NeedsDraw), m_progress_percent(0.0f) {
         const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
+        const float button_width = (WindowWidth - HorizontalInset * 2.0f) / 2.0f - ButtonHorizontalGap;
 
         /* Add buttons. */
-        this->AddButton(ShutdownButtonId, "Shutdown", x + HorizontalGap, y + WindowHeight - BottomGap - ButtonHeight, ButtonWidth, ButtonHeight);
-        this->AddButton(RebootButtonId, "Reboot", x + HorizontalGap + ButtonWidth + ButtonHorizontalGap, y + WindowHeight - BottomGap - ButtonHeight, ButtonWidth, ButtonHeight);
+        this->AddButton(ShutdownButtonId, "Shutdown", x + HorizontalInset, y + WindowHeight - BottomInset - ButtonHeight, button_width, ButtonHeight);
+        this->AddButton(RebootButtonId, "Reboot", x + HorizontalInset + button_width + ButtonHorizontalGap, y + WindowHeight - BottomInset - ButtonHeight, button_width, ButtonHeight);
         this->SetButtonEnabled(ShutdownButtonId, false);
         this->SetButtonEnabled(RebootButtonId, false);
 
@@ -1046,6 +1101,25 @@ namespace dbk {
             } else {
                 /* Log success. */
                 this->LogText("Update applied successfully.\n");
+
+                if (g_reset_to_factory) {
+                    if (R_FAILED(rc = nsResetToFactorySettingsForRefurbishment())) {
+                        /* Fallback on ResetToFactorySettings. */
+                        if (rc == MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer)) {
+                            if (R_FAILED(rc = nsResetToFactorySettings())) {
+                                this->LogText("Failed to reset to factory settings.\nResult: 0x%08x\n", rc);
+                                this->MarkForReboot();
+                                return rc;
+                            }
+                        } else {
+                            this->LogText("Failed to reset to factory settings for refurbishment.\nResult: 0x%08x\n", rc);
+                            this->MarkForReboot();
+                            return rc;
+                        }
+                    }
+
+                    this->LogText("Successfully reset to factory settings.\n", rc);
+                }
             }
 
             this->MarkForReboot();
@@ -1085,10 +1159,10 @@ namespace dbk {
         const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
 
         DrawWindow(vg, "Installing update", x, y, WindowWidth, WindowHeight);
-        DrawProgressText(vg, x + HorizontalGap, y + TitleGap, m_progress_percent);
-        DrawProgressBar(vg, x + HorizontalGap, y + TitleGap + ProgressTextHeight, WindowWidth - HorizontalGap * 2.0f, ProgressBarHeight, m_progress_percent);
-        DrawTextBackground(vg, x + HorizontalGap, y + TitleGap + ProgressTextHeight + ProgressBarHeight + VerticalGap, WindowWidth - HorizontalGap * 2.0f, TextAreaHeight);
-        DrawTextBlock(vg, m_log_buffer, x + HorizontalGap + TextHorizontalInset, y + TitleGap + ProgressTextHeight + ProgressBarHeight + VerticalGap + TextVerticalInset, WindowWidth - (HorizontalGap + TextHorizontalInset) * 2.0f, TextAreaHeight - TextVerticalInset * 2.0f);
+        DrawProgressText(vg, x + HorizontalInset, y + TitleGap, m_progress_percent);
+        DrawProgressBar(vg, x + HorizontalInset, y + TitleGap + ProgressTextHeight, WindowWidth - HorizontalInset * 2.0f, ProgressBarHeight, m_progress_percent);
+        DrawTextBackground(vg, x + HorizontalInset, y + TitleGap + ProgressTextHeight + ProgressBarHeight + VerticalGap, WindowWidth - HorizontalInset * 2.0f, TextAreaHeight);
+        DrawTextBlock(vg, m_log_buffer, x + HorizontalInset + TextHorizontalInset, y + TitleGap + ProgressTextHeight + ProgressBarHeight + VerticalGap + TextVerticalInset, WindowWidth - (HorizontalInset + TextHorizontalInset) * 2.0f, TextAreaHeight - TextVerticalInset * 2.0f);
 
         this->DrawButtons(vg, ns);
 

@@ -42,6 +42,10 @@ extern "C" {
             fatalThrow(rc);
         }
 
+        if (R_FAILED(rc = nsInitialize())) {
+            fatalThrow(rc);
+        }
+
         if (R_FAILED(rc = hiddbgInitialize())) {
             fatalThrow(rc);
         }
@@ -50,6 +54,7 @@ extern "C" {
 
     void userAppExit(void) {
         hiddbgExit();
+        nsExit();
         splExit();
         plExit();
         spsmExit();
