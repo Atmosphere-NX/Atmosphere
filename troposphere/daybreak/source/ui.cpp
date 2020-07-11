@@ -60,6 +60,8 @@ namespace dbk {
 
         /* Update install state. */
         char g_update_path[FS_MAX_PATH];
+        bool g_reset_to_factory = false;
+        bool g_exfat_supported = false;
         bool g_use_exfat = false;
 
         constexpr u32 MaxTapMovement = 20;
@@ -864,13 +866,13 @@ namespace dbk {
                         break;
                     }
 
-                    if (m_update_info.exfat_supported) {
-                        ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
-                    } else {
+                    /* Check if exfat is supported. */
+                    g_exfat_supported = m_update_info.exfat_supported;
+                    if (!g_exfat_supported) {
                         g_use_exfat = false;
-                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
                     }
 
+                    ChangeMenu(std::make_shared<ChooseResetMenu>(g_current_menu));
                     return;
             }
         }
@@ -888,6 +890,60 @@ namespace dbk {
 
         this->DrawButtons(vg, ns);
         m_has_drawn = true;
+    }
+
+    ChooseResetMenu::ChooseResetMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu) {
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
+        const float button_width = (WindowWidth - HorizontalInset * 2.0f) / 2.0f - ButtonHorizontalGap;
+
+        /* Add buttons. */
+        this->AddButton(ResetToFactorySettingsButtonId, "Reset to factory settings", x + HorizontalInset, y + TitleGap, button_width, ButtonHeight);
+        this->AddButton(PreserveSettingsButtonId, "Preserve settings", x + HorizontalInset + button_width + ButtonHorizontalGap, y + TitleGap, button_width, ButtonHeight);
+        this->SetButtonSelected(PreserveSettingsButtonId, true);
+    }
+
+    void ChooseResetMenu::Update(u64 ns) {
+        u64 k_down = hidKeysDown(CONTROLLER_P1_AUTO);
+
+        /* Go back if B is pressed. */
+        if (k_down & KEY_B) {
+            ReturnToPreviousMenu();
+            return;
+        }
+
+        /* Take action if a button has been activated. */
+        if (const Button *activated_button = this->GetActivatedButton(); activated_button != nullptr) {
+            switch (activated_button->id) {
+                case ResetToFactorySettingsButtonId:
+                    g_reset_to_factory = true;
+                    break;
+                case PreserveSettingsButtonId:
+                    g_reset_to_factory = false;
+                    break;
+            }
+
+            if (g_exfat_supported) {
+                ChangeMenu(std::make_shared<ChooseExfatMenu>(g_current_menu));
+            } else {
+                ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<InstallUpdateMenu>(g_current_menu), "Ready to begin update installation", "Are you sure you want to proceed?"));
+            }
+        }
+
+        this->UpdateButtons();
+
+        /* Fallback on selecting the exfat button. */
+        if (const Button *selected_button = this->GetSelectedButton(); k_down && selected_button == nullptr) {
+            this->SetButtonSelected(PreserveSettingsButtonId, true);
+        }
+    }
+
+    void ChooseResetMenu::Draw(NVGcontext *vg, u64 ns) {
+        const float x = g_screen_width / 2.0f - WindowWidth / 2.0f;
+        const float y = g_screen_height / 2.0f - WindowHeight / 2.0f;
+
+        DrawWindow(vg, "Select settings mode", x, y, WindowWidth, WindowHeight);
+        this->DrawButtons(vg, ns);
     }
 
     ChooseExfatMenu::ChooseExfatMenu(std::shared_ptr<Menu> prev_menu) : Menu(prev_menu) {
@@ -1045,6 +1101,25 @@ namespace dbk {
             } else {
                 /* Log success. */
                 this->LogText("Update applied successfully.\n");
+
+                if (g_reset_to_factory) {
+                    if (R_FAILED(rc = nsResetToFactorySettingsForRefurbishment())) {
+                        /* Fallback on ResetToFactorySettings. */
+                        if (rc == MAKERESULT(Module_Libnx, LibnxError_IncompatSysVer)) {
+                            if (R_FAILED(rc = nsResetToFactorySettings())) {
+                                this->LogText("Failed to reset to factory settings.\nResult: 0x%08x\n", rc);
+                                this->MarkForReboot();
+                                return rc;
+                            }
+                        } else {
+                            this->LogText("Failed to reset to factory settings for refurbishment.\nResult: 0x%08x\n", rc);
+                            this->MarkForReboot();
+                            return rc;
+                        }
+                    }
+
+                    this->LogText("Successfully reset to factory settings.\n", rc);
+                }
             }
 
             this->MarkForReboot();

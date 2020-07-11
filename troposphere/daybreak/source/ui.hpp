@@ -197,6 +197,21 @@ namespace dbk {
             virtual void Draw(NVGcontext *vg, u64 ns) override;
     };
 
+    class ChooseResetMenu : public Menu {
+        private:
+            static constexpr u32 ResetToFactorySettingsButtonId = 0;
+            static constexpr u32 PreserveSettingsButtonId = 1;
+
+            static constexpr float WindowWidth           = 600.0f;
+            static constexpr float WindowHeight          = 170.0f;
+            static constexpr float TitleGap              = 90.0f;
+        public:
+            ChooseResetMenu(std::shared_ptr<Menu> prev_menu);
+
+            virtual void Update(u64 ns) override;
+            virtual void Draw(NVGcontext *vg, u64 ns) override;
+    };
+
     class ChooseExfatMenu : public Menu {
         private:
             static constexpr u32 Fat32ButtonId = 0;
