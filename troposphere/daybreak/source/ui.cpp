@@ -320,7 +320,7 @@ namespace dbk {
         char tmp[0x100];
         va_list args;
         va_start(args, format);
-        vsnprintf(tmp, sizeof(tmp)-1, format, args);
+        vsnprintf(tmp, sizeof(tmp), format, args);
         va_end(args);
 
         /* Append the text to the log buffer. */
@@ -338,7 +338,7 @@ namespace dbk {
 
         /* Copy result text if there is a result. */
         if (R_FAILED(rc)) {
-            snprintf(m_result_text, sizeof(m_result_text)-1, "Result: 0x%08x", rc);
+            snprintf(m_result_text, sizeof(m_result_text), "Result: 0x%08x", rc);
         }
     }
 
@@ -663,7 +663,8 @@ namespace dbk {
 
         /* Determine the selected path. */
         char current_path[FS_MAX_PATH] = {};
-        snprintf(current_path, sizeof(current_path)-1, "%s%s/", m_root, entry.name);
+        const int path_len = snprintf(current_path, sizeof(current_path), "%s%s/", m_root, entry.name);
+        DBK_ABORT_UNLESS(path_len >= 0 && path_len < static_cast<int>(sizeof(current_path)));
 
         /* Determine if the chosen path is the bottom level. */
         Result rc = 0;
@@ -675,7 +676,7 @@ namespace dbk {
         /* Show exfat settings or the next file menu. */
         if (bottom_level) {
             /* Set the update path. */
-            snprintf(g_update_path, sizeof(g_update_path)-1, "%s", current_path);
+            snprintf(g_update_path, sizeof(g_update_path), "%s", current_path);
 
             /* Change the menu. */
             ChangeMenu(std::make_shared<ValidateUpdateMenu>(g_current_menu));
