@@ -193,6 +193,18 @@ namespace ams::kern {
 
             bool IsLockedByCurrentThread() const { return this->general_lock.IsLockedByCurrentThread(); }
 
+            bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr) {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsLinearMappedPhysicalAddress(std::addressof(this->cached_physical_linear_region), phys_addr, this->cached_physical_linear_region);
+            }
+
+            bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsLinearMappedPhysicalAddress(std::addressof(this->cached_physical_linear_region), phys_addr, size, this->cached_physical_linear_region);
+            }
+
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
@@ -223,6 +235,8 @@ namespace ams::kern {
         private:
             constexpr size_t GetNumGuardPages() const { return this->IsKernel() ? 1 : 4; }
             ALWAYS_INLINE KProcessAddress FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const;
+
+            Result CheckMemoryStateContiguous(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const;
 
             Result CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const;
             Result CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr = DefaultMemoryIgnoreAttr) const;
@@ -313,28 +327,28 @@ namespace ams::kern {
                 return this->GetHeapRegionSize() + this->mapped_physical_memory_size;
             }
         public:
-            static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress addr) {
+            static ALWAYS_INLINE KVirtualAddress GetLinearMappedVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);
             }
 
-            static ALWAYS_INLINE KPhysicalAddress GetLinearPhysicalAddress(KVirtualAddress addr) {
+            static ALWAYS_INLINE KPhysicalAddress GetLinearMappedPhysicalAddress(KVirtualAddress addr) {
                 return KMemoryLayout::GetLinearPhysicalAddress(addr);
             }
 
             static ALWAYS_INLINE KVirtualAddress GetHeapVirtualAddress(KPhysicalAddress addr) {
-                return GetLinearVirtualAddress(addr);
+                return GetLinearMappedVirtualAddress(addr);
             }
 
             static ALWAYS_INLINE KPhysicalAddress GetHeapPhysicalAddress(KVirtualAddress addr) {
-                return GetLinearPhysicalAddress(addr);
+                return GetLinearMappedPhysicalAddress(addr);
             }
 
             static ALWAYS_INLINE KVirtualAddress GetPageTableVirtualAddress(KPhysicalAddress addr) {
-                return GetLinearVirtualAddress(addr);
+                return GetLinearMappedVirtualAddress(addr);
             }
 
             static ALWAYS_INLINE KPhysicalAddress GetPageTablePhysicalAddress(KVirtualAddress addr) {
-                return GetLinearPhysicalAddress(addr);
+                return GetLinearMappedPhysicalAddress(addr);
             }
     };
 

@@ -546,6 +546,48 @@ namespace ams::kern {
                 return false;
             }
 
+            static NOINLINE bool IsLinearMappedPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, const KMemoryRegion *hint = nullptr) {
+                auto &tree = GetPhysicalLinearMemoryRegionTree();
+                KMemoryRegionTree::const_iterator it = tree.end();
+                if (hint != nullptr) {
+                    it = tree.iterator_to(*hint);
+                }
+                if (it == tree.end() || !it->Contains(GetInteger(address))) {
+                    it = tree.FindContainingRegion(GetInteger(address));
+                }
+                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionAttr_LinearMapped)) {
+                    if (out) {
+                        *out = std::addressof(*it);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            static NOINLINE bool IsLinearMappedPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, size_t size, const KMemoryRegion *hint = nullptr) {
+                auto &tree = GetPhysicalLinearMemoryRegionTree();
+                KMemoryRegionTree::const_iterator it = tree.end();
+                if (hint != nullptr) {
+                    it = tree.iterator_to(*hint);
+                }
+                if (it == tree.end() || !it->Contains(GetInteger(address))) {
+                    it = tree.FindContainingRegion(GetInteger(address));
+                }
+                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionAttr_LinearMapped)) {
+                    const uintptr_t last_address = GetInteger(address) + size - 1;
+                    do {
+                        if (last_address <= it->GetLastAddress()) {
+                            if (out) {
+                                *out = std::addressof(*it);
+                            }
+                            return true;
+                        }
+                        it++;
+                    } while (it != tree.end() && it->IsDerivedFrom(KMemoryRegionAttr_LinearMapped));
+                }
+                return false;
+            }
+
             static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion **out, KVirtualAddress address, const KMemoryRegion *hint = nullptr) {
                 auto &tree = GetVirtualLinearMemoryRegionTree();
                 KMemoryRegionTree::const_iterator it = tree.end();

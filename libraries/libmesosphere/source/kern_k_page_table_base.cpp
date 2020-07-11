@@ -394,6 +394,32 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::CheckMemoryStateContiguous(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Get information about the first block. */
+        const KProcessAddress last_addr = addr + size - 1;
+        KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(addr);
+        KMemoryInfo info = it->GetMemoryInfo();
+
+        while (true) {
+            /* Validate against the provided masks. */
+            R_TRY(this->CheckMemoryState(info, state_mask, state, perm_mask, perm, attr_mask, attr));
+
+            /* Break once we're done. */
+            if (last_addr <= info.GetLastAddress()) {
+                break;
+            }
+
+            /* Advance our iterator. */
+            it++;
+            MESOSPHERE_ASSERT(it != this->memory_block_manager.cend());
+            info = it->GetMemoryInfo();
+        }
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
@@ -1293,19 +1319,301 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lightly validate the range before doing anything else. */
+        R_UNLESS(this->Contains(src_addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Copy the memory. */
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Check memory state. */
+            R_TRY(this->CheckMemoryStateContiguous(src_addr, size, src_state_mask, src_state, src_test_perm, src_test_perm, src_attr_mask | KMemoryAttribute_Uncached, src_attr));
+
+            auto &impl = this->GetImpl();
+
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   next_entry;
+            bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), src_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+
+            /* Prepare tracking variables. */
+            KPhysicalAddress cur_addr = next_entry.phys_addr;
+            size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+            size_t tot_size = cur_size;
+
+            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                /* Ensure the address is linear mapped. */
+                R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+                /* Copy as much aligned data as we can. */
+                if (cur_size >= sizeof(u32)) {
+                    const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
+                    R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(GetVoidPointer(dst_addr), GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size), svc::ResultInvalidCurrentMemory());
+                    dst_addr += copy_size;
+                    cur_addr += copy_size;
+                    cur_size -= copy_size;
+                }
+
+                /* Copy remaining data. */
+                if (cur_size > 0) {
+                    R_UNLESS(UserspaceAccess::CopyMemoryToUser(GetVoidPointer(dst_addr), GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size), svc::ResultInvalidCurrentMemory());
+                }
+
+                return ResultSuccess();
+            };
+
+            /* Iterate. */
+            while (tot_size < size) {
+                /* Continue the traversal. */
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                MESOSPHERE_ASSERT(traverse_valid);
+
+                if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                    /* Perform copy. */
+                    R_TRY(PerformCopy());
+
+                    /* Advance. */
+                    dst_addr += cur_size;
+
+                    cur_addr = next_entry.phys_addr;
+                    cur_size = next_entry.block_size;
+                } else {
+                    cur_size += next_entry.block_size;
+                }
+
+                tot_size += next_entry.block_size;
+            }
+
+            /* Ensure we use the right size for the last block. */
+            if (tot_size > size) {
+                cur_size -= (tot_size - size);
+            }
+
+            /* Perform copy for the last block. */
+            R_TRY(PerformCopy());
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToKernel(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lightly validate the range before doing anything else. */
+        R_UNLESS(this->Contains(src_addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Copy the memory. */
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Check memory state. */
+            R_TRY(this->CheckMemoryStateContiguous(src_addr, size, src_state_mask, src_state, src_test_perm, src_test_perm, src_attr_mask | KMemoryAttribute_Uncached, src_attr));
+
+            auto &impl = this->GetImpl();
+
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   next_entry;
+            bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), src_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+
+            /* Prepare tracking variables. */
+            KPhysicalAddress cur_addr = next_entry.phys_addr;
+            size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+            size_t tot_size = cur_size;
+
+            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                /* Ensure the address is linear mapped. */
+                R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+                /* Copy the data. */
+                std::memcpy(GetVoidPointer(dst_addr), GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
+
+                return ResultSuccess();
+            };
+
+            /* Iterate. */
+            while (tot_size < size) {
+                /* Continue the traversal. */
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                MESOSPHERE_ASSERT(traverse_valid);
+
+                if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                    /* Perform copy. */
+                    R_TRY(PerformCopy());
+
+                    /* Advance. */
+                    dst_addr += cur_size;
+
+                    cur_addr = next_entry.phys_addr;
+                    cur_size = next_entry.block_size;
+                } else {
+                    cur_size += next_entry.block_size;
+                }
+
+                tot_size += next_entry.block_size;
+            }
+
+            /* Ensure we use the right size for the last block. */
+            if (tot_size > size) {
+                cur_size -= (tot_size - size);
+            }
+
+            /* Perform copy for the last block. */
+            R_TRY(PerformCopy());
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CopyMemoryFromUserToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lightly validate the range before doing anything else. */
+        R_UNLESS(this->Contains(dst_addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Copy the memory. */
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Check memory state. */
+            R_TRY(this->CheckMemoryStateContiguous(dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_test_perm, dst_attr_mask | KMemoryAttribute_Uncached, dst_attr));
+
+            auto &impl = this->GetImpl();
+
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   next_entry;
+            bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), dst_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+
+            /* Prepare tracking variables. */
+            KPhysicalAddress cur_addr = next_entry.phys_addr;
+            size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+            size_t tot_size = cur_size;
+
+            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                /* Ensure the address is linear mapped. */
+                R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+                /* Copy as much aligned data as we can. */
+                if (cur_size >= sizeof(u32)) {
+                    const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
+                    R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), GetVoidPointer(src_addr), copy_size), svc::ResultInvalidCurrentMemory());
+                    src_addr += copy_size;
+                    cur_addr += copy_size;
+                    cur_size -= copy_size;
+                }
+
+                /* Copy remaining data. */
+                if (cur_size > 0) {
+                    R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), GetVoidPointer(src_addr), cur_size), svc::ResultInvalidCurrentMemory());
+                }
+
+                return ResultSuccess();
+            };
+
+            /* Iterate. */
+            while (tot_size < size) {
+                /* Continue the traversal. */
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                MESOSPHERE_ASSERT(traverse_valid);
+
+                if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                    /* Perform copy. */
+                    R_TRY(PerformCopy());
+
+                    /* Advance. */
+                    src_addr += cur_size;
+
+                    cur_addr = next_entry.phys_addr;
+                    cur_size = next_entry.block_size;
+                } else {
+                    cur_size += next_entry.block_size;
+                }
+
+                tot_size += next_entry.block_size;
+            }
+
+            /* Ensure we use the right size for the last block. */
+            if (tot_size > size) {
+                cur_size -= (tot_size - size);
+            }
+
+            /* Perform copy for the last block. */
+            R_TRY(PerformCopy());
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CopyMemoryFromKernelToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lightly validate the range before doing anything else. */
+        R_UNLESS(this->Contains(dst_addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Copy the memory. */
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Check memory state. */
+            R_TRY(this->CheckMemoryStateContiguous(dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_test_perm, dst_attr_mask | KMemoryAttribute_Uncached, dst_attr));
+
+            auto &impl = this->GetImpl();
+
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   next_entry;
+            bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), dst_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+
+            /* Prepare tracking variables. */
+            KPhysicalAddress cur_addr = next_entry.phys_addr;
+            size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+            size_t tot_size = cur_size;
+
+            auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+                /* Ensure the address is linear mapped. */
+                R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+                /* Copy the data. */
+                std::memcpy(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), GetVoidPointer(src_addr), cur_size);
+
+                return ResultSuccess();
+            };
+
+            /* Iterate. */
+            while (tot_size < size) {
+                /* Continue the traversal. */
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                MESOSPHERE_ASSERT(traverse_valid);
+
+                if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                    /* Perform copy. */
+                    R_TRY(PerformCopy());
+
+                    /* Advance. */
+                    src_addr += cur_size;
+
+                    cur_addr = next_entry.phys_addr;
+                    cur_size = next_entry.block_size;
+                } else {
+                    cur_size += next_entry.block_size;
+                }
+
+                tot_size += next_entry.block_size;
+            }
+
+            /* Ensure we use the right size for the last block. */
+            if (tot_size > size) {
+                cur_size -= (tot_size - size);
+            }
+
+            /* Perform copy for the last block. */
+            R_TRY(PerformCopy());
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToLinear(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {

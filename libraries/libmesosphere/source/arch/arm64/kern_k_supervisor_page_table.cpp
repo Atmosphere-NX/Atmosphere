@@ -34,7 +34,7 @@ namespace ams::kern::arch::arm64 {
             const u64 ttbr1 = cpu::GetTtbr1El1() & 0xFFFFFFFFFFFFul;
             const u64 kernel_vaddr_start = 0xFFFFFF8000000000ul;
             const u64 kernel_vaddr_end   = 0xFFFFFFFFFFE00000ul;
-            void *table = GetVoidPointer(KPageTableBase::GetLinearVirtualAddress(ttbr1));
+            void *table = GetVoidPointer(KPageTableBase::GetLinearMappedVirtualAddress(ttbr1));
             this->page_table.InitializeForKernel(table, kernel_vaddr_start, kernel_vaddr_end);
         }
     }

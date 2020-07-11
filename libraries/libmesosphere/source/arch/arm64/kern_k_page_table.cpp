@@ -172,7 +172,7 @@ namespace ams::kern::arch::arm64 {
         const KVirtualAddress page = this->manager->Allocate();
         MESOSPHERE_ASSERT(page != Null<KVirtualAddress>);
         cpu::ClearPageToZero(GetVoidPointer(page));
-        this->ttbr = GetInteger(KPageTableBase::GetLinearPhysicalAddress(page)) | asid_tag;
+        this->ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
 
         /* Initialize the base page table. */
         MESOSPHERE_R_ABORT_UNLESS(KPageTableBase::InitializeForKernel(true, table, start, end));
@@ -619,7 +619,7 @@ namespace ams::kern::arch::arm64 {
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 for (const auto &block : pg) {
-                    const KPhysicalAddress block_phys_addr = GetLinearPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
                     const size_t cur_pages = block.GetNumPages();
                     R_TRY(this->Map(virt_addr, block_phys_addr, cur_pages, entry_template, L3BlockSize, page_list, reuse_ll));
 
@@ -631,7 +631,7 @@ namespace ams::kern::arch::arm64 {
                 AlignedMemoryBlock virt_block(GetInteger(virt_addr), num_pages, L1BlockSize);
                 for (const auto &block : pg) {
                     /* Create a block representing this physical group, synchronize its alignment to our virtual block. */
-                    const KPhysicalAddress block_phys_addr = GetLinearPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
                     size_t cur_pages = block.GetNumPages();
 
                     AlignedMemoryBlock phys_block(GetInteger(block_phys_addr), cur_pages, virt_block.GetAlignment());
