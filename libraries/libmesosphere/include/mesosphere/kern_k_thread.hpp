@@ -268,6 +268,9 @@ namespace ams::kern {
             ALWAYS_INLINE void AddWaiterImpl(KThread *thread);
             ALWAYS_INLINE void RemoveWaiterImpl(KThread *thread);
             ALWAYS_INLINE static void RestorePriority(KThread *thread);
+
+            void StartTermination();
+            void FinishTermination();
         public:
             constexpr u64 GetThreadId() const { return this->thread_id; }
 

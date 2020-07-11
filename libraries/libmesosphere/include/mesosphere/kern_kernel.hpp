@@ -94,6 +94,10 @@ namespace ams::kern {
             static KThread &GetMainThread(s32 core_id);
             static KThread &GetIdleThread(s32 core_id);
 
+            static ALWAYS_INLINE KCurrentContext &GetCurrentContext(s32 core_id) {
+                return GetCoreLocalContext(core_id).current;
+            }
+
             static ALWAYS_INLINE KScheduler &GetScheduler() {
                 return GetCoreLocalContext().scheduler;
             }

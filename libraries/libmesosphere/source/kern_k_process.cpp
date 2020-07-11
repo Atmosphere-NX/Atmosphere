@@ -272,6 +272,25 @@ namespace ams::kern {
         }
     }
 
+    bool KProcess::EnterUserException() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    bool KProcess::LeaveUserException() {
+        return this->ReleaseUserException(GetCurrentThreadPointer());
+    }
+
+    bool KProcess::ReleaseUserException(KThread *thread) {
+        KScopedSchedulerLock sl;
+
+        if (this->exception_thread == thread) {
+            /* TODO */
+            MESOSPHERE_UNIMPLEMENTED();
+        } else {
+            return false;
+        }
+    }
+
     void KProcess::RegisterThread(KThread *thread) {
         KScopedLightLock lk(this->list_lock);
 

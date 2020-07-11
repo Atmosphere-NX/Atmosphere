@@ -262,6 +262,16 @@ namespace ams::kern {
         cpu::SwitchThreadLocalRegion(GetInteger(next_thread->GetThreadLocalRegionAddress()));
     }
 
+    void KScheduler::ClearPreviousThread(KThread *thread) {
+        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
+        for (size_t i = 0; i < cpu::NumCores; ++i) {
+            std::atomic<KThread *> *prev_thread_ptr = reinterpret_cast<std::atomic<KThread *> *>(std::addressof(Kernel::GetScheduler(static_cast<s32>(i)).prev_thread));
+            static_assert(sizeof(*prev_thread_ptr) == sizeof(KThread *));
+
+            prev_thread_ptr->compare_exchange_weak(thread, nullptr);
+        }
+    }
+
     void KScheduler::OnThreadStateChanged(KThread *thread, KThread::ThreadState old_state) {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
 

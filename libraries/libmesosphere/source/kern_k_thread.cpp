@@ -278,8 +278,60 @@ namespace ams::kern {
         this->Wakeup();
     }
 
+    void KThread::StartTermination() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Release user exception, if relevant. */
+        if (this->parent != nullptr) {
+            this->parent->ReleaseUserException(this);
+            if (this->parent->GetPreemptionStatePinnedThread(GetCurrentCoreId()) == this) {
+                /* TODO: this->parent->UnpinCurrentThread(); */
+                MESOSPHERE_UNIMPLEMENTED();
+            }
+        }
+
+        /* Set state to terminated. */
+        this->SetState(KThread::ThreadState_Terminated);
+
+        /* Clear the thread's status as running in parent. */
+        if (this->parent != nullptr) {
+            this->parent->ClearRunningThread(this);
+        }
+
+        /* Signal. */
+        this->signaled = true;
+        this->NotifyAvailable();
+
+        /* TODO: On Thread Termination handler */
+
+        /* Clear previous thread in KScheduler. */
+        KScheduler::ClearPreviousThread(this);
+
+        /* Register terminated dpc flag. */
+        this->RegisterDpc(DpcFlag_Terminated);
+    }
+
+    void KThread::FinishTermination() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Ensure that the thread is not executing on any core. */
+        if (this->parent != nullptr) {
+            for (size_t i = 0; i < cpu::NumCores; ++i) {
+                KThread *core_thread;
+                do {
+                    core_thread = Kernel::GetCurrentContext(i).current_thread.load(std::memory_order_acquire);
+                } while (core_thread == this);
+            }
+        }
+
+        /* Close the thread. */
+        this->Close();
+    }
+
     void KThread::DoWorkerTask() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Finish the termination that was begun by Exit(). */
+        this->FinishTermination();
     }
 
     void KThread::DisableCoreMigration() {
@@ -586,7 +638,28 @@ namespace ams::kern {
     void KThread::Exit() {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_UNIMPLEMENTED();
+        MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
+
+        /* TODO: KDebug::OnExitThread(this); */
+
+        /* Release the thread resource hint from parent. */
+        if (this->parent != nullptr) {
+            this->parent->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 0, 1);
+        }
+
+        /* Perform termination. */
+        {
+            KScopedSchedulerLock sl;
+
+            /* Disallow all suspension. */
+            this->suspend_allowed_flags = 0;
+
+            /* Start termination. */
+            this->StartTermination();
+
+            /* Register the thread as a work task. */
+            KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_Exit, this);
+        }
 
         MESOSPHERE_PANIC("KThread::Exit() would return");
     }

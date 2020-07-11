@@ -147,6 +147,10 @@ namespace ams::kern {
                 return this->is_suspended;
             }
 
+            bool EnterUserException();
+            bool LeaveUserException();
+            bool ReleaseUserException(KThread *thread);
+
             KThread *GetPreemptionStatePinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 return this->pinned_threads[core_id];
@@ -185,6 +189,14 @@ namespace ams::kern {
 
             void IncrementThreadCount();
             void DecrementThreadCount();
+
+            void ClearRunningThread(KThread *thread) {
+                for (size_t i = 0; i < util::size(this->running_threads); ++i) {
+                    if (this->running_threads[i] == thread) {
+                        this->running_threads[i] = nullptr;
+                    }
+                }
+            }
 
             void RegisterThread(KThread *thread);
             void UnregisterThread(KThread *thread);

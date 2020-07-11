@@ -613,7 +613,7 @@ namespace ams::kern {
 
             /* Apply the memory block updates. */
             this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state, new_src_perm, new_src_attr);
-            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_Stack, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
         }
 
         return ResultSuccess();

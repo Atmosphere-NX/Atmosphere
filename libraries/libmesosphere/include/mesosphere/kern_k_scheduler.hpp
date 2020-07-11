@@ -116,6 +116,8 @@ namespace ams::kern {
                 }
             }
 
+            static NOINLINE void ClearPreviousThread(KThread *thread);
+
             static NOINLINE void OnThreadStateChanged(KThread *thread, KThread::ThreadState old_state);
             static NOINLINE void OnThreadPriorityChanged(KThread *thread, s32 old_priority);
             static NOINLINE void OnThreadAffinityMaskChanged(KThread *thread, const KAffinityMask &old_affinity, s32 old_core);
