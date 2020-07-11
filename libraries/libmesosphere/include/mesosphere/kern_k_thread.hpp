@@ -349,6 +349,9 @@ namespace ams::kern {
             constexpr s64 GetLastScheduledTick() const { return this->last_scheduled_tick; }
             constexpr void SetLastScheduledTick(s64 tick) { this->last_scheduled_tick = tick; }
 
+            constexpr s64 GetYieldScheduleCount() const { return this->schedule_count; }
+            constexpr void SetYieldScheduleCount(s64 count) { this->schedule_count = count; }
+
             constexpr KProcess *GetOwnerProcess() const { return this->parent; }
             constexpr bool IsUserThread() const { return this->parent != nullptr; }
 
