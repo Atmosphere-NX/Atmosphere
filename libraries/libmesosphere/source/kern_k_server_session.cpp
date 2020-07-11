@@ -250,14 +250,14 @@ namespace ams::kern {
 
                 /* Perform the pointer data copy. */
                 if (dst_user) {
-                    R_TRY(src_page_table.CopyMemoryFromLinearToLinearWithoutCheckDestination(dst_page_table, recv_pointer, recv_size,
-                                                                                             KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                                             static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                                                                             KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
-                                                                                             src_pointer,
-                                                                                             KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                                             KMemoryPermission_UserRead,
-                                                                                             KMemoryAttribute_Uncached, KMemoryAttribute_None));
+                    R_TRY(src_page_table.CopyMemoryFromHeapToHeapWithoutCheckDestination(dst_page_table, recv_pointer, recv_size,
+                                                                                         KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                                         static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
+                                                                                         KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                                                                         src_pointer,
+                                                                                         KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                                         KMemoryPermission_UserRead,
+                                                                                         KMemoryAttribute_Uncached, KMemoryAttribute_None));
                 } else {
                     R_TRY(src_page_table.CopyMemoryFromLinearToUser(recv_pointer, recv_size, src_pointer,
                                                                     KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
@@ -644,14 +644,14 @@ namespace ams::kern {
 
                     /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
                     if (fast_size < raw_size) {
-                        R_TRY(src_page_table.CopyMemoryFromLinearToLinear(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
-                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                                                          KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
-                                                                          src_message_buffer + max_fast_size,
-                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                          src_perm,
-                                                                          KMemoryAttribute_Uncached, KMemoryAttribute_None));
+                        R_TRY(src_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
+                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
+                                                                      KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                                                      src_message_buffer + max_fast_size,
+                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      src_perm,
+                                                                      KMemoryAttribute_Uncached, KMemoryAttribute_None));
                     }
                 } else /* if (src_user) */ {
                     /* The source is a user buffer, so it should be unmapped + readable. */
@@ -894,14 +894,14 @@ namespace ams::kern {
 
                     /* If the fast part of the copy didn't get everything, perform the slow part of the copy. */
                     if (fast_size < raw_size) {
-                        R_TRY(src_page_table.CopyMemoryFromLinearToLinear(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
-                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                          dst_perm,
-                                                                          KMemoryAttribute_Uncached, KMemoryAttribute_None,
-                                                                          src_message_buffer + max_fast_size,
-                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
-                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelRead),
-                                                                          KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
+                        R_TRY(src_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
+                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      dst_perm,
+                                                                      KMemoryAttribute_Uncached, KMemoryAttribute_None,
+                                                                      src_message_buffer + max_fast_size,
+                                                                      KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                                      static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelRead),
+                                                                      KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
                     }
                 } else /* if (dst_user) */ {
                     /* The destination is a user buffer, so it should be unmapped + readable. */

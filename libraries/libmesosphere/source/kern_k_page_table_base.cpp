@@ -1616,12 +1616,257 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::CopyMemoryFromLinearToLinear(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
-        MESOSPHERE_UNIMPLEMENTED();
+    Result KPageTableBase::CopyMemoryFromHeapToHeap(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+        /* For convenience, alias this. */
+        KPageTableBase &src_page_table = *this;
+
+        /* Lightly validate the ranges before doing anything else. */
+        R_UNLESS(src_page_table.Contains(src_addr, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(dst_page_table.Contains(dst_addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Copy the memory. */
+        {
+            /* Get the table locks. */
+            KLightLock &lock_0 = (reinterpret_cast<uintptr_t>(std::addressof(src_page_table)) <= reinterpret_cast<uintptr_t>(std::addressof(dst_page_table))) ? src_page_table.general_lock : dst_page_table.general_lock;
+            KLightLock &lock_1 = (reinterpret_cast<uintptr_t>(std::addressof(src_page_table)) <= reinterpret_cast<uintptr_t>(std::addressof(dst_page_table))) ? dst_page_table.general_lock : src_page_table.general_lock;
+
+            /* Lock the first lock. */
+            KScopedLightLock lk0(lock_0);
+
+            /* If necessary, lock the second lock. */
+            std::optional<KScopedLightLock> lk1;
+            if (std::addressof(lock_0) != std::addressof(lock_1)) {
+                lk1.emplace(lock_1);
+            }
+
+            /* Check memory state. */
+            R_TRY(src_page_table.CheckMemoryStateContiguous(src_addr, size, src_state_mask, src_state, src_test_perm, src_test_perm, src_attr_mask | KMemoryAttribute_Uncached, src_attr));
+            R_TRY(dst_page_table.CheckMemoryStateContiguous(dst_addr, size, dst_state_mask, dst_state, dst_test_perm, dst_test_perm, dst_attr_mask | KMemoryAttribute_Uncached, dst_attr));
+
+            /* Get implementations. */
+            auto &src_impl = src_page_table.GetImpl();
+            auto &dst_impl = dst_page_table.GetImpl();
+
+            /* Prepare for traversal. */
+            TraversalContext src_context;
+            TraversalContext dst_context;
+            TraversalEntry   src_next_entry;
+            TraversalEntry   dst_next_entry;
+            bool             traverse_valid;
+
+            /* Begin traversal. */
+            traverse_valid = src_impl.BeginTraversal(std::addressof(src_next_entry), std::addressof(src_context), src_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+            traverse_valid = dst_impl.BeginTraversal(std::addressof(dst_next_entry), std::addressof(dst_context), dst_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+
+            /* Prepare tracking variables. */
+            KPhysicalAddress cur_src_block_addr = src_next_entry.phys_addr;
+            KPhysicalAddress cur_dst_block_addr = dst_next_entry.phys_addr;
+            size_t cur_src_size = src_next_entry.block_size - (GetInteger(cur_src_block_addr) & (src_next_entry.block_size - 1));
+            size_t cur_dst_size = dst_next_entry.block_size - (GetInteger(cur_dst_block_addr) & (dst_next_entry.block_size - 1));
+
+            /* Adjust the initial block sizes. */
+            src_next_entry.block_size = cur_src_size;
+            dst_next_entry.block_size = cur_dst_size;
+
+            /* Before we get any crazier, succeed if there's nothing to do. */
+            R_SUCCEED_IF(size == 0);
+
+            /* We're going to manage dual traversal via an offset against the total size. */
+            KPhysicalAddress cur_src_addr = cur_src_block_addr;
+            KPhysicalAddress cur_dst_addr = cur_dst_block_addr;
+            size_t cur_min_size = std::min<size_t>(cur_src_size, cur_dst_size);
+
+            /* Iterate. */
+            size_t ofs = 0;
+            while (ofs < size) {
+                /* Determine how much we can copy this iteration. */
+                const size_t cur_copy_size = std::min<size_t>(cur_min_size, size - ofs);
+
+                /* If we need to advance the traversals, do so. */
+                bool updated_src = false, updated_dst = false, skip_copy = false;
+                if (ofs + cur_copy_size != size) {
+                    if (cur_src_addr + cur_min_size == cur_src_block_addr + cur_src_size) {
+                        /* Continue the src traversal. */
+                        traverse_valid = src_impl.ContinueTraversal(std::addressof(src_next_entry), std::addressof(src_context));
+                        MESOSPHERE_ASSERT(traverse_valid);
+
+                        /* Update source. */
+                        updated_src = cur_src_addr + cur_min_size != GetInteger(src_next_entry.phys_addr);
+                    }
+
+                    if (cur_dst_addr + cur_min_size == dst_next_entry.phys_addr + dst_next_entry.block_size) {
+                        /* Continue the dst traversal. */
+                        traverse_valid = dst_impl.ContinueTraversal(std::addressof(dst_next_entry), std::addressof(dst_context));
+                        MESOSPHERE_ASSERT(traverse_valid);
+
+                        /* Update destination. */
+                        updated_dst = cur_dst_addr + cur_min_size != GetInteger(dst_next_entry.phys_addr);
+                    }
+
+                    /* If we didn't update either of source/destination, skip the copy this iteration. */
+                    if (!updated_src && !updated_dst) {
+                        skip_copy = true;
+
+                        /* Update the source block address. */
+                        cur_src_block_addr = src_next_entry.phys_addr;
+                    }
+                }
+
+                /* Do the copy, unless we're skipping it. */
+                if (!skip_copy) {
+                    /* We need both ends of the copy to be heap blocks. */
+                    R_UNLESS(IsHeapPhysicalAddress(cur_src_addr), svc::ResultInvalidCurrentMemory());
+                    R_UNLESS(IsHeapPhysicalAddress(cur_dst_addr), svc::ResultInvalidCurrentMemory());
+
+                    /* Copy the data. */
+                    std::memcpy(GetVoidPointer(GetHeapVirtualAddress(cur_dst_addr)), GetVoidPointer(GetHeapVirtualAddress(cur_src_addr)), cur_copy_size);
+
+                    /* Update. */
+                    cur_src_block_addr = src_next_entry.phys_addr;
+                    cur_src_addr       = updated_src ? cur_src_block_addr : cur_src_addr + cur_copy_size;
+                    cur_dst_block_addr = dst_next_entry.phys_addr;
+                    cur_dst_addr       = updated_dst ? cur_dst_block_addr : cur_dst_addr + cur_copy_size;
+
+                    /* Advance offset. */
+                    ofs += cur_copy_size;
+                }
+
+                /* Update min size. */
+                cur_src_size = src_next_entry.block_size;
+                cur_dst_size = dst_next_entry.block_size;
+                cur_min_size = std::min<size_t>(cur_src_block_addr - cur_src_addr + cur_src_size, cur_dst_block_addr - cur_dst_addr + cur_dst_size);
+            }
+        }
+
+        return ResultSuccess();
     }
 
-    Result KPageTableBase::CopyMemoryFromLinearToLinearWithoutCheckDestination(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
-        MESOSPHERE_UNIMPLEMENTED();
+    Result KPageTableBase::CopyMemoryFromHeapToHeapWithoutCheckDestination(KPageTableBase &dst_page_table, KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
+        /* For convenience, alias this. */
+        KPageTableBase &src_page_table = *this;
+
+        /* Lightly validate the ranges before doing anything else. */
+        R_UNLESS(src_page_table.Contains(src_addr, size), svc::ResultInvalidCurrentMemory());
+        R_UNLESS(dst_page_table.Contains(dst_addr, size), svc::ResultInvalidCurrentMemory());
+
+        /* Copy the memory. */
+        {
+            /* Get the table locks. */
+            KLightLock &lock_0 = (reinterpret_cast<uintptr_t>(std::addressof(src_page_table)) <= reinterpret_cast<uintptr_t>(std::addressof(dst_page_table))) ? src_page_table.general_lock : dst_page_table.general_lock;
+            KLightLock &lock_1 = (reinterpret_cast<uintptr_t>(std::addressof(src_page_table)) <= reinterpret_cast<uintptr_t>(std::addressof(dst_page_table))) ? dst_page_table.general_lock : src_page_table.general_lock;
+
+            /* Lock the first lock. */
+            KScopedLightLock lk0(lock_0);
+
+            /* If necessary, lock the second lock. */
+            std::optional<KScopedLightLock> lk1;
+            if (std::addressof(lock_0) != std::addressof(lock_1)) {
+                lk1.emplace(lock_1);
+            }
+
+            /* Check memory state. */
+            R_TRY(src_page_table.CheckMemoryStateContiguous(src_addr, size, src_state_mask, src_state, src_test_perm, src_test_perm, src_attr_mask | KMemoryAttribute_Uncached, src_attr));
+
+            /* Get implementations. */
+            auto &src_impl = src_page_table.GetImpl();
+            auto &dst_impl = dst_page_table.GetImpl();
+
+            /* Prepare for traversal. */
+            TraversalContext src_context;
+            TraversalContext dst_context;
+            TraversalEntry   src_next_entry;
+            TraversalEntry   dst_next_entry;
+            bool             traverse_valid;
+
+            /* Begin traversal. */
+            traverse_valid = src_impl.BeginTraversal(std::addressof(src_next_entry), std::addressof(src_context), src_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+            traverse_valid = dst_impl.BeginTraversal(std::addressof(dst_next_entry), std::addressof(dst_context), dst_addr);
+            MESOSPHERE_ABORT_UNLESS(traverse_valid);
+
+            /* Prepare tracking variables. */
+            KPhysicalAddress cur_src_block_addr = src_next_entry.phys_addr;
+            KPhysicalAddress cur_dst_block_addr = dst_next_entry.phys_addr;
+            size_t cur_src_size = src_next_entry.block_size - (GetInteger(cur_src_block_addr) & (src_next_entry.block_size - 1));
+            size_t cur_dst_size = dst_next_entry.block_size - (GetInteger(cur_dst_block_addr) & (dst_next_entry.block_size - 1));
+
+            /* Adjust the initial block sizes. */
+            src_next_entry.block_size = cur_src_size;
+            dst_next_entry.block_size = cur_dst_size;
+
+            /* Before we get any crazier, succeed if there's nothing to do. */
+            R_SUCCEED_IF(size == 0);
+
+            /* We're going to manage dual traversal via an offset against the total size. */
+            KPhysicalAddress cur_src_addr = cur_src_block_addr;
+            KPhysicalAddress cur_dst_addr = cur_dst_block_addr;
+            size_t cur_min_size = std::min<size_t>(cur_src_size, cur_dst_size);
+
+            /* Iterate. */
+            size_t ofs = 0;
+            while (ofs < size) {
+                /* Determine how much we can copy this iteration. */
+                const size_t cur_copy_size = std::min<size_t>(cur_min_size, size - ofs);
+
+                /* If we need to advance the traversals, do so. */
+                bool updated_src = false, updated_dst = false, skip_copy = false;
+                if (ofs + cur_copy_size != size) {
+                    if (cur_src_addr + cur_min_size == cur_src_block_addr + cur_src_size) {
+                        /* Continue the src traversal. */
+                        traverse_valid = src_impl.ContinueTraversal(std::addressof(src_next_entry), std::addressof(src_context));
+                        MESOSPHERE_ASSERT(traverse_valid);
+
+                        /* Update source. */
+                        updated_src = cur_src_addr + cur_min_size != GetInteger(src_next_entry.phys_addr);
+                    }
+
+                    if (cur_dst_addr + cur_min_size == dst_next_entry.phys_addr + dst_next_entry.block_size) {
+                        /* Continue the dst traversal. */
+                        traverse_valid = dst_impl.ContinueTraversal(std::addressof(dst_next_entry), std::addressof(dst_context));
+                        MESOSPHERE_ASSERT(traverse_valid);
+
+                        /* Update destination. */
+                        updated_dst = cur_dst_addr + cur_min_size != GetInteger(dst_next_entry.phys_addr);
+                    }
+
+                    /* If we didn't update either of source/destination, skip the copy this iteration. */
+                    if (!updated_src && !updated_dst) {
+                        skip_copy = true;
+
+                        /* Update the source block address. */
+                        cur_src_block_addr = src_next_entry.phys_addr;
+                    }
+                }
+
+                /* Do the copy, unless we're skipping it. */
+                if (!skip_copy) {
+                    /* We need both ends of the copy to be heap blocks. */
+                    R_UNLESS(IsHeapPhysicalAddress(cur_src_addr), svc::ResultInvalidCurrentMemory());
+                    R_UNLESS(IsHeapPhysicalAddress(cur_dst_addr), svc::ResultInvalidCurrentMemory());
+
+                    /* Copy the data. */
+                    std::memcpy(GetVoidPointer(GetHeapVirtualAddress(cur_dst_addr)), GetVoidPointer(GetHeapVirtualAddress(cur_src_addr)), cur_copy_size);
+
+                    /* Update. */
+                    cur_src_block_addr = src_next_entry.phys_addr;
+                    cur_src_addr       = updated_src ? cur_src_block_addr : cur_src_addr + cur_copy_size;
+                    cur_dst_block_addr = dst_next_entry.phys_addr;
+                    cur_dst_addr       = updated_dst ? cur_dst_block_addr : cur_dst_addr + cur_copy_size;
+
+                    /* Advance offset. */
+                    ofs += cur_copy_size;
+                }
+
+                /* Update min size. */
+                cur_src_size = src_next_entry.block_size;
+                cur_dst_size = dst_next_entry.block_size;
+                cur_min_size = std::min<size_t>(cur_src_block_addr - cur_src_addr + cur_src_size, cur_dst_block_addr - cur_dst_addr + cur_dst_size);
+            }
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send) {
