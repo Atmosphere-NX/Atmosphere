@@ -401,5 +401,16 @@ namespace ams::kern {
         SetSchedulerUpdateNeeded();
     }
 
+    void KScheduler::YieldWithoutCoreMigration() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    void KScheduler::YieldWithCoreMigration() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    void KScheduler::YieldToAnyThread() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
 
 }

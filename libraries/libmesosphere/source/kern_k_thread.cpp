@@ -664,6 +664,35 @@ namespace ams::kern {
         MESOSPHERE_PANIC("KThread::Exit() would return");
     }
 
+    Result KThread::Sleep(s64 timeout) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(!KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
+        MESOSPHERE_ASSERT(timeout > 0);
+
+        KHardwareTimer *timer;
+        {
+            /* Setup the scheduling lock and sleep. */
+            KScopedSchedulerLockAndSleep slp(std::addressof(timer), this, timeout);
+
+            /* Check if the thread should terminate. */
+            if (this->IsTerminationRequested()) {
+                slp.CancelSleep();
+                return svc::ResultTerminationRequested();
+            }
+
+            /* Mark the thread as waiting. */
+            this->SetState(KThread::ThreadState_Waiting);
+        }
+
+        /* The lock/sleep is done. */
+
+        /* Cancel the timer. */
+        timer->CancelTask(this);
+
+        return ResultSuccess();
+    }
+
     void KThread::SetState(ThreadState state) {
         MESOSPHERE_ASSERT_THIS();
 

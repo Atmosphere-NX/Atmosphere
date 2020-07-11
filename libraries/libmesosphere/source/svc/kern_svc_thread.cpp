@@ -86,6 +86,37 @@ namespace ams::kern::svc {
             MESOSPHERE_PANIC("Process survived call to exit");
         }
 
+        void SleepThread(int64_t ns) {
+            /* When the input tick is positive, sleep. */
+            if (AMS_LIKELY(ns > 0)) {
+                /* Convert the timeout from nanoseconds to ticks. */
+                /* NOTE: Nintendo does not use this conversion logic in WaitSynchronization... */
+                s64 timeout;
+
+                const ams::svc::Tick offset_tick(TimeSpan::FromNanoSeconds(ns));
+                if (AMS_LIKELY(offset_tick > 0)) {
+                    timeout = KHardwareTimer::GetTick() + offset_tick + 2;
+                    if (AMS_UNLIKELY(timeout <= 0)) {
+                        timeout = std::numeric_limits<s64>::max();
+                    }
+                } else {
+                    timeout = std::numeric_limits<s64>::max();
+                }
+
+                /* Sleep. */
+                /* NOTE: Nintendo does not check the result of this sleep. */
+                GetCurrentThread().Sleep(timeout);
+            } else if (ns == ams::svc::YieldType_WithoutCoreMigration) {
+                KScheduler::YieldWithoutCoreMigration();
+            } else if (ns == ams::svc::YieldType_WithCoreMigration) {
+                KScheduler::YieldWithCoreMigration();
+            } else if (ns == ams::svc::YieldType_ToAnyThread) {
+                KScheduler::YieldToAnyThread();
+            } else {
+                /* Nintendo does nothing at all if an otherwise invalid value is passed. */
+            }
+        }
+
         Result GetThreadPriority(int32_t *out_priority, ams::svc::Handle thread_handle) {
             /* Get the thread from its handle. */
             KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
@@ -123,7 +154,7 @@ namespace ams::kern::svc {
     }
 
     void SleepThread64(int64_t ns) {
-        MESOSPHERE_PANIC("Stubbed SvcSleepThread64 was called.");
+        return SleepThread(ns);
     }
 
     Result GetThreadPriority64(int32_t *out_priority, ams::svc::Handle thread_handle) {
@@ -177,7 +208,7 @@ namespace ams::kern::svc {
     }
 
     void SleepThread64From32(int64_t ns) {
-        MESOSPHERE_PANIC("Stubbed SvcSleepThread64From32 was called.");
+        return SleepThread(ns);
     }
 
     Result GetThreadPriority64From32(int32_t *out_priority, ams::svc::Handle thread_handle) {

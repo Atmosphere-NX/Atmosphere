@@ -385,6 +385,8 @@ namespace ams::kern {
             Result Run();
             void Exit();
 
+            Result Sleep(s64 timeout);
+
             ALWAYS_INLINE void *GetStackTop() const { return reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1; }
             ALWAYS_INLINE void *GetKernelStackTop() const { return this->kernel_stack_top; }
 
