@@ -88,7 +88,7 @@ namespace ams::kern {
                             break;
                         case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer:
                             {
-                                const uintptr_t buf = util::AlignUp(this->msg_buffer_end, PointerTransferBufferAlignment);
+                                const uintptr_t buf = util::AlignUp(this->msg_buffer_end + key, PointerTransferBufferAlignment);
 
                                 if ((buf < buf + size) && (buf + size <= this->msg_buffer_space_end)) {
                                     out = buf;
