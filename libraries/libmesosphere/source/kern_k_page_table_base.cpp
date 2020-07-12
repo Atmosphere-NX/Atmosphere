@@ -388,8 +388,8 @@ namespace ams::kern {
     Result KPageTableBase::CheckMemoryState(const KMemoryInfo &info, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
         /* Validate the states match expectation. */
         R_UNLESS((info.state     & state_mask) == state, svc::ResultInvalidCurrentMemory());
-        R_UNLESS((info.perm      & perm_mask)  == perm, svc::ResultInvalidCurrentMemory());
-        R_UNLESS((info.attribute & attr_mask)  == attr, svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.perm      & perm_mask)  == perm,  svc::ResultInvalidCurrentMemory());
+        R_UNLESS((info.attribute & attr_mask)  == attr,  svc::ResultInvalidCurrentMemory());
 
         return ResultSuccess();
     }
@@ -780,7 +780,7 @@ namespace ams::kern {
         auto mapping_guard = SCOPE_GUARD {
             MESOSPHERE_ABORT_UNLESS(!reuse_ll);
             if (cur_address != start_address) {
-                const KPageProperties unmap_properties = {};
+                const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
                 MESOSPHERE_R_ABORT_UNLESS(this->Operate(page_list, start_address, (cur_address - start_address) / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, true));
             }
         };
@@ -1869,16 +1869,571 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::SetupForIpcClient(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state) {
+        /* Validate pre-conditions. */
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(test_perm == KMemoryPermission_UserReadWrite || test_perm == KMemoryPermission_UserRead);
+
+        /* Check that the address is in range. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Get the source permission. */
+        const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped : KMemoryPermission_UserRead);
+
+        /* Get aligned extents. */
+        const KProcessAddress aligned_src_start = util::AlignDown(GetInteger(address), PageSize);
+        const KProcessAddress aligned_src_end   = util::AlignUp(GetInteger(address) + size, PageSize);
+        const KProcessAddress mapping_src_start = util::AlignUp(GetInteger(address), PageSize);
+        const KProcessAddress mapping_src_end   = util::AlignDown(GetInteger(address) + size, PageSize);
+
+        const auto aligned_src_last = GetInteger(aligned_src_end) - 1;
+        const auto mapping_src_last = GetInteger(mapping_src_end) - 1;
+
+        /* Get the test state and attribute mask. */
+        u32 test_state;
+        u32 test_attr_mask;
+        switch (dst_state) {
+            case KMemoryState_Ipc:
+                test_state     = KMemoryState_FlagCanUseIpc;
+                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                break;
+            case KMemoryState_NonSecureIpc:
+                test_state     = KMemoryState_FlagCanUseNonSecureIpc;
+                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                break;
+            case KMemoryState_NonDeviceIpc:
+                test_state     = KMemoryState_FlagCanUseNonDeviceIpc;
+                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                break;
+            default:
+                return svc::ResultInvalidCombination();
+        }
+
+        /* Ensure that on failure, we roll back appropriately. */
+        size_t mapped_size = 0;
+        auto unmap_guard = SCOPE_GUARD {
+            if (mapped_size > 0) {
+                /* Determine where the mapping ends. */
+                const auto mapped_end  = GetInteger(mapping_src_start) + mapped_size;
+                const auto mapped_last = mapped_end - 1;
+
+                KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(mapping_src_start);
+                while (true) {
+                    const KMemoryInfo info = it->GetMemoryInfo();
+
+                    const auto cur_start  = info.GetAddress() >= GetInteger(mapping_src_start) ? info.GetAddress() : GetInteger(mapping_src_start);
+                    const auto cur_end    = mapped_last <= info.GetLastAddress() ? mapped_end : info.GetEndAddress();
+                    const size_t cur_size = cur_end - cur_start;
+
+                    /* Fix the permissions, if we need to. */
+                    if ((info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
+                        const KPageProperties properties = { info.GetPermission(), false, false, false };
+                        MESOSPHERE_R_ABORT_UNLESS(this->Operate(page_list, cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
+                    }
+
+                    /* If the block is at the end, we're done. */
+                    if (mapped_last <= info.GetLastAddress()) {
+                        break;
+                    }
+
+                    /* Advance. */
+                    ++it;
+                    MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
+                }
+            }
+        };
+
+        /* Iterate, mapping as needed. */
+        KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(aligned_src_start);
+        while (true) {
+            const KMemoryInfo info = it->GetMemoryInfo();
+
+            /* Validate the current block. */
+            R_TRY(this->CheckMemoryState(info, test_state, test_state, test_perm, test_perm, test_attr_mask, KMemoryAttribute_None));
+
+            if (mapping_src_start < mapping_src_end && GetInteger(mapping_src_start) < info.GetEndAddress() && info.GetAddress() < GetInteger(mapping_src_end)) {
+                const auto cur_start  = info.GetAddress() >= GetInteger(mapping_src_start) ? info.GetAddress() : GetInteger(mapping_src_start);
+                const auto cur_end    = mapping_src_last <= info.GetLastAddress() ? GetInteger(mapping_src_end) : info.GetEndAddress();
+                const size_t cur_size = cur_end - cur_start;
+
+                /* Set the permissions on the block, if we need to. */
+                if ((info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
+                    const KPageProperties properties = { src_perm, false, false, false };
+                    R_TRY(this->Operate(page_list, cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
+                }
+
+                /* Note that we mapped this part. */
+                mapped_size += cur_size;
+            }
+
+            /* If the block is at the end, we're done. */
+            if (aligned_src_last <= info.GetLastAddress()) {
+                break;
+            }
+
+            /* Advance. */
+            ++it;
+            MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
+        }
+
+        /* We succeeded, so no need to unmap. */
+        unmap_guard.Cancel();
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Check that we can theoretically map. */
+        const KProcessAddress region_start = this->alias_region_start;
+        const size_t          region_size  = this->alias_region_end - this->alias_region_start;
+        R_UNLESS(size < region_size, svc::ResultOutOfAddressSpace());
+
+        /* Get aligned source extents. */
+        const KProcessAddress         src_start = src_addr;
+        const KProcessAddress         src_end   = src_addr + size;
+        const KProcessAddress aligned_src_start = util::AlignDown(GetInteger(src_start), PageSize);
+        const KProcessAddress aligned_src_end   = util::AlignUp(GetInteger(src_start) + size, PageSize);
+        const KProcessAddress mapping_src_start = util::AlignUp(GetInteger(src_start), PageSize);
+        const KProcessAddress mapping_src_end   = util::AlignDown(GetInteger(src_start) + size, PageSize);
+        const size_t          aligned_src_size  = aligned_src_end - aligned_src_start;
+        const size_t          mapping_src_size  = (mapping_src_start < mapping_src_end) ? (mapping_src_end - mapping_src_start) : 0;
+
+        /* Select a random address to map at. */
+        KProcessAddress dst_addr = Null<KProcessAddress>;
+        for (s32 block_type = KPageTable::GetMaxBlockType(); block_type >= 0; block_type--) {
+            const size_t alignment = KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(block_type));
+            const size_t offset    = GetInteger(aligned_src_start) & (alignment - 1);
+
+            dst_addr = this->FindFreeArea(region_start, region_size / PageSize, aligned_src_size / PageSize, alignment, offset, this->GetNumGuardPages());
+            if (dst_addr != Null<KProcessAddress>) {
+                break;
+            }
+        }
+        R_UNLESS(dst_addr != Null<KProcessAddress>, svc::ResultOutOfAddressSpace());
+
+        /* Check that we can perform the operation we're about to perform. */
+        MESOSPHERE_ASSERT(this->CanContain(dst_addr, aligned_src_size, dst_state));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Reserve space for any partial pages we allocate. */
+        const size_t unmapped_size    = aligned_src_size - mapping_src_size;
+        KScopedResourceReservation memory_reservation(GetCurrentProcess().GetResourceLimit(), ams::svc::LimitableResource_PhysicalMemoryMax, unmapped_size);
+        R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
+
+        /* Ensure that we we clean up on failure. */
+        KVirtualAddress start_partial_page = Null<KVirtualAddress>;
+        KVirtualAddress end_partial_page   = Null<KVirtualAddress>;
+        KProcessAddress cur_mapped_addr    = dst_addr;
+
+        auto cleanup_guard = SCOPE_GUARD {
+            if (start_partial_page != Null<KVirtualAddress>) {
+                Kernel::GetMemoryManager().Open(start_partial_page, 1);
+                Kernel::GetMemoryManager().Close(start_partial_page, 1);
+            }
+            if (end_partial_page != Null<KVirtualAddress>) {
+                Kernel::GetMemoryManager().Open(end_partial_page, 1);
+                Kernel::GetMemoryManager().Close(end_partial_page, 1);
+            }
+            if (cur_mapped_addr != dst_addr) {
+                const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
+                MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), dst_addr, (cur_mapped_addr - dst_addr) / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, true));
+            }
+        };
+
+        /* Allocate the start page as needed. */
+        if (aligned_src_start < mapping_src_start) {
+            start_partial_page = Kernel::GetMemoryManager().AllocateContinuous(1, 0, this->allocate_option);
+            R_UNLESS(start_partial_page != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+        }
+
+        /* Allocate the end page as needed. */
+        if (mapping_src_end < aligned_src_end && (aligned_src_start < mapping_src_end || aligned_src_start == mapping_src_start)) {
+            end_partial_page = Kernel::GetMemoryManager().AllocateContinuous(1, 0, this->allocate_option);
+            R_UNLESS(end_partial_page != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+        }
+
+        /* Get the implementation. */
+        auto &impl = this->GetImpl();
+
+        /* Get the page properties for any mapping we'll be doing. */
+        const KPageProperties dst_map_properties = { test_perm, false, false, false };
+
+        /* Get the fill value for partial pages. */
+        const auto fill_val = this->ipc_fill_value;
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), aligned_src_start);
+        MESOSPHERE_ASSERT(traverse_valid);
+
+        /* Prepare tracking variables. */
+        KPhysicalAddress cur_block_addr = next_entry.phys_addr;
+        size_t cur_block_size           = next_entry.block_size - (GetInteger(cur_block_addr) & (next_entry.block_size - 1));
+        size_t tot_block_size           = cur_block_size;
+
+        /* Map the start page, if we have one. */
+        if (start_partial_page != Null<KVirtualAddress>) {
+            /* Ensure the page holds correct data. */
+            if (send) {
+                const size_t partial_offset = src_start - aligned_src_start;
+                size_t copy_size, clear_size;
+                if (src_end < mapping_src_start) {
+                    copy_size  = size;
+                    clear_size = mapping_src_start - src_end;
+                } else {
+                    copy_size  = mapping_src_start - src_start;
+                    clear_size = 0;
+                }
+
+                std::memset(GetVoidPointer(start_partial_page), fill_val, partial_offset);
+                std::memcpy(GetVoidPointer(start_partial_page + partial_offset), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr) + partial_offset), copy_size);
+                if (clear_size > 0) {
+                    std::memset(GetVoidPointer(start_partial_page + partial_offset + copy_size), fill_val, clear_size);
+                }
+            } else {
+                std::memset(GetVoidPointer(start_partial_page), fill_val, PageSize);
+            }
+
+            /* Map the page. */
+            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, 1, GetHeapPhysicalAddress(start_partial_page), true, dst_map_properties, OperationType_Map, false));
+
+            /* Update tracking extents. */
+            cur_mapped_addr += PageSize;
+            cur_block_addr  += PageSize;
+            cur_block_size  -= PageSize;
+
+            /* If the block's size was one page, we may need to continue traversal. */
+            if (cur_block_size == 0 && aligned_src_size > PageSize) {
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                MESOSPHERE_ASSERT(traverse_valid);
+
+                cur_block_addr  = next_entry.phys_addr;
+                cur_block_size  = next_entry.block_size;
+                tot_block_size += next_entry.block_size;
+            }
+        }
+
+        /* Map the remaining pages. */
+        while (aligned_src_start + tot_block_size < mapping_src_end) {
+            /* Continue the traversal. */
+            traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            MESOSPHERE_ASSERT(traverse_valid);
+
+            /* Process the block. */
+            if (next_entry.phys_addr != cur_block_addr + cur_block_size) {
+                /* Map the block we've been processing so far. */
+                R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, cur_block_size / PageSize, cur_block_addr, true, dst_map_properties, OperationType_Map, false));
+
+                /* Update tracking extents. */
+                cur_mapped_addr += cur_block_size;
+                cur_block_addr   = next_entry.phys_addr;
+                cur_block_size   = next_entry.block_size;
+            } else {
+                cur_block_size += next_entry.block_size;
+            }
+            tot_block_size += next_entry.block_size;
+        }
+
+        /* Handle the last direct-mapped page. */
+        if (cur_mapped_addr < mapping_src_end) {
+            const size_t last_block_size = mapping_src_end - cur_mapped_addr;
+
+            /* Map the last block. */
+            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, last_block_size / PageSize, cur_block_addr, true, dst_map_properties, OperationType_Map, false));
+
+            /* Update tracking extents. */
+            cur_mapped_addr += last_block_size;
+            cur_block_addr  += last_block_size;
+            if (aligned_src_start + tot_block_size < aligned_src_end && cur_block_size == last_block_size) {
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                MESOSPHERE_ASSERT(traverse_valid);
+
+                cur_block_addr = next_entry.phys_addr;
+            }
+        }
+
+        /* Map the end page, if we have one. */
+        if (end_partial_page != Null<KVirtualAddress>) {
+            /* Ensure the page holds correct data. */
+            if (send) {
+                const size_t copy_size = src_end - mapping_src_end;
+                std::memcpy(GetVoidPointer(end_partial_page), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr)), copy_size);
+                std::memset(GetVoidPointer(end_partial_page + copy_size), fill_val, PageSize - copy_size);
+            } else {
+                std::memset(GetVoidPointer(start_partial_page), fill_val, PageSize);
+            }
+
+            /* Map the page. */
+            R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, 1, GetHeapPhysicalAddress(end_partial_page), true, dst_map_properties, OperationType_Map, false));
+        }
+
+        /* Update memory blocks to reflect our changes */
+        this->memory_block_manager.Update(std::addressof(allocator), dst_addr, aligned_src_size / PageSize, dst_state, test_perm, KMemoryAttribute_None);
+
+        /* Set the output address. */
+        *out_addr = dst_addr;
+
+        /* We succeeded. */
+        cleanup_guard.Cancel();
+        memory_reservation.Commit();
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* For convenience, alias this. */
+        KPageTableBase &dst_page_table = *this;
+
+        /* Get the table locks. */
+        KLightLock &lock_0 = (reinterpret_cast<uintptr_t>(std::addressof(src_page_table)) <= reinterpret_cast<uintptr_t>(std::addressof(dst_page_table))) ? src_page_table.general_lock : dst_page_table.general_lock;
+        KLightLock &lock_1 = (reinterpret_cast<uintptr_t>(std::addressof(src_page_table)) <= reinterpret_cast<uintptr_t>(std::addressof(dst_page_table))) ? dst_page_table.general_lock : src_page_table.general_lock;
+
+        /* Lock the first lock. */
+        KScopedLightLock lk0(lock_0);
+
+        /* If necessary, lock the second lock. */
+        std::optional<KScopedLightLock> lk1;
+        if (std::addressof(lock_0) != std::addressof(lock_1)) {
+            lk1.emplace(lock_1);
+        }
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(src_page_table.memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(std::addressof(src_page_table));
+
+        /* Perform client setup. */
+        R_TRY(src_page_table.SetupForIpcClient(updater.GetPageList(), src_addr, size, test_perm, dst_state));
+
+        /* Ensure that we clean up appropriately if we fail after this. */
+        auto cleanup_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(src_page_table.CleanupForIpcClientOnServerSetupFailure(updater.GetPageList(), src_addr, size, test_perm)); };
+
+        /* Perform server setup. */
+        R_TRY(dst_page_table.SetupForIpcServer(out_dst_addr, size, src_addr, test_perm, dst_state, src_page_table, send));
+
+        /* Get the mapped extents. */
+        const KProcessAddress src_map_start = util::AlignUp(GetInteger(src_addr), PageSize);
+        const KProcessAddress src_map_end   = util::AlignDown(GetInteger(src_addr) + size, PageSize);
+
+        /* If anything was mapped, ipc-lock the pages. */
+        if (src_map_start < src_map_end) {
+            src_page_table.memory_block_manager.UpdateLock(std::addressof(allocator), src_map_start, (src_map_end - src_map_start) / PageSize, &KMemoryBlock::LockForIpc, KMemoryPermission_None);
+        }
+
+        /* We succeeded, so cancel our cleanup guard. */
+        cleanup_guard.Cancel();
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Validate the address. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Validate the memory state. */
+        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, dst_state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Get aligned extents. */
+        const KProcessAddress aligned_start = util::AlignDown(GetInteger(address), PageSize);
+        const KProcessAddress aligned_end   = util::AlignUp(GetInteger(address) + size, PageSize);
+        const size_t aligned_size           = aligned_start - aligned_end;
+        const size_t aligned_num_pages      = aligned_size / PageSize;
+
+        /* Unmap the pages. */
+        const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
+        R_TRY(this->Operate(updater.GetPageList(), aligned_start, aligned_size / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+
+        /* Update memory blocks. */
+        this->memory_block_manager.Update(std::addressof(allocator), aligned_start, aligned_num_pages, KMemoryState_None, KMemoryPermission_None, KMemoryAttribute_None);
+
+        /* Release from the resource limit as relevant. */
+        if (auto *resource_limit = server_process->GetResourceLimit(); resource_limit != nullptr) {
+            const KProcessAddress mapping_start = util::AlignUp(GetInteger(address), PageSize);
+            const KProcessAddress mapping_end   = util::AlignDown(GetInteger(address) + size, PageSize);
+            const size_t mapping_size           = (mapping_start < mapping_end) ? mapping_end - mapping_start : 0;
+            resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, aligned_size - mapping_size);
+        }
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Validate the address. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Get aligned source extents. */
+        const KProcessAddress mapping_start = util::AlignUp(GetInteger(address), PageSize);
+        const KProcessAddress mapping_end   = util::AlignDown(GetInteger(address) + size, PageSize);
+        const KProcessAddress mapping_last  = mapping_end - 1;
+        const size_t          mapping_size  = (mapping_start < mapping_end) ? (mapping_end - mapping_start) : 0;
+
+        /* If nothing was mapped, we're actually done immediately. */
+        R_SUCCEED_IF(mapping_size == 0);
+
+        /* Get the test state and attribute mask. */
+        u32 test_state;
+        u32 test_attr_mask;
+        switch (dst_state) {
+            case KMemoryState_Ipc:
+                test_state     = KMemoryState_FlagCanUseIpc;
+                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                break;
+            case KMemoryState_NonSecureIpc:
+                test_state     = KMemoryState_FlagCanUseNonSecureIpc;
+                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                break;
+            case KMemoryState_NonDeviceIpc:
+                test_state     = KMemoryState_FlagCanUseNonDeviceIpc;
+                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                break;
+            default:
+                return svc::ResultInvalidCombination();
+        }
+
+        /* Lock the table. */
+        /* NOTE: Nintendo does this *after* creating the updater below, but this does not follow convention elsewhere in KPageTableBase. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Ensure that on failure, we roll back appropriately. */
+        size_t mapped_size = 0;
+        auto unmap_guard = SCOPE_GUARD {
+            if (mapped_size > 0) {
+                /* Determine where the mapping ends. */
+                const auto mapped_end  = GetInteger(mapping_start) + mapped_size;
+                const auto mapped_last = mapped_end - 1;
+
+                KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(mapping_start);
+                while (true) {
+                    const KMemoryInfo info = it->GetMemoryInfo();
+
+                    const auto cur_start  = info.GetAddress() >= GetInteger(mapping_start) ? info.GetAddress() : GetInteger(mapping_start);
+                    const auto cur_end    = mapped_last <= info.GetLastAddress() ? mapped_end : info.GetEndAddress();
+                    const size_t cur_size = cur_end - cur_start;
+
+                    /* Fix the permissions, if we need to. */
+                    if (info.GetIpcLockCount() == 1 && (info.GetPermission() != info.GetOriginalPermission())) {
+                        const KPageProperties properties = { info.GetPermission(), false, false, false };
+                        MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
+                    }
+
+                    /* If the block is at the end, we're done. */
+                    if (mapped_last <= info.GetLastAddress()) {
+                        break;
+                    }
+
+                    /* Advance. */
+                    ++it;
+                    MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
+                }
+            }
+        };
+
+        /* Iterate, reprotecting as needed. */
+        KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(mapping_start);
+        while (true) {
+            const KMemoryInfo info = it->GetMemoryInfo();
+
+            /* Validate the current block. */
+            R_TRY(this->CheckMemoryState(info, test_state, test_state, KMemoryPermission_None, KMemoryPermission_None, test_attr_mask | KMemoryAttribute_IpcLocked, KMemoryAttribute_IpcLocked));
+
+            const auto cur_start  = info.GetAddress() >= GetInteger(mapping_start) ? info.GetAddress() : GetInteger(mapping_start);
+            const auto cur_end    = mapping_last <= info.GetLastAddress() ? GetInteger(mapping_end) : info.GetEndAddress();
+            const size_t cur_size = cur_end - cur_start;
+
+            /* Set the permissions on the block, if we need to. */
+            if (info.GetIpcLockCount() == 1 && (info.GetPermission() != info.GetOriginalPermission())) {
+                const KPageProperties properties = { info.GetOriginalPermission(), false, false, false };
+                R_TRY(this->Operate(updater.GetPageList(), cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
+            }
+
+            /* Mark that we mapped the block. */
+            mapped_size += cur_size;
+
+            /* If the block is at the end, we're done. */
+            if (mapping_last <= info.GetLastAddress()) {
+                break;
+            }
+
+            /* Advance. */
+            ++it;
+            MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
+        }
+
+        /* Unlock the pages. */
+        this->memory_block_manager.UpdateLock(std::addressof(allocator), mapping_start, mapping_size / PageSize, &KMemoryBlock::UnlockForIpc, KMemoryPermission_None);
+
+        /* We succeeded, so no need to unmap. */
+        unmap_guard.Cancel();
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission src_perm) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+
+        /* Get the mapped extents. */
+        const KProcessAddress src_map_start = util::AlignUp(GetInteger(address), PageSize);
+        const KProcessAddress src_map_end   = util::AlignDown(GetInteger(address) + size, PageSize);
+        const KProcessAddress src_map_last  = src_map_end - 1;
+
+        /* If nothing was reprotected, there's no cleanup to do. */
+        R_SUCCEED_IF(src_map_start >= src_map_end);
+
+        /* Get the permission to check against. */
+        const auto prot_perm = (src_perm == KMemoryPermission_UserReadWrite ? KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped : KMemoryPermission_UserRead);
+
+        /* Iterate over blocks, fixing permissions. */
+        KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(address);
+        while (true) {
+            const KMemoryInfo info = it->GetMemoryInfo();
+
+            const auto cur_start = info.GetAddress() >= GetInteger(src_map_start) ? info.GetAddress() : GetInteger(src_map_start);
+            const auto cur_end   = src_map_last <= info.GetLastAddress() ? src_map_end : info.GetEndAddress();
+
+            /* If we can, fix the protections on the block. */
+            if (info.GetIpcLockCount() == 0 && (info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm) {
+                const KPageProperties properties = { src_perm, false, false, false };
+                R_TRY(this->Operate(page_list, cur_start, (cur_end - cur_start) / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
+            }
+
+            /* If we're past the end of the region, we're done. */
+            if (src_map_last <= info.GetLastAddress()) {
+                break;
+            }
+
+            /* Advance. */
+            ++it;
+            MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
+        }
+
+        return ResultSuccess();
     }
 
 }
