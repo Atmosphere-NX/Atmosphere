@@ -21,7 +21,69 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result QueryIoMapping(uintptr_t *out_address, size_t *out_size, uint64_t phys_addr, size_t size) {
+            /* Declare variables we'll populate. */
+            KProcessAddress found_address = Null<KProcessAddress>;
+            size_t          found_size    = 0;
 
+            /* Get reference to page table. */
+            auto &pt = GetCurrentProcess().GetPageTable();
+
+            /* Check whether the address is aligned. */
+            const bool aligned = util::IsAligned(phys_addr, PageSize);
+
+            if (aligned) {
+                /* The size must be non-zero. */
+                R_UNLESS(size > 0, svc::ResultInvalidSize());
+
+                /* The request must not overflow. */
+                R_UNLESS((phys_addr < phys_addr + size), svc::ResultNotFound());
+
+                /* Query the mapping. */
+                R_TRY(pt.QueryIoMapping(std::addressof(found_address), phys_addr, size));
+
+                /* Use the size as the found size. */
+                found_size = size;
+            } else {
+                /* TODO: Older kernel ABI compatibility. */
+                /* Newer kernel only allows unaligned addresses when they're special enum members. */
+                R_UNLESS(phys_addr < PageSize, svc::ResultNotFound());
+
+                /* Try to find the memory region. */
+                const KMemoryRegion *region;
+                switch (static_cast<ams::svc::MemoryRegionType>(phys_addr)) {
+                    case ams::svc::MemoryRegionType_KernelTraceBuffer:
+                        region = KMemoryLayout::TryGetKernelTraceBufferRegion();
+                        break;
+                    case ams::svc::MemoryRegionType_OnMemoryBootImage:
+                        region = KMemoryLayout::TryGetOnMemoryBootImageRegion();
+                        break;
+                    case ams::svc::MemoryRegionType_DTB:
+                        region = KMemoryLayout::TryGetDTBRegion();
+                        break;
+                    default:
+                        region = nullptr;
+                        break;
+                }
+
+                /* Ensure that we found the region. */
+                R_UNLESS(region != nullptr, svc::ResultNotFound());
+
+                R_TRY(pt.QueryStaticMapping(std::addressof(found_address), region->GetAddress(), region->GetSize()));
+                found_size = region->GetSize();
+            }
+
+            /* We succeeded. */
+            MESOSPHERE_ASSERT(found_address != Null<KProcessAddress>);
+            MESOSPHERE_ASSERT(found_size    != 0);
+            if (out_address != nullptr) {
+                *out_address = GetInteger(found_address);
+            }
+            if (out_size != nullptr) {
+                *out_size = found_size;
+            }
+            return ResultSuccess();
+        }
 
     }
 
@@ -32,7 +94,8 @@ namespace ams::kern::svc {
     }
 
     Result QueryIoMapping64(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryIoMapping64 was called.");
+        static_assert(sizeof(*out_address) == sizeof(uintptr_t));
+        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -42,7 +105,8 @@ namespace ams::kern::svc {
     }
 
     Result QueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryIoMapping64From32 was called.");
+        static_assert(sizeof(*out_address) == sizeof(uintptr_t));
+        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size);
     }
 
 }

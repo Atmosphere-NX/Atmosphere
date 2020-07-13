@@ -585,6 +585,76 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, KMemoryState state) const {
+        MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(out != nullptr);
+
+        const KProcessAddress region_start = this->GetRegionAddress(state);
+        const size_t region_size           = this->GetRegionSize(state);
+
+        /* Check that the address/size are potentially valid. */
+        R_UNLESS((address < address + size), svc::ResultNotFound());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        auto &impl = this->GetImpl();
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   cur_entry  = {};
+        bool             cur_valid  = false;
+        TraversalEntry   next_entry;
+        bool             next_valid;
+        size_t           tot_size   = false;
+
+        next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), region_start);
+        next_entry.block_size = (next_entry.block_size - (GetInteger(address) & (next_entry.block_size - 1)));
+
+        /* Iterate, looking for entry. */
+        while (true) {
+            if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
+                cur_entry.block_size += next_entry.block_size;
+            } else {
+                if (cur_valid && cur_entry.phys_addr <= address && address + size <= cur_entry.phys_addr + cur_entry.block_size) {
+                    /* Check if this region is valid. */
+                    const KProcessAddress mapped_address = (region_start + tot_size) + (address - cur_entry.phys_addr);
+                    if (R_SUCCEEDED(this->CheckMemoryState(mapped_address, size, KMemoryState_All, state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
+                        /* It is! */
+                        *out = mapped_address;
+                        return ResultSuccess();
+                    }
+                }
+
+                /* Update tracking variables. */
+                tot_size += cur_entry.block_size;
+                cur_entry = next_entry;
+                cur_valid = next_valid;
+            }
+
+            if (cur_entry.block_size + tot_size >= region_size) {
+                break;
+            }
+
+            next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+        }
+
+        /* Check the last entry. */
+        R_UNLESS(cur_valid,                                                    svc::ResultNotFound());
+        R_UNLESS(cur_entry.phys_addr <= address,                               svc::ResultNotFound());
+        R_UNLESS(address + size <= cur_entry.phys_addr + cur_entry.block_size, svc::ResultNotFound());
+
+        /* Check if the last region is valid. */
+        const KProcessAddress mapped_address = (region_start + tot_size) + (address - cur_entry.phys_addr);
+        R_TRY_CATCH(this->CheckMemoryState(mapped_address, size, KMemoryState_All, state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None)) {
+            R_CONVERT_ALL(svc::ResultNotFound());
+        } R_END_TRY_CATCH;
+
+        /* We found the region. */
+        *out = mapped_address;
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
         /* Lock the table. */
         KScopedLightLock lk(this->general_lock);

@@ -120,6 +120,14 @@ namespace ams::svc {
         u32 flags;
     };
 
+    enum MemoryRegionType {
+        MemoryRegionType_None              = 0,
+        MemoryRegionType_KernelTraceBuffer = 1,
+        MemoryRegionType_OnMemoryBootImage = 2,
+        MemoryRegionType_DTB               = 3,
+        MemoryRegionType_Count,
+    };
+
     /* Info Types. */
     enum InfoType : u32 {
         InfoType_CoreMask                       = 0,

@@ -56,6 +56,14 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.QueryInfo(out_info, out_page_info, addr);
             }
 
+            Result QueryStaticMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const {
+                return this->page_table.QueryStaticMapping(out, address, size);
+            }
+
+            Result QueryIoMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const {
+                return this->page_table.QueryIoMapping(out, address, size);
+            }
+
             Result MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
                 return this->page_table.MapMemory(dst_address, src_address, size);
             }
