@@ -2180,7 +2180,7 @@ namespace ams::kern {
         this->memory_block_manager.Update(std::addressof(allocator), dst_addr, aligned_src_size / PageSize, dst_state, test_perm, KMemoryAttribute_None);
 
         /* Set the output address. */
-        *out_addr = dst_addr;
+        *out_addr = dst_addr + (src_start - aligned_src_start);
 
         /* We succeeded. */
         cleanup_guard.Cancel();
