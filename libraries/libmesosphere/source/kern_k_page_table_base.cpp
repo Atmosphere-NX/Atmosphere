@@ -2227,7 +2227,9 @@ namespace ams::kern {
 
         /* If anything was mapped, ipc-lock the pages. */
         if (src_map_start < src_map_end) {
-            src_page_table.memory_block_manager.UpdateLock(std::addressof(allocator), src_map_start, (src_map_end - src_map_start) / PageSize, &KMemoryBlock::LockForIpc, KMemoryPermission_None);
+            /* Get the source permission. */
+            const auto src_perm = static_cast<KMemoryPermission>((test_perm == KMemoryPermission_UserReadWrite) ? KMemoryPermission_KernelReadWrite | KMemoryPermission_NotMapped : KMemoryPermission_UserRead);
+            src_page_table.memory_block_manager.UpdateLock(std::addressof(allocator), src_map_start, (src_map_end - src_map_start) / PageSize, &KMemoryBlock::LockForIpc, src_perm);
         }
 
         /* We succeeded, so cancel our cleanup guard. */
