@@ -159,11 +159,11 @@ namespace ams::svc::ipc {
                         return this->header.Get<HasProcessId>();
                     }
 
-                    constexpr ALWAYS_INLINE bool GetCopyHandleCount() const {
+                    constexpr ALWAYS_INLINE s32 GetCopyHandleCount() const {
                         return this->header.Get<CopyHandleCount>();
                     }
 
-                    constexpr ALWAYS_INLINE bool GetMoveHandleCount() const {
+                    constexpr ALWAYS_INLINE s32 GetMoveHandleCount() const {
                         return this->header.Get<MoveHandleCount>();
                     }
 
