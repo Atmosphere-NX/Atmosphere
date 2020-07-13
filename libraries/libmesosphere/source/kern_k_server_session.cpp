@@ -413,17 +413,17 @@ namespace ams::kern {
 
             /* Cleanup Send mappings. */
             for (size_t i = 0; i < request->GetSendCount(); ++i) {
-                R_TRY(client_page_table->CleanupForIpcClient(request->GetSendServerAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i)));
+                R_TRY(client_page_table->CleanupForIpcClient(request->GetSendClientAddress(i), request->GetSendSize(i), request->GetSendMemoryState(i)));
             }
 
             /* Cleanup Receive mappings. */
             for (size_t i = 0; i < request->GetReceiveCount(); ++i) {
-                R_TRY(client_page_table->CleanupForIpcClient(request->GetReceiveServerAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
+                R_TRY(client_page_table->CleanupForIpcClient(request->GetReceiveClientAddress(i), request->GetReceiveSize(i), request->GetReceiveMemoryState(i)));
             }
 
             /* Cleanup Exchange mappings. */
             for (size_t i = 0; i < request->GetExchangeCount(); ++i) {
-                R_TRY(client_page_table->CleanupForIpcClient(request->GetExchangeServerAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
+                R_TRY(client_page_table->CleanupForIpcClient(request->GetExchangeClientAddress(i), request->GetExchangeSize(i), request->GetExchangeMemoryState(i)));
             }
 
             return ResultSuccess();

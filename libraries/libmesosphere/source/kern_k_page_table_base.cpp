@@ -2144,8 +2144,8 @@ namespace ams::kern {
         }
 
         /* Handle the last direct-mapped page. */
-        if (cur_mapped_addr < mapping_src_end) {
-            const size_t last_block_size = mapping_src_end - cur_mapped_addr;
+        if (const KProcessAddress mapped_block_end = aligned_src_start + tot_block_size - cur_block_size; mapped_block_end < mapping_src_end) {
+            const size_t last_block_size = mapping_src_end - mapped_block_end;
 
             /* Map the last block. */
             R_TRY(this->Operate(updater.GetPageList(), cur_mapped_addr, last_block_size / PageSize, cur_block_addr, true, dst_map_properties, OperationType_Map, false));
@@ -2153,7 +2153,7 @@ namespace ams::kern {
             /* Update tracking extents. */
             cur_mapped_addr += last_block_size;
             cur_block_addr  += last_block_size;
-            if (aligned_src_start + tot_block_size < aligned_src_end && cur_block_size == last_block_size) {
+            if (mapped_block_end + cur_block_size < aligned_src_end && cur_block_size == last_block_size) {
                 traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
                 MESOSPHERE_ASSERT(traverse_valid);
 
@@ -2256,12 +2256,12 @@ namespace ams::kern {
         /* Get aligned extents. */
         const KProcessAddress aligned_start = util::AlignDown(GetInteger(address), PageSize);
         const KProcessAddress aligned_end   = util::AlignUp(GetInteger(address) + size, PageSize);
-        const size_t aligned_size           = aligned_start - aligned_end;
+        const size_t aligned_size           = aligned_end - aligned_start;
         const size_t aligned_num_pages      = aligned_size / PageSize;
 
         /* Unmap the pages. */
         const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
-        R_TRY(this->Operate(updater.GetPageList(), aligned_start, aligned_size / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+        R_TRY(this->Operate(updater.GetPageList(), aligned_start, aligned_num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
         /* Update memory blocks. */
         this->memory_block_manager.Update(std::addressof(allocator), aligned_start, aligned_num_pages, KMemoryState_None, KMemoryPermission_None, KMemoryAttribute_None);

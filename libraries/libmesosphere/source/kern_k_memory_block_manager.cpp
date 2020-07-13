@@ -257,7 +257,9 @@ namespace ams::kern {
                 /* If there's a previous, we should check for coalescing. */
                 check_coalesce_prev = true;
                 prev--;
-            } else if (cur_info.GetSize() > remaining_size) {
+            }
+
+            if (cur_info.GetSize() > remaining_size) {
                 /* If we need to, create a new block after and insert it. */
                 KMemoryBlock *new_block = allocator->Allocate();
 
