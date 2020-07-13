@@ -2169,7 +2169,7 @@ namespace ams::kern {
                 std::memcpy(GetVoidPointer(end_partial_page), GetVoidPointer(GetHeapVirtualAddress(cur_block_addr)), copy_size);
                 std::memset(GetVoidPointer(end_partial_page + copy_size), fill_val, PageSize - copy_size);
             } else {
-                std::memset(GetVoidPointer(start_partial_page), fill_val, PageSize);
+                std::memset(GetVoidPointer(end_partial_page), fill_val, PageSize);
             }
 
             /* Map the page. */

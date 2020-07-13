@@ -400,7 +400,7 @@ namespace ams::kern {
                 /* If this is our first lock, update our permissions. */
                 if (new_lock_count == 1) {
                     MESOSPHERE_ASSERT(this->original_perm == KMemoryPermission_None);
-                    MESOSPHERE_ASSERT((this->perm | new_perm) == this->perm);
+                    MESOSPHERE_ASSERT((this->perm | new_perm | KMemoryPermission_NotMapped) == (this->perm | KMemoryPermission_NotMapped));
                     MESOSPHERE_ASSERT((this->perm & KMemoryPermission_UserExecute) != KMemoryPermission_UserExecute || (new_perm == KMemoryPermission_UserRead));
                     this->original_perm = this->perm;
                     this->perm          = static_cast<KMemoryPermission>((new_perm & KMemoryPermission_IpcLockChangeMask) | (this->original_perm & ~KMemoryPermission_IpcLockChangeMask));
