@@ -328,7 +328,7 @@ namespace ams::kern {
                 /* Lock the table. */
                 KScopedLightLock lk(this->general_lock);
 
-                return this->GetHeapRegionSize() + this->mapped_physical_memory_size;
+                return (this->current_heap_end - this->heap_region_start) + this->mapped_physical_memory_size;
             }
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearMappedVirtualAddress(KPhysicalAddress addr) {

@@ -28,6 +28,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     void Break64(ams::svc::BreakReason break_reason, ams::svc::Address arg, ams::svc::Size size) {
+        MESOSPHERE_LOG("%s: Break\n", GetCurrentProcess().GetName());
         MESOSPHERE_PANIC("Stubbed SvcBreak64 was called.");
     }
 

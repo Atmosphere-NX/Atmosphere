@@ -176,6 +176,8 @@ namespace ams::kern {
             constexpr KHandleTable &GetHandleTable() { return this->handle_table; }
             constexpr const KHandleTable &GetHandleTable() const { return this->handle_table; }
 
+            size_t GetUsedUserPhysicalMemorySize() const;
+            size_t GetTotalUserPhysicalMemorySize() const;
             size_t GetUsedNonSystemUserPhysicalMemorySize() const;
             size_t GetTotalNonSystemUserPhysicalMemorySize() const;
 
