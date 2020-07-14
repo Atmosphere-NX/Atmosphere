@@ -52,7 +52,18 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetProcessList(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
+            /* Validate that the out count is valid. */
+            R_UNLESS((0 <= max_out_count && max_out_count <= static_cast<int32_t>(std::numeric_limits<int32_t>::max() / sizeof(u64))), svc::ResultOutOfRange());
 
+            /* Validate that the pointer is in range. */
+            if (max_out_count > 0) {
+                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(out_process_ids.GetUnsafePointer()), max_out_count * sizeof(u64)), svc::ResultInvalidCurrentMemory());
+            }
+
+            /* Get the process list. */
+            return KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count);
+        }
 
     }
 
@@ -67,7 +78,7 @@ namespace ams::kern::svc {
     }
 
     Result GetProcessList64(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
-        MESOSPHERE_PANIC("Stubbed SvcGetProcessList64 was called.");
+        return GetProcessList(out_num_processes, out_process_ids, max_out_count);
     }
 
     Result CreateProcess64(ams::svc::Handle *out_handle, KUserPointer<const ams::svc::lp64::CreateProcessParameter *> parameters, KUserPointer<const uint32_t *> caps, int32_t num_caps) {
@@ -97,7 +108,7 @@ namespace ams::kern::svc {
     }
 
     Result GetProcessList64From32(int32_t *out_num_processes, KUserPointer<uint64_t *> out_process_ids, int32_t max_out_count) {
-        MESOSPHERE_PANIC("Stubbed SvcGetProcessList64From32 was called.");
+        return GetProcessList(out_num_processes, out_process_ids, max_out_count);
     }
 
     Result CreateProcess64From32(ams::svc::Handle *out_handle, KUserPointer<const ams::svc::ilp32::CreateProcessParameter *> parameters, KUserPointer<const uint32_t *> caps, int32_t num_caps) {

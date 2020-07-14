@@ -231,6 +231,9 @@ namespace ams::kern {
                 return this->cond_var.Wait(address, cv_key, tag, ns);
             }
 
+            static KProcess *GetProcessFromId(u64 process_id);
+            static Result GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count);
+
             static void Switch(KProcess *cur_process, KProcess *next_process) {
                 /* Set the current process pointer. */
                 SetCurrentProcess(next_process);
