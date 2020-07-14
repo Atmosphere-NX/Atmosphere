@@ -455,4 +455,52 @@ namespace ams::kern {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    KProcess *KProcess::GetProcessFromId(u64 process_id) {
+        /* Lock the list. */
+        ListAccessor accessor;
+        const auto end = accessor.end();
+
+        /* Iterate over the list. */
+        for (auto it = accessor.begin(); it != end; ++it) {
+            /* Get the process. */
+            KProcess *process = static_cast<KProcess *>(std::addressof(*it));
+
+            if (process->GetId() == process_id) {
+                if (AMS_LIKELY(process->Open())) {
+                    return process;
+                }
+            }
+        }
+
+        /* We failed to find the process. */
+        return nullptr;
+    }
+
+    Result KProcess::GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count) {
+        /* Lock the list. */
+        ListAccessor accessor;
+        const auto end = accessor.end();
+
+        /* Iterate over the list. */
+        s32 count = 0;
+        for (auto it = accessor.begin(); it != end; ++it) {
+            /* If we're within array bounds, write the id. */
+            if (count < max_out_count) {
+                /* Get the process id. */
+                KProcess *process = static_cast<KProcess *>(std::addressof(*it));
+                const u64 id = process->GetId();
+
+                /* Copy the id to userland. */
+                R_TRY(out_process_ids.CopyArrayElementFrom(std::addressof(id), count));
+            }
+
+            /* Increment the count. */
+            ++count;
+        }
+
+        /* We successfully iterated the list. */
+        *out_num_processes = count;
+        return ResultSuccess();
+    }
+
 }
