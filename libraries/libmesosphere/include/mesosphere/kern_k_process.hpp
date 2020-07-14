@@ -147,6 +147,10 @@ namespace ams::kern {
                 return this->is_suspended;
             }
 
+            constexpr bool IsPermittedInterrupt(int32_t interrupt_id) const {
+                return this->capabilities.IsPermittedInterrupt(interrupt_id);
+            }
+
             bool EnterUserException();
             bool LeaveUserException();
             bool ReleaseUserException(KThread *thread);

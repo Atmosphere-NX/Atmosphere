@@ -26,13 +26,40 @@ namespace ams::kern {
 
     class KInterruptEvent final : public KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KInterruptEvent, KReadableEvent);
+        private:
+            KInterruptEventTask *task;
+            s32 interrupt_id;
+            bool is_initialized;
         public:
-            /* TODO: This is a placeholder definition. */
+            constexpr KInterruptEvent() : task(nullptr), interrupt_id(-1), is_initialized(false) { /* ... */ }
+            virtual ~KInterruptEvent() { /* ... */ }
+
+            Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
+            virtual void Finalize() override;
+
+            virtual Result Reset() override;
+
+            virtual bool IsInitialized() const override { return this->is_initialized; }
+
+            static void PostDestroy(uintptr_t arg) { /* ... */ }
+
+            constexpr s32 GetInterruptId() const { return this->interrupt_id; }
     };
 
     class KInterruptEventTask : public KSlabAllocated<KInterruptEventTask>, public KInterruptTask {
+        private:
+            KInterruptEvent *event;
+            s32 interrupt_id;
         public:
-            /* TODO: This is a placeholder definition. */
+            constexpr KInterruptEventTask() : event(nullptr), interrupt_id(-1) { /* ... */ }
+            ~KInterruptEventTask() { /* ... */ }
+
+            virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override;
+            virtual void DoTask() override;
+
+            void Unregister();
+        public:
+            static Result Register(KInterruptEventTask **out, s32 interrupt_id, bool level, KInterruptEvent *event);
     };
 
 }
