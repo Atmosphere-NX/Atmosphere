@@ -27,6 +27,29 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result ResetSignal(ams::svc::Handle handle) {
+            /* Get the current handle table. */
+            auto &handle_table = GetCurrentProcess().GetHandleTable();
+
+            /* Try to reset as readable event. */
+            {
+                KScopedAutoObject readable_event = handle_table.GetObject<KReadableEvent>(handle);
+                if (readable_event.IsNotNull()) {
+                    return readable_event->Reset();
+                }
+            }
+
+            /* Try to reset as process. */
+            {
+                KScopedAutoObject process = handle_table.GetObject<KProcess>(handle);
+                if (process.IsNotNull()) {
+                    return process->Reset();
+                }
+            }
+
+            return svc::ResultInvalidHandle();
+        }
+
         Result WaitSynchronizationImpl(int32_t *out_index, KSynchronizationObject **objs, int32_t num_handles, int64_t timeout_ns) {
             /* Convert the timeout from nanoseconds to ticks. */
             s64 timeout;
@@ -88,7 +111,7 @@ namespace ams::kern::svc {
     }
 
     Result ResetSignal64(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcResetSignal64 was called.");
+        return ResetSignal(handle);
     }
 
     Result WaitSynchronization64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
@@ -112,7 +135,7 @@ namespace ams::kern::svc {
     }
 
     Result ResetSignal64From32(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcResetSignal64From32 was called.");
+        return ResetSignal(handle);
     }
 
     Result WaitSynchronization64From32(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
