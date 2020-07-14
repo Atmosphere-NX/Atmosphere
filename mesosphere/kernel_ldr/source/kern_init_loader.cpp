@@ -317,11 +317,11 @@ namespace ams::kern::init::loader {
         const Elf::Dyn *kernel_dynamic = reinterpret_cast<const Elf::Dyn *>(GetInteger(virtual_base_address) + dynamic_offset);
         Elf::ApplyRelocations(GetInteger(virtual_base_address), kernel_dynamic);
 
-        /* Reprotect .rodata as R-- */
-        ttbr1_table.Reprotect(virtual_base_address + ro_offset, ro_end_offset - ro_offset, KernelRwDataAttribute, KernelRoDataAttribute);
-
         /* Call the kernel's init array functions. */
         Elf::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
+
+        /* Reprotect .rodata as R-- */
+        ttbr1_table.Reprotect(virtual_base_address + ro_offset, ro_end_offset - ro_offset, KernelRwDataAttribute, KernelRoDataAttribute);
 
         /* Return the difference between the random virtual base and the physical base. */
         return GetInteger(virtual_base_address) - base_address;
