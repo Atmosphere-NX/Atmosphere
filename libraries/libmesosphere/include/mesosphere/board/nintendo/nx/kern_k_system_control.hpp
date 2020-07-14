@@ -48,7 +48,7 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Privileged Access. */
             static void ReadWriteRegisterPrivileged(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
-            static void ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
+            static Result ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
 
             static ALWAYS_INLINE u32 ReadRegisterPrivileged(ams::svc::PhysicalAddress address) {
                 u32 v;

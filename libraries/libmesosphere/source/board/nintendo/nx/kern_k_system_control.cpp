@@ -125,12 +125,95 @@ namespace ams::kern::board::nintendo::nx {
             return GetConfigU64(which) != 0;
         }
 
+        ALWAYS_INLINE bool CheckRegisterAllowedTable(const u8 *table, const size_t offset) {
+            return (table[(offset / sizeof(u32)) / BITSIZEOF(u8)] & (1u << ((offset / sizeof(u32)) % BITSIZEOF(u8)))) != 0;
+        }
+
+        /* TODO: Generate this from a list of register names (see similar logic in exosphere)? */
+        constexpr inline const u8 McKernelRegisterWhitelist[(PageSize / sizeof(u32)) / BITSIZEOF(u8)] = {
+            0x9F, 0x31, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0xC0, 0x73, 0x3E, 0x6F, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0xE4, 0xFF, 0xFF, 0x01,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        };
+
+        /* TODO: Generate this from a list of register names (see similar logic in exosphere)? */
+        constexpr inline const u8 McUserRegisterWhitelist[(PageSize / sizeof(u32)) / BITSIZEOF(u8)] = {
+            0x00, 0x00, 0x20, 0x00, 0xF0, 0xFF, 0xF7, 0x01,
+            0xCD, 0xFE, 0xC0, 0xFE, 0x00, 0x00, 0x00, 0x00,
+            0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x6E,
+            0x30, 0x05, 0x06, 0xB0, 0x71, 0xC8, 0x43, 0x04,
+            0x80, 0xFF, 0x08, 0x80, 0x03, 0x38, 0x8E, 0x1F,
+            0xC8, 0xFF, 0xFF, 0x00, 0x0E, 0x00, 0x00, 0x00,
+            0xF0, 0x1F, 0x00, 0x30, 0xF0, 0x03, 0x03, 0x30,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x31, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x0C, 0x00, 0xFE, 0x0F,
+            0x01, 0x00, 0x80, 0x00, 0x00, 0x08, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        };
+
         bool IsRegisterAccessibleToPrivileged(ams::svc::PhysicalAddress address) {
-            if (!KMemoryLayout::GetMemoryControllerRegion().Contains(address)) {
-                return false;
+            /* Find the region for the address. */
+            KMemoryRegionTree::const_iterator it = KMemoryLayout::FindContainingRegion(KPhysicalAddress(address));
+            if (AMS_LIKELY(it != KMemoryLayout::GetPhysicalMemoryRegionTree().end())) {
+                if (AMS_LIKELY(it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController))) {
+                    /* Get the offset within the region. */
+                    const size_t offset = address - it->GetAddress();
+                    MESOSPHERE_ABORT_UNLESS(offset < it->GetSize());
+
+                    /* Check the whitelist. */
+                    if (AMS_LIKELY(CheckRegisterAllowedTable(McKernelRegisterWhitelist, offset))) {
+                        return true;
+                    }
+                }
             }
-            /* TODO: Validate specific offsets. */
-            return true;
+
+            return false;
+        }
+
+        bool IsRegisterAccessibleToUser(ams::svc::PhysicalAddress address) {
+            /* Find the region for the address. */
+            KMemoryRegionTree::const_iterator it = KMemoryLayout::FindContainingRegion(KPhysicalAddress(address));
+            if (AMS_LIKELY(it != KMemoryLayout::GetPhysicalMemoryRegionTree().end())) {
+                /* The PMC is always allowed. */
+                if (it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_PowerManagementController)) {
+                    return true;
+                }
+
+                /* Memory controller is allowed if the register is whitelisted. */
+                if (it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController ) ||
+                    it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController0) ||
+                    it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController1))
+                {
+                    /* Get the offset within the region. */
+                    const size_t offset = address - it->GetAddress();
+                    MESOSPHERE_ABORT_UNLESS(offset < it->GetSize());
+
+                    /* Check the whitelist. */
+                    if (AMS_LIKELY(CheckRegisterAllowedTable(McUserRegisterWhitelist, offset))) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
     }
@@ -299,8 +382,11 @@ namespace ams::kern::board::nintendo::nx {
         MESOSPHERE_ABORT_UNLESS(smc::ReadWriteRegister(out, address, mask, value));
     }
 
-    void KSystemControl::ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
-        MESOSPHERE_UNIMPLEMENTED();
+    Result KSystemControl::ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
+        R_UNLESS(AMS_LIKELY(util::IsAligned(address, sizeof(u32))),             svc::ResultInvalidAddress());
+        R_UNLESS(AMS_LIKELY(IsRegisterAccessibleToUser(address)),               svc::ResultInvalidAddress());
+        R_UNLESS(AMS_LIKELY(smc::ReadWriteRegister(out, address, mask, value)), svc::ResultInvalidAddress());
+        return ResultSuccess();
     }
 
     /* Randomness. */
