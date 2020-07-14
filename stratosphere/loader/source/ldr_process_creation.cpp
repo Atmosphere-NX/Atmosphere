@@ -99,7 +99,7 @@ namespace ams::ldr {
             if (hos_version >= hos::Version_10_1_0) {
                 entries = g_MinimumProgramVersions1010;
                 num_entries = g_MinimumProgramVersionsCount1010;
-            } elseif (hos_version >= hos::Version_10_0_0) {
+            } else if (hos_version >= hos::Version_10_0_0) {
                 entries = g_MinimumProgramVersions1000;
                 num_entries = g_MinimumProgramVersionsCount1000;
             } else if (hos_version >= hos::Version_9_1_0) {
