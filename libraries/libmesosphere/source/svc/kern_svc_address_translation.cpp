@@ -93,7 +93,13 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcQueryPhysicalAddress64 was called.");
     }
 
-    Result QueryIoMapping64(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
+    Result QueryIoMapping64(ams::svc::Address *out_address, ams::svc::Size *out_size, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
+        static_assert(sizeof(*out_address) == sizeof(uintptr_t));
+        static_assert(sizeof(*out_size)    == sizeof(size_t));
+        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), reinterpret_cast<size_t *>(out_size), physical_address, size);
+    }
+
+    Result LegacyQueryIoMapping64(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
         static_assert(sizeof(*out_address) == sizeof(uintptr_t));
         return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size);
     }
@@ -104,7 +110,13 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcQueryPhysicalAddress64From32 was called.");
     }
 
-    Result QueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
+    Result QueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::Size *out_size, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
+        static_assert(sizeof(*out_address) == sizeof(uintptr_t));
+        static_assert(sizeof(*out_size)    == sizeof(size_t));
+        return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), reinterpret_cast<size_t *>(out_size), physical_address, size);
+    }
+
+    Result LegacyQueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
         static_assert(sizeof(*out_address) == sizeof(uintptr_t));
         return QueryIoMapping(reinterpret_cast<uintptr_t *>(out_address), nullptr, physical_address, size);
     }
