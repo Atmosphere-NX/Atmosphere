@@ -457,7 +457,7 @@ namespace ams::kern {
 
     KProcess *KProcess::GetProcessFromId(u64 process_id) {
         /* Lock the list. */
-        ListAccessor accessor;
+        KProcess::ListAccessor accessor;
         const auto end = accessor.end();
 
         /* Iterate over the list. */
@@ -478,7 +478,7 @@ namespace ams::kern {
 
     Result KProcess::GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count) {
         /* Lock the list. */
-        ListAccessor accessor;
+        KProcess::ListAccessor accessor;
         const auto end = accessor.end();
 
         /* Iterate over the list. */
