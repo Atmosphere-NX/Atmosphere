@@ -38,7 +38,7 @@ static const char *register_names[] = {
 /* Adapted from https://gist.github.com/ccbrown/9722406 */
 static void hexdump(const void* data, size_t size, uintptr_t addrbase, char* strbuf) {
     const uint8_t *d = (const uint8_t *)data;
-    char ascii[17];
+    char ascii[17] = {0};
     ascii[16] = '\0';
 
     for (size_t i = 0; i < size; i++) {
@@ -79,17 +79,17 @@ void setup_exception_handlers(void) {
 }
 
 void exception_handler_main(uint32_t *registers, unsigned int exception_type) {
-    char exception_log[0x400];
-    uint8_t code_dump[CODE_DUMP_SIZE];
-    uint8_t stack_dump[STACK_DUMP_SIZE];
-    size_t code_dump_size;
-    size_t stack_dump_size;
+    char exception_log[0x400] = {0};
+    uint8_t code_dump[CODE_DUMP_SIZE] = {0};
+    uint8_t stack_dump[STACK_DUMP_SIZE] = {0};
+    size_t code_dump_size = 0;
+    size_t stack_dump_size = 0;
 
     uint32_t pc = registers[15];
     uint32_t cpsr = registers[16];
     uint32_t instr_addr = pc + ((cpsr & 0x20) ? 2 : 4) - CODE_DUMP_SIZE;
 
-    sprintf(exception_log + strlen(exception_log), "An exception occured!\n");
+    sprintf(exception_log, "An exception occured!\n");
     
     code_dump_size = safecpy(code_dump, (const void *)instr_addr, CODE_DUMP_SIZE);
     stack_dump_size = safecpy(stack_dump, (const void *)registers[13], STACK_DUMP_SIZE);
