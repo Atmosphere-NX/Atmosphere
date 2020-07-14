@@ -32,7 +32,7 @@ namespace ams::kern::svc {
             /* Check whether the address is aligned. */
             const bool aligned = util::IsAligned(phys_addr, PageSize);
 
-            if (aligned) {
+            auto QueryIoMappingFromPageTable = [&] ALWAYS_INLINE_LAMBDA (uint64_t phys_addr, size_t size) -> Result {
                 /* The size must be non-zero. */
                 R_UNLESS(size > 0, svc::ResultInvalidSize());
 
@@ -44,33 +44,48 @@ namespace ams::kern::svc {
 
                 /* Use the size as the found size. */
                 found_size = size;
+
+                return ResultSuccess();
+            };
+
+            if (aligned) {
+                /* Query the input. */
+                R_TRY(QueryIoMappingFromPageTable(phys_addr, size));
             } else {
-                /* TODO: Older kernel ABI compatibility. */
-                /* Newer kernel only allows unaligned addresses when they're special enum members. */
-                R_UNLESS(phys_addr < PageSize, svc::ResultNotFound());
+                if (kern::GetTargetFirmware() < TargetFirmware_8_0_0 && phys_addr >= PageSize) {
+                    /* Query the aligned-down page. */
+                    const size_t offset = phys_addr & (PageSize - 1);
+                    R_TRY(QueryIoMappingFromPageTable(phys_addr - offset, size + offset));
 
-                /* Try to find the memory region. */
-                const KMemoryRegion *region;
-                switch (static_cast<ams::svc::MemoryRegionType>(phys_addr)) {
-                    case ams::svc::MemoryRegionType_KernelTraceBuffer:
-                        region = KMemoryLayout::TryGetKernelTraceBufferRegion();
-                        break;
-                    case ams::svc::MemoryRegionType_OnMemoryBootImage:
-                        region = KMemoryLayout::TryGetOnMemoryBootImageRegion();
-                        break;
-                    case ams::svc::MemoryRegionType_DTB:
-                        region = KMemoryLayout::TryGetDTBRegion();
-                        break;
-                    default:
-                        region = nullptr;
-                        break;
+                    /* Adjust the output address. */
+                    found_address += offset;
+                } else {
+                    /* Newer kernel only allows unaligned addresses when they're special enum members. */
+                    R_UNLESS(phys_addr < PageSize, svc::ResultNotFound());
+
+                    /* Try to find the memory region. */
+                    const KMemoryRegion *region;
+                    switch (static_cast<ams::svc::MemoryRegionType>(phys_addr)) {
+                        case ams::svc::MemoryRegionType_KernelTraceBuffer:
+                            region = KMemoryLayout::TryGetKernelTraceBufferRegion();
+                            break;
+                        case ams::svc::MemoryRegionType_OnMemoryBootImage:
+                            region = KMemoryLayout::TryGetOnMemoryBootImageRegion();
+                            break;
+                        case ams::svc::MemoryRegionType_DTB:
+                            region = KMemoryLayout::TryGetDTBRegion();
+                            break;
+                        default:
+                            region = nullptr;
+                            break;
+                    }
+
+                    /* Ensure that we found the region. */
+                    R_UNLESS(region != nullptr, svc::ResultNotFound());
+
+                    R_TRY(pt.QueryStaticMapping(std::addressof(found_address), region->GetAddress(), region->GetSize()));
+                    found_size = region->GetSize();
                 }
-
-                /* Ensure that we found the region. */
-                R_UNLESS(region != nullptr, svc::ResultNotFound());
-
-                R_TRY(pt.QueryStaticMapping(std::addressof(found_address), region->GetAddress(), region->GetSize()));
-                found_size = region->GetSize();
             }
 
             /* We succeeded. */
