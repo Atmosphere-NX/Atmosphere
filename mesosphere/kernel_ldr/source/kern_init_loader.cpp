@@ -318,6 +318,8 @@ namespace ams::kern::init::loader {
         Elf::ApplyRelocations(GetInteger(virtual_base_address), kernel_dynamic);
 
         /* Call the kernel's init array functions. */
+        /* NOTE: The kernel does this after reprotecting .rodata, but we do it before. */
+        /* This allows our global constructors to edit .rodata, which is valuable for editing the SVC tables to support older firmwares' ABIs. */
         Elf::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
 
         /* Reprotect .rodata as R-- */

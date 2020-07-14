@@ -116,11 +116,13 @@ namespace ams::kern {
     }
 
     void Kernel::PrintLayout() {
+        const auto target_fw = kern::GetTargetFirmware();
+
         /* Print out the kernel version. */
-        /* TODO: target firmware, if we support that? */
         MESOSPHERE_LOG("Horizon Kernel (Mesosphere)\n");
         MESOSPHERE_LOG("Built:                  %s %s\n", __DATE__, __TIME__);
         MESOSPHERE_LOG("Atmosphere version:     %d.%d.%d-%s\n", ATMOSPHERE_RELEASE_VERSION, ATMOSPHERE_GIT_REVISION);
+        MESOSPHERE_LOG("Target Firmware:        %d.%d.%d\n", (target_fw >> 24) & 0xFF, (target_fw >> 16) & 0xFF, (target_fw >> 8) & 0xFF);
         MESOSPHERE_LOG("Supported OS version:   %d.%d.%d\n", ATMOSPHERE_SUPPORTED_HOS_VERSION_MAJOR, ATMOSPHERE_SUPPORTED_HOS_VERSION_MINOR, ATMOSPHERE_SUPPORTED_HOS_VERSION_MICRO);
         MESOSPHERE_LOG("\n");
 

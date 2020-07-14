@@ -47,6 +47,10 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcContinueDebugEvent64 was called.");
     }
 
+    Result LegacyContinueDebugEvent64(ams::svc::Handle debug_handle, uint32_t flags, uint64_t thread_id) {
+        MESOSPHERE_PANIC("Stubbed SvcLegacyContinueDebugEvent64 was called.");
+    }
+
     Result GetDebugThreadContext64(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {
         MESOSPHERE_PANIC("Stubbed SvcGetDebugThreadContext64 was called.");
     }
@@ -95,6 +99,10 @@ namespace ams::kern::svc {
 
     Result ContinueDebugEvent64From32(ams::svc::Handle debug_handle, uint32_t flags, KUserPointer<const uint64_t *> thread_ids, int32_t num_thread_ids) {
         MESOSPHERE_PANIC("Stubbed SvcContinueDebugEvent64From32 was called.");
+    }
+
+    Result LegacyContinueDebugEvent64From32(ams::svc::Handle debug_handle, uint32_t flags, uint64_t thread_id) {
+        MESOSPHERE_PANIC("Stubbed SvcLegacyContinueDebugEvent64From32 was called.");
     }
 
     Result GetDebugThreadContext64From32(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {

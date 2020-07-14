@@ -55,7 +55,7 @@ namespace ams::kern::svc {
             std::array<SvcTableEntry, NumSupervisorCalls> table = {};
 
             #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
-                table[ID] = NAME::Call64From32;
+                if (table[ID] == nullptr) { table[ID] = NAME::Call64From32; }
             AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
             #undef AMS_KERN_SVC_SET_TABLE_ENTRY
 
@@ -66,7 +66,7 @@ namespace ams::kern::svc {
             std::array<SvcTableEntry, NumSupervisorCalls> table = {};
 
             #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
-                table[ID] = NAME::Call64;
+                if (table[ID] == nullptr) { table[ID] = NAME::Call64; }
             AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
             #undef AMS_KERN_SVC_SET_TABLE_ENTRY
 
@@ -91,5 +91,49 @@ namespace ams::kern::svc {
     constinit const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64       = SvcTable64Impl;
 
     constinit const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32 = SvcTable64From32Impl;
+
+    namespace {
+
+        /* NOTE: Although the SVC tables are constants, our global constructor will run before .rodata is protected R--. */
+        class SvcTablePatcher {
+            private:
+                using SvcTable = std::array<SvcTableEntry, NumSupervisorCalls>;
+            private:
+                static SvcTablePatcher s_instance;
+            private:
+                ALWAYS_INLINE volatile SvcTableEntry *GetEditableTable(const SvcTable *table) {
+                    if (table != nullptr) {
+                        return const_cast<volatile SvcTableEntry *>(table->data());
+                    } else {
+                        return nullptr;
+                    }
+                }
+
+                /* TODO: This should perhaps be implemented in assembly. */
+                NOINLINE void PatchTables(volatile SvcTableEntry *table_64, volatile SvcTableEntry *table_64_from_32) {
+                    /* Get the target firmware. */
+                    const auto target_fw = kern::GetTargetFirmware();
+
+                    /* 10.0.0 broke the ABI for QueryIoMapping. */
+                    if (target_fw < TargetFirmware_10_0_0) {
+                        if (table_64)         { table_64[        svc::SvcId_QueryIoMapping] = LegacyQueryIoMapping::Call64; }
+                        if (table_64_from_32) { table_64_from_32[svc::SvcId_QueryIoMapping] = LegacyQueryIoMapping::Call64From32; }
+                    }
+
+                    /* 3.0.0 broke the ABI for ContinueDebugEvent. */
+                    if (target_fw < TargetFirmware_3_0_0) {
+                        if (table_64)         { table_64[        svc::SvcId_ContinueDebugEvent] = LegacyContinueDebugEvent::Call64; }
+                        if (table_64_from_32) { table_64_from_32[svc::SvcId_ContinueDebugEvent] = LegacyContinueDebugEvent::Call64From32; }
+                    }
+                }
+            public:
+                SvcTablePatcher(const SvcTable *table_64, const SvcTable *table_64_from_32) {
+                    PatchTables(GetEditableTable(table_64), GetEditableTable(table_64_from_32));
+                }
+        };
+
+        SvcTablePatcher SvcTablePatcher::s_instance(std::addressof(SvcTable64), std::addressof(SvcTable64From32));
+
+    }
 
 }
