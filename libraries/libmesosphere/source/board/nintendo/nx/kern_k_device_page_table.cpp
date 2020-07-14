@@ -37,6 +37,8 @@ namespace ams::kern::board::nintendo::nx {
         constexpr size_t DeviceLargePageSize = (1ul << DevicePageBits);
         static_assert(DevicePageSize == PageSize);
 
+        constexpr size_t DeviceRegionSize    = (1ul << 32);
+
         constexpr size_t DeviceAsidRegisterOffsets[] = {
             [ams::svc::DeviceName_Afi]        = MC_SMMU_AFI_ASID,
             [ams::svc::DeviceName_Avpc]       = MC_SMMU_AVPC_ASID,
@@ -138,6 +140,57 @@ namespace ams::kern::board::nintendo::nx {
 
         constexpr ALWAYS_INLINE bool IsValidPhysicalAddress(KPhysicalAddress addr) {
             return (static_cast<u64>(GetInteger(addr)) & ~PhysicalAddressMask) == 0;
+        }
+
+        constexpr struct { u64 start; u64 end; } SmmuSupportedRanges[] = {
+            [ams::svc::DeviceName_Afi]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Avpc]       = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Dc]         = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Dcb]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Hc]         = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Hda]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Isp2]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_MsencNvenc] = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nv]         = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nv2]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Ppcs]       = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Sata]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Vi]         = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Vic]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_XusbHost]   = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_XusbDev]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsec]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Ppcs1]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Dc1]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc1a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc2a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc3a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc4a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Isp2b]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Gpu]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Gpub]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Ppcs2]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nvdec]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Ape]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Se]         = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nvjpg]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Hc1]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Se1]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Axiap]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Etr]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsecb]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsec1]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsecb1]     = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Nvdec1]     = { 0x00000000ul, 0x0FFFFFFFFul },
+        };
+        static_assert(util::size(SmmuSupportedRanges) == ams::svc::DeviceName_Count);
+
+        constexpr bool IsAttachable(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) {
+            if (0 <= device_name && device_name < ams::svc::DeviceName_Count) {
+                const auto &range = SmmuSupportedRanges[device_name];
+                return range.start <= space_address && (space_address + space_size - 1) <= range.end;
+            }
+            return false;
         }
 
         /* Types. */
@@ -402,6 +455,132 @@ namespace ams::kern::board::nintendo::nx {
         SmmuSynchronizationBarrier();
 
         /* TODO: Install interrupt handler. */
+    }
+
+    /* Member functions. */
+
+    Result KDevicePageTable::Initialize(u64 space_address, u64 space_size) {
+        /* Ensure space is valid. */
+        R_UNLESS(((space_address + space_size - 1) & ~DeviceVirtualAddressMask) == 0, svc::ResultInvalidMemoryRegion());
+
+        /* Determine extents. */
+        const size_t start_index = space_address / DeviceRegionSize;
+        const size_t end_index   = (space_address + space_size - 1) / DeviceRegionSize;
+
+        /* Get the page table manager. */
+        auto &ptm = Kernel::GetPageTableManager();
+
+        /* Clear the tables. */
+        static_assert(TableCount == (1ul << DeviceVirtualAddressBits) / DeviceRegionSize);
+        for (size_t i = 0; i < TableCount; ++i) {
+            this->tables[i] = Null<KVirtualAddress>;
+        }
+
+        /* Ensure that we clean up the tables on failure. */
+        auto table_guard = SCOPE_GUARD {
+            for (size_t i = start_index; i <= end_index; ++i) {
+                if (this->tables[i] != Null<KVirtualAddress> && ptm.Close(this->tables[i], 1)) {
+                    ptm.Free(this->tables[i]);
+                }
+            }
+        };
+
+        /* Allocate a table for all required indices. */
+        for (size_t i = start_index; i <= end_index; ++i) {
+            const KVirtualAddress table_vaddr = ptm.Allocate();
+            R_UNLESS(table_vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+
+            MESOSPHERE_ASSERT((static_cast<u64>(GetInteger(GetPageTablePhysicalAddress(table_vaddr))) & ~PhysicalAddressMask) == 0);
+
+            ptm.Open(table_vaddr, 1);
+            cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageDirectorySize);
+            this->tables[i] = table_vaddr;
+        }
+
+        /* Clear asids. */
+        for (size_t i = 0; i < TableCount; ++i) {
+            this->table_asids[i] = g_reserved_asid;
+        }
+
+        /* Reserve asids for the tables. */
+        R_TRY(g_asid_manager.Reserve(std::addressof(this->table_asids[start_index]), end_index - start_index + 1));
+
+        /* Associate tables with asids. */
+        for (size_t i = start_index; i <= end_index; ++i) {
+            SetTable(this->table_asids[i], GetPageTablePhysicalAddress(this->tables[i]));
+        }
+
+        /* Set member variables. */
+        this->attached_device = 0;
+        this->attached_value  = (1u << 31) | this->table_asids[0];
+        this->detached_value  = (1u << 31) | g_reserved_asid;
+
+        this->hs_attached_value = (1u << 31);
+        this->hs_detached_value = (1u << 31);
+        for (size_t i = 0; i < TableCount; ++i) {
+            this->hs_attached_value |= (this->table_asids[i] << (i * BITSIZEOF(u8)));
+            this->hs_detached_value |= (g_reserved_asid      << (i * BITSIZEOF(u8)));
+        }
+
+        /* We succeeded. */
+        table_guard.Cancel();
+        return ResultSuccess();
+    }
+
+    void KDevicePageTable::Finalize() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KDevicePageTable::Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) {
+        /* Validate the device name. */
+        R_UNLESS(0 <= device_name,                         svc::ResultNotFound());
+        R_UNLESS(device_name < ams::svc::DeviceName_Count, svc::ResultNotFound());
+
+        /* Check that the device isn't already attached. */
+        R_UNLESS((this->attached_device & (1ul << device_name)) == 0, svc::ResultBusy());
+
+        /* Validate that the space is allowed for the device. */
+        const size_t end_index = (space_address + space_size - 1) / DeviceRegionSize;
+        R_UNLESS(end_index == 0 || IsHsSupported(device_name), svc::ResultInvalidCombination());
+
+        /* Validate that the device can be attached. */
+        R_UNLESS(IsAttachable(device_name, space_address, space_size), svc::ResultInvalidCombination());
+
+        /* Get the device asid register offset. */
+        const int reg_offset = GetDeviceAsidRegisterOffset(device_name);
+        R_UNLESS(reg_offset >= 0, svc::ResultNotFound());
+
+        /* Determine the old/new values. */
+        const u32 old_val = IsHsSupported(device_name) ? this->hs_detached_value : this->detached_value;
+        const u32 new_val = IsHsSupported(device_name) ? this->hs_attached_value : this->attached_value;
+
+        /* Attach the device. */
+        {
+            KScopedLightLock lk(g_lock);
+
+            /* Validate that the device is unclaimed. */
+            R_UNLESS((ReadMcRegister(reg_offset) | (1u << 31)) == (old_val | (1u << 31)), svc::ResultBusy());
+
+            /* Claim the device. */
+            WriteMcRegister(reg_offset, new_val);
+            SmmuSynchronizationBarrier();
+
+            /* Ensure that we claimed it successfully. */
+            if (ReadMcRegister(reg_offset) != new_val) {
+                WriteMcRegister(reg_offset, old_val);
+                SmmuSynchronizationBarrier();
+                return svc::ResultNotFound();
+            }
+        }
+
+        /* Mark the device as attached. */
+        this->attached_device |= (1ul << device_name);
+
+        return ResultSuccess();
+    }
+
+    Result KDevicePageTable::Detach(ams::svc::DeviceName device_name) {
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
 }

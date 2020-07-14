@@ -21,22 +21,61 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result CreateDeviceAddressSpace(ams::svc::Handle *out, uint64_t das_address, uint64_t das_size) {
+            /* Validate input. */
+            R_UNLESS(util::IsAligned(das_address, PageSize), svc::ResultInvalidMemoryRegion());
+            R_UNLESS(util::IsAligned(das_size, PageSize),    svc::ResultInvalidMemoryRegion());
+            R_UNLESS(das_size > 0,                           svc::ResultInvalidMemoryRegion());
+            R_UNLESS((das_address < das_address + das_size), svc::ResultInvalidMemoryRegion());
 
+            /* Create the device address space. */
+            KScopedAutoObject das = KDeviceAddressSpace::Create();
+            R_UNLESS(das.IsNotNull(), svc::ResultOutOfResource());
+
+            /* Initialize the device address space. */
+            R_TRY(das->Initialize(das_address, das_size));
+
+            /* Register the device address space. */
+            R_TRY(KDeviceAddressSpace::Register(das.GetPointerUnsafe()));
+
+            /* Add to the handle table. */
+            R_TRY(GetCurrentProcess().GetHandleTable().Add(out, das.GetPointerUnsafe()));
+
+            return ResultSuccess();
+        }
+
+        Result AttachDeviceAddressSpace(ams::svc::DeviceName device_name, ams::svc::Handle das_handle) {
+            /* Get the device address space. */
+            KScopedAutoObject das = GetCurrentProcess().GetHandleTable().GetObject<KDeviceAddressSpace>(das_handle);
+            R_UNLESS(das.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Attach. */
+            return das->Attach(device_name);
+        }
+
+        Result DetachDeviceAddressSpace(ams::svc::DeviceName device_name, ams::svc::Handle das_handle) {
+            /* Get the device address space. */
+            KScopedAutoObject das = GetCurrentProcess().GetHandleTable().GetObject<KDeviceAddressSpace>(das_handle);
+            R_UNLESS(das.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Detach. */
+            return das->Detach(device_name);
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result CreateDeviceAddressSpace64(ams::svc::Handle *out_handle, uint64_t das_address, uint64_t das_size) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateDeviceAddressSpace64 was called.");
+        return CreateDeviceAddressSpace(out_handle, das_address, das_size);
     }
 
     Result AttachDeviceAddressSpace64(ams::svc::DeviceName device_name, ams::svc::Handle das_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcAttachDeviceAddressSpace64 was called.");
+        return AttachDeviceAddressSpace(device_name, das_handle);
     }
 
     Result DetachDeviceAddressSpace64(ams::svc::DeviceName device_name, ams::svc::Handle das_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcDetachDeviceAddressSpace64 was called.");
+        return DetachDeviceAddressSpace(device_name, das_handle);
     }
 
     Result MapDeviceAddressSpaceByForce64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
@@ -58,15 +97,15 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateDeviceAddressSpace64From32(ams::svc::Handle *out_handle, uint64_t das_address, uint64_t das_size) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateDeviceAddressSpace64From32 was called.");
+        return CreateDeviceAddressSpace(out_handle, das_address, das_size);
     }
 
     Result AttachDeviceAddressSpace64From32(ams::svc::DeviceName device_name, ams::svc::Handle das_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcAttachDeviceAddressSpace64From32 was called.");
+        return AttachDeviceAddressSpace(device_name, das_handle);
     }
 
     Result DetachDeviceAddressSpace64From32(ams::svc::DeviceName device_name, ams::svc::Handle das_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcDetachDeviceAddressSpace64From32 was called.");
+        return DetachDeviceAddressSpace(device_name, das_handle);
     }
 
     Result MapDeviceAddressSpaceByForce64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {

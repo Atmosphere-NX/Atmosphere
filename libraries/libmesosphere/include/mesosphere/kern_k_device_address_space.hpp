@@ -23,10 +23,39 @@ namespace ams::kern {
 
     class KDeviceAddressSpace final : public KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDeviceAddressSpace, KAutoObject);
+        private:
+            KLightLock lock;
+            KDevicePageTable table;
+            u64 space_address;
+            u64 space_size;
+            bool is_initialized;
+        public:
+            constexpr KDeviceAddressSpace() : lock(), table(), space_address(), space_size(), is_initialized() { /* ... */ }
+            virtual ~KDeviceAddressSpace() { /* ... */ }
+
+            Result Initialize(u64 address, u64 size);
+            virtual void Finalize() override;
+
+            virtual bool IsInitialized() const override { return this->is_initialized; }
+            static void PostDestroy(uintptr_t arg) { /* ... */ }
+
+            Result Attach(ams::svc::DeviceName device_name);
+            Result Detach(ams::svc::DeviceName device_name);
+
+            Result Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+                return this->Map(out_mapped_size, page_table, process_address, size, device_address, device_perm, false, refresh_mappings);
+            }
+
+            Result MapAligned(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm) {
+                size_t dummy;
+                return this->Map(std::addressof(dummy), page_table, process_address, size, device_address, device_perm, true, false);
+            }
+
+            Result Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address);
+        private:
+            Result Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool refresh_mappings);
         public:
             static void Initialize();
-
-            /* TODO: This is a placeholder definition. */
     };
 
 }
