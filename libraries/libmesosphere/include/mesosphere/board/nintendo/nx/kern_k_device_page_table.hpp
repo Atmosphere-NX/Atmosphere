@@ -53,6 +53,12 @@ namespace ams::kern::board::nintendo::nx {
         public:
             constexpr KDevicePageTable() : tables(), table_asids(), attached_device(), attached_value(), detached_value(), hs_attached_value(), hs_detached_value() { /* ... */ }
 
+            Result Initialize(u64 space_address, u64 space_size);
+            void Finalize();
+
+            Result Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size);
+            Result Detach(ams::svc::DeviceName device_name);
+        public:
             static void Initialize();
     };
 
