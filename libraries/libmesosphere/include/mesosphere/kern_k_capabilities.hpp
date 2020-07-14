@@ -230,7 +230,7 @@ namespace ams::kern {
                 }
             }
 
-            bool SetInterruptAllowed(u32 id) {
+            bool SetInterruptPermitted(u32 id) {
                 constexpr size_t BitsPerWord = BITSIZEOF(this->irq_access_flags[0]);
                 if (id < BITSIZEOF(this->irq_access_flags)) {
                     this->irq_access_flags[id / BitsPerWord] = (1ul << (id % BitsPerWord));
@@ -271,6 +271,15 @@ namespace ams::kern {
                 ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
                 if (sp.is_preemption_state_pinned) {
                     ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            constexpr bool IsPermittedInterrupt(u32 id) const {
+                constexpr size_t BitsPerWord = BITSIZEOF(this->irq_access_flags[0]);
+                if (id < BITSIZEOF(this->irq_access_flags)) {
+                    return (this->irq_access_flags[id / BitsPerWord] & (1ul << (id % BitsPerWord))) != 0;
+                } else {
+                    return false;
                 }
             }
 

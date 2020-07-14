@@ -164,7 +164,7 @@ namespace ams::kern {
         for (size_t i = 0; i < util::size(ids); i++) {
             if (ids[i] != PaddingInterruptId) {
                 R_UNLESS(Kernel::GetInterruptManager().IsInterruptDefined(ids[i]), svc::ResultOutOfRange());
-                R_UNLESS(this->SetInterruptAllowed(ids[i]),                        svc::ResultOutOfRange());
+                R_UNLESS(this->SetInterruptPermitted(ids[i]),                      svc::ResultOutOfRange());
             }
         }
 
