@@ -435,6 +435,22 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KProcess::Reset() {
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Lock the process and the scheduler. */
+        KScopedLightLock lk(this->state_lock);
+        KScopedSchedulerLock sl;
+
+        /* Validate that we're in a state that we can reset. */
+        R_UNLESS(this->state != State_Terminated, svc::ResultInvalidState());
+        R_UNLESS(this->is_signaled,               svc::ResultInvalidState());
+
+        /* Clear signaled. */
+        this->is_signaled = false;
+        return ResultSuccess();
+    }
+
     void KProcess::SetPreemptionState() {
         MESOSPHERE_UNIMPLEMENTED();
     }

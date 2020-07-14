@@ -39,7 +39,7 @@ namespace ams::kern::svc {
             R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
             R_UNLESS(process.CheckThreadPriority(priority),                                                     svc::ResultInvalidPriority());
 
-            /* Reserve a new session from the process resource limit (waiting up to 100ms). */
+            /* Reserve a new thread from the process resource limit (waiting up to 100ms). */
             KScopedResourceReservation thread_reservation(std::addressof(process), ams::svc::LimitableResource_ThreadCountMax, 1, KHardwareTimer::GetTick() + ams::svc::Tick(TimeSpan::FromMilliSeconds(100)));
             R_UNLESS(thread_reservation.Succeeded(), svc::ResultLimitReached());
 

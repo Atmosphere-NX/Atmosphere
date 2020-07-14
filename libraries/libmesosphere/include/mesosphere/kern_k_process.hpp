@@ -207,6 +207,8 @@ namespace ams::kern {
 
             Result Run(s32 priority, size_t stack_size);
 
+            Result Reset();
+
             void SetPreemptionState();
 
             Result SignalToAddress(KProcessAddress address) {
