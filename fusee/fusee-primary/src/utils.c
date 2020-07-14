@@ -26,6 +26,7 @@
 #include "car.h"
 #include "btn.h"
 #include "lib/log.h"
+#include "lib/vsprintf.h"
 #include "display/video_fb.h"
 
 #include <inttypes.h>
@@ -112,10 +113,10 @@ __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
         /* Turn on the backlight after initializing the lfb */
         /* to avoid flickering. */
         display_backlight(true);
-        
-        /* Override the global logging level. */
-        log_set_log_level(SCREEN_LOG_LEVEL_ERROR);
     }
+    
+    /* Override the global logging level. */
+    log_set_log_level(SCREEN_LOG_LEVEL_ERROR);
     
     /* Display fatal error. */
     va_list args;
@@ -136,38 +137,4 @@ __attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, u
     if(bs <= as && as <= be)
         return true;
     return false;
-}
-
-/* Adapted from https://gist.github.com/ccbrown/9722406 */
-void hexdump(const void* data, size_t size, uintptr_t addrbase) {
-    const uint8_t *d = (const uint8_t *)data;
-    char ascii[17];
-    ascii[16] = '\0';
-
-    for (size_t i = 0; i < size; i++) {
-        if (i % 16 == 0) {
-            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%0*" PRIXPTR ": | ", 2 * sizeof(addrbase), addrbase + i);
-        }
-        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "%02X ", d[i]);
-        if (d[i] >= ' ' && d[i] <= '~') {
-            ascii[i % 16] = d[i];
-        } else {
-            ascii[i % 16] = '.';
-        }
-        if ((i+1) % 8 == 0 || i+1 == size) {
-            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, " ");
-            if ((i+1) % 16 == 0) {
-                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "|  %s \n", ascii);
-            } else if (i+1 == size) {
-                ascii[(i+1) % 16] = '\0';
-                if ((i+1) % 16 <= 8) {
-                    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, " ");
-                }
-                for (size_t j = (i+1) % 16; j < 16; j++) {
-                    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "   ");
-                }
-                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "|  %s \n", ascii);
-            }
-        }
-    }
 }

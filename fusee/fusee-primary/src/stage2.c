@@ -106,7 +106,7 @@ void load_stage2(const char *bct0) {
     }
 
     if (strlen(config.path) + 1 + sizeof(stage2_args_t) > CHAINLOADER_ARG_DATA_MAX_SIZE) {
-        print(SCREEN_LOG_LEVEL_ERROR, "Stage2's path name is too big!\n");
+        fatal_error("Stage2's path name is too big!\n");
     }
 
     if (!check_32bit_address_loadable(config.entrypoint)) {
