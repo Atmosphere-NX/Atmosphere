@@ -50,6 +50,7 @@ namespace ams::kern {
 
             /* TODO: More of KClientPort. */
             Result CreateSession(KClientSession **out);
+            Result CreateLightSession(KLightClientSession **out);
     };
 
 }
