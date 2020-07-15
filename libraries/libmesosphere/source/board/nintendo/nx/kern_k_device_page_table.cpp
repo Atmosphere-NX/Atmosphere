@@ -640,15 +640,10 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     bool KDevicePageTable::Compare(const KPageGroup &compare_pg, KDeviceVirtualAddress device_address) const {
-        bool same_pages = false;
-
-        /* Make a page group. */
+        /* Check whether the page group we expect for the virtual address matches the page group we're validating. */
         KPageGroup calc_pg(std::addressof(Kernel::GetBlockInfoManager()));
-        if (R_SUCCEEDED(this->MakePageGroup(std::addressof(calc_pg), device_address, compare_pg.GetNumPages() * PageSize))) {
-            same_pages = calc_pg.IsEquivalentTo(compare_pg);
-        }
-
-        return same_pages;
+        return (R_SUCCEEDED(this->MakePageGroup(std::addressof(calc_pg), device_address, compare_pg.GetNumPages() * PageSize))) &&
+               calc_pg.IsEquivalentTo(compare_pg);
     }
 
     Result KDevicePageTable::Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {

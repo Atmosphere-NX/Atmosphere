@@ -18,6 +18,10 @@
 #define cpuactlr_el1 s3_1_c15_c2_0
 #define cpuectlr_el1 s3_1_c15_c2_1
 
+#define LOAD_IMMEDIATE_32(reg, val)                \
+    mov  reg, #(((val) >> 0x00) & 0xFFFF);         \
+    movk reg, #(((val) >> 0x10) & 0xFFFF), lsl#16
+
 .section    .crt0.text.start, "ax", %progbits
 .global     _start
 _start:
@@ -46,12 +50,25 @@ _main:
     ldr x17, [x17, #0x10] /* stack top */
     add sp, x17, x18
 
-    /* Stack is now set up. */
-    /* Apply relocations and call init array for KernelLdr. */
+    /* Stack is now set up, so save important state. */
     sub sp, sp, #0x30
     stp x0, x1, [sp, #0x00]
     stp x2, x30, [sp, #0x10]
     stp xzr, xzr, [sp, #0x20]
+
+    /* Get the target firmware from exosphere. */
+    LOAD_IMMEDIATE_32(w0, 0xC3000004)
+    mov w1, #65000
+    smc #1
+    cmp x0, #0
+0:
+    b.ne 0b
+
+    /* Store the target firmware. */
+    adr x0, __metadata_target_firmware
+    str w1, [x0]
+
+    /* Apply relocations and call init array for KernelLdr. */
     adr x0, _start
     adr x1, __external_references
     ldr x1, [x1, #0x18] /* .dynamic. */
