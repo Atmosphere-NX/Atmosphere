@@ -231,6 +231,14 @@ namespace ams::kern {
                 return this->cond_var.Wait(address, cv_key, tag, ns);
             }
 
+            Result SignalAddressArbiter(uintptr_t address, ams::svc::SignalType signal_type, s32 value, s32 count) {
+                return this->address_arbiter.SignalToAddress(address, signal_type, value, count);
+            }
+
+            Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s32 value, s64 timeout) {
+                return this->address_arbiter.WaitForAddress(address, arb_type, value, timeout);
+            }
+
             static KProcess *GetProcessFromId(u64 process_id);
             static Result GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count);
 

@@ -119,6 +119,23 @@ namespace ams::kern {
                 constexpr SyncObjectBuffer() : sync_objects() { /* ... */ }
             };
             static_assert(sizeof(SyncObjectBuffer::sync_objects) == sizeof(SyncObjectBuffer::handles));
+
+            struct ConditionVariableComparator {
+                static constexpr ALWAYS_INLINE int Compare(const KThread &lhs, const KThread &rhs) {
+                    const uintptr_t l_key = lhs.GetConditionVariableKey();
+                    const uintptr_t r_key = rhs.GetConditionVariableKey();
+
+                    if (l_key < r_key) {
+                        /* Sort first by key */
+                        return -1;
+                    } else if (l_key == r_key && lhs.GetPriority() < rhs.GetPriority()) {
+                        /* And then by priority. */
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                }
+            };
         private:
             static inline std::atomic<u64> s_next_thread_id = 0;
         private:
@@ -150,10 +167,13 @@ namespace ams::kern {
             using WaiterListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&KThread::waiter_list_node>;
             using WaiterList       = WaiterListTraits::ListType;
 
+            using ConditionVariableThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::condvar_arbiter_tree_node>;
+            using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
+
             WaiterList                      waiter_list{};
             WaiterList                      paused_waiter_list{};
             KThread                        *lock_owner{};
-            KConditionVariable             *cond_var{};
+            ConditionVariableThreadTree    *condvar_tree{};
             uintptr_t                       debug_params[3]{};
             u32                             arbiter_value{};
             u32                             suspend_request_flags{};
@@ -290,8 +310,21 @@ namespace ams::kern {
                 this->priority    = priority;
             }
 
-            void ClearConditionVariable() {
-                this->cond_var = nullptr;
+            constexpr void ClearConditionVariableTree() {
+                this->condvar_tree = nullptr;
+            }
+
+            constexpr void SetAddressArbiter(ConditionVariableThreadTree *tree, uintptr_t address) {
+                this->condvar_tree = tree;
+                this->condvar_key  = address;
+            }
+
+            constexpr void ClearAddressArbiter() {
+                this->condvar_tree = nullptr;
+            }
+
+            constexpr bool IsWaitingForAddressArbiter() const {
+                return this->condvar_tree != nullptr;
             }
 
             constexpr s32 GetIdealCore() const { return this->ideal_core_id; }
@@ -308,7 +341,7 @@ namespace ams::kern {
             constexpr const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
             constexpr void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
 
-            constexpr KConditionVariable *GetConditionVariable() const { return this->cond_var; }
+            constexpr ConditionVariableThreadTree *GetConditionVariableTree() const { return this->condvar_tree; }
 
             constexpr s32 GetNumKernelWaiters() const { return this->num_kernel_waiters; }
 
@@ -416,9 +449,16 @@ namespace ams::kern {
             static constexpr bool IsWaiterListValid() {
                 return WaiterListTraits::IsValid();
             }
+
+            static constexpr bool IsConditionVariableThreadTreeValid() {
+                return ConditionVariableThreadTreeTraits::IsValid();
+            }
+
+            using ConditionVariableThreadTreeType = ConditionVariableThreadTree;
     };
     static_assert(alignof(KThread) == 0x10);
     static_assert(KThread::IsWaiterListValid());
+    static_assert(KThread::IsConditionVariableThreadTreeValid());
 
     class KScopedDisableDispatch {
         public:

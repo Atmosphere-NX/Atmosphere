@@ -146,7 +146,7 @@ namespace ams::kern {
                 }
 
                 it = this->tree.erase(it);
-                target_thread->ClearConditionVariable();
+                target_thread->ClearConditionVariableTree();
                 ++num_waiters;
             }
         }
