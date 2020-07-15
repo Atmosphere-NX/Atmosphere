@@ -61,6 +61,15 @@ namespace ams::kern::board::nintendo::nx {
 
             Result Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings);
             Result Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address);
+        private:
+            Result MapDevicePage(size_t *out_mapped_size, s32 *out_num_pt, s32 max_pt, KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm);
+
+            Result MapImpl(size_t *out_mapped_size, s32 *out_num_pt, s32 max_pt, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm);
+            void UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force);
+
+            bool IsFree(KDeviceVirtualAddress address, u64 size) const;
+            Result MakePageGroup(KPageGroup *out, KDeviceVirtualAddress address, u64 size) const;
+            bool Compare(const KPageGroup &pg, KDeviceVirtualAddress device_address) const;
         public:
             static void Initialize();
     };

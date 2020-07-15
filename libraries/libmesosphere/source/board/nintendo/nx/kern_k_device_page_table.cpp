@@ -580,15 +580,99 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     Result KDevicePageTable::Detach(ams::svc::DeviceName device_name) {
+        /* Validate the device name. */
+        R_UNLESS(0 <= device_name,                         svc::ResultNotFound());
+        R_UNLESS(device_name < ams::svc::DeviceName_Count, svc::ResultNotFound());
+
+        /* Check that the device is already attached. */
+        R_UNLESS((this->attached_device & (1ul << device_name)) != 0, svc::ResultInvalidState());
+
+        /* Get the device asid register offset. */
+        const int reg_offset = GetDeviceAsidRegisterOffset(device_name);
+        R_UNLESS(reg_offset >= 0, svc::ResultNotFound());
+
+        /* Determine the old/new values. */
+        const u32 old_val = IsHsSupported(device_name) ? this->hs_attached_value : this->attached_value;
+        const u32 new_val = IsHsSupported(device_name) ? this->hs_detached_value : this->detached_value;
+
+        /* When not building for debug, the old value might be unused. */
+        AMS_UNUSED(old_val);
+
+        /* Detach the device. */
+        {
+            KScopedLightLock lk(g_lock);
+
+            /* Check that the device is attached. */
+            MESOSPHERE_ASSERT(ReadMcRegister(reg_offset) == old_val);
+
+            /* Release the device. */
+            WriteMcRegister(reg_offset, new_val);
+            SmmuSynchronizationBarrier();
+
+            /* Check that the device was released. */
+            MESOSPHERE_ASSERT((ReadMcRegister(reg_offset) | (1u << 31)) == (new_val | 1u << 31));
+        }
+
+        /* Mark the device as detached. */
+        this->attached_device &= ~(1ul << device_name);
+
+        return ResultSuccess();
+    }
+
+    Result KDevicePageTable::MapDevicePage(size_t *out_mapped_size, s32 *out_num_pt, s32 max_pt, KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm) {
         MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KDevicePageTable::MapImpl(size_t *out_mapped_size, s32 *out_num_pt, s32 max_pt, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    void KDevicePageTable::UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    bool KDevicePageTable::IsFree(KDeviceVirtualAddress address, u64 size) const {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KDevicePageTable::MakePageGroup(KPageGroup *out, KDeviceVirtualAddress address, u64 size) const {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    bool KDevicePageTable::Compare(const KPageGroup &compare_pg, KDeviceVirtualAddress device_address) const {
+        bool same_pages = false;
+
+        /* Make a page group. */
+        KPageGroup calc_pg(std::addressof(Kernel::GetBlockInfoManager()));
+        if (R_SUCCEEDED(this->MakePageGroup(std::addressof(calc_pg), device_address, compare_pg.GetNumPages() * PageSize))) {
+            same_pages = calc_pg.IsEquivalentTo(compare_pg);
+        }
+
+        return same_pages;
     }
 
     Result KDevicePageTable::Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Clear the output size. */
+        *out_mapped_size = 0;
+
+        /* Map the pages. */
+        s32 num_pt = 0;
+        return this->MapImpl(out_mapped_size, std::addressof(num_pt), refresh_mappings ? 1 : std::numeric_limits<s32>::max(), pg, device_address, device_perm);
     }
 
     Result KDevicePageTable::Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Validate address/size. */
+        const size_t size = pg.GetNumPages() * PageSize;
+        MESOSPHERE_ASSERT((device_address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Ensure the page group is correct. */
+        R_UNLESS(this->Compare(pg, device_address), svc::ResultInvalidCurrentMemory());
+
+        /* Unmap the pages. */
+        this->UnmapImpl(device_address, size, false);
+
+        return ResultSuccess();
     }
 
 }
