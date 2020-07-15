@@ -104,6 +104,18 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MakeAndOpenPageGroup(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
             }
 
+            Result MakeAndOpenPageGroupContiguous(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
+                return this->page_table.MakeAndOpenPageGroupContiguous(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
+            }
+
+            Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+                return this->page_table.LockForDeviceAddressSpace(out, address, size, perm, is_aligned);
+            }
+
+            Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {
+                return this->page_table.UnlockForDeviceAddressSpace(address, size);
+            }
+
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
                 return this->page_table.LockForIpcUserBuffer(out, address, size);
             }

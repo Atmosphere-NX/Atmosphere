@@ -583,4 +583,12 @@ namespace ams::kern::board::nintendo::nx {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    Result KDevicePageTable::Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KDevicePageTable::Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
 }

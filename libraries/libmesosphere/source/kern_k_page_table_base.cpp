@@ -1370,6 +1370,85 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::MakeAndOpenPageGroupContiguous(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
+        /* Ensure that the page group isn't null. */
+        MESOSPHERE_ASSERT(out != nullptr);
+
+        /* Make sure that the region we're mapping is valid for the table. */
+        const size_t size = num_pages * PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check if state allows us to create the group. */
+        R_TRY(this->CheckMemoryStateContiguous(address, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
+
+        /* Create a new page group for the region. */
+        R_TRY(this->MakePageGroup(*out, address, num_pages));
+
+        /* Open a new reference to the pages in the group. */
+        out->Open();
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
+        /* Lightly validate the range before doing anything else. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the memory state. */
+        const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
+        R_TRY(this->CheckMemoryState(address, size, test_state, test_state, perm, perm, KMemoryAttribute_AnyLocked | KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, 0, KMemoryAttribute_DeviceShared));
+
+        /* Make the page group, if we should. */
+        if (out != nullptr) {
+            R_TRY(this->MakePageGroup(*out, address, num_pages));
+        }
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* Update the memory blocks. */
+        this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::ShareToDevice, KMemoryPermission_None);
+
+        /* Open the page group. */
+        if (out != nullptr) {
+            out->Open();
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {
+        /* Lightly validate the range before doing anything else. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryStateContiguous(address, size,
+                                               KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                               KMemoryPermission_None, KMemoryPermission_None,
+                                               KMemoryAttribute_AnyLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* Update the memory blocks. */
+        this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::UnshareToDevice, KMemoryPermission_None);
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
         return this->LockMemoryAndOpen(nullptr, out, address, size,
                                         KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,

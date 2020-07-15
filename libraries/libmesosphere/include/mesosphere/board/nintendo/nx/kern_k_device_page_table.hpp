@@ -58,6 +58,9 @@ namespace ams::kern::board::nintendo::nx {
 
             Result Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size);
             Result Detach(ams::svc::DeviceName device_name);
+
+            Result Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings);
+            Result Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address);
         public:
             static void Initialize();
     };
