@@ -116,6 +116,8 @@ namespace ams::svc {
         MemoryAttribute_Uncached     = (1 << 3),
     };
 
+    constexpr inline size_t HeapSizeAlignment = 2_MB;
+
     struct PageInfo {
         u32 flags;
     };
