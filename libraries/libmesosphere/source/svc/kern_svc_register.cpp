@@ -22,6 +22,10 @@ namespace ams::kern::svc {
     namespace {
 
         Result ReadWriteRegister(uint32_t *out, ams::svc::PhysicalAddress address, uint32_t mask, uint32_t value) {
+            /* Clear the output unconditionally. */
+            *out = 0;
+
+            /* Read/write the register. */
             return KSystemControl::ReadWriteRegister(out, address, mask, value);
         }
 

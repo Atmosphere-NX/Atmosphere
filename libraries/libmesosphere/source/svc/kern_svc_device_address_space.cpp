@@ -21,6 +21,12 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr inline u64 DeviceAddressSpaceAlignMask = (1ul << 22) - 1;
+
+        constexpr bool IsProcessAndDeviceAligned(uint64_t process_address, uint64_t device_address) {
+            return (process_address & DeviceAddressSpaceAlignMask) == (device_address & DeviceAddressSpaceAlignMask);
+        }
+
         Result CreateDeviceAddressSpace(ams::svc::Handle *out, uint64_t das_address, uint64_t das_size) {
             /* Validate input. */
             R_UNLESS(util::IsAligned(das_address, PageSize), svc::ResultInvalidMemoryRegion());
@@ -62,6 +68,97 @@ namespace ams::kern::svc {
             return das->Detach(device_name);
         }
 
+        constexpr bool IsValidDeviceMemoryPermission(ams::svc::MemoryPermission device_perm) {
+            switch (device_perm) {
+                case ams::svc::MemoryPermission_Read:
+                case ams::svc::MemoryPermission_Write:
+                case ams::svc::MemoryPermission_ReadWrite:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        Result MapDeviceAddressSpace(size_t *out_mapped_size, ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, size_t size, uint64_t device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+            /* Validate input. */
+            R_UNLESS(util::IsAligned(process_address, PageSize),                   svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(device_address, PageSize),                    svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size, PageSize),                              svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                                                     svc::ResultInvalidSize());
+            R_UNLESS((process_address < process_address + size),                   svc::ResultInvalidCurrentMemory());
+            R_UNLESS((device_address < device_address + size),                     svc::ResultInvalidMemoryRegion());
+            R_UNLESS((process_address == static_cast<uintptr_t>(process_address)), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(IsValidDeviceMemoryPermission(device_perm),                   svc::ResultInvalidNewMemoryPermission());
+
+            /* Get the device address space. */
+            KScopedAutoObject das = GetCurrentProcess().GetHandleTable().GetObject<KDeviceAddressSpace>(das_handle);
+            R_UNLESS(das.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the process. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate that the process address is within range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(process_address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Map. */
+            return das->Map(out_mapped_size, std::addressof(page_table), KProcessAddress(process_address), size, device_address, device_perm, refresh_mappings);
+        }
+
+        Result MapDeviceAddressSpaceAligned(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, size_t size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
+            /* Validate input. */
+            R_UNLESS(util::IsAligned(process_address, PageSize),                   svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(device_address, PageSize),                    svc::ResultInvalidAddress());
+            R_UNLESS(IsProcessAndDeviceAligned(process_address, device_address),   svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size, PageSize),                              svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                                                     svc::ResultInvalidSize());
+            R_UNLESS((process_address < process_address + size),                   svc::ResultInvalidCurrentMemory());
+            R_UNLESS((device_address < device_address + size),                     svc::ResultInvalidMemoryRegion());
+            R_UNLESS((process_address == static_cast<uintptr_t>(process_address)), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(IsValidDeviceMemoryPermission(device_perm),                   svc::ResultInvalidNewMemoryPermission());
+
+            /* Get the device address space. */
+            KScopedAutoObject das = GetCurrentProcess().GetHandleTable().GetObject<KDeviceAddressSpace>(das_handle);
+            R_UNLESS(das.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the process. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate that the process address is within range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(process_address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Map. */
+            return das->MapAligned(std::addressof(page_table), KProcessAddress(process_address), size, device_address, device_perm);
+        }
+
+        Result UnmapDeviceAddressSpace(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, size_t size, uint64_t device_address) {
+            /* Validate input. */
+            R_UNLESS(util::IsAligned(process_address, PageSize),                   svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(device_address, PageSize),                    svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size, PageSize),                              svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                                                     svc::ResultInvalidSize());
+            R_UNLESS((process_address < process_address + size),                   svc::ResultInvalidCurrentMemory());
+            R_UNLESS((device_address < device_address + size),                     svc::ResultInvalidMemoryRegion());
+            R_UNLESS((process_address == static_cast<uintptr_t>(process_address)), svc::ResultInvalidCurrentMemory());
+
+            /* Get the device address space. */
+            KScopedAutoObject das = GetCurrentProcess().GetHandleTable().GetObject<KDeviceAddressSpace>(das_handle);
+            R_UNLESS(das.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the process. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate that the process address is within range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(process_address, size), svc::ResultInvalidCurrentMemory());
+
+            return das->Unmap(std::addressof(page_table), KProcessAddress(process_address), size, device_address);
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -79,19 +176,21 @@ namespace ams::kern::svc {
     }
 
     Result MapDeviceAddressSpaceByForce64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        MESOSPHERE_PANIC("Stubbed SvcMapDeviceAddressSpaceByForce64 was called.");
+        size_t dummy_map_size;
+        return MapDeviceAddressSpace(std::addressof(dummy_map_size), das_handle, process_handle, process_address, size, device_address, device_perm, false);
     }
 
     Result MapDeviceAddressSpaceAligned64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        MESOSPHERE_PANIC("Stubbed SvcMapDeviceAddressSpaceAligned64 was called.");
+        return MapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, device_perm);
     }
 
     Result MapDeviceAddressSpace64(ams::svc::Size *out_mapped_size, ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        MESOSPHERE_PANIC("Stubbed SvcMapDeviceAddressSpace64 was called.");
+        static_assert(sizeof(*out_mapped_size) == sizeof(size_t));
+        return MapDeviceAddressSpace(reinterpret_cast<size_t *>(out_mapped_size), das_handle, process_handle, process_address, size, device_address, device_perm, true);
     }
 
     Result UnmapDeviceAddressSpace64(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapDeviceAddressSpace64 was called.");
+        return UnmapDeviceAddressSpace(das_handle, process_handle, process_address, size, device_address);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -109,19 +208,21 @@ namespace ams::kern::svc {
     }
 
     Result MapDeviceAddressSpaceByForce64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        MESOSPHERE_PANIC("Stubbed SvcMapDeviceAddressSpaceByForce64From32 was called.");
+        size_t dummy_map_size;
+        return MapDeviceAddressSpace(std::addressof(dummy_map_size), das_handle, process_handle, process_address, size, device_address, device_perm, false);
     }
 
     Result MapDeviceAddressSpaceAligned64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        MESOSPHERE_PANIC("Stubbed SvcMapDeviceAddressSpaceAligned64From32 was called.");
+        return MapDeviceAddressSpaceAligned(das_handle, process_handle, process_address, size, device_address, device_perm);
     }
 
     Result MapDeviceAddressSpace64From32(ams::svc::Size *out_mapped_size, ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address, ams::svc::MemoryPermission device_perm) {
-        MESOSPHERE_PANIC("Stubbed SvcMapDeviceAddressSpace64From32 was called.");
+        static_assert(sizeof(*out_mapped_size) == sizeof(size_t));
+        return MapDeviceAddressSpace(reinterpret_cast<size_t *>(out_mapped_size), das_handle, process_handle, process_address, size, device_address, device_perm, true);
     }
 
     Result UnmapDeviceAddressSpace64From32(ams::svc::Handle das_handle, ams::svc::Handle process_handle, uint64_t process_address, ams::svc::Size size, uint64_t device_address) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapDeviceAddressSpace64From32 was called.");
+        return UnmapDeviceAddressSpace(das_handle, process_handle, process_address, size, device_address);
     }
 
 }
