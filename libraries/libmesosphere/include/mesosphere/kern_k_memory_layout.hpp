@@ -17,6 +17,12 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/init/kern_init_page_table_select.hpp>
 
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+    #include <mesosphere/board/nintendo/nx/kern_k_memory_layout.board.nintendo_nx.hpp>
+#else
+    #error "Unknown board for KMemoryLayout"
+#endif
+
 namespace ams::kern {
 
     constexpr size_t KernelAslrAlignment = 2_MB;

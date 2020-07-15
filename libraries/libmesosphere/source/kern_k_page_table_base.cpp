@@ -1077,7 +1077,119 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::SetHeapSize(KProcessAddress *out, size_t size) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lock the physical memory mutex. */
+        KScopedLightLock map_phys_mem_lk(this->map_physical_memory_lock);
+
+        /* Try to perform a reduction in heap, instead of an extension. */
+        KProcessAddress cur_address;
+        size_t allocation_size;
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Validate that setting heap size is possible at all. */
+            R_UNLESS(!this->is_kernel,                                                             svc::ResultOutOfMemory());
+            R_UNLESS(size <= static_cast<size_t>(this->heap_region_end - this->heap_region_start), svc::ResultOutOfMemory());
+            R_UNLESS(size <= this->max_heap_size,                                                  svc::ResultOutOfMemory());
+
+            if (size < static_cast<size_t>(this->current_heap_end - this->heap_region_start)) {
+                /* The size being requested is less than the current size, so we need to free the end of the heap. */
+
+                /* Create an update allocator. */
+                KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+                R_TRY(allocator.GetResult());
+
+                /* We're going to perform an update, so create a helper. */
+                KScopedPageTableUpdater updater(this);
+
+                /* Validate memory state. */
+                R_TRY(this->CheckMemoryState(this->heap_region_start + size, (this->heap_region_end - this->heap_region_start) - size,
+                                             KMemoryState_All, KMemoryState_Normal,
+                                             KMemoryPermission_All, KMemoryPermission_UserReadWrite,
+                                             KMemoryAttribute_All,  KMemoryAttribute_None));
+
+                /* Unmap the end of the heap. */
+                const size_t num_pages = ((this->current_heap_end - this->heap_region_start) - size) / PageSize;
+                const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
+                R_TRY(this->Operate(updater.GetPageList(), this->heap_region_start + size, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+
+                /* Release the memory from the resource limit. */
+                GetCurrentProcess().ReleaseResource(ams::svc::LimitableResource_PhysicalMemoryMax, num_pages * PageSize);
+
+                /* Apply the memory block update. */
+                this->memory_block_manager.Update(std::addressof(allocator), this->heap_region_start + size, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+
+                /* Update the current heap end. */
+                this->current_heap_end = this->heap_region_start + size;
+
+                /* Set the output. */
+                *out = this->heap_region_start;
+                return ResultSuccess();
+            } else if (size == static_cast<size_t>(this->current_heap_end - this->heap_region_start)) {
+                /* The size requested is exactly the current size. */
+                *out = this->heap_region_start;
+                return ResultSuccess();
+            } else {
+                /* We have to allocate memory. Determine how much to allocate and where while the table is locked. */
+                cur_address     = this->current_heap_end;
+                allocation_size = size - (this->current_heap_end - this->heap_region_start);
+            }
+        }
+
+        /* Reserve memory for the heap extension. */
+        KScopedResourceReservation memory_reservation(GetCurrentProcess().GetResourceLimit(), ams::svc::LimitableResource_PhysicalMemoryMax, allocation_size);
+        R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
+
+        /* Allocate pages for the heap extension. */
+        KPageGroup pg(this->block_info_manager);
+        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(pg), allocation_size / PageSize, this->allocate_option));
+
+        /* Open the pages in the group for the duration of the call, and close them at the end. */
+        /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
+        pg.Open();
+        ON_SCOPE_EXIT { pg.Close(); };
+
+        /* Clear all the newly allocated pages. */
+        for (const auto &it : pg) {
+            std::memset(GetVoidPointer(it.GetAddress()), this->heap_fill_value, it.GetSize());
+        }
+
+        /* Map the pages. */
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Create an update allocator. */
+            KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+            R_TRY(allocator.GetResult());
+
+            /* We're going to perform an update, so create a helper. */
+            KScopedPageTableUpdater updater(this);
+
+            /* Ensure that the heap hasn't changed since we began executing. */
+            MESOSPHERE_ABORT_UNLESS(cur_address == this->current_heap_end);
+
+            /* Check the memory state. */
+            R_TRY(this->CheckMemoryState(this->current_heap_end, allocation_size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+            /* Map the pages. */
+            const size_t num_pages = allocation_size / PageSize;
+            const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, false };
+            R_TRY(this->Operate(updater.GetPageList(), this->current_heap_end, num_pages, pg, map_properties, OperationType_MapGroup, false));
+
+            /* We succeeded, so commit our memory reservation. */
+            memory_reservation.Commit();
+
+            /* Apply the memory block update. */
+            this->memory_block_manager.Update(std::addressof(allocator), this->current_heap_end, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+
+            /* Update the current heap end. */
+            this->current_heap_end = this->heap_region_start + size;
+
+            /* Set the output. */
+            *out = this->heap_region_start;
+            return ResultSuccess();
+        }
     }
 
     Result KPageTableBase::SetMaxHeapSize(size_t size) {

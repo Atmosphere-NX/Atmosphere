@@ -21,6 +21,20 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result SetHeapSize(uintptr_t *out_address, size_t size) {
+            /* Validate size. */
+            R_UNLESS(util::IsAligned(size, ams::svc::HeapSizeAlignment), svc::ResultInvalidSize());
+            R_UNLESS(size < ams::kern::MainMemorySize,                   svc::ResultInvalidSize());
+
+            /* Set the heap size. */
+            KProcessAddress address;
+            R_TRY(GetCurrentProcess().GetPageTable().SetHeapSize(std::addressof(address), size));
+
+            /* Set the output. */
+            *out_address = GetInteger(address);
+            return ResultSuccess();
+        }
+
         Result SetUnsafeLimit(size_t limit) {
             /* Ensure the size is aligned. */
             R_UNLESS(util::IsAligned(limit, PageSize), svc::ResultInvalidSize());
@@ -37,7 +51,8 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SetHeapSize64(ams::svc::Address *out_address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcSetHeapSize64 was called.");
+        static_assert(sizeof(*out_address) == sizeof(uintptr_t));
+        return SetHeapSize(reinterpret_cast<uintptr_t *>(out_address), size);
     }
 
     Result MapPhysicalMemory64(ams::svc::Address address, ams::svc::Size size) {
@@ -63,7 +78,8 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result SetHeapSize64From32(ams::svc::Address *out_address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcSetHeapSize64From32 was called.");
+        static_assert(sizeof(*out_address) == sizeof(uintptr_t));
+        return SetHeapSize(reinterpret_cast<uintptr_t *>(out_address), size);
     }
 
     Result MapPhysicalMemory64From32(ams::svc::Address address, ams::svc::Size size) {
