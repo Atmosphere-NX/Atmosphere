@@ -22,8 +22,6 @@ namespace ams::kern::svc {
     namespace {
 
         Result QueryProcessMemory(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uintptr_t address) {
-            MESOSPHERE_LOG("%s: QueryProcessMemory(0x%08x, 0x%zx) was called\n", GetCurrentProcess().GetName(), process_handle, address);
-
             /* Get the process. */
             KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
             R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());

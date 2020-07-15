@@ -31,7 +31,6 @@ namespace ams::kern::svc {
             R_UNLESS(name[sizeof(name) - 1] == '\x00', svc::ResultOutOfRange());
 
             if (max_sessions > 0) {
-                MESOSPHERE_LOG("Creating Named Port %s (max sessions = %d)\n", name, max_sessions);
                 /* Get the current handle table. */
                 auto &handle_table = GetCurrentProcess().GetHandleTable();
 
@@ -62,8 +61,6 @@ namespace ams::kern::svc {
                 port->GetClientPort().Close();
                 register_guard.Cancel();
             } else /* if (max_sessions == 0) */ {
-                MESOSPHERE_LOG("Deleting Named Port %s\n", name);
-
                 /* Ensure that this else case is correct. */
                 MESOSPHERE_AUDIT(max_sessions == 0);
 
@@ -121,8 +118,6 @@ namespace ams::kern::svc {
 
             /* Validate that name is valid. */
             R_UNLESS(name[sizeof(name) - 1] == '\x00', svc::ResultOutOfRange());
-
-            MESOSPHERE_LOG("%s: ConnectToNamedPort(%s) was called\n", GetCurrentProcess().GetName(), name);
 
             /* Get the current handle table. */
             auto &handle_table = GetCurrentProcess().GetHandleTable();
