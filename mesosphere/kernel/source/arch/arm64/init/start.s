@@ -94,6 +94,18 @@ core0_el2:
 core0_el1:
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
+    /* Get the target firmware from exosphere. */
+    LOAD_IMMEDIATE_32(w0, 0xC3000004)
+    mov w1, #65000
+    smc #1
+    cmp x0, #0
+0:
+    b.ne 0b
+
+    /* Store the target firmware. */
+    adr x0, __metadata_target_firmware
+    str w1, [x0]
+
     /* We want to invoke kernel loader. */
     adr x0, _start
     adr x1, __metadata_kernel_layout
@@ -102,14 +114,7 @@ core0_el1:
     LOAD_FROM_LABEL(x3, __metadata_kernelldr_offset)
     add x3, x0, x3
 
-    /* If kernelldr is ours, set its target firmware. */
-    ldr w4, [x3, #4]
-    LOAD_IMMEDIATE_32(w5, 0x30444C4D)
-    cmp w4, w5
-    b.ne 1f
-    LOAD_FROM_LABEL(x4, __metadata_target_firmware)
-    str w4, [x3, #8]
-1:
+    /* Invoke kernel loader. */
     blr x3
 
     /* At this point kernelldr has been invoked, and we are relocated at a random virtual address. */
