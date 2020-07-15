@@ -606,10 +606,10 @@ namespace ams::kern {
         bool             cur_valid  = false;
         TraversalEntry   next_entry;
         bool             next_valid;
-        size_t           tot_size   = false;
+        size_t           tot_size   = 0;
 
         next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), region_start);
-        next_entry.block_size = (next_entry.block_size - (GetInteger(address) & (next_entry.block_size - 1)));
+        next_entry.block_size = (next_entry.block_size - (GetInteger(region_start) & (next_entry.block_size - 1)));
 
         /* Iterate, looking for entry. */
         while (true) {

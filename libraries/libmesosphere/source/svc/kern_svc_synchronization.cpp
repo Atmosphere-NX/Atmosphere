@@ -115,9 +115,7 @@ namespace ams::kern::svc {
     }
 
     Result WaitSynchronization64(int32_t *out_index, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
-        Result result = WaitSynchronization(out_index, handles, num_handles, timeout_ns);
-        MESOSPHERE_LOG("WaitSynchronization returned %08x\n", result.GetValue());
-        return result;
+        return WaitSynchronization(out_index, handles, num_handles, timeout_ns);
     }
 
     Result CancelSynchronization64(ams::svc::Handle handle) {
