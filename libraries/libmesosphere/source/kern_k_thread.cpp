@@ -94,7 +94,7 @@ namespace ams::kern {
 
         /* Set parent and condvar tree. */
         this->parent                        = nullptr;
-        this->cond_var                      = nullptr;
+        this->condvar_tree                  = nullptr;
 
         /* Set sync booleans. */
         this->signaled                      = false;
@@ -519,8 +519,8 @@ namespace ams::kern {
             }
 
             /* Ensure we don't violate condition variable red black tree invariants. */
-            if (auto *cond_var = thread->GetConditionVariable(); cond_var != nullptr) {
-                cond_var->BeforeUpdatePriority(thread);
+            if (auto *cv_tree = thread->GetConditionVariableTree(); cv_tree != nullptr) {
+                BeforeUpdatePriority(cv_tree, thread);
             }
 
             /* Change the priority. */
@@ -528,8 +528,8 @@ namespace ams::kern {
             thread->SetPriority(new_priority);
 
             /* Restore the condition variable, if relevant. */
-            if (auto *cond_var = thread->GetConditionVariable(); cond_var != nullptr) {
-                cond_var->AfterUpdatePriority(thread);
+            if (auto *cv_tree = thread->GetConditionVariableTree(); cv_tree != nullptr) {
+                AfterUpdatePriority(cv_tree, thread);
             }
 
             /* Update the scheduler. */
