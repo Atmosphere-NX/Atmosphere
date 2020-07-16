@@ -73,6 +73,7 @@ namespace ams {
         static constexpr uintptr_t StdAbortMagicAddress = 0x8;
         static constexpr u64       StdAbortMagicValue = 0xA55AF00DDEADCAFEul;
         static constexpr u32       StdAbortErrorDesc = 0xFFE;
+        static constexpr u32       StackOverflowErrorDesc = 0xFFD;
         static constexpr u32       DataAbortErrorDesc = 0x101;
         static constexpr u32       Magic = util::FourCC<'A', 'F', 'E', '2'>::Code;
 

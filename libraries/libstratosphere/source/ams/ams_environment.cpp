@@ -77,11 +77,26 @@ namespace ams {
             ams_ctx.afsr1 = ctx->afsr1;
             ams_ctx.far = ctx->far.x;
             ams_ctx.report_identifier = armGetSystemTick();
+
+            /* Detect stack overflow. */
+            if (ams_ctx.error_desc == FatalErrorContext::DataAbortErrorDesc) {
+                svc::lp64::MemoryInfo mem_info;
+                svc::PageInfo page_info;
+
+                if (/* Check if stack pointer is in guard page. */
+                    R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), ams_ctx.sp)) &&
+                    mem_info.state == svc::MemoryState_Free &&
+                    /* Check if stack pointer fell off stack. */
+                    R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), ams_ctx.sp + 0x1000)) &&
+                    mem_info.state == svc::MemoryState_Stack) {
+                    ams_ctx.error_desc = FatalErrorContext::StackOverflowErrorDesc;
+                }
+            }
             /* Grab module base. */
             {
-                MemoryInfo mem_info;
-                u32 page_info;
-                if (R_SUCCEEDED(svcQueryMemory(&mem_info, &page_info, GetPc()))) {
+                svc::lp64::MemoryInfo mem_info;
+                svc::PageInfo page_info;
+                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), GetPc()))) {
                     ams_ctx.module_base = mem_info.addr;
                 } else {
                     ams_ctx.module_base = 0;
@@ -97,9 +112,9 @@ namespace ams {
 
                 /* Read a new frame. */
                 StackFrame cur_frame;
-                MemoryInfo mem_info;
-                u32 page_info;
-                if (R_SUCCEEDED(svcQueryMemory(&mem_info, &page_info, cur_fp)) && (mem_info.perm & Perm_R) == Perm_R) {
+                svc::lp64::MemoryInfo mem_info;
+                svc::PageInfo page_info;
+                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), cur_fp)) && (mem_info.perm & Perm_R) == Perm_R) {
                     std::memcpy(&cur_frame, reinterpret_cast<void *>(cur_fp), sizeof(cur_frame));
                 } else {
                     break;
@@ -116,9 +131,9 @@ namespace ams {
 
             /* Grab up to 0x100 of stack. */
             {
-                MemoryInfo mem_info;
-                u32 page_info;
-                if (R_SUCCEEDED(svcQueryMemory(&mem_info, &page_info, ams_ctx.sp)) && (mem_info.perm & Perm_R) == Perm_R) {
+                svc::lp64::MemoryInfo mem_info;
+                svc::PageInfo page_info;
+                if (R_SUCCEEDED(svc::QueryMemory(std::addressof(mem_info), std::addressof(page_info), ams_ctx.sp)) && (mem_info.perm & Perm_R) == Perm_R) {
                     size_t copy_size = std::min(FatalErrorContext::MaxStackDumpSize, static_cast<size_t>(mem_info.addr + mem_info.size - ams_ctx.sp));
                     ams_ctx.stack_dump_size = copy_size;
                     std::memcpy(ams_ctx.stack_dump, reinterpret_cast<void *>(ams_ctx.sp), copy_size);
