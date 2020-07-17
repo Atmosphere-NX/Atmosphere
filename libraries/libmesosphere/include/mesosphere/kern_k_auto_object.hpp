@@ -204,15 +204,20 @@ namespace ams::kern {
                 this->obj = nullptr;
             }
 
-            template<typename U>
+            template<typename U> requires (std::derived_from<T, U> || std::derived_from<U, T>)
             constexpr ALWAYS_INLINE KScopedAutoObject(KScopedAutoObject<U> &&rhs) {
-                if constexpr (std::same_as<T, U>) {
+                if constexpr (std::derived_from<U, T>) {
+                    /* Upcast. */
                     this->obj = rhs.obj;
                     rhs.obj = nullptr;
                 } else {
-                    T *derived = rhs.obj->template DynamicCast<T *>();
-                    if (derived == nullptr) {
-                        rhs.obj->Close();
+                    /* Downcast. */
+                    T *derived = nullptr;
+                    if (rhs.obj != nullptr) {
+                        derived = rhs.obj->template DynamicCast<T *>();
+                        if (derived == nullptr) {
+                            rhs.obj->Close();
+                        }
                     }
 
                     this->obj = derived;
@@ -220,16 +225,7 @@ namespace ams::kern {
                 }
             }
 
-            template<typename U>
-            constexpr ALWAYS_INLINE KScopedAutoObject &operator=(KScopedAutoObject<U> &&rhs) {
-                if constexpr (!std::same_as<T, U>) {
-                    T *derived = rhs.obj->template DynamicCast<T *>();
-                    if (derived == nullptr) {
-                        rhs.obj->Close();
-                    }
-                    rhs.obj = nullptr;
-                }
-
+            constexpr ALWAYS_INLINE KScopedAutoObject<T> &operator=(KScopedAutoObject<T> &&rhs) {
                 rhs.Swap(*this);
                 return *this;
             }
