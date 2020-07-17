@@ -252,6 +252,7 @@ namespace ams::kern {
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
+            MESOSPHERE_LOG("!!! PROCESS SWITCH !!! %s -> %s\n", cur_process != nullptr ? cur_process->GetName() : nullptr, next_process != nullptr ? next_process->GetName() : nullptr);
             KProcess::Switch(cur_process, next_process);
         }
 
