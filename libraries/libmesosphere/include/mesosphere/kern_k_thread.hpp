@@ -147,7 +147,7 @@ namespace ams::kern {
             KLightLock                     *waiting_lock{};
             uintptr_t                       condvar_key{};
             uintptr_t                       entrypoint{};
-            KProcessAddress                 arbiter_key{};
+            KProcessAddress                 address_key{};
             KProcess                       *parent{};
             void                           *kernel_stack_top{};
             u32                            *light_ipc_data{};
@@ -175,7 +175,7 @@ namespace ams::kern {
             KThread                        *lock_owner{};
             ConditionVariableThreadTree    *condvar_tree{};
             uintptr_t                       debug_params[3]{};
-            u32                             arbiter_value{};
+            u32                             address_key_value{};
             u32                             suspend_request_flags{};
             u32                             suspend_allowed_flags{};
             Result                          wait_result;
@@ -304,6 +304,7 @@ namespace ams::kern {
             NOINLINE KThreadContext *GetContextForSchedulerLoop();
 
             constexpr uintptr_t GetConditionVariableKey() const { return this->condvar_key; }
+            constexpr uintptr_t GetAddressArbiterKey() const { return this->condvar_key; }
 
             constexpr void SetupForConditionVariableCompare(uintptr_t cv_key, int priority) {
                 this->condvar_key = cv_key;
@@ -312,6 +313,11 @@ namespace ams::kern {
 
             constexpr void ClearConditionVariableTree() {
                 this->condvar_tree = nullptr;
+            }
+
+            constexpr void SetupForAddressArbiterCompare(uintptr_t address, int priority) {
+                this->condvar_key = address;
+                this->priority    = priority;
             }
 
             constexpr void SetAddressArbiter(ConditionVariableThreadTree *tree, uintptr_t address) {
@@ -349,10 +355,10 @@ namespace ams::kern {
             void RemoveWaiter(KThread *thread);
             KThread *RemoveWaiterByKey(s32 *out_num_waiters, KProcessAddress key);
 
-            constexpr KProcessAddress GetAddressKey() const { return this->arbiter_key; }
-            constexpr u32 GetAddressKeyValue() const { return this->arbiter_value; }
-            constexpr void SetAddressKey(KProcessAddress key) { this->arbiter_key = key; }
-            constexpr void SetAddressKey(KProcessAddress key, u32 val) { this->arbiter_key = key; this->arbiter_value = val; }
+            constexpr KProcessAddress GetAddressKey() const { return this->address_key; }
+            constexpr u32 GetAddressKeyValue() const { return this->address_key_value; }
+            constexpr void SetAddressKey(KProcessAddress key) { this->address_key = key; }
+            constexpr void SetAddressKey(KProcessAddress key, u32 val) { this->address_key = key; this->address_key_value = val; }
 
             constexpr void SetLockOwner(KThread *owner) { this->lock_owner = owner; }
             constexpr KThread *GetLockOwner() const { return this->lock_owner; }

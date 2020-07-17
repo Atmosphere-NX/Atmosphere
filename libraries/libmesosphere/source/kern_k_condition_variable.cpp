@@ -17,9 +17,9 @@
 
 namespace ams::kern {
 
-    namespace {
+    constinit KThread g_cv_arbiter_compare_thread;
 
-        constinit KThread g_cv_compare_thread;
+    namespace {
 
         ALWAYS_INLINE bool ReadFromUser(u32 *out, KProcessAddress address) {
             return UserspaceAccess::CopyMemoryFromUserSize32Bit(out, GetVoidPointer(address));
@@ -131,9 +131,9 @@ namespace ams::kern {
         int num_waiters = 0;
         {
             KScopedSchedulerLock sl;
-            g_cv_compare_thread.SetupForConditionVariableCompare(cv_key, -1);
+            g_cv_arbiter_compare_thread.SetupForConditionVariableCompare(cv_key, -1);
 
-            auto it = this->tree.nfind(g_cv_compare_thread);
+            auto it = this->tree.nfind(g_cv_arbiter_compare_thread);
             while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
                 KThread *target_thread = std::addressof(*it);
 
