@@ -428,6 +428,67 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv:
     mov     x0, #1
     ret
 
+/* ams::kern::arch::arm64::UserspaceAccess::UpdateIfEqualAtomic(s32 *out, s32 *address, s32 compare_value, s32 new_value) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii:
+    /* Load the value from the address. */
+    ldaxr   w4, [x1]
+
+    /* Compare it to the desired one. */
+    cmp     w4, w2
+
+    /* If equal, we want to try to write the new value. */
+    b.eq    1f
+
+    /* Otherwise, clear our exclusive hold and finish. */
+    clrex
+    b       2f
+
+1:  /* Try to store. */
+    stlxr   w5, w3, [x1]
+
+    /* If we failed to store, try again. */
+    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
+
+2:  /* We're done. */
+    str     w4, [x0]
+    mov     x0, #1
+    ret
+
+/* ams::kern::arch::arm64::UserspaceAccess::DecrementIfLessThanAtomic(s32 *out, s32 *address, s32 compare) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i:
+    /* Load the value from the address. */
+    ldaxr   w3, [x1]
+
+    /* Compare it to the desired one. */
+    cmp     w3, w2
+
+    /* If less than, we want to try to decrement. */
+    b.lt    1f
+
+    /* Otherwise, clear our exclusive hold and finish. */
+    clrex
+    b       2f
+
+1:  /* Decrement and try to store. */
+    sub     w4, w3, #1
+    stlxr   w5, w4, [x1]
+
+    /* If we failed to store, try again. */
+    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i
+
+2:  /* We're done. */
+    str     w3, [x0]
+    mov     x0, #1
+    ret
+
 /* ams::kern::arch::arm64::UserspaceAccess::StoreDataCache(uintptr_t start, uintptr_t end) */
 .section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm

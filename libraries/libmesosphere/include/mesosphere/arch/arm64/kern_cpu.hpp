@@ -149,6 +149,26 @@ namespace ams::kern::arch::arm64::cpu {
         return true;
     }
 
+    ALWAYS_INLINE bool CanAccessAtomic(KProcessAddress addr, bool privileged = false) {
+        const uintptr_t va = GetInteger(addr);
+
+        u64 phys_addr;
+        if (privileged) {
+            __asm__ __volatile__("at s1e1w, %[va]" :: [va]"r"(va) : "memory");
+        } else {
+            __asm__ __volatile__("at s1e0w, %[va]" :: [va]"r"(va) : "memory");
+        }
+        InstructionMemoryBarrier();
+
+        u64 par = GetParEl1();
+
+        if (par & 0x1) {
+            return false;
+        }
+
+        return (par >> BITSIZEOF(par) - BITSIZEOF(u8)) == 0xFF;
+    }
+
     /* Synchronization helpers. */
     NOINLINE void SynchronizeAllCores();
 
