@@ -38,6 +38,8 @@ namespace ams::kern::arch::arm64 {
             KProcess *cur_process = GetCurrentProcessPointer();
             bool should_process_user_exception = KTargetSystem::IsUserExceptionHandlersEnabled();
 
+            MESOSPHERE_LOG("User Exception occurred in %s\n", cur_process->GetName());
+
             const u64 ec = (esr >> 26) & 0x3F;
             switch (ec) {
                 case 0x0:  /* Unknown */

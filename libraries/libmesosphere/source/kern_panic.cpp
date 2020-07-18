@@ -120,6 +120,9 @@ namespace ams::kern {
             ::std::va_list vl;
             va_start(vl, format);
             MESOSPHERE_RELEASE_LOG("Core[%d]: Kernel Panic at %s:%d\n", GetCurrentCoreId(), file, line);
+            if (KProcess *cur_process = GetCurrentProcessPointer(); cur_process != nullptr) {
+                MESOSPHERE_RELEASE_LOG("Core[%d]: Current Process: %s\n", GetCurrentCoreId(), cur_process->GetName());
+            }
             MESOSPHERE_RELEASE_VLOG(format, vl);
             MESOSPHERE_RELEASE_LOG("\n");
             va_end(vl);

@@ -115,10 +115,10 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     ldrb   w3, [x1, #1]
     cbz    w3, 0f
 
-    /* If it is, we want to call KScheduler::SetInterruptTaskThreadRunnable() to note it runnable. */
+    /* If it is, we want to call KScheduler::InterruptTaskThreadToRunnable() to change its state to runnable. */
     stp     x0,  x1, [sp, #-16]!
     stp    x30, xzr, [sp, #-16]!
-    bl     _ZN3ams4kern10KScheduler30SetInterruptTaskThreadRunnableEv
+    bl     _ZN3ams4kern10KScheduler29InterruptTaskThreadToRunnableEv
     ldp    x30, xzr, [sp], 16
     ldp     x0,  x1, [sp], 16
 
@@ -271,7 +271,7 @@ _ZN3ams4kern10KScheduler12ScheduleImplEv:
     cbz    w3, 4b
 
     /* It does, so do so. We're using the idle thread stack so no register state preserve needed. */
-    bl     _ZN3ams4kern10KScheduler30SetInterruptTaskThreadRunnableEv
+    bl     _ZN3ams4kern10KScheduler29InterruptTaskThreadToRunnableEv
 
     /* Clear the interrupt task thread as runnable. */
     strb   wzr, [x20, #1]
