@@ -91,7 +91,7 @@ namespace ams::kern {
 
         /* Enqueue the task and signal the scheduler. */
         this->task_queue.Enqueue(task);
-        Kernel::GetScheduler().SetInterruptTaskThreadRunnable();
+        Kernel::GetScheduler().SetInterruptTaskRunnable();
     }
 
 }

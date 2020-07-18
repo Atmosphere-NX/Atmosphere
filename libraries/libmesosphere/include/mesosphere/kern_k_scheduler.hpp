@@ -70,6 +70,11 @@ namespace ams::kern {
             NOINLINE void Initialize(KThread *idle_thread);
             NOINLINE void Activate();
 
+            ALWAYS_INLINE void SetInterruptTaskRunnable() {
+                this->state.interrupt_task_thread_runnable = true;
+                this->state.needs_scheduling               = true;
+            }
+
             ALWAYS_INLINE void RequestScheduleOnInterrupt() {
                 SetSchedulerUpdateNeeded();
 
@@ -85,12 +90,12 @@ namespace ams::kern {
             static ALWAYS_INLINE KSchedulerPriorityQueue &GetPriorityQueue() { return s_priority_queue; }
 
             static NOINLINE u64 UpdateHighestPriorityThreadsImpl();
+
+            static NOINLINE void InterruptTaskThreadToRunnable();
         public:
             /* Static public API. */
             static ALWAYS_INLINE bool CanSchedule() { return GetCurrentThread().GetDisableDispatchCount() == 0; }
             static ALWAYS_INLINE bool IsSchedulerLockedByCurrentThread() { return s_scheduler_lock.IsLockedByCurrentThread(); }
-
-            static NOINLINE void SetInterruptTaskThreadRunnable();
 
             static ALWAYS_INLINE void DisableScheduling() {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 0);
