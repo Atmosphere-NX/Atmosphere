@@ -127,6 +127,23 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result SetThreadPriority(ams::svc::Handle thread_handle, int32_t priority) {
+            /* Get the current process. */
+            KProcess &process = GetCurrentProcess();
+
+            /* Validate the priority. */
+            R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
+            R_UNLESS(process.CheckThreadPriority(priority),                                                     svc::ResultInvalidPriority());
+
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = process.GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Set the thread priority. */
+            thread->SetPriority(priority);
+            return ResultSuccess();
+        }
+
         Result GetThreadId(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
             /* Get the thread from its handle. */
             KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
@@ -162,7 +179,7 @@ namespace ams::kern::svc {
     }
 
     Result SetThreadPriority64(ams::svc::Handle thread_handle, int32_t priority) {
-        MESOSPHERE_PANIC("Stubbed SvcSetThreadPriority64 was called.");
+        return SetThreadPriority(thread_handle, priority);
     }
 
     Result GetThreadCoreMask64(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
@@ -216,7 +233,7 @@ namespace ams::kern::svc {
     }
 
     Result SetThreadPriority64From32(ams::svc::Handle thread_handle, int32_t priority) {
-        MESOSPHERE_PANIC("Stubbed SvcSetThreadPriority64From32 was called.");
+        return SetThreadPriority(thread_handle, priority);
     }
 
     Result GetThreadCoreMask64From32(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
