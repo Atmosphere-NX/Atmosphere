@@ -2322,7 +2322,7 @@ namespace ams::kern {
         }
 
         /* Get the implementation. */
-        auto &impl = this->GetImpl();
+        auto &src_impl = src_page_table.GetImpl();
 
         /* Get the page properties for any mapping we'll be doing. */
         const KPageProperties dst_map_properties = { test_perm, false, false, false };
@@ -2333,7 +2333,7 @@ namespace ams::kern {
         /* Begin traversal. */
         TraversalContext context;
         TraversalEntry   next_entry;
-        bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), aligned_src_start);
+        bool traverse_valid = src_impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), aligned_src_start);
         MESOSPHERE_ASSERT(traverse_valid);
 
         /* Prepare tracking variables. */
@@ -2374,7 +2374,7 @@ namespace ams::kern {
 
             /* If the block's size was one page, we may need to continue traversal. */
             if (cur_block_size == 0 && aligned_src_size > PageSize) {
-                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                traverse_valid = src_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
                 MESOSPHERE_ASSERT(traverse_valid);
 
                 cur_block_addr  = next_entry.phys_addr;
@@ -2386,7 +2386,7 @@ namespace ams::kern {
         /* Map the remaining pages. */
         while (aligned_src_start + tot_block_size < mapping_src_end) {
             /* Continue the traversal. */
-            traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            traverse_valid = src_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
             MESOSPHERE_ASSERT(traverse_valid);
 
             /* Process the block. */
@@ -2415,7 +2415,7 @@ namespace ams::kern {
             cur_mapped_addr += last_block_size;
             cur_block_addr  += last_block_size;
             if (mapped_block_end + cur_block_size < aligned_src_end && cur_block_size == last_block_size) {
-                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                traverse_valid = src_impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
                 MESOSPHERE_ASSERT(traverse_valid);
 
                 cur_block_addr = next_entry.phys_addr;
