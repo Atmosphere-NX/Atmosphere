@@ -152,7 +152,6 @@ namespace ams::kern::arch::arm64::cpu {
     ALWAYS_INLINE bool CanAccessAtomic(KProcessAddress addr, bool privileged = false) {
         const uintptr_t va = GetInteger(addr);
 
-        u64 phys_addr;
         if (privileged) {
             __asm__ __volatile__("at s1e1w, %[va]" :: [va]"r"(va) : "memory");
         } else {
@@ -166,7 +165,7 @@ namespace ams::kern::arch::arm64::cpu {
             return false;
         }
 
-        return (par >> BITSIZEOF(par) - BITSIZEOF(u8)) == 0xFF;
+        return (par >> (BITSIZEOF(par) - BITSIZEOF(u8))) == 0xFF;
     }
 
     /* Synchronization helpers. */
