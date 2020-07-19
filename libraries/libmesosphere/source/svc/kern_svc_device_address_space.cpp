@@ -35,17 +35,18 @@ namespace ams::kern::svc {
             R_UNLESS((das_address < das_address + das_size), svc::ResultInvalidMemoryRegion());
 
             /* Create the device address space. */
-            KScopedAutoObject das = KDeviceAddressSpace::Create();
-            R_UNLESS(das.IsNotNull(), svc::ResultOutOfResource());
+            KDeviceAddressSpace *das = KDeviceAddressSpace::Create();
+            R_UNLESS(das != nullptr, svc::ResultOutOfResource());
+            ON_SCOPE_EXIT { das->Close(); };
 
             /* Initialize the device address space. */
             R_TRY(das->Initialize(das_address, das_size));
 
             /* Register the device address space. */
-            R_TRY(KDeviceAddressSpace::Register(das.GetPointerUnsafe()));
+            R_TRY(KDeviceAddressSpace::Register(das));
 
             /* Add to the handle table. */
-            R_TRY(GetCurrentProcess().GetHandleTable().Add(out, das.GetPointerUnsafe()));
+            R_TRY(GetCurrentProcess().GetHandleTable().Add(out, das));
 
             return ResultSuccess();
         }

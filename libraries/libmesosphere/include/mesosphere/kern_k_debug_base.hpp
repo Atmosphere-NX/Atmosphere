@@ -16,12 +16,42 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_synchronization_object.hpp>
+#include <mesosphere/kern_k_process.hpp>
+#include <mesosphere/kern_k_event_info.hpp>
+#include <mesosphere/kern_k_light_lock.hpp>
 
 namespace ams::kern {
 
     class KDebugBase : public KSynchronizationObject {
+        protected:
+            using DebugEventList = util::IntrusiveListBaseTraits<KEventInfo>::ListType;
+        private:
+            DebugEventList event_info_list;
+            u32 continue_flags;
+            KProcess *process;
+            KLightLock lock;
+            KProcess::State old_process_state;
         public:
+            explicit KDebugBase() { /* ... */ }
+            virtual ~KDebugBase() { /* ... */ }
+        public:
+            void Initialize();
+            Result Attach(KProcess *process);
+
+            Result GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out);
+            Result GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out);
+
             /* TODO: This is a placeholder definition. */
+        private:
+            KScopedAutoObject<KProcess> GetProcess();
+
+            void PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
+            void EnqueueDebugEventInfo(KEventInfo *info);
+        public:
+            virtual void OnFinalizeSynchronizationObject() override;
+            virtual bool IsSignaled() const override;
+        public:
+            static KEventInfo *CreateDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4, u64 thread_id);
     };
 
 }

@@ -70,6 +70,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(OutOfAddressSpace,            259);
     R_DEFINE_ERROR_RESULT(MessageTooLarge,              260);
 
+    R_DEFINE_ERROR_RESULT(InvalidProcessId,             517);
     R_DEFINE_ERROR_RESULT(ProcessTerminated,            520);
 
 }
