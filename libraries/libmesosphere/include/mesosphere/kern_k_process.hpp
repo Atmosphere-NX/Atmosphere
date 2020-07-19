@@ -131,6 +131,8 @@ namespace ams::kern {
 
             constexpr u64 GetProcessId() const { return this->process_id; }
 
+            constexpr State GetState() const { return this->state; }
+
             constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }
             constexpr u64 GetPriorityMask() const { return this->capabilities.GetPriorityMask(); }
 
@@ -138,6 +140,8 @@ namespace ams::kern {
             constexpr void SetIdealCoreId(s32 core_id) { this->ideal_core_id = core_id; }
 
             constexpr bool CheckThreadPriority(s32 prio) const { return ((1ul << prio) & this->GetPriorityMask()) != 0; }
+
+            constexpr u32 GetCreateProcessFlags() const { return this->flags; }
 
             constexpr bool Is64Bit() const { return this->flags & ams::svc::CreateProcessFlag_Is64Bit; }
 
@@ -147,9 +151,31 @@ namespace ams::kern {
                 return this->is_suspended;
             }
 
+            constexpr bool IsTerminated() const {
+                return this->state == State_Terminated;
+            }
+
+            constexpr bool IsAttachedToDebugger() const {
+                return this->attached_object != nullptr;
+            }
+
             constexpr bool IsPermittedInterrupt(int32_t interrupt_id) const {
                 return this->capabilities.IsPermittedInterrupt(interrupt_id);
             }
+
+            constexpr bool IsPermittedDebug() const {
+                return this->capabilities.IsPermittedDebug();
+            }
+
+            constexpr bool CanForceDebug() const {
+                return this->capabilities.CanForceDebug();
+            }
+
+            ThreadList &GetThreadList() { return this->thread_list; }
+            const ThreadList &GetThreadList() const { return this->thread_list; }
+
+            KProcess::State SetDebugObject(void *debug_object);
+            KEventInfo *GetJitDebugInfo();
 
             bool EnterUserException();
             bool LeaveUserException();

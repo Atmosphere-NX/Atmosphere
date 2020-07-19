@@ -311,8 +311,19 @@ namespace ams::kern {
                 this->priority    = priority;
             }
 
-            constexpr void ClearConditionVariableTree() {
+            constexpr void SetConditionVariable(ConditionVariableThreadTree *tree, KProcessAddress address, uintptr_t cv_key, u32 value) {
+                this->condvar_tree      = tree;
+                this->condvar_key       = cv_key;
+                this->address_key       = address;
+                this->address_key_value = value;
+            }
+
+            constexpr void ClearConditionVariable() {
                 this->condvar_tree = nullptr;
+            }
+
+            constexpr bool IsWaitingForConditionVariable() const {
+                return this->condvar_tree != nullptr;
             }
 
             constexpr void SetupForAddressArbiterCompare(uintptr_t address, int priority) {
@@ -394,6 +405,8 @@ namespace ams::kern {
             constexpr KProcess *GetOwnerProcess() const { return this->parent; }
             constexpr bool IsUserThread() const { return this->parent != nullptr; }
 
+            constexpr uintptr_t GetEntrypoint() const { return this->entrypoint; }
+
             constexpr KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
             constexpr void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
 
@@ -402,6 +415,9 @@ namespace ams::kern {
 
             constexpr u16 GetUserPreemptionState() const { return *GetPointer<u16>(this->tls_address + 0x100); }
             constexpr void SetKernelPreemptionState(u16 state) const { *GetPointer<u16>(this->tls_address + 0x100 + sizeof(u16)) = state; }
+
+            constexpr void SetDebugAttached() { this->debug_attached = true; }
+            constexpr bool IsAttachedToDebugger() const { return this->debug_attached; }
 
             void AddCpuTime(s64 amount) {
                 this->cpu_time += amount;

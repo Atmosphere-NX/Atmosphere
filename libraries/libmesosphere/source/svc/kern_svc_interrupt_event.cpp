@@ -43,17 +43,18 @@ namespace ams::kern::svc {
             auto &handle_table = process.GetHandleTable();
 
             /* Create the interrupt event. */
-            KScopedAutoObject event = KInterruptEvent::Create();
-            R_UNLESS(event.IsNotNull(), svc::ResultOutOfResource());
+            KInterruptEvent *event = KInterruptEvent::Create();
+            R_UNLESS(event != nullptr, svc::ResultOutOfResource());
+            ON_SCOPE_EXIT { event->Close(); };
 
             /* Initialize the event. */
             R_TRY(event->Initialize(interrupt_id, type));
 
             /* Register the event. */
-            R_TRY(KInterruptEvent::Register(event.GetPointerUnsafe()));
+            R_TRY(KInterruptEvent::Register(event));
 
             /* Add the event to the handle table. */
-            R_TRY(handle_table.Add(out, event.GetPointerUnsafe()));
+            R_TRY(handle_table.Add(out, event));
 
             return ResultSuccess();
         }

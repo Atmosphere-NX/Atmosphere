@@ -21,7 +21,50 @@ namespace ams::kern {
 
     class KEventInfo : public KSlabAllocated<KEventInfo>, public util::IntrusiveListBaseNode<KEventInfo> {
         public:
-            /* TODO: This is a placeholder definition. */
+            struct InfoCreateThread {
+                u32 thread_id;
+                uintptr_t tls_address;
+                uintptr_t entrypoint;
+            };
+
+            struct InfoExitProcess {
+                ams::svc::ProcessExitReason reason;
+            };
+
+            struct InfoExitThread {
+                ams::svc::ThreadExitReason reason;
+            };
+
+            struct InfoException {
+                ams::svc::DebugException exception_type;
+                s32 exception_data_count;
+                uintptr_t exception_address;
+                uintptr_t exception_data[4];
+            };
+
+            struct InfoSystemCall {
+                s64 tick;
+                s32 id;
+            };
+        public:
+            ams::svc::DebugEvent event;
+            u32 thread_id;
+            u32 flags;
+            bool is_attached;
+            bool continue_flag;
+            bool ignore_continue;
+            bool close_once;
+            union {
+                InfoCreateThread create_thread;
+                InfoExitProcess exit_process;
+                InfoExitThread exit_thread;
+                InfoException exception;
+                InfoSystemCall system_call;
+            } info;
+            KThread *debug_thread;
+        public:
+            explicit KEventInfo() : is_attached(), continue_flag(), ignore_continue() { /* ... */ }
+            ~KEventInfo() { /* ... */ }
     };
 
 }

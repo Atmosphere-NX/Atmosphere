@@ -30,6 +30,11 @@ namespace ams::kern::arch::arm64 {
     class KDebug final : public KAutoObjectWithSlabHeapAndContainer<KDebug, KDebugBase> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDebug, KSynchronizationObject);
         public:
+            explicit KDebug() { /* ... */ }
+            virtual ~KDebug() { /* ... */ }
+
+            static void PostDestroy(uintptr_t arg) { /* ... */ }
+
             /* TODO: This is a placeholder definition. */
     };
 

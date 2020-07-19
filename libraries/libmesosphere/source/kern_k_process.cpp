@@ -451,6 +451,33 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    KProcess::State KProcess::SetDebugObject(void *debug_object) {
+        /* Cache our state to return it to the debug object. */
+        const auto old_state = this->state;
+
+        /* Set the object. */
+        this->attached_object = debug_object;
+
+        /* Update our state. */
+        if (this->state != State_DebugBreak) {
+            this->state = (this->state != State_Created) ? State_DebugBreak : State_CreatedAttached;
+
+            /* Signal. */
+            this->is_signaled = true;
+            this->NotifyAvailable();
+        }
+
+        return old_state;
+    }
+
+    KEventInfo *KProcess::GetJitDebugInfo() {
+        if (this->is_jit_debug) {
+            return KDebugBase::CreateDebugEvent(this->jit_debug_event_type, this->jit_debug_exception_type, this->jit_debug_params[0], this->jit_debug_params[1], this->jit_debug_params[2], this->jit_debug_params[3], this->jit_debug_thread_id);
+        } else {
+            return nullptr;
+        }
+    }
+
     void KProcess::SetPreemptionState() {
         MESOSPHERE_UNIMPLEMENTED();
     }

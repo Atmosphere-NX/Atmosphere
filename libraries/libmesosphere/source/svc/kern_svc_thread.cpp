@@ -44,13 +44,14 @@ namespace ams::kern::svc {
             R_UNLESS(thread_reservation.Succeeded(), svc::ResultLimitReached());
 
             /* Create the thread. */
-            KScopedAutoObject thread = KThread::Create();
-            R_UNLESS(thread.IsNotNull(), svc::ResultOutOfResource());
+            KThread *thread = KThread::Create();
+            R_UNLESS(thread != nullptr, svc::ResultOutOfResource());
+            ON_SCOPE_EXIT { thread->Close(); };
 
             /* Initialize the thread. */
             {
                 KScopedLightLock lk(process.GetStateLock());
-                R_TRY(KThread::InitializeUserThread(thread.GetPointerUnsafe(), reinterpret_cast<KThreadFunction>(static_cast<uintptr_t>(f)), arg, stack_bottom, priority, core_id, std::addressof(process)));
+                R_TRY(KThread::InitializeUserThread(thread, reinterpret_cast<KThreadFunction>(static_cast<uintptr_t>(f)), arg, stack_bottom, priority, core_id, std::addressof(process)));
             }
 
             /* Commit the thread reservation. */
@@ -60,10 +61,10 @@ namespace ams::kern::svc {
             thread->GetContext().CloneFpuStatus();
 
             /* Register the new thread. */
-            R_TRY(KThread::Register(thread.GetPointerUnsafe()));
+            R_TRY(KThread::Register(thread));
 
             /* Add the thread to the handle table. */
-            R_TRY(process.GetHandleTable().Add(out, thread.GetPointerUnsafe()));
+            R_TRY(process.GetHandleTable().Add(out, thread));
 
             return ResultSuccess();
         }

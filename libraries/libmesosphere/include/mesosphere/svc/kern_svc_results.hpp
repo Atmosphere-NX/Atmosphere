@@ -67,6 +67,7 @@ namespace ams::kern::svc {
     /* 259 */ using ::ams::svc::ResultOutOfAddressSpace;
     /* 260 */ using ::ams::svc::ResultMessageTooLarge;
 
+    /* 517 */ using ::ams::svc::ResultInvalidProcessId;
     /* 520 */ using ::ams::svc::ResultProcessTerminated;
 
 }

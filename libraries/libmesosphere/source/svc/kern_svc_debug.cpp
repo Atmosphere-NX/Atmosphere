@@ -21,14 +21,70 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result DebugActiveProcess(ams::svc::Handle *out_handle, uint64_t process_id) {
+            /* Get the process from its id. */
+            KProcess *process = KProcess::GetProcessFromId(process_id);
+            R_UNLESS(process != nullptr, svc::ResultInvalidProcessId());
 
+            /* Close the reference we opened to the process on scope exit. */
+            ON_SCOPE_EXIT { process->Close(); };
+
+            /* Check that the debugging is allowed. */
+            if (!process->IsPermittedDebug()) {
+                R_UNLESS(GetCurrentProcess().CanForceDebug(), svc::ResultInvalidState());
+            }
+
+            /* Disallow debugging one's own processs, to prevent softlocks. */
+            R_UNLESS(process != GetCurrentProcessPointer(), svc::ResultInvalidState());
+
+            /* Get the current handle table. */
+            auto &handle_table = GetCurrentProcess().GetHandleTable();
+
+            /* Create a new debug object. */
+            KDebug *debug = KDebug::Create();
+            R_UNLESS(debug != nullptr, svc::ResultOutOfResource());
+            ON_SCOPE_EXIT { debug->Close(); };
+
+            /* Initialize the debug object. */
+            debug->Initialize();
+
+            /* Register the debug object. */
+            KDebug::Register(debug);
+
+            /* Try to attach to the target process. */
+            R_TRY(debug->Attach(process));
+
+            /* Add the new debug object to the handle table. */
+            R_TRY(handle_table.Add(out_handle, debug));
+
+            return ResultSuccess();
+        }
+
+        template<typename EventInfoType>
+        Result GetDebugEvent(KUserPointer<EventInfoType *> out_info, ams::svc::Handle debug_handle) {
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Create and clear a new event info. */
+            EventInfoType info;
+            std::memset(std::addressof(info), 0, sizeof(info));
+
+            /* Get the next info from the debug object. */
+            R_TRY(debug->GetDebugEventInfo(std::addressof(info)));
+
+            /* Copy the info out to the user. */
+            R_TRY(out_info.CopyFrom(std::addressof(info)));
+
+            return ResultSuccess();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result DebugActiveProcess64(ams::svc::Handle *out_handle, uint64_t process_id) {
-        MESOSPHERE_PANIC("Stubbed SvcDebugActiveProcess64 was called.");
+        return DebugActiveProcess(out_handle, process_id);
     }
 
     Result BreakDebugProcess64(ams::svc::Handle debug_handle) {
@@ -40,7 +96,7 @@ namespace ams::kern::svc {
     }
 
     Result GetDebugEvent64(KUserPointer<ams::svc::lp64::DebugEventInfo *> out_info, ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugEvent64 was called.");
+        return GetDebugEvent(out_info, debug_handle);
     }
 
     Result ContinueDebugEvent64(ams::svc::Handle debug_handle, uint32_t flags, KUserPointer<const uint64_t *> thread_ids, int32_t num_thread_ids) {
@@ -82,7 +138,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result DebugActiveProcess64From32(ams::svc::Handle *out_handle, uint64_t process_id) {
-        MESOSPHERE_PANIC("Stubbed SvcDebugActiveProcess64From32 was called.");
+        return DebugActiveProcess(out_handle, process_id);
     }
 
     Result BreakDebugProcess64From32(ams::svc::Handle debug_handle) {
@@ -94,7 +150,7 @@ namespace ams::kern::svc {
     }
 
     Result GetDebugEvent64From32(KUserPointer<ams::svc::ilp32::DebugEventInfo *> out_info, ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugEvent64From32 was called.");
+        return GetDebugEvent(out_info, debug_handle);
     }
 
     Result ContinueDebugEvent64From32(ams::svc::Handle debug_handle, uint32_t flags, KUserPointer<const uint64_t *> thread_ids, int32_t num_thread_ids) {

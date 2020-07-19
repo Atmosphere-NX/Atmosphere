@@ -283,6 +283,14 @@ namespace ams::kern {
                 }
             }
 
+            constexpr bool IsPermittedDebug() const {
+                return this->debug_capabilities.Get<DebugFlags::AllowDebug>();
+            }
+
+            constexpr bool CanForceDebug() const {
+                return this->debug_capabilities.Get<DebugFlags::ForceDebug>();
+            }
+
             /* TODO: Member functions. */
     };
 

@@ -146,7 +146,7 @@ namespace ams::kern {
                 }
 
                 it = this->tree.erase(it);
-                target_thread->ClearConditionVariableTree();
+                target_thread->ClearConditionVariable();
                 ++num_waiters;
             }
         }
@@ -168,7 +168,83 @@ namespace ams::kern {
     }
 
     Result KConditionVariable::Wait(KProcessAddress addr, uintptr_t key, u32 value, s64 timeout) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Prepare to wait. */
+        KThread *cur_thread = GetCurrentThreadPointer();
+        KHardwareTimer *timer;
+
+        {
+            KScopedSchedulerLockAndSleep slp(std::addressof(timer), cur_thread, timeout);
+
+            /* Set the synced object. */
+            cur_thread->SetSyncedObject(nullptr, ams::svc::ResultTimedOut());
+
+            /* Check that the thread isn't terminating. */
+            if (cur_thread->IsTerminationRequested()) {
+                slp.CancelSleep();
+                return svc::ResultTerminationRequested();
+            }
+
+            /* Update the value and process for the next owner. */
+            {
+                /* Remove waiter thread. */
+                s32 num_waiters;
+                KThread *next_owner_thread = cur_thread->RemoveWaiterByKey(std::addressof(num_waiters), GetInteger(addr));
+
+                /* Update for the next owner thread. */
+                u32 next_value = 0;
+                if (next_owner_thread != nullptr) {
+                    /* Get the next tag value. */
+                    next_value = next_owner_thread->GetAddressKeyValue();
+                    if (num_waiters > 1) {
+                        next_value |= ams::svc::HandleWaitMask;
+                    }
+
+                    /* Wake up the next owner. */
+                    next_owner_thread->SetSyncedObject(nullptr, ResultSuccess());
+                    next_owner_thread->Wakeup();
+                }
+
+                /* Write the value to userspace. */
+                if (!WriteToUser(addr, std::addressof(next_value))) {
+                    slp.CancelSleep();
+                    return svc::ResultInvalidCurrentMemory();
+                }
+            }
+
+            /* Update condition variable tracking. */
+            {
+                cur_thread->SetConditionVariable(std::addressof(this->tree), addr, key, value);
+                this->tree.insert(*cur_thread);
+            }
+
+            /* If the timeout is non-zero, set the thread as waiting. */
+            if (timeout != 0) {
+                cur_thread->SetState(KThread::ThreadState_Waiting);
+            }
+        }
+
+        /* Cancel the timer wait. */
+        if (timer != nullptr) {
+            timer->CancelTask(cur_thread);
+        }
+
+        /* Remove from the condition variable. */
+        {
+            KScopedSchedulerLock sl;
+
+            if (KThread *owner = cur_thread->GetLockOwner(); owner != nullptr) {
+                owner->RemoveWaiter(cur_thread);
+            }
+
+            if (cur_thread->IsWaitingForConditionVariable()) {
+                this->tree.erase(this->tree.iterator_to(*cur_thread));
+                cur_thread->ClearConditionVariable();
+            }
+        }
+
+        /* Get the result. */
+        KSynchronizationObject *dummy;
+        return cur_thread->GetWaitResult(std::addressof(dummy));
     }
 
 }
