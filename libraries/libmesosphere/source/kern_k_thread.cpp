@@ -439,6 +439,27 @@ namespace ams::kern {
         }
     }
 
+    void KThread::WaitCancel() {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock sl;
+
+        /* Check if we're waiting and cancellable. */
+        if (this->GetState() == ThreadState_Waiting && this->cancellable) {
+            if (this->sleeping_queue != nullptr) {
+                /* TODO: Cancel light IPC. */
+                MESOSPHERE_UNIMPLEMENTED();
+            } else {
+                this->SetSyncedObject(nullptr, svc::ResultCancelled());
+                this->SetState(ThreadState_Runnable);
+                this->wait_cancelled = false;
+            }
+        } else {
+            /* Otherwise, note that we cancelled a wait. */
+            this->wait_cancelled = true;
+        }
+    }
+
     void KThread::TrySuspend() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());

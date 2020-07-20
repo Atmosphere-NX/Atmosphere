@@ -390,6 +390,8 @@ namespace ams::kern {
                 return this->wait_result;
             }
 
+            void WaitCancel();
+
             bool IsWaitCancelled() const { return this->wait_cancelled; }
             void ClearWaitCancelled() { this->wait_cancelled = false; }
 
