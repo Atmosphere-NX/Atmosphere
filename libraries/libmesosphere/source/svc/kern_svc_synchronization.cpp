@@ -102,6 +102,16 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result CancelSynchronization(ams::svc::Handle handle) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Cancel the thread's wait. */
+            thread->WaitCancel();
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -119,7 +129,7 @@ namespace ams::kern::svc {
     }
 
     Result CancelSynchronization64(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcCancelSynchronization64 was called.");
+        return CancelSynchronization(handle);
     }
 
     void SynchronizePreemptionState64() {
@@ -141,7 +151,7 @@ namespace ams::kern::svc {
     }
 
     Result CancelSynchronization64From32(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcCancelSynchronization64From32 was called.");
+        return CancelSynchronization(handle);
     }
 
     void SynchronizePreemptionState64From32() {
