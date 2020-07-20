@@ -452,22 +452,51 @@ namespace ams::kern {
     }
 
     KProcess::State KProcess::SetDebugObject(void *debug_object) {
+        /* Attaching should only happen to non-null objects while the scheduler is locked. */
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(debug_object != nullptr);
+
         /* Cache our state to return it to the debug object. */
         const auto old_state = this->state;
 
         /* Set the object. */
         this->attached_object = debug_object;
 
+        /* Check that our state is valid for attach. */
+        MESOSPHERE_ASSERT(this->state == State_Created || this->state == State_Running || this->state == State_Crashed);
+
         /* Update our state. */
         if (this->state != State_DebugBreak) {
-            this->state = (this->state != State_Created) ? State_DebugBreak : State_CreatedAttached;
-
-            /* Signal. */
-            this->is_signaled = true;
-            this->NotifyAvailable();
+            if (this->state == State_Created) {
+                this->ChangeState(State_CreatedAttached);
+            } else {
+                this->ChangeState(State_DebugBreak);
+            }
         }
 
         return old_state;
+    }
+
+    void KProcess::ClearDebugObject(KProcess::State old_state) {
+        /* Detaching from process should only happen while the scheduler is locked. */
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Clear the attached object. */
+        this->attached_object = nullptr;
+
+        /* Validate that the process is in an attached state. */
+        MESOSPHERE_ASSERT(this->state == State_CreatedAttached || this->state == State_RunningAttached || this->state == State_DebugBreak || this->state == State_Terminating || this->state == State_Terminated);
+
+        /* Change the state appropriately. */
+        if (this->state == State_CreatedAttached) {
+            this->ChangeState(State_Created);
+        } else if (this->state == State_RunningAttached || this->state == State_DebugBreak) {
+            /* Disallow transition back to created from running. */
+            if (old_state == State_Created) {
+                old_state = State_Running;
+            }
+            this->ChangeState(old_state);
+        }
     }
 
     KEventInfo *KProcess::GetJitDebugInfo() {

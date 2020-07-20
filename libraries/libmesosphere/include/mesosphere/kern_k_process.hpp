@@ -175,6 +175,8 @@ namespace ams::kern {
             const ThreadList &GetThreadList() const { return this->thread_list; }
 
             KProcess::State SetDebugObject(void *debug_object);
+            void ClearDebugObject(KProcess::State state);
+
             KEventInfo *GetJitDebugInfo();
 
             bool EnterUserException();

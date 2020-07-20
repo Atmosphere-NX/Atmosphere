@@ -21,6 +21,57 @@ namespace ams::kern::svc {
 
     namespace {
 
+        template<typename T>
+        Result CreateSession(ams::svc::Handle *out_server, ams::svc::Handle *out_client, uintptr_t name) {
+            /* Get the current process and handle table. */
+            auto &process      = GetCurrentProcess();
+            auto &handle_table = process.GetHandleTable();
+
+            /* Reserve a new session from the process resource limit. */
+            KScopedResourceReservation session_reservation(std::addressof(process), ams::svc::LimitableResource_SessionCountMax);
+            R_UNLESS(session_reservation.Succeeded(), svc::ResultLimitReached());
+
+            /* Create a new session. */
+            T *session = T::Create();
+            R_UNLESS(session != nullptr, svc::ResultOutOfResource());
+
+            /* Initialize the session. */
+            session->Initialize(nullptr, name);
+
+            /* Commit the session reservation. */
+            session_reservation.Commit();
+
+            /* Ensure that we clean up the session (and its only references are handle table) on function end. */
+            ON_SCOPE_EXIT {
+                session->GetServerSession().Close();
+                session->GetClientSession().Close();
+            };
+
+            /* Register the session. */
+            R_TRY(T::Register(session));
+
+            /* Add the server session to the handle table. */
+            R_TRY(handle_table.Add(out_server, std::addressof(session->GetServerSession())));
+
+            /* Ensure that we maintaing a clean handle state on exit. */
+            auto handle_guard = SCOPE_GUARD { handle_table.Remove(*out_server); };
+
+            /* Add the client session to the handle table. */
+            R_TRY(handle_table.Add(out_client, std::addressof(session->GetClientSession())));
+
+            /* We succeeded! */
+            handle_guard.Cancel();
+            return ResultSuccess();
+        }
+
+        Result CreateSession(ams::svc::Handle *out_server, ams::svc::Handle *out_client, bool is_light, uintptr_t name) {
+            if (is_light) {
+                return CreateSession<KLightSession>(out_server, out_client, name);
+            } else {
+                return CreateSession<KSession>(out_server, out_client, name);
+            }
+        }
+
         Result AcceptSession(ams::svc::Handle *out, ams::svc::Handle port_handle) {
             /* Get the current handle table. */
             auto &handle_table = GetCurrentProcess().GetHandleTable();
@@ -57,7 +108,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result CreateSession64(ams::svc::Handle *out_server_session_handle, ams::svc::Handle *out_client_session_handle, bool is_light, ams::svc::Address name) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateSession64 was called.");
+        return CreateSession(out_server_session_handle, out_client_session_handle, is_light, name);
     }
 
     Result AcceptSession64(ams::svc::Handle *out_handle, ams::svc::Handle port) {
@@ -67,7 +118,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateSession64From32(ams::svc::Handle *out_server_session_handle, ams::svc::Handle *out_client_session_handle, bool is_light, ams::svc::Address name) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateSession64From32 was called.");
+        return CreateSession(out_server_session_handle, out_client_session_handle, is_light, name);
     }
 
     Result AcceptSession64From32(ams::svc::Handle *out_handle, ams::svc::Handle port) {
