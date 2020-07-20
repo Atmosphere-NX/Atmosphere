@@ -71,6 +71,7 @@ namespace ams::fs {
                 R_CATCH(fs::ResultSystemPartitionNotReady) {
                     if (i < MaxRetries - 1) {
                         os::SleepThread(RetryInterval);
+                        continue;
                     } else {
                         return fs::ResultSystemPartitionNotReady();
                     }
