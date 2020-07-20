@@ -358,7 +358,65 @@ namespace ams::kern {
     }
 
     void KDebugBase::OnFinalizeSynchronizationObject() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Detach from our process, if we have one. */
+        {
+            /* Get the attached process. */
+            KScopedAutoObject process = this->GetProcess();
+
+            /* If the process isn't null, detach. */
+            if (process.IsNotNull()) {
+                /* When we're done detaching, clear the reference we opened when we attached. */
+                ON_SCOPE_EXIT { process->Close(); };
+
+                /* Detach. */
+                {
+                    /* Lock both ourselves and the target process. */
+                    KScopedLightLock state_lk(process->GetStateLock());
+                    KScopedLightLock list_lk(process->GetListLock());
+                    KScopedLightLock this_lk(this->lock);
+
+                    /* Ensure we finalize exactly once. */
+                    if (this->process != nullptr) {
+                        MESOSPHERE_ASSERT(this->process == process.GetPointerUnsafe());
+                        {
+                            KScopedSchedulerLock sl;
+
+                            /* Detach ourselves from the process. */
+                            process->ClearDebugObject(this->old_process_state);
+
+                            /* Release all threads. */
+                            const bool resume = (process->GetState() != KProcess::State_Crashed);
+                            {
+                                auto end = process->GetThreadList().end();
+                                for (auto it = process->GetThreadList().begin(); it != end; ++it) {
+                                    if (resume) {
+                                        /* If the process isn't crashed, resume threads. */
+                                        it->Resume(KThread::SuspendType_Debug);
+                                    } else {
+                                        /* Otherwise, suspend them. */
+                                        it->RequestSuspend(KThread::SuspendType_Debug);
+                                    }
+                                }
+                            }
+
+                            /* Clear our process. */
+                            this->process = nullptr;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Free any pending events. */
+        {
+            KScopedSchedulerLock sl;
+
+            while (!this->event_info_list.empty()) {
+                KEventInfo *info = std::addressof(this->event_info_list.front());
+                this->event_info_list.pop_front();
+                KEventInfo::Free(info);
+            }
+        }
     }
 
     bool KDebugBase::IsSignaled() const {

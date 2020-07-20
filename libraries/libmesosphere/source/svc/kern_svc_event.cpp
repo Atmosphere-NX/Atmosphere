@@ -71,6 +71,9 @@ namespace ams::kern::svc {
             /* Initialize the event. */
             event->Initialize();
 
+            /* Commit the event reservation. */
+            event_reservation.Commit();
+
             /* Ensure that we clean up the event (and its only references are handle table) on function end. */
             ON_SCOPE_EXIT {
                 event->GetWritableEvent().Close();
