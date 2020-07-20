@@ -347,8 +347,10 @@ namespace ams::kern {
             constexpr s32 GetIdealCore() const { return this->ideal_core_id; }
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }
+
             constexpr s32 GetPriority() const { return this->priority; }
             constexpr void SetPriority(s32 prio) { this->priority = prio; }
+
             constexpr s32 GetBasePriority() const { return this->base_priority; }
 
             constexpr QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
@@ -438,6 +440,7 @@ namespace ams::kern {
 
             void Wakeup();
 
+            void SetBasePriority(s32 priority);
             Result SetPriorityToIdle();
 
             Result Run();

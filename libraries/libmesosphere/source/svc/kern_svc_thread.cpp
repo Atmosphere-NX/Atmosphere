@@ -141,7 +141,7 @@ namespace ams::kern::svc {
             R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Set the thread priority. */
-            thread->SetPriority(priority);
+            thread->SetBasePriority(priority);
             return ResultSuccess();
         }
 
