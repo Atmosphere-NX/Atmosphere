@@ -384,6 +384,19 @@ namespace ams::kern {
         }
     }
 
+    void KThread::SetBasePriority(s32 priority) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority);
+
+        KScopedSchedulerLock sl;
+
+        /* Change our base priority. */
+        this->base_priority = priority;
+
+        /* Perform a priority restoration. */
+        RestorePriority(this);
+    }
+
     Result KThread::SetPriorityToIdle() {
         MESOSPHERE_ASSERT_THIS();
 
