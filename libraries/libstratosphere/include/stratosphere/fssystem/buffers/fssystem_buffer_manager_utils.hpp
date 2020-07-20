@@ -37,8 +37,7 @@ namespace ams::fssystem::buffers {
                     }
                     R_TRY(on_failure());
 
-                    /* TODO: os::SleepThread */
-                    svc::SleepThread(impl::RetryWait.GetNanoSeconds());
+                    os::SleepThread(impl::RetryWait);
 
                     continue;
                 }

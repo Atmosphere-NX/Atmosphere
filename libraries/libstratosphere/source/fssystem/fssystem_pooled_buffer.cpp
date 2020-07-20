@@ -145,8 +145,7 @@ namespace ams::fssystem {
                 break;
             } else {
                 /* Sleep. */
-                /* TODO: os::SleepThread() */
-                svc::SleepThread(RetryWait.GetNanoSeconds());
+                os::SleepThread(RetryWait);
                 g_retry_count++;
             }
         }
