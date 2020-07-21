@@ -1033,8 +1033,9 @@ namespace ams::kern {
         /* Determine new perm/state. */
         const KMemoryPermission new_perm = ConvertToKMemoryPermission(svc_perm);
         KMemoryState new_state = old_state;
-        const bool is_w = (new_perm & KMemoryPermission_UserWrite)   == KMemoryPermission_UserWrite;
-        const bool is_x = (new_perm & KMemoryPermission_UserExecute) == KMemoryPermission_UserExecute;
+        const bool is_w  = (new_perm & KMemoryPermission_UserWrite)   == KMemoryPermission_UserWrite;
+        const bool is_x  = (new_perm & KMemoryPermission_UserExecute) == KMemoryPermission_UserExecute;
+        const bool was_x = (old_perm & KMemoryPermission_UserExecute) == KMemoryPermission_UserExecute;
         MESOSPHERE_ASSERT(!(is_w && is_x));
 
         if (is_w) {
@@ -1050,6 +1051,9 @@ namespace ams::kern {
             R_TRY(this->MakePageGroup(pg, GetInteger(addr), num_pages));
         }
 
+        /* Succeed if there's nothing to do. */
+        R_SUCCEED_IF(old_perm == new_perm && old_state == new_state);
+
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
         R_TRY(allocator.GetResult());
@@ -1059,7 +1063,7 @@ namespace ams::kern {
 
         /* Perform mapping operation. */
         const KPageProperties properties = { new_perm, false, false, false };
-        const auto operation = is_x ? OperationType_ChangePermissionsAndRefresh : OperationType_ChangePermissions;
+        const auto operation = was_x ? OperationType_ChangePermissionsAndRefresh : OperationType_ChangePermissions;
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, operation, false));
 
         /* Update the blocks. */

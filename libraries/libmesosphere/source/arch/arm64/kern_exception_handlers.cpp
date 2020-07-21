@@ -40,6 +40,14 @@ namespace ams::kern::arch::arm64 {
 
             MESOSPHERE_LOG("User Exception occurred in %s\n", cur_process->GetName());
 
+            for (size_t i = 0; i < 31; i++) {
+                MESOSPHERE_LOG("X[%02zu] = %016lx\n", i, context->x[i]);
+            }
+            MESOSPHERE_LOG("PC    = %016lx\n", context->pc);
+            MESOSPHERE_LOG("SP    = %016lx\n", context->sp);
+
+            MESOSPHERE_PANIC("Unhandled Exception in Supervisor Mode\n");
+
             const u64 ec = (esr >> 26) & 0x3F;
             switch (ec) {
                 case 0x0:  /* Unknown */
