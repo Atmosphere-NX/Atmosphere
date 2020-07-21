@@ -317,6 +317,11 @@ namespace ams::kern {
             Result SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send);
             Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process);
             Result CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state);
+
+            void DumpTable() const {
+                KScopedLightLock lk(this->general_lock);
+                this->GetImpl().Dump(GetInteger(this->address_space_start), this->address_space_end - this->address_space_start);
+            }
         public:
             KProcessAddress GetAddressSpaceStart()    const { return this->address_space_start; }
             KProcessAddress GetHeapRegionStart()      const { return this->heap_region_start; }

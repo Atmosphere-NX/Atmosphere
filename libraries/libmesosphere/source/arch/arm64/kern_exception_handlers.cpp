@@ -46,7 +46,10 @@ namespace ams::kern::arch::arm64 {
             MESOSPHERE_LOG("PC    = %016lx\n", context->pc);
             MESOSPHERE_LOG("SP    = %016lx\n", context->sp);
 
-            MESOSPHERE_PANIC("Unhandled Exception in Supervisor Mode\n");
+            /* Dump the page tables. */
+            GetCurrentProcess().GetPageTable().DumpTable();
+
+            MESOSPHERE_PANIC("Unhandled Exception in User Mode\n");
 
             const u64 ec = (esr >> 26) & 0x3F;
             switch (ec) {
