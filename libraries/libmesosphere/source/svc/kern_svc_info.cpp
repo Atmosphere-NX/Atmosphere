@@ -107,6 +107,31 @@ namespace ams::kern::svc {
                         }
                     }
                     break;
+                case ams::svc::InfoType_ResourceLimit:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(info_subtype == 0, svc::ResultInvalidCombination());
+
+                        /* Get the handle table and resource limit. */
+                        KHandleTable &handle_table     = GetCurrentProcess().GetHandleTable();
+                        KResourceLimit *resource_limit = GetCurrentProcess().GetResourceLimit();
+
+                        if (resource_limit != nullptr) {
+                            /* Get a new handle for the resource limit. */
+                            ams::svc::Handle tmp;
+                            R_TRY(handle_table.Add(std::addressof(tmp), resource_limit));
+
+                            /* Set the output. */
+                            *out = tmp;
+                        } else {
+                            /* Set the output. */
+                            *out = ams::svc::InvalidHandle;
+                        }
+                    }
+                    break;
                 default:
                     return svc::ResultInvalidEnumValue();
             }
