@@ -21,44 +21,108 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsValidLimitableResource(ams::svc::LimitableResource which) {
+            return which < ams::svc::LimitableResource_Count;
+        }
 
+        Result GetResourceLimitLimitValue(int64_t *out_limit_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
+            /* Validate the resource. */
+            R_UNLESS(IsValidLimitableResource(which), svc::ResultInvalidEnumValue());
+
+            /* Get the resource limit. */
+            KScopedAutoObject resource_limit = GetCurrentProcess().GetHandleTable().GetObject<KResourceLimit>(resource_limit_handle);
+            R_UNLESS(resource_limit.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the limit value. */
+            *out_limit_value = resource_limit->GetLimitValue(which);
+
+            return ResultSuccess();
+        }
+
+        Result GetResourceLimitCurrentValue(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
+            /* Validate the resource. */
+            R_UNLESS(IsValidLimitableResource(which), svc::ResultInvalidEnumValue());
+
+            /* Get the resource limit. */
+            KScopedAutoObject resource_limit = GetCurrentProcess().GetHandleTable().GetObject<KResourceLimit>(resource_limit_handle);
+            R_UNLESS(resource_limit.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the current value. */
+            *out_current_value = resource_limit->GetCurrentValue(which);
+
+            return ResultSuccess();
+        }
+
+        Result CreateResourceLimit(ams::svc::Handle *out_handle) {
+            /* Create a new resource limit. */
+            KResourceLimit *resource_limit = KResourceLimit::Create();
+            R_UNLESS(resource_limit != nullptr, svc::ResultOutOfResource());
+
+            /* Ensure we don't leak a reference to the limit. */
+            ON_SCOPE_EXIT { resource_limit->Close(); };
+
+            /* Initialize the resource limit. */
+            resource_limit->Initialize();
+
+            /* Try to register the limit. */
+            R_TRY(KResourceLimit::Register(resource_limit));
+
+            /* Add the limit to the handle table. */
+            R_TRY(GetCurrentProcess().GetHandleTable().Add(out_handle, resource_limit));
+
+            return ResultSuccess();
+        }
+
+        Result SetResourceLimitLimitValue(ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which, int64_t limit_value) {
+            /* Validate the resource. */
+            R_UNLESS(IsValidLimitableResource(which), svc::ResultInvalidEnumValue());
+
+            /* Get the resource limit. */
+            KScopedAutoObject resource_limit = GetCurrentProcess().GetHandleTable().GetObject<KResourceLimit>(resource_limit_handle);
+            R_UNLESS(resource_limit.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Set the limit value. */
+            R_TRY(resource_limit->SetLimitValue(which, limit_value));
+
+            return ResultSuccess();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result GetResourceLimitLimitValue64(int64_t *out_limit_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        MESOSPHERE_PANIC("Stubbed SvcGetResourceLimitLimitValue64 was called.");
+        return GetResourceLimitLimitValue(out_limit_value, resource_limit_handle, which);
     }
 
     Result GetResourceLimitCurrentValue64(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        MESOSPHERE_PANIC("Stubbed SvcGetResourceLimitCurrentValue64 was called.");
+        return GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which);
     }
 
     Result CreateResourceLimit64(ams::svc::Handle *out_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateResourceLimit64 was called.");
+        return CreateResourceLimit(out_handle);
     }
 
     Result SetResourceLimitLimitValue64(ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which, int64_t limit_value) {
-        MESOSPHERE_PANIC("Stubbed SvcSetResourceLimitLimitValue64 was called.");
+        return SetResourceLimitLimitValue(resource_limit_handle, which, limit_value);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result GetResourceLimitLimitValue64From32(int64_t *out_limit_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        MESOSPHERE_PANIC("Stubbed SvcGetResourceLimitLimitValue64From32 was called.");
+        return GetResourceLimitLimitValue(out_limit_value, resource_limit_handle, which);
     }
 
     Result GetResourceLimitCurrentValue64From32(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
-        MESOSPHERE_PANIC("Stubbed SvcGetResourceLimitCurrentValue64From32 was called.");
+        return GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which);
     }
 
     Result CreateResourceLimit64From32(ams::svc::Handle *out_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateResourceLimit64From32 was called.");
+        return CreateResourceLimit(out_handle);
     }
 
     Result SetResourceLimitLimitValue64From32(ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which, int64_t limit_value) {
-        MESOSPHERE_PANIC("Stubbed SvcSetResourceLimitLimitValue64From32 was called.");
+        return SetResourceLimitLimitValue(resource_limit_handle, which, limit_value);
     }
 
 }
