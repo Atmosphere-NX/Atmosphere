@@ -139,11 +139,48 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        constexpr bool IsValidMemoryPool(u64 pool) {
+            switch (static_cast<KMemoryManager::Pool>(pool)) {
+                case KMemoryManager::Pool_Application:
+                case KMemoryManager::Pool_Applet:
+                case KMemoryManager::Pool_System:
+                case KMemoryManager::Pool_SystemNonSecure:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         Result GetSystemInfo(u64 *out, ams::svc::SystemInfoType info_type, ams::svc::Handle handle, u64 info_subtype) {
             MESOSPHERE_LOG("GetSystemInfo(%p, %u, %08x, %lu) was called\n", out, static_cast<u32>(info_type), static_cast<u32>(handle), info_subtype);
             ON_SCOPE_EXIT{ MESOSPHERE_LOG("GetSystemInfo returned %016lx\n", *out); };
 
             switch (info_type) {
+                case ams::svc::SystemInfoType_TotalPhysicalMemorySize:
+                case ams::svc::SystemInfoType_UsedPhysicalMemorySize:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(IsValidMemoryPool(info_subtype), svc::ResultInvalidCombination());
+
+                        /* Convert to pool. */
+                        const auto pool = static_cast<KMemoryManager::Pool>(info_subtype);
+
+                        /* Get the memory size. */
+                        auto &mm = Kernel::GetMemoryManager();
+                        switch (info_type) {
+                            case ams::svc::SystemInfoType_TotalPhysicalMemorySize:
+                                *out = mm.GetSize(pool);
+                                break;
+                            case ams::svc::SystemInfoType_UsedPhysicalMemorySize:
+                                *out = mm.GetSize(pool) - mm.GetFreeSize(pool);
+                                break;
+                            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                        }
+                    }
+                    break;
                 case ams::svc::SystemInfoType_InitialProcessIdRange:
                     {
                         R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
