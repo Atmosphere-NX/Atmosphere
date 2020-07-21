@@ -192,7 +192,7 @@ namespace ams::kern::arch::arm64::cpu {
 
     ALWAYS_INLINE void InvalidateTlbByAsid(u32 asid) {
         const u64 value = (static_cast<u64>(asid) << 48);
-        __asm__ __volatile__("tlbi aside1is, %[value]" :: [value]"r"(static_cast<u64>(value) << 48) : "memory");
+        __asm__ __volatile__("tlbi aside1is, %[value]" :: [value]"r"(value) : "memory");
         EnsureInstructionConsistency();
     }
 
