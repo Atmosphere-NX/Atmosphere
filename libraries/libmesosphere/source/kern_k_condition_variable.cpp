@@ -90,7 +90,7 @@ namespace ams::kern {
                     R_SUCCEED_IF(test_tag != (handle | ams::svc::HandleWaitMask));
 
                     /* Get the lock owner thread. */
-                    owner_thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(handle);
+                    owner_thread = GetCurrentProcess().GetHandleTable().GetObjectWithoutPseudoHandle<KThread>(handle);
                     R_UNLESS(owner_thread.IsNotNull(), svc::ResultInvalidHandle());
 
                     /* Update the lock. */

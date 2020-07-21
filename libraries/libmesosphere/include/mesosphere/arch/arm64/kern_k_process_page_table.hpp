@@ -88,6 +88,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MapPageGroup(addr, pg, state, perm);
             }
 
+            Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state) {
+                return this->page_table.UnmapPageGroup(address, pg, state);
+            }
+
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KMemoryState state, KMemoryPermission perm) {
                 return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, state, perm);
             }

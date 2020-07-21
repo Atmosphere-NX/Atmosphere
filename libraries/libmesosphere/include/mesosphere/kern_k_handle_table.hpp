@@ -126,20 +126,7 @@ namespace ams::kern {
             NOINLINE bool Remove(ams::svc::Handle handle);
 
             template<typename T = KAutoObject>
-            ALWAYS_INLINE KScopedAutoObject<T> GetObject(ams::svc::Handle handle) const {
-                MESOSPHERE_ASSERT_THIS();
-
-                /* Handle pseudo-handles. */
-                if constexpr (std::is_base_of<T, KProcess>::value) {
-                    if (handle == ams::svc::PseudoHandle::CurrentProcess) {
-                        return GetCurrentProcessPointer();
-                    }
-                } else if constexpr (std::is_base_of<T, KThread>::value) {
-                    if (handle == ams::svc::PseudoHandle::CurrentThread) {
-                        return GetCurrentThreadPointer();
-                    }
-                }
-
+            ALWAYS_INLINE KScopedAutoObject<T> GetObjectWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
                 KScopedSpinLock lk(this->lock);
@@ -153,6 +140,24 @@ namespace ams::kern {
                         return nullptr;
                     }
                 }
+            }
+
+            template<typename T = KAutoObject>
+            ALWAYS_INLINE KScopedAutoObject<T> GetObject(ams::svc::Handle handle) const {
+                MESOSPHERE_ASSERT_THIS();
+
+                /* Handle pseudo-handles. */
+                if constexpr (std::derived_from<KProcess, T>) {
+                    if (handle == ams::svc::PseudoHandle::CurrentProcess) {
+                        return GetCurrentProcessPointer();
+                    }
+                } else if constexpr (std::derived_from<KThread, T>) {
+                    if (handle == ams::svc::PseudoHandle::CurrentThread) {
+                        return GetCurrentThreadPointer();
+                    }
+                }
+
+                return this->template GetObjectWithoutPseudoHandle<T>(handle);
             }
 
             ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpcWithoutPseudoHandle(ams::svc::Handle handle) const {
