@@ -160,6 +160,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.CleanupForIpcClient(address, size, dst_state);
             }
 
+            void DumpTable() const {
+                return this->page_table.DumpTable();
+            }
+
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }

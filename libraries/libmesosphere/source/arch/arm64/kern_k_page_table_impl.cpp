@@ -292,4 +292,134 @@ namespace ams::kern::arch::arm64 {
         return false;
     }
 
+    void KPageTableImpl::Dump(uintptr_t start, size_t size) const {
+        /* If zero size, there's nothing to dump. */
+        if (size == 0) {
+            return;
+        }
+
+        /* Define extents. */
+        const uintptr_t end  = start + size;
+        const uintptr_t last = end - 1;
+
+        MESOSPHERE_LOG("==== PAGE TABLE DUMP START (%012lx - %012lx) ====\n", start, last);
+        ON_SCOPE_EXIT { MESOSPHERE_LOG("==== PAGE TABLE DUMP END ====\n"); };
+
+        /* Define tracking variables. */
+        bool unmapped = false;
+        uintptr_t unmapped_start = 0;
+
+        /* Walk the table. */
+        uintptr_t cur = start;
+        while (cur < end) {
+            /* Validate that we can read the actual entry. */
+            const size_t l0_index = GetL0Index(cur);
+            const size_t l1_index = GetL1Index(cur);
+            if (this->is_kernel) {
+                /* Kernel entries must be accessed via TTBR1. */
+                if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+                    return;
+                }
+            } else {
+                /* User entries must be accessed with TTBR0. */
+                if ((l0_index != 0) || l1_index >= this->num_entries) {
+                    return;
+                }
+            }
+
+            /* Try to get from l1 table. */
+            const L1PageTableEntry *l1_entry = this->GetL1Entry(cur);
+            if (l1_entry->IsBlock()) {
+                /* Update. */
+                cur = util::AlignDown(cur, L1BlockSize);
+                if (unmapped) {
+                    unmapped = false;
+                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                }
+
+                /* Print. */
+                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l1_entry));
+
+                /* Advance. */
+                cur += L1BlockSize;
+                continue;
+            } else if (!l1_entry->IsTable()) {
+                /* Update. */
+                cur = util::AlignDown(cur, L1BlockSize);
+                if (!unmapped) {
+                    unmapped_start = cur;
+                    unmapped       = true;
+                }
+
+                /* Advance. */
+                cur += L1BlockSize;
+                continue;
+            }
+
+            /* Try to get from l2 table. */
+            const L2PageTableEntry *l2_entry = this->GetL2Entry(l1_entry, cur);
+            if (l2_entry->IsBlock()) {
+                /* Update. */
+                cur = util::AlignDown(cur, L2BlockSize);
+                if (unmapped) {
+                    unmapped = false;
+                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                }
+
+                /* Print. */
+                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l2_entry));
+
+                /* Advance. */
+                cur += L2BlockSize;
+                continue;
+            } else if (!l2_entry->IsTable()) {
+                /* Update. */
+                cur = util::AlignDown(cur, L2BlockSize);
+                if (!unmapped) {
+                    unmapped_start = cur;
+                    unmapped       = true;
+                }
+
+                /* Advance. */
+                cur += L2BlockSize;
+                continue;
+            }
+
+            /* Try to get from l3 table. */
+            const L3PageTableEntry *l3_entry = this->GetL3Entry(l2_entry, cur);
+            if (l3_entry->IsBlock()) {
+                /* Update. */
+                cur = util::AlignDown(cur, L3BlockSize);
+                if (unmapped) {
+                    unmapped = false;
+                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                }
+
+                /* Print. */
+                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l3_entry));
+
+                /* Advance. */
+                cur += L3BlockSize;
+                continue;
+            } else {
+                /* Update. */
+                cur = util::AlignDown(cur, L3BlockSize);
+                if (!unmapped) {
+                    unmapped_start = cur;
+                    unmapped       = true;
+                }
+
+                /* Advance. */
+                cur += L3BlockSize;
+                continue;
+            }
+        }
+
+        /* Print the last unmapped range if necessary. */
+        if (unmapped) {
+            MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, last);
+        }
+    }
+
+
 }
