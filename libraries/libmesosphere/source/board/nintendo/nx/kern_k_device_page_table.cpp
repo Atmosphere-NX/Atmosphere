@@ -959,7 +959,7 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Walk the directory. */
         u64 remaining = size;
-        bool first = false;
+        bool first = true;
         u32 attr = 0;
         while (remaining > 0) {
             const size_t l0_index = (address / DeviceRegionSize);
