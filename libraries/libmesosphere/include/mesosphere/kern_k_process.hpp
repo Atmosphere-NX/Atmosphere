@@ -216,6 +216,7 @@ namespace ams::kern {
             size_t GetTotalNonSystemUserPhysicalMemorySize() const;
 
             Result CreateThreadLocalRegion(KProcessAddress *out);
+            Result DeleteThreadLocalRegion(KProcessAddress addr);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
 
             constexpr KProcessAddress GetProcessLocalRegionAddress() const { return this->plr_address; }

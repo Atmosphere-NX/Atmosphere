@@ -1358,7 +1358,31 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Check that the unmap is in range. */
+        const size_t size = num_pages * PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform the unmap. */
+        const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
+        R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {

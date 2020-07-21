@@ -251,7 +251,49 @@ namespace ams::kern {
     }
 
     void KThread::Finalize() {
-        MESOSPHERE_UNIMPLEMENTED();
+        MESOSPHERE_ASSERT_THIS();
+
+        /* If the thread has an owner process, unregister it. */
+        if (this->parent != nullptr) {
+            this->parent->UnregisterThread(this);
+        }
+
+        /* If the thread has a local region, delete it. */
+        if (this->tls_address != Null<KProcessAddress>) {
+            MESOSPHERE_R_ABORT_UNLESS(this->parent->DeleteThreadLocalRegion(this->tls_address));
+        }
+
+        /* Release any waiters. */
+        {
+            MESOSPHERE_ASSERT(this->lock_owner == nullptr);
+            KScopedSchedulerLock sl;
+
+            auto it = this->waiter_list.begin();
+            while (it != this->waiter_list.end()) {
+                /* The thread shouldn't be a kernel waiter. */
+                MESOSPHERE_ASSERT(!IsKernelAddressKey(it->GetAddressKey()));
+                it->SetLockOwner(nullptr);
+                it->SetSyncedObject(nullptr, svc::ResultInvalidState());
+                it->Wakeup();
+                it = this->waiter_list.erase(it);
+            }
+        }
+
+        /* Finalize the thread context. */
+        this->thread_context.Finalize();
+
+        /* Cleanup the kernel stack. */
+        if (this->kernel_stack_top != nullptr) {
+            CleanupKernelStack(reinterpret_cast<uintptr_t>(this->kernel_stack_top));
+        }
+
+        /* Decrement the parent process's thread count. */
+        if (this->parent != nullptr) {
+            this->parent->DecrementThreadCount();
+        }
+
+        /* Perform inherited finalization. */
+        KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>::Finalize();
     }
 
     bool KThread::IsSignaled() const {
