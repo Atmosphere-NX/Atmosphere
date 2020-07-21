@@ -212,6 +212,54 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KProcess::DeleteThreadLocalRegion(KProcessAddress addr) {
+        KThreadLocalPage *page_to_free = nullptr;
+
+        /* Release the region. */
+        {
+            KScopedSchedulerLock sl;
+
+            /* Try to find the page in the partially used list. */
+            auto it = this->partially_used_tlp_tree.find(KThreadLocalPage(util::AlignDown(GetInteger(addr), PageSize)));
+            if (it == this->partially_used_tlp_tree.end()) {
+                /* If we don't find it, it has to be in the fully used list. */
+                it = this->fully_used_tlp_tree.find(KThreadLocalPage(util::AlignDown(GetInteger(addr), PageSize)));
+                R_UNLESS(it != this->fully_used_tlp_tree.end(), svc::ResultInvalidAddress());
+
+                /* Release the region. */
+                it->Release(addr);
+
+                /* Move the page out of the fully used list. */
+                KThreadLocalPage *tlp = std::addressof(*it);
+                this->fully_used_tlp_tree.erase(it);
+                if (tlp->IsAllFree()) {
+                    page_to_free = tlp;
+                } else {
+                    this->partially_used_tlp_tree.insert(*tlp);
+                }
+            } else {
+                /* Release the region. */
+                it->Release(addr);
+
+                /* Handle the all-free case. */
+                KThreadLocalPage *tlp = std::addressof(*it);
+                if (tlp->IsAllFree()) {
+                    this->partially_used_tlp_tree.erase(it);
+                    page_to_free = tlp;
+                }
+            }
+        }
+
+        /* If we should free the page it was in, do so. */
+        if (page_to_free != nullptr) {
+            page_to_free->Finalize();
+
+            KThreadLocalPage::Free(page_to_free);
+        }
+
+        return ResultSuccess();
+    }
+
     void *KProcess::GetThreadLocalRegionPointer(KProcessAddress addr) {
         KThreadLocalPage *tlp = nullptr;
         {
