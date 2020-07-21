@@ -21,14 +21,48 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsValidProcessMemoryPermission(ams::svc::MemoryPermission perm) {
+            switch (perm) {
+                case ams::svc::MemoryPermission_None:
+                case ams::svc::MemoryPermission_Read:
+                case ams::svc::MemoryPermission_ReadWrite:
+                case ams::svc::MemoryPermission_ReadExecute:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
+        Result SetProcessMemoryPermission(ams::svc::Handle process_handle, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
+            /* Validate the address/size. */
+            R_UNLESS(util::IsAligned(address, PageSize),         svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize),         svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                                   svc::ResultInvalidSize());
+            R_UNLESS((address < address + size),                 svc::ResultInvalidCurrentMemory());
+            R_UNLESS(address == static_cast<uintptr_t>(address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(size == static_cast<size_t>(size),          svc::ResultInvalidCurrentMemory());
+
+            /* Validate the memory permission. */
+            R_UNLESS(IsValidProcessMemoryPermission(perm), svc::ResultInvalidNewMemoryPermission());
+
+            /* Get the process from its handle. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate that the address is in range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Set the memory permission. */
+            return page_table.SetProcessMemoryPermission(address, size, perm);
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result SetProcessMemoryPermission64(ams::svc::Handle process_handle, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
-        MESOSPHERE_PANIC("Stubbed SvcSetProcessMemoryPermission64 was called.");
+        return SetProcessMemoryPermission(process_handle, address, size, perm);
     }
 
     Result MapProcessMemory64(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {
@@ -50,7 +84,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result SetProcessMemoryPermission64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size, ams::svc::MemoryPermission perm) {
-        MESOSPHERE_PANIC("Stubbed SvcSetProcessMemoryPermission64From32 was called.");
+        return SetProcessMemoryPermission(process_handle, address, size, perm);
     }
 
     Result MapProcessMemory64From32(ams::svc::Address dst_address, ams::svc::Handle process_handle, uint64_t src_address, ams::svc::Size size) {

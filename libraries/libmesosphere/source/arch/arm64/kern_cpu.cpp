@@ -370,24 +370,24 @@ namespace ams::kern::arch::arm64::cpu {
 
     Result StoreDataCache(const void *addr, size_t size) {
         KScopedCoreMigrationDisable dm;
-        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
-        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        DataCacheLineSize);
+        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, DataCacheLineSize);
 
         return StoreDataCacheRange(start, end);
     }
 
     Result FlushDataCache(const void *addr, size_t size) {
         KScopedCoreMigrationDisable dm;
-        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
-        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr), DataCacheLineSize);
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        DataCacheLineSize);
+        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, DataCacheLineSize);
 
         return FlushDataCacheRange(start, end);
     }
 
     Result InvalidateInstructionCache(void *addr, size_t size) {
         KScopedCoreMigrationDisable dm;
-        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr), InstructionCacheLineSize);
-        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr), InstructionCacheLineSize);
+        const uintptr_t start = util::AlignDown(reinterpret_cast<uintptr_t>(addr),        InstructionCacheLineSize);
+        const uintptr_t end   = util::AlignUp(  reinterpret_cast<uintptr_t>(addr) + size, InstructionCacheLineSize);
 
         R_TRY(InvalidateInstructionCacheRange(start, end));
 
