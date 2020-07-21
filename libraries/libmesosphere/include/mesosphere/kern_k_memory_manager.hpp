@@ -73,6 +73,8 @@ namespace ams::kern {
                     constexpr size_t GetSize() const { return this->heap.GetSize(); }
                     constexpr KVirtualAddress GetEndAddress() const { return this->heap.GetEndAddress(); }
 
+                    size_t GetFreeSize() const { return this->heap.GetFreeSize(); }
+
                     constexpr void SetNext(Impl *n) { this->next = n; }
                     constexpr void SetPrev(Impl *n) { this->prev = n; }
                     constexpr Impl *GetNext() const { return this->next; }
@@ -201,6 +203,23 @@ namespace ams::kern {
                 size_t total = 0;
                 for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
                     total += manager->GetSize();
+                }
+                return total;
+            }
+
+            size_t GetFreeSize() {
+                size_t total = 0;
+                for (size_t i = 0; i < this->num_managers; i++) {
+                    total += this->managers[i].GetFreeSize();
+                }
+                return total;
+            }
+
+            size_t GetFreeSize(Pool pool) {
+                constexpr Direction GetSizeDirection = Direction_FromFront;
+                size_t total = 0;
+                for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
+                    total += manager->GetFreeSize();
                 }
                 return total;
             }

@@ -145,6 +145,8 @@ namespace ams::kern {
                 return Initialize(heap_address, heap_size, metadata_address, metadata_size, MemoryBlockPageShifts, NumMemoryBlockPageShifts);
             }
 
+            size_t GetFreeSize() const { return this->GetNumFreePages() * PageSize; }
+
             void UpdateUsedSize() {
                 this->used_size = this->heap_size - (this->GetNumFreePages() * PageSize);
             }
