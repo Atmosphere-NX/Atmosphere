@@ -132,6 +132,18 @@ namespace ams::kern::svc {
                         }
                     }
                     break;
+                case ams::svc::InfoType_RandomEntropy:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the requested entropy is valid. */
+                        R_UNLESS(info_subtype < 4, svc::ResultInvalidCombination());
+
+                        /* Get the entropy. */
+                        *out = GetCurrentProcess().GetRandomEntropy(info_subtype);
+                    }
+                    break;
                 default:
                     return svc::ResultInvalidEnumValue();
             }

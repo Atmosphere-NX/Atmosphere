@@ -147,6 +147,8 @@ namespace ams::kern {
 
             constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
 
+            constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }
+
             constexpr bool IsSuspended() const {
                 return this->is_suspended;
             }

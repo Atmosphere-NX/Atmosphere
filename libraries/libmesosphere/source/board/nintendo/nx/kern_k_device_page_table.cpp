@@ -528,7 +528,42 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     void KDevicePageTable::Finalize() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Get the page table manager. */
+        auto &ptm = Kernel::GetPageTableManager();
+
+        /* Detach from all devices. */
+        {
+            KScopedLightLock lk(g_lock);
+            for (size_t i = 0; i < ams::svc::DeviceName_Count; ++i) {
+                const auto device_name = static_cast<ams::svc::DeviceName>(i);
+                if ((this->attached_device & (1ul << device_name)) != 0) {
+                    WriteMcRegister(GetDeviceAsidRegisterOffset(device_name), IsHsSupported(device_name) ? this->hs_detached_value : this->detached_value);
+                    SmmuSynchronizationBarrier();
+                }
+            }
+        }
+
+        /* Forcibly unmap all pages. */
+        this->UnmapImpl(0, (1ul << DeviceVirtualAddressBits), true);
+
+        /* Release all asids. */
+        for (size_t i = 0; i < TableCount; ++i) {
+            if (this->table_asids[i] != g_reserved_asid) {
+                /* Set the table to the reserved table. */
+                SetTable(this->table_asids[i], g_reserved_table_phys_addr);
+
+                /* Close the table. */
+                const KVirtualAddress table_vaddr = this->tables[i];
+                MESOSPHERE_ASSERT(ptm.GetRefCount(table_vaddr) == 1);
+                MESOSPHERE_ABORT_UNLESS(ptm.Close(table_vaddr, 1));
+
+                /* Free the table. */
+                ptm.Free(table_vaddr);
+
+                /* Release the asid. */
+                g_asid_manager.Release(this->table_asids[i]);
+            }
+        }
     }
 
     Result KDevicePageTable::Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) {
