@@ -1350,10 +1350,38 @@ namespace ams::kern {
         }
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, state, perm, KMemoryAttribute_None);
 
         /* We successfully mapped the pages. */
         *out_addr = addr;
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::MapPages(KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm) {
+        /* Check that the map is in range. */
+        const size_t size = num_pages * PageSize;
+        R_UNLESS(this->CanContain(address, size, state), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Map the pages. */
+        const KPageProperties properties = { perm, false, false, false };
+        R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), address, num_pages, properties));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, state, perm, KMemoryAttribute_None);
+
         return ResultSuccess();
     }
 

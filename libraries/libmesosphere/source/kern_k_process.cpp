@@ -21,7 +21,12 @@ namespace ams::kern {
 
         constexpr u64 InitialProcessIdMin = 1;
         constexpr u64 InitialProcessIdMax = 0x50;
+
+        constexpr u64 ProcessIdMin        = InitialProcessIdMax + 1;
+        constexpr u64 ProcessIdMax        = std::numeric_limits<u64>::max();
+
         std::atomic<u64> g_initial_process_id = InitialProcessIdMin;
+        std::atomic<u64> g_process_id         = ProcessIdMin;
 
     }
 
@@ -153,8 +158,115 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
-        MESOSPHERE_UNIMPLEMENTED();
+    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(res_limit != nullptr);
+
+        /* Set pool and resource limit. */
+        this->memory_pool               = pool;
+        this->resource_limit            = res_limit;
+
+        /* Get the memory sizes. */
+        const size_t code_num_pages            = params.code_num_pages;
+        const size_t system_resource_num_pages = params.system_resource_num_pages;
+        const size_t code_size                 = code_num_pages * PageSize;
+        const size_t system_resource_size      = system_resource_num_pages * PageSize;
+
+        /* Reserve memory for the system resource. */
+        KScopedResourceReservation memory_reservation(this, ams::svc::LimitableResource_PhysicalMemoryMax, code_size + KSystemControl::CalculateRequiredSecureMemorySize(system_resource_size, pool));
+        R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
+
+        /* Setup page table resource objects. */
+        KMemoryBlockSlabManager *mem_block_manager;
+        KBlockInfoManager *block_info_manager;
+        KPageTableManager *pt_manager;
+
+        this->system_resource_address   = Null<KVirtualAddress>;
+        this->system_resource_num_pages = 0;
+
+        if (system_resource_num_pages != 0) {
+            /* Allocate secure memory. */
+            R_TRY(KSystemControl::AllocateSecureMemory(std::addressof(this->system_resource_address), system_resource_size, pool));
+
+            /* Set the number of system resource pages. */
+            MESOSPHERE_ASSERT(this->system_resource_address != Null<KVirtualAddress>);
+            this->system_resource_num_pages = system_resource_num_pages;
+
+            /* Initialize managers. */
+            const size_t rc_size = util::AlignUp(KPageTableManager::CalculateReferenceCountSize(system_resource_size), PageSize);
+            this->dynamic_page_manager.Initialize(this->system_resource_address + rc_size, system_resource_size - rc_size);
+            this->page_table_manager.Initialize(std::addressof(this->dynamic_page_manager), GetPointer<KPageTableManager::RefCount>(this->system_resource_address));
+            this->memory_block_slab_manager.Initialize(std::addressof(this->dynamic_page_manager));
+            this->block_info_manager.Initialize(std::addressof(this->dynamic_page_manager));
+
+            mem_block_manager  = std::addressof(this->memory_block_slab_manager);
+            block_info_manager = std::addressof(this->block_info_manager);
+            pt_manager         = std::addressof(this->page_table_manager);
+        } else {
+            const bool is_app  = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
+            mem_block_manager  = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
+            block_info_manager = std::addressof(Kernel::GetBlockInfoManager());
+            pt_manager         = std::addressof(Kernel::GetPageTableManager());
+        }
+
+        /* Ensure we don't leak any secure memory we allocated. */
+        auto sys_resource_guard = SCOPE_GUARD {
+            if (this->system_resource_address != Null<KVirtualAddress>) {
+                /* Check that we have no outstanding allocations. */
+                MESOSPHERE_ABORT_UNLESS(this->memory_block_slab_manager.GetUsed() == 0);
+                MESOSPHERE_ABORT_UNLESS(this->block_info_manager.GetUsed()        == 0);
+                MESOSPHERE_ABORT_UNLESS(this->page_table_manager.GetUsed()        == 0);
+
+                /* Free the memory. */
+                KSystemControl::FreeSecureMemory(this->system_resource_address, system_resource_size, pool);
+
+                /* Clear our tracking variables. */
+                this->system_resource_address   = Null<KVirtualAddress>;
+                this->system_resource_num_pages = 0;
+            }
+        };
+
+        /* Setup page table. */
+        /* NOTE: Nintendo passes process ID despite not having set it yet. */
+        /* This goes completely unused, but even so... */
+        {
+            const auto as_type     = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
+            const bool enable_aslr = (params.flags & ams::svc::CreateProcessFlag_EnableAslr);
+            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
+        }
+        auto pt_guard = SCOPE_GUARD { this->page_table.Finalize(); };
+
+        /* Ensure we can insert the code region. */
+        R_UNLESS(this->page_table.CanContain(params.code_address, code_size, KMemoryState_Code), svc::ResultInvalidMemoryRegion());
+
+        /* Map the code region. */
+        R_TRY(this->page_table.MapPages(params.code_address, code_num_pages, KMemoryState_Code, static_cast<KMemoryPermission>(KMemoryPermission_KernelRead | KMemoryPermission_NotMapped)));
+
+        /* Initialize capabilities. */
+        R_TRY(this->capabilities.Initialize(user_caps, num_caps, std::addressof(this->page_table)));
+
+        /* Initialize the process id. */
+        this->process_id = g_process_id++;
+        MESOSPHERE_ABORT_UNLESS(ProcessIdMin <= this->process_id);
+        MESOSPHERE_ABORT_UNLESS(this->process_id <= ProcessIdMax);
+
+        /* If we should optimize memory allocations, do so. */
+        if (this->system_resource_address != Null<KVirtualAddress>) {
+            R_TRY(Kernel::GetMemoryManager().InitializeOptimizedMemory(this->process_id, pool));
+        }
+
+        /* Initialize the rest of the process. */
+        R_TRY(this->Initialize(params));
+
+        /* Open a reference to the resource limit. */
+        this->resource_limit->Open();
+
+        /* We succeeded, so commit our memory reservation and cancel our guards. */
+        sys_resource_guard.Cancel();
+        pt_guard.Cancel();
+        memory_reservation.Commit();
+
+        return ResultSuccess();
     }
 
     void KProcess::DoWorkerTask() {

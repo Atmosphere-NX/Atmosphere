@@ -53,6 +53,12 @@ namespace ams::kern {
             class Impl {
                 private:
                     using RefCount = u16;
+                public:
+                    static size_t CalculateMetadataOverheadSize(size_t region_size);
+
+                    static constexpr size_t CalculateOptimizedProcessOverheadSize(size_t region_size) {
+                        return (util::AlignUp((region_size / PageSize), BITSIZEOF(u64)) / BITSIZEOF(u64)) * sizeof(u64);
+                    }
                 private:
                     KPageHeap heap;
                     RefCount *page_reference_counts;
@@ -68,6 +74,7 @@ namespace ams::kern {
                     KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
 
+                    void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->metadata_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
                     void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
 
                     constexpr size_t GetSize() const { return this->heap.GetSize(); }
@@ -127,8 +134,6 @@ namespace ams::kern {
                             this->Free(this->heap.GetAddress() + free_start * PageSize, free_count);
                         }
                     }
-                public:
-                    static size_t CalculateMetadataOverheadSize(size_t region_size);
             };
         private:
             KLightLock pool_locks[Pool_Count];
@@ -164,6 +169,8 @@ namespace ams::kern {
             }
 
             NOINLINE void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
+
+            NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
 
             NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);

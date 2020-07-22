@@ -68,8 +68,10 @@ namespace ams::kern::board::nintendo::nx {
             /* User access. */
             static void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);
 
-            /* Constant calculations. */
+            /* Secure Memory. */
             static size_t CalculateRequiredSecureMemorySize(size_t size, u32 pool);
+            static Result AllocateSecureMemory(KVirtualAddress *out, size_t size, u32 pool);
+            static void FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool);
     };
 
 }
