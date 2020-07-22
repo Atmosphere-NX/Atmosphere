@@ -428,6 +428,34 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv:
     mov     x0, #1
     ret
 
+/* ams::kern::arch::arm64::UserspaceAccess::UpdateLockAtomic(u32 *out, u32 *address, u32 if_zero, u32 new_orr_mask) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj:
+    /* Load the value from the address. */
+    ldaxr   w4, [x1]
+
+    /* Orr in the new mask. */
+    orr     w5, w4, w3
+
+    /* If the value is zero, use the if_zero value, otherwise use the newly orr'd value. */
+    cmp     w4, wzr
+    csel    w5, w2, w5, eq
+
+    /* Try to store. */
+    stlxr   w6, w5, [x1]
+
+    /* If we failed to store, try again. */
+    cbnz    w6, _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj
+
+    /* We're done. */
+    str     w4, [x0]
+    mov     x0, #1
+    ret
+
+
 /* ams::kern::arch::arm64::UserspaceAccess::UpdateIfEqualAtomic(s32 *out, s32 *address, s32 compare_value, s32 new_value) */
 .section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
