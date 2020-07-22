@@ -25,10 +25,10 @@ namespace ams::svc {
             u32    version;
             u64    program_id;
             u64    code_address;
-            u32    code_num_pages;
+            s32    code_num_pages;
             u32    flags;
             Handle reslimit;
-            u32    system_resource_num_pages;
+            s32    system_resource_num_pages;
         };
         static_assert(sizeof(CreateProcessParameter) == 0x30);
 
@@ -41,10 +41,10 @@ namespace ams::svc {
             u32    version;
             u64    program_id;
             u64    code_address;
-            u32    code_num_pages;
+            s32    code_num_pages;
             u32    flags;
             Handle reslimit;
-            u32    system_resource_num_pages;
+            s32    system_resource_num_pages;
         };
         static_assert(sizeof(CreateProcessParameter) == 0x30);
 

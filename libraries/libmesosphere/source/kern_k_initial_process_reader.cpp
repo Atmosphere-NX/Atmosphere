@@ -106,7 +106,7 @@ namespace ams::kern {
         const uintptr_t start_address = rx_address;
         const uintptr_t end_address   = bss_size > 0 ? bss_address + bss_size : rw_address + rw_size;
         const size_t    as_width      = this->Is64BitAddressSpace() ? 39 : 32;
-        const ASType    as_type       = this->Is64BitAddressSpace() ? KAddressSpaceInfo::Type_Large64Bit : KAddressSpaceInfo::Type_32Bit;
+        const ASType    as_type       = this->Is64BitAddressSpace() ? KAddressSpaceInfo::Type_Map39Bit : KAddressSpaceInfo::Type_MapSmall;
         const uintptr_t map_start     = KAddressSpaceInfo::GetAddressSpaceStart(as_width, as_type);
         const size_t    map_size      = KAddressSpaceInfo::GetAddressSpaceSize(as_width, as_type);
         const uintptr_t map_end       = map_start + map_size;

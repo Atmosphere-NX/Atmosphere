@@ -22,9 +22,9 @@ namespace ams::kern {
     struct KAddressSpaceInfo {
         public:
             enum Type {
-                Type_32Bit      = 0,
-                Type_Small64Bit = 1,
-                Type_Large64Bit = 2,
+                Type_MapSmall   = 0,
+                Type_MapLarge   = 1,
+                Type_Map39Bit   = 2,
                 Type_Heap       = 3,
                 Type_Stack      = 4,
                 Type_Alias      = 5,

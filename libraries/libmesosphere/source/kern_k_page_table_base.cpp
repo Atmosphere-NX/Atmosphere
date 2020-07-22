@@ -100,9 +100,9 @@ namespace ams::kern {
             alias_region_size               = GetSpaceSize(KAddressSpaceInfo::Type_Alias);
             heap_region_size                = GetSpaceSize(KAddressSpaceInfo::Type_Heap);
             stack_region_size               = GetSpaceSize(KAddressSpaceInfo::Type_Stack);
-            kernel_map_region_size          = GetSpaceSize(KAddressSpaceInfo::Type_32Bit);
-            this->code_region_start         = GetSpaceStart(KAddressSpaceInfo::Type_Large64Bit);
-            this->code_region_end           = this->code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_Large64Bit);
+            kernel_map_region_size          = GetSpaceSize(KAddressSpaceInfo::Type_MapSmall);
+            this->code_region_start         = GetSpaceStart(KAddressSpaceInfo::Type_Map39Bit);
+            this->code_region_end           = this->code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_Map39Bit);
             this->alias_code_region_start   = this->code_region_start;
             this->alias_code_region_end     = this->code_region_end;
             process_code_start              = util::AlignDown(GetInteger(code_address), RegionAlignment);
@@ -110,11 +110,11 @@ namespace ams::kern {
         } else {
             stack_region_size               = 0;
             kernel_map_region_size          = 0;
-            this->code_region_start         = GetSpaceStart(KAddressSpaceInfo::Type_32Bit);
-            this->code_region_end           = this->code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_32Bit);
+            this->code_region_start         = GetSpaceStart(KAddressSpaceInfo::Type_MapSmall);
+            this->code_region_end           = this->code_region_start + GetSpaceSize(KAddressSpaceInfo::Type_MapSmall);
             this->stack_region_start        = this->code_region_start;
             this->alias_code_region_start   = this->code_region_start;
-            this->alias_code_region_end     = GetSpaceStart(KAddressSpaceInfo::Type_Small64Bit) + GetSpaceSize(KAddressSpaceInfo::Type_Small64Bit);
+            this->alias_code_region_end     = GetSpaceStart(KAddressSpaceInfo::Type_MapLarge) + GetSpaceSize(KAddressSpaceInfo::Type_MapLarge);
             this->stack_region_end          = this->code_region_end;
             this->kernel_map_region_start   = this->code_region_start;
             this->kernel_map_region_end     = this->code_region_end;
