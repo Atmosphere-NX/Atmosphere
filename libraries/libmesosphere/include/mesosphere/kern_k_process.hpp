@@ -48,6 +48,8 @@ namespace ams::kern {
             };
 
             using ThreadList = util::IntrusiveListMemberTraits<&KThread::process_list_node>::ListType;
+
+            static constexpr size_t AslrAlignment = KernelAslrAlignment;
         private:
             using SharedMemoryInfoList = util::IntrusiveListBaseTraits<KSharedMemoryInfo>::ListType;
             using TLPTree = util::IntrusiveRedBlackTreeBaseTraits<KThreadLocalPage>::TreeType<KThreadLocalPage>;
@@ -123,6 +125,7 @@ namespace ams::kern {
             virtual ~KProcess() { /* ... */ }
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
             void Exit();
 
             constexpr const char *GetName() const { return this->name; }

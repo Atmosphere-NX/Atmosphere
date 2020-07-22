@@ -65,6 +65,192 @@ namespace ams::kern::svc {
             return KProcess::GetProcessList(out_num_processes, out_process_ids, max_out_count);
         }
 
+        Result CreateProcess(ams::svc::Handle *out, const ams::svc::CreateProcessParameter &params, KUserPointer<const uint32_t *> user_caps, int32_t num_caps) {
+            /* Validate the capabilities pointer. */
+            R_UNLESS(num_caps >= 0, svc::ResultInvalidPointer());
+            if (num_caps > 0) {
+                /* Check for overflow. */
+                R_UNLESS(((num_caps * sizeof(u32)) / sizeof(u32)) == static_cast<size_t>(num_caps), svc::ResultInvalidPointer());
+
+                /* Validate that the pointer is in range. */
+                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(user_caps.GetUnsafePointer()), num_caps * sizeof(u32)), svc::ResultInvalidPointer());
+            }
+
+            /* Validate that the parameter flags are valid. */
+            R_UNLESS((params.flags & ~ams::svc::CreateProcessFlag_All) == 0, svc::ResultInvalidEnumValue());
+
+            /* Validate that 64-bit process is okay. */
+            const bool is_64_bit = (params.flags & ams::svc::CreateProcessFlag_Is64Bit) != 0;
+            if constexpr (sizeof(void *) < sizeof(u64)) {
+                R_UNLESS(!is_64_bit, svc::ResultInvalidCombination());
+            }
+
+            /* Decide on an address space map region. */
+            uintptr_t map_start, map_end;
+            size_t map_size;
+            switch (params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask) {
+                case ams::svc::CreateProcessFlag_AddressSpace32Bit:
+                case ams::svc::CreateProcessFlag_AddressSpace32BitWithoutAlias:
+                    {
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(32, KAddressSpaceInfo::Type_MapSmall);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(32, KAddressSpaceInfo::Type_MapSmall);
+                        map_end   = map_start + map_size;
+                    }
+                    break;
+                case ams::svc::CreateProcessFlag_AddressSpace64BitDeprecated:
+                    {
+                        /* 64-bit address space requires 64-bit process. */
+                        R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
+
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(36, KAddressSpaceInfo::Type_MapSmall);
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(36, KAddressSpaceInfo::Type_MapSmall);
+                        map_end   = map_start + map_size;
+                    }
+                    break;
+                case ams::svc::CreateProcessFlag_AddressSpace64Bit:
+                    {
+                        /* 64-bit address space requires 64-bit process. */
+                        R_UNLESS(is_64_bit, svc::ResultInvalidCombination());
+
+                        map_start = KAddressSpaceInfo::GetAddressSpaceStart(39, KAddressSpaceInfo::Type_Map39Bit);
+                        map_end   = map_start + KAddressSpaceInfo::GetAddressSpaceSize(39, KAddressSpaceInfo::Type_Map39Bit);
+
+                        map_size  = KAddressSpaceInfo::GetAddressSpaceSize(39, KAddressSpaceInfo::Type_Heap);
+                    }
+                    break;
+                default:
+                    return svc::ResultInvalidEnumValue();
+            }
+
+            /* Validate the pool partition. */
+            /* TODO: 4.0.0 UseSecureMemory flag, pre-4.0.0 behavior. */
+            switch (params.flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
+                case ams::svc::CreateProcessFlag_PoolPartitionApplication:
+                case ams::svc::CreateProcessFlag_PoolPartitionApplet:
+                case ams::svc::CreateProcessFlag_PoolPartitionSystem:
+                case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
+                    break;
+                default:
+                    return svc::ResultInvalidEnumValue();
+            }
+
+            /* Check that the code address is aligned. */
+            R_UNLESS(util::IsAligned(params.code_address, KProcess::AslrAlignment), svc::ResultInvalidAddress());
+
+            /* Check that the number of code pages is >= 0. */
+            R_UNLESS(params.code_num_pages >= 0, svc::ResultInvalidSize());
+
+            /* Check that the number of extra resource pages is >= 0. */
+            R_UNLESS(params.system_resource_num_pages >= 0, svc::ResultInvalidSize());
+
+            /* Convert to sizes. */
+            const size_t code_num_pages            = params.code_num_pages;
+            const size_t system_resource_num_pages = params.system_resource_num_pages;
+            const size_t total_pages               = code_num_pages + system_resource_num_pages;
+            const size_t code_size                 = code_num_pages * PageSize;
+            const size_t system_resource_size      = system_resource_num_pages * PageSize;
+            const size_t total_size                = code_size + system_resource_size;
+
+            /* Check for overflow. */
+            R_UNLESS((code_size / PageSize) == code_num_pages,                       svc::ResultInvalidSize());
+            R_UNLESS((system_resource_size / PageSize) == system_resource_num_pages, svc::ResultInvalidSize());
+            R_UNLESS((code_num_pages + system_resource_num_pages) >= code_num_pages, svc::ResultOutOfMemory());
+            R_UNLESS((total_size / PageSize) == total_pages,                         svc::ResultInvalidSize());
+
+            /* Check that the number of pages is valid. */
+            R_UNLESS(code_num_pages < (map_size / PageSize), svc::ResultInvalidMemoryRegion());
+
+            /* Validate that the code falls within the map reigon. */
+            R_UNLESS(map_start <= params.code_address,                      svc::ResultInvalidMemoryRegion());
+            R_UNLESS(params.code_address < params.code_address + code_size, svc::ResultInvalidMemoryRegion());
+            R_UNLESS(params.code_address + code_size - 1 <= map_end - 1,    svc::ResultInvalidMemoryRegion());
+
+            /* Check that the number of pages is valid for the kernel address space. */
+            R_UNLESS(code_num_pages            < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(system_resource_num_pages < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(total_pages               < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
+
+            /* Check that optimized memory allocation is used only for applications. */
+            const bool optimize_allocs = (params.flags & ams::svc::CreateProcessFlag_OptimizeMemoryAllocation) != 0;
+            const bool is_application  = (params.flags & ams::svc::CreateProcessFlag_IsApplication) != 0;
+            R_UNLESS(!optimize_allocs || is_application, svc::ResultBusy());
+
+            /* Get the current handle table. */
+            auto &handle_table = GetCurrentProcess().GetHandleTable();
+
+            /* Create the new process. */
+            KProcess *process = KProcess::Create();
+            R_UNLESS(process != nullptr, svc::ResultOutOfResource());
+
+            /* Ensure that the only reference to the process is in the handle table when we're done. */
+            ON_SCOPE_EXIT { process->Close(); };
+
+            /* Get the resource limit from the handle. */
+            KScopedAutoObject resource_limit = handle_table.GetObject<KResourceLimit>(params.reslimit);
+            R_UNLESS(resource_limit.IsNotNull() || params.reslimit == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+            /* Decide on a resource limit for the process. */
+            KResourceLimit *process_resource_limit = resource_limit.IsNotNull() ? resource_limit.GetPointerUnsafe() : std::addressof(Kernel::GetSystemResourceLimit());
+
+            /* Get the pool for the process. */
+            /* TODO: 4.0.0 UseSecureMemory flag, pre-4.0.0 behavior. */
+            KMemoryManager::Pool pool;
+            switch (params.flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
+                case ams::svc::CreateProcessFlag_PoolPartitionApplication:
+                    pool = KMemoryManager::Pool_Application;
+                    break;
+                case ams::svc::CreateProcessFlag_PoolPartitionApplet:
+                    pool = KMemoryManager::Pool_Applet;
+                    break;
+                case ams::svc::CreateProcessFlag_PoolPartitionSystem:
+                    pool = KMemoryManager::Pool_System;
+                    break;
+                case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
+                default:
+                    pool = KMemoryManager::Pool_SystemNonSecure;
+                    break;
+            }
+
+            /* Initialize the process. */
+            R_TRY(process->Initialize(params, user_caps, num_caps, process_resource_limit, pool));
+
+            /* Register the process. */
+            R_TRY(KProcess::Register(process));
+
+            /* Add the process to the handle table. */
+            R_TRY(handle_table.Add(out, process));
+
+            return ResultSuccess();
+        }
+
+        template<typename T>
+        Result CreateProcess(ams::svc::Handle *out, KUserPointer<const T *> user_parameters, KUserPointer<const uint32_t *> user_caps, int32_t num_caps) {
+            /* Read the parameters from user space. */
+            T params;
+            R_TRY(user_parameters.CopyTo(std::addressof(params)));
+
+            /* Invoke the implementation. */
+            if constexpr (std::same_as<T, ams::svc::CreateProcessParameter>) {
+                return CreateProcess(out, params, user_caps, num_caps);
+            } else {
+                /* Convert the parameters. */
+                ams::svc::CreateProcessParameter converted_params;
+                static_assert(sizeof(T{}.name) == sizeof(ams::svc::CreateProcessParameter{}.name));
+
+                std::memcpy(converted_params.name, params.name, sizeof(converted_params.name));
+                converted_params.version                   = params.version;
+                converted_params.program_id                = params.program_id;
+                converted_params.code_address              = params.code_address;
+                converted_params.code_num_pages            = params.code_num_pages;
+                converted_params.flags                     = params.flags;
+                converted_params.reslimit                  = params.reslimit;
+                converted_params.system_resource_num_pages = params.system_resource_num_pages;
+
+                /* Invoke. */
+                return CreateProcess(out, converted_params, user_caps, num_caps);
+            }
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -82,7 +268,7 @@ namespace ams::kern::svc {
     }
 
     Result CreateProcess64(ams::svc::Handle *out_handle, KUserPointer<const ams::svc::lp64::CreateProcessParameter *> parameters, KUserPointer<const uint32_t *> caps, int32_t num_caps) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateProcess64 was called.");
+        return CreateProcess(out_handle, parameters, caps, num_caps);
     }
 
     Result StartProcess64(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
@@ -112,7 +298,7 @@ namespace ams::kern::svc {
     }
 
     Result CreateProcess64From32(ams::svc::Handle *out_handle, KUserPointer<const ams::svc::ilp32::CreateProcessParameter *> parameters, KUserPointer<const uint32_t *> caps, int32_t num_caps) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateProcess64From32 was called.");
+        return CreateProcess(out_handle, parameters, caps, num_caps);
     }
 
     Result StartProcess64From32(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {

@@ -22,16 +22,16 @@ namespace ams::kern {
         constexpr uintptr_t Invalid = std::numeric_limits<uintptr_t>::max();
 
         constexpr KAddressSpaceInfo AddressSpaceInfos[] = {
-            { .bit_width = 32, .address = 2_MB,    .size = 1_GB   - 2_MB,   .type = KAddressSpaceInfo::Type_32Bit,      },
-            { .bit_width = 32, .address = 1_GB,    .size = 4_GB   - 1_GB,   .type = KAddressSpaceInfo::Type_Small64Bit, },
+            { .bit_width = 32, .address = 2_MB,    .size = 1_GB   - 2_MB,   .type = KAddressSpaceInfo::Type_MapSmall,   },
+            { .bit_width = 32, .address = 1_GB,    .size = 4_GB   - 1_GB,   .type = KAddressSpaceInfo::Type_MapLarge,   },
             { .bit_width = 32, .address = Invalid, .size = 1_GB,            .type = KAddressSpaceInfo::Type_Heap,       },
             { .bit_width = 32, .address = Invalid, .size = 1_GB,            .type = KAddressSpaceInfo::Type_Alias,      },
-            { .bit_width = 36, .address = 128_MB,  .size = 2_GB   - 128_MB, .type = KAddressSpaceInfo::Type_32Bit,      },
-            { .bit_width = 36, .address = 2_GB,    .size = 64_GB  - 2_GB,   .type = KAddressSpaceInfo::Type_Small64Bit, },
+            { .bit_width = 36, .address = 128_MB,  .size = 2_GB   - 128_MB, .type = KAddressSpaceInfo::Type_MapSmall,   },
+            { .bit_width = 36, .address = 2_GB,    .size = 64_GB  - 2_GB,   .type = KAddressSpaceInfo::Type_MapLarge,   },
             { .bit_width = 36, .address = Invalid, .size = 6_GB,            .type = KAddressSpaceInfo::Type_Heap,       },
             { .bit_width = 36, .address = Invalid, .size = 6_GB,            .type = KAddressSpaceInfo::Type_Alias,      },
-            { .bit_width = 39, .address = 128_MB,  .size = 512_GB - 128_MB, .type = KAddressSpaceInfo::Type_Large64Bit, },
-            { .bit_width = 39, .address = Invalid, .size = 64_GB,           .type = KAddressSpaceInfo::Type_32Bit,      },
+            { .bit_width = 39, .address = 128_MB,  .size = 512_GB - 128_MB, .type = KAddressSpaceInfo::Type_Map39Bit,   },
+            { .bit_width = 39, .address = Invalid, .size = 64_GB,           .type = KAddressSpaceInfo::Type_MapSmall,   },
             { .bit_width = 39, .address = Invalid, .size = 6_GB,            .type = KAddressSpaceInfo::Type_Heap,       },
             { .bit_width = 39, .address = Invalid, .size = 64_GB,           .type = KAddressSpaceInfo::Type_Alias,      },
             { .bit_width = 39, .address = Invalid, .size = 2_GB,            .type = KAddressSpaceInfo::Type_Stack,      },
@@ -54,15 +54,15 @@ namespace ams::kern {
         };
 
         constexpr bool IsAllowed32BitType(KAddressSpaceInfo::Type type) {
-            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Large64Bit && type != KAddressSpaceInfo::Type_Stack;
+            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Map39Bit && type != KAddressSpaceInfo::Type_Stack;
         }
 
         constexpr bool IsAllowed36BitType(KAddressSpaceInfo::Type type) {
-            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Large64Bit && type != KAddressSpaceInfo::Type_Stack;
+            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Map39Bit && type != KAddressSpaceInfo::Type_Stack;
         }
 
         constexpr bool IsAllowed39BitType(KAddressSpaceInfo::Type type) {
-            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_Small64Bit;
+            return type < KAddressSpaceInfo::Type_Count && type != KAddressSpaceInfo::Type_MapLarge;
         }
 
     }

@@ -106,7 +106,7 @@ namespace ams::kern {
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(res_limit != nullptr);
-        MESOSPHERE_ABORT_UNLESS((params.code_num_pages * PageSize) / PageSize == params.code_num_pages);
+        MESOSPHERE_ABORT_UNLESS((params.code_num_pages * PageSize) / PageSize == static_cast<size_t>(params.code_num_pages));
 
         /* Set members. */
         this->memory_pool               = pool;
@@ -151,6 +151,10 @@ namespace ams::kern {
         /* We succeeded! */
         pt_guard.Cancel();
         return ResultSuccess();
+    }
+
+    Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool) {
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
     void KProcess::DoWorkerTask() {

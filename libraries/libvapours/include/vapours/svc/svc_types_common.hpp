@@ -374,6 +374,15 @@ namespace ams::svc {
 
         /* 7.x+ Should memory allocation be optimized? This requires IsApplication. */
         CreateProcessFlag_OptimizeMemoryAllocation = (1 << 11),
+
+        /* Mask of all flags. */
+        CreateProcessFlag_All = CreateProcessFlag_Is64Bit                  |
+                                CreateProcessFlag_AddressSpaceMask         |
+                                CreateProcessFlag_EnableDebug              |
+                                CreateProcessFlag_EnableAslr               |
+                                CreateProcessFlag_IsApplication            |
+                                CreateProcessFlag_PoolPartitionMask        |
+                                CreateProcessFlag_OptimizeMemoryAllocation,
     };
 
     /* Debug types. */
