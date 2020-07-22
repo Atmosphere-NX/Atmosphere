@@ -87,6 +87,26 @@ namespace ams::kern {
         }
     }
 
+    Result KMemoryManager::InitializeOptimizedMemory(u64 process_id, Pool pool) {
+        /* Lock the pool. */
+        KScopedLightLock lk(this->pool_locks[pool]);
+
+        /* Check that we don't already have an optimized process. */
+        R_UNLESS(!this->has_optimized_process[pool], svc::ResultBusy());
+
+        /* Set the optimized process id. */
+        this->optimized_process_ids[pool] = process_id;
+        this->has_optimized_process[pool] = true;
+
+        /* Clear the management area for the optimized process. */
+        for (auto *manager = this->GetFirstManager(pool, Direction_FromFront); manager != nullptr; manager = this->GetNextManager(manager, Direction_FromFront)) {
+            manager->InitializeOptimizedMemory();
+        }
+
+        return ResultSuccess();
+    }
+
+
     KVirtualAddress KMemoryManager::AllocateContinuous(size_t num_pages, size_t align_pages, u32 option) {
         /* Early return if we're allocating no pages. */
         if (num_pages == 0) {
@@ -199,7 +219,7 @@ namespace ams::kern {
     size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress metadata, KVirtualAddress metadata_end) {
         /* Calculate metadata sizes. */
         const size_t ref_count_size      = (region->GetSize() / PageSize) * sizeof(u16);
-        const size_t optimize_map_size   = (util::AlignUp((region->GetSize() / PageSize), BITSIZEOF(u64)) / BITSIZEOF(u64)) * sizeof(u64);
+        const size_t optimize_map_size   = CalculateOptimizedProcessOverheadSize(region->GetSize());
         const size_t manager_size        = util::AlignUp(optimize_map_size + ref_count_size, PageSize);
         const size_t page_heap_size      = KPageHeap::CalculateMetadataOverheadSize(region->GetSize());
         const size_t total_metadata_size = manager_size + page_heap_size;

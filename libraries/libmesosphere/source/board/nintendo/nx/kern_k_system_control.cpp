@@ -475,12 +475,20 @@ namespace ams::kern::board::nintendo::nx {
         }
     }
 
-    /* Constant calculations. */
+    /* Secure Memory. */
     size_t KSystemControl::CalculateRequiredSecureMemorySize(size_t size, u32 pool) {
         if (pool == KMemoryManager::Pool_Applet) {
             return 0;
         }
         return size;
+    }
+
+    Result KSystemControl::AllocateSecureMemory(KVirtualAddress *out, size_t size, u32 pool) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    void KSystemControl::FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool) {
+        MESOSPHERE_UNIMPLEMENTED();
     }
 
 }

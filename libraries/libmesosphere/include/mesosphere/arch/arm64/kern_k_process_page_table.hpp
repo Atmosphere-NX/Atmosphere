@@ -100,6 +100,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MapPages(out_addr, num_pages, state, perm);
             }
 
+            Result MapPages(KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm) {
+                return this->page_table.MapPages(address, num_pages, state, perm);
+            }
+
             Result UnmapPages(KProcessAddress addr, size_t num_pages, KMemoryState state) {
                 return this->page_table.UnmapPages(addr, num_pages, state);
             }

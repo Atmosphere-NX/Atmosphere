@@ -253,10 +253,12 @@ namespace ams::kern {
 
             Result SetCapability(const util::BitPack32 cap, u32 &set_flags, u32 &set_svc, KProcessPageTable *page_table);
             Result SetCapabilities(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
+            Result SetCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
         public:
             constexpr KCapabilities() = default;
 
             Result Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
+            Result Initialize(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
 
             constexpr u64 GetCoreMask() const { return this->core_mask; }
             constexpr u64 GetPriorityMask() const { return this->priority_mask; }
