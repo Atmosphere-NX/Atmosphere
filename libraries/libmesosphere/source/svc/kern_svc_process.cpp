@@ -283,6 +283,67 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result TerminateProcess(ams::svc::Handle process_handle) {
+            /* Get the target process. */
+            KProcess *process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle).ReleasePointerUnsafe();
+            R_UNLESS(process != nullptr, svc::ResultInvalidHandle());
+
+            if (process != GetCurrentProcessPointer()) {
+                /* We're terminating another process. Close our reference after terminating the process. */
+                ON_SCOPE_EXIT { process->Close(); };
+
+                /* Terminate the process. */
+                R_TRY(process->Terminate());
+            } else {
+                /* We're terminating ourselves. Close our reference immediately. */
+                process->Close();
+
+                /* Exit. */
+                ExitProcess();
+            }
+
+            return ResultSuccess();
+        }
+
+        Result GetProcessInfo(int64_t *out, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
+            /* Get the target process. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the info. */
+            switch (info_type) {
+                case ams::svc::ProcessInfoType_ProcessState:
+                    {
+                        /* Get the process's state. */
+                        KProcess::State state;
+                        {
+                            KScopedLightLock proc_lk(process->GetStateLock());
+                            KScopedSchedulerLock sl;
+
+                            state = process->GetState();
+                        }
+
+                        /* Convert to svc state. */
+                        switch (state) {
+                            case KProcess::State_Created:         *out = ams::svc::ProcessState_Created;         break;
+                            case KProcess::State_CreatedAttached: *out = ams::svc::ProcessState_CreatedAttached; break;
+                            case KProcess::State_Running:         *out = ams::svc::ProcessState_Running;         break;
+                            case KProcess::State_Crashed:         *out = ams::svc::ProcessState_Crashed;         break;
+                            case KProcess::State_RunningAttached: *out = ams::svc::ProcessState_RunningAttached; break;
+                            case KProcess::State_Terminating:     *out = ams::svc::ProcessState_Terminating;     break;
+                            case KProcess::State_Terminated:      *out = ams::svc::ProcessState_Terminated;      break;
+                            case KProcess::State_DebugBreak:      *out = ams::svc::ProcessState_DebugBreak;      break;
+                            MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
+                        }
+                    }
+                    break;
+                default:
+                    return svc::ResultInvalidEnumValue();
+            }
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -308,11 +369,11 @@ namespace ams::kern::svc {
     }
 
     Result TerminateProcess64(ams::svc::Handle process_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcTerminateProcess64 was called.");
+        return TerminateProcess(process_handle);
     }
 
     Result GetProcessInfo64(int64_t *out_info, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
-        MESOSPHERE_PANIC("Stubbed SvcGetProcessInfo64 was called.");
+        return GetProcessInfo(out_info, process_handle, info_type);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -338,11 +399,11 @@ namespace ams::kern::svc {
     }
 
     Result TerminateProcess64From32(ams::svc::Handle process_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcTerminateProcess64From32 was called.");
+        return TerminateProcess(process_handle);
     }
 
     Result GetProcessInfo64From32(int64_t *out_info, ams::svc::Handle process_handle, ams::svc::ProcessInfoType info_type) {
-        MESOSPHERE_PANIC("Stubbed SvcGetProcessInfo64From32 was called.");
+        return GetProcessInfo(out_info, process_handle, info_type);
     }
 
 }
