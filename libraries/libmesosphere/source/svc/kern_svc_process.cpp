@@ -21,6 +21,10 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsValidCoreId(int32_t core_id) {
+            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumCores));
+        }
+
         void ExitProcess() {
             GetCurrentProcess().Exit();
             MESOSPHERE_PANIC("Process survived call to exit");
@@ -251,6 +255,34 @@ namespace ams::kern::svc {
             }
         }
 
+        Result StartProcess(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
+            /* Validate stack size. */
+            R_UNLESS(main_thread_stack_size == static_cast<size_t>(main_thread_stack_size), svc::ResultOutOfMemory());
+
+            /* Get the target process. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate the core id. */
+            R_UNLESS(IsValidCoreId(core_id),                           svc::ResultInvalidCoreId());
+            R_UNLESS(((1ul << core_id) & process->GetCoreMask()) != 0, svc::ResultInvalidCoreId());
+
+            /* Validate the priority. */
+            R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
+            R_UNLESS(process->CheckThreadPriority(priority),                                                    svc::ResultInvalidPriority());
+
+            /* Set the process's ideal processor. */
+            process->SetIdealCoreId(core_id);
+
+            /* Run the process. */
+            R_TRY(process->Run(priority, static_cast<size_t>(main_thread_stack_size)));
+
+            /* Open a reference to the process, since it's now running. */
+            process->Open();
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -272,7 +304,7 @@ namespace ams::kern::svc {
     }
 
     Result StartProcess64(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
-        MESOSPHERE_PANIC("Stubbed SvcStartProcess64 was called.");
+        return StartProcess(process_handle, priority, core_id, main_thread_stack_size);
     }
 
     Result TerminateProcess64(ams::svc::Handle process_handle) {
@@ -302,7 +334,7 @@ namespace ams::kern::svc {
     }
 
     Result StartProcess64From32(ams::svc::Handle process_handle, int32_t priority, int32_t core_id, uint64_t main_thread_stack_size) {
-        MESOSPHERE_PANIC("Stubbed SvcStartProcess64From32 was called.");
+        return StartProcess(process_handle, priority, core_id, main_thread_stack_size);
     }
 
     Result TerminateProcess64From32(ams::svc::Handle process_handle) {
