@@ -277,6 +277,61 @@ namespace ams::kern {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    Result KProcess::AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
+        /* Lock ourselves, to prevent concurrent access. */
+        KScopedLightLock lk(this->state_lock);
+
+        /* Try to find an existing info for the memory. */
+        KSharedMemoryInfo *info = nullptr;
+        for (auto it = this->shared_memory_list.begin(); it != this->shared_memory_list.end(); ++it) {
+            if (it->GetSharedMemory() == shmem) {
+                info = std::addressof(*it);
+                break;
+            }
+        }
+
+        /* If we didn't find an info, create one. */
+        if (info == nullptr) {
+            /* Allocate a new info. */
+            info = KSharedMemoryInfo::Allocate();
+            R_UNLESS(info != nullptr, svc::ResultOutOfResource());
+
+            /* Initialize the info and add it to our list. */
+            info->Initialize(shmem);
+            this->shared_memory_list.push_back(*info);
+        }
+
+        /* Open a reference to the shared memory and its info. */
+        shmem->Open();
+        info->Open();
+
+        return ResultSuccess();
+    }
+
+    void KProcess::RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
+        /* Lock ourselves, to prevent concurrent access. */
+        KScopedLightLock lk(this->state_lock);
+
+        /* Find an existing info for the memory. */
+        KSharedMemoryInfo *info = nullptr;
+        auto it = this->shared_memory_list.begin();
+        for (/* ... */; it != this->shared_memory_list.end(); ++it) {
+            if (it->GetSharedMemory() == shmem) {
+                info = std::addressof(*it);
+                break;
+            }
+        }
+        MESOSPHERE_ABORT_UNLESS(info != nullptr);
+
+        /* Close a reference to the info and its memory. */
+        if (info->Close()) {
+            this->shared_memory_list.erase(it);
+            KSharedMemoryInfo::Free(info);
+        }
+
+        shmem->Close();
+    }
+
     Result KProcess::CreateThreadLocalRegion(KProcessAddress *out) {
         KThreadLocalPage *tlp = nullptr;
         KProcessAddress   tlr = Null<KProcessAddress>;
