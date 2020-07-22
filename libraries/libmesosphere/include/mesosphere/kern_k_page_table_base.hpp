@@ -345,6 +345,8 @@ namespace ams::kern {
 
                 return (this->current_heap_end - this->heap_region_start) + this->mapped_physical_memory_size;
             }
+
+            u32 GetAllocateOption() const { return this->allocate_option; }
         public:
             static ALWAYS_INLINE KVirtualAddress GetLinearMappedVirtualAddress(KPhysicalAddress addr) {
                 return KMemoryLayout::GetLinearVirtualAddress(addr);

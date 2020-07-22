@@ -151,7 +151,6 @@ namespace ams::kern {
             constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
 
             constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }
-
             constexpr bool IsSuspended() const {
                 return this->is_suspended;
             }
@@ -175,6 +174,8 @@ namespace ams::kern {
             constexpr bool CanForceDebug() const {
                 return this->capabilities.CanForceDebug();
             }
+
+            u32 GetAllocateOption() const { return this->page_table.GetAllocateOption(); }
 
             ThreadList &GetThreadList() { return this->thread_list; }
             const ThreadList &GetThreadList() const { return this->thread_list; }
@@ -217,6 +218,9 @@ namespace ams::kern {
             size_t GetTotalUserPhysicalMemorySize() const;
             size_t GetUsedNonSystemUserPhysicalMemorySize() const;
             size_t GetTotalNonSystemUserPhysicalMemorySize() const;
+
+            Result AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
+            void RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
 
             Result CreateThreadLocalRegion(KProcessAddress *out);
             Result DeleteThreadLocalRegion(KProcessAddress addr);
