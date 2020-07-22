@@ -29,6 +29,10 @@ namespace ams::kern {
             return UserspaceAccess::CopyMemoryToUserSize32Bit(GetVoidPointer(address), p);
         }
 
+        ALWAYS_INLINE bool UpdateLockAtomic(u32 *out, KProcessAddress address, u32 if_zero, u32 new_orr_mask) {
+            return UserspaceAccess::UpdateLockAtomic(out, GetPointer<u32>(address), if_zero, new_orr_mask);
+        }
+
     }
 
     Result KConditionVariable::SignalToAddress(KProcessAddress addr) {
@@ -117,7 +121,51 @@ namespace ams::kern {
     }
 
     KThread *KConditionVariable::SignalImpl(KThread *thread) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Check pre-conditions. */
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Update the tag. */
+        KProcessAddress address = thread->GetAddressKey();
+        u32 own_tag             = thread->GetAddressKeyValue();
+
+        u32 prev_tag;
+        bool can_access;
+        {
+            KScopedInterruptDisable di;
+
+            can_access = cpu::CanAccessAtomic(address);
+            if (AMS_LIKELY(can_access)) {
+                UpdateLockAtomic(std::addressof(prev_tag), address, own_tag, ams::svc::HandleWaitMask);
+            }
+        }
+
+        KThread *thread_to_close = nullptr;
+        if (AMS_LIKELY(can_access)) {
+            if (prev_tag == ams::svc::InvalidHandle) {
+                /* If nobody held the lock previously, we're all good. */
+                thread->SetSyncedObject(nullptr, ResultSuccess());
+                thread->Wakeup();
+            } else {
+                /* Get the previous owner. */
+                KThread *owner_thread = GetCurrentProcess().GetHandleTable().GetObjectWithoutPseudoHandle<KThread>(static_cast<ams::svc::Handle>(prev_tag & ~ams::svc::HandleWaitMask))
+                                                                            .ReleasePointerUnsafe();
+                if (AMS_LIKELY(owner_thread != nullptr)) {
+                    /* Add the thread as a waiter on the owner. */
+                    owner_thread->AddWaiter(thread);
+                    thread_to_close = owner_thread;
+                } else {
+                    /* The lock was tagged with a thread that doesn't exist. */
+                    thread->SetSyncedObject(nullptr, svc::ResultInvalidState());
+                    thread->Wakeup();
+                }
+            }
+        } else {
+            /* If the address wasn't accessible, note so. */
+            thread->SetSyncedObject(nullptr, svc::ResultInvalidCurrentMemory());
+            thread->Wakeup();
+        }
+
+        return thread_to_close;
     }
 
     void KConditionVariable::Signal(uintptr_t cv_key, s32 count) {
