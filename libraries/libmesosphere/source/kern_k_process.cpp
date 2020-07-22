@@ -277,6 +277,10 @@ namespace ams::kern {
         MESOSPHERE_UNIMPLEMENTED();
     }
 
+    Result KProcess::Terminate() {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
     Result KProcess::AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
         /* Lock ourselves, to prevent concurrent access. */
         KScopedLightLock lk(this->state_lock);

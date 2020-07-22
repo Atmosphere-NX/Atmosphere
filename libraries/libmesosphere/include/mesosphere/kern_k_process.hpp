@@ -155,6 +155,8 @@ namespace ams::kern {
                 return this->is_suspended;
             }
 
+            Result Terminate();
+
             constexpr bool IsTerminated() const {
                 return this->state == State_Terminated;
             }
