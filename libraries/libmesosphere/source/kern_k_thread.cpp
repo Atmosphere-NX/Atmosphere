@@ -450,6 +450,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this->parent != nullptr);
         MESOSPHERE_ASSERT(affinity_mask != 0);
         {
+            KScopedLightLock lk(this->activity_pause_lock);
             KScopedSchedulerLock sl;
             MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
 
@@ -490,6 +491,8 @@ namespace ams::kern {
                 this->original_affinity_mask.SetAffinityMask(affinity_mask);
             }
         }
+
+        /* TODO: Paused waiter list. */
 
         return ResultSuccess();
     }
@@ -608,6 +611,38 @@ namespace ams::kern {
 
         /* Note the state change in scheduler. */
         KScheduler::OnThreadStateChanged(this, old_state);
+    }
+
+    Result KThread::SetActivity(ams::svc::ThreadActivity activity) {
+        /* Lock ourselves and the scheduler. */
+        KScopedLightLock lk(this->activity_pause_lock);
+        KScopedSchedulerLock sl;
+
+        /* Verify our state. */
+        const auto cur_state = this->GetState();
+        R_UNLESS((cur_state == ThreadState_Waiting || cur_state == ThreadState_Runnable), svc::ResultInvalidState());
+
+        /* Either pause or resume. */
+        if (activity == ams::svc::ThreadActivity_Paused) {
+            /* Verify that we're not suspended. */
+            R_UNLESS(!this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+
+            /* Suspend. */
+            this->RequestSuspend(SuspendType_Thread);
+
+            /* TODO: Paused waiter list. */
+            MESOSPHERE_UNIMPLEMENTED();
+        } else {
+            MESOSPHERE_ASSERT(activity == ams::svc::ThreadActivity_Runnable);
+
+            /* Verify that we're suspended. */
+            R_UNLESS(this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+
+            /* Resume. */
+            this->Resume(SuspendType_Thread);
+        }
+
+        return ResultSuccess();
     }
 
     void KThread::AddWaiterImpl(KThread *thread) {
