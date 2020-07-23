@@ -88,7 +88,7 @@ namespace ams::kern::svc {
             /* Verify that the mapping is in range. */
             R_UNLESS(page_table.CanContain(address, size, KMemoryState_Shared), svc::ResultInvalidMemoryRegion());
 
-            /* Map the shared memory. */
+            /* Unmap the shared memory. */
             R_TRY(shmem->Unmap(std::addressof(page_table), address, size, std::addressof(process)));
 
             /* Remove the shared memory from the process. */

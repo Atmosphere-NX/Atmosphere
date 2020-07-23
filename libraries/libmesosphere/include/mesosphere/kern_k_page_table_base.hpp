@@ -316,6 +316,11 @@ namespace ams::kern {
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size);
             Result UnlockForIpcUserBuffer(KProcessAddress address, size_t size);
 
+            Result LockForTransferMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm);
+            Result UnlockForTransferMemory(KProcessAddress address, size_t size, const KPageGroup &pg);
+            Result LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm);
+            Result UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg);
+
             Result CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr);
             Result CopyMemoryFromLinearToKernel(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr);
             Result CopyMemoryFromUserToLinear(KProcessAddress dst_addr, size_t size, u32 dst_state_mask, u32 dst_state, KMemoryPermission dst_test_perm, u32 dst_attr_mask, u32 dst_attr, KProcessAddress src_addr);

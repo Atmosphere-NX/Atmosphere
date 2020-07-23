@@ -54,8 +54,6 @@ namespace ams::kern {
 
             u64 GetOwnerProcessId() const { return this->owner_process_id; }
             size_t GetSize() const { return this->page_group.GetNumPages() * PageSize; }
-        public:
-            /* TODO: This is a placeholder definition. */
     };
 
 }
