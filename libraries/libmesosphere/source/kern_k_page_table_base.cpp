@@ -1021,7 +1021,35 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {
-        MESOSPHERE_UNIMPLEMENTED();
+        const size_t num_pages = size / PageSize;
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Verify we can change the memory permission. */
+        KMemoryState old_state;
+        KMemoryPermission old_perm;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), nullptr, addr, size, KMemoryState_FlagCanReprotect, KMemoryState_FlagCanReprotect, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Determine new perm. */
+        const KMemoryPermission new_perm = ConvertToKMemoryPermission(svc_perm);
+        R_SUCCEED_IF(old_perm == new_perm);
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Perform mapping operation. */
+        const KPageProperties properties = { new_perm, false, false, false };
+        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, addr, num_pages, old_state, new_perm, KMemoryAttribute_None);
+
+        return ResultSuccess();
     }
 
     Result KPageTableBase::SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission svc_perm) {

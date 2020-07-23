@@ -21,6 +21,35 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsValidSetMemoryPermission(ams::svc::MemoryPermission perm) {
+            switch (perm) {
+                case ams::svc::MemoryPermission_None:
+                case ams::svc::MemoryPermission_Read:
+                case ams::svc::MemoryPermission_ReadWrite:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        Result SetMemoryPermission(uintptr_t address, size_t size, ams::svc::MemoryPermission perm) {
+            /* Validate address / size. */
+            R_UNLESS(util::IsAligned(address, PageSize), svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                           svc::ResultInvalidSize());
+            R_UNLESS((address < address + size),         svc::ResultInvalidCurrentMemory());
+
+            /* Validate the permission. */
+            R_UNLESS(IsValidSetMemoryPermission(perm), svc::ResultInvalidNewMemoryPermission());
+
+            /* Validate that the region is in range for the current process. */
+            auto &page_table = GetCurrentProcess().GetPageTable();
+            R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Set the memory attribute. */
+            return page_table.SetMemoryPermission(address, size, perm);
+        }
+
         Result SetMemoryAttribute(uintptr_t address, size_t size, uint32_t mask, uint32_t attr) {
             /* Validate address / size. */
             R_UNLESS(util::IsAligned(address, PageSize), svc::ResultInvalidAddress());
@@ -97,7 +126,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result SetMemoryPermission64(ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
-        MESOSPHERE_PANIC("Stubbed SvcSetMemoryPermission64 was called.");
+        return SetMemoryPermission(address, size, perm);
     }
 
     Result SetMemoryAttribute64(ams::svc::Address address, ams::svc::Size size, uint32_t mask, uint32_t attr) {
@@ -115,7 +144,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result SetMemoryPermission64From32(ams::svc::Address address, ams::svc::Size size, ams::svc::MemoryPermission perm) {
-        MESOSPHERE_PANIC("Stubbed SvcSetMemoryPermission64From32 was called.");
+        return SetMemoryPermission(address, size, perm);
     }
 
     Result SetMemoryAttribute64From32(ams::svc::Address address, ams::svc::Size size, uint32_t mask, uint32_t attr) {
