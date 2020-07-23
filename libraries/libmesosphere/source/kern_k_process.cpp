@@ -879,6 +879,48 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KProcess::SetActivity(ams::svc::ProcessActivity activity) {
+        /* Lock ourselves and the scheduler. */
+        KScopedLightLock lk(this->state_lock);
+        KScopedLightLock list_lk(this->list_lock);
+        KScopedSchedulerLock sl;
+
+        /* Validate our state. */
+        R_UNLESS(this->state != State_Terminating, svc::ResultInvalidState());
+        R_UNLESS(this->state != State_Terminated,  svc::ResultInvalidState());
+
+        /* Either pause or resume. */
+        if (activity == ams::svc::ProcessActivity_Paused) {
+            /* Verify that we're not suspended. */
+            R_UNLESS(!this->is_suspended, svc::ResultInvalidState());
+
+            /* Suspend all threads. */
+            auto end = this->GetThreadList().end();
+            for (auto it = this->GetThreadList().begin(); it != end; ++it) {
+                it->RequestSuspend(KThread::SuspendType_Process);
+            }
+
+            /* Set ourselves as suspended. */
+            this->SetSuspended(true);
+        } else {
+            MESOSPHERE_ASSERT(activity == ams::svc::ProcessActivity_Runnable);
+
+            /* Verify that we're suspended. */
+            R_UNLESS(this->is_suspended, svc::ResultInvalidState());
+
+            /* Resume all threads. */
+            auto end = this->GetThreadList().end();
+            for (auto it = this->GetThreadList().begin(); it != end; ++it) {
+                it->Resume(KThread::SuspendType_Process);
+            }
+
+            /* Set ourselves as resumed. */
+            this->SetSuspended(false);
+        }
+
+        return ResultSuccess();
+    }
+
     KProcess::State KProcess::SetDebugObject(void *debug_object) {
         /* Attaching should only happen to non-null objects while the scheduler is locked. */
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());

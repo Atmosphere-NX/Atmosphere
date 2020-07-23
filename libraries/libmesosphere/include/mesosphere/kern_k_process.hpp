@@ -158,6 +158,10 @@ namespace ams::kern {
                 return this->is_suspended;
             }
 
+            constexpr void SetSuspended(bool suspended) {
+                this->is_suspended = suspended;
+            }
+
             Result Terminate();
 
             constexpr bool IsTerminated() const {
@@ -256,6 +260,8 @@ namespace ams::kern {
             Result Run(s32 priority, size_t stack_size);
 
             Result Reset();
+
+            Result SetActivity(ams::svc::ProcessActivity activity);
 
             void SetPreemptionState();
 

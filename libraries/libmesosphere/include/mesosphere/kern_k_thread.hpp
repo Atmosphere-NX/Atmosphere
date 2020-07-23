@@ -433,10 +433,13 @@ namespace ams::kern {
 
             constexpr u32 GetSuspendFlags() const { return this->suspend_allowed_flags & this->suspend_request_flags; }
             constexpr bool IsSuspended() const { return this->GetSuspendFlags() != 0; }
+            constexpr bool IsSuspendRequested(SuspendType type) const { return (this->suspend_request_flags & (1u << (ThreadState_SuspendShift + type))) != 0; }
             void RequestSuspend(SuspendType type);
             void Resume(SuspendType type);
             void TrySuspend();
             void Continue();
+
+            Result SetActivity(ams::svc::ThreadActivity activity);
 
             void ContinueIfHasKernelWaiters() {
                 if (this->GetNumKernelWaiters() > 0) {
