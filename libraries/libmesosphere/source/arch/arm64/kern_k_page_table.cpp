@@ -212,7 +212,103 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KPageTable::Finalize() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Only process tables should be finalized. */
+        MESOSPHERE_ASSERT(!this->IsKernel());
+
+        /* Note that we've updated (to ensure we're synchronized). */
+        this->NoteUpdated();
+
+        /* Free all pages in the table. */
+        {
+            /* Get implementation objects. */
+            auto &impl = this->GetImpl();
+            auto &mm   = Kernel::GetMemoryManager();
+
+            /* Traverse, freeing all pages. */
+            {
+                /* Get the address space size. */
+                const size_t as_size = this->GetAddressSpaceSize();
+
+                /* Begin the traversal. */
+                TraversalContext context;
+                TraversalEntry   cur_entry  = {};
+                bool             cur_valid  = false;
+                TraversalEntry   next_entry;
+                bool             next_valid;
+                size_t           tot_size   = 0;
+
+                next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), this->GetAddressSpaceStart());
+
+                /* Iterate over entries. */
+                while (true) {
+                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
+                        cur_entry.block_size += next_entry.block_size;
+                    } else {
+                        if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
+                            mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                        }
+
+                        /* Update tracking variables. */
+                        tot_size += cur_entry.block_size;
+                        cur_entry = next_entry;
+                        cur_valid = next_valid;
+                    }
+
+                    if (cur_entry.block_size + tot_size >= as_size) {
+                        break;
+                    }
+
+                    next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                }
+
+                /* Handle the last block. */
+                if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
+                    mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                }
+            }
+
+            /* Cache address space extents for convenience. */
+            const KProcessAddress as_start = this->GetAddressSpaceStart();
+            const KProcessAddress as_last  = as_start + this->GetAddressSpaceSize() - 1;
+
+            /* Free all L3 tables. */
+            for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L2BlockSize) {
+                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
+                if (l1_entry->IsTable()) {
+                    L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, cur_address);
+                    if (l2_entry->IsTable()) {
+                        KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
+                        if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
+                            while (!this->GetPageTableManager().Close(l3_table, 1)) { /* ... */ }
+                            this->GetPageTableManager().Free(l3_table);
+                        }
+                    }
+                }
+            }
+
+            /* Free all L2 tables. */
+            for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L1BlockSize) {
+                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
+                if (l1_entry->IsTable()) {
+                    KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
+                    if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
+                        while (!this->GetPageTableManager().Close(l2_table, 1)) { /* ... */ }
+                        this->GetPageTableManager().Free(l2_table);
+                    }
+                }
+            }
+
+            /* Free the L1 table. */
+            this->GetPageTableManager().Free(reinterpret_cast<uintptr_t>(impl.Finalize()));
+
+            /* Perform inherited finalization. */
+            KPageTableBase::Finalize();
+        }
+
+        /* Release our asid. */
+        g_asid_manager.Release(this->asid);
+
+        return ResultSuccess();
     }
 
     Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {

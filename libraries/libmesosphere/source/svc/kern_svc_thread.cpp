@@ -84,7 +84,7 @@ namespace ams::kern::svc {
 
         void ExitThread() {
             GetCurrentThread().Exit();
-            MESOSPHERE_PANIC("Process survived call to exit");
+            MESOSPHERE_PANIC("Thread survived call to exit");
         }
 
         void SleepThread(int64_t ns) {

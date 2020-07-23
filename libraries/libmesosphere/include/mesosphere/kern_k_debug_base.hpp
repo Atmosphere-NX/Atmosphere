@@ -50,7 +50,13 @@ namespace ams::kern {
         public:
             virtual void OnFinalizeSynchronizationObject() override;
             virtual bool IsSignaled() const override;
+        private:
+            static Result ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4);
         public:
+            static Result OnDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
+            static Result OnExitProcess(KProcess *process);
+            static Result OnTerminateProcess(KProcess *process);
+            static Result OnExitThread(KThread *thread);
             static KEventInfo *CreateDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4, u64 thread_id);
     };
 

@@ -716,7 +716,8 @@ namespace ams::kern {
 
         MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
 
-        /* TODO: KDebug::OnExitThread(this); */
+        /* Call the debug callback. */
+        KDebug::OnExitThread(this);
 
         /* Release the thread resource hint from parent. */
         if (this->parent != nullptr) {
@@ -738,6 +739,75 @@ namespace ams::kern {
         }
 
         MESOSPHERE_PANIC("KThread::Exit() would return");
+    }
+
+    void KThread::Terminate() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this != GetCurrentThreadPointer());
+
+        /* Request the thread terminate. */
+        if (const auto new_state = this->RequestTerminate(); new_state != ThreadState_Terminated) {
+            /* If the thread isn't terminated, wait for it to terminate. */
+            s32 index;
+            KSynchronizationObject *objects[] = { this };
+            Kernel::GetSynchronization().Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
+        }
+    }
+
+    KThread::ThreadState KThread::RequestTerminate() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this != GetCurrentThreadPointer());
+
+        KScopedSchedulerLock sl;
+
+        /* Determine if this is the first termination request. */
+        const bool first_request = [&] ALWAYS_INLINE_LAMBDA () -> bool {
+            /* Perform an atomic compare-and-swap from false to true. */
+            bool expected = false;
+            do {
+                if (expected) {
+                    return false;
+                }
+            } while (!this->termination_requested.compare_exchange_weak(expected, true));
+
+            return true;
+        }();
+
+        /* If this is the first request, start termination procedure. */
+        if (first_request) {
+            /* If the thread is in initialized state, just change state to terminated. */
+            if (this->GetState() == ThreadState_Initialized) {
+                this->thread_state = ThreadState_Terminated;
+                return ThreadState_Terminated;
+            }
+
+            /* Register the terminating dpc. */
+            this->RegisterDpc(DpcFlag_Terminating);
+
+            /* If the thread is suspended, continue it. */
+            if (this->IsSuspended()) {
+                this->suspend_allowed_flags = 0;
+                this->Continue();
+            }
+
+            /* Change the thread's priority to be higher than any system thread's. */
+            if (this->GetBasePriority() >= ams::svc::SystemThreadPriorityHighest) {
+                this->SetBasePriority(ams::svc::SystemThreadPriorityHighest - 1);
+            }
+
+            /* If the thread is runnable, send a termination interrupt to other cores. */
+            if (this->GetState() == ThreadState_Runnable) {
+                if (const u64 core_mask = this->affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
+                    Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_ThreadTerminate, core_mask);
+                }
+            }
+
+            /* Wake up the thread. */
+            this->SetSyncedObject(nullptr, svc::ResultTerminationRequested());
+            this->Wakeup();
+        }
+
+        return this->GetState();
     }
 
     Result KThread::Sleep(s64 timeout) {

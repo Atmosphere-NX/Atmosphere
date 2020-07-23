@@ -211,6 +211,12 @@ namespace ams::kern {
                 return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, this->cached_physical_heap_region);
             }
 
+            bool IsHeapPhysicalAddressForFinalize(KPhysicalAddress phys_addr) {
+                MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, this->cached_physical_heap_region);
+            }
+
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 

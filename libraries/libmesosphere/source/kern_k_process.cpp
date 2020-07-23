@@ -28,10 +28,118 @@ namespace ams::kern {
         std::atomic<u64> g_initial_process_id = InitialProcessIdMin;
         std::atomic<u64> g_process_id         = ProcessIdMin;
 
+        void TerminateChildren(KProcess *process, const KThread *thread_to_not_terminate) {
+            /* Request that all children threads terminate. */
+            {
+                KScopedLightLock proc_lk(process->GetListLock());
+                KScopedSchedulerLock sl;
+
+                auto &thread_list = process->GetThreadList();
+                for (auto it = thread_list.begin(); it != thread_list.end(); ++it) {
+                    if (KThread *thread = std::addressof(*it); thread != thread_to_not_terminate) {
+                        if (thread->GetState() != KThread::ThreadState_Terminated) {
+                            thread->RequestTerminate();
+                        }
+                    }
+                }
+            }
+
+            /* Wait for all children threads to terminate.*/
+            while (true) {
+                /* Get the next child. */
+                KThread *cur_child = nullptr;
+                {
+                    KScopedLightLock proc_lk(process->GetListLock());
+
+                    auto &thread_list = process->GetThreadList();
+                    for (auto it = thread_list.begin(); it != thread_list.end(); ++it) {
+                        if (KThread *thread = std::addressof(*it); thread != thread_to_not_terminate) {
+                            if (thread->GetState() != KThread::ThreadState_Terminated) {
+                                if (AMS_LIKELY(thread->Open())) {
+                                    cur_child = thread;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                /* If we didn't find any non-terminated children, we're done. */
+                if (cur_child == nullptr) {
+                    break;
+                }
+
+                /* Terminate and close the thread. */
+                cur_child->Terminate();
+                cur_child->Close();
+            }
+        }
+
     }
 
     void KProcess::Finalize() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Ensure we're not executing on any core. */
+        for (size_t i = 0; i < cpu::NumCores; ++i) {
+            MESOSPHERE_ASSERT(Kernel::GetCurrentContext(static_cast<s32>(i)).current_process.load(std::memory_order_relaxed) != this);
+        }
+
+        /* Delete the process local region. */
+        this->DeleteThreadLocalRegion(this->plr_address);
+
+        /* Get the used memory size. */
+        const size_t used_memory_size = this->GetUsedUserPhysicalMemorySize();
+
+        /* Finalize the page table. */
+        this->page_table.Finalize();
+
+        /* Free the system resource. */
+        if (this->system_resource_address != Null<KVirtualAddress>) {
+            /* Check that we have no outstanding allocations. */
+            MESOSPHERE_ABORT_UNLESS(this->memory_block_slab_manager.GetUsed() == 0);
+            MESOSPHERE_ABORT_UNLESS(this->block_info_manager.GetUsed()        == 0);
+            MESOSPHERE_ABORT_UNLESS(this->page_table_manager.GetUsed()        == 0);
+
+            /* Free the memory. */
+            KSystemControl::FreeSecureMemory(this->system_resource_address, this->system_resource_num_pages * PageSize, this->memory_pool);
+
+            /* Clear our tracking variables. */
+            this->system_resource_address   = Null<KVirtualAddress>;
+            this->system_resource_num_pages = 0;
+        }
+
+        /* Release memory to the resource limit. */
+        if (this->resource_limit != nullptr) {
+            MESOSPHERE_ABORT_UNLESS(used_memory_size >= this->memory_release_hint);
+            this->resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, used_memory_size, used_memory_size - this->memory_release_hint);
+            this->resource_limit->Close();
+        }
+
+        /* Free all shared memory infos. */
+        {
+            auto it = this->shared_memory_list.begin();
+            while (it != this->shared_memory_list.end()) {
+                KSharedMemoryInfo *info = std::addressof(*it);
+                KSharedMemory *shmem    = info->GetSharedMemory();
+
+                while (!info->Close()) {
+                    shmem->Close();
+                }
+                shmem->Close();
+
+                it = this->shared_memory_list.erase(it);
+                KSharedMemoryInfo::Free(info);
+            }
+        }
+
+        /* Our thread local page list must be empty at this point. */
+        MESOSPHERE_ABORT_UNLESS(this->partially_used_tlp_tree.empty());
+        MESOSPHERE_ABORT_UNLESS(this->fully_used_tlp_tree.empty());
+
+        /* Log that we finalized for debug. */
+        MESOSPHERE_LOG("KProcess::Finalize() pid=%ld name=%-12s\n", this->process_id, this->name);
+
+        /* Perform inherited finalization. */
+        KAutoObjectWithSlabHeapAndContainer<KProcess, KSynchronizationObject>::Finalize();
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params) {
@@ -270,15 +378,112 @@ namespace ams::kern {
     }
 
     void KProcess::DoWorkerTask() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Terminate child threads. */
+        TerminateChildren(this, nullptr);
+
+        /* Call the debug callback. */
+        KDebug::OnExitProcess(this);
+
+        /* Finish termination. */
+        this->FinishTermination();
+    }
+
+    void KProcess::StartTermination() {
+        /* Terminate child threads other than the current one. */
+        TerminateChildren(this, GetCurrentThreadPointer());
+
+        /* Finalize the handle tahble. */
+        this->handle_table.Finalize();
+    }
+
+    void KProcess::FinishTermination() {
+        /* Release resource limit hint. */
+        if (this->resource_limit != nullptr) {
+            this->memory_release_hint = this->GetUsedUserPhysicalMemorySize();
+            this->resource_limit->Release(ams::svc::LimitableResource_PhysicalMemoryMax, 0, this->memory_release_hint);
+        }
+
+        /* Change state. */
+        {
+            KScopedSchedulerLock sl;
+            this->ChangeState(State_Terminated);
+        }
+
+        /* Close. */
+        this->Close();
     }
 
     void KProcess::Exit() {
-        MESOSPHERE_UNIMPLEMENTED();
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Determine whether we need to start terminating */
+        bool needs_terminate = false;
+        {
+            KScopedLightLock lk(this->state_lock);
+            KScopedSchedulerLock sl;
+
+            MESOSPHERE_ASSERT(this->state != State_Created);
+            MESOSPHERE_ASSERT(this->state != State_CreatedAttached);
+            MESOSPHERE_ASSERT(this->state != State_Crashed);
+            MESOSPHERE_ASSERT(this->state != State_Terminated);
+            if (this->state == State_Running || this->state == State_RunningAttached || this->state == State_DebugBreak) {
+                this->ChangeState(State_Terminating);
+                needs_terminate = true;
+            }
+        }
+
+        /* If we need to start termination, do so. */
+        if (needs_terminate) {
+            this->StartTermination();
+
+            /* Note for debug that we're exiting the process. */
+            MESOSPHERE_LOG("KProcess::Exit() pid=%ld name=%-12s\n", this->process_id, this->name);
+
+            /* Register the process as a work task. */
+            KWorkerTaskManager::AddTask(KWorkerTaskManager::WorkerType_Exit, this);
+        }
+
+        /* Exit the current thread. */
+        GetCurrentThread().Exit();
+        MESOSPHERE_PANIC("Thread survived call to exit");
     }
 
     Result KProcess::Terminate() {
-        MESOSPHERE_UNIMPLEMENTED();
+        MESOSPHERE_ASSERT_THIS();
+
+        /* Determine whether we need to start terminating */
+        bool needs_terminate = false;
+        {
+            KScopedLightLock lk(this->state_lock);
+
+            /* Check whether we're allowed to terminate. */
+            R_UNLESS(this->state != State_Created,         svc::ResultInvalidState());
+            R_UNLESS(this->state != State_CreatedAttached, svc::ResultInvalidState());
+
+            KScopedSchedulerLock sl;
+
+            if (this->state == State_Running || this->state == State_RunningAttached|| this->state == State_Crashed || this->state == State_DebugBreak) {
+                this->ChangeState(State_Terminating);
+                needs_terminate = true;
+            }
+        }
+
+        /* If we need to terminate, do so. */
+        if (needs_terminate) {
+            /* Start termination. */
+            this->StartTermination();
+
+            /* Note for debug that we're terminating the process. */
+            MESOSPHERE_LOG("KProcess::Terminate() pid=%ld name=%-12s\n", this->process_id, this->name);
+
+            /* Call the debug callback. */
+            KDebug::OnTerminateProcess(this);
+
+            /* Finish termination. */
+            this->FinishTermination();
+        }
+
+        return ResultSuccess();
     }
 
     Result KProcess::AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
@@ -491,7 +696,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this->num_threads > 0);
 
         if (const auto count = --this->num_threads; count == 0) {
-            MESOSPHERE_TODO("this->Terminate();");
+            this->Terminate();
         }
     }
 
