@@ -409,7 +409,7 @@ namespace ams::kern {
 
             /* Restore our ideals. */
             this->ideal_core_id = this->original_ideal_core_id;
-            this->original_affinity_mask = this->affinity_mask;
+            this->affinity_mask = this->original_affinity_mask;
 
             if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                 const s32 active_core = this->GetActiveCore();
@@ -424,6 +424,74 @@ namespace ams::kern {
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
             }
         }
+    }
+
+    Result KThread::GetCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask) {
+        MESOSPHERE_ASSERT_THIS();
+        {
+            KScopedSchedulerLock sl;
+            MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
+
+            /* Select between core mask and original core mask. */
+            if (this->num_core_migration_disables == 0) {
+                *out_ideal_core    = this->ideal_core_id;
+                *out_affinity_mask = this->affinity_mask.GetAffinityMask();
+            } else {
+                *out_ideal_core    = this->original_ideal_core_id;
+                *out_affinity_mask = this->original_affinity_mask.GetAffinityMask();
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KThread::SetCoreMask(int32_t ideal_core, u64 affinity_mask) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this->parent != nullptr);
+        MESOSPHERE_ASSERT(affinity_mask != 0);
+        {
+            KScopedSchedulerLock sl;
+            MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
+
+            /* If the core id is no-update magic, preserve the ideal core id. */
+            if (ideal_core == ams::svc::IdealCoreNoUpdate) {
+                if (this->num_core_migration_disables == 0) {
+                    ideal_core = this->ideal_core_id;
+                } else {
+                    ideal_core = this->original_ideal_core_id;
+                }
+
+                R_UNLESS(((1ul << ideal_core) & affinity_mask) != 0, svc::ResultInvalidCombination());
+            }
+
+            /* If we haven't disabled migration, perform an affinity change. */
+            if (this->num_core_migration_disables == 0) {
+                const KAffinityMask old_mask = this->affinity_mask;
+
+                /* Set our new ideals. */
+                this->ideal_core_id = ideal_core;
+                this->affinity_mask.SetAffinityMask(affinity_mask);
+
+                if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+                    const s32 active_core = this->GetActiveCore();
+
+                    if (active_core >= 0) {
+                        if (!this->affinity_mask.GetAffinity(active_core)) {
+                            this->SetActiveCore(this->ideal_core_id);
+                        } else {
+                            this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->affinity_mask.GetAffinityMask()));
+                        }
+                    }
+                    KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
+                }
+            } else {
+                /* Otherwise, we edit the original affinity for restoration later. */
+                this->original_ideal_core_id = ideal_core;
+                this->original_affinity_mask.SetAffinityMask(affinity_mask);
+            }
+        }
+
+        return ResultSuccess();
     }
 
     void KThread::SetBasePriority(s32 priority) {

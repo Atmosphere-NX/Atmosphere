@@ -296,7 +296,11 @@ namespace ams::kern {
 
             constexpr KThreadContext &GetContext() { return this->thread_context; }
             constexpr const KThreadContext &GetContext() const { return this->thread_context; }
+
             constexpr const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+            Result GetCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
+            Result SetCoreMask(int32_t ideal_core, u64 affinity_mask);
+
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return this->thread_state; }
             NOINLINE void SetState(ThreadState state);
