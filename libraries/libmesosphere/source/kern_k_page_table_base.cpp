@@ -1181,7 +1181,7 @@ namespace ams::kern {
                 KScopedPageTableUpdater updater(this);
 
                 /* Validate memory state. */
-                R_TRY(this->CheckMemoryState(this->heap_region_start + size, (this->heap_region_end - this->heap_region_start) - size,
+                R_TRY(this->CheckMemoryState(this->heap_region_start + size, (this->current_heap_end - this->heap_region_start) - size,
                                              KMemoryState_All, KMemoryState_Normal,
                                              KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                              KMemoryAttribute_All,  KMemoryAttribute_None));
