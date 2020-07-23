@@ -183,14 +183,16 @@ namespace ams::boot2 {
             return R_SUCCEEDED(gpioPadGetValue(&button, &val)) && val == GpioValue_Low;
         }
 
+        bool IsForceMaintenance() {
+            u8 force_maintenance = 1;
+            settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
+            return force_maintenance != 0;
+        }
+
         bool IsMaintenanceMode() {
             /* Contact set:sys, retrieve boot!force_maintenance. */
-            {
-                u8 force_maintenance = 1;
-                settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
-                if (force_maintenance != 0) {
-                    return true;
-                }
+            if (IsForceMaintenance()) {
+                return true;
             }
 
             /* Contact GPIO, read plus/minus buttons. */
@@ -313,7 +315,38 @@ namespace ams::boot2 {
         R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("fsp-srv")));
 
         /* Launch programs required to mount the SD card. */
-        LaunchList(PreSdCardLaunchPrograms, NumPreSdCardLaunchPrograms);
+        /* psc, bus, pcv (and usb on newer firmwares) is the minimal set of required programs. */
+        /* bus depends on pcie, and pcv depends on settings. */
+        {
+            /* Launch psc. */
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Psc, ncm::StorageId::BuiltInSystem), 0);
+
+            /* Launch pcie. */
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Pcie, ncm::StorageId::BuiltInSystem), 0);
+
+            /* Launch bus. */
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Bus, ncm::StorageId::BuiltInSystem), 0);
+
+            /* Launch settings. */
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Settings, ncm::StorageId::BuiltInSystem), 0);
+
+            /* NOTE: Here we work around a race condition in the boot process by ensuring that settings initializes its db. */
+            {
+                /* Connect to set:sys. */
+                sm::ScopedServiceHolder<::setsysInitialize, ::setsysExit> setsys_holder;
+                AMS_ABORT_UNLESS(setsys_holder);
+
+                /* Retrieve setting from the database. */
+                u8 force_maintenance = 0;
+                settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
+            }
+
+            /* Launch pcv. */
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Pcv, ncm::StorageId::BuiltInSystem), 0);
+
+            /* Launch usb. */
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+        }
 
         /* Wait for the SD card required services to be ready. */
         cfg::WaitSdCardRequiredServicesReady();
