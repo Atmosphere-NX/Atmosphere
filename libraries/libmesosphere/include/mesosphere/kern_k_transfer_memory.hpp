@@ -22,8 +22,34 @@ namespace ams::kern {
 
     class KTransferMemory final : public KAutoObjectWithSlabHeapAndContainer<KTransferMemory, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KTransferMemory, KAutoObject);
+        private:
+            TYPED_STORAGE(KPageGroup) page_group;
+            KProcess *owner;
+            KProcessAddress address;
+            KLightLock lock;
+            ams::svc::MemoryPermission owner_perm;
+            bool is_initialized;
+            bool is_mapped;
         public:
-            /* TODO: This is a placeholder definition. */
+            explicit KTransferMemory() : owner(nullptr), address(Null<KProcessAddress>), owner_perm(ams::svc::MemoryPermission_None), is_initialized(false), is_mapped(false) {
+                /* ... */
+            }
+
+            virtual ~KTransferMemory() { /* ... */ }
+
+            Result Initialize(KProcessAddress addr, size_t size, ams::svc::MemoryPermission own_perm);
+            virtual void Finalize() override;
+
+            virtual bool IsInitialized() const override { return this->is_initialized; }
+            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->owner); }
+            static void PostDestroy(uintptr_t arg);
+
+            Result Map(KProcessAddress address, size_t size, ams::svc::MemoryPermission map_perm);
+            Result Unmap(KProcessAddress address, size_t size);
+
+            KProcess *GetOwner() const { return this->owner; }
+            KProcessAddress GetSourceAddress() { return this->address; }
+            size_t GetSize() const { return this->is_initialized ? GetReference(this->page_group).GetNumPages() * PageSize : 0; }
     };
 
 }
