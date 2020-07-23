@@ -431,8 +431,6 @@ namespace ams::kern::board::nintendo::nx {
         /* Get the function id for the current call. */
         u64 function_id = args->r[0];
 
-        MESOSPHERE_LOG("CallSecureMonitor(%lx, %lx, %lx, %lx, %lx, %lx, %lx, %lx);\n", args->r[0], args->r[1], args->r[2], args->r[3], args->r[4], args->r[5], args->r[6], args->r[7]);
-
         /* We'll need to map in pages if arguments are pointers. Prepare page groups to do so. */
         auto &page_table = GetCurrentProcess().GetPageTable();
         auto *bim = page_table.GetBlockInfoManager();
@@ -455,10 +453,8 @@ namespace ams::kern::board::nintendo::nx {
                     KPhysicalAddress phys_addr = page_table.GetHeapPhysicalAddress(it->GetAddress());
 
                     args->r[reg_id] = GetInteger(phys_addr) | (GetInteger(virt_addr) & (PageSize - 1));
-                    MESOSPHERE_LOG("Mapped arg %zu\n", reg_id);
                 } else {
                     /* If we couldn't map, we should clear the address. */
-                    MESOSPHERE_LOG("Failed to map arg %zu\n", reg_id);
                     args->r[reg_id] = 0;
                 }
             }
@@ -466,8 +462,6 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Invoke the secure monitor. */
         smc::CallSecureMonitorFromUser(args);
-
-        MESOSPHERE_LOG("Secure Monitor Returned: (%lx, %lx, %lx, %lx, %lx, %lx, %lx, %lx);\n", args->r[0], args->r[1], args->r[2], args->r[3], args->r[4], args->r[5], args->r[6], args->r[7]);
 
         /* Make sure that we close any pages that we opened. */
         for (size_t i = 0; i < MaxMappedRegisters; i++) {

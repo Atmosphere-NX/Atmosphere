@@ -30,7 +30,6 @@ namespace ams::kern::svc {
             R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
-            MESOSPHERE_LOG("%lx: ArbitrateLock(%08x, %lx, %08x)\n", GetCurrentThread().GetId(), thread_handle, address, tag);
             return GetCurrentProcess().WaitForAddress(thread_handle, address, tag);
         }
 
@@ -39,7 +38,6 @@ namespace ams::kern::svc {
             R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
             R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
 
-            MESOSPHERE_LOG("%lx: ArbitrateUnlock(%lx)\n", GetCurrentThread().GetId(), address);
             return GetCurrentProcess().SignalToAddress(address);
         }
 

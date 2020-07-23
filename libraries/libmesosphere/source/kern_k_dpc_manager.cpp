@@ -126,9 +126,9 @@ namespace ams::kern {
         /* Launch the new thread. */
         g_preemption_priorities[core_id] = priority;
         if (core_id == cpu::NumCores - 1) {
-            MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(new_thread, DpcManagerNormalThreadFunction,     0, DpcManagerThreadPriority, core_id));
-        } else {
             MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(new_thread, DpcManagerPreemptionThreadFunction, 0, DpcManagerThreadPriority, core_id));
+        } else {
+            MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(new_thread, DpcManagerNormalThreadFunction,     0, DpcManagerThreadPriority, core_id));
         }
 
         /* Register the new thread. */
