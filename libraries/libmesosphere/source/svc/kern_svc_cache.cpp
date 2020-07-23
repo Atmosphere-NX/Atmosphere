@@ -21,7 +21,111 @@ namespace ams::kern::svc {
 
     namespace {
 
+        class CacheOperation {
+            public:
+                virtual void Operate(void *address, size_t size) const = 0;
+        };
 
+        Result DoProcessCacheOperation(const CacheOperation &operation, KProcessPageTable &page_table, uintptr_t address, size_t size) {
+            /* Determine aligned extents. */
+            const uintptr_t aligned_start = util::AlignDown(address, PageSize);
+            const uintptr_t aligned_end   = util::AlignUp(address + size, PageSize);
+            const size_t num_pages        = (aligned_end - aligned_start) / PageSize;
+
+            /* Create a page group for the process's memory. */
+            KPageGroup pg(page_table.GetBlockInfoManager());
+
+            /* Make and open the page group. */
+            R_TRY(page_table.MakeAndOpenPageGroup(std::addressof(pg),
+                                                  aligned_start, num_pages,
+                                                  KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
+                                                  KMemoryPermission_UserRead, KMemoryPermission_UserRead,
+                                                  KMemoryAttribute_Uncached, KMemoryAttribute_None));
+
+            /* Ensure we don't leak references to the pages we're operating on. */
+            ON_SCOPE_EXIT { pg.Close(); };
+
+            /* Operate on all the blocks. */
+            uintptr_t cur_address = aligned_start;
+            size_t remaining = size;
+            for (const auto &block : pg) {
+                /* Get the block extents. */
+                KVirtualAddress operate_address = block.GetAddress();
+                size_t operate_size             = block.GetSize();
+
+                /* Adjust to remain within range. */
+                if (cur_address < address) {
+                    operate_address += (address - cur_address);
+                }
+                if (operate_size > remaining) {
+                    operate_size = remaining;
+                }
+
+                /* Operate. */
+                operation.Operate(GetVoidPointer(operate_address), operate_size);
+
+                /* Advance. */
+                cur_address += block.GetSize();
+                remaining   -= operate_size;
+            }
+            MESOSPHERE_ASSERT(remaining == 0);
+
+            return ResultSuccess();
+        }
+
+        Result StoreProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
+            /* Validate address/size. */
+            R_UNLESS(size > 0,                                   svc::ResultInvalidSize());
+            R_UNLESS(address == static_cast<uintptr_t>(address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(size == static_cast<size_t>(size),          svc::ResultInvalidCurrentMemory());
+
+            /* Get the process from its handle. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Verify the region is within range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Perform the operation. */
+            if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
+                return cpu::StoreDataCache(reinterpret_cast<void *>(address), size);
+            } else {
+                class StoreCacheOperation : public CacheOperation {
+                    public:
+                        virtual void Operate(void *address, size_t size) const override { cpu::StoreDataCache(address, size); }
+                } operation;
+
+                return DoProcessCacheOperation(operation, page_table, address, size);
+            }
+        }
+
+        Result FlushProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
+            /* Validate address/size. */
+            R_UNLESS(size > 0,                                   svc::ResultInvalidSize());
+            R_UNLESS(address == static_cast<uintptr_t>(address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(size == static_cast<size_t>(size),          svc::ResultInvalidCurrentMemory());
+
+            /* Get the process from its handle. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Verify the region is within range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Perform the operation. */
+            if (process.GetPointerUnsafe() == GetCurrentProcessPointer()) {
+                return cpu::FlushDataCache(reinterpret_cast<void *>(address), size);
+            } else {
+                class FlushCacheOperation : public CacheOperation {
+                    public:
+                        virtual void Operate(void *address, size_t size) const override { cpu::FlushDataCache(address, size); }
+                } operation;
+
+                return DoProcessCacheOperation(operation, page_table, address, size);
+            }
+        }
 
     }
 
@@ -40,11 +144,11 @@ namespace ams::kern::svc {
     }
 
     Result StoreProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcStoreProcessDataCache64 was called.");
+        return StoreProcessDataCache(process_handle, address, size);
     }
 
     Result FlushProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcFlushProcessDataCache64 was called.");
+        return FlushProcessDataCache(process_handle, address, size);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -62,11 +166,11 @@ namespace ams::kern::svc {
     }
 
     Result StoreProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcStoreProcessDataCache64From32 was called.");
+        return StoreProcessDataCache(process_handle, address, size);
     }
 
     Result FlushProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcFlushProcessDataCache64From32 was called.");
+        return FlushProcessDataCache(process_handle, address, size);
     }
 
 }
