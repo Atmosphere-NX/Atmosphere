@@ -145,6 +145,46 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetThreadCoreMask(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the core mask. */
+            R_TRY(thread->GetCoreMask(out_core_id, out_affinity_mask));
+
+            return ResultSuccess();
+        }
+
+        Result SetThreadCoreMask(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
+            /* Determine the core id/affinity mask. */
+            if (core_id == ams::svc::IdealCoreUseProcessValue) {
+                core_id       = GetCurrentProcess().GetIdealCoreId();
+                affinity_mask = (1ul << core_id);
+            } else {
+                /* Validate the affinity mask. */
+                const u64 process_core_mask = GetCurrentProcess().GetCoreMask();
+                R_UNLESS((affinity_mask | process_core_mask) == process_core_mask, svc::ResultInvalidCoreId());
+                R_UNLESS(affinity_mask != 0,                                       svc::ResultInvalidCombination());
+
+                /* Validate the core id. */
+                if (IsValidCoreId(core_id)) {
+                    R_UNLESS(((1ul << core_id) & affinity_mask) != 0, svc::ResultInvalidCombination());
+                } else {
+                    R_UNLESS(core_id == ams::svc::IdealCoreNoUpdate || core_id == ams::svc::IdealCoreDontCare, svc::ResultInvalidCoreId());
+                }
+            }
+
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Set the core mask. */
+            R_TRY(thread->SetCoreMask(core_id, affinity_mask));
+
+            return ResultSuccess();
+        }
+
         Result GetThreadId(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
             /* Get the thread from its handle. */
             KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
@@ -184,11 +224,11 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadCoreMask64(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadCoreMask64 was called.");
+        return GetThreadCoreMask(out_core_id, out_affinity_mask, thread_handle);
     }
 
     Result SetThreadCoreMask64(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
-        MESOSPHERE_PANIC("Stubbed SvcSetThreadCoreMask64 was called.");
+        return SetThreadCoreMask(thread_handle, core_id, affinity_mask);
     }
 
     Result GetThreadId64(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
@@ -238,11 +278,11 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadCoreMask64From32(int32_t *out_core_id, uint64_t *out_affinity_mask, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadCoreMask64From32 was called.");
+        return GetThreadCoreMask(out_core_id, out_affinity_mask, thread_handle);
     }
 
     Result SetThreadCoreMask64From32(ams::svc::Handle thread_handle, int32_t core_id, uint64_t affinity_mask) {
-        MESOSPHERE_PANIC("Stubbed SvcSetThreadCoreMask64From32 was called.");
+        return SetThreadCoreMask(thread_handle, core_id, affinity_mask);
     }
 
     Result GetThreadId64From32(uint64_t *out_thread_id, ams::svc::Handle thread_handle) {
