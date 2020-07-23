@@ -233,7 +233,7 @@ namespace ams::kern {
             bool SetInterruptPermitted(u32 id) {
                 constexpr size_t BitsPerWord = BITSIZEOF(this->irq_access_flags[0]);
                 if (id < BITSIZEOF(this->irq_access_flags)) {
-                    this->irq_access_flags[id / BitsPerWord] = (1ul << (id % BitsPerWord));
+                    this->irq_access_flags[id / BitsPerWord] |= (1ul << (id % BitsPerWord));
                     return true;
                 } else {
                     return false;
