@@ -120,6 +120,9 @@ namespace ams::kern {
             KPageTableManager           page_table_manager{};
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
+
+            void StartTermination();
+            void FinishTermination();
         public:
             KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
@@ -182,6 +185,7 @@ namespace ams::kern {
             ThreadList &GetThreadList() { return this->thread_list; }
             const ThreadList &GetThreadList() const { return this->thread_list; }
 
+            constexpr void *GetDebugObject() const { return this->attached_object; }
             KProcess::State SetDebugObject(void *debug_object);
             void ClearDebugObject(KProcess::State state);
 

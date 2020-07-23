@@ -17,6 +17,14 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        ALWAYS_INLINE KDebugBase *GetDebugObject(KProcess *process) {
+            return static_cast<KDebugBase *>(process->GetDebugObject());
+        }
+
+    }
+
     void KDebugBase::Initialize() {
         /* Clear the process and continue flags. */
         this->process        = nullptr;
@@ -423,6 +431,57 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         return (!this->event_info_list.empty()) || this->process == nullptr || this->process->IsTerminated();
+    }
+
+    Result KDebugBase::ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
+        MESOSPHERE_UNIMPLEMENTED();
+    }
+
+    Result KDebugBase::OnDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
+        if (KProcess *process = GetCurrentProcessPointer(); process != nullptr && process->IsAttachedToDebugger()) {
+            return ProcessDebugEvent(event, param0, param1, param2, param3, param4);
+        }
+        return ResultSuccess();
+    }
+
+    Result KDebugBase::OnExitProcess(KProcess *process) {
+        MESOSPHERE_ASSERT(process != nullptr);
+
+        if (process->IsAttachedToDebugger()) {
+            KScopedSchedulerLock sl;
+
+            if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
+                debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, ams::svc::ProcessExitReason_ExitProcess);
+                debug->NotifyAvailable();
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KDebugBase::OnTerminateProcess(KProcess *process) {
+        MESOSPHERE_ASSERT(process != nullptr);
+
+        if (process->IsAttachedToDebugger()) {
+            KScopedSchedulerLock sl;
+
+            if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
+                debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, ams::svc::ProcessExitReason_TerminateProcess);
+                debug->NotifyAvailable();
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KDebugBase::OnExitThread(KThread *thread) {
+        MESOSPHERE_ASSERT(thread != nullptr);
+
+        if (KProcess *process = thread->GetOwnerProcess(); process != nullptr && process->IsAttachedToDebugger()) {
+            R_TRY(OnDebugEvent(ams::svc::DebugEvent_ExitThread, thread->GetId(), thread->IsTerminationRequested() ? ams::svc::ThreadExitReason_TerminateThread : ams::svc::ThreadExitReason_ExitThread));
+        }
+
+        return ResultSuccess();
     }
 
 }

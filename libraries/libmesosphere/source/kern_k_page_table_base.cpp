@@ -273,8 +273,16 @@ namespace ams::kern {
 
 
     void KPageTableBase::Finalize() {
+        /* Finalize memory blocks. */
         this->memory_block_manager.Finalize(this->memory_block_slab_manager);
-        MESOSPHERE_TODO("cpu::InvalidateEntireInstructionCache();");
+
+        /* Free any unsafe mapped memory. */
+        if (this->mapped_unsafe_physical_memory) {
+            Kernel::GetUnsafeMemory().Release(this->mapped_unsafe_physical_memory);
+        }
+
+        /* Invalidate the entire instruction cache. */
+        cpu::InvalidateEntireInstructionCache();
     }
 
     KProcessAddress KPageTableBase::GetRegionAddress(KMemoryState state) const {
