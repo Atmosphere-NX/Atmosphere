@@ -1080,6 +1080,44 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::SetMemoryAttribute(KProcessAddress addr, size_t size, u32 mask, u32 attr) {
+        const size_t num_pages = size / PageSize;
+        MESOSPHERE_ASSERT((mask | KMemoryAttribute_SetMask) == KMemoryAttribute_SetMask);
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Verify we can change the memory attribute. */
+        KMemoryState old_state;
+        KMemoryPermission old_perm;
+        KMemoryAttribute old_attr;
+        constexpr u32 AttributeTestMask = ~(KMemoryAttribute_SetMask | KMemoryAttribute_DeviceShared);
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr),
+                                     addr, size,
+                                     KMemoryState_FlagCanChangeAttribute, KMemoryState_FlagCanChangeAttribute,
+                                     KMemoryPermission_None, KMemoryPermission_None,
+                                     AttributeTestMask, KMemoryAttribute_None, ~AttributeTestMask));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Determine the new attribute. */
+        const KMemoryAttribute new_attr = static_cast<KMemoryAttribute>(((old_attr & ~mask) | (attr & mask)));
+
+        /* Perform operation. */
+        const KPageProperties properties = { old_perm, false, (new_attr & KMemoryAttribute_Uncached) != 0, false };
+        R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefresh, false));
+
+        /* Update the blocks. */
+        this->memory_block_manager.Update(&allocator, addr, num_pages, old_state, old_perm, new_attr);
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::SetHeapSize(KProcessAddress *out, size_t size) {
         /* Lock the physical memory mutex. */
         KScopedLightLock map_phys_mem_lk(this->map_physical_memory_lock);

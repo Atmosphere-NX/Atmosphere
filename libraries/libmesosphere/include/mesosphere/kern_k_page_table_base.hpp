@@ -271,6 +271,7 @@ namespace ams::kern {
 
             Result SetMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
             Result SetProcessMemoryPermission(KProcessAddress addr, size_t size, ams::svc::MemoryPermission perm);
+            Result SetMemoryAttribute(KProcessAddress addr, size_t size, u32 mask, u32 attr);
             Result SetHeapSize(KProcessAddress *out, size_t size);
             Result SetMaxHeapSize(size_t size);
             Result QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const;

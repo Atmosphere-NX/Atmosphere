@@ -44,6 +44,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.SetProcessMemoryPermission(addr, size, perm);
             }
 
+            Result SetMemoryAttribute(KProcessAddress addr, size_t size, u32 mask, u32 attr) {
+                return this->page_table.SetMemoryAttribute(addr, size, mask, attr);
+            }
+
             Result SetHeapSize(KProcessAddress *out, size_t size) {
                 return this->page_table.SetHeapSize(out, size);
             }

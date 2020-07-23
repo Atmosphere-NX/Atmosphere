@@ -174,6 +174,8 @@ namespace ams::kern {
         KMemoryAttribute_Uncached       = ams::svc::MemoryAttribute_Uncached,
 
         KMemoryAttribute_AnyLocked      = 0x80,
+
+        KMemoryAttribute_SetMask        = KMemoryAttribute_Uncached,
     };
 
     struct KMemoryInfo {
