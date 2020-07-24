@@ -57,7 +57,15 @@ namespace ams::kern::svc {
     }
 
     Result QueryProcessMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, uint64_t address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryProcessMemory64 was called.");
+        /* Get an ams::svc::MemoryInfo for the region. */
+        ams::svc::MemoryInfo info = {};
+        R_TRY(QueryProcessMemory(std::addressof(info), out_page_info, process_handle, address));
+
+        /* Try to copy to userspace. In the 64-bit case, ams::svc::lp64::MemoryInfo is the same as ams::svc::MemoryInfo. */
+        static_assert(sizeof(ams::svc::MemoryInfo) == sizeof(ams::svc::lp64::MemoryInfo));
+        R_TRY(out_memory_info.CopyFrom(std::addressof(info)));
+
+        return ResultSuccess();
     }
 
     /* ============================= 64From32 ABI ============================= */

@@ -21,15 +21,30 @@ namespace ams::kern::svc {
 
     namespace {
 
+        void Break(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
+            /* Log for debug that Break was called. */
+            MESOSPHERE_LOG("%s: Break(%08x)\n", GetCurrentProcess().GetName(), static_cast<u32>(break_reason));
 
+            /* If the current process is attached to debugger, notify it. */
+            if (GetCurrentProcess().IsAttachedToDebugger()) {
+                MESOSPHERE_UNIMPLEMENTED();
+            }
+
+            /* If the break is only a notification, we're done. */
+            if ((break_reason & ams::svc::BreakReason_NotificationOnlyFlag) != 0) {
+                return;
+            }
+
+            /* TODO */
+            MESOSPHERE_UNIMPLEMENTED();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     void Break64(ams::svc::BreakReason break_reason, ams::svc::Address arg, ams::svc::Size size) {
-        MESOSPHERE_LOG("%s: Break\n", GetCurrentProcess().GetName());
-        MESOSPHERE_PANIC("Stubbed SvcBreak64 was called.");
+        return Break(break_reason, arg, size);
     }
 
     void ReturnFromException64(ams::Result result) {
@@ -39,7 +54,7 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     void Break64From32(ams::svc::BreakReason break_reason, ams::svc::Address arg, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcBreak64From32 was called.");
+        return Break(break_reason, arg, size);
     }
 
     void ReturnFromException64From32(ams::Result result) {
