@@ -141,6 +141,60 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result MapProcessCodeMemory(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
+            /* Validate the address/size. */
+            R_UNLESS(util::IsAligned(dst_address, PageSize),             svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(src_address, PageSize),             svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize),                 svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                                           svc::ResultInvalidSize());
+            R_UNLESS((dst_address < dst_address + size),                 svc::ResultInvalidCurrentMemory());
+            R_UNLESS((src_address < src_address + size),                 svc::ResultInvalidCurrentMemory());
+            R_UNLESS(src_address == static_cast<uintptr_t>(src_address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(dst_address == static_cast<uintptr_t>(dst_address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(size == static_cast<size_t>(size),                  svc::ResultInvalidCurrentMemory());
+
+            /* Get the process from its handle. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObjectWithoutPseudoHandle<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate that the mapping is in range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(src_address, size),                           svc::ResultInvalidCurrentMemory());
+            R_UNLESS(page_table.CanContain(dst_address, size, KMemoryState_AliasCode), svc::ResultInvalidCurrentMemory());
+
+            /* Map the memory. */
+            R_TRY(page_table.MapCodeMemory(dst_address, src_address, size));
+
+            return ResultSuccess();
+        }
+
+        Result UnmapProcessCodeMemory(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
+            /* Validate the address/size. */
+            R_UNLESS(util::IsAligned(dst_address, PageSize),             svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(src_address, PageSize),             svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize),                 svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                                           svc::ResultInvalidSize());
+            R_UNLESS((dst_address < dst_address + size),                 svc::ResultInvalidCurrentMemory());
+            R_UNLESS((src_address < src_address + size),                 svc::ResultInvalidCurrentMemory());
+            R_UNLESS(src_address == static_cast<uintptr_t>(src_address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(dst_address == static_cast<uintptr_t>(dst_address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(size == static_cast<size_t>(size),                  svc::ResultInvalidCurrentMemory());
+
+            /* Get the process from its handle. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObjectWithoutPseudoHandle<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Validate that the mapping is in range. */
+            auto &page_table = process->GetPageTable();
+            R_UNLESS(page_table.Contains(src_address, size),                           svc::ResultInvalidCurrentMemory());
+            R_UNLESS(page_table.CanContain(dst_address, size, KMemoryState_AliasCode), svc::ResultInvalidCurrentMemory());
+
+            /* Unmap the memory. */
+            R_TRY(page_table.UnmapCodeMemory(dst_address, src_address, size));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -158,11 +212,11 @@ namespace ams::kern::svc {
     }
 
     Result MapProcessCodeMemory64(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapProcessCodeMemory64 was called.");
+        return MapProcessCodeMemory(process_handle, dst_address, src_address, size);
     }
 
     Result UnmapProcessCodeMemory64(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapProcessCodeMemory64 was called.");
+        return UnmapProcessCodeMemory(process_handle, dst_address, src_address, size);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -180,11 +234,11 @@ namespace ams::kern::svc {
     }
 
     Result MapProcessCodeMemory64From32(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapProcessCodeMemory64From32 was called.");
+        return MapProcessCodeMemory(process_handle, dst_address, src_address, size);
     }
 
     Result UnmapProcessCodeMemory64From32(ams::svc::Handle process_handle, uint64_t dst_address, uint64_t src_address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapProcessCodeMemory64From32 was called.");
+        return UnmapProcessCodeMemory(process_handle, dst_address, src_address, size);
     }
 
 }

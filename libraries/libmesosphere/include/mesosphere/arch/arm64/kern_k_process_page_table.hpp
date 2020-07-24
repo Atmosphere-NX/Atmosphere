@@ -76,6 +76,14 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.UnmapMemory(dst_address, src_address, size);
             }
 
+            Result MapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
+                return this->page_table.MapCodeMemory(dst_address, src_address, size);
+            }
+
+            Result UnmapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size) {
+                return this->page_table.UnmapCodeMemory(dst_address, src_address, size);
+            }
+
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
                 return this->page_table.MapIo(phys_addr, size, perm);
             }
