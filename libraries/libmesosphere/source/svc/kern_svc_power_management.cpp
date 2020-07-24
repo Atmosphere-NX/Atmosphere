@@ -21,20 +21,22 @@ namespace ams::kern::svc {
 
     namespace {
 
-
+        void SleepSystem() {
+            return KSystemControl::SleepSystem();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     void SleepSystem64() {
-        MESOSPHERE_PANIC("Stubbed SvcSleepSystem64 was called.");
+        return SleepSystem();
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     void SleepSystem64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcSleepSystem64From32 was called.");
+        return SleepSystem();
     }
 
 }

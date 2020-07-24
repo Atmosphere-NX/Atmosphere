@@ -29,6 +29,10 @@ namespace ams::kern {
             static NOINLINE void VPrintf(const char *format, ::std::va_list vl);
 
             static NOINLINE Result PrintUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len);
+
+            /* Functionality for preserving across sleep. */
+            static NOINLINE void Save();
+            static NOINLINE void Restore();
     };
 
 }

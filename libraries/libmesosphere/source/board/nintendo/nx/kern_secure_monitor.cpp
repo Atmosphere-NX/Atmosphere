@@ -201,6 +201,12 @@ namespace ams::kern::board::nintendo::nx::smc {
         MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
     }
 
+    void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
+        SecureMonitorArguments args = { FunctionId_CpuOn, core_id, static_cast<u64>(entrypoint), static_cast<u64>(arg) };
+        CallPrivilegedSecureMonitorFunction(args);
+        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+    }
+
     void GenerateRandomBytes(void *dst, size_t size) {
         /* Setup for call. */
         SecureMonitorArguments args = { FunctionId_GenerateRandomBytes, size };

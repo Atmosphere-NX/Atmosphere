@@ -80,6 +80,11 @@ namespace ams::kern::board::nintendo::nx {
             bool Compare(const KPageGroup &pg, KDeviceVirtualAddress device_address) const;
         public:
             static void Initialize();
+
+            static void Lock();
+            static void Unlock();
+            static void Sleep();
+            static void Wakeup();
     };
 
 }

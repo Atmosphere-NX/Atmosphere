@@ -423,6 +423,8 @@ namespace ams::kern::board::nintendo::nx {
             /* Display a panic screen via secure monitor. */
             smc::Panic(0xF00);
         }
+        u32 dummy;
+        smc::init::ReadWriteRegister(std::addressof(dummy), 0x7000E400, 0x10, 0x10);
         while (true) { /* ... */ }
     }
 

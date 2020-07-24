@@ -19,7 +19,7 @@ namespace ams::kern::arch::arm64 {
 
     void KSupervisorPageTable::Initialize(s32 core_id) {
         /* Get the identity mapping ttbr0. */
-        this->ttbr0[core_id] = cpu::GetTtbr0El1();
+        this->ttbr0_identity[core_id] = cpu::GetTtbr0El1();
 
         /* Set sctlr_el1 */
         cpu::SystemControlRegisterAccessor().SetWxn(true).Store();
