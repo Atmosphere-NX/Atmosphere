@@ -77,6 +77,7 @@ namespace ams::kern {
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->metadata_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
                     void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
 
+                    constexpr Pool GetPool() const { return this->pool; }
                     constexpr size_t GetSize() const { return this->heap.GetSize(); }
                     constexpr KVirtualAddress GetEndAddress() const { return this->heap.GetEndAddress(); }
 

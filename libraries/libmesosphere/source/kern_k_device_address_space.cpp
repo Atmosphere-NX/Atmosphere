@@ -75,6 +75,9 @@ namespace ams::kern {
         KPageGroup pg(page_table->GetBlockInfoManager());
         R_TRY(page_table->LockForDeviceAddressSpace(std::addressof(pg), process_address, size, ConvertToKMemoryPermission(device_perm), is_aligned));
 
+        /* Close the pages we opened when we're done with them. */
+        ON_SCOPE_EXIT { pg.Close(); };
+
         /* Ensure that if we fail, we don't keep unmapped pages locked. */
         ON_SCOPE_EXIT {
             if (*out_mapped_size != size) {
