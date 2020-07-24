@@ -153,6 +153,19 @@ namespace ams::kern::svc {
                         }
                     }
                     break;
+                case ams::svc::InfoType_IdleTickCount:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the requested core is valid. */
+                        const bool core_valid = (info_subtype == static_cast<u64>(-1ul)) || (info_subtype == static_cast<u64>(GetCurrentCoreId()));
+                        R_UNLESS(core_valid, svc::ResultInvalidCombination());
+
+                        /* Get the idle tick count. */
+                        *out = Kernel::GetScheduler().GetIdleThread()->GetCpuTime();
+                    }
+                    break;
                 case ams::svc::InfoType_RandomEntropy:
                     {
                         /* Verify the input handle is invalid. */
@@ -165,11 +178,42 @@ namespace ams::kern::svc {
                         *out = GetCurrentProcess().GetRandomEntropy(info_subtype);
                     }
                     break;
+                case ams::svc::InfoType_ThreadTickCount:
+                    {
+                        /* Verify the requested core is valid. */
+                        const bool core_valid = (info_subtype == static_cast<u64>(-1ul)) || (info_subtype < cpu::NumCores);
+                        R_UNLESS(core_valid, svc::ResultInvalidCombination());
+
+                        /* Get the thread from its handle. */
+                        KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(handle);
+                        R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+                        /* Get the tick count. */
+                        s64 tick_count;
+                        if (info_subtype == static_cast<u64>(-1ul)) {
+                            tick_count = thread->GetCpuTime();
+                            if (GetCurrentThreadPointer() == thread.GetPointerUnsafe()) {
+                                const s64 cur_tick    = KHardwareTimer::GetTick();
+                                const s64 prev_switch = Kernel::GetScheduler().GetLastContextSwitchTime();
+                                tick_count += (cur_tick - prev_switch);
+                            }
+                        } else {
+                            tick_count = thread->GetCpuTime(static_cast<s32>(info_subtype));
+                            if (GetCurrentThreadPointer() == thread.GetPointerUnsafe() && static_cast<s32>(info_subtype) == GetCurrentCoreId()) {
+                                const s64 cur_tick    = KHardwareTimer::GetTick();
+                                const s64 prev_switch = Kernel::GetScheduler().GetLastContextSwitchTime();
+                                tick_count += (cur_tick - prev_switch);
+                            }
+                        }
+
+                        /* Set the output. */
+                        *out = tick_count;
+                    }
+                    break;
                 default:
                     {
-                        /* For debug, until all infos are implemented. */
+                        /* For debug, log the invalid info call. */
                         MESOSPHERE_LOG("GetInfo(%p, %u, %08x, %lu) was called\n", out, static_cast<u32>(info_type), static_cast<u32>(handle), info_subtype);
-                        MESOSPHERE_UNIMPLEMENTED();
                     }
                     return svc::ResultInvalidEnumValue();
             }

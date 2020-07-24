@@ -82,6 +82,14 @@ namespace ams::kern {
                     this->ScheduleOnInterrupt();
                 }
             }
+
+            ALWAYS_INLINE KThread *GetIdleThread() const {
+                return this->idle_thread;
+            }
+
+            ALWAYS_INLINE s64 GetLastContextSwitchTime() const {
+                return this->last_context_switch_time;
+            }
         private:
             /* Static private API. */
             static ALWAYS_INLINE bool IsSchedulerUpdateNeeded() { return s_scheduler_update_needed; }
