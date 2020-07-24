@@ -73,6 +73,22 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result InvalidateProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
+            /* Validate address/size. */
+            R_UNLESS(size > 0,                                   svc::ResultInvalidSize());
+            R_UNLESS(address == static_cast<uintptr_t>(address), svc::ResultInvalidCurrentMemory());
+            R_UNLESS(size == static_cast<size_t>(size),          svc::ResultInvalidCurrentMemory());
+
+            /* Get the process from its handle. */
+            KScopedAutoObject process = GetCurrentProcess().GetHandleTable().GetObject<KProcess>(process_handle);
+            R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Invalidate the cache. */
+            R_TRY(process->GetPageTable().InvalidateProcessDataCache(address, size));
+
+            return ResultSuccess();
+        }
+
         Result StoreProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
             /* Validate address/size. */
             R_UNLESS(size > 0,                                   svc::ResultInvalidSize());
@@ -140,7 +156,7 @@ namespace ams::kern::svc {
     }
 
     Result InvalidateProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcInvalidateProcessDataCache64 was called.");
+        return InvalidateProcessDataCache(process_handle, address, size);
     }
 
     Result StoreProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
@@ -162,7 +178,7 @@ namespace ams::kern::svc {
     }
 
     Result InvalidateProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
-        MESOSPHERE_PANIC("Stubbed SvcInvalidateProcessDataCache64From32 was called.");
+        return InvalidateProcessDataCache(process_handle, address, size);
     }
 
     Result StoreProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {

@@ -128,6 +128,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MakeAndOpenPageGroupContiguous(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
             }
 
+            Result InvalidateProcessDataCache(KProcessAddress address, size_t size) {
+                return this->page_table.InvalidateProcessDataCache(address, size);
+            }
+
             Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
                 return this->page_table.LockForDeviceAddressSpace(out, address, size, perm, is_aligned);
             }

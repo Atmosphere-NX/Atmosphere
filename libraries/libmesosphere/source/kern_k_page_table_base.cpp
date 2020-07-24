@@ -1822,6 +1822,73 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::InvalidateProcessDataCache(KProcessAddress address, size_t size) {
+        /* Check that the region is in range. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_Uncached, KMemoryAttribute_None));
+
+        /* Get the impl. */
+        auto &impl = this->GetImpl();
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), address);
+        R_UNLESS(traverse_valid, svc::ResultInvalidCurrentMemory());
+
+        /* Prepare tracking variables. */
+        KPhysicalAddress cur_addr = next_entry.phys_addr;
+        size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+        size_t tot_size = cur_size;
+
+        /* Iterate. */
+        while (tot_size < size) {
+            /* Continue the traversal. */
+            traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            R_UNLESS(traverse_valid, svc::ResultInvalidCurrentMemory());
+
+            if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                /* Check that the pages are linearly mapped. */
+                R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+                /* Invalidate the block. */
+                if (cur_size > 0) {
+                    /* NOTE: Nintendo does not check the result of invalidation. */
+                    cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
+                }
+
+                /* Advance. */
+                cur_addr = next_entry.phys_addr;
+                cur_size = next_entry.block_size;
+            } else {
+                cur_size += next_entry.block_size;
+            }
+
+            tot_size += next_entry.block_size;
+        }
+
+        /* Ensure we use the right size for the last block. */
+        if (tot_size > size) {
+            cur_size -= (tot_size - size);
+        }
+
+        /* Check that the last block is linearly mapped. */
+        R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+        /* Invalidate the last block. */
+        if (cur_size > 0) {
+            /* NOTE: Nintendo does not check the result of invalidation. */
+            cpu::InvalidateDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
+        }
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
