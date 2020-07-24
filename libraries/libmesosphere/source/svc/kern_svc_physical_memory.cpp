@@ -22,6 +22,8 @@ namespace ams::kern::svc {
     namespace {
 
         Result SetHeapSize(uintptr_t *out_address, size_t size) {
+            MESOSPHERE_LOG("%s: SetHeapSize(%012zx)\n", GetCurrentProcess().GetName(), size);
+
             /* Validate size. */
             R_UNLESS(util::IsAligned(size, ams::svc::HeapSizeAlignment), svc::ResultInvalidSize());
             R_UNLESS(size < ams::kern::MainMemorySize,                   svc::ResultInvalidSize());
@@ -46,6 +48,48 @@ namespace ams::kern::svc {
             return Kernel::GetUnsafeMemory().SetLimitSize(limit);
         }
 
+        Result MapPhysicalMemory(uintptr_t address, size_t size) {
+            /* Validate address / size. */
+            R_UNLESS(util::IsAligned(address, PageSize), svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                           svc::ResultInvalidSize());
+            R_UNLESS((address < address + size),         svc::ResultInvalidMemoryRegion());
+
+            /* Verify that the process has system resource. */
+            auto &process = GetCurrentProcess();
+            R_UNLESS(process.GetTotalSystemResourceSize() > 0, svc::ResultInvalidState());
+
+            /* Verify that the region is in range. */
+            auto &page_table = process.GetPageTable();
+            R_UNLESS(page_table.IsInAliasRegion(address, size), svc::ResultInvalidMemoryRegion());
+
+            /* Map the memory. */
+            R_TRY(page_table.MapPhysicalMemory(address, size));
+
+            return ResultSuccess();
+        }
+
+        Result UnmapPhysicalMemory(uintptr_t address, size_t size) {
+            /* Validate address / size. */
+            R_UNLESS(util::IsAligned(address, PageSize), svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                           svc::ResultInvalidSize());
+            R_UNLESS((address < address + size),         svc::ResultInvalidMemoryRegion());
+
+            /* Verify that the process has system resource. */
+            auto &process = GetCurrentProcess();
+            R_UNLESS(process.GetTotalSystemResourceSize() > 0, svc::ResultInvalidState());
+
+            /* Verify that the region is in range. */
+            auto &page_table = process.GetPageTable();
+            R_UNLESS(page_table.IsInAliasRegion(address, size), svc::ResultInvalidMemoryRegion());
+
+            /* Unmap the memory. */
+            R_TRY(page_table.UnmapPhysicalMemory(address, size));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -56,11 +100,11 @@ namespace ams::kern::svc {
     }
 
     Result MapPhysicalMemory64(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapPhysicalMemory64 was called.");
+        return MapPhysicalMemory(address, size);
     }
 
     Result UnmapPhysicalMemory64(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapPhysicalMemory64 was called.");
+        return UnmapPhysicalMemory(address, size);
     }
 
     Result MapPhysicalMemoryUnsafe64(ams::svc::Address address, ams::svc::Size size) {
@@ -83,11 +127,11 @@ namespace ams::kern::svc {
     }
 
     Result MapPhysicalMemory64From32(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapPhysicalMemory64From32 was called.");
+        return MapPhysicalMemory(address, size);
     }
 
     Result UnmapPhysicalMemory64From32(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapPhysicalMemory64From32 was called.");
+        return UnmapPhysicalMemory(address, size);
     }
 
     Result MapPhysicalMemoryUnsafe64From32(ams::svc::Address address, ams::svc::Size size) {

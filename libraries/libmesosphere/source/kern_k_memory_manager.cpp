@@ -143,13 +143,13 @@ namespace ams::kern {
 
         /* Maintain the optimized memory bitmap, if we should. */
         if (this->has_optimized_process[pool]) {
-            chosen_manager->TrackAllocationForOptimizedProcess(allocated_block, num_pages);
+            chosen_manager->TrackUnoptimizedAllocation(allocated_block, num_pages);
         }
 
         return allocated_block;
     }
 
-    Result KMemoryManager::AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool optimize, bool random) {
+    Result KMemoryManager::AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random) {
         /* Choose a heap based on our page size request. */
         const s32 heap_index = KPageHeap::GetBlockIndex(num_pages);
         R_UNLESS(0 <= heap_index, svc::ResultOutOfMemory());
@@ -183,8 +183,8 @@ namespace ams::kern {
                     }
 
                     /* Maintain the optimized memory bitmap, if we should. */
-                    if (optimize) {
-                        cur_manager->TrackAllocationForOptimizedProcess(allocated_block, pages_per_alloc);
+                    if (unoptimized) {
+                        cur_manager->TrackUnoptimizedAllocation(allocated_block, pages_per_alloc);
                     }
 
                     num_pages -= pages_per_alloc;
@@ -216,6 +216,91 @@ namespace ams::kern {
         return this->AllocatePageGroupImpl(out, num_pages, pool, dir, this->has_optimized_process[pool], true);
     }
 
+    Result KMemoryManager::AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern) {
+        MESOSPHERE_ASSERT(out != nullptr);
+        MESOSPHERE_ASSERT(out->GetNumPages() == 0);
+
+        /* Decode the option. */
+        const auto [pool, dir] = DecodeOption(option);
+
+        /* Allocate the memory. */
+        bool has_optimized, is_optimized;
+        {
+            /* Lock the pool that we're allocating from. */
+            KScopedLightLock lk(this->pool_locks[pool]);
+
+            /* Check if we have an optimized process. */
+            has_optimized = this->has_optimized_process[pool];
+            is_optimized  = this->optimized_process_ids[pool] == process_id;
+
+            /* Allocate the page group. */
+            R_TRY(this->AllocatePageGroupImpl(out, num_pages, pool, dir, has_optimized && !is_optimized, false));
+        }
+
+        /* Perform optimized memory tracking, if we should. */
+        if (has_optimized && is_optimized) {
+            /* Iterate over the allocated blocks. */
+            for (const auto &block : *out) {
+                /* Get the block extents. */
+                const KVirtualAddress block_address = block.GetAddress();
+                const size_t block_pages            = block.GetNumPages();
+
+                /* If it has no pages, we don't need to do anything. */
+                if (block_pages == 0) {
+                    continue;
+                }
+
+                /* Fill all the pages that we need to fill. */
+                bool any_new = false;
+                {
+                    KVirtualAddress cur_address = block_address;
+                    size_t cur_pages            = block_pages;
+                    while (cur_pages > 0) {
+                        /* Get the manager for the current address. */
+                        auto &manager = this->GetManager(cur_address);
+
+                        /* Process part or all of the block. */
+                        const size_t processed_pages = manager.ProcessOptimizedAllocation(std::addressof(any_new), cur_address, cur_pages, fill_pattern);
+
+                        /* Advance. */
+                        cur_address += processed_pages * PageSize;
+                        cur_pages   -= processed_pages;
+                    }
+                }
+
+                /* If there are no new pages, move on to the next block. */
+                if (!any_new) {
+                    continue;
+                }
+
+                /* Update tracking for the allocation. */
+                KVirtualAddress cur_address = block_address;
+                size_t cur_pages            = block_pages;
+                while (cur_pages > 0) {
+                    /* Get the manager for the current address. */
+                    auto &manager = this->GetManager(cur_address);
+
+                    /* Lock the pool for the manager. */
+                    KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+
+                    /* Track some or all of the current pages. */
+                    const size_t processed_pages = manager.TrackOptimizedAllocation(cur_address, cur_pages);
+
+                    /* Advance. */
+                    cur_address += processed_pages * PageSize;
+                    cur_pages   -= processed_pages;
+                }
+            }
+        } else {
+            /* Set all the allocated memory. */
+            for (const auto &block : *out) {
+                std::memset(GetVoidPointer(block.GetAddress()), fill_pattern, block.GetSize());
+            }
+        }
+
+        return ResultSuccess();
+    }
+
     size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress metadata, KVirtualAddress metadata_end) {
         /* Calculate metadata sizes. */
         const size_t ref_count_size      = (region->GetSize() / PageSize) * sizeof(u16);
@@ -245,7 +330,7 @@ namespace ams::kern {
         return total_metadata_size;
     }
 
-    void KMemoryManager::Impl::TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages) {
+    void KMemoryManager::Impl::TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages) {
         size_t offset = this->heap.GetPageOffset(block);
         const size_t last = offset + num_pages - 1;
         u64 *optimize_map = GetPointer<u64>(this->metadata_region);
@@ -253,6 +338,57 @@ namespace ams::kern {
             optimize_map[offset / BITSIZEOF(u64)] &= ~(u64(1) << (offset % BITSIZEOF(u64)));
             offset++;
         }
+    }
+
+    size_t KMemoryManager::Impl::TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages) {
+        /* Get the number of tracking pages. */
+        const size_t cur_pages = std::min(num_pages, this->heap.GetPageOffsetToEnd(block));
+
+        /* Get the range we're tracking. */
+        size_t offset = this->heap.GetPageOffset(block);
+        const size_t last = offset + cur_pages - 1;
+
+        /* Track. */
+        u64 *optimize_map = GetPointer<u64>(this->metadata_region);
+        while (offset <= last) {
+            /* Mark the page as being optimized-allocated. */
+            optimize_map[offset / BITSIZEOF(u64)] |= (u64(1) << (offset % BITSIZEOF(u64)));
+
+            offset++;
+        }
+
+        /* Return the number of pages we tracked. */
+        return cur_pages;
+    }
+
+    size_t KMemoryManager::Impl::ProcessOptimizedAllocation(bool *out_any_new, KVirtualAddress block, size_t num_pages, u8 fill_pattern) {
+        /* Get the number of processable pages. */
+        const size_t cur_pages = std::min(num_pages, this->heap.GetPageOffsetToEnd(block));
+
+        /* Clear any new. */
+        *out_any_new = false;
+
+        /* Get the range we're processing. */
+        size_t offset = this->heap.GetPageOffset(block);
+        const size_t last = offset + cur_pages - 1;
+
+        /* Process. */
+        u64 *optimize_map = GetPointer<u64>(this->metadata_region);
+        while (offset <= last) {
+            /* Check if the page has been optimized-allocated before. */
+            if ((optimize_map[offset / BITSIZEOF(u64)] & (u64(1) << (offset % BITSIZEOF(u64)))) == 0) {
+                /* If not, it's new. */
+                *out_any_new = true;
+
+                /* Fill the page. */
+                std::memset(GetVoidPointer(this->heap.GetAddress() + offset * PageSize), fill_pattern, PageSize);
+            }
+
+            offset++;
+        }
+
+        /* Return the number of pages we processed. */
+        return cur_pages;
     }
 
     size_t KMemoryManager::Impl::CalculateMetadataOverheadSize(size_t region_size) {

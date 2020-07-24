@@ -954,7 +954,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Open references to the L2 table. */
-            Kernel::GetPageTableManager().Open(l2_table, L1BlockSize / L2BlockSize);
+            this->GetPageTableManager().Open(l2_table, L1BlockSize / L2BlockSize);
 
             /* Replace the L1 entry with one to the new table. */
             PteDataSynchronizationBarrier();
@@ -1001,7 +1001,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Open references to the L3 table. */
-            Kernel::GetPageTableManager().Open(l3_table, L2BlockSize / L3BlockSize);
+            this->GetPageTableManager().Open(l3_table, L2BlockSize / L3BlockSize);
 
             /* Replace the L2 entry with one to the new table. */
             PteDataSynchronizationBarrier();

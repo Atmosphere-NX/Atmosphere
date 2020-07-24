@@ -75,7 +75,11 @@ namespace ams::kern {
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
 
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->metadata_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
-                    void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
+
+                    void TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages);
+                    size_t TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
+
+                    size_t ProcessOptimizedAllocation(bool *out_any_new, KVirtualAddress block, size_t num_pages, u8 fill_pattern);
 
                     constexpr Pool GetPool() const { return this->pool; }
                     constexpr size_t GetSize() const { return this->heap.GetSize(); }
@@ -161,7 +165,7 @@ namespace ams::kern {
                 }
             }
 
-            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool optimize, bool random);
+            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random);
         public:
             KMemoryManager()
                 : pool_locks(), pool_managers_head(), pool_managers_tail(), managers(), num_managers(), optimized_process_ids(), has_optimized_process()
@@ -175,6 +179,7 @@ namespace ams::kern {
 
             NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);
+            NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
             void Open(KVirtualAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */
