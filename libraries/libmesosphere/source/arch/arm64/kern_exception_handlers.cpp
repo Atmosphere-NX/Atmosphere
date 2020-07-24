@@ -163,14 +163,18 @@ namespace ams::kern::arch::arm64 {
                     HandleUserException(context, esr, far, afsr0, afsr1, data);
                 }
             } else {
-                MESOSPHERE_LOG("Unhandled Exception in Supervisor Mode\n");
-                MESOSPHERE_LOG("Current Process = %s\n", GetCurrentProcess().GetName());
+                const s32 core_id = GetCurrentCoreId();
+
+                MESOSPHERE_LOG("%d: Unhandled Exception in Supervisor Mode\n", core_id);
+                if (GetCurrentProcessPointer() != nullptr) {
+                    MESOSPHERE_LOG("%d: Current Process = %s\n", core_id, GetCurrentProcess().GetName());
+                }
 
                 for (size_t i = 0; i < 31; i++) {
-                    MESOSPHERE_LOG("X[%02zu] = %016lx\n", i, context->x[i]);
+                    MESOSPHERE_LOG("%d: X[%02zu] = %016lx\n", core_id, i, context->x[i]);
                 }
-                MESOSPHERE_LOG("PC    = %016lx\n", context->pc);
-                MESOSPHERE_LOG("SP    = %016lx\n", context->sp);
+                MESOSPHERE_LOG("%d: PC    = %016lx\n", core_id, context->pc);
+                MESOSPHERE_LOG("%d: SP    = %016lx\n", core_id, context->sp);
 
                 MESOSPHERE_PANIC("Unhandled Exception in Supervisor Mode\n");
             }

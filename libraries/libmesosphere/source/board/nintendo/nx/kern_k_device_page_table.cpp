@@ -337,6 +337,8 @@ namespace ams::kern::board::nintendo::nx {
         KPhysicalAddress   g_memory_controller_address;
         KPhysicalAddress   g_reserved_table_phys_addr;
         KDeviceAsidManager g_asid_manager;
+        u32 g_saved_page_tables[AsidCount];
+        u32 g_saved_asid_registers[ams::svc::DeviceName_Count];
 
         /* Memory controller access functionality. */
         void WriteMcRegister(size_t offset, u32 value) {
@@ -455,6 +457,61 @@ namespace ams::kern::board::nintendo::nx {
         SmmuSynchronizationBarrier();
 
         /* TODO: Install interrupt handler. */
+    }
+
+    void KDevicePageTable::Lock() {
+        g_lock.Lock();
+    }
+
+    void KDevicePageTable::Unlock() {
+        g_lock.Unlock();
+    }
+
+    void KDevicePageTable::Sleep() {
+        /* Save all page tables. */
+        for (size_t i = 0; i < AsidCount; ++i) {
+            WriteMcRegister(MC_SMMU_PTB_ASID, i);
+            SmmuSynchronizationBarrier();
+            g_saved_page_tables[i] = ReadMcRegister(MC_SMMU_PTB_DATA);
+        }
+
+        /* Save all asid registers. */
+        for (size_t i = 0; i < ams::svc::DeviceName_Count; ++i) {
+            g_saved_asid_registers[i] = ReadMcRegister(GetDeviceAsidRegisterOffset(static_cast<ams::svc::DeviceName>(i)));
+        }
+    }
+
+    void KDevicePageTable::Wakeup() {
+        /* Synchronize. */
+        InvalidatePtc();
+        InvalidateTlb();
+        SmmuSynchronizationBarrier();
+
+        /* Disable the SMMU */
+        WriteMcRegister(MC_SMMU_CONFIG, 0);
+
+        /* Restore the page tables. */
+        for (size_t i = 0; i < AsidCount; ++i) {
+            WriteMcRegister(MC_SMMU_PTB_ASID, i);
+            SmmuSynchronizationBarrier();
+            WriteMcRegister(MC_SMMU_PTB_DATA, g_saved_page_tables[i]);
+        }
+        SmmuSynchronizationBarrier();
+
+        /* Restore the asid registers. */
+        for (size_t i = 0; i < ams::svc::DeviceName_Count; ++i) {
+            WriteMcRegister(GetDeviceAsidRegisterOffset(static_cast<ams::svc::DeviceName>(i)), g_saved_asid_registers[i]);
+            SmmuSynchronizationBarrier();
+        }
+
+        /* Synchronize. */
+        InvalidatePtc();
+        InvalidateTlb();
+        SmmuSynchronizationBarrier();
+
+        /* Enable the SMMU */
+        WriteMcRegister(MC_SMMU_CONFIG, 1);
+        SmmuSynchronizationBarrier();
     }
 
     /* Member functions. */

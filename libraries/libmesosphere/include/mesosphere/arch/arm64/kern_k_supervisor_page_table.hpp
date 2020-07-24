@@ -23,9 +23,9 @@ namespace ams::kern::arch::arm64 {
     class KSupervisorPageTable {
         private:
             KPageTable page_table;
-            u64 ttbr0[cpu::NumCores];
+            u64 ttbr0_identity[cpu::NumCores];
         public:
-            constexpr KSupervisorPageTable() : page_table(), ttbr0() { /* ... */ }
+            constexpr KSupervisorPageTable() : page_table(), ttbr0_identity() { /* ... */ }
 
             NOINLINE void Initialize(s32 core_id);
 
@@ -62,6 +62,8 @@ namespace ams::kern::arch::arm64 {
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }
+
+            constexpr u64 GetIdentityMapTtbr0(s32 core_id) const { return this->ttbr0_identity[core_id]; }
     };
 
 }

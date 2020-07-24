@@ -31,6 +31,81 @@ namespace ams::kern::arch::arm64 {
         this->interrupt_controller.Finalize(core_id);
     }
 
+    void KInterruptManager::Save(s32 core_id) {
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* If on core 0, save the global interrupts. */
+        if (core_id == 0) {
+            MESOSPHERE_ABORT_UNLESS(!s_global_state_saved);
+            this->interrupt_controller.SaveGlobal(std::addressof(s_global_state));
+            s_global_state_saved = true;
+        }
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* Save all local interrupts. */
+        MESOSPHERE_ABORT_UNLESS(!this->local_state_saved);
+        this->interrupt_controller.SaveCoreLocal(std::addressof(this->local_state));
+        this->local_state_saved = true;
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* Finalize all cores other than core 0. */
+        if (core_id != 0) {
+            this->Finalize(core_id);
+        }
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* Finalize core 0. */
+        if (core_id == 0) {
+            this->Finalize(core_id);
+        }
+    }
+
+    void KInterruptManager::Restore(s32 core_id) {
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* Initialize core 0. */
+        if (core_id == 0) {
+            this->Initialize(core_id);
+        }
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* Initialize all cores other than core 0. */
+        if (core_id != 0) {
+            this->Initialize(core_id);
+        }
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* Restore all local interrupts. */
+        MESOSPHERE_ASSERT(this->local_state_saved);
+        this->interrupt_controller.RestoreCoreLocal(std::addressof(this->local_state));
+        this->local_state_saved = false;
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+
+        /* If on core 0, restore the global interrupts. */
+        if (core_id == 0) {
+            MESOSPHERE_ASSERT(s_global_state_saved);
+            this->interrupt_controller.RestoreGlobal(std::addressof(s_global_state));
+            s_global_state_saved = false;
+        }
+
+        /* Ensure all cores get to this point before continuing. */
+        cpu::SynchronizeAllCores();
+    }
+
     bool KInterruptManager::OnHandleInterrupt() {
         /* Get the interrupt id. */
         const u32 raw_irq = this->interrupt_controller.GetIrq();

@@ -89,6 +89,8 @@ namespace ams::kern::board::nintendo::nx::smc {
     bool ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
     void ConfigureCarveout(size_t which, uintptr_t address, size_t size);
 
+    void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
+
     void NORETURN Panic(u32 color);
 
     void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);

@@ -503,4 +503,22 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    void KDebugLog::Save() {
+        if (KTargetSystem::IsDebugLoggingEnabled()) {
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_debug_log_lock);
+
+            KDebugLogImpl::Save();
+        }
+    }
+
+    void KDebugLog::Restore() {
+        if (KTargetSystem::IsDebugLoggingEnabled()) {
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_debug_log_lock);
+
+            KDebugLogImpl::Restore();
+        }
+    }
+
 }
