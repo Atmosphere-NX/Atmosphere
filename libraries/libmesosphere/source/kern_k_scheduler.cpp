@@ -232,7 +232,7 @@ namespace ams::kern {
         const s64 prev_tick = this->last_context_switch_time;
         const s64 cur_tick  = KHardwareTimer::GetTick();
         const s64 tick_diff = cur_tick - prev_tick;
-        cur_thread->AddCpuTime(tick_diff);
+        cur_thread->AddCpuTime(this->core_id, tick_diff);
         if (cur_process != nullptr) {
             cur_process->AddCpuTime(tick_diff);
         }

@@ -427,8 +427,18 @@ namespace ams::kern {
             constexpr void SetDebugAttached() { this->debug_attached = true; }
             constexpr bool IsAttachedToDebugger() const { return this->debug_attached; }
 
-            void AddCpuTime(s64 amount) {
+            void AddCpuTime(s32 core_id, s64 amount) {
                 this->cpu_time += amount;
+                /* TODO: Debug kernels track per-core tick counts. Should we? */
+            }
+
+            s64 GetCpuTime() const { return this->cpu_time; }
+
+            s64 GetCpuTime(s32 core_id) const {
+                MESOSPHERE_ABORT_UNLESS(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+
+                /* TODO: Debug kernels track per-core tick counts. Should we? */
+                return 0;
             }
 
             constexpr u32 GetSuspendFlags() const { return this->suspend_allowed_flags & this->suspend_request_flags; }
