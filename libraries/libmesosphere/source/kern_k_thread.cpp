@@ -143,7 +143,7 @@ namespace ams::kern {
         this->num_kernel_waiters            = 0;
         this->entrypoint                    = reinterpret_cast<uintptr_t>(func);
 
-        /* We don't need a release (probably), and we've spent no time on the cpu. */
+        /* We haven't released our resource limit hint, and we've spent no time on the cpu. */
         this->resource_limit_release_hint   = 0;
         this->cpu_time                      = 0;
 
@@ -825,6 +825,7 @@ namespace ams::kern {
         /* Release the thread resource hint from parent. */
         if (this->parent != nullptr) {
             this->parent->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 0, 1);
+            this->resource_limit_release_hint = true;
         }
 
         /* Perform termination. */

@@ -796,7 +796,7 @@ namespace ams::kern {
         R_UNLESS(stack_size + this->code_size >= this->code_size,          svc::ResultOutOfMemory());
 
         /* Place a tentative reservation of memory for our new stack. */
-        KScopedResourceReservation mem_reservation(this, ams::svc::LimitableResource_PhysicalMemoryMax);
+        KScopedResourceReservation mem_reservation(this, ams::svc::LimitableResource_PhysicalMemoryMax, stack_size);
         R_UNLESS(mem_reservation.Succeeded(), svc::ResultLimitReached());
 
         /* Allocate and map our stack. */
