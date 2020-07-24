@@ -154,13 +154,11 @@ namespace ams::kern {
             constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
 
             constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }
-            constexpr bool IsSuspended() const {
-                return this->is_suspended;
-            }
 
-            constexpr void SetSuspended(bool suspended) {
-                this->is_suspended = suspended;
-            }
+            constexpr bool IsApplication() const { return this->is_application; }
+
+            constexpr bool IsSuspended() const { return this->is_suspended; }
+            constexpr void SetSuspended(bool suspended) { this->is_suspended = suspended; }
 
             Result Terminate();
 
@@ -245,6 +243,14 @@ namespace ams::kern {
 
             void IncrementThreadCount();
             void DecrementThreadCount();
+
+            size_t GetTotalSystemResourceSize() const { return this->system_resource_num_pages * PageSize; }
+            size_t GetUsedSystemResourceSize() const {
+                if (this->system_resource_num_pages == 0) {
+                    return 0;
+                }
+                return this->dynamic_page_manager.GetUsed() * PageSize;
+            }
 
             void ClearRunningThread(KThread *thread) {
                 for (size_t i = 0; i < util::size(this->running_threads); ++i) {
