@@ -224,6 +224,10 @@ namespace ams::kern {
             return this->ipc_lock_count;
         }
 
+        constexpr KMemoryState GetState() const {
+            return this->state;
+        }
+
         constexpr KMemoryPermission GetPermission() const {
             return this->perm;
         }

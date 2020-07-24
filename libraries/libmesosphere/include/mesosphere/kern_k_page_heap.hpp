@@ -140,6 +140,7 @@ namespace ams::kern {
             constexpr size_t GetSize() const { return this->heap_size; }
             constexpr KVirtualAddress GetEndAddress() const { return this->GetAddress() + this->GetSize(); }
             constexpr size_t GetPageOffset(KVirtualAddress block) const { return (block - this->GetAddress()) / PageSize; }
+            constexpr size_t GetPageOffsetToEnd(KVirtualAddress block) const { return (this->GetEndAddress() - block) / PageSize; }
 
             void Initialize(KVirtualAddress heap_address, size_t heap_size, KVirtualAddress metadata_address, size_t metadata_size) {
                 return Initialize(heap_address, heap_size, metadata_address, metadata_size, MemoryBlockPageShifts, NumMemoryBlockPageShifts);

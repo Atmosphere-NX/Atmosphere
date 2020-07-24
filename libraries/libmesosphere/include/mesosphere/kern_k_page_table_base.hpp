@@ -180,6 +180,10 @@ namespace ams::kern {
                 return this->address_space_start <= addr && addr < addr + size && addr + size - 1 <= this->address_space_end - 1;
             }
 
+            constexpr bool IsInAliasRegion(KProcessAddress addr, size_t size) const {
+                return this->Contains(addr, size) && this->alias_region_start <= addr && addr + size - 1 <= this->alias_region_end - 1;
+            }
+
             KProcessAddress GetRegionAddress(KMemoryState state) const;
             size_t GetRegionSize(KMemoryState state) const;
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const;
@@ -335,6 +339,12 @@ namespace ams::kern {
             Result SetupForIpc(KProcessAddress *out_dst_addr, size_t size, KProcessAddress src_addr, KPageTableBase &src_page_table, KMemoryPermission test_perm, KMemoryState dst_state, bool send);
             Result CleanupForIpcServer(KProcessAddress address, size_t size, KMemoryState dst_state, KProcess *server_process);
             Result CleanupForIpcClient(KProcessAddress address, size_t size, KMemoryState dst_state);
+
+            Result MapPhysicalMemory(KProcessAddress address, size_t size);
+            Result UnmapPhysicalMemory(KProcessAddress address, size_t size);
+
+            Result MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
+            Result UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
 
             void DumpTable() const {
                 KScopedLightLock lk(this->general_lock);

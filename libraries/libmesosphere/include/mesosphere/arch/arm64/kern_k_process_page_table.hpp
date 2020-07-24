@@ -200,6 +200,22 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.CleanupForIpcClient(address, size, dst_state);
             }
 
+            Result MapPhysicalMemory(KProcessAddress address, size_t size) {
+                return this->page_table.MapPhysicalMemory(address, size);
+            }
+
+            Result UnmapPhysicalMemory(KProcessAddress address, size_t size) {
+                return this->page_table.UnmapPhysicalMemory(address, size);
+            }
+
+            Result MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {
+                return this->page_table.MapPhysicalMemoryUnsafe(address, size);
+            }
+
+            Result UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {
+                return this->page_table.UnmapPhysicalMemoryUnsafe(address, size);
+            }
+
             void DumpTable() const {
                 return this->page_table.DumpTable();
             }
@@ -209,6 +225,9 @@ namespace ams::kern::arch::arm64 {
             }
 
             bool Contains(KProcessAddress addr, size_t size) const { return this->page_table.Contains(addr, size); }
+
+            bool IsInAliasRegion(KProcessAddress addr, size_t size) const { return this->page_table.IsInAliasRegion(addr, size); }
+
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return this->page_table.CanContain(addr, size, state); }
 
             KProcessAddress GetAddressSpaceStart()    const { return this->page_table.GetAddressSpaceStart(); }
