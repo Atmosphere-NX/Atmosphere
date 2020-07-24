@@ -22,9 +22,6 @@ namespace ams::kern::svc {
     namespace {
 
         Result GetInfo(u64 *out, ams::svc::InfoType info_type, ams::svc::Handle handle, u64 info_subtype) {
-            MESOSPHERE_LOG("GetInfo(%p, %u, %08x, %lu) was called\n", out, static_cast<u32>(info_type), static_cast<u32>(handle), info_subtype);
-            ON_SCOPE_EXIT{ MESOSPHERE_LOG("GetInfo returned %016lx\n", *out); };
-
             switch (info_type) {
                 case ams::svc::InfoType_CoreMask:
                 case ams::svc::InfoType_PriorityMask:
@@ -38,11 +35,14 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_AslrRegionSize:
                 case ams::svc::InfoType_StackRegionAddress:
                 case ams::svc::InfoType_StackRegionSize:
+                case ams::svc::InfoType_SystemResourceSizeTotal:
+                case ams::svc::InfoType_SystemResourceSizeUsed:
                 case ams::svc::InfoType_ProgramId:
                 case ams::svc::InfoType_InitialProcessIdRange:
                 case ams::svc::InfoType_UserExceptionContextAddress:
                 case ams::svc::InfoType_TotalNonSystemMemorySize:
                 case ams::svc::InfoType_UsedNonSystemMemorySize:
+                case ams::svc::InfoType_IsApplication:
                     {
                         /* These info types don't support non-zero subtypes. */
                         R_UNLESS(info_subtype == 0,  svc::ResultInvalidCombination());
@@ -88,6 +88,12 @@ namespace ams::kern::svc {
                             case ams::svc::InfoType_StackRegionSize:
                                 *out = process->GetPageTable().GetStackRegionSize();
                                 break;
+                            case ams::svc::InfoType_SystemResourceSizeTotal:
+                                *out = process->GetTotalSystemResourceSize();
+                                break;
+                            case ams::svc::InfoType_SystemResourceSizeUsed:
+                                *out = process->GetUsedSystemResourceSize();
+                                break;
                             case ams::svc::InfoType_ProgramId:
                                 *out = process->GetProgramId();
                                 break;
@@ -102,6 +108,9 @@ namespace ams::kern::svc {
                                 break;
                             case ams::svc::InfoType_UsedNonSystemMemorySize:
                                 *out = process->GetUsedNonSystemUserPhysicalMemorySize();
+                                break;
+                            case ams::svc::InfoType_IsApplication:
+                                *out = process->IsApplication();
                                 break;
                             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                         }
@@ -157,6 +166,11 @@ namespace ams::kern::svc {
                     }
                     break;
                 default:
+                    {
+                        /* For debug, until all infos are implemented. */
+                        MESOSPHERE_LOG("GetInfo(%p, %u, %08x, %lu) was called\n", out, static_cast<u32>(info_type), static_cast<u32>(handle), info_subtype);
+                        MESOSPHERE_UNIMPLEMENTED();
+                    }
                     return svc::ResultInvalidEnumValue();
             }
 
@@ -176,9 +190,6 @@ namespace ams::kern::svc {
         }
 
         Result GetSystemInfo(u64 *out, ams::svc::SystemInfoType info_type, ams::svc::Handle handle, u64 info_subtype) {
-            MESOSPHERE_LOG("GetSystemInfo(%p, %u, %08x, %lu) was called\n", out, static_cast<u32>(info_type), static_cast<u32>(handle), info_subtype);
-            ON_SCOPE_EXIT{ MESOSPHERE_LOG("GetSystemInfo returned %016lx\n", *out); };
-
             switch (info_type) {
                 case ams::svc::SystemInfoType_TotalPhysicalMemorySize:
                 case ams::svc::SystemInfoType_UsedPhysicalMemorySize:

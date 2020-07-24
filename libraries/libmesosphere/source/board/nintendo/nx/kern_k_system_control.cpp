@@ -21,13 +21,21 @@ namespace ams::kern::board::nintendo::nx {
 
     namespace {
 
+        constexpr size_t SecureAlignment = 128_KB;
+
         /* Global variables for panic. */
-        bool g_call_smc_on_panic;
+        constinit bool g_call_smc_on_panic;
 
         /* Global variables for secure memory. */
-        constexpr size_t SecureAppletReservedMemorySize = 4_MB;
-        KVirtualAddress g_secure_applet_memory_address;
+        constexpr size_t SecureAppletMemorySize = 4_MB;
+        constinit KSpinLock g_secure_applet_lock;
+        constinit bool g_secure_applet_memory_used = false;
+        constinit KVirtualAddress g_secure_applet_memory_address = Null<KVirtualAddress>;
 
+        constinit KSpinLock g_secure_region_lock;
+        constinit bool g_secure_region_used = false;
+        constinit KPhysicalAddress g_secure_region_phys_addr = Null<KPhysicalAddress>;
+        constinit size_t g_secure_region_size = 0;
 
         /* Global variables for randomness. */
         /* Nintendo uses std::mt19937_t for randomness. */
@@ -35,7 +43,7 @@ namespace ams::kern::board::nintendo::nx {
         /* We will use TinyMT. */
         bool         g_initialized_random_generator;
         util::TinyMT g_random_generator;
-        KSpinLock    g_random_lock;
+        constinit KSpinLock    g_random_lock;
 
         ALWAYS_INLINE size_t GetRealMemorySizeForInit() {
             /* TODO: Move this into a header for the MC in general. */
@@ -216,6 +224,90 @@ namespace ams::kern::board::nintendo::nx {
             return false;
         }
 
+        bool SetSecureRegion(KPhysicalAddress phys_addr, size_t size) {
+            /* Ensure address and size are aligned. */
+            if (!util::IsAligned(GetInteger(phys_addr), SecureAlignment)) {
+                return false;
+            }
+            if (!util::IsAligned(size, SecureAlignment)) {
+                return false;
+            }
+
+            /* Disable interrupts and acquire the secure region lock. */
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_secure_region_lock);
+
+            /* If size is non-zero, we're allocating the secure region. Otherwise, we're freeing it. */
+            if (size != 0) {
+                /* Verify that the secure region is free. */
+                if (g_secure_region_used) {
+                    return false;
+                }
+
+                /* Set the secure region. */
+                g_secure_region_used      = true;
+                g_secure_region_phys_addr = phys_addr;
+                g_secure_region_size      = size;
+            } else {
+                /* Verify that the secure region is in use. */
+                if (!g_secure_region_used) {
+                    return false;
+                }
+
+                /* Verify that the address being freed is the secure region. */
+                if (phys_addr != g_secure_region_phys_addr) {
+                    return false;
+                }
+
+                /* Clear the secure region. */
+                g_secure_region_used      = false;
+                g_secure_region_phys_addr = Null<KPhysicalAddress>;
+                g_secure_region_size      = 0;
+            }
+
+            /* Configure the carveout with the secure monitor. */
+            smc::ConfigureCarveout(1, GetInteger(phys_addr), size);
+
+            return true;
+        }
+
+        Result AllocateSecureMemoryForApplet(KVirtualAddress *out, size_t size) {
+            /* Verify that the size is valid. */
+            R_UNLESS(util::IsAligned(size, PageSize), svc::ResultInvalidSize());
+            R_UNLESS(size <= SecureAppletMemorySize,  svc::ResultOutOfMemory());
+
+            /* Disable interrupts and acquire the secure applet lock. */
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_secure_applet_lock);
+
+            /* Check that memory is reserved for secure applet use. */
+            MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
+
+            /* Verify that the secure applet memory isn't already being used. */
+            R_UNLESS(!g_secure_applet_memory_used, svc::ResultOutOfMemory());
+
+            /* Return the secure applet memory. */
+            g_secure_applet_memory_used = true;
+            *out = g_secure_applet_memory_address;
+
+            return ResultSuccess();
+        }
+
+        void FreeSecureMemoryForApplet(KVirtualAddress address, size_t size) {
+            /* Disable interrupts and acquire the secure applet lock. */
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_secure_applet_lock);
+
+            /* Verify that the memory being freed is correct. */
+            MESOSPHERE_ABORT_UNLESS(address == g_secure_applet_memory_address);
+            MESOSPHERE_ABORT_UNLESS(size <= SecureAppletMemorySize);
+            MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, PageSize));
+            MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_used);
+
+            /* Release the secure applet memory. */
+            g_secure_applet_memory_used = false;
+        }
+
     }
 
     /* Initialization. */
@@ -363,10 +455,10 @@ namespace ams::kern::board::nintendo::nx {
         /* Reserve secure applet memory. */
         {
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address == Null<KVirtualAddress>);
-            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletReservedMemorySize));
+            MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
 
             constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletReservedMemorySize / PageSize, 1, SecureAppletAllocateOption);
+            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
         }
     }
@@ -480,11 +572,71 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     Result KSystemControl::AllocateSecureMemory(KVirtualAddress *out, size_t size, u32 pool) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Applet secure memory is handled separately. */
+        if (pool == KMemoryManager::Pool_Applet) {
+            return AllocateSecureMemoryForApplet(out, size);
+        }
+
+        /* Ensure the size is aligned. */
+        const size_t alignment = (pool == KMemoryManager::Pool_System ? PageSize : SecureAlignment);
+        R_UNLESS(util::IsAligned(size, alignment), svc::ResultInvalidSize());
+
+        /* Allocate the memory. */
+        const size_t num_pages = size / PageSize;
+        const KVirtualAddress vaddr = Kernel::GetMemoryManager().AllocateContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
+        R_UNLESS(vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+
+        /* Open a reference to the memory. */
+        Kernel::GetMemoryManager().Open(vaddr, num_pages);
+
+        /* Ensure we don't leak references to the memory on error. */
+        auto mem_guard = SCOPE_GUARD { Kernel::GetMemoryManager().Close(vaddr, num_pages); };
+
+        /* If the memory isn't already secure, set it as secure. */
+        if (pool != KMemoryManager::Pool_System) {
+            /* Get the physical address. */
+            const KPhysicalAddress paddr = KPageTable::GetHeapPhysicalAddress(vaddr);
+            MESOSPHERE_ABORT_UNLESS(paddr != Null<KPhysicalAddress>);
+
+            /* Set the secure region. */
+            R_UNLESS(SetSecureRegion(paddr, size), svc::ResultOutOfMemory());
+        }
+
+        /* We succeeded. */
+        mem_guard.Cancel();
+        *out = vaddr;
+        return ResultSuccess();
     }
 
     void KSystemControl::FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Applet secure memory is handled separately. */
+        if (pool == KMemoryManager::Pool_Applet) {
+            return FreeSecureMemoryForApplet(address, size);
+        }
+
+        /* Ensure the size is aligned. */
+        const size_t alignment = (pool == KMemoryManager::Pool_System ? PageSize : SecureAlignment);
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(address), alignment));
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(size, alignment));
+
+        /* If the memory isn't secure system, reset the secure region. */
+        if (pool != KMemoryManager::Pool_System) {
+            /* Check that the size being freed is the current secure region size. */
+            MESOSPHERE_ABORT_UNLESS(g_secure_region_size == size);
+
+            /* Get the physical address. */
+            const KPhysicalAddress paddr = KPageTable::GetHeapPhysicalAddress(address);
+            MESOSPHERE_ABORT_UNLESS(paddr != Null<KPhysicalAddress>);
+
+            /* Check that the memory being freed is the current secure region. */
+            MESOSPHERE_ABORT_UNLESS(paddr == g_secure_region_phys_addr);
+
+            /* Free the secure region. */
+            MESOSPHERE_ABORT_UNLESS(SetSecureRegion(paddr, 0));
+        }
+
+        /* Close the secure region's pages. */
+        Kernel::GetMemoryManager().Close(address, size / PageSize);
     }
 
 }
