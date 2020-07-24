@@ -197,7 +197,7 @@ namespace ams::kern {
             bool LeaveUserException();
             bool ReleaseUserException(KThread *thread);
 
-            KThread *GetPreemptionStatePinnedThread(s32 core_id) const {
+            KThread *GetPinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 return this->pinned_threads[core_id];
             }
@@ -269,7 +269,7 @@ namespace ams::kern {
 
             Result SetActivity(ams::svc::ProcessActivity activity);
 
-            void SetPreemptionState();
+            void PinCurrentThread();
 
             Result SignalToAddress(KProcessAddress address) {
                 return this->cond_var.SignalToAddress(address);

@@ -30,6 +30,7 @@ namespace ams::kern {
         KInterruptTaskManager *interrupt_task_manager;
         s32 core_id;
         void *exception_stack_top;
+        ams::svc::ThreadLocalRegion *tlr;
     };
     static_assert(std::is_standard_layout<KCurrentContext>::value && std::is_trivially_destructible<KCurrentContext>::value);
     static_assert(sizeof(KCurrentContext) <= cpu::DataCacheLineSize);
@@ -80,12 +81,20 @@ namespace ams::kern {
         return impl::GetCurrentContext().core_id;
     }
 
+    ALWAYS_INLINE ams::svc::ThreadLocalRegion *GetCurrentThreadLocalRegion() {
+        return impl::GetCurrentContext().tlr;
+    }
+
     ALWAYS_INLINE void SetCurrentThread(KThread *new_thread) {
         impl::GetCurrentContext().current_thread = new_thread;
     }
 
     ALWAYS_INLINE void SetCurrentProcess(KProcess *new_process) {
         impl::GetCurrentContext().current_process = new_process;
+    }
+
+    ALWAYS_INLINE void SetCurrentThreadLocalRegion(void *address) {
+        impl::GetCurrentContext().tlr = static_cast<ams::svc::ThreadLocalRegion *>(address);
     }
 
 }

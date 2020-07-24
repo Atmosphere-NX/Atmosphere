@@ -145,15 +145,15 @@ namespace ams::kern::arch::arm64 {
         {
             const bool is_user_mode = (context->psr & 0xF) == 0;
             if (is_user_mode) {
-                /* Handle any changes needed to the user preemption state. */
-                if (GetCurrentThread().GetUserPreemptionState() != 0 && GetCurrentProcess().GetPreemptionStatePinnedThread(GetCurrentCoreId()) == nullptr) {
+                /* If the user disable count is set, we may need to pin the current thread. */
+                if (GetCurrentThread().GetUserDisableCount() != 0 && GetCurrentProcess().GetPinnedThread(GetCurrentCoreId()) == nullptr) {
                     KScopedSchedulerLock lk;
 
-                    /* Note the preemption state in process. */
-                    GetCurrentProcess().SetPreemptionState();
+                    /* Pin the current thread. */
+                    GetCurrentProcess().PinCurrentThread();
 
-                    /* Set the kernel preemption state flag. */
-                    GetCurrentThread().SetKernelPreemptionState(1);
+                    /* Set the interrupt flag for the thread. */
+                    GetCurrentThread().SetInterruptFlag();
                 }
 
                 /* Enable interrupts while we process the usermode exception. */
