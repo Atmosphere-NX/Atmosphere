@@ -23,7 +23,7 @@ namespace ams::kern::svc {
 
         void Break(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
             /* Log for debug that Break was called. */
-            MESOSPHERE_LOG("%s: Break(%08x)\n", GetCurrentProcess().GetName(), static_cast<u32>(break_reason));
+            MESOSPHERE_LOG("%s: Break(%08x, %016lx, %zu)\n", GetCurrentProcess().GetName(), static_cast<u32>(break_reason), address, size);
 
             /* If the current process is attached to debugger, notify it. */
             if (GetCurrentProcess().IsAttachedToDebugger()) {
@@ -36,7 +36,10 @@ namespace ams::kern::svc {
             }
 
             /* TODO */
-            MESOSPHERE_UNIMPLEMENTED();
+            if (size == sizeof(u32)) {
+                MESOSPHERE_LOG("DEBUG: %08x\n", *reinterpret_cast<u32 *>(address));
+            }
+            MESOSPHERE_PANIC("Break was called\n");
         }
 
     }

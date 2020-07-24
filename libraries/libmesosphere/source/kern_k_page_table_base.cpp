@@ -3352,7 +3352,217 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::UnmapPhysicalMemory(KProcessAddress address, size_t size) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lock the physical memory lock. */
+        KScopedLightLock phys_lk(this->map_physical_memory_lock);
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Calculate the last address for convenience. */
+        const KProcessAddress last_address = address + size - 1;
+
+        /* Define iteration variables. */
+        KProcessAddress cur_address;
+        size_t mapped_size;
+
+        /* Check if the memory is mapped. */
+        {
+            /* Iterate over the memory. */
+            cur_address = address;
+            mapped_size = 0;
+
+            auto it = this->memory_block_manager.FindIterator(cur_address);
+            while (true) {
+                /* Check that the iterator is valid. */
+                MESOSPHERE_ASSERT(it != this->memory_block_manager.end());
+
+                /* Get the memory info. */
+                const KMemoryInfo info = it->GetMemoryInfo();
+
+                /* Verify the memory's state. */
+                const bool is_normal = info.GetState() == KMemoryState_Normal && info.GetAttribute() == 0;
+                const bool is_free   = info.GetState() == KMemoryState_Free;
+                R_UNLESS(is_normal || is_free, svc::ResultInvalidCurrentMemory());
+
+                /* Check if we're done. */
+                if (last_address <= info.GetLastAddress()) {
+                    if (is_normal) {
+                        mapped_size += (last_address + 1 - cur_address);
+                    }
+                    break;
+                }
+
+                /* Track the memory if it's mapped. */
+                if (is_normal) {
+                    mapped_size += KProcessAddress(info.GetEndAddress()) - cur_address;
+                }
+
+                /* Advance. */
+                cur_address = info.GetEndAddress();
+                ++it;
+            }
+
+            /* If there's nothing mapped, we've nothing to do. */
+            R_SUCCEED_IF(mapped_size == 0);
+        }
+
+        /* Make a page group for the unmap region. */
+        KPageGroup pg(this->block_info_manager);
+        {
+            auto &impl = this->GetImpl();
+
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   cur_entry  = {};
+            bool             cur_valid  = false;
+            TraversalEntry   next_entry;
+            bool             next_valid;
+            size_t           tot_size   = 0;
+
+            next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_address);
+            next_entry.block_size = (next_entry.block_size - (GetInteger(next_entry.phys_addr) & (next_entry.block_size - 1)));
+
+            /* Iterate, building the group. */
+            while (true) {
+                if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
+                    cur_entry.block_size += next_entry.block_size;
+                } else {
+                    if (cur_valid) {
+                        MESOSPHERE_ABORT_UNLESS(IsHeapPhysicalAddress(cur_entry.phys_addr));
+                        R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize));
+                    }
+
+                    /* Update tracking variables. */
+                    tot_size += cur_entry.block_size;
+                    cur_entry = next_entry;
+                    cur_valid = next_valid;
+                }
+
+                if (cur_entry.block_size + tot_size >= size) {
+                    break;
+                }
+
+                next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            }
+
+            /* Add the last block. */
+            if (cur_valid) {
+                MESOSPHERE_ABORT_UNLESS(IsHeapPhysicalAddress(cur_entry.phys_addr));
+                R_TRY(pg.AddBlock(GetHeapVirtualAddress(cur_entry.phys_addr), (size - tot_size) / PageSize));
+            }
+        }
+        MESOSPHERE_ASSERT(pg.GetNumPages() == mapped_size / PageSize);
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Open a reference to the pages, we're unmapping, and close the reference when we're done. */
+        pg.Open();
+        ON_SCOPE_EXIT { pg.Close(); };
+
+        /* Reset the current tracking address, and make sure we clean up on failure. */
+        cur_address = address;
+        auto remap_guard = SCOPE_GUARD {
+            if (cur_address > address) {
+                const KProcessAddress last_map_address = cur_address - 1;
+                cur_address = address;
+
+                /* Iterate over the memory we unmapped. */
+                auto it = this->memory_block_manager.FindIterator(cur_address);
+                auto pg_it = pg.begin();
+                KPhysicalAddress pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                size_t pg_pages = pg_it->GetNumPages();
+
+                while (true) {
+                    /* Get the memory info for the pages we unmapped, convert to property. */
+                    const KMemoryInfo info = it->GetMemoryInfo();
+                    const KPageProperties prev_properties = { info.GetPermission(), false, false, false };
+
+                    /* If the memory is normal, we unmapped it and need to re-map it. */
+                    if (info.GetState() == KMemoryState_Normal) {
+                        /* Determine the range to map. */
+                        size_t map_pages = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_map_address + 1 - cur_address) / PageSize;
+
+                        /* While we have pages to map, map them. */
+                        while (map_pages > 0) {
+                            /* Check if we're at the end of the physical block. */
+                            if (pg_pages == 0) {
+                                /* Ensure there are more pages to map. */
+                                MESOSPHERE_ABORT_UNLESS(pg_it != pg.end());
+
+                                /* Advance our physical block. */
+                                ++pg_it;
+                                pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
+                                pg_pages      = pg_it->GetNumPages();
+                            }
+
+                            /* Map whatever we can. */
+                            const size_t cur_pages = std::min(pg_pages, map_pages);
+                            MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), cur_address, cur_pages, pg_phys_addr, true, prev_properties, OperationType_Map, true));
+
+                            /* Advance. */
+                            cur_address += cur_pages * PageSize;
+                            map_pages   -= cur_pages;
+
+                            pg_phys_addr += cur_pages * PageSize;
+                            pg_pages     -= cur_pages;
+                        }
+                    }
+
+                    /* Check if we're done. */
+                    if (last_map_address <= info.GetLastAddress()) {
+                        break;
+                    }
+
+                    /* Advance. */
+                    ++it;
+                }
+            }
+        };
+
+        /* Iterate over the memory, unmapping as we go. */
+        auto it = this->memory_block_manager.FindIterator(cur_address);
+        while (true) {
+            /* Check that the iterator is valid. */
+            MESOSPHERE_ASSERT(it != this->memory_block_manager.end());
+
+            /* Get the memory info. */
+            const KMemoryInfo info = it->GetMemoryInfo();
+
+            /* If the memory state is normal, we need to unmap it. */
+            if (info.GetState() == KMemoryState_Normal) {
+                /* Determine the range to unmap. */
+                const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
+                const size_t cur_pages = std::min(KProcessAddress(info.GetEndAddress()) - cur_address, last_address + 1 - cur_address) / PageSize;
+
+                /* Unmap. */
+                R_TRY(this->Operate(updater.GetPageList(), cur_address, cur_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+            }
+
+            /* Check if we're done. */
+            if (last_address <= info.GetLastAddress()) {
+                break;
+            }
+
+            /* Advance. */
+            cur_address = info.GetEndAddress();
+            ++it;
+        }
+
+        /* Release the memory resource. */
+        this->mapped_physical_memory_size -= mapped_size;
+        GetCurrentProcess().ReleaseResource(ams::svc::LimitableResource_PhysicalMemoryMax, mapped_size);
+
+        /* Update memory blocks. */
+        this->memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+
+        /* We succeeded. */
+        remap_guard.Cancel();
+        return ResultSuccess();
     }
 
     Result KPageTableBase::MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {

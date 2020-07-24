@@ -421,8 +421,9 @@ namespace ams::kern {
             constexpr KSynchronizationObject **GetSynchronizationObjectBuffer() { return std::addressof(this->sync_object_buffer.sync_objects[0]); }
             constexpr ams::svc::Handle *GetHandleBuffer() { return std::addressof(this->sync_object_buffer.handles[sizeof(this->sync_object_buffer.sync_objects) / sizeof(ams::svc::Handle) - ams::svc::ArgumentHandleCountMax]); }
 
-            constexpr u16 GetUserPreemptionState() const { return *GetPointer<u16>(this->tls_address + 0x100); }
-            constexpr void SetKernelPreemptionState(u16 state) const { *GetPointer<u16>(this->tls_address + 0x100 + sizeof(u16)) = state; }
+            u16 GetUserDisableCount() const { return static_cast<ams::svc::ThreadLocalRegion *>(this->tls_heap_address)->disable_count; }
+            void SetInterruptFlag()   const { static_cast<ams::svc::ThreadLocalRegion *>(this->tls_heap_address)->interrupt_flag = 1; }
+            void ClearInterruptFlag() const { static_cast<ams::svc::ThreadLocalRegion *>(this->tls_heap_address)->interrupt_flag = 0; }
 
             constexpr void SetDebugAttached() { this->debug_attached = true; }
             constexpr bool IsAttachedToDebugger() const { return this->debug_attached; }

@@ -977,7 +977,7 @@ namespace ams::kern {
         }
     }
 
-    void KProcess::SetPreemptionState() {
+    void KProcess::PinCurrentThread() {
         MESOSPHERE_UNIMPLEMENTED();
     }
 

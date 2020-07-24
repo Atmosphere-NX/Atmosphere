@@ -118,11 +118,11 @@ namespace ams::kern {
         for (size_t core_id = 0; core_id < cpu::NumCores; core_id++) {
             KThread *top_thread = priority_queue.GetScheduledFront(core_id);
             if (top_thread != nullptr) {
-                /* If the thread has no waiters, we need to check if the process has a thread pinned by PreemptionState. */
+                /* If the thread has no waiters, we need to check if the process has a thread pinned. */
                 if (top_thread->GetNumKernelWaiters() == 0) {
                     if (KProcess *parent = top_thread->GetOwnerProcess(); parent != nullptr) {
-                        if (KThread *suggested = parent->GetPreemptionStatePinnedThread(core_id); suggested != nullptr && suggested != top_thread) {
-                            /* We prefer our parent's pinned thread possible. However, we also don't want to schedule un-runnable threads. */
+                        if (KThread *suggested = parent->GetPinnedThread(core_id); suggested != nullptr && suggested != top_thread && suggested->GetNumKernelWaiters() == 0) {
+                            /* We prefer our parent's pinned thread if possible. However, we also don't want to schedule un-runnable threads. */
                             if (suggested->GetRawState() == KThread::ThreadState_Runnable) {
                                 top_thread = suggested;
                             } else {
@@ -261,6 +261,7 @@ namespace ams::kern {
 
         /* Set the new Thread Local region. */
         cpu::SwitchThreadLocalRegion(GetInteger(next_thread->GetThreadLocalRegionAddress()));
+        SetCurrentThreadLocalRegion(next_thread->GetThreadLocalRegionHeapAddress());
     }
 
     void KScheduler::ClearPreviousThread(KThread *thread) {

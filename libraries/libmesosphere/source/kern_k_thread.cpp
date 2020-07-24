@@ -327,7 +327,7 @@ namespace ams::kern {
         /* Release user exception, if relevant. */
         if (this->parent != nullptr) {
             this->parent->ReleaseUserException(this);
-            if (this->parent->GetPreemptionStatePinnedThread(GetCurrentCoreId()) == this) {
+            if (this->parent->GetPinnedThread(GetCurrentCoreId()) == this) {
                 /* TODO: this->parent->UnpinCurrentThread(); */
                 MESOSPHERE_UNIMPLEMENTED();
             }
