@@ -107,6 +107,18 @@ namespace ams::kern::svc {
                         }
                     }
                     break;
+                case ams::svc::InfoType_DebuggerAttached:
+                    {
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify the sub-type is valid. */
+                        R_UNLESS(info_subtype == 0, svc::ResultInvalidCombination());
+
+                        /* Get whether debugger is attached. */
+                        *out = GetCurrentProcess().GetDebugObject() != nullptr;
+                    }
+                    break;
                 case ams::svc::InfoType_ResourceLimit:
                     {
                         /* Verify the input handle is invalid. */

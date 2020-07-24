@@ -285,6 +285,8 @@ namespace ams::kern {
             Result QueryIoMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { return this->QueryMappingImpl(out, address, size, KMemoryState_Io); }
             Result MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
             Result UnmapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
+            Result MapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
+            Result UnmapCodeMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);
             Result MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapStatic(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm);
             Result MapRegion(KMemoryRegionType region_type, KMemoryPermission perm);
