@@ -3567,11 +3567,91 @@ namespace ams::kern {
     }
 
     Result KPageTableBase::MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Try to reserve the unsafe memory. */
+        R_UNLESS(Kernel::GetUnsafeMemory().TryReserve(size), svc::ResultLimitReached());
+
+        /* Ensure we release our reservation on failure. */
+        auto reserve_guard = SCOPE_GUARD { Kernel::GetUnsafeMemory().Release(size); };
+
+        /* Create a page group for the new memory. */
+        KPageGroup pg(this->block_info_manager);
+
+        /* Allocate the new memory. */
+        const size_t num_pages = size / PageSize;
+        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(pg), num_pages, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
+
+        /* Open the page group, and close it when we're done with it. */
+        pg.Open();
+        ON_SCOPE_EXIT { pg.Close(); };
+
+        /* Clear the new memory. */
+        for (const auto &block : pg) {
+            std::memset(GetVoidPointer(block.GetAddress()), this->heap_fill_value, block.GetSize());
+        }
+
+        /* Map the new memory. */
+        {
+            /* Lock the table. */
+            KScopedLightLock lk(this->general_lock);
+
+            /* Check the memory state. */
+            R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+            /* Create an update allocator. */
+            KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+            R_TRY(allocator.GetResult());
+
+            /* We're going to perform an update, so create a helper. */
+            KScopedPageTableUpdater updater(this);
+
+            /* Map the pages. */
+            const KPageProperties map_properties = { KMemoryPermission_UserReadWrite, false, false, false };
+            R_TRY(this->Operate(updater.GetPageList(), address, num_pages, pg, map_properties, OperationType_MapGroup, false));
+
+            /* Apply the memory block update. */
+            this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+
+            /* Update our mapped unsafe size. */
+            this->mapped_unsafe_physical_memory += size;
+
+            /* We succeeded. */
+            reserve_guard.Cancel();
+            return ResultSuccess();
+        }
     }
 
     Result KPageTableBase::UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check whether we can unmap this much unsafe physical memory. */
+        R_UNLESS(size <= this->mapped_unsafe_physical_memory, svc::ResultInvalidCurrentMemory());
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.GetResult());
+
+        /* We're going to perform an update, so create a helper. */
+        KScopedPageTableUpdater updater(this);
+
+        /* Unmap the memory. */
+        const size_t num_pages = size / PageSize;
+        const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, false };
+        R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
+
+        /* Apply the memory block update. */
+        this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+
+        /* Release the unsafe memory from the limit. */
+        Kernel::GetUnsafeMemory().Release(size);
+
+        /* Update our mapped unsafe size. */
+        this->mapped_unsafe_physical_memory -= size;
+
+        return ResultSuccess();
     }
 
 }
