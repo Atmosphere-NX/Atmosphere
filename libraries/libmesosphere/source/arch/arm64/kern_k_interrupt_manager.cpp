@@ -175,15 +175,15 @@ namespace ams::kern::arch::arm64 {
 
         /* If we need scheduling, */
         if (needs_scheduling) {
-            /* Handle any changes needed to the user preemption state. */
-            if (user_mode && GetCurrentThread().GetUserPreemptionState() != 0 && GetCurrentProcess().GetPreemptionStatePinnedThread(GetCurrentCoreId()) == nullptr) {
+            /* If the user disable count is set, we may need to pin the current thread. */
+            if (user_mode && GetCurrentThread().GetUserDisableCount() != 0 && GetCurrentProcess().GetPinnedThread(GetCurrentCoreId()) == nullptr) {
                 KScopedSchedulerLock sl;
 
-                /* Note the preemption state in process. */
-                GetCurrentProcess().SetPreemptionState();
+                /* Pin the current thread. */
+                GetCurrentProcess().PinCurrentThread();
 
-                /* Set the kernel preemption state flag. */
-                GetCurrentThread().SetKernelPreemptionState(1);;
+                /* Set the interrupt flag for the thread. */
+                GetCurrentThread().SetInterruptFlag();
 
                 /* Request interrupt scheduling. */
                 Kernel::GetScheduler().RequestScheduleOnInterrupt();
