@@ -432,7 +432,16 @@ namespace ams::svc {
     };
 
     enum BreakReason : u32 {
-        /* TODO */
+        BreakReason_Panic         = 0,
+        BreakReason_Assert        = 1,
+        BreakReason_User          = 2,
+        BreakReason_PreLoadDll    = 3,
+        BreakReason_PostLoadDll   = 4,
+        BreakReason_PreUnloadDll  = 5,
+        BreakReason_PostUnloadDll = 6,
+        BreakReason_CppException  = 7,
+
+        BreakReason_NotificationOnlyFlag = 0x80000000,
     };
 
     enum KernelDebugType : u32 {
