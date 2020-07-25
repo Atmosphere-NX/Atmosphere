@@ -3419,7 +3419,8 @@ namespace ams::kern {
             bool             next_valid;
             size_t           tot_size   = 0;
 
-            next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_address);
+            cur_address = address;
+            next_valid  = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), cur_address);
             next_entry.block_size = (next_entry.block_size - (GetInteger(next_entry.phys_addr) & (next_entry.block_size - 1)));
 
             /* Iterate, building the group. */
@@ -3497,7 +3498,7 @@ namespace ams::kern {
                                 /* Advance our physical block. */
                                 ++pg_it;
                                 pg_phys_addr = GetHeapPhysicalAddress(pg_it->GetAddress());
-                                pg_pages      = pg_it->GetNumPages();
+                                pg_pages     = pg_it->GetNumPages();
                             }
 
                             /* Map whatever we can. */

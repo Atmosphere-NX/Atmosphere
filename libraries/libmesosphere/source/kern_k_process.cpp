@@ -105,6 +105,9 @@ namespace ams::kern {
             /* Clear our tracking variables. */
             this->system_resource_address   = Null<KVirtualAddress>;
             this->system_resource_num_pages = 0;
+
+            /* Finalize optimized memory. If memory wasn't optimized, this is a no-op. */
+            Kernel::GetMemoryManager().FinalizeOptimizedMemory(this->GetId(), this->memory_pool);
         }
 
         /* Release memory to the resource limit. */
@@ -359,7 +362,7 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(this->process_id <= ProcessIdMax);
 
         /* If we should optimize memory allocations, do so. */
-        if (this->system_resource_address != Null<KVirtualAddress>) {
+        if (this->system_resource_address != Null<KVirtualAddress> && (params.flags & ams::svc::CreateProcessFlag_OptimizeMemoryAllocation) != 0) {
             R_TRY(Kernel::GetMemoryManager().InitializeOptimizedMemory(this->process_id, pool));
         }
 

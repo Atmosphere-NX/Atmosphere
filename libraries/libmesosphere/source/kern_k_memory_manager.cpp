@@ -106,6 +106,16 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    void KMemoryManager::FinalizeOptimizedMemory(u64 process_id, Pool pool) {
+        /* Lock the pool. */
+        KScopedLightLock lk(this->pool_locks[pool]);
+
+        /* If the process was optimized, clear it. */
+        if (this->has_optimized_process[pool] && this->optimized_process_ids[pool] == process_id) {
+            this->has_optimized_process[pool] = false;
+        }
+    }
+
 
     KVirtualAddress KMemoryManager::AllocateContinuous(size_t num_pages, size_t align_pages, u32 option) {
         /* Early return if we're allocating no pages. */
