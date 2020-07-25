@@ -31,15 +31,18 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
+                const uintptr_t cur_thread_tag = (cur_thread | 1);
 
                 while (true) {
                     uintptr_t old_tag = this->tag.load(std::memory_order_relaxed);
 
                     while (!this->tag.compare_exchange_weak(old_tag, (old_tag == 0) ? cur_thread : old_tag | 1, std::memory_order_acquire)) {
-                         /* ... */
+                        if ((old_tag | 1) == cur_thread_tag) {
+                            return;
+                        }
                     }
 
-                    if ((old_tag == 0) || ((old_tag | 1) == (cur_thread | 1))) {
+                    if ((old_tag == 0) || ((old_tag | 1) == cur_thread_tag)) {
                         break;
                     }
 
@@ -52,9 +55,11 @@ namespace ams::kern {
 
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
                 uintptr_t expected = cur_thread;
-                if (!this->tag.compare_exchange_weak(expected, 0, std::memory_order_release)) {
-                    this->UnlockSlowPath(cur_thread);
-                }
+                do {
+                    if (expected != cur_thread) {
+                        return this->UnlockSlowPath(cur_thread);
+                    }
+                } while (!this->tag.compare_exchange_weak(expected, 0, std::memory_order_release));
             }
 
             void LockSlowPath(uintptr_t owner, uintptr_t cur_thread);

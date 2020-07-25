@@ -95,9 +95,6 @@ namespace ams::kern::svc {
         }
 
         Result UnmapMemory(uintptr_t dst_address, uintptr_t src_address, size_t size) {
-            /* Log the call parameters for debugging. */
-            MESOSPHERE_LOG("UnmapMemory(%zx, %zx, %zx)\n", dst_address, src_address, size);
-
             /* Validate that addresses are page aligned. */
             R_UNLESS(util::IsAligned(dst_address, PageSize), svc::ResultInvalidAddress());
             R_UNLESS(util::IsAligned(src_address, PageSize), svc::ResultInvalidAddress());
