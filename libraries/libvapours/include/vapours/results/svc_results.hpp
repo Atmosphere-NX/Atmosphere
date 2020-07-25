@@ -65,6 +65,7 @@ namespace ams::svc {
 
     R_DEFINE_ERROR_RESULT(PortClosed,                   131);
     R_DEFINE_ERROR_RESULT(LimitReached,                 132);
+    R_DEFINE_ERROR_RESULT(InvalidMemoryPool,            133);
 
     R_DEFINE_ERROR_RESULT(ReceiveListBroken,            258);
     R_DEFINE_ERROR_RESULT(OutOfAddressSpace,            259);

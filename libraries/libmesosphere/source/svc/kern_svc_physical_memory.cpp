@@ -90,6 +90,45 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result MapPhysicalMemoryUnsafe(uintptr_t address, size_t size) {
+            /* Validate address / size. */
+            R_UNLESS(util::IsAligned(address, PageSize), svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                           svc::ResultInvalidSize());
+            R_UNLESS((address < address + size),         svc::ResultInvalidCurrentMemory());
+
+            /* Verify that the region is in range. */
+            auto &process    = GetCurrentProcess();
+            auto &page_table = process.GetPageTable();
+            R_UNLESS(page_table.IsInUnsafeAliasRegion(address, size), svc::ResultInvalidMemoryRegion());
+
+            /* Verify that the process isn't already using the unsafe pool. */
+            R_UNLESS(process.GetMemoryPool() != KMemoryManager::Pool_Unsafe, svc::ResultInvalidMemoryPool());
+
+            /* Map the memory. */
+            R_TRY(page_table.MapPhysicalMemoryUnsafe(address, size));
+
+            return ResultSuccess();
+        }
+
+        Result UnmapPhysicalMemoryUnsafe(uintptr_t address, size_t size) {
+            /* Validate address / size. */
+            R_UNLESS(util::IsAligned(address, PageSize), svc::ResultInvalidAddress());
+            R_UNLESS(util::IsAligned(size,    PageSize), svc::ResultInvalidSize());
+            R_UNLESS(size > 0,                           svc::ResultInvalidSize());
+            R_UNLESS((address < address + size),         svc::ResultInvalidCurrentMemory());
+
+            /* Verify that the region is in range. */
+            auto &process    = GetCurrentProcess();
+            auto &page_table = process.GetPageTable();
+            R_UNLESS(page_table.IsInUnsafeAliasRegion(address, size), svc::ResultInvalidMemoryRegion());
+
+            /* Unmap the memory. */
+            R_TRY(page_table.UnmapPhysicalMemoryUnsafe(address, size));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -108,11 +147,11 @@ namespace ams::kern::svc {
     }
 
     Result MapPhysicalMemoryUnsafe64(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapPhysicalMemoryUnsafe64 was called.");
+        return MapPhysicalMemoryUnsafe(address, size);
     }
 
     Result UnmapPhysicalMemoryUnsafe64(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapPhysicalMemoryUnsafe64 was called.");
+        return UnmapPhysicalMemoryUnsafe(address, size);
     }
 
     Result SetUnsafeLimit64(ams::svc::Size limit) {
@@ -135,11 +174,11 @@ namespace ams::kern::svc {
     }
 
     Result MapPhysicalMemoryUnsafe64From32(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcMapPhysicalMemoryUnsafe64From32 was called.");
+        return MapPhysicalMemoryUnsafe(address, size);
     }
 
     Result UnmapPhysicalMemoryUnsafe64From32(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcUnmapPhysicalMemoryUnsafe64From32 was called.");
+        return UnmapPhysicalMemoryUnsafe(address, size);
     }
 
     Result SetUnsafeLimit64From32(ams::svc::Size limit) {

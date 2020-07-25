@@ -184,6 +184,11 @@ namespace ams::kern {
                 return this->Contains(addr, size) && this->alias_region_start <= addr && addr + size - 1 <= this->alias_region_end - 1;
             }
 
+            bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const {
+                /* Even though Unsafe physical memory is KMemoryState_Normal, it must be mapped inside the alias code region. */
+                return this->CanContain(addr, size, KMemoryState_AliasCode);
+            }
+
             KProcessAddress GetRegionAddress(KMemoryState state) const;
             size_t GetRegionSize(KMemoryState state) const;
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const;

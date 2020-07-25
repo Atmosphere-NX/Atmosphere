@@ -227,6 +227,7 @@ namespace ams::kern::arch::arm64 {
             bool Contains(KProcessAddress addr, size_t size) const { return this->page_table.Contains(addr, size); }
 
             bool IsInAliasRegion(KProcessAddress addr, size_t size) const { return this->page_table.IsInAliasRegion(addr, size); }
+            bool IsInUnsafeAliasRegion(KProcessAddress addr, size_t size) const { return this->page_table.IsInUnsafeAliasRegion(addr, size); }
 
             bool CanContain(KProcessAddress addr, size_t size, KMemoryState state) const { return this->page_table.CanContain(addr, size, state); }
 

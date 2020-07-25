@@ -62,6 +62,7 @@ namespace ams::kern::svc {
 
     /* 131 */ using ::ams::svc::ResultPortClosed;
     /* 132 */ using ::ams::svc::ResultLimitReached;
+    /* 133 */ using ::ams::svc::ResultInvalidMemoryPool;
 
     /* 258 */ using ::ams::svc::ResultReceiveListBroken;
     /* 259 */ using ::ams::svc::ResultOutOfAddressSpace;
