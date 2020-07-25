@@ -645,7 +645,7 @@ namespace ams::kern::arch::arm64 {
                 size_t alignment;
                 for (alignment = ContiguousPageSize; (virt_addr & (alignment - 1)) == (phys_addr & (alignment - 1)); alignment = GetLargerAlignment(alignment)) {
                     /* Check if this would be our last map. */
-                    const size_t pages_to_map = (alignment - (virt_addr & (alignment - 1))) & (alignment - 1);
+                    const size_t pages_to_map = ((alignment - (virt_addr & (alignment - 1))) & (alignment - 1)) / PageSize;
                     if (pages_to_map + (alignment / PageSize) > remaining_pages) {
                         break;
                     }
