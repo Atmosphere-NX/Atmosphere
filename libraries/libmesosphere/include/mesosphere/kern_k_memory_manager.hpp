@@ -176,6 +176,7 @@ namespace ams::kern {
             NOINLINE void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
 
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
+            NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
 
             NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);

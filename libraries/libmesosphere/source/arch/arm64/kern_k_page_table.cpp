@@ -497,7 +497,8 @@ namespace ams::kern::arch::arm64 {
                 MESOSPHERE_ABORT_UNLESS(force);
                 const size_t cur_size = std::min(next_entry.block_size - (GetInteger(virt_addr) & (next_entry.block_size - 1)), remaining_pages * PageSize);
                 remaining_pages -= cur_size / PageSize;
-                virt_addr += cur_size;
+                virt_addr       += cur_size;
+                next_valid       = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
                 continue;
             }
 
