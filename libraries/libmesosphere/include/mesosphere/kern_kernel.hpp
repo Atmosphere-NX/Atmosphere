@@ -115,7 +115,7 @@ namespace ams::kern {
             }
 
             static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
-                return GetCoreLocalContext().hardware_timer;
+                return GetCoreLocalContext(GetCurrentCoreId()).hardware_timer;
             }
 
             static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {
