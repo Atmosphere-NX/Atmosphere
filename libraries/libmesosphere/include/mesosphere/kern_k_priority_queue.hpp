@@ -400,7 +400,7 @@ namespace ams::kern {
 
                     /* Remove from the suggested queue and add to the scheduled queue for the new core. */
                     if (new_core >= 0) {
-                        this->suggested_queue.Remove(priority, prev_core, member);
+                        this->suggested_queue.Remove(priority, new_core, member);
                         if (to_front) {
                             this->scheduled_queue.PushFront(priority, new_core, member);
                         } else {
