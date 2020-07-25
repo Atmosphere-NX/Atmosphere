@@ -576,7 +576,7 @@ namespace ams::kern {
     void KThread::TrySuspend() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-        MESOSPHERE_ASSERT(this->IsSuspended());
+        MESOSPHERE_ASSERT(this->IsSuspendRequested());
 
         /* Ensure that we have no waiters. */
         if (this->GetNumKernelWaiters() > 0) {
@@ -591,7 +591,7 @@ namespace ams::kern {
     void KThread::Suspend() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-        MESOSPHERE_ASSERT(this->IsSuspended());
+        MESOSPHERE_ASSERT(this->IsSuspendRequested());
 
         /* Set our suspend flags in state. */
         const auto old_state = this->thread_state;
