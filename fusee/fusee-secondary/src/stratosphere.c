@@ -51,7 +51,6 @@ static bool g_stratosphere_boot_enabled = true;
 static bool g_stratosphere_ncm_enabled = false;
 
 extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], boot_kip[], ncm_kip[], ams_mitm_kip[];
-extern const uint32_t loader_kip_size, pm_kip_size, sm_kip_size, spl_kip_size, boot_kip_size, ncm_kip_size, ams_mitm_kip_size;
 
 static emummc_fs_ver_t g_fs_ver = FS_VER_1_0_0;
 
