@@ -358,7 +358,82 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
-    Result KPageTable::Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L1BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L1BlockSize));
+
+        auto &impl = this->GetImpl();
+
+        /* Iterate, mapping each block. */
+        for (size_t i = 0; i < num_pages; i += L1BlockSize / PageSize) {
+            /* Map the block. */
+            *impl.GetL1Entry(virt_addr) = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            virt_addr += L1BlockSize;
+            phys_addr += L1BlockSize;
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTable::MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L2BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L2BlockSize));
+
+        auto &impl = this->GetImpl();
+        KVirtualAddress l2_virt = Null<KVirtualAddress>;
+        int l2_open_count = 0;
+
+        /* Iterate, mapping each block. */
+        for (size_t i = 0; i < num_pages; i += L2BlockSize / PageSize) {
+            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
+
+            /* If we have no L2 table, we should get or allocate one. */
+            if (l2_virt == Null<KVirtualAddress>) {
+                if (L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr); !l1_entry->GetTable(l2_phys)) {
+                    /* Allocate table. */
+                    l2_virt = AllocatePageTable(page_list, reuse_ll);
+                    R_UNLESS(l2_virt != Null<KVirtualAddress>, svc::ResultOutOfResource());
+
+                    /* Set the entry. */
+                    l2_phys = GetPageTablePhysicalAddress(l2_virt);
+                    PteDataSynchronizationBarrier();
+                    *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
+                    PteDataSynchronizationBarrier();
+                } else {
+                    l2_virt = GetPageTableVirtualAddress(l2_phys);
+                }
+            }
+            MESOSPHERE_ASSERT(l2_virt != Null<KVirtualAddress>);
+
+            /* Map the block. */
+            *impl.GetL2EntryFromTable(l2_virt, virt_addr) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            l2_open_count++;
+            virt_addr += L2BlockSize;
+            phys_addr += L2BlockSize;
+
+            /* Account for hitting end of table. */
+            if (util::IsAligned(GetInteger(virt_addr), L1BlockSize)) {
+                if (this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
+                    this->GetPageTableManager().Open(l2_virt, l2_open_count);
+                }
+                l2_virt = Null<KVirtualAddress>;
+                l2_open_count = 0;
+            }
+        }
+
+        /* Perform any remaining opens. */
+        if (l2_open_count > 0 && this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
+            this->GetPageTableManager().Open(l2_virt, l2_open_count);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTable::MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
