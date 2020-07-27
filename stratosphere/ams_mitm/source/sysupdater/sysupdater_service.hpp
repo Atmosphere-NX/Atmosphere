@@ -40,14 +40,14 @@ namespace ams::mitm::sysupdater {
 
     namespace impl {
 
-        #define AMS_SYSUPDATER_SYSTEM_UPDATE_INTERFACE_INFO(C, H)                                                                                                                                                        \
-            AMS_SF_METHOD_INFO(C, H, 0, Result, GetUpdateInformation,     (sf::Out<UpdateInformation> out, const ncm::Path &path))                                                                                       \
-            AMS_SF_METHOD_INFO(C, H, 1, Result, ValidateUpdate,           (sf::Out<Result> out_validate_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path))                                 \
-            AMS_SF_METHOD_INFO(C, H, 2, Result, SetupUpdate,              (sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat))                                                 \
-            AMS_SF_METHOD_INFO(C, H, 3, Result, SetupUpdateWithVariation, (sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id)) \
-            AMS_SF_METHOD_INFO(C, H, 4, Result, RequestPrepareUpdate,     (sf::OutCopyHandle out_event_handle, sf::Out<std::shared_ptr<ns::impl::IAsyncResult>> out_async))                                              \
-            AMS_SF_METHOD_INFO(C, H, 5, Result, GetPrepareUpdateProgress, (sf::Out<SystemUpdateProgress> out))                                                                                                           \
-            AMS_SF_METHOD_INFO(C, H, 6, Result, HasPreparedUpdate,        (sf::Out<bool> out))                                                                                                                           \
+        #define AMS_SYSUPDATER_SYSTEM_UPDATE_INTERFACE_INFO(C, H)                                                                                                                                                                   \
+            AMS_SF_METHOD_INFO(C, H, 0, Result, GetUpdateInformation,     (sf::Out<UpdateInformation> out, const ncm::Path &path))                                                                                                  \
+            AMS_SF_METHOD_INFO(C, H, 1, Result, ValidateUpdate,           (sf::Out<Result> out_validate_result, sf::Out<Result> out_validate_exfat_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path)) \
+            AMS_SF_METHOD_INFO(C, H, 2, Result, SetupUpdate,              (sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat))                                                            \
+            AMS_SF_METHOD_INFO(C, H, 3, Result, SetupUpdateWithVariation, (sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id))            \
+            AMS_SF_METHOD_INFO(C, H, 4, Result, RequestPrepareUpdate,     (sf::OutCopyHandle out_event_handle, sf::Out<std::shared_ptr<ns::impl::IAsyncResult>> out_async))                                                         \
+            AMS_SF_METHOD_INFO(C, H, 5, Result, GetPrepareUpdateProgress, (sf::Out<SystemUpdateProgress> out))                                                                                                                      \
+            AMS_SF_METHOD_INFO(C, H, 6, Result, HasPreparedUpdate,        (sf::Out<bool> out))                                                                                                                                      \
             AMS_SF_METHOD_INFO(C, H, 7, Result, ApplyPreparedUpdate,      ())
 
         AMS_SF_DEFINE_INTERFACE(ISystemUpdateInterface, AMS_SYSUPDATER_SYSTEM_UPDATE_INTERFACE_INFO)
@@ -70,7 +70,7 @@ namespace ams::mitm::sysupdater {
             Result InitializeUpdateTask(os::ManagedHandle &transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
         public:
             Result GetUpdateInformation(sf::Out<UpdateInformation> out, const ncm::Path &path);
-            Result ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path);
+            Result ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<Result> out_validate_exfat_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path);
             Result SetupUpdate(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat);
             Result SetupUpdateWithVariation(sf::CopyHandle transfer_memory, u64 transfer_memory_size, const ncm::Path &path, bool exfat, ncm::FirmwareVariationId firmware_variation_id);
             Result RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<std::shared_ptr<ns::impl::IAsyncResult>> out_async);

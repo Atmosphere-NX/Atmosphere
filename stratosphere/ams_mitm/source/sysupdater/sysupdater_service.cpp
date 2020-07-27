@@ -25,6 +25,10 @@ namespace ams::mitm::sysupdater {
         /* ExFat NCAs prior to 2.0.0 do not actually include the exfat driver, and don't boot. */
         constexpr inline u32 MinimumVersionForExFatDriver = 65536;
 
+        bool IsExFatDriverSupported(const ncm::ContentMetaInfo &info) {
+            return info.version >= MinimumVersionForExFatDriver && ((info.attributes & ncm::ContentMetaAttribute_IncludesExFatDriver) != 0);
+        }
+
         template<typename F>
         Result ForEachFileInDirectory(const char *root_path, F f) {
             /* Open the directory. */
@@ -123,9 +127,10 @@ namespace ams::mitm::sysupdater {
             return ResultSuccess();
         }
 
-        Result ValidateSystemUpdate(Result *out_result, UpdateValidationInfo *out_info, const ncm::PackagedContentMetaReader &update_reader, const char *package_root) {
+        Result ValidateSystemUpdate(Result *out_result, Result *out_exfat_result, UpdateValidationInfo *out_info, const ncm::PackagedContentMetaReader &update_reader, const char *package_root) {
             /* Clear output. */
-            *out_result = ResultSuccess();
+            *out_result       = ResultSuccess();
+            *out_exfat_result = ResultSuccess();
 
             /* We want to track all content the update requires. */
             const size_t num_content_metas = update_reader.GetContentMetaCount();
@@ -264,20 +269,22 @@ namespace ams::mitm::sysupdater {
             if (R_SUCCEEDED(*out_result)) {
                 for (size_t i = 0; i < num_content_metas; ++i) {
                     if (!content_meta_valid[i]) {
-                        *out_result = fs::ResultPathNotFound();
-                        *out_info = {
-                            .invalid_key = update_reader.GetContentMetaInfo(i)->ToKey(),
-                        };
-                        break;
+                        const ncm::ContentMetaInfo *info = update_reader.GetContentMetaInfo(i);
+
+                        *out_info = { .invalid_key = info->ToKey(), };
+
+                        if (IsExFatDriverSupported(*info)) {
+                            *out_exfat_result = fs::ResultPathNotFound();
+                            /* Continue, in case there's a non-exFAT failure result. */
+                        } else {
+                            *out_result = fs::ResultPathNotFound();
+                            break;
+                        }
                     }
                 }
             }
 
             return ResultSuccess();
-        }
-
-        bool IsExFatDriverSupported(const ncm::ContentMetaInfo &info) {
-            return info.version >= MinimumVersionForExFatDriver && ((info.attributes & ncm::ContentMetaAttribute_IncludesExFatDriver) != 0);
         }
 
         Result FormatUserPackagePath(ncm::Path *out, const ncm::Path &user_path) {
@@ -378,7 +385,7 @@ namespace ams::mitm::sysupdater {
         return ResultSuccess();
     }
 
-    Result SystemUpdateService::ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path) {
+    Result SystemUpdateService::ValidateUpdate(sf::Out<Result> out_validate_result, sf::Out<Result> out_validate_exfat_result, sf::Out<UpdateValidationInfo> out_validate_info, const ncm::Path &path) {
         /* Adjust the path. */
         ncm::Path package_root;
         R_TRY(FormatUserPackagePath(std::addressof(package_root), path));
@@ -397,7 +404,7 @@ namespace ams::mitm::sysupdater {
             const auto reader = ncm::PackagedContentMetaReader(content_meta_buffer.Get(), content_meta_buffer.GetSize());
 
             /* Validate the update. */
-            R_TRY(ValidateSystemUpdate(out_validate_result.GetPointer(), out_validate_info.GetPointer(), reader, package_root.str));
+            R_TRY(ValidateSystemUpdate(out_validate_result.GetPointer(), out_validate_exfat_result.GetPointer(), out_validate_info.GetPointer(), reader, package_root.str));
         }
 
         return ResultSuccess();

@@ -29,6 +29,7 @@ typedef struct {
 
 typedef struct {
     Result result;
+    Result exfat_result;
     NcmContentMetaKey invalid_key;
     NcmContentId invalid_content_id;
 } AmsSuUpdateValidationInfo;

@@ -814,6 +814,19 @@ namespace dbk {
         if (R_SUCCEEDED(m_validation_info.result)) {
             this->LogText("Update is valid!\n");
 
+            if (R_FAILED(m_validation_info.exfat_result)) {
+                const u32 version = m_validation_info.invalid_key.version;
+                this->LogText("exFAT Validation failed with result: 0x%08x\n", m_validation_info.exfat_result);
+                this->LogText("Missing content:\n- Program id: %016lx\n- Version: %d.%d.%d\n", m_validation_info.invalid_key.id, (version >> 26) & 0x1f, (version >> 20) & 0x1f, (version >> 16) & 0xf);
+
+                /* Log the missing content id. */
+                this->LogText("- Content id: ");
+                for (size_t i = 0; i < sizeof(NcmContentId); i++) {
+                    this->LogText("%02x", m_validation_info.invalid_content_id.c[i]);
+                }
+                this->LogText("\n");
+            }
+
             /* Enable the back and continue buttons and select the continue button. */
             this->SetButtonEnabled(BackButtonId, true);
             this->SetButtonEnabled(ContinueButtonId, true);
@@ -867,12 +880,18 @@ namespace dbk {
                     }
 
                     /* Check if exfat is supported. */
-                    g_exfat_supported = m_update_info.exfat_supported;
+                    g_exfat_supported = m_update_info.exfat_supported && R_SUCCEEDED(m_validation_info.exfat_result);
                     if (!g_exfat_supported) {
                         g_use_exfat = false;
                     }
 
-                    ChangeMenu(std::make_shared<ChooseResetMenu>(g_current_menu));
+                    /* Warn the user if they're updating with exFAT supposed to be supported but not present/corrupted. */
+                    if (m_update_info.exfat_supported && R_FAILED(m_validation_info.exfat_result)) {
+                        ChangeMenu(std::make_shared<WarningMenu>(g_current_menu, std::make_shared<ChooseResetMenu>(g_current_menu), "Warning: exFAT firmware is missing or corrupt", "Are you sure you want to proceed?"));
+                    } else {
+                        ChangeMenu(std::make_shared<ChooseResetMenu>(g_current_menu));
+                    }
+
                     return;
             }
         }
