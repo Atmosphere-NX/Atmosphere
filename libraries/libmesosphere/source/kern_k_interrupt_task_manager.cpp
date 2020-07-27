@@ -54,6 +54,8 @@ namespace ams::kern {
 
         #if defined (MESOSPHERE_BUILD_FOR_AUDITING)
         old_head->SetNextTask(nullptr);
+        #else
+        AMS_UNUSED(old_head);
         #endif
     }
 
