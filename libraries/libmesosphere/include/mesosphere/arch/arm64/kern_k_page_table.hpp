@@ -182,25 +182,31 @@ namespace ams::kern::arch::arm64 {
             NOINLINE Result InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager);
             Result Finalize();
         private:
-            Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+            Result MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+            Result MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+            Result MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
+
             Result Unmap(KProcessAddress virt_addr, size_t num_pages, PageLinkedList *page_list, bool force, bool reuse_ll);
 
             Result Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, size_t page_size, PageLinkedList *page_list, bool reuse_ll) {
                 switch (page_size) {
                     case L1BlockSize:
+                        return this->MapL1Blocks(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
+                    case L2ContiguousBlockSize:
+                        entry_template.SetContiguous(true);
+                        [[fallthrough]];
 #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
                     case L2TegraSmmuBlockSize:
 #endif
                     case L2BlockSize:
-                    case L3BlockSize:
-                        break;
-                    case L2ContiguousBlockSize:
+                        return this->MapL2Blocks(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
                     case L3ContiguousBlockSize:
                         entry_template.SetContiguous(true);
-                        break;
+                        [[fallthrough]];
+                    case L3BlockSize:
+                        return this->MapL3Blocks(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
                     MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                 }
-                return this->Map(virt_addr, phys_addr, num_pages, entry_template, page_list, reuse_ll);
             }
 
             Result MapContiguous(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll);
