@@ -221,6 +221,12 @@ namespace ams::kern {
                 data[id / BitsPerWord] &= ~(1ul << (id % BitsPerWord));
             }
 
+            static constexpr ALWAYS_INLINE bool GetSvcAllowedImpl(u8 *data, u32 id) {
+                constexpr size_t BitsPerWord = BITSIZEOF(*data);
+                MESOSPHERE_ASSERT(id < svc::SvcId_Count);
+                return (data[id / BitsPerWord] & (1ul << (id % BitsPerWord))) != 0;
+            }
+
             bool SetSvcAllowed(u32 id) {
                 if (id < BITSIZEOF(this->svc_access_flags)) {
                     SetSvcAllowedImpl(this->svc_access_flags, id);
@@ -266,13 +272,43 @@ namespace ams::kern {
 
             ALWAYS_INLINE void CopySvcPermissionsTo(KThread::StackParameters &sp) const {
                 static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                /* Copy permissions. */
                 std::memcpy(sp.svc_permission, this->svc_access_flags, sizeof(this->svc_access_flags));
 
                 /* Clear specific SVCs based on our state. */
                 ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
                 ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
-                if (sp.is_preemption_state_pinned) {
+                if (sp.is_pinned) {
                     ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            ALWAYS_INLINE void CopyPinnedSvcPermissionsTo(KThread::StackParameters &sp) const {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                /* Clear all permissions. */
+                std::memset(sp.svc_permission, 0, sizeof(this->svc_access_flags));
+
+                /* Set specific SVCs based on our state. */
+                SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
+                if (GetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException)) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            ALWAYS_INLINE void CopyUnpinnedSvcPermissionsTo(KThread::StackParameters &sp) const {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                /* Get whether we have access to return from exception. */
+                const bool return_from_exception = GetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+
+                /* Copy permissions. */
+                std::memcpy(sp.svc_permission, this->svc_access_flags, sizeof(this->svc_access_flags));
+
+                /* Clear/Set specific SVCs based on our state. */
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
+                if (return_from_exception) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
                 }
             }
 

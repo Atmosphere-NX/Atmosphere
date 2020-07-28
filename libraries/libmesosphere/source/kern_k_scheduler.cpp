@@ -121,10 +121,10 @@ namespace ams::kern {
                 /* If the thread has no waiters, we need to check if the process has a thread pinned. */
                 if (top_thread->GetNumKernelWaiters() == 0) {
                     if (KProcess *parent = top_thread->GetOwnerProcess(); parent != nullptr) {
-                        if (KThread *suggested = parent->GetPinnedThread(core_id); suggested != nullptr && suggested != top_thread && suggested->GetNumKernelWaiters() == 0) {
+                        if (KThread *pinned = parent->GetPinnedThread(core_id); pinned != nullptr && pinned != top_thread) {
                             /* We prefer our parent's pinned thread if possible. However, we also don't want to schedule un-runnable threads. */
-                            if (suggested->GetRawState() == KThread::ThreadState_Runnable) {
-                                top_thread = suggested;
+                            if (pinned->GetRawState() == KThread::ThreadState_Runnable) {
+                                top_thread = pinned;
                             } else {
                                 top_thread = nullptr;
                             }
@@ -272,6 +272,36 @@ namespace ams::kern {
 
             prev_thread_ptr->compare_exchange_weak(thread, nullptr);
         }
+    }
+
+    void KScheduler::PinCurrentThread(KProcess *cur_process) {
+        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
+
+        /* Get the current thread. */
+        const s32 core_id   = GetCurrentCoreId();
+        KThread *cur_thread = GetCurrentThreadPointer();
+
+        /* Pin it. */
+        cur_process->PinThread(core_id, cur_thread);
+        cur_thread->Pin();
+
+        /* An update is needed. */
+        SetSchedulerUpdateNeeded();
+    }
+
+    void KScheduler::UnpinCurrentThread(KProcess *cur_process) {
+        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
+
+        /* Get the current thread. */
+        const s32 core_id   = GetCurrentCoreId();
+        KThread *cur_thread = GetCurrentThreadPointer();
+
+        /* Unpin it. */
+        cur_thread->Unpin();
+        cur_process->UnpinThread(core_id, cur_thread);
+
+        /* An update is needed. */
+        SetSchedulerUpdateNeeded();
     }
 
     void KScheduler::OnThreadStateChanged(KThread *thread, KThread::ThreadState old_state) {

@@ -980,10 +980,6 @@ namespace ams::kern {
         }
     }
 
-    void KProcess::PinCurrentThread() {
-        MESOSPHERE_UNIMPLEMENTED();
-    }
-
     KProcess *KProcess::GetProcessFromId(u64 process_id) {
         /* Lock the list. */
         KProcess::ListAccessor accessor;
