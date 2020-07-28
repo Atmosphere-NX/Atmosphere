@@ -47,7 +47,7 @@ namespace ams::kern::arch::arm64 {
             MESOSPHERE_LOG("SP    = %016lx\n", context->sp);
 
             /* Dump the page tables. */
-            GetCurrentProcess().GetPageTable().DumpTable();
+            /* GetCurrentProcess().GetPageTable().DumpTable(); */
 
             MESOSPHERE_PANIC("Unhandled Exception in User Mode\n");
 

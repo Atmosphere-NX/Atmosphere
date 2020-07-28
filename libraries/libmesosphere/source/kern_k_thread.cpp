@@ -555,8 +555,10 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(this->parent != nullptr);
         MESOSPHERE_ASSERT(affinity_mask != 0);
+        KScopedLightLock lk(this->activity_pause_lock);
+
+        /* Set the core mask. */
         {
-            KScopedLightLock lk(this->activity_pause_lock);
             KScopedSchedulerLock sl;
             MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
 
@@ -598,7 +600,59 @@ namespace ams::kern {
             }
         }
 
-        /* TODO: Paused waiter list. */
+        /* Update the pinned waiter list. */
+        {
+            bool retry_update;
+            bool thread_is_pinned = false;
+            do {
+                /* Lock the scheduler. */
+                KScopedSchedulerLock sl;
+
+                /* Don't do any further management if our termination has been requested. */
+                R_SUCCEED_IF(this->IsTerminationRequested());
+
+                /* By default, we won't need to retry. */
+                retry_update = false;
+
+                /* Check if the thread is currently running. */
+                bool thread_is_current = false;
+                s32 thread_core;
+                for (thread_core = 0; thread_core < static_cast<s32>(cpu::NumCores); ++thread_core) {
+                    if (Kernel::GetCurrentContext(thread_core).current_thread == this) {
+                        thread_is_current = true;
+                        break;
+                    }
+                }
+
+                /* If the thread is currently running, check whether it's no longer allowed under the new mask. */
+                if (thread_is_current && ((1ul << thread_core) & affinity_mask) == 0) {
+                    /* If the thread is pinned, we want to wait until it's not pinned. */
+                    if (this->GetStackParameters().is_pinned) {
+                        /* Verify that the current thread isn't terminating. */
+                        R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
+
+                        /* Note that the thread was pinned. */
+                        thread_is_pinned = true;
+
+                        /* Wait until the thread isn't pinned any more. */
+                        this->pinned_waiter_list.push_back(GetCurrentThread());
+                        GetCurrentThread().SetState(ThreadState_Waiting);
+                    } else {
+                        /* If the thread isn't pinned, release the scheduler lock and retry until it's not current. */
+                        retry_update = true;
+                    }
+                }
+            } while (retry_update);
+
+            /* If the thread was pinned, it no longer is, and we should remove the current thread from our waiter list. */
+            if (thread_is_pinned) {
+                /* Lock the scheduler. */
+                KScopedSchedulerLock sl;
+
+                /* Remove from the list. */
+                this->pinned_waiter_list.erase(this->pinned_waiter_list.iterator_to(GetCurrentThread()));
+            }
+        }
 
         return ResultSuccess();
     }
@@ -720,32 +774,81 @@ namespace ams::kern {
     }
 
     Result KThread::SetActivity(ams::svc::ThreadActivity activity) {
-        /* Lock ourselves and the scheduler. */
+        /* Lock ourselves. */
         KScopedLightLock lk(this->activity_pause_lock);
-        KScopedSchedulerLock sl;
 
-        /* Verify our state. */
-        const auto cur_state = this->GetState();
-        R_UNLESS((cur_state == ThreadState_Waiting || cur_state == ThreadState_Runnable), svc::ResultInvalidState());
+        /* Set the activity. */
+        {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
 
-        /* Either pause or resume. */
+            /* Verify our state. */
+            const auto cur_state = this->GetState();
+            R_UNLESS((cur_state == ThreadState_Waiting || cur_state == ThreadState_Runnable), svc::ResultInvalidState());
+
+            /* Either pause or resume. */
+            if (activity == ams::svc::ThreadActivity_Paused) {
+                /* Verify that we're not suspended. */
+                R_UNLESS(!this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+
+                /* Suspend. */
+                this->RequestSuspend(SuspendType_Thread);
+            } else {
+                MESOSPHERE_ASSERT(activity == ams::svc::ThreadActivity_Runnable);
+
+                /* Verify that we're suspended. */
+                R_UNLESS(this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+
+                /* Resume. */
+                this->Resume(SuspendType_Thread);
+            }
+        }
+
+        /* If the thread is now paused, update the pinned waiter list. */
         if (activity == ams::svc::ThreadActivity_Paused) {
-            /* Verify that we're not suspended. */
-            R_UNLESS(!this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+            bool thread_is_pinned = false;
+            bool thread_is_current;
+            do {
+                /* Lock the scheduler. */
+                KScopedSchedulerLock sl;
 
-            /* Suspend. */
-            this->RequestSuspend(SuspendType_Thread);
+                /* Don't do any further management if our termination has been requested. */
+                R_SUCCEED_IF(this->IsTerminationRequested());
 
-            /* TODO: Paused waiter list. */
-            MESOSPHERE_UNIMPLEMENTED();
-        } else {
-            MESOSPHERE_ASSERT(activity == ams::svc::ThreadActivity_Runnable);
+                /* Check whether the thread is pinned. */
+                if (this->GetStackParameters().is_pinned) {
+                    /* Verify that the current thread isn't terminating. */
+                    R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultTerminationRequested());
 
-            /* Verify that we're suspended. */
-            R_UNLESS(this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+                    /* Note that the thread was pinned and not current. */
+                    thread_is_pinned  = true;
+                    thread_is_current = false;
 
-            /* Resume. */
-            this->Resume(SuspendType_Thread);
+                    /* Wait until the thread isn't pinned any more. */
+                    this->pinned_waiter_list.push_back(GetCurrentThread());
+                    GetCurrentThread().SetState(ThreadState_Waiting);
+                } else {
+                    /* Check if the thread is currently running. */
+                    /* If it is, we'll need to retry. */
+                    thread_is_current = false;
+
+                    for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
+                        if (Kernel::GetCurrentContext(i).current_thread == this) {
+                            thread_is_current = true;
+                            break;
+                        }
+                    }
+                }
+            } while (thread_is_current);
+
+            /* If the thread was pinned, it no longer is, and we should remove the current thread from our waiter list. */
+            if (thread_is_pinned) {
+                /* Lock the scheduler. */
+                KScopedSchedulerLock sl;
+
+                /* Remove from the list. */
+                this->pinned_waiter_list.erase(this->pinned_waiter_list.iterator_to(GetCurrentThread()));
+            }
         }
 
         return ResultSuccess();
