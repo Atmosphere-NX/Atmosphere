@@ -40,6 +40,15 @@ namespace ams::kern::arch::arm64 {
 
     namespace {
 
+        /* TODO: Should these be elsewhere? (In a header)? */
+        ALWAYS_INLINE KExceptionContext *GetExceptionContext(KThread *thread) {
+            return reinterpret_cast<KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
+        }
+
+        ALWAYS_INLINE const KExceptionContext *GetExceptionContext(const KThread *thread) {
+            return reinterpret_cast<const KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
+        }
+
         ALWAYS_INLINE bool IsFpuEnabled() {
             return cpu::ArchitecturalFeatureAccessControlRegisterAccessor().IsFpEnabled();
         }
@@ -186,6 +195,80 @@ namespace ams::kern::arch::arm64 {
 
         this->SetFpcr(pcr);
         this->SetFpsr(psr);
+    }
+
+    void GetUserContext(ams::svc::ThreadContext *out, const KThread *thread) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(thread->IsSuspended());
+        MESOSPHERE_ASSERT(thread->GetOwnerProcess() != nullptr);
+
+        /* Get the contexts. */
+        const KExceptionContext *e_ctx = GetExceptionContext(thread);
+        const KThreadContext    *t_ctx = std::addressof(thread->GetContext());
+
+        if (thread->GetOwnerProcess()->Is64Bit()) {
+            /* Set special registers. */
+            out->fp     = e_ctx->x[29];
+            out->lr     = e_ctx->x[30];
+            out->sp     = e_ctx->sp;
+            out->pc     = e_ctx->pc;
+            out->pstate = e_ctx->psr & 0xFF0FFE20;
+
+            /* Get the thread's general purpose registers. */
+            if (thread->IsCallingSvc()) {
+                for (size_t i = 19; i < 29; ++i) {
+                    out->r[i] = e_ctx->x[i];
+                }
+                if (e_ctx->write == 0) {
+                    out->pc -= sizeof(u32);
+                }
+            } else {
+                for (size_t i = 0; i < 29; ++i) {
+                    out->r[i] = e_ctx->x[i];
+                }
+            }
+
+            /* Copy tpidr. */
+            out->tpidr = e_ctx->tpidr;
+
+            /* Copy fpu registers. */
+            static_assert(util::size(ams::svc::ThreadContext{}.v) == KThreadContext::NumFpuRegisters);
+            const u128 *f = t_ctx->GetFpuRegisters();
+            for (size_t i = 0; i < KThreadContext::NumFpuRegisters; ++i) {
+                out->v[i] = f[i];
+            }
+        } else {
+            /* Set special registers. */
+            out->pc     = static_cast<u32>(e_ctx->pc);
+            out->pstate = e_ctx->psr & 0xFF0FFE20;
+
+            /* Get the thread's general purpose registers. */
+            for (size_t i = 0; i < 15; ++i) {
+                out->r[i] = static_cast<u32>(e_ctx->x[i]);
+            }
+
+            /* Adjust PC, if the thread is calling svc. */
+            if (thread->IsCallingSvc()) {
+                if (e_ctx->write == 0) {
+                    /* Adjust by 2 if thumb mode, 4 if arm mode. */
+                    out->pc -= ((e_ctx->psr & 0x20) == 0) ? sizeof(u32) : sizeof(u16);
+                }
+            }
+
+            /* Copy tpidr. */
+            out->tpidr = static_cast<u32>(e_ctx->tpidr);
+
+            /* Copy fpu registers. */
+            static_assert(util::size(ams::svc::ThreadContext{}.v) == KThreadContext::NumFpuRegisters);
+            const u128 *f = t_ctx->GetFpuRegisters();
+            for (size_t i = 0; i < KThreadContext::NumFpuRegisters / 2; ++i) {
+                out->v[i] = f[i];
+            }
+        }
+
+        /* Copy fpcr/fpsr. */
+        out->fpcr = t_ctx->GetFpcr();
+        out->fpsr = t_ctx->GetFpsr();
     }
 
 }

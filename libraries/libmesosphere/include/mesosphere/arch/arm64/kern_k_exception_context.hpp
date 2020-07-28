@@ -22,7 +22,8 @@ namespace ams::kern::arch::arm64 {
         u64 x[(30 - 0) + 1];
         u64 sp;
         u64 pc;
-        u64 psr;
+        u32 psr;
+        u32 write;
         u64 tpidr;
         u64 reserved;
     };

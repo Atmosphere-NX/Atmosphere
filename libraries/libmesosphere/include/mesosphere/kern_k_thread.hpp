@@ -270,6 +270,11 @@ namespace ams::kern {
                 return this->GetStackParameters().is_in_exception_handler;
             }
 
+            ALWAYS_INLINE bool IsCallingSvc() const {
+                MESOSPHERE_ASSERT_THIS();
+                return this->GetStackParameters().is_calling_svc;
+            }
+
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
                 this->GetStackParameters().dpc_flags |= flag;
             }
@@ -455,6 +460,7 @@ namespace ams::kern {
             void Continue();
 
             Result SetActivity(ams::svc::ThreadActivity activity);
+            Result GetThreadContext3(ams::svc::ThreadContext *out);
 
             void ContinueIfHasKernelWaiters() {
                 if (this->GetNumKernelWaiters() > 0) {

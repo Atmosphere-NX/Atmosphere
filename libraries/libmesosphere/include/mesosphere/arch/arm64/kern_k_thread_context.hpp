@@ -74,7 +74,11 @@ namespace ams::kern::arch::arm64 {
 
             void CloneFpuStatus();
 
+            const u128 *GetFpuRegisters() const { return this->fpu_registers; }
+
             /* TODO: More methods (especially FPU management) */
     };
+
+    void GetUserContext(ams::svc::ThreadContext *out, const KThread *thread);
 
 }

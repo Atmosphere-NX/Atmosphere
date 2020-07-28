@@ -854,6 +854,27 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KThread::GetThreadContext3(ams::svc::ThreadContext *out) {
+        /* Lock ourselves. */
+        KScopedLightLock lk(this->activity_pause_lock);
+
+        /* Get the context. */
+        {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
+
+            /* Verify that we're suspended. */
+            R_UNLESS(this->IsSuspendRequested(SuspendType_Thread), svc::ResultInvalidState());
+
+            /* If we're not terminating, get the thread's user context. */
+            if (!this->IsTerminationRequested()) {
+                GetUserContext(out, this);
+            }
+        }
+
+        return ResultSuccess();
+    }
+
     void KThread::AddWaiterImpl(KThread *thread) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
