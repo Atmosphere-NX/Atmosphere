@@ -87,7 +87,7 @@ namespace ams::kern {
                 u8 current_svc_id;
                 bool is_calling_svc;
                 bool is_in_exception_handler;
-                bool is_preemption_state_pinned;
+                bool is_pinned;
                 s32 disable_count;
                 KThreadContext *context;
             };
@@ -171,7 +171,7 @@ namespace ams::kern {
             using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
 
             WaiterList                      waiter_list{};
-            WaiterList                      paused_waiter_list{};
+            WaiterList                      pinned_waiter_list{};
             KThread                        *lock_owner{};
             ConditionVariableThreadTree    *condvar_tree{};
             uintptr_t                       debug_params[3]{};
@@ -249,6 +249,9 @@ namespace ams::kern {
                 this->GetStackParameters().disable_count--;
             }
 
+            void Pin();
+            void Unpin();
+
             NOINLINE void DisableCoreMigration();
             NOINLINE void EnableCoreMigration();
 
@@ -281,7 +284,7 @@ namespace ams::kern {
 
             ALWAYS_INLINE bool HasDpc() const {
                 MESOSPHERE_ASSERT_THIS();
-                return this->GetDpc() != 0;;
+                return this->GetDpc() != 0;
             }
         private:
             void Suspend();

@@ -112,6 +112,21 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        void SynchronizePreemptionState() {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
+
+            /* If the current thread is pinned, unpin it. */
+            KProcess *cur_process = GetCurrentProcessPointer();
+            if (cur_process->GetPinnedThread(GetCurrentCoreId()) == GetCurrentThreadPointer()) {
+                /* Clear the current thread's interrupt flag. */
+                GetCurrentThread().ClearInterruptFlag();
+
+                /* Unpin the current thread. */
+                KScheduler::UnpinCurrentThread(cur_process);
+            }
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -133,7 +148,7 @@ namespace ams::kern::svc {
     }
 
     void SynchronizePreemptionState64() {
-        MESOSPHERE_PANIC("Stubbed SvcSynchronizePreemptionState64 was called.");
+        return SynchronizePreemptionState();
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -155,7 +170,7 @@ namespace ams::kern::svc {
     }
 
     void SynchronizePreemptionState64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcSynchronizePreemptionState64From32 was called.");
+        return SynchronizePreemptionState();
     }
 
 }

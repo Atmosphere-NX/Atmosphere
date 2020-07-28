@@ -324,12 +324,11 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
-        /* Release user exception, if relevant. */
+        /* Release user exception and unpin, if relevant. */
         if (this->parent != nullptr) {
             this->parent->ReleaseUserException(this);
             if (this->parent->GetPinnedThread(GetCurrentCoreId()) == this) {
-                /* TODO: this->parent->UnpinCurrentThread(); */
-                MESOSPHERE_UNIMPLEMENTED();
+                KScheduler::UnpinCurrentThread(this->parent);
             }
         }
 
@@ -376,6 +375,113 @@ namespace ams::kern {
         this->FinishTermination();
     }
 
+    void KThread::Pin() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Set ourselves as pinned. */
+        this->GetStackParameters().is_pinned = true;
+
+        /* Disable core migration. */
+        MESOSPHERE_ASSERT(this->num_core_migration_disables == 0);
+        {
+            ++this->num_core_migration_disables;
+
+            /* Save our ideal state to restore when we're unpinned. */
+            this->original_ideal_core_id = this->ideal_core_id;
+            this->original_affinity_mask = this->affinity_mask;
+
+            /* Bind ourselves to this core. */
+            const s32 active_core  = this->GetActiveCore();
+            const s32 current_core = GetCurrentCoreId();
+
+            this->SetActiveCore(current_core);
+            this->ideal_core_id = current_core;
+
+            this->affinity_mask.SetAffinityMask(1ul << current_core);
+
+            if (active_core != current_core || this->affinity_mask.GetAffinityMask() != this->original_affinity_mask.GetAffinityMask()) {
+                KScheduler::OnThreadAffinityMaskChanged(this, this->original_affinity_mask, active_core);
+            }
+        }
+
+        /* Disallow performing thread suspension. */
+        {
+            /* Update our allow flags. */
+            this->suspend_allowed_flags &= ~(1 << (SuspendType_Thread + ThreadState_SuspendShift));
+
+            /* Update our state. */
+            const ThreadState old_state = this->thread_state;
+            this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+            if (this->thread_state != old_state) {
+                KScheduler::OnThreadStateChanged(this, old_state);
+            }
+        }
+
+        /* Update our SVC access permissions. */
+        MESOSPHERE_ASSERT(this->parent != nullptr);
+        this->parent->CopyPinnedSvcPermissionsTo(this->GetStackParameters());
+    }
+
+    void KThread::Unpin() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Set ourselves as unpinned. */
+        this->GetStackParameters().is_pinned = false;
+
+        /* Enable core migration. */
+        MESOSPHERE_ASSERT(this->num_core_migration_disables == 1);
+        {
+            --this->num_core_migration_disables;
+
+            /* Restore our original state. */
+            const KAffinityMask old_mask = this->affinity_mask;
+
+            this->ideal_core_id = this->original_ideal_core_id;
+            this->affinity_mask = this->original_affinity_mask;
+
+            if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+                const s32 active_core = this->GetActiveCore();
+
+                if (!this->affinity_mask.GetAffinity(active_core)) {
+                    if (this->ideal_core_id >= 0) {
+                        this->SetActiveCore(this->ideal_core_id);
+                    } else {
+                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->affinity_mask.GetAffinityMask()));
+                    }
+                }
+                KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
+            }
+        }
+
+        /* Allow performing thread suspension (if termination hasn't been requested). */
+        {
+            /* Update our allow flags. */
+            if (!this->IsTerminationRequested()) {
+                this->suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
+            }
+
+            /* Update our state. */
+            const ThreadState old_state = this->thread_state;
+            this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+            if (this->thread_state != old_state) {
+                KScheduler::OnThreadStateChanged(this, old_state);
+            }
+        }
+
+        /* Update our SVC access permissions. */
+        MESOSPHERE_ASSERT(this->parent != nullptr);
+        this->parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+
+        /* Resume any threads that began waiting on us while we were pinned. */
+        for (auto it = this->pinned_waiter_list.begin(); it != this->pinned_waiter_list.end(); ++it) {
+            if (it->GetState() == ThreadState_Waiting) {
+                it->SetState(ThreadState_Runnable);
+            }
+        }
+    }
+
     void KThread::DisableCoreMigration() {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
@@ -387,7 +493,7 @@ namespace ams::kern {
             this->original_ideal_core_id = this->ideal_core_id;
             this->original_affinity_mask = this->affinity_mask;
 
-            /* Bind outselves to this core. */
+            /* Bind ourselves to this core. */
             const s32 active_core = this->GetActiveCore();
             this->ideal_core_id = active_core;
             this->affinity_mask.SetAffinityMask(1ul << active_core);
