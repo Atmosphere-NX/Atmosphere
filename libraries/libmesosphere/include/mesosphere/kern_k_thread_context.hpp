@@ -20,6 +20,8 @@
 
     namespace ams::kern {
         using ams::kern::arch::arm64::KThreadContext;
+
+        using ams::kern::arch::arm64::GetUserContext;
     }
 #else
     #error "Unknown architecture for KThreadContext"

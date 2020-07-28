@@ -195,6 +195,25 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetThreadContext3(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
+            /* Get the thread from its handle. */
+            KScopedAutoObject thread = GetCurrentProcess().GetHandleTable().GetObject<KThread>(thread_handle);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Require the handle be to a non-current thread in the current process. */
+            R_UNLESS(thread->GetOwnerProcess() == GetCurrentProcessPointer(), svc::ResultInvalidHandle());
+            R_UNLESS(thread.GetPointerUnsafe() != GetCurrentThreadPointer(),  svc::ResultBusy());
+
+            /* Get the thread context. */
+            ams::svc::ThreadContext context = {};
+            R_TRY(thread->GetThreadContext3(std::addressof(context)));
+
+            /* Copy the thread context to user space. */
+            R_TRY(out_context.CopyFrom(std::addressof(context)));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -244,7 +263,7 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadContext364(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadContext364 was called.");
+        return GetThreadContext3(out_context, thread_handle);
     }
 
     Result GetThreadList64(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
@@ -298,7 +317,7 @@ namespace ams::kern::svc {
     }
 
     Result GetThreadContext364From32(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadContext364From32 was called.");
+        return GetThreadContext3(out_context, thread_handle);
     }
 
     Result GetThreadList64From32(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
