@@ -48,7 +48,7 @@ namespace ams::kern {
     void KTransferMemory::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
-        /* Unmap. */
+        /* Unlock. */
         if (!this->is_mapped) {
             const size_t size = GetReference(this->page_group).GetNumPages() * PageSize;
             MESOSPHERE_R_ABORT_UNLESS(this->owner->GetPageTable().UnlockForTransferMemory(this->address, size, GetReference(this->page_group)));

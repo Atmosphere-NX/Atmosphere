@@ -1981,7 +1981,7 @@ namespace ams::kern {
                                   KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked, std::addressof(pg));
     }
 
-    Result KPageTableBase::LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm) {
+    Result KPageTableBase::LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size) {
         return this->LockMemoryAndOpen(out, nullptr, address, size,
                                        KMemoryState_FlagCanCodeMemory, KMemoryState_FlagCanCodeMemory,
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,

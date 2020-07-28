@@ -331,7 +331,7 @@ namespace ams::kern {
 
             Result LockForTransferMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm);
             Result UnlockForTransferMemory(KProcessAddress address, size_t size, const KPageGroup &pg);
-            Result LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm);
+            Result LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size);
             Result UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg);
 
             Result CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr);
