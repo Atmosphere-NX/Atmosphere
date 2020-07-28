@@ -156,8 +156,8 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.UnlockForTransferMemory(address, size, pg);
             }
 
-            Result LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm) {
-                return this->page_table.LockForCodeMemory(out, address, size, perm);
+            Result LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size) {
+                return this->page_table.LockForCodeMemory(out, address, size);
             }
 
             Result UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
