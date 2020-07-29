@@ -21,28 +21,48 @@ namespace ams::kern::svc {
 
     namespace {
 
+        ALWAYS_INLINE Result SendSyncRequestLight(ams::svc::Handle session_handle, u32 *args) {
+            /* Get the light client session from its handle. */
+            KScopedAutoObject session = GetCurrentProcess().GetHandleTable().GetObject<KLightClientSession>(session_handle);
+            R_UNLESS(session.IsNotNull(), svc::ResultInvalidHandle());
 
+            /* Send the request. */
+            R_TRY(session->SendSyncRequest(args));
+
+            return ResultSuccess();
+        }
+
+        ALWAYS_INLINE Result ReplyAndReceiveLight(ams::svc::Handle session_handle, u32 *args) {
+            /* Get the light server session from its handle. */
+            KScopedAutoObject session = GetCurrentProcess().GetHandleTable().GetObject<KLightServerSession>(session_handle);
+            R_UNLESS(session.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Handle the request. */
+            R_TRY(session->ReplyAndReceive(args));
+
+            return ResultSuccess();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
-    Result SendSyncRequestLight64(ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendSyncRequestLight64 was called.");
+    Result SendSyncRequestLight64(ams::svc::Handle session_handle, u32 *args) {
+        return SendSyncRequestLight(session_handle, args);
     }
 
-    Result ReplyAndReceiveLight64(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcReplyAndReceiveLight64 was called.");
+    Result ReplyAndReceiveLight64(ams::svc::Handle session_handle, u32 *args) {
+        return ReplyAndReceiveLight(session_handle, args);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
-    Result SendSyncRequestLight64From32(ams::svc::Handle session_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcSendSyncRequestLight64From32 was called.");
+    Result SendSyncRequestLight64From32(ams::svc::Handle session_handle, u32 *args) {
+        return SendSyncRequestLight(session_handle, args);
     }
 
-    Result ReplyAndReceiveLight64From32(ams::svc::Handle handle) {
-        MESOSPHERE_PANIC("Stubbed SvcReplyAndReceiveLight64From32 was called.");
+    Result ReplyAndReceiveLight64From32(ams::svc::Handle session_handle, u32 *args) {
+        return ReplyAndReceiveLight(session_handle, args);
     }
 
 }

@@ -22,6 +22,13 @@
 
 namespace ams::kern::svc {
 
+    /* Declare special prototypes for the light ipc handlers. */
+    void CallSendSyncRequestLight64();
+    void CallSendSyncRequestLight64From32();
+
+    void CallReplyAndReceiveLight64();
+    void CallReplyAndReceiveLight64From32();
+
     namespace {
 
         #ifndef MESOSPHERE_USE_STUBBED_SVC_TABLES
@@ -59,6 +66,9 @@ namespace ams::kern::svc {
             AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
             #undef AMS_KERN_SVC_SET_TABLE_ENTRY
 
+            table[svc::SvcId_SendSyncRequestLight] = CallSendSyncRequestLight64From32;
+            table[svc::SvcId_ReplyAndReceiveLight] = CallReplyAndReceiveLight64From32;
+
             return table;
         }();
 
@@ -69,6 +79,9 @@ namespace ams::kern::svc {
                 if (table[ID] == nullptr) { table[ID] = NAME::Call64; }
             AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
             #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+
+            table[svc::SvcId_SendSyncRequestLight] = CallSendSyncRequestLight64;
+            table[svc::SvcId_ReplyAndReceiveLight] = CallReplyAndReceiveLight64;
 
             return table;
         }();

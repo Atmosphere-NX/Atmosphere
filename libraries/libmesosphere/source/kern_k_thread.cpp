@@ -720,8 +720,8 @@ namespace ams::kern {
         /* Check if we're waiting and cancellable. */
         if (this->GetState() == ThreadState_Waiting && this->cancellable) {
             if (this->sleeping_queue != nullptr) {
-                /* TODO: Cancel light IPC. */
-                MESOSPHERE_UNIMPLEMENTED();
+                this->sleeping_queue->WakeupThread(this);
+                this->wait_cancelled = true;
             } else {
                 this->SetSyncedObject(nullptr, svc::ResultCancelled());
                 this->SetState(ThreadState_Runnable);

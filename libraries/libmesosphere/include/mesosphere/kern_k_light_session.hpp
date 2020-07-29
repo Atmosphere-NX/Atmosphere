@@ -34,6 +34,9 @@ namespace ams::kern {
                 ClientClosed = 2,
                 ServerClosed = 3,
             };
+        public:
+            static constexpr size_t DataSize = sizeof(u32) * 7;
+            static constexpr u32 ReplyFlag   = (1u << (BITSIZEOF(u32) - 1));
         private:
             KLightServerSession server;
             KLightClientSession client;
