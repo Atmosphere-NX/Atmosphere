@@ -220,6 +220,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.DumpTable();
             }
 
+            void DumpMemoryBlocks() const {
+                return this->page_table.DumpMemoryBlocks();
+            }
+
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }
