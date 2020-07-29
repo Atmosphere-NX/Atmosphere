@@ -77,9 +77,10 @@ namespace ams::kern::arch::arm64 {
             if (is_64_bit) {
                 ctx->psr = 0;
             } else {
-                constexpr u64 PsrArmValue   = 0x20;
-                constexpr u64 PsrThumbValue = 0x00;
+                constexpr u64 PsrArmValue   = 0x00;
+                constexpr u64 PsrThumbValue = 0x20;
                 ctx->psr = ((pc & 1) == 0 ? PsrArmValue : PsrThumbValue) | (0x10);
+                MESOSPHERE_LOG("Creating User 32-Thread, %016lx\n", GetInteger(pc));
             }
 
             /* Set stack pointer. */

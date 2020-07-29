@@ -355,6 +355,16 @@ namespace ams::kern {
                 KScopedLightLock lk(this->general_lock);
                 this->GetImpl().Dump(GetInteger(this->address_space_start), this->address_space_end - this->address_space_start);
             }
+
+            void DumpMemoryBlocks() const {
+                KScopedLightLock lk(this->general_lock);
+                this->DumpMemoryBlocksLocked();
+            }
+
+            void DumpMemoryBlocksLocked() const {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+                this->memory_block_manager.DumpBlocks();
+            }
         public:
             KProcessAddress GetAddressSpaceStart()    const { return this->address_space_start; }
             KProcessAddress GetHeapRegionStart()      const { return this->heap_region_start; }

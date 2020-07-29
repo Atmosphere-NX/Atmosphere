@@ -48,6 +48,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Dump the page tables. */
             /* GetCurrentProcess().GetPageTable().DumpTable(); */
+            GetCurrentProcess().GetPageTable().DumpMemoryBlocks();
 
             MESOSPHERE_PANIC("Unhandled Exception in User Mode\n");
 
