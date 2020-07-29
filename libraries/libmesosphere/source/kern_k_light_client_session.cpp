@@ -30,7 +30,24 @@ namespace ams::kern {
     Result KLightClientSession::SendSyncRequest(u32 *data) {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Get the request thread. */
+        KThread *cur_thread = GetCurrentThreadPointer();
+
+        /* Set the light data. */
+        cur_thread->SetLightSessionData(data);
+
+        /* Send the request. */
+        {
+            KScopedSchedulerLock sl;
+
+            cur_thread->SetSyncedObject(nullptr, ResultSuccess());
+
+            R_TRY(this->parent->OnRequest(cur_thread));
+        }
+
+        /* Get the result. */
+        KSynchronizationObject *dummy;
+        return cur_thread->GetWaitResult(std::addressof(dummy));
     }
 
 }

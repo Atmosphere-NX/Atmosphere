@@ -410,6 +410,9 @@ namespace ams::kern {
             void ClearCancellable() { this->cancellable = false; }
             void SetCancellable() { this->cancellable = true; }
 
+            constexpr u32 *GetLightSessionData() const { return this->light_ipc_data; }
+            constexpr void SetLightSessionData(u32 *data) { this->light_ipc_data = data; }
+
             bool HasWaiters() const { return !this->waiter_list.empty(); }
 
             constexpr s64 GetLastScheduledTick() const { return this->last_scheduled_tick; }
