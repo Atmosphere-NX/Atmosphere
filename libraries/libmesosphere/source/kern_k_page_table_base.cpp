@@ -2665,6 +2665,7 @@ namespace ams::kern {
 
     Result KPageTableBase::SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(src_page_table.IsLockedByCurrentThread());
 
         /* Check that we can theoretically map. */
         const KProcessAddress region_start = this->alias_region_start;
