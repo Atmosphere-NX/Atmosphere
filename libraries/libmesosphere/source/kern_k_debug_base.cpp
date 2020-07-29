@@ -31,6 +31,23 @@ namespace ams::kern {
         this->continue_flags = 0;
     }
 
+    Result KDebugBase::QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address) {
+        /* Lock ourselves. */
+        KScopedLightLock lk(this->lock);
+
+        /* Check that we have a valid process. */
+        R_UNLESS(this->process != nullptr,       svc::ResultProcessTerminated());
+        R_UNLESS(!this->process->IsTerminated(), svc::ResultProcessTerminated());
+
+        /* Query the mapping's info. */
+        KMemoryInfo info;
+        R_TRY(process->GetPageTable().QueryInfo(std::addressof(info), out_page_info, address));
+
+        /* Write output. */
+        *out_memory_info = info.GetSvcMemoryInfo();
+        return ResultSuccess();
+    }
+
     Result KDebugBase::Attach(KProcess *target) {
         /* Check that the process isn't null. */
         MESOSPHERE_ASSERT(target != nullptr);
