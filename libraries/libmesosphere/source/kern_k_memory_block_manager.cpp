@@ -250,7 +250,7 @@ namespace ams::kern {
                     it = this->memory_block_tree.insert(*new_block);
                     it++;
 
-                    cur_info = it->GetMemoryInfo();
+                    cur_info    = it->GetMemoryInfo();
                     cur_address = cur_info.GetAddress();
                 }
 
@@ -266,7 +266,7 @@ namespace ams::kern {
 
                 /* Update block state. */
                 it->Update(state, perm, attr);
-                cur_address += cur_info.GetSize();
+                cur_address     += cur_info.GetSize();
                 remaining_pages -= cur_info.GetNumPages();
             } else {
                 /* If we already have the right properties, just advance. */
@@ -275,7 +275,7 @@ namespace ams::kern {
                     cur_address += remaining_size;
                 } else {
                     remaining_pages = (cur_address + remaining_size - cur_info.GetEndAddress()) / PageSize;
-                    cur_address = cur_info.GetEndAddress();
+                    cur_address     = cur_info.GetEndAddress();
                 }
             }
             it++;
