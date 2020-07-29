@@ -41,7 +41,7 @@ namespace ams::kern::svc {
             ams::svc::MemoryInfo info = {};
             R_TRY(QueryProcessMemory(std::addressof(info), out_page_info, process_handle, address));
 
-            /* Invoke the implementation. */
+            /* Copy the info to userspace. */
             if constexpr (std::same_as<T, ams::svc::MemoryInfo>) {
                 R_TRY(out_memory_info.CopyFrom(std::addressof(info)));
             } else {
@@ -58,7 +58,7 @@ namespace ams::kern::svc {
                 converted_info.ipc_refcount     = info.ipc_refcount;
                 converted_info.device_refcount  = info.device_refcount;
 
-                /* Invoke. */
+                /* Copy it. */
                 R_TRY(out_memory_info.CopyFrom(std::addressof(converted_info)));
             }
 
