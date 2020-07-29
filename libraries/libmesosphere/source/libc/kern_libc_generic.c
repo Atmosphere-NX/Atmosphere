@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stddef.h>
 #include <limits.h>
+#include "kern_libc_config.h"
 
 /* Note: copied from newlib */
 #ifdef __cplusplus
@@ -57,6 +58,8 @@ QUICKREF
 /* Threshhold for punting to the byte copier.  */
 #undef TOO_SMALL
 #define TOO_SMALL(LEN)  ((LEN) < BIGBLOCKSIZE)
+
+#if MESOSPHERE_LIBC_MEMMOVE_GENERIC
 
 /*SUPPRESS 20*/
 void *
@@ -147,6 +150,8 @@ memmove (void *dst_void,
 #endif /* not PREFER_SIZE_OVER_SPEED */
 }
 
+#endif /* MESOSPHERE_LIBC_MEMMOVE_GENERIC */
+
 /*
 FUNCTION
         <<memcpy>>---copy memory regions
@@ -168,6 +173,8 @@ PORTABILITY
 QUICKREF
         memcpy ansi pure
 	*/
+
+#if MESOSPHERE_LIBC_MEMCPY_GENERIC
 
 void *
 __attribute__((weak))
@@ -229,6 +236,8 @@ memcpy (void * dst0,
 #endif /* not PREFER_SIZE_OVER_SPEED */
 }
 
+#endif /* MESOSPHERE_LIBC_MEMCPY_GENERIC */
+
 /*
 FUNCTION
 	<<memset>>---set an area of memory
@@ -259,6 +268,8 @@ QUICKREF
 #define LBLOCKSIZE (sizeof(long))
 #define UNALIGNED(X)   ((long)X & (LBLOCKSIZE - 1))
 #define TOO_SMALL(LEN) ((LEN) < LBLOCKSIZE)
+
+#if MESOSPHERE_LIBC_MEMSET_GENERIC
 
 void *
 __attribute__((weak))
@@ -322,6 +333,8 @@ memset (void *m,
   return m;
 }
 
+#endif /* MESOSPHERE_LIBC_MEMSET_GENERIC */
+
 /*
 FUNCTION
 	<<memcmp>>---compare two memory areas
@@ -358,6 +371,8 @@ QUICKREF
 
 /* Threshhold for punting to the byte copier.  */
 #define TOO_SMALL(LEN)  ((LEN) < LBLOCKSIZE)
+
+#if MESOSPHERE_LIBC_MEMCMP_GENERIC
 
 int
 __attribute__((weak))
@@ -421,6 +436,8 @@ memcmp (const void *m1,
 #endif /* not PREFER_SIZE_OVER_SPEED */
 }
 
+#endif /* MESOSPHERE_LIBC_MEMCMP_GENERIC */
+
 /*
 FUNCTION
 	<<strncpy>>---counted copy string
@@ -474,6 +491,8 @@ QUICKREF
 
 #undef TOO_SMALL
 #define TOO_SMALL(LEN) ((LEN) < sizeof (long))
+
+#if MESOSPHERE_LIBC_STRNCMP_GENERIC
 
 char *
 strncpy (char *__restrict dst0,
@@ -534,6 +553,8 @@ strncpy (char *__restrict dst0,
 #endif /* not PREFER_SIZE_OVER_SPEED */
 }
 
+#endif /* MESOSPHERE_LIBC_STRNCPY_GENERIC */
+
 /*
 FUNCTION
 	<<strncmp>>---character string compare
@@ -580,6 +601,8 @@ QUICKREF
 #ifndef DETECTNULL
 #error long int is not a 32bit or 64bit byte
 #endif
+
+#if MESOSPHERE_LIBC_STRNCMP_GENERIC
 
 int
 strncmp (const char *s1,
@@ -642,6 +665,8 @@ strncmp (const char *s1,
   return (*(unsigned char *) s1) - (*(unsigned char *) s2);
 #endif /* not PREFER_SIZE_OVER_SPEED */
 }
+
+#endif /* MESOSPHERE_LIBC_STRNCMP_GENERIC */
 
 #ifdef __cplusplus
 } /* extern "C" */
