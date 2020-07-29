@@ -114,6 +114,7 @@ namespace ams::kern {
                 this->current_request = this->request_queue.GetFront();
                 this->current_request->Open();
                 this->server_thread   = server_thread;
+                break;
             } else {
                 /* Otherwise, wait for a request to come in. */
                 R_UNLESS(this->server_queue.SleepThread(server_thread), svc::ResultTerminationRequested());
@@ -133,6 +134,7 @@ namespace ams::kern {
 
         /* Copy the client data. */
         std::memcpy(server_thread->GetLightSessionData(), this->current_request->GetLightSessionData(), KLightSession::DataSize);
+        return ResultSuccess();
     }
 
     void KLightServerSession::CleanupRequests() {
