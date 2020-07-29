@@ -79,6 +79,47 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result QueryDebugProcessMemory(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, uintptr_t address) {
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Query the mapping's info. */
+            R_TRY(debug->QueryMemoryInfo(out_memory_info, out_page_info, address));
+
+            return ResultSuccess();
+        }
+
+        template<typename T>
+        Result QueryDebugProcessMemory(KUserPointer<T *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, uint64_t address) {
+            /* Get an ams::svc::MemoryInfo for the region. */
+            ams::svc::MemoryInfo info = {};
+            R_TRY(QueryDebugProcessMemory(std::addressof(info), out_page_info, debug_handle, address));
+
+            /* Copy the info to userspace. */
+            if constexpr (std::same_as<T, ams::svc::MemoryInfo>) {
+                R_TRY(out_memory_info.CopyFrom(std::addressof(info)));
+            } else {
+                /* Convert the info. */
+                T converted_info = {};
+                static_assert(std::same_as<decltype(T{}.addr), decltype(ams::svc::MemoryInfo{}.addr)>);
+                static_assert(std::same_as<decltype(T{}.size), decltype(ams::svc::MemoryInfo{}.size)>);
+
+                converted_info.addr             = info.addr;
+                converted_info.size             = info.size;
+                converted_info.state            = info.state;
+                converted_info.attr             = info.attr;
+                converted_info.perm             = info.perm;
+                converted_info.ipc_refcount     = info.ipc_refcount;
+                converted_info.device_refcount  = info.device_refcount;
+
+                /* Copy it. */
+                R_TRY(out_memory_info.CopyFrom(std::addressof(converted_info)));
+            }
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -115,8 +156,8 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcSetDebugThreadContext64 was called.");
     }
 
-    Result QueryDebugProcessMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryDebugProcessMemory64 was called.");
+    Result QueryDebugProcessMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, ams::svc::Address address) {
+        return QueryDebugProcessMemory(out_memory_info, out_page_info, debug_handle, address);
     }
 
     Result ReadDebugProcessMemory64(ams::svc::Address buffer, ams::svc::Handle debug_handle, ams::svc::Address address, ams::svc::Size size) {
@@ -169,8 +210,8 @@ namespace ams::kern::svc {
         MESOSPHERE_PANIC("Stubbed SvcSetDebugThreadContext64From32 was called.");
     }
 
-    Result QueryDebugProcessMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle process_handle, ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryDebugProcessMemory64From32 was called.");
+    Result QueryDebugProcessMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, ams::svc::Address address) {
+        return QueryDebugProcessMemory(out_memory_info, out_page_info, debug_handle, address);
     }
 
     Result ReadDebugProcessMemory64From32(ams::svc::Address buffer, ams::svc::Handle debug_handle, ams::svc::Address address, ams::svc::Size size) {
