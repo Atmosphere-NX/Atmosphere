@@ -810,7 +810,7 @@ namespace ams::kern {
                         CleanupSpecialData(dst_process, dst_msg_ptr, dst_buffer_size);
                     }
                 } else {
-                    CleanupServerHandles(src_message_buffer, src_buffer_size, src_message_paddr);
+                    CleanupServerHandles(src_user ? src_message_buffer : 0, src_buffer_size, src_message_paddr);
                 }
 
                 /* Cleanup mappings. */
