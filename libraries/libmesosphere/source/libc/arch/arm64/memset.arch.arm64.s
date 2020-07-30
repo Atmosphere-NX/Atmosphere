@@ -76,11 +76,13 @@ L(set96):
 	.p2align 4
 L(set_long):
 	stp	    val, val, [dstin]
-	bic	    dst, dstin, 15
 #if DC_ZVA_THRESHOLD
 	cmp	    count, DC_ZVA_THRESHOLD
 	ccmp	val, 0, 0, cs
+	bic	    dst, dstin, 15
 	b.eq	L(zva_64)
+#else
+	bic	    dst, dstin, 15
 #endif
 	/* Small-size or non-zero memset does not use DC ZVA. */
 	sub	    count, dstend, dst

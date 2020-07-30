@@ -241,9 +241,6 @@ namespace ams::kern::init::loader {
         RelocateKernelPhysically(base_address, layout);
 
         /* Validate kernel layout. */
-        /* TODO: constexpr 0x1000 definition somewhere. */
-        /* In stratosphere, this is os::MemoryPageSize. */
-        /* We don't have ams::os, this may go in hw:: or something. */
         const uintptr_t rx_offset      = layout->rx_offset;
         const uintptr_t rx_end_offset  = layout->rx_end_offset;
         const uintptr_t ro_offset      = layout->ro_offset;
@@ -251,12 +248,12 @@ namespace ams::kern::init::loader {
         const uintptr_t rw_offset      = layout->rw_offset;
         /* UNUSED: const uintptr_t rw_end_offset  = layout->rw_end_offset; */
         const uintptr_t bss_end_offset = layout->bss_end_offset;
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_offset,      0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_end_offset,  0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_offset,      PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_end_offset,  PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_offset,      PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_end_offset,  PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, PageSize));
         const uintptr_t bss_offset            = layout->bss_offset;
         const uintptr_t ini_load_offset       = layout->ini_load_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
