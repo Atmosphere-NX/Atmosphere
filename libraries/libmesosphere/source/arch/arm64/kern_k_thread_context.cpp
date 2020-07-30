@@ -70,7 +70,7 @@ namespace ams::kern::arch::arm64 {
             std::memset(ctx, 0, sizeof(*ctx));
 
             /* Set PC and argument. */
-            ctx->pc = GetInteger(pc);
+            ctx->pc = GetInteger(pc) & ~(UINT64_C(1));
             ctx->x[0] = arg;
 
             /* Set PSR. */
