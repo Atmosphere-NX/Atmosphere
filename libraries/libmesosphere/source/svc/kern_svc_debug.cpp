@@ -120,6 +120,38 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result ReadDebugProcessMemory(uintptr_t buffer, ams::svc::Handle debug_handle, uintptr_t address, size_t size) {
+            /* Validate address / size. */
+            R_UNLESS(size > 0,                   svc::ResultInvalidSize());
+            R_UNLESS((address < address + size), svc::ResultInvalidCurrentMemory());
+            R_UNLESS((buffer  < buffer  + size), svc::ResultInvalidCurrentMemory());
+
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Read the memory. */
+            R_TRY(debug->ReadMemory(buffer, address, size));
+
+            return ResultSuccess();
+        }
+
+        Result WriteDebugProcessMemory(ams::svc::Handle debug_handle, uintptr_t buffer, uintptr_t address, size_t size) {
+            /* Validate address / size. */
+            R_UNLESS(size > 0,                   svc::ResultInvalidSize());
+            R_UNLESS((address < address + size), svc::ResultInvalidCurrentMemory());
+            R_UNLESS((buffer  < buffer  + size), svc::ResultInvalidCurrentMemory());
+
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Write the memory. */
+            R_TRY(debug->WriteMemory(buffer, address, size));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -161,11 +193,11 @@ namespace ams::kern::svc {
     }
 
     Result ReadDebugProcessMemory64(ams::svc::Address buffer, ams::svc::Handle debug_handle, ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcReadDebugProcessMemory64 was called.");
+        return ReadDebugProcessMemory(buffer, debug_handle, address, size);
     }
 
     Result WriteDebugProcessMemory64(ams::svc::Handle debug_handle, ams::svc::Address buffer, ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcWriteDebugProcessMemory64 was called.");
+        return WriteDebugProcessMemory(debug_handle, buffer, address, size);
     }
 
     Result SetHardwareBreakPoint64(ams::svc::HardwareBreakPointRegisterName name, uint64_t flags, uint64_t value) {
@@ -215,11 +247,11 @@ namespace ams::kern::svc {
     }
 
     Result ReadDebugProcessMemory64From32(ams::svc::Address buffer, ams::svc::Handle debug_handle, ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcReadDebugProcessMemory64From32 was called.");
+        return ReadDebugProcessMemory(buffer, debug_handle, address, size);
     }
 
     Result WriteDebugProcessMemory64From32(ams::svc::Handle debug_handle, ams::svc::Address buffer, ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcWriteDebugProcessMemory64From32 was called.");
+        return WriteDebugProcessMemory(debug_handle, buffer, address, size);
     }
 
     Result SetHardwareBreakPoint64From32(ams::svc::HardwareBreakPointRegisterName name, uint64_t flags, uint64_t value) {

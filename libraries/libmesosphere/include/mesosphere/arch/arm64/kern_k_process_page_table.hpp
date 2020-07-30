@@ -132,6 +132,14 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.InvalidateProcessDataCache(address, size);
             }
 
+            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
+                return this->page_table.ReadDebugMemory(buffer, address, size);
+            }
+
+            Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size) {
+                return this->page_table.WriteDebugMemory(address, buffer, size);
+            }
+
             Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
                 return this->page_table.LockForDeviceAddressSpace(out, address, size, perm, is_aligned);
             }

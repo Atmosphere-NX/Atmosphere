@@ -324,6 +324,9 @@ namespace ams::kern {
 
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size);
 
+            Result ReadDebugMemory(void *buffer, KProcessAddress address, size_t size);
+            Result WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size);
+
             Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size);
