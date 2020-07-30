@@ -515,6 +515,8 @@ namespace ams::kern {
                 return ConditionVariableThreadTreeTraits::IsValid();
             }
 
+            static Result GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count);
+
             using ConditionVariableThreadTreeType = ConditionVariableThreadTree;
     };
     static_assert(alignof(KThread) == 0x10);
