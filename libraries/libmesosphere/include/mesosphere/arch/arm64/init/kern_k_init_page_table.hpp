@@ -23,6 +23,17 @@
 
 namespace ams::kern::arch::arm64::init {
 
+    inline void ClearPhysicalMemory(KPhysicalAddress address, size_t size) {
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(size, sizeof(u64)));
+
+        /* This Physical Address -> void * conversion is valid, because this is init page table code. */
+        /* The MMU is necessarily not yet turned on, if we are creating an initial page table. */
+        volatile u64 *ptr = reinterpret_cast<volatile u64 *>(GetInteger(address));
+        for (size_t i = 0; i < size / sizeof(u64); ++i) {
+            ptr[i] = 0;
+        }
+    }
+
     class KInitialPageTable {
         public:
             class IPageAllocator {
@@ -61,9 +72,7 @@ namespace ams::kern::arch::arm64::init {
             }
 
             static ALWAYS_INLINE void ClearNewPageTable(KPhysicalAddress address) {
-                /* This Physical Address -> void * conversion is valid, because this is page table code. */
-                /* The MMU is necessarily not yet turned on, if we are creating an initial page table. */
-                std::memset(reinterpret_cast<void *>(GetInteger(address)), 0, PageSize);
+                ClearPhysicalMemory(address, PageSize);
             }
         private:
             size_t NOINLINE GetBlockCount(KVirtualAddress virt_addr, size_t size, size_t block_size) {
@@ -705,7 +714,7 @@ namespace ams::kern::arch::arm64::init {
                     this->state.next_address += PageSize;
                 }
 
-                std::memset(reinterpret_cast<void *>(allocated), 0, PageSize);
+                ClearPhysicalMemory(allocated, PageSize);
                 return allocated;
             }
 
