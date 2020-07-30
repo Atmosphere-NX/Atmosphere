@@ -42,6 +42,8 @@ namespace ams::kern {
             Result ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
             Result WriteMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
 
+            Result GetRunningThreadInfo(ams::svc::LastThreadContext *out_context, u64 *out_thread_id);
+
             Result GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out);
             Result GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out);
 

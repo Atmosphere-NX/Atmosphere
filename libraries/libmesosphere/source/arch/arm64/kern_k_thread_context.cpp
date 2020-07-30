@@ -40,15 +40,6 @@ namespace ams::kern::arch::arm64 {
 
     namespace {
 
-        /* TODO: Should these be elsewhere? (In a header)? */
-        ALWAYS_INLINE KExceptionContext *GetExceptionContext(KThread *thread) {
-            return reinterpret_cast<KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
-        }
-
-        ALWAYS_INLINE const KExceptionContext *GetExceptionContext(const KThread *thread) {
-            return reinterpret_cast<const KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
-        }
-
         ALWAYS_INLINE bool IsFpuEnabled() {
             return cpu::ArchitecturalFeatureAccessControlRegisterAccessor().IsFpEnabled();
         }

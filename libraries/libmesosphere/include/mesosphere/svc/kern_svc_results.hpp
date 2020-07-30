@@ -58,8 +58,8 @@ namespace ams::kern::svc {
     /* 126 */ using ::ams::svc::ResultReservedUsed;
     /* 127 */ using ::ams::svc::ResultNotSupported;
     /* 128 */ using ::ams::svc::ResultDebug;
-    /* 129 */ using ::ams::svc::ResultThreadNotOwned;
-
+    /* 129 */ using ::ams::svc::ResultNoThread;
+    /* 130 */ using ::ams::svc::ResultUnknownThread;
     /* 131 */ using ::ams::svc::ResultPortClosed;
     /* 132 */ using ::ams::svc::ResultLimitReached;
     /* 133 */ using ::ams::svc::ResultInvalidMemoryPool;

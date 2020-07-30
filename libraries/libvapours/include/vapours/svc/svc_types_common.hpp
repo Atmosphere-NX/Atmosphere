@@ -188,7 +188,7 @@ namespace ams::svc {
     };
 
     enum LastThreadInfoFlag : u32 {
-        /* TODO */
+        LastThreadInfoFlag_ThreadInSystemCall = (1u << 0),
     };
 
     enum LimitableResource : u32 {
@@ -413,6 +413,10 @@ namespace ams::svc {
         DebugException_DebuggerBreak        = 7,
         DebugException_UndefinedSystemCall  = 8,
         DebugException_MemorySystemError    = 9,
+    };
+
+    enum DebugEventFlag : u32 {
+        DebugEventFlag_Stopped = (1u << 0),
     };
 
     enum ExceptionType : u32 {

@@ -83,8 +83,16 @@ namespace ams::kern {
                 }
             }
 
+            ALWAYS_INLINE u64 GetIdleCount() const {
+                return this->state.idle_count;
+            }
+
             ALWAYS_INLINE KThread *GetIdleThread() const {
                 return this->idle_thread;
+            }
+
+            ALWAYS_INLINE KThread *GetPreviousThread() const {
+                return this->prev_thread;
             }
 
             ALWAYS_INLINE s64 GetLastContextSwitchTime() const {

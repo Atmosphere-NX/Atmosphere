@@ -543,4 +543,12 @@ namespace ams::kern {
             }
     };
 
+    ALWAYS_INLINE KExceptionContext *GetExceptionContext(KThread *thread) {
+        return reinterpret_cast<KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
+    }
+
+    ALWAYS_INLINE const KExceptionContext *GetExceptionContext(const KThread *thread) {
+        return reinterpret_cast<const KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
+    }
+
 }

@@ -246,6 +246,8 @@ namespace ams::kern {
             constexpr KHandleTable &GetHandleTable() { return this->handle_table; }
             constexpr const KHandleTable &GetHandleTable() const { return this->handle_table; }
 
+            KWaitObject *GetWaitObjectPointer() { return std::addressof(this->wait_object); }
+
             size_t GetUsedUserPhysicalMemorySize() const;
             size_t GetTotalUserPhysicalMemorySize() const;
             size_t GetUsedNonSystemUserPhysicalMemorySize() const;
@@ -283,6 +285,9 @@ namespace ams::kern {
                     }
                 }
             }
+
+            constexpr KThread *GetRunningThread(s32 core) const { return this->running_threads[core]; }
+            constexpr u64 GetRunningThreadIdleCount(s32 core) const { return this->running_thread_idle_counts[core]; }
 
             void RegisterThread(KThread *thread);
             void UnregisterThread(KThread *thread);

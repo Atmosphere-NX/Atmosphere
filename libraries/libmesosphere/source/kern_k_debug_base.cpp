@@ -234,6 +234,36 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KDebugBase::GetRunningThreadInfo(ams::svc::LastThreadContext *out_context, u64 *out_thread_id) {
+        /* Get the attached process. */
+        KScopedAutoObject process = this->GetProcess();
+        R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+
+        /* Get the thread info. */
+        {
+            KScopedSchedulerLock sl;
+
+            /* Get the running thread. */
+            const s32 core_id = GetCurrentCoreId();
+            KThread *thread = process->GetRunningThread(core_id);
+
+            /* Check that the thread's idle count is correct. */
+            R_UNLESS(process->GetRunningThreadIdleCount(core_id) == Kernel::GetScheduler(core_id).GetIdleCount(), svc::ResultNoThread());
+
+            /* Check that the thread is running on the current core. */
+            R_UNLESS(thread != nullptr,                  svc::ResultUnknownThread());
+            R_UNLESS(thread->GetActiveCore() == core_id, svc::ResultUnknownThread());
+
+            /* Get the thread's exception context. */
+            GetExceptionContext(thread)->GetSvcThreadContext(out_context);
+
+            /* Get the thread's id. */
+            *out_thread_id = thread->GetId();
+        }
+
+        return ResultSuccess();
+    }
+
     Result KDebugBase::Attach(KProcess *target) {
         /* Check that the process isn't null. */
         MESOSPHERE_ASSERT(target != nullptr);

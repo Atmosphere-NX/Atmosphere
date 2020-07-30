@@ -61,8 +61,8 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(ReservedUsed,                 126);
     R_DEFINE_ERROR_RESULT(NotSupported,                 127);
     R_DEFINE_ERROR_RESULT(Debug,                        128);
-    R_DEFINE_ERROR_RESULT(ThreadNotOwned,               129);
-
+    R_DEFINE_ERROR_RESULT(NoThread,                     129);
+    R_DEFINE_ERROR_RESULT(UnknownThread,                130);
     R_DEFINE_ERROR_RESULT(PortClosed,                   131);
     R_DEFINE_ERROR_RESULT(LimitReached,                 132);
     R_DEFINE_ERROR_RESULT(InvalidMemoryPool,            133);

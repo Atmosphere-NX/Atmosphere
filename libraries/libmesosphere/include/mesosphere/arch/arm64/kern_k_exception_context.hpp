@@ -26,6 +26,22 @@ namespace ams::kern::arch::arm64 {
         u32 write;
         u64 tpidr;
         u64 reserved;
+
+        constexpr void GetSvcThreadContext(ams::svc::LastThreadContext *out) const {
+            if ((this->psr & 0x10) == 0) {
+                /* aarch64 thread. */
+                out->fp = this->x[29];
+                out->sp = this->sp;
+                out->lr = this->x[30];
+                out->pc = this->pc;
+            } else {
+                /* aarch32 thread. */
+                out->fp = this->x[11];
+                out->sp = this->x[13];
+                out->lr = this->x[14];
+                out->pc = this->pc;
+            }
+        }
     };
     static_assert(sizeof(KExceptionContext) == 0x120);
 
