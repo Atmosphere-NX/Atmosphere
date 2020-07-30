@@ -1189,4 +1189,31 @@ namespace ams::kern {
         return std::addressof(this->GetContext());
     }
 
+    Result KThread::GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count) {
+        /* Lock the list. */
+        KThread::ListAccessor accessor;
+        const auto end = accessor.end();
+
+        /* Iterate over the list. */
+        s32 count = 0;
+        for (auto it = accessor.begin(); it != end; ++it) {
+            /* If we're within array bounds, write the id. */
+            if (count < max_out_count) {
+                /* Get the thread id. */
+                KThread *thread = static_cast<KThread *>(std::addressof(*it));
+                const u64 id = thread->GetId();
+
+                /* Copy the id to userland. */
+                R_TRY(out_thread_ids.CopyArrayElementFrom(std::addressof(id), count));
+            }
+
+            /* Increment the count. */
+            ++count;
+        }
+
+        /* We successfully iterated the list. */
+        *out_num_threads = count;
+        return ResultSuccess();
+    }
+
 }

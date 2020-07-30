@@ -214,6 +214,44 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetThreadList(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
+            /* Validate that the out count is valid. */
+            R_UNLESS((0 <= max_out_count && max_out_count <= static_cast<int32_t>(std::numeric_limits<int32_t>::max() / sizeof(u64))), svc::ResultOutOfRange());
+
+            /* Validate that the pointer is in range. */
+            if (max_out_count > 0) {
+                R_UNLESS(GetCurrentProcess().GetPageTable().Contains(KProcessAddress(out_thread_ids.GetUnsafePointer()), max_out_count * sizeof(u64)), svc::ResultInvalidCurrentMemory());
+            }
+
+            if (debug_handle == ams::svc::InvalidHandle) {
+                /* If passed invalid handle, we should return the global thread list. */
+                return KThread::GetThreadList(out_num_threads, out_thread_ids, max_out_count);
+            } else {
+                /* Get the handle table. */
+                auto &handle_table = GetCurrentProcess().GetHandleTable();
+
+                /* Try to get as a debug object. */
+                KScopedAutoObject debug = handle_table.GetObject<KDebug>(debug_handle);
+                if (debug.IsNotNull()) {
+                    /* Get the debug object's process. */
+                    KScopedAutoObject process = debug->GetProcess();
+                    R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+
+                    /* Get the thread list. */
+                    R_TRY(process->GetThreadList(out_num_threads, out_thread_ids, max_out_count));
+                } else {
+                    /* Try to get as a process. */
+                    KScopedAutoObject process = handle_table.GetObjectWithoutPseudoHandle<KProcess>(debug_handle);
+                    R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
+
+                    /* Get the thread list. */
+                    R_TRY(process->GetThreadList(out_num_threads, out_thread_ids, max_out_count));
+                }
+            }
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -254,20 +292,12 @@ namespace ams::kern::svc {
         return GetThreadId(out_thread_id, thread_handle);
     }
 
-    Result GetDebugFutureThreadInfo64(ams::svc::lp64::LastThreadContext *out_context, uint64_t *thread_id, ams::svc::Handle debug_handle, int64_t ns) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugFutureThreadInfo64 was called.");
-    }
-
-    Result GetLastThreadInfo64(ams::svc::lp64::LastThreadContext *out_context, ams::svc::Address *out_tls_address, uint32_t *out_flags) {
-        MESOSPHERE_PANIC("Stubbed SvcGetLastThreadInfo64 was called.");
-    }
-
     Result GetThreadContext364(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
         return GetThreadContext3(out_context, thread_handle);
     }
 
     Result GetThreadList64(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadList64 was called.");
+        return GetThreadList(out_num_threads, out_thread_ids, max_out_count, debug_handle);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -308,20 +338,12 @@ namespace ams::kern::svc {
         return GetThreadId(out_thread_id, thread_handle);
     }
 
-    Result GetDebugFutureThreadInfo64From32(ams::svc::ilp32::LastThreadContext *out_context, uint64_t *thread_id, ams::svc::Handle debug_handle, int64_t ns) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugFutureThreadInfo64From32 was called.");
-    }
-
-    Result GetLastThreadInfo64From32(ams::svc::ilp32::LastThreadContext *out_context, ams::svc::Address *out_tls_address, uint32_t *out_flags) {
-        MESOSPHERE_PANIC("Stubbed SvcGetLastThreadInfo64From32 was called.");
-    }
-
     Result GetThreadContext364From32(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle thread_handle) {
         return GetThreadContext3(out_context, thread_handle);
     }
 
     Result GetThreadList64From32(int32_t *out_num_threads, KUserPointer<uint64_t *> out_thread_ids, int32_t max_out_count, ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcGetThreadList64From32 was called.");
+        return GetThreadList(out_num_threads, out_thread_ids, max_out_count, debug_handle);
     }
 
 }

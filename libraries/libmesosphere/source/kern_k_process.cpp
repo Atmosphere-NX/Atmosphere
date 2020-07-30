@@ -924,6 +924,33 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KProcess::GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count) {
+        /* Lock the list. */
+        KScopedLightLock lk(this->list_lock);
+
+        /* Iterate over the list. */
+        s32 count = 0;
+        auto end = this->GetThreadList().end();
+        for (auto it = this->GetThreadList().begin(); it != end; ++it) {
+            /* If we're within array bounds, write the id. */
+            if (count < max_out_count) {
+                /* Get the thread id. */
+                KThread *thread = std::addressof(*it);
+                const u64 id = thread->GetId();
+
+                /* Copy the id to userland. */
+                R_TRY(out_thread_ids.CopyArrayElementFrom(std::addressof(id), count));
+            }
+
+            /* Increment the count. */
+            ++count;
+        }
+
+        /* We successfully iterated the list. */
+        *out_num_threads = count;
+        return ResultSuccess();
+    }
+
     KProcess::State KProcess::SetDebugObject(void *debug_object) {
         /* Attaching should only happen to non-null objects while the scheduler is locked. */
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
