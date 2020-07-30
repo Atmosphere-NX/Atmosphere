@@ -25,13 +25,42 @@ namespace ams::kern {
             using Entry = KThread::QueueEntry;
         private:
             Entry root;
-            bool  uses_timer;
+            bool  timer_used;
         public:
-            constexpr KWaitObject() : root(), uses_timer() { /* ... */ }
+            constexpr KWaitObject() : root(), timer_used() { /* ... */ }
 
             virtual void OnTimer() override;
+            Result Synchronize(s64 timeout);
+        private:
+            constexpr ALWAYS_INLINE void Enqueue(KThread *add) {
+                /* Get the entry associated with the added thread. */
+                Entry &add_entry = add->GetSleepingQueueEntry();
 
-            /* TODO: Member functions */
+                /* Get the entry associated with the end of the queue. */
+                KThread *tail       = this->root.GetPrev();
+                Entry   &tail_entry = (tail != nullptr) ? tail->GetSleepingQueueEntry() : this->root;
+
+                /* Link the entries. */
+                add_entry.SetPrev(tail);
+                add_entry.SetNext(nullptr);
+                tail_entry.SetNext(add);
+                this->root.SetPrev(add);
+            }
+
+            constexpr ALWAYS_INLINE void Remove(KThread *remove) {
+                /* Get the entry associated with the thread. */
+                Entry &remove_entry = remove->GetSleepingQueueEntry();
+
+                /* Get the entries associated with next and prev. */
+                KThread *prev = remove_entry.GetPrev();
+                KThread *next = remove_entry.GetNext();
+                Entry   &prev_entry = (prev != nullptr) ? prev->GetSleepingQueueEntry() : this->root;
+                Entry   &next_entry = (next != nullptr) ? next->GetSleepingQueueEntry() : this->root;
+
+                /* Unlink. */
+                prev_entry.SetNext(next);
+                next_entry.SetPrev(prev);
+            }
     };
 
 }
