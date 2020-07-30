@@ -127,6 +127,7 @@ namespace ams::kern {
                 u32 cur_ref_count = this->ref_count.load(std::memory_order_acquire);
                 do {
                     if (AMS_UNLIKELY(cur_ref_count == 0)) {
+                        MESOSPHERE_AUDIT(cur_ref_count != 0);
                         return false;
                     }
                     MESOSPHERE_ABORT_UNLESS(cur_ref_count < cur_ref_count + 1);
