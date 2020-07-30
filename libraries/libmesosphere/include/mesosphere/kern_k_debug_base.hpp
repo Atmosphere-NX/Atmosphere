@@ -39,6 +39,8 @@ namespace ams::kern {
             Result Attach(KProcess *process);
 
             Result QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address);
+            Result ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
+            Result WriteMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
 
             Result GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out);
             Result GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out);

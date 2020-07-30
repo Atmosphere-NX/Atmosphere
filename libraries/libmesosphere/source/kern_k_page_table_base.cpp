@@ -1889,6 +1889,170 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KPageTableBase::ReadDebugMemory(void *buffer, KProcessAddress address, size_t size) {
+        /* Lightly validate the region is in range. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Require that the memory either be user readable or debuggable. */
+        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
+        if (!can_read) {
+            const bool can_debug = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+            R_UNLESS(can_debug, svc::ResultInvalidCurrentMemory());
+        }
+
+        /* Get the impl. */
+        auto &impl = this->GetImpl();
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), address);
+        R_UNLESS(traverse_valid, svc::ResultInvalidCurrentMemory());
+
+        /* Prepare tracking variables. */
+        KPhysicalAddress cur_addr = next_entry.phys_addr;
+        size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+        size_t tot_size = cur_size;
+
+        auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+            /* Ensure the address is linear mapped. */
+            R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+            /* Copy as much aligned data as we can. */
+            if (cur_size >= sizeof(u32)) {
+                const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
+                R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(buffer, GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size), svc::ResultInvalidPointer());
+                buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
+                cur_addr += copy_size;
+                cur_size -= copy_size;
+            }
+
+            /* Copy remaining data. */
+            if (cur_size > 0) {
+                R_UNLESS(UserspaceAccess::CopyMemoryToUser(buffer, GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size), svc::ResultInvalidPointer());
+            }
+
+            return ResultSuccess();
+        };
+
+        /* Iterate. */
+        while (tot_size < size) {
+            /* Continue the traversal. */
+            traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            MESOSPHERE_ASSERT(traverse_valid);
+
+            if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                /* Perform copy. */
+                R_TRY(PerformCopy());
+
+                /* Advance. */
+                buffer   = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + cur_size);
+
+                cur_addr = next_entry.phys_addr;
+                cur_size = next_entry.block_size;
+            } else {
+                cur_size += next_entry.block_size;
+            }
+
+            tot_size += next_entry.block_size;
+        }
+
+        /* Ensure we use the right size for the last block. */
+        if (tot_size > size) {
+            cur_size -= (tot_size - size);
+        }
+
+        /* Perform copy for the last block. */
+        R_TRY(PerformCopy());
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::WriteDebugMemory(KProcessAddress address, const void *buffer, size_t size) {
+        /* Lightly validate the region is in range. */
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Require that the memory either be user writable or debuggable. */
+        const bool can_read = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserReadWrite, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryAttribute_None));
+        if (!can_read) {
+            const bool can_debug = R_SUCCEEDED(this->CheckMemoryStateContiguous(address, size, KMemoryState_FlagCanDebug, KMemoryState_FlagCanDebug, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+            R_UNLESS(can_debug, svc::ResultInvalidCurrentMemory());
+        }
+
+        /* Get the impl. */
+        auto &impl = this->GetImpl();
+
+        /* Begin traversal. */
+        TraversalContext context;
+        TraversalEntry   next_entry;
+        bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), address);
+        R_UNLESS(traverse_valid, svc::ResultInvalidCurrentMemory());
+
+        /* Prepare tracking variables. */
+        KPhysicalAddress cur_addr = next_entry.phys_addr;
+        size_t cur_size = next_entry.block_size - (GetInteger(cur_addr) & (next_entry.block_size - 1));
+        size_t tot_size = cur_size;
+
+        auto PerformCopy = [&] ALWAYS_INLINE_LAMBDA () -> Result {
+            /* Ensure the address is linear mapped. */
+            R_UNLESS(IsLinearMappedPhysicalAddress(cur_addr), svc::ResultInvalidCurrentMemory());
+
+            /* Copy as much aligned data as we can. */
+            if (cur_size >= sizeof(u32)) {
+                const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
+                R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, copy_size), svc::ResultInvalidCurrentMemory());
+                buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
+                cur_addr += copy_size;
+                cur_size -= copy_size;
+            }
+
+            /* Copy remaining data. */
+            if (cur_size > 0) {
+                R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, cur_size), svc::ResultInvalidCurrentMemory());
+            }
+
+            return ResultSuccess();
+        };
+
+        /* Iterate. */
+        while (tot_size < size) {
+            /* Continue the traversal. */
+            traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+            MESOSPHERE_ASSERT(traverse_valid);
+
+            if (next_entry.phys_addr != (cur_addr + cur_size)) {
+                /* Perform copy. */
+                R_TRY(PerformCopy());
+
+                /* Advance. */
+                buffer   = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + cur_size);
+
+                cur_addr = next_entry.phys_addr;
+                cur_size = next_entry.block_size;
+            } else {
+                cur_size += next_entry.block_size;
+            }
+
+            tot_size += next_entry.block_size;
+        }
+
+        /* Ensure we use the right size for the last block. */
+        if (tot_size > size) {
+            cur_size -= (tot_size - size);
+        }
+
+        /* Perform copy for the last block. */
+        R_TRY(PerformCopy());
+
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned) {
         /* Lightly validate the range before doing anything else. */
         const size_t num_pages = size / PageSize;
