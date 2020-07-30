@@ -158,12 +158,12 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     cmp     x17, #0x7
     b.eq    4f
 
-    /* Is this an instruction abort? */
-    cmp     x17, #0x21
+    /* Is this a data abort? */
+    cmp     x17, #0x24
     b.eq    5f
 
-    /* Is this a data abort? */
-    cmp     x17, #0x25
+    /* Is this an instruction abort? */
+    cmp     x17, #0x20
     b.eq    5f
 
 1:  /* The exception is not a data abort or instruction abort caused by a TLB conflict. */
@@ -259,12 +259,12 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     mrs     x16, far_el1
     lsr     x16, x16, #12
     orr     x17, x16, x17
-    tlbi    vaae1, x17
+    tlbi    vae1, x17
     b       7f
 
 6:  /* There's a TLB conflict and FAR isn't valid. */
     /* Invalidate the entire TLB. */
-    tlbi    vmalle1
+    tlbi    aside1, x17
 
 7:  /* Return from a TLB conflict. */
     /* Ensure instruction consistency. */
