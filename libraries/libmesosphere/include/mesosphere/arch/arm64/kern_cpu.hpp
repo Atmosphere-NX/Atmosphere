@@ -64,6 +64,10 @@ namespace ams::kern::arch::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    ALWAYS_INLINE void Yield() {
+        __asm__ __volatile__("yield" ::: "memory");
+    }
+
     ALWAYS_INLINE void SwitchProcess(u64 ttbr, u32 proc_id) {
         SetTtbr0El1(ttbr);
         ContextIdRegisterAccessor(0).SetProcId(proc_id).Store();

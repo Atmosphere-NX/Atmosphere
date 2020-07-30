@@ -60,7 +60,7 @@ namespace ams::kern::arch::arm64::cpu {
 
                 void Wait() {
                     while (!this->done) {
-                        __asm__ __volatile__("yield");
+                        cpu::Yield();
                     }
                 }
 
@@ -173,7 +173,7 @@ namespace ams::kern::arch::arm64::cpu {
                             Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CacheOperation, target_mask);
                             this->ProcessOperation();
                             while (this->target_cores != 0) {
-                                __asm__ __volatile__("yield");
+                                cpu::Yield();
                             }
                         } else {
                             /* Request all cores. */
