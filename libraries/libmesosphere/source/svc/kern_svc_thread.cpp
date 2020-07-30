@@ -225,7 +225,7 @@ namespace ams::kern::svc {
 
             if (debug_handle == ams::svc::InvalidHandle) {
                 /* If passed invalid handle, we should return the global thread list. */
-                return KThread::GetThreadList(out_num_threads, out_thread_ids, max_out_count);
+                R_TRY(KThread::GetThreadList(out_num_threads, out_thread_ids, max_out_count));
             } else {
                 /* Get the handle table. */
                 auto &handle_table = GetCurrentProcess().GetHandleTable();
