@@ -73,6 +73,32 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        void FlushEntireDataCache() {
+            /* Flushing cache takes up to 1ms, so determine our minimum end tick. */
+            const s64 timeout = KHardwareTimer::GetTick() + ams::svc::Tick(TimeSpan::FromMilliSeconds(1));
+
+            /* Flush the entire data cache. */
+            cpu::FlushEntireDataCache();
+
+            /* Wait for 1ms to have passed. */
+            while (KHardwareTimer::GetTick() < timeout) {
+                cpu::Yield();
+            }
+        }
+
+        Result FlushDataCache(uintptr_t address, size_t size) {
+            /* Succeed if there's nothing to do. */
+            R_SUCCEED_IF(size == 0);
+
+            /* Validate that the region is within range. */
+            R_UNLESS(GetCurrentProcess().GetPageTable().Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+            /* Flush the cache. */
+            R_TRY(cpu::FlushDataCache(reinterpret_cast<void *>(address), size));
+
+            return ResultSuccess();
+        }
+
         Result InvalidateProcessDataCache(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
             /* Validate address/size. */
             R_UNLESS(size > 0,                                   svc::ResultInvalidSize());
@@ -148,11 +174,11 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     void FlushEntireDataCache64() {
-        MESOSPHERE_PANIC("Stubbed SvcFlushEntireDataCache64 was called.");
+        return FlushEntireDataCache();
     }
 
     Result FlushDataCache64(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcFlushDataCache64 was called.");
+        return FlushDataCache(address, size);
     }
 
     Result InvalidateProcessDataCache64(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {
@@ -170,11 +196,11 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     void FlushEntireDataCache64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcFlushEntireDataCache64From32 was called.");
+        return FlushEntireDataCache();
     }
 
     Result FlushDataCache64From32(ams::svc::Address address, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcFlushDataCache64From32 was called.");
+        return FlushDataCache(address, size);
     }
 
     Result InvalidateProcessDataCache64From32(ams::svc::Handle process_handle, uint64_t address, uint64_t size) {

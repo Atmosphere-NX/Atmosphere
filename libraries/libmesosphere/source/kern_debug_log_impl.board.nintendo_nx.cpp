@@ -86,7 +86,7 @@ namespace ams::kern {
     void KDebugLogImpl::PutChar(char c) {
         while (ReadUartRegister(UartRegister_LSR) & 0x100) {
             /* While the FIFO is full, yield. */
-            __asm__ __volatile__("yield" ::: "memory");
+            cpu::Yield();
         }
         WriteUartRegister(UartRegister_THR, c);
         cpu::DataSynchronizationBarrier();
