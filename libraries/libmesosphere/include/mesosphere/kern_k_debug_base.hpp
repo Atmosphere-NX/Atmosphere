@@ -38,6 +38,8 @@ namespace ams::kern {
             void Initialize();
 
             Result Attach(KProcess *process);
+            Result BreakProcess();
+            Result TerminateProcess();
 
             Result ContinueDebug(const u32 flags, const u64 *thread_ids, size_t num_thread_ids);
 
