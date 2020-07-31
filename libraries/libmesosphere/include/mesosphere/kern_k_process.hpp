@@ -233,6 +233,14 @@ namespace ams::kern {
                 this->capabilities.CopyUnpinnedSvcPermissionsTo(sp);
             }
 
+            void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopyEnterExceptionSvcPermissionsTo(sp);
+            }
+
+            void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopyLeaveExceptionSvcPermissionsTo(sp);
+            }
+
             constexpr KResourceLimit *GetResourceLimit() const { return this->resource_limit; }
 
             bool ReserveResource(ams::svc::LimitableResource which, s64 value);

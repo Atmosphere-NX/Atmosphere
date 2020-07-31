@@ -47,6 +47,21 @@ namespace ams::kern::arch::arm64 {
             static Result BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size);
             static Result SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, u64 flags, u64 value);
 
+            static constexpr bool IsBreakInstruction(u32 insn, u32 psr) {
+                constexpr u32 BreakInstructionAarch64 = 0xE7FFFFFF;
+                constexpr u32 BreakInstructionAarch32 = 0xE7FFDEFE;
+                constexpr u32 BreakInstructionThumb32 = 0xB68E;
+                if ((psr & 0x10) == 0) {
+                    return insn == BreakInstructionAarch64;
+                } else {
+                    if ((psr & 0x20) == 0) {
+                        return insn == BreakInstructionAarch32;
+                    } else {
+                        return insn == BreakInstructionThumb32;
+                    }
+                }
+            }
+
             /* TODO: This is a placeholder definition. */
     };
 

@@ -231,6 +231,10 @@ namespace ams::kern {
                 return *(reinterpret_cast<const StackParameters *>(this->kernel_stack_top) - 1);
             }
         public:
+            StackParameters &GetStackParametersForExceptionSvcPermission() {
+                return *(reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1);
+            }
+        public:
             ALWAYS_INLINE s32 GetDisableDispatchCount() const {
                 MESOSPHERE_ASSERT_THIS();
                 return this->GetStackParameters().disable_count;
@@ -250,6 +254,18 @@ namespace ams::kern {
 
             void Pin();
             void Unpin();
+
+            ALWAYS_INLINE void SaveDebugParams(uintptr_t param1, uintptr_t param2, uintptr_t param3) {
+                this->debug_params[0] = param1;
+                this->debug_params[1] = param2;
+                this->debug_params[2] = param3;
+            }
+
+            ALWAYS_INLINE void RestoreDebugParams(uintptr_t *param1, uintptr_t *param2, uintptr_t *param3) {
+                *param1 = this->debug_params[0];
+                *param2 = this->debug_params[1];
+                *param3 = this->debug_params[2];
+            }
 
             NOINLINE void DisableCoreMigration();
             NOINLINE void EnableCoreMigration();

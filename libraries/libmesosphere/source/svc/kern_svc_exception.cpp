@@ -79,18 +79,10 @@ namespace ams::kern::svc {
         return Break(break_reason, arg, size);
     }
 
-    void ReturnFromException64(ams::Result result) {
-        MESOSPHERE_PANIC("Stubbed SvcReturnFromException64 was called.");
-    }
-
     /* ============================= 64From32 ABI ============================= */
 
     void Break64From32(ams::svc::BreakReason break_reason, ams::svc::Address arg, ams::svc::Size size) {
         return Break(break_reason, arg, size);
-    }
-
-    void ReturnFromException64From32(ams::Result result) {
-        MESOSPHERE_PANIC("Stubbed SvcReturnFromException64From32 was called.");
     }
 
 }

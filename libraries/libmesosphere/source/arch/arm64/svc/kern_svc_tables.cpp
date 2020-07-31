@@ -29,6 +29,10 @@ namespace ams::kern::svc {
     void CallReplyAndReceiveLight64();
     void CallReplyAndReceiveLight64From32();
 
+    /* Declare special prototypes for ReturnFromException. */
+    void CallReturnFromException64();
+    void CallReturnFromException64From32();
+
     namespace {
 
         #ifndef MESOSPHERE_USE_STUBBED_SVC_TABLES
@@ -69,6 +73,8 @@ namespace ams::kern::svc {
             table[svc::SvcId_SendSyncRequestLight] = CallSendSyncRequestLight64From32;
             table[svc::SvcId_ReplyAndReceiveLight] = CallReplyAndReceiveLight64From32;
 
+            table[svc::SvcId_ReturnFromException]  = CallReturnFromException64From32;
+
             return table;
         }();
 
@@ -82,6 +88,8 @@ namespace ams::kern::svc {
 
             table[svc::SvcId_SendSyncRequestLight] = CallSendSyncRequestLight64;
             table[svc::SvcId_ReplyAndReceiveLight] = CallReplyAndReceiveLight64;
+
+            table[svc::SvcId_ReturnFromException]  = CallReturnFromException64;
 
             return table;
         }();
