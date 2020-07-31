@@ -193,6 +193,8 @@ namespace ams::kern {
             KProcess::State SetDebugObject(void *debug_object);
             void ClearDebugObject(KProcess::State state);
 
+            bool EnterJitDebug(ams::svc::DebugEvent event, ams::svc::DebugException exception, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
+
             KEventInfo *GetJitDebugInfo();
             void ClearJitDebugInfo();
 

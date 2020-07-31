@@ -38,6 +38,36 @@ namespace ams::kern::arch::arm64 {
         static_assert(ForbiddenWatchPointFlagsMask == 0xFFFFFFFF00F0E006ul);
     }
 
+    uintptr_t KDebug::GetProgramCounter(const KThread &thread) {
+        return GetExceptionContext(std::addressof(thread))->pc;
+    }
+
+    void KDebug::SetPreviousProgramCounter() {
+        /* Get the current thread. */
+        KThread *thread = GetCurrentThreadPointer();
+        MESOSPHERE_ASSERT(thread->IsCallingSvc());
+
+        /* Get the exception context. */
+        KExceptionContext *e_ctx = GetExceptionContext(thread);
+
+        /* Set the previous pc. */
+        if (e_ctx->write == 0) {
+            /* Subtract from the program counter. */
+            if (thread->GetOwnerProcess()->Is64Bit()) {
+                e_ctx->pc -= sizeof(u32);
+            } else {
+                e_ctx->pc -= (e_ctx->psr & 0x20) ? sizeof(u16) : sizeof(u32);
+            }
+
+            /* Mark that we've set. */
+            e_ctx->write = 1;
+        }
+    }
+
+    Result KDebug::BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
+        return KDebugBase::OnDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_UserBreak, GetProgramCounter(GetCurrentThread()), break_reason, address, size);
+    }
+
     #define MESOSPHERE_SET_HW_BREAK_POINT(ID, FLAGS, VALUE) \
         ({                                                  \
             cpu::SetDbgBcr##ID##El1(0);                     \

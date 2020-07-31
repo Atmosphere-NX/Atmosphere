@@ -35,6 +35,10 @@ namespace ams::kern::arch::arm64 {
 
             static void PostDestroy(uintptr_t arg) { /* ... */ }
         public:
+            static uintptr_t GetProgramCounter(const KThread &thread);
+            static void SetPreviousProgramCounter();
+
+            static Result BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size);
             static Result SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, u64 flags, u64 value);
 
             /* TODO: This is a placeholder definition. */
