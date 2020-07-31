@@ -465,7 +465,7 @@ namespace ams::kern {
 
             KScopedSchedulerLock sl;
 
-            if (this->state == State_Running || this->state == State_RunningAttached|| this->state == State_Crashed || this->state == State_DebugBreak) {
+            if (this->state == State_Running || this->state == State_RunningAttached || this->state == State_Crashed || this->state == State_DebugBreak) {
                 this->ChangeState(State_Terminating);
                 needs_terminate = true;
             }
@@ -997,6 +997,90 @@ namespace ams::kern {
             }
             this->ChangeState(old_state);
         }
+    }
+
+    bool KProcess::EnterJitDebug(ams::svc::DebugEvent event, ams::svc::DebugException exception, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
+        /* Check that we're the current process. */
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this == GetCurrentProcessPointer());
+
+        /* If we aren't allowed to enter jit debug, don't. */
+        if ((this->flags & ams::svc::CreateProcessFlag_EnableDebug) == 0) {
+            return false;
+        }
+
+        /* We're the current process, so we should be some kind of running. */
+        MESOSPHERE_ASSERT(this->state != State_Created);
+        MESOSPHERE_ASSERT(this->state != State_CreatedAttached);
+        MESOSPHERE_ASSERT(this->state != State_Terminated);
+
+        /* Try to enter JIT debug. */
+        while (true) {
+            /* Lock ourselves and the scheduler. */
+            KScopedLightLock lk(this->state_lock);
+            KScopedLightLock list_lk(this->list_lock);
+            KScopedSchedulerLock sl;
+
+            /* If we're attached to a debugger, we're necessarily in debug. */
+            if (this->IsAttachedToDebugger()) {
+                return true;
+            }
+
+            /* If the current thread is terminating, we can't enter debug. */
+            if (GetCurrentThread().IsTerminationRequested()) {
+                return false;
+            }
+
+            /* We're not attached to debugger, so check that. */
+            MESOSPHERE_ASSERT(this->state != State_RunningAttached);
+            MESOSPHERE_ASSERT(this->state != State_DebugBreak);
+
+            /* If we're terminating, we can't enter debug. */
+            if (this->state != State_Running && this->state != State_Crashed) {
+                MESOSPHERE_ASSERT(this->state == State_Terminating);
+                return false;
+            }
+
+            /* If the current thread is suspended, retry. */
+            if (GetCurrentThread().IsSuspended()) {
+                continue;
+            }
+
+            /* Suspend all our threads. */
+            {
+                auto end = this->GetThreadList().end();
+                for (auto it = this->GetThreadList().begin(); it != end; ++it) {
+                    it->RequestSuspend(KThread::SuspendType_Debug);
+                }
+            }
+
+            /* Change our state to crashed. */
+            this->ChangeState(State_Crashed);
+
+            /* Enter jit debug. */
+            this->is_jit_debug             = true;
+            this->jit_debug_event_type     = event;
+            this->jit_debug_exception_type = exception;
+            this->jit_debug_params[0]      = param1;
+            this->jit_debug_params[1]      = param2;
+            this->jit_debug_params[2]      = param3;
+            this->jit_debug_params[3]      = param4;
+            this->jit_debug_thread_id      = GetCurrentThread().GetId();
+
+            /* Exit our retry loop. */
+            break;
+        }
+
+        /* Check if our state indicates we're in jit debug. */
+        {
+            KScopedSchedulerLock sl;
+
+            if (this->state == State_Running || this->state == State_RunningAttached || this->state == State_Crashed || this->state == State_DebugBreak) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     KEventInfo *KProcess::GetJitDebugInfo() {
