@@ -72,6 +72,7 @@ namespace ams::kern::svc {
 
     /* 517 */ using ::ams::svc::ResultInvalidProcessId;
     /* 518 */ using ::ams::svc::ResultInvalidThreadId;
+    /* 519 */ using ::ams::svc::ResultInvalidId;
     /* 520 */ using ::ams::svc::ResultProcessTerminated;
 
 }

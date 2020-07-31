@@ -274,6 +274,11 @@ namespace ams::kern {
                 return this->GetStackParameters().is_calling_svc;
             }
 
+            ALWAYS_INLINE u8 GetSvcId() const {
+                MESOSPHERE_ASSERT_THIS();
+                return this->GetStackParameters().current_svc_id;
+            }
+
             ALWAYS_INLINE void RegisterDpc(DpcFlag flag) {
                 this->GetStackParameters().dpc_flags |= flag;
             }

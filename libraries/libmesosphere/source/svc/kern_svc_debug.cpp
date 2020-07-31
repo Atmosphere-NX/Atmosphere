@@ -163,6 +163,45 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetDebugThreadContext(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {
+            /* Validate the context flags. */
+            R_UNLESS((context_flags | ams::svc::ThreadContextFlag_All) == ams::svc::ThreadContextFlag_All, svc::ResultInvalidEnumValue());
+
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the thread context. */
+            ams::svc::ThreadContext context = {};
+            R_TRY(debug->GetThreadContext(std::addressof(context), thread_id, context_flags));
+
+            /* Copy the context to userspace. */
+            R_TRY(out_context.CopyFrom(std::addressof(context)));
+
+            return ResultSuccess();
+        }
+
+        Result SetDebugThreadContext(ams::svc::Handle debug_handle, uint64_t thread_id, KUserPointer<const ams::svc::ThreadContext *> user_context, uint32_t context_flags) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            /* Validate the context flags. */
+            R_UNLESS((context_flags | ams::svc::ThreadContextFlag_All) == ams::svc::ThreadContextFlag_All, svc::ResultInvalidEnumValue());
+
+            /* Copy the thread context from userspace. */
+            ams::svc::ThreadContext context;
+            R_TRY(user_context.CopyTo(std::addressof(context)));
+
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Set the thread context. */
+            R_TRY(debug->SetThreadContext(context, thread_id, context_flags));
+
+            return ResultSuccess();
+        }
+
         Result QueryDebugProcessMemory(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, uintptr_t address) {
             /* Get the debug object. */
             KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
@@ -374,11 +413,11 @@ namespace ams::kern::svc {
     }
 
     Result GetDebugThreadContext64(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugThreadContext64 was called.");
+        return GetDebugThreadContext(out_context, debug_handle, thread_id, context_flags);
     }
 
     Result SetDebugThreadContext64(ams::svc::Handle debug_handle, uint64_t thread_id, KUserPointer<const ams::svc::ThreadContext *> context, uint32_t context_flags) {
-        MESOSPHERE_PANIC("Stubbed SvcSetDebugThreadContext64 was called.");
+        return SetDebugThreadContext(debug_handle, thread_id, context, context_flags);
     }
 
     Result QueryDebugProcessMemory64(KUserPointer<ams::svc::lp64::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, ams::svc::Address address) {
@@ -428,11 +467,11 @@ namespace ams::kern::svc {
     }
 
     Result GetDebugThreadContext64From32(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugThreadContext64From32 was called.");
+        return GetDebugThreadContext(out_context, debug_handle, thread_id, context_flags);
     }
 
     Result SetDebugThreadContext64From32(ams::svc::Handle debug_handle, uint64_t thread_id, KUserPointer<const ams::svc::ThreadContext *> context, uint32_t context_flags) {
-        MESOSPHERE_PANIC("Stubbed SvcSetDebugThreadContext64From32 was called.");
+        return SetDebugThreadContext(debug_handle, thread_id, context, context_flags);
     }
 
     Result QueryDebugProcessMemory64From32(KUserPointer<ams::svc::ilp32::MemoryInfo *> out_memory_info, ams::svc::PageInfo *out_page_info, ams::svc::Handle debug_handle, ams::svc::Address address) {

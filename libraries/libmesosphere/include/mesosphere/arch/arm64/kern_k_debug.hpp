@@ -35,6 +35,12 @@ namespace ams::kern::arch::arm64 {
 
             static void PostDestroy(uintptr_t arg) { /* ... */ }
         public:
+            virtual Result GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) override;
+            virtual Result SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) override;
+        private:
+            Result GetFpuContext(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags);
+            Result SetFpuContext(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags);
+        public:
             static uintptr_t GetProgramCounter(const KThread &thread);
             static void SetPreviousProgramCounter();
 

@@ -34,6 +34,8 @@ namespace ams::kern {
         public:
             explicit KDebugBase() { /* ... */ }
             virtual ~KDebugBase() { /* ... */ }
+        protected:
+            bool Is64Bit() const;
         public:
             void Initialize();
 
@@ -46,6 +48,12 @@ namespace ams::kern {
             Result QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address);
             Result ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
             Result WriteMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
+
+            Result GetThreadContext(ams::svc::ThreadContext *out, u64 thread_id, u32 context_flags);
+            Result SetThreadContext(const ams::svc::ThreadContext &ctx, u64 thread_id, u32 context_flags);
+
+            virtual Result GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) = 0;
+            virtual Result SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) = 0;
 
             Result GetRunningThreadInfo(ams::svc::LastThreadContext *out_context, u64 *out_thread_id);
 
