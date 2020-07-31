@@ -879,7 +879,81 @@ namespace ams::kern {
     }
 
     Result KDebugBase::ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Get the current process. */
+        KProcess *process = GetCurrentProcessPointer();
+
+        /* If the event is AttachThread and we've already attached, there's nothing to do. */
+        if (event == ams::svc::DebugEvent_AttachThread) {
+            R_SUCCEED_IF(GetCurrentThread().IsAttachedToDebugger());
+        }
+
+        while (true) {
+            /* Lock the process and the scheduler. */
+            KScopedLightLock state_lk(process->GetStateLock());
+            KScopedLightLock list_lk(process->GetListLock());
+            KScopedSchedulerLock sl;
+
+            /* If the current thread is terminating, we can't process an event. */
+            R_SUCCEED_IF(GetCurrentThread().IsTerminationRequested());
+
+            /* Get the debug object. If we have none, there's nothing to process. */
+            KDebugBase *debug = GetDebugObject(process);
+            R_SUCCEED_IF(debug == nullptr);
+
+            /* If the event is an exception and we don't have exception events enabled, we can't handle the event. */
+            if (event == ams::svc::DebugEvent_Exception && (debug->continue_flags & ams::svc::ContinueFlag_EnableExceptionEvent) == 0) {
+                GetCurrentThread().SetDebugExceptionResult(ResultSuccess());
+                return svc::ResultNotHandled();
+            }
+
+            /* If the current thread is suspended, retry. */
+            if (GetCurrentThread().IsSuspended()) {
+                continue;
+            }
+
+            /* Suspend all the process's threads. */
+            {
+                auto end = process->GetThreadList().end();
+                for (auto it = process->GetThreadList().begin(); it != end; ++it) {
+                    it->RequestSuspend(KThread::SuspendType_Debug);
+                }
+            }
+
+            /* Push the event. */
+            debug->PushDebugEvent(event, param0, param1, param2, param3, param4);
+            debug->NotifyAvailable();
+
+            /* Set the process as breaked. */
+            process->SetDebugBreak();
+
+            /* If the event is an exception, set the result. */
+            if (event == ams::svc::DebugEvent_Exception) {
+                GetCurrentThread().SetDebugExceptionResult(ResultSuccess());
+            }
+
+            /* Exit our retry loop. */
+            break;
+        }
+
+        /* If the event is an exception, get the exception result. */
+        if (event == ams::svc::DebugEvent_Exception) {
+            /* Lock the scheduler. */
+            KScopedSchedulerLock sl;
+
+            /* If the thread is terminating, we can't process the exception. */
+            R_UNLESS(!GetCurrentThread().IsTerminationRequested(), svc::ResultStopProcessingException());
+
+            /* Get the debug object. */
+            if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
+                /* If we have one, check the debug exception. */
+                return GetCurrentThread().GetDebugExceptionResult();
+            } else {
+                /* We don't have a debug object, so stop processing the exception. */
+                return svc::ResultStopProcessingException();
+            }
+        }
+
+        return ResultSuccess();
     }
 
     Result KDebugBase::OnDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
@@ -892,9 +966,12 @@ namespace ams::kern {
     Result KDebugBase::OnExitProcess(KProcess *process) {
         MESOSPHERE_ASSERT(process != nullptr);
 
+        /* Check if we're attached to a debugger. */
         if (process->IsAttachedToDebugger()) {
+            /* If we are, lock the scheduler. */
             KScopedSchedulerLock sl;
 
+            /* Push the event. */
             if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
                 debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, ams::svc::ProcessExitReason_ExitProcess);
                 debug->NotifyAvailable();
@@ -907,9 +984,12 @@ namespace ams::kern {
     Result KDebugBase::OnTerminateProcess(KProcess *process) {
         MESOSPHERE_ASSERT(process != nullptr);
 
+        /* Check if we're attached to a debugger. */
         if (process->IsAttachedToDebugger()) {
+            /* If we are, lock the scheduler. */
             KScopedSchedulerLock sl;
 
+            /* Push the event. */
             if (KDebugBase *debug = GetDebugObject(process); debug != nullptr) {
                 debug->PushDebugEvent(ams::svc::DebugEvent_ExitProcess, ams::svc::ProcessExitReason_TerminateProcess);
                 debug->NotifyAvailable();
@@ -922,7 +1002,9 @@ namespace ams::kern {
     Result KDebugBase::OnExitThread(KThread *thread) {
         MESOSPHERE_ASSERT(thread != nullptr);
 
+        /* Check if we're attached to a debugger. */
         if (KProcess *process = thread->GetOwnerProcess(); process != nullptr && process->IsAttachedToDebugger()) {
+            /* If we are, submit the event. */
             R_TRY(OnDebugEvent(ams::svc::DebugEvent_ExitThread, thread->GetId(), thread->IsTerminationRequested() ? ams::svc::ThreadExitReason_TerminateThread : ams::svc::ThreadExitReason_ExitThread));
         }
 
