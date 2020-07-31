@@ -62,6 +62,34 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result BreakDebugProcess(ams::svc::Handle debug_handle) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Break the process. */
+            R_TRY(debug->BreakProcess());
+
+            return ResultSuccess();
+        }
+
+        Result TerminateDebugProcess(ams::svc::Handle debug_handle) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Terminate the process. */
+            R_TRY(debug->TerminateProcess());
+
+            return ResultSuccess();
+        }
+
         template<typename EventInfoType>
         Result GetDebugEvent(KUserPointer<EventInfoType *> out_info, ams::svc::Handle debug_handle) {
             /* Get the debug object. */
@@ -227,11 +255,11 @@ namespace ams::kern::svc {
     }
 
     Result BreakDebugProcess64(ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcBreakDebugProcess64 was called.");
+        return BreakDebugProcess(debug_handle);
     }
 
     Result TerminateDebugProcess64(ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcTerminateDebugProcess64 was called.");
+        return TerminateDebugProcess(debug_handle);
     }
 
     Result GetDebugEvent64(KUserPointer<ams::svc::lp64::DebugEventInfo *> out_info, ams::svc::Handle debug_handle) {
@@ -281,11 +309,11 @@ namespace ams::kern::svc {
     }
 
     Result BreakDebugProcess64From32(ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcBreakDebugProcess64From32 was called.");
+        return BreakDebugProcess(debug_handle);
     }
 
     Result TerminateDebugProcess64From32(ams::svc::Handle debug_handle) {
-        MESOSPHERE_PANIC("Stubbed SvcTerminateDebugProcess64From32 was called.");
+        return TerminateDebugProcess(debug_handle);
     }
 
     Result GetDebugEvent64From32(KUserPointer<ams::svc::ilp32::DebugEventInfo *> out_info, ams::svc::Handle debug_handle) {

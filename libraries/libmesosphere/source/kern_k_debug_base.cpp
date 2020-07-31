@@ -341,6 +341,124 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KDebugBase::BreakProcess() {
+        /* Get the attached process. */
+        KScopedAutoObject target = this->GetProcess();
+        R_UNLESS(target.IsNotNull(), svc::ResultProcessTerminated());
+
+        /* Lock both ourselves, the target process, and the scheduler. */
+        KScopedLightLock state_lk(target->GetStateLock());
+        KScopedLightLock list_lk(target->GetListLock());
+        KScopedLightLock this_lk(this->lock);
+        KScopedSchedulerLock sl;
+
+        /* Check that we're still attached to the process, and that it's not terminated. */
+        /* NOTE: Here Nintendo only checks that this->process is not nullptr. */
+        R_UNLESS(this->process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
+        R_UNLESS(!target->IsTerminated(),                    svc::ResultProcessTerminated());
+
+        /* Get the currently active threads. */
+        constexpr u64 ThreadIdNoThread      = -1ll;
+        constexpr u64 ThreadIdUnknownThread = -2ll;
+        u64 thread_ids[cpu::NumCores];
+        for (size_t i = 0; i < util::size(thread_ids); ++i) {
+            /* Get the currently running thread. */
+            KThread *thread = target->GetRunningThread(i);
+
+            /* Check that the thread's idle count is correct. */
+            if (target->GetRunningThreadIdleCount(i) == Kernel::GetScheduler(i).GetIdleCount()) {
+                if (thread != nullptr && static_cast<size_t>(thread->GetActiveCore()) == i) {
+                    thread_ids[i] = thread->GetId();
+                } else {
+                    /* We found an unknown thread. */
+                    thread_ids[i] = ThreadIdUnknownThread;
+                }
+            } else {
+                /* We didn't find a thread. */
+                thread_ids[i] = ThreadIdNoThread;
+            }
+        }
+
+        /* Suspend all the threads in the process. */
+        {
+            auto end = target->GetThreadList().end();
+            for (auto it = target->GetThreadList().begin(); it != end; ++it) {
+                /* Request that we suspend the thread. */
+                it->RequestSuspend(KThread::SuspendType_Debug);
+            }
+        }
+
+        /* Send an exception event to represent our breaking the process. */
+        static_assert(util::size(thread_ids) >= 4);
+        this->PushDebugEvent(ams::svc::DebugEvent_Exception, ams::svc::DebugException_DebuggerBreak, thread_ids[0], thread_ids[1], thread_ids[2], thread_ids[3]);
+
+        /* Signal. */
+        this->NotifyAvailable();
+
+        /* Set the process as breaked. */
+        target->SetDebugBreak();
+
+        return ResultSuccess();
+    }
+
+    Result KDebugBase::TerminateProcess() {
+        /* Get the attached process. If we don't have one, we have nothing to do. */
+        KScopedAutoObject target = this->GetProcess();
+        R_SUCCEED_IF(target.IsNull());
+
+        /* Detach from the process. */
+        {
+            /* Lock both ourselves and the target process. */
+            KScopedLightLock state_lk(target->GetStateLock());
+            KScopedLightLock list_lk(target->GetListLock());
+            KScopedLightLock this_lk(this->lock);
+
+            /* Check that we still have our process. */
+            if (this->process != nullptr) {
+                /* Check that our process is the one we got earlier. */
+                MESOSPHERE_ASSERT(this->process == target.GetPointerUnsafe());
+
+                /* Lock the scheduler. */
+                KScopedSchedulerLock sl;
+
+                /* Get the process's state. */
+                const KProcess::State state = target->GetState();
+
+                /* Check that the process is in a state where we can terminate it. */
+                R_UNLESS(state != KProcess::State_Created,         svc::ResultInvalidState());
+                R_UNLESS(state != KProcess::State_CreatedAttached, svc::ResultInvalidState());
+
+                /* Decide on a new state for the process. */
+                KProcess::State new_state;
+                if (state == KProcess::State_RunningAttached) {
+                    /* If the process is running, transition it accordingly. */
+                    new_state = KProcess::State_Running;
+                } else if (state == KProcess::State_DebugBreak) {
+                    /* If the process is debug breaked, transition it accordingly. */
+                    new_state = KProcess::State_Crashed;
+                } else {
+                    /* Otherwise, don't transition. */
+                    new_state = state;
+                }
+
+                /* Detach from the process. */
+                target->ClearDebugObject(new_state);
+                this->process = nullptr;
+
+                /* Clear our continue flags. */
+                this->continue_flags = 0;
+            }
+        }
+
+        /* Close the reference we held to the process while we were attached to it. */
+        target->Close();
+
+        /* Terminate the process. */
+        target->Terminate();
+
+        return ResultSuccess();
+    }
+
     Result KDebugBase::ContinueDebug(const u32 flags, const u64 *thread_ids, size_t num_thread_ids) {
         /* Get the attached process. */
         KScopedAutoObject target = this->GetProcess();
