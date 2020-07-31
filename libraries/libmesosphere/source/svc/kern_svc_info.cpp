@@ -21,6 +21,23 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result GetInitialProcessIdRange(u64 *out, ams::svc::InitialProcessIdRangeInfo info) {
+            switch (info) {
+                case ams::svc::InitialProcessIdRangeInfo_Minimum:
+                    MESOSPHERE_ABORT_UNLESS(GetInitialProcessIdMin() <= GetInitialProcessIdMax());
+                    *out = GetInitialProcessIdMin();
+                    break;
+                case ams::svc::InitialProcessIdRangeInfo_Maximum:
+                    MESOSPHERE_ABORT_UNLESS(GetInitialProcessIdMin() <= GetInitialProcessIdMax());
+                    *out = GetInitialProcessIdMax();
+                    break;
+                default:
+                    return svc::ResultInvalidCombination();
+            }
+
+            return ResultSuccess();
+        }
+
         Result GetInfo(u64 *out, ams::svc::InfoType info_type, ams::svc::Handle handle, u64 info_subtype) {
             switch (info_type) {
                 case ams::svc::InfoType_CoreMask:
@@ -38,7 +55,6 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_SystemResourceSizeTotal:
                 case ams::svc::InfoType_SystemResourceSizeUsed:
                 case ams::svc::InfoType_ProgramId:
-                case ams::svc::InfoType_InitialProcessIdRange:
                 case ams::svc::InfoType_UserExceptionContextAddress:
                 case ams::svc::InfoType_TotalNonSystemMemorySize:
                 case ams::svc::InfoType_UsedNonSystemMemorySize:
@@ -97,9 +113,6 @@ namespace ams::kern::svc {
                             case ams::svc::InfoType_ProgramId:
                                 *out = process->GetProgramId();
                                 break;
-                            case ams::svc::InfoType_InitialProcessIdRange:
-                                /* TODO: Detect exactly 4.0.0 target firmware, do the right thing. */
-                                return svc::ResultInvalidEnumValue();
                             case ams::svc::InfoType_UserExceptionContextAddress:
                                 *out = GetInteger(process->GetProcessLocalRegionAddress());
                                 break;
@@ -176,6 +189,18 @@ namespace ams::kern::svc {
 
                         /* Get the entropy. */
                         *out = GetCurrentProcess().GetRandomEntropy(info_subtype);
+                    }
+                    break;
+                case ams::svc::InfoType_InitialProcessIdRange:
+                    {
+                        /* NOTE: This info type was added in 4.0.0, and removed in 5.0.0. */
+                        R_UNLESS(GetTargetFirmware() < TargetFirmware_5_0_0, svc::ResultInvalidEnumValue());
+
+                        /* Verify the input handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Get the process id range. */
+                        R_TRY(GetInitialProcessIdRange(out, static_cast<ams::svc::InitialProcessIdRangeInfo>(info_subtype)));
                     }
                     break;
                 case ams::svc::InfoType_ThreadTickCount:
@@ -262,19 +287,11 @@ namespace ams::kern::svc {
                     break;
                 case ams::svc::SystemInfoType_InitialProcessIdRange:
                     {
+                        /* Verify the handle is invalid. */
                         R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
-                        switch (static_cast<ams::svc::InitialProcessIdRangeInfo>(info_subtype)) {
-                            case ams::svc::InitialProcessIdRangeInfo_Minimum:
-                                MESOSPHERE_ABORT_UNLESS(GetInitialProcessIdMin() <= GetInitialProcessIdMax());
-                                *out = GetInitialProcessIdMin();
-                                break;
-                            case ams::svc::InitialProcessIdRangeInfo_Maximum:
-                                MESOSPHERE_ABORT_UNLESS(GetInitialProcessIdMin() <= GetInitialProcessIdMax());
-                                *out = GetInitialProcessIdMax();
-                                break;
-                            default:
-                                return svc::ResultInvalidCombination();
-                        }
+
+                        /* Get the process id range. */
+                        R_TRY(GetInitialProcessIdRange(out, static_cast<ams::svc::InitialProcessIdRangeInfo>(info_subtype)));
                     }
                     break;
                 default:
