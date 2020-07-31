@@ -402,6 +402,16 @@ namespace ams::kern {
                 return this->wait_result;
             }
 
+            constexpr void SetDebugExceptionResult(Result result) {
+                MESOSPHERE_ASSERT_THIS();
+                this->debug_exception_result = result;
+            }
+
+            constexpr Result GetDebugExceptionResult() const {
+                MESOSPHERE_ASSERT_THIS();
+                return this->debug_exception_result;
+            }
+
             void WaitCancel();
 
             bool IsWaitCancelled() const { return this->wait_cancelled; }
