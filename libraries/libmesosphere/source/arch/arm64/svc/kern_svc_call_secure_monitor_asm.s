@@ -13,26 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <mesosphere.hpp>
 
-namespace ams::kern::svc {
+/* ams::kern::svc::CallCallSecureMonitor64From32() */
+.section    .text._ZN3ams4kern3svc29CallCallSecureMonitor64From32Ev, "ax", %progbits
+.global     _ZN3ams4kern3svc29CallCallSecureMonitor64From32Ev
+.type       _ZN3ams4kern3svc29CallCallSecureMonitor64From32Ev, %function
+_ZN3ams4kern3svc29CallCallSecureMonitor64From32Ev:
+    /* Secure Monitor 64-from-32 ABI is not supported. */
+    mov     x0, xzr
+    mov     x1, xzr
+    mov     x2, xzr
+    mov     x3, xzr
+    mov     x4, xzr
+    mov     x5, xzr
+    mov     x6, xzr
+    mov     x7, xzr
 
-    /* =============================    Common    ============================= */
-
-    namespace {
-
-
-
-    }
-
-    /* =============================    64 ABI    ============================= */
-
-    void CallSecureMonitor64(ams::svc::lp64::SecureMonitorArguments *args) {
-        KSystemControl::CallSecureMonitorFromUser(args);
-    }
-
-    /* ============================= 64From32 ABI ============================= */
-
-    /* CallSecureMonitor64From32 is not supported. */
-
-}
+    ret

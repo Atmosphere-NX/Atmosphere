@@ -21,28 +21,55 @@ namespace ams::kern::svc {
 
     namespace {
 
+        void KernelDebug(ams::svc::KernelDebugType kern_debug_type, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
+            #ifdef ATMOSPHERE_BUILD_FOR_DEBUGGING
+            {
+                /* TODO: Implement Kernel Debugging. */
+            }
+            #endif
+        }
 
+        void ChangeKernelTraceState(ams::svc::KernelTraceState kern_trace_state) {
+            #ifdef ATMOSPHERE_BUILD_FOR_DEBUGGING
+            {
+                switch (kern_trace_state) {
+                    case ams::svc::KernelTraceState_Enabled:
+                        {
+                            /* TODO: MESOSPHERE_KTRACE_RESUME(); */
+                        }
+                        break;
+                    case ams::svc::KernelTraceState_Disabled:
+                        {
+                            /* TODO: MESOSPHERE_KTRACE_PAUSE(); */
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+            #endif
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     void KernelDebug64(ams::svc::KernelDebugType kern_debug_type, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
-        MESOSPHERE_PANIC("Stubbed SvcKernelDebug64 was called.");
+        return KernelDebug(kern_debug_type, arg0, arg1, arg2);
     }
 
     void ChangeKernelTraceState64(ams::svc::KernelTraceState kern_trace_state) {
-        MESOSPHERE_PANIC("Stubbed SvcChangeKernelTraceState64 was called.");
+        return ChangeKernelTraceState(kern_trace_state);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     void KernelDebug64From32(ams::svc::KernelDebugType kern_debug_type, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
-        MESOSPHERE_PANIC("Stubbed SvcKernelDebug64From32 was called.");
+        return KernelDebug(kern_debug_type, arg0, arg1, arg2);
     }
 
     void ChangeKernelTraceState64From32(ams::svc::KernelTraceState kern_trace_state) {
-        MESOSPHERE_PANIC("Stubbed SvcChangeKernelTraceState64From32 was called.");
+        return ChangeKernelTraceState(kern_trace_state);
     }
 
 }
