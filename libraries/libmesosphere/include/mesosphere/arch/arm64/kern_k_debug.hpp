@@ -34,6 +34,8 @@ namespace ams::kern::arch::arm64 {
             virtual ~KDebug() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { /* ... */ }
+        public:
+            static Result SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, u64 flags, u64 value);
 
             /* TODO: This is a placeholder definition. */
     };

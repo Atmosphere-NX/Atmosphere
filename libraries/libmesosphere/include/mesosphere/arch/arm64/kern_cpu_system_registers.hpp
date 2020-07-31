@@ -241,6 +241,10 @@ namespace ams::kern::arch::arm64::cpu {
             constexpr ALWAYS_INLINE size_t GetNumBreakpoints() const {
                 return this->GetBits(12, 4);
             }
+
+            constexpr ALWAYS_INLINE size_t GetNumContextAwareBreakpoints() const {
+                return this->GetBits(28, 4);
+            }
     };
 
     MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(MonitorDebugSystemControl) {
