@@ -74,6 +74,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(MessageTooLarge,              260);
 
     R_DEFINE_ERROR_RESULT(InvalidProcessId,             517);
+    R_DEFINE_ERROR_RESULT(InvalidThreadId,              518);
     R_DEFINE_ERROR_RESULT(ProcessTerminated,            520);
 
 }
