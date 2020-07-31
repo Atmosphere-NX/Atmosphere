@@ -41,8 +41,6 @@ namespace ams::kern::arch::arm64 {
                 cpu::InvalidateEntireTlb();
             }
 
-            void Finalize(s32 core_id);
-
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm);
             }
