@@ -208,6 +208,16 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, uint64_t flags, uint64_t value) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            /* Set the breakpoint. */
+            R_TRY(KDebug::SetHardwareBreakPoint(name, flags, value));
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -257,7 +267,7 @@ namespace ams::kern::svc {
     }
 
     Result SetHardwareBreakPoint64(ams::svc::HardwareBreakPointRegisterName name, uint64_t flags, uint64_t value) {
-        MESOSPHERE_PANIC("Stubbed SvcSetHardwareBreakPoint64 was called.");
+        return SetHardwareBreakPoint(name, flags, value);
     }
 
     Result GetDebugThreadParam64(uint64_t *out_64, uint32_t *out_32, ams::svc::Handle debug_handle, uint64_t thread_id, ams::svc::DebugThreadParam param) {
@@ -311,7 +321,7 @@ namespace ams::kern::svc {
     }
 
     Result SetHardwareBreakPoint64From32(ams::svc::HardwareBreakPointRegisterName name, uint64_t flags, uint64_t value) {
-        MESOSPHERE_PANIC("Stubbed SvcSetHardwareBreakPoint64From32 was called.");
+        return SetHardwareBreakPoint(name, flags, value);
     }
 
     Result GetDebugThreadParam64From32(uint64_t *out_64, uint32_t *out_32, ams::svc::Handle debug_handle, uint64_t thread_id, ams::svc::DebugThreadParam param) {
