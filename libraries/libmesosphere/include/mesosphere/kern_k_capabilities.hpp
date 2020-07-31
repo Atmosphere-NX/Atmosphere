@@ -312,6 +312,32 @@ namespace ams::kern {
                 }
             }
 
+            ALWAYS_INLINE void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+
+                /* Set ReturnFromException if allowed. */
+                if (GetSvcAllowedImpl(this->svc_access_flags, svc::SvcId_ReturnFromException)) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                }
+
+                /* Set GetInfo if allowed. */
+                if (GetSvcAllowedImpl(this->svc_access_flags, svc::SvcId_GetInfo)) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            ALWAYS_INLINE void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+
+                /* Clear ReturnFromException. */
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+
+                /* If pinned, clear GetInfo. */
+                if (sp.is_pinned) {
+                    ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
             constexpr bool IsPermittedInterrupt(u32 id) const {
                 constexpr size_t BitsPerWord = BITSIZEOF(this->irq_access_flags[0]);
                 if (id < BITSIZEOF(this->irq_access_flags)) {

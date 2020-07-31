@@ -548,6 +548,7 @@ namespace ams::svc {
         struct ExceptionInfoStatus64 {
             u32 pstate;
             u32 afsr0;
+            u32 afsr1;
             u32 esr;
             u32 far;
         };

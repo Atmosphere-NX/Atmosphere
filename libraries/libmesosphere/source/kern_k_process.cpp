@@ -704,7 +704,47 @@ namespace ams::kern {
     }
 
     bool KProcess::EnterUserException() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Get the current thread. */
+        KThread *cur_thread = GetCurrentThreadPointer();
+        MESOSPHERE_ASSERT(this == cur_thread->GetOwnerProcess());
+
+        /* Try to claim the exception thread. */
+        if (this->exception_thread != cur_thread) {
+            const uintptr_t address_key = reinterpret_cast<uintptr_t>(std::addressof(this->exception_thread));
+            while (true) {
+                {
+                    KScopedSchedulerLock sl;
+
+                    /* If the thread is terminating, it can't enter. */
+                    if (cur_thread->IsTerminationRequested()) {
+                        return false;
+                    }
+
+                    /* If we have no exception thread, we succeeded. */
+                    if (this->exception_thread == nullptr) {
+                        this->exception_thread = cur_thread;
+                        return true;
+                    }
+
+                    /* Otherwise, wait for us to not have an exception thread. */
+                    cur_thread->SetAddressKey(address_key);
+                    this->exception_thread->AddWaiter(cur_thread);
+                    if (cur_thread->GetState() == KThread::ThreadState_Runnable) {
+                        cur_thread->SetState(KThread::ThreadState_Waiting);
+                    }
+                }
+                /* Remove the thread as a waiter from the lock owner. */
+                {
+                    KScopedSchedulerLock sl;
+                    KThread *owner_thread = cur_thread->GetLockOwner();
+                    if (owner_thread != nullptr) {
+                        owner_thread->RemoveWaiter(cur_thread);
+                    }
+                }
+            }
+        } else {
+            return false;
+        }
     }
 
     bool KProcess::LeaveUserException() {
@@ -715,8 +755,18 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         if (this->exception_thread == thread) {
-            /* TODO */
-            MESOSPHERE_UNIMPLEMENTED();
+            this->exception_thread = nullptr;
+
+            /* Remove waiter thread. */
+            s32 num_waiters;
+            KThread *next = thread->RemoveWaiterByKey(std::addressof(num_waiters), reinterpret_cast<uintptr_t>(std::addressof(this->exception_thread)));
+            if (next != nullptr) {
+                if (next->GetState() == KThread::ThreadState_Waiting) {
+                    next->SetState(KThread::ThreadState_Runnable);
+                }
+            }
+
+            return true;
         } else {
             return false;
         }
