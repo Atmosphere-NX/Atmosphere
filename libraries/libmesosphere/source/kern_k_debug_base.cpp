@@ -690,7 +690,8 @@ namespace ams::kern {
         return this->process;
     }
 
-    Result KDebugBase::GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out) {
+    template<typename T> requires (std::same_as<T, ams::svc::lp64::DebugEventInfo> || std::same_as<T, ams::svc::ilp32::DebugEventInfo>)
+    Result KDebugBase::GetDebugEventInfoImpl(T *out) {
         /* Get the attached process. */
         KScopedAutoObject process = this->GetProcess();
         R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
@@ -801,8 +802,12 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KDebugBase::GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out) {
+        return this->GetDebugEventInfoImpl(out);
+    }
+
     Result KDebugBase::GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out) {
-        MESOSPHERE_UNIMPLEMENTED();
+        return this->GetDebugEventInfoImpl(out);
     }
 
     void KDebugBase::OnFinalizeSynchronizationObject() {
