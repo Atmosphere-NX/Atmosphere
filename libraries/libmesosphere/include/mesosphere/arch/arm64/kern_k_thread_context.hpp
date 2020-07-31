@@ -74,6 +74,8 @@ namespace ams::kern::arch::arm64 {
 
             void CloneFpuStatus();
 
+            void SetFpuRegisters(const u128 *v, bool is_64_bit);
+
             const u128 *GetFpuRegisters() const { return this->fpu_registers; }
         public:
             static void OnThreadTerminating(const KThread *thread);

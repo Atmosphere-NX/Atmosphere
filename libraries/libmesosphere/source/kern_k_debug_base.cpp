@@ -31,6 +31,13 @@ namespace ams::kern {
         this->continue_flags = 0;
     }
 
+    bool KDebugBase::Is64Bit() const {
+        MESOSPHERE_ASSERT(this->lock.IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(this->process != nullptr);
+        return this->process->Is64Bit();
+    }
+
+
     Result KDebugBase::QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address) {
         /* Lock ourselves. */
         KScopedLightLock lk(this->lock);
@@ -458,6 +465,105 @@ namespace ams::kern {
 
         return ResultSuccess();
     }
+
+    Result KDebugBase::GetThreadContext(ams::svc::ThreadContext *out, u64 thread_id, u32 context_flags) {
+        /* Lock ourselves. */
+        KScopedLightLock lk(this->lock);
+
+        /* Get the thread from its id. */
+        KScopedAutoObject thread = KThread::GetThreadFromId(thread_id);
+        R_UNLESS(thread.IsNotNull(), svc::ResultInvalidId());
+
+        /* Verify that the thread is owned by our process. */
+        R_UNLESS(this->process == thread->GetOwnerProcess(), svc::ResultInvalidId());
+
+        /* Verify that the thread isn't terminated. */
+        R_UNLESS(thread->GetState() != KThread::ThreadState_Terminated, svc::ResultTerminationRequested());
+
+        /* Check that the thread is not the current one. */
+        /* NOTE: Nintendo does not check this, and thus the following loop will deadlock. */
+        R_UNLESS(thread.GetPointerUnsafe() != GetCurrentThreadPointer(), svc::ResultInvalidId());
+
+        /* Try to get the thread context until the thread isn't current on any core. */
+        while (true) {
+            KScopedSchedulerLock sl;
+
+            /* The thread needs to be requested for debug suspension. */
+            R_UNLESS(thread->IsSuspendRequested(KThread::SuspendType_Debug), svc::ResultInvalidState());
+
+            /* If the thread's raw state isn't runnable, check if it's current on some core. */
+            if (thread->GetRawState() != KThread::ThreadState_Runnable) {
+                bool current = false;
+                for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
+                    if (thread.GetPointerUnsafe() == Kernel::GetCurrentContext(i).current_thread) {
+                        current = true;
+                    }
+                    break;
+                }
+
+                /* If the thread is current, retry until it isn't. */
+                if (current) {
+                    continue;
+                }
+            }
+
+            /* Get the thread context. */
+            return this->GetThreadContextImpl(out, thread.GetPointerUnsafe(), context_flags);
+        }
+    }
+
+    Result KDebugBase::SetThreadContext(const ams::svc::ThreadContext &ctx, u64 thread_id, u32 context_flags) {
+        /* Lock ourselves. */
+        KScopedLightLock lk(this->lock);
+
+        /* Get the thread from its id. */
+        KScopedAutoObject thread = KThread::GetThreadFromId(thread_id);
+        R_UNLESS(thread.IsNotNull(), svc::ResultInvalidId());
+
+        /* Verify that the thread is owned by our process. */
+        R_UNLESS(this->process == thread->GetOwnerProcess(), svc::ResultInvalidId());
+
+        /* Verify that the thread isn't terminated. */
+        R_UNLESS(thread->GetState() != KThread::ThreadState_Terminated, svc::ResultTerminationRequested());
+
+        /* Check that the thread is not the current one. */
+        /* NOTE: Nintendo does not check this, and thus the following loop will deadlock. */
+        R_UNLESS(thread.GetPointerUnsafe() != GetCurrentThreadPointer(), svc::ResultInvalidId());
+
+        /* Try to get the thread context until the thread isn't current on any core. */
+        while (true) {
+            KScopedSchedulerLock sl;
+
+            /* The thread needs to be requested for debug suspension. */
+            R_UNLESS(thread->IsSuspendRequested(KThread::SuspendType_Debug), svc::ResultInvalidState());
+
+            /* If the thread's raw state isn't runnable, check if it's current on some core. */
+            if (thread->GetRawState() != KThread::ThreadState_Runnable) {
+                bool current = false;
+                for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
+                    if (thread.GetPointerUnsafe() == Kernel::GetCurrentContext(i).current_thread) {
+                        current = true;
+                    }
+                    break;
+                }
+
+                /* If the thread is current, retry until it isn't. */
+                if (current) {
+                    continue;
+                }
+            }
+
+            /* Verify that the thread's svc state is valid. */
+            if (thread->IsCallingSvc()) {
+                R_UNLESS(thread->GetSvcId() != svc::SvcId_Break,               svc::ResultInvalidState());
+                R_UNLESS(thread->GetSvcId() != svc::SvcId_ReturnFromException, svc::ResultInvalidState());
+            }
+
+            /* Set the thread context. */
+            return this->SetThreadContextImpl(ctx, thread.GetPointerUnsafe(), context_flags);
+        }
+    }
+
 
     Result KDebugBase::ContinueDebug(const u32 flags, const u64 *thread_ids, size_t num_thread_ids) {
         /* Get the attached process. */

@@ -36,6 +36,9 @@ namespace ams::kern::arch::arm64 {
                                                             (((1ul <<  2) - 1) <<  1);  /* Privileged Access Control. */
 
         static_assert(ForbiddenWatchPointFlagsMask == 0xFFFFFFFF00F0E006ul);
+
+        constexpr inline u32 El0PsrMask = 0xFF0FFE20;
+
     }
 
     uintptr_t KDebug::GetProgramCounter(const KThread &thread) {
@@ -62,6 +65,179 @@ namespace ams::kern::arch::arm64 {
             /* Mark that we've set. */
             e_ctx->write = 1;
         }
+    }
+
+    Result KDebug::GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(thread != GetCurrentThreadPointer());
+
+        /* Get the exception context. */
+        const KExceptionContext *e_ctx = GetExceptionContext(thread);
+
+        /* If general registers are requested, get them. */
+        if ((context_flags & ams::svc::ThreadContextFlag_General) != 0) {
+            if (!thread->IsCallingSvc() || thread->GetSvcId() == svc::SvcId_ReturnFromException) {
+                if (this->Is64Bit()) {
+                    /* Get X0-X28. */
+                    for (auto i = 0; i <= 28; ++i) {
+                        out->r[i] = e_ctx->x[i];
+                    }
+                } else {
+                    /* Get R0-R12. */
+                    for (auto i = 0; i <= 12; ++i) {
+                        out->r[i] = static_cast<u32>(e_ctx->x[i]);
+                    }
+                }
+            }
+        }
+
+        /* If control flags are requested, get them. */
+        if ((context_flags & ams::svc::ThreadContextFlag_Control) != 0) {
+            if (this->Is64Bit()) {
+                out->fp     = e_ctx->x[29];
+                out->lr     = e_ctx->x[30];
+                out->sp     = e_ctx->sp;
+                out->pc     = e_ctx->pc;
+                out->pstate = (e_ctx->psr & El0PsrMask);
+
+                /* Adjust PC if we should. */
+                if (e_ctx->write == 0 && thread->IsCallingSvc()) {
+                    out->pc -= sizeof(u32);
+                }
+
+                out->tpidr = e_ctx->tpidr;
+            } else {
+                out->r[11]  = static_cast<u32>(e_ctx->x[11]);
+                out->r[13]  = static_cast<u32>(e_ctx->x[13]);
+                out->r[14]  = static_cast<u32>(e_ctx->x[14]);
+                out->lr     = 0;
+                out->sp     = 0;
+                out->pc     = e_ctx->pc;
+                out->pstate = (e_ctx->psr & El0PsrMask);
+
+                /* Adjust PC if we should. */
+                if (e_ctx->write == 0 && thread->IsCallingSvc()) {
+                    out->pc -= (e_ctx->psr & 0x20) ? sizeof(u16) : sizeof(u32);
+                }
+
+                out->tpidr = static_cast<u32>(e_ctx->tpidr);
+            }
+        }
+
+        /* Get the FPU context. */
+        return this->GetFpuContext(out, thread, context_flags);
+    }
+
+    Result KDebug::SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(thread != GetCurrentThreadPointer());
+
+        /* Get the exception context. */
+        KExceptionContext *e_ctx = GetExceptionContext(thread);
+
+        /* If general registers are requested, set them. */
+        if ((context_flags & ams::svc::ThreadContextFlag_General) != 0) {
+            if (this->Is64Bit()) {
+                /* Set X0-X28. */
+                for (auto i = 0; i <= 28; ++i) {
+                    e_ctx->x[i] = ctx.r[i];
+                }
+            } else {
+                /* Set R0-R12. */
+                for (auto i = 0; i <= 12; ++i) {
+                    e_ctx->x[i] = static_cast<u32>(ctx.r[i]);
+                }
+            }
+        }
+
+        /* If control flags are requested, set them. */
+        if ((context_flags & ams::svc::ThreadContextFlag_Control) != 0) {
+            /* Mark ourselve as having adjusted pc. */
+            e_ctx->write = 1;
+
+            if (this->Is64Bit()) {
+                e_ctx->x[29] = ctx.fp;
+                e_ctx->x[30] = ctx.lr;
+                e_ctx->sp    = ctx.sp;
+                e_ctx->pc    = ctx.pc;
+                e_ctx->psr   = ((ctx.pstate & El0PsrMask) | (e_ctx->psr & ~El0PsrMask));
+                e_ctx->tpidr = ctx.tpidr;
+            } else {
+                e_ctx->x[13] = static_cast<u32>(ctx.r[13]);
+                e_ctx->x[14] = static_cast<u32>(ctx.r[14]);
+                e_ctx->x[30] = 0;
+                e_ctx->sp    = 0;
+                e_ctx->pc    = static_cast<u32>(ctx.pc);
+                e_ctx->psr   = ((ctx.pstate & El0PsrMask) | (e_ctx->psr & ~El0PsrMask));
+                e_ctx->tpidr = ctx.tpidr;
+            }
+        }
+
+        /* Set the FPU context. */
+        return this->SetFpuContext(ctx, thread, context_flags);
+    }
+
+    Result KDebug::GetFpuContext(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(thread != GetCurrentThreadPointer());
+
+        /* Succeed if there's nothing to do. */
+        R_SUCCEED_IF((context_flags & (ams::svc::ThreadContextFlag_Fpu | ams::svc::ThreadContextFlag_FpuControl)) == 0);
+
+        /* Get the thread context. */
+        KThreadContext *t_ctx = std::addressof(thread->GetContext());
+
+        /* Get the FPU control registers, if required. */
+        if ((context_flags & ams::svc::ThreadContextFlag_FpuControl) != 0) {
+            out->fpsr = t_ctx->GetFpsr();
+            out->fpcr = t_ctx->GetFpcr();
+        }
+
+        /* Get the FPU registers, if required. */
+        if ((context_flags & ams::svc::ThreadContextFlag_Fpu) != 0) {
+            static_assert(util::size(ams::svc::ThreadContext{}.v) == KThreadContext::NumFpuRegisters);
+            const u128 *f = t_ctx->GetFpuRegisters();
+
+            if (this->Is64Bit()) {
+                for (size_t i = 0; i < KThreadContext::NumFpuRegisters; ++i) {
+                    out->v[i] = f[i];
+                }
+            } else {
+                for (size_t i = 0; i < KThreadContext::NumFpuRegisters / 2; ++i) {
+                    out->v[i] = f[i];
+                }
+                for (size_t i = KThreadContext::NumFpuRegisters / 2; i < KThreadContext::NumFpuRegisters; ++i) {
+                    out->v[i] = 0;
+                }
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KDebug::SetFpuContext(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+        MESOSPHERE_ASSERT(thread != GetCurrentThreadPointer());
+
+        /* Succeed if there's nothing to do. */
+        R_SUCCEED_IF((context_flags & (ams::svc::ThreadContextFlag_Fpu | ams::svc::ThreadContextFlag_FpuControl)) == 0);
+
+        /* Get the thread context. */
+        KThreadContext *t_ctx = std::addressof(thread->GetContext());
+
+        /* Set the FPU control registers, if required. */
+        if ((context_flags & ams::svc::ThreadContextFlag_FpuControl) != 0) {
+            t_ctx->SetFpsr(ctx.fpsr);
+            t_ctx->SetFpcr(ctx.fpcr);
+        }
+
+        /* Set the FPU registers, if required. */
+        if ((context_flags & ams::svc::ThreadContextFlag_Fpu) != 0) {
+            static_assert(util::size(ams::svc::ThreadContext{}.v) == KThreadContext::NumFpuRegisters);
+            t_ctx->SetFpuRegisters(ctx.v, this->Is64Bit());
+        }
+
+        return ResultSuccess();
     }
 
     Result KDebug::BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {

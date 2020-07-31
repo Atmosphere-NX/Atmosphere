@@ -189,6 +189,18 @@ namespace ams::kern::arch::arm64 {
         this->SetFpsr(psr);
     }
 
+    void KThreadContext::SetFpuRegisters(const u128 *v, bool is_64_bit) {
+        if (is_64_bit) {
+            for (size_t i = 0; i < KThreadContext::NumFpuRegisters; ++i) {
+                this->fpu_registers[i] = v[i];
+            }
+        } else {
+            for (size_t i = 0; i < KThreadContext::NumFpuRegisters / 2; ++i) {
+                this->fpu_registers[i] = v[i];
+            }
+        }
+    }
+
     void GetUserContext(ams::svc::ThreadContext *out, const KThread *thread) {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
         MESOSPHERE_ASSERT(thread->IsSuspended());
@@ -255,6 +267,9 @@ namespace ams::kern::arch::arm64 {
             const u128 *f = t_ctx->GetFpuRegisters();
             for (size_t i = 0; i < KThreadContext::NumFpuRegisters / 2; ++i) {
                 out->v[i] = f[i];
+            }
+            for (size_t i = KThreadContext::NumFpuRegisters / 2; i < KThreadContext::NumFpuRegisters; ++i) {
+                out->v[i] = 0;
             }
         }
 
