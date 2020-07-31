@@ -1000,11 +1000,21 @@ namespace ams::kern {
     }
 
     KEventInfo *KProcess::GetJitDebugInfo() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
         if (this->is_jit_debug) {
             return KDebugBase::CreateDebugEvent(this->jit_debug_event_type, this->jit_debug_exception_type, this->jit_debug_params[0], this->jit_debug_params[1], this->jit_debug_params[2], this->jit_debug_params[3], this->jit_debug_thread_id);
         } else {
             return nullptr;
         }
+    }
+
+    void KProcess::ClearJitDebugInfo() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        this->is_jit_debug = false;
     }
 
     KProcess *KProcess::GetProcessFromId(u64 process_id) {

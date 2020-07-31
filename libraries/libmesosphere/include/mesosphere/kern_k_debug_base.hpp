@@ -36,9 +36,10 @@ namespace ams::kern {
             virtual ~KDebugBase() { /* ... */ }
         public:
             void Initialize();
+
             Result Attach(KProcess *process);
 
-            KScopedAutoObject<KProcess> GetProcess();
+            Result ContinueDebug(const u32 flags, const u64 *thread_ids, size_t num_thread_ids);
 
             Result QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address);
             Result ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size);
@@ -48,6 +49,8 @@ namespace ams::kern {
 
             Result GetDebugEventInfo(ams::svc::lp64::DebugEventInfo *out);
             Result GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out);
+
+            KScopedAutoObject<KProcess> GetProcess();
 
             /* TODO: This is a placeholder definition. */
         private:

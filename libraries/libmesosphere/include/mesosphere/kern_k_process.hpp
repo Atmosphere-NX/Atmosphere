@@ -194,6 +194,7 @@ namespace ams::kern {
             void ClearDebugObject(KProcess::State state);
 
             KEventInfo *GetJitDebugInfo();
+            void ClearJitDebugInfo();
 
             bool EnterUserException();
             bool LeaveUserException();
@@ -295,6 +296,18 @@ namespace ams::kern {
             Result Run(s32 priority, size_t stack_size);
 
             Result Reset();
+
+            void SetDebugBreak() {
+                if (this->state == State_RunningAttached) {
+                    this->ChangeState(State_DebugBreak);
+                }
+            }
+
+            void SetAttached() {
+                if (this->state == State_DebugBreak) {
+                    this->ChangeState(State_RunningAttached);
+                }
+            }
 
             Result SetActivity(ams::svc::ProcessActivity activity);
 

@@ -21,6 +21,8 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr inline int32_t MaximumDebuggableThreadCount = 0x60;
+
         Result DebugActiveProcess(ams::svc::Handle *out_handle, uint64_t process_id) {
             /* Get the process from its id. */
             KProcess *process = KProcess::GetProcessFromId(process_id);
@@ -75,6 +77,60 @@ namespace ams::kern::svc {
 
             /* Copy the info out to the user. */
             R_TRY(out_info.CopyFrom(std::addressof(info)));
+
+            return ResultSuccess();
+        }
+
+        Result ContinueDebugEventImpl(ams::svc::Handle debug_handle, uint32_t flags, const uint64_t *thread_ids, int32_t num_thread_ids) {
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Continue the event. */
+            R_TRY(debug->ContinueDebug(flags, thread_ids, num_thread_ids));
+
+            return ResultSuccess();
+        }
+
+        Result ContinueDebugEvent(ams::svc::Handle debug_handle, uint32_t flags, KUserPointer<const uint64_t *> user_thread_ids, int32_t num_thread_ids) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            /* Verify that the flags are valid. */
+            R_UNLESS((flags | ams::svc::ContinueFlag_AllMask) == ams::svc::ContinueFlag_AllMask, svc::ResultInvalidEnumValue());
+
+            /* Verify that continue all and continue others flags are exclusive. */
+            constexpr u32 AllAndOthersMask = ams::svc::ContinueFlag_ContinueAll | ams::svc::ContinueFlag_ContinueOthers;
+            R_UNLESS((flags & AllAndOthersMask) != AllAndOthersMask, svc::ResultInvalidEnumValue());
+
+            /* Verify that the number of thread ids is valid. */
+            R_UNLESS((0 <= num_thread_ids && num_thread_ids <= MaximumDebuggableThreadCount), svc::ResultOutOfRange());
+
+            /* Copy the threads from userspace. */
+            uint64_t thread_ids[MaximumDebuggableThreadCount];
+            if (num_thread_ids > 0) {
+                R_TRY(user_thread_ids.CopyArrayTo(thread_ids, num_thread_ids));
+            }
+
+            /* Continue the event. */
+            R_TRY(ContinueDebugEventImpl(debug_handle, flags, thread_ids, num_thread_ids));
+
+            return ResultSuccess();
+        }
+
+        Result LegacyContinueDebugEvent(ams::svc::Handle debug_handle, uint32_t flags, uint64_t thread_id) {
+            /* Only allow invoking the svc on development hardware. */
+            R_UNLESS(KTargetSystem::IsDebugMode(), svc::ResultNotImplemented());
+
+            /* Verify that the flags are valid. */
+            R_UNLESS((flags | ams::svc::ContinueFlag_AllMask) == ams::svc::ContinueFlag_AllMask, svc::ResultInvalidEnumValue());
+
+            /* Verify that continue all and continue others flags are exclusive. */
+            constexpr u32 AllAndOthersMask = ams::svc::ContinueFlag_ContinueAll | ams::svc::ContinueFlag_ContinueOthers;
+            R_UNLESS((flags & AllAndOthersMask) != AllAndOthersMask, svc::ResultInvalidEnumValue());
+
+            /* Continue the event. */
+            R_TRY(ContinueDebugEventImpl(debug_handle, flags, std::addressof(thread_id), 1));
 
             return ResultSuccess();
         }
@@ -173,11 +229,11 @@ namespace ams::kern::svc {
     }
 
     Result ContinueDebugEvent64(ams::svc::Handle debug_handle, uint32_t flags, KUserPointer<const uint64_t *> thread_ids, int32_t num_thread_ids) {
-        MESOSPHERE_PANIC("Stubbed SvcContinueDebugEvent64 was called.");
+        return ContinueDebugEvent(debug_handle, flags, thread_ids, num_thread_ids);
     }
 
     Result LegacyContinueDebugEvent64(ams::svc::Handle debug_handle, uint32_t flags, uint64_t thread_id) {
-        MESOSPHERE_PANIC("Stubbed SvcLegacyContinueDebugEvent64 was called.");
+        return LegacyContinueDebugEvent(debug_handle, flags, thread_id);
     }
 
     Result GetDebugThreadContext64(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {
@@ -227,11 +283,11 @@ namespace ams::kern::svc {
     }
 
     Result ContinueDebugEvent64From32(ams::svc::Handle debug_handle, uint32_t flags, KUserPointer<const uint64_t *> thread_ids, int32_t num_thread_ids) {
-        MESOSPHERE_PANIC("Stubbed SvcContinueDebugEvent64From32 was called.");
+        return ContinueDebugEvent(debug_handle, flags, thread_ids, num_thread_ids);
     }
 
     Result LegacyContinueDebugEvent64From32(ams::svc::Handle debug_handle, uint32_t flags, uint64_t thread_id) {
-        MESOSPHERE_PANIC("Stubbed SvcLegacyContinueDebugEvent64From32 was called.");
+        return LegacyContinueDebugEvent(debug_handle, flags, thread_id);
     }
 
     Result GetDebugThreadContext64From32(KUserPointer<ams::svc::ThreadContext *> out_context, ams::svc::Handle debug_handle, uint64_t thread_id, uint32_t context_flags) {

@@ -27,6 +27,8 @@ namespace ams::svc {
 
     R_DEFINE_ERROR_RESULT(NotImplemented,               33);
 
+    R_DEFINE_ERROR_RESULT(StopProcessingException,      54);
+
     R_DEFINE_ERROR_RESULT(NoSynchronizationObject,      57);
 
     R_DEFINE_ERROR_RESULT(TerminationRequested,         59);

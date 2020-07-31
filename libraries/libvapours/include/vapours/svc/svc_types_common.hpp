@@ -292,6 +292,15 @@ namespace ams::svc {
         ThreadContextFlag_All = (ThreadContextFlag_General | ThreadContextFlag_Control | ThreadContextFlag_Fpu | ThreadContextFlag_FpuControl),
     };
 
+    enum ContinueFlag : u32 {
+        ContinueFlag_ExceptionHandled     = (1u << 0),
+        ContinueFlag_EnableExceptionEvent = (1u << 1),
+        ContinueFlag_ContinueAll          = (1u << 2),
+        ContinueFlag_ContinueOthers       = (1u << 3),
+
+        ContinueFlag_AllMask              = (1u << 4) - 1,
+    };
+
     enum ThreadExitReason : u32 {
         ThreadExitReason_ExitThread       = 0,
         ThreadExitReason_TerminateThread  = 1,

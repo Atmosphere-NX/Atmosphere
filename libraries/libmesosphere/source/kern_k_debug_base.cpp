@@ -341,6 +341,95 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    Result KDebugBase::ContinueDebug(const u32 flags, const u64 *thread_ids, size_t num_thread_ids) {
+        /* Get the attached process. */
+        KScopedAutoObject target = this->GetProcess();
+        R_UNLESS(target.IsNotNull(), svc::ResultProcessTerminated());
+
+        /* Lock both ourselves, the target process, and the scheduler. */
+        KScopedLightLock state_lk(target->GetStateLock());
+        KScopedLightLock list_lk(target->GetListLock());
+        KScopedLightLock this_lk(this->lock);
+        KScopedSchedulerLock sl;
+
+        /* Check that we're still attached to the process, and that it's not terminated. */
+        R_UNLESS(this->process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
+        R_UNLESS(!target->IsTerminated(),                    svc::ResultProcessTerminated());
+
+        /* Check that we have no pending events. */
+        R_UNLESS(this->event_info_list.empty(), svc::ResultBusy());
+
+        /* Clear the target's JIT debug info. */
+        target->ClearJitDebugInfo();
+
+        /* Set our continue flags. */
+        this->continue_flags = flags;
+
+        /* Iterate over threads, continuing them as we should. */
+        bool has_debug_break_thread = false;
+        {
+            /* Parse our flags. */
+            const bool exception_handled = (this->continue_flags & ams::svc::ContinueFlag_ExceptionHandled) != 0;
+            const bool continue_all      = (this->continue_flags & ams::svc::ContinueFlag_ContinueAll)      != 0;
+            const bool continue_others   = (this->continue_flags & ams::svc::ContinueFlag_ContinueOthers)   != 0;
+
+            /* Update each thread. */
+            auto end = target->GetThreadList().end();
+            for (auto it = target->GetThreadList().begin(); it != end; ++it) {
+                /* Determine if we should continue the thread. */
+                bool should_continue;
+                {
+                    if (continue_all) {
+                        /* Continue all threads. */
+                        should_continue = true;
+                    } else if (continue_others) {
+                        /* Continue the thread if it doesn't match one of our target ids. */
+                        const u64 thread_id = it->GetId();
+                        should_continue = true;
+                        for (size_t i = 0; i < num_thread_ids; ++i) {
+                            if (thread_ids[i] == thread_id) {
+                                should_continue = false;
+                                break;
+                            }
+                        }
+                    } else {
+                        /* Continue the thread if it matches one of our target ids. */
+                        const u64 thread_id = it->GetId();
+                        should_continue = false;
+                        for (size_t i = 0; i < num_thread_ids; ++i) {
+                            if (thread_ids[i] == thread_id) {
+                                should_continue = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                /* Continue the thread if we should. */
+                if (should_continue) {
+                    if (exception_handled) {
+                        it->SetDebugExceptionResult(svc::ResultStopProcessingException());
+                    }
+                    it->Resume(KThread::SuspendType_Debug);
+                }
+
+                /* If the thread has debug suspend requested, note so. */
+                if (it->IsSuspendRequested(KThread::SuspendType_Debug)) {
+                    has_debug_break_thread = true;
+                }
+            }
+        }
+
+        /* Set the process's state. */
+        if (has_debug_break_thread) {
+            target->SetDebugBreak();
+        } else {
+            target->SetAttached();
+        }
+
+        return ResultSuccess();
+    }
+
     KEventInfo *KDebugBase::CreateDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4, u64 cur_thread_id) {
         /* Allocate a new event. */
         KEventInfo *info = KEventInfo::Allocate();
@@ -350,7 +439,7 @@ namespace ams::kern {
             /* Set common fields. */
             info->event     = event;
             info->thread_id = 0;
-            info->flags     = 1; /* TODO: enum this in ams::svc */
+            info->flags     = ams::svc::DebugEventFlag_Stopped;
 
             /* Set event specific fields. */
             switch (event) {
