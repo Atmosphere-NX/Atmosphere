@@ -55,7 +55,6 @@ namespace ams::kern::init::loader {
         }
 
         void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout) {
-            /* TODO: Proper secure monitor call. */
             KPhysicalAddress correct_base = KSystemControl::Init::GetKernelPhysicalBaseAddress(base_address);
             if (correct_base != base_address) {
                 const uintptr_t diff = GetInteger(correct_base) - base_address;

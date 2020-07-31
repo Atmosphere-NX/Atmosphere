@@ -203,7 +203,6 @@ namespace ams::kern {
             constexpr KThread() : wait_result(svc::ResultNoSynchronizationObject()), debug_exception_result(ResultSuccess()) { /* ... */ }
 
             virtual ~KThread() { /* ... */ }
-            /* TODO: Is a constexpr KThread() possible? */
 
             Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type);
 
@@ -496,8 +495,6 @@ namespace ams::kern {
 
             ALWAYS_INLINE void *GetStackTop() const { return reinterpret_cast<StackParameters *>(this->kernel_stack_top) - 1; }
             ALWAYS_INLINE void *GetKernelStackTop() const { return this->kernel_stack_top; }
-
-            /* TODO: This is kind of a placeholder definition. */
 
             ALWAYS_INLINE bool IsTerminationRequested() const {
                 return this->termination_requested || this->GetRawState() == ThreadState_Terminated;

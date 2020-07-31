@@ -33,7 +33,7 @@ namespace ams::creport {
             std::map<u64, u64> thread_tls_map;
 
             /* Attach process info. */
-            svc::DebugInfoAttachProcess process_info = {};
+            svc::DebugInfoCreateProcess process_info = {};
             u64 dying_message_address = 0;
             u64 dying_message_size = 0;
             u8 *dying_message = nullptr;
@@ -95,8 +95,8 @@ namespace ams::creport {
         private:
             void ProcessExceptions();
             void ProcessDyingMessage();
-            void HandleDebugEventInfoAttachProcess(const svc::DebugEventInfo &d);
-            void HandleDebugEventInfoAttachThread(const svc::DebugEventInfo &d);
+            void HandleDebugEventInfoCreateProcess(const svc::DebugEventInfo &d);
+            void HandleDebugEventInfoCreateThread(const svc::DebugEventInfo &d);
             void HandleDebugEventInfoException(const svc::DebugEventInfo &d);
 
             void SaveToFile(ScopedFile &file);

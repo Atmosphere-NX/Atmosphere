@@ -49,8 +49,6 @@ namespace ams::kern {
 
             NOINLINE void Initialize();
             void EnqueueTask(KInterruptTask *task);
-
-            /* TODO: Actually implement KInterruptTaskManager. This is a placeholder. */
     };
 
 }

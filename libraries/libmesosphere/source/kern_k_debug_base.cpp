@@ -305,7 +305,7 @@ namespace ams::kern {
                 this->old_process_state = this->process->SetDebugObject(this);
 
                 /* Send an event for our attaching to the process. */
-                this->PushDebugEvent(ams::svc::DebugEvent_AttachProcess);
+                this->PushDebugEvent(ams::svc::DebugEvent_CreateProcess);
 
                 /* Send events for attaching to each thread in the process. */
                 {
@@ -320,7 +320,7 @@ namespace ams::kern {
                             it->SetDebugAttached();
 
                             /* Send the event. */
-                            this->PushDebugEvent(ams::svc::DebugEvent_AttachThread, it->GetId(), GetInteger(it->GetThreadLocalRegionAddress()), it->GetEntrypoint());
+                            this->PushDebugEvent(ams::svc::DebugEvent_CreateThread, it->GetId(), GetInteger(it->GetThreadLocalRegionAddress()), it->GetEntrypoint());
                         }
                     }
                 }
@@ -561,12 +561,12 @@ namespace ams::kern {
 
             /* Set event specific fields. */
             switch (event) {
-                case ams::svc::DebugEvent_AttachProcess:
+                case ams::svc::DebugEvent_CreateProcess:
                     {
                         /* ... */
                     }
                     break;
-                case ams::svc::DebugEvent_AttachThread:
+                case ams::svc::DebugEvent_CreateThread:
                     {
                         /* Set the thread id. */
                         info->thread_id = param0;
@@ -584,7 +584,7 @@ namespace ams::kern {
 
                         /* Clear the thread id and flags. */
                         info->thread_id = 0;
-                        info->flags = 0 /* TODO: enum this in ams::svc */;
+                        info->flags = 0;
                     }
                     break;
                 case ams::svc::DebugEvent_ExitThread:
@@ -720,21 +720,21 @@ namespace ams::kern {
 
         /* Set event specific fields. */
         switch (info->event) {
-            case ams::svc::DebugEvent_AttachProcess:
+            case ams::svc::DebugEvent_CreateProcess:
                 {
-                    out->info.attach_process.program_id                     = process->GetProgramId();
-                    out->info.attach_process.process_id                     = process->GetId();
-                    out->info.attach_process.flags                          = process->GetCreateProcessFlags();
-                    out->info.attach_process.user_exception_context_address = GetInteger(process->GetProcessLocalRegionAddress());
+                    out->info.create_process.program_id                     = process->GetProgramId();
+                    out->info.create_process.process_id                     = process->GetId();
+                    out->info.create_process.flags                          = process->GetCreateProcessFlags();
+                    out->info.create_process.user_exception_context_address = GetInteger(process->GetProcessLocalRegionAddress());
 
-                    std::memcpy(out->info.attach_process.name, process->GetName(), sizeof(out->info.attach_process.name));
+                    std::memcpy(out->info.create_process.name, process->GetName(), sizeof(out->info.create_process.name));
                 }
                 break;
-            case ams::svc::DebugEvent_AttachThread:
+            case ams::svc::DebugEvent_CreateThread:
                 {
-                    out->info.attach_thread.thread_id   = info->info.create_thread.thread_id;
-                    out->info.attach_thread.tls_address = info->info.create_thread.tls_address;
-                    out->info.attach_thread.entrypoint  = info->info.create_thread.entrypoint;
+                    out->info.create_thread.thread_id   = info->info.create_thread.thread_id;
+                    out->info.create_thread.tls_address = info->info.create_thread.tls_address;
+                    out->info.create_thread.entrypoint  = info->info.create_thread.entrypoint;
                 }
                 break;
             case ams::svc::DebugEvent_ExitProcess:
@@ -882,8 +882,8 @@ namespace ams::kern {
         /* Get the current process. */
         KProcess *process = GetCurrentProcessPointer();
 
-        /* If the event is AttachThread and we've already attached, there's nothing to do. */
-        if (event == ams::svc::DebugEvent_AttachThread) {
+        /* If the event is CreateThread and we've already attached, there's nothing to do. */
+        if (event == ams::svc::DebugEvent_CreateThread) {
             R_SUCCEED_IF(GetCurrentThread().IsAttachedToDebugger());
         }
 

@@ -163,11 +163,11 @@ namespace ams::creport {
         svc::DebugEventInfo d;
         while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), this->debug_handle))) {
             switch (d.type) {
-                case svc::DebugEvent_AttachProcess:
-                    this->HandleDebugEventInfoAttachProcess(d);
+                case svc::DebugEvent_CreateProcess:
+                    this->HandleDebugEventInfoCreateProcess(d);
                     break;
-                case svc::DebugEvent_AttachThread:
-                    this->HandleDebugEventInfoAttachThread(d);
+                case svc::DebugEvent_CreateThread:
+                    this->HandleDebugEventInfoCreateThread(d);
                     break;
                 case svc::DebugEvent_Exception:
                     this->HandleDebugEventInfoException(d);
@@ -182,8 +182,8 @@ namespace ams::creport {
         this->crashed_thread.ReadFromProcess(this->debug_handle, this->thread_tls_map, this->crashed_thread_id, this->Is64Bit());
     }
 
-    void CrashReport::HandleDebugEventInfoAttachProcess(const svc::DebugEventInfo &d) {
-        this->process_info = d.info.attach_process;
+    void CrashReport::HandleDebugEventInfoCreateProcess(const svc::DebugEventInfo &d) {
+        this->process_info = d.info.create_process;
 
         /* On 5.0.0+, we want to parse out a dying message from application crashes. */
         if (hos::GetVersion() < hos::Version_5_0_0 || !IsApplication()) {
@@ -217,9 +217,9 @@ namespace ams::creport {
         this->dying_message_size = userdata_size;
     }
 
-    void CrashReport::HandleDebugEventInfoAttachThread(const svc::DebugEventInfo &d) {
+    void CrashReport::HandleDebugEventInfoCreateThread(const svc::DebugEventInfo &d) {
         /* Save info on the thread's TLS address for later. */
-        this->thread_tls_map[d.info.attach_thread.thread_id] = d.info.attach_thread.tls_address;
+        this->thread_tls_map[d.info.create_thread.thread_id] = d.info.create_thread.tls_address;
     }
 
     void CrashReport::HandleDebugEventInfoException(const svc::DebugEventInfo &d) {

@@ -56,11 +56,11 @@ namespace ams::dmnt::cheat::impl {
                     size_t target_core = NumCores - 1;
 
                     /* Retrieve correct core for new thread event. */
-                    if (dbg_event.type == svc::DebugEvent_AttachThread) {
+                    if (dbg_event.type == svc::DebugEvent_CreateThread) {
                         u64 out64 = 0;
                         u32 out32 = 0;
 
-                        R_TRY_CATCH(svcGetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.attach_thread.thread_id, DebugThreadParam_CurrentCore)) {
+                        R_TRY_CATCH(svcGetDebugThreadParam(&out64, &out32, debug_handle, dbg_event.info.create_thread.thread_id, DebugThreadParam_CurrentCore)) {
                             R_CATCH_RETHROW(svc::ResultProcessTerminated)
                         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
@@ -131,7 +131,7 @@ namespace ams::dmnt::cheat::impl {
                     svc::DebugEventInfo d;
                     size_t target_core = NumCores - 1;
                     while (R_SUCCEEDED(svc::GetDebugEvent(std::addressof(d), cheat_dbg_hnd))) {
-                        if (d.type == svc::DebugEvent_AttachThread) {
+                        if (d.type == svc::DebugEvent_CreateThread) {
                             R_TRY(GetTargetCore(std::addressof(target_core), d, cheat_dbg_hnd));
                         }
                     }

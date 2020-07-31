@@ -53,8 +53,6 @@ namespace ams::kern {
             Result GetDebugEventInfo(ams::svc::ilp32::DebugEventInfo *out);
 
             KScopedAutoObject<KProcess> GetProcess();
-
-            /* TODO: This is a placeholder definition. */
         private:
             void PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
             void EnqueueDebugEventInfo(KEventInfo *info);

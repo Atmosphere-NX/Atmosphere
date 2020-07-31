@@ -51,7 +51,6 @@ namespace ams::kern {
     }
 
     bool KClientPort::IsSignaled() const {
-        /* TODO: Check preconditions later. */
         MESOSPHERE_ASSERT_THIS();
         return this->num_sessions < this->max_sessions;
     }
