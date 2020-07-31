@@ -58,6 +58,9 @@ namespace ams::kern {
         private:
             void PushDebugEvent(ams::svc::DebugEvent event, uintptr_t param0 = 0, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
             void EnqueueDebugEventInfo(KEventInfo *info);
+
+            template<typename T> requires (std::same_as<T, ams::svc::lp64::DebugEventInfo> || std::same_as<T, ams::svc::ilp32::DebugEventInfo>)
+            Result GetDebugEventInfoImpl(T *out);
         public:
             virtual void OnFinalizeSynchronizationObject() override;
             virtual bool IsSignaled() const override;
