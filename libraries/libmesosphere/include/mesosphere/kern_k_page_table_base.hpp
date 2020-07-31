@@ -290,6 +290,7 @@ namespace ams::kern {
             Result SetHeapSize(KProcessAddress *out, size_t size);
             Result SetMaxHeapSize(size_t size);
             Result QueryInfo(KMemoryInfo *out_info, ams::svc::PageInfo *out_page_info, KProcessAddress addr) const;
+            Result QueryPhysicalAddress(ams::svc::PhysicalMemoryInfo *out, KProcessAddress address) const;
             Result QueryStaticMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { return this->QueryMappingImpl(out, address, size, KMemoryState_Static); }
             Result QueryIoMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const { return this->QueryMappingImpl(out, address, size, KMemoryState_Io); }
             Result MapMemory(KProcessAddress dst_address, KProcessAddress src_address, size_t size);

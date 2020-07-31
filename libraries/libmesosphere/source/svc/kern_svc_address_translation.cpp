@@ -21,6 +21,22 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result QueryPhysicalAddress(ams::svc::PhysicalMemoryInfo *out_info, uintptr_t address) {
+            /* NOTE: In 10.0.0, Nintendo stubbed this SVC. Should we do so? */
+            /* R_UNLESS(GetTargetFirmware() < TargetFirmware_10_0_0, svc::ResultInvalidCurrentMemory()); */
+
+            /* Get reference to page table. */
+            auto &pt = GetCurrentProcess().GetPageTable();
+
+            /* Check that the address is valid. */
+            R_UNLESS(pt.Contains(address, 1), svc::ResultInvalidCurrentMemory());
+
+            /* Query the physical mapping. */
+            R_TRY(pt.QueryPhysicalAddress(out_info, address));
+
+            return ResultSuccess();
+        }
+
         Result QueryIoMapping(uintptr_t *out_address, size_t *out_size, uint64_t phys_addr, size_t size) {
             /* Declare variables we'll populate. */
             KProcessAddress found_address = Null<KProcessAddress>;
@@ -105,7 +121,7 @@ namespace ams::kern::svc {
     /* =============================    64 ABI    ============================= */
 
     Result QueryPhysicalAddress64(ams::svc::lp64::PhysicalMemoryInfo *out_info, ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryPhysicalAddress64 was called.");
+        return QueryPhysicalAddress(out_info, address);
     }
 
     Result QueryIoMapping64(ams::svc::Address *out_address, ams::svc::Size *out_size, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
@@ -122,7 +138,15 @@ namespace ams::kern::svc {
     /* ============================= 64From32 ABI ============================= */
 
     Result QueryPhysicalAddress64From32(ams::svc::ilp32::PhysicalMemoryInfo *out_info, ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcQueryPhysicalAddress64From32 was called.");
+        ams::svc::PhysicalMemoryInfo info = {};
+        R_TRY(QueryPhysicalAddress(std::addressof(info), address));
+
+        *out_info = {
+            .physical_address = info.physical_address,
+            .virtual_address  = static_cast<u32>(info.virtual_address),
+            .size             = static_cast<u32>(info.size),
+        };
+        return ResultSuccess();
     }
 
     Result QueryIoMapping64From32(ams::svc::Address *out_address, ams::svc::Size *out_size, ams::svc::PhysicalAddress physical_address, ams::svc::Size size) {
