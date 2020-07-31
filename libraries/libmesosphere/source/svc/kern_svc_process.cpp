@@ -37,15 +37,19 @@ namespace ams::kern::svc {
 
             /* Get the process from the object. */
             KProcess *process = nullptr;
-            if (obj->IsDerivedFrom(KProcess::GetStaticTypeObj())) {
+            if (KProcess *p = obj->DynamicCast<KProcess *>(); p != nullptr) {
                 /* The object is a process, so we can use it directly. */
-                process = reinterpret_cast<KProcess *>(obj.GetPointerUnsafe());
-            } else if (obj->IsDerivedFrom(KThread::GetStaticTypeObj())) {
+                process = p;
+            } else if (KThread *t = obj->DynamicCast<KThread *>(); t != nullptr) {
                 /* The object is a thread, so we want to use its parent. */
                 process = reinterpret_cast<KThread *>(obj.GetPointerUnsafe())->GetOwnerProcess();
-            } else if (obj->IsDerivedFrom(KDebug::GetStaticTypeObj())) {
+            } else if (KDebug *d = obj->DynamicCast<KDebug *>(); d != nullptr) {
                 /* The object is a debug, so we want to use the process it's attached to. */
-                MESOSPHERE_UNIMPLEMENTED();
+                obj = d->GetProcess();
+
+                if (obj.IsNotNull()) {
+                    process = static_cast<KProcess *>(obj.GetPointerUnsafe());
+                }
             }
 
             /* Make sure the target process exists. */
