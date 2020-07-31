@@ -48,7 +48,6 @@ namespace ams::kern {
             virtual void Destroy() override;
             virtual bool IsSignaled() const override;
 
-            /* TODO: More of KClientPort. */
             Result CreateSession(KClientSession **out);
             Result CreateLightSession(KLightClientSession **out);
     };

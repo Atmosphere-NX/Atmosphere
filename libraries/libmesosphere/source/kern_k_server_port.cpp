@@ -84,7 +84,6 @@ namespace ams::kern {
     }
 
     bool KServerPort::IsSignaled() const {
-        /* TODO: Check preconditions later. */
         MESOSPHERE_ASSERT_THIS();
         if (this->IsLight()) {
             return !this->light_session_list.empty();

@@ -26,7 +26,7 @@ namespace ams::kern::arch::arm64 {
         /* Send KDebug event for this thread's creation. */
         {
             KScopedInterruptEnable ei;
-            /* TODO */
+            KDebug::OnDebugEvent(ams::svc::DebugEvent_CreateThread, GetCurrentThread().GetId(), GetInteger(GetCurrentThread().GetThreadLocalRegionAddress()), GetCurrentThread().GetEntrypoint());
         }
 
         /* Handle any pending dpc. */
@@ -261,6 +261,10 @@ namespace ams::kern::arch::arm64 {
         /* Copy fpcr/fpsr. */
         out->fpcr = t_ctx->GetFpcr();
         out->fpsr = t_ctx->GetFpsr();
+    }
+
+    void KThreadContext::OnThreadTerminating(const KThread *thread) {
+        /* ... */
     }
 
 }

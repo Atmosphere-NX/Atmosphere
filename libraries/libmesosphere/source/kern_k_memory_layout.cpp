@@ -144,7 +144,7 @@ namespace ams::kern {
             constexpr size_t CoreLocalRegionSize           = PageSize * (1 + cpu::NumCores);
             constexpr size_t CoreLocalRegionSizeWithGuards = CoreLocalRegionSize + 2 * PageSize;
             constexpr size_t CoreLocalRegionBoundsAlign    = 1_GB;
-            /* TODO: static_assert(CoreLocalRegionSize == sizeof(KCoreLocalRegion)); */
+            static_assert(CoreLocalRegionSize == sizeof(KCoreLocalRegion));
 
             KVirtualAddress GetCoreLocalRegionVirtualAddress() {
                 while (true) {

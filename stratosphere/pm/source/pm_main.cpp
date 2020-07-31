@@ -94,8 +94,8 @@ namespace {
         svc::DebugEventInfo d;
         while (true) {
             R_ABORT_UNLESS(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()));
-            if (d.type == svc::DebugEvent_AttachProcess) {
-                return ncm::ProgramId{d.info.attach_process.program_id};
+            if (d.type == svc::DebugEvent_CreateProcess) {
+                return ncm::ProgramId{d.info.create_process.program_id};
             }
         }
     }

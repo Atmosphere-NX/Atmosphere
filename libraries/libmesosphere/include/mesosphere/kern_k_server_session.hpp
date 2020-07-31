@@ -44,7 +44,6 @@ namespace ams::kern {
 
             virtual bool IsSignaled() const override;
 
-            /* TODO: More of KServerSession. */
             Result OnRequest(KSessionRequest *request);
 
             Result ReceiveRequest(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr);

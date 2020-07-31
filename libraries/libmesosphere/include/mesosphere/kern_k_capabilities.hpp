@@ -328,8 +328,6 @@ namespace ams::kern {
             constexpr bool CanForceDebug() const {
                 return this->debug_capabilities.Get<DebugFlags::ForceDebug>();
             }
-
-            /* TODO: Member functions. */
     };
 
 }

@@ -344,7 +344,8 @@ namespace ams::kern {
         this->signaled = true;
         this->NotifyAvailable();
 
-        /* TODO: On Thread Termination handler */
+        /* Call the on thread termination handler. */
+        KThreadContext::OnThreadTerminating(this);
 
         /* Clear previous thread in KScheduler. */
         KScheduler::ClearPreviousThread(this);

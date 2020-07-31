@@ -396,8 +396,8 @@ namespace ams::svc {
 
     /* Debug types. */
     enum DebugEvent : u32 {
-        DebugEvent_AttachProcess = 0,
-        DebugEvent_AttachThread  = 1,
+        DebugEvent_CreateProcess = 0,
+        DebugEvent_CreateThread  = 1,
         DebugEvent_ExitProcess   = 2,
         DebugEvent_ExitThread    = 3,
         DebugEvent_Exception     = 4,

@@ -90,7 +90,9 @@ namespace ams::kern {
             }
             if (this->state.should_count_idle) {
                 if (AMS_LIKELY(highest_thread != nullptr)) {
-                    /* TODO: Set parent process's idle count if it exists. */
+                    if (KProcess *process = highest_thread->GetOwnerProcess(); process != nullptr) {
+                        process->SetRunningThread(this->core_id, highest_thread, this->state.idle_count);
+                    }
                 } else {
                     this->state.idle_count++;
                 }

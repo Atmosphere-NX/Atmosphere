@@ -129,8 +129,7 @@ namespace ams::kern::init {
 
         /* NOTE: This can't be used right now because we don't have all these types implemented. */
         /* Once we do, uncomment the following and stop using the hardcoded size. */
-        /* TODO: FOREACH_SLAB_TYPE(ADD_SLAB_SIZE) */
-        size = 0x647000;
+        FOREACH_SLAB_TYPE(ADD_SLAB_SIZE)
 
         return size;
     }

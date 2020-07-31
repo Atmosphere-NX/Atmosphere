@@ -124,8 +124,6 @@ namespace ams::kern {
                 return this->address != rhs;
             }
 
-            /* TODO: <, <=, >, >= against uintptr_t? would need to be declared outside of class. Maybe worth it. */
-
             /* Allow getting the address explicitly, for use in accessors. */
             constexpr ALWAYS_INLINE uintptr_t GetValue() const {
                 return this->address;
@@ -244,6 +242,5 @@ namespace ams::kern {
     /* Accessors. */
     static_assert(15 == GetInteger(KPhysicalAddress(15)));
     static_assert(0  == GetInteger(Null<KPhysicalAddress>));
-    /* TODO: reinterpret_cast<> not valid in a constant expression, can't test get pointers. */
 
 }

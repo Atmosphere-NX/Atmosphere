@@ -266,7 +266,6 @@ namespace ams::kern::arch::arm64 {
             u32 GetAllocateOption() const { return this->page_table.GetAllocateOption(); }
 
             KPhysicalAddress GetHeapPhysicalAddress(KVirtualAddress address) const {
-                /* TODO: Better way to convert address type? */
                 return this->page_table.GetHeapPhysicalAddress(address);
             }
 

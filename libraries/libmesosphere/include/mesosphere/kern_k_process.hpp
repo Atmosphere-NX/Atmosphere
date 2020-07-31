@@ -281,6 +281,11 @@ namespace ams::kern {
                 return this->dynamic_page_manager.GetUsed() * PageSize;
             }
 
+            void SetRunningThread(s32 core, KThread *thread, u64 idle_count) {
+                this->running_threads[core]            = thread;
+                this->running_thread_idle_counts[core] = idle_count;
+            }
+
             void ClearRunningThread(KThread *thread) {
                 for (size_t i = 0; i < util::size(this->running_threads); ++i) {
                     if (this->running_threads[i] == thread) {

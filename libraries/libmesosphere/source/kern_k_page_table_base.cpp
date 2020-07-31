@@ -999,8 +999,8 @@ namespace ams::kern {
                 if (address == Null<KProcessAddress>) {
                     /* NOTE: Nintendo does not account for guard pages here. */
                     /* This may theoretically cause an offset to be chosen that cannot be mapped. */
-                    /* TODO: Should we account for guard pages? */
-                    const size_t offset_pages = KSystemControl::GenerateRandomRange(0, region_num_pages - num_pages);
+                    /* We will account for guard pages. */
+                    const size_t offset_pages = KSystemControl::GenerateRandomRange(0, region_num_pages - num_pages - guard_pages);
                     address = this->memory_block_manager.FindFreeArea(region_start + offset_pages * PageSize, region_num_pages - offset_pages, num_pages, alignment, offset, guard_pages);
                 }
             }

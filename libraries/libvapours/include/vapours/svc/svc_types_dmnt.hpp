@@ -20,7 +20,7 @@ namespace ams::svc {
 
     namespace lp64 {
 
-        struct DebugInfoAttachProcess {
+        struct DebugInfoCreateProcess {
             u64 program_id;
             u64 process_id;
             char name[0xC];
@@ -28,7 +28,7 @@ namespace ams::svc {
             u64 user_exception_context_address; /* 5.0.0+ */
         };
 
-        struct DebugInfoAttachThread {
+        struct DebugInfoCreateThread {
             u64 thread_id;
             u64 tls_address;
             u64 entrypoint;
@@ -91,8 +91,8 @@ namespace ams::svc {
         };
 
         union DebugInfo {
-            DebugInfoAttachProcess attach_process;
-            DebugInfoAttachThread attach_thread;
+            DebugInfoCreateProcess create_process;
+            DebugInfoCreateThread create_thread;
             DebugInfoExitProcess exit_process;
             DebugInfoExitThread exit_thread;
             DebugInfoException exception;
@@ -110,7 +110,7 @@ namespace ams::svc {
 
     namespace ilp32 {
 
-        struct DebugInfoAttachProcess {
+        struct DebugInfoCreateProcess {
             u64 program_id;
             u64 process_id;
             char name[0xC];
@@ -118,7 +118,7 @@ namespace ams::svc {
             u32 user_exception_context_address; /* 5.0.0+ */
         };
 
-        struct DebugInfoAttachThread {
+        struct DebugInfoCreateThread {
             u64 thread_id;
             u32 tls_address;
             u32 entrypoint;
@@ -181,8 +181,8 @@ namespace ams::svc {
         };
 
         union DebugInfo {
-            DebugInfoAttachProcess attach_process;
-            DebugInfoAttachThread attach_thread;
+            DebugInfoCreateProcess create_process;
+            DebugInfoCreateThread create_thread;
             DebugInfoExitProcess exit_process;
             DebugInfoExitThread exit_thread;
             DebugInfoException exception;

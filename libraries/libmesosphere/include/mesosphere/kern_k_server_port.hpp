@@ -51,11 +51,8 @@ namespace ams::kern {
             /* Overridden virtual functions. */
             virtual void Destroy() override;
             virtual bool IsSignaled() const override;
-
-            /* TODO: More of KServerPort. */
         private:
             void CleanupSessions();
-            /* TODO: This is a placeholder definition. */
     };
 
 }
