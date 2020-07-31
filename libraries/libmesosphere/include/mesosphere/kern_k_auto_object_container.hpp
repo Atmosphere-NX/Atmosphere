@@ -23,7 +23,7 @@ namespace ams::kern {
     class KAutoObjectWithListContainer {
         NON_COPYABLE(KAutoObjectWithListContainer);
         NON_MOVEABLE(KAutoObjectWithListContainer);
-        private:
+        public:
             using ListType = util::IntrusiveRedBlackTreeMemberTraits<&KAutoObjectWithList::list_node>::TreeType<KAutoObjectWithList>;
         public:
             class ListAccessor : public KScopedLightLock {

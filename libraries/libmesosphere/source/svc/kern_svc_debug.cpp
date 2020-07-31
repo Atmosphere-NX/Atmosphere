@@ -246,6 +246,105 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetDebugThreadParam(uint64_t *out_64, uint32_t *out_32, ams::svc::Handle debug_handle, uint64_t thread_id, ams::svc::DebugThreadParam param) {
+            /* Get the debug object. */
+            KScopedAutoObject debug = GetCurrentProcess().GetHandleTable().GetObject<KDebug>(debug_handle);
+            R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the thread from its id. */
+            KScopedAutoObject thread = KThread::GetThreadFromId(thread_id);
+            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidThreadId());
+
+            /* Get the process from the debug object. */
+            KScopedAutoObject process = debug->GetProcess();
+            R_UNLESS(process.IsNotNull(), svc::ResultProcessTerminated());
+
+            /* Verify that the process is the thread's parent. */
+            R_UNLESS(process.GetPointerUnsafe() == thread->GetOwnerProcess(), svc::ResultInvalidThreadId());
+
+            /* Get the parameter. */
+            switch (param) {
+                case ams::svc::DebugThreadParam_Priority:
+                    {
+                        /* Get the priority. */
+                        *out_32 = thread->GetPriority();
+                    }
+                    break;
+                case ams::svc::DebugThreadParam_State:
+                    {
+                        /* Get the thread state and suspend status. */
+                        KThread::ThreadState state;
+                        bool suspended_user;
+                        bool suspended_debug;
+                        {
+                            KScopedSchedulerLock sl;
+
+                            state           = thread->GetState();
+                            suspended_user  = thread->IsSuspendRequested(KThread::SuspendType_Thread);
+                            suspended_debug = thread->IsSuspendRequested(KThread::SuspendType_Debug);
+                        }
+
+                        /* Set the suspend flags. */
+                        *out_32 = 0;
+                        if (suspended_user) {
+                            *out_32 |= ams::svc::ThreadSuspend_User;
+                        }
+                        if (suspended_debug) {
+                            *out_32 |= ams::svc::ThreadSuspend_Debug;
+                        }
+
+                        /* Set the state. */
+                        switch (state) {
+                            case KThread::ThreadState_Initialized:
+                                {
+                                    *out_64 = ams::svc::ThreadState_Initializing;
+                                }
+                                break;
+                            case KThread::ThreadState_Waiting:
+                                {
+                                    *out_64 = ams::svc::ThreadState_Waiting;
+                                }
+                                break;
+                            case KThread::ThreadState_Runnable:
+                                {
+                                    *out_64 = ams::svc::ThreadState_Running;
+                                }
+                                break;
+                            case KThread::ThreadState_Terminated:
+                                {
+                                    *out_64 = ams::svc::ThreadState_Terminated;
+                                }
+                                break;
+                            default:
+                                return svc::ResultInvalidState();
+                        }
+                    }
+                    break;
+                case ams::svc::DebugThreadParam_IdealCore:
+                    {
+                        /* Get the ideal core. */
+                        *out_32 = thread->GetIdealCore();
+                    }
+                    break;
+                case ams::svc::DebugThreadParam_CurrentCore:
+                    {
+                        /* Get the current core. */
+                        *out_32 = thread->GetActiveCore();
+                    }
+                    break;
+                case ams::svc::DebugThreadParam_AffinityMask:
+                    {
+                        /* Get the affinity mask. */
+                        *out_32 = thread->GetAffinityMask().GetAffinityMask();
+                    }
+                    break;
+                default:
+                    return ams::svc::ResultInvalidEnumValue();
+            }
+
+            return ResultSuccess();
+        }
+
     }
 
     /* =============================    64 ABI    ============================= */
@@ -299,7 +398,7 @@ namespace ams::kern::svc {
     }
 
     Result GetDebugThreadParam64(uint64_t *out_64, uint32_t *out_32, ams::svc::Handle debug_handle, uint64_t thread_id, ams::svc::DebugThreadParam param) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugThreadParam64 was called.");
+        return GetDebugThreadParam(out_64, out_32, debug_handle, thread_id, param);
     }
 
     /* ============================= 64From32 ABI ============================= */
@@ -353,7 +452,7 @@ namespace ams::kern::svc {
     }
 
     Result GetDebugThreadParam64From32(uint64_t *out_64, uint32_t *out_32, ams::svc::Handle debug_handle, uint64_t thread_id, ams::svc::DebugThreadParam param) {
-        MESOSPHERE_PANIC("Stubbed SvcGetDebugThreadParam64From32 was called.");
+        return GetDebugThreadParam(out_64, out_32, debug_handle, thread_id, param);
     }
 
 }

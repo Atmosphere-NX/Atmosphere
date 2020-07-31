@@ -1190,6 +1190,41 @@ namespace ams::kern {
         return std::addressof(this->GetContext());
     }
 
+    KThread *KThread::GetThreadFromId(u64 thread_id) {
+        /* Lock the list. */
+        KThread::ListAccessor accessor;
+        const auto end = accessor.end();
+
+        /* Define helper object to find the thread. */
+        class IdObjectHelper : public KAutoObjectWithListContainer::ListType::value_type {
+            private:
+                u64 id;
+            public:
+                constexpr explicit IdObjectHelper(u64 id) : id(id) { /* ... */ }
+                virtual u64 GetId() const override { return this->id; }
+        };
+
+        /* Find the object with the right id. */
+        const auto it = accessor.find(IdObjectHelper(thread_id));
+
+        /* Check to make sure we found the thread. */
+        if (it == end) {
+            return nullptr;
+        }
+
+        /* Get the thread. */
+        KThread *thread = static_cast<KThread *>(std::addressof(*it));
+
+        /* Open the thread. */
+        if (AMS_LIKELY(thread->Open())) {
+            MESOSPHERE_ASSERT(thread->GetId() == thread_id);
+            return thread;
+        }
+
+        /* We failed to find the thread. */
+        return nullptr;
+    }
+
     Result KThread::GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count) {
         /* Lock the list. */
         KThread::ListAccessor accessor;
