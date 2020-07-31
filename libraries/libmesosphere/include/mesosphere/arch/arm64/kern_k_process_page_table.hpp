@@ -60,6 +60,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.QueryInfo(out_info, out_page_info, addr);
             }
 
+            Result QueryPhysicalAddress(ams::svc::PhysicalMemoryInfo *out, KProcessAddress address) const {
+                return this->page_table.QueryPhysicalAddress(out, address);
+            }
+
             Result QueryStaticMapping(KProcessAddress *out, KPhysicalAddress address, size_t size) const {
                 return this->page_table.QueryStaticMapping(out, address, size);
             }

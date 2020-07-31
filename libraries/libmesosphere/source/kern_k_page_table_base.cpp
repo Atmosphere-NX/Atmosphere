@@ -1492,6 +1492,82 @@ namespace ams::kern {
         return this->QueryInfoImpl(out_info, out_page_info, addr);
     }
 
+    Result KPageTableBase::QueryPhysicalAddress(ams::svc::PhysicalMemoryInfo *out, KProcessAddress address) const {
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Align the address down to page size. */
+        address = util::AlignDown(GetInteger(address), PageSize);
+
+        /* Verify that we can query the address. */
+        KMemoryInfo info;
+        ams::svc::PageInfo page_info;
+        R_TRY(this->QueryInfoImpl(std::addressof(info), std::addressof(page_info), address));
+
+        /* Check the memory state. */
+        R_TRY(this->CheckMemoryState(info, KMemoryState_FlagCanQueryPhysical, KMemoryState_FlagCanQueryPhysical, KMemoryPermission_UserReadExecute, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None));
+
+        /* Prepare to traverse. */
+        KPhysicalAddress phys_addr;
+        size_t phys_size;
+
+        KProcessAddress virt_addr = info.GetAddress();
+        KProcessAddress end_addr  = info.GetEndAddress();
+
+        /* Perform traversal. */
+        {
+            /* Begin traversal. */
+            TraversalContext context;
+            TraversalEntry   next_entry;
+            bool traverse_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), virt_addr);
+            R_UNLESS(traverse_valid, svc::ResultInvalidCurrentMemory());
+
+            /* Set tracking variables. */
+            phys_addr = next_entry.phys_addr;
+            phys_size = next_entry.block_size - (GetInteger(phys_addr) & (next_entry.block_size - 1));
+
+            /* Iterate. */
+            while (true) {
+                /* Continue the traversal. */
+                traverse_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                if (!traverse_valid) {
+                    break;
+                }
+
+                if (next_entry.phys_addr != (phys_addr + phys_size)) {
+                    /* Check if we're done. */
+                    if (virt_addr <= address && address <= virt_addr + phys_size - 1) {
+                        break;
+                    }
+
+                    /* Advance. */
+                    phys_addr  = next_entry.phys_addr;
+                    virt_addr += next_entry.block_size;
+                    phys_size  = next_entry.block_size - (GetInteger(phys_addr) & (next_entry.block_size - 1));
+                } else {
+                    phys_size += next_entry.block_size;
+                }
+
+                /* Check if we're done. */
+                if (end_addr < virt_addr + phys_size) {
+                    break;
+                }
+            }
+            MESOSPHERE_ASSERT(virt_addr <= address && address <= virt_addr + phys_size - 1);
+
+            /* Ensure we use the right size. */
+            if (end_addr < virt_addr + phys_size) {
+                phys_size = end_addr - virt_addr;
+            }
+        }
+
+        /* Set the output. */
+        out->physical_address = GetInteger(phys_addr);
+        out->virtual_address  = GetInteger(virt_addr);
+        out->size             = phys_size;
+        return ResultSuccess();
+    }
+
     Result KPageTableBase::MapIo(KPhysicalAddress phys_addr, size_t size, KMemoryPermission perm) {
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(size,                  PageSize));
