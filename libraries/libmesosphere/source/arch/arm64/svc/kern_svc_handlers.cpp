@@ -13,15 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_build_config.hpp>
-#include <mesosphere/svc/kern_svc_results.hpp>
+#include <mesosphere.hpp>
 
-namespace ams::kern {
+namespace ams::kern::svc {
 
-    constexpr size_t PageSize = 4_KB;
+    void TraceSvcEntry(const u64 *data) {
+        MESOSPHERE_KTRACE_SVC_ENTRY(GetCurrentThread().GetSvcId(), data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    }
 
-    ams::TargetFirmware GetTargetFirmware();
+    void TraceSvcExit(const u64 *data) {
+        MESOSPHERE_KTRACE_SVC_EXIT(GetCurrentThread().GetSvcId(), data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    }
 
 }
