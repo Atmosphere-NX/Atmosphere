@@ -103,7 +103,7 @@ namespace ams {
         TargetFirmware_10_0_3  = ATMOSPHERE_TARGET_FIRMWARE_10_0_3,
         TargetFirmware_10_0_4  = ATMOSPHERE_TARGET_FIRMWARE_10_0_4,
         TargetFirmware_10_1_0  = ATMOSPHERE_TARGET_FIRMWARE_10_1_0,
-        TargetFirmware_10_1_0  = ATMOSPHERE_TARGET_FIRMWARE_10_1_1,
+        TargetFirmware_10_1_1  = ATMOSPHERE_TARGET_FIRMWARE_10_1_1,
 
         TargetFirmware_Current = ATMOSPHERE_TARGET_FIRMWARE_CURRENT,
 
