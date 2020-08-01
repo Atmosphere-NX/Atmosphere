@@ -12,7 +12,7 @@ DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Wextra -Werror -fno-non-call-exceptions
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit -flto
-ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
+ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 
 SOURCES     += $(call ALL_SOURCE_DIRS,../libvapours/source)
 

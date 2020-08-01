@@ -30,12 +30,21 @@ namespace ams::kern {
     static_assert(IsKTraceEnabled || !IsKTraceEnabled);
 
     class KTrace {
+        public:
+            enum Type {
+                Type_SvcEntry0 = 3,
+                Type_SvcEntry1 = 4,
+                Type_SvcExit0  = 5,
+                Type_SvcExit1  = 6,
+            };
         private:
             static bool s_is_active;
         public:
             static void Initialize(KVirtualAddress address, size_t size);
             static void Start();
             static void Stop();
+
+            static void PushRecord(u8 type, u64 param0 = 0, u64 param1 = 0, u64 param2 = 0, u64 param3 = 0, u64 param4 = 0, u64 param5 = 0);
 
             static ALWAYS_INLINE bool IsActive() { return s_is_active; }
     };
@@ -54,4 +63,24 @@ namespace ams::kern {
         if constexpr (::ams::kern::IsKTraceEnabled) { \
             ::ams::kern::KTrace::Stop();              \
         }                                             \
+    })
+
+#define MESOSPHERE_KTRACE_SVC_ENTRY(SVC_ID, PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7)                           \
+    ({                                                                                                                                \
+        if constexpr (::ams::kern::IsKTraceEnabled) {                                                                                 \
+            if (::ams::kern::KTrace::IsActive()) {                                                                                    \
+                ::ams::kern::KTrace::PushRecord(::ams::kern::KTrace::Type_SvcEntry0, SVC_ID, PARAM0, PARAM1, PARAM2, PARAM3, PARAM4); \
+                ::ams::kern::KTrace::PushRecord(::ams::kern::KTrace::Type_SvcEntry1, PARAM5, PARAM6, PARAM7);                         \
+            }                                                                                                                         \
+        }                                                                                                                             \
+    })
+
+#define MESOSPHERE_KTRACE_SVC_EXIT(SVC_ID, PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7)                           \
+    ({                                                                                                                               \
+        if constexpr (::ams::kern::IsKTraceEnabled) {                                                                                \
+            if (::ams::kern::KTrace::IsActive()) {                                                                                   \
+                ::ams::kern::KTrace::PushRecord(::ams::kern::KTrace::Type_SvcExit0, SVC_ID, PARAM0, PARAM1, PARAM2, PARAM3, PARAM4); \
+                ::ams::kern::KTrace::PushRecord(::ams::kern::KTrace::Type_SvcExit1, PARAM5, PARAM6, PARAM7);                         \
+            }                                                                                                                        \
+        }                                                                                                                            \
     })
