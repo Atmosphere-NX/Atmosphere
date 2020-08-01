@@ -35,12 +35,12 @@ namespace ams::kern::svc {
                 switch (kern_trace_state) {
                     case ams::svc::KernelTraceState_Enabled:
                         {
-                            /* TODO: MESOSPHERE_KTRACE_RESUME(); */
+                            MESOSPHERE_KTRACE_RESUME();
                         }
                         break;
                     case ams::svc::KernelTraceState_Disabled:
                         {
-                            /* TODO: MESOSPHERE_KTRACE_PAUSE(); */
+                            MESOSPHERE_KTRACE_PAUSE();
                         }
                         break;
                     default:

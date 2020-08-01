@@ -338,39 +338,52 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     size_t KSystemControl::Init::GetApplicationPoolSize() {
-        switch (GetMemoryArrangeForInit()) {
-            case smc::MemoryArrangement_4GB:
-            default:
-                return 3285_MB;
-            case smc::MemoryArrangement_4GBForAppletDev:
-                return 2048_MB;
-            case smc::MemoryArrangement_4GBForSystemDev:
-                return 3285_MB;
-            case smc::MemoryArrangement_6GB:
-                return 4916_MB;
-            case smc::MemoryArrangement_6GBForAppletDev:
-                return 3285_MB;
-            case smc::MemoryArrangement_8GB:
-                return 4916_MB;
-        }
+        /* Get the base pool size. */
+        const size_t base_pool_size = [] ALWAYS_INLINE_LAMBDA () -> size_t {
+            switch (GetMemoryArrangeForInit()) {
+                case smc::MemoryArrangement_4GB:
+                default:
+                    return 3285_MB;
+                case smc::MemoryArrangement_4GBForAppletDev:
+                    return 2048_MB;
+                case smc::MemoryArrangement_4GBForSystemDev:
+                    return 3285_MB;
+                case smc::MemoryArrangement_6GB:
+                    return 4916_MB;
+                case smc::MemoryArrangement_6GBForAppletDev:
+                    return 3285_MB;
+                case smc::MemoryArrangement_8GB:
+                    return 4916_MB;
+            }
+        }();
+
+        /* Return (possibly) adjusted size. */
+        return base_pool_size;
     }
 
     size_t KSystemControl::Init::GetAppletPoolSize() {
-        switch (GetMemoryArrangeForInit()) {
-            case smc::MemoryArrangement_4GB:
-            default:
-                return 507_MB;
-            case smc::MemoryArrangement_4GBForAppletDev:
-                return 1554_MB;
-            case smc::MemoryArrangement_4GBForSystemDev:
-                return 448_MB;
-            case smc::MemoryArrangement_6GB:
-                return 562_MB;
-            case smc::MemoryArrangement_6GBForAppletDev:
-                return 2193_MB;
-            case smc::MemoryArrangement_8GB:
-                return 2193_MB;
-        }
+        /* Get the base pool size. */
+        const size_t base_pool_size = [] ALWAYS_INLINE_LAMBDA () -> size_t {
+            switch (GetMemoryArrangeForInit()) {
+                case smc::MemoryArrangement_4GB:
+                default:
+                    return 507_MB;
+                case smc::MemoryArrangement_4GBForAppletDev:
+                    return 1554_MB;
+                case smc::MemoryArrangement_4GBForSystemDev:
+                    return 448_MB;
+                case smc::MemoryArrangement_6GB:
+                    return 562_MB;
+                case smc::MemoryArrangement_6GBForAppletDev:
+                    return 2193_MB;
+                case smc::MemoryArrangement_8GB:
+                    return 2193_MB;
+            }
+        }();
+
+        /* Return (possibly) adjusted size. */
+        constexpr size_t ExtraSystemMemoryForAtmosphere = 33_MB;
+        return base_pool_size - ExtraSystemMemoryForAtmosphere - KTraceBufferSize;
     }
 
     size_t KSystemControl::Init::GetMinimumNonSecureSystemPoolSize() {
@@ -460,6 +473,12 @@ namespace ams::kern::board::nintendo::nx {
             constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
             g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
+        }
+
+        /* Initialize KTrace. */
+        if constexpr (IsKTraceEnabled) {
+            const auto &ktrace = KMemoryLayout::GetKernelTraceBufferRegion();
+            KTrace::Initialize(ktrace.GetAddress(), ktrace.GetSize());
         }
     }
 

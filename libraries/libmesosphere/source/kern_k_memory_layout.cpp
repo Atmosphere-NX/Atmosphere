@@ -223,7 +223,9 @@ namespace ams::kern {
 
         void SetupPoolPartitionMemoryRegions() {
             /* Start by identifying the extents of the DRAM memory region. */
-            const auto dram_extents = KMemoryLayout::GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Dram);
+            const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
+
+            const uintptr_t pool_end = dram_extents.GetEndAddress() - KTraceBufferSize;
 
             /* Get Application and Applet pool sizes. */
             const size_t application_pool_size       = KSystemControl::Init::GetApplicationPoolSize();
@@ -238,7 +240,7 @@ namespace ams::kern {
             const uintptr_t pool_partitions_start = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_DramPoolPartition)->GetAddress();
 
             /* Decide on starting addresses for our pools. */
-            const uintptr_t application_pool_start   = dram_extents.GetEndAddress() - application_pool_size;
+            const uintptr_t application_pool_start   = pool_end - application_pool_size;
             const uintptr_t applet_pool_start        = application_pool_start - applet_pool_size;
             const uintptr_t unsafe_system_pool_start = std::min(kernel_dram_start + CarveoutSizeMax, util::AlignDown(applet_pool_start - unsafe_system_pool_min_size, CarveoutAlignment));
             const size_t    unsafe_system_pool_size  = applet_pool_start - unsafe_system_pool_start;
