@@ -183,6 +183,11 @@ namespace ams::kern::init {
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_unk_debug_virt_addr), MiscUnknownDebugRegionSize, KMemoryRegionType_KernelMiscUnknownDebug));
             ttbr1_table.Map(misc_unk_debug_virt_addr, MiscUnknownDebugRegionSize, misc_unk_debug_phys_addr, KernelRoDataAttribute, g_initial_page_allocator);
         }
+            constexpr size_t MiscUnknownDebugRegionSize  = PageSize;
+            constexpr size_t MiscUnknownDebugRegionAlign = PageSize;
+            const KVirtualAddress misc_unk_debug_virt_addr = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(MiscUnknownDebugRegionSize, MiscUnknownDebugRegionAlign, KMemoryRegionType_KernelMisc, PageSize);
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_unk_debug_virt_addr), MiscUnknownDebugRegionSize, KMemoryRegionType_KernelMiscUnknownDebug));
+            ttbr1_table.Map(misc_unk_debug_virt_addr, MiscUnknownDebugRegionSize, misc_unk_debug_phys_addr, KernelRoDataAttribute, g_initial_page_allocator);
 
         /* Setup board-specific device physical regions. */
         SetupDevicePhysicalMemoryRegions();
@@ -241,6 +246,14 @@ namespace ams::kern::init {
         /* Insert a physical region for the kernel page table heap region */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
 
+        /* Insert a physical region for the kernel trace buffer. */
+        static_assert(!IsKTraceEnabled || KTraceBufferSize > 0);
+        if constexpr (IsKTraceEnabled) {
+            const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
+            const KPhysicalAddress ktrace_buffer_phys_addr = dram_extents.GetEndAddress() - KTraceBufferSize;
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
+        }
+
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
             if (region.GetType() == KMemoryRegionType_Dram) {
@@ -258,17 +271,37 @@ namespace ams::kern::init {
         const uintptr_t linear_region_phys_to_virt_diff = GetInteger(linear_region_start) - GetInteger(aligned_linear_phys_start);
 
         /* Map and create regions for all the linearly-mapped data. */
-        for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
-                continue;
+        {
+            uintptr_t cur_phys_addr = 0;
+            uintptr_t cur_size = 0;
+            for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
+                if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
+                    continue;
+                }
+
+                if (cur_phys_addr == 0) {
+                    cur_phys_addr = region.GetAddress();
+                    cur_size      = region.GetSize();
+                } else if (cur_phys_addr + cur_size == region.GetAddress()) {
+                    cur_size     += region.GetSize();
+                } else {
+                    const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
+                    ttbr1_table.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+                    cur_phys_addr = region.GetAddress();
+                    cur_size      = region.GetSize();
+                }
+
+                const uintptr_t region_virt_addr = region.GetAddress() + linear_region_phys_to_virt_diff;
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(region_virt_addr, region.GetSize(), GetTypeForVirtualLinearMapping(region.GetType())));
+                region.SetPairAddress(region_virt_addr);
+                KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(region_virt_addr)->SetPairAddress(region.GetAddress());
             }
 
-            const uintptr_t region_virt_addr = region.GetAddress() + linear_region_phys_to_virt_diff;
-            ttbr1_table.Map(region_virt_addr, region.GetSize(), region.GetAddress(), KernelRwDataAttribute, g_initial_page_allocator);
-
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(region_virt_addr, region.GetSize(), GetTypeForVirtualLinearMapping(region.GetType())));
-            region.SetPairAddress(region_virt_addr);
-            KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(region_virt_addr)->SetPairAddress(region.GetAddress());
+            /* Map the last block, which we may have skipped. */
+            if (cur_phys_addr != 0) {
+                const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
+                ttbr1_table.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+            }
         }
 
         /* Create regions for and map all core-specific stacks. */

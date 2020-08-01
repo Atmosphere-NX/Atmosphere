@@ -157,6 +157,10 @@ namespace ams::kern {
         PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
         PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
         PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+        if constexpr (IsKTraceEnabled) {
+            MESOSPHERE_LOG("    Debug\n");
+            PrintMemoryRegion("        Trace Buffer",   KMemoryLayout::GetKernelTraceBufferRegionPhysicalExtents());
+        }
         MESOSPHERE_LOG("\n");
     }
 
