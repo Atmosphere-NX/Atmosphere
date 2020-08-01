@@ -14,14 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_build_config.hpp>
-#include <mesosphere/svc/kern_svc_results.hpp>
 
-namespace ams::kern {
+#if 1 || defined(AMS_BUILD_FOR_AUDITING)
+#define MESOSPHERE_BUILD_FOR_AUDITING
+#endif
 
-    constexpr size_t PageSize = 4_KB;
+#if defined(MESOSPHERE_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
+#define MESOSPHERE_BUILD_FOR_DEBUGGING
+#endif
 
-    ams::TargetFirmware GetTargetFirmware();
+#ifdef  MESOSPHERE_BUILD_FOR_DEBUGGING
+#define MESOSPHERE_ENABLE_ASSERTIONS
+#define MESOSPHERE_ENABLE_DEBUG_PRINT
+#endif
 
-}
+#define MESOSPHERE_BUILD_FOR_TRACING
