@@ -37,4 +37,6 @@ namespace ams::kern {
 #define MESOSPHERE_ENABLE_DEBUG_PRINT
 #endif
 
+#define MESOSPHERE_BUILD_FOR_TRACING
+
 #include <mesosphere/svc/kern_svc_results.hpp>

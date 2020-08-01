@@ -100,8 +100,6 @@ namespace ams::kern {
         KMemoryRegionType_DramSystemNonSecurePool = 0xDA6  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped,
         KMemoryRegionType_DramSystemPool          = 0x13A6 | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_CarveoutProtected,
 
-
-
         KMemoryRegionType_DramKernel        = 0xE   | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
         KMemoryRegionType_DramKernelCode    = 0xCE  | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
         KMemoryRegionType_DramKernelSlab    = 0x14E | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected,
@@ -526,6 +524,10 @@ namespace ams::kern {
                 return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelTemp);
             }
 
+            static NOINLINE KMemoryRegion &GetKernelTraceBufferRegion() {
+                return *GetVirtualLinearMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualKernelTraceBuffer);
+            }
+
             static NOINLINE KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) {
                 return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
             }
@@ -730,6 +732,10 @@ namespace ams::kern {
                 return GetVirtualLinearExtents(GetLinearRegionPhysicalExtents());
             }
 
+            static NOINLINE auto GetMainMemoryPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Dram);
+            }
+
             static NOINLINE auto GetCarveoutRegionExtents() {
                 return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
             }
@@ -776,6 +782,10 @@ namespace ams::kern {
 
             static NOINLINE auto GetKernelApplicationPoolRegionPhysicalExtents() {
                 return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramApplicationPool);
+            }
+
+            static NOINLINE auto GetKernelTraceBufferRegionPhysicalExtents() {
+                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelTraceBuffer);
             }
     };
 
