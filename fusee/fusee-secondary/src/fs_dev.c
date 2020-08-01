@@ -302,7 +302,6 @@ int fsdev_register_keys(const char *name, unsigned int target_firmware, BisParti
     return 0;
 }
 
-
 int fsdev_unmount_all(void) {
     for (size_t i = 0; i < FF_VOLUMES; i++) {
         int ret = fsdev_unmount_device(g_fsdev_devices[i].name);

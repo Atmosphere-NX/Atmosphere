@@ -649,7 +649,7 @@ uint32_t nxboot_main(void) {
     } else {
         emummc_size = get_file_size("atmosphere/emummc.kip");
         if (emummc_size != 0) {
-            /* Allocate memory for the TSEC firmware. */
+            /* Allocate memory for the emummc KIP. */
             emummc = memalign(0x100, emummc_size);
 
             if (emummc == NULL) {
