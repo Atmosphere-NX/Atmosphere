@@ -15,7 +15,7 @@ The following descriptions were last updated on July 7th, 2020.
 
 ## mesosphere
 * **Description**: mesosphère is a reimplementation of the Horizon operating system's Kernel. It aims to provide an open-source reference for Nintendo's code.
-* **Development Status**: Under semi-active development by SciresM; temporarily on pause while the System Updater API is completed.
+* **Development Status**: Under active development by SciresM.
 * **Estimated Time**: Mid-to-Late 2020
 
 ## tma reimplementation
