@@ -1,4 +1,7 @@
 # Changelog
+## 0.14.1
++ An issue was fixed in 0.14.0 that would cause a black screen on boot when the INI1's size was not aligned to 8 bytes.
++ General system stability improvements to enhance the user's experience.
 ## 0.14.0
 + An API (`ams:su`) was added to allow homebrew to safely install system upgrades or downgrades.
   + This is a re-implementation of the logic that `ns` uses to install gamecard system updates.
