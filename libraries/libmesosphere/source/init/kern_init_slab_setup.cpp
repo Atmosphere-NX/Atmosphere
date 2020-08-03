@@ -72,7 +72,7 @@ namespace ams::kern::init {
         constexpr size_t SlabCountExtraKThread          = 160;
 
         /* This is used for gaps between the slab allocators. */
-        constexpr size_t SlabRegionReservedSize         = 2_MB;
+        constexpr size_t SlabRegionReservedSize         = 2_MB - 64_KB;
 
         /* Global to hold our resource counts. */
         KSlabResourceCounts g_slab_resource_counts = {
