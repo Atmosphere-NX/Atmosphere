@@ -377,7 +377,7 @@ namespace ams::kern {
 
             virtual void Finalize() override;
 
-            virtual u64 GetId() const override { return this->GetProcessId(); }
+            virtual u64 GetId() const override final { return this->GetProcessId(); }
 
             virtual bool IsSignaled() const override {
                 MESOSPHERE_ASSERT_THIS();

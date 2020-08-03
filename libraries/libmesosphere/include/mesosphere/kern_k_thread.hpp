@@ -523,7 +523,7 @@ namespace ams::kern {
 
         public:
             /* Overridden parent functions. */
-            virtual u64 GetId() const override { return this->GetThreadId(); }
+            virtual u64 GetId() const override final { return this->GetThreadId(); }
 
             virtual bool IsInitialized() const override { return this->initialized; }
             virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->parent) | (this->resource_limit_release_hint ? 1 : 0); }
