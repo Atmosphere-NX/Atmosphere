@@ -76,7 +76,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void RequestScheduleOnInterrupt() {
-                SetSchedulerUpdateNeeded();
+                this->state.needs_scheduling = true;
 
                 if (CanSchedule()) {
                     this->ScheduleOnInterrupt();
@@ -100,11 +100,7 @@ namespace ams::kern {
             }
         private:
             /* Static private API. */
-            static ALWAYS_INLINE bool IsSchedulerUpdateNeeded() { return s_scheduler_update_needed; }
-            static ALWAYS_INLINE void SetSchedulerUpdateNeeded() { s_scheduler_update_needed = true; }
-            static ALWAYS_INLINE void ClearSchedulerUpdateNeeded() { s_scheduler_update_needed = false; }
             static ALWAYS_INLINE KSchedulerPriorityQueue &GetPriorityQueue() { return s_priority_queue; }
-
             static NOINLINE u64 UpdateHighestPriorityThreadsImpl();
 
             static NOINLINE void InterruptTaskThreadToRunnable();
@@ -112,6 +108,10 @@ namespace ams::kern {
             /* Static public API. */
             static ALWAYS_INLINE bool CanSchedule() { return GetCurrentThread().GetDisableDispatchCount() == 0; }
             static ALWAYS_INLINE bool IsSchedulerLockedByCurrentThread() { return s_scheduler_lock.IsLockedByCurrentThread(); }
+
+            static ALWAYS_INLINE bool IsSchedulerUpdateNeeded() { return s_scheduler_update_needed; }
+            static ALWAYS_INLINE void SetSchedulerUpdateNeeded() { s_scheduler_update_needed = true; }
+            static ALWAYS_INLINE void ClearSchedulerUpdateNeeded() { s_scheduler_update_needed = false; }
 
             static ALWAYS_INLINE void DisableScheduling() {
                 MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() >= 0);
@@ -138,9 +138,6 @@ namespace ams::kern {
             }
 
             static NOINLINE void ClearPreviousThread(KThread *thread);
-
-            static NOINLINE void PinCurrentThread(KProcess *cur_process);
-            static NOINLINE void UnpinCurrentThread(KProcess *cur_process);
 
             static NOINLINE void OnThreadStateChanged(KThread *thread, KThread::ThreadState old_state);
             static NOINLINE void OnThreadPriorityChanged(KThread *thread, s32 old_priority);

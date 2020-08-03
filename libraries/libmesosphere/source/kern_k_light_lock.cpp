@@ -37,10 +37,13 @@ namespace ams::kern {
             /* Set thread states. */
             if (AMS_LIKELY(cur_thread->GetState() == KThread::ThreadState_Runnable)) {
                 cur_thread->SetState(KThread::ThreadState_Waiting);
+            } else {
+                KScheduler::SetSchedulerUpdateNeeded();
             }
 
             if (owner_thread->IsSuspended()) {
                 owner_thread->ContinueIfHasKernelWaiters();
+                KScheduler::SetSchedulerUpdateNeeded();
             }
         }
 
@@ -75,6 +78,8 @@ namespace ams::kern {
 
                 if (AMS_LIKELY(next_owner->GetState() == KThread::ThreadState_Waiting)) {
                     next_owner->SetState(KThread::ThreadState_Runnable);
+                } else {
+                    KScheduler::SetSchedulerUpdateNeeded();
                 }
 
                 if (next_owner->IsSuspended()) {
