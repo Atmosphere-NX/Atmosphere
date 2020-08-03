@@ -123,6 +123,20 @@ namespace ams::kern {
 
             void StartTermination();
             void FinishTermination();
+
+            void PinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+                MESOSPHERE_ASSERT(thread != nullptr);
+                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == nullptr);
+                this->pinned_threads[core_id] = thread;
+            }
+
+            void UnpinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+                MESOSPHERE_ASSERT(thread != nullptr);
+                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == thread);
+                this->pinned_threads[core_id] = nullptr;
+            }
         public:
             KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
@@ -205,20 +219,6 @@ namespace ams::kern {
             KThread *GetPinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 return this->pinned_threads[core_id];
-            }
-
-            void PinThread(s32 core_id, KThread *thread) {
-                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
-                MESOSPHERE_ASSERT(thread != nullptr);
-                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == nullptr);
-                this->pinned_threads[core_id] = thread;
-            }
-
-            void UnpinThread(s32 core_id, KThread *thread) {
-                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
-                MESOSPHERE_ASSERT(thread != nullptr);
-                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == thread);
-                this->pinned_threads[core_id] = nullptr;
             }
 
             void CopySvcPermissionsTo(KThread::StackParameters &sp) {
@@ -327,6 +327,7 @@ namespace ams::kern {
             Result SetActivity(ams::svc::ProcessActivity activity);
 
             void PinCurrentThread();
+            void UnpinCurrentThread();
 
             Result SignalToAddress(KProcessAddress address) {
                 return this->cond_var.SignalToAddress(address);

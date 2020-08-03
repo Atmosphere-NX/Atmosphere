@@ -277,36 +277,6 @@ namespace ams::kern {
         }
     }
 
-    void KScheduler::PinCurrentThread(KProcess *cur_process) {
-        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
-
-        /* Get the current thread. */
-        const s32 core_id   = GetCurrentCoreId();
-        KThread *cur_thread = GetCurrentThreadPointer();
-
-        /* Pin it. */
-        cur_process->PinThread(core_id, cur_thread);
-        cur_thread->Pin();
-
-        /* An update is needed. */
-        SetSchedulerUpdateNeeded();
-    }
-
-    void KScheduler::UnpinCurrentThread(KProcess *cur_process) {
-        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
-
-        /* Get the current thread. */
-        const s32 core_id   = GetCurrentCoreId();
-        KThread *cur_thread = GetCurrentThreadPointer();
-
-        /* Unpin it. */
-        cur_thread->Unpin();
-        cur_process->UnpinThread(core_id, cur_thread);
-
-        /* An update is needed. */
-        SetSchedulerUpdateNeeded();
-    }
-
     void KScheduler::OnThreadStateChanged(KThread *thread, KThread::ThreadState old_state) {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
 
