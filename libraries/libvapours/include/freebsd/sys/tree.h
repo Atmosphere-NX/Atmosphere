@@ -425,20 +425,34 @@ struct {								\
 /* Main rb operation.
  * Moves node close to the key of elm to top
  */
-#define	RB_GENERATE(name, type, field, cmp)				\
-	RB_GENERATE_INTERNAL(name, type, field, cmp,)
-#define	RB_GENERATE_STATIC(name, type, field, cmp)			\
-	RB_GENERATE_INTERNAL(name, type, field, cmp, __unused static)
-#define RB_GENERATE_INTERNAL(name, type, field, cmp, attr)		\
-	RB_GENERATE_INSERT_COLOR(name, type, field, attr)		\
+#define	RB_GENERATE_WITHOUT_COMPARE(name, type, field)				\
+	RB_GENERATE_WITHOUT_COMPARE_INTERNAL(name, type, field,)
+#define	RB_GENERATE_WITHOUT_COMPARE_STATIC(name, type, field)			\
+	RB_GENERATE_WITHOUT_COMPARE_INTERNAL(name, type, field, __unused static)
+#define RB_GENERATE_WITHOUT_COMPARE_INTERNAL(name, type, field, attr)		\
 	RB_GENERATE_REMOVE_COLOR(name, type, field, attr)		\
-	RB_GENERATE_INSERT(name, type, field, cmp, attr)		\
 	RB_GENERATE_REMOVE(name, type, field, attr)			\
-	RB_GENERATE_FIND(name, type, field, cmp, attr)			\
-	RB_GENERATE_NFIND(name, type, field, cmp, attr)			\
 	RB_GENERATE_NEXT(name, type, field, attr)			\
 	RB_GENERATE_PREV(name, type, field, attr)			\
 	RB_GENERATE_MINMAX(name, type, field, attr)
+
+#define	RB_GENERATE_WITH_COMPARE(name, type, field, cmp)				\
+	RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp,)
+#define	RB_GENERATE_WITH_COMPARE_STATIC(name, type, field, cmp)			\
+	RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, __unused static)
+#define RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, attr)		\
+	RB_GENERATE_INSERT_COLOR(name, type, field, attr)		\
+	RB_GENERATE_INSERT(name, type, field, cmp, attr)		\
+	RB_GENERATE_FIND(name, type, field, cmp, attr)			\
+	RB_GENERATE_NFIND(name, type, field, cmp, attr)
+
+#define	RB_GENERATE_ALL(name, type, field, cmp)				\
+	RB_GENERATE_ALL_INTERNAL(name, type, field, cmp,)
+#define	RB_GENERATE_ALL_STATIC(name, type, field, cmp)			\
+	RB_GENERATE_ALL_INTERNAL(name, type, field, cmp, __unused static)
+#define RB_GENERATE_ALL_INTERNAL(name, type, field, cmp, attr)		\
+    RB_GENERATE_WITHOUT_COMPARE_INTERNAL(name, type, field, attr) \
+    RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, attr)
 
 #define RB_GENERATE_INSERT_COLOR(name, type, field, attr)		\
 attr void								\
