@@ -328,7 +328,7 @@ namespace ams::kern {
         if (this->parent != nullptr) {
             this->parent->ReleaseUserException(this);
             if (this->parent->GetPinnedThread(GetCurrentCoreId()) == this) {
-                KScheduler::UnpinCurrentThread(this->parent);
+                this->parent->UnpinCurrentThread();
             }
         }
 

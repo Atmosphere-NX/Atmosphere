@@ -180,7 +180,7 @@ namespace ams::kern::arch::arm64 {
                 KScopedSchedulerLock sl;
 
                 /* Pin the current thread. */
-                KScheduler::PinCurrentThread(GetCurrentProcessPointer());
+                GetCurrentProcess().PinCurrentThread();
 
                 /* Set the interrupt flag for the thread. */
                 GetCurrentThread().SetInterruptFlag();
