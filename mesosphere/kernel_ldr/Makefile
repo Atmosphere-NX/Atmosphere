@@ -87,6 +87,8 @@ $(OUTPUT).elf	:	$(OFILES) ../../../libraries/libmesosphere/lib/libmesosphere.a
 
 $(OFILES_SRC)	: $(HFILES_BIN)
 
+kern_libc_generic.o: CFLAGS += -fno-builtin
+
 #---------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #---------------------------------------------------------------------------------
