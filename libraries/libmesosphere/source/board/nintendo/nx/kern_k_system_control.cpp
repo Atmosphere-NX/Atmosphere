@@ -179,12 +179,12 @@ namespace ams::kern::board::nintendo::nx {
 
         bool IsRegisterAccessibleToPrivileged(ams::svc::PhysicalAddress address) {
             /* Find the region for the address. */
-            KMemoryRegionTree::const_iterator it = KMemoryLayout::FindContainingRegion(KPhysicalAddress(address));
-            if (AMS_LIKELY(it != KMemoryLayout::GetPhysicalMemoryRegionTree().end())) {
-                if (AMS_LIKELY(it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController))) {
+            const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
+            if (AMS_LIKELY(region != nullptr)) {
+                if (AMS_LIKELY(region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController))) {
                     /* Get the offset within the region. */
-                    const size_t offset = address - it->GetAddress();
-                    MESOSPHERE_ABORT_UNLESS(offset < it->GetSize());
+                    const size_t offset = address - region->GetAddress();
+                    MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
 
                     /* Check the whitelist. */
                     if (AMS_LIKELY(CheckRegisterAllowedTable(McKernelRegisterWhitelist, offset))) {
@@ -198,21 +198,21 @@ namespace ams::kern::board::nintendo::nx {
 
         bool IsRegisterAccessibleToUser(ams::svc::PhysicalAddress address) {
             /* Find the region for the address. */
-            KMemoryRegionTree::const_iterator it = KMemoryLayout::FindContainingRegion(KPhysicalAddress(address));
-            if (AMS_LIKELY(it != KMemoryLayout::GetPhysicalMemoryRegionTree().end())) {
+            const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
+            if (AMS_LIKELY(region != nullptr)) {
                 /* The PMC is always allowed. */
-                if (it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_PowerManagementController)) {
+                if (region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_PowerManagementController)) {
                     return true;
                 }
 
                 /* Memory controller is allowed if the register is whitelisted. */
-                if (it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController ) ||
-                    it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController0) ||
-                    it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController1))
+                if (region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController ) ||
+                    region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController0) ||
+                    region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController1))
                 {
                     /* Get the offset within the region. */
-                    const size_t offset = address - it->GetAddress();
-                    MESOSPHERE_ABORT_UNLESS(offset < it->GetSize());
+                    const size_t offset = address - region->GetAddress();
+                    MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
 
                     /* Check the whitelist. */
                     if (AMS_LIKELY(CheckRegisterAllowedTable(McUserRegisterWhitelist, offset))) {

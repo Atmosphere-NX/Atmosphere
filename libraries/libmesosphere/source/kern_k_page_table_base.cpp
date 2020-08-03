@@ -1582,28 +1582,30 @@ namespace ams::kern {
         const size_t          region_num_pages = region_size / PageSize;
 
         /* Locate the memory region. */
-        auto region_it    = KMemoryLayout::FindContainingRegion(phys_addr);
-        const auto end_it = KMemoryLayout::GetEnd(phys_addr);
-        R_UNLESS(region_it != end_it, svc::ResultInvalidAddress());
+        const KMemoryRegion *region = KMemoryLayout::Find(phys_addr);
+        R_UNLESS(region != nullptr, svc::ResultInvalidAddress());
 
-        MESOSPHERE_ASSERT(region_it->Contains(GetInteger(phys_addr)));
+        MESOSPHERE_ASSERT(region->Contains(GetInteger(phys_addr)));
 
         /* Ensure that the region is mappable. */
         const bool is_rw = perm == KMemoryPermission_UserReadWrite;
-        do {
+        while (true) {
+            /* Check that the region exists. */
+            R_UNLESS(region != nullptr, svc::ResultInvalidAddress());
+
             /* Check the region attributes. */
-            R_UNLESS(!region_it->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
-            R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
-            R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
+            R_UNLESS(!region->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
+            R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
+            R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
 
             /* Check if we're done. */
-            if (GetInteger(last) <= region_it->GetLastAddress()) {
+            if (GetInteger(last) <= region->GetLastAddress()) {
                 break;
             }
 
             /* Advance. */
-            region_it++;
-        } while (region_it != end_it);
+            region = region->GetNext();
+        };
 
         /* Lock the table. */
         KScopedLightLock lk(this->general_lock);
@@ -1660,18 +1662,17 @@ namespace ams::kern {
         const size_t          region_num_pages = region_size / PageSize;
 
         /* Locate the memory region. */
-        auto region_it    = KMemoryLayout::FindContainingRegion(phys_addr);
-        const auto end_it = KMemoryLayout::GetEnd(phys_addr);
-        R_UNLESS(region_it != end_it, svc::ResultInvalidAddress());
+        const KMemoryRegion *region = KMemoryLayout::Find(phys_addr);
+        R_UNLESS(region != nullptr, svc::ResultInvalidAddress());
 
-        MESOSPHERE_ASSERT(region_it->Contains(GetInteger(phys_addr)));
-        R_UNLESS(GetInteger(last) <= region_it->GetLastAddress(), svc::ResultInvalidAddress());
+        MESOSPHERE_ASSERT(region->Contains(GetInteger(phys_addr)));
+        R_UNLESS(GetInteger(last) <= region->GetLastAddress(), svc::ResultInvalidAddress());
 
         /* Check the region attributes. */
         const bool is_rw = perm == KMemoryPermission_UserReadWrite;
-        R_UNLESS( region_it->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
-        R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
-        R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
+        R_UNLESS( region->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
+        R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
+        R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
 
         /* Lock the table. */
         KScopedLightLock lk(this->general_lock);
@@ -1716,12 +1717,11 @@ namespace ams::kern {
 
     Result KPageTableBase::MapRegion(KMemoryRegionType region_type, KMemoryPermission perm) {
         /* Get the memory region. */
-        auto &tree = KMemoryLayout::GetPhysicalMemoryRegionTree();
-        auto it    = tree.TryFindFirstDerivedRegion(region_type);
-        R_UNLESS(it != tree.end(), svc::ResultOutOfRange());
+        const KMemoryRegion *region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(region_type);
+        R_UNLESS(region != nullptr, svc::ResultOutOfRange());
 
         /* Map the region. */
-        R_TRY_CATCH(this->MapStatic(it->GetAddress(), it->GetSize(), perm)) {
+        R_TRY_CATCH(this->MapStatic(region->GetAddress(), region->GetSize(), perm)) {
             R_CONVERT(svc::ResultInvalidAddress, svc::ResultOutOfRange())
         } R_END_TRY_CATCH;
 

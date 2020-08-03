@@ -36,11 +36,13 @@ namespace ams::kern::board::nintendo::nx {
             u32 hs_detached_value;
         private:
             static ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress addr) {
-                return KMemoryLayout::IsHeapVirtualAddress(nullptr, addr);
+                const KMemoryRegion *hint = nullptr;
+                return KMemoryLayout::IsHeapVirtualAddress(hint, addr);
             }
 
             static ALWAYS_INLINE bool IsHeapPhysicalAddress(KPhysicalAddress addr) {
-                return KMemoryLayout::IsHeapPhysicalAddress(nullptr, addr);
+                const KMemoryRegion *hint = nullptr;
+                return KMemoryLayout::IsHeapPhysicalAddress(hint, addr);
             }
 
             static ALWAYS_INLINE KVirtualAddress GetHeapVirtualAddress(KPhysicalAddress addr) {

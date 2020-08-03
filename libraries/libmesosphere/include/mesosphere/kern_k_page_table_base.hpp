@@ -205,43 +205,43 @@ namespace ams::kern {
             bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-                return KMemoryLayout::IsLinearMappedPhysicalAddress(std::addressof(this->cached_physical_linear_region), phys_addr, this->cached_physical_linear_region);
+                return KMemoryLayout::IsLinearMappedPhysicalAddress(this->cached_physical_linear_region, phys_addr);
             }
 
             bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-                return KMemoryLayout::IsLinearMappedPhysicalAddress(std::addressof(this->cached_physical_linear_region), phys_addr, size, this->cached_physical_linear_region);
+                return KMemoryLayout::IsLinearMappedPhysicalAddress(this->cached_physical_linear_region, phys_addr, size);
             }
 
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-                return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, this->cached_physical_heap_region);
-            }
-
-            bool IsHeapPhysicalAddressForFinalize(KPhysicalAddress phys_addr) {
-                MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
-
-                return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, this->cached_physical_heap_region);
+                return KMemoryLayout::IsHeapPhysicalAddress(this->cached_physical_heap_region, phys_addr);
             }
 
             bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-                return KMemoryLayout::IsHeapPhysicalAddress(std::addressof(this->cached_physical_heap_region), phys_addr, size, this->cached_physical_heap_region);
+                return KMemoryLayout::IsHeapPhysicalAddress(this->cached_physical_heap_region, phys_addr, size);
+            }
+
+            bool IsHeapPhysicalAddressForFinalize(KPhysicalAddress phys_addr) {
+                MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
+
+                return KMemoryLayout::IsHeapPhysicalAddress(this->cached_physical_heap_region, phys_addr);
             }
 
             bool IsHeapVirtualAddress(KVirtualAddress virt_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-                return KMemoryLayout::IsHeapVirtualAddress(std::addressof(this->cached_virtual_heap_region), virt_addr, this->cached_virtual_heap_region);
+                return KMemoryLayout::IsHeapVirtualAddress(this->cached_virtual_heap_region, virt_addr);
             }
 
             bool IsHeapVirtualAddress(KVirtualAddress virt_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
-                return KMemoryLayout::IsHeapVirtualAddress(std::addressof(this->cached_virtual_heap_region), virt_addr, size, this->cached_virtual_heap_region);
+                return KMemoryLayout::IsHeapVirtualAddress(this->cached_virtual_heap_region, virt_addr, size);
             }
 
             bool ContainsPages(KProcessAddress addr, size_t num_pages) const {

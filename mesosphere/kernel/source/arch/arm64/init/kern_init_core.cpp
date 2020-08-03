@@ -114,10 +114,10 @@ namespace ams::kern::init {
         InitializeSlabResourceCounts();
 
         /* Insert the root region for the virtual memory tree, from which all other regions will derive. */
-        KMemoryLayout::GetVirtualMemoryRegionTree().insert(*KMemoryLayout::GetMemoryRegionAllocator().Create(KernelVirtualAddressSpaceBase, KernelVirtualAddressSpaceSize, 0, 0));
+        KMemoryLayout::GetVirtualMemoryRegionTree().InsertDirectly(KernelVirtualAddressSpaceBase, KernelVirtualAddressSpaceSize);
 
         /* Insert the root region for the physical memory tree, from which all other regions will derive. */
-        KMemoryLayout::GetPhysicalMemoryRegionTree().insert(*KMemoryLayout::GetMemoryRegionAllocator().Create(KernelPhysicalAddressSpaceBase, KernelPhysicalAddressSpaceSize, 0, 0));
+        KMemoryLayout::GetPhysicalMemoryRegionTree().InsertDirectly(KernelPhysicalAddressSpaceBase, KernelPhysicalAddressSpaceSize);
 
         /* Save start and end for ease of use. */
         const uintptr_t code_start_virt_addr = reinterpret_cast<uintptr_t>(_start);
@@ -294,7 +294,10 @@ namespace ams::kern::init {
                 const uintptr_t region_virt_addr = region.GetAddress() + linear_region_phys_to_virt_diff;
                 MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(region_virt_addr, region.GetSize(), GetTypeForVirtualLinearMapping(region.GetType())));
                 region.SetPairAddress(region_virt_addr);
-                KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(region_virt_addr)->SetPairAddress(region.GetAddress());
+
+                KMemoryRegion *virt_region = KMemoryLayout::GetVirtualMemoryRegionTree().FindModifiable(region_virt_addr);
+                MESOSPHERE_INIT_ABORT_UNLESS(virt_region != nullptr);
+                virt_region->SetPairAddress(region.GetAddress());
             }
 
             /* Map the last block, which we may have skipped. */
