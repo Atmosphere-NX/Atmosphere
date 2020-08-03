@@ -17,55 +17,99 @@
 
 namespace ams::kern {
 
+    namespace {
+
+        class KMemoryRegionAllocator {
+            NON_COPYABLE(KMemoryRegionAllocator);
+            NON_MOVEABLE(KMemoryRegionAllocator);
+            public:
+                static constexpr size_t MaxMemoryRegions = 1000;
+            private:
+                KMemoryRegion region_heap[MaxMemoryRegions];
+                size_t num_regions;
+            public:
+                constexpr ALWAYS_INLINE KMemoryRegionAllocator() : region_heap(), num_regions() { /* ... */ }
+            public:
+                template<typename... Args>
+                ALWAYS_INLINE KMemoryRegion *Allocate(Args&&... args) {
+                    /* Ensure we stay within the bounds of our heap. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(this->num_regions < MaxMemoryRegions);
+
+                    /* Create the new region. */
+                    KMemoryRegion *region = std::addressof(this->region_heap[this->num_regions++]);
+                    new (region) KMemoryRegion(std::forward<Args>(args)...);
+
+                    return region;
+
+                    return &this->region_heap[this->num_regions++];
+                }
+        };
+
+        constinit KMemoryRegionAllocator g_memory_region_allocator;
+
+        template<typename... Args>
+        ALWAYS_INLINE KMemoryRegion *AllocateRegion(Args&&... args) {
+            return g_memory_region_allocator.Allocate(std::forward<Args>(args)...);
+        }
+
+
+    }
+
+    void KMemoryRegionTree::InsertDirectly(uintptr_t address, size_t size, u32 attr, u32 type_id) {
+        this->insert(*AllocateRegion(address, size, attr, type_id));
+    }
+
     bool KMemoryRegionTree::Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr, u32 old_attr) {
         /* Locate the memory region that contains the address. */
-        auto it = this->FindContainingRegion(address);
+        KMemoryRegion *found = this->FindModifiable(address);
 
         /* We require that the old attr is correct. */
-        if (it->GetAttributes() != old_attr) {
+        if (found->GetAttributes() != old_attr) {
             return false;
         }
 
         /* We further require that the region can be split from the old region. */
         const uintptr_t inserted_region_end = address + size;
         const uintptr_t inserted_region_last = inserted_region_end - 1;
-        if (it->GetLastAddress() < inserted_region_last) {
+        if (found->GetLastAddress() < inserted_region_last) {
             return false;
         }
 
         /* Further, we require that the type id is a valid transformation. */
-        if (!it->CanDerive(type_id)) {
+        if (!found->CanDerive(type_id)) {
             return false;
         }
 
         /* Cache information from the region before we remove it. */
-        KMemoryRegion *cur_region = std::addressof(*it);
-        const uintptr_t old_address = it->GetAddress();
-        const size_t    old_size    = it->GetSize();
+        const uintptr_t old_address = found->GetAddress();
+        const size_t    old_size    = found->GetSize();
         const uintptr_t old_end     = old_address + old_size;
         const uintptr_t old_last    = old_end - 1;
-        const uintptr_t old_pair    = it->GetPairAddress();
-        const u32       old_type    = it->GetType();
+        const uintptr_t old_pair    = found->GetPairAddress();
+        const u32       old_type    = found->GetType();
 
         /* Erase the existing region from the tree. */
-        this->erase(it);
+        this->erase(this->iterator_to(*found));
 
-        /* If we need to insert a region before the region, do so. */
-        if (old_address != address) {
-            new (cur_region) KMemoryRegion(old_address, address - old_address, old_pair, old_attr, old_type);
-            this->insert(*cur_region);
-            cur_region = KMemoryLayout::GetMemoryRegionAllocator().Allocate();
-        }
-
-        /* Insert a new region. */
+        /* Insert the new region into the tree. */
         const uintptr_t new_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (address - old_address) : old_pair;
-        new (cur_region) KMemoryRegion(address, size, new_pair, new_attr, type_id);
-        this->insert(*cur_region);
+        if (old_address == address) {
+            /* Reuse the old object for the new region, if we can. */
+            found->Reset(address, size, new_pair, new_attr, type_id);
+            this->insert(*found);
+        } else {
+            /* If we can't re-use, adjust the old region. */
+            found->Reset(old_address, address - old_address, old_pair, old_attr, old_type);
+            this->insert(*found);
+
+            /* Insert a new region for the split. */
+            this->insert(*AllocateRegion(address, size, new_pair, new_attr, type_id));
+        }
 
         /* If we need to insert a region after the region, do so. */
         if (old_last != inserted_region_last) {
             const uintptr_t after_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (inserted_region_end - old_address) : old_pair;
-            this->insert(*KMemoryLayout::GetMemoryRegionAllocator().Create(inserted_region_end, old_end - inserted_region_end, after_pair, old_attr, old_type));
+            this->insert(*AllocateRegion(inserted_region_end, old_end - inserted_region_end, after_pair, old_attr, old_type));
         }
 
         return true;
@@ -96,15 +140,10 @@ namespace ams::kern {
                 continue;
             }
 
-            /* Locate the candidate region, and ensure it fits. */
-            const KMemoryRegion *candidate_region = std::addressof(*this->FindContainingRegion(candidate));
-            if (candidate_last > candidate_region->GetLastAddress()) {
+            /* Locate the candidate region, and ensure it fits and has the correct type id. */
+            if (const auto &candidate_region = *this->Find(candidate); !(candidate_last <= candidate_region.GetLastAddress() && candidate_region.GetType() == type_id)) {
                 continue;
             }
-
-            /* Ensure that the region has the correct type id. */
-            if (candidate_region->GetType() != type_id)
-                continue;
 
             return candidate;
         }
@@ -117,17 +156,15 @@ namespace ams::kern {
 
         /* Initialize linear trees. */
         for (auto &region : GetPhysicalMemoryRegionTree()) {
-            if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
-                continue;
+            if (region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
+                GetPhysicalLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType());
             }
-            GetPhysicalLinearMemoryRegionTree().insert(*GetMemoryRegionAllocator().Create(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType()));
         }
 
         for (auto &region : GetVirtualMemoryRegionTree()) {
-            if (!region.IsDerivedFrom(KMemoryRegionType_Dram)) {
-                continue;
+            if (region.IsDerivedFrom(KMemoryRegionType_Dram)) {
+                GetVirtualLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType());
             }
-            GetVirtualLinearMemoryRegionTree().insert(*GetMemoryRegionAllocator().Create(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType()));
         }
     }
 
@@ -152,13 +189,13 @@ namespace ams::kern {
                     const uintptr_t candidate_end   = candidate_start + CoreLocalRegionSizeWithGuards;
                     const uintptr_t candidate_last  = candidate_end - 1;
 
-                    const KMemoryRegion *containing_region = std::addressof(*KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(candidate_start));
+                    const auto &containing_region = *KMemoryLayout::GetVirtualMemoryRegionTree().Find(candidate_start);
 
-                    if (candidate_last > containing_region->GetLastAddress()) {
+                    if (candidate_last > containing_region.GetLastAddress()) {
                         continue;
                     }
 
-                    if (containing_region->GetType() != KMemoryRegionType_None) {
+                    if (containing_region.GetType() != KMemoryRegionType_None) {
                         continue;
                     }
 
@@ -166,11 +203,11 @@ namespace ams::kern {
                         continue;
                     }
 
-                    if (containing_region->GetAddress() > util::AlignDown(candidate_start, CoreLocalRegionBoundsAlign)) {
+                    if (containing_region.GetAddress() > util::AlignDown(candidate_start, CoreLocalRegionBoundsAlign)) {
                         continue;
                     }
 
-                    if (util::AlignUp(candidate_last, CoreLocalRegionBoundsAlign) - 1 > containing_region->GetLastAddress()) {
+                    if (util::AlignUp(candidate_last, CoreLocalRegionBoundsAlign) - 1 > containing_region.GetLastAddress()) {
                         continue;
                     }
 
@@ -182,7 +219,9 @@ namespace ams::kern {
             void InsertPoolPartitionRegionIntoBothTrees(size_t start, size_t size, KMemoryRegionType phys_type, KMemoryRegionType virt_type, u32 &cur_attr) {
                 const u32 attr = cur_attr++;
                 MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(start, size, phys_type, attr));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(phys_type, attr)->GetPairAddress(), size, virt_type, attr));
+                const KMemoryRegion *phys = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(phys_type, attr);
+                MESOSPHERE_INIT_ABORT_UNLESS(phys != nullptr);
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(phys->GetPairAddress(), size, virt_type, attr));
             }
 
         }
@@ -237,11 +276,16 @@ namespace ams::kern {
             const size_t unsafe_system_pool_min_size = KSystemControl::Init::GetMinimumNonSecureSystemPoolSize();
 
             /* Find the start of the kernel DRAM region. */
-            const uintptr_t kernel_dram_start = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_DramKernel)->GetAddress();
+            const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernel);
+            MESOSPHERE_INIT_ABORT_UNLESS(kernel_dram_region != nullptr);
+
+            const uintptr_t kernel_dram_start = kernel_dram_region->GetAddress();
             MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(kernel_dram_start, CarveoutAlignment));
 
             /* Find the start of the pool partitions region. */
-            const uintptr_t pool_partitions_start = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_DramPoolPartition)->GetAddress();
+            const KMemoryRegion *pool_partitions_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(KMemoryRegionType_DramPoolPartition, 0);
+            MESOSPHERE_INIT_ABORT_UNLESS(pool_partitions_region != nullptr);
+            const uintptr_t pool_partitions_start = pool_partitions_region->GetAddress();
 
             /* Decide on starting addresses for our pools. */
             const uintptr_t application_pool_start   = pool_end - application_pool_size;

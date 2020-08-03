@@ -139,7 +139,7 @@ namespace ams::kern {
         PrintMemoryRegion("        Misc",           KMemoryLayout::GetKernelMiscRegionExtents());
         PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionExtents());
         PrintMemoryRegion("    CoreLocalRegion",    KMemoryLayout::GetCoreLocalRegion());
-        PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionExtents());
+        PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionVirtualExtents());
         MESOSPHERE_LOG("\n");
 
         MESOSPHERE_LOG("Physical Memory Layout\n");

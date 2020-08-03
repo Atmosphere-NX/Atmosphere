@@ -122,9 +122,13 @@ namespace ams::kern {
         }
     }
 
+    class KMemoryRegionTree;
+
     class KMemoryRegion : public util::IntrusiveRedBlackTreeBaseNode<KMemoryRegion> {
         NON_COPYABLE(KMemoryRegion);
         NON_MOVEABLE(KMemoryRegion);
+        private:
+            friend class KMemoryRegionTree;
         private:
             uintptr_t address;
             uintptr_t pair_address;
@@ -149,7 +153,15 @@ namespace ams::kern {
                 /* ... */
             }
             constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t rs, u32 r, u32 t) : KMemoryRegion(a, rs, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
-
+        private:
+            constexpr ALWAYS_INLINE void Reset(uintptr_t a, uintptr_t rs, uintptr_t p, u32 r, u32 t) {
+                this->address      = a;
+                this->pair_address = p;
+                this->region_size  = rs;
+                this->attributes   = r;
+                this->type_id      = t;
+            }
+        public:
             constexpr ALWAYS_INLINE uintptr_t GetAddress() const {
                 return this->address;
             }
@@ -250,56 +262,59 @@ namespace ams::kern {
         public:
             constexpr ALWAYS_INLINE KMemoryRegionTree() : tree() { /* ... */ }
         public:
-            iterator FindContainingRegion(uintptr_t address) {
-                return this->find(KMemoryRegion(address, 1, 0, 0));
+            KMemoryRegion *FindModifiable(uintptr_t address) {
+                if (auto it = this->find(KMemoryRegion(address, 1, 0, 0)); it != this->end()) {
+                    return std::addressof(*it);
+                } else {
+                    return nullptr;
+                }
             }
 
-            iterator FindFirstRegionByTypeAttr(u32 type_id, u32 attr = 0) {
-                for (auto it = this->begin(); it != this->end(); it++) {
+            const KMemoryRegion *Find(uintptr_t address) const {
+                if (auto it = this->find(KMemoryRegion(address, 1, 0, 0)); it != this->cend()) {
+                    return std::addressof(*it);
+                } else {
+                    return nullptr;
+                }
+            }
+
+            const KMemoryRegion *FindByType(u32 type_id) const {
+                for (auto it = this->cbegin(); it != this->cend(); ++it) {
+                    if (it->GetType() == type_id) {
+                        return std::addressof(*it);
+                    }
+                }
+                return nullptr;
+            }
+
+            const KMemoryRegion *FindByTypeAndAttribute(u32 type_id, u32 attr) const {
+                for (auto it = this->cbegin(); it != this->cend(); ++it) {
                     if (it->GetType() == type_id && it->GetAttributes() == attr) {
-                        return it;
+                        return std::addressof(*it);
                     }
                 }
-                MESOSPHERE_INIT_ABORT();
+                return nullptr;
             }
 
-            iterator FindFirstRegionByType(u32 type_id) {
-                for (auto it = this->begin(); it != this->end(); it++) {
-                    if (it->GetType() == type_id) {
-                        return it;
+            const KMemoryRegion *FindFirstDerived(u32 type_id) const {
+                for (auto it = this->cbegin(); it != this->cend(); it++) {
+                    if (it->IsDerivedFrom(type_id)) {
+                        return std::addressof(*it);
                     }
                 }
-                MESOSPHERE_INIT_ABORT();
+                return nullptr;
             }
 
-            iterator TryFindFirstRegionByType(u32 type_id) {
-                for (auto it = this->begin(); it != this->end(); it++) {
-                    if (it->GetType() == type_id) {
-                        return it;
-                    }
-                }
-
-                return this->end();
-            }
-
-            iterator FindFirstDerivedRegion(u32 type_id) {
+            const KMemoryRegion *FindLastDerived(u32 type_id) const {
+                const KMemoryRegion *region = nullptr;
                 for (auto it = this->begin(); it != this->end(); it++) {
                     if (it->IsDerivedFrom(type_id)) {
-                        return it;
+                        region = std::addressof(*it);
                     }
                 }
-                MESOSPHERE_INIT_ABORT();
+                return region;
             }
 
-            iterator TryFindFirstDerivedRegion(u32 type_id) {
-                for (auto it = this->begin(); it != this->end(); it++) {
-                    if (it->IsDerivedFrom(type_id)) {
-                        return it;
-                    }
-                }
-
-                return this->end();
-            }
 
             DerivedRegionExtents GetDerivedRegionExtents(u32 type_id) const {
                 DerivedRegionExtents extents;
@@ -322,7 +337,9 @@ namespace ams::kern {
                 return extents;
             }
         public:
+            NOINLINE void InsertDirectly(uintptr_t address, size_t size, u32 attr = 0, u32 type_id = 0);
             NOINLINE bool Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr = 0, u32 old_attr = 0);
+
             NOINLINE KVirtualAddress GetRandomAlignedRegion(size_t size, size_t alignment, u32 type_id);
 
             ALWAYS_INLINE KVirtualAddress GetRandomAlignedRegionWithGuard(size_t size, size_t alignment, u32 type_id, size_t guard_size) {
@@ -401,297 +418,125 @@ namespace ams::kern {
             }
     };
 
-    class KMemoryRegionAllocator {
-        NON_COPYABLE(KMemoryRegionAllocator);
-        NON_MOVEABLE(KMemoryRegionAllocator);
-        public:
-            static constexpr size_t MaxMemoryRegions = 1000;
-            friend class KMemoryLayout;
-        private:
-            KMemoryRegion region_heap[MaxMemoryRegions];
-            size_t num_regions;
-        private:
-            constexpr ALWAYS_INLINE KMemoryRegionAllocator() : region_heap(), num_regions() { /* ... */ }
-        public:
-            ALWAYS_INLINE KMemoryRegion *Allocate() {
-                /* Ensure we stay within the bounds of our heap. */
-                MESOSPHERE_INIT_ABORT_UNLESS(this->num_regions < MaxMemoryRegions);
-
-                return &this->region_heap[this->num_regions++];
-            }
-
-            template<typename... Args>
-            ALWAYS_INLINE KMemoryRegion *Create(Args&&... args) {
-                KMemoryRegion *region = this->Allocate();
-                new (region) KMemoryRegion(std::forward<Args>(args)...);
-                return region;
-            }
-    };
-
     class KMemoryLayout {
         private:
             static /* constinit */ inline uintptr_t s_linear_phys_to_virt_diff;
             static /* constinit */ inline uintptr_t s_linear_virt_to_phys_diff;
-            static /* constinit */ inline KMemoryRegionAllocator s_region_allocator;
             static /* constinit */ inline KMemoryRegionTree s_virtual_tree;
             static /* constinit */ inline KMemoryRegionTree s_physical_tree;
             static /* constinit */ inline KMemoryRegionTree s_virtual_linear_tree;
             static /* constinit */ inline KMemoryRegionTree s_physical_linear_tree;
         private:
-            static ALWAYS_INLINE auto GetVirtualLinearExtents(const KMemoryRegionTree::DerivedRegionExtents physical) {
-                return KMemoryRegion(GetInteger(GetLinearVirtualAddress(physical.GetAddress())), physical.GetSize(), 0, KMemoryRegionType_None);
+            template<typename AddressType> requires IsKTypedAddress<AddressType>
+            static ALWAYS_INLINE bool IsTypedAddress(const KMemoryRegion *&region, AddressType address, KMemoryRegionTree &tree, KMemoryRegionType type) {
+                /* Check if the cached region already contains the address. */
+                if (region != nullptr && region->Contains(GetInteger(address))) {
+                    return true;
+                }
+
+                /* Find the containing region, and update the cache. */
+                if (const KMemoryRegion *found = tree.Find(GetInteger(address)); found != nullptr && found->IsDerivedFrom(type)) {
+                    region = found;
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            template<typename AddressType> requires IsKTypedAddress<AddressType>
+            static ALWAYS_INLINE bool IsTypedAddress(const KMemoryRegion *&region, AddressType address, size_t size, KMemoryRegionTree &tree, KMemoryRegionType type) {
+                /* Get the end of the checked region. */
+                const uintptr_t last_address = GetInteger(address) + size - 1;
+
+                /* Walk the tree to verify the region is correct. */
+                const KMemoryRegion *cur = (region != nullptr && region->Contains(GetInteger(address))) ? region : tree.Find(GetInteger(address));
+                while (cur != nullptr && cur->IsDerivedFrom(type)) {
+                    if (last_address <= cur->GetLastAddress()) {
+                        region = cur;
+                        return true;
+                    }
+
+                    cur = cur->GetNext();
+                }
+                return false;
+            }
+
+            template<typename AddressType> requires IsKTypedAddress<AddressType>
+            static ALWAYS_INLINE const KMemoryRegion *Find(AddressType address, const KMemoryRegionTree &tree) {
+                return tree.Find(GetInteger(address));
+            }
+
+            static ALWAYS_INLINE KMemoryRegion &Dereference(KMemoryRegion *region) {
+                MESOSPHERE_INIT_ABORT_UNLESS(region != nullptr);
+                return *region;
+            }
+
+            static ALWAYS_INLINE const KMemoryRegion &Dereference(const KMemoryRegion *region) {
+                MESOSPHERE_INIT_ABORT_UNLESS(region != nullptr);
+                return *region;
+            }
+
+            static ALWAYS_INLINE KVirtualAddress GetStackTopAddress(s32 core_id, KMemoryRegionType type) {
+                return Dereference(GetVirtualMemoryRegionTree().FindByTypeAndAttribute(type, static_cast<u32>(core_id))).GetEndAddress();
             }
         public:
-            static ALWAYS_INLINE KMemoryRegionAllocator &GetMemoryRegionAllocator()        { return s_region_allocator; }
-            static ALWAYS_INLINE KMemoryRegionTree      &GetVirtualMemoryRegionTree()      { return s_virtual_tree; }
-            static ALWAYS_INLINE KMemoryRegionTree      &GetPhysicalMemoryRegionTree()     { return s_physical_tree; }
-            static ALWAYS_INLINE KMemoryRegionTree      &GetVirtualLinearMemoryRegionTree()  { return s_virtual_linear_tree; }
-            static ALWAYS_INLINE KMemoryRegionTree      &GetPhysicalLinearMemoryRegionTree() { return s_physical_linear_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree &GetVirtualMemoryRegionTree()        { return s_virtual_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree &GetPhysicalMemoryRegionTree()       { return s_physical_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree &GetVirtualLinearMemoryRegionTree()  { return s_virtual_linear_tree; }
+            static ALWAYS_INLINE KMemoryRegionTree &GetPhysicalLinearMemoryRegionTree() { return s_physical_linear_tree; }
 
-            static ALWAYS_INLINE KMemoryRegionTree::iterator GetEnd(KVirtualAddress) {
-                return GetVirtualLinearMemoryRegionTree().end();
-            }
+            static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress address)  { return GetInteger(address) + s_linear_phys_to_virt_diff; }
+            static ALWAYS_INLINE KPhysicalAddress GetLinearPhysicalAddress(KVirtualAddress address) { return GetInteger(address) + s_linear_virt_to_phys_diff; }
 
-            static ALWAYS_INLINE KMemoryRegionTree::iterator GetEnd(KPhysicalAddress) {
-                return GetPhysicalMemoryRegionTree().end();
-            }
+            static NOINLINE const KMemoryRegion *Find(KVirtualAddress address)  { return Find(address, GetVirtualMemoryRegionTree()); }
+            static NOINLINE const KMemoryRegion *Find(KPhysicalAddress address) { return Find(address, GetPhysicalMemoryRegionTree()); }
 
-            static NOINLINE KMemoryRegionTree::iterator FindContainingRegion(KVirtualAddress address) {
-                return GetVirtualMemoryRegionTree().FindContainingRegion(GetInteger(address));
-            }
+            static NOINLINE const KMemoryRegion *FindLinear(KVirtualAddress address)  { return Find(address, GetVirtualLinearMemoryRegionTree());  }
+            static NOINLINE const KMemoryRegion *FindLinear(KPhysicalAddress address) { return Find(address, GetPhysicalLinearMemoryRegionTree()); }
 
-            static NOINLINE KMemoryRegionTree::iterator FindContainingRegion(KPhysicalAddress address) {
-                return GetPhysicalMemoryRegionTree().FindContainingRegion(GetInteger(address));
-            }
+            static NOINLINE KVirtualAddress GetMainStackTopAddress(s32 core_id)      { return GetStackTopAddress(core_id, KMemoryRegionType_KernelMiscMainStack); }
+            static NOINLINE KVirtualAddress GetIdleStackTopAddress(s32 core_id)      { return GetStackTopAddress(core_id, KMemoryRegionType_KernelMiscIdleStack); }
+            static NOINLINE KVirtualAddress GetExceptionStackTopAddress(s32 core_id) { return GetStackTopAddress(core_id, KMemoryRegionType_KernelMiscExceptionStack); }
 
-            static ALWAYS_INLINE KVirtualAddress GetLinearVirtualAddress(KPhysicalAddress address) {
-                return GetInteger(address) + s_linear_phys_to_virt_diff;
-            }
+            static NOINLINE KVirtualAddress GetSlabRegionAddress()      { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_KernelSlab)).GetAddress(); }
+            static NOINLINE KVirtualAddress GetCoreLocalRegionAddress() { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_CoreLocal)).GetAddress(); }
 
-            static ALWAYS_INLINE KPhysicalAddress GetLinearPhysicalAddress(KVirtualAddress address) {
-                return GetInteger(address) + s_linear_virt_to_phys_diff;
-            }
+            static NOINLINE KVirtualAddress GetInterruptDistributorAddress()  { return Dereference(GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_InterruptDistributor)).GetPairAddress(); }
+            static NOINLINE KVirtualAddress GetInterruptCpuInterfaceAddress() { return Dereference(GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_InterruptCpuInterface)).GetPairAddress(); }
+            static NOINLINE KVirtualAddress GetUartAddress()                  { return Dereference(GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_Uart)).GetPairAddress(); }
 
-            static NOINLINE KVirtualAddress GetMainStackTopAddress(s32 core_id) {
-                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscMainStack, static_cast<u32>(core_id))->GetEndAddress();
-            }
+            static NOINLINE const KMemoryRegion &GetMemoryControllerRegion() { return Dereference(GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_MemoryController)); }
 
-            static NOINLINE KVirtualAddress GetIdleStackTopAddress(s32 core_id) {
-                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscIdleStack, static_cast<u32>(core_id))->GetEndAddress();
-            }
+            static NOINLINE const KMemoryRegion &GetMetadataPoolRegion()  { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_VirtualDramMetadataPool)); }
+            static NOINLINE const KMemoryRegion &GetPageTableHeapRegion() { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_VirtualKernelPtHeap)); }
+            static NOINLINE const KMemoryRegion &GetKernelStackRegion()   { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_KernelStack)); }
+            static NOINLINE const KMemoryRegion &GetTempRegion()          { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_KernelTemp)); }
+            static NOINLINE const KMemoryRegion &GetCoreLocalRegion()     { return Dereference(GetVirtualMemoryRegionTree().FindByType(KMemoryRegionType_CoreLocal)); }
 
-            static NOINLINE KVirtualAddress GetExceptionStackTopAddress(s32 core_id) {
-                return GetVirtualMemoryRegionTree().FindFirstRegionByTypeAttr(KMemoryRegionType_KernelMiscExceptionStack, static_cast<u32>(core_id))->GetEndAddress();
-            }
+            static NOINLINE const KMemoryRegion &GetKernelTraceBufferRegion() { return Dereference(GetVirtualLinearMemoryRegionTree().FindByType(KMemoryRegionType_VirtualKernelTraceBuffer)); }
 
-            static NOINLINE KVirtualAddress GetSlabRegionAddress() {
-                return GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelSlab)->GetAddress();
-            }
+            static NOINLINE const KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) { return Dereference(FindLinear(address)); }
 
-            static NOINLINE KVirtualAddress GetCoreLocalRegionAddress() {
-                return GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_CoreLocal)->GetAddress();
-            }
+            static NOINLINE const KMemoryRegion *GetPhysicalKernelTraceBufferRegion() { return GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_KernelTraceBuffer); }
+            static NOINLINE const KMemoryRegion *GetPhysicalOnMemoryBootImageRegion() { return GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_OnMemoryBootImage); }
+            static NOINLINE const KMemoryRegion *GetPhysicalDTBRegion()               { return GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DTB); }
 
-            static NOINLINE KVirtualAddress GetInterruptDistributorAddress() {
-                return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_InterruptDistributor)->GetPairAddress();
-            }
+            static NOINLINE bool IsHeapPhysicalAddress(const KMemoryRegion *&region, KPhysicalAddress address) { return IsTypedAddress(region, address, GetPhysicalLinearMemoryRegionTree(), KMemoryRegionType_DramNonKernel); }
+            static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion *&region, KVirtualAddress address)   { return IsTypedAddress(region, address, GetVirtualLinearMemoryRegionTree(), KMemoryRegionType_VirtualDramManagedPool); }
 
-            static NOINLINE KVirtualAddress GetInterruptCpuInterfaceAddress() {
-                return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_InterruptCpuInterface)->GetPairAddress();
-            }
+            static NOINLINE bool IsHeapPhysicalAddress(const KMemoryRegion *&region, KPhysicalAddress address, size_t size) { return IsTypedAddress(region, address, size, GetPhysicalLinearMemoryRegionTree(), KMemoryRegionType_DramNonKernel); }
+            static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion *&region, KVirtualAddress address, size_t size)   { return IsTypedAddress(region, address, size, GetVirtualLinearMemoryRegionTree(), KMemoryRegionType_VirtualDramManagedPool); }
 
-            static NOINLINE KVirtualAddress GetUartAddress() {
-                return GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_Uart)->GetPairAddress();
-            }
-
-            static NOINLINE KMemoryRegion &GetMemoryControllerRegion() {
-                return *GetPhysicalMemoryRegionTree().FindFirstDerivedRegion(KMemoryRegionType_MemoryController);
-            }
-
-            static NOINLINE KMemoryRegion &GetMetadataPoolRegion() {
-                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualDramMetadataPool);
-            }
-
-            static NOINLINE KMemoryRegion &GetPageTableHeapRegion() {
-                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualKernelPtHeap);
-            }
-
-            static NOINLINE KMemoryRegion &GetKernelStackRegion() {
-                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelStack);
-            }
-
-            static NOINLINE KMemoryRegion &GetTempRegion() {
-                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_KernelTemp);
-            }
-
-            static NOINLINE KMemoryRegion &GetKernelTraceBufferRegion() {
-                return *GetVirtualLinearMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_VirtualKernelTraceBuffer);
-            }
-
-            static NOINLINE KMemoryRegion &GetVirtualLinearRegion(KVirtualAddress address) {
-                return *GetVirtualLinearMemoryRegionTree().FindContainingRegion(GetInteger(address));
-            }
-
-            static NOINLINE const KMemoryRegion *TryGetKernelTraceBufferRegion() {
-                auto &tree = GetPhysicalMemoryRegionTree();
-                if (KMemoryRegionTree::const_iterator it = tree.TryFindFirstDerivedRegion(KMemoryRegionType_KernelTraceBuffer); it != tree.end()) {
-                    return std::addressof(*it);
-                } else {
-                    return nullptr;
-                }
-            }
-
-            static NOINLINE const KMemoryRegion *TryGetOnMemoryBootImageRegion() {
-                auto &tree = GetPhysicalMemoryRegionTree();
-                if (KMemoryRegionTree::const_iterator it = tree.TryFindFirstDerivedRegion(KMemoryRegionType_OnMemoryBootImage); it != tree.end()) {
-                    return std::addressof(*it);
-                } else {
-                    return nullptr;
-                }
-            }
-
-            static NOINLINE const KMemoryRegion *TryGetDTBRegion() {
-                auto &tree = GetPhysicalMemoryRegionTree();
-                if (KMemoryRegionTree::const_iterator it = tree.TryFindFirstDerivedRegion(KMemoryRegionType_DTB); it != tree.end()) {
-                    return std::addressof(*it);
-                } else {
-                    return nullptr;
-                }
-            }
-
-            static NOINLINE bool IsHeapPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, const KMemoryRegion *hint = nullptr) {
-                auto &tree = GetPhysicalLinearMemoryRegionTree();
-                KMemoryRegionTree::const_iterator it = tree.end();
-                if (hint != nullptr) {
-                    it = tree.iterator_to(*hint);
-                }
-                if (it == tree.end() || !it->Contains(GetInteger(address))) {
-                    it = tree.FindContainingRegion(GetInteger(address));
-                }
-                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
-                    if (out) {
-                        *out = std::addressof(*it);
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-            static NOINLINE bool IsHeapPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, size_t size, const KMemoryRegion *hint = nullptr) {
-                auto &tree = GetPhysicalLinearMemoryRegionTree();
-                KMemoryRegionTree::const_iterator it = tree.end();
-                if (hint != nullptr) {
-                    it = tree.iterator_to(*hint);
-                }
-                if (it == tree.end() || !it->Contains(GetInteger(address))) {
-                    it = tree.FindContainingRegion(GetInteger(address));
-                }
-                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
-                    const uintptr_t last_address = GetInteger(address) + size - 1;
-                    do {
-                        if (last_address <= it->GetLastAddress()) {
-                            if (out) {
-                                *out = std::addressof(*it);
-                            }
-                            return true;
-                        }
-                        it++;
-                    } while (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_DramNonKernel));
-                }
-                return false;
-            }
-
-            static NOINLINE bool IsLinearMappedPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, const KMemoryRegion *hint = nullptr) {
-                auto &tree = GetPhysicalLinearMemoryRegionTree();
-                KMemoryRegionTree::const_iterator it = tree.end();
-                if (hint != nullptr) {
-                    it = tree.iterator_to(*hint);
-                }
-                if (it == tree.end() || !it->Contains(GetInteger(address))) {
-                    it = tree.FindContainingRegion(GetInteger(address));
-                }
-                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionAttr_LinearMapped)) {
-                    if (out) {
-                        *out = std::addressof(*it);
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-            static NOINLINE bool IsLinearMappedPhysicalAddress(const KMemoryRegion **out, KPhysicalAddress address, size_t size, const KMemoryRegion *hint = nullptr) {
-                auto &tree = GetPhysicalLinearMemoryRegionTree();
-                KMemoryRegionTree::const_iterator it = tree.end();
-                if (hint != nullptr) {
-                    it = tree.iterator_to(*hint);
-                }
-                if (it == tree.end() || !it->Contains(GetInteger(address))) {
-                    it = tree.FindContainingRegion(GetInteger(address));
-                }
-                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionAttr_LinearMapped)) {
-                    const uintptr_t last_address = GetInteger(address) + size - 1;
-                    do {
-                        if (last_address <= it->GetLastAddress()) {
-                            if (out) {
-                                *out = std::addressof(*it);
-                            }
-                            return true;
-                        }
-                        it++;
-                    } while (it != tree.end() && it->IsDerivedFrom(KMemoryRegionAttr_LinearMapped));
-                }
-                return false;
-            }
-
-            static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion **out, KVirtualAddress address, const KMemoryRegion *hint = nullptr) {
-                auto &tree = GetVirtualLinearMemoryRegionTree();
-                KMemoryRegionTree::const_iterator it = tree.end();
-                if (hint != nullptr) {
-                    it = tree.iterator_to(*hint);
-                }
-                if (it == tree.end() || !it->Contains(GetInteger(address))) {
-                    it = tree.FindContainingRegion(GetInteger(address));
-                }
-                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool)) {
-                    if (out) {
-                        *out = std::addressof(*it);
-                    }
-                    return true;
-                }
-                return false;
-            }
-
-            static NOINLINE bool IsHeapVirtualAddress(const KMemoryRegion **out, KVirtualAddress address, size_t size, const KMemoryRegion *hint = nullptr) {
-                auto &tree = GetVirtualLinearMemoryRegionTree();
-                KMemoryRegionTree::const_iterator it = tree.end();
-                if (hint != nullptr) {
-                    it = tree.iterator_to(*hint);
-                }
-                if (it == tree.end() || !it->Contains(GetInteger(address))) {
-                    it = tree.FindContainingRegion(GetInteger(address));
-                }
-                if (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool)) {
-                    const uintptr_t last_address = GetInteger(address) + size - 1;
-                    do {
-                        if (last_address <= it->GetLastAddress()) {
-                            if (out) {
-                                *out = std::addressof(*it);
-                            }
-                            return true;
-                        }
-                        it++;
-                    } while (it != tree.end() && it->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool));
-                }
-                return false;
-            }
+            static NOINLINE bool IsLinearMappedPhysicalAddress(const KMemoryRegion *&region, KPhysicalAddress address)  { return IsTypedAddress(region, address, GetPhysicalLinearMemoryRegionTree(), KMemoryRegionAttr_LinearMapped); }
+            static NOINLINE bool IsLinearMappedPhysicalAddress(const KMemoryRegion *&region, KPhysicalAddress address, size_t size) { return IsTypedAddress(region, address, size, GetPhysicalLinearMemoryRegionTree(), KMemoryRegionAttr_LinearMapped); }
 
             static NOINLINE std::tuple<size_t, size_t> GetTotalAndKernelMemorySizes() {
                 size_t total_size = 0, kernel_size = 0;
-                for (auto it = GetPhysicalMemoryRegionTree().cbegin(); it != GetPhysicalMemoryRegionTree().cend(); it++) {
-                    if (it->IsDerivedFrom(KMemoryRegionType_Dram)) {
-                        total_size += it->GetSize();
-                        if (!it->IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
-                            kernel_size += it->GetSize();
+                for (const auto &region : GetPhysicalMemoryRegionTree()) {
+                    if (region.IsDerivedFrom(KMemoryRegionType_Dram)) {
+                        total_size += region.GetSize();
+                        if (!region.IsDerivedFrom(KMemoryRegionType_DramNonKernel)) {
+                            kernel_size += region.GetSize();
                         }
                     }
                 }
@@ -700,93 +545,37 @@ namespace ams::kern {
 
             static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
 
-            static NOINLINE auto GetKernelRegionExtents() {
-                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Kernel);
+            static NOINLINE auto GetKernelRegionExtents()      { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Kernel); }
+            static NOINLINE auto GetKernelCodeRegionExtents()  { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelCode); }
+            static NOINLINE auto GetKernelStackRegionExtents() { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelStack); }
+            static NOINLINE auto GetKernelMiscRegionExtents()  { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelMisc); }
+            static NOINLINE auto GetKernelSlabRegionExtents()  { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelSlab); }
+
+
+            static NOINLINE auto GetLinearRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_LinearMapped); }
+
+            static NOINLINE auto GetLinearRegionVirtualExtents()  {
+                auto physical = GetLinearRegionPhysicalExtents();
+                return KMemoryRegion(GetInteger(GetLinearVirtualAddress(physical.GetAddress())), physical.GetSize(), 0, KMemoryRegionType_None);
             }
 
-            static NOINLINE auto GetKernelCodeRegionExtents() {
-                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelCode);
-            }
+            static NOINLINE auto GetMainMemoryPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Dram); }
+            static NOINLINE auto GetCarveoutRegionExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected); }
 
-            static NOINLINE auto GetKernelStackRegionExtents() {
-                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelStack);
-            }
+            static NOINLINE auto GetKernelRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernel); }
+            static NOINLINE auto GetKernelCodeRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelCode); }
+            static NOINLINE auto GetKernelSlabRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelSlab); }
+            static NOINLINE auto GetKernelPageTableHeapRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelPtHeap); }
+            static NOINLINE auto GetKernelInitPageTableRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelInitPt); }
 
-            static NOINLINE auto GetKernelMiscRegionExtents() {
-                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelMisc);
-            }
+            static NOINLINE auto GetKernelPoolPartitionRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramPoolPartition); }
+            static NOINLINE auto GetKernelMetadataPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramMetadataPool); }
+            static NOINLINE auto GetKernelSystemPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemPool); }
+            static NOINLINE auto GetKernelSystemNonSecurePoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemNonSecurePool); }
+            static NOINLINE auto GetKernelAppletPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramAppletPool); }
+            static NOINLINE auto GetKernelApplicationPoolRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramApplicationPool); }
 
-            static NOINLINE auto GetKernelSlabRegionExtents() {
-                return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelSlab);
-            }
-
-            static NOINLINE const KMemoryRegion &GetCoreLocalRegion() {
-                return *GetVirtualMemoryRegionTree().FindFirstRegionByType(KMemoryRegionType_CoreLocal);
-            }
-
-            static NOINLINE auto GetLinearRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_LinearMapped);
-            }
-
-            static NOINLINE auto GetLinearRegionExtents() {
-                return GetVirtualLinearExtents(GetLinearRegionPhysicalExtents());
-            }
-
-            static NOINLINE auto GetMainMemoryPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Dram);
-            }
-
-            static NOINLINE auto GetCarveoutRegionExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_CarveoutProtected);
-            }
-
-            static NOINLINE auto GetKernelRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernel);
-            }
-
-            static NOINLINE auto GetKernelCodeRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelCode);
-            }
-
-            static NOINLINE auto GetKernelSlabRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelSlab);
-            }
-
-            static NOINLINE auto GetKernelPageTableHeapRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelPtHeap);
-            }
-
-            static NOINLINE auto GetKernelInitPageTableRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramKernelInitPt);
-            }
-
-            static NOINLINE auto GetKernelPoolPartitionRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramPoolPartition);
-            }
-
-            static NOINLINE auto GetKernelMetadataPoolRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramMetadataPool);
-            }
-
-            static NOINLINE auto GetKernelSystemPoolRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemPool);
-            }
-
-            static NOINLINE auto GetKernelSystemNonSecurePoolRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramSystemNonSecurePool);
-            }
-
-            static NOINLINE auto GetKernelAppletPoolRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramAppletPool);
-            }
-
-            static NOINLINE auto GetKernelApplicationPoolRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_DramApplicationPool);
-            }
-
-            static NOINLINE auto GetKernelTraceBufferRegionPhysicalExtents() {
-                return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelTraceBuffer);
-            }
+            static NOINLINE auto GetKernelTraceBufferRegionPhysicalExtents() { return GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelTraceBuffer); }
     };
 
 

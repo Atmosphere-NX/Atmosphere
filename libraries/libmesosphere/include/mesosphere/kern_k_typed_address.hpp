@@ -184,6 +184,9 @@ namespace ams::kern {
 #endif
 
     template<typename T>
+    concept IsKTypedAddress = std::same_as<T, KPhysicalAddress> || std::same_as<T, KVirtualAddress> || std::same_as<T, KProcessAddress>;
+
+    template<typename T>
     constexpr inline T Null = [] {
         if constexpr (std::is_same<T, uintptr_t>::value) {
             return 0;

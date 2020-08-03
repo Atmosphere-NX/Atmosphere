@@ -80,21 +80,14 @@ namespace ams::kern::svc {
                     R_UNLESS(phys_addr < PageSize, svc::ResultNotFound());
 
                     /* Try to find the memory region. */
-                    const KMemoryRegion *region;
-                    switch (static_cast<ams::svc::MemoryRegionType>(phys_addr)) {
-                        case ams::svc::MemoryRegionType_KernelTraceBuffer:
-                            region = KMemoryLayout::TryGetKernelTraceBufferRegion();
-                            break;
-                        case ams::svc::MemoryRegionType_OnMemoryBootImage:
-                            region = KMemoryLayout::TryGetOnMemoryBootImageRegion();
-                            break;
-                        case ams::svc::MemoryRegionType_DTB:
-                            region = KMemoryLayout::TryGetDTBRegion();
-                            break;
-                        default:
-                            region = nullptr;
-                            break;
-                    }
+                    const KMemoryRegion * const region = [] ALWAYS_INLINE_LAMBDA (ams::svc::MemoryRegionType type) -> const KMemoryRegion * {
+                        switch (type) {
+                            case ams::svc::MemoryRegionType_KernelTraceBuffer: return KMemoryLayout::GetPhysicalKernelTraceBufferRegion();
+                            case ams::svc::MemoryRegionType_OnMemoryBootImage: return KMemoryLayout::GetPhysicalOnMemoryBootImageRegion();
+                            case ams::svc::MemoryRegionType_DTB:               return KMemoryLayout::GetPhysicalDTBRegion();
+                            default:                                           return nullptr;
+                        }
+                    }(static_cast<ams::svc::MemoryRegionType>(phys_addr));
 
                     /* Ensure that we found the region. */
                     R_UNLESS(region != nullptr, svc::ResultNotFound());
