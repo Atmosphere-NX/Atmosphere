@@ -77,9 +77,9 @@ namespace ams::kern {
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->metadata_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
 
                     void TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages);
-                    size_t TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
+                    void TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
 
-                    size_t ProcessOptimizedAllocation(bool *out_any_new, KVirtualAddress block, size_t num_pages, u8 fill_pattern);
+                    bool ProcessOptimizedAllocation(KVirtualAddress block, size_t num_pages, u8 fill_pattern);
 
                     constexpr Pool GetPool() const { return this->pool; }
                     constexpr size_t GetSize() const { return this->heap.GetSize(); }
@@ -87,15 +87,16 @@ namespace ams::kern {
 
                     size_t GetFreeSize() const { return this->heap.GetFreeSize(); }
 
+                    constexpr size_t GetPageOffset(KVirtualAddress address)      const { return this->heap.GetPageOffset(address); }
+                    constexpr size_t GetPageOffsetToEnd(KVirtualAddress address) const { return this->heap.GetPageOffsetToEnd(address); }
+
                     constexpr void SetNext(Impl *n) { this->next = n; }
                     constexpr void SetPrev(Impl *n) { this->prev = n; }
                     constexpr Impl *GetNext() const { return this->next; }
                     constexpr Impl *GetPrev() const { return this->prev; }
 
-                    void Open(KLightLock *pool_locks, KVirtualAddress address, size_t num_pages) {
-                        KScopedLightLock lk(pool_locks[this->pool]);
-
-                        size_t index = this->heap.GetPageOffset(address);
+                    void Open(KVirtualAddress address, size_t num_pages) {
+                        size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
                             const RefCount ref_count = (++this->page_reference_counts[index]);
@@ -105,10 +106,8 @@ namespace ams::kern {
                         }
                     }
 
-                    void Close(KLightLock *pool_locks, KVirtualAddress address, size_t num_pages) {
-                        KScopedLightLock lk(pool_locks[this->pool]);
-
-                        size_t index = this->heap.GetPageOffset(address);
+                    void Close(KVirtualAddress address, size_t num_pages) {
+                        size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
 
                         size_t free_start = 0;
@@ -186,8 +185,13 @@ namespace ams::kern {
                 /* Repeatedly open references until we've done so for all pages. */
                 while (num_pages) {
                     auto &manager = this->GetManager(address);
-                    const size_t cur_pages = std::min(num_pages, (manager.GetEndAddress() - address) / PageSize);
-                    manager.Open(this->pool_locks, address, cur_pages);
+                    const size_t cur_pages = std::min(num_pages, manager.GetPageOffsetToEnd(address));
+
+                    {
+                        KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+                        manager.Open(address, cur_pages);
+                    }
+
                     num_pages -= cur_pages;
                     address += cur_pages * PageSize;
                 }
@@ -197,8 +201,13 @@ namespace ams::kern {
                 /* Repeatedly close references until we've done so for all pages. */
                 while (num_pages) {
                     auto &manager = this->GetManager(address);
-                    const size_t cur_pages = std::min(num_pages, (manager.GetEndAddress() - address) / PageSize);
-                    manager.Close(this->pool_locks, address, cur_pages);
+                    const size_t cur_pages = std::min(num_pages, manager.GetPageOffsetToEnd(address));
+
+                    {
+                        KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+                        manager.Close(address, cur_pages);
+                    }
+
                     num_pages -= cur_pages;
                     address += cur_pages * PageSize;
                 }
