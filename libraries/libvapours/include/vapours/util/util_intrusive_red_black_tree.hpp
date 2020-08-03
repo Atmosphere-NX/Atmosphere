@@ -29,17 +29,21 @@ namespace ams::util {
 
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
+
+            template<class, class>
+            friend class IntrusiveRedBlackTreeImpl;
         public:
             constexpr IntrusiveRedBlackTreeNode() : entry() { /* ... */}
     };
     static_assert(std::is_literal_type<IntrusiveRedBlackTreeNode>::value);
 
-    template<class T, class Traits, class Comparator>
-    class IntrusiveRedBlackTree {
-        NON_COPYABLE(IntrusiveRedBlackTree);
-        private:
+    template<class T, class Traits>
+    class IntrusiveRedBlackTreeImpl {
+        NON_COPYABLE(IntrusiveRedBlackTreeImpl);
+        protected:
             RB_HEAD(IntrusiveRedBlackTreeRoot, IntrusiveRedBlackTreeNode);
-
+            using RootType = IntrusiveRedBlackTreeRoot;
+        protected:
             IntrusiveRedBlackTreeRoot root;
         public:
             template<bool Const>
@@ -59,10 +63,10 @@ namespace ams::util {
             class Iterator {
                 public:
                     using iterator_category = std::bidirectional_iterator_tag;
-                    using value_type        = typename IntrusiveRedBlackTree::value_type;
-                    using difference_type   = typename IntrusiveRedBlackTree::difference_type;
-                    using pointer           = typename std::conditional<Const, IntrusiveRedBlackTree::const_pointer, IntrusiveRedBlackTree::pointer>::type;
-                    using reference         = typename std::conditional<Const, IntrusiveRedBlackTree::const_reference, IntrusiveRedBlackTree::reference>::type;
+                    using value_type        = typename IntrusiveRedBlackTreeImpl::value_type;
+                    using difference_type   = typename IntrusiveRedBlackTreeImpl::difference_type;
+                    using pointer           = typename std::conditional<Const, IntrusiveRedBlackTreeImpl::const_pointer, IntrusiveRedBlackTreeImpl::pointer>::type;
+                    using reference         = typename std::conditional<Const, IntrusiveRedBlackTreeImpl::const_reference, IntrusiveRedBlackTreeImpl::reference>::type;
                 private:
                     pointer node;
                 public:
@@ -110,30 +114,10 @@ namespace ams::util {
                         return Iterator<true>(this->node);
                     }
             };
+        protected:
+            /* Generate static implementations for non-comparison operations for IntrusiveRedBlackTreeRoot. */
+            RB_GENERATE_WITHOUT_COMPARE_STATIC(IntrusiveRedBlackTreeRoot, IntrusiveRedBlackTreeNode, entry);
         private:
-            static int CompareImpl(const IntrusiveRedBlackTreeNode *lhs, const IntrusiveRedBlackTreeNode *rhs) {
-                return Comparator::Compare(*Traits::GetParent(lhs), *Traits::GetParent(rhs));
-            }
-
-            /* Generate static implementations for IntrusiveRedBlackTreeRoot. */
-            RB_GENERATE_STATIC(IntrusiveRedBlackTreeRoot, IntrusiveRedBlackTreeNode, entry, CompareImpl);
-
-            static constexpr inline IntrusiveRedBlackTreeNode *GetNext(IntrusiveRedBlackTreeNode *node) {
-                return RB_NEXT(IntrusiveRedBlackTreeRoot, nullptr, node);
-            }
-
-            static constexpr inline IntrusiveRedBlackTreeNode const *GetNext(IntrusiveRedBlackTreeNode const *node) {
-                return const_cast<const IntrusiveRedBlackTreeNode *>(GetNext(const_cast<IntrusiveRedBlackTreeNode *>(node)));
-            }
-
-            static constexpr inline IntrusiveRedBlackTreeNode *GetPrev(IntrusiveRedBlackTreeNode *node) {
-                return RB_PREV(IntrusiveRedBlackTreeRoot, nullptr, node);
-            }
-
-            static constexpr inline IntrusiveRedBlackTreeNode const *GetPrev(IntrusiveRedBlackTreeNode const *node) {
-                return const_cast<const IntrusiveRedBlackTreeNode *>(GetPrev(const_cast<IntrusiveRedBlackTreeNode *>(node)));
-            }
-
             /* Define accessors using RB_* functions. */
             constexpr ALWAYS_INLINE void InitializeImpl() {
                 RB_INIT(&this->root);
@@ -151,24 +135,27 @@ namespace ams::util {
                 return RB_MAX(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root));
             }
 
-            IntrusiveRedBlackTreeNode *InsertImpl(IntrusiveRedBlackTreeNode *node) {
-                return RB_INSERT(IntrusiveRedBlackTreeRoot, &this->root, node);
-            }
-
             IntrusiveRedBlackTreeNode *RemoveImpl(IntrusiveRedBlackTreeNode *node) {
                 return RB_REMOVE(IntrusiveRedBlackTreeRoot, &this->root, node);
             }
-
-            IntrusiveRedBlackTreeNode *FindImpl(IntrusiveRedBlackTreeNode const *node) const {
-                return RB_FIND(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root), const_cast<IntrusiveRedBlackTreeNode *>(node));
-            }
-
-            IntrusiveRedBlackTreeNode *NFindImpl(IntrusiveRedBlackTreeNode const *node) const {
-                return RB_NFIND(IntrusiveRedBlackTreeRoot, const_cast<IntrusiveRedBlackTreeRoot *>(&this->root), const_cast<IntrusiveRedBlackTreeNode *>(node));
-            }
-
         public:
-            constexpr ALWAYS_INLINE IntrusiveRedBlackTree() : root() {
+            static constexpr inline IntrusiveRedBlackTreeNode *GetNext(IntrusiveRedBlackTreeNode *node) {
+                return RB_NEXT(IntrusiveRedBlackTreeRoot, nullptr, node);
+            }
+
+            static constexpr inline IntrusiveRedBlackTreeNode const *GetNext(IntrusiveRedBlackTreeNode const *node) {
+                return const_cast<const IntrusiveRedBlackTreeNode *>(GetNext(const_cast<IntrusiveRedBlackTreeNode *>(node)));
+            }
+
+            static constexpr inline IntrusiveRedBlackTreeNode *GetPrev(IntrusiveRedBlackTreeNode *node) {
+                return RB_PREV(IntrusiveRedBlackTreeRoot, nullptr, node);
+            }
+
+            static constexpr inline IntrusiveRedBlackTreeNode const *GetPrev(IntrusiveRedBlackTreeNode const *node) {
+                return const_cast<const IntrusiveRedBlackTreeNode *>(GetPrev(const_cast<IntrusiveRedBlackTreeNode *>(node)));
+            }
+        public:
+            constexpr ALWAYS_INLINE IntrusiveRedBlackTreeImpl() : root() {
                 this->InitializeImpl();
             }
 
@@ -226,16 +213,57 @@ namespace ams::util {
                 return *Traits::GetParent(this->GetMinImpl());
             }
 
-            iterator insert(reference ref) {
-                this->InsertImpl(Traits::GetNode(&ref));
-                return iterator(&ref);
-            }
-
             iterator erase(iterator it) {
                 auto cur = Traits::GetNode(&*it);
                 auto next = Traits::GetParent(GetNext(cur));
                 this->RemoveImpl(cur);
                 return iterator(next);
+            }
+    };
+
+    template<class T, class Traits, class Comparator>
+    class IntrusiveRedBlackTree : public IntrusiveRedBlackTreeImpl<T, Traits> {
+        NON_COPYABLE(IntrusiveRedBlackTree);
+        public:
+            using ImplType = IntrusiveRedBlackTreeImpl<T, Traits>;
+
+            struct IntrusiveRedBlackTreeRootWithCompare : ImplType::IntrusiveRedBlackTreeRoot{};
+
+            using value_type             = ImplType::value_type;
+            using size_type              = ImplType::size_type;
+            using difference_type        = ImplType::difference_type;
+            using pointer                = ImplType::pointer;
+            using const_pointer          = ImplType::const_pointer;
+            using reference              = ImplType::reference;
+            using const_reference        = ImplType::const_reference;
+            using iterator               = ImplType::iterator;
+            using const_iterator         = ImplType::const_iterator;
+        protected:
+            /* Generate static implementations for comparison operations for IntrusiveRedBlackTreeRoot. */
+            RB_GENERATE_WITH_COMPARE_STATIC(IntrusiveRedBlackTreeRootWithCompare, IntrusiveRedBlackTreeNode, entry, CompareImpl);
+        private:
+            static int CompareImpl(const IntrusiveRedBlackTreeNode *lhs, const IntrusiveRedBlackTreeNode *rhs) {
+                return Comparator::Compare(*Traits::GetParent(lhs), *Traits::GetParent(rhs));
+            }
+
+            /* Define accessors using RB_* functions. */
+            IntrusiveRedBlackTreeNode *InsertImpl(IntrusiveRedBlackTreeNode *node) {
+                return RB_INSERT(IntrusiveRedBlackTreeRootWithCompare, static_cast<IntrusiveRedBlackTreeRootWithCompare *>(&this->root), node);
+            }
+
+            IntrusiveRedBlackTreeNode *FindImpl(IntrusiveRedBlackTreeNode const *node) const {
+                return RB_FIND(IntrusiveRedBlackTreeRootWithCompare, const_cast<IntrusiveRedBlackTreeRootWithCompare *>(static_cast<const IntrusiveRedBlackTreeRootWithCompare *>(&this->root)), const_cast<IntrusiveRedBlackTreeNode *>(node));
+            }
+
+            IntrusiveRedBlackTreeNode *NFindImpl(IntrusiveRedBlackTreeNode const *node) const {
+                return RB_NFIND(IntrusiveRedBlackTreeRootWithCompare, const_cast<IntrusiveRedBlackTreeRootWithCompare *>(static_cast<const IntrusiveRedBlackTreeRootWithCompare *>(&this->root)), const_cast<IntrusiveRedBlackTreeNode *>(node));
+            }
+        public:
+            constexpr ALWAYS_INLINE IntrusiveRedBlackTree() : ImplType() { /* ... */ }
+
+            iterator insert(reference ref) {
+                this->InsertImpl(Traits::GetNode(&ref));
+                return iterator(&ref);
             }
 
             iterator find(const_reference ref) const {
@@ -254,10 +282,13 @@ namespace ams::util {
     class IntrusiveRedBlackTreeMemberTraits<Member, Derived> {
         public:
             template<class Comparator>
-            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraits, Comparator>;
+            using TreeType     = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraits, Comparator>;
+            using TreeTypeImpl = IntrusiveRedBlackTreeImpl<Derived, IntrusiveRedBlackTreeMemberTraits>;
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
+            template<class, class>
+            friend class IntrusiveRedBlackTreeImpl;
 
             static constexpr IntrusiveRedBlackTreeNode *GetNode(Derived *parent) {
                 return std::addressof(parent->*Member);
@@ -286,7 +317,8 @@ namespace ams::util {
     class IntrusiveRedBlackTreeMemberTraitsDeferredAssert<Member, Derived> {
         public:
             template<class Comparator>
-            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraitsDeferredAssert, Comparator>;
+            using TreeType     = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraitsDeferredAssert, Comparator>;
+            using TreeTypeImpl = IntrusiveRedBlackTreeImpl<Derived, IntrusiveRedBlackTreeMemberTraitsDeferredAssert>;
 
             static constexpr bool IsValid() {
                 TYPED_STORAGE(Derived) DerivedStorage = {};
@@ -295,6 +327,8 @@ namespace ams::util {
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
+            template<class, class>
+            friend class IntrusiveRedBlackTreeImpl;
 
             static constexpr IntrusiveRedBlackTreeNode *GetNode(Derived *parent) {
                 return std::addressof(parent->*Member);
@@ -314,16 +348,26 @@ namespace ams::util {
     };
 
     template<class Derived>
-    class IntrusiveRedBlackTreeBaseNode : public IntrusiveRedBlackTreeNode{};
+    class IntrusiveRedBlackTreeBaseNode : public IntrusiveRedBlackTreeNode {
+        public:
+            constexpr ALWAYS_INLINE Derived *GetPrev();
+            constexpr ALWAYS_INLINE const Derived *GetPrev() const;
+
+            constexpr ALWAYS_INLINE Derived *GetNext();
+            constexpr ALWAYS_INLINE const Derived *GetNext() const;
+    };
 
     template<class Derived>
     class IntrusiveRedBlackTreeBaseTraits {
         public:
             template<class Comparator>
-            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeBaseTraits, Comparator>;
+            using TreeType     = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeBaseTraits, Comparator>;
+            using TreeTypeImpl = IntrusiveRedBlackTreeImpl<Derived, IntrusiveRedBlackTreeBaseTraits>;
         private:
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
+            template<class, class>
+            friend class IntrusiveRedBlackTreeImpl;
 
             static constexpr IntrusiveRedBlackTreeNode *GetNode(Derived *parent) {
                 return static_cast<IntrusiveRedBlackTreeNode *>(parent);
@@ -341,5 +385,17 @@ namespace ams::util {
                 return static_cast<const Derived *>(node);
             }
     };
+
+    template<class Derived>
+    constexpr Derived *IntrusiveRedBlackTreeBaseNode<Derived>::GetPrev() { using TreeType = typename IntrusiveRedBlackTreeBaseTraits<Derived>::TreeTypeImpl; return static_cast<Derived *>(TreeType::GetPrev(static_cast<Derived *>(this))); }
+
+    template<class Derived>
+    constexpr const Derived *IntrusiveRedBlackTreeBaseNode<Derived>::GetPrev() const { using TreeType = typename IntrusiveRedBlackTreeBaseTraits<Derived>::TreeTypeImpl; return static_cast<const Derived *>(TreeType::GetPrev(static_cast<const Derived *>(this))); }
+
+    template<class Derived>
+    constexpr Derived *IntrusiveRedBlackTreeBaseNode<Derived>::GetNext() { using TreeType = typename IntrusiveRedBlackTreeBaseTraits<Derived>::TreeTypeImpl; return static_cast<Derived *>(TreeType::GetNext(static_cast<Derived *>(this))); }
+
+    template<class Derived>
+    constexpr const Derived *IntrusiveRedBlackTreeBaseNode<Derived>::GetNext() const { using TreeType = typename IntrusiveRedBlackTreeBaseTraits<Derived>::TreeTypeImpl; return static_cast<const Derived *>(TreeType::GetNext(static_cast<const Derived *>(this))); }
 
 }
