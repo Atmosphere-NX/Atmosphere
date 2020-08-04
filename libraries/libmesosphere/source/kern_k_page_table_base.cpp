@@ -2167,7 +2167,7 @@ namespace ams::kern {
             /* Copy remaining data. */
             if (cur_size > 0) {
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, cur_size), svc::ResultInvalidCurrentMemory());
-                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size);
+                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
             }
 
             return ResultSuccess();
