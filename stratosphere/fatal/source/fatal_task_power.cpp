@@ -55,15 +55,15 @@ namespace ams::fatal::srv {
             private:
                 os::Tick start_tick;
                 bool flag;
-                s32 interval;
+                s64 interval;
             public:
-                RebootTimingObserver(bool flag, s32 interval) : start_tick(os::GetSystemTick()), flag(flag), interval(interval) {
+                RebootTimingObserver(bool flag, s64 interval) : start_tick(os::GetSystemTick()), flag(flag), interval(interval) {
                     /* ... */
                 }
 
                 bool IsRebootTiming() const {
                     auto current_tick = os::GetSystemTick();
-                    return this->flag && (current_tick - this->start_tick).ToTimeSpan().GetSeconds() >= this->interval;
+                    return this->flag && (current_tick - this->start_tick).ToTimeSpan().GetMilliSeconds() >= this->interval;
                 }
         };
 
