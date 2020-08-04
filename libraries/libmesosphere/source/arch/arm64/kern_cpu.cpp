@@ -155,43 +155,56 @@ namespace ams::kern::arch::arm64::cpu {
 
                 void RequestOperation(Operation op) {
                     KScopedLightLock lk(this->lock);
-                    MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
-                    /* Send and wait for acknowledgement of request. */
-                    {
-                        KScopedLightLock cv_lk(this->cv_lock);
+
+                    /* Create core masks for us to use. */
+                    constexpr u64 AllCoresMask = (1ul << cpu::NumCores) - 1ul;
+                    const u64 other_cores_mask = AllCoresMask & ~(1ul << GetCurrentCoreId());
+
+                    if ((op == Operation::InvalidateInstructionCache) || (Kernel::GetState() == Kernel::State::Initializing)) {
+                        /* Check that there's no on-going operation. */
+                        MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
                         MESOSPHERE_ABORT_UNLESS(this->target_cores == 0);
 
                         /* Set operation. */
                         this->operation = op;
 
-                        /* Create core masks for us to use. */
-                        constexpr u64 AllCoresMask = (1ul << cpu::NumCores) - 1ul;
-                        const u64 other_cores_mask = AllCoresMask & ~(1ul << GetCurrentCoreId());
+                        /* For certain operations, we want to send an interrupt. */
+                        this->target_cores = other_cores_mask;
 
-                        if ((op == Operation::InvalidateInstructionCache) || (Kernel::GetState() == Kernel::State::Initializing)) {
-                            /* For certain operations, we want to send an interrupt. */
-                            this->target_cores = other_cores_mask;
-                            DataSynchronizationBarrier();
-                            const u64 target_mask = this->target_cores;
-                            DataSynchronizationBarrier();
-                            Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CacheOperation, target_mask);
-                            this->ProcessOperation();
-                            while (this->target_cores != 0) {
-                                cpu::Yield();
-                            }
-                        } else {
-                            /* Request all cores. */
-                            this->target_cores = AllCoresMask;
+                        const u64 target_mask = this->target_cores;
+                        DataSynchronizationBarrier();
+                        Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CacheOperation, target_mask);
 
-                            /* Use the condvar. */
-                            this->cv.Broadcast();
-                            while (this->target_cores != 0) {
-                                this->cv.Wait(std::addressof(this->cv_lock));
-                            }
+                        this->ProcessOperation();
+                        while (this->target_cores != 0) {
+                            cpu::Yield();
                         }
+
+                        /* Go idle again. */
+                        this->operation = Operation::Idle;
+                    } else {
+                        /* Lock condvar so that we can send and wait for acknowledgement of request. */
+                        KScopedLightLock cv_lk(this->cv_lock);
+
+                        /* Check that there's no on-going operation. */
+                        MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
+                        MESOSPHERE_ABORT_UNLESS(this->target_cores == 0);
+
+                        /* Set operation. */
+                        this->operation = op;
+
+                        /* Request all cores. */
+                        this->target_cores = AllCoresMask;
+
+                        /* Use the condvar. */
+                        this->cv.Broadcast();
+                        while (this->target_cores != 0) {
+                            this->cv.Wait(std::addressof(this->cv_lock));
+                        }
+
+                        /* Go idle again. */
+                        this->operation = Operation::Idle;
                     }
-                    /* Go idle again. */
-                    this->operation = Operation::Idle;
                 }
         };
 
@@ -285,6 +298,8 @@ namespace ams::kern::arch::arm64::cpu {
                     DataSynchronizationBarrier();
                     break;
             }
+
+            this->target_cores &= ~(1ul << GetCurrentCoreId());
         }
 
         ALWAYS_INLINE void SetEventLocally() {
@@ -327,6 +342,14 @@ namespace ams::kern::arch::arm64::cpu {
             return ResultSuccess();
         }
 
+        ALWAYS_INLINE void InvalidateEntireInstructionCacheLocalImpl() {
+            __asm__ __volatile__("ic iallu" ::: "memory");
+        }
+
+        ALWAYS_INLINE void InvalidateEntireInstructionCacheGlobalImpl() {
+            __asm__ __volatile__("ic ialluis" ::: "memory");
+        }
+
     }
 
     void FlushEntireDataCacheSharedForInit() {
@@ -337,11 +360,16 @@ namespace ams::kern::arch::arm64::cpu {
         return PerformCacheOperationBySetWayLocal<true>(FlushDataCacheLineBySetWayImpl);
     }
 
+    void InvalidateEntireInstructionCacheForInit() {
+        InvalidateEntireInstructionCacheLocalImpl();
+        EnsureInstructionConsistency();
+    }
+
     void StoreEntireCacheForInit() {
         PerformCacheOperationBySetWayLocal<true>(StoreDataCacheLineBySetWayImpl);
         PerformCacheOperationBySetWayShared<true>(StoreDataCacheLineBySetWayImpl);
         DataSynchronizationBarrierInnerShareable();
-        InvalidateEntireInstructionCache();
+        InvalidateEntireInstructionCacheForInit();
     }
 
     void FlushEntireDataCache() {
@@ -399,6 +427,17 @@ namespace ams::kern::arch::arm64::cpu {
         g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InvalidateInstructionCache);
 
         return ResultSuccess();
+    }
+
+    void InvalidateEntireInstructionCache() {
+        KScopedCoreMigrationDisable dm;
+
+        /* Invalidate the instruction cache on all cores. */
+        InvalidateEntireInstructionCacheGlobalImpl();
+        EnsureInstructionConsistency();
+
+        /* Request the interrupt helper to invalidate, too. */
+        g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InvalidateInstructionCache);
     }
 
     void InitializeInterruptThreads(s32 core_id) {
