@@ -86,18 +86,20 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
 
     /* If we should, trace the svc entry. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
-    sub     sp, sp, #0x40
+    sub     sp, sp, #0x50
     stp     x0,  x1,  [sp, #(8 *  0)]
     stp     x2,  x3,  [sp, #(8 *  2)]
     stp     x4,  x5,  [sp, #(8 *  4)]
     stp     x6,  x7,  [sp, #(8 *  6)]
+    str     x11,      [sp, #(8 *  8)]
     mov     x0, sp
     bl      _ZN3ams4kern3svc13TraceSvcEntryEPKm
     ldp     x0,  x1,  [sp, #(8 *  0)]
     ldp     x2,  x3,  [sp, #(8 *  2)]
     ldp     x4,  x5,  [sp, #(8 *  4)]
     ldp     x6,  x7,  [sp, #(8 *  6)]
-    add     sp, sp, #0x40
+    ldr     x11,      [sp, #(8 *  8)]
+    add     sp, sp, #0x50
 #endif
 
     /* Invoke the SVC handler. */
@@ -294,18 +296,20 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
 
     /* If we should, trace the svc entry. */
 #if defined(MESOSPHERE_BUILD_FOR_TRACING)
-    sub     sp, sp, #0x40
+    sub     sp, sp, #0x50
     stp     x0,  x1,  [sp, #(8 *  0)]
     stp     x2,  x3,  [sp, #(8 *  2)]
     stp     x4,  x5,  [sp, #(8 *  4)]
     stp     x6,  x7,  [sp, #(8 *  6)]
+    str     x19,      [sp, #(8 *  8)]
     mov     x0, sp
     bl      _ZN3ams4kern3svc13TraceSvcEntryEPKm
     ldp     x0,  x1,  [sp, #(8 *  0)]
     ldp     x2,  x3,  [sp, #(8 *  2)]
     ldp     x4,  x5,  [sp, #(8 *  4)]
     ldp     x6,  x7,  [sp, #(8 *  6)]
-    add     sp, sp, #0x40
+    ldr     x19,      [sp, #(8 *  8)]
+    add     sp, sp, #0x50
 #endif
 
     /* Invoke the SVC handler. */

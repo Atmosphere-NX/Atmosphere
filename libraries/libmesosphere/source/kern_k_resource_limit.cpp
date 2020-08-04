@@ -31,7 +31,7 @@ namespace ams::kern {
             for (size_t i = 0; i < util::size(this->limit_values); i++) {
                 this->limit_values[i]    = 0;
                 this->current_values[i]  = 0;
-                this->current_hints[i] = 0;
+                this->current_hints[i]   = 0;
             }
         */
     }
@@ -123,7 +123,7 @@ namespace ams::kern {
 
             if (this->current_values[which] + value <= this->limit_values[which]) {
                 this->current_values[which] += value;
-                this->current_hints[which] += value;
+                this->current_hints[which]  += value;
                 return true;
             }
 
