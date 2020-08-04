@@ -68,11 +68,11 @@ namespace ams::fatal::srv {
             }
 
             u64 GetQuestRebootTimeoutInterval() const {
-                return this->quest_reboot_interval_second * 1'000'000'000ul;
+                return this->quest_reboot_interval_second * 1'000ul;
             }
 
             u64 GetFatalRebootTimeoutInterval() const {
-                return this->fatal_auto_reboot_interval * 1'000'000ul;
+                return this->fatal_auto_reboot_interval;
             }
 
             const char *GetErrorMessage() const {
