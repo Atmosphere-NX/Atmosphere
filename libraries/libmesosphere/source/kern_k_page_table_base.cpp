@@ -2157,6 +2157,8 @@ namespace ams::kern {
             if (cur_size >= sizeof(u32)) {
                 const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, copy_size), svc::ResultInvalidCurrentMemory());
+                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size);
+
                 buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
                 cur_addr += copy_size;
                 cur_size -= copy_size;
@@ -2165,6 +2167,7 @@ namespace ams::kern {
             /* Copy remaining data. */
             if (cur_size > 0) {
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, cur_size), svc::ResultInvalidCurrentMemory());
+                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size);
             }
 
             return ResultSuccess();
@@ -2199,6 +2202,9 @@ namespace ams::kern {
 
         /* Perform copy for the last block. */
         R_TRY(PerformCopy());
+
+        /* Invalidate the entire instruction cache, as this svc allows modifying executable pages. */
+        cpu::InvalidateEntireInstructionCache();
 
         return ResultSuccess();
     }
