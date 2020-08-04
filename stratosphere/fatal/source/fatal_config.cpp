@@ -57,9 +57,6 @@ namespace ams::fatal::srv {
     }
 
     FatalConfig::FatalConfig() {
-        /* Clear this. */
-        std::memset(this, 0, sizeof(*this));
-
         /* Get information from set. */
         settings::system::GetSerialNumber(std::addressof(this->serial_number));
         settings::system::GetFirmwareVersion(std::addressof(this->firmware_version));
@@ -69,11 +66,16 @@ namespace ams::fatal::srv {
         /* Read information from settings. */
         settings::fwdbg::GetSettingsItemValue(&this->transition_to_fatal, sizeof(this->transition_to_fatal), "fatal", "transition_to_fatal");
         settings::fwdbg::GetSettingsItemValue(&this->show_extra_info, sizeof(this->show_extra_info), "fatal", "show_extra_info");
-        settings::fwdbg::GetSettingsItemValue(&this->quest_reboot_interval_second, sizeof(this->quest_reboot_interval_second), "fatal", "quest_reboot_interval_second");
+
+        u64 quest_interval_second;
+        settings::fwdbg::GetSettingsItemValue(&quest_interval_second, sizeof(quest_interval_second), "fatal", "quest_reboot_interval_second");
+        this->quest_reboot_interval = TimeSpan::FromSeconds(quest_interval_second);
 
         /* Atmosphere extension for automatic reboot. */
-        if (settings::fwdbg::GetSettingsItemValue(&this->fatal_auto_reboot_interval, sizeof(this->fatal_auto_reboot_interval), "atmosphere", "fatal_auto_reboot_interval") == sizeof(this->fatal_auto_reboot_interval)) {
-            this->fatal_auto_reboot_enabled = this->fatal_auto_reboot_interval != 0;
+        u64 auto_reboot_ms;
+        if (settings::fwdbg::GetSettingsItemValue(&auto_reboot_ms, sizeof(auto_reboot_ms), "atmosphere", "fatal_auto_reboot_interval") == sizeof(auto_reboot_ms)) {
+            this->fatal_auto_reboot_interval = TimeSpan::FromMilliSeconds(auto_reboot_ms);
+            this->fatal_auto_reboot_enabled  = auto_reboot_ms != 0;
         }
 
         /* Setup messages. */

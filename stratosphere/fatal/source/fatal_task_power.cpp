@@ -54,16 +54,16 @@ namespace ams::fatal::srv {
         class RebootTimingObserver {
             private:
                 os::Tick start_tick;
+                TimeSpan interval;
                 bool flag;
-                s64 interval;
             public:
-                RebootTimingObserver(bool flag, s64 interval) : start_tick(os::GetSystemTick()), flag(flag), interval(interval) {
+                RebootTimingObserver(bool flag, TimeSpan iv) : start_tick(os::GetSystemTick()), interval(iv), flag(flag)  {
                     /* ... */
                 }
 
                 bool IsRebootTiming() const {
                     auto current_tick = os::GetSystemTick();
-                    return this->flag && (current_tick - this->start_tick).ToTimeSpan().GetMilliSeconds() >= this->interval;
+                    return this->flag && (current_tick - this->start_tick).ToTimeSpan() >= this->interval;
                 }
         };
 
@@ -75,7 +75,7 @@ namespace ams::fatal::srv {
         /* Task Implementations. */
         bool PowerControlTask::TryShutdown() {
             /* Set a timeout of 30 seconds. */
-            constexpr s32 MaxShutdownWaitSeconds = 30;
+            constexpr auto MaxShutdownWaitInterval = TimeSpan::FromSeconds(30);
 
             auto start_tick = os::GetSystemTick();
 
@@ -84,7 +84,7 @@ namespace ams::fatal::srv {
 
             while (true) {
                 auto cur_tick = os::GetSystemTick();
-                if ((cur_tick - start_tick).ToTimeSpan().GetSeconds() > MaxShutdownWaitSeconds) {
+                if ((cur_tick - start_tick).ToTimeSpan() > MaxShutdownWaitInterval) {
                     break;
                 }
 
