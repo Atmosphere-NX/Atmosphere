@@ -59,11 +59,6 @@ namespace ams::kern::arch::arm64::cpu {
         InstructionMemoryBarrier();
     }
 
-    ALWAYS_INLINE void InvalidateEntireInstructionCache() {
-        __asm__ __volatile__("ic iallu" ::: "memory");
-        EnsureInstructionConsistency();
-    }
-
     ALWAYS_INLINE void Yield() {
         __asm__ __volatile__("yield" ::: "memory");
     }
@@ -179,6 +174,7 @@ namespace ams::kern::arch::arm64::cpu {
     void ClearPageToZeroImpl(void *);
     void FlushEntireDataCacheSharedForInit();
     void FlushEntireDataCacheLocalForInit();
+    void InvalidateEntireInstructionCacheForInit();
     void StoreEntireCacheForInit();
 
     void FlushEntireDataCache();
@@ -187,6 +183,8 @@ namespace ams::kern::arch::arm64::cpu {
     Result StoreDataCache(const void *addr, size_t size);
     Result FlushDataCache(const void *addr, size_t size);
     Result InvalidateInstructionCache(void *addr, size_t size);
+
+    void InvalidateEntireInstructionCache();
 
     ALWAYS_INLINE void ClearPageToZero(void *page) {
         MESOSPHERE_ASSERT(util::IsAligned(reinterpret_cast<uintptr_t>(page), PageSize));

@@ -81,7 +81,7 @@ namespace ams::kern::init::loader {
             cpu::DataSynchronizationBarrier();
 
             /* Invalidate entire instruction cache. */
-            cpu::InvalidateEntireInstructionCache();
+            cpu::InvalidateEntireInstructionCacheForInit();
 
             /* Invalidate entire TLB. */
             cpu::InvalidateEntireTlb();
