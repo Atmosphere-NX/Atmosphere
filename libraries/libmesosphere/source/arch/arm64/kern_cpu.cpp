@@ -85,7 +85,7 @@ namespace ams::kern::arch::arm64::cpu {
             public:
                 enum class Operation {
                     Idle,
-                    InvalidateInstructionCache,
+                    InstructionMemoryBarrier,
                     StoreDataCache,
                     FlushDataCache,
                 };
@@ -156,7 +156,7 @@ namespace ams::kern::arch::arm64::cpu {
                     constexpr u64 AllCoresMask = (1ul << cpu::NumCores) - 1ul;
                     const u64 other_cores_mask = AllCoresMask & ~(1ul << GetCurrentCoreId());
 
-                    if ((op == Operation::InvalidateInstructionCache) || (Kernel::GetState() == Kernel::State::Initializing)) {
+                    if ((op == Operation::InstructionMemoryBarrier) || (Kernel::GetState() == Kernel::State::Initializing)) {
                         /* Check that there's no on-going operation. */
                         MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
                         MESOSPHERE_ABORT_UNLESS(this->target_cores == 0);
@@ -282,7 +282,7 @@ namespace ams::kern::arch::arm64::cpu {
             switch (this->operation) {
                 case Operation::Idle:
                     break;
-                case Operation::InvalidateInstructionCache:
+                case Operation::InstructionMemoryBarrier:
                     InstructionMemoryBarrier();
                     break;
                 case Operation::StoreDataCache:
@@ -419,8 +419,8 @@ namespace ams::kern::arch::arm64::cpu {
 
         R_TRY(InvalidateInstructionCacheRange(start, end));
 
-        /* Request the interrupt helper to invalidate, too. */
-        g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InvalidateInstructionCache);
+        /* Request the interrupt helper to perform an instruction memory barrier. */
+        g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InstructionMemoryBarrier);
 
         return ResultSuccess();
     }
@@ -432,8 +432,8 @@ namespace ams::kern::arch::arm64::cpu {
         InvalidateEntireInstructionCacheGlobalImpl();
         EnsureInstructionConsistency();
 
-        /* Request the interrupt helper to invalidate, too. */
-        g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InvalidateInstructionCache);
+        /* Request the interrupt helper to perform an instruction memory barrier. */
+        g_cache_operation_handler.RequestOperation(KCacheHelperInterruptHandler::Operation::InstructionMemoryBarrier);
     }
 
     void InitializeInterruptThreads(s32 core_id) {
