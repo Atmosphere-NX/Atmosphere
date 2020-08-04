@@ -98,6 +98,8 @@ namespace ams::kern {
                 }
             }
 
+            MESOSPHERE_KTRACE_SCHEDULE_UPDATE(this->core_id, (prev_highest_thread != nullptr ? prev_highest_thread : this->idle_thread), (highest_thread != nullptr ? highest_thread : this->idle_thread));
+
             this->state.highest_priority_thread = highest_thread;
             this->state.needs_scheduling = true;
             return (1ul << this->core_id);
@@ -162,6 +164,7 @@ namespace ams::kern {
                         /* The suggested thread isn't bound to its core, so we can migrate it! */
                         suggested->SetActiveCore(core_id);
                         priority_queue.ChangeCore(suggested_core, suggested);
+                        MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), suggested_core, core_id, 1);
                         top_threads[core_id] = suggested;
                         cores_needing_scheduling |= Kernel::GetScheduler(core_id).UpdateHighestPriorityThread(top_threads[core_id]);
                         break;
@@ -187,6 +190,7 @@ namespace ams::kern {
                             /* Perform the migration. */
                             suggested->SetActiveCore(core_id);
                             priority_queue.ChangeCore(candidate_core, suggested);
+                            MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), candidate_core, core_id, 2);
                             top_threads[core_id] = suggested;
                             cores_needing_scheduling |= Kernel::GetScheduler(core_id).UpdateHighestPriorityThread(top_threads[core_id]);
                             break;
@@ -251,6 +255,8 @@ namespace ams::kern {
         } else if (cur_thread == this->idle_thread) {
             this->prev_thread = nullptr;
         }
+
+        MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
 
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
@@ -495,6 +501,7 @@ namespace ams::kern {
                         if (running_on_suggested_core == nullptr || running_on_suggested_core->GetPriority() >= HighestCoreMigrationAllowedPriority) {
                             suggested->SetActiveCore(core_id);
                             priority_queue.ChangeCore(suggested_core, suggested, true);
+                            MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), suggested_core, core_id, 3);
                             IncrementScheduledCount(suggested);
                             break;
                         } else {
@@ -548,6 +555,7 @@ namespace ams::kern {
                 /* Migrate the current thread to core -1. */
                 cur_thread.SetActiveCore(-1);
                 priority_queue.ChangeCore(core_id, std::addressof(cur_thread));
+                MESOSPHERE_KTRACE_CORE_MIGRATION(cur_thread.GetId(), core_id, -1, 4);
                 IncrementScheduledCount(std::addressof(cur_thread));
 
                 /* If there's nothing scheduled, we can try to perform a migration. */
@@ -562,6 +570,7 @@ namespace ams::kern {
                             if (top_on_suggested_core == nullptr || top_on_suggested_core->GetPriority() >= HighestCoreMigrationAllowedPriority) {
                                 suggested->SetActiveCore(core_id);
                                 priority_queue.ChangeCore(suggested_core, suggested);
+                                MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), suggested_core, core_id, 5);
                                 IncrementScheduledCount(suggested);
                             }
 

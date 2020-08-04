@@ -32,10 +32,17 @@ namespace ams::kern {
     class KTrace {
         public:
             enum Type {
-                Type_SvcEntry0 = 3,
-                Type_SvcEntry1 = 4,
-                Type_SvcExit0  = 5,
-                Type_SvcExit1  = 6,
+                Type_ThreadSwitch   =  1,
+
+                Type_SvcEntry0      =  3,
+                Type_SvcEntry1      =  4,
+                Type_SvcExit0       =  5,
+                Type_SvcExit1       =  6,
+                Type_Interrupt      =  7,
+
+                Type_ScheduleUpdate = 11,
+
+                Type_CoreMigration  = 14,
             };
         private:
             static bool s_is_active;
@@ -65,6 +72,18 @@ namespace ams::kern {
         }                                             \
     })
 
+#define MESOSPHERE_KTRACE_PUSH_RECORD(TYPE, ...)                       \
+    ({                                                                 \
+        if constexpr (::ams::kern::IsKTraceEnabled) {                  \
+            if (::ams::kern::KTrace::IsActive()) {                     \
+                ::ams::kern::KTrace::PushRecord(TYPE, ## __VA_ARGS__); \
+            }                                                          \
+        }                                                              \
+    })
+
+#define MESOSPHERE_KTRACE_THREAD_SWITCH(NEXT) \
+    MESOSPHERE_KTRACE_PUSH_RECORD(::ams::kern::KTrace::Type_ThreadSwitch, (NEXT)->GetId())
+
 #define MESOSPHERE_KTRACE_SVC_ENTRY(SVC_ID, PARAM0, PARAM1, PARAM2, PARAM3, PARAM4, PARAM5, PARAM6, PARAM7)                           \
     ({                                                                                                                                \
         if constexpr (::ams::kern::IsKTraceEnabled) {                                                                                 \
@@ -84,3 +103,12 @@ namespace ams::kern {
             }                                                                                                                        \
         }                                                                                                                            \
     })
+
+#define MESOSPHERE_KTRACE_INTERRUPT(ID) \
+    MESOSPHERE_KTRACE_PUSH_RECORD(::ams::kern::KTrace::Type_Interrupt, ID)
+
+#define MESOSPHERE_KTRACE_SCHEDULE_UPDATE(CORE, PREV, NEXT) \
+    MESOSPHERE_KTRACE_PUSH_RECORD(::ams::kern::KTrace::Type_ScheduleUpdate, CORE, (PREV)->GetId(), (NEXT)->GetId())
+
+#define MESOSPHERE_KTRACE_CORE_MIGRATION(THREAD_ID, PREV, NEXT, REASON) \
+    MESOSPHERE_KTRACE_PUSH_RECORD(::ams::kern::KTrace::Type_CoreMigration,  THREAD_ID, PREV, NEXT, REASON)

@@ -111,6 +111,9 @@ namespace ams::kern::arch::arm64 {
         const u32 raw_irq = this->interrupt_controller.GetIrq();
         const s32 irq = KInterruptController::ConvertRawIrq(raw_irq);
 
+        /* Trace the interrupt. */
+        MESOSPHERE_KTRACE_INTERRUPT(irq);
+
         /* If the IRQ is spurious, we don't need to reschedule. */
         if (irq < 0) {
             return false;
