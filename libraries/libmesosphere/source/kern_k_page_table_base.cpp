@@ -2915,35 +2915,10 @@ namespace ams::kern {
 
         /* Ensure that on failure, we roll back appropriately. */
         size_t mapped_size = 0;
-        auto unmap_guard = SCOPE_GUARD {
+        auto cleanup_guard = SCOPE_GUARD {
             if (mapped_size > 0) {
-                /* Determine where the mapping ends. */
-                const auto mapped_end  = GetInteger(mapping_src_start) + mapped_size;
-                const auto mapped_last = mapped_end - 1;
-
-                KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(mapping_src_start);
-                while (true) {
-                    const KMemoryInfo info = it->GetMemoryInfo();
-
-                    const auto cur_start  = info.GetAddress() >= GetInteger(mapping_src_start) ? info.GetAddress() : GetInteger(mapping_src_start);
-                    const auto cur_end    = mapped_last <= info.GetLastAddress() ? mapped_end : info.GetEndAddress();
-                    const size_t cur_size = cur_end - cur_start;
-
-                    /* Fix the permissions, if we need to. */
-                    if ((info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
-                        const KPageProperties properties = { info.GetPermission(), false, false, false };
-                        MESOSPHERE_R_ABORT_UNLESS(this->Operate(page_list, cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
-                    }
-
-                    /* If the block is at the end, we're done. */
-                    if (mapped_last <= info.GetLastAddress()) {
-                        break;
-                    }
-
-                    /* Advance. */
-                    ++it;
-                    MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
-                }
+                /* NOTE: Nintendo does not check that this cleanup succeeds. */
+                this->CleanupForIpcClientOnServerSetupFailure(page_list, mapping_src_start, mapped_size, test_perm);
             }
         };
 
@@ -2980,8 +2955,8 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
         }
 
-        /* We succeeded, so no need to unmap. */
-        unmap_guard.Cancel();
+        /* We succeeded, so no need to cleanup. */
+        cleanup_guard.Cancel();
 
         return ResultSuccess();
     }
