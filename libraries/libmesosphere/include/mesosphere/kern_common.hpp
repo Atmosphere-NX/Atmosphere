@@ -22,6 +22,12 @@ namespace ams::kern {
 
     constexpr size_t PageSize = 4_KB;
 
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
     ams::TargetFirmware GetTargetFirmware();
+#else
+    consteval ALWAYS_INLINE ams::TargetFirmware GetTargetFirmware() {
+        return ams::TargetFirmware_Current;
+    }
+#endif
 
 }
