@@ -56,6 +56,7 @@ _main:
     stp x2, x30, [sp, #0x10]
     stp xzr, xzr, [sp, #0x20]
 
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
     /* Get the target firmware from exosphere. */
     LOAD_IMMEDIATE_32(w0, 0xC3000004)
     mov w1, #65000
@@ -67,6 +68,7 @@ _main:
     /* Store the target firmware. */
     adr x0, __metadata_target_firmware
     str w1, [x0]
+#endif
 
     /* Apply relocations and call init array for KernelLdr. */
     adr x0, _start
@@ -121,13 +123,14 @@ _main:
     mov sp, x2
     br  x1
 
-
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
 .global     _ZN3ams4kern17GetTargetFirmwareEv
 .type       _ZN3ams4kern17GetTargetFirmwareEv, %function
 _ZN3ams4kern17GetTargetFirmwareEv:
     adr x0, __metadata_target_firmware
     ldr w0, [x0]
     ret
+#endif
 
 .balign 8
 __external_references:

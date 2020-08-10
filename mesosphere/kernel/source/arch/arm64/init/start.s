@@ -61,12 +61,14 @@ __metadata_kernel_layout:
     .error "Incorrect Mesosphere Metadata"
 .endif
 
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
 .global     _ZN3ams4kern17GetTargetFirmwareEv
 .type       _ZN3ams4kern17GetTargetFirmwareEv, %function
 _ZN3ams4kern17GetTargetFirmwareEv:
     adr x0, __metadata_target_firmware
     ldr w0, [x0]
     ret
+#endif
 
 /* ams::kern::init::StartCore0(uintptr_t, uintptr_t) */
 .section    .crt0.text._ZN3ams4kern4init10StartCore0Emm, "ax", %progbits
@@ -94,6 +96,7 @@ core0_el2:
 core0_el1:
     bl _ZN3ams4kern4init19DisableMmuAndCachesEv
 
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
     /* Get the target firmware from exosphere. */
     LOAD_IMMEDIATE_32(w0, 0xC3000004)
     mov w1, #65000
@@ -105,6 +108,7 @@ core0_el1:
     /* Store the target firmware. */
     adr x0, __metadata_target_firmware
     str w1, [x0]
+#endif
 
     /* We want to invoke kernel loader. */
     adr x0, _start
