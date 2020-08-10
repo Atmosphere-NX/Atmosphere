@@ -87,6 +87,22 @@ namespace ams::kern::init::loader {
             cpu::InvalidateEntireTlb();
         }
 
+        #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+
+        ALWAYS_INLINE bool ShouldPerformCpuSpecificSetup() {
+            /* Perform cpu-specific setup only on < 10.0.0. */
+            return kern::GetTargetFirmware() < ams::TargetFirmware_10_0_0;
+        }
+
+        #else
+
+        consteval ALWAYS_INLINE bool ShouldPerformCpuSpecificSetup() {
+            /* Always perform cpu-specific setup. */
+            return true;
+        }
+
+        #endif
+
         void SetupInitialIdentityMapping(KInitialPageTable &ttbr1_table, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageTable::IPageAllocator &allocator) {
             /* Make a new page table for TTBR0_EL1. */
             KInitialPageTable ttbr0_table(allocator.Allocate());
@@ -116,8 +132,8 @@ namespace ams::kern::init::loader {
             cpu::MemoryAccessIndirectionRegisterAccessor(MairValue).Store();
             cpu::TranslationControlRegisterAccessor(TcrValue).Store();
 
-            /* Perform cpu-specific setup on < 10.0.0. */
-            if (kern::GetTargetFirmware() < ams::TargetFirmware_10_0_0) {
+            /* Perform cpu-specific setup if needed. */
+            if (ShouldPerformCpuSpecificSetup()) {
                 SavedRegisterState saved_registers;
                 SaveRegistersToTpidrEl1(&saved_registers);
                 ON_SCOPE_EXIT { VerifyAndClearTpidrEl1(&saved_registers); };
