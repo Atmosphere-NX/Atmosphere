@@ -43,16 +43,19 @@ namespace ams::sf::cmif {
         CmifOutHeader *out_header = nullptr;
         Result command_result = cmd_handler(&out_header, ctx, in_message_raw_data);
 
-        /* Forward forwardable results, otherwise ensure we can send result to user. */
-        R_TRY_CATCH(command_result) {
-            R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
-            R_CATCH_ALL() { AMS_ABORT_UNLESS(out_header != nullptr); }
-        } R_END_TRY_CATCH;
+        /* Forward any meta-context change result. */
+        if (sf::impl::ResultRequestContextChanged::Includes(command_result)) {
+            return command_result;
+        }
+
+        /* Otherwise, ensure that we're able to write the output header. */
+        if (out_header == nullptr) {
+            AMS_ABORT_UNLESS(R_FAILED(command_result));
+            return command_result;
+        }
 
         /* Write output header to raw data. */
-        if (out_header != nullptr) {
-            *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
-        }
+        *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
 
         return ResultSuccess();
     }
@@ -87,19 +90,24 @@ namespace ams::sf::cmif {
         CmifOutHeader *out_header = nullptr;
         Result command_result = cmd_handler(&out_header, ctx, in_message_raw_data);
 
-        /* Forward forwardable results, otherwise ensure we can send result to user. */
-        R_TRY_CATCH(command_result) {
-            R_CATCH(sm::mitm::ResultShouldForwardToSession) {
-                return ctx.session->ForwardRequest(ctx);
-            }
-            R_CATCH_RETHROW(sf::impl::ResultRequestContextChanged)
-            R_CATCH_ALL() { AMS_ABORT_UNLESS(out_header != nullptr); }
-        } R_END_TRY_CATCH;
+        /* If we should, forward the request to the forward session. */
+        if (sm::mitm::ResultShouldForwardToSession::Includes(command_result)) {
+            return ctx.session->ForwardRequest(ctx);
+        }
+
+        /* Forward any meta-context change result. */
+        if (sf::impl::ResultRequestContextChanged::Includes(command_result)) {
+            return command_result;
+        }
+
+        /* Otherwise, ensure that we're able to write the output header. */
+        if (out_header == nullptr) {
+            AMS_ABORT_UNLESS(R_FAILED(command_result));
+            return command_result;
+        }
 
         /* Write output header to raw data. */
-        if (out_header != nullptr) {
-            *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
-        }
+        *out_header = CmifOutHeader{CMIF_OUT_HEADER_MAGIC, 0, command_result.GetValue(), 0};
 
         return ResultSuccess();
     }
