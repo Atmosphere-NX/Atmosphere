@@ -28,17 +28,17 @@ export ATMOSPHERE_ASFLAGS  :=
 ifeq ($(ATMOSPHERE_BOARD),nx-hac-001)
 
 ifeq ($(ATMOSPHERE_CPU),arm-cortex-a57)
-export ATMOSPHERE_ARCH_DIR   := arch/arm64
-export ATMOSPHERE_BOARD_DIR  := board/nintendo/nx
-export ATMOSPHERE_OS_DIR     := os/horizon
+export ATMOSPHERE_ARCH_DIR   := arm64
+export ATMOSPHERE_BOARD_DIR  := nintendo/nx
+export ATMOSPHERE_OS_DIR     := horizon
 
 export ATMOSPHERE_ARCH_NAME  := arm64
 export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
 else ifeq ($(ATMOSPHERE_CPU),arm7tdmi)
-export ATMOSPHERE_ARCH_DIR   := arch/arm
-export ATMOSPHERE_BOARD_DIR  := board/nintendo/nx_bpmp
-export ATMOSPHERE_OS_DIR     := os/horizon
+export ATMOSPHERE_ARCH_DIR   := arm
+export ATMOSPHERE_BOARD_DIR  := nintendo/nx_bpmp
+export ATMOSPHERE_OS_DIR     := horizon
 
 export ATMOSPHERE_ARCH_NAME  := arm
 export ATMOSPHERE_BOARD_NAME := nintendo_nx
@@ -48,20 +48,20 @@ endif
 endif
 
 ifeq ($(ATMOSPHERE_CPU),arm-cortex-a57)
-export ATMOSPHERE_CPU_DIR    := arch/arm64/cpu/cortex_a57
+export ATMOSPHERE_CPU_DIR    := cortex_a57
 export ATMOSPHERE_CPU_NAME   := arm_cortex_a57
 endif
 
 ifeq ($(ATMOSPHERE_CPU),arm7tdmi)
-export ATMOSPHERE_CPU_DIR    := arch/arm/cpu/arm7tdmi
+export ATMOSPHERE_CPU_DIR    := arm7tdmi
 export ATMOSPHERE_CPU_NAME   := arm7tdmi
 endif
 
 
-export ATMOSPHERE_ARCH_MAKE_DIR  := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_ARCH_DIR)
-export ATMOSPHERE_BOARD_MAKE_DIR := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_BOARD_DIR)
-export ATMOSPHERE_OS_MAKE_DIR    := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_OS_DIR)
-export ATMOSPHERE_CPU_MAKE_DIR   := $(ATMOSPHERE_CONFIG_MAKE_DIR)/$(ATMOSPHERE_CPU_DIR)
+export ATMOSPHERE_ARCH_MAKE_DIR  := $(ATMOSPHERE_CONFIG_MAKE_DIR)/arch/$(ATMOSPHERE_ARCH_DIR)
+export ATMOSPHERE_BOARD_MAKE_DIR := $(ATMOSPHERE_CONFIG_MAKE_DIR)/board/$(ATMOSPHERE_BOARD_DIR)
+export ATMOSPHERE_OS_MAKE_DIR    := $(ATMOSPHERE_CONFIG_MAKE_DIR)/os/$(ATMOSPHERE_OS_DIR)
+export ATMOSPHERE_CPU_MAKE_DIR   := $(ATMOSPHERE_ARCH_MAKE_DIR)/cpu/$(ATMOSPHERE_CPU_DIR)
 
 export ATMOSPHERE_LIBRARY_DIR := lib_$(ATMOSPHERE_BOARD_NAME)_$(ATMOSPHERE_ARCH_NAME)
 export ATMOSPHERE_BUILD_DIR := build_$(ATMOSPHERE_BOARD_NAME)_$(ATMOSPHERE_ARCH_NAME)
@@ -102,11 +102,28 @@ BUILD        := build
 DATA         := data
 INCLUDES     := include
 
-GENERAL_SOURCE_DIRS=$1 $(foreach d,$(filter-out $1/arch $1/board $1,$(wildcard $1/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
-SPECIFIC_SOURCE_DIRS=$(if $(wildcard $1/$2/.*),$1/$2 $(call DIR_WILDCARD,$1/$2),)
-ALL_SOURCE_DIRS=$(call GENERAL_SOURCE_DIRS,$1) $(call SPECIFIC_SOURCE_DIRS,$1,$(ATMOSPHERE_ARCH_DIR)) $(call SPECIFIC_SOURCE_DIRS,$1,$(ATMOSPHERE_BOARD_DIR)) $(call SPECIFIC_SOURCE_DIRS,$1,$(ATMOSPHERE_OS_DIR))
+GENERAL_SOURCE_DIRS=$1 $(foreach d,$(filter-out $1/arch $1/board $1/os $1/cpu $1,$(wildcard $1/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
+SPECIFIC_SOURCE_DIRS=$(if $(wildcard $1/$2/$3/.*),$1/$2/$3 $(call DIR_WILDCARD,$1/$2/$3),$(if $(wildcard $1/$2/generic/.*), $1/$2/generic $(call DIR_WILDCARD,$1/$2/generic),))
+
+ALL_SOURCE_DIRS=$(call GENERAL_SOURCE_DIRS,$1) \
+                $(call SPECIFIC_SOURCE_DIRS,$1,arch,$(ATMOSPHERE_ARCH_DIR)) \
+                $(call SPECIFIC_SOURCE_DIRS,$1,board,$(ATMOSPHERE_BOARD_DIR)) \
+                $(call SPECIFIC_SOURCE_DIRS,$1,os,$(ATMOSPHERE_OS_DIR)) \
+                $(call SPECIFIC_SOURCE_DIRS,$1,cpu,$(ATMOSPHERE_ARCH_DIR)/$(ATMOSPHERE_CPU_DIR))
 
 SOURCES      ?= $(call ALL_SOURCE_DIRS,source)
+
+FIND_SPECIFIC_SOURCE_FILES= $(notdir $(wildcard $1/*.$2.$3.$4)) $(filter-out $(subst .$2.$3.,.$2.generic.,$(notdir $(wildcard $1/*.$2.$3.$4))),$(notdir $(wildcard $1/*.$2.generic.$4)))
+
+FIND_SOURCE_FILES=$(foreach dir,$1,$(filter-out $(notdir $(wildcard $(dir)/*.arch.*.$2)) \
+                                                    $(notdir $(wildcard $(dir)/*.board.*.$2)) \
+                                                    $(notdir $(wildcard $(dir)/*.os.*.$2)) \
+                                                    $(notdir $(wildcard $(dir)/.cpu.*.$2)), \
+                                                $(notdir $(wildcard $(dir)/*.$2)))) \
+                  $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),arch,$(ATMOSPHERE_ARCH_NAME),$2)) \
+                  $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),board,$(ATMOSPHERE_BOARD_NAME),$2)) \
+                  $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),os,$(ATMOSPHERE_OS_NAME),$2)) \
+                  $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),cpu,$(ATMOSPHERE_CPU_NAME),$2))
 
 #---------------------------------------------------------------------------------
 # Rules for compiling pre-compiled headers
