@@ -10,7 +10,7 @@ ifeq ($(strip $(ATMOSPHERE_BOARD)),)
 export ATMOSPHERE_BOARD := nx-hac-001
 
 ifeq ($(strip $(ATMOSPHERE_CPU)),)
-export ATMOSPHERE_CPU   := arm-cortex-a57
+export ATMOSPHERE_CPU            := arm-cortex-a57
 endif
 
 endif
@@ -35,6 +35,8 @@ export ATMOSPHERE_OS_DIR     := horizon
 export ATMOSPHERE_ARCH_NAME  := arm64
 export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
+
+export ATMOSPHERE_CPU_EXTENSIONS := arm_crypto_extension aarch64_crypto_extension
 else ifeq ($(ATMOSPHERE_CPU),arm7tdmi)
 export ATMOSPHERE_ARCH_DIR   := arm
 export ATMOSPHERE_BOARD_DIR  := nintendo/nx_bpmp
@@ -43,6 +45,8 @@ export ATMOSPHERE_OS_DIR     := horizon
 export ATMOSPHERE_ARCH_NAME  := arm
 export ATMOSPHERE_BOARD_NAME := nintendo_nx
 export ATMOSPHERE_OS_NAME    := horizon
+
+export ATMOSPHERE_CPU_EXTENSIONS :=
 endif
 
 endif
@@ -115,6 +119,8 @@ SOURCES      ?= $(call ALL_SOURCE_DIRS,source)
 
 FIND_SPECIFIC_SOURCE_FILES= $(notdir $(wildcard $1/*.$2.$3.$4)) $(filter-out $(subst .$2.$3.,.$2.generic.,$(notdir $(wildcard $1/*.$2.$3.$4))),$(notdir $(wildcard $1/*.$2.generic.$4)))
 
+FIND_SPECIFIC_SOURCE_FILES_EX=$(foreach ext,$3,$(notdir $(wildcard $1/*.$2.$(ext).$4))) $(filter-out $(foreach ext,$3,$(subst .$2.$(ext).,.$2.generic.,$(notdir $(wildcard $1/*.$2.$(ext).$4)))),$(notdir $(wildcard $1/*.$2.generic.$4)))
+
 FIND_SOURCE_FILES=$(foreach dir,$1,$(filter-out $(notdir $(wildcard $(dir)/*.arch.*.$2)) \
                                                     $(notdir $(wildcard $(dir)/*.board.*.$2)) \
                                                     $(notdir $(wildcard $(dir)/*.os.*.$2)) \
@@ -123,7 +129,7 @@ FIND_SOURCE_FILES=$(foreach dir,$1,$(filter-out $(notdir $(wildcard $(dir)/*.arc
                   $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),arch,$(ATMOSPHERE_ARCH_NAME),$2)) \
                   $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),board,$(ATMOSPHERE_BOARD_NAME),$2)) \
                   $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),os,$(ATMOSPHERE_OS_NAME),$2)) \
-                  $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),cpu,$(ATMOSPHERE_CPU_NAME),$2))
+                  $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES_EX,$(dir),cpu,$(ATMOSPHERE_CPU_NAME) $(ATMOSPHERE_CPU_EXTENSIONS),$2))
 
 #---------------------------------------------------------------------------------
 # Rules for compiling pre-compiled headers
