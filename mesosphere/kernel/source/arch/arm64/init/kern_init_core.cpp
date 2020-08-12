@@ -349,6 +349,7 @@ namespace ams::kern::init {
     }
 
     void SetInitArguments(s32 core_id, KPhysicalAddress address, uintptr_t arg) {
+        /* Set the arguments. */
         KInitArguments *init_args = reinterpret_cast<KInitArguments *>(GetInteger(address));
         init_args->ttbr0            = cpu::GetTtbr0El1();
         init_args->ttbr1            = arg;
@@ -361,12 +362,12 @@ namespace ams::kern::init {
         init_args->entrypoint       = reinterpret_cast<uintptr_t>(::ams::kern::HorizonKernelMain);
         init_args->argument         = static_cast<u64>(core_id);
         init_args->setup_function   = reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore);
+
+        /* Ensure the arguments are written to memory. */
+        StoreDataCache(init_args, sizeof(*init_args));
+
+        /* Save the pointer to the arguments to use as argument upon core wakeup. */
         g_init_arguments_phys_addr[core_id] = address;
-    }
-
-
-    void StoreInitArguments() {
-        StoreDataCache(g_init_arguments_phys_addr, sizeof(g_init_arguments_phys_addr));
     }
 
     void InitializeDebugRegisters() {
