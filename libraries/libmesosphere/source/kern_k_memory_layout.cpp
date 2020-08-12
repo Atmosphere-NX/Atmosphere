@@ -259,9 +259,6 @@ namespace ams::kern {
                 /* Setup the InitArguments. */
                 SetInitArguments(static_cast<s32>(i), core_local_region_start_phys[i], GetInteger(core_l1_ttbr1_phys[i]));
             }
-
-            /* Ensure the InitArguments are flushed to cache. */
-            StoreInitArguments();
         }
 
         void SetupPoolPartitionMemoryRegions() {
