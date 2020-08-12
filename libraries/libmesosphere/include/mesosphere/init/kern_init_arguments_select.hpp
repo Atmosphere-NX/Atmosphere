@@ -26,6 +26,5 @@ namespace ams::kern::init {
 
     KPhysicalAddress GetInitArgumentsAddress(s32 core_id);
     void SetInitArguments(s32 core_id, KPhysicalAddress address, uintptr_t arg);
-    void StoreInitArguments();
 
 }
