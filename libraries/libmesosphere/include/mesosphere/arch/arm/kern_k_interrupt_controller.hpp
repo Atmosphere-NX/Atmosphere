@@ -21,13 +21,6 @@
 #if 1
 
     #include <mesosphere/arch/arm/kern_generic_interrupt_controller.hpp>
-    namespace ams::kern::arch::arm64 {
-
-        using ams::kern::arch::arm::GicDistributor;
-        using ams::kern::arch::arm::GicCpuInterface;
-        using ams::kern::arch::arm::KInterruptController;
-
-    }
 
 #else
 

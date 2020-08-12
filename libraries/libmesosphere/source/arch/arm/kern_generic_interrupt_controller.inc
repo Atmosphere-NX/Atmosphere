@@ -15,7 +15,7 @@
  */
 #include <mesosphere.hpp>
 
-namespace ams::kern::arch::arm64 {
+namespace ams::kern::arch::arm {
 
     void KInterruptController::SetupInterruptLines(s32 core_id) const {
         const size_t ITLines = (core_id == 0) ? 32 * ((this->gicd->typer & 0x1F) + 1) : NumLocalInterrupts;
