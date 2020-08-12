@@ -13,24 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <mesosphere/kern_select_cpu.hpp>
-#include <mesosphere/kern_k_typed_address.hpp>
+#include <mesosphere.hpp>
 
-#if 1
-
-    #include <mesosphere/arch/arm/kern_generic_interrupt_controller.hpp>
-    namespace ams::kern::arch::arm64 {
-
-        using ams::kern::arch::arm::GicDistributor;
-        using ams::kern::arch::arm::GicCpuInterface;
-        using ams::kern::arch::arm::KInterruptController;
-
-    }
-
-#else
-
-    #error "Unknown board for KInterruptController"
-
-#endif
+/* Include the common implementation. */
+#include "../arm/kern_generic_interrupt_controller.inc"
