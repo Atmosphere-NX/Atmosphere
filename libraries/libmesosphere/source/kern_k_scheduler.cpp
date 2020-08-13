@@ -282,7 +282,7 @@ namespace ams::kern {
 
             /* Atomically clear the previous thread if it's our target. */
             KThread *compare = thread;
-            prev_thread.compare_exchange_weak(compare, nullptr);
+            prev_thread.compare_exchange_strong(compare, nullptr);
         }
     }
 
