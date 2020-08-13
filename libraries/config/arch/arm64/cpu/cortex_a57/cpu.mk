@@ -1,5 +1,5 @@
 export ATMOSPHERE_DEFINES  += -DATMOSPHERE_CPU_ARM_CORTEX_A57
-export ATMOSPHERE_SETTINGS += -mtune=cortex-a57
+export ATMOSPHERE_SETTINGS += -march=armv8-a+crc+crypto -mtune=cortex-a57
 export ATMOSPHERE_CFLAGS   +=
 export ATMOSPHERE_CXXFLAGS +=
 export ATMOSPHERE_ASFLAGS  +=
