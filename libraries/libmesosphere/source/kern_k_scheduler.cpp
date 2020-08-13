@@ -276,10 +276,12 @@ namespace ams::kern {
     void KScheduler::ClearPreviousThread(KThread *thread) {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
         for (size_t i = 0; i < cpu::NumCores; ++i) {
-            std::atomic<KThread *> *prev_thread_ptr = reinterpret_cast<std::atomic<KThread *> *>(std::addressof(Kernel::GetScheduler(static_cast<s32>(i)).prev_thread));
-            static_assert(sizeof(*prev_thread_ptr) == sizeof(KThread *));
+            /* Get an atomic reference to the core scheduler's previous thread. */
+            std::atomic_ref<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).prev_thread);
+            static_assert(std::atomic_ref<KThread *>::is_always_lock_free);
 
-            prev_thread_ptr->compare_exchange_weak(thread, nullptr);
+            /* Atomically clear the previous thread if it's our target. */
+            prev_thread.compare_exchange_weak(thread, nullptr);
         }
     }
 
