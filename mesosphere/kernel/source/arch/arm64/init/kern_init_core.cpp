@@ -274,7 +274,7 @@ namespace ams::kern::init {
                     continue;
                 }
 
-                if (cur_phys_addr == 0) {
+                if (cur_size == 0) {
                     cur_phys_addr = region.GetAddress();
                     cur_size      = region.GetSize();
                 } else if (cur_phys_addr + cur_size == region.GetAddress()) {
@@ -296,7 +296,7 @@ namespace ams::kern::init {
             }
 
             /* Map the last block, which we may have skipped. */
-            if (cur_phys_addr != 0) {
+            if (cur_size != 0) {
                 const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
                 ttbr1_table.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
             }
