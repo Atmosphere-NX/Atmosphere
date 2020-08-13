@@ -183,11 +183,6 @@ namespace ams::kern::init {
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_unk_debug_virt_addr), MiscUnknownDebugRegionSize, KMemoryRegionType_KernelMiscUnknownDebug));
             ttbr1_table.Map(misc_unk_debug_virt_addr, MiscUnknownDebugRegionSize, misc_unk_debug_phys_addr, KernelRoDataAttribute, g_initial_page_allocator);
         }
-            constexpr size_t MiscUnknownDebugRegionSize  = PageSize;
-            constexpr size_t MiscUnknownDebugRegionAlign = PageSize;
-            const KVirtualAddress misc_unk_debug_virt_addr = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(MiscUnknownDebugRegionSize, MiscUnknownDebugRegionAlign, KMemoryRegionType_KernelMisc, PageSize);
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_unk_debug_virt_addr), MiscUnknownDebugRegionSize, KMemoryRegionType_KernelMiscUnknownDebug));
-            ttbr1_table.Map(misc_unk_debug_virt_addr, MiscUnknownDebugRegionSize, misc_unk_debug_phys_addr, KernelRoDataAttribute, g_initial_page_allocator);
 
         /* Setup board-specific device physical regions. */
         SetupDevicePhysicalMemoryRegions();
