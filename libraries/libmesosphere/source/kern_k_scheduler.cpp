@@ -281,7 +281,8 @@ namespace ams::kern {
             static_assert(std::atomic_ref<KThread *>::is_always_lock_free);
 
             /* Atomically clear the previous thread if it's our target. */
-            prev_thread.compare_exchange_weak(thread, nullptr);
+            KThread *compare = thread;
+            prev_thread.compare_exchange_weak(compare, nullptr);
         }
     }
 
