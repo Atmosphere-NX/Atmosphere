@@ -65,3 +65,5 @@
 #define AMS_ASSUME(expr) do { if (!static_cast<bool>((expr))) { __builtin_unreachable(); } } while (0)
 
 #define AMS_CURRENT_FUNCTION_NAME __FUNCTION__
+
+#define AMS_INFINITE_LOOP() do { __asm__ __volatile__("" ::: "memory"); } while (1)

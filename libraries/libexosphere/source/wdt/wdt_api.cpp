@@ -81,7 +81,8 @@ namespace ams::wdt {
                 /* Enable the counters. */
                 reg::Write(registers + 0x188, 0x1);
 
-                while (true) { /* ... */ }
+                /* Wait forever until the reboot takes. */
+                AMS_INFINITE_LOOP();
             }
         #endif
 

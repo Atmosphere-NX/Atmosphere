@@ -69,7 +69,7 @@ namespace ams::kern {
 #define MESOSPHERE_UNIMPLEMENTED() MESOSPHERE_PANIC("%s: Unimplemented\n", __PRETTY_FUNCTION__)
 
 #define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()\n");
-#define MESOSPHERE_INIT_ABORT() do { /* ... */ } while (true)
+#define MESOSPHERE_INIT_ABORT() AMS_INFINITE_LOOP()
 
 #define MESOSPHERE_ABORT_UNLESS(expr)               \
     ({                                              \

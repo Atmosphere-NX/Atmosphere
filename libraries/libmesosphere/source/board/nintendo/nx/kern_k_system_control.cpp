@@ -517,7 +517,7 @@ namespace ams::kern::board::nintendo::nx {
         }
         u32 dummy;
         smc::init::ReadWriteRegister(std::addressof(dummy), 0x7000E400, 0x10, 0x10);
-        while (true) { /* ... */ }
+        AMS_INFINITE_LOOP();
     }
 
     /* User access. */

@@ -227,7 +227,7 @@ namespace ams::kern::board::nintendo::nx::smc {
     void NORETURN Panic(u32 color) {
         SecureMonitorArguments args = { FunctionId_Panic, color };
         CallPrivilegedSecureMonitorFunction(args);
-        while (true) { /* ... */ }
+        AMS_INFINITE_LOOP();
     }
 
     void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args) {

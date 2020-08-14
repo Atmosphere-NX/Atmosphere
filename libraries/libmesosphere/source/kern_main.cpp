@@ -139,7 +139,7 @@ namespace ams::kern {
 
         /* Main() is done, and we should never get to this point. */
         MESOSPHERE_PANIC("Main Thread continued after exit.");
-        while (true) { /* ... */ }
+        AMS_INFINITE_LOOP();
     }
 
 }
