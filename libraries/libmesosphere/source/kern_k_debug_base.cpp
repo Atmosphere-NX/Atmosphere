@@ -471,8 +471,9 @@ namespace ams::kern {
         KScopedLightLock lk(this->lock);
 
         /* Get the thread from its id. */
-        KScopedAutoObject thread = KThread::GetThreadFromId(thread_id);
-        R_UNLESS(thread.IsNotNull(), svc::ResultInvalidId());
+        KThread *thread = KThread::GetThreadFromId(thread_id);
+        R_UNLESS(thread != nullptr, svc::ResultInvalidId());
+        ON_SCOPE_EXIT { thread->Close(); };
 
         /* Verify that the thread is owned by our process. */
         R_UNLESS(this->process == thread->GetOwnerProcess(), svc::ResultInvalidId());
@@ -482,7 +483,7 @@ namespace ams::kern {
 
         /* Check that the thread is not the current one. */
         /* NOTE: Nintendo does not check this, and thus the following loop will deadlock. */
-        R_UNLESS(thread.GetPointerUnsafe() != GetCurrentThreadPointer(), svc::ResultInvalidId());
+        R_UNLESS(thread != GetCurrentThreadPointer(), svc::ResultInvalidId());
 
         /* Try to get the thread context until the thread isn't current on any core. */
         while (true) {
@@ -495,7 +496,7 @@ namespace ams::kern {
             if (thread->GetRawState() != KThread::ThreadState_Runnable) {
                 bool current = false;
                 for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
-                    if (thread.GetPointerUnsafe() == Kernel::GetCurrentContext(i).current_thread) {
+                    if (thread == Kernel::GetCurrentContext(i).current_thread) {
                         current = true;
                     }
                     break;
@@ -508,7 +509,7 @@ namespace ams::kern {
             }
 
             /* Get the thread context. */
-            return this->GetThreadContextImpl(out, thread.GetPointerUnsafe(), context_flags);
+            return this->GetThreadContextImpl(out, thread, context_flags);
         }
     }
 
@@ -517,8 +518,9 @@ namespace ams::kern {
         KScopedLightLock lk(this->lock);
 
         /* Get the thread from its id. */
-        KScopedAutoObject thread = KThread::GetThreadFromId(thread_id);
-        R_UNLESS(thread.IsNotNull(), svc::ResultInvalidId());
+        KThread *thread = KThread::GetThreadFromId(thread_id);
+        R_UNLESS(thread != nullptr, svc::ResultInvalidId());
+        ON_SCOPE_EXIT { thread->Close(); };
 
         /* Verify that the thread is owned by our process. */
         R_UNLESS(this->process == thread->GetOwnerProcess(), svc::ResultInvalidId());
@@ -528,7 +530,7 @@ namespace ams::kern {
 
         /* Check that the thread is not the current one. */
         /* NOTE: Nintendo does not check this, and thus the following loop will deadlock. */
-        R_UNLESS(thread.GetPointerUnsafe() != GetCurrentThreadPointer(), svc::ResultInvalidId());
+        R_UNLESS(thread != GetCurrentThreadPointer(), svc::ResultInvalidId());
 
         /* Try to get the thread context until the thread isn't current on any core. */
         while (true) {
@@ -541,7 +543,7 @@ namespace ams::kern {
             if (thread->GetRawState() != KThread::ThreadState_Runnable) {
                 bool current = false;
                 for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
-                    if (thread.GetPointerUnsafe() == Kernel::GetCurrentContext(i).current_thread) {
+                    if (thread == Kernel::GetCurrentContext(i).current_thread) {
                         current = true;
                     }
                     break;
@@ -560,7 +562,7 @@ namespace ams::kern {
             }
 
             /* Set the thread context. */
-            return this->SetThreadContextImpl(ctx, thread.GetPointerUnsafe(), context_flags);
+            return this->SetThreadContextImpl(ctx, thread, context_flags);
         }
     }
 

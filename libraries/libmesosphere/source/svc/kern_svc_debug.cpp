@@ -291,8 +291,9 @@ namespace ams::kern::svc {
             R_UNLESS(debug.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Get the thread from its id. */
-            KScopedAutoObject thread = KThread::GetThreadFromId(thread_id);
-            R_UNLESS(thread.IsNotNull(), svc::ResultInvalidThreadId());
+            KThread *thread = KThread::GetThreadFromId(thread_id);
+            R_UNLESS(thread != nullptr, svc::ResultInvalidThreadId());
+            ON_SCOPE_EXIT { thread->Close(); };
 
             /* Get the process from the debug object. */
             KScopedAutoObject process = debug->GetProcess();
