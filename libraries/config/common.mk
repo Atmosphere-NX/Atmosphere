@@ -108,6 +108,7 @@ INCLUDES     := include
 
 GENERAL_SOURCE_DIRS=$1 $(foreach d,$(filter-out $1/arch $1/board $1/os $1/cpu $1,$(wildcard $1/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
 SPECIFIC_SOURCE_DIRS=$(if $(wildcard $1/$2/$3/.*),$1/$2/$3 $(call DIR_WILDCARD,$1/$2/$3),$(if $(wildcard $1/$2/generic/.*), $1/$2/generic $(call DIR_WILDCARD,$1/$2/generic),))
+UNFILTERED_SOURCE_DIRS=$1 $(foreach d,$(wildcard $1/*),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
 
 ALL_SOURCE_DIRS=$(call GENERAL_SOURCE_DIRS,$1) \
                 $(call SPECIFIC_SOURCE_DIRS,$1,arch,$(ATMOSPHERE_ARCH_DIR)) \

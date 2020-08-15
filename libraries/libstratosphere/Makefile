@@ -26,6 +26,7 @@ ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
 LDFLAGS     := -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) -Wl,-Map,$(notdir $*.map)
 
 SOURCES     += $(call ALL_SOURCE_DIRS,../libvapours/source)
+SOURCES     += $(call UNFILTERED_SOURCE_DIRS,source/os)
 
 LIBS        := -lnx
 
