@@ -15,9 +15,7 @@
  */
 
 #pragma once
-#include <switch/types.h>
-#include <switch/kernel/event.h>
-#include <switch/services/sm.h>
+#include <switch.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,13 +1,14 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <switch/types.h>
 #include <switch/result.h>
 #include <switch/kernel/mutex.h>
 #include <switch/sf/service.h>
 #include <switch/services/sm.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef struct ServiceGuard {
     Mutex mutex;
