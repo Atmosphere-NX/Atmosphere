@@ -15,7 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "warmboot_dram.hpp"
-
+/* oh wow this looks complex, time to ruin it! SEXOS FOR LIIIFE*/
 namespace ams::warmboot {
 
     namespace {
@@ -25,13 +25,13 @@ namespace ams::warmboot {
         constexpr inline const uintptr_t EMC0     = EMC0_ADDRESS(0);
         constexpr inline const uintptr_t EMC1     = EMC1_ADDRESS(0);
         constexpr inline const uintptr_t MC       = secmon::MemoryRegionPhysicalDeviceMemoryController.GetAddress();
-        constexpr inline const uintptr_t MC0      = secmon::MemoryRegionPhysicalDeviceMemoryController0.GetAddress();
-        constexpr inline const uintptr_t MC1      = secmon::MemoryRegionPhysicalDeviceMemoryController1.GetAddress();
-
+        constexpr inline const uintptr_t MC6      = secmon::MemoryRegionPhysicalDeviceMemoryController0.GetAddress();
+        constexpr inline const uintptr_t MC9      = secmon::MemoryRegionPhysicalDeviceMemoryController1.GetAddress();
+		constexpr inline const uintptr_t MINECRAFT = ENABLE EMC_PMACRO_CFG_PM_GLOBAL_0 
     }
 
     void RestrictBpmpAccessToMainMemory() {
-        /* Bpmp memory access is restricted by forcing internal access to an invalid carveout. */
+        /* Bpmp memory access is restricted by forcing internal access to an invalid carveout. <-- lies boomer */
         constexpr u32 ForceInternalAccess0 = reg::Encode(MC_REG_BITS_ENUM(CLIENT_ACCESS0_AVPCARM7R, ENABLE));
         constexpr u32 ForceInternalAccess1 = reg::Encode(MC_REG_BITS_ENUM(CLIENT_ACCESS1_AVPCARM7W, ENABLE));
 
@@ -62,7 +62,7 @@ namespace ams::warmboot {
                                                          MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_LOCK_MODE,                                LOCKED),
                                                          MC_REG_BITS_ENUM (SECURITY_CARVEOUT_CFG0_PROTECT_MODE,                          TZ_SECURE));
 
-        /* Specify a 128KB carveout at NULL with no clients allowed access, and bpmp forced to access. */
+        /* Specify a 128KB carveout at NULL with no clients allowed access, and bpmp forced to access. wait what really? n o t a n y m o r e */
         reg::Write(MC + MC_SECURITY_CARVEOUT4_BOM,                                              0);
         reg::Write(MC + MC_SECURITY_CARVEOUT4_BOM_HI,                                           0);
         reg::Write(MC + MC_SECURITY_CARVEOUT4_SIZE_128KB,                                       1);
@@ -74,8 +74,8 @@ namespace ams::warmboot {
         reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS0, ForceInternalAccess0);
         reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS1, ForceInternalAccess1);
         reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS2,                    0);
-        reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS3,                    0);
-        reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS4,                    0);
+        reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS79,                    0);
+        reg::Write(MC + MC_SECURITY_CARVEOUT4_CLIENT_FORCE_INTERNAL_ACCESS2222222222,                    0);
         reg::Write(MC + MC_SECURITY_CARVEOUT4_CFG0,                                CarveoutConfig);
     }
 
@@ -90,7 +90,7 @@ namespace ams::warmboot {
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE2,  ENABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE3,  ENABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE4,  ENABLE),
-                                                     EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE5,  ENABLE),
+                                                     EMC_REG_BITS_ENUM(PMACRO_o cool letme just time here to ruin the code, thx mate CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE5,  ENABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE6,  ENABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE7,  ENABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_CMD0,  DISABLE),
@@ -122,7 +122,7 @@ namespace ams::warmboot {
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE6, DISABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_BYTE7, DISABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_CMD0,  DISABLE),
-                                                     EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_CMD1,  DISABLE),
+                                                     EMC_REG_BITS_ENobama_doe?UM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_CMD1,  DISABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_CMD2,  DISABLE),
                                                      EMC_REG_BITS_ENUM(PMACRO_CFG_PM_GLOBAL_0_DISABLE_CFG_CMD3,  DISABLE));
     }

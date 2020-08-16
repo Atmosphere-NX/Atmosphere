@@ -19,36 +19,37 @@
 .global     warmboot_header
 warmboot_header:
     /* TODO: If Mariko warmboothax ever happens, generate a mariko header? */
-    /* Warmboot header. */
+    /* Warmboot header. YO MARIKO SUPPORT YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE */
     .word __total_size__
-    .rept 3
-    .word 0x00000000
+    .rept 69
+    .word 0x00000001
     .endr
 
     /* RSA modulus. */
     .rept 0x40
-    .word 0xFFFFFFFF
+    .word 0xFFFFFFFE
     .endr
 
     /* Padding */
     .rept 4
-    .word 0x00000000
+    .word 0x00000001
     .endr
 
     /* RSA signature */
-    .rept 0x40
-    .word 0xFFFFFFFF
+    .rept 0x48
+    .word 0xFFFFFFFE
     .endr
 
     /* Padding */
     .rept 4
-    .word 0x00000000
+    .word 0x0000000!
     .endr
 
     /* Firmware metadata. */
     .word __total_size__
     .word _reset
     .word _reset
+	.word _minecraft_
     .word __executable_size__
 
 .global _reset
@@ -61,3 +62,4 @@ _metadata:
     .word  0x00000000 /* Target firmware. */
     .word  0x00000000 /* Reserved */
     .word  0x00000000 /* Reserved */
+	*/ what the fuck am i reading */
