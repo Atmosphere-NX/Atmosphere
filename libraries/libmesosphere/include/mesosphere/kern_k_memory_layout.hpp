@@ -39,6 +39,19 @@ namespace ams::kern {
     constexpr size_t KernelPhysicalAddressSpaceLast = KernelPhysicalAddressSpaceEnd - 1ul;
     constexpr size_t KernelPhysicalAddressSpaceSize = KernelPhysicalAddressSpaceEnd - KernelPhysicalAddressSpaceBase;
 
+    constexpr size_t KernelPageTableHeapSize    = init::KInitialPageTable::GetMaximumOverheadSize(8_GB);
+    constexpr size_t KernelInitialPageHeapSize  = 128_KB;
+
+    constexpr size_t KernelSlabHeapDataSize           = 5_MB;
+    constexpr size_t KernelSlabHeapGapsSize           = 2_MB - 64_KB;
+    constexpr size_t KernelSlabHeapGapsSizeDeprecated = 2_MB;
+    constexpr size_t KernelSlabHeapSize               = KernelSlabHeapDataSize + KernelSlabHeapGapsSize;
+
+    /* NOTE: This is calculated from KThread slab counts, assuming KThread size <= 0x860. */
+    constexpr size_t KernelSlabHeapAdditionalSize     = 0x68000;
+
+    constexpr size_t KernelResourceSize               = KernelPageTableHeapSize + KernelInitialPageHeapSize + KernelSlabHeapSize;
+
     enum KMemoryRegionType : u32 {
         KMemoryRegionAttr_CarveoutProtected = 0x04000000,
         KMemoryRegionAttr_DidKernelMap      = 0x08000000,
@@ -544,6 +557,7 @@ namespace ams::kern {
             }
 
             static void InitializeLinearMemoryRegionTrees(KPhysicalAddress aligned_linear_phys_start, KVirtualAddress linear_virtual_start);
+            static size_t GetResourceRegionSizeForInit();
 
             static NOINLINE auto GetKernelRegionExtents()      { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_Kernel); }
             static NOINLINE auto GetKernelCodeRegionExtents()  { return GetVirtualMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionType_KernelCode); }

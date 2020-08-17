@@ -74,6 +74,10 @@ namespace ams::kern::arch::arm64::init {
             static ALWAYS_INLINE void ClearNewPageTable(KPhysicalAddress address) {
                 ClearPhysicalMemory(address, PageSize);
             }
+        public:
+            static consteval size_t GetMaximumOverheadSize(size_t size) {
+                return (util::DivideUp(size, L1BlockSize) + util::DivideUp(size, L2BlockSize)) * PageSize;
+            }
         private:
             size_t NOINLINE GetBlockCount(KVirtualAddress virt_addr, size_t size, size_t block_size) {
                 const KVirtualAddress end_virt_addr = virt_addr + size;

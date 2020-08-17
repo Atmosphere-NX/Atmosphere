@@ -28,31 +28,15 @@ namespace ams::kern::init::loader {
 
     namespace {
 
-        constexpr size_t KernelResourceRegionSize = 0x1728000;
-        constexpr size_t ExtraKernelResourceSize  = 0x68000;
-        static_assert(ExtraKernelResourceSize + KernelResourceRegionSize == 0x1790000);
-        constexpr size_t KernelResourceReduction_10_0_0 = 0x10000;
+        static_assert(InitialProcessBinarySizeMax <= KernelResourceSize);
 
-        constexpr size_t InitialPageTableRegionSize = 0x200000;
+        constexpr size_t InitialPageTableRegionSizeMax = 2_MB;
+        static_assert(InitialPageTableRegionSizeMax < KernelPageTableHeapSize + KernelInitialPageHeapSize);
 
         /* Global Allocator. */
         KInitialPageAllocator g_initial_page_allocator;
 
         KInitialPageAllocator::State g_final_page_allocator_state;
-
-        size_t GetResourceRegionSize() {
-            /* Decide if Kernel should have enlarged resource region. */
-            const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-            size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
-            static_assert(KernelResourceRegionSize > InitialProcessBinarySizeMax);
-            static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
-
-            /* 10.0.0 reduced the kernel resource region size by 64K. */
-            if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-                resource_region_size -= KernelResourceReduction_10_0_0;
-            }
-            return resource_region_size;
-        }
 
         void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout) {
             KPhysicalAddress correct_base = KSystemControl::Init::GetKernelPhysicalBaseAddress(base_address);
@@ -276,7 +260,7 @@ namespace ams::kern::init::loader {
         const uintptr_t init_array_end_offset = layout->init_array_end_offset;
 
         /* Determine the size of the resource region. */
-        const size_t resource_region_size = GetResourceRegionSize();
+        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
 
         /* Setup the INI1 header in memory for the kernel. */
         const uintptr_t ini_end_address  = base_address + ini_load_offset + resource_region_size;
@@ -300,7 +284,7 @@ namespace ams::kern::init::loader {
         KInitialPageTable ttbr1_table(g_initial_page_allocator.Allocate());
 
         /* Setup initial identity mapping. TTBR1 table passed by reference. */
-        SetupInitialIdentityMapping(ttbr1_table, base_address, bss_end_offset, ini_end_address, InitialPageTableRegionSize, g_initial_page_allocator);
+        SetupInitialIdentityMapping(ttbr1_table, base_address, bss_end_offset, ini_end_address, InitialPageTableRegionSizeMax, g_initial_page_allocator);
 
         /* Generate a random slide for the kernel's base address. */
         const KVirtualAddress virtual_base_address = GetRandomKernelBaseAddress(ttbr1_table, base_address, bss_end_offset);

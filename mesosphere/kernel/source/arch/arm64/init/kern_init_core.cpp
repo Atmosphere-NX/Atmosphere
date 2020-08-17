@@ -31,30 +31,11 @@ namespace ams::kern::init {
 
     namespace {
 
-        constexpr size_t KernelResourceRegionSize = 0x1728000;
-        constexpr size_t ExtraKernelResourceSize  = 0x68000;
-        static_assert(ExtraKernelResourceSize + KernelResourceRegionSize == 0x1790000);
-        constexpr size_t KernelResourceReduction_10_0_0 = 0x10000;
-
         /* Global Allocator. */
         KInitialPageAllocator g_initial_page_allocator;
 
         /* Global initial arguments array. */
         KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
-
-        size_t GetResourceRegionSize() {
-            /* Decide if Kernel should have enlarged resource region. */
-            const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-            size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
-            static_assert(KernelResourceRegionSize > InitialProcessBinarySizeMax);
-            static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
-
-            /* 10.0.0 reduced the kernel resource region size by 64K. */
-            if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-                resource_region_size -= KernelResourceReduction_10_0_0;
-            }
-            return resource_region_size;
-        }
 
         /* Page table attributes. */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR,  PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
@@ -152,8 +133,8 @@ namespace ams::kern::init {
         const KVirtualAddress stack_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(StackRegionSize, StackRegionAlign, KMemoryRegionType_Kernel);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_region_start), StackRegionSize, KMemoryRegionType_KernelStack));
 
-        /* Decide if Kernel should have enlarged resource region (slab region + page table heap region). */
-        const size_t resource_region_size = GetResourceRegionSize();
+        /* Determine the size of the resource region. */
+        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
 
         /* Determine the size of the slab region. */
         const size_t slab_region_size = util::AlignUp(CalculateTotalSlabHeapSize(), PageSize);
