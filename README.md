@@ -1,3 +1,5 @@
+This fork add ForceCloseCheatProcess to dmnt:cht service to enable reloading of cheatcode and detaching dmnt from game process without relaunching the game.
+
 
 ![Banner](img/banner.png?raw=true)
 =====
