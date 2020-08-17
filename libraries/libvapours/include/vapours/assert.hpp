@@ -32,7 +32,7 @@ namespace ams::diag {
 #define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)
 #else
 #define AMS_CALL_ASSERT_FAIL_IMPL(cond, ...) ::ams::diag::AssertionFailureImpl("", 0, "", "", 0)
-#define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl()
+#define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl(); AMS_UNUSED(cond, ## __VA_ARGS__)
 #endif
 
 #ifdef AMS_ENABLE_ASSERTIONS

@@ -89,7 +89,13 @@ namespace ams::secmon {
 
     constexpr inline const SecureMonitorConfiguration DefaultSecureMonitorConfiguration = {
         .target_firmware = ams::TargetFirmware_Current,
+        .key_generation  = {},
+        .hardware_type   = {},
+        .soc_type        = {},
+        .hardware_state  = {},
+        .pad_0B          = {},
         .flags           = SecureMonitorConfigurationFlag_Default,
+        .reserved        = {},
     };
 
 }

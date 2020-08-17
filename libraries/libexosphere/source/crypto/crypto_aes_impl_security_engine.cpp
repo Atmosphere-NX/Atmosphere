@@ -33,6 +33,8 @@ namespace ams::crypto::impl {
     template<size_t KeySize>
     void AesImpl<KeySize>::Initialize(const void *key, size_t key_size, bool is_encrypt) {
         static_assert(IsSupportedKeySize(KeySize));
+        AMS_ASSERT(key_size == sizeof(int));
+        AMS_UNUSED(is_encrypt);
 
         /* Set the security engine keyslot. */
         this->slot = *static_cast<const int *>(key);
@@ -50,9 +52,11 @@ namespace ams::crypto::impl {
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
             /* TODO: se::EncryptAes192(dst, dst_size, this->slot, src, src_size); */
+            AMS_UNUSED(dst, dst_size, src, src_size);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
             /* TODO: se::EncryptAes256(dst, dst_size, this->slot, src, src_size); */
+            AMS_UNUSED(dst, dst_size, src, src_size);
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);
@@ -71,9 +75,11 @@ namespace ams::crypto::impl {
         } else if constexpr (KeySize == 24) {
             /* Aes 192. */
             /* TODO: se::DecryptAes192(dst, dst_size, this->slot, src, src_size); */
+            AMS_UNUSED(dst, dst_size, src, src_size);
         } else if constexpr (KeySize == 32) {
             /* Aes 256. */
             /* TODO: se::DecryptAes256(dst, dst_size, this->slot, src, src_size); */
+            AMS_UNUSED(dst, dst_size, src, src_size);
         } else {
             /* Invalid key size. */
             static_assert(!std::is_same<AesImpl<KeySize>, AesImpl<KeySize>>::value);

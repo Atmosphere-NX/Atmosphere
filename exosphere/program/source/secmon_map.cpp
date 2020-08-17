@@ -41,6 +41,7 @@ namespace ams::secmon {
 
         constexpr void UnmapBootCodeImpl(u64 *l1, u64 *l2, u64 *l3, uintptr_t boot_code, size_t boot_code_size) {
             /* Unmap the L3 entries corresponding to the boot code. */
+            AMS_UNUSED(l1, l2);
             InvalidateL3Entries(l3, boot_code, boot_code_size);
         }
 

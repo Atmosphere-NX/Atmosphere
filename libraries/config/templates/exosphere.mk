@@ -8,7 +8,7 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../common.mk
 #---------------------------------------------------------------------------------
 ifeq ($(strip $(ATMOSPHERE_ARCH_NAME)),arm64)
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_EXOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -mgeneral-regs-only -ffixed-x18 -Os -Werror -fno-non-call-exceptions
+SETTINGS    := $(ATMOSPHERE_SETTINGS) -mgeneral-regs-only -ffixed-x18 -Os -Wextra -Werror -fno-non-call-exceptions
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)

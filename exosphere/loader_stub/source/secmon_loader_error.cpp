@@ -19,10 +19,12 @@
 namespace ams::diag {
 
     NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) {
+        AMS_UNUSED(file, line, func, expr, value, format);
         ams::secmon::loader::ErrorReboot();
     }
 
     NORETURN void AbortImpl(const char *file, int line, const char *func, const char *expr, u64 value) {
+        AMS_UNUSED(file, line, func, expr, value);
         ams::secmon::loader::ErrorReboot();
     }
 
