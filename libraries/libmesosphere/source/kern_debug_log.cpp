@@ -498,6 +498,8 @@ namespace ams::kern {
 
                 R_TRY(PutUserString(user_str, len));
             }
+        #else
+            MESOSPHERE_UNUSED(user_str, len);
         #endif
 
         return ResultSuccess();

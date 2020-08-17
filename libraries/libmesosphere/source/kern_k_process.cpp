@@ -493,6 +493,9 @@ namespace ams::kern {
         /* Lock ourselves, to prevent concurrent access. */
         KScopedLightLock lk(this->state_lock);
 
+        /* Address and size parameters aren't used. */
+        MESOSPHERE_UNUSED(address, size);
+
         /* Try to find an existing info for the memory. */
         KSharedMemoryInfo *info = nullptr;
         for (auto it = this->shared_memory_list.begin(); it != this->shared_memory_list.end(); ++it) {
@@ -523,6 +526,9 @@ namespace ams::kern {
     void KProcess::RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
         /* Lock ourselves, to prevent concurrent access. */
         KScopedLightLock lk(this->state_lock);
+
+        /* Address and size parameters aren't used. */
+        MESOSPHERE_UNUSED(address, size);
 
         /* Find an existing info for the memory. */
         KSharedMemoryInfo *info = nullptr;

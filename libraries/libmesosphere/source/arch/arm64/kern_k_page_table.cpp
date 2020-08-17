@@ -160,6 +160,7 @@ namespace ams::kern::arch::arm64 {
 
     void KPageTable::Initialize(s32 core_id) {
         /* Nothing actually needed here. */
+        MESOSPHERE_UNUSED(core_id);
     }
 
     Result KPageTable::InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end) {
@@ -181,7 +182,8 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KPageTable::InitializeForProcess(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
-        /* Convert the address space type to a width. */
+        /* The input ID isn't actually used. */
+        MESOSPHERE_UNUSED(id);
 
         /* Get an ASID */
         this->asid = g_asid_manager.Reserve();
@@ -363,6 +365,9 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L1BlockSize));
         MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L1BlockSize));
+
+        /* Allocation is never needed for L1 block mapping. */
+        MESOSPHERE_UNUSED(page_list, reuse_ll);
 
         auto &impl = this->GetImpl();
 

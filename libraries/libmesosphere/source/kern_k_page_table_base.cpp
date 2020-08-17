@@ -2761,8 +2761,11 @@ namespace ams::kern {
                 lk1.emplace(lock_1);
             }
 
-            /* Check memory state. */
+            /* Check memory state for source. */
             R_TRY(src_page_table.CheckMemoryStateContiguous(src_addr, size, src_state_mask, src_state, src_test_perm, src_test_perm, src_attr_mask | KMemoryAttribute_Uncached, src_attr));
+
+            /* Destination state is intentionally unchecked. */
+            MESOSPHERE_UNUSED(dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr);
 
             /* Get implementations. */
             auto &src_impl = src_page_table.GetImpl();

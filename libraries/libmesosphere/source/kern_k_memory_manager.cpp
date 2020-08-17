@@ -203,7 +203,6 @@ namespace ams::kern {
         }
 
         /* Only succeed if we allocated as many pages as we wanted. */
-        MESOSPHERE_ASSERT(num_pages >= 0);
         R_UNLESS(num_pages == 0, svc::ResultOutOfMemory());
 
         /* We succeeded! */

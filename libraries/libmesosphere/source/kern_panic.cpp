@@ -126,6 +126,8 @@ namespace ams::kern {
             MESOSPHERE_RELEASE_VLOG(format, vl);
             MESOSPHERE_RELEASE_LOG("\n");
             va_end(vl);
+        #else
+            MESOSPHERE_UNUSED(file, line, format);
         #endif
 
         StopSystem();

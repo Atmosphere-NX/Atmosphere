@@ -26,6 +26,10 @@ namespace ams::kern::svc {
             {
                 /* TODO: Implement Kernel Debugging. */
             }
+            #else
+            {
+                MESOSPHERE_UNUSED(kern_debug_type, arg0, arg1, arg2);
+            }
             #endif
         }
 
@@ -46,6 +50,10 @@ namespace ams::kern::svc {
                     default:
                         break;
                 }
+            }
+            #else
+            {
+                MESOSPHERE_UNUSED(kern_trace_state);
             }
             #endif
         }

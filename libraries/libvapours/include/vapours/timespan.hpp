@@ -61,7 +61,7 @@ namespace ams {
         private:
             TimeSpanType ts;
         public:
-            constexpr ALWAYS_INLINE TimeSpan(ZeroTag z = nullptr) : ts(TimeSpanType::FromNanoSeconds(0)) { /* ... */ }
+            constexpr ALWAYS_INLINE TimeSpan(ZeroTag z = nullptr) : ts(TimeSpanType::FromNanoSeconds(0)) { AMS_UNUSED(z); /* ... */ }
             constexpr ALWAYS_INLINE TimeSpan(const TimeSpanType &t) : ts(t) { /* ... */ }
 
             template<typename R, typename P>

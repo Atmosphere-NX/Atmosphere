@@ -37,6 +37,7 @@ namespace ams::kern::arch::arm64::cpu {
                 constexpr KThreadTerminationInterruptHandler() : KInterruptHandler() { /* ... */ }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
                     return nullptr;
                 }
         };
@@ -68,6 +69,8 @@ namespace ams::kern::arch::arm64::cpu {
 
                 /* Nintendo misuses this per their own API, but it's functional. */
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
+
                     if (this->which < 0) {
                         this->counter = cpu::GetCycleCounter();
                     } else {
@@ -145,6 +148,7 @@ namespace ams::kern::arch::arm64::cpu {
                 }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
                     this->ProcessOperation();
                     return nullptr;
                 }

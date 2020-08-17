@@ -188,6 +188,10 @@ namespace ams::kern {
         }
 
         void SetupCoreLocalRegionMemoryRegions(KInitialPageTable &page_table, KInitialPageAllocator &page_allocator) {
+            /* NOTE: Nintendo passes page table here to use num_l1_entries; we don't use this at present. */
+            MESOSPHERE_UNUSED(page_table);
+
+            /* Get the virtual address of the core local reigon. */
             const KVirtualAddress core_local_virt_start = GetCoreLocalRegionVirtualAddress();
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(core_local_virt_start), CoreLocalRegionSize, KMemoryRegionType_CoreLocal));
 

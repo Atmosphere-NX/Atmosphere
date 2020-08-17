@@ -139,7 +139,7 @@ namespace ams::svc::codegen::impl {
                     template<typename Operation>
                     static constexpr void GenerateCodeForPrepareForKernelProcedureToSvcInvocation(MetaCodeGenerator &mcg) {
                         static_assert(Operation::Kind == OperationKind::PackAndUnpack);
-                        /* ... */
+                        AMS_UNUSED(mcg);
                     }
 
                     template<typename Operation>

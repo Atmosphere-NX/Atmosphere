@@ -353,7 +353,7 @@ namespace ams::svc::codegen::impl {
             };
 
             template<auto Allocator, typename FirstOperation, typename...OtherOperations>
-            static constexpr auto GetModifiedOperations(std::tuple<FirstOperation, OtherOperations...> ops) {
+            static constexpr auto GetModifiedOperations(std::tuple<FirstOperation, OtherOperations...>) {
                 constexpr size_t ModifyRegister = [] {
                     auto allocator = Allocator;
                     return allocator.AllocateFirstFree();
@@ -535,7 +535,11 @@ namespace ams::svc::codegen::impl {
                 GenerateCodeForMetaCode<CodeGenerator, BeforeMetaCode>();
                 ON_SCOPE_EXIT { GenerateCodeForMetaCode<CodeGenerator, AfterMetaCode>(); };
 
+                /* Cast the generated function to the generic funciton pointer type. */
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wcast-function-type"
                 return reinterpret_cast<ReturnType (*)()>(Function)();
+                #pragma GCC diagnostic pop
             }
 
 #pragma GCC pop_options

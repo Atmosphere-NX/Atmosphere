@@ -267,12 +267,14 @@ namespace ams::util {
                 }
 
                 void splice(const_iterator pos, IntrusiveListImpl &o, const_iterator first) {
+                    AMS_UNUSED(o);
                     const_iterator last(first);
                     std::advance(last, 1);
                     splice_impl(pos, first, last);
                 }
 
                 void splice(const_iterator pos, IntrusiveListImpl &o, const_iterator first, const_iterator last) {
+                    AMS_UNUSED(o);
                     splice_impl(pos, first, last);
                 }
 

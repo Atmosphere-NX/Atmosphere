@@ -62,7 +62,7 @@ namespace ams::kern {
 
                     /* Allocate memory for the process. */
                     auto &mm = Kernel::GetMemoryManager();
-                    const auto pool = static_cast<KMemoryManager::Pool>(reader.UsesSecureMemory() ? KMemoryManager::Pool_System : KSystemControl::GetInitialProcessBinaryPool());
+                    const auto pool = reader.UsesSecureMemory() ? KMemoryManager::Pool_System : static_cast<KMemoryManager::Pool>(KSystemControl::GetInitialProcessBinaryPool());
                     MESOSPHERE_R_ABORT_UNLESS(mm.Allocate(std::addressof(pg), params.code_num_pages, KMemoryManager::EncodeOption(pool, KMemoryManager::Direction_FromFront)));
 
                     {

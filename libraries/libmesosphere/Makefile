@@ -9,7 +9,7 @@ include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
 PRECOMPILED_HEADERS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/include/mesosphere.hpp
 
 DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_MESOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Werror -fno-non-call-exceptions
+SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2 -mgeneral-regs-only -ffixed-x18 -Wextra -Werror -fno-non-call-exceptions
 CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit -flto
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)

@@ -55,6 +55,7 @@ namespace ams::crypto::impl {
 
     size_t XtsModeImpl::FinalizeEncryption(void *dst, size_t dst_size) {
         AMS_ASSERT(this->state == State_Processing);
+        AMS_UNUSED(dst_size);
 
         u8 *dst_u8 = static_cast<u8 *>(dst);
         size_t processed = 0;
@@ -80,6 +81,7 @@ namespace ams::crypto::impl {
 
     size_t XtsModeImpl::FinalizeDecryption(void *dst, size_t dst_size) {
         AMS_ASSERT(this->state == State_Processing);
+        AMS_UNUSED(dst_size);
 
         u8 *dst_u8 = static_cast<u8 *>(dst);
         size_t processed = 0;
@@ -131,6 +133,8 @@ namespace ams::crypto::impl {
     }
 
     size_t XtsModeImpl::ProcessRemainingData(u8 *dst, const u8 *src, size_t size) {
+        AMS_UNUSED(dst);
+
         std::memcpy(this->buffer, src, size);
         this->num_buffered = size;
 

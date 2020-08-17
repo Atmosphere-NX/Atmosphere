@@ -31,6 +31,9 @@ namespace ams::kern {
             template<typename U>
             constexpr ALWAYS_INLINE explicit KTypedAddress(U *ptr) : address(reinterpret_cast<uintptr_t>(ptr)) { /* ... */ }
 
+            /* Copy constructor. */
+            constexpr ALWAYS_INLINE KTypedAddress(const KTypedAddress &rhs) : address(rhs.address) { /* ... */ }
+
             /* Assignment operator. */
             constexpr ALWAYS_INLINE KTypedAddress operator=(KTypedAddress rhs) {
                 this->address = rhs.address;

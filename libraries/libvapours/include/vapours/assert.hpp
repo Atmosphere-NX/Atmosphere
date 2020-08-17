@@ -16,15 +16,6 @@
 #pragma once
 #include <vapours/common.hpp>
 
-namespace ams::impl {
-
-    template<typename... ArgTypes>
-    constexpr ALWAYS_INLINE void UnusedImpl(ArgTypes... args) {
-        (static_cast<void>(args), ...);
-    }
-
-}
-
 namespace ams::diag {
 
     NORETURN NOINLINE void AssertionFailureImpl(const char *file, int line, const char *func, const char *expr, u64 value, const char *format, ...) __attribute__((format(printf, 6, 7)));
@@ -35,8 +26,6 @@ namespace ams::diag {
     NORETURN NOINLINE void AbortImpl();
 
 }
-
-#define AMS_UNUSED(...) ::ams::impl::UnusedImpl(__VA_ARGS__)
 
 #ifdef AMS_ENABLE_DEBUG_PRINT
 #define AMS_CALL_ASSERT_FAIL_IMPL(cond, ...) ::ams::diag::AssertionFailureImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)

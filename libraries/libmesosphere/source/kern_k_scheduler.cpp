@@ -28,6 +28,7 @@ namespace ams::kern {
                 constexpr KSchedulerInterruptTask() : KInterruptTask() { /* ... */ }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
                     return GetDummyInterruptTask();
                 }
 

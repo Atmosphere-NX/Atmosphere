@@ -357,6 +357,7 @@ namespace ams::kern::init {
             case ID:                                           \
                 cpu::SetDbgWcr##ID##El1(__VA_ARGS__);          \
                 cpu::SetDbgWvr##ID##El1(__VA_ARGS__);          \
+            [[fallthrough]];
 
         #define MESOSPHERE_INITIALIZE_BREAKPOINT_CASE(ID, ...) \
             case ID:                                           \

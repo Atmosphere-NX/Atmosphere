@@ -157,6 +157,7 @@ namespace ams::kern {
                 case RegionType::OnMemoryBootImage:
                 case RegionType::DTB:
                     R_TRY(page_table->MapRegion(MemoryRegions[static_cast<u32>(type)], perm));
+                    break;
                 default:
                     return svc::ResultNotFound();
             }

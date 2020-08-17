@@ -53,6 +53,10 @@ namespace ams::kern {
                     this->msg_buffer_end       = dst_address + sizeof(u32) * out_offset;
                     this->msg_buffer_space_end = dst_address + msg_size;
 
+                    /* NOTE: Nintendo calculates the receive list index here using the special header. */
+                    /* We pre-calculate it in the caller, and pass it as a parameter. */
+                    MESOSPHERE_UNUSED(dst_special_header);
+
                     const u32 *recv_list   = dst_msg + dst_recv_list_idx;
                     const auto entry_count = GetEntryCount(dst_header);
 
@@ -494,6 +498,9 @@ namespace ams::kern {
             auto &dst_page_table      = dst_process.GetPageTable();
             auto &src_page_table      = src_process.GetPageTable();
 
+            /* NOTE: Session is used only for debugging, and so may go unused. */
+            MESOSPHERE_UNUSED(session);
+
             /* The receive list is initially not broken. */
             recv_list_broken = false;
 
@@ -711,7 +718,7 @@ namespace ams::kern {
             return ResultSuccess();
         }
 
-        ALWAYS_INLINE Result ProcessSendMessagePointerDescriptors(int &offset, int &pointer_key, KProcessPageTable &dst_page_table, KProcessPageTable &src_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, const ReceiveList &dst_recv_list, bool dst_user) {
+        ALWAYS_INLINE Result ProcessSendMessagePointerDescriptors(int &offset, int &pointer_key, KProcessPageTable &dst_page_table, const ipc::MessageBuffer &dst_msg, const ipc::MessageBuffer &src_msg, const ReceiveList &dst_recv_list, bool dst_user) {
             /* Get the offset at the start of processing. */
             const int cur_offset = offset;
 
@@ -757,6 +764,9 @@ namespace ams::kern {
             KProcess &src_process = *(src_thread.GetOwnerProcess());
             auto &dst_page_table  = dst_process.GetPageTable();
             auto &src_page_table  = src_process.GetPageTable();
+
+            /* NOTE: Session is used only for debugging, and so may go unused. */
+            MESOSPHERE_UNUSED(session);
 
             /* Determine the message buffers. */
             u32 *dst_msg_ptr, *src_msg_ptr;
@@ -860,7 +870,7 @@ namespace ams::kern {
 
             /* Process any pointer buffers. */
             for (auto i = 0; i < src_header.GetPointerCount(); ++i) {
-                R_TRY(ProcessSendMessagePointerDescriptors(offset, pointer_key, dst_page_table, src_page_table, dst_msg, src_msg, dst_recv_list, dst_user && dst_header.GetReceiveListCount() == ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer));
+                R_TRY(ProcessSendMessagePointerDescriptors(offset, pointer_key, dst_page_table, dst_msg, src_msg, dst_recv_list, dst_user && dst_header.GetReceiveListCount() == ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer));
             }
 
             /* Clear any map alias buffers. */
