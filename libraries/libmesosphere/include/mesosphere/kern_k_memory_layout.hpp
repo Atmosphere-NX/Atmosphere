@@ -39,7 +39,7 @@ namespace ams::kern {
     constexpr size_t KernelPhysicalAddressSpaceLast = KernelPhysicalAddressSpaceEnd - 1ul;
     constexpr size_t KernelPhysicalAddressSpaceSize = KernelPhysicalAddressSpaceEnd - KernelPhysicalAddressSpaceBase;
 
-    constexpr size_t KernelPageTableHeapSize    = init::KInitialPageTable::GetMaximumOverheadSize(8_GB);
+    constexpr size_t KernelPageTableHeapSize    = init::KInitialPageTable::GetMaximumOverheadSize(kern::MainMemorySizeMax);
     constexpr size_t KernelInitialPageHeapSize  = 128_KB;
 
     constexpr size_t KernelSlabHeapDataSize           = 5_MB;
