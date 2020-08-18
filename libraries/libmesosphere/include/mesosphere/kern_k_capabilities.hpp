@@ -354,6 +354,10 @@ namespace ams::kern {
             constexpr bool CanForceDebug() const {
                 return this->debug_capabilities.Get<DebugFlags::ForceDebug>();
             }
+
+            constexpr u32 GetIntendedKernelMajorVersion() const { return this->intended_kernel_version.Get<KernelVersion::MajorVersion>(); }
+            constexpr u32 GetIntendedKernelMinorVersion() const { return this->intended_kernel_version.Get<KernelVersion::MinorVersion>(); }
+            constexpr u32 GetIntendedKernelVersion() const { return ams::svc::EncodeKernelVersion(this->GetIntendedKernelMajorVersion(), this->GetIntendedKernelMinorVersion()); }
     };
 
 }

@@ -146,8 +146,11 @@ namespace ams::kern {
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params) {
-        /* TODO: Validate intended kernel version. */
-        /* How should we do this? */
+        /* Validate that the intended kernel version is high enough for us to support. */
+        R_UNLESS(this->capabilities.GetIntendedKernelVersion() >= ams::svc::RequiredKernelVersion,  svc::ResultInvalidCombination());
+
+        /* Validate that the intended kernel version isn't too high for us to support. */
+        R_UNLESS(this->capabilities.GetIntendedKernelVersion() <= ams::svc::SupportedKernelVersion, svc::ResultInvalidCombination());
 
         /* Create and clear the process local region. */
         R_TRY(this->CreateThreadLocalRegion(std::addressof(this->plr_address)));
