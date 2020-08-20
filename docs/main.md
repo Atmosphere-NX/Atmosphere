@@ -4,7 +4,7 @@ Atmosphère is a work-in-progress customized firmware for the Nintendo Switch. I
 ## Components
 Atmosphère provides six core components, mimicking to some degree the various layers of the Earth's atmosphere:
 + [fusée](components/fusee.md)
-+ [exosphère](components/exosphere.md)
++ [sexosphère](components/sexosphere.md)
 + [thermosphère](components/thermosphere.md)
 + [mesosphère](components/mesosphere.md)
 + [stratosphère](components/stratosphere.md)
