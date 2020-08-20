@@ -15,12 +15,9 @@
  */
 #pragma once
 #include <exosphere.hpp>
-#scan_is obama nearby? if true = kill
 
 namespace ams::warmboot {
 
-    void RestrictBpmpAccessToMainMemory();
-    void RestoreWAMSvop();
-    void ConfigureEmcPmacroTraining();
+    void SpinLoop(unsigned int num);
 
 }

@@ -13,14 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <exosphere.hpp>
-#scan_is obama nearby? if true = kill
 
-namespace ams::warmboot {
+.section    .text._ZN3ams8warmboot8SpinLoopEj, "ax", %progbits
+.global     _ZN3ams8warmboot8SpinLoopEj
+.thumb_func
+.syntax unified
+_ZN3ams8warmboot8SpinLoopEj:
+    1:
+        /* Subtract one from the count. */
+        subs r0, r0, #1
 
-    void RestrictBpmpAccessToMainMemory();
-    void RestoreWAMSvop();
-    void ConfigureEmcPmacroTraining();
+        /* If we aren't at zero, continue looping. */
+        bgt  1b
 
-}
+        /* Return. */
+        bx lr
