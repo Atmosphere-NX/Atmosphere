@@ -6,9 +6,9 @@ SUBFOLDERS := $(MODULES)
 all: exosphere.bin warmboot.bin
 
 clean: $(CLEAN_TARGETS)
-	@rm -f exosphere.bin
+	@rm -f sexosphere.bin
 
-exosphere.bin: program.lz4 boot_code.lz4
+sexosphere.bin: program.lz4 boot_code.lz4
 	$(MAKE) -C loader_stub
 	@cp loader_stub/loader_stub.bin exosphere.bin
 	@printf LENY >> exosphere.bin
@@ -29,7 +29,7 @@ build_warmboot:
 
 boot_code.lz4: program.lz4
 
-exosphere-clean:
+sexosphere-clean:
 	$(MAKE) -C loader_stub clean
 	@rm -f exosphere.bin
 
