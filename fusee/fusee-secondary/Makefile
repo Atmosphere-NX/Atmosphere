@@ -89,7 +89,7 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
 			$(AMS)/exosphere $(AMS)/exosphere/warmboot $(AMS)/exosphere/program/rebootstub \
 			$(AMS)/thermosphere $(AMS)/fusee/fusee-primary $(AMS)/sept/sept-primary \
-			$(AMS)/sept/sept-secondary $(AMS)/emummc $(AMS)/mesosphere/kernel_ldr $(KIPDIRS)
+			$(AMS)/sept/sept-secondary $(AMS)/emummc $(AMS)/mesosphere $(AMS)/mesosphere/kernel_ldr $(KIPDIRS)
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -100,7 +100,7 @@ KIPFILES 	:=	loader.kip ncm.kip pm.kip sm.kip ams_mitm.kip spl.kip boot.kip
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary.bin \
 				exosphere.bin warmboot.bin rebootstub.bin thermosphere.bin splash_screen.bmp \
 				sept-primary.bin sept-secondary_00.enc sept-secondary_01.enc emummc.kip \
-				sept-secondary_dev_00.enc sept-secondary_dev_01.enc kernel_ldr.bin $(KIPFILES)
+				sept-secondary_dev_00.enc sept-secondary_dev_01.enc mesosphere.bin kernel_ldr.bin $(KIPFILES)
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
