@@ -963,11 +963,6 @@ void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel
     }
 
     if (kernel_info == NULL && is_sd_kernel) {
-        /* If the kernel is mesosphere, patch it. */
-        if (*(volatile uint32_t *)((uintptr_t)_kernel + 4) == 0x3053534D) {
-            *out_ini1 = (void *)((uintptr_t)_kernel + *(volatile uint32_t *)((uintptr_t)_kernel + 8));
-            *(volatile uint64_t *)((uintptr_t)_kernel + 8) = (uint64_t)*kernel_size;
-        }
         return;
     }
 
