@@ -206,10 +206,8 @@ namespace ams::pm::resource {
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_EventCountMax]   += ExtraSystemEventCount600;
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount600;
         }
-        if (hos_version >= hos::Version_9_0_0) {
+        if (hos_version >= hos::Version_9_2_0) {
             /* 9.2.0 increased the system session limit. */
-            /* NOTE: We don't currently support detection of minor version, so we will provide this increase on 9.0.0+. */
-            /* This shouldn't impact any existing behavior in undesirable ways. */
             g_resource_limits[ResourceLimitGroup_System][svc::LimitableResource_SessionCountMax] += ExtraSystemSessionCount920;
         }
 
@@ -232,7 +230,8 @@ namespace ams::pm::resource {
         }
 
         /* Choose and initialize memory arrangement. */
-        if (hos_version >= hos::Version_6_0_0) {
+        const bool use_dynamic_memory_arrangement = (hos_version >= hos::Version_6_0_0) || (svc::IsKernelMesosphere() && hos_version >= hos::Version_5_0_0);
+        if (use_dynamic_memory_arrangement) {
             /* 6.0.0 retrieves memory limit information from the kernel, rather than using a hardcoded profile. */
             g_memory_arrangement = spl::MemoryArrangement_Dynamic;
 
@@ -253,14 +252,13 @@ namespace ams::pm::resource {
 
             g_memory_resource_limits[spl::MemoryArrangement_Dynamic][ResourceLimitGroup_System] = total_memory - reserved_non_system_size;
         } else {
+            /* Older system versions retrieve memory arrangement from spl, and use hardcoded profiles. */
             g_memory_arrangement = spl::GetMemoryArrangement();
-        }
 
-        /* Adjust memory limits for atmosphere. */
-        /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
-        /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead modify the kernel, which we do */
-        /* via patches in fusee-secondary. */
-        if (hos_version < hos::Version_6_0_0) {
+            /* Adjust memory limits for atmosphere. */
+            /* We take memory away from applet normally, but away from application on < 3.0.0 to avoid a rare hang on boot. */
+            /* NOTE: On Version 5.0.0+, we cannot set the pools so simply. We must instead modify the kernel, which we do */
+            /* via patches in fusee-secondary. */
             const size_t extra_memory_size = hos_version == hos::Version_5_0_0 ? ExtraSystemMemorySizeAtmosphere500 : ExtraSystemMemorySizeAtmosphere;
             const auto src_group = hos_version >= hos::Version_3_0_0 ? ResourceLimitGroup_Applet : ResourceLimitGroup_Application;
             for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {

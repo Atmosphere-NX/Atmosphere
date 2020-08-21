@@ -294,6 +294,19 @@ namespace ams::kern::svc {
                         R_TRY(GetInitialProcessIdRange(out, static_cast<ams::svc::InitialProcessIdRangeInfo>(info_subtype)));
                     }
                     break;
+                case ams::svc::SystemInfoType_IsMesosphere:
+                    {
+                        /* Verify the handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        /* Verify that the sub-type is zero. */
+                        R_UNLESS(info_subtype == 0, svc::ResultInvalidCombination());
+
+                        /* We don't actually have any data to return. */
+                        /* Clear the output. */
+                        *out = 0;
+                    }
+                    break;
                 default:
                     return svc::ResultInvalidEnumValue();
             }
