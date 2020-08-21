@@ -26,6 +26,7 @@ namespace ams::ldr::caps {
             SyscallMask     = 4,
             MapRange        = 6,
             MapPage         = 7,
+            MapRegion       = 10,
             InterruptPair   = 11,
             ApplicationType = 13,
             KernelVersion   = 14,
@@ -181,6 +182,35 @@ namespace ams::ldr::caps {
             }
         );
 
+        enum class MemoryRegionType : u32 {
+            None              = 0,
+            KernelTraceBuffer = 1,
+            OnMemoryBootImage = 2,
+            DTB               = 3,
+        };
+
+        DEFINE_CAPABILITY_CLASS(MapRegion,
+            DEFINE_CAPABILITY_FIELD(Region0,   IdBits,    6, MemoryRegionType);
+            DEFINE_CAPABILITY_FIELD(ReadOnly0, Region0,   1, bool);
+            DEFINE_CAPABILITY_FIELD(Region1,   ReadOnly0, 6, MemoryRegionType);
+            DEFINE_CAPABILITY_FIELD(ReadOnly1, Region1,   1, bool);
+            DEFINE_CAPABILITY_FIELD(Region2,   ReadOnly1, 6, MemoryRegionType);
+            DEFINE_CAPABILITY_FIELD(ReadOnly2, Region2,   1, bool);
+
+            bool IsValid(const util::BitPack32 *kac, size_t kac_count) const {
+                for (size_t i = 0; i < kac_count; i++) {
+                    if (GetCapabilityId(kac[i]) == Id) {
+                        const auto restriction = Decode(kac[i]);
+
+                        if (this->GetValue() == restriction.GetValue()) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        );
+
         DEFINE_CAPABILITY_CLASS(InterruptPair,
             DEFINE_CAPABILITY_FIELD(InterruptId0, IdBits,       10);
             DEFINE_CAPABILITY_FIELD(InterruptId1, InterruptId0, 10);
@@ -304,6 +334,7 @@ namespace ams::ldr::caps {
                 VALIDATE_CASE(KernelFlags);
                 VALIDATE_CASE(SyscallMask);
                 VALIDATE_CASE(MapPage);
+                VALIDATE_CASE(MapRegion);
                 VALIDATE_CASE(InterruptPair);
                 VALIDATE_CASE(ApplicationType);
                 VALIDATE_CASE(KernelVersion);
