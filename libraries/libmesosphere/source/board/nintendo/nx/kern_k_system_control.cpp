@@ -201,7 +201,7 @@ namespace ams::kern::board::nintendo::nx {
             const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
             if (AMS_LIKELY(region != nullptr)) {
                 /* The PMC is always allowed. */
-                if (region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_PowerManagementController)) {
+                if (region->IsDerivedFrom(KMemoryRegionType_PowerManagementController)) {
                     return true;
                 }
 
