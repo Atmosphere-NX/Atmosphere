@@ -500,7 +500,7 @@
 
         ALWAYS_INLINE bool IsKernelMesosphere() {
             uint64_t dummy;
-            return R_SUCCEEDED(::ams::svc::GetSystemInfo(std::addressof(dummy), ::ams::svc::SystemInfoType_IsMesosphere, ::ams::svc::InvalidHandle, 0));
+            return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(dummy), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_KernelVersion));
         }
 
     }
