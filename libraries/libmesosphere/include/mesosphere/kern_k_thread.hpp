@@ -472,6 +472,7 @@ namespace ams::kern {
             void AddCpuTime(s32 core_id, s64 amount) {
                 this->cpu_time += amount;
                 /* TODO: Debug kernels track per-core tick counts. Should we? */
+                MESOSPHERE_UNUSED(core_id);
             }
 
             s64 GetCpuTime() const { return this->cpu_time; }

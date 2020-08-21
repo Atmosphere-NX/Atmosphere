@@ -359,6 +359,8 @@ namespace ams::kern {
             static Result GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count);
 
             static void Switch(KProcess *cur_process, KProcess *next_process) {
+                MESOSPHERE_UNUSED(cur_process);
+
                 /* Set the current process pointer. */
                 SetCurrentProcess(next_process);
 
@@ -373,7 +375,7 @@ namespace ams::kern {
             /* Overridden parent functions. */
             virtual bool IsInitialized() const override { return this->is_initialized; }
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             virtual void Finalize() override;
 

@@ -35,7 +35,7 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE KResourceLimit() : limit_values(), current_values(), current_hints(), lock(), waiter_count(), cond_var() { /* ... */ }
             virtual ~KResourceLimit() { /* ... */ }
 
-            static ALWAYS_INLINE void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             void Initialize();
             virtual void Finalize() override;

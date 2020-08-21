@@ -47,7 +47,7 @@ namespace ams::kern {
             virtual void Finalize() override;
 
             virtual bool IsInitialized() const override { return this->is_initialized; }
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Map(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process, ams::svc::MemoryPermission map_perm);
             Result Unmap(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process);

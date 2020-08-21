@@ -32,7 +32,7 @@ namespace ams::kern {
 
             virtual void Destroy() override;
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             void Initialize(KEvent *p);
             Result Signal();
