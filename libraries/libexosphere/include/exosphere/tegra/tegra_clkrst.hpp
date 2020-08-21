@@ -203,12 +203,12 @@ DEFINE_CLK_RST_REG_BIT_ENUM(RST_CPUG_CMPLX_CLR_CLR_NONCPURESET, 29, DISABLE, ENA
     HANDLER(H, MEM,           1,  0)    \
     HANDLER(H, AHBDMA,        1,  1)    \
     HANDLER(H, APBDMA,        1,  2)    \
-    HANDLER(H, USB2,          1, 26)    \
     HANDLER(H, PMC,           1,  6)    \
     HANDLER(H, FUSE,          1,  7)    \
     HANDLER(H, KFUSE,         1,  8)    \
     HANDLER(H, I2C5,          1, 15)    \
     HANDLER(H, EMC,           1, 25)    \
+    HANDLER(H, USB2,          1, 26)    \
     HANDLER(U, CSITE,         2,  9)    \
     HANDLER(U, IRAMA,         2, 20)    \
     HANDLER(U, IRAMB,         2, 21)    \

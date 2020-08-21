@@ -24,6 +24,7 @@
 #include "nxboot.h"
 #include "nxfs.h"
 #include "bct.h"
+#include "car.h"
 #include "di.h"
 #include "mc.h"
 #include "se.h"
@@ -1014,6 +1015,12 @@ uint32_t nxboot_main(void) {
 
     /* Wait for the splash screen to have been displayed for as long as it should be. */
     splash_screen_wait_delay();
+
+    /* Set reset for USBD, USB2, AHBDMA, and APBDMA. */
+    rst_enable(CARDEVICE_USBD);
+    rst_enable(CARDEVICE_USB2);
+    rst_enable(CARDEVICE_AHBDMA);
+    rst_enable(CARDEVICE_APBDMA);
 
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
