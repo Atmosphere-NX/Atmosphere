@@ -157,6 +157,8 @@ namespace ams::svc {
         InfoType_UsedNonSystemMemorySize        = 22,
         InfoType_IsApplication                  = 23,
 
+        InfoType_MesosphereMeta                 = 65000,
+
         InfoType_ThreadTickCount                = 0xF0000002,
     };
 
@@ -169,13 +171,15 @@ namespace ams::svc {
         TickCountInfo_Total = std::numeric_limits<s64>::max(),
     };
 
+    enum MesosphereMetaInfo : u64 {
+        MesosphereMetaInfo_KernelVersion   = 0,
+        MesosphereMetaInfo_IsKTraceEnabled = 1,
+    };
+
     enum SystemInfoType : u32 {
         SystemInfoType_TotalPhysicalMemorySize  = 0,
         SystemInfoType_UsedPhysicalMemorySize   = 1,
         SystemInfoType_InitialProcessIdRange    = 2,
-
-        /* NOTE: This is potentially temporary, and highly subject to change. */
-        SystemInfoType_IsMesosphere = 0xF0000000,
     };
 
     enum InitialProcessIdRangeInfo : u64 {
