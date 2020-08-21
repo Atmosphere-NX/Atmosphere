@@ -33,7 +33,7 @@ namespace ams::kern::arch::arm64 {
             explicit KDebug() { /* ... */ }
             virtual ~KDebug() { /* ... */ }
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
         public:
             virtual Result GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) override;
             virtual Result SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) override;

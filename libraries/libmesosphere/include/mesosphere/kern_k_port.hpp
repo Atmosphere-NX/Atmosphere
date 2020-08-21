@@ -44,7 +44,7 @@ namespace ams::kern {
             constexpr KPort() : server(), client(), name(), state(State::Invalid), is_light() { /* ... */ }
             virtual ~KPort() { /* ... */ }
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             void Initialize(s32 max_sessions, bool is_light, uintptr_t name);
             void OnClientClosed();

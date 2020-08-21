@@ -197,6 +197,7 @@ namespace ams::kern {
                 .perm             = static_cast<ams::svc::MemoryPermission>(this->perm & KMemoryPermission_UserMask),
                 .ipc_refcount     = this->ipc_lock_count,
                 .device_refcount  = this->device_use_count,
+                .padding          = {},
             };
         }
 
@@ -396,6 +397,9 @@ namespace ams::kern {
             }
 
             constexpr void ShareToDevice(KMemoryPermission new_perm) {
+                /* New permission isn't used. */
+                MESOSPHERE_UNUSED(new_perm);
+
                 /* We must either be shared or have a zero lock count. */
                 MESOSPHERE_ASSERT((this->attribute & KMemoryAttribute_DeviceShared) == KMemoryAttribute_DeviceShared || this->device_use_count == 0);
 
@@ -407,6 +411,9 @@ namespace ams::kern {
             }
 
             constexpr void UnshareToDevice(KMemoryPermission new_perm) {
+                /* New permission isn't used. */
+                MESOSPHERE_UNUSED(new_perm);
+
                 /* We must be shared. */
                 MESOSPHERE_ASSERT((this->attribute & KMemoryAttribute_DeviceShared) == KMemoryAttribute_DeviceShared);
 
@@ -439,6 +446,9 @@ namespace ams::kern {
             }
 
             constexpr void UnlockForIpc(KMemoryPermission new_perm) {
+                /* New permission isn't used. */
+                MESOSPHERE_UNUSED(new_perm);
+
                 /* We must be locked. */
                 MESOSPHERE_ASSERT((this->attribute & KMemoryAttribute_IpcLocked) == KMemoryAttribute_IpcLocked);
 

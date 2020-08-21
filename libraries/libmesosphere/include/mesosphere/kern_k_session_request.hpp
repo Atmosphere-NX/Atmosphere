@@ -174,7 +174,7 @@ namespace ams::kern {
                 }
             }
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr KThread *GetThread() const { return this->thread; }
             constexpr KWritableEvent *GetEvent() const { return this->event; }
