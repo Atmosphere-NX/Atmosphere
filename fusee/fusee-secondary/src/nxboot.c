@@ -936,7 +936,7 @@ uint32_t nxboot_main(void) {
         size_t sd_meso_size = get_file_size("atmosphere/mesosphere.bin");
         if (sd_meso_size != 0) {
             if (sd_meso_size > PACKAGE2_SIZE_MAX) {
-                fatal_error("Error: atmosphere/kernel.bin is too large!\n");
+                fatal_error("Error: atmosphere/mesosphere.bin is too large!\n");
             }
             mesosphere = malloc(sd_meso_size);
             if (mesosphere == NULL) {
