@@ -23,4 +23,6 @@ namespace ams::ldr::caps {
     u16    GetProgramInfoFlags(const void *kac, size_t kac_size);
     void   SetProgramInfoFlags(u16 flags, void *kac, size_t kac_size);
 
+    void   ProcessCapabilities(void *kac, size_t kac_size);
+
 }
