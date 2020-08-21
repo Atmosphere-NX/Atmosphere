@@ -54,6 +54,7 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidCapabilitySyscallMask,     104);
     R_DEFINE_ERROR_RESULT(InvalidCapabilityMapRange,        106);
     R_DEFINE_ERROR_RESULT(InvalidCapabilityMapPage,         107);
+    R_DEFINE_ERROR_RESULT(InvalidCapabilityMapRegion,       110);
     R_DEFINE_ERROR_RESULT(InvalidCapabilityInterruptPair,   111);
     R_DEFINE_ERROR_RESULT(InvalidCapabilityApplicationType, 113);
     R_DEFINE_ERROR_RESULT(InvalidCapabilityKernelVersion,   114);
