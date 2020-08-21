@@ -47,6 +47,9 @@ namespace ams::ldr::caps {
             return static_cast<CapabilityId>(__builtin_ctz(~cap.value));
         }
 
+        constexpr inline util::BitPack32 EmptyCapability = {~u32{}};
+        static_assert(GetCapabilityId(EmptyCapability) == CapabilityId::Empty);
+
 #define CAPABILITY_CLASS_NAME(id) Capability##id
 
 #define DEFINE_CAPABILITY_CLASS(id, member_functions)                                                                           \
@@ -400,6 +403,30 @@ namespace ams::ldr::caps {
                     break;
                 case CapabilityId::DebugFlags:
                     caps[i] = CapabilityDebugFlags::Encode((flags & ProgramInfoFlag_AllowDebug) != 0, CapabilityDebugFlags::Decode(cur_cap).GetForceDebug());
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    void ProcessCapabilities(void *kac, size_t kac_size) {
+        util::BitPack32 *caps = reinterpret_cast<util::BitPack32 *>(kac);
+        const size_t num_caps = kac_size / sizeof(*caps);
+
+        for (size_t i = 0; i < num_caps; i++) {
+            const auto cur_cap = caps[i];
+            switch (GetCapabilityId(cur_cap)) {
+                case CapabilityId::MapRegion:
+                    {
+                        /* MapRegion was added in 8.0.0+. */
+                        /* To prevent kernel error, we should reject the descriptor on lower firmwares. */
+                        /* NOTE: We also allow it on any firmware under mesosphere, as an extension. */
+                        const bool is_allowed = (hos::GetVersion() >= hos::Version_8_0_0 || svc::IsKernelMesosphere());
+                        if (!is_allowed) {
+                            caps[i] = EmptyCapability;
+                        }
+                    }
                     break;
                 default:
                     break;

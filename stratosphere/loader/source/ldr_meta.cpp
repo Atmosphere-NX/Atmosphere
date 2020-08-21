@@ -225,6 +225,11 @@ namespace ams::ldr {
             }
         }
 
+        /* Pre-process the capabilities. */
+        /* This is used to e.g. avoid passing memory region descriptor to older kernels. */
+        caps::ProcessCapabilities(meta->acid_kac, meta->acid->kac_size);
+        caps::ProcessCapabilities(meta->aci_kac, meta->aci->kac_size);
+
         /* Set output. */
         g_cached_program_id = loc.program_id;
         g_cached_override_status = status;
