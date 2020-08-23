@@ -50,7 +50,7 @@ namespace ams::kern {
 
     bool KDebugLogImpl::Initialize() {
         /* Set the uart register base address. */
-        g_uart_address = KMemoryLayout::GetUartAddress();
+        g_uart_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_Uart);
 
         /* Parameters for uart. */
         constexpr u32 BaudRate = 115200;

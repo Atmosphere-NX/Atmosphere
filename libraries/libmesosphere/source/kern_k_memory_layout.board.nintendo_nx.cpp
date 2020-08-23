@@ -27,9 +27,9 @@ namespace ams::kern {
 
         ALWAYS_INLINE bool SetupUartPhysicalMemoryRegion() {
             #if   defined(MESOSPHERE_DEBUG_LOG_USE_UART_A)
-                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
             #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_B)
-                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
             #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_C)
                 return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
             #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_D)
@@ -41,10 +41,10 @@ namespace ams::kern {
 
         ALWAYS_INLINE bool SetupPowerManagementControllerMemoryRegion() {
             /* For backwards compatibility, the PMC must remain mappable on < 2.0.0. */
-            const auto pmc_type = GetTargetFirmware() >= TargetFirmware_2_0_0 ? (KMemoryRegionType_PowerManagementController | KMemoryRegionAttr_NoUserMap) : KMemoryRegionType_PowerManagementController;
+            const auto restrict_attr = GetTargetFirmware() >= TargetFirmware_2_0_0 ? KMemoryRegionAttr_NoUserMap : static_cast<KMemoryRegionAttr>(0);
 
-            return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E000, 0x400, KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap) &&
-                   KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E400, 0xC00, pmc_type);
+            return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E000, 0x400, KMemoryRegionType_None                      | restrict_attr) &&
+                   KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7000E400, 0xC00, KMemoryRegionType_PowerManagementController | restrict_attr);
         }
 
         void InsertPoolPartitionRegionIntoBothTrees(size_t start, size_t size, KMemoryRegionType phys_type, KMemoryRegionType virt_type, u32 &cur_attr) {
@@ -95,7 +95,7 @@ namespace ams::kern {
             const size_t unsafe_system_pool_min_size = KSystemControl::Init::GetMinimumNonSecureSystemPoolSize();
 
             /* Find the start of the kernel DRAM region. */
-            const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernel);
+            const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernelBase);
             MESOSPHERE_INIT_ABORT_UNLESS(kernel_dram_region != nullptr);
 
             const uintptr_t kernel_dram_start = kernel_dram_region->GetAddress();
@@ -141,7 +141,7 @@ namespace ams::kern {
             const uintptr_t metadata_pool_start = unsafe_system_pool_start - total_overhead_size;
             const size_t    metadata_pool_size  = total_overhead_size;
             u32 metadata_pool_attr = 0;
-            InsertPoolPartitionRegionIntoBothTrees(metadata_pool_start, metadata_pool_size, KMemoryRegionType_DramMetadataPool, KMemoryRegionType_VirtualDramMetadataPool, metadata_pool_attr);
+            InsertPoolPartitionRegionIntoBothTrees(metadata_pool_start, metadata_pool_size, KMemoryRegionType_DramPoolManagement, KMemoryRegionType_VirtualDramPoolManagement, metadata_pool_attr);
 
             /* Insert the system pool. */
             const uintptr_t system_pool_size = metadata_pool_start - pool_partitions_start;

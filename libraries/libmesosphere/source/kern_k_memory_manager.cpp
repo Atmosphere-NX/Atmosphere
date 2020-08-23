@@ -42,7 +42,7 @@ namespace ams::kern {
             const KMemoryRegion *region = nullptr;
             for (const auto &it : KMemoryLayout::GetVirtualMemoryRegionTree()) {
                 /* We only care about regions that we need to create managers for. */
-                if (!it.IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool)) {
+                if (!it.IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool)) {
                     continue;
                 }
 
@@ -64,7 +64,7 @@ namespace ams::kern {
             MESOSPHERE_ASSERT(region->GetAddress() != Null<decltype(region->GetAddress())>);
             MESOSPHERE_ASSERT(region->GetSize()    > 0);
             MESOSPHERE_ASSERT(region->GetEndAddress() >= region->GetAddress());
-            MESOSPHERE_ASSERT(region->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool));
+            MESOSPHERE_ASSERT(region->IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool));
             MESOSPHERE_ASSERT(region->GetAttributes() == this->num_managers);
 
             /* Initialize a new manager for the region. */
