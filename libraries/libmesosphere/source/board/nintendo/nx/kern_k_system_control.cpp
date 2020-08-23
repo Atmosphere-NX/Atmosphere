@@ -181,7 +181,7 @@ namespace ams::kern::board::nintendo::nx {
             /* Find the region for the address. */
             const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
             if (AMS_LIKELY(region != nullptr)) {
-                if (AMS_LIKELY(region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController))) {
+                if (AMS_LIKELY(region->IsDerivedFrom(KMemoryRegionType_MemoryController))) {
                     /* Get the offset within the region. */
                     const size_t offset = address - region->GetAddress();
                     MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
@@ -206,9 +206,9 @@ namespace ams::kern::board::nintendo::nx {
                 }
 
                 /* Memory controller is allowed if the register is whitelisted. */
-                if (region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController ) ||
-                    region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController0) ||
-                    region->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController1))
+                if (region->IsDerivedFrom(KMemoryRegionType_MemoryController ) ||
+                    region->IsDerivedFrom(KMemoryRegionType_MemoryController0) ||
+                    region->IsDerivedFrom(KMemoryRegionType_MemoryController1))
                 {
                     /* Get the offset within the region. */
                     const size_t offset = address - region->GetAddress();

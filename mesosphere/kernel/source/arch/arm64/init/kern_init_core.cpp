@@ -170,8 +170,13 @@ namespace ams::kern::init {
 
         /* Automatically map in devices that have auto-map attributes. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            /* We only care about automatically-mapped regions. */
-            if (!region.IsDerivedFrom(KMemoryRegionType_KernelAutoMap)) {
+            /* We only care about kernel regions. */
+            if (!region.IsDerivedFrom(KMemoryRegionType_Kernel)) {
+                continue;
+            }
+
+            /* Check whether we should map the region. */
+            if (!region.HasTypeAttribute(KMemoryRegionAttr_ShouldKernelMap)) {
                 continue;
             }
 
@@ -301,11 +306,11 @@ namespace ams::kern::init {
 
         /* Insert regions for the initial page table region. */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr), init_page_table_region_size, KMemoryRegionType_DramKernelInitPt));
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr) + linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualKernelInitPt));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr) + linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualDramKernelInitPt));
 
         /* All linear-mapped DRAM regions that we haven't tagged by this point will be allocated to some pool partition. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            if (region.GetType() == KMemoryRegionType_DramLinearMapped) {
+            if (region.GetType() == KMemoryRegionType_Dram && region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
                 region.SetType(KMemoryRegionType_DramPoolPartition);
             }
         }

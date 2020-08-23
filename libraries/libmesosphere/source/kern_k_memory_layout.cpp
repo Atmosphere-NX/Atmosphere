@@ -234,7 +234,7 @@ namespace ams::kern {
 
             /* Get the virtual address of the core local reigon. */
             const KVirtualAddress core_local_virt_start = GetCoreLocalRegionVirtualAddress();
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(core_local_virt_start), CoreLocalRegionSize, KMemoryRegionType_CoreLocal));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(core_local_virt_start), CoreLocalRegionSize, KMemoryRegionType_CoreLocalRegion));
 
             /* Allocate a page for each core. */
             KPhysicalAddress core_local_region_start_phys[cpu::NumCores] = {};

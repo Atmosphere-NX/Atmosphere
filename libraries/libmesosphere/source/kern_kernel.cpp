@@ -153,7 +153,7 @@ namespace ams::kern {
         PrintMemoryRegion("        InitPageTable",  KMemoryLayout::GetKernelInitPageTableRegionPhysicalExtents());
         PrintMemoryRegion("    MemoryPoolRegion",   KMemoryLayout::GetKernelPoolPartitionRegionPhysicalExtents());
         PrintMemoryRegion("        System",         KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
-        PrintMemoryRegion("        Internal",       KMemoryLayout::GetKernelMetadataPoolRegionPhysicalExtents());
+        PrintMemoryRegion("        Management",     KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
         PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
         PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
         PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());

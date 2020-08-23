@@ -405,7 +405,7 @@ namespace ams::kern::board::nintendo::nx {
 
     void KDevicePageTable::Initialize() {
         /* Set the memory controller register address. */
-        g_memory_controller_address = KMemoryLayout::GetMemoryControllerRegion().GetAddress();
+        g_memory_controller_address = KMemoryLayout::GetDevicePhysicalAddress(KMemoryRegionType_MemoryController);
 
         /* Allocate a page to use as a reserved/no device table. */
         const KVirtualAddress table_virt_addr = Kernel::GetPageTableManager().Allocate();

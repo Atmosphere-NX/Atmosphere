@@ -39,8 +39,8 @@ namespace ams::kern::arch::arm {
 
     void KInterruptController::Initialize(s32 core_id) {
         /* Setup pointers to ARM mmio. */
-        this->gicd = GetPointer<volatile  GicDistributor>(KMemoryLayout::GetInterruptDistributorAddress());
-        this->gicc = GetPointer<volatile GicCpuInterface>(KMemoryLayout::GetInterruptCpuInterfaceAddress());
+        this->gicd = GetPointer<volatile GicDistributor >(KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_InterruptDistributor));
+        this->gicc = GetPointer<volatile GicCpuInterface>(KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_InterruptCpuInterface));
 
         /* Clear CTLRs. */
         this->gicc->ctlr = 0;
