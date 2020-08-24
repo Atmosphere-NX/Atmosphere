@@ -195,9 +195,9 @@ namespace ams::kern {
     constexpr inline const auto KMemoryRegionType_DramPoolPartition = KMemoryRegionType_DramHeapBase.DeriveAttribute(KMemoryRegionAttr_NoUserMap);
     static_assert(KMemoryRegionType_DramPoolPartition.GetValue() == (0x26 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
 
-    constexpr inline const auto KMemoryRegionType_DramPoolManagement = KMemoryRegionType_DramPoolPartition.DeriveTransition(0, 2).DeriveTransition();
+    constexpr inline const auto KMemoryRegionType_DramPoolManagement = KMemoryRegionType_DramPoolPartition.DeriveTransition(0, 2).DeriveTransition().SetAttribute(KMemoryRegionAttr_CarveoutProtected);
     constexpr inline const auto KMemoryRegionType_DramUserPool       = KMemoryRegionType_DramPoolPartition.DeriveTransition(1, 2).DeriveTransition();
-    static_assert(KMemoryRegionType_DramPoolManagement.GetValue() == (0x166 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
+    static_assert(KMemoryRegionType_DramPoolManagement.GetValue() == (0x166 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap | KMemoryRegionAttr_CarveoutProtected));
     static_assert(KMemoryRegionType_DramUserPool.GetValue()       == (0x1A6 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));
 
     constexpr inline const auto KMemoryRegionType_DramApplicationPool     = KMemoryRegionType_DramUserPool.Derive(4, 0);
