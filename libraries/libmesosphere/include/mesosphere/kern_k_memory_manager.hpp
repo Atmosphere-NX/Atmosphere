@@ -38,6 +38,7 @@ namespace ams::kern {
 
                 /* Aliases. */
                 Pool_Unsafe = Pool_Application,
+                Pool_Secure = Pool_System,
             };
 
             enum Direction {
@@ -54,7 +55,7 @@ namespace ams::kern {
                 private:
                     using RefCount = u16;
                 public:
-                    static size_t CalculateMetadataOverheadSize(size_t region_size);
+                    static size_t CalculateManagementOverheadSize(size_t region_size);
 
                     static constexpr size_t CalculateOptimizedProcessOverheadSize(size_t region_size) {
                         return (util::AlignUp((region_size / PageSize), BITSIZEOF(u64)) / BITSIZEOF(u64)) * sizeof(u64);
@@ -62,19 +63,19 @@ namespace ams::kern {
                 private:
                     KPageHeap heap;
                     RefCount *page_reference_counts;
-                    KVirtualAddress metadata_region;
+                    KVirtualAddress management_region;
                     Pool pool;
                     Impl *next;
                     Impl *prev;
                 public:
-                    Impl() : heap(), page_reference_counts(), metadata_region(), pool(), next(), prev() { /* ... */ }
+                    Impl() : heap(), page_reference_counts(), management_region(), pool(), next(), prev() { /* ... */ }
 
-                    size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress metadata_region, KVirtualAddress metadata_region_end);
+                    size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress management_region, KVirtualAddress management_region_end);
 
                     KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
 
-                    void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->metadata_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
+                    void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->management_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
 
                     void TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages);
                     void TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
@@ -172,7 +173,7 @@ namespace ams::kern {
                 /* ... */
             }
 
-            NOINLINE void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
+            NOINLINE void Initialize(KVirtualAddress management_region, size_t management_region_size);
 
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
@@ -247,8 +248,8 @@ namespace ams::kern {
                 return total;
             }
         public:
-            static size_t CalculateMetadataOverheadSize(size_t region_size) {
-                return Impl::CalculateMetadataOverheadSize(region_size);
+            static size_t CalculateManagementOverheadSize(size_t region_size) {
+                return Impl::CalculateManagementOverheadSize(region_size);
             }
 
             static constexpr ALWAYS_INLINE u32 EncodeOption(Pool pool, Direction dir) {

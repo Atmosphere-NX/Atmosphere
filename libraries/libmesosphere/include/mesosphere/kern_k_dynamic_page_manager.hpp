@@ -46,9 +46,9 @@ namespace ams::kern {
                 /* We need to have positive size. */
                 R_UNLESS(sz > 0, svc::ResultOutOfMemory());
 
-                /* Calculate metadata overhead. */
-                const size_t metadata_size    = KPageBitmap::CalculateMetadataOverheadSize(sz / sizeof(PageBuffer));
-                const size_t allocatable_size = sz - metadata_size;
+                /* Calculate management overhead. */
+                const size_t management_size  = KPageBitmap::CalculateManagementOverheadSize(sz / sizeof(PageBuffer));
+                const size_t allocatable_size = sz - management_size;
 
                 /* Set tracking fields. */
                 this->address = memory;
@@ -56,12 +56,12 @@ namespace ams::kern {
                 this->count   = allocatable_size / sizeof(PageBuffer);
                 R_UNLESS(this->count > 0, svc::ResultOutOfMemory());
 
-                /* Clear the metadata region. */
-                u64 *metadata_ptr = GetPointer<u64>(this->address + allocatable_size);
-                std::memset(metadata_ptr, 0, metadata_size);
+                /* Clear the management region. */
+                u64 *management_ptr = GetPointer<u64>(this->address + allocatable_size);
+                std::memset(management_ptr, 0, management_size);
 
                 /* Initialize the bitmap. */
-                this->page_bitmap.Initialize(metadata_ptr, this->count);
+                this->page_bitmap.Initialize(management_ptr, this->count);
 
                 /* Free the pages to the bitmap. */
                 std::memset(GetPointer<PageBuffer>(this->address), 0, this->count * sizeof(PageBuffer));
