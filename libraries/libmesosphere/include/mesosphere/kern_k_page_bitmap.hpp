@@ -254,7 +254,7 @@ namespace ams::kern {
                 }
             }
         public:
-            static constexpr size_t CalculateMetadataOverheadSize(size_t region_size) {
+            static constexpr size_t CalculateManagementOverheadSize(size_t region_size) {
                 size_t overhead_bits = 0;
                 for (s32 depth = GetRequiredDepth(region_size) - 1; depth >= 0; depth--) {
                     region_size = util::AlignUp(region_size, BITSIZEOF(u64)) / BITSIZEOF(u64);
