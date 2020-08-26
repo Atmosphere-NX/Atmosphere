@@ -485,7 +485,7 @@ namespace ams::kern::board::nintendo::nx {
         }
     }
 
-    u32 KSystemControl::GetInitialProcessBinaryPool() {
+    u32 KSystemControl::GetCreateProcessMemoryPool() {
         return KMemoryManager::Pool_Unsafe;
     }
 

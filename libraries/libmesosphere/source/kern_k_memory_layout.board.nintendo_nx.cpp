@@ -151,7 +151,7 @@ namespace ams::kern {
                 /* Insert the system pool. */
                 const uintptr_t system_pool_size = pool_management_start - pool_partitions_start;
                 InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
-            } else if (GetTargetFirmware() >= TargetFirmware_2_0_0) {
+            } else {
                 /* On < 5.0.0, setup a legacy 2-pool layout for backwards compatibility. */
 
                 static_assert(KMemoryManager::Pool_Count == 4);
@@ -159,12 +159,33 @@ namespace ams::kern {
                 static_assert(KMemoryManager::Pool_Secure == KMemoryManager::Pool_System);
 
                 /* Get Secure pool size. */
-                constexpr size_t LegacySecureKernelSize = 6_MB;          /* KPageBuffer pages, other small kernel allocations. */
-                constexpr size_t LegacySecureMiscSize   = 1_MB;          /* Miscellaneous pages for secure process mapping. */
-                constexpr size_t LegacySecureHeapSize   = 24_MB;         /* Heap pages for secure process mapping (fs). */
-                constexpr size_t LegacySecureEsSize     = 1_MB + 232_KB; /* Size for additional secure process (es, 4.0.0+). */
+                const size_t secure_pool_size = [] ALWAYS_INLINE_LAMBDA (auto target_firmware) -> size_t {
+                    constexpr size_t LegacySecureKernelSize = 8_MB;          /* KPageBuffer pages, other small kernel allocations. */
+                    constexpr size_t LegacySecureMiscSize   = 1_MB;          /* Miscellaneous pages for secure process mapping. */
+                    constexpr size_t LegacySecureHeapSize   = 24_MB;         /* Heap pages for secure process mapping (fs). */
+                    constexpr size_t LegacySecureEsSize     = 1_MB + 232_KB; /* Size for additional secure process (es, 4.0.0+). */
 
-                const size_t secure_pool_size = GetInitialProcessesSecureMemorySize() + LegacySecureKernelSize + LegacySecureHeapSize + LegacySecureMiscSize + (GetTargetFirmware() >= TargetFirmware_4_0_0 ? LegacySecureEsSize : 0);
+                    /* The baseline size for the secure region is enough to cover any allocations the kernel might make. */
+                    size_t size = LegacySecureKernelSize;
+
+                    /* If on 2.0.0+, initial processes will fall within the secure region. */
+                    if (target_firmware >= TargetFirmware_2_0_0) {
+                        /* Account for memory used directly for the processes. */
+                        size += GetInitialProcessesSecureMemorySize();
+
+                        /* Account for heap and transient memory used by the processes. */
+                        size += LegacySecureHeapSize + LegacySecureMiscSize;
+                    }
+
+                    /* If on 4.0.0+, any process may use secure memory via a create process flag. */
+                    /* In process this is used for es alone, and the secure pool's size should be */
+                    /* increased to accommodate es's binary. */
+                    if (target_firmware >= TargetFirmware_4_0_0) {
+                        size += LegacySecureEsSize;
+                    }
+
+                    return size;
+                }(GetTargetFirmware());
 
                 /* Calculate the overhead for the secure and (defunct) applet/non-secure-system pools. */
                 size_t total_overhead_size = KMemoryManager::CalculateManagementOverheadSize(secure_pool_size);
@@ -208,9 +229,6 @@ namespace ams::kern {
 
                 u32 pool_management_attr = 0;
                 InsertPoolPartitionRegionIntoBothTrees(pool_management_start, pool_management_size, KMemoryRegionType_DramPoolManagement, KMemoryRegionType_VirtualDramPoolManagement, pool_management_attr);
-            } else {
-                /* TODO: 1.0.0 single-pool layout. */
-                MESOSPHERE_UNIMPLEMENTED();
             }
         }
 
