@@ -38,6 +38,30 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(header->num_processes <= init::GetSlabResourceCounts().num_KProcess);
         }
 
+        size_t GetProcessesSecureMemorySize(KVirtualAddress binary_address, const InitialProcessBinaryHeader &header) {
+            u8 *current = GetPointer<u8>(binary_address + sizeof(InitialProcessBinaryHeader));
+            const u8 * const end = GetPointer<u8>(binary_address + header.size - sizeof(KInitialProcessHeader));
+
+            size_t size = 0;
+            const size_t num_processes = header.num_processes;
+            for (size_t i = 0; i < num_processes; i++) {
+                /* Validate that we can read the current KIP. */
+                MESOSPHERE_ABORT_UNLESS(current <= end);
+                KInitialProcessReader reader;
+                MESOSPHERE_ABORT_UNLESS(reader.Attach(current));
+
+                /* If the process uses secure memory, account for that. */
+                if (reader.UsesSecureMemory()) {
+                    size += util::AlignUp(reader.GetSize(), PageSize);
+                }
+
+                /* Advance the reader. */
+                current += reader.GetBinarySize();
+            }
+
+            return size;
+        }
+
         void CreateProcesses(InitialProcessInfo *infos, KVirtualAddress binary_address, const InitialProcessBinaryHeader &header) {
             u8 *current = GetPointer<u8>(binary_address + sizeof(InitialProcessBinaryHeader));
             const u8 * const end = GetPointer<u8>(binary_address + header.size - sizeof(KInitialProcessHeader));
@@ -108,10 +132,10 @@ namespace ams::kern {
             }
         }
 
-        KVirtualAddress g_initial_process_binary_address;
-        InitialProcessBinaryHeader g_initial_process_binary_header;
-        u64 g_initial_process_id_min = std::numeric_limits<u64>::max();
-        u64 g_initial_process_id_max = std::numeric_limits<u64>::min();
+        constinit KVirtualAddress g_initial_process_binary_address = Null<KVirtualAddress>;
+        constinit InitialProcessBinaryHeader g_initial_process_binary_header = {};
+        constinit u64 g_initial_process_id_min = std::numeric_limits<u64>::max();
+        constinit u64 g_initial_process_id_max = std::numeric_limits<u64>::min();
 
     }
 
@@ -121,6 +145,12 @@ namespace ams::kern {
 
     u64 GetInitialProcessIdMax() {
         return g_initial_process_id_max;
+    }
+
+    size_t GetInitialProcessesSecureMemorySize() {
+        LoadInitialProcessBinaryHeader(&g_initial_process_binary_header);
+
+        return GetProcessesSecureMemorySize(g_initial_process_binary_address != Null<KVirtualAddress> ? g_initial_process_binary_address : GetInitialProcessBinaryAddress(), g_initial_process_binary_header);
     }
 
     void CopyInitialProcessBinaryToKernelMemory() {
