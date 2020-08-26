@@ -39,7 +39,7 @@ namespace ams::kern::board::nintendo::nx {
             /* Initialization. */
             static NOINLINE void InitializePhase1();
             static NOINLINE void InitializePhase2();
-            static NOINLINE u32 GetInitialProcessBinaryPool();
+            static NOINLINE u32 GetCreateProcessMemoryPool();
 
             /* Randomness. */
             static void GenerateRandomBytes(void *dst, size_t size);

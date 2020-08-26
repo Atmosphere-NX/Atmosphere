@@ -219,13 +219,12 @@ namespace ams::kern::svc {
                     if ((flags & ams::svc::CreateProcessFlag_DeprecatedUseSecureMemory) != 0) {
                         return KMemoryManager::Pool_Secure;
                     } else {
-                        return KMemoryManager::Pool_Unsafe;
+                        return static_cast<KMemoryManager::Pool>(KSystemControl::GetCreateProcessMemoryPool());
                     }
                 } else {
-                    return KMemoryManager::Pool_Unsafe;
+                    return static_cast<KMemoryManager::Pool>(KSystemControl::GetCreateProcessMemoryPool());
                 }
             }(params.flags);
-
 
             /* Initialize the process. */
             R_TRY(process->Initialize(params, user_caps, num_caps, process_resource_limit, pool));
