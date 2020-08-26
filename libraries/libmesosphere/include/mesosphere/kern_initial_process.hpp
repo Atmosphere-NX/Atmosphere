@@ -34,5 +34,6 @@ namespace ams::kern {
 
     u64 GetInitialProcessIdMin();
     u64 GetInitialProcessIdMax();
+    size_t GetInitialProcessesSecureMemorySize();
 
 }

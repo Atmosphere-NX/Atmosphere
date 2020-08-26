@@ -59,30 +59,57 @@ namespace ams::kern {
 
     namespace init {
 
-        namespace {
+        void SetupDevicePhysicalMemoryRegions() {
+            /* TODO: Give these constexpr defines somewhere? */
+            MESOSPHERE_INIT_ABORT_UNLESS(SetupUartPhysicalMemoryRegion());
+            MESOSPHERE_INIT_ABORT_UNLESS(SetupPowerManagementControllerMemoryRegion());
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,    KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,    KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,    KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000,   KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+        }
 
-            void SetupPoolPartitionMemoryRegionsImpl() {
-                /* Start by identifying the extents of the DRAM memory region. */
-                const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
+        void SetupDramPhysicalMemoryRegions() {
+            const size_t intended_memory_size                   = KSystemControl::Init::GetIntendedMemorySize();
+            const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(DramPhysicalAddress);
 
-                const uintptr_t pool_end = dram_extents.GetEndAddress() - KTraceBufferSize;
+            /* Insert blocks into the tree. */
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), ReservedEarlyDramSize, KMemoryRegionType_DramReservedEarly));
+        }
+
+        void SetupPoolPartitionMemoryRegions() {
+            /* Start by identifying the extents of the DRAM memory region. */
+            const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
+
+            /* Determine the end of the pool region. */
+            const uintptr_t pool_end = dram_extents.GetEndAddress() - KTraceBufferSize;
+
+            /* Find the start of the kernel DRAM region. */
+            const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernelBase);
+            MESOSPHERE_INIT_ABORT_UNLESS(kernel_dram_region != nullptr);
+
+            const uintptr_t kernel_dram_start = kernel_dram_region->GetAddress();
+            MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(kernel_dram_start, CarveoutAlignment));
+
+            /* Find the start of the pool partitions region. */
+            const KMemoryRegion *pool_partitions_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(KMemoryRegionType_DramPoolPartition, 0);
+            MESOSPHERE_INIT_ABORT_UNLESS(pool_partitions_region != nullptr);
+            const uintptr_t pool_partitions_start = pool_partitions_region->GetAddress();
+
+            /* Setup the pool partition layouts. */
+            if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
+                /* On 5.0.0+, setup modern 4-pool-partition layout. */
 
                 /* Get Application and Applet pool sizes. */
                 const size_t application_pool_size       = KSystemControl::Init::GetApplicationPoolSize();
                 const size_t applet_pool_size            = KSystemControl::Init::GetAppletPoolSize();
                 const size_t unsafe_system_pool_min_size = KSystemControl::Init::GetMinimumNonSecureSystemPoolSize();
-
-                /* Find the start of the kernel DRAM region. */
-                const KMemoryRegion *kernel_dram_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_DramKernelBase);
-                MESOSPHERE_INIT_ABORT_UNLESS(kernel_dram_region != nullptr);
-
-                const uintptr_t kernel_dram_start = kernel_dram_region->GetAddress();
-                MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(kernel_dram_start, CarveoutAlignment));
-
-                /* Find the start of the pool partitions region. */
-                const KMemoryRegion *pool_partitions_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(KMemoryRegionType_DramPoolPartition, 0);
-                MESOSPHERE_INIT_ABORT_UNLESS(pool_partitions_region != nullptr);
-                const uintptr_t pool_partitions_start = pool_partitions_region->GetAddress();
 
                 /* Decide on starting addresses for our pools. */
                 const uintptr_t application_pool_start   = pool_end - application_pool_size;
@@ -124,45 +151,66 @@ namespace ams::kern {
                 /* Insert the system pool. */
                 const uintptr_t system_pool_size = pool_management_start - pool_partitions_start;
                 InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, system_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
-            }
-
-            void SetupPoolPartitionMemoryRegionsDeprecatedImpl() {
-                MESOSPHERE_UNIMPLEMENTED();
-            }
-
-        }
-
-        void SetupDevicePhysicalMemoryRegions() {
-            /* TODO: Give these constexpr defines somewhere? */
-            MESOSPHERE_INIT_ABORT_UNLESS(SetupUartPhysicalMemoryRegion());
-            MESOSPHERE_INIT_ABORT_UNLESS(SetupPowerManagementControllerMemoryRegion());
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,    KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,    KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,    KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000,   KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-        }
-
-        void SetupDramPhysicalMemoryRegions() {
-            const size_t intended_memory_size                   = KSystemControl::Init::GetIntendedMemorySize();
-            const KPhysicalAddress physical_memory_base_address = KSystemControl::Init::GetKernelPhysicalBaseAddress(DramPhysicalAddress);
-
-            /* Insert blocks into the tree. */
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), ReservedEarlyDramSize, KMemoryRegionType_DramReservedEarly));
-        }
-
-        void SetupPoolPartitionMemoryRegions() {
-            if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
-                /* On 5.0.0+, setup modern 4-pool-partition layout. */
-                SetupPoolPartitionMemoryRegionsImpl();
-            } else {
+            } else if (GetTargetFirmware() >= TargetFirmware_2_0_0) {
                 /* On < 5.0.0, setup a legacy 2-pool layout for backwards compatibility. */
-                SetupPoolPartitionMemoryRegionsDeprecatedImpl();
+
+                static_assert(KMemoryManager::Pool_Count == 4);
+                static_assert(KMemoryManager::Pool_Unsafe == KMemoryManager::Pool_Application);
+                static_assert(KMemoryManager::Pool_Secure == KMemoryManager::Pool_System);
+
+                /* Get Secure pool size. */
+                constexpr size_t LegacySecureKernelSize = 6_MB;          /* KPageBuffer pages, other small kernel allocations. */
+                constexpr size_t LegacySecureMiscSize   = 1_MB;          /* Miscellaneous pages for secure process mapping. */
+                constexpr size_t LegacySecureHeapSize   = 24_MB;         /* Heap pages for secure process mapping (fs). */
+                constexpr size_t LegacySecureEsSize     = 1_MB + 232_KB; /* Size for additional secure process (es, 4.0.0+). */
+
+                const size_t secure_pool_size = GetInitialProcessesSecureMemorySize() + LegacySecureKernelSize + LegacySecureHeapSize + LegacySecureMiscSize + (GetTargetFirmware() >= TargetFirmware_4_0_0 ? LegacySecureEsSize : 0);
+
+                /* Calculate the overhead for the secure and (defunct) applet/non-secure-system pools. */
+                size_t total_overhead_size = KMemoryManager::CalculateManagementOverheadSize(secure_pool_size);
+
+                /* Calculate the overhead for (an amount larger than) the unsafe pool. */
+                const size_t approximate_total_overhead_size = total_overhead_size + KMemoryManager::CalculateManagementOverheadSize((pool_end - pool_partitions_start) - secure_pool_size - total_overhead_size) + 2 * PageSize;
+
+                /* Determine the start of the unsafe region. */
+                const uintptr_t unsafe_memory_start = util::AlignUp(pool_partitions_start + secure_pool_size + approximate_total_overhead_size, CarveoutAlignment);
+
+                /* Determine the start of the pool regions. */
+                const uintptr_t application_pool_start = unsafe_memory_start;
+
+                /* Determine the pool sizes. */
+                const size_t application_pool_size = pool_end - application_pool_start;
+
+                /* We want to arrange application pool depending on where the middle of dram is. */
+                const uintptr_t dram_midpoint = (dram_extents.GetAddress() + dram_extents.GetEndAddress()) / 2;
+                u32 cur_pool_attr = 0;
+                if (dram_extents.GetEndAddress() <= dram_midpoint || dram_midpoint <= application_pool_start) {
+                    InsertPoolPartitionRegionIntoBothTrees(application_pool_start, application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                    total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(application_pool_size);
+                } else {
+                    const size_t first_application_pool_size  = dram_midpoint - application_pool_start;
+                    const size_t second_application_pool_size = application_pool_start + application_pool_size - dram_midpoint;
+                    InsertPoolPartitionRegionIntoBothTrees(application_pool_start, first_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                    InsertPoolPartitionRegionIntoBothTrees(dram_midpoint, second_application_pool_size, KMemoryRegionType_DramApplicationPool, KMemoryRegionType_VirtualDramApplicationPool, cur_pool_attr);
+                    total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(first_application_pool_size);
+                    total_overhead_size += KMemoryManager::CalculateManagementOverheadSize(second_application_pool_size);
+                }
+
+                /* Insert the secure pool. */
+                InsertPoolPartitionRegionIntoBothTrees(pool_partitions_start, secure_pool_size, KMemoryRegionType_DramSystemPool, KMemoryRegionType_VirtualDramSystemPool, cur_pool_attr);
+
+                /* Insert the pool management region. */
+                MESOSPHERE_INIT_ABORT_UNLESS(total_overhead_size <= approximate_total_overhead_size);
+
+                const uintptr_t pool_management_start = pool_partitions_start + secure_pool_size;
+                const size_t    pool_management_size  = unsafe_memory_start - pool_management_start;
+                MESOSPHERE_INIT_ABORT_UNLESS(total_overhead_size <= pool_management_size);
+
+                u32 pool_management_attr = 0;
+                InsertPoolPartitionRegionIntoBothTrees(pool_management_start, pool_management_size, KMemoryRegionType_DramPoolManagement, KMemoryRegionType_VirtualDramPoolManagement, pool_management_attr);
+            } else {
+                /* TODO: 1.0.0 single-pool layout. */
+                MESOSPHERE_UNIMPLEMENTED();
             }
         }
 

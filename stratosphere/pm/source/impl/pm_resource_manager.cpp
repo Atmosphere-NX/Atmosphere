@@ -168,6 +168,17 @@ namespace ams::pm::resource {
             }
         }
 
+        bool IsKTraceEnabled() {
+            if (!svc::IsKernelMesosphere()) {
+                return false;
+            }
+
+            u64 value = 0;
+            R_ABORT_UNLESS(svc::GetInfo(std::addressof(value), svc::InfoType_MesosphereMeta, INVALID_HANDLE, svc::MesosphereMetaInfo_IsKTraceEnabled));
+
+            return value != 0;
+        }
+
     }
 
     /* Resource API. */
@@ -264,6 +275,14 @@ namespace ams::pm::resource {
             for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
                 g_memory_resource_limits[i][ResourceLimitGroup_System] += extra_memory_size;
                 g_memory_resource_limits[i][src_group] -= extra_memory_size;
+            }
+
+            /* If KTrace is enabled, account for that by subtracting the memory from the applet pool. */
+            if (IsKTraceEnabled()) {
+                constexpr size_t KTraceBufferSize = 16_MB;
+                for (size_t i = 0; i < spl::MemoryArrangement_Count; i++) {
+                    g_memory_resource_limits[i][ResourceLimitGroup_Applet] -= KTraceBufferSize;
+                }
             }
         }
 

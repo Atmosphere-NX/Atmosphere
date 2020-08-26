@@ -469,7 +469,7 @@ namespace ams::kern::board::nintendo::nx {
         KSleepManager::Initialize();
 
         /* Reserve secure applet memory. */
-        {
+        if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address == Null<KVirtualAddress>);
             MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
 
@@ -486,7 +486,7 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     u32 KSystemControl::GetInitialProcessBinaryPool() {
-        return KMemoryManager::Pool_Application;
+        return KMemoryManager::Pool_Unsafe;
     }
 
     /* Privileged Access. */
