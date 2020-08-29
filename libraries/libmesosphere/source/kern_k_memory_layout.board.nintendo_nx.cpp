@@ -63,16 +63,29 @@ namespace ams::kern {
             /* TODO: Give these constexpr defines somewhere? */
             MESOSPHERE_INIT_ABORT_UNLESS(SetupUartPhysicalMemoryRegion());
             MESOSPHERE_INIT_ABORT_UNLESS(SetupPowerManagementControllerMemoryRegion());
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,    KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,    KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,    KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,    KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,    KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000,   KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70019000, 0x1000,  KMemoryRegionType_MemoryController          | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001C000, 0x1000,  KMemoryRegionType_MemoryController0         | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x7001D000, 0x1000,  KMemoryRegionType_MemoryController1         | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50040000, 0x1000,  KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50041000, 0x1000,  KMemoryRegionType_InterruptDistributor      | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50042000, 0x1000,  KMemoryRegionType_InterruptCpuInterface     | KMemoryRegionAttr_ShouldKernelMap));
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x50043000, 0x1D000, KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+
+            /* Map IRAM unconditionally, to support debug-logging-to-iram build config. */
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x40000000, 0x40000, KMemoryRegionType_LegacyLpsIram | KMemoryRegionAttr_ShouldKernelMap));
+
             if (GetTargetFirmware() >= TargetFirmware_2_0_0) {
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000,    KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
-                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,     KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+                /* Prevent mapping the bpmp exception vectors or the ipatch region. */
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000, KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6001DC00, 0x400,  KMemoryRegionType_None                      | KMemoryRegionAttr_NoUserMap));
+            } else {
+                /* Map devices required for legacy lps driver. */
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x6000F000, 0x1000, KMemoryRegionType_LegacyLpsExceptionVectors | KMemoryRegionAttr_ShouldKernelMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60007000, 0x1000, KMemoryRegionType_LegacyLpsFlowController   | KMemoryRegionAttr_ShouldKernelMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60004000, 0x1000, KMemoryRegionType_LegacyLpsPrimaryICtlr     | KMemoryRegionAttr_ShouldKernelMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60001000, 0x1000, KMemoryRegionType_LegacyLpsSemaphore        | KMemoryRegionAttr_ShouldKernelMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70016000, 0x1000, KMemoryRegionType_LegacyLpsAtomics          | KMemoryRegionAttr_ShouldKernelMap));
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x60006000, 0x1000, KMemoryRegionType_LegacyLpsClkRst           | KMemoryRegionAttr_ShouldKernelMap));
             }
         }
 
