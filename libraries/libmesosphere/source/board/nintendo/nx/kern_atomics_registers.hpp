@@ -2,7 +2,7 @@
  * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU General Public License,
+ * under the terms and conditions of the GNU General Public License
  * version 2, as published by the Free Software Foundation.
  *
  * This program is distributed in the hope it will be useful, but WITHOUT
@@ -14,16 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <mesosphere.hpp>
 
-namespace ams::kern::board::nintendo::nx {
+#define ATOMICS_AP0_TRIGGER	   0x000
+#define ATOMICS_AP0_RESULT(id) (0xc00 + id * 4)
 
-    namespace lps {
-
-        void Initialize();
-        Result EnableSuspend(bool enable);
-        void InvokeCpuSleepHandler(uintptr_t arg, uintptr_t entry);
-
-    }
-
-}
+#define TRIGGER_CMD_GET 4
