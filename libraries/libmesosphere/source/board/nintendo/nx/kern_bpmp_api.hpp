@@ -17,31 +17,31 @@
 #include <mesosphere.hpp>
 
 /* Message Flags */
-#define BPMP_MSG_DO_ACK		    (1 << 0)
+#define BPMP_MSG_DO_ACK            (1 << 0)
 #define BPMP_MSG_RING_DOORBELL  (1 << 1)
 
 /* Messages */
-#define MRQ_PING		    0
-#define MRQ_ENABLE_SUSPEND	17
+#define MRQ_PING            0
+#define MRQ_ENABLE_SUSPEND  17
 #define MRQ_CPU_PMIC_SELECT 28
 
 /* BPMP Power states. */
-#define TEGRA_BPMP_PM_CC1	9
-#define TEGRA_BPMP_PM_CC4	12
-#define TEGRA_BPMP_PM_CC6	14
-#define TEGRA_BPMP_PM_CC7	15
-#define TEGRA_BPMP_PM_SC1	17
-#define TEGRA_BPMP_PM_SC2	18
-#define TEGRA_BPMP_PM_SC3	19
-#define TEGRA_BPMP_PM_SC4	20
-#define TEGRA_BPMP_PM_SC7	23
+#define TEGRA_BPMP_PM_CC1 9
+#define TEGRA_BPMP_PM_CC4 12
+#define TEGRA_BPMP_PM_CC6 14
+#define TEGRA_BPMP_PM_CC7 15
+#define TEGRA_BPMP_PM_SC1 17
+#define TEGRA_BPMP_PM_SC2 18
+#define TEGRA_BPMP_PM_SC3 19
+#define TEGRA_BPMP_PM_SC4 20
+#define TEGRA_BPMP_PM_SC7 23
 
 /* Channel states. */
-#define CH_MASK(ch)	(0x3u << ((ch) * 2))
-#define SL_SIGL(ch)	(0x0u << ((ch) * 2))
-#define SL_QUED(ch)	(0x1u << ((ch) * 2))
-#define MA_FREE(ch)	(0x2u << ((ch) * 2))
-#define MA_ACKD(ch)	(0x3u << ((ch) * 2))
+#define CH_MASK(ch) (0x3u << ((ch) * 2))
+#define SL_SIGL(ch) (0x0u << ((ch) * 2))
+#define SL_QUED(ch) (0x1u << ((ch) * 2))
+#define MA_FREE(ch) (0x2u << ((ch) * 2))
+#define MA_ACKD(ch) (0x3u << ((ch) * 2))
 
 constexpr inline int MessageSize = 0x80;
 constexpr inline int MessageDataSizeMax = 0x78;

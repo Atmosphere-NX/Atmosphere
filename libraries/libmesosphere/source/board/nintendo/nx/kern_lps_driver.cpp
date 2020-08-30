@@ -19,8 +19,10 @@
 
 #include "kern_bpmp_api.hpp"
 #include "kern_atomics_registers.hpp"
-#include "kern_ictlr_registers.hpp"
+#include "kern_clkrst_registers.hpp"
 #include "kern_flow_registers.hpp"
+#include "kern_ictlr_registers.hpp"
+#include "kern_pmc_registers.hpp"
 #include "kern_sema_registers.hpp"
 
 namespace ams::kern::board::nintendo::nx::lps {
@@ -43,8 +45,11 @@ namespace ams::kern::board::nintendo::nx::lps {
         constinit KVirtualAddress g_sema_address    = Null<KVirtualAddress>;
         constinit KVirtualAddress g_atomics_address = Null<KVirtualAddress>;
         constinit KVirtualAddress g_clkrst_address  = Null<KVirtualAddress>;
+        constinit KVirtualAddress g_pmc_address     = Null<KVirtualAddress>;
 
         constinit ChannelData g_channel_area[ChannelCount] = {};
+
+        constinit u32 g_csite_clk_source = 0;
 
         ALWAYS_INLINE u32 Read(KVirtualAddress address) {
             return *GetPointer<volatile u32>(address);
@@ -62,6 +67,7 @@ namespace ams::kern::board::nintendo::nx::lps {
             g_sema_address    = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsSemaphore);
             g_atomics_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsAtomics);
             g_clkrst_address  = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsClkRst);
+            g_pmc_address     = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_PowerManagementController);
         }
 
         /* NOTE: linux "do_cc4_init" */
@@ -393,15 +399,36 @@ namespace ams::kern::board::nintendo::nx::lps {
     }
 
     void InvokeCpuSleepHandler(uintptr_t arg, uintptr_t entry) {
+        /* Verify that we're allowed to perform suspension. */
         MESOSPHERE_ABORT_UNLESS(g_lps_init_done);
         MESOSPHERE_ABORT_UNLESS(GetCurrentCoreId() == 0);
 
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Save the CSITE clock source. */
+        g_csite_clk_source = Read(g_clkrst_address + CLK_RST_CONTROLLER_CLK_SOURCE_CSITE);
+
+        /* Configure CSITE clock source as CLK_M. */
+        Write(g_clkrst_address + CLK_RST_CONTROLLER_CLK_SOURCE_CSITE, (0x6 << 29));
+
+        /* Clear the top bit of PMC_SCRATCH4. */
+        Write(g_pmc_address + APBDEV_PMC_SCRATCH4, Read(g_pmc_address + APBDEV_PMC_SCRATCH4) & 0x7FFFFFFF);
+
+        /* Write 1 to PMC_SCRATCH0. This will cause the bootrom to use the warmboot code-path. */
+        Write(g_pmc_address + APBDEV_PMC_SCRATCH0, 1);
+
+        /* Read PMC_SCRATCH0 to be sure our write takes. */
+        Read(g_pmc_address + APBDEV_PMC_SCRATCH0);
 
         /* Invoke the sleep hander. */
         KSleepManager::CpuSleepHandler(arg, entry);
 
-        /* TODO: restore saved clkrst reg */
+        /* Disable deep power down. */
+        Write(g_pmc_address + APBDEV_PMC_DPD_ENABLE, 0);
+
+        /* Restore the saved CSITE clock source. */
+        Write(g_clkrst_address + CLK_RST_CONTROLLER_CLK_SOURCE_CSITE, g_csite_clk_source);
+
+        /* Read the CSITE clock source to ensure our configuration takes. */
+        Read(g_clkrst_address + CLK_RST_CONTROLLER_CLK_SOURCE_CSITE);
 
         /* Configure CC3/CC4. */
         ConfigureCc3AndCc4();

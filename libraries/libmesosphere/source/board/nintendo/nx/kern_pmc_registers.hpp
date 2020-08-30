@@ -15,11 +15,6 @@
  */
 #pragma once
 
-#define ICTLR_REG_BASE(irq) ((((irq) - 32) >> 5) * 0x100)
-#define ICTLR_FIR_SET(irq)  (ICTLR_REG_BASE(irq) + 0x18)
-#define ICTLR_FIR_CLR(irq)  (ICTLR_REG_BASE(irq) + 0x1c)
-#define FIR_BIT(irq)        (1 << ((irq) & 0x1f))
-
-#define INT_GIC_BASE            (0)
-#define INT_PRI_BASE            (INT_GIC_BASE + 32)
-#define INT_SHR_SEM_OUTBOX_IBF  (INT_PRI_BASE + 6)
+#define APBDEV_PMC_DPD_ENABLE 0x024
+#define APBDEV_PMC_SCRATCH0   0x050
+#define APBDEV_PMC_SCRATCH4   0x060

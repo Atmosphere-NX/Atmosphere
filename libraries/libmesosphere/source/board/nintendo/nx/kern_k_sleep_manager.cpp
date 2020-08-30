@@ -561,7 +561,7 @@ namespace ams::kern::board::nintendo::nx {
 
                     /* If we're using the legacy lps driver, enable suspend. */
                     if (use_legacy_lps_driver) {
-                        MESOSPHERE_R_ABORT_UNLESS(lps::EnableSuspend());
+                        MESOSPHERE_R_ABORT_UNLESS(lps::EnableSuspend(true));
                     }
 
                     /* Log that we're about to enter SC7. */
