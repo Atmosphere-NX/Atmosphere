@@ -16,6 +16,10 @@
 #include <mesosphere.hpp>
 #include "kern_mc_registers.hpp"
 
+#if defined(MESOSPHERE_BUILD_FOR_DEBUGGING) || defined(MESOSPHERE_BUILD_FOR_AUDITING)
+#define MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT
+#endif
+
 namespace ams::kern::board::nintendo::nx {
 
     namespace {
@@ -332,13 +336,13 @@ namespace ams::kern::board::nintendo::nx {
         };
 
         /* Globals. */
-        KLightLock g_lock;
-        u8 g_reserved_asid;
-        KPhysicalAddress   g_memory_controller_address;
-        KPhysicalAddress   g_reserved_table_phys_addr;
-        KDeviceAsidManager g_asid_manager;
-        u32 g_saved_page_tables[AsidCount];
-        u32 g_saved_asid_registers[ams::svc::DeviceName_Count];
+        constinit KLightLock g_lock;
+        constinit u8 g_reserved_asid;
+        constinit KPhysicalAddress   g_memory_controller_address;
+        constinit KPhysicalAddress   g_reserved_table_phys_addr;
+        constinit KDeviceAsidManager g_asid_manager;
+        constinit u32 g_saved_page_tables[AsidCount];
+        constinit u32 g_saved_asid_registers[ams::svc::DeviceName_Count];
 
         /* Memory controller access functionality. */
         void WriteMcRegister(size_t offset, u32 value) {
@@ -349,6 +353,237 @@ namespace ams::kern::board::nintendo::nx {
             return KSystemControl::ReadRegisterPrivileged(GetInteger(g_memory_controller_address) + offset);
         }
 
+        /* Memory controller interrupt functionality. */
+
+        constexpr const char * const MemoryControllerClientNames[138] = {
+            [  0] = "csr_ptcr (ptc)",
+            [  1] = "csr_display0a (dc)",
+            [  2] = "csr_display0ab (dcb)",
+            [  3] = "csr_display0b (dc)",
+            [  4] = "csr_display0bb (dcb)",
+            [  5] = "csr_display0c (dc)",
+            [  6] = "csr_display0cb (dcb)",
+            [  7] = "Unknown Client",
+            [  8] = "Unknown Client",
+            [  9] = "Unknown Client",
+            [ 10] = "Unknown Client",
+            [ 11] = "Unknown Client",
+            [ 12] = "Unknown Client",
+            [ 13] = "Unknown Client",
+            [ 14] = "csr_afir (afi)",
+            [ 15] = "csr_avpcarm7r (avpc)",
+            [ 16] = "csr_displayhc (dc)",
+            [ 17] = "csr_displayhcb (dcb)",
+            [ 18] = "Unknown Client",
+            [ 19] = "Unknown Client",
+            [ 20] = "Unknown Client",
+            [ 21] = "csr_hdar (hda)",
+            [ 22] = "csr_host1xdmar (hc)",
+            [ 23] = "csr_host1xr (hc)",
+            [ 24] = "Unknown Client",
+            [ 25] = "Unknown Client",
+            [ 26] = "Unknown Client",
+            [ 27] = "Unknown Client",
+            [ 28] = "csr_nvencsrd (nvenc)",
+            [ 29] = "csr_ppcsahbdmar (ppcs)",
+            [ 30] = "csr_ppcsahbslvr (ppcs)",
+            [ 31] = "csr_satar (sata)",
+            [ 32] = "Unknown Client",
+            [ 33] = "Unknown Client",
+            [ 34] = "Unknown Client",
+            [ 35] = "Unknown Client",
+            [ 36] = "Unknown Client",
+            [ 37] = "Unknown Client",
+            [ 38] = "Unknown Client",
+            [ 39] = "csr_mpcorer (cpu)",
+            [ 40] = "Unknown Client",
+            [ 41] = "Unknown Client",
+            [ 42] = "Unknown Client",
+            [ 43] = "csw_nvencswr (nvenc)",
+            [ 44] = "Unknown Client",
+            [ 45] = "Unknown Client",
+            [ 46] = "Unknown Client",
+            [ 47] = "Unknown Client",
+            [ 48] = "Unknown Client",
+            [ 49] = "csw_afiw (afi)",
+            [ 50] = "csw_avpcarm7w (avpc)",
+            [ 51] = "Unknown Client",
+            [ 52] = "Unknown Client",
+            [ 53] = "csw_hdaw (hda)",
+            [ 54] = "csw_host1xw (hc)",
+            [ 55] = "Unknown Client",
+            [ 56] = "Unknown Client",
+            [ 57] = "csw_mpcorew (cpu)",
+            [ 58] = "Unknown Client",
+            [ 59] = "csw_ppcsahbdmaw (ppcs)",
+            [ 60] = "csw_ppcsahbslvw (ppcs)",
+            [ 61] = "csw_sataw (sata)",
+            [ 62] = "Unknown Client",
+            [ 63] = "Unknown Client",
+            [ 64] = "Unknown Client",
+            [ 65] = "Unknown Client",
+            [ 66] = "Unknown Client",
+            [ 67] = "Unknown Client",
+            [ 68] = "csr_ispra (isp2)",
+            [ 69] = "Unknown Client",
+            [ 70] = "csw_ispwa (isp2)",
+            [ 71] = "csw_ispwb (isp2)",
+            [ 72] = "Unknown Client",
+            [ 73] = "Unknown Client",
+            [ 74] = "csr_xusb_hostr (xusb_host)",
+            [ 75] = "csw_xusb_hostw (xusb_host)",
+            [ 76] = "csr_xusb_devr (xusb_dev)",
+            [ 77] = "csw_xusb_devw (xusb_dev)",
+            [ 78] = "csr_isprab (isp2b)",
+            [ 79] = "Unknown Client",
+            [ 80] = "csw_ispwab (isp2b)",
+            [ 81] = "csw_ispwbb (isp2b)",
+            [ 82] = "Unknown Client",
+            [ 83] = "Unknown Client",
+            [ 84] = "csr_tsecsrd (tsec)",
+            [ 85] = "csw_tsecswr (tsec)",
+            [ 86] = "csr_a9avpscr (a9avp)",
+            [ 87] = "csw_a9avpscw (a9avp)",
+            [ 88] = "csr_gpusrd (gpu)",
+            [ 89] = "csw_gpuswr (gpu)",
+            [ 90] = "csr_displayt (dc)",
+            [ 91] = "Unknown Client",
+            [ 92] = "Unknown Client",
+            [ 93] = "Unknown Client",
+            [ 94] = "Unknown Client",
+            [ 95] = "Unknown Client",
+            [ 96] = "csr_sdmmcra (sdmmc1a)",
+            [ 97] = "csr_sdmmcraa (sdmmc2a)",
+            [ 98] = "csr_sdmmcr (sdmmc3a)",
+            [ 99] = "csr_sdmmcrab (sdmmc4a)",
+            [100] = "csw_sdmmcwa (sdmmc1a)",
+            [101] = "csw_sdmmcwaa (sdmmc2a)",
+            [102] = "csw_sdmmcw (sdmmc3a)",
+            [103] = "csw_sdmmcwab (sdmmc4a)",
+            [104] = "Unknown Client",
+            [105] = "Unknown Client",
+            [106] = "Unknown Client",
+            [107] = "Unknown Client",
+            [108] = "csr_vicsrd (vic)",
+            [109] = "csw_vicswr (vic)",
+            [110] = "Unknown Client",
+            [111] = "Unknown Client",
+            [112] = "Unknown Client",
+            [113] = "Unknown Client",
+            [114] = "csw_viw (vi)",
+            [115] = "csr_displayd (dc)",
+            [116] = "Unknown Client",
+            [117] = "Unknown Client",
+            [118] = "Unknown Client",
+            [119] = "Unknown Client",
+            [120] = "csr_nvdecsrd (nvdec)",
+            [121] = "csw_nvdecswr (nvdec)",
+            [122] = "csr_aper (ape)",
+            [123] = "csw_apew (ape)",
+            [124] = "Unknown Client",
+            [125] = "Unknown Client",
+            [126] = "csr_nvjpgsrd (nvjpg)",
+            [127] = "csw_nvjpgswr (nvjpg)",
+            [128] = "csr_sesrd (se)",
+            [129] = "csw_seswr (se)",
+            [130] = "csr_axiapr (axiap)",
+            [131] = "csw_axiapw (axiap)",
+            [132] = "csr_etrr (etr)",
+            [133] = "csw_etrw (etr)",
+            [134] = "csr_tsecsrdb (tsecb)",
+            [135] = "csw_tsecswrb (tsecb)",
+            [136] = "csr_gpusrd2 (gpu)",
+            [137] = "csw_gpuswr2 (gpu)",
+        };
+
+        constexpr const char * GetMemoryControllerClientName(size_t i) {
+            if (i < util::size(MemoryControllerClientNames)) {
+                return MemoryControllerClientNames[i];
+            }
+            return "Unknown Client";
+        }
+
+        constexpr const char * const MemoryControllerErrorTypes[8] = {
+            "RSVD",
+            "Unknown",
+            "DECERR_EMEM",
+            "SECURITY_TRUSTZONE",
+            "SECURITY_CARVEOUT",
+            "Unknown",
+            "INVALID_SMMU_PAGE",
+            "Unknown",
+        };
+
+        class KMemoryControllerInterruptTask : public KInterruptTask {
+            public:
+                constexpr KMemoryControllerInterruptTask() : KInterruptTask() { /* ... */ }
+
+                virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
+                    return this;
+                }
+
+                virtual void DoTask() override {
+                    #if defined(MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT)
+                    {
+                        /* Clear the interrupt when we're done. */
+                        ON_SCOPE_EXIT {  };
+
+                        /* Get and clear the interrupt status. */
+                        u32 int_status, err_status, err_adr;
+                        {
+                            int_status = ReadMcRegister(MC_INTSTATUS);
+                            err_status = ReadMcRegister(MC_ERR_STATUS);
+                            err_adr    = ReadMcRegister(MC_ERR_ADR);
+
+                            WriteMcRegister(MC_INTSTATUS, int_status);
+                        }
+
+                        /* Print the interrupt. */
+                        {
+                            constexpr auto GetBits = [] ALWAYS_INLINE_LAMBDA (u32 value, size_t ofs, size_t count) {
+                                return (value >> ofs) & ((1u << count) - 1);
+                            };
+
+                            constexpr auto GetBit = [GetBits] ALWAYS_INLINE_LAMBDA (u32 value, size_t ofs) {
+                                return (value >> ofs) & 1u;
+                            };
+
+                            MESOSPHERE_RELEASE_LOG("sMMU error interrupt\n");
+                            MESOSPHERE_RELEASE_LOG("    MC_INTSTATUS=%08x\n", int_status);
+                            MESOSPHERE_RELEASE_LOG("        DECERR_GENERALIZED_CARVEOUT=%d\n", GetBit(int_status, 17));
+                            MESOSPHERE_RELEASE_LOG("        DECERR_MTS=%d\n",                  GetBit(int_status, 16));
+                            MESOSPHERE_RELEASE_LOG("        SECERR_SEC=%d\n",                  GetBit(int_status, 13));
+                            MESOSPHERE_RELEASE_LOG("        DECERR_VPR=%d\n",                  GetBit(int_status, 12));
+                            MESOSPHERE_RELEASE_LOG("        INVALID_APB_ASID_UPDATE=%d\n",     GetBit(int_status, 11));
+                            MESOSPHERE_RELEASE_LOG("        INVALID_SMMU_PAGE=%d\n",           GetBit(int_status, 10));
+                            MESOSPHERE_RELEASE_LOG("        ARBITRATION_EMEM=%d\n",            GetBit(int_status,  9));
+                            MESOSPHERE_RELEASE_LOG("        SECURITY_VIOLATION=%d\n",          GetBit(int_status,  8));
+                            MESOSPHERE_RELEASE_LOG("        DECERR_EMEM=%d\n",                 GetBit(int_status,  6));
+                            MESOSPHERE_RELEASE_LOG("    MC_ERRSTATUS=%08x\n", err_status);
+                            MESOSPHERE_RELEASE_LOG("        ERR_TYPE=%d (%s)\n",                  GetBits(err_status, 28, 3), MemoryControllerErrorTypes[GetBits(err_status, 28, 3)]);
+                            MESOSPHERE_RELEASE_LOG("        ERR_INVALID_SMMU_PAGE_READABLE=%d\n", GetBit (err_status, 27));
+                            MESOSPHERE_RELEASE_LOG("        ERR_INVALID_SMMU_PAGE_WRITABLE=%d\n", GetBit (err_status, 26));
+                            MESOSPHERE_RELEASE_LOG("        ERR_INVALID_SMMU_NONSECURE=%d\n",     GetBit (err_status, 25));
+                            MESOSPHERE_RELEASE_LOG("        ERR_ADR_HI=%x\n",                     GetBits(err_status, 20, 2));
+                            MESOSPHERE_RELEASE_LOG("        ERR_SWAP=%d\n",                       GetBit (err_status, 18));
+                            MESOSPHERE_RELEASE_LOG("        ERR_SECURITY=%d %s\n",                GetBit (err_status, 17), GetBit(err_status, 17) ? "SECURE" : "NONSECURE");
+                            MESOSPHERE_RELEASE_LOG("        ERR_RW=%d %s\n",                      GetBit (err_status, 16), GetBit(err_status, 16) ? "WRITE" : "READ");
+                            MESOSPHERE_RELEASE_LOG("        ERR_ADR1=%x\n",                       GetBits(err_status, 12, 3));
+                            MESOSPHERE_RELEASE_LOG("        ERR_ID=%d %s\n",                      GetBits(err_status,  0, 8), GetMemoryControllerClientName(GetBits(err_status,  0, 8)));
+                            MESOSPHERE_RELEASE_LOG("    MC_ERRADR=%08x\n", err_adr);
+                            MESOSPHERE_RELEASE_LOG("        ERR_ADR=%lx\n", (static_cast<u64>(GetBits(err_status, 20, 2)) << 32) | static_cast<u64>(err_adr));
+                            MESOSPHERE_RELEASE_LOG("\n");
+                        }
+                    }
+                    #endif
+                }
+        };
+
+        /* Interrupt task global. */
+        constinit KMemoryControllerInterruptTask g_mc_interrupt_task;
+
+        /* Memory controller utilities. */
         void SmmuSynchronizationBarrier() {
             ReadMcRegister(MC_SMMU_CONFIG);
         }
@@ -452,11 +687,23 @@ namespace ams::kern::board::nintendo::nx {
         /* Clear int status. */
         WriteMcRegister(MC_INTSTATUS, ReadMcRegister(MC_INTSTATUS));
 
+        /* If we're setting an interrupt handler, unmask all interrupts. */
+        #if defined(MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT)
+        {
+            WriteMcRegister(MC_INTMASK, 0x33D40);
+        }
+        #endif
+
         /* Enable the SMMU */
         WriteMcRegister(MC_SMMU_CONFIG, 1);
         SmmuSynchronizationBarrier();
 
-        /* TODO: Install interrupt handler. */
+        /* Install interrupt handler. */
+        #if defined(MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT)
+        {
+            Kernel::GetInterruptManager().BindHandler(std::addressof(g_mc_interrupt_task), KInterruptName_MemoryController, GetCurrentCoreId(), KInterruptController::PriorityLevel_High, true, true);
+        }
+        #endif
     }
 
     void KDevicePageTable::Lock() {
