@@ -605,6 +605,11 @@ namespace ams::kern::board::nintendo::nx {
                 /* If on core 0, wake up the device page tables. */
                 if (core_id == 0) {
                     KDevicePageTable::Wakeup();
+
+                    /* If we're using the legacy driver, resume the bpmp firmware. */
+                    if (use_legacy_lps_driver) {
+                        lps::ResumeBpmpFirmware();
+                    }
                 }
 
                 /* Ensure that all cores get to this point before continuing. */
