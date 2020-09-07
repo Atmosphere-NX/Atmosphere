@@ -26,6 +26,7 @@ void smAtmosphereCloseSession(Service *srv);
 Result smAtmosphereMitmInstall(Service *fwd_srv, Handle *handle_out, Handle *query_out, SmServiceName name);
 Result smAtmosphereMitmUninstall(SmServiceName name);
 Result smAtmosphereMitmDeclareFuture(SmServiceName name);
+Result smAtmosphereMitmClearFuture(SmServiceName name);
 Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, void *info_out, SmServiceName name);
 
 #ifdef __cplusplus

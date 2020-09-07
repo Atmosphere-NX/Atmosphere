@@ -32,6 +32,7 @@ namespace ams::sm::impl {
         AMS_SF_METHOD_INFO(C, H, 65004, Result, AtmosphereHasMitm,                (sf::Out<bool> out, ServiceName service))                                             \
         AMS_SF_METHOD_INFO(C, H, 65005, Result, AtmosphereWaitMitm,               (ServiceName service))                                                                \
         AMS_SF_METHOD_INFO(C, H, 65006, Result, AtmosphereDeclareFutureMitm,      (ServiceName service))                                                                \
+        AMS_SF_METHOD_INFO(C, H, 65007, Result, AtmosphereClearFutureMitm,        (ServiceName service))                                                                \
         AMS_SF_METHOD_INFO(C, H, 65100, Result, AtmosphereHasService,             (sf::Out<bool> out, ServiceName service))                                             \
         AMS_SF_METHOD_INFO(C, H, 65101, Result, AtmosphereWaitService,            (ServiceName service))
 

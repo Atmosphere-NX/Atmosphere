@@ -75,6 +75,11 @@ namespace ams::sm {
         return impl::DeclareFutureMitm(this->process_id, service);
     }
 
+    Result UserService::AtmosphereClearFutureMitm(ServiceName service) {
+        R_TRY(this->EnsureInitialized());
+        return impl::ClearFutureMitm(this->process_id, service);
+    }
+
 
     Result UserService::AtmosphereHasService(sf::Out<bool> out, ServiceName service) {
         R_TRY(this->EnsureInitialized());

@@ -588,6 +588,15 @@ namespace ams::sm::impl {
         *out = INVALID_HANDLE;
         *out_query = INVALID_HANDLE;
 
+        /* If we don't have a future mitm declaration, add one. */
+        /* Client will clear this when ready to process. */
+        bool has_existing_future_declaration = HasFutureMitmDeclaration(service);
+        if (!has_existing_future_declaration) {
+            R_TRY(AddFutureMitmDeclaration(service));
+        }
+
+        auto future_guard = SCOPE_GUARD { if (!has_existing_future_declaration) { ClearFutureMitmDeclaration(service); } };
+
         /* Create mitm handles. */
         {
             os::ManagedHandle hnd, port_hnd, qry_hnd, mitm_qry_hnd;
@@ -603,9 +612,7 @@ namespace ams::sm::impl {
             *out_query = qry_hnd.Move();
         }
 
-        /* Clear the future declaration, if one exists. */
-        ClearFutureMitmDeclaration(service);
-
+        future_guard.Cancel();
         return ResultSuccess();
     }
 
@@ -648,6 +655,34 @@ namespace ams::sm::impl {
 
         /* Try to forward declare it. */
         R_TRY(AddFutureMitmDeclaration(service));
+        return ResultSuccess();
+    }
+
+    Result ClearFutureMitm(os::ProcessId process_id, ServiceName service) {
+        /* Validate service name. */
+        R_TRY(ValidateServiceName(service));
+
+        /* Check that the process is registered and allowed to register the service. */
+        if (!IsInitialProcess(process_id)) {
+            ProcessInfo *proc = GetProcessInfo(process_id);
+            R_UNLESS(proc != nullptr, sm::ResultInvalidClient());
+            R_TRY(ValidateAccessControl(AccessControlEntry(proc->access_control, proc->access_control_size), service, true, false));
+        }
+
+        /* Check that a future mitm declaration is present or we have a mitm. */
+        if (HasMitm(service)) {
+            /* Validate that the service exists. */
+            ServiceInfo *service_info = GetServiceInfo(service);
+            R_UNLESS(service_info != nullptr, sm::ResultNotRegistered());
+
+            /* Validate that the client process_id is the mitm process. */
+            R_UNLESS(service_info->mitm_process_id == process_id, sm::ResultNotAllowed());
+        } else {
+            R_UNLESS(HasFutureMitmDeclaration(service), sm::ResultNotRegistered());
+        }
+
+        /* Clear the forward declaration. */
+        ClearFutureMitmDeclaration(service);
         return ResultSuccess();
     }
 

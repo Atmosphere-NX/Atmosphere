@@ -40,6 +40,7 @@ namespace ams::sm {
             Result AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
             Result AtmosphereWaitMitm(ServiceName service);
             Result AtmosphereDeclareFutureMitm(ServiceName service);
+            Result AtmosphereClearFutureMitm(ServiceName service);
 
             Result AtmosphereHasService(sf::Out<bool> out, ServiceName service);
             Result AtmosphereWaitService(ServiceName service);

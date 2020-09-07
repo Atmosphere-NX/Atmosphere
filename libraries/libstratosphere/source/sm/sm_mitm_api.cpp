@@ -37,6 +37,12 @@ namespace ams::sm::mitm {
         });
     }
 
+    Result ClearFutureMitm(ServiceName name) {
+        return impl::DoWithUserSession([&]() {
+            return smAtmosphereMitmClearFuture(impl::ConvertName(name));
+        });
+    }
+
     Result AcknowledgeSession(Service *out_service, MitmProcessInfo *out_info, ServiceName name) {
         return impl::DoWithMitmAcknowledgementSession([&]() {
             return smAtmosphereMitmAcknowledgeSession(out_service, reinterpret_cast<void *>(out_info), impl::ConvertName(name));

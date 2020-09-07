@@ -24,6 +24,7 @@ namespace ams::sm::mitm {
     Result InstallMitm(Handle *out_port, Handle *out_query, ServiceName name);
     Result UninstallMitm(ServiceName name);
     Result DeclareFutureMitm(ServiceName name);
+    Result ClearFutureMitm(ServiceName name);
     Result AcknowledgeSession(Service *out_service, MitmProcessInfo *out_info, ServiceName name);
     Result HasMitm(bool *out, ServiceName name);
     Result WaitMitm(ServiceName name);
