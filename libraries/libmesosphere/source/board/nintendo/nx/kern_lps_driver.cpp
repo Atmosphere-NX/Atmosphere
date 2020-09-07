@@ -20,6 +20,7 @@
 #include "kern_bpmp_api.hpp"
 #include "kern_atomics_registers.hpp"
 #include "kern_clkrst_registers.hpp"
+#include "kern_evp_registers.hpp"
 #include "kern_flow_registers.hpp"
 #include "kern_ictlr_registers.hpp"
 #include "kern_pmc_registers.hpp"
@@ -31,7 +32,7 @@ namespace ams::kern::board::nintendo::nx::lps {
 
         constexpr inline int ChannelCount = 12;
 
-        constexpr inline TimeSpan ChannelTimeout = TimeSpan::FromMicroSeconds(1);
+        constexpr inline TimeSpan ChannelTimeout = TimeSpan::FromSeconds(1);
 
         constinit bool g_lps_init_done         = false;
         constinit bool g_bpmp_connected        = false;
@@ -432,6 +433,35 @@ namespace ams::kern::board::nintendo::nx::lps {
 
         /* Configure CC3/CC4. */
         ConfigureCc3AndCc4();
+    }
+
+    void ResumeBpmpFirmware() {
+        /* Halt the bpmp. */
+        Write(g_flow_address + FLOW_CTLR_HALT_COP_EVENTS, (0x2 << 29));
+
+        /* Hold the bpmp in reset. */
+        Write(g_clkrst_address + CLK_RST_CONTROLLER_RST_DEV_L_SET, 0x2);
+
+        /* Read the saved bpmp entrypoint, and write it to the relevant exception vector. */
+        const u32 bpmp_entry = Read(g_pmc_address + APBDEV_PMC_SCRATCH39);
+        Write(g_evp_address + EVP_COP_RESET_VECTOR, bpmp_entry);
+
+        /* Verify that we can read back the address we wrote. */
+        while (Read(g_evp_address + EVP_COP_RESET_VECTOR) != bpmp_entry) {
+            /* ... */
+        }
+
+        /* Spin for 40 ticks, to give enough time for the bpmp to be reset. */
+        const auto start_tick = KHardwareTimer::GetTick();
+        do {
+            __asm__ __volatile__("" ::: "memory");
+        } while ((KHardwareTimer::GetTick() - start_tick) < 40);
+
+        /* Take the bpmp out of reset. */
+        Write(g_clkrst_address + CLK_RST_CONTROLLER_RST_DEV_L_CLR, 0x2);
+
+        /* Resume the bpmp. */
+        Write(g_flow_address + FLOW_CTLR_HALT_COP_EVENTS, (0x0 << 29));
     }
 
 }

@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#define FLOW_CTLR_HALT_COP_EVENTS       0x004
 #define FLOW_CTLR_CC4_HVC_CONTROL       0x060
 #define FLOW_CTLR_CC4_RETENTION_CONTROL 0x064
 #define FLOW_CTLR_CC4_HVC_RETRY         0x08C

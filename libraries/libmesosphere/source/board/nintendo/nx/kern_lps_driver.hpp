@@ -23,6 +23,7 @@ namespace ams::kern::board::nintendo::nx {
         void Initialize();
         Result EnableSuspend(bool enable);
         void InvokeCpuSleepHandler(uintptr_t arg, uintptr_t entry);
+        void ResumeBpmpFirmware();
 
     }
 
