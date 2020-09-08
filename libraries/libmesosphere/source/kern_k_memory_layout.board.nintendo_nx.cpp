@@ -34,6 +34,8 @@ namespace ams::kern {
                 return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
             #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_D)
                 return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006300, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+            #elif defined(MESOSPHERE_DEBUG_LOG_USE_IRAM_RINGBUFFER)
+                return true;
             #else
                 #error "Unknown Debug UART device!"
             #endif
