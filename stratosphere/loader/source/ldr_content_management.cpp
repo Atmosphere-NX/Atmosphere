@@ -58,15 +58,15 @@ namespace ams::ldr {
         }
 
         /* Mount the atmosphere code file system. */
-        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(this->ams_code_info), AtmosphereCodeMountName, content_path, loc.program_id, this->override_status.IsHbl(), this->override_status.IsProgramSpecific()));
+        R_TRY(fs::MountCodeForAtmosphereWithRedirection(std::addressof(this->ams_code_verification_data), AtmosphereCodeMountName, content_path, loc.program_id, this->override_status.IsHbl(), this->override_status.IsProgramSpecific()));
         this->mounted_ams = true;
 
         /* Mount the sd or base code file system. */
-        R_TRY(fs::MountCodeForAtmosphere(std::addressof(this->sd_or_base_code_info), SdOrCodeMountName, content_path, loc.program_id));
+        R_TRY(fs::MountCodeForAtmosphere(std::addressof(this->sd_or_base_code_verification_data), SdOrCodeMountName, content_path, loc.program_id));
         this->mounted_sd_or_code = true;
 
         /* Mount the base code file system. */
-        if (R_SUCCEEDED(fs::MountCode(std::addressof(this->base_code_info), CodeMountName, content_path, loc.program_id))) {
+        if (R_SUCCEEDED(fs::MountCode(std::addressof(this->base_code_verification_data), CodeMountName, content_path, loc.program_id))) {
             this->mounted_code = true;
         }
 
