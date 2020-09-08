@@ -20,7 +20,7 @@
 namespace ams::ro::impl {
 
     /* Utilities for working with NRRs. */
-    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, void *out_hash, size_t out_hash_size, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type);
+    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, void *out_hash, size_t out_hash_size, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, NrrKind nrr_kind, bool enforce_nrr_kind);
     Result UnmapNrr(Handle process_handle, const NrrHeader *header, u64 nrr_heap_address, u64 nrr_heap_size, u64 mapped_code_address);
 
     bool ValidateNrrHashTableEntry(const void *signed_area, size_t signed_area_size, size_t hashes_offset, size_t num_hashes, const void *nrr_hash, const u8 *hash_table, const void *desired_hash);

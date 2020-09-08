@@ -95,11 +95,11 @@ namespace {
     constexpr size_t          DebugMonitorMaxSessions = 2;
 
     /* NOTE: Official code passes 32 for ldr:ro max sessions. We will pass 2, because that's the actual limit. */
-    constexpr sm::ServiceName ForSelfServiceName = sm::ServiceName::Encode("ldr:ro");
-    constexpr size_t          ForSelfMaxSessions = 2;
+    constexpr sm::ServiceName UserServiceName = sm::ServiceName::Encode("ldr:ro");
+    constexpr size_t          UserMaxSessions = 2;
 
-    constexpr sm::ServiceName ForOthersServiceName = sm::ServiceName::Encode("ro:1");
-    constexpr size_t          ForOthersMaxSessions = 2;
+    constexpr sm::ServiceName JitPluginServiceName = sm::ServiceName::Encode("ro:1");
+    constexpr size_t          JitPluginMaxSessions = 2;
 
 }
 
@@ -120,9 +120,9 @@ int main(int argc, char **argv)
     /* Create services. */
     R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IDebugMonitorInterface, ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IRoInterface, ro::RoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IRoInterface, ro::RoUserService>(UserServiceName, UserMaxSessions)));
     if (hos::GetVersion() >= hos::Version_7_0_0) {
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IRoInterface, ro::RoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IRoInterface, ro::RoJitPluginService>(JitPluginServiceName, JitPluginMaxSessions)));
     }
 
     /* Loop forever, servicing our services. */

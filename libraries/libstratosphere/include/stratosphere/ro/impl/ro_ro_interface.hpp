@@ -27,7 +27,7 @@ namespace ams::ro::impl {
         AMS_SF_METHOD_INFO(C, H,  2, Result, RegisterModuleInfo,          (const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size))                                                                                   \
         AMS_SF_METHOD_INFO(C, H,  3, Result, UnregisterModuleInfo,        (const sf::ClientProcessId &client_pid, u64 nrr_address))                                                                                                 \
         AMS_SF_METHOD_INFO(C, H,  4, Result, RegisterProcessHandle,       (const sf::ClientProcessId &client_pid, sf::CopyHandle process_h))                                                                                        \
-        AMS_SF_METHOD_INFO(C, H, 10, Result, RegisterModuleInfoEx,        (const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h),                                     hos::Version_7_0_0)
+        AMS_SF_METHOD_INFO(C, H, 10, Result, RegisterProcessModuleInfo,   (const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h),                                     hos::Version_7_0_0)
 
     AMS_SF_DEFINE_INTERFACE(IRoInterface, AMS_RO_I_RO_INTERFACE_INTERFACE_INFO)
 

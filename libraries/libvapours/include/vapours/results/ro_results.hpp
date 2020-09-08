@@ -30,7 +30,7 @@ namespace ams::ro {
         R_DEFINE_ERROR_RESULT(TooManyNro,               7);
         R_DEFINE_ERROR_RESULT(TooManyNrr,               8);
         R_DEFINE_ERROR_RESULT(NotAuthorized,            9);
-        R_DEFINE_ERROR_RESULT(InvalidNrrType,           10);
+        R_DEFINE_ERROR_RESULT(InvalidNrrKind,           10);
 
         R_DEFINE_ERROR_RESULT(InternalError,            1023);
 

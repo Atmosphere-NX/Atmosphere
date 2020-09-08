@@ -20,10 +20,11 @@
 
 namespace ams::ro {
 
-    enum class ModuleType : u8 {
-        ForSelf   = 0,
-        ForOthers = 1,
-        Count
+    enum NrrKind : u8 {
+        NrrKind_User      = 0,
+        NrrKind_JitPlugin = 1,
+
+        NrrKind_Count,
     };
 
     struct ModuleId {
@@ -54,7 +55,7 @@ namespace ams::ro {
             u8  signature[0x100];
             ncm::ProgramId program_id;
             u32 size;
-            u8  type; /* 7.0.0+ */
+            u8  nrr_kind; /* 7.0.0+ */
             u8  reserved_33D[3];
             u32 hashes_offset;
             u32 num_hashes;
@@ -68,10 +69,10 @@ namespace ams::ro {
                 return (static_cast<u64>(this->program_id) & this->certification.program_id_mask) == this->certification.program_id_pattern;
             }
 
-            ModuleType GetType() const {
-                const ModuleType type = static_cast<ModuleType>(this->type);
-                AMS_ABORT_UNLESS(type < ModuleType::Count);
-                return type;
+            NrrKind GetNrrKind() const {
+                const NrrKind kind = static_cast<NrrKind>(this->nrr_kind);
+                AMS_ABORT_UNLESS(kind < NrrKind_Count);
+                return kind;
             }
 
             ncm::ProgramId GetProgramId() const {

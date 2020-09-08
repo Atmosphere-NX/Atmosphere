@@ -413,7 +413,7 @@ namespace ams::ro::impl {
     }
 
     /* Service implementations. */
-    Result RegisterModuleInfo(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type) {
+    Result RegisterModuleInfo(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
         AMS_ABORT_UNLESS(context != nullptr);
@@ -435,7 +435,7 @@ namespace ams::ro::impl {
         /* Map. */
         NrrHeader *header = nullptr;
         u64 mapped_code_address = 0;
-        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, expected_type, enforce_type));
+        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, nrr_kind, enforce_nrr_kind));
 
         /* Set NRR info. */
         context->SetNrrInfoInUse(nrr_info, true);

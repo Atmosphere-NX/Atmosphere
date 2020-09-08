@@ -26,9 +26,9 @@ namespace ams::ro {
     class RoService {
         private:
             size_t context_id;
-            ModuleType type;
+            NrrKind nrr_kind;
         protected:
-            explicit RoService(ModuleType t);
+            explicit RoService(NrrKind k);
         public:
             virtual ~RoService();
         public:
@@ -38,19 +38,18 @@ namespace ams::ro {
             Result RegisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size);
             Result UnregisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address);
             Result RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h);
-            Result RegisterModuleInfoEx(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h);
+            Result RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h);
     };
     static_assert(ro::impl::IsIRoInterface<RoService>);
 
-    class RoServiceForSelf final : public RoService {
+    class RoUserService final : public RoService {
         public:
-            RoServiceForSelf() : RoService(ro::ModuleType::ForSelf) { /* ... */ }
+            RoUserService() : RoService(NrrKind_User) { /* ... */ }
     };
 
-    /* TODO: This is really JitPlugin... */
-    class RoServiceForOthers final : public RoService {
+    class RoJitPluginService final : public RoService {
         public:
-            RoServiceForOthers() : RoService(ro::ModuleType::ForOthers) { /* ... */ }
+            RoJitPluginService() : RoService(NrrKind_JitPlugin) { /* ... */ }
     };
 
 }
