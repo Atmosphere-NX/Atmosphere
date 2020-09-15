@@ -1,4 +1,19 @@
 # Changelog
+## 0.14.3
++ Support was added for 10.2.0.
++ General system stability improvements to enhance the user's experience.
+## 0.14.2
++ A bug was fixed that could cause a deadlock when installing mitm services.
+  + Fixing this required a breaking change to the client behavior when installing a mitm service, and so custom sysmodules which use mitm will need to be re-compiled to function properly.
++ A bug was fixed that caused atmosphere sysmodules to respond incorrectly when receiving invalid messages.
++ A bug was fixed that caused fatal auto-reboot timing to work improperly.
++ Support was added to fusee for loading binaries for `mesosphere`, atmosphère's reimplementation of the Nintendo Switch kernel.
+  + 0.14.2 does not include mesosphere, but those who are especially interested can build and test mesosphere themselves.
+  + In the future, to enable a sufficient testing period Atmosphère releases will distribute two zips for some time.
+    + One zip will use mesosphere, and the other will not.
+    + This will allow users who are interested to opt-in to mesosphere usage before it has been tested to be stable.
+  + When mesosphere is stable and well-tested, it will be enabled by default and Atmosphère's version will transition to 1.0.0.
++ General system stability improvements to enhance the user's experience.
 ## 0.14.1
 + An issue was fixed in 0.14.0 that would cause a black screen on boot when the INI1's size was not aligned to 8 bytes.
 + General system stability improvements to enhance the user's experience.
