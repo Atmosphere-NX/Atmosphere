@@ -236,6 +236,7 @@ static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
+        CHECK_NCA("26325de4db3909e0ef2379787c7e671d", 10_2_0);
         CHECK_NCA("5077973537f6735b564dd7475b779f87", 10_1_1); /* Exclusive to China. */
         CHECK_NCA("fd1faed0ca750700d254c0915b93d506", 10_1_0);
         CHECK_NCA("34728c771299443420820d8ae490ea41", 10_0_4);
