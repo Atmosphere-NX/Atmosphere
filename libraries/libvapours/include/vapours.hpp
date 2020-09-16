@@ -27,3 +27,5 @@
 #include <vapours/results.hpp>
 #include <vapours/crypto.hpp>
 #include <vapours/svc.hpp>
+
+#include <vapours/ams/ams_fatal_error_context.hpp>
