@@ -42,6 +42,8 @@ static const char *get_error_desc_str(uint32_t error_desc) {
             return "SError";
         case 0x301:
             return "Bad SVC";
+        case 0xF00:
+	        return "Kernel Panic";
         case 0xFFD:
 	        return "Stack overflow";
         case 0xFFE:

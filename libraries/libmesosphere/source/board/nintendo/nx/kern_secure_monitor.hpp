@@ -83,6 +83,12 @@ namespace ams::kern::board::nintendo::nx::smc {
         using MemorySize                  = util::BitPack32::Field<Reserved9::Next,                   2, smc::MemorySize>;
     };
 
+    enum UserRebootType {
+        UserRebootType_None      = 0,
+        UserRebootType_ToRcm     = 1,
+        UserRebootType_ToPayload = 2,
+    };
+
     /* TODO: Rest of Secure Monitor API. */
     void GenerateRandomBytes(void *dst, size_t size);
     void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
@@ -101,6 +107,8 @@ namespace ams::kern::board::nintendo::nx::smc {
         void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
         void GenerateRandomBytes(void *dst, size_t size);
         bool ReadWriteRegister(u32 *out, u64 address, u32 mask, u32 value);
+
+        bool SetConfig(ConfigItem config_item, u64 value);
 
     }
 

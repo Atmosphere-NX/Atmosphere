@@ -24,6 +24,10 @@ namespace ams::kern::board::nintendo::nx::smc {
             u64 x[8];
         };
 
+        enum UserFunctionId : u32 {
+            UserFunctionId_SetConfig = 0xC3000401,
+        };
+
         enum FunctionId : u32 {
             FunctionId_CpuSuspend          = 0xC4000001,
             FunctionId_CpuOff              = 0x84000002,
@@ -136,6 +140,35 @@ namespace ams::kern::board::nintendo::nx::smc {
             args.x[7] = x7;
         }
 
+        void CallUserSecureMonitorFunctionForInit(SecureMonitorArguments &args) {
+            /* Load arguments into registers. */
+            register u64 x0 asm("x0") = args.x[0];
+            register u64 x1 asm("x1") = args.x[1];
+            register u64 x2 asm("x2") = args.x[2];
+            register u64 x3 asm("x3") = args.x[3];
+            register u64 x4 asm("x4") = args.x[4];
+            register u64 x5 asm("x5") = args.x[5];
+            register u64 x6 asm("x6") = args.x[6];
+            register u64 x7 asm("x7") = args.x[7];
+
+            /* Actually make the call. */
+            __asm__ __volatile__("smc #0"
+                                : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
+                                :
+                                : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
+                                );
+
+            /* Store arguments to output. */
+            args.x[0] = x0;
+            args.x[1] = x1;
+            args.x[2] = x2;
+            args.x[3] = x3;
+            args.x[4] = x4;
+            args.x[5] = x5;
+            args.x[6] = x6;
+            args.x[7] = x7;
+        }
+
         /* Global lock for generate random bytes. */
         KSpinLock g_generate_random_lock;
 
@@ -174,6 +207,12 @@ namespace ams::kern::board::nintendo::nx::smc {
             SecureMonitorArguments args = { FunctionId_ReadWriteRegister, address, mask, value };
             CallPrivilegedSecureMonitorFunctionForInit(args);
             *out = args.x[1];
+            return static_cast<SmcResult>(args.x[0]) == SmcResult::Success;
+        }
+
+        bool SetConfig(ConfigItem config_item, u64 value) {
+            SecureMonitorArguments args = { UserFunctionId_SetConfig, static_cast<u32>(config_item), 0, value };
+            CallUserSecureMonitorFunctionForInit(args);
             return static_cast<SmcResult>(args.x[0]) == SmcResult::Success;
         }
 
