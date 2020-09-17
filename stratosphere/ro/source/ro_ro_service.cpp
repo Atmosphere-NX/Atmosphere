@@ -56,12 +56,20 @@ namespace ams::ro {
     }
 
     Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h) {
-        return impl::RegisterProcess(std::addressof(this->context_id), process_h.GetValue(), client_pid.GetValue());
+        /* Ensure we manage references to the process handle correctly. */
+        os::ManagedHandle process_handle(process_h.GetValue());
+
+        /* Register the process. */
+        return impl::RegisterProcess(std::addressof(this->context_id), std::move(process_handle), client_pid.GetValue());
     }
 
     Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h) {
+        /* Ensure we manage references to the process handle correctly. */
+        os::ManagedHandle process_handle(process_h.GetValue());
+
+        /* Register the module. */
         R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::RegisterModuleInfo(this->context_id, process_h.GetValue(), nrr_address, nrr_size, this->nrr_kind, this->nrr_kind == NrrKind_JitPlugin);
+        return impl::RegisterModuleInfo(this->context_id, std::move(process_handle), nrr_address, nrr_size, this->nrr_kind, this->nrr_kind == NrrKind_JitPlugin);
     }
 
 }
