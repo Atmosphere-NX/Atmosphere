@@ -19,6 +19,9 @@
 
 namespace ams::sm::impl {
 
+    /* Client disconnection callback. */
+    void OnClientDisconnected(os::ProcessId process_id);
+
     /* Process management. */
     Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
     Result UnregisterProcess(os::ProcessId process_id);

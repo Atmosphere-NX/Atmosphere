@@ -27,6 +27,8 @@ namespace ams::sm {
         private:
             Result EnsureInitialized();
         public:
+            virtual ~UserService();
+        public:
             /* Official commands. */
             Result RegisterClient(const sf::ClientProcessId &client_process_id);
             Result GetServiceHandle(sf::OutMoveHandle out_h, ServiceName service);

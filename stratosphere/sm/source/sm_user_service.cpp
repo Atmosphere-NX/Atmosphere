@@ -19,6 +19,12 @@
 
 namespace ams::sm {
 
+    UserService::~UserService() {
+        if (this->has_initialized) {
+            impl::OnClientDisconnected(this->process_id);
+        }
+    }
+
     Result UserService::RegisterClient(const sf::ClientProcessId &client_process_id) {
         this->process_id = client_process_id.GetValue();
         this->has_initialized = true;
