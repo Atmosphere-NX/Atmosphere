@@ -1,4 +1,12 @@
 # Changelog
+## 0.14.4
++ Several bugs were fixed involving the official jit sysmodule added in 10.0.0.
+  + A Process handle leak was fixed when JitPlugin NRRs were registered with the `ro` sysmodule.
+    + This prevented processes using jit from being able to exit, causing a full system freeze.
+  + The `sm` atmosphere extension to not unregister services when the server's connection is closed was special-case disabled for `jit:u`.
+    + This extension is normally desirable in order to allow more concurrent processes to exist (as only 0x40 sm connections may ever be concurrently open), but official jit sysmodule relies on the behavior.
+    + This would cause crashes on attempts to launch a program using jit services more than once per reboot.
++ General system stability improvements to enhance the user's experience.
 ## 0.14.3
 + Support was added for 10.2.0.
 + General system stability improvements to enhance the user's experience.
