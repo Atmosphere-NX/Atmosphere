@@ -133,7 +133,7 @@ namespace ams::kern {
         }
 
         /* Map the memory. */
-        R_TRY(GetCurrentProcess().GetPageTable().MapPageGroup(address, GetReference(this->page_group), KMemoryState_GeneratedCode, k_perm));
+        R_TRY(this->owner->GetPageTable().MapPageGroup(address, GetReference(this->page_group), KMemoryState_GeneratedCode, k_perm));
 
         /* Mark ourselves as mapped. */
         this->is_owner_mapped = true;
@@ -151,7 +151,7 @@ namespace ams::kern {
         KScopedLightLock lk(this->lock);
 
         /* Unmap the memory. */
-        R_TRY(GetCurrentProcess().GetPageTable().UnmapPageGroup(address, GetReference(this->page_group), KMemoryState_GeneratedCode));
+        R_TRY(this->owner->GetPageTable().UnmapPageGroup(address, GetReference(this->page_group), KMemoryState_GeneratedCode));
 
         /* Mark ourselves as unmapped. */
         MESOSPHERE_ASSERT(this->is_owner_mapped);
