@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#if 1 || defined(AMS_BUILD_FOR_AUDITING)
+#if defined(AMS_BUILD_FOR_AUDITING)
 #define MESOSPHERE_BUILD_FOR_AUDITING
 #endif
 
