@@ -15,6 +15,7 @@
  */
 #include <exosphere.hpp>
 #include "../secmon_error.hpp"
+#include "../secmon_map.hpp"
 #include "../secmon_misc.hpp"
 #include "../secmon_page_mapper.hpp"
 #include "../secmon_user_power_management.hpp"
@@ -157,6 +158,8 @@ namespace ams::secmon::smc {
             return value.value;
         }
 
+        constinit u64 g_payload_address = 0;
+
         SmcResult GetConfig(SmcArguments &args, bool kern) {
             switch (static_cast<ConfigItem>(args.r[1])) {
                 case ConfigItem::DisableProgramVerification:
@@ -267,6 +270,14 @@ namespace ams::secmon::smc {
                     /* NOTE: This may return values other than 1 in the future. */
                     args.r[1] = (GetEmummcConfiguration().IsEmummcActive() ? 1 : 0);
                     break;
+                case ConfigItem::ExospherePayloadAddress:
+                    /* Gets the physical address of the reboot payload buffer, if one exists. */
+                    if (g_payload_address != 0) {
+                        args.r[1] = g_payload_address;
+                    } else {
+                        return SmcResult::NotInitialized;
+                    }
+                    break;
                 default:
                     return SmcResult::InvalidArgument;
             }
@@ -307,6 +318,17 @@ namespace ams::secmon::smc {
                         }
                     } else /* if (soc_type == fuse::SocType_Mariko) */ {
                         return SmcResult::NotImplemented;
+                    }
+                    break;
+                case ConfigItem::ExospherePayloadAddress:
+                    if (g_payload_address == 0) {
+                        if (secmon::IsPhysicalMemoryAddress(args.r[2])) {
+                            g_payload_address = args.r[2];
+                        } else {
+                            return SmcResult::InvalidArgument;
+                        }
+                    } else {
+                        return SmcResult::Busy;
                     }
                     break;
                 default:

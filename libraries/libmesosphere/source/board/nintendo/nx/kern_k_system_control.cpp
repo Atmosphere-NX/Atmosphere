@@ -534,10 +534,14 @@ namespace ams::kern::board::nintendo::nx {
 
     void KSystemControl::StopSystem(void *arg) {
         if (arg != nullptr) {
+            /* Get the address of the legacy IRAM region. */
+            const KVirtualAddress iram_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsIram) + 64_KB;
+            constexpr size_t RebootPayloadSize = 0x2E000;
+
             /* NOTE: Atmosphere extension; if we received an exception context from Panic(), */
             /*       generate a fatal error report using it. */
             const KExceptionContext *e_ctx = static_cast<const KExceptionContext *>(arg);
-            auto *f_ctx = GetPointer<::ams::impl::FatalErrorContext>(KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsIram) + 0x3E000);
+            auto *f_ctx = GetPointer<::ams::impl::FatalErrorContext>(iram_address + RebootPayloadSize);
 
             /* Clear the fatal context. */
             std::memset(f_ctx, 0xCC, sizeof(*f_ctx));
@@ -581,8 +585,27 @@ namespace ams::kern::board::nintendo::nx {
                 }
             }
 
-            /* Trigger a reboot to rcm. */
-            smc::init::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToRcm);
+            /* Try to get a payload address. */
+            const KMemoryRegion *cached_region = nullptr;
+            u64 reboot_payload_paddr = 0;
+            if (smc::TryGetConfig(std::addressof(reboot_payload_paddr), 1, smc::ConfigItem::ExospherePayloadAddress) && KMemoryLayout::IsLinearMappedPhysicalAddress(cached_region, reboot_payload_paddr, RebootPayloadSize)) {
+                /* If we have a payload, reboot to it. */
+                const KVirtualAddress reboot_payload = KMemoryLayout::GetLinearVirtualAddress(KPhysicalAddress(reboot_payload_paddr));
+
+                /* Clear IRAM. */
+                std::memset(GetVoidPointer(iram_address), 0xCC, RebootPayloadSize);
+
+                /* Copy the payload to iram. */
+                for (size_t i = 0; i < RebootPayloadSize / sizeof(u32); ++i) {
+                    GetPointer<volatile u32>(iram_address)[i] = GetPointer<volatile u32>(reboot_payload)[i];
+                }
+
+                /* Reboot. */
+                smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToPayload);
+            } else {
+                /* If we don't have a payload, reboot to rcm. */
+                smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToRcm);
+            }
         }
 
         if (g_call_smc_on_panic) {

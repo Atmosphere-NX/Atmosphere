@@ -96,10 +96,6 @@ namespace ams::secmon {
             util::ClearMemory(reinterpret_cast<void *>(address + size / 2), size / 2);
         }
 
-        bool IsPhysicalMemoryAddress(uintptr_t address) {
-            return (address - MemoryRegionDram.GetAddress()) < GetPhysicalMemorySize();
-        }
-
     }
 
     void ClearBootCodeHigh() {
@@ -128,6 +124,10 @@ namespace ams::secmon {
             case pkg1::MemorySize_8GB: return 8_GB;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
+    }
+
+    bool IsPhysicalMemoryAddress(uintptr_t address) {
+        return (address - MemoryRegionDram.GetAddress()) < GetPhysicalMemorySize();
     }
 
     void UnmapTzram() {

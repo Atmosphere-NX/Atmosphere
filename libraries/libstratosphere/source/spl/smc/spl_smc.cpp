@@ -17,12 +17,12 @@
 
 namespace ams::spl::smc {
 
-    Result SetConfig(spl::ConfigItem which, const u64 *value, size_t num_qwords) {
+    Result SetConfig(spl::ConfigItem which, const void *address, const u64 *value, size_t num_qwords) {
         SecmonArgs args;
 
         args.X[0] = static_cast<u64>(FunctionId::SetConfig);
         args.X[1] = static_cast<u64>(which);
-        args.X[2] = 0;
+        args.X[2] = reinterpret_cast<u64>(address);
         for (size_t i = 0; i < std::min(size_t(4), num_qwords); i++) {
             args.X[3 + i] = value[i];
         }

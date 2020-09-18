@@ -141,6 +141,9 @@ namespace ams::secmon::smc {
             { 0xC3000006, Restriction_Normal,             SmcShowError                      },
             { 0xC3000007, Restriction_Normal,             SmcSetKernelCarveoutRegion        },
             { 0xC3000008, Restriction_Normal,             SmcReadWriteRegister              },
+
+            /* NOTE: Atmosphere extension for mesosphere. This ID is subject to change at any time. */
+            { 0xC3000409, Restriction_Normal,             SmcSetConfig                      },
         };
 
         constinit HandlerInfo g_ams_handlers[] = {

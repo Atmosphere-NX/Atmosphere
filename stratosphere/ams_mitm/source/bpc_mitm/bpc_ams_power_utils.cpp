@@ -108,6 +108,9 @@ namespace ams::mitm::bpc {
         /* Copy in payload. */
         std::memcpy(g_reboot_payload, payload, payload_size);
 
+        /* Note to the secure monitor that we have a payload. */
+        spl::smc::SetConfig(spl::ConfigItem::ExospherePayloadAddress, g_reboot_payload, nullptr, 0);
+
         /* NOTE: Preferred reboot type may be overrwritten when parsed from settings during boot. */
         g_reboot_type = RebootType::ToPayload;
     }

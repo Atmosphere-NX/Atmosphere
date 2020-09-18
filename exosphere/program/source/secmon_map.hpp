@@ -18,6 +18,7 @@
 
 namespace ams::secmon {
 
+    bool IsPhysicalMemoryAddress(uintptr_t address);
     size_t GetPhysicalMemorySize();
 
     void UnmapTzram();
