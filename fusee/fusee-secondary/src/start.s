@@ -249,7 +249,7 @@ _content_headers:
 .word __ncm_kip_start__
 .word __ncm_kip_size__
 .byte CONTENT_TYPE_KIP
-.byte CONTENT_FLAG0_EXPERIMENTAL
+.byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
 .byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC

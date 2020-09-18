@@ -209,11 +209,11 @@ static int stratosphere_ini_handler(void *user, const char *section, const char 
             strat_cfg->has_nogc_config = true;
             sscanf(value, "%d", &tmp);
             strat_cfg->enable_nogc = tmp != 0;
-        } else if (strcmp(name, STRATOSPHERE_ENABLE_NCM_KEY) == 0) {
+        } else if (strcmp(name, STRATOSPHERE_DISABLE_NCM_KEY) == 0) {
             sscanf(value, "%d", &tmp);
-            strat_cfg->ncm_enabled = tmp != 0;
-            if (strat_cfg->ncm_enabled) {
-                stratosphere_enable_ncm();
+            strat_cfg->ncm_disabled = tmp != 0;
+            if (strat_cfg->ncm_disabled) {
+                stratosphere_disable_ncm();
             }
         } else {
             return 0;
