@@ -198,6 +198,8 @@ namespace ams::ldr {
         if (status.IsHbl()) {
             if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), SdOrBaseMetaPath, fs::OpenMode_Read))) {
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+
                 if (R_SUCCEEDED(LoadMetaFromFile(file, &g_original_meta_cache))) {
                     Meta *o_meta = &g_original_meta_cache.meta;
 
@@ -210,6 +212,15 @@ namespace ams::ldr {
                     const u16 program_info_flags = caps::GetProgramInfoFlags(o_meta->aci_kac, o_meta->aci->kac_size);
                     caps::SetProgramInfoFlags(program_info_flags, meta->acid_kac, meta->acid->kac_size);
                     caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
+                }
+            }
+
+            /* When hbl is applet, adjust main thread priority. */
+            if ((caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
+                constexpr auto HblMainThreadPriorityApplication = 44;
+                constexpr auto HblMainThreadPriorityApplet      = 40;
+                if (meta->npdm->main_thread_priority == HblMainThreadPriorityApplication) {
+                    meta->npdm->main_thread_priority = HblMainThreadPriorityApplet;
                 }
             }
         } else if (hos::GetVersion() >= hos::Version_10_0_0) {
