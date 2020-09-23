@@ -274,10 +274,10 @@ def get_full(nxo):
             if s.name:
                 if s.type == STT_FUNC:
                     print(hex(s.resolved), s.name)
-                    idaapi.add_entry(s.resolved, s.resolved, s.name, 0)
+                    #idaapi.add_entry(s.resolved, s.resolved, s.name, 0)
                 else:
-                    idaapi.force_name(s.resolved, s.name)
-
+                    #idaapi.force_name(s.resolved, s.name)
+                    pass
         else:
             # NULL symbol
             s.resolved = 0
