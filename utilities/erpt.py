@@ -273,8 +273,9 @@ def get_full(nxo):
             s.resolved = LOAD_BASE + s.value
             if s.name:
                 if s.type == STT_FUNC:
-                    print(hex(s.resolved), s.name)
+                    #print(hex(s.resolved), s.name)
                     #idaapi.add_entry(s.resolved, s.resolved, s.name, 0)
+                    pass
                 else:
                     #idaapi.force_name(s.resolved, s.name)
                     pass
@@ -353,12 +354,18 @@ def find_categories(full, num_fields):
     return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
 def find_types(full, num_fields):
-    KNOWN = range(10) + [4, 4, 2, 4]
-    ind = full.index(''.join(pk('<I', i) for i in KNOWN))
+    KNOWN     = range(10) + [4, 4, 2, 4]
+    KNOWN_OLD = range(10) + [4, 4, 0, 4]
+    try:
+        ind = full.index(''.join(pk('<I', i) for i in KNOWN))
+    except ValueError:
+        ind = full.index(''.join(pk('<I', i) for i in KNOWN_OLD))
     return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
 def find_flags(full, num_fields):
     KNOWN = '\x00' + ('\x01'*6) + '\x00\x01\x01\x00'
+    if num_fields < 443 + len(KNOWN):
+        return [0] * num_fields
     ind = full.index(KNOWN) - 443
     return list(up('<'+'B'*num_fields, full[ind:ind+num_fields]))
 
