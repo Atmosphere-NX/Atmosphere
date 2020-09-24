@@ -379,10 +379,10 @@ def flg_to_string(f):
     return FIELD_FLAGS[f] if f in FIELD_FLAGS else 'FieldFlag_Unknown%d' % f
 
 def main(argc, argv):
-    if argc != 2:
-        print 'Usage: %s erpt_nso' % argv[0]
+    if argc != 2 and not (argc == 3 and argv[1] == '-f'):
+        print 'Usage: %s [-f] erpt_nso' % argv[0]
         return 1
-    f = open(argv[1], 'rb')
+    f = open(argv[-1], 'rb')
     nxo = nxo64.load_nxo(f)
     full = get_full(nxo)
     field_table = locate_fields(full)
@@ -396,11 +396,13 @@ def main(argc, argv):
     mc = max(len(cat_to_string(c)) for c in cats)
     mt = max(len(typ_to_string(t)) for t in types)
     ml = max(len(flg_to_string(f)) for f in flags)
+    if argc == 3:
+        mf, mc, mt, ml = (64, 48, 32, 32)
     format_string = '- %%-%ds %%-%ds %%-%ds %%-%ds' % (mf+1, mc+1, mt+1, ml)
     for i in xrange(NUM_FIELDS):
         f, c, t, l = fields[i], cat_to_string(cats[i]), typ_to_string(types[i]), flg_to_string(flags[i])
         print format_string % (f+',', c+',', t+',', l)
-    with open(argv[1]+'.hpp', 'w') as out:
+    with open(argv[-1]+'.hpp', 'w') as out:
         out.write(HEADER)
         out.write('#define AMS_ERPT_FOREACH_FIELD_TYPE(HANDLER) \\\n')
         for tp in sorted(list(set(types + FIELD_TYPES.keys()))):
