@@ -1,0 +1,53 @@
+name: Atmosphere Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: ubuntu-20.04
+    runs-on: ubuntu-20.04
+    container: devkitpro/devkita64_devkitarm
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: Copy source list
+      run: sudo cp -r sources.list /etc/apt/
+      working-directory: ./workflow_files
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y dirmngr --install-recommends --allow-unauthenticated
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 871920D1991BC93C
+        sudo apt-get update
+        sudo apt-get install -y -f
+        sudo dpkg --configure -a
+        sudo apt-get upgrade -y --with-new-pkgs
+        sudo apt-get install -y lz4
+        sudo apt-get install -y gawk
+        sudo apt-get install python-is-python3
+        sudo apt-get install python3-pip --yes
+        sudo pip3 install lz4
+        sudo pip3 install pycryptodome
+
+    - name: Checkout libnx
+      uses: actions/checkout@v2
+      with:
+        repository: switchbrew/libnx
+        path: libnx
+
+    - name: Make libnx
+      run: make
+      working-directory: ${{ github.workspace }}/libnx
+
+    - name: Install libnx
+      run: make install
+      working-directory: ${{ github.workspace }}/libnx
+
+    - name: Build
+      run: |
+        make -j2
