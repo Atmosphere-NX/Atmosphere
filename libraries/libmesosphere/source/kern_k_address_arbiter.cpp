@@ -73,14 +73,15 @@ namespace ams::kern {
         s32 num_waiters = 0;
         {
             KScopedSchedulerLock sl;
-            g_cv_arbiter_compare_thread.SetupForAddressArbiterCompare(addr, -1);
-
-            auto it = this->tree.nfind(g_cv_arbiter_compare_thread);
 
             /* Check the userspace value. */
             s32 user_value;
             R_UNLESS(UpdateIfEqual(std::addressof(user_value), addr, value, value + 1), svc::ResultInvalidCurrentMemory());
             R_UNLESS(user_value == value,                                               svc::ResultInvalidState());
+
+            g_cv_arbiter_compare_thread.SetupForAddressArbiterCompare(addr, -1);
+
+            auto it = this->tree.nfind(g_cv_arbiter_compare_thread);
 
             while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
@@ -108,26 +109,54 @@ namespace ams::kern {
 
             /* Determine the updated value. */
             s32 new_value;
-            if (count <= 0) {
-                if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
-                    new_value = value - 1;
+            if (GetTargetFirmware() >= TargetFirmware_7_0_0) {
+                if (count <= 0) {
+                    if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                        new_value = value - 2;
+                    } else {
+                        new_value = value + 1;
+                    }
                 } else {
-                    new_value = value + 1;
+                    if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                        auto tmp_it = it;
+                        s32 tmp_num_waiters = 0;
+                        while ((++tmp_it != this->tree.end()) && (tmp_it->GetAddressArbiterKey() == addr)) {
+                            if ((tmp_num_waiters++) >= count) {
+                                break;
+                            }
+                        }
+
+                        if (tmp_num_waiters < count) {
+                            new_value = value - 1;
+                        } else {
+                            new_value = value;
+                        }
+                    } else {
+                        new_value = value + 1;
+                    }
                 }
             } else {
-                auto tmp_it = it;
-                int tmp_num_waiters = 0;
-                while ((tmp_it != this->tree.end()) && (tmp_it->GetAddressArbiterKey() == addr) && (tmp_num_waiters < count + 1)) {
-                    ++tmp_num_waiters;
-                    ++tmp_it;
-                }
-
-                if (tmp_num_waiters == 0) {
-                    new_value = value + 1;
-                } else if (tmp_num_waiters <= count) {
-                    new_value = value - 1;
+                if (count <= 0) {
+                    if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                        new_value = value - 1;
+                    } else {
+                        new_value = value + 1;
+                    }
                 } else {
-                    new_value = value;
+                    auto tmp_it = it;
+                    s32 tmp_num_waiters = 0;
+                    while ((tmp_it != this->tree.end()) && (tmp_it->GetAddressArbiterKey() == addr) && (tmp_num_waiters < count + 1)) {
+                        ++tmp_num_waiters;
+                        ++tmp_it;
+                    }
+
+                    if (tmp_num_waiters == 0) {
+                        new_value = value + 1;
+                    } else if (tmp_num_waiters <= count) {
+                        new_value = value - 1;
+                    } else {
+                        new_value = value;
+                    }
                 }
             }
 
