@@ -48,6 +48,7 @@ namespace ams::kern {
         private:
             friend class KScopedSchedulerLock;
             friend class KScopedSchedulerLockAndSleep;
+            friend class KScopedDisableDispatch;
         private:
             SchedulingState state;
             bool is_active;
@@ -161,8 +162,9 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void ScheduleOnInterrupt() {
-                KScopedDisableDispatch dd;
+                GetCurrentThread().DisableDispatch();
                 this->Schedule();
+                GetCurrentThread().EnableDispatch();
             }
 
             void RescheduleOtherCores(u64 cores_needing_scheduling);

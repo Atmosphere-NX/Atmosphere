@@ -559,20 +559,7 @@ namespace ams::kern {
                 GetCurrentThread().DisableDispatch();
             }
 
-            ALWAYS_INLINE ~KScopedDisableDispatch() {
-                GetCurrentThread().EnableDispatch();
-            }
-    };
-
-    class KScopedEnableDispatch {
-        public:
-            explicit ALWAYS_INLINE KScopedEnableDispatch() {
-                GetCurrentThread().EnableDispatch();
-            }
-
-            ALWAYS_INLINE ~KScopedEnableDispatch() {
-                GetCurrentThread().DisableDispatch();
-            }
+            ~KScopedDisableDispatch();
     };
 
     ALWAYS_INLINE KExceptionContext *GetExceptionContext(KThread *thread) {
