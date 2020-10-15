@@ -254,4 +254,6 @@ SECTIONS
     PROVIDE(__emummc_kip_size__ = emummc_kip_end - emummc_kip);
     PROVIDE(__kernel_ldr_bin_start__ = kernel_ldr_bin - __start__);
     PROVIDE(__kernel_ldr_bin_size__ = kernel_ldr_bin_end - kernel_ldr_bin);
+    PROVIDE(__mesosphere_bin_start__ = mesosphere_bin - __start__);
+    PROVIDE(__mesosphere_bin_size__ = mesosphere_bin_end - mesosphere_bin);
 }

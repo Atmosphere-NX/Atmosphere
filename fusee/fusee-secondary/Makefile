@@ -186,11 +186,15 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 all	:	$(OUTPUT).bin
 
-$(OUTPUT).bin	:	$(OUTPUT).elf
+$(OUTPUT).bin	:	$(OUTPUT)-experimental.bin
+	@python $(TOPDIR)/fusee_make_standard.py $(OUTPUT)-experimental.bin $(OUTPUT).bin
+	@echo built ... $(notdir $@)
+
+$(OUTPUT)-experimental.bin	:	$(OUTPUT)-experimental.elf
 	$(OBJCOPY) -S -O binary $< $@
 	@echo built ... $(notdir $@)
 
-$(OUTPUT).elf	:	$(OFILES)
+$(OUTPUT)-experimental.elf	:	$(OFILES)
 
 %.elf: $(OFILES)
 	@echo linking $(notdir $@)

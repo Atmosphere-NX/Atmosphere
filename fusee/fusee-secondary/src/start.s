@@ -30,6 +30,9 @@ _start:
 
 .word (_metadata - _start)
 
+_is_experimental:
+.word 0x00000001 /* is experimental */
+
 _crt0:
     /* Switch to system mode, mask all interrupts, clear all flags */
     msr cpsr_cxsf, #0xDF
@@ -67,6 +70,14 @@ _crt0:
     ldr r0, [r0]
     ldr r1, [r1]
     b   main
+
+.arm
+.global fusee_is_experimental
+.type   fusee_is_experimental, %function
+fusee_is_experimental:
+    ldr r0, =_is_experimental
+    ldr r0, [r0]
+    bx lr
 
 /* Fusee-secondary header. */
 .align 5
@@ -133,6 +144,17 @@ _content_headers:
 .byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "exosphere"
+.align 5
+
+/* mesosphere content header */
+.word __mesosphere_bin_start__
+.word __mesosphere_bin_size__
+.byte CONTENT_TYPE_KRN
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.word 0xCCCCCCCC
+.asciz "mesosphere"
 .align 5
 
 /* fusee_primary content header */
@@ -265,17 +287,6 @@ _content_headers:
 .byte CONTENT_FLAG_NONE
 .word 0xCCCCCCCC
 .asciz "emummc"
-.align 5
-
-/* kernel_ldr content header */
-.word __kernel_ldr_bin_start__
-.word __kernel_ldr_bin_size__
-.byte CONTENT_TYPE_KLD
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.word 0xCCCCCCCC
-.asciz "kernel_ldr"
 .align 5
 
 /* splash_screen content header */

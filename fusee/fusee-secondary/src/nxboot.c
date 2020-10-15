@@ -55,6 +55,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
+#include "mesosphere_bin.h"
 #include "sept_secondary_00_enc.h"
 #include "sept_secondary_01_enc.h"
 #include "sept_secondary_dev_00_enc.h"
@@ -65,6 +66,8 @@
 #undef u32
 
 extern const uint8_t warmboot_bin[];
+
+extern int fusee_is_experimental(void);
 
 static const uint8_t retail_pkc_modulus[0x100] = {
     0xF7, 0x86, 0x47, 0xAB, 0x71, 0x89, 0x81, 0xB5, 0xCF, 0x0C, 0xB0, 0xE8, 0x48, 0xA7, 0xFD, 0xAD,
@@ -624,6 +627,7 @@ static nx_keyblob_t __attribute__((aligned(16))) g_keyblobs[32];
 uint32_t nxboot_main(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     loader_ctx_t *loader_ctx = get_loader_ctx();
+    const bool is_experimental = fusee_is_experimental();
     package2_header_t *package2;
     size_t package2_size;
     void *tsec_fw;
@@ -933,7 +937,6 @@ uint32_t nxboot_main(void) {
     }
 
     /* Configure mesosphere. */
-    /* TODO: Support non-SD/embedded mesosphere. */
     {
         size_t sd_meso_size = get_file_size("atmosphere/mesosphere.bin");
         if (sd_meso_size != 0) {
@@ -948,6 +951,20 @@ uint32_t nxboot_main(void) {
                 fatal_error("Error: failed to read atmosphere/mesosphere.bin!\n");
             }
             mesosphere_size = sd_meso_size;
+        } else if (is_experimental) {
+            mesosphere_size = mesosphere_bin_size;
+
+            mesosphere      = malloc(mesosphere_size);
+
+            if (mesosphere == NULL) {
+                fatal_error("[NXBOOT] Out of memory!\n");
+            }
+
+            memcpy(mesosphere, mesosphere_bin, mesosphere_size);
+
+            if (mesosphere_size == 0) {
+                fatal_error("[NXBOOT] Could not read embedded mesosphere!\n");
+            }
         } else {
             mesosphere = NULL;
             mesosphere_size = 0;
