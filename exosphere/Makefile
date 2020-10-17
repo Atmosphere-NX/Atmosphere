@@ -5,13 +5,16 @@ define ATMOSPHERE_ADD_TARGET
 
 ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
-$(strip $1): exosphere$(strip $2).bin check_warmboot_$(strip $1)
-	@cp warmboot/warmboot$(strip $2).bin warmboot$(strip $2).bin
+$(strip $1): exosphere$(strip $2).bin warmboot$(strip $2).bin
 
 exosphere$(strip $2).bin: loader_stub/loader_stub$(strip $2).bin
 	@cp loader_stub/loader_stub$(strip $2).bin exosphere$(strip $2).bin
 	@printf LENY >> exosphere$(strip $2).bin
 	@echo "Built exosphere$(strip $2).bin..."
+
+warmboot$(strip $2).bin: warmboot/warmboot$(strip $2).bin
+	@cp warmboot/warmboot$(strip $2).bin warmboot$(strip $2).bin
+	@echo "Built warmboot$(strip $2).bin..."
 
 check_program_$(strip $1):
 	@$$(MAKE) -C program $(strip $1)
@@ -21,6 +24,8 @@ check_warmboot_$(strip $1):
 
 loader_stub/loader_stub$(strip $2).bin: check_program_$(strip $1)
 	@$$(MAKE) -C loader_stub $(strip $1)
+
+warmboot/warmboot$(strip $2).bin: check_warmboot_$(strip $1)
 
 clean-$(strip $1): clean-program-$(strip $1) clean-loader_stub-$(strip $1) clean-warmboot-$(strip $1)
 	@rm -rf exosphere$(strip $2).bin warmboot$(strip $2).bin

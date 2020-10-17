@@ -123,15 +123,24 @@ check_rebootstub:
 check_key_derivation:
 	@$(MAKE) -C key_derivation
 
-$(BUILD): check_rebootstub check_key_derivation
 ifeq ($(strip $(SEPT_00_ENC_PATH)),)
+$(BUILD): check_rebootstub check_key_derivation
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 else
+$(BUILD): $(TOPDIR)/$(TARGET)_00.enc $(TOPDIR)/$(TARGET)_01.enc $(TOPDIR)/$(TARGET)_dev_00.enc $(TOPDIR)/$(TARGET)_dev_01.enc
 	@touch $(TOPDIR)/$(TARGET).bin
+
+$(TOPDIR)/$(TARGET)_00.enc: $(SEPT_00_ENC_PATH)
 	@cp $(SEPT_00_ENC_PATH) $(TOPDIR)/$(TARGET)_00.enc
+
+$(TOPDIR)/$(TARGET)_01.enc: $(SEPT_01_ENC_PATH)
 	@cp $(SEPT_01_ENC_PATH) $(TOPDIR)/$(TARGET)_01.enc
+
+$(TOPDIR)/$(TARGET)_dev_00.enc: $(SEPT_DEV_00_ENC_PATH)
 	@cp $(SEPT_DEV_00_ENC_PATH) $(TOPDIR)/$(TARGET)_dev_00.enc
+
+$(TOPDIR)/$(TARGET)_dev_01.enc: $(SEPT_DEV_01_ENC_PATH)
 	@cp $(SEPT_DEV_01_ENC_PATH) $(TOPDIR)/$(TARGET)_dev_01.enc
 endif
 

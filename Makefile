@@ -73,7 +73,7 @@ dist-no-debug: all
 	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
 	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/sept/payload.bin
 	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/sept/sept-primary.bin
-	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin
+	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin || true
 	cp sept/sept-secondary/sept-secondary_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
 	cp sept/sept-secondary/sept-secondary_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
 	cp sept/sept-secondary/sept-secondary_dev_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_00.enc
@@ -126,7 +126,7 @@ dist: dist-no-debug
 	cp fusee/fusee-mtc/fusee-mtc.elf atmosphere-$(AMSVER)-debug/fusee-mtc.elf
 	cp fusee/fusee-secondary/fusee-secondary-experimental.elf atmosphere-$(AMSVER)-debug/fusee-secondary.elf
 	cp sept/sept-primary/sept-primary.elf atmosphere-$(AMSVER)-debug/sept-primary.elf
-	cp sept/sept-secondary/sept-secondary.elf atmosphere-$(AMSVER)-debug/sept-secondary.elf
+	cp sept/sept-secondary/sept-secondary.elf atmosphere-$(AMSVER)-debug/sept-secondary.elf || true
 	cp sept/sept-secondary/key_derivation/key_derivation.elf atmosphere-$(AMSVER)-debug/sept-secondary-key-derivation.elf
 	cp exosphere/loader_stub/loader_stub.elf atmosphere-$(AMSVER)-debug/exosphere-loader-stub.elf
 	cp exosphere/program/program.elf atmosphere-$(AMSVER)-debug/exosphere-program.elf
