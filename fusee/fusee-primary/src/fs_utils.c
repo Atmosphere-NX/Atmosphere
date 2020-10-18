@@ -22,7 +22,6 @@
 FATFS sd_fs;
 static bool g_sd_mounted = false;
 static bool g_sd_initialized = false;
-static bool g_ahb_redirect_enabled = false;
 sdmmc_t g_sd_sdmmc;
 sdmmc_device_t g_sd_device;
 
@@ -34,10 +33,7 @@ bool mount_sd(void)
         return true;
 
     /* Enable AHB redirection if necessary. */
-    if (!g_ahb_redirect_enabled) {
-        mc_enable_ahb_redirect();
-        g_ahb_redirect_enabled = true;
-    }
+    mc_acquire_ahb_redirect();
 
     if (!g_sd_initialized) {
         /* Initialize SD. */
@@ -68,10 +64,7 @@ void unmount_sd(void)
     }
 
     /* Disable AHB redirection if necessary. */
-    if (g_ahb_redirect_enabled) {
-        mc_disable_ahb_redirect();
-        g_ahb_redirect_enabled = false;
-    }
+    mc_release_ahb_redirect();
 }
 
 uint32_t get_file_size(const char *filename)
