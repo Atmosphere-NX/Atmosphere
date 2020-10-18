@@ -13,32 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef FUSEE_BCT0_H
-#define FUSEE_BCT0_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#pragma once
 
-#include "lib/log.h"
+#include "xusb.h"
 
-#define BCTO_MAX_SIZE 0x5800
+namespace xusb {
 
-typedef struct {
-	/* [config] */
-	ScreenLogLevel log_level;
+    namespace test {
 
-	/* [stage1] */
-	char stage2_path[0x100];
-	char stage2_mtc_path[0x100];
-	uintptr_t stage2_load_address;
-	uintptr_t stage2_entrypoint;
+        Gadget &GetTestGadget();
 
-	/* [fastboot] */
-	bool fastboot_force_enable;
-	int fastboot_button_timeout;
-} bct0_t;
-
-int bct0_parse(const char *ini, bct0_t *out);
-
-#endif
+    } // namespace test
+    
+} // namespace xusb

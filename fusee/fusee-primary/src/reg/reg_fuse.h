@@ -13,32 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#ifndef FUSEE_BCT0_H
-#define FUSEE_BCT0_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#pragma once
 
-#include "lib/log.h"
+#include "reg_util.h"
 
-#define BCTO_MAX_SIZE 0x5800
+namespace t210 {
 
-typedef struct {
-	/* [config] */
-	ScreenLogLevel log_level;
+    const struct FUSE {
+        static const uintptr_t base_addr = 0x7000f800;
+        using Peripheral = FUSE;
 
-	/* [stage1] */
-	char stage2_path[0x100];
-	char stage2_mtc_path[0x100];
-	uintptr_t stage2_load_address;
-	uintptr_t stage2_entrypoint;
+        BEGIN_DEFINE_REGISTER(SKU_USB_CALIB, uint32_t, 0x1f0)
+            DEFINE_RO_FIELD(TERM_RANGE_ADJ, 7, 10) // TODO: check?
+            DEFINE_RO_FIELD(HS_CURR_LEVEL, 0, 5) // TODO: check?
+        END_DEFINE_REGISTER(SKU_USB_CALIB)
 
-	/* [fastboot] */
-	bool fastboot_force_enable;
-	int fastboot_button_timeout;
-} bct0_t;
+        BEGIN_DEFINE_REGISTER(USB_CALIB_EXT, uint32_t, 0x350)
+            DEFINE_RO_FIELD(RPD_CTRL, 0, 5)
+        END_DEFINE_REGISTER(USB_CALIB_EXT)
 
-int bct0_parse(const char *ini, bct0_t *out);
-
-#endif
+    } FUSE;
+    
+} // namespace t210

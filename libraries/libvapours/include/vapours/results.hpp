@@ -63,3 +63,4 @@
 
 /* Unofficial. */
 #include <vapours/results/exosphere_results.hpp>
+#include <vapours/results/xusb_gadget_results.hpp>

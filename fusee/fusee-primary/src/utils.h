@@ -22,12 +22,16 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifndef BIT
+
 #define BIT(n)      (1u   << (n))
 #define BITL(n)     (1ull << (n))
 #define MASK(n)     (BIT(n) - 1)
 #define MASKL(n)    (BITL(n) - 1)
 #define MASK2(a,b)  (MASK(a) & ~MASK(b))
 #define MASK2L(a,b) (MASKL(a) & ~MASKL(b))
+
+#endif
 
 #define MAKE_REG32(a)   (*(volatile uint32_t *)(a))
 
@@ -108,12 +112,13 @@ static inline bool overlaps_a(const void *as, const void *ae, const void *bs, co
 static inline bool check_32bit_address_range_in_program(uintptr_t addr, size_t size) {
     extern uint8_t __chainloader_start__[], __chainloader_end__[];
     extern uint8_t __stack_bottom__[], __stack_top__[];
+    extern uint8_t __dram_start__[], __dram_end__[];
     extern uint8_t __start__[], __end__[];
     uint8_t *start = (uint8_t *)addr, *end = start + size;
 
     return overlaps_a(start, end, __chainloader_start__, __chainloader_end__) ||
     overlaps_a(start, end, __stack_bottom__, __stack_top__) ||
-    overlaps_a(start, end, (void *)0xC0000000, (void *)0xC03C0000) || /* framebuffer */
+    overlaps_a(start, end, __dram_start__, __dram_end__) ||
     overlaps_a(start, end, __start__, __end__);
 }
 

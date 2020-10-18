@@ -20,12 +20,15 @@
 
 #include <string.h>
 
+#define CONFIG_LOG_LEVEL_KEY "log_level"
+
 #define STAGE2_NAME_KEY "stage2_path"
 #define STAGE2_MTC_NAME_KEY "stage2_mtc_path"
 #define STAGE2_ADDRESS_KEY "stage2_addr"
 #define STAGE2_ENTRYPOINT_KEY "stage2_entrypoint"
 
-#define CONFIG_LOG_LEVEL_KEY "log_level"
+#define FASTBOOT_FORCE_ENABLE_KEY "force_enable"
+#define FASTBOOT_BUTTON_TIMEOUT_KEY "button_timeout_ms"
 
 static int bct0_ini_handler(void *user, const char *section, const char *name, const char *value) {
 	bct0_t *bct0 = (bct0_t*) user;
@@ -61,6 +64,18 @@ static int bct0_ini_handler(void *user, const char *section, const char *name, c
 	    } else {
 		    return 0;
 	    }
+    } else if (strcmp(section, "fastboot") == 0) {
+	    if (strcmp(name, FASTBOOT_FORCE_ENABLE_KEY) == 0) {
+		    int tmp = 0;
+		    sscanf(value, "%d", &tmp);
+		    bct0->fastboot_force_enable = (tmp != 0);
+	    } else if (strcmp(name, FASTBOOT_BUTTON_TIMEOUT_KEY) == 0) {
+		    int tmp = 0;
+		    sscanf(value, "%d", &tmp);
+		    bct0->fastboot_button_timeout = tmp;
+	    } else {
+		    return 0;
+	    }
     } else {
         return 0;
     }
@@ -77,5 +92,8 @@ int bct0_parse(const char *ini, bct0_t *out) {
 	out->stage2_load_address = 0xf0000000;
 	out->stage2_entrypoint = 0xf0000000;
 
+	out->fastboot_force_enable = false;
+	out->fastboot_button_timeout = 3000;
+	
 	return ini_parse_string(ini, bct0_ini_handler, out);
 }

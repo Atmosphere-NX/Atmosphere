@@ -27,6 +27,7 @@
 #include "lib/log.h"
 #include "lib/vsprintf.h"
 #include "display/video_fb.h"
+#include "fastboot/fastboot.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -43,7 +44,10 @@ static char g_bct0_buffer[BCTO_MAX_SIZE] __attribute__((section(".dram"))) = {0}
 "debugmode = 1\n"\
 "debugmode_user = 0\n"\
 "disable_user_exception_handlers = 0\n"\
-"[stratosphere]\n"
+"[stratosphere]\n" \
+"[fastboot]\n" \
+"force_enable = 0\n" \
+"button_timeout_ms = 0\n"
 
 static const char *load_config(void) {
     if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "atmosphere/config/BCT.ini")) {
@@ -130,8 +134,18 @@ int main(void) {
     /* Assert that our configuration is sane. */
     stage2_validate_config(&bct0);
 
-    /* Load the loader payload into DRAM. */
-    stage2_load(&bct0);
+    /* Try to enter fastboot, if we are configured to. */
+    switch(fastboot_enter(&bct0)) {
+    case FASTBOOT_INVALID:
+    case FASTBOOT_SKIPPED:
+    case FASTBOOT_LOAD_STAGE2:
+        /* Load the loader payload into DRAM. */
+        stage2_load(&bct0);
+        break;
+    case FASTBOOT_CHAINLOAD:
+        print(SCREEN_LOG_LEVEL_DEBUG, "fastboot: chainloading\n");
+        break;
+    }
 
     /* Setup argument data. */
     strcpy(g_chainloader_arg_data, bct0.stage2_path);
