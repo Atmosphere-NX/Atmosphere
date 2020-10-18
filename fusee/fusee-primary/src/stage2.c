@@ -19,12 +19,12 @@
 #include "fs_utils.h"
 #include "utils.h"
 
-static bool run_mtc(const char *mtc_path, uintptr_t mtc_address) {
+bool stage2_run_mtc(const bct0_t *bct0) {
     FILINFO info;
     size_t size;
     
     /* Check if the MTC binary is present. */
-    if (f_stat(mtc_path, &info) != FR_OK) {
+    if (f_stat(bct0->stage2_mtc_path, &info) != FR_OK) {
         print(SCREEN_LOG_LEVEL_WARNING, "Stage2's MTC binary not found!\n");
         return false;
     }
@@ -32,8 +32,8 @@ static bool run_mtc(const char *mtc_path, uintptr_t mtc_address) {
     size = (size_t)info.fsize;
     
     /* Try to read the MTC binary. */
-    if (read_from_file((void *)mtc_address, size, mtc_path) != size) {
-        print(SCREEN_LOG_LEVEL_WARNING, "Failed to read stage2's MTC binary (%s)!\n", mtc_path);
+    if (read_from_file((void *)bct0->stage2_load_address, size, bct0->stage2_mtc_path) != size) {
+        print(SCREEN_LOG_LEVEL_WARNING, "Failed to read stage2's MTC binary (%s)!\n", bct0->stage2_mtc_path);
         return false;
     }
     
@@ -47,19 +47,15 @@ static bool run_mtc(const char *mtc_path, uintptr_t mtc_address) {
     memcpy(&mtc_args->log_level, &mtc_log_level, sizeof(mtc_log_level));
     
     /* Run the MTC binary. */
-    mtc_res = (((int (*)(int, void *))mtc_address)(mtc_argc, mtc_arg_data) == 0);
+    mtc_res = (((int (*)(int, void *))bct0->stage2_load_address)(mtc_argc, mtc_arg_data) == 0);
     
     /* Cleanup right away. */
-    memset((void *)mtc_address, 0, size);
+    memset((void *)bct0->stage2_load_address, 0, size);
     
     return mtc_res;
 }
 
-void load_stage2(const bct0_t *bct0) {
-    FILINFO info;
-    size_t size;
-    uintptr_t tmp_addr;
-
+void stage2_validate_config(const bct0_t *bct0) {
     if (bct0->stage2_load_address == 0 || bct0->stage2_path[0] == '\x00') {
         fatal_error("Failed to determine where to load stage2!\n");
     }
@@ -81,11 +77,12 @@ void load_stage2(const bct0_t *bct0) {
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    MTC File Path:    %s\n", bct0->stage2_mtc_path);
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Load Address: 0x%08x\n", bct0->stage2_load_address);
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Entrypoint:   0x%p\n", bct0->stage2_entrypoint);
+}
 
-    /* Run the MTC binary. */
-    if (!run_mtc(bct0->stage2_mtc_path, bct0->stage2_load_address)) {
-        print(SCREEN_LOG_LEVEL_WARNING, "DRAM training failed! Continuing with untrained DRAM.\n");
-    }
+void stage2_load(const bct0_t *bct0) {
+    FILINFO info;
+    size_t size;
+    uintptr_t tmp_addr;
 
     if (f_stat(bct0->stage2_path, &info) != FR_OK) {
         fatal_error("Failed to stat stage2 (%s)!\n", bct0->stage2_path);

@@ -147,8 +147,16 @@ int main(void) {
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
     print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);
 
+    /* Run the MTC binary. */
+    if (!stage2_run_mtc(&bct0)) {
+        print(SCREEN_LOG_LEVEL_WARNING, "DRAM training failed! Continuing with untrained DRAM.\n");
+    }
+
+    /* Assert that our configuration is sane. */
+    stage2_validate_config(&bct0);
+
     /* Load the loader payload into DRAM. */
-    load_stage2(&bct0);
+    stage2_load(&bct0);
 
     /* Setup argument data. */
     strcpy(g_chainloader_arg_data, bct0.stage2_path);

@@ -43,6 +43,8 @@ typedef struct {
     ScreenLogLevel log_level;
 } stage2_mtc_args_t;
 
-void load_stage2(const bct0_t *bct0);
+bool stage2_run_mtc(const bct0_t *bct0);
+void stage2_validate_config(const bct0_t *bct0);
+void stage2_load(const bct0_t *bct0);
 
 #endif
