@@ -14,35 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#ifndef FUSEE_STAGE2_H
-#define FUSEE_STAGE2_H
+#ifndef FUSEE_BCT0_H
+#define FUSEE_BCT0_H
 
-#include <stdbool.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "display/video_fb.h"
 #include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "lib/ini.h"
-#include "lib/fatfs/ff.h"
 
-#include "bct0.h"
-
-/* TODO: Is there a more concise way to do this? */
-#define STAGE2_ARGV_PROGRAM_PATH 0
-#define STAGE2_ARGV_ARGUMENT_STRUCT 1
-#define STAGE2_ARGC 2
+#define BCTO_MAX_SIZE 0x5800
 
 typedef struct {
-    uint32_t version;
-    ScreenLogLevel log_level;
-    char bct0[BCTO_MAX_SIZE];
-} stage2_args_t;
+	/* [config] */
+	ScreenLogLevel log_level;
 
-typedef struct {
-    ScreenLogLevel log_level;
-} stage2_mtc_args_t;
+	/* [stage1] */
+	char stage2_path[0x100];
+	char stage2_mtc_path[0x100];
+	uintptr_t stage2_load_address;
+	uintptr_t stage2_entrypoint;
+} bct0_t;
 
-void load_stage2(const bct0_t *bct0);
+int bct0_parse(const char *ini, bct0_t *out);
 
 #endif

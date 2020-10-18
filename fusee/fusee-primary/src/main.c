@@ -27,15 +27,12 @@
 #include "lib/fatfs/ff.h"
 #include "lib/log.h"
 #include "lib/vsprintf.h"
-#include "lib/ini.h"
 #include "display/video_fb.h"
 
 extern void (*__program_exit_callback)(int rc);
 
 static uint32_t g_framebuffer[1280*768] __attribute__((section(".framebuffer"))) = {0};
 static char g_bct0_buffer[BCTO_MAX_SIZE] __attribute__((section(".dram"))) = {0};
-
-#define CONFIG_LOG_LEVEL_KEY "log_level"
 
 #define DEFAULT_BCT0 \
 "BCT0\n"\
@@ -72,22 +69,6 @@ static const char *load_config(void) {
     }
 
     return bct0;
-}
-
-static int config_ini_handler(void *user, const char *section, const char *name, const char *value) {
-    if (strcmp(section, "config") == 0) {
-        if (strcmp(name, CONFIG_LOG_LEVEL_KEY) == 0) {
-            ScreenLogLevel *config_log_level = (ScreenLogLevel *)user;
-            int log_level = 0;
-            sscanf(value, "%d", &log_level);
-            *config_log_level = (ScreenLogLevel)log_level;
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
-    }
-    return 1;
 }
 
 static void setup_display(void) {
@@ -134,12 +115,11 @@ static void exit_callback(int rc) {
     relocate_and_chainload();
 }
 
-int main(void) {
-    const char *bct0;
-    const char *stage2_path;
+int main(void) {	
+    const char *bct0_string;
     stage2_args_t *stage2_args;
     uint32_t stage2_version = 0;
-    ScreenLogLevel log_level = SCREEN_LOG_LEVEL_NONE;
+    bct0_t bct0;
 
     /* Initialize the boot environment. */
     setup_env();
@@ -148,17 +128,17 @@ int main(void) {
     check_and_display_panic();
 
     /* Load the BCT0 configuration ini off of the SD. */
-    bct0 = load_config();
+    bct0_string = load_config();
 
-    /* Extract the logging level from the BCT.ini file. */
-    if (ini_parse_string(bct0, config_ini_handler, &log_level) < 0) {
+    /* Parse the BCT0 configuration ini. */
+    if (bct0_parse(bct0_string, &bct0) < 0) {
         fatal_error("Failed to parse BCT.ini!\n");
     }
 
     /* Override the global logging level. */
-    log_set_log_level(log_level);
+    log_set_log_level(bct0.log_level);
 
-    if (log_level != SCREEN_LOG_LEVEL_NONE) {
+    if (bct0.log_level != SCREEN_LOG_LEVEL_NONE) {
         /* Initialize the display for debugging. */
         setup_display();
     }
@@ -168,21 +148,20 @@ int main(void) {
     print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);
 
     /* Load the loader payload into DRAM. */
-    load_stage2(bct0);
+    load_stage2(&bct0);
 
     /* Setup argument data. */
-    stage2_path = stage2_get_program_path();
-    strcpy(g_chainloader_arg_data, stage2_path);
-    stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(stage2_path) + 1); /* May be unaligned. */
+    strcpy(g_chainloader_arg_data, bct0.stage2_path);
+    stage2_args = (stage2_args_t *)(g_chainloader_arg_data + strlen(bct0.stage2_path) + 1); /* May be unaligned. */
     memcpy(&stage2_args->version, &stage2_version, 4);
-    memcpy(&stage2_args->log_level, &log_level, sizeof(log_level));
-    strcpy(stage2_args->bct0, bct0);
+    memcpy(&stage2_args->log_level, &bct0.log_level, sizeof(bct0.log_level));
+    strcpy(stage2_args->bct0, bct0_string);
     g_chainloader_argc = 2;
 
     /* Terminate the boot environment. */
     cleanup_env();
 
-    if (log_level != SCREEN_LOG_LEVEL_NONE) {
+    if (bct0.log_level != SCREEN_LOG_LEVEL_NONE) {
         /* Wait a while for debugging. */
         mdelay(1000);
 

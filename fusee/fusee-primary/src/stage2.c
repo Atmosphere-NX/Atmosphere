@@ -19,42 +19,6 @@
 #include "fs_utils.h"
 #include "utils.h"
 
-char g_stage2_path[0x100] = {0};
-
-const char *stage2_get_program_path(void) {
-    return g_stage2_path;
-}
-
-static int stage2_ini_handler(void *user, const char *section, const char *name, const char *value) {
-    stage2_config_t *config = (stage2_config_t *)user;
-    uintptr_t x = 0;
-    if (strcmp(section, "stage1") == 0) {
-        if (strcmp(name, STAGE2_NAME_KEY) == 0) {
-            strncpy(config->path, value, sizeof(config->path) - 1);
-            config->path[sizeof(config->path) - 1]  = '\0';
-        } else if (strcmp(name, STAGE2_MTC_NAME_KEY) == 0) {
-            strncpy(config->mtc_path, value, sizeof(config->mtc_path) - 1);
-            config->mtc_path[sizeof(config->mtc_path) - 1]  = '\0';
-        } else if (strcmp(name, STAGE2_ADDRESS_KEY) == 0) {
-            /* Read in load address as a hex string. */
-            sscanf(value, "%x", &x);
-            config->load_address = x;
-            if (config->entrypoint == 0) {
-                config->entrypoint = config->load_address;
-            }
-        } else if (strcmp(name, STAGE2_ENTRYPOINT_KEY) == 0) {
-            /* Read in entrypoint as a hex string. */
-            sscanf(value, "%x", &x);
-            config->entrypoint = x;
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
-    }
-    return 1;
-}
-
 static bool run_mtc(const char *mtc_path, uintptr_t mtc_address) {
     FILINFO info;
     size_t size;
@@ -91,45 +55,40 @@ static bool run_mtc(const char *mtc_path, uintptr_t mtc_address) {
     return mtc_res;
 }
 
-void load_stage2(const char *bct0) {
-    stage2_config_t config = {0};
+void load_stage2(const bct0_t *bct0) {
     FILINFO info;
     size_t size;
     uintptr_t tmp_addr;
 
-    if (ini_parse_string(bct0, stage2_ini_handler, &config) < 0) {
-        fatal_error("Failed to parse BCT.ini!\n");
-    }
-
-    if (config.load_address == 0 || config.path[0] == '\x00') {
+    if (bct0->stage2_load_address == 0 || bct0->stage2_path[0] == '\x00') {
         fatal_error("Failed to determine where to load stage2!\n");
     }
 
-    if (strlen(config.path) + 1 + sizeof(stage2_args_t) > CHAINLOADER_ARG_DATA_MAX_SIZE) {
+    if (strlen(bct0->stage2_path) + 1 + sizeof(stage2_args_t) > CHAINLOADER_ARG_DATA_MAX_SIZE) {
         fatal_error("Stage2's path name is too big!\n");
     }
 
-    if (!check_32bit_address_loadable(config.entrypoint)) {
+    if (!check_32bit_address_loadable(bct0->stage2_entrypoint)) {
         fatal_error("Stage2's entrypoint is invalid!\n");
     }
 
-    if (!check_32bit_address_loadable(config.load_address)) {
+    if (!check_32bit_address_loadable(bct0->stage2_load_address)) {
         fatal_error("Stage2's load address is invalid!\n");
     }
     
     print(SCREEN_LOG_LEVEL_DEBUG, "Stage 2 Config:\n");
-    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    File Path:    %s\n", config.path);
-    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    MTC File Path:    %s\n", config.mtc_path);
-    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Load Address: 0x%08x\n", config.load_address);
-    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Entrypoint:   0x%p\n", config.entrypoint);
+    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    File Path:    %s\n", bct0->stage2_path);
+    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    MTC File Path:    %s\n", bct0->stage2_mtc_path);
+    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Load Address: 0x%08x\n", bct0->stage2_load_address);
+    print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "    Entrypoint:   0x%p\n", bct0->stage2_entrypoint);
 
     /* Run the MTC binary. */
-    if (!run_mtc(config.mtc_path, config.load_address)) {
+    if (!run_mtc(bct0->stage2_mtc_path, bct0->stage2_load_address)) {
         print(SCREEN_LOG_LEVEL_WARNING, "DRAM training failed! Continuing with untrained DRAM.\n");
     }
 
-    if (f_stat(config.path, &info) != FR_OK) {
-        fatal_error("Failed to stat stage2 (%s)!\n", config.path);
+    if (f_stat(bct0->stage2_path, &info) != FR_OK) {
+        fatal_error("Failed to stat stage2 (%s)!\n", bct0->stage2_path);
     }
 
     size = (size_t)info.fsize;
@@ -139,32 +98,29 @@ void load_stage2(const char *bct0) {
         fatal_error("Stage2 is way too big!\n");
     }
 
-    if (!check_32bit_address_range_loadable(config.load_address, size)) {
-        fatal_error("Stage2 has an invalid load address & size combination (0x%08x 0x%08x)!\n", config.load_address, size);
+    if (!check_32bit_address_range_loadable(bct0->stage2_load_address, size)) {
+        fatal_error("Stage2 has an invalid load address & size combination (0x%08x 0x%08x)!\n", bct0->stage2_load_address, size);
     }
 
-    if (config.entrypoint < config.load_address || config.entrypoint >= config.load_address + size) {
+    if (bct0->stage2_entrypoint < bct0->stage2_load_address || bct0->stage2_entrypoint >= bct0->stage2_load_address + size) {
         fatal_error("Stage2's entrypoint is outside Stage2!\n");
     }
 
-    if (check_32bit_address_range_in_program(config.load_address, size)) {
+    if (check_32bit_address_range_in_program(bct0->stage2_load_address, size)) {
         tmp_addr = 0x80000000u;
     } else {
-        tmp_addr = config.load_address;
+        tmp_addr = bct0->stage2_load_address;
     }
     
     /* Try to read stage2. */
-    if (read_from_file((void *)tmp_addr, size, config.path) != size) {
-        fatal_error("Failed to read stage2 (%s)!\n", config.path);
+    if (read_from_file((void *)tmp_addr, size, bct0->stage2_path) != size) {
+        fatal_error("Failed to read stage2 (%s)!\n", bct0->stage2_path);
     }
 
     g_chainloader_num_entries             = 1;
-    g_chainloader_entries[0].load_address = config.load_address;
+    g_chainloader_entries[0].load_address = bct0->stage2_load_address;
     g_chainloader_entries[0].src_address  = tmp_addr;
     g_chainloader_entries[0].size         = size;
     g_chainloader_entries[0].num          = 0;
-    g_chainloader_entrypoint              = config.entrypoint;
-
-    strncpy(g_stage2_path, config.path, sizeof(g_stage2_path) - 1);
-    g_stage2_path[sizeof(g_stage2_path) - 1]  = '\0';
+    g_chainloader_entrypoint              = bct0->stage2_entrypoint;
 }
