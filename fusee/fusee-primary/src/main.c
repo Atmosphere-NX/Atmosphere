@@ -32,8 +32,8 @@
 
 extern void (*__program_exit_callback)(int rc);
 
-static void *g_framebuffer;
-static char g_bct0_buffer[BCTO_MAX_SIZE];
+static uint32_t g_framebuffer[1280*768] __attribute__((section(".framebuffer"))) = {0};
+static char g_bct0_buffer[BCTO_MAX_SIZE] __attribute__((section(".dram"))) = {0};
 
 #define CONFIG_LOG_LEVEL_KEY "log_level"
 
@@ -91,8 +91,6 @@ static int config_ini_handler(void *user, const char *section, const char *name,
 }
 
 static void setup_display(void) {
-    g_framebuffer = (void *)0xC0000000;
-
     /* Zero-fill the framebuffer and register it as printk provider. */
     video_init(g_framebuffer);
 

@@ -179,6 +179,8 @@ void config_se_brom()
     pmc->reset_status = 0;
 }
 
+extern uint8_t __dram_start__[], __dram_end__[];
+
 void nx_hwinit()
 {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
@@ -291,6 +293,9 @@ void nx_hwinit()
 
     /* Initialize SDRAM. */
     sdram_init();
+
+    /* Zero-fill the .dram section */
+    memset(__dram_start__, 0, __dram_end__ - __dram_start__);
     
     /* Save SDRAM LP0 parameters. */
     sdram_lp0_save_params(sdram_get_params());
