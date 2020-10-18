@@ -65,9 +65,9 @@ void config_gpios()
     pinmux->uart3_tx = 0;
     pinmux->pe6 = PINMUX_INPUT;
     pinmux->ph6 = PINMUX_INPUT;
-    
-    gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
-    gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
+
+    gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_SFIO);
+    gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_SFIO);
     gpio_configure_mode(TEGRA_GPIO(E, 6), GPIO_MODE_GPIO);
     gpio_configure_mode(TEGRA_GPIO(H, 6), GPIO_MODE_GPIO);
     gpio_configure_direction(TEGRA_GPIO(G, 0), GPIO_DIRECTION_INPUT);
@@ -78,6 +78,7 @@ void config_gpios()
     i2c_config(I2C_1);
     i2c_config(I2C_5);
     uart_config(UART_A);
+    uart_config(UART_B);
 
     /* Configure volume up/down as inputs. */
     gpio_configure_mode(GPIO_BUTTON_VOL_UP, GPIO_MODE_GPIO);
@@ -213,10 +214,9 @@ void nx_hwinit()
     config_gpios();
 
     /* Uncomment for UART debugging. */
-    /*
-    clkrst_reboot(CARDEVICE_UARTC);
-    uart_init(UART_C, 115200);
-    */
+
+    clkrst_reboot(CARDEVICE_UARTB);
+    uart_init(UART_B, 115200);
     
     /* Reboot CL-DVFS. */
     clkrst_reboot(CARDEVICE_CL_DVFS);

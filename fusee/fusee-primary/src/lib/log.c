@@ -17,6 +17,7 @@
 #include "log.h"
 
 #include "../display/video_fb.h"
+#include "../uart.h"
 #include "vsprintf.h"
 
 /* default log level for screen output */
@@ -31,7 +32,7 @@ ScreenLogLevel log_get_log_level() {
 }
 
 void log_to_uart(const char *message) {
-    /* TODO: add UART logging */
+    uart_send(UART_B, message, strlen(message));
 }
 
 static void print_to_screen(ScreenLogLevel screen_log_level, char *message) {
