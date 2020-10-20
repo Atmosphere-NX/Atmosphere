@@ -17,18 +17,29 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
-#include <vapours/literals.hpp>
-
-#include <vapours/allocator.hpp>
-#include <vapours/timespan.hpp>
-#include <vapours/span.hpp>
-
-#include <vapours/util.hpp>
 #include <vapours/results.hpp>
-#include <vapours/crypto.hpp>
+#include <vapours/util.hpp>
 #include <vapours/svc.hpp>
-
-#include <vapours/ams/ams_fatal_error_context.hpp>
-
 #include <vapours/dd.hpp>
-#include <vapours/sdmmc.hpp>
+
+#if defined(ATMOSPHERE_IS_EXOSPHERE)
+
+    //#define AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS
+    //#define AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL
+    //#define AMS_SDMMC_USE_OS_EVENTS
+
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+
+    //#define AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS
+    //#define AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL
+    //#define AMS_SDMMC_USE_OS_EVENTS
+
+#elif defined(ATMOSPHERE_IS_STRATOSPHERE)
+
+    #define AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS
+    #define AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL
+    #define AMS_SDMMC_USE_OS_EVENTS
+
+#else
+    #error "Unknown execution context for ams::sdmmc!"
+#endif

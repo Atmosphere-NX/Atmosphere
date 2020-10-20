@@ -17,18 +17,10 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
-#include <vapours/literals.hpp>
-
-#include <vapours/allocator.hpp>
-#include <vapours/timespan.hpp>
-#include <vapours/span.hpp>
-
-#include <vapours/util.hpp>
 #include <vapours/results.hpp>
-#include <vapours/crypto.hpp>
+#include <vapours/util.hpp>
 #include <vapours/svc.hpp>
 
-#include <vapours/ams/ams_fatal_error_context.hpp>
-
-#include <vapours/dd.hpp>
-#include <vapours/sdmmc.hpp>
+#include <vapours/sdmmc/sdmmc_build_config.hpp>
+#include <vapours/sdmmc/sdmmc_common.hpp>
+#include <vapours/sdmmc/sdmmc_mmc.hpp>

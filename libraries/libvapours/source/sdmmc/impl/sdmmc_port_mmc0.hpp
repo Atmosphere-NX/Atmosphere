@@ -13,22 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/literals.hpp>
 
-#include <vapours/allocator.hpp>
-#include <vapours/timespan.hpp>
-#include <vapours/span.hpp>
+#include <vapours.hpp>
+#include "sdmmc_i_host_controller.hpp"
+#include "sdmmc_i_device_accessor.hpp"
 
-#include <vapours/util.hpp>
-#include <vapours/results.hpp>
-#include <vapours/crypto.hpp>
-#include <vapours/svc.hpp>
+namespace ams::sdmmc::impl {
 
-#include <vapours/ams/ams_fatal_error_context.hpp>
+    IHostController *GetHostControllerOfPortMmc0();
+    IDeviceAccessor *GetDeviceAccessorOfPortMmc0();
 
-#include <vapours/dd.hpp>
-#include <vapours/sdmmc.hpp>
+}
