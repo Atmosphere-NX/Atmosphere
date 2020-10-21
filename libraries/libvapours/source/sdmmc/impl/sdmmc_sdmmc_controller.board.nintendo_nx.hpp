@@ -288,6 +288,79 @@ namespace ams::sdmmc::impl {
             }
     };
 
+    constexpr inline dd::PhysicalAddress Sdmmc2RegistersPhysicalAddress = UINT64_C(0x700B0200);
+
+    class Sdmmc2Controller : public Sdmmc2And4Controller {
+        private:
+            #if defined(AMS_SDMMC_USE_OS_EVENTS)
+                static constinit inline os::InterruptEventType s_interrupt_event{};
+            #endif
+        protected:
+            virtual void SetPad() override {
+                /* Nothing is needed here. */
+            }
+
+            virtual ClockResetController::Module GetClockResetModule() const override {
+                return ClockResetController::Module_Sdmmc2;
+            }
+
+            #if defined(AMS_SDMMC_USE_OS_EVENTS)
+            virtual int GetInterruptNumber() const override {
+                return 47;
+            }
+
+            virtual os::InterruptEventType *GetInterruptEvent() const override {
+                return std::addressof(s_interrupt_event);
+            }
+            #endif
+
+            virtual void ClearPadParked() override {
+                if (IsSocMariko()) {
+                    /* Nothing is needed here. */
+                } else {
+                    /* Get the apb registers address. */
+                    const uintptr_t apb_address = dd::QueryIoMapping(ApbMiscRegistersPhysicalAddress, ApbMiscRegistersSize);
+
+                    /* Clear all MISC2PMC_EMMC2_*_PARK bits. */
+                    reg::ReadWrite(apb_address + APB_MISC_GP_EMMC2_PAD_CFGPADCTRL, APB_MISC_REG_BITS_VALUE(GP_EMMC2_PAD_CFGPADCTRL_MISC2PMC_EMMC2_ALL_PARK, 0));
+
+                    /* Read to be sure our config takes. */
+                    reg::Read(apb_address + APB_MISC_GP_EMMC2_PAD_CFGPADCTRL);
+                }
+            }
+
+            virtual void SetDriveStrengthToDefaultValues(BusPower bus_power) override {
+                /* SDMMC4 only supports 1.8v. */
+                AMS_ABORT_UNLESS(bus_power == BusPower_1_8V);
+
+                /* Ensure that we can control registers. */
+                SdHostStandardController::EnsureControl();
+
+                /* Get the apb registers address. */
+                const uintptr_t apb_address = dd::QueryIoMapping(ApbMiscRegistersPhysicalAddress, ApbMiscRegistersSize);
+
+                if (IsSocMariko()) {
+                    /* Write the drv up/down values to APB_MISC_GP_SDMMC2_PAD_CFGPADCTRL. */
+                    reg::ReadWrite(apb_address + APB_MISC_GP_SDMMC2_PAD_CFGPADCTRL, APB_MISC_REG_BITS_VALUE(GP_SDMMC2_PAD_CFGPADCTRL_CFG2TMC_SDMMC2_PAD_CAL_DRVDN, 0xA),
+                                                                                    APB_MISC_REG_BITS_VALUE(GP_SDMMC2_PAD_CFGPADCTRL_CFG2TMC_SDMMC2_PAD_CAL_DRVUP, 0xA));
+
+                    /* Read to be sure our config takes. */
+                    reg::Read(apb_address + APB_MISC_GP_SDMMC2_PAD_CFGPADCTRL);
+                } else {
+                    /* Write the drv up/down values to APB_MISC_GP_EMMC4_PAD_CFGPADCTRL. */
+                    reg::ReadWrite(apb_address + APB_MISC_GP_EMMC2_PAD_CFGPADCTRL, APB_MISC_REG_BITS_VALUE(GP_EMMC2_PAD_CFGPADCTRL_CFG2TMC_EMMC2_PAD_DRVDN_COMP, 0x10),
+                                                                                   APB_MISC_REG_BITS_VALUE(GP_EMMC2_PAD_CFGPADCTRL_CFG2TMC_EMMC2_PAD_DRVUP_COMP, 0x10));
+
+                    /* Read to be sure our config takes. */
+                    reg::Read(apb_address + APB_MISC_GP_EMMC2_PAD_CFGPADCTRL);
+                }
+            }
+        public:
+            Sdmmc2Controller() : Sdmmc2And4Controller(Sdmmc2RegistersPhysicalAddress) {
+                /* ... */
+            }
+    };
+
     constexpr inline dd::PhysicalAddress Sdmmc4RegistersPhysicalAddress = UINT64_C(0x700B0600);
 
     class Sdmmc4Controller : public Sdmmc2And4Controller {
