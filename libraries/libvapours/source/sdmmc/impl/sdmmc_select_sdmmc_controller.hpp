@@ -22,7 +22,9 @@
 
     namespace ams::sdmmc::impl {
 
-        using SdmmcControllerForMmc = Sdmmc4Controller;
+        using SdmmcControllerForPortSdCard0 = Sdmmc1Controller;
+        using SdmmcControllerForPortGcAsic0 = Sdmmc2Controller;
+        using SdmmcControllerForPortMmc0    = Sdmmc4Controller;
 
     }
 

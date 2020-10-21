@@ -203,6 +203,216 @@ namespace ams::sdmmc::impl {
             }
     };
 
+    constexpr inline dd::PhysicalAddress Sdmmc1RegistersPhysicalAddress = UINT64_C(0x700B0000);
+
+    class Sdmmc1Controller : public SdmmcController {
+        private:
+            #if defined(AMS_SDMMC_USE_OS_EVENTS)
+                static constinit inline os::InterruptEventType s_interrupt_event{};
+            #endif
+        private:
+            #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+            /* TODO: pinmux::PinmuxSession pinmux_session; */
+            #endif
+            BusPower current_bus_power;
+            #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+            bool is_pcv_control;
+            #endif
+        private:
+            Result PowerOnForRegisterControl(BusPower bus_power);
+            void PowerOffForRegisterControl();
+            Result LowerBusPowerForRegisterControl();
+            void SetSchmittTriggerForRegisterControl(BusPower bus_power);
+
+            #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+            Result PowerOnForPcvControl(BusPower bus_power);
+            void PowerOffForPcvControl();
+            Result LowerBusPowerForPcvControl();
+            void SetSchmittTriggerForPcvControl(BusPower bus_power);
+            #endif
+        protected:
+            virtual void SetPad() override {
+                /* Nothing is needed here. */
+            }
+
+            virtual ClockResetController::Module GetClockResetModule() const override {
+                return ClockResetController::Module_Sdmmc1;
+            }
+
+            #if defined(AMS_SDMMC_USE_OS_EVENTS)
+            virtual int GetInterruptNumber() const override {
+                return 46;
+            }
+
+            virtual os::InterruptEventType *GetInterruptEvent() const override {
+                return std::addressof(s_interrupt_event);
+            }
+            #endif
+
+            virtual bool IsNeedPeriodicDriveStrengthCalibration() override {
+                return !IsSocMariko();
+            }
+
+            virtual void ClearPadParked() override {
+                /* Nothing is needed here. */
+            }
+
+            virtual Result PowerOn(BusPower bus_power) override;
+            virtual void PowerOff() override;
+            virtual Result LowerBusPower() override;
+
+            virtual void SetSchmittTrigger(BusPower bus_power) override;
+
+            virtual u8 GetOutboundTapValue() const override {
+                if (IsSocMariko()) {
+                    return 0xE;
+                } else {
+                    return 0x2;
+                }
+            }
+
+            virtual u8 GetDefaultInboundTapValue() const override {
+                if (IsSocMariko()) {
+                    return 0xB;
+                } else {
+                    return 0x4;
+                }
+            }
+
+            virtual u8 GetVrefSelValue() const override {
+                if (IsSocMariko()) {
+                    return 0x0;
+                } else {
+                    return 0x7;
+                }
+            }
+
+            virtual void SetSlewCodes() override {
+                if (IsSocMariko()) {
+                    /* Do nothing. */
+                } else {
+                    /* Ensure that we can control registers. */
+                    SdHostStandardController::EnsureControl();
+
+                    /* Get the apb registers address. */
+                    const uintptr_t apb_address = dd::QueryIoMapping(ApbMiscRegistersPhysicalAddress, ApbMiscRegistersSize);
+
+                    /* Write the slew values to APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL. */
+                    reg::ReadWrite(apb_address + APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL, APB_MISC_REG_BITS_VALUE(GP_SDMMC1_PAD_CFGPADCTRL_CFG2TMC_SDMMC1_CLK_CFG_CAL_DRVDN_SLWR, 0x1),
+                                                                                    APB_MISC_REG_BITS_VALUE(GP_SDMMC1_PAD_CFGPADCTRL_CFG2TMC_SDMMC1_CLK_CFG_CAL_DRVDN_SLWF, 0x1));
+
+                    /* Read to be sure our config takes. */
+                    reg::Read(apb_address + APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL);
+                }
+            }
+
+            virtual void GetAutoCalOffsets(u8 *out_auto_cal_pd_offset, u8 *out_auto_cal_pu_offset, BusPower bus_power) const override {
+                /* Ensure that we can write the offsets. */
+                AMS_ABORT_UNLESS(out_auto_cal_pd_offset != nullptr);
+                AMS_ABORT_UNLESS(out_auto_cal_pu_offset != nullptr);
+
+                /* Set the offsets. */
+                if (IsSocMariko()) {
+                    switch (bus_power) {
+                        case BusPower_1_8V:
+                            *out_auto_cal_pd_offset = 6;
+                            *out_auto_cal_pu_offset = 6;
+                            break;
+                        case BusPower_3_3V:
+                            *out_auto_cal_pd_offset = 0;
+                            *out_auto_cal_pu_offset = 0;
+                            break;
+                        case BusPower_Off:
+                        AMS_UNREACHABLE_DEFAULT_CASE();
+                    }
+                } else {
+                    switch (bus_power) {
+                        case BusPower_1_8V:
+                            *out_auto_cal_pd_offset = 0x7B;
+                            *out_auto_cal_pu_offset = 0x7B;
+                            break;
+                        case BusPower_3_3V:
+                            *out_auto_cal_pd_offset = 0x7D;
+                            *out_auto_cal_pu_offset = 0;
+                            break;
+                        case BusPower_Off:
+                        AMS_UNREACHABLE_DEFAULT_CASE();
+                    }
+                }
+            }
+
+            virtual void SetDriveStrengthToDefaultValues(BusPower bus_power) override {
+                /* Ensure that we can control registers. */
+                SdHostStandardController::EnsureControl();
+
+                /* Get the apb registers address. */
+                const uintptr_t apb_address = dd::QueryIoMapping(ApbMiscRegistersPhysicalAddress, ApbMiscRegistersSize);
+
+                /* Determine the drive code values. */
+                u8 drvdn, drvup;
+                if (IsSocMariko()) {
+                    drvdn = 0x8;
+                    drvup = 0x8;
+                } else {
+                    switch (bus_power) {
+                        case BusPower_1_8V:
+                            drvdn = 0xF;
+                            drvup = 0xB;
+                            break;
+                        case BusPower_3_3V:
+                            drvdn = 0xC;
+                            drvup = 0xC;
+                            break;
+                        case BusPower_Off:
+                        AMS_UNREACHABLE_DEFAULT_CASE();
+                    }
+                }
+
+                /* Write the drv up/down values to APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL. */
+                reg::ReadWrite(apb_address + APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL, APB_MISC_REG_BITS_VALUE(GP_SDMMC1_PAD_CFGPADCTRL_CFG2TMC_SDMMC1_PAD_CAL_DRVDN, drvdn),
+                                                                                APB_MISC_REG_BITS_VALUE(GP_SDMMC1_PAD_CFGPADCTRL_CFG2TMC_SDMMC1_PAD_CAL_DRVUP, drvup));
+
+                /* Read to be sure our config takes. */
+                reg::Read(apb_address + APB_MISC_GP_EMMC4_PAD_CFGPADCTRL);
+            }
+        public:
+            Sdmmc1Controller() : SdmmcController(Sdmmc1RegistersPhysicalAddress) {
+                this->current_bus_power = BusPower_Off;
+                #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+                this->is_pcv_control = false;
+                #endif
+            }
+
+            virtual void Initialize() override;
+            virtual void Finalize() override;
+
+            void InitializeForRegisterControl();
+            void FinalizeForRegisterControl();
+
+            #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+            void InitializeForPcvControl();
+            void FinalizeForPcvControl();
+            #endif
+
+            virtual bool IsSupportedBusPower(BusPower bus_power) const override {
+                switch (bus_power) {
+                    case BusPower_Off:  return true;
+                    case BusPower_1_8V: return true;
+                    case BusPower_3_3V: return true;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
+
+            virtual bool IsSupportedBusWidth(BusWidth bus_width) const override {
+                switch (bus_width) {
+                    case BusWidth_1Bit: return true;
+                    case BusWidth_4Bit: return true;
+                    case BusWidth_8Bit: return false;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
+    };
+
     class Sdmmc2And4Controller : public SdmmcController {
         protected:
             virtual bool IsNeedPeriodicDriveStrengthCalibration() override {
@@ -330,7 +540,7 @@ namespace ams::sdmmc::impl {
             }
 
             virtual void SetDriveStrengthToDefaultValues(BusPower bus_power) override {
-                /* SDMMC4 only supports 1.8v. */
+                /* SDMMC2 only supports 1.8v. */
                 AMS_ABORT_UNLESS(bus_power == BusPower_1_8V);
 
                 /* Ensure that we can control registers. */

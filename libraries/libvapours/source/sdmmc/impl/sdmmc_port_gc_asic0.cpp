@@ -22,12 +22,12 @@ namespace ams::sdmmc::impl {
 
     namespace {
 
-        SdmmcControllerForPortMmc0 g_mmc0_host_controller;
+        SdmmcControllerForPortGcAsic0 g_gc_asic0_host_controller;
 
     }
 
-    IHostController *GetHostControllerOfPortMmc0() {
-        return std::addressof(g_mmc0_host_controller);
+    IHostController *GetHostControllerOfPortGcAsic0() {
+        return std::addressof(g_gc_asic0_host_controller);
     }
 
 }

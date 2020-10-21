@@ -869,4 +869,234 @@ namespace ams::sdmmc::impl {
         this->is_valid_tap_value_for_hs_400 = true;
     }
 
+    Result Sdmmc1Controller::PowerOnForRegisterControl(BusPower bus_power) {
+        AMS_ABORT_UNLESS(bus_power == BusPower_3_3V);
+
+        /* Nintendo sets the current bus power regardless of whether the call succeeds. */
+        ON_SCOPE_EXIT { this->current_bus_power = BusPower_3_3V; };
+
+        /* TODO: equivalent of return pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
+        return ResultSuccess();
+    }
+
+    void Sdmmc1Controller::PowerOffForRegisterControl() {
+        /* If we're already off, there's nothing to do. */
+        if (this->current_bus_power == BusPower_Off) {
+            return;
+        }
+
+        /* If we're at 3.3V, lower to 1.8V. */
+        {
+            /* TODO: equivalent of pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+            this->current_bus_power = BusPower_1_8V;
+        }
+
+        /* TODO: Equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1OutputHigh); */
+
+        /* TODO: Equivalent of pcv::PowerOff(pcv::PowerControlTarget_SdCard); */
+        this->current_bus_power = BusPower_Off;
+
+        /* TODO: Equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1ResetState); */
+    }
+
+    Result Sdmmc1Controller::LowerBusPowerForRegisterControl() {
+        /* Nintendo sets the current bus power regardless of whether the call succeeds. */
+        ON_SCOPE_EXIT { this->current_bus_power = BusPower_1_8V; };
+
+        /* TODO: equivalent of return pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+        return ResultSuccess();
+    }
+
+    void Sdmmc1Controller::SetSchmittTriggerForRegisterControl(BusPower bus_power) {
+        SdHostStandardController::EnsureControl();
+
+        if (IsSocMariko()) {
+            /* TODO: equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+        } else {
+            switch (bus_power) {
+                case BusPower_1_8V:
+                    /* TODO: equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+                    break;
+                case BusPower_3_3V:
+                    /* TODO: equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtDisable); */
+                    break;
+                case BusPower_Off:
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+    }
+
+    #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+    Result Sdmmc1Controller::PowerOnForPcvControl(BusPower bus_power) {
+        AMS_ABORT_UNLESS(bus_power == BusPower_3_3V);
+
+        /* Nintendo sets the current bus power regardless of whether the call succeeds. */
+        ON_SCOPE_EXIT { this->current_bus_power = BusPower_3_3V; };
+
+        /* TODO: return pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
+        return ResultSuccess();
+    }
+
+    void Sdmmc1Controller::PowerOffForPcvControl() {
+        /* If we're already off, there's nothing to do. */
+        if (this->current_bus_power == BusPower_Off) {
+            return;
+        }
+
+        /* If we're at 3.3V, lower to 1.8V. */
+        {
+            /* TODO: pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+            this->current_bus_power = BusPower_1_8V;
+        }
+
+        /* TODO: pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1OutputHigh); */
+
+        /* TODO: pcv::PowerOff(pcv::PowerControlTarget_SdCard); */
+        this->current_bus_power = BusPower_Off;
+
+        /* TODO: pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1ResetState); */
+
+    }
+
+    Result Sdmmc1Controller::LowerBusPowerForPcvControl() {
+        /* Nintendo sets the current bus power regardless of whether the call succeeds. */
+        ON_SCOPE_EXIT { this->current_bus_power = BusPower_1_8V; };
+
+        /* TODO: return pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+        return ResultSuccess();
+    }
+
+    void Sdmmc1Controller::SetSchmittTriggerForPcvControl(BusPower bus_power) {
+        SdHostStandardController::EnsureControl();
+
+        if (IsSocMariko()) {
+            /* TODO: pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+        } else {
+            switch (bus_power) {
+                case BusPower_1_8V:
+                    /* TODO: pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+                    break;
+                case BusPower_3_3V:
+                    /* TODO: pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtDisable); */
+                    break;
+                case BusPower_Off:
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
+    }
+    #endif
+
+    Result Sdmmc1Controller::PowerOn(BusPower bus_power) {
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        if (this->is_pcv_control) {
+            return this->PowerOnForPcvControl(bus_power);
+        } else
+        #endif
+        {
+            return this->PowerOnForRegisterControl(bus_power);
+        }
+    }
+
+    void Sdmmc1Controller::PowerOff() {
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        if (this->is_pcv_control) {
+            return this->PowerOffForPcvControl();
+        } else
+        #endif
+        {
+            return this->PowerOffForRegisterControl();
+        }
+    }
+
+    Result Sdmmc1Controller::LowerBusPower() {
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        if (this->is_pcv_control) {
+            return this->LowerBusPowerForPcvControl();
+        } else
+        #endif
+        {
+            return this->LowerBusPowerForRegisterControl();
+        }
+    }
+
+    void Sdmmc1Controller::SetSchmittTrigger(BusPower bus_power) {
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        if (this->is_pcv_control) {
+            return this->SetSchmittTriggerForPcvControl(bus_power);
+        } else
+        #endif
+        {
+            return this->SetSchmittTriggerForRegisterControl(bus_power);
+        }
+    }
+
+    void Sdmmc1Controller::Initialize() {
+        return this->InitializeForRegisterControl();
+    }
+
+    void Sdmmc1Controller::Finalize() {
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        if (this->is_pcv_control) {
+            return this->FinalizeForPcvControl();
+        } else
+        #endif
+        {
+            return this->FinalizeForRegisterControl();
+        }
+    }
+
+    void Sdmmc1Controller::InitializeForRegisterControl() {
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        /* Mark ourselves as initialized by register control. */
+        this->is_pcv_control = false;
+        #endif
+
+        /* TODO: equivalent of pinmux::Initialize(); */
+        /* TODO: equivalent of pinmux::OpenSession(std::addressof(this->pinmux_session), pinmux::AssignablePinGroupName_Sdmmc1); */
+        /* TODO: equivalent of pcv::Initialize(); */
+
+        /* Perform base initialization. */
+        SdmmcController::Initialize();
+    }
+
+    void Sdmmc1Controller::FinalizeForRegisterControl() {
+        /* Perform base finalization. */
+        SdmmcController::Finalize();
+
+        /* TODO: equivalent of pcv::Finalize(); */
+        /* TODO: equivalent of pinmux::CloseSession(std::addressof(this->pinmux_session)); */
+        /* TODO: equivalent of pinmux::Finalize(); */
+
+        #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+        /* Mark ourselves as initialized by register control. */
+        this->is_pcv_control = false;
+        #endif
+    }
+
+    #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
+    void Sdmmc1Controller::InitializeForPcvControl() {
+        /* Mark ourselves as initialized by pcv control. */
+        this->is_pcv_control = true;
+
+        /* TODO: pinmux::Initialize(); */
+        /* TODO: pinmux::OpenSession(std::addressof(this->pinmux_session), pinmux::AssignablePinGroupName_Sdmmc1); */
+        /* TODO: pcv::Initialize(); */
+
+        /* Perform base initialization. */
+        SdmmcController::Initialize();
+    }
+
+    void Sdmmc1Controller::FinalizeForPcvControl() {
+        /* Perform base finalization. */
+        SdmmcController::Finalize();
+
+        /* TODO: pcv::Finalize(); */
+        /* TODO: pinmux::CloseSession(std::addressof(this->pinmux_session)); */
+        /* TODO: pinmux::Finalize(); */
+
+        /* Mark ourselves as initialized by register control. */
+        this->is_pcv_control = false;
+    }
+    #endif
+
 }

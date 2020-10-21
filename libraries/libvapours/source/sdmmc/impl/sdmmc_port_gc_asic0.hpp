@@ -13,21 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <vapours.hpp>
-#include "sdmmc_port_mmc0.hpp"
-#include "sdmmc_select_sdmmc_controller.hpp"
-
+#include "sdmmc_i_host_controller.hpp"
+#include "sdmmc_i_device_accessor.hpp"
 
 namespace ams::sdmmc::impl {
 
-    namespace {
-
-        SdmmcControllerForPortMmc0 g_mmc0_host_controller;
-
-    }
-
-    IHostController *GetHostControllerOfPortMmc0() {
-        return std::addressof(g_mmc0_host_controller);
-    }
+    IHostController *GetHostControllerOfPortGcAsic0();
+    IDeviceAccessor *GetDeviceAccessorOfPortGcAsic0();
 
 }
