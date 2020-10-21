@@ -13,12 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#else
+#include <vapours.hpp>
+#endif
+#include "impl/dd_select_cache_impl.hpp"
 
-#pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
+namespace ams::dd {
 
-#include <vapours/dd/dd_common_types.hpp>
-#include <vapours/dd/dd_io_mapping.hpp>
-#include <vapours/dd/dd_cache.hpp>
+    void InvalidateDataCache(void *addr, size_t size) {
+        return impl::InvalidateDataCacheImpl(addr, size);
+    }
+
+    void StoreDataCache(void *addr, size_t size) {
+        return impl::StoreDataCacheImpl(addr, size);
+    }
+
+    void FlushDataCache(void *addr, size_t size) {
+        return impl::FlushDataCacheImpl(addr, size);
+    }
+
+}

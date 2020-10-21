@@ -15,7 +15,6 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <exosphere/reg.hpp>
 
 #define MC_INTSTATUS                            (0x000)
 #define MC_INTMASK                              (0x004)

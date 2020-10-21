@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
 #include <vapours.hpp>
 
 #if defined(AMS_SDMMC_USE_OS_EVENTS)
@@ -78,12 +77,62 @@ namespace ams::sdmmc::impl {
             virtual void Initialize() = 0;
             virtual void Finalize() = 0;
 
-            /* TODO */
+            #if defined(AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS)
+            virtual void RegisterDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size, ams::dd::DeviceVirtualAddress buffer_device_virtual_address) = 0;
+            virtual void UnregisterDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size, ams::dd::DeviceVirtualAddress buffer_device_virtual_address) = 0;
+            #endif
+
+            virtual void SetWorkBuffer(void *wb, size_t wb_size) = 0;
+
+            virtual Result Startup(BusPower bus_power, BusWidth bus_width, SpeedMode speed_mode, bool power_saving_enable) = 0;
+            virtual void Shutdown();
+            virtual void PutToSleep();
+            virtual Result Awaken();
+
+            virtual Result SwitchToSdr12();
+
+            virtual bool IsSupportedBusPower(BusPower bus_power) const = 0;
+            virtual BusPower GetBusPower() const = 0;
+
+            virtual bool IsSupportedBusWidth(BusWidth bus_width) const = 0;
+            virtual void SetBusWidth(BusWidth bus_width) = 0;
+            virtual BusWidth GetBusWidth() const = 0;
+
+            virtual Result SetSpeedMode(SpeedMode speed_mode) = 0;
+            virtual SpeedMode GetSpeedMode() const = 0;
+
+            virtual u32 GetDeviceClockFrequencyKHz() const = 0;
+
+            virtual void SetPowerSaving(bool en) = 0;
+            virtual bool IsPowerSavingEnable() const = 0;
+
+            virtual void EnableDeviceClock() = 0;
+            virtual void DisableDeviceClock() = 0;
+            virtual bool IsDeviceClockEnable() const = 0;
+
+            virtual u32 GetMaxTransferNumBlocks() const = 0;
 
             virtual void ChangeCheckTransferInterval(u32 ms) = 0;
             virtual void SetDefaultCheckTransferInterval() = 0;
 
-            /* TODO */
+            virtual Result IssueCommand(const Command *command, TransferData *xfer_data, u32 *out_num_transferred_blocks) = 0;
+            virtual Result IssueStopTransmissionCommand(u32 *out_response) = 0;
+
+            ALWAYS_INLINE Result IssueCommand(const Command *command, TransferData *xfer_data) {
+                return this->IssueCommand(command, xfer_data, nullptr);
+            }
+
+            ALWAYS_INLINE Result IssueCommand(const Command *command) {
+                return this->IssueCommand(command, nullptr, nullptr);
+            }
+
+            virtual void GetLastResponse(u32 *out_response, size_t response_size, ResponseType response_type) const = 0;
+            virtual void GetLastStopTransmissionResponse(u32 *out_response, size_t response_size) const = 0;
+
+            virtual bool IsSupportedTuning() const = 0;
+            virtual Result Tuning(SpeedMode speed_mode, u32 command_index) = 0;
+            virtual void SaveTuningStatusForHs400() = 0;
+            virtual Result GetInternalStatus() const = 0;
     };
 
 }

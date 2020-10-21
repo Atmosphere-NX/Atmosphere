@@ -13,14 +13,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
 
-namespace ams::dd {
-
-    using DeviceVirtualAddress = u64;
-
-}
+#if defined(ATMOSPHERE_OS_HORIZON)
+    #include "dd_cache_impl.os.horizon.hpp"
+#else
+    #error "Unknown OS for ams::dd::CacheImpl"
+#endif

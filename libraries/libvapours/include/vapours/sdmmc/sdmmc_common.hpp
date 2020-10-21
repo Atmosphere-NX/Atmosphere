@@ -17,7 +17,6 @@
 #pragma once
 #include <vapours/sdmmc/sdmmc_build_config.hpp>
 
-
 namespace ams::sdmmc {
 
     enum BusPower {
@@ -109,7 +108,5 @@ namespace ams::sdmmc {
     Result GetDeviceCsd(void *out, size_t out_size, Port port);
 
     void GetAndClearErrorInfo(ErrorInfo *out_error_info, size_t *out_log_size, char *out_log_buffer, size_t log_buffer_size, Port port);
-
-
 
 }

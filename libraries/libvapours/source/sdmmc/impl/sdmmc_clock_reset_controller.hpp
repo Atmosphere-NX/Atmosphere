@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
 #include <vapours.hpp>
 
 namespace ams::sdmmc::impl::ClockResetController {

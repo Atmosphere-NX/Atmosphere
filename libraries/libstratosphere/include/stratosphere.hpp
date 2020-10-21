@@ -60,7 +60,6 @@
 #include <stratosphere/pgl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
-#include <stratosphere/reg.hpp>
 #include <stratosphere/ro.hpp>
 #include <stratosphere/settings.hpp>
 #include <stratosphere/sf.hpp>

@@ -17,8 +17,10 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
-#include <vapours/results.hpp>
 
-#include <vapours/dd/dd_common_types.hpp>
-#include <vapours/dd/dd_io_mapping.hpp>
-#include <vapours/dd/dd_cache.hpp>
+namespace ams::util {
+
+    u32 GetMicroSeconds();
+    void WaitMicroSeconds(int us);
+
+}

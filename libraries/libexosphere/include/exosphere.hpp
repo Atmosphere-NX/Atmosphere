@@ -17,7 +17,6 @@
 #include <vapours.hpp>
 
 #include <exosphere/common.hpp>
-#include <exosphere/reg.hpp>
 #include <exosphere/hw.hpp>
 #include <exosphere/util.hpp>
 #include <exosphere/mmu.hpp>

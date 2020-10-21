@@ -13,12 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
+#include <vapours.hpp>
 
-#include <vapours/dd/dd_common_types.hpp>
-#include <vapours/dd/dd_io_mapping.hpp>
-#include <vapours/dd/dd_cache.hpp>
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+
+    #include "sdmmc_sdmmc_controller.board.nintendo_nx.hpp"
+
+    namespace ams::sdmmc::impl {
+
+        using SdmmcControllerForMmc = Sdmmc4Controller;
+
+    }
+
+#else
+    #error "Unknown board for ams::sdmmc::SdmmcController"
+#endif

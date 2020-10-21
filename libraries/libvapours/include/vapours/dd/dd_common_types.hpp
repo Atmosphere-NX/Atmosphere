@@ -19,6 +19,11 @@
 #include <vapours/assert.hpp>
 #include <vapours/results.hpp>
 
-#include <vapours/dd/dd_common_types.hpp>
-#include <vapours/dd/dd_io_mapping.hpp>
-#include <vapours/dd/dd_cache.hpp>
+namespace ams::dd {
+
+    using PhysicalAddress      = u64;
+    using DeviceVirtualAddress = u64;
+
+    static_assert(std::same_as<PhysicalAddress, ams::svc::PhysicalAddress>);
+
+}

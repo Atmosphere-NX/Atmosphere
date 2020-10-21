@@ -48,100 +48,132 @@ namespace ams::reg {
         return (EncodeValue(values) | ...);
     }
 
-    ALWAYS_INLINE void Write(volatile u32 *reg, u32 val) { *reg = val; }
-    ALWAYS_INLINE void Write(volatile u32 &reg, u32 val) {  reg = val; }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void Write(volatile IntType *reg, std::type_identity_t<IntType> val) { *reg = val; }
+
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void Write(volatile IntType &reg, std::type_identity_t<IntType> val) {  reg = val; }
+
     ALWAYS_INLINE void Write(uintptr_t reg, u32 val) { Write(reinterpret_cast<volatile u32 *>(reg), val); }
 
-    template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE void Write(volatile u32 *reg, const Values... values) { return Write(reg, (EncodeValue(values) | ...)); }
+    template<typename IntType, typename... Values> requires std::unsigned_integral<IntType> && ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
+    ALWAYS_INLINE void Write(volatile IntType *reg, const Values... values) { return Write(reg, static_cast<IntType>((EncodeValue(values) | ...))); }
 
-    template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE void Write(volatile u32 &reg, const Values... values) { return Write(reg, (EncodeValue(values) | ...)); }
+    template<typename IntType, typename... Values> requires std::unsigned_integral<IntType> && ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
+    ALWAYS_INLINE void Write(volatile IntType &reg, const Values... values) { return Write(reg, static_cast<IntType>((EncodeValue(values) | ...))); }
 
     template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
     ALWAYS_INLINE void Write(uintptr_t reg, const Values... values)     { return Write(reg, (EncodeValue(values) | ...)); }
 
-    ALWAYS_INLINE u32 Read(volatile u32 *reg) { return *reg; }
-    ALWAYS_INLINE u32 Read(volatile u32 &reg) { return  reg; }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE IntType Read(volatile IntType *reg) { return *reg; }
+
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE IntType Read(volatile IntType &reg) { return  reg; }
+
     ALWAYS_INLINE u32 Read(uintptr_t reg) { return Read(reinterpret_cast<volatile u32 *>(reg)); }
 
-    ALWAYS_INLINE u32 Read(volatile u32 *reg, u32 mask) { return *reg & mask; }
-    ALWAYS_INLINE u32 Read(volatile u32 &reg, u32 mask) { return  reg & mask; }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE IntType Read(volatile IntType *reg, std::type_identity_t<IntType> mask) { return *reg & mask; }
+
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE IntType Read(volatile IntType &reg, std::type_identity_t<IntType> mask) { return  reg & mask; }
+
     ALWAYS_INLINE u32 Read(uintptr_t reg, u32 mask) { return Read(reinterpret_cast<volatile u32 *>(reg), mask); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE u32 Read(volatile u32 *reg, const Masks... masks) { return Read(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE IntType Read(volatile IntType *reg, const Masks... masks) { return Read(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
+
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE IntType Read(volatile IntType &reg, const Masks... masks) { return Read(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
 
     template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE u32 Read(volatile u32 &reg, const Masks... masks) { return Read(reg, (EncodeMask(masks) | ...)); }
+    ALWAYS_INLINE u32 Read(uintptr_t reg, const Masks... masks) { return Read(reg, (EncodeMask(masks) | ...)); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE u32 Read(uintptr_t reg, const Masks... masks)     { return Read(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType, typename... Values> requires std::unsigned_integral<IntType> && ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
+    ALWAYS_INLINE bool HasValue(volatile IntType *reg, const Values... values) { return Read(reg, static_cast<IntType>((EncodeMask(values) | ...))) == static_cast<IntType>(Encode(values...)); }
 
-    template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE bool HasValue(volatile u32 *reg, const Values... values) { return Read(reg, (EncodeMask(values) | ...)) == Encode(values...); }
-
-    template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE bool HasValue(volatile u32 &reg, const Values... values) { return Read(reg, (EncodeMask(values) | ...)) == Encode(values...); }
+    template<typename IntType, typename... Values> requires std::unsigned_integral<IntType> && ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
+    ALWAYS_INLINE bool HasValue(volatile IntType &reg, const Values... values) { return Read(reg, static_cast<IntType>((EncodeMask(values) | ...))) == static_cast<IntType>(Encode(values...)); }
 
     template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
     ALWAYS_INLINE bool HasValue(uintptr_t reg, const Values... values) { return Read(reg, (EncodeMask(values) | ...)) == Encode(values...); }
 
-    ALWAYS_INLINE u32 GetValue(volatile u32 *reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
-    ALWAYS_INLINE u32 GetValue(volatile u32 &reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
-    ALWAYS_INLINE u32 GetValue(uintptr_t reg,     const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE IntType GetValue(volatile IntType *reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
 
-    ALWAYS_INLINE void ReadWrite(volatile u32 *reg, u32 val, u32 mask) { *reg = (*reg & (~mask)) | (val & mask); }
-    ALWAYS_INLINE void ReadWrite(volatile u32 &reg, u32 val, u32 mask) {  reg = ( reg & (~mask)) | (val & mask); }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE IntType GetValue(volatile IntType &reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
+
+    ALWAYS_INLINE u32 GetValue(uintptr_t reg, const BitsMask mask) { return Read(reg, mask) >> GetOffset(mask); }
+
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void ReadWrite(volatile IntType *reg, std::type_identity_t<IntType> val, std::type_identity_t<IntType> mask) { *reg = (*reg & (~mask)) | (val & mask); }
+
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void ReadWrite(volatile IntType &reg, std::type_identity_t<IntType> val, std::type_identity_t<IntType> mask) {  reg = ( reg & (~mask)) | (val & mask); }
+
     ALWAYS_INLINE void ReadWrite(uintptr_t reg, u32 val, u32 mask) { ReadWrite(reinterpret_cast<volatile u32 *>(reg), val, mask); }
 
-    template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE void ReadWrite(volatile u32 *reg, const Values... values) { return ReadWrite(reg, (EncodeValue(values) | ...), (EncodeMask(values) | ...)); }
+    template<typename IntType, typename... Values> requires std::unsigned_integral<IntType> && ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
+    ALWAYS_INLINE void ReadWrite(volatile IntType *reg, const Values... values) { return ReadWrite(reg, static_cast<IntType>((EncodeValue(values) | ...)), static_cast<IntType>((EncodeMask(values) | ...))); }
+
+    template<typename IntType, typename... Values> requires std::unsigned_integral<IntType> && ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
+    ALWAYS_INLINE void ReadWrite(volatile IntType &reg, const Values... values) { return ReadWrite(reg, static_cast<IntType>((EncodeValue(values) | ...)), static_cast<IntType>((EncodeMask(values) | ...))); }
 
     template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE void ReadWrite(volatile u32 &reg, const Values... values) { return ReadWrite(reg, (EncodeValue(values) | ...), (EncodeMask(values) | ...)); }
+    ALWAYS_INLINE void ReadWrite(uintptr_t reg, const Values... values)         { return ReadWrite(reg, (EncodeValue(values) | ...), (EncodeMask(values) | ...)); }
 
-    template<typename... Values> requires ((sizeof...(Values) > 0) && (std::is_same<Values, BitsValue>::value && ...))
-    ALWAYS_INLINE void ReadWrite(uintptr_t reg, const Values... values)     { return ReadWrite(reg, (EncodeValue(values) | ...), (EncodeMask(values) | ...)); }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void SetBits(volatile IntType *reg, std::type_identity_t<IntType> mask) { *reg = *reg | mask; }
 
-    ALWAYS_INLINE void SetBits(volatile u32 *reg, u32 mask) { *reg = *reg | mask; }
-    ALWAYS_INLINE void SetBits(volatile u32 &reg, u32 mask) {  reg =  reg | mask; }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void SetBits(volatile IntType &reg, std::type_identity_t<IntType> mask) {  reg =  reg | mask; }
+
     ALWAYS_INLINE void SetBits(uintptr_t reg, u32 mask) { SetBits(reinterpret_cast<volatile u32 *>(reg), mask); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void SetBits(volatile u32 *reg, const Masks... masks) { return SetBits(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE void SetBits(volatile IntType *reg, const Masks... masks) { return SetBits(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
+
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE void SetBits(volatile IntType &reg, const Masks... masks) { return SetBits(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
 
     template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void SetBits(volatile u32 &reg, const Masks... masks) { return SetBits(reg, (EncodeMask(masks) | ...)); }
+    ALWAYS_INLINE void SetBits(uintptr_t reg, const Masks... masks)         { return SetBits(reg, (EncodeMask(masks) | ...)); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void SetBits(uintptr_t reg, const Masks... masks)     { return SetBits(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void ClearBits(volatile IntType *reg, std::type_identity_t<IntType> mask) { *reg = *reg & ~mask; }
 
-    ALWAYS_INLINE void ClearBits(volatile u32 *reg, u32 mask) { *reg = *reg & ~mask; }
-    ALWAYS_INLINE void ClearBits(volatile u32 &reg, u32 mask) {  reg =  reg & ~mask; }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void ClearBits(volatile IntType &reg, std::type_identity_t<IntType> mask) {  reg =  reg & ~mask; }
+
     ALWAYS_INLINE void ClearBits(uintptr_t reg, u32 mask) { ClearBits(reinterpret_cast<volatile u32 *>(reg), mask); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void ClearBits(volatile u32 *reg, const Masks... masks) { return ClearBits(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE void ClearBits(volatile IntType *reg, const Masks... masks) { return ClearBits(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
+
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE void ClearBits(volatile IntType &reg, const Masks... masks) { return ClearBits(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
 
     template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void ClearBits(volatile u32 &reg, const Masks... masks) { return ClearBits(reg, (EncodeMask(masks) | ...)); }
+    ALWAYS_INLINE void ClearBits(uintptr_t reg, const Masks... masks)         { return ClearBits(reg, (EncodeMask(masks) | ...)); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void ClearBits(uintptr_t reg, const Masks... masks)     { return ClearBits(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void MaskBits(volatile IntType *reg, std::type_identity_t<IntType> mask) { *reg = *reg & mask; }
 
-    ALWAYS_INLINE void MaskBits(volatile u32 *reg, u32 mask) { *reg = *reg & mask; }
-    ALWAYS_INLINE void MaskBits(volatile u32 &reg, u32 mask) {  reg =  reg & mask; }
+    template<typename IntType> requires std::unsigned_integral<IntType>
+    ALWAYS_INLINE void MaskBits(volatile IntType &reg, std::type_identity_t<IntType> mask) {  reg =  reg & mask; }
+
     ALWAYS_INLINE void MaskBits(uintptr_t reg, u32 mask) { MaskBits(reinterpret_cast<volatile u32 *>(reg), mask); }
 
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void MaskBits(volatile u32 *reg, const Masks... masks) { return MaskBits(reg, (EncodeMask(masks) | ...)); }
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE void MaskBits(volatile IntType *reg, const Masks... masks) { return MaskBits(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
+
+    template<typename IntType, typename... Masks> requires std::unsigned_integral<IntType> && ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    ALWAYS_INLINE void MaskBits(volatile IntType &reg, const Masks... masks) { return MaskBits(reg, static_cast<IntType>((EncodeMask(masks) | ...))); }
 
     template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void MaskBits(volatile u32 &reg, const Masks... masks) { return MaskBits(reg, (EncodeMask(masks) | ...)); }
-
-    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
-    ALWAYS_INLINE void MaskBits(uintptr_t reg, const Masks... masks)     { return MaskBits(reg, (EncodeMask(masks) | ...)); }
+    ALWAYS_INLINE void MaskBits(uintptr_t reg, const Masks... masks)         { return MaskBits(reg, (EncodeMask(masks) | ...)); }
 
     #define REG_BITS_MASK(OFFSET, WIDTH)         ::ams::reg::BitsMask{OFFSET, WIDTH}
     #define REG_BITS_VALUE(OFFSET, WIDTH, VALUE) ::ams::reg::BitsValue{OFFSET, WIDTH, VALUE}

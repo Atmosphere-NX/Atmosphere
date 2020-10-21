@@ -25,6 +25,7 @@
 
 #include <vapours/util.hpp>
 #include <vapours/results.hpp>
+#include <vapours/reg.hpp>
 #include <vapours/crypto.hpp>
 #include <vapours/svc.hpp>
 

@@ -13,12 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <vapours.hpp>
+#include "sdmmc_port_mmc0.hpp"
+#include "sdmmc_select_sdmmc_controller.hpp"
 
-#pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
 
-#include <vapours/dd/dd_common_types.hpp>
-#include <vapours/dd/dd_io_mapping.hpp>
-#include <vapours/dd/dd_cache.hpp>
+namespace ams::sdmmc::impl {
+
+    namespace {
+
+        SdmmcControllerForMmc g_mmc0_host_controller;
+
+    }
+
+    IHostController *GetHostControllerOfPortMmc0() {
+        return std::addressof(g_mmc0_host_controller);
+    }
+
+}

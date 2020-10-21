@@ -73,4 +73,9 @@ namespace ams::util {
         return IsAligned(reinterpret_cast<uintptr_t>(value), alignment);
     }
 
+    template<typename T, typename U> requires std::integral<T> && std::integral<U>
+    constexpr ALWAYS_INLINE T DivideUp(T x, U y) {
+        return (x + (y - 1)) / y;
+    }
+
 }

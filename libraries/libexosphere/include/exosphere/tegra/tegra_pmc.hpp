@@ -15,7 +15,6 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <exosphere/reg.hpp>
 
 #define APBDEV_PMC_CNTRL                (0x000)
 #define APBDEV_PMC_WAKE_MASK            (0x00C)

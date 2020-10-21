@@ -27,18 +27,24 @@
     //#define AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS
     //#define AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL
     //#define AMS_SDMMC_USE_OS_EVENTS
+    //#define AMS_SDMMC_USE_OS_TIMER
+    #define AMS_SDMMC_USE_UTIL_TIMER
 
 #elif defined(ATMOSPHERE_IS_MESOSPHERE)
 
     //#define AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS
     //#define AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL
     //#define AMS_SDMMC_USE_OS_EVENTS
+    //#define AMS_SDMMC_USE_OS_TIMER
+    #define AMS_SDMMC_USE_UTIL_TIMER
 
 #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
 
     #define AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS
     #define AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL
     #define AMS_SDMMC_USE_OS_EVENTS
+    #define AMS_SDMMC_USE_OS_TIMER
+    //#define AMS_SDMMC_USE_UTIL_TIMER
 
 #else
     #error "Unknown execution context for ams::sdmmc!"
