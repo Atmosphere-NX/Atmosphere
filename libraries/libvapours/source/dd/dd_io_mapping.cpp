@@ -86,7 +86,7 @@ namespace ams::dd {
         #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
 
             u32 out_val;
-            R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(val), phys_addr, 0xFFFFFFFF, value));
+            R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(out_val), phys_addr, 0xFFFFFFFF, value));
             AMS_UNUSED(out_val);
 
         #else
