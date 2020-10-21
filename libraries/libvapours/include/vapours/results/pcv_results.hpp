@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <vapours/dd/dd_common_types.hpp>
+#include <vapours/results/results_common.hpp>
 
-namespace ams::dd {
+namespace ams::pcv {
 
-    uintptr_t QueryIoMapping(dd::PhysicalAddress phys_addr, size_t size);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(133);
 
-    u32 ReadIoRegister(dd::PhysicalAddress phys_addr);
-    void WriteIoRegister(dd::PhysicalAddress phys_addr, u32 value);
+    R_DEFINE_ERROR_RESULT(IllegalRequest, 16);
 
 }

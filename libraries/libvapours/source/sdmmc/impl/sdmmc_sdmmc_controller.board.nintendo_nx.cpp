@@ -23,6 +23,7 @@
 #include <vapours.hpp>
 #endif
 #include "sdmmc_sdmmc_controller.board.nintendo_nx.hpp"
+#include "sdmmc_io_impl.board.nintendo_nx.hpp"
 #include "sdmmc_timer.hpp"
 
 namespace ams::sdmmc::impl {
@@ -875,7 +876,9 @@ namespace ams::sdmmc::impl {
         /* Nintendo sets the current bus power regardless of whether the call succeeds. */
         ON_SCOPE_EXIT { this->current_bus_power = BusPower_3_3V; };
 
-        /* TODO: equivalent of return pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
+        /* pcv::PowerOn(pcv::PowerControlTarget_SdCard, 3300000); */
+        R_TRY(this->power_controller->PowerOn(BusPower_3_3V));
+
         return ResultSuccess();
     }
 
@@ -887,23 +890,34 @@ namespace ams::sdmmc::impl {
 
         /* If we're at 3.3V, lower to 1.8V. */
         {
-            /* TODO: equivalent of pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+            /* pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+            this->power_controller->LowerBusPower();
+
+            /* Set our bus power. */
             this->current_bus_power = BusPower_1_8V;
         }
 
-        /* TODO: Equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1OutputHigh); */
+        /* pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1OutputHigh); */
+        pinmux_impl::SetPinAssignment(pinmux_impl::PinAssignment_Sdmmc1OutputHigh);
 
-        /* TODO: Equivalent of pcv::PowerOff(pcv::PowerControlTarget_SdCard); */
+
+        /* pcv::PowerOff(pcv::PowerControlTarget_SdCard); */
+        this->power_controller->PowerOff();
+
+        /* Set our bus power. */
         this->current_bus_power = BusPower_Off;
 
-        /* TODO: Equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1ResetState); */
+        /* pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1ResetState); */
+        pinmux_impl::SetPinAssignment(pinmux_impl::PinAssignment_Sdmmc1ResetState);
     }
 
     Result Sdmmc1Controller::LowerBusPowerForRegisterControl() {
         /* Nintendo sets the current bus power regardless of whether the call succeeds. */
         ON_SCOPE_EXIT { this->current_bus_power = BusPower_1_8V; };
 
-        /* TODO: equivalent of return pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+        /* pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
+        R_TRY(this->power_controller->LowerBusPower());
+
         return ResultSuccess();
     }
 
@@ -911,14 +925,17 @@ namespace ams::sdmmc::impl {
         SdHostStandardController::EnsureControl();
 
         if (IsSocMariko()) {
-            /* TODO: equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+            /* pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+            pinmux_impl::SetPinAssignment(pinmux_impl::PinAssignment_Sdmmc1SchmtEnable);
         } else {
             switch (bus_power) {
                 case BusPower_1_8V:
-                    /* TODO: equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+                    /* pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtEnable); */
+                    pinmux_impl::SetPinAssignment(pinmux_impl::PinAssignment_Sdmmc1SchmtEnable);
                     break;
                 case BusPower_3_3V:
-                    /* TODO: equivalent of pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtDisable); */
+                    /* pinmux::SetPinAssignment(std::addressof(this->pinmux_session), pinmux::PinAssignment_Sdmmc1SchmtDisable); */
+                    pinmux_impl::SetPinAssignment(pinmux_impl::PinAssignment_Sdmmc1SchmtDisable);
                     break;
                 case BusPower_Off:
                 AMS_UNREACHABLE_DEFAULT_CASE();
@@ -1051,9 +1068,17 @@ namespace ams::sdmmc::impl {
         this->is_pcv_control = false;
         #endif
 
-        /* TODO: equivalent of pinmux::Initialize(); */
-        /* TODO: equivalent of pinmux::OpenSession(std::addressof(this->pinmux_session), pinmux::AssignablePinGroupName_Sdmmc1); */
-        /* TODO: equivalent of pcv::Initialize(); */
+        /* pinmux::Initialize(); */
+        /* This just opens a session handle to pinmux service, no work to do. */
+
+        /* pinmux::OpenSession(std::addressof(this->pinmux_session), pinmux::AssignablePinGroupName_Sdmmc1); */
+        /* This just sets the session's internal value to the pin group name, so nothing to do here either. */
+
+        /* pcv::Initialize(); */
+        /* This initializes a lot of globals in pcv, most of which we don't care about. */
+        /* However, we do care about the Sdmmc1PowerController. */
+        AMS_ABORT_UNLESS(this->power_controller == nullptr);
+        this->power_controller = new (GetPointer(this->power_controller_storage)) PowerController;
 
         /* Perform base initialization. */
         SdmmcController::Initialize();
@@ -1063,9 +1088,18 @@ namespace ams::sdmmc::impl {
         /* Perform base finalization. */
         SdmmcController::Finalize();
 
-        /* TODO: equivalent of pcv::Finalize(); */
-        /* TODO: equivalent of pinmux::CloseSession(std::addressof(this->pinmux_session)); */
-        /* TODO: equivalent of pinmux::Finalize(); */
+        /* pcv::Finalize(); */
+        /* As with initialize, we mostly don't care about the globals this touches. */
+        /* However, we do want to finalize the Sdmmc1PowerController. */
+        AMS_ABORT_UNLESS(this->power_controller != nullptr);
+        this->power_controller->~PowerController();
+        this->power_controller = nullptr;
+
+        /* pinmux::CloseSession(std::addressof(this->pinmux_session)); */
+        /* This does nothing. */
+
+        /* pinmux::Finalize(); */
+        /* This does nothing. */
 
         #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
         /* Mark ourselves as initialized by register control. */
@@ -1098,5 +1132,173 @@ namespace ams::sdmmc::impl {
         this->is_pcv_control = false;
     }
     #endif
+
+    namespace {
+
+        constexpr inline dd::PhysicalAddress PmcRegistersPhysicalAddress = 0x7000E400;
+
+    }
+
+    Result Sdmmc1Controller::PowerController::ControlVddioSdmmc1(BusPower bus_power) {
+        /* Configure appropriate voltage. */
+        switch (bus_power) {
+            case BusPower_Off:
+                R_TRY(SetSdCardVoltageEnabled(false));
+                break;
+            case BusPower_1_8V:
+                R_TRY(SetSdCardVoltageValue(1'800'000));
+                R_TRY(SetSdCardVoltageEnabled(true));
+                break;
+            case BusPower_3_3V:
+                R_TRY(SetSdCardVoltageValue(3'300'000));
+                R_TRY(SetSdCardVoltageEnabled(true));
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+
+        return ResultSuccess();
+    }
+
+    void Sdmmc1Controller::PowerController::SetSdmmcIoMode(bool is_3_3V) {
+        /* Determine the address we're updating. */
+        constexpr dd::PhysicalAddress ApbdevPmcPwrDetValAddress = PmcRegistersPhysicalAddress + APBDEV_PMC_PWR_DET_VAL;
+
+        /* Read the current value. */
+        u32 value = dd::ReadIoRegister(ApbdevPmcPwrDetValAddress);
+
+        /* Mask out the existing bits. */
+        value &= ~(reg::EncodeMask(PMC_REG_BITS_MASK(PWR_DET_VAL_SDMMC1)));
+
+        /* ORR in the new bits. */
+        value |= reg::Encode(PMC_REG_BITS_ENUM_SEL(PWR_DET_VAL_SDMMC1, is_3_3V, ENABLE, DISABLE));
+
+        /* Write the new value. */
+        dd::WriteIoRegister(ApbdevPmcPwrDetValAddress, value);
+
+        /* Read the value back to be sure our write takes. */
+        dd::ReadIoRegister(ApbdevPmcPwrDetValAddress);
+    }
+
+    void Sdmmc1Controller::PowerController::ControlRailSdmmc1Io(bool is_power_on) {
+        /* Determine the address we're updating. */
+        constexpr dd::PhysicalAddress ApbdevPmcNoIoPowerAddress = PmcRegistersPhysicalAddress + APBDEV_PMC_NO_IOPOWER;
+
+        /* Read the current value. */
+        u32 value = dd::ReadIoRegister(ApbdevPmcNoIoPowerAddress);
+
+        /* Mask out the existing bits. */
+        value &= ~(reg::EncodeMask(PMC_REG_BITS_MASK(NO_IOPOWER_SDMMC1)));
+
+        /* ORR in the new bits. */
+        value |= reg::Encode(PMC_REG_BITS_ENUM_SEL(NO_IOPOWER_SDMMC1, is_power_on, DISABLE, ENABLE));
+
+        /* Write the new value. */
+        dd::WriteIoRegister(ApbdevPmcNoIoPowerAddress, value);
+
+        /* Read the value back to be sure our write takes. */
+        dd::ReadIoRegister(ApbdevPmcNoIoPowerAddress);
+    }
+
+    Sdmmc1Controller::PowerController::PowerController() : current_bus_power(BusPower_Off) {
+        /* gpio::Initialize(); */
+        /* ... */
+
+        /* Open gpio session. */
+        /* gpio::OpenSession(std::addressof(this->gpio_pad_session), gpio::GpioPadName_PowSdEn); */
+        gpio_impl::OpenSession(gpio_impl::GpioPadName_PowSdEn);
+
+        /* Configure the gpio as low/output. */
+        /* gpio::SetValue(std::addressof(this->gpio_pad_session), gpio::GpioValue_Low); */
+        gpio_impl::SetValue(gpio_impl::GpioPadName_PowSdEn, gpio_impl::GpioValue_Low);
+
+        /* gpio::SetDirection(std::addressof(this->gpio_pad_session), gpio::Direction_Output); */
+        gpio_impl::SetDirection(gpio_impl::GpioPadName_PowSdEn, gpio_impl::Direction_Output);
+    }
+
+    Sdmmc1Controller::PowerController::~PowerController() {
+        /* gpio::CloseSession(std::addressof(this->gpio_pad_session)); */
+        gpio_impl::CloseSession(gpio_impl::GpioPadName_PowSdEn);
+
+        /* gpio::Finalize(); */
+        /* ... */
+    }
+
+    Result Sdmmc1Controller::PowerController::PowerOn(BusPower bus_power) {
+        /* Bus power should be off, and if it's not we don't need to do anything. */
+        AMS_ASSERT(this->current_bus_power == BusPower_Off);
+        R_SUCCEED_IF(this->current_bus_power != BusPower_Off);
+
+        /* Power on requires the target bus power be 3.3V. */
+        AMS_ABORT_UNLESS(bus_power == BusPower_3_3V);
+
+        /* Enable the rail. */
+        this->ControlRailSdmmc1Io(true);
+
+        /* Set the SD power GPIO to high. */
+        /* gpio::SetValue(std::addressof(this->gpio_pad_session), gpio::GpioValue_High); */
+        gpio_impl::SetValue(gpio_impl::GpioPadName_PowSdEn, gpio_impl::GpioValue_High);
+
+        /* Wait 10ms for power change to take. */
+        WaitMicroSeconds(10000);
+
+        /* Configure Sdmmc1 IO as 3.3V. */
+        this->SetSdmmcIoMode(true);
+        R_TRY(this->ControlVddioSdmmc1(BusPower_3_3V));
+
+        /* Wait 130 us for changes to take. */
+        WaitMicroSeconds(130);
+
+        /* Update our current bus power. */
+        this->current_bus_power = bus_power;
+
+        return ResultSuccess();
+    }
+
+    Result Sdmmc1Controller::PowerController::PowerOff() {
+        /* Bus power should be on, and if it's not we don't need to do anything. */
+        AMS_ASSERT(this->current_bus_power != BusPower_Off);
+        R_SUCCEED_IF(this->current_bus_power == BusPower_Off);
+
+        /* Bus power should be 1.8V. */
+        /* NOTE: the result returned here is 0x8C0 (regulator::ResultIllegalRequest()) on newer firmwares. */
+        AMS_ASSERT(this->current_bus_power == BusPower_1_8V);
+        R_UNLESS(this->current_bus_power == BusPower_1_8V, pcv::ResultIllegalRequest());
+
+        /* Disable vddio, and wait 4 ms. */
+        this->ControlVddioSdmmc1(BusPower_Off);
+        WaitMicroSeconds(4000);
+
+        /* Set the SD power GPIO to low. */
+        /* gpio::SetValue(std::addressof(this->gpio_pad_session), gpio::GpioValue_Low); */
+        gpio_impl::SetValue(gpio_impl::GpioPadName_PowSdEn, gpio_impl::GpioValue_Low);
+
+        /* Wait 239ms for the gpio config to take. */
+        WaitMicroSeconds(239000);
+
+        /* Disable the rail. */
+        this->ControlRailSdmmc1Io(false);
+        this->SetSdmmcIoMode(true);
+
+        /* Update our current bus power. */
+        this->current_bus_power = BusPower_Off;
+
+        return ResultSuccess();
+    }
+
+    Result Sdmmc1Controller::PowerController::LowerBusPower() {
+        /* Bus power should be 3.3V, and if it's not we don't need to do anything. */
+        AMS_ASSERT(this->current_bus_power == BusPower_3_3V);
+        R_SUCCEED_IF(this->current_bus_power != BusPower_3_3V);
+
+        /* Configure as 1.8V, then wait 150us for it to take. */
+        R_TRY(this->ControlVddioSdmmc1(BusPower_1_8V));
+        WaitMicroSeconds(150);
+        this->SetSdmmcIoMode(false);
+
+        /* Update our current bus power. */
+        this->current_bus_power = BusPower_1_8V;
+
+        return ResultSuccess();
+    }
 
 }

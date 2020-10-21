@@ -66,4 +66,32 @@ namespace ams::dd {
         #endif
     }
 
+    u32 ReadIoRegister(dd::PhysicalAddress phys_addr) {
+        #if defined(ATMOSPHERE_IS_EXOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
+            return reg::Read(dd::QueryIoMapping(phys_addr, sizeof(u32)));
+        #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
+
+            u32 val;
+            R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(val), phys_addr, 0, 0));
+            return val;
+
+        #else
+            #error "Unknown execution context for ams::dd::ReadIoRegister!"
+        #endif
+    }
+
+    void WriteIoRegister(dd::PhysicalAddress phys_addr, u32 value) {
+        #if defined(ATMOSPHERE_IS_EXOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
+            reg::Write(dd::QueryIoMapping(phys_addr, sizeof(u32)), value);
+        #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
+
+            u32 out_val;
+            R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(val), phys_addr, 0xFFFFFFFF, value));
+            AMS_UNUSED(out_val);
+
+        #else
+            #error "Unknown execution context for ams::dd::WriteIoRegister!"
+        #endif
+    }
+
 }

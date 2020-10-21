@@ -210,6 +210,25 @@ namespace ams::sdmmc::impl {
             #if defined(AMS_SDMMC_USE_OS_EVENTS)
                 static constinit inline os::InterruptEventType s_interrupt_event{};
             #endif
+
+            /* NOTE: This is a fascimile of pcv's Sdmmc1PowerController. */
+            class PowerController {
+                NON_COPYABLE(PowerController);
+                NON_MOVEABLE(PowerController);
+                private:
+                    BusPower current_bus_power;
+                private:
+                    Result ControlVddioSdmmc1(BusPower bus_power);
+                    void   SetSdmmcIoMode(bool is_3_3V);
+                    void   ControlRailSdmmc1Io(bool is_power_on);
+                public:
+                    PowerController();
+                    ~PowerController();
+
+                    Result PowerOn(BusPower bus_power);
+                    Result PowerOff();
+                    Result LowerBusPower();
+            };
         private:
             #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
             /* TODO: pinmux::PinmuxSession pinmux_session; */
@@ -218,6 +237,8 @@ namespace ams::sdmmc::impl {
             #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
             bool is_pcv_control;
             #endif
+            TYPED_STORAGE(PowerController) power_controller_storage;
+            PowerController *power_controller;
         private:
             Result PowerOnForRegisterControl(BusPower bus_power);
             void PowerOffForRegisterControl();
@@ -381,6 +402,7 @@ namespace ams::sdmmc::impl {
                 #if defined(AMS_SDMMC_USE_PCV_CLOCK_RESET_CONTROL)
                 this->is_pcv_control = false;
                 #endif
+                this->power_controller = nullptr;
             }
 
             virtual void Initialize() override;
