@@ -40,4 +40,3 @@
 #include <exosphere/actmon.hpp>
 #include <exosphere/pmc.hpp>
 #include <exosphere/secmon.hpp>
-#include <exosphere/tegra.hpp>

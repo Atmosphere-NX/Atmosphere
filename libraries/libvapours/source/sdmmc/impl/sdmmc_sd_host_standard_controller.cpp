@@ -62,6 +62,66 @@ namespace ams::sdmmc::impl {
         reg::Read(this->registers->clock_control);
     }
 
+    Result SdHostStandardController::EnableInternalClock() {
+        /* Enable internal clock. */
+        reg::ReadWrite(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_INTERNAL_CLOCK_ENABLE, OSCILLATE));
+        this->EnsureControl();
+
+        /* Wait for the internal clock to become stable. */
+        {
+            ManualTimer timer(ControllerReactionTimeoutMilliSeconds);
+            while (true) {
+                /* Check if the clock is steady. */
+                if (reg::HasValue(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_INTERNAL_CLOCK_STABLE, READY))) {
+                    break;
+                }
+
+                /* If not, check for timeout. */
+                R_UNLESS(timer.Update(), sdmmc::ResultInternalClockStableSoftwareTimeout());
+            }
+        }
+
+        /* Configure to use host controlled divided clock. */
+        reg::ReadWrite(this->registers->host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_PRESET_VALUE_ENABLE, HOST_DRIVER));
+        reg::ReadWrite(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_CLOCK_GENERATOR_SELECT, DIVIDED_CLOCK));
+
+        /* Set host version 4.0.0 enable. */
+        reg::ReadWrite(this->registers->host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_HOST_VERSION_4_ENABLE, VERSION_4));
+
+        /* Set host 64 bit addressing enable. */
+        AMS_ABORT_UNLESS(reg::HasValue(this->registers->capabilities, SD_REG_BITS_ENUM(CAPABILITIES_64_BIT_SYSTEM_ADDRESS_SUPPORT_FOR_V3, SUPPORTED)));
+        reg::ReadWrite(this->registers->host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_64_BIT_ADDRESSING, 64_BIT_ADDRESSING));
+
+        /* Select SDMA mode. */
+        reg::ReadWrite(this->registers->host_control, SD_REG_BITS_ENUM(HOST_CONTROL_DMA_SELECT, SDMA));
+
+        /* Configure timeout control to use the maximum timeout value (TMCLK * 2^27) */
+        reg::ReadWrite(this->registers->timeout_control, SD_REG_BITS_VALUE(TIMEOUT_CONTROL_DATA_TIMEOUT_COUNTER, 0b1110));
+
+        return ResultSuccess();
+    }
+
+    void SdHostStandardController::SetBusPower(BusPower bus_power) {
+        /* Check that we support the bus power. */
+        AMS_ABORT_UNLESS(this->IsSupportedBusPower(bus_power));
+
+        /* Set the appropriate power. */
+        switch (bus_power) {
+            case BusPower_Off:
+                reg::ReadWrite(this->registers->power_control, SD_REG_BITS_ENUM(POWER_CONTROL_SD_BUS_POWER_FOR_VDD1, OFF));
+                break;
+            case BusPower_1_8V:
+                reg::ReadWrite(this->registers->power_control, SD_REG_BITS_ENUM(POWER_CONTROL_SD_BUS_VOLTAGE_SELECT_FOR_VDD1, 1_8V));
+                reg::ReadWrite(this->registers->power_control, SD_REG_BITS_ENUM(POWER_CONTROL_SD_BUS_POWER_FOR_VDD1, ON));
+                break;
+            case BusPower_3_3V:
+                reg::ReadWrite(this->registers->power_control, SD_REG_BITS_ENUM(POWER_CONTROL_SD_BUS_VOLTAGE_SELECT_FOR_VDD1, 3_3V));
+                reg::ReadWrite(this->registers->power_control, SD_REG_BITS_ENUM(POWER_CONTROL_SD_BUS_POWER_FOR_VDD1, ON));
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
     void SdHostStandardController::EnableInterruptStatus() {
         /* Set the status register interrupt enables. */
         reg::ReadWrite(this->registers->normal_int_enable, SD_HOST_STANDARD_NORMAL_INTERRUPT_ENABLE_ISSUE_COMMAND(ENABLED));
@@ -156,7 +216,7 @@ namespace ams::sdmmc::impl {
 
         /* Configure block size. */
         AMS_ABORT_UNLESS(xfer_data->block_size <= SdHostStandardBlockSizeTransferBlockSizeMax);
-        reg::Write(this->registers->block_size, SD_REG_BITS_ENUM (BLOCK_SIZE_SDMA_BUFFER_BOUNDARY, FIVE_TWELVE_KB),
+        reg::Write(this->registers->block_size, SD_REG_BITS_ENUM (BLOCK_SIZE_SDMA_BUFFER_BOUNDARY, 512_KB),
                                                 SD_REG_BITS_VALUE(BLOCK_SIZE_TRANSFER_BLOCK_SIZE,  static_cast<u16>(xfer_data->block_size)));
 
         /* Configure transfer blocks. */
@@ -171,6 +231,31 @@ namespace ams::sdmmc::impl {
                                                    SD_REG_BITS_ENUM_SEL(TRANSFER_MODE_MULTI_BLOCK_SELECT, (xfer_data->is_multi_block_transfer), MULTI_BLOCK, SINGLE_BLOCK),
                                                    SD_REG_BITS_ENUM_SEL(TRANSFER_MODE_DATA_TRANSFER_DIRECTION, (xfer_data->transfer_direction == TransferDirection_ReadFromDevice), READ, WRITE),
                                                    SD_REG_BITS_ENUM_SEL(TRANSFER_MODE_AUTO_CMD_ENABLE,         (xfer_data->is_stop_transmission_command_enabled), CMD12_ENABLE, DISABLE));
+    }
+
+    void SdHostStandardController::SetTransferForTuning() {
+        /* Get the tuning block size. */
+        u16 tuning_block_size;
+        switch (this->GetBusWidth()) {
+            case BusWidth_4Bit:
+                tuning_block_size = 64;
+                break;
+            case BusWidth_8Bit:
+                tuning_block_size = 128;
+                break;
+            case BusWidth_1Bit:
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+
+        /* Configure block size. */
+        AMS_ABORT_UNLESS(tuning_block_size <= SdHostStandardBlockSizeTransferBlockSizeMax);
+        reg::Write(this->registers->block_size, SD_REG_BITS_VALUE(BLOCK_SIZE_TRANSFER_BLOCK_SIZE, tuning_block_size));
+
+        /* Configure transfer blocks. */
+        reg::Write(this->registers->block_count, 1);
+
+        /* Configure transfer mode. */
+        reg::Write(this->registers->transfer_mode, SD_REG_BITS_ENUM(TRANSFER_MODE_DATA_TRANSFER_DIRECTION, READ));
     }
 
     void SdHostStandardController::SetCommand(const Command *command, bool has_xfer_data) {
@@ -214,6 +299,11 @@ namespace ams::sdmmc::impl {
         /* Write the command and argument. */
         reg::Write(this->registers->argument, command->command_argument);
         reg::Write(this->registers->command,  command_val);
+    }
+
+    void SdHostStandardController::SetCommandForTuning(u32 command_index) {
+        Command command(command_index, 0, ResponseType_R1, false);
+        return this->SetCommand(std::addressof(command), true);
     }
 
     Result SdHostStandardController::ResetCmdDatLine() {
@@ -855,7 +945,7 @@ namespace ams::sdmmc::impl {
         AMS_ABORT_UNLESS(this->is_device_clock_enable);
 
         /* Check if we need to temporarily re-enable the device clock. */
-        bool clock_disabled = reg::HasValue(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, DISABLE));
+        const bool clock_disabled = reg::HasValue(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, DISABLE));
 
         /* Ensure that the clock is enabled and the device is usable for the period we're using it. */
         if (clock_disabled) {
@@ -884,7 +974,7 @@ namespace ams::sdmmc::impl {
         AMS_ABORT_UNLESS(this->is_device_clock_enable);
 
         /* Check if we need to temporarily re-enable the device clock. */
-        bool clock_disabled = reg::HasValue(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, DISABLE));
+        const bool clock_disabled = reg::HasValue(this->registers->clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, DISABLE));
 
         /* Ensure that the clock is enabled and the device is usable for the period we're using it. */
         if (clock_disabled) {

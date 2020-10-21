@@ -40,14 +40,26 @@ namespace ams::sdmmc {
             R_DEFINE_ERROR_RESULT(AutoCommandResponseTimeoutError,  44);
             R_DEFINE_ERROR_RESULT(CommandCompleteSoftwareTimeout,   45);
             R_DEFINE_ERROR_RESULT(TransferCompleteSoftwareTimeout,  46);
-        R_DEFINE_ERROR_RESULT(AbortTransactionSoftwareTimeout,  74);
-        R_DEFINE_ERROR_RESULT(CommandInhibitCmdSoftwareTimeout, 75);
-        R_DEFINE_ERROR_RESULT(CommandInhibitDatSoftwareTimeout, 76);
-        R_DEFINE_ERROR_RESULT(BusySoftwareTimeout,              77);
+        R_DEFINE_ERROR_RESULT(AbortTransactionSoftwareTimeout,   74);
+        R_DEFINE_ERROR_RESULT(CommandInhibitCmdSoftwareTimeout,  75);
+        R_DEFINE_ERROR_RESULT(CommandInhibitDatSoftwareTimeout,  76);
+        R_DEFINE_ERROR_RESULT(BusySoftwareTimeout,               77);
+        R_DEFINE_ERROR_RESULT(IssueTuningCommandSoftwareTimeout, 78);
+        R_DEFINE_ERROR_RESULT(TuningFailed,                      79);
+        R_DEFINE_ERROR_RESULT(SdCardNotReadyToVoltageSwitch,     96);
+        R_DEFINE_ERROR_RESULT(SdCardNotCompleteVoltageSwitch,    97);
 
     R_DEFINE_ERROR_RANGE(HostControllerUnexpected, 128, 158);
-        R_DEFINE_ERROR_RESULT(SdHostStandardUnknownAutoCmdError, 130);
-        R_DEFINE_ERROR_RESULT(SdHostStandardUnknownError, 131);
+        R_DEFINE_ERROR_RESULT(InternalClockStableSoftwareTimeout,       129);
+        R_DEFINE_ERROR_RESULT(SdHostStandardUnknownAutoCmdError,        130);
+        R_DEFINE_ERROR_RESULT(SdHostStandardUnknownError,               131);
+        R_DEFINE_ERROR_RESULT(SdmmcDllCalibrationSoftwareTimeout,       132);
+        R_DEFINE_ERROR_RESULT(SdmmcDllApplicationSoftwareTimeout,       133);
+        R_DEFINE_ERROR_RESULT(SdHostStandardFailSwitchTo1_8V,           134);
+        R_DEFINE_ERROR_RESULT(DriveStrengthCalibrationNotCompleted,     135);
+        R_DEFINE_ERROR_RESULT(DriveStrengthCalibrationSoftwareTimeout,  136);
+        R_DEFINE_ERROR_RESULT(SdmmcCompShortToGnd,                      137);
+        R_DEFINE_ERROR_RESULT(SdmmcCompOpen,                            138);
 
     R_DEFINE_ERROR_RANGE(InternalError, 160, 190);
         R_DEFINE_ERROR_RESULT(NoWaitedInterrupt,            161);

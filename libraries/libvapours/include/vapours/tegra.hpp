@@ -13,28 +13,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
 #include <vapours/literals.hpp>
-
-#include <vapours/allocator.hpp>
-#include <vapours/timespan.hpp>
-#include <vapours/span.hpp>
-
 #include <vapours/util.hpp>
 #include <vapours/results.hpp>
 #include <vapours/reg.hpp>
 
-#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
-#include <vapours/tegra.hpp>
-#endif
-
-#include <vapours/crypto.hpp>
-#include <vapours/svc.hpp>
-
-#include <vapours/ams/ams_fatal_error_context.hpp>
-
-#include <vapours/dd.hpp>
-#include <vapours/sdmmc.hpp>
+#include <vapours/tegra/tegra_ahb_arbc.hpp>
+#include <vapours/tegra/tegra_apb_misc.hpp>
+#include <vapours/tegra/tegra_avp_cache.hpp>
+#include <vapours/tegra/tegra_clkrst.hpp>
+#include <vapours/tegra/tegra_emc.hpp>
+#include <vapours/tegra/tegra_evp.hpp>
+#include <vapours/tegra/tegra_flow_ctlr.hpp>
+#include <vapours/tegra/tegra_ictlr.hpp>
+#include <vapours/tegra/tegra_mc.hpp>
+#include <vapours/tegra/tegra_mselect.hpp>
+#include <vapours/tegra/tegra_pinmux.hpp>
+#include <vapours/tegra/tegra_pg_up.hpp>
+#include <vapours/tegra/tegra_pmc.hpp>
+#include <vapours/tegra/tegra_sb.hpp>
+#include <vapours/tegra/tegra_sysctr0.hpp>
+#include <vapours/tegra/tegra_timer.hpp>

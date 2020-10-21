@@ -14,7 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/literals.hpp>
+#include <vapours/util.hpp>
+#include <vapours/results.hpp>
+#include <vapours/reg.hpp>
 
 /* Clock source enums. */
 #define CLK_RST_REG_BITS_MASK(NAME)                                      REG_NAMED_BITS_MASK    (CLK_RST_CONTROLLER, NAME)

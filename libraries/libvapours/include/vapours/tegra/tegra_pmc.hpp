@@ -14,7 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/literals.hpp>
+#include <vapours/util.hpp>
+#include <vapours/results.hpp>
+#include <vapours/reg.hpp>
 
 #define APBDEV_PMC_CNTRL                (0x000)
 #define APBDEV_PMC_WAKE_MASK            (0x00C)

@@ -14,7 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
+#include <vapours/literals.hpp>
+#include <vapours/util.hpp>
+#include <vapours/results.hpp>
+#include <vapours/reg.hpp>
 
 #define EVP_CPU_RESET_VECTOR          (0x100)
 

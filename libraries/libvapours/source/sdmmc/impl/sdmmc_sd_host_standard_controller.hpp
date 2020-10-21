@@ -67,12 +67,18 @@ namespace ams::sdmmc::impl {
                 }
             #endif
 
+            void SetDeviceClockFrequencyKHz(u32 khz) {
+                this->device_clock_frequency_khz = khz;
+            }
+
             #if defined(AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS)
                 void ResetBufferInfos();
                 dd::DeviceVirtualAddress GetDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size);
             #endif
 
             void EnsureControl();
+            Result EnableInternalClock();
+            void SetBusPower(BusPower bus_power);
 
             void EnableInterruptStatus();
             void DisableInterruptStatus();
@@ -83,8 +89,10 @@ namespace ams::sdmmc::impl {
             #endif
 
             void SetTransfer(u32 *out_num_transferred_blocks, const TransferData *xfer_data);
+            void SetTransferForTuning();
 
             void SetCommand(const Command *command, bool has_xfer_data);
+            void SetCommandForTuning(u32 command_index);
 
             Result ResetCmdDatLine();
             Result AbortTransaction();
