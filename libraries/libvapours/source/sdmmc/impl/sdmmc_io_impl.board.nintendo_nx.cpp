@@ -22,21 +22,387 @@
 #else
 #include <vapours.hpp>
 #endif
+#include "sdmmc_timer.hpp"
 #include "sdmmc_sdmmc_controller.board.nintendo_nx.hpp"
 #include "sdmmc_io_impl.board.nintendo_nx.hpp"
 
 namespace ams::sdmmc::impl {
 
+    /* Lovingly taken from libexosphere. */
+    namespace i2c_impl {
+
+        enum Port {
+            Port_1 = 0,
+            /* TODO: Support other ports? */
+            Port_5 = 4,
+
+            Port_Count = 5,
+        };
+
+        constexpr inline const dd::PhysicalAddress I2c5RegistersAddress = UINT64_C(0x7000D000);
+        constexpr inline const size_t I2c5RegistersSize = 4_KB;
+
+        #define I2C_I2C_CNFG                  (0x000)
+        #define I2C_I2C_CMD_ADDR0             (0x004)
+        #define I2C_I2C_CMD_DATA1             (0x00C)
+        #define I2C_I2C_STATUS                (0x01C)
+        #define I2C_INTERRUPT_STATUS_REGISTER (0x068)
+        #define I2C_CLK_DIVISOR_REGISTER      (0x06C)
+        #define I2C_BUS_CLEAR_CONFIG          (0x084)
+        #define I2C_BUS_CLEAR_STATUS          (0x088)
+        #define I2C_CONFIG_LOAD               (0x08C)
+
+        #define I2C_REG_BITS_MASK(NAME)                                      REG_NAMED_BITS_MASK    (I2C, NAME)
+        #define I2C_REG_BITS_VALUE(NAME, VALUE)                              REG_NAMED_BITS_VALUE   (I2C, NAME, VALUE)
+        #define I2C_REG_BITS_ENUM(NAME, ENUM)                                REG_NAMED_BITS_ENUM    (I2C, NAME, ENUM)
+        #define I2C_REG_BITS_ENUM_SEL(NAME, __COND__, TRUE_ENUM, FALSE_ENUM) REG_NAMED_BITS_ENUM_SEL(I2C, NAME, __COND__, TRUE_ENUM, FALSE_ENUM)
+
+        #define DEFINE_I2C_REG(NAME, __OFFSET__, __WIDTH__)                                                                                                                  REG_DEFINE_NAMED_REG           (I2C, NAME, __OFFSET__, __WIDTH__)
+        #define DEFINE_I2C_REG_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE)                                                                                                         REG_DEFINE_NAMED_BIT_ENUM      (I2C, NAME, __OFFSET__, ZERO, ONE)
+        #define DEFINE_I2C_REG_TWO_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE, TWO, THREE)                                                                                         REG_DEFINE_NAMED_TWO_BIT_ENUM  (I2C, NAME, __OFFSET__, ZERO, ONE, TWO, THREE)
+        #define DEFINE_I2C_REG_THREE_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN)                                                               REG_DEFINE_NAMED_THREE_BIT_ENUM(I2C, NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN)
+        #define DEFINE_I2C_REG_FOUR_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE, THIRTEEN, FOURTEEN, FIFTEEN) REG_DEFINE_NAMED_FOUR_BIT_ENUM (I2C, NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE, THIRTEEN, FOURTEEN, FIFTEEN)
+
+        /* I2C_CNFG */
+        DEFINE_I2C_REG(I2C_CNFG_LENGTH, 1, 3);
+        DEFINE_I2C_REG_BIT_ENUM(I2C_CNFG_CMD1, 6, WRITE, READ);
+        DEFINE_I2C_REG_BIT_ENUM(I2C_CNFG_SEND, 9, NOP, GO);
+        DEFINE_I2C_REG_BIT_ENUM(I2C_CNFG_NEW_MASTER_FSM, 11, DISABLE, ENABLE);
+        DEFINE_I2C_REG_THREE_BIT_ENUM(I2C_CNFG_DEBOUNCE_CNT, 12, NO_DEBOUNCE, DEBOUNCE_2T, DEBOUNCE_4T, DEBOUNCE_6T, DEBOUNCE_8T, DEBOUNCE_10T, DEBOUNCE_12T, DEBOUNCE_14T);
+
+        /* I2C_CMD_ADDR0 */
+        DEFINE_I2C_REG_BIT_ENUM(I2C_CMD_ADDR0_7BIT_RW, 0, WRITE, READ);
+        DEFINE_I2C_REG(I2C_CMD_ADDR0_7BIT_ADDR, 1, 7);
+
+        /* I2C_STATUS */
+        DEFINE_I2C_REG_FOUR_BIT_ENUM(I2C_STATUS_CMD1_STAT, 0, SL1_XFER_SUCCESSFUL, SL1_NOACK_FOR_BYTE1, SL1_NOACK_FOR_BYTE2, SL1_NOACK_FOR_BYTE3, SL1_NOACK_FOR_BYTE4, SL1_NOACK_FOR_BYTE5, SL1_NOACK_FOR_BYTE6, SL1_NOACK_FOR_BYTE7, SL1_NOACK_FOR_BYTE8, SL1_NOACK_FOR_BYTE9, SL1_NOACK_FOR_BYTE10, RESERVED11, RESERVED12, RESERVED13, RESERVED14, RESERVED15);
+        DEFINE_I2C_REG_FOUR_BIT_ENUM(I2C_STATUS_CMD2_STAT, 4, SL2_XFER_SUCCESSFUL, SL2_NOACK_FOR_BYTE1, SL2_NOACK_FOR_BYTE2, SL2_NOACK_FOR_BYTE3, SL2_NOACK_FOR_BYTE4, SL2_NOACK_FOR_BYTE5, SL2_NOACK_FOR_BYTE6, SL2_NOACK_FOR_BYTE7, SL2_NOACK_FOR_BYTE8, SL2_NOACK_FOR_BYTE9, SL2_NOACK_FOR_BYTE10, RESERVED11, RESERVED12, RESERVED13, RESERVED14, RESERVED15);
+        DEFINE_I2C_REG_BIT_ENUM(I2C_STATUS_BUSY, 8, NOT_BUSY, BUSY);
+
+        /* INTERRUPT_STATUS_REGISTER */
+        DEFINE_I2C_REG_BIT_ENUM(INTERRUPT_STATUS_REGISTER_BUS_CLEAR_DONE, 11, UNSET, SET);
+
+        /* CLK_DIVISOR_REGISTER */
+        DEFINE_I2C_REG(CLK_DIVISOR_REGISTER_HSMODE, 0, 16);
+        DEFINE_I2C_REG(CLK_DIVISOR_REGISTER_STD_FAST_MODE, 16, 16);
+
+        /* BUS_CLEAR_CONFIG */
+        DEFINE_I2C_REG_BIT_ENUM(BUS_CLEAR_CONFIG_BC_ENABLE,    0, DISABLE, ENABLE);
+        DEFINE_I2C_REG_BIT_ENUM(BUS_CLEAR_CONFIG_BC_TERMINATE, 1, THRESHOLD, IMMEDIATE);
+        DEFINE_I2C_REG_BIT_ENUM(BUS_CLEAR_CONFIG_BC_STOP_COND, 2, NO_STOP, STOP);
+        DEFINE_I2C_REG(BUS_CLEAR_CONFIG_BC_SCLK_THRESHOLD, 16, 8);
+
+        /* CONFIG_LOAD */
+        DEFINE_I2C_REG_BIT_ENUM(CONFIG_LOAD_MSTR_CONFIG_LOAD,    0, DISABLE, ENABLE);
+        DEFINE_I2C_REG_BIT_ENUM(CONFIG_LOAD_SLV_CONFIG_LOAD,     1, DISABLE, ENABLE);
+        DEFINE_I2C_REG_BIT_ENUM(CONFIG_LOAD_TIMEOUT_CONFIG_LOAD, 2, DISABLE, ENABLE);
+        DEFINE_I2C_REG(CONFIG_LOAD_RESERVED_BIT_5, 5, 1);
+
+        namespace {
+
+            constexpr inline size_t MaxTransferSize = sizeof(u32);
+
+            constinit std::array<uintptr_t, Port_Count> g_register_addresses = [] {
+                std::array<uintptr_t, Port_Count> arr = {};
+                return arr;
+            }();
+
+            void LoadConfig(uintptr_t address) {
+                /* Configure for TIMEOUT and MSTR config load. */
+                /* NOTE: Nintendo writes value 1 to reserved bit 5 here. This bit is documented as having no meaning. */
+                /* We will reproduce the write just in case it is undocumented. */
+                reg::Write(address + I2C_CONFIG_LOAD, I2C_REG_BITS_VALUE(CONFIG_LOAD_RESERVED_BIT_5, 1),
+                                                      I2C_REG_BITS_ENUM (CONFIG_LOAD_TIMEOUT_CONFIG_LOAD, ENABLE),
+                                                      I2C_REG_BITS_ENUM (CONFIG_LOAD_SLV_CONFIG_LOAD,     DISABLE),
+                                                      I2C_REG_BITS_ENUM (CONFIG_LOAD_MSTR_CONFIG_LOAD,    ENABLE));
+
+                /* Wait up to 20 microseconds for the master config to be loaded. */
+                for (int i = 0; i < 20; ++i) {
+                    if (reg::HasValue(address + I2C_CONFIG_LOAD, I2C_REG_BITS_ENUM(CONFIG_LOAD_MSTR_CONFIG_LOAD, DISABLE))) {
+                        return;
+                    }
+                    util::WaitMicroSeconds(1);
+                }
+            }
+
+            void ClearBus(uintptr_t address) {
+                /* Configure the bus clear register. */
+                reg::Write(address + I2C_BUS_CLEAR_CONFIG, I2C_REG_BITS_VALUE(BUS_CLEAR_CONFIG_BC_SCLK_THRESHOLD,         9),
+                                                           I2C_REG_BITS_ENUM (BUS_CLEAR_CONFIG_BC_STOP_COND,        NO_STOP),
+                                                           I2C_REG_BITS_ENUM (BUS_CLEAR_CONFIG_BC_TERMINATE,      IMMEDIATE),
+                                                           I2C_REG_BITS_ENUM (BUS_CLEAR_CONFIG_BC_ENABLE,            ENABLE));
+
+                /* Load the config. */
+                LoadConfig(address);
+
+                /* Wait up to 250us (in 25 us increments) until the bus clear is done. */
+                for (int i = 0; i < 10; ++i) {
+                    if (reg::HasValue(address + I2C_INTERRUPT_STATUS_REGISTER, I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_BUS_CLEAR_DONE, SET))) {
+                        break;
+                    }
+
+                    util::WaitMicroSeconds(25);
+                }
+
+                /* Read the bus clear status. */
+                reg::Read(address + I2C_BUS_CLEAR_STATUS);
+            }
+
+            void InitializePort(uintptr_t address) {
+                /* Calculate the divisor. */
+                constexpr int Divisor = util::DivideUp(19200, 8 * 400);
+
+                /* Set the divisor. */
+                reg::Write(address + I2C_CLK_DIVISOR_REGISTER, I2C_REG_BITS_VALUE(CLK_DIVISOR_REGISTER_STD_FAST_MODE, Divisor - 1),
+                                                               I2C_REG_BITS_VALUE(CLK_DIVISOR_REGISTER_HSMODE,        1));
+
+                /* Clear the bus. */
+                ClearBus(address);
+
+                /* Clear the status. */
+                reg::Write(address + I2C_INTERRUPT_STATUS_REGISTER, reg::Read(address + I2C_INTERRUPT_STATUS_REGISTER));
+            }
+
+            bool Write(uintptr_t base_address, Port port, int address, const void *src, size_t src_size, bool unused) {
+                AMS_UNUSED(port, unused);
+
+                /* Ensure we don't write too much. */
+                u32 data = 0;
+                if (src_size > MaxTransferSize) {
+                    return false;
+                }
+
+                /* Copy the data to a transfer word. */
+                std::memcpy(std::addressof(data), src, src_size);
+
+
+                /* Configure the to write the 7-bit address. */
+                reg::Write(base_address + I2C_I2C_CMD_ADDR0, I2C_REG_BITS_VALUE(I2C_CMD_ADDR0_7BIT_ADDR, address),
+                                                             I2C_REG_BITS_ENUM (I2C_CMD_ADDR0_7BIT_RW,         WRITE));
+
+                /* Configure to write the data. */
+                reg::Write(base_address + I2C_I2C_CMD_DATA1, data);
+
+                /* Configure to write the correct amount of data. */
+                reg::Write(base_address + I2C_I2C_CNFG, I2C_REG_BITS_ENUM (I2C_CNFG_DEBOUNCE_CNT,    DEBOUNCE_4T),
+                                                        I2C_REG_BITS_ENUM (I2C_CNFG_NEW_MASTER_FSM,       ENABLE),
+                                                        I2C_REG_BITS_ENUM (I2C_CNFG_CMD1,                  WRITE),
+                                                        I2C_REG_BITS_VALUE(I2C_CNFG_LENGTH,         src_size - 1));
+
+                /* Load the configuration. */
+                LoadConfig(base_address);
+
+                /* Start the command. */
+                reg::ReadWrite(base_address + I2C_I2C_CNFG, I2C_REG_BITS_ENUM(I2C_CNFG_SEND, GO));
+
+                /* Wait for the command to be done. */
+                while (!reg::HasValue(base_address + I2C_I2C_STATUS, I2C_REG_BITS_ENUM(I2C_STATUS_BUSY, NOT_BUSY))) { /* ... */ }
+
+                /* Check if the transfer was successful. */
+                return reg::HasValue(base_address + I2C_I2C_STATUS, I2C_REG_BITS_ENUM(I2C_STATUS_CMD1_STAT, SL1_XFER_SUCCESSFUL));
+            }
+
+            bool Read(uintptr_t base_address, Port port, void *dst, size_t dst_size, int address, bool unused) {
+                AMS_UNUSED(port, unused);
+
+                /* Ensure we don't read too much. */
+                if (dst_size > MaxTransferSize) {
+                    return false;
+                }
+
+                /* Configure the to read the 7-bit address. */
+                reg::Write(base_address + I2C_I2C_CMD_ADDR0, I2C_REG_BITS_VALUE(I2C_CMD_ADDR0_7BIT_ADDR, address),
+                                                             I2C_REG_BITS_ENUM (I2C_CMD_ADDR0_7BIT_RW,          READ));
+
+                /* Configure to read the correct amount of data. */
+                reg::Write(base_address + I2C_I2C_CNFG, I2C_REG_BITS_ENUM (I2C_CNFG_DEBOUNCE_CNT,    DEBOUNCE_4T),
+                                                        I2C_REG_BITS_ENUM (I2C_CNFG_NEW_MASTER_FSM,       ENABLE),
+                                                        I2C_REG_BITS_ENUM (I2C_CNFG_CMD1,                   READ),
+                                                        I2C_REG_BITS_VALUE(I2C_CNFG_LENGTH,         dst_size - 1));
+
+                /* Load the configuration. */
+                LoadConfig(base_address);
+
+                /* Start the command. */
+                reg::ReadWrite(base_address + I2C_I2C_CNFG, I2C_REG_BITS_ENUM(I2C_CNFG_SEND, GO));
+
+                /* Wait for the command to be done. */
+                while (!reg::HasValue(base_address + I2C_I2C_STATUS, I2C_REG_BITS_ENUM(I2C_STATUS_BUSY, NOT_BUSY))) { /* ... */ }
+
+                /* Check that the transfer was successful. */
+                if (!reg::HasValue(base_address + I2C_I2C_STATUS, I2C_REG_BITS_ENUM(I2C_STATUS_CMD1_STAT, SL1_XFER_SUCCESSFUL))) {
+                    return false;
+                }
+
+                /* Read and copy out the data. */
+                u32 data = reg::Read(base_address + I2C_I2C_CMD_DATA1);
+                std::memcpy(dst, std::addressof(data), dst_size);
+                return true;
+            }
+
+        }
+
+        void SetRegisterAddress(Port port, uintptr_t address) {
+            g_register_addresses[port] = address;
+        }
+
+        void Initialize(Port port) {
+            InitializePort(g_register_addresses[port]);
+        }
+
+        bool Query(void *dst, size_t dst_size, Port port, int address, int r) {
+            const uintptr_t base_address = g_register_addresses[port];
+
+            /* Select the register we want to read. */
+            bool success = Write(base_address, port, address, std::addressof(r), 1, false);
+            if (success) {
+                /* If we successfully selected, read data from the register. */
+                success = Read(base_address, port, dst, dst_size, address, true);
+            }
+
+            return success;
+        }
+
+        bool Send(Port port, int address, int r, const void *src, size_t src_size) {
+            const uintptr_t base_address = g_register_addresses[port];
+
+            /* Create a transfer buffer, make sure we can use it. */
+            u8 buffer[MaxTransferSize];
+            if (src_size > sizeof(buffer) - 1) {
+                return false;
+            }
+
+            /* Copy data into the buffer. */
+            buffer[0] = static_cast<u8>(r);
+            std::memcpy(buffer + 1, src, src_size);
+
+            return Write(base_address, port, address, buffer, src_size + 1, false);
+        }
+
+    }
+
+    namespace max7762x {
+
+        /* The only regulator we care about for SD card power is ldo2. */
+        constexpr inline const u8  Max77620PwrI2cAddr = 0x3C;
+
+        constexpr inline const u32 Max77620Ldo2MvStep      = 50'000;    /* 50 mV (50K uV) steps. */
+        constexpr inline const u32 Max77620Ldo2MvMin       = 800'000;   /* 0.8V min voltage. */
+        constexpr inline const u32 Max77620Ldo2MvDefault   = 1'800'000; /* 1.8V default voltage. */
+        constexpr inline const u32 Max77620Ldo2MvMax       = 3'300'000; /* 3.3V max voltage. */
+        constexpr inline const u8  Max77620Ldo2VoltAddr    = 0x27;
+        constexpr inline const u8  Max77620Ldo2CfgAddr     = 0x28;
+        constexpr inline const u8  Max77620Ldo2VoltMask    = 0x3F;
+        constexpr inline const u8  Max77620Ldo2EnableMask  = 0xC0;
+        constexpr inline const u8  Max77620Ldo2EnableShift = 0x6;
+        constexpr inline const u8  Max77620Ldo2StatusMask  = 0x00;
+
+        namespace {
+
+            #if defined(AMS_SDMMC_THREAD_SAFE)
+                constinit os::Mutex g_i2c_init_mutex(false);
+
+                #define AMS_SDMMC_LOCK_I2C_INIT_MUTEX() std::scoped_lock lk(g_i2c_init_mutex)
+
+            #else
+
+                #define AMS_SDMMC_LOCK_I2C_INIT_MUTEX()
+
+            #endif
+
+            constinit bool g_initialized_i2c = false;
+
+            void EnsureI2cInitialized() {
+                if (AMS_UNLIKELY(!g_initialized_i2c)) {
+                    /* Ensure we have exclusive access to the i2c init status. */
+                    AMS_SDMMC_LOCK_I2C_INIT_MUTEX();
+
+                    if (AMS_LIKELY(!g_initialized_i2c)) {
+                        i2c_impl::SetRegisterAddress(i2c_impl::Port_5, dd::QueryIoMapping(i2c_impl::I2c5RegistersAddress, i2c_impl::I2c5RegistersSize));
+                        i2c_impl::Initialize(i2c_impl::Port_5);
+                        g_initialized_i2c = true;
+                    }
+                }
+            }
+
+        }
+
+        bool SetVoltageEnabled(bool en) {
+            /* Ensure that we can use i2c to communicate with the max7762x regulator. */
+            EnsureI2cInitialized();
+
+            /* Read the current value. */
+            u8 val;
+            if (!i2c_impl::Query(std::addressof(val), sizeof(val), i2c_impl::Port_5, Max77620PwrI2cAddr, Max77620Ldo2VoltAddr)) {
+                return false;
+            }
+
+            /* Set or clear the enable mask. */
+            val &= ~Max77620Ldo2EnableMask;
+            if (en) {
+                val |= ((3 << Max77620Ldo2EnableShift) & Max77620Ldo2EnableMask);
+            }
+
+            /* Write the updated value. */
+            if (!i2c_impl::Send(i2c_impl::Port_5, Max77620PwrI2cAddr, Max77620Ldo2VoltAddr, std::addressof(val), sizeof(val))) {
+                return false;
+            }
+
+            /* Wait 1ms for change to take. */
+            WaitMicroSeconds(1);
+
+            /* Voltage is now enabled/disabled. */
+            return true;
+        }
+
+        bool SetVoltageValue(u32 micro_volts) {
+            /* Ensure that we can use i2c to communicate with the max7762x regulator. */
+            EnsureI2cInitialized();
+
+            /* Check that the value is within range. */
+            if (micro_volts < Max77620Ldo2MvMin || Max77620Ldo2MvMax < micro_volts) {
+                return false;
+            }
+
+            /* Determine the mult. */
+            const u32 mult = util::DivideUp(micro_volts - Max77620Ldo2MvMin, Max77620Ldo2MvStep);
+
+            /* Read the current value. */
+            u8 val;
+            if (!i2c_impl::Query(std::addressof(val), sizeof(val), i2c_impl::Port_5, Max77620PwrI2cAddr, Max77620Ldo2VoltAddr)) {
+                return false;
+            }
+
+            /* Set the new voltage. */
+            val &= ~Max77620Ldo2VoltMask;
+            val |= (mult & Max77620Ldo2VoltMask);
+
+            /* Write the updated value. */
+            if (!i2c_impl::Send(i2c_impl::Port_5, Max77620PwrI2cAddr, Max77620Ldo2VoltAddr, std::addressof(val), sizeof(val))) {
+                return false;
+            }
+
+            /* Wait 1ms for change to take. */
+            WaitMicroSeconds(1);
+
+            /* Voltage is now set. */
+            return true;
+        }
+
+    }
+
     Result SetSdCardVoltageEnabled(bool en) {
-        /* TODO */
-        AMS_UNUSED(en);
-        AMS_ABORT();
+        /* TODO: A way for this to be non-fatal? */
+        AMS_ABORT_UNLESS(max7762x::SetVoltageEnabled(en));
+
+        return ResultSuccess();
     }
 
     Result SetSdCardVoltageValue(u32 micro_volts) {
-        /* TODO */
-        AMS_UNUSED(micro_volts);
-        AMS_ABORT();
+        /* TODO: A way for this to be non-fatal? */
+        AMS_ABORT_UNLESS(max7762x::SetVoltageValue(micro_volts));
+
+        return ResultSuccess();
     }
 
     namespace gpio_impl {
