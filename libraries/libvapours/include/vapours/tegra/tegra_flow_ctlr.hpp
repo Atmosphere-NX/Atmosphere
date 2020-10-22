@@ -21,10 +21,14 @@
 #include <vapours/results.hpp>
 #include <vapours/reg.hpp>
 
-#define FLOW_CTLR_RAM_REPAIR           (0x040)
-#define FLOW_CTLR_FLOW_DBG_QUAL        (0x050)
-#define FLOW_CTLR_L2FLUSH_CONTROL      (0x094)
-#define FLOW_CTLR_BPMP_CLUSTER_CONTROL (0x098)
+#define FLOW_CTLR_RAM_REPAIR            (0x040)
+#define FLOW_CTLR_FLOW_DBG_QUAL         (0x050)
+#define FLOW_CTLR_CC4_HVC_CONTROL       (0x060)
+#define FLOW_CTLR_CC4_RETENTION_CONTROL (0x064)
+#define FLOW_CTLR_CC4_HVC_RETRY         (0x08C)
+#define FLOW_CTLR_L2FLUSH_CONTROL       (0x094)
+#define FLOW_CTLR_BPMP_CLUSTER_CONTROL  (0x098)
+
 
 #define FLOW_CTLR_CPU0_CSR             (0x008)
 #define FLOW_CTLR_CPU1_CSR             (0x018)
