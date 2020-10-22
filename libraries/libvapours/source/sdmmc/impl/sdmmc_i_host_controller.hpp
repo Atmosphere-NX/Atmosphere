@@ -36,6 +36,59 @@ namespace ams::sdmmc::impl {
         TransferDirection_WriteToDevice  = 1,
     };
 
+    enum CommandIndex {
+        /* Generic commands. */
+        CommandIndex_GoIdleState            =  0,
+
+        CommandIndex_AllSendCid             =  2,
+        CommandIndex_SendRelativeAddr       =  3,
+        CommandIndex_SetDsr                 =  4,
+
+        CommandIndex_SelectCard             =  7,
+        CommandIndex_DeselectCard           =  7,
+
+        CommandIndex_SendIfCond             =  8,
+        CommandIndex_SendCsd                =  9,
+        CommandIndex_SendCid                = 10,
+        CommandIndex_VoltageSwitch          = 11,
+        CommandIndex_StopTransmission       = 12,
+        CommandIndex_SendStatus             = 13,
+        CommandIndex_SendTaskStatus         = 13,
+
+        CommandIndex_GoInactiveState        = 15,
+        CommandIndex_SetBlockLen            = 16,
+        CommandIndex_ReadSingleBlock        = 17,
+        CommandIndex_ReadMultipleBlock      = 18,
+        CommandIndex_SendTuningBlock        = 19,
+        CommandIndex_SpeedClassControl      = 20,
+
+        CommandIndex_AddressExtension       = 22,
+        CommandIndex_SetBlockCount          = 23,
+        CommandIndex_WriteBlock             = 24,
+        CommandIndex_WriteMultipleBlock     = 25,
+
+        CommandIndex_ProgramCsd             = 27,
+        CommandIndex_SetWriteProt           = 28,
+        CommandIndex_ClearWriteProt         = 29,
+        CommandIndex_SendWriteProt          = 30,
+
+        CommandIndex_EraseWriteBlockStart   = 32,
+        CommandIndex_EraseWriteBlockEnd     = 33,
+
+        CommandIndex_Erase                  = 38,
+
+        CommandIndex_LockUnlock             = 42,
+
+        CommandIndex_AppCmd                 = 55,
+        CommandIndex_GenCmd                 = 56,
+
+        /* Nintendo specific vendor commands for lotus3. */
+        CommandIndex_GcAsicWriteOperation   = 60,
+        CommandIndex_GcAsicFinishOperation  = 61,
+        CommandIndex_GcAsicSleep            = 62,
+        CommandIndex_GcAsicUpdateKey        = 63,
+    };
+
     struct Command {
         u32 command_index;
         u32 command_argument;

@@ -72,6 +72,8 @@ namespace ams::sdmmc {
 
     using DeviceDetectionEventCallback = void (*)(void *);
 
+    constexpr inline size_t SectorSize    = 0x200;
+
     constexpr inline size_t DeviceCidSize = 0x10;
     constexpr inline size_t DeviceCsdSize = 0x10;
 

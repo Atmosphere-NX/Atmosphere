@@ -38,11 +38,12 @@ namespace ams::sdmmc::impl {
             virtual Result GetSpeedMode(SpeedMode *out) const = 0;
             virtual Result GetMemoryCapacity(u32 *out_sectors) const = 0;
             virtual Result GetDeviceStatus(u32 *out) const = 0;
+            virtual Result GetOcr(u32 *out) const = 0;
+            virtual Result GetRca(u16 *out) const = 0;
             virtual Result GetCid(void *out, size_t size) const = 0;
             virtual Result GetCsd(void *out, size_t size) const = 0;
 
             virtual void GetAndClearErrorInfo(ErrorInfo *out_error_info, size_t *out_log_size, char *out_log_buffer, size_t log_buffer_size) = 0;
-            /* TODO */
     };
 
 }

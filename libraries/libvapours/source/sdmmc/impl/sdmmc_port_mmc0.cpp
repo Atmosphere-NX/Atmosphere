@@ -16,6 +16,7 @@
 #include <vapours.hpp>
 #include "sdmmc_port_mmc0.hpp"
 #include "sdmmc_select_sdmmc_controller.hpp"
+#include "sdmmc_base_device_accessor.hpp"
 
 
 namespace ams::sdmmc::impl {

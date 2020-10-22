@@ -721,7 +721,7 @@ namespace ams::sdmmc::impl {
             ON_SCOPE_EXIT { this->DisableInterruptStatus(); };
 
             /* Set the command. */
-            Command command(12, 0, StopTransmissionCommandResponseType, true);
+            Command command(CommandIndex_StopTransmission, 0, StopTransmissionCommandResponseType, true);
             this->SetCommand(std::addressof(command), false);
 
             /* Wait for the command to complete. */
