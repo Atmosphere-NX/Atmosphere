@@ -39,15 +39,17 @@ namespace ams::sdmmc::impl {
     enum CommandIndex {
         /* Generic commands. */
         CommandIndex_GoIdleState            =  0,
-
+        CommandIndex_SendOpCond             =  1,
         CommandIndex_AllSendCid             =  2,
         CommandIndex_SendRelativeAddr       =  3,
+        CommandIndex_SetRelativeAddr        =  3,
         CommandIndex_SetDsr                 =  4,
 
+        CommandIndex_Switch                 =  6,
         CommandIndex_SelectCard             =  7,
         CommandIndex_DeselectCard           =  7,
-
         CommandIndex_SendIfCond             =  8,
+        CommandIndex_SendExtCsd             =  8,
         CommandIndex_SendCsd                =  9,
         CommandIndex_SendCid                = 10,
         CommandIndex_VoltageSwitch          = 11,
@@ -74,6 +76,9 @@ namespace ams::sdmmc::impl {
 
         CommandIndex_EraseWriteBlockStart   = 32,
         CommandIndex_EraseWriteBlockEnd     = 33,
+
+        CommandIndex_EraseGroupStart        = 35,
+        CommandIndex_EraseGroupEnd          = 36,
 
         CommandIndex_Erase                  = 38,
 

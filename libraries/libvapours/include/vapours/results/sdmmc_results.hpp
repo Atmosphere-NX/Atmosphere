@@ -65,6 +65,10 @@ namespace ams::sdmmc {
         R_DEFINE_ERROR_RESULT(BusySoftwareTimeout,               77);
         R_DEFINE_ERROR_RESULT(IssueTuningCommandSoftwareTimeout, 78);
         R_DEFINE_ERROR_RESULT(TuningFailed,                      79);
+        R_DEFINE_ERROR_RESULT(MmcInitializationSoftwareTimeout,  80);
+        R_DEFINE_ERROR_RESULT(MmcNotSupportExtendedCsd,          81);
+        R_DEFINE_ERROR_RESULT(UnexpectedMmcExtendedCsdValue,     82);
+        R_DEFINE_ERROR_RESULT(MmcEraseSoftwareTimeout,           83);
         R_DEFINE_ERROR_RESULT(SdCardNotReadyToVoltageSwitch,     96);
         R_DEFINE_ERROR_RESULT(SdCardNotCompleteVoltageSwitch,    97);
 

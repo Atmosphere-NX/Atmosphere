@@ -24,6 +24,7 @@ namespace ams::sdmmc::impl {
     namespace {
 
         SdmmcControllerForPortMmc0 g_mmc0_host_controller;
+        MmcDeviceAccessor g_mmc0_device_accessor(std::addressof(g_mmc0_host_controller));
 
     }
 

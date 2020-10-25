@@ -485,7 +485,7 @@ namespace ams::sdmmc::impl {
             }
 
             virtual Result OnActivate() = 0;
-            virtual Result OnReadWrite(u32 sector_index, u32 num_sectors, void *buf, size_t buf_sie, bool is_read) = 0;
+            virtual Result OnReadWrite(u32 sector_index, u32 num_sectors, void *buf, size_t buf_size, bool is_read) = 0;
             virtual Result ReStartup() = 0;
         public:
             #if defined(AMS_SDMMC_USE_DEVICE_VIRTUAL_ADDRESS)
@@ -493,11 +493,11 @@ namespace ams::sdmmc::impl {
             virtual void UnregisterDeviceVirtualAddress(uintptr_t buffer, size_t buffer_size, ams::dd::DeviceVirtualAddress buffer_device_virtual_address) override;
             #endif
 
-            virtual Result Activate() = 0;
-            virtual void Deactivate() = 0;
+            virtual Result Activate() override;
+            virtual void Deactivate() override;
 
-            virtual Result ReadWrite(u32 sector_index, u32 num_sectors, void *buffer, size_t buffer_size, bool is_read) = 0;
-            virtual Result CheckConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width) = 0;
+            virtual Result ReadWrite(u32 sector_index, u32 num_sectors, void *buffer, size_t buffer_size, bool is_read) override;
+            virtual Result CheckConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width) override;
 
             virtual Result GetMemoryCapacity(u32 *out_sectors) const override;
             virtual Result GetDeviceStatus(u32 *out) const override;

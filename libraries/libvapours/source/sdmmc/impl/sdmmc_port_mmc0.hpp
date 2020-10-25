@@ -17,10 +17,12 @@
 #include <vapours.hpp>
 #include "sdmmc_i_host_controller.hpp"
 #include "sdmmc_i_device_accessor.hpp"
+#include "sdmmc_mmc_device_accessor.hpp"
 
 namespace ams::sdmmc::impl {
 
     IHostController *GetHostControllerOfPortMmc0();
     IDeviceAccessor *GetDeviceAccessorOfPortMmc0();
+    MmcDeviceAccessor *GetMmcDeviceAccessorOfPortMmc0();
 
 }

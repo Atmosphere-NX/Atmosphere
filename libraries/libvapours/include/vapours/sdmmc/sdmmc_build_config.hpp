@@ -32,6 +32,7 @@
     //#define AMS_SDMMC_USE_OS_EVENTS
     //#define AMS_SDMMC_USE_OS_TIMER
     #define AMS_SDMMC_USE_UTIL_TIMER
+    //#define AMS_SDMMC_ENABLE_MMC_HS400
 
 #elif defined(ATMOSPHERE_IS_MESOSPHERE)
 
@@ -43,6 +44,7 @@
     //#define AMS_SDMMC_USE_OS_EVENTS
     //#define AMS_SDMMC_USE_OS_TIMER
     #define AMS_SDMMC_USE_UTIL_TIMER
+    //#define AMS_SDMMC_ENABLE_MMC_HS400
 
 #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
 
@@ -54,6 +56,7 @@
     #define AMS_SDMMC_USE_OS_EVENTS
     #define AMS_SDMMC_USE_OS_TIMER
     //#define AMS_SDMMC_USE_UTIL_TIMER
+    #define AMS_SDMMC_ENABLE_MMC_HS400
 
 #else
     #error "Unknown execution context for ams::sdmmc!"
