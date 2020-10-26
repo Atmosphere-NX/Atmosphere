@@ -1,4 +1,31 @@
 # Changelog
+## 0.15.0
++ fusee-primary's panic display was updated to automatically identify and give suggestions to resolve many of the most common errors users encounter.
++ Having been tested as well as I can alone, `mesosphere` (atmosphère's reimplementation of the Nintendo Switch kernel) is now available for users interested in trying it.
+  + Beginning in this release and until it is stable and well-tested, atmosphère will distribute two zips.
+    + Users who wish to opt-in to mesosphere should download and extract the "atmosphere-EXPERIMENTAL" zip.
+    + Users who do not wish to use mesosphere should continue using the normal "atmosphere" zip.
+  + Users may detect whether mesosphere is active in system settings.
+    + When mesosphere is active, the system version string will display "M.15.0" rather than "0.15.0", and so on for future releases.
+    + Crash reports and the like will contain information on whether or not the user is using mesosphere, as well.
+  + There are "probably" no material user-facing benefits to using mesosphere at this time.
+    + Developers may be interested in the fact that mesosphere provides many newer SVC APIs even when on lower firmware versions.
+    + The primary benefit to using mesosphere is that any issues you may encounter and report to me will be fixed.
+      + All users who choose to opt in to using mesosphere have my deepest gratitude.
+  + **Note:** If using hekate instead of fusee-primary, you will have to wait for the next hekate release for mesosphere to function, as hekate's support has not yet been included in an official release build.
+    + This will be updated in the release notes when hekate provides a new release.
+  + As mentioned in previous release notes, when mesosphere is stable and well-tested, it will be enabled by default and atmosphère's version will transition to 1.0.0.
++ Having been tested sufficiently over the last half-year, Atmosphere's NCM implementation is now opt-out, rather than opt in.
+  + In the unlikely event that any issues are encountered, please report them to @SciresM.
+  + Users interested in opting out of using our implementation should set `stratosphere!disable_ncm = 1` in BCT.ini.
+  + The NCM implementation will stop being opt-out in a future update, probably around the same time that mesosphere becomes opt-out instead of opt-in.
++ Several bugs were fixed, including:
+  + Loader now sets HBL's thread priority to a higher value when loading it in applet mode.
+    + This fixes an extremely-slow launch ("hang") when using applet-HBL with certain games that do not suspend while inactive (e.g. Super Mario Sunshine).
+  + set.mitm now caches user language configuration much more heavily.
+    + This severely reduces lag in certain games which misuse the "nn::oe::GetDesiredLanguage()" API.
+  + A bug was fixed that could cause erpt to fatal when loading an official save file that had error report attachments in it.
++ General system stability improvements to enhance the user's experience.
 ## 0.14.4
 + Several bugs were fixed involving the official jit sysmodule added in 10.0.0.
   + A Process handle leak was fixed when JitPlugin NRRs were registered with the `ro` sysmodule.

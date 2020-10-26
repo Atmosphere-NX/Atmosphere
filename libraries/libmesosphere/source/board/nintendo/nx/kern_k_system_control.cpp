@@ -308,6 +308,15 @@ namespace ams::kern::board::nintendo::nx {
             g_secure_applet_memory_used = false;
         }
 
+        u64 GetVersionIdentifier() {
+            u64 value = kern::GetTargetFirmware();
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO) << 32;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR) << 40;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR) << 48;
+            value |= static_cast<u64>('M') << 56;
+            return value;
+        }
+
     }
 
     /* Initialization. */
@@ -556,6 +565,10 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Set module base. */
             f_ctx->module_base = KMemoryLayout::GetKernelCodeRegionExtents().GetAddress();
+
+            /* Set afsr1. */
+            f_ctx->afsr0 = 0;
+            f_ctx->afsr1 = GetVersionIdentifier();
 
             /* Copy registers. */
             for (size_t i = 0; i < util::size(e_ctx->x); ++i) {
