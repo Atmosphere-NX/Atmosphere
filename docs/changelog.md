@@ -3,8 +3,8 @@
 + fusee-primary's panic display was updated to automatically identify and give suggestions to resolve many of the most common errors users encounter.
 + Having been tested as well as I can alone, `mesosphere` (atmosphère's reimplementation of the Nintendo Switch kernel) is now available for users interested in trying it.
   + Beginning in this release and until it is stable and well-tested, atmosphère will distribute two zips.
-    + Users who wish to opt-in to mesosphere should download and extract the "atmosphere-EXPERIMENTAL" zip.
-    + Users who do not wish to use mesosphere should continue using the normal "atmosphere" zip.
+    + Users who wish to opt-in to mesosphere should download and extract the "cool kids" zip ("atmosphere-EXPERIMENTAL-").
+    + Users who do not wish to use mesosphere should continue using the normal zip ("atmosphere-").
   + Users may detect whether mesosphere is active in system settings.
     + When mesosphere is active, the system version string will display "M.15.0" rather than "0.15.0", and so on for future releases.
     + Crash reports and the like will contain information on whether or not the user is using mesosphere, as well.
