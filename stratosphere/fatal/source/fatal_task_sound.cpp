@@ -70,16 +70,16 @@ namespace ams::fatal::srv {
 
             /* Talk to the ALC5639 over GPIO, and disable audio output */
             {
-                GpioPadSession audio;
-                if (R_SUCCEEDED(gpioOpenSession(&audio, GpioPadName_AudioCodec))) {
-                    ON_SCOPE_EXIT { gpioPadClose(&audio); };
+                gpio::GpioPadSession audio;
+                if (R_SUCCEEDED(gpio::OpenSession(std::addressof(audio), gpio::DeviceCode_CodecLdoEnTemp))) {
+                    ON_SCOPE_EXIT { gpio::CloseSession(std::addressof(audio)); };
 
                     /* Set direction output, sleep 200 ms so it can take effect. */
-                    gpioPadSetDirection(&audio, GpioDirection_Output);
-                    svcSleepThread(200000000UL);
+                    gpio::SetDirection(std::addressof(audio), gpio::Direction_Output);
+                    os::SleepThread(TimeSpan::FromMilliSeconds(200));
 
                     /* Pull audio codec low. */
-                    gpioPadSetValue(&audio, GpioValue_Low);
+                    gpio::SetValue(std::addressof(audio), gpio::GpioValue_Low);
                 }
             }
         }

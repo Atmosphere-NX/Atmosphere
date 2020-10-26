@@ -24,6 +24,7 @@ namespace ams::sdmmc::impl {
 
         SdmmcControllerForPortSdCard0 g_sd_card0_host_controller;
 
+
     }
 
     IHostController *GetHostControllerOfPortSdCard0() {

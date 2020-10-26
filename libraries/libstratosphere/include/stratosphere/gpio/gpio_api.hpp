@@ -15,14 +15,11 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include "sdmmc_i_host_controller.hpp"
-#include "sdmmc_i_device_accessor.hpp"
-#include "sdmmc_sd_card_device_accessor.hpp"
+#include <stratosphere/gpio/gpio_types.hpp>
 
-namespace ams::sdmmc::impl {
+namespace ams::gpio {
 
-    IHostController *GetHostControllerOfPortSdCard0();
-    IDeviceAccessor *GetDeviceAccessorOfPortSdCard0();
-    SdCardDeviceAccessor *GetSdCardDeviceAccessorOfPortSdCard0();
+    void Initialize();
+    void Finalize();
 
 }

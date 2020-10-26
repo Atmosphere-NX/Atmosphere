@@ -75,7 +75,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(pminfoInitialize());
         R_ABORT_UNLESS(pmshellInitialize());
         R_ABORT_UNLESS(setsysInitialize());
-        R_ABORT_UNLESS(gpioInitialize());
+        R_ABORT_UNLESS(gpio::Initialize());
     });
 
     /* Mount the SD card. */
@@ -86,7 +86,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     fs::Unmount("sdmc");
-    gpioExit();
+    gpio::Exit();
     setsysExit();
     pmshellExit();
     pminfoExit();

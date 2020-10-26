@@ -15,14 +15,10 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include "sdmmc_i_host_controller.hpp"
-#include "sdmmc_i_device_accessor.hpp"
-#include "sdmmc_sd_card_device_accessor.hpp"
+#include <stratosphere/gpio/gpio_types.hpp>
 
-namespace ams::sdmmc::impl {
-
-    IHostController *GetHostControllerOfPortSdCard0();
-    IDeviceAccessor *GetDeviceAccessorOfPortSdCard0();
-    SdCardDeviceAccessor *GetSdCardDeviceAccessorOfPortSdCard0();
-
-}
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+    #include <stratosphere/gpio/gpio_pad_name.board.nintendo_nx.hpp>
+#else
+    /* Error? */
+#endif

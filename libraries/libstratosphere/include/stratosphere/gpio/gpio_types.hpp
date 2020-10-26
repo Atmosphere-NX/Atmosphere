@@ -15,14 +15,30 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include "sdmmc_i_host_controller.hpp"
-#include "sdmmc_i_device_accessor.hpp"
-#include "sdmmc_sd_card_device_accessor.hpp"
 
-namespace ams::sdmmc::impl {
+namespace ams::gpio {
 
-    IHostController *GetHostControllerOfPortSdCard0();
-    IDeviceAccessor *GetDeviceAccessorOfPortSdCard0();
-    SdCardDeviceAccessor *GetSdCardDeviceAccessorOfPortSdCard0();
+    enum InterruptMode {
+        InterruptMode_LowLevel    = 0,
+        InterruptMode_HighLevel   = 1,
+        InterruptMode_RisingEdge  = 2,
+        InterruptMode_FallingEdge = 3,
+        InterruptMode_AnyEdge     = 4,
+    };
+
+    enum Direction {
+        Direction_Input  = 0,
+        Direction_Output = 1,
+    };
+
+    enum GpioValue {
+        GpioValue_Low  = 0,
+        GpioValue_High = 1,
+    };
+
+    enum InterruptStatus {
+        InterruptStatus_Inactive = 0,
+        InterruptStatus_Active   = 1,
+    };
 
 }

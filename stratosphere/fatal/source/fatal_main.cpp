@@ -92,7 +92,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(psmInitialize());
         R_ABORT_UNLESS(spsmInitialize());
         R_ABORT_UNLESS(plInitialize(::PlServiceType_User));
-        R_ABORT_UNLESS(gpioInitialize());
+        gpio::Initialize();
         R_ABORT_UNLESS(fsInitialize());
     });
 
@@ -105,7 +105,7 @@ void __appExit(void) {
     /* Cleanup services. */
     fsExit();
     plExit();
-    gpioExit();
+    gpio::Finalize();
     spsmExit();
     psmExit();
     lblExit();

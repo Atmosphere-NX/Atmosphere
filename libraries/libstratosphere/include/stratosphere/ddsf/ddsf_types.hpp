@@ -13,16 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
 #include <vapours.hpp>
-#include "sdmmc_i_host_controller.hpp"
-#include "sdmmc_i_device_accessor.hpp"
-#include "sdmmc_sd_card_device_accessor.hpp"
 
-namespace ams::sdmmc::impl {
+namespace ams::ddsf {
 
-    IHostController *GetHostControllerOfPortSdCard0();
-    IDeviceAccessor *GetDeviceAccessorOfPortSdCard0();
-    SdCardDeviceAccessor *GetSdCardDeviceAccessorOfPortSdCard0();
+    enum AccessMode {
+        AccessMode_None  = (0u << 0),
+        AccessMode_Read  = (1u << 0),
+        AccessMode_Write = (1u << 1),
+
+        AccessMode_ReadWrite = AccessMode_Read | AccessMode_Write,
+    };
 
 }

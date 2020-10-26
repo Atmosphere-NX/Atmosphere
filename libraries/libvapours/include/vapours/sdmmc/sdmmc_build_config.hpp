@@ -34,6 +34,7 @@
     #define AMS_SDMMC_USE_UTIL_TIMER
     //#define AMS_SDMMC_ENABLE_MMC_HS400
     //#define AMS_SDMMC_SET_PLLC4_BASE
+    //#define AMS_SDMMC_USE_SD_CARD_DETECTOR
 
 #elif defined(ATMOSPHERE_IS_MESOSPHERE)
 
@@ -47,6 +48,7 @@
     #define AMS_SDMMC_USE_UTIL_TIMER
     //#define AMS_SDMMC_ENABLE_MMC_HS400
     //#define AMS_SDMMC_SET_PLLC4_BASE
+    //#define AMS_SDMMC_USE_SD_CARD_DETECTOR
 
 #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
 
@@ -60,6 +62,7 @@
     //#define AMS_SDMMC_USE_UTIL_TIMER
     #define AMS_SDMMC_ENABLE_MMC_HS400
     #define AMS_SDMMC_SET_PLLC4_BASE
+    #define AMS_SDMMC_USE_SD_CARD_DETECTOR
 
 #else
     #error "Unknown execution context for ams::sdmmc!"

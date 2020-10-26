@@ -20,6 +20,7 @@
 #include <vapours/literals.hpp>
 
 #include <vapours/allocator.hpp>
+#include <vapours/device_code.hpp>
 #include <vapours/timespan.hpp>
 #include <vapours/span.hpp>
 
