@@ -171,7 +171,7 @@ namespace ams::sdmmc::impl {
     namespace {
 
         #if defined(AMS_SDMMC_THREAD_SAFE)
-            constinit os::Mutex g_soc_mutex(false);
+            constinit os::SdkMutex g_soc_mutex;
 
             #define AMS_SDMMC_LOCK_SOC_MUTEX() std::scoped_lock lk(g_soc_mutex)
 

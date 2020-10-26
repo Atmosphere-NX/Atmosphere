@@ -300,7 +300,7 @@ namespace ams::sdmmc::impl {
         namespace {
 
             #if defined(AMS_SDMMC_THREAD_SAFE)
-                constinit os::Mutex g_i2c_init_mutex(false);
+                constinit os::SdkMutex g_i2c_init_mutex;
 
                 #define AMS_SDMMC_LOCK_I2C_INIT_MUTEX() std::scoped_lock lk(g_i2c_init_mutex)
 

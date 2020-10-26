@@ -51,6 +51,11 @@ namespace ams::reg {
         return (EncodeValue(values) | ...);
     }
 
+    template<typename... Masks> requires ((sizeof...(Masks) > 0) && (std::is_same<Masks, BitsMask>::value && ...))
+    constexpr ALWAYS_INLINE u32 EncodeMask(const Masks... masks) {
+        return (EncodeMask(masks) | ...);
+    }
+
     template<typename IntType> requires UnsignedNonConstIntegral<IntType>
     ALWAYS_INLINE void Write(volatile IntType *reg, std::type_identity_t<IntType> val) { *reg = val; }
 
