@@ -66,4 +66,8 @@ namespace ams::sdmmc {
         return GetMmcDeviceAccessor(port)->GetMmcExtendedCsd(out_buffer, buffer_size);
     }
 
+    Result CheckMmcConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width, Port port) {
+        return GetMmcDeviceAccessor(port)->CheckConnection(out_speed_mode, out_bus_width);
+    }
+
 }

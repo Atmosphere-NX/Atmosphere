@@ -65,7 +65,7 @@ namespace ams::sdmmc::impl {
             return (ext_csd[163] & (1u << 1)) != 0;
         }
 
-        constexpr bool GetDeviceType(const u8 *ext_csd) {
+        constexpr u8 GetDeviceType(const u8 *ext_csd) {
             /* Get the DEVICE_TYPE register. */
             AMS_ABORT_UNLESS(ext_csd != nullptr);
             return ext_csd[196];

@@ -38,5 +38,6 @@ namespace ams::sdmmc {
     Result GetMmcBootPartitionCapacity(u32 *out_num_sectors, Port port);
     Result GetMmcExtendedCsd(void *out_buffer, size_t buffer_size, Port port);
 
+    Result CheckMmcConnection(SpeedMode *out_speed_mode, BusWidth *out_bus_width, Port port);
 
 }

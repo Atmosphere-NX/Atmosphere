@@ -73,8 +73,18 @@ namespace ams::sdmmc_test {
         DEBUG[0] = 5;
         CheckResult(result);
 
+        /* Get the connection status. */
+        sdmmc::SpeedMode speed_mode;
+        sdmmc::BusWidth bus_width;
+        result = sdmmc::CheckMmcConnection(std::addressof(speed_mode), std::addressof(bus_width), Port);
+
+        /* Save status for debug. */
+        DEBUG[0] = 6;
+        DEBUG[1] = result.GetValue();
+        DEBUG[2] = static_cast<u32>(speed_mode);
+        DEBUG[3] = static_cast<u32>(bus_width);
+
         /* Perform a reboot. */
-        DEBUG[1] = 0;
         PmcMainReboot();
     }
 
