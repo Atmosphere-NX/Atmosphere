@@ -14,23 +14,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-.section    .text._ZN3ams8warmboot5StartEv, "ax", %progbits
+.section    .crt0.text._ZN3ams10sdmmc_test5StartEv, "ax", %progbits
 .align      3
-.global     _ZN3ams8warmboot5StartEv
-_ZN3ams8warmboot5StartEv:
-    /* Set CPSR_cf and CPSR_cf. */
-    msr cpsr_f, #0xC0
-    msr cpsr_cf, #0xD3
+.global     _ZN3ams10sdmmc_test5StartEv
+_ZN3ams10sdmmc_test5StartEv:
+    /* Switch to system mode, mask all interrupts, clear all flags */
+    msr cpsr_cxsf, #0xDF
 
     /* Set the stack pointer. */
     ldr sp, =__stack_top__
 
     /* Set our link register to the exception handler. */
-    ldr lr, =_ZN3ams8warmboot16ExceptionHandlerEv
+    ldr lr, =_ZN3ams10sdmmc_test16ExceptionHandlerEv
+
+    /* Call init array functions. */
+    bl __libc_init_array
 
     /* Invoke main. */
-    ldr r0, =_metadata
-    b _ZN3ams8warmboot4MainEPKNS0_8MetadataE
+    b _ZN3ams10sdmmc_test4MainEv
 
     /* Infinite loop. */
-    1: b 1b
+    2: b 2b

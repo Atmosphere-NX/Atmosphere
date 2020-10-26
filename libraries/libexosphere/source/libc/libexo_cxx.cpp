@@ -13,24 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <exosphere.hpp>
 
-.section    .text._ZN3ams8warmboot5StartEv, "ax", %progbits
-.align      3
-.global     _ZN3ams8warmboot5StartEv
-_ZN3ams8warmboot5StartEv:
-    /* Set CPSR_cf and CPSR_cf. */
-    msr cpsr_f, #0xC0
-    msr cpsr_cf, #0xD3
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    /* Set the stack pointer. */
-    ldr sp, =__stack_top__
+/* cxx implementation details to be stubbed here, as needed. */
+void __cxa_pure_virtual() { AMS_ABORT("pure virtual function call"); }
 
-    /* Set our link register to the exception handler. */
-    ldr lr, =_ZN3ams8warmboot16ExceptionHandlerEv
-
-    /* Invoke main. */
-    ldr r0, =_metadata
-    b _ZN3ams8warmboot4MainEPKNS0_8MetadataE
-
-    /* Infinite loop. */
-    1: b 1b
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

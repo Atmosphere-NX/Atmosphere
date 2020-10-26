@@ -7,27 +7,7 @@ export ATMOSPHERE_CPU   := arm7tdmi
 #---------------------------------------------------------------------------------
 # pull in common atmosphere configuration
 #---------------------------------------------------------------------------------
-include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
-
-#---------------------------------------------------------------------------------
-# options for code generation
-#---------------------------------------------------------------------------------
-
-DEFINES     := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_EXOSPHERE
-SETTINGS    := $(ATMOSPHERE_SETTINGS) -Os -Wextra -Werror -flto -fno-non-call-exceptions
-CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
-CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit
-ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS)
-
-SOURCES     += $(call ALL_SOURCE_DIRS,../libvapours/source)
-
-LIBS        :=
-
-#---------------------------------------------------------------------------------
-# list of directories containing libraries, this must be the top level containing
-# include and lib
-#---------------------------------------------------------------------------------
-LIBDIRS	:= $(ATMOSPHERE_LIBRARIES_DIR)/libvapours
+include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../../libraries/config/templates/exosphere.mk
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -36,7 +16,11 @@ LIBDIRS	:= $(ATMOSPHERE_LIBRARIES_DIR)/libvapours
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) $(CURDIR)/include \
+export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export TOPDIR	:=	$(CURDIR)
+export DEPSDIR  :=  $(CURDIR)/$(BUILD)
+
+export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
 
 CFILES      :=	$(call FIND_SOURCE_FILES,$(SOURCES),c)
@@ -59,71 +43,66 @@ endif
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export GCH_FILES    :=	$(foreach hdr,$(PRECOMPILED_HEADERS:.hpp=.gch),$(notdir $(hdr)))
 export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(subst -,_,$(BINFILES))))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 			-I.
 
-.PHONY: clean all
+export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib -L$(dir)/$(ATMOSPHERE_LIBRARY_DIR))
+
+.PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
-all: $(ATMOSPHERE_LIBRARY_DIR)/$(TARGET).a
+all: $(BUILD) check_libexo
 
-$(ATMOSPHERE_LIBRARY_DIR):
+$(BUILD): check_libexo
 	@[ -d $@ ] || mkdir -p $@
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
-$(ATMOSPHERE_BUILD_DIR):
-	@[ -d $@ ] || mkdir -p $@
-
-$(ATMOSPHERE_LIBRARY_DIR)/$(TARGET).a : $(ATMOSPHERE_LIBRARY_DIR) $(ATMOSPHERE_BUILD_DIR) $(SOURCES) $(INCLUDES)
-	@$(MAKE) BUILD=$(ATMOSPHERE_BUILD_DIR) OUTPUT=$(CURDIR)/$@ \
-	DEPSDIR=$(CURDIR)/$(ATMOSPHERE_BUILD_DIR) \
-	--no-print-directory -C $(ATMOSPHERE_BUILD_DIR) \
-	-f $(CURDIR)/arm.mk
-
-dist-bin: all
-	@tar --exclude=*~ -cjf $(TARGET).tar.bz2 include $(ATMOSPHERE_LIBRARY_DIR)
-
-dist-src:
-	@tar --exclude=*~ -cjf $(TARGET)-src.tar.bz2 include source arm.mk
-
-dist: dist-src dist-bin
+check_libexo:
+	@$(MAKE) --no-print-directory -C ../../libraries/libexosphere arm
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(ATMOSPHERE_BUILD_DIR) $(ATMOSPHERE_LIBRARY_DIR) *.bz2
+	@rm -fr $(BUILD) $(OUTPUT).bin $(OUTPUT).elf *.lz4
 
 #---------------------------------------------------------------------------------
 else
+.PHONY:	all
 
-DEPENDS	:=	$(OFILES:.o=.d) $(GCH_FILES:.gch=.d)
+DEPENDS	:=	$(OFILES:.o=.d)
 
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-$(OUTPUT)	:	$(OFILES)
+all	:	$(OUTPUT).bin
 
-$(OFILES)	:	$(GCH_FILES)
+$(OUTPUT).bin	:	$(OUTPUT).elf
+	$(OBJCOPY) -S -O binary --set-section-flags .bss=alloc,load,contents $< $@
+	@echo built ... $(notdir $@)
+
+$(OUTPUT).elf	:	$(OFILES) ../../../libraries/libexosphere/$(ATMOSPHERE_LIBRARY_DIR)/libexosphere.a
+
+%.elf:
+	@echo linking $(notdir $@)
+	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
+	@$(NM) -CSn $@ > $(notdir $*.lst)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
 
-libc.o: CFLAGS += -fno-builtin -fno-lto
-libgcc_division.arch.arm.o: CFLAGS += -fno-builtin -fno-lto
-
 #---------------------------------------------------------------------------------
-%_bin.h %.bin.o	:	%.bin
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+%.bin.o	%_bin.h:	%.bin
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
-
 
 -include $(DEPENDS)
 
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
-
