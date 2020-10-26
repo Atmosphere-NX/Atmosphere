@@ -32,4 +32,12 @@ namespace ams::sdmmc::impl {
         return std::addressof(g_mmc0_host_controller);
     }
 
+    IDeviceAccessor *GetDeviceAccessorOfPortMmc0() {
+        return std::addressof(g_mmc0_device_accessor);
+    }
+
+    MmcDeviceAccessor *GetMmcDeviceAccessorOfPortMmc0() {
+        return std::addressof(g_mmc0_device_accessor);
+    }
+
 }

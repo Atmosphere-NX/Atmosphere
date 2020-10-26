@@ -355,7 +355,7 @@ namespace ams::sdmmc::impl {
                 R_TRY(this->CheckRemoved());
 
                 /* Check if command inhibit is no longer present. */
-                if (reg::HasValue(this->registers->present_state, SD_REG_BITS_ENUM(PRESENT_STATE_COMMAND_INHIBIT_CMD, NOT_READY))) {
+                if (reg::HasValue(this->registers->present_state, SD_REG_BITS_ENUM(PRESENT_STATE_COMMAND_INHIBIT_CMD, READY))) {
                     break;
                 }
 
@@ -375,7 +375,7 @@ namespace ams::sdmmc::impl {
                 R_TRY(this->CheckRemoved());
 
                 /* Check if command inhibit is no longer present. */
-                if (reg::HasValue(this->registers->present_state, SD_REG_BITS_ENUM(PRESENT_STATE_COMMAND_INHIBIT_DAT, NOT_READY))) {
+                if (reg::HasValue(this->registers->present_state, SD_REG_BITS_ENUM(PRESENT_STATE_COMMAND_INHIBIT_DAT, READY))) {
                     break;
                 }
 
