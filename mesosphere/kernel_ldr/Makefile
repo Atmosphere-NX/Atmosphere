@@ -105,7 +105,9 @@ $(OUTPUT).bin	:	$(OUTPUT).elf
 	$(OBJCOPY) -S -O binary --set-section-flags .bss=alloc,load,contents $< $@
 	@echo built ... $(notdir $@)
 
-$(OUTPUT).elf	:	$(OFILES) $(ATMOSPHERE_LIBRARIES_DIR)/libmesosphere/$(ATMOSPHERE_LIBRARY_DIR)/lib$(LIBMESOSPHERE_NAME).a
+$(OUTPUT).elf	:	$(OFILES)
+
+$(OFILES)	:	$(ATMOSPHERE_LIBRARIES_DIR)/libmesosphere/$(ATMOSPHERE_LIBRARY_DIR)/lib$(LIBMESOSPHERE_NAME).a
 
 %.elf:
 	@echo linking $(notdir $@)
