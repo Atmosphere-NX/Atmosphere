@@ -139,8 +139,8 @@ namespace ams::mitm {
             /* maintaining an open reference prevents cleanly the issue of "automatic" updaters selecting the incorrect */
             /* zip, and encourages good updating hygiene -- atmosphere should not be updated on SD while HOS is alive. */
             {
-                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_secondary_file),    "/atmosphere/fusee-secondary.bin", ams::fs::OpenMode_ReadWrite));
-                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_sept_payload_file), "/sept/payload.bin",               ams::fs::OpenMode_ReadWrite));
+                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_secondary_file),    "/atmosphere/fusee-secondary.bin", ams::fs::OpenMode_Read));
+                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_sept_payload_file), "/sept/payload.bin",               ams::fs::OpenMode_Read));
             }
         }
 
