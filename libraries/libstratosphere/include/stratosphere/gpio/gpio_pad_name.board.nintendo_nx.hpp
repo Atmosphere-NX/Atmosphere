@@ -19,7 +19,7 @@
 
 namespace ams::gpio {
 
-    enum GpioPadName {
+    enum GpioPadName : u32 {
         GpioPadName_CodecLdoEnTemp =  1,
         GpioPadName_ButtonVolUp    = 25,
         GpioPadName_ButtonVolDn    = 26,

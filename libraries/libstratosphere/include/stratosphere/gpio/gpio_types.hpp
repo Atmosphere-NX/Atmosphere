@@ -18,7 +18,7 @@
 
 namespace ams::gpio {
 
-    enum InterruptMode {
+    enum InterruptMode : u32 {
         InterruptMode_LowLevel    = 0,
         InterruptMode_HighLevel   = 1,
         InterruptMode_RisingEdge  = 2,
@@ -26,19 +26,21 @@ namespace ams::gpio {
         InterruptMode_AnyEdge     = 4,
     };
 
-    enum Direction {
+    enum Direction : u32 {
         Direction_Input  = 0,
         Direction_Output = 1,
     };
 
-    enum GpioValue {
+    enum GpioValue : u32 {
         GpioValue_Low  = 0,
         GpioValue_High = 1,
     };
 
-    enum InterruptStatus {
+    enum InterruptStatus : u32 {
         InterruptStatus_Inactive = 0,
         InterruptStatus_Active   = 1,
     };
+
+    using WakeBitFlag = util::BitFlagSet<128>;
 
 }

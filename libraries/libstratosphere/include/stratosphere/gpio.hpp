@@ -16,5 +16,7 @@
 
 #pragma once
 #include <stratosphere/gpio/gpio_types.hpp>
+#include <stratosphere/gpio/sf/gpio_sf_i_pad_session.hpp>
+#include <stratosphere/gpio/sf/gpio_sf_i_manager.hpp>
 #include <stratosphere/gpio/gpio_api.hpp>
 #include <stratosphere/gpio/gpio_pad_api.hpp>

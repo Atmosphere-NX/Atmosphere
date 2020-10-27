@@ -14,22 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "gpio_remote_manager_impl.hpp"
 
 namespace ams::gpio {
-
-    /* TODO: This deserves proper new interface def support. */
 
     namespace {
 
         /* TODO: Manager object. */
         constinit os::SdkMutex g_init_mutex;
         constinit int g_initialize_count = 0;
+        std::shared_ptr<sf::IManager> g_manager;
 
-        using InternalSession = ::GpioPadSession;
+        using InternalSession = std::shared_ptr<gpio::sf::IPadSession>;
 
-        InternalSession *GetInterface(GpioPadSession *session) {
+        InternalSession &GetInterface(GpioPadSession *session) {
             AMS_ASSERT(session->_session != nullptr);
-            return static_cast<::GpioPadSession *>(session->_session);
+            return *static_cast<InternalSession *>(session->_session);
         }
 
     }
@@ -39,6 +39,7 @@ namespace ams::gpio {
 
         if ((g_initialize_count++) == 0) {
             R_ABORT_UNLESS(::gpioInitialize());
+            g_manager = ams::sf::MakeShared<sf::IManager, RemoteManagerImpl>();
         }
     }
 
@@ -48,21 +49,26 @@ namespace ams::gpio {
         AMS_ASSERT(g_initialize_count > 0);
 
         if ((--g_initialize_count) == 0) {
+            g_manager.reset();
             ::gpioExit();
         }
     }
 
     Result OpenSession(GpioPadSession *out_session, ams::DeviceCode device_code) {
         /* Allocate the session. */
-        InternalSession *internal_session = static_cast<InternalSession *>(std::malloc(sizeof(InternalSession)));
+        InternalSession *internal_session = new (std::nothrow) InternalSession;
         AMS_ABORT_UNLESS(internal_session != nullptr);
-        auto session_guard = SCOPE_GUARD { std::free(internal_session); };
+        auto session_guard = SCOPE_GUARD { delete internal_session; };
 
         /* Get the session. */
-        if (hos::GetVersion() >= hos::Version_7_0_0) {
-            R_TRY(::gpioOpenSession2(internal_session, device_code.GetInternalValue(), ddsf::AccessMode_ReadWrite));
-        } else {
-            R_ABORT_UNLESS(::gpioOpenSession(internal_session, static_cast<::GpioPadName>(static_cast<s32>(ConvertToGpioPadName(device_code)))));
+        {
+            ams::sf::cmif::ServiceObjectHolder object_holder;
+            if (hos::GetVersion() >= hos::Version_7_0_0) {
+                R_TRY(g_manager->OpenSession2(std::addressof(object_holder), device_code, ddsf::AccessMode_ReadWrite));
+            } else {
+                R_TRY(g_manager->OpenSession(std::addressof(object_holder), ConvertToGpioPadName(device_code)));
+            }
+            *internal_session = object_holder.GetServiceObject<sf::IPadSession>();
         }
 
         /* Set output. */
@@ -83,96 +89,97 @@ namespace ams::gpio {
         }
 
         /* Close the session. */
-        ::gpioPadClose(GetInterface(session));
-        std::free(session->_session);
+        delete std::addressof(GetInterface(session));
         session->_session = nullptr;
     }
 
     Result IsWakeEventActive(bool *out_is_active, ams::DeviceCode device_code) {
         if (hos::GetVersion() >= hos::Version_7_0_0) {
-            R_TRY(::gpioIsWakeEventActive2(out_is_active, device_code.GetInternalValue()));
+            R_TRY(g_manager->IsWakeEventActive2(out_is_active, device_code));
         } else {
-            R_ABORT_UNLESS(::gpioIsWakeEventActive(out_is_active, static_cast<::GpioPadName>(static_cast<s32>(ConvertToGpioPadName(device_code)))));
+            R_TRY(g_manager->IsWakeEventActive(out_is_active, ConvertToGpioPadName(device_code)));
         }
 
         return ResultSuccess();
     }
 
     Direction GetDirection(GpioPadSession *session) {
-        ::GpioDirection out;
-        R_ABORT_UNLESS(::gpioPadGetDirection(GetInterface(session), std::addressof(out)));
-        return static_cast<Direction>(static_cast<s32>(out));
+        Direction out;
+        R_ABORT_UNLESS(GetInterface(session)->GetDirection(std::addressof(out)));
+        return out;
     }
 
     void SetDirection(GpioPadSession *session, Direction direction) {
-        R_ABORT_UNLESS(::gpioPadSetDirection(GetInterface(session), static_cast<::GpioDirection>(static_cast<s32>(direction))));
+        R_ABORT_UNLESS(GetInterface(session)->SetDirection(direction));
     }
 
     GpioValue GetValue(GpioPadSession *session) {
-        ::GpioValue out;
-        R_ABORT_UNLESS(::gpioPadGetValue(GetInterface(session), std::addressof(out)));
-        return static_cast<GpioValue>(static_cast<s32>(out));
+        GpioValue out;
+        R_ABORT_UNLESS(GetInterface(session)->GetValue(std::addressof(out)));
+        return out;
     }
 
     void SetValue(GpioPadSession *session, GpioValue value) {
-        R_ABORT_UNLESS(::gpioPadSetValue(GetInterface(session), static_cast<::GpioValue>(static_cast<s32>(value))));
+        R_ABORT_UNLESS(GetInterface(session)->SetValue(value));
     }
 
     InterruptMode GetInterruptMode(GpioPadSession *session) {
-        ::GpioInterruptMode out;
-        R_ABORT_UNLESS(::gpioPadGetInterruptMode(GetInterface(session), std::addressof(out)));
-        return static_cast<InterruptMode>(static_cast<s32>(out));
+        InterruptMode out;
+        R_ABORT_UNLESS(GetInterface(session)->GetInterruptMode(std::addressof(out)));
+        return out;
     }
 
     void SetInterruptMode(GpioPadSession *session, InterruptMode mode) {
-        R_ABORT_UNLESS(::gpioPadSetInterruptMode(GetInterface(session), static_cast<::GpioInterruptMode>(static_cast<s32>(mode))));
+        R_ABORT_UNLESS(GetInterface(session)->SetInterruptMode(mode));
     }
 
     bool GetInterruptEnable(GpioPadSession *session) {
         bool out;
-        R_ABORT_UNLESS(::gpioPadGetInterruptEnable(GetInterface(session), std::addressof(out)));
+        R_ABORT_UNLESS(GetInterface(session)->GetInterruptEnable(std::addressof(out)));
         return out;
     }
 
     void SetInterruptEnable(GpioPadSession *session, bool en) {
-        R_ABORT_UNLESS(::gpioPadSetInterruptEnable(GetInterface(session), en));
+        R_ABORT_UNLESS(GetInterface(session)->SetInterruptEnable(en));
     }
 
     InterruptStatus GetInterruptStatus(GpioPadSession *session) {
-        ::GpioInterruptStatus out;
-        R_ABORT_UNLESS(::gpioPadGetInterruptStatus(GetInterface(session), std::addressof(out)));
-        return static_cast<InterruptStatus>(static_cast<s32>(out));
+        InterruptStatus out;
+        R_ABORT_UNLESS(GetInterface(session)->GetInterruptStatus(std::addressof(out)));
+        return out;
     }
 
     void ClearInterruptStatus(GpioPadSession *session) {
-        R_ABORT_UNLESS(::gpioPadClearInterruptStatus(GetInterface(session)));
+        R_ABORT_UNLESS(GetInterface(session)->ClearInterruptStatus());
     }
 
     int GetDebounceTime(GpioPadSession *session) {
         int out;
-        R_ABORT_UNLESS(::gpioPadGetDebounceTime(GetInterface(session), std::addressof(out)));
+        R_ABORT_UNLESS(GetInterface(session)->GetDebounceTime(std::addressof(out)));
         return out;
     }
 
     void SetDebounceTime(GpioPadSession *session, int ms) {
-        R_ABORT_UNLESS(::gpioPadSetDebounceTime(GetInterface(session), ms));
+        R_ABORT_UNLESS(GetInterface(session)->SetDebounceTime(ms));
     }
 
     bool GetDebounceEnabled(GpioPadSession *session) {
         bool out;
-        R_ABORT_UNLESS(::gpioPadGetDebounceEnabled(GetInterface(session), std::addressof(out)));
+        R_ABORT_UNLESS(GetInterface(session)->GetDebounceEnabled(std::addressof(out)));
         return out;
     }
 
     void SetDebounceEnabled(GpioPadSession *session, bool en) {
-        R_ABORT_UNLESS(::gpioPadSetDebounceEnabled(GetInterface(session), en));
+        R_ABORT_UNLESS(GetInterface(session)->SetDebounceEnabled(en));
     }
 
     Result BindInterrupt(os::SystemEventType *event, GpioPadSession *session) {
-        ::Event ev;
-        R_TRY(::gpioPadBindInterrupt(GetInterface(session), std::addressof(ev)));
+        AMS_ASSERT(session->_event == nullptr);
 
-        os::AttachReadableHandleToSystemEvent(event, ev.revent, true, os::EventClearMode_ManualClear);
+        ams::sf::CopyHandle handle;
+        R_TRY(GetInterface(session)->BindInterrupt(std::addressof(handle)));
+
+        os::AttachReadableHandleToSystemEvent(event, handle.GetValue(), true, os::EventClearMode_ManualClear);
 
         session->_event = event;
         return ResultSuccess();
@@ -181,7 +188,7 @@ namespace ams::gpio {
     void UnbindInterrupt(GpioPadSession *session) {
         AMS_ASSERT(session->_event != nullptr);
 
-        R_ABORT_UNLESS(::gpioPadUnbindInterrupt(GetInterface(session)));
+        R_ABORT_UNLESS(GetInterface(session)->UnbindInterrupt());
 
         os::DestroySystemEvent(session->_event);
         session->_event = nullptr;
