@@ -15,8 +15,10 @@ endif
 
 endif
 
+ATMOSPHERE_BUILD_SETTINGS ?=
+
 export ATMOSPHERE_DEFINES  := -DATMOSPHERE
-export ATMOSPHERE_SETTINGS := -fPIE -g
+export ATMOSPHERE_SETTINGS := -fPIE -g $(ATMOSPHERE_BUILD_SETTINGS)
 export ATMOSPHERE_CFLAGS   := -Wall -ffunction-sections -fdata-sections -fno-strict-aliasing -fwrapv  \
                               -fno-asynchronous-unwind-tables -fno-unwind-tables -fno-stack-protector \
                               -Wno-format-truncation -Wno-format-zero-length -Wno-stringop-truncation
@@ -132,10 +134,15 @@ FIND_SOURCE_FILES=$(foreach dir,$1,$(filter-out $(notdir $(wildcard $(dir)/*.arc
                   $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES,$(dir),os,$(ATMOSPHERE_OS_NAME),$2)) \
                   $(foreach dir,$1,$(call FIND_SPECIFIC_SOURCE_FILES_EX,$(dir),cpu,$(ATMOSPHERE_CPU_NAME) $(ATMOSPHERE_CPU_EXTENSIONS),$2))
 
+ATMOSPHERE_GCH_IDENTIFIER ?= ams_placeholder_gch_identifier
+
 #---------------------------------------------------------------------------------
 # Rules for compiling pre-compiled headers
 #---------------------------------------------------------------------------------
-%.gch: %.hpp
-	@echo $<
-	$(CXX) -w -x c++-header -MMD -MP -MF $(DEPSDIR)/$*.d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
-	@cp $@ $(<).gch
+%.hpp.gch/$(ATMOSPHERE_GCH_IDENTIFIER): %.hpp | %.hpp.gch
+	$(SILENTMSG) Precompiling $(notdir $<) for $(ATMOSPHERE_GCH_IDENTIFIER)
+	$(SILENTCMD)$(CXX) -w -x c++-header -MMD -MP -MQ$@ -MF $(DEPSDIR)/$(notdir $*).d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+%.hpp.gch: %.hpp
+	$(SILENTMSG) Precompiling $(notdir $<)
+	$(SILENTCMD)$(CXX) -w -x c++-header -MMD -MP -MQ$@ -MF $(DEPSDIR)/$(notdir $*).d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
