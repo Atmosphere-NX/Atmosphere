@@ -82,6 +82,12 @@ $$(ATMOSPHERE_LIBRARY_DIR)/$(strip $2) : $$(ATMOSPHERE_LIBRARY_DIR) $$(ATMOSPHER
 	--no-print-directory -C $$(ATMOSPHERE_BUILD_DIR)/$(strip $1) \
 	-f $$(THIS_MAKEFILE)
 
+clean-$(strip $1):
+	@echo clean $(strip $1) ...
+	@rm -fr $$(ATMOSPHERE_BUILD_DIR)/$(strip $1) $$(ATMOSPHERE_LIBRARY_DIR)/$(strip $2)
+	@rm -fr $$(foreach hdr,$$(GCH_DIRS),$$(hdr)/$$(ATMOSPHERE_BOARD_NAME)_$$(ATMOSPHERE_ARCH_NAME)_$(strip $1))
+	@for i in $$(GCH_DIRS) $$(ATMOSPHERE_BUILD_DIR) $$(ATMOSPHERE_LIBRARY_DIR); do [ -d $$$$i ] && rmdir --ignore-fail-on-non-empty $$$$i || true; done
+
 endef
 
 $(eval $(call ATMOSPHERE_ADD_TARGET, release, $(TARGET).a, \
@@ -103,7 +109,7 @@ $(eval $(call ATMOSPHERE_ADD_TARGET, audit, $(TARGET)_audit.a, \
 ALL_GCH_IDENTIFIERS := $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),$(ATMOSPHERE_BOARD_NAME)_$(ATMOSPHERE_ARCH_NAME)_$(config))
 ALL_GCH_FILES       := $(foreach hdr,$(PRECOMPILED_HEADERS:.hpp=.hpp.gch),$(foreach id,$(ALL_GCH_IDENTIFIERS),$(hdr)/$(id)))
 
-.PHONY: clean all $(ATMOSPHERE_BUILD_CONFIGS)
+.PHONY: clean all $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),$(config) clean-$(config))
 
 $(ATMOSPHERE_LIBRARY_DIR) $(GCH_DIRS):
 	@[ -d $@ ] || mkdir -p $@

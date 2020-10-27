@@ -139,6 +139,6 @@ ATMOSPHERE_GCH_IDENTIFIER ?= ams_placeholder_gch_identifier
 #---------------------------------------------------------------------------------
 # Rules for compiling pre-compiled headers
 #---------------------------------------------------------------------------------
-%.hpp.gch/$(ATMOSPHERE_GCH_IDENTIFIER): %.hpp %.hpp.gch
+%.hpp.gch/$(ATMOSPHERE_GCH_IDENTIFIER): %.hpp | %.hpp.gch
 	$(SILENTMSG) Precompiling $(notdir $<) for $(ATMOSPHERE_GCH_IDENTIFIER)
 	$(SILENTCMD)$(CXX) -w -x c++-header -MMD -MP -MQ$@ -MF $(DEPSDIR)/$(notdir $*).d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
