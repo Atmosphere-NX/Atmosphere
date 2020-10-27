@@ -1,7 +1,9 @@
 #---------------------------------------------------------------------------------
 # pull in common atmosphere configuration
 #---------------------------------------------------------------------------------
-include  $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/../config/common.mk
+THIS_MAKEFILE     := $(abspath $(lastword $(MAKEFILE_LIST)))
+CURRENT_DIRECTORY := $(abspath $(dir $(THIS_MAKEFILE)))
+include $(CURRENT_DIRECTORY)/../config/common.mk
 
 #---------------------------------------------------------------------------------
 # pull in switch rules
@@ -15,7 +17,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
-PRECOMPILED_HEADERS := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))/include/stratosphere.hpp
+PRECOMPILED_HEADERS := $(CURRENT_DIRECTORY)/include/stratosphere.hpp
 
 DEFINES	    := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2
@@ -66,7 +68,7 @@ endif
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export GCH_FILES    :=	$(foreach hdr,$(PRECOMPILED_HEADERS:.hpp=.gch),$(notdir $(hdr)))
+export GCH_FILES    :=	$(PRECOMPILED_HEADERS:.hpp=.hpp.gch)
 export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
@@ -103,12 +105,12 @@ dist: dist-src dist-bin
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr release lib *.bz2 include/stratosphere.hpp.gch
+	@rm -fr release lib *.bz2 $(GCH_FILES)
 
 #---------------------------------------------------------------------------------
 else
 
-DEPENDS	:=	$(OFILES:.o=.d) $(GCH_FILES:.gch=.d)
+DEPENDS	:=	$(OFILES:.o=.d) $(foreach hdr,$(GCH_FILES:.gch=.d),$(notdir $(hdr)))
 
 #---------------------------------------------------------------------------------
 # main targets

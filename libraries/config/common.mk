@@ -142,3 +142,7 @@ ATMOSPHERE_GCH_IDENTIFIER ?= ams_placeholder_gch_identifier
 %.hpp.gch/$(ATMOSPHERE_GCH_IDENTIFIER): %.hpp | %.hpp.gch
 	$(SILENTMSG) Precompiling $(notdir $<) for $(ATMOSPHERE_GCH_IDENTIFIER)
 	$(SILENTCMD)$(CXX) -w -x c++-header -MMD -MP -MQ$@ -MF $(DEPSDIR)/$(notdir $*).d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
+
+%.hpp.gch: %.hpp
+	$(SILENTMSG) Precompiling $(notdir $<)
+	$(SILENTCMD)$(CXX) -w -x c++-header -MMD -MP -MQ$@ -MF $(DEPSDIR)/$(notdir $*).d $(CXXFLAGS) -c $< -o $@ $(ERROR_FILTER)
