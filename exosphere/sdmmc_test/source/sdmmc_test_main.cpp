@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "hwinit.h"
 
 namespace ams::sdmmc_test {
 
@@ -46,6 +47,54 @@ namespace ams::sdmmc_test {
     }
 
     void Main() {
+        /* Perform butchered hwinit. */
+        /* TODO: replace with simpler, non-C logic. */
+        nx_hwinit();
+
+        /* Clear output buffer for debug. */
+        std::memset((void *)0x40038000, 0xAA, 0x400);
+
+        /* Normally, these pins get configured by boot sysmodule during initial pinmux config. */
+        /* However, they're required to access the SD card. */
+        {
+            const uintptr_t apb_misc = dd::QueryIoMapping(0x70000000, 0x4000);
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_SDMMC1_CLK,  PINMUX_REG_BITS_ENUM(AUX_E_INPUT,             ENABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_PUPD,             PULL_DOWN),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_CLK_PM,       SDMMC1));
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_SDMMC1_CMD,  PINMUX_REG_BITS_ENUM(AUX_E_INPUT,             ENABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_PUPD,               PULL_UP),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_CMD_PM,       SDMMC1));
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_SDMMC1_DAT3, PINMUX_REG_BITS_ENUM(AUX_E_INPUT,             ENABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_PUPD,               PULL_UP),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_DAT3_PM,      SDMMC1));
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_SDMMC1_DAT2, PINMUX_REG_BITS_ENUM(AUX_E_INPUT,             ENABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_PUPD,               PULL_UP),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_DAT2_PM,      SDMMC1));
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_SDMMC1_DAT1, PINMUX_REG_BITS_ENUM(AUX_E_INPUT,             ENABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_PUPD,               PULL_UP),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_DAT1_PM,      SDMMC1));
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_SDMMC1_DAT0, PINMUX_REG_BITS_ENUM(AUX_E_INPUT,             ENABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_PUPD,               PULL_UP),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_DAT0_PM,      SDMMC1));
+
+            reg::ReadWrite(apb_misc + PINMUX_AUX_DMIC3_CLK,   PINMUX_REG_BITS_ENUM(AUX_E_OD,               DISABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_E_INPUT,            DISABLE),
+                                                              PINMUX_REG_BITS_ENUM(AUX_TRISTATE,       PASSTHROUGH),
+                                                              PINMUX_REG_BITS_ENUM(AUX_SDMMC1_DAT0_PM,       RSVD2));
+        }
+
         /* Debug signaler. */
         volatile u32 * const DEBUG = reinterpret_cast<volatile u32 *>(0x4003C000);
         DEBUG[0] = 0;
@@ -61,8 +110,6 @@ namespace ams::sdmmc_test {
         Result result = sdmmc::Activate(Port);
         DEBUG[0] = 3;
         CheckResult(result);
-
-        PmcMainReboot();
 
         /* Read the first two sectors from disk. */
         void * const sector_dst = reinterpret_cast<void *>(0x40038000);
