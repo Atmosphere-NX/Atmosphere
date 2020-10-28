@@ -17,8 +17,6 @@
 #include "boot_pmc_wrapper.hpp"
 #include "boot_wake_pins.hpp"
 
-#include "boot_registers_pmc.hpp"
-
 namespace ams::boot {
 
     /* Include configuration into anonymous namespace. */
@@ -43,7 +41,7 @@ namespace ams::boot {
 
         /* Helpers. */
         void UpdatePmcControlBit(const u32 reg_offset, const u32 mask_val, const bool flag) {
-            WritePmcRegister(PmcBase + reg_offset, flag ? UINT32_MAX : 0, mask_val);
+            WritePmcRegister(PmcBase + reg_offset, flag ? std::numeric_limits<u32>::max() : 0, mask_val);
             ReadPmcRegister(PmcBase + reg_offset);
         }
 

@@ -18,7 +18,7 @@
 #include <switch.h>
 #include <stratosphere.hpp>
 
-namespace ams::gpio {
+namespace ams::boot::gpio {
 
     /* GPIO Utilities. */
     u32 Configure(u32 gpio_pad_name);

@@ -123,7 +123,7 @@ int main(int argc, char **argv)
     boot::ChangeGpioVoltageTo1_8v();
 
     /* Setup GPIO. */
-    gpio::SetInitialConfiguration();
+    boot::gpio::SetInitialConfiguration();
 
     /* Check USB PLL/UTMIP clock. */
     boot::CheckClock();

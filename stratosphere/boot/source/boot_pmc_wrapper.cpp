@@ -23,15 +23,15 @@ namespace ams::boot {
         /* Convenience definitions. */
         constexpr u32 SmcFunctionId_AtmosphereReadWriteRegister = 0xF0000002;
 
-        constexpr u32 PmcPhysStart = 0x7000E400;
-        constexpr u32 PmcPhysEnd = 0x7000EFFF;
+        constexpr dd::PhysicalAddress PmcPhysStart = 0x7000E400;
+        constexpr dd::PhysicalAddress PmcPhysLast  = 0x7000EFFF;
 
         /* Helpers. */
-        bool IsValidPmcAddress(u32 phys_addr) {
-            return (phys_addr & 3) == 0 && PmcPhysStart <= phys_addr && phys_addr <= PmcPhysEnd;
+        bool IsValidPmcAddress(dd::PhysicalAddress phys_addr) {
+            return util::IsAligned(phys_addr, alignof(u32)) && PmcPhysStart <= phys_addr && phys_addr <= PmcPhysLast;
         }
 
-        inline u32 ReadWriteRegisterImpl(uintptr_t phys_addr, u32 value, u32 mask) {
+        inline u32 ReadWriteRegisterImpl(dd::PhysicalAddress phys_addr, u32 value, u32 mask) {
             u32 out_value;
             R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::AtmosphereReadWriteRegister(phys_addr, mask, value, &out_value)));
             return out_value;
@@ -39,12 +39,12 @@ namespace ams::boot {
 
     }
 
-    u32 ReadPmcRegister(u32 phys_addr) {
+    u32 ReadPmcRegister(dd::PhysicalAddress phys_addr) {
         AMS_ABORT_UNLESS(IsValidPmcAddress(phys_addr));
         return ReadWriteRegisterImpl(phys_addr, 0, 0);
     }
 
-    void WritePmcRegister(u32 phys_addr, u32 value, u32 mask) {
+    void WritePmcRegister(dd::PhysicalAddress phys_addr, u32 value, u32 mask) {
         AMS_ABORT_UNLESS(IsValidPmcAddress(phys_addr));
         ReadWriteRegisterImpl(phys_addr, value, mask);
     }

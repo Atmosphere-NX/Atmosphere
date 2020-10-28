@@ -48,6 +48,11 @@
 #define PINMUX_AUX_UART3_RTS      (0x310C)
 #define PINMUX_AUX_UART3_CTS      (0x3110)
 #define PINMUX_AUX_DVFS_PWM       (0x3184)
+#define PINMUX_AUX_NFC_EN         (0x31D0)
+#define PINMUX_AUX_NFC_INT        (0x31D4)
+#define PINMUX_AUX_LCD_BL_PWM     (0x31FC)
+#define PINMUX_AUX_LCD_BL_EN      (0x3200)
+#define PINMUX_AUX_LCD_RST        (0x3204)
 #define PINMUX_AUX_GPIO_PA6       (0x3244)
 
 #define PINMUX_REG_BITS_MASK(NAME)                                      REG_NAMED_BITS_MASK    (PINMUX, NAME)

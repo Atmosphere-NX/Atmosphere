@@ -18,11 +18,7 @@
 #include "boot_i2c_utils.hpp"
 #include "boot_pmc_wrapper.hpp"
 
-#include "boot_registers_clkrst.hpp"
 #include "boot_registers_di.hpp"
-#include "boot_registers_gpio.hpp"
-#include "boot_registers_pinmux.hpp"
-#include "boot_registers_pmc.hpp"
 
 namespace ams::boot {
 
@@ -60,6 +56,14 @@ namespace ams::boot {
         constexpr s32 DsiWaitForCommandMilliSecondsMax        = 250;
         constexpr s32 DsiWaitForCommandCompletionMilliSeconds = 5;
         constexpr s32 DsiWaitForHostControlMilliSecondsMax    = 150;
+
+        constexpr size_t GPIO_PORT3_CNF_0 = 0x200;
+        constexpr size_t GPIO_PORT3_OE_0  = 0x210;
+        constexpr size_t GPIO_PORT3_OUT_0 = 0x220;
+
+        constexpr size_t GPIO_PORT6_CNF_1 = 0x504;
+        constexpr size_t GPIO_PORT6_OE_1  = 0x514;
+        constexpr size_t GPIO_PORT6_OUT_1 = 0x524;
 
         /* Types. */
 
@@ -216,15 +220,15 @@ namespace ams::boot {
         reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_SOURCE_DSIA_LP, 0xA);
 
         /* DPD idle. */
-        WritePmcRegister(PmcBase + APBDEV_PMC_IO_DPD_REQ, 0x40000000);
+        WritePmcRegister(PmcBase + APBDEV_PMC_IO_DPD_REQ,  0x40000000);
         WritePmcRegister(PmcBase + APBDEV_PMC_IO_DPD2_REQ, 0x40000000);
 
         /* Configure LCD pinmux tristate + passthrough. */
-        reg::ClearBits(g_apb_misc_regs + 0x3000 + PINMUX_AUX_NFC_EN, PINMUX_TRISTATE);
-        reg::ClearBits(g_apb_misc_regs + 0x3000 + PINMUX_AUX_NFC_INT, PINMUX_TRISTATE);
-        reg::ClearBits(g_apb_misc_regs + 0x3000 + PINMUX_AUX_LCD_BL_PWM, PINMUX_TRISTATE);
-        reg::ClearBits(g_apb_misc_regs + 0x3000 + PINMUX_AUX_LCD_BL_EN, PINMUX_TRISTATE);
-        reg::ClearBits(g_apb_misc_regs + 0x3000 + PINMUX_AUX_LCD_RST, PINMUX_TRISTATE);
+        reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_NFC_EN,     reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+        reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_NFC_INT,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+        reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+        reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_EN,  reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+        reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_RST,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
 
         /* Configure LCD power, VDD. */
         reg::SetBits(g_gpio_regs + GPIO_PORT3_CNF_0, 0x3);
@@ -493,8 +497,8 @@ namespace ams::boot {
 
         /* Final LCD config for PWM */
         reg::ClearBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x1);
-        reg::SetBits(g_apb_misc_regs + 0x3000 + PINMUX_AUX_LCD_BL_PWM, PINMUX_TRISTATE);
-        reg::ReadWrite(g_apb_misc_regs + 0x3000 + PINMUX_AUX_LCD_BL_PWM, 1, 0x3);
+        reg::SetBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+        reg::ReadWrite(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, 1, 0x3);
 
         /* Unmap framebuffer from DC virtual address space. */
         FinalizeFrameBuffer();
