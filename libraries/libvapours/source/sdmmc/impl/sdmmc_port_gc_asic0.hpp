@@ -17,10 +17,12 @@
 #include <vapours.hpp>
 #include "sdmmc_i_host_controller.hpp"
 #include "sdmmc_i_device_accessor.hpp"
+#include "sdmmc_gc_asic_device_accessor.hpp"
 
 namespace ams::sdmmc::impl {
 
     IHostController *GetHostControllerOfPortGcAsic0();
     IDeviceAccessor *GetDeviceAccessorOfPortGcAsic0();
+    GcAsicDeviceAccessor *GetGcAsicDeviceAccessorOfPortGcAsic0();
 
 }

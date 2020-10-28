@@ -590,7 +590,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_MMC_DEVICE_MUTEX();
 
         /* If the device is awake, we don't need to do anything. */
-        if (!this->mmc_device.IsAwake()) {
+        if (this->mmc_device.IsAwake()) {
             return;
         }
 

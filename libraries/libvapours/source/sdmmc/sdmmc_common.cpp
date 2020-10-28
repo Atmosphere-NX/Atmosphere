@@ -39,7 +39,7 @@ namespace ams::sdmmc {
             switch (port) {
                 case Port_Mmc0:    host_controller = impl::GetHostControllerOfPortMmc0();    break;
                 case Port_SdCard0: host_controller = impl::GetHostControllerOfPortSdCard0(); break;
-                //TODO: case Port_GcAsic0: host_controller = impl::GetHostControllerOfPortGcAsic0(); break;
+                case Port_GcAsic0: host_controller = impl::GetHostControllerOfPortGcAsic0(); break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
 
@@ -54,7 +54,7 @@ namespace ams::sdmmc {
             switch (port) {
                 case Port_Mmc0:    device_accessor = impl::GetDeviceAccessorOfPortMmc0();    break;
                 case Port_SdCard0: device_accessor = impl::GetDeviceAccessorOfPortSdCard0(); break;
-                //TODO: case Port_GcAsic0: device_accessor = impl::GetDeviceAccessorOfPortGcAsic0(); break;
+                case Port_GcAsic0: device_accessor = impl::GetDeviceAccessorOfPortGcAsic0(); break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
 

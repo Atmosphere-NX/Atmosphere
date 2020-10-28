@@ -22,7 +22,7 @@
 #else
 #include <vapours.hpp>
 #endif
-#include "sdmmc_port_mmc0.hpp"
+#include "sdmmc_port_gc_asic0.hpp"
 #include "sdmmc_select_sdmmc_controller.hpp"
 
 
@@ -31,11 +31,20 @@ namespace ams::sdmmc::impl {
     namespace {
 
         SdmmcControllerForPortGcAsic0 g_gc_asic0_host_controller;
+        GcAsicDeviceAccessor g_gc_asic0_device_accessor(std::addressof(g_gc_asic0_host_controller));
 
     }
 
     IHostController *GetHostControllerOfPortGcAsic0() {
         return std::addressof(g_gc_asic0_host_controller);
+    }
+
+    IDeviceAccessor *GetDeviceAccessorOfPortGcAsic0() {
+        return std::addressof(g_gc_asic0_device_accessor);
+    }
+
+    GcAsicDeviceAccessor *GetGcAsicDeviceAccessorOfPortGcAsic0() {
+        return std::addressof(g_gc_asic0_device_accessor);
     }
 
 }

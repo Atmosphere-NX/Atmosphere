@@ -885,7 +885,7 @@ namespace ams::sdmmc::impl {
         AMS_SDMMC_LOCK_SD_CARD_DEVICE_MUTEX();
 
         /* If the device is awake, we don't need to do anything. */
-        if (!this->sd_card_device.IsAwake()) {
+        if (this->sd_card_device.IsAwake()) {
             return;
         }
 
