@@ -262,7 +262,7 @@ namespace ams::sdmmc::impl {
         this->SetSlewCodes();
 
         /* Set vref sel. */
-        reg::ReadWrite(this->sdmmc_registers->sdmemcomppadctrl, SD_REG_BITS_VALUE(SDMEMCOMPPADCTRL_SDMMC2TMC_CFG_SDMEMCOMP_VREF_SEL, this->GetOutboundTapValue()));
+        reg::ReadWrite(this->sdmmc_registers->sdmemcomppadctrl, SD_REG_BITS_VALUE(SDMEMCOMPPADCTRL_SDMMC2TMC_CFG_SDMEMCOMP_VREF_SEL, this->GetVrefSelValue()));
 
         /* Perform drive strength calibration at the new power. */
         this->SetDriveCodeOffsets(bus_power);
