@@ -13,7 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
+#else
 #include <vapours.hpp>
+#endif
 #include "impl/sdmmc_i_host_controller.hpp"
 #include "impl/sdmmc_i_device_accessor.hpp"
 #include "impl/sdmmc_clock_reset_controller.hpp"
@@ -30,7 +38,7 @@ namespace ams::sdmmc {
             impl::IHostController *host_controller = nullptr;
             switch (port) {
                 case Port_Mmc0:    host_controller = impl::GetHostControllerOfPortMmc0();    break;
-                //TODO: case Port_SdCard0: host_controller = impl::GetHostControllerOfPortSdCard0(); break;
+                case Port_SdCard0: host_controller = impl::GetHostControllerOfPortSdCard0(); break;
                 //TODO: case Port_GcAsic0: host_controller = impl::GetHostControllerOfPortGcAsic0(); break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
@@ -45,7 +53,7 @@ namespace ams::sdmmc {
             impl::IDeviceAccessor *device_accessor = nullptr;
             switch (port) {
                 case Port_Mmc0:    device_accessor = impl::GetDeviceAccessorOfPortMmc0();    break;
-                //TODO: case Port_SdCard0: device_accessor = impl::GetDeviceAccessorOfPortSdCard0(); break;
+                case Port_SdCard0: device_accessor = impl::GetDeviceAccessorOfPortSdCard0(); break;
                 //TODO: case Port_GcAsic0: device_accessor = impl::GetDeviceAccessorOfPortGcAsic0(); break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }

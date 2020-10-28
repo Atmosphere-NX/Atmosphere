@@ -13,7 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
+#else
 #include <vapours.hpp>
+#endif
 #if defined(AMS_SDMMC_USE_SD_CARD_DETECTOR)
 #include "sdmmc_device_detector.hpp"
 

@@ -21,6 +21,7 @@ namespace ams::sdmmc {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(24);
 
+    R_DEFINE_ERROR_RESULT(NoDevice,      1);
     R_DEFINE_ERROR_RESULT(NotActivated,  2);
     R_DEFINE_ERROR_RESULT(DeviceRemoved, 3);
     R_DEFINE_ERROR_RESULT(NotAwakened,   4);
@@ -57,20 +58,32 @@ namespace ams::sdmmc {
             R_DEFINE_ERROR_RESULT(DeviceStatusWpEraseSkip,       62);
             R_DEFINE_ERROR_RESULT(DeviceStatusEraseReset,        63);
             R_DEFINE_ERROR_RESULT(DeviceStatusSwitchError,       64);
-        R_DEFINE_ERROR_RESULT(UnexpectedDeviceState,             72);
-        R_DEFINE_ERROR_RESULT(UnexpectedDeviceCsdValue,          73);
-        R_DEFINE_ERROR_RESULT(AbortTransactionSoftwareTimeout,   74);
-        R_DEFINE_ERROR_RESULT(CommandInhibitCmdSoftwareTimeout,  75);
-        R_DEFINE_ERROR_RESULT(CommandInhibitDatSoftwareTimeout,  76);
-        R_DEFINE_ERROR_RESULT(BusySoftwareTimeout,               77);
-        R_DEFINE_ERROR_RESULT(IssueTuningCommandSoftwareTimeout, 78);
-        R_DEFINE_ERROR_RESULT(TuningFailed,                      79);
-        R_DEFINE_ERROR_RESULT(MmcInitializationSoftwareTimeout,  80);
-        R_DEFINE_ERROR_RESULT(MmcNotSupportExtendedCsd,          81);
-        R_DEFINE_ERROR_RESULT(UnexpectedMmcExtendedCsdValue,     82);
-        R_DEFINE_ERROR_RESULT(MmcEraseSoftwareTimeout,           83);
-        R_DEFINE_ERROR_RESULT(SdCardNotReadyToVoltageSwitch,     96);
-        R_DEFINE_ERROR_RESULT(SdCardNotCompleteVoltageSwitch,    97);
+        R_DEFINE_ERROR_RESULT(UnexpectedDeviceState,                72);
+        R_DEFINE_ERROR_RESULT(UnexpectedDeviceCsdValue,             73);
+        R_DEFINE_ERROR_RESULT(AbortTransactionSoftwareTimeout,      74);
+        R_DEFINE_ERROR_RESULT(CommandInhibitCmdSoftwareTimeout,     75);
+        R_DEFINE_ERROR_RESULT(CommandInhibitDatSoftwareTimeout,     76);
+        R_DEFINE_ERROR_RESULT(BusySoftwareTimeout,                  77);
+        R_DEFINE_ERROR_RESULT(IssueTuningCommandSoftwareTimeout,    78);
+        R_DEFINE_ERROR_RESULT(TuningFailed,                         79);
+        R_DEFINE_ERROR_RESULT(MmcInitializationSoftwareTimeout,     80);
+        R_DEFINE_ERROR_RESULT(MmcNotSupportExtendedCsd,             81);
+        R_DEFINE_ERROR_RESULT(UnexpectedMmcExtendedCsdValue,        82);
+        R_DEFINE_ERROR_RESULT(MmcEraseSoftwareTimeout,              83);
+        R_DEFINE_ERROR_RESULT(SdCardValidationError,                84);
+        R_DEFINE_ERROR_RESULT(SdCardInitializationSoftwareTimeout,  85);
+        R_DEFINE_ERROR_RESULT(SdCardGetValidRcaSoftwareTimeout,     86);
+        R_DEFINE_ERROR_RESULT(UnexpectedSdCardAcmdDisabled,         87);
+        R_DEFINE_ERROR_RESULT(SdCardNotSupportSwitchFunctionStatus, 88);
+        R_DEFINE_ERROR_RESULT(UnexpectedSdCardSwitchFunctionStatus, 89);
+        R_DEFINE_ERROR_RESULT(SdCardNotSupportAccessMode,           90);
+        R_DEFINE_ERROR_RESULT(SdCardNot4BitBusWidthAtUhsIMode,      91);
+        R_DEFINE_ERROR_RESULT(SdCardNotSupportSdr104AndSdr50,       92);
+        R_DEFINE_ERROR_RESULT(SdCardCannotSwitchAccessMode,         93);
+        R_DEFINE_ERROR_RESULT(SdCardFailedSwitchAccessMode,         94);
+        R_DEFINE_ERROR_RESULT(SdCardUnacceptableCurrentConsumption, 95);
+        R_DEFINE_ERROR_RESULT(SdCardNotReadyToVoltageSwitch,        96);
+        R_DEFINE_ERROR_RESULT(SdCardNotCompleteVoltageSwitch,       97);
 
     R_DEFINE_ERROR_RANGE(HostControllerUnexpected, 128, 158);
         R_DEFINE_ERROR_RESULT(InternalClockStableSoftwareTimeout,       129);

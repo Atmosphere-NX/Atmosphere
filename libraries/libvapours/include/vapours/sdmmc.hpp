@@ -24,3 +24,4 @@
 #include <vapours/sdmmc/sdmmc_build_config.hpp>
 #include <vapours/sdmmc/sdmmc_common.hpp>
 #include <vapours/sdmmc/sdmmc_mmc.hpp>
+#include <vapours/sdmmc/sdmmc_sd_card.hpp>

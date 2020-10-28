@@ -33,6 +33,7 @@
     //#define AMS_SDMMC_USE_OS_TIMER
     #define AMS_SDMMC_USE_UTIL_TIMER
     //#define AMS_SDMMC_ENABLE_MMC_HS400
+    //#define AMS_SDMMC_ENABLE_SD_UHS_I
     //#define AMS_SDMMC_SET_PLLC4_BASE
     //#define AMS_SDMMC_USE_SD_CARD_DETECTOR
 
@@ -47,6 +48,7 @@
     //#define AMS_SDMMC_USE_OS_TIMER
     #define AMS_SDMMC_USE_UTIL_TIMER
     //#define AMS_SDMMC_ENABLE_MMC_HS400
+    //#define AMS_SDMMC_ENABLE_SD_UHS_I
     //#define AMS_SDMMC_SET_PLLC4_BASE
     //#define AMS_SDMMC_USE_SD_CARD_DETECTOR
 
@@ -61,6 +63,7 @@
     #define AMS_SDMMC_USE_OS_TIMER
     //#define AMS_SDMMC_USE_UTIL_TIMER
     #define AMS_SDMMC_ENABLE_MMC_HS400
+    #define AMS_SDMMC_ENABLE_SD_UHS_I
     #define AMS_SDMMC_SET_PLLC4_BASE
     #define AMS_SDMMC_USE_SD_CARD_DETECTOR
 

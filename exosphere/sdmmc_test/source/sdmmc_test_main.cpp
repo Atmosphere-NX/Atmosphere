@@ -21,8 +21,8 @@ namespace ams::sdmmc_test {
 
         constexpr inline const uintptr_t PMC = secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
 
-        constexpr inline auto Port = sdmmc::Port_Mmc0;
-        alignas(8) constinit u8 g_mmc_work_buffer[sdmmc::MmcWorkBufferSize];
+        constexpr inline auto Port = sdmmc::Port_SdCard0;
+        alignas(8) constinit u8 g_sd_work_buffer[sdmmc::SdCardWorkBufferSize];
 
         constexpr inline u32 SectorIndex = 0;
         constexpr inline u32 SectorCount = 2;
@@ -55,31 +55,28 @@ namespace ams::sdmmc_test {
         sdmmc::Initialize(Port);
         DEBUG[0] = 1;
 
-        sdmmc::SetMmcWorkBuffer(Port, g_mmc_work_buffer, sizeof(g_mmc_work_buffer));
+        sdmmc::SetSdCardWorkBuffer(Port, g_sd_work_buffer, sizeof(g_sd_work_buffer));
         DEBUG[0] = 2;
 
         Result result = sdmmc::Activate(Port);
         DEBUG[0] = 3;
         CheckResult(result);
 
-        /* Select user data partition. */
-        result = sdmmc::SelectMmcPartition(Port, sdmmc::MmcPartition_UserData);
-        DEBUG[0] = 4;
-        CheckResult(result);
+        PmcMainReboot();
 
         /* Read the first two sectors from disk. */
         void * const sector_dst = reinterpret_cast<void *>(0x40038000);
         result = sdmmc::Read(sector_dst, SectorCount * sdmmc::SectorSize, Port, SectorIndex, SectorCount);
-        DEBUG[0] = 5;
+        DEBUG[0] = 4;
         CheckResult(result);
 
         /* Get the connection status. */
         sdmmc::SpeedMode speed_mode;
         sdmmc::BusWidth bus_width;
-        result = sdmmc::CheckMmcConnection(std::addressof(speed_mode), std::addressof(bus_width), Port);
+        result = sdmmc::CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width), Port);
 
         /* Save status for debug. */
-        DEBUG[0] = 6;
+        DEBUG[0] = 5;
         DEBUG[1] = result.GetValue();
         DEBUG[2] = static_cast<u32>(speed_mode);
         DEBUG[3] = static_cast<u32>(bus_width);

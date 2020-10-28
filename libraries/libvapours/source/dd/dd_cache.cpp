@@ -15,6 +15,10 @@
  */
 #if defined(ATMOSPHERE_IS_STRATOSPHERE)
 #include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
 #else
 #include <vapours.hpp>
 #endif

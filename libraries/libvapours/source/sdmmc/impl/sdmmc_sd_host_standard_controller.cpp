@@ -13,7 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
+#else
 #include <vapours.hpp>
+#endif
 #include "sdmmc_sd_host_standard_controller.hpp"
 #include "sdmmc_timer.hpp"
 
@@ -392,9 +400,9 @@ namespace ams::sdmmc::impl {
 
     Result SdHostStandardController::CheckAndClearInterruptStatus(volatile u16 *out_normal_int_status, u16 wait_mask) {
         /* Read the statuses. */
-        volatile u16 normal_int_status   = this->registers->normal_int_status;
-        volatile u16 error_int_status    = this->registers->error_int_status;
-        volatile u16 auto_cmd_err_status = this->registers->acmd12_err;
+        volatile u16 normal_int_status   = reg::Read(this->registers->normal_int_status);
+        volatile u16 error_int_status    = reg::Read(this->registers->error_int_status);
+        volatile u16 auto_cmd_err_status = reg::Read(this->registers->acmd12_err);
 
         /* Set the output status, if necessary. */
         if (out_normal_int_status != nullptr) {

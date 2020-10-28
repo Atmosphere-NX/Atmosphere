@@ -13,7 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
+#else
 #include <vapours.hpp>
+#endif
 #include "sdmmc_port_mmc0.hpp"
 #include "sdmmc_select_sdmmc_controller.hpp"
 #include "sdmmc_base_device_accessor.hpp"

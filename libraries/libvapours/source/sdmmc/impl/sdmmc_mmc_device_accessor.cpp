@@ -13,7 +13,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
+#else
 #include <vapours.hpp>
+#endif
 #include "sdmmc_mmc_device_accessor.hpp"
 #include "sdmmc_timer.hpp"
 
@@ -231,7 +239,7 @@ namespace ams::sdmmc::impl {
         /* Be prepared to wait up to 1.5 seconds to change state. */
         ManualTimer timer(1500);
         while (true) {
-            /* Gte the ocr, and check if we're done. */
+            /* Get the ocr, and check if we're done. */
             u32 ocr;
             R_TRY(this->IssueCommandSendOpCond(std::addressof(ocr), bus_power));
             if ((ocr & OcrCardPowerUpStatus) != 0) {
@@ -467,7 +475,7 @@ namespace ams::sdmmc::impl {
             if (R_SUCCEEDED(result)) {
                 /* If we previously failed to start up the device, log the error correction. */
                 if (i != 0) {
-                    BaseDeviceAccessor::PushErrorLog(true, "S %d %d:0", this->max_bus_width, this->max_speed_mode, 0);
+                    BaseDeviceAccessor::PushErrorLog(true, "S %d %d:0", this->max_bus_width, this->max_speed_mode);
                     BaseDeviceAccessor::IncrementNumActivationErrorCorrections();
                 }
 
@@ -586,7 +594,7 @@ namespace ams::sdmmc::impl {
             return;
         }
 
-        /* Wake the device, it we need to.*/
+        /* Wake the host controller, if we need to.*/
         if (this->mmc_device.IsActive()) {
             const Result result = BaseDeviceAccessor::GetHostController()->Awaken();
             if (R_FAILED(result)) {
@@ -594,6 +602,7 @@ namespace ams::sdmmc::impl {
             }
         }
 
+        /* Wake the device. */
         this->mmc_device.Awaken();
     }
 
