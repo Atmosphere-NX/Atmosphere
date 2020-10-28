@@ -18,7 +18,6 @@
 #include "exception_handlers.h"
 #include "panic.h"
 #include "hwinit.h"
-#include "di.h"
 #include "timers.h"
 #include "fs_utils.h"
 #include "stage2.h"
@@ -31,7 +30,6 @@
 
 extern void (*__program_exit_callback)(int rc);
 
-static uint32_t g_framebuffer[1280*768] __attribute__((section(".framebuffer"))) = {0};
 static char g_bct0_buffer[BCTO_MAX_SIZE] __attribute__((section(".dram"))) = {0};
 
 #define DEFAULT_BCT0 \
@@ -69,29 +67,6 @@ static const char *load_config(void) {
     }
 
     return bct0;
-}
-
-static void setup_display(void) {
-    /* Zero-fill the framebuffer and register it as printk provider. */
-    video_init(g_framebuffer);
-
-    /* Initialize the display. */
-    display_init();
-
-    /* Set the framebuffer. */
-    display_init_framebuffer(g_framebuffer);
-
-    /* Turn on the backlight after initializing the lfb */
-    /* to avoid flickering. */
-    display_backlight(true);
-}
-
-static void cleanup_display(void) {
-    /* Turn off the backlight. */
-    display_backlight(false);
-
-    /* Terminate the display. */
-    display_end();
 }
 
 static void setup_env(void) {
@@ -140,12 +115,12 @@ int main(void) {
 
     if (bct0.log_level != SCREEN_LOG_LEVEL_NONE) {
         /* Initialize the display for debugging. */
-        setup_display();
+        log_setup_display();
     }
 
     /* Say hello. */
     print(SCREEN_LOG_LEVEL_DEBUG | SCREEN_LOG_LEVEL_NO_PREFIX, "Welcome to Atmosph\xe8re Fus\xe9" "e!\n");
-    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", g_framebuffer);
+    print(SCREEN_LOG_LEVEL_DEBUG, "Using color linear framebuffer at 0x%p!\n", log_get_display_framebuffer());
 
     /* Run the MTC binary. */
     if (!stage2_run_mtc(&bct0)) {
@@ -174,7 +149,7 @@ int main(void) {
         mdelay(1000);
 
         /* Terminate the display for debugging. */
-        cleanup_display();
+        log_cleanup_display();
     }
 
     /* Finally, after the cleanup routines (__libc_fini_array, etc.) are called, jump to Stage2. */

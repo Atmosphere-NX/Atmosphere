@@ -36,6 +36,10 @@ extern ScreenLogLevel g_screen_log_level;
 
 void log_set_log_level(ScreenLogLevel screen_log_level);
 ScreenLogLevel log_get_log_level();
+void log_setup_display();
+void log_cleanup_display();
+void *log_get_display_framebuffer();
+
 void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args);
 void print(ScreenLogLevel screen_log_level, const char* fmt, ...);
 
