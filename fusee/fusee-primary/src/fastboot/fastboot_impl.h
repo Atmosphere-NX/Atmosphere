@@ -18,6 +18,8 @@
 
 #include<stddef.h>
 
+#include "../lib/miniz.h"
+
 namespace ams {
 
     namespace fastboot {
@@ -38,10 +40,16 @@ namespace ams {
 
             enum class Action {
                 Invalid,
+                FlashAms,
             } current_action;
         
             union {
-                /* Actions */
+                struct {
+                    mz_zip_archive zip;
+                    mz_uint num_files;
+                    mz_uint file_index;
+                    const char *error;
+                } flash_ams;
             };
 
             /* Commands */
@@ -53,6 +61,7 @@ namespace ams {
             Result OemCRC32(const char *arg);
 
             /* Continuations */
+            Result ContinueFlashAms();
         };
         
     } // namespace fastboot

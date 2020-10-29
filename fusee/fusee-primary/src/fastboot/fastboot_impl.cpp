@@ -17,6 +17,7 @@
 #include "fastboot.h"
 #include "fastboot_gadget.h"
 
+#include "../lib/miniz.h"
 extern "C" {
 #include "../lib/log.h"
 #include "../utils.h"
@@ -73,6 +74,39 @@ struct android_boot_image_v2 {
     uint32_t dtb_size;
     uint64_t dtb_addr;
 } __attribute__((packed));
+
+/* Simple bump heap for zip extraction. */
+struct MzHeap {
+    public:
+    
+    static void Reset() {
+        heap_head = heap;
+    }
+
+    static void *Alloc(void *opaque, size_t items, size_t size) {
+        if (heap_head + items * size > heap + sizeof(heap)) {
+            return nullptr;
+        } else {
+            uint8_t *ret = heap_head;
+            heap_head+= items * size;
+            return ret;
+        }
+    }
+
+    static void Free(void *opaque, void *addr) {
+        /* No-op. */
+    }
+
+    static void *Realloc(void *opaque, void *addr, size_t items, size_t size) {
+        void *new_allocation = Alloc(opaque, items, size);
+        memmove(new_allocation, addr, items * size);
+        return new_allocation;
+    }
+    
+    private:
+    static inline uint8_t heap[8 * 1024 * 1024] __attribute__((section(".dram")));
+    static inline uint8_t *heap_head;
+};
 
 namespace ams {
 
@@ -157,7 +191,28 @@ namespace ams {
         }
 
         Result FastbootImpl::Flash(const char *argument) {
-            return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "unknown partition");
+            if (!strcmp(argument, "ams")) {
+                memset(&this->flash_ams.zip, 0, sizeof(this->flash_ams.zip));
+                this->flash_ams.zip.m_pAlloc = &MzHeap::Alloc;
+                this->flash_ams.zip.m_pFree = &MzHeap::Free;
+                this->flash_ams.zip.m_pRealloc = &MzHeap::Realloc;
+            
+                MzHeap::Reset();
+
+                if (!mz_zip_reader_init_mem(&this->flash_ams.zip, this->gadget.GetLastDownloadBuffer(), this->gadget.GetLastDownloadSize(), 0)) {
+                    return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "failed to initialize zip reader");
+                }
+
+                this->flash_ams.num_files = mz_zip_reader_get_num_files(&this->flash_ams.zip);
+                this->flash_ams.file_index = 0;
+                this->flash_ams.error = nullptr;
+
+                this->current_action = Action::FlashAms;
+            
+                return this->ContinueFlashAms();
+            } else {
+                return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "unknown partition");
+            }
         }
 
         Result FastbootImpl::Reboot(const char *argment) {
@@ -221,7 +276,77 @@ namespace ams {
             default:
             case Action::Invalid:
                 fatal_error("fastboot implementation has invalid current action");
+            case Action::FlashAms:
+                return this->ContinueFlashAms();
             }
+        }
+
+        namespace {
+            size_t flash_ams_mz_extract_callback(void *opaque, mz_uint64 file_ofs, const void *buf, size_t n) {
+                FIL *f = (FIL*) opaque;
+
+                if (f_lseek(f, file_ofs) != FR_OK) {
+                    return 0;
+                }
+
+                UINT bw;
+                if (f_write(f, buf, n, &bw) != FR_OK) {
+                    return 0;
+                }
+
+                return bw;
+            }
+        } // anonymous namespace
+    
+        Result FastbootImpl::ContinueFlashAms() {
+            if (this->flash_ams.error != nullptr) {
+                return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, this->flash_ams.error);
+            }
+            
+            if (this->flash_ams.file_index == this->flash_ams.num_files) {
+                return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::OKAY, "");
+            }
+
+            mz_uint file_index = this->flash_ams.file_index++;
+            static char filename_buffer[261];
+            mz_zip_reader_get_filename(&this->flash_ams.zip, file_index, filename_buffer, sizeof(filename_buffer));
+
+            R_TRY(this->gadget.SendResponse(ResponseDisposition::Continue, ResponseToken::INFO, "(%d/%d): %s", file_index + 1, this->flash_ams.num_files, filename_buffer));
+
+            if (mz_zip_reader_is_file_a_directory(&this->flash_ams.zip, file_index)) {
+                size_t len = strlen(filename_buffer);
+                if (filename_buffer[len-1] == '/') {
+                    /* FatFS needs us to trim trailing slash on directories. */
+                    filename_buffer[len-1] = '\0';
+                }
+                        
+                FRESULT r = f_mkdir(filename_buffer);
+                if (r != FR_OK && r != FR_EXIST) {
+                    this->flash_ams.error = "failed to create directory";
+                    return ResultSuccess();
+                }
+            } else {
+                FIL f;
+                if (f_open(&f, filename_buffer, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {
+                    this->flash_ams.error = "failed to open file";
+                    return ResultSuccess();
+                }
+
+                f_sync(&f);
+
+                if (!mz_zip_reader_extract_to_callback(&this->flash_ams.zip, file_index, flash_ams_mz_extract_callback, &f, 0)) {
+                    this->flash_ams.error = "failed to extract file";
+                    f_close(&f);
+                    return ResultSuccess();
+                }
+                        
+                if (f_close(&f) != FR_OK) {
+                    this->flash_ams.error = "failed to close file";
+                    return ResultSuccess();
+                }
+            }
+
+            return ResultSuccess();
         }
     
     } // namespace fastboot
