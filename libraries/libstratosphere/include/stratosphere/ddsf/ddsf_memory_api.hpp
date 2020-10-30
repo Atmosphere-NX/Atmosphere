@@ -13,15 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-#include <stratosphere/ddsf/ddsf_types.hpp>
-#include <stratosphere/ddsf/ddsf_i_castable.hpp>
-#include <stratosphere/ddsf/ddsf_i_session.hpp>
-#include <stratosphere/ddsf/ddsf_i_device.hpp>
-#include <stratosphere/ddsf/ddsf_i_driver.hpp>
+#pragma once
+#include <vapours.hpp>
 #include <stratosphere/ddsf/ddsf_device_code_entry.hpp>
-#include <stratosphere/ddsf/ddsf_device_code_entry_manager.hpp>
-#include <stratosphere/ddsf/ddsf_i_event_handler.hpp>
-#include <stratosphere/ddsf/ddsf_event_handler_manager.hpp>
-#include <stratosphere/ddsf/ddsf_memory_api.hpp>
+
+namespace ams::ddsf {
+
+    void SetMemoryResource(ams::MemoryResource *mr);
+    ams::MemoryResource *GetMemoryResource();
+
+    static constexpr size_t DeviceCodeEntryHolderSize = sizeof(DeviceCodeEntryHolder);
+
+    void SetDeviceCodeEntryHolderMemoryResource(ams::MemoryResource *mr);
+    ams::MemoryResource *GetDeviceCodeEntryHolderMemoryResource();
+
+}
