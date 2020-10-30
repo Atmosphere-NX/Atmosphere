@@ -110,7 +110,7 @@ clean:
 #---------------------------------------------------------------------------------
 else
 
-DEPENDS	:=	$(OFILES:.o=.d) $(foreach hdr,$(GCH_FILES:.gch=.d),$(notdir $(hdr)))
+DEPENDS	:=	$(OFILES:.o=.d) $(foreach hdr,$(GCH_FILES:.hpp.gch=.d),$(notdir $(hdr)))
 
 #---------------------------------------------------------------------------------
 # main targets
