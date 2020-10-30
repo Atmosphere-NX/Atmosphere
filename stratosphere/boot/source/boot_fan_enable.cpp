@@ -29,9 +29,9 @@ namespace ams::boot {
 
     void SetFanEnabled() {
         if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            gpio::Configure(GpioPadName_FanEnable);
-            gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output);
-            gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);
+            boot::gpio::Configure(GpioPadName_FanEnable);
+            boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output);
+            boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);
         }
     }
 

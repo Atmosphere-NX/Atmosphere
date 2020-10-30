@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-constexpr u32 InvalidPadName = UINT32_MAX;
+constexpr u32 InvalidPadName = std::numeric_limits<u32>::max();
 
 constexpr u32 Map[] = {
     InvalidPadName,  /* Invalid */

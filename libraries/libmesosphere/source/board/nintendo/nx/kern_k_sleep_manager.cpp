@@ -78,13 +78,11 @@ namespace ams::kern::board::nintendo::nx {
 
         void WaitOtherCpuPowerOff() {
             constexpr u64 PmcPhysicalAddress = 0x7000E400;
-            constexpr u64 APBDEV_PMC_PWRGATE_STATUS = PmcPhysicalAddress + 0x38;
-
             constexpr u32 PWRGATE_STATUS_CE123_MASK = ((1u << 3) - 1) << 9;
 
             u32 value;
             do {
-                bool res = smc::ReadWriteRegister(std::addressof(value), APBDEV_PMC_PWRGATE_STATUS, 0, 0);
+                bool res = smc::ReadWriteRegister(std::addressof(value), PmcPhysicalAddress + APBDEV_PMC_PWRGATE_STATUS, 0, 0);
                 MESOSPHERE_ASSERT(res);
             } while ((value & PWRGATE_STATUS_CE123_MASK) != 0);
         }

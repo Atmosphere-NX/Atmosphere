@@ -156,33 +156,33 @@ namespace ams::fatal::srv {
             RebootTimingObserver fatal_reboot_helper(config.IsFatalRebootEnabled(), config.GetFatalRebootTimeoutInterval());
 
             bool check_vol_up = true, check_vol_down = true;
-            GpioPadSession vol_up_btn, vol_down_btn;
-            if (R_FAILED(gpioOpenSession(&vol_up_btn, GpioPadName_ButtonVolUp))) {
+            gpio::GpioPadSession vol_up_btn, vol_down_btn;
+            if (R_FAILED(gpio::OpenSession(std::addressof(vol_up_btn), gpio::DeviceCode_ButtonVolUp))) {
                 check_vol_up = false;
             }
-            if (R_FAILED(gpioOpenSession(&vol_down_btn, GpioPadName_ButtonVolDown))) {
+            if (R_FAILED(gpio::OpenSession(std::addressof(vol_down_btn), gpio::DeviceCode_ButtonVolDn))) {
                 check_vol_down = false;
             }
 
             /* Ensure we close on early return. */
-            ON_SCOPE_EXIT { if (check_vol_up) { gpioPadClose(&vol_up_btn); } };
-            ON_SCOPE_EXIT { if (check_vol_down) { gpioPadClose(&vol_down_btn); } };
+            ON_SCOPE_EXIT { if (check_vol_up)   { gpio::CloseSession(std::addressof(vol_up_btn)); } };
+            ON_SCOPE_EXIT { if (check_vol_down) { gpio::CloseSession(std::addressof(vol_down_btn)); } };
 
             /* Set direction input. */
             if (check_vol_up) {
-                gpioPadSetDirection(&vol_up_btn, GpioDirection_Input);
+                gpio::SetDirection(std::addressof(vol_up_btn), gpio::Direction_Input);
             }
             if (check_vol_down) {
-                gpioPadSetDirection(&vol_down_btn, GpioDirection_Input);
+                gpio::SetDirection(std::addressof(vol_down_btn), gpio::Direction_Input);
             }
 
             BpcSleepButtonState state;
-            GpioValue val;
             while (true) {
                 if (fatal_reboot_helper.IsRebootTiming() || (quest_reboot_helper.IsRebootTiming()) ||
-                    (check_vol_up && R_SUCCEEDED(gpioPadGetValue(&vol_up_btn, &val)) && val == GpioValue_Low) ||
-                    (check_vol_down && R_SUCCEEDED(gpioPadGetValue(&vol_down_btn, &val)) && val == GpioValue_Low) ||
-                    (R_SUCCEEDED(bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held)) {
+                    (check_vol_up && gpio::GetValue(std::addressof(vol_up_btn)) == gpio::GpioValue_Low) ||
+                    (check_vol_down && gpio::GetValue(std::addressof(vol_down_btn)) == gpio::GpioValue_Low) ||
+                    (R_SUCCEEDED(bpcGetSleepButtonState(&state)) && state == BpcSleepButtonState_Held))
+                {
                     /* If any of the above conditions succeeded, we should reboot. */
                     bpcRebootSystem();
                     return;

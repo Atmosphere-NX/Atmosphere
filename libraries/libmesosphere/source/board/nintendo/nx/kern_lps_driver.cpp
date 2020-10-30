@@ -19,11 +19,7 @@
 
 #include "kern_bpmp_api.hpp"
 #include "kern_atomics_registers.hpp"
-#include "kern_clkrst_registers.hpp"
-#include "kern_evp_registers.hpp"
-#include "kern_flow_registers.hpp"
 #include "kern_ictlr_registers.hpp"
-#include "kern_pmc_registers.hpp"
 #include "kern_sema_registers.hpp"
 
 namespace ams::kern::board::nintendo::nx::lps {

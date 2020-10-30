@@ -47,6 +47,7 @@
 #include <stratosphere/erpt.hpp>
 #include <stratosphere/err.hpp>
 #include <stratosphere/fatal.hpp>
+#include <stratosphere/gpio.hpp>
 #include <stratosphere/hid.hpp>
 #include <stratosphere/hos.hpp>
 #include <stratosphere/kvdb.hpp>
@@ -60,7 +61,6 @@
 #include <stratosphere/pgl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
-#include <stratosphere/reg.hpp>
 #include <stratosphere/ro.hpp>
 #include <stratosphere/settings.hpp>
 #include <stratosphere/sf.hpp>

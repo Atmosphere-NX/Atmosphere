@@ -112,6 +112,7 @@ $(OFILES)	:	$(GCH_FILES)
 $(OFILES_SRC)	: $(HFILES_BIN)
 
 libc.o: CFLAGS += -fno-builtin -fno-lto
+libgcc_division.arch.arm.o: CFLAGS += -fno-builtin -fno-lto
 
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin

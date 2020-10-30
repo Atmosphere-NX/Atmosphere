@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "gpio_utils.hpp"
 
-namespace ams::gpio {
+namespace ams::boot::gpio {
 
     namespace {
 

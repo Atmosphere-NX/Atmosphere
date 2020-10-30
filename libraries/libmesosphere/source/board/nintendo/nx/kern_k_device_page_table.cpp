@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mesosphere.hpp>
-#include "kern_mc_registers.hpp"
 
 #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING) || defined(MESOSPHERE_BUILD_FOR_AUDITING)
 #define MESOSPHERE_ENABLE_MEMORY_CONTROLLER_INTERRUPT

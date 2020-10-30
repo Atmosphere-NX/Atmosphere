@@ -41,10 +41,12 @@
 #include <vapours/results/nim_results.hpp>
 #include <vapours/results/ns_results.hpp>
 #include <vapours/results/os_results.hpp>
+#include <vapours/results/pcv_results.hpp>
 #include <vapours/results/pgl_results.hpp>
 #include <vapours/results/pm_results.hpp>
 #include <vapours/results/psc_results.hpp>
 #include <vapours/results/ro_results.hpp>
+#include <vapours/results/sdmmc_results.hpp>
 #include <vapours/results/settings_results.hpp>
 #include <vapours/results/sf_results.hpp>
 #include <vapours/results/sm_results.hpp>

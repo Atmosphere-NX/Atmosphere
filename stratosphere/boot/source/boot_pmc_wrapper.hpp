@@ -18,8 +18,10 @@
 
 namespace ams::boot {
 
+    constexpr inline dd::PhysicalAddress PmcBase = 0x7000E400;
+
     /* PMC Access Utilities. */
-    u32 ReadPmcRegister(u32 phys_addr);
-    void WritePmcRegister(u32 phys_addr, u32 value, u32 mask = UINT32_MAX);
+    u32 ReadPmcRegister(dd::PhysicalAddress phys_addr);
+    void WritePmcRegister(dd::PhysicalAddress phys_addr, u32 value, u32 mask = std::numeric_limits<u32>::max());
 
 }

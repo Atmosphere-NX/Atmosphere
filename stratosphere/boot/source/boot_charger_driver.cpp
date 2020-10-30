@@ -60,7 +60,7 @@ namespace ams::boot {
     }
 
     Result ChargerDriver::SetChargeEnabled(bool enabled) {
-        gpio::SetValue(GpioPadName_Bq24193Charger, enabled ? GpioValue_Low : GpioValue_High);
+        boot::gpio::SetValue(GpioPadName_Bq24193Charger, enabled ? GpioValue_Low : GpioValue_High);
         return this->SetChargerConfiguration(bq24193::ChargerConfiguration_ChargeBattery);
     }
 
