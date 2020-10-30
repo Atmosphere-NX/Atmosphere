@@ -13,15 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 
-#include <stratosphere/ddsf/ddsf_types.hpp>
-#include <stratosphere/ddsf/ddsf_i_castable.hpp>
-#include <stratosphere/ddsf/ddsf_i_session.hpp>
-#include <stratosphere/ddsf/ddsf_i_device.hpp>
-#include <stratosphere/ddsf/ddsf_i_driver.hpp>
-#include <stratosphere/ddsf/ddsf_device_code_entry.hpp>
-#include <stratosphere/ddsf/ddsf_device_code_entry_manager.hpp>
-#include <stratosphere/ddsf/ddsf_i_event_handler.hpp>
-#include <stratosphere/ddsf/ddsf_event_handler_manager.hpp>
-#include <stratosphere/ddsf/ddsf_memory_api.hpp>
+#pragma once
+#include <vapours/results/results_common.hpp>
+
+namespace ams::ddsf {
+
+    R_DEFINE_NAMESPACE_RESULT_MODULE(30);
+
+    R_DEFINE_ERROR_RESULT(OutOfResource,      1);
+    R_DEFINE_ERROR_RESULT(NotSupported,       2);
+    R_DEFINE_ERROR_RESULT(InvalidArgument,    3);
+    R_DEFINE_ERROR_RESULT(PermissionDenied,   4);
+    R_DEFINE_ERROR_RESULT(AccessModeDenied,   5);
+    R_DEFINE_ERROR_RESULT(DeviceCodeNotFound, 6);
+
+}

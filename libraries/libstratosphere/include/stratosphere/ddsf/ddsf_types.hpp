@@ -20,11 +20,14 @@
 namespace ams::ddsf {
 
     enum AccessMode {
-        AccessMode_None  = (0u << 0),
-        AccessMode_Read  = (1u << 0),
-        AccessMode_Write = (1u << 1),
+        AccessMode_None   = (0u << 0),
+        AccessMode_Read   = (1u << 0),
+        AccessMode_Write  = (1u << 1),
+        AccessMode_Shared = (1u << 2),
 
-        AccessMode_ReadWrite = AccessMode_Read | AccessMode_Write,
+        AccessMode_ReadWrite       = AccessMode_Read  | AccessMode_Write,
+        AccessMode_WriteShared     = AccessMode_Write | AccessMode_Shared,
+        AccessMode_ReadWriteShared = AccessMode_Read  | AccessMode_WriteShared,
     };
 
 }
