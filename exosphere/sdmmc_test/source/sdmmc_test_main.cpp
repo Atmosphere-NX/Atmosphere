@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "hwinit.h"
 
 namespace ams::sdmmc_test {
 
@@ -49,7 +48,7 @@ namespace ams::sdmmc_test {
     void Main() {
         /* Perform butchered hwinit. */
         /* TODO: replace with simpler, non-C logic. */
-        nx_hwinit();
+        /* nx_hwinit(); */
 
         /* Clear output buffer for debug. */
         std::memset((void *)0x40038000, 0xAA, 0x400);
