@@ -43,6 +43,7 @@
 #include <stratosphere/boot2.hpp>
 #include <stratosphere/capsrv.hpp>
 #include <stratosphere/cfg.hpp>
+#include <stratosphere/clkrst.hpp>
 #include <stratosphere/ddsf.hpp>
 #include <stratosphere/dmnt.hpp>
 #include <stratosphere/erpt.hpp>
@@ -63,6 +64,8 @@
 #include <stratosphere/pgl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
+#include <stratosphere/pwm.hpp>
+#include <stratosphere/regulator.hpp>
 #include <stratosphere/ro.hpp>
 #include <stratosphere/settings.hpp>
 #include <stratosphere/sf.hpp>

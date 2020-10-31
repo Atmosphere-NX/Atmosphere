@@ -28,6 +28,7 @@
 #include <vapours/tegra/tegra_emc.hpp>
 #include <vapours/tegra/tegra_evp.hpp>
 #include <vapours/tegra/tegra_flow_ctlr.hpp>
+#include <vapours/tegra/tegra_i2c.hpp>
 #include <vapours/tegra/tegra_ictlr.hpp>
 #include <vapours/tegra/tegra_mc.hpp>
 #include <vapours/tegra/tegra_mselect.hpp>
