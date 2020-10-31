@@ -33,19 +33,19 @@ namespace ams::i2c::driver {
             virtual void InitializeDriver() = 0;
             virtual void FinalizeDriver()   = 0;
 
-            virtual Result Open() = 0;
-            virtual void Close()  = 0;
+            virtual Result InitializeDevice(I2cDeviceProperty *device) = 0;
+            virtual void FinalizeDevice(I2cDeviceProperty *device)     = 0;
 
             virtual Result Send(I2cDeviceProperty *device, const void *src, size_t src_size, TransactionOption option) = 0;
             virtual Result Receive(void *dst, size_t dst_size, I2cDeviceProperty *device, TransactionOption option)    = 0;
 
             virtual os::SdkMutex &GetTransactionOrderMutex() = 0;
 
-            virtual void SuspendBus();
-            virtual void SuspendPowerBus();
+            virtual void SuspendBus()      = 0;
+            virtual void SuspendPowerBus() = 0;
 
-            virtual void ResumeBus();
-            virtual void ResumePowerBus();
+            virtual void ResumeBus()       = 0;
+            virtual void ResumePowerBus()  = 0;
 
             virtual const DeviceCode &GetDeviceCode() const = 0;
     };

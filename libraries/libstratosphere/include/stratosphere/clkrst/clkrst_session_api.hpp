@@ -14,19 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/clkrst/clkrst_types.hpp>
 
-namespace ams::i2c {
+namespace ams::clkrst {
 
-    enum class AddressingMode {
-        SevenBit = 0,
+    struct ClkRstSession {
+        void *_session;
     };
 
-    enum class SpeedMode {
-        Normal    = 100000,
-        Fast      = 400000,
-        FastPlus  = 1000000,
-        HighSpeed = 3400000,
-    };
+    Result OpenSession(ClkRstSession *out, DeviceCode device_code);
+    void CloseSession(ClkRstSession *session);
+
+    void SetResetAsserted(ClkRstSession *session);
+    void SetResetDeasserted(ClkRstSession *session);
+
+    void SetClockRate(ClkRstSession *session, u32 hz);
+
+    void SetClockDisabled(ClkRstSession *session);
 
 }
