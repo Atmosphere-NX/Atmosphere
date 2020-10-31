@@ -41,6 +41,11 @@ namespace ams::gpio {
         InterruptStatus_Active   = 1,
     };
 
+    enum WakePinDebugMode {
+        WakePinDebugMode_AutoImmediateWake = 1,
+        WakePinDebugMode_NoWake            = 2,
+    };
+
     using WakeBitFlag = util::BitFlagSet<128>;
 
 }

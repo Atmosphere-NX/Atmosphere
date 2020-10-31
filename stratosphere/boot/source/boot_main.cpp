@@ -24,7 +24,6 @@
 #include "boot_splash_screen.hpp"
 #include "boot_wake_pins.hpp"
 
-#include "gpio/gpio_initial_configuration.hpp"
 #include "pinmux/pinmux_initial_configuration.hpp"
 
 #include "boot_power_utils.hpp"
@@ -38,7 +37,7 @@ extern "C" {
     u32 __nx_fs_num_sessions = 1;
 
     /* TODO: Evaluate to what extent this can be reduced further. */
-    #define INNER_HEAP_SIZE 0x20000
+    #define INNER_HEAP_SIZE 0x1000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -71,6 +70,42 @@ namespace ams {
 
 using namespace ams;
 
+namespace {
+
+    u8 g_exp_heap_memory[20_KB];
+    u8 g_unit_heap_memory[5_KB];
+    lmem::HeapHandle g_exp_heap_handle;
+    lmem::HeapHandle g_unit_heap_handle;
+
+    std::optional<sf::ExpHeapMemoryResource>  g_exp_heap_memory_resource;
+    std::optional<sf::UnitHeapMemoryResource> g_unit_heap_memory_resource;
+
+    void *Allocate(size_t size) {
+        void *mem = lmem::AllocateFromExpHeap(g_exp_heap_handle, size);
+        return mem;
+    }
+
+    void Deallocate(void *p, size_t size) {
+        AMS_UNUSED(size);
+        lmem::FreeToExpHeap(g_exp_heap_handle, p);
+    }
+
+    void InitializeHeaps() {
+        /* Create the heaps. */
+        g_exp_heap_handle  = lmem::CreateExpHeap(g_exp_heap_memory, sizeof(g_exp_heap_memory), lmem::CreateOption_ThreadSafe);
+        g_unit_heap_handle = lmem::CreateUnitHeap(g_unit_heap_memory, sizeof(g_unit_heap_memory), sizeof(ddsf::DeviceCodeEntryHolder), lmem::CreateOption_ThreadSafe);
+
+        /* Create the memory resources. */
+        g_exp_heap_memory_resource.emplace(g_exp_heap_handle);
+        g_unit_heap_memory_resource.emplace(g_unit_heap_handle);
+
+        /* Register with ddsf. */
+        ddsf::SetMemoryResource(std::addressof(*g_exp_heap_memory_resource));
+        ddsf::SetDeviceCodeEntryHolderMemoryResource(std::addressof(*g_unit_heap_memory_resource));
+    }
+
+}
+
 void __libnx_exception_handler(ThreadExceptionDump *ctx) {
     ams::CrashHandler(ctx);
 }
@@ -85,10 +120,14 @@ void __libnx_initheap(void) {
 
     fake_heap_start = (char*)addr;
     fake_heap_end   = (char*)addr + size;
+
+    InitializeHeaps();
 }
 
 void __appInit(void) {
     hos::InitializeForStratosphere();
+
+    fs::SetAllocator(Allocate, Deallocate);
 
     /* Initialize services we need (TODO: NCM) */
     sm::DoWithSession([&]() {
@@ -107,6 +146,30 @@ void __appExit(void) {
     fsExit();
 }
 
+void *operator new(size_t size) {
+    return Allocate(size);
+}
+
+void *operator new(size_t size, const std::nothrow_t &) {
+    return Allocate(size);
+}
+
+void operator delete(void *p) {
+    return Deallocate(p, 0);
+}
+
+void *operator new[](size_t size) {
+    return Allocate(size);
+}
+
+void *operator new[](size_t size, const std::nothrow_t &) {
+    return Allocate(size);
+}
+
+void operator delete[](void *p) {
+    return Deallocate(p, 0);
+}
+
 int main(int argc, char **argv)
 {
     /* Set thread name. */
@@ -123,7 +186,7 @@ int main(int argc, char **argv)
     boot::ChangeGpioVoltageTo1_8v();
 
     /* Setup GPIO. */
-    boot::gpio::SetInitialConfiguration();
+    gpio::driver::SetInitialGpioConfig();
 
     /* Check USB PLL/UTMIP clock. */
     boot::CheckClock();

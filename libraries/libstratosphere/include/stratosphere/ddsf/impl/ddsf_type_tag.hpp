@@ -23,7 +23,7 @@ namespace ams::ddsf::impl {
 
         #define AMS_DDSF_CASTABLE_ROOT_TRAITS(__CLASS__)                                                                                    \
             public:                                                                                                                         \
-                static constexpr inline ::ams::ddsf::impl::TypeTag s_ams_ddsf_castable_type_tag(#__CLASS__);                                \
+                static constexpr inline ::ams::ddsf::impl::TypeTag s_ams_ddsf_castable_type_tag{#__CLASS__};                                \
                 constexpr virtual const ::ams::ddsf::impl::TypeTag &GetTypeTag() const override { return s_ams_ddsf_castable_type_tag; }
 
     #else

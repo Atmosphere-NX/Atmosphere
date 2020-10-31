@@ -13,18 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#pragma once
+#include <vapours.hpp>
+#include <stratosphere/gpio/gpio_types.hpp>
+#include <stratosphere/gpio/driver/gpio_i_gpio_driver.hpp>
+#include <stratosphere/gpio/driver/gpio_driver_service_api.hpp>
+#include <stratosphere/gpio/driver/gpio_driver_client_api.hpp>
 
-namespace ams::boot {
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    void SetFanEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
+    #include <stratosphere/gpio/driver/board/nintendo_nx/gpio_driver_api.hpp>
+
+    namespace ams::gpio::driver::board {
+
+        using namespace ams::gpio::driver::board::nintendo_nx;
+
     }
 
-}
+#else
+
+    #error "Unknown board for ams::gpio::driver::"
+
+#endif
+

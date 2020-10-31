@@ -13,16 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/gpio/gpio_types.hpp>
+#include <stratosphere/gpio/driver/gpio_i_gpio_driver.hpp>
 
-namespace ams::boot::gpio {
+namespace ams::gpio::driver {
 
-    /* GPIO Utilities. */
-    u32 Configure(u32 gpio_pad_name);
-    u32 SetDirection(u32 gpio_pad_name, GpioDirection dir);
-    u32 SetValue(u32 gpio_pad_name, GpioValue val);
+    void RegisterDriver(IGpioDriver *driver);
+    void UnregisterDriver(IGpioDriver *driver);
+
+    Result RegisterDeviceCode(DeviceCode device_code, Pad *pad);
+    bool UnregisterDeviceCode(DeviceCode device_code);
+
+    void RegisterInterruptHandler(ddsf::IEventHandler *handler);
+    void UnregisterInterruptHandler(ddsf::IEventHandler *handler);
+
+    void SetInitialGpioConfig();
+    void SetInitialWakePinConfig();
 
 }

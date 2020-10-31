@@ -13,13 +13,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <switch.h>
-#include <stratosphere.hpp>
+#include <vapours.hpp>
+#include <stratosphere/wec/wec_types.hpp>
 
-namespace ams::boot::gpio {
+namespace ams::wec {
 
-    void SetInitialConfiguration();
+    void Initialize();
+    void ClearWakeEvents();
+
+    void WecRestoreForExitSuspend();
+
+    void SetWakeEventLevel(wec::WakeEvent event, wec::WakeEventLevel level);
+    void SetWakeEventEnabled(wec::WakeEvent event, bool en);
 
 }

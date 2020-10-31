@@ -13,18 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#pragma once
+#include <vapours.hpp>
 
-namespace ams::boot {
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    void SetFanEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
-    }
+    #include <stratosphere/wec/wec_wake_event.board.nintendo_nx.hpp>
+
+#else
+
+    #error "Unknown board for ams::wec::WakeEvent"
+
+#endif
+
+namespace ams::wec {
+
+    enum WakeEventLevel {
+        WakeEventLevel_Low  = 0,
+        WakeEventLevel_High = 1,
+        WakeEventLevel_Auto = 2,
+    };
 
 }
