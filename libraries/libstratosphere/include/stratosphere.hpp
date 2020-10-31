@@ -51,6 +51,7 @@
 #include <stratosphere/gpio.hpp>
 #include <stratosphere/hid.hpp>
 #include <stratosphere/hos.hpp>
+#include <stratosphere/i2c.hpp>
 #include <stratosphere/kvdb.hpp>
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/lr.hpp>

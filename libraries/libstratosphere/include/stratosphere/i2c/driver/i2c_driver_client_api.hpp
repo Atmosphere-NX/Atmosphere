@@ -14,12 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/i2c/i2c_types.hpp>
 
-namespace ams::boot {
+namespace ams::i2c::driver {
 
-    void InitializeGpioDriverLibrary();
-    void InitializeI2cDriverLibrary();
-
+    void Initialize();
+    void Finalize();
 
 }
-

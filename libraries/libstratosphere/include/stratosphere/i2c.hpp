@@ -13,13 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-
-namespace ams::boot {
-
-    void InitializeGpioDriverLibrary();
-    void InitializeI2cDriverLibrary();
-
-
-}
-
+#include <stratosphere/i2c/i2c_types.hpp>
+#include <stratosphere/i2c/i2c_select_device_name.hpp>
+#include <stratosphere/i2c/sf/i2c_sf_i_session.hpp>
+#include <stratosphere/i2c/sf/i2c_sf_i_manager.hpp>
+#include <stratosphere/i2c/server/i2c_server_api.hpp>
+#include <stratosphere/i2c/driver/i2c_select_driver_api.hpp>
+#include <stratosphere/i2c/driver/i2c_driver_client_api.hpp>
+#include <stratosphere/i2c/i2c_api.hpp>

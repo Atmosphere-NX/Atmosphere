@@ -29,4 +29,15 @@ namespace ams::boot {
         gpio::driver::Initialize();
     }
 
+    void InitializeI2cDriverLibrary() {
+        /* Initialize the i2c client library with the server manager object. */
+        i2c::InitializeWith(i2c::server::GetServiceObject(), i2c::server::GetServiceObjectPowerBus());
+
+        /* Initialize the board driver without enabling interrupt handlers. */
+        i2c::driver::board::Initialize();
+
+        /* Initialize the driver library. */
+        i2c::driver::Initialize();
+    }
+
 }
