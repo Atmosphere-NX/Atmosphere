@@ -23,7 +23,7 @@ namespace ams::gpio::driver {
     class Pad : public ::ams::ddsf::IDevice {
         NON_COPYABLE(Pad);
         NON_MOVEABLE(Pad);
-        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::Pad, ::ams::ddsf::IDevice);
+        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::Pad, ::ams::ddsf::IDevice);
         private:
             int pad_number;
             bool is_interrupt_enabled;

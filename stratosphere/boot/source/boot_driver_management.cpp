@@ -13,16 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <stratosphere/gpio/gpio_types.hpp>
-#include <stratosphere/gpio/sf/gpio_sf_i_manager.hpp>
+#include <stratosphere.hpp>
+#include "boot_driver_management.hpp"
 
-namespace ams::gpio {
+namespace ams::boot {
 
-    void Initialize();
-    void Finalize();
+    void InitializeGpioDriverLibrary() {
+        /* Initialize the gpio client library with the server manager object. */
+        gpio::InitializeWith(gpio::server::GetServiceObject());
 
-    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp);
+        /* Initialize the board driver without enabling interrupt handlers. */
+        gpio::driver::board::Initialize(false);
+
+        /* Initialize the driver library. */
+        gpio::driver::Initialize();
+    }
 
 }

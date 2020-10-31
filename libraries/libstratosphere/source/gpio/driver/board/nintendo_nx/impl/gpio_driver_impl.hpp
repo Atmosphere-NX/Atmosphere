@@ -29,13 +29,13 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
             DriverImpl *driver;
             os::InterruptName interrupt_name;
             os::InterruptEventType interrupt_event;
-            int port_number;
+            int controller_number;
         private:
-            void CheckAndHandleInterrupt(TegraPad *pad);
+            bool CheckAndHandleInterrupt(TegraPad &pad);
         public:
-            InterruptEventHandler() : IEventHandler(), driver(nullptr), interrupt_name(), interrupt_event(), port_number() { /* ... */ }
+            InterruptEventHandler() : IEventHandler(), driver(nullptr), interrupt_name(), interrupt_event(), controller_number() { /* ... */ }
 
-            void Initialize(DriverImpl *driver, os::InterruptName intr, int port);
+            void Initialize(DriverImpl *drv, os::InterruptName intr, int ctlr);
 
             virtual void HandleEvent() override;
     };
@@ -44,11 +44,12 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
         NON_COPYABLE(DriverImpl);
         NON_MOVEABLE(DriverImpl);
         AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::board::nintendo_nx::impl::DriverImpl, ::ams::gpio::driver::IGpioDriver);
+        friend class InterruptEventHandler;
         private:
             dd::PhysicalAddress gpio_physical_address;
             uintptr_t gpio_virtual_address;
             SuspendHandler suspend_handler;
-            TegraPad::List interrupt_pad_list;
+            TegraPad::InterruptList interrupt_pad_list;
             mutable os::SdkMutex interrupt_control_mutex;
         public:
             DriverImpl(dd::PhysicalAddress reg_paddr, size_t size);
@@ -96,6 +97,33 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
             virtual Result SuspendLow() override;
             virtual Result Resume()     override;
             virtual Result ResumeLow()  override;
+        private:
+            static constexpr ALWAYS_INLINE TegraPad &GetTegraPad(Pad *pad) {
+                AMS_ASSERT(pad != nullptr);
+                return static_cast<TegraPad &>(*pad);
+            }
+
+            static ALWAYS_INLINE const PadInfo &GetInfo(Pad *pad) {
+                return GetTegraPad(pad).GetInfo();
+            }
+
+            static ALWAYS_INLINE PadStatus &GetStatus(Pad *pad) {
+                return GetTegraPad(pad).GetStatus();
+            }
+
+            void AddInterruptPad(TegraPad *pad) {
+                AMS_ASSERT(pad != nullptr);
+                if (!pad->IsLinkedToInterruptBoundPadList()) {
+                    this->interrupt_pad_list.push_back(*pad);
+                }
+            }
+
+            void RemoveInterruptPad(TegraPad *pad) {
+                AMS_ASSERT(pad != nullptr);
+                if (pad->IsLinkedToInterruptBoundPadList()) {
+                    this->interrupt_pad_list.erase(this->interrupt_pad_list.iterator_to(*pad));
+                }
+            }
     };
 
 }

@@ -13,16 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/gpio/gpio_types.hpp>
-#include <stratosphere/gpio/sf/gpio_sf_i_manager.hpp>
+#include <vapours/results/results_common.hpp>
 
 namespace ams::gpio {
 
-    void Initialize();
-    void Finalize();
+    R_DEFINE_NAMESPACE_RESULT_MODULE(102);
 
-    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp);
+    R_DEFINE_ERROR_RESULT(AlreadyBound,    1);
+    R_DEFINE_ERROR_RESULT(AlreadyOpen,     2);
+    R_DEFINE_ERROR_RESULT(DeviceNotFound,  3);
+    R_DEFINE_ERROR_RESULT(InvalidArgument, 4);
 
 }

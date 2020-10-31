@@ -13,16 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
-#include <stratosphere/gpio/gpio_types.hpp>
-#include <stratosphere/gpio/sf/gpio_sf_i_manager.hpp>
+#include <stratosphere.hpp>
+#include "gpio_server_manager_impl.hpp"
 
-namespace ams::gpio {
+namespace ams::gpio::server {
 
-    void Initialize();
-    void Finalize();
+    namespace {
 
-    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp);
+        ManagerImpl g_manager_impl;
+
+        std::shared_ptr<gpio::sf::IManager> GetManagerServiceObject() {
+            static std::shared_ptr<gpio::sf::IManager> s_sp = ams::sf::GetSharedPointerTo<gpio::sf::IManager>(g_manager_impl);
+            return s_sp;
+        }
+
+    }
+
+    std::shared_ptr<gpio::sf::IManager> GetServiceObject() {
+        return GetManagerServiceObject();
+    }
 
 }

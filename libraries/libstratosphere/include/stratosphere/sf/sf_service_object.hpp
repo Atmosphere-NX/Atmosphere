@@ -63,6 +63,40 @@ namespace ams::sf {
     }
 
     template<typename Interface, typename Impl>
+    class ServiceObjectAllocator {
+        public:
+            using value_type = typename Interface::ImplHolder<Impl>;
+        private:
+            MemoryResource * const memory_resource;
+        public:
+            constexpr ServiceObjectAllocator(MemoryResource *mr) : memory_resource(mr) { /* ... */ }
+
+            value_type *allocate(size_t n) const {
+                void *mem = this->memory_resource->Allocate(n * sizeof(value_type), alignof(value_type));
+                AMS_ABORT_UNLESS(mem != nullptr);
+                return mem;
+            }
+
+            void deallocate(void *p, size_t n) const {
+                this->memory_resource->Deallocate(p, n * sizeof(value_type), alignof(value_type));
+            }
+
+            inline bool operator==(const ServiceObjectAllocator &rhs) const {
+                return this->memory_resource->is_equal(*rhs->memory_resource);
+            }
+
+            inline bool operator!=(const ServiceObjectAllocator &rhs) const {
+                return !(*this == rhs);
+            }
+    };
+
+    template<typename Interface, typename Impl, typename Allocator, typename... Arguments>
+        requires std::constructible_from<Impl, Arguments...>
+    constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplHolder<Impl>> AllocateShared(const Allocator &allocator, Arguments &&... args) {
+        return std::allocate_shared<typename Interface::ImplHolder<Impl>>(allocator, std::forward<Arguments>(args)...);
+    }
+
+    template<typename Interface, typename Impl>
     constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplPointer<Impl>> GetSharedPointerTo(Impl *impl) {
         return std::make_shared<typename Interface::ImplPointer<Impl>>(impl);
     }

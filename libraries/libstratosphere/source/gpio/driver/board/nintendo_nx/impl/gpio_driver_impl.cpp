@@ -19,6 +19,71 @@
 
 namespace ams::gpio::driver::board::nintendo_nx::impl {
 
+    void InterruptEventHandler::Initialize(DriverImpl *drv, os::InterruptName intr, int ctlr) {
+        /* Set fields. */
+        this->driver            = drv;
+        this->interrupt_name    = intr;
+        this->controller_number = ctlr;
+
+        /* Initialize interrupt event. */
+        os::InitializeInterruptEvent(std::addressof(this->interrupt_event), intr, os::EventClearMode_ManualClear);
+
+        /* Initialize base. */
+        IEventHandler::Initialize(std::addressof(this->interrupt_event));
+    }
+
+    void InterruptEventHandler::HandleEvent() {
+        /* Lock the driver's interrupt mutex. */
+        std::scoped_lock lk(this->driver->interrupt_control_mutex);
+
+        /* Check each pad. */
+        bool found = false;
+        for (auto it = this->driver->interrupt_pad_list.begin(); !found && it != this->driver->interrupt_pad_list.end(); ++it) {
+            found = this->CheckAndHandleInterrupt(*it);
+        }
+
+        /* If we didn't find a pad, clear the interrupt event. */
+        if (!found) {
+            os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+        }
+    }
+
+    bool InterruptEventHandler::CheckAndHandleInterrupt(TegraPad &pad) {
+        /* Get the pad's number. */
+        const InternalGpioPadNumber pad_number = static_cast<InternalGpioPadNumber>(pad.GetPadNumber());
+
+        /* Check if the pad matches our controller number. */
+        if (this->controller_number != ConvertInternalGpioPadNumberToController(pad_number)) {
+            return false;
+        }
+
+        /* Get the addresses of INT_STA, INT_ENB. */
+        const uintptr_t sta_address = GetGpioRegisterAddress(this->driver->gpio_virtual_address, GpioRegisterType_GPIO_INT_STA, pad_number);
+        const uintptr_t enb_address = GetGpioRegisterAddress(this->driver->gpio_virtual_address, GpioRegisterType_GPIO_INT_STA, pad_number);
+        const uintptr_t pad_index   = ConvertInternalGpioPadNumberToBitIndex(pad_number);
+
+        /* Check if both STA and ENB are set. */
+        if (reg::Read(sta_address, 1u << pad_index) == 0 || reg::Read(enb_address, 1u << pad_index) == 0) {
+            return false;
+        }
+
+        /* The pad is signaled. First, clear the enb bit. */
+        SetMaskedBit(enb_address, pad_index, 0);
+        reg::Read(enb_address);
+
+        /* Disable the interrupt on the pad. */
+        pad.SetInterruptEnabled(false);
+        this->driver->RemoveInterruptPad(std::addressof(pad));
+
+        /* Clear the interrupt event. */
+        os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+
+        /* Signal the pad's bound event. */
+        pad.SignalInterruptBoundEvent();
+
+        return true;
+    }
+
     DriverImpl::DriverImpl(dd::PhysicalAddress reg_paddr, size_t size) : gpio_physical_address(reg_paddr), gpio_virtual_address(), suspend_handler(this), interrupt_pad_list(), interrupt_control_mutex() {
         /* Get the corresponding virtual address for our physical address. */
         this->gpio_virtual_address = dd::QueryIoMapping(reg_paddr, size);
