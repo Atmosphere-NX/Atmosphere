@@ -89,6 +89,9 @@ namespace ams::impl {
     /* ro. */
     AMS_DEFINE_SYSTEM_THREAD(16, ro, Main);
 
+    /* gpio. */
+    AMS_DEFINE_SYSTEM_THREAD(-12, gpio, InterruptHandler);
+
     /* bpc. */
     AMS_DEFINE_SYSTEM_THREAD(4, bpc, IpcServer);
 

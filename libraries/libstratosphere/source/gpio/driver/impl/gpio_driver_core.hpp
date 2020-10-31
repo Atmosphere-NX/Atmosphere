@@ -13,18 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
 
-namespace ams::boot {
+namespace ams::gpio::driver::impl {
 
-    void SetFanEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
-    }
+    void InitializeDrivers();
+    void FinalizeDrivers();
+
+    void RegisterDriver(IGpioDriver *driver);
+    void UnregisterDriver(IGpioDriver *driver);
+
+    Result RegisterDeviceCode(DeviceCode device_code, Pad *pad);
+    bool UnregisterDeviceCode(DeviceCode device_code);
+
+    void RegisterInterruptHandler(ddsf::IEventHandler *handler);
+    void UnregisterInterruptHandler(ddsf::IEventHandler *handler);
+
+    Result FindPad(Pad **out, DeviceCode device_code);
+    Result FindPadByNumber(Pad **out, int pad_number);
 
 }

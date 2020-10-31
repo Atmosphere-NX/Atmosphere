@@ -13,18 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#pragma once
+#include <vapours.hpp>
+#include <stratosphere/gpio/gpio_types.hpp>
+#include <stratosphere/gpio/driver/gpio_i_gpio_driver.hpp>
 
-namespace ams::boot {
+namespace ams::gpio::driver::board::nintendo_nx {
 
-    void SetFanEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
-    }
+    void Initialize(bool enable_interrupt_handlers);
+
+    void SetInitialGpioConfig();
+    void SetInitialWakePinConfig();
 
 }

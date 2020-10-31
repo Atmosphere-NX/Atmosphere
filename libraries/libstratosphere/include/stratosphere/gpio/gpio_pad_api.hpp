@@ -18,6 +18,7 @@
 #include <stratosphere/ddsf/ddsf_types.hpp>
 #include <stratosphere/gpio/gpio_types.hpp>
 #include <stratosphere/gpio/gpio_select_pad_name.hpp>
+#include <stratosphere/gpio/driver/gpio_pad.hpp>
 
 namespace ams::gpio {
 

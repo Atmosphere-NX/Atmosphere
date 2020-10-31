@@ -48,7 +48,7 @@ namespace ams::ddsf {
                   loop_control_command_params(), loop_control_command_done_event(os::EventClearMode_AutoClear),
                   loop_control_lock()
             {
-                /* ... */
+                this->Initialize();
             }
 
             ~EventHandlerManager() {

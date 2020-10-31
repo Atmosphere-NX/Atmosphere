@@ -38,7 +38,6 @@ namespace ams::ddsf {
 
     void EventHandlerManager::Initialize() {
         /* Check that we're not already initialized. */
-        AMS_ASSERT(!this->is_initialized);
         if (this->is_initialized) {
             return;
         }

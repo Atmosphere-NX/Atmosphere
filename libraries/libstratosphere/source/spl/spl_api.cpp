@@ -29,7 +29,7 @@ namespace ams::spl {
             Manu
         };
 
-        os::Mutex g_mutex(false);
+        os::SdkMutex g_mutex;
         s32 g_initialize_count = 0;
         InitializeMode g_initialize_mode = InitializeMode::None;
 

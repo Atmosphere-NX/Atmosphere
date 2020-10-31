@@ -17,8 +17,6 @@
 #include "boot_bq24193_charger.hpp"
 #include "boot_i2c_utils.hpp"
 
-#include "gpio/gpio_utils.hpp"
-
 namespace ams::boot {
 
     class ChargerDriver {
@@ -31,8 +29,8 @@ namespace ams::boot {
                 i2c::driver::Initialize();
                 i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
 
-                boot::gpio::Configure(GpioPadName_Bq24193Charger);
-                boot::gpio::SetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
+                //boot::gpio::Configure(GpioPadName_Bq24193Charger);
+                //boot::gpio::SetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
             }
 
             ~ChargerDriver() {
