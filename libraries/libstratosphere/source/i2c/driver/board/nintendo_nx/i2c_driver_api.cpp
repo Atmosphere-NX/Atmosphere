@@ -13,28 +13,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <vapours.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::i2c {
+namespace ams::i2c::driver::board::nintendo_nx {
 
-    enum TransactionOption : u32 {
-        TransactionOption_StartCondition = (1u <<  0),
-        TransactionOption_StopCondition  = (1u <<  1),
-        TransactionOption_MaxBits        = (1u << 30),
-    };
+    namespace {
 
-    enum AddressingMode : u32 {
-        AddressingMode_SevenBit = 0,
-    };
+        struct I2cDeviceDefinition {
+            DeviceCode device_code;
+            u8 slave_address;
+        };
 
-    enum SpeedMode : u32 {
-        SpeedMode_Standard  = 100000,
-        SpeedMode_Fast      = 400000,
-        SpeedMode_FastPlus  = 1000000,
-        SpeedMode_HighSpeed = 3400000,
-    };
+        struct I2cBusDefinition {
+            DeviceCode device_code;
+            dd::PhysicalAddress registers_phys_addr;
+            size_t registers_size;
+            SpeedMode speed_mode;
+            os::InterruptName interrupt_name;
+            const I2cDeviceDefinition *devices;
+            size_t num_devices;
+        };
 
-    using I2cCommand = u8;
+        #include "i2c_bus_device_map.inc"
+
+    }
+
+    void Initialize() {
+        /* TODO */
+    }
 
 }

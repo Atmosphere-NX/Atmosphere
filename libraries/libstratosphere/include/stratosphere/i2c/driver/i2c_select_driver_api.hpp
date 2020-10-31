@@ -31,7 +31,7 @@
 
 #else
 
-    #error "Unknown board for ams::gpio::driver::"
+    #error "Unknown board for ams::i2c::driver::"
 
 #endif
 
