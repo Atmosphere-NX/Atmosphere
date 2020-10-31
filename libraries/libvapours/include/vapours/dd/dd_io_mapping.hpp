@@ -22,5 +22,6 @@ namespace ams::dd {
 
     u32 ReadIoRegister(dd::PhysicalAddress phys_addr);
     void WriteIoRegister(dd::PhysicalAddress phys_addr, u32 value);
+    u32 ReadModifyWriteIoRegister(PhysicalAddress phys_addr, u32 value, u32 mask);
 
 }

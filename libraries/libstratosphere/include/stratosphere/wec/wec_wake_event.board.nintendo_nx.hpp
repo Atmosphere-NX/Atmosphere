@@ -79,6 +79,8 @@ namespace ams::wec {
         WakeEvent_ModemWakeAp        = 0x3D,
         WakeEvent_TouchInt           = 0x3E,
         WakeEvent_MotionInt          = 0x3F,
+
+        WakeEvent_Count              = 0x40,
     };
 
     constexpr inline WakeEvent WakeEvent_None = static_cast<WakeEvent>(-1);

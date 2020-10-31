@@ -70,13 +70,55 @@ namespace ams::dd {
         #endif
     }
 
+    namespace {
+
+        #if defined(ATMOSPHERE_IS_STRATOSPHERE)
+
+            #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+
+                constexpr dd::PhysicalAddress PmcPhysStart = 0x7000E400;
+                constexpr dd::PhysicalAddress PmcPhysLast  = 0x7000EFFF;
+
+                constexpr bool IsValidPmcPhysicalAddress(dd::PhysicalAddress phys_addr) {
+                    return util::IsAligned(phys_addr, alignof(u32)) && PmcPhysStart <= phys_addr && phys_addr <= PmcPhysLast;
+                }
+
+                u32 ReadWritePmcRegisterImpl(dd::PhysicalAddress phys_addr, u32 value, u32 mask) {
+                    u32 out_value;
+                    R_ABORT_UNLESS(spl::smc::ConvertResult(spl::smc::AtmosphereReadWriteRegister(phys_addr, mask, value, &out_value)));
+                    return out_value;
+                }
+
+                bool TryReadModifyWritePmcRegister(u32 *out, dd::PhysicalAddress phys_addr, u32 value, u32 mask) {
+                    if (IsValidPmcPhysicalAddress(phys_addr)) {
+                        *out = ReadWritePmcRegisterImpl(phys_addr, value, mask);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+
+            #else
+
+                bool TryReadModifyWritePmcRegister(u32 *out, dd::PhysicalAddress phys_addr, u32 value, u32 mask) {
+                    AMS_UNUSED(out, phys_addr, value, mask);
+                    return false;
+                }
+
+            #endif
+
+        #endif
+    }
+
     u32 ReadIoRegister(dd::PhysicalAddress phys_addr) {
         #if defined(ATMOSPHERE_IS_EXOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
             return reg::Read(dd::QueryIoMapping(phys_addr, sizeof(u32)));
         #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
 
             u32 val;
-            R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(val), phys_addr, 0, 0));
+            if (!TryReadModifyWritePmcRegister(std::addressof(val), phys_addr, 0, 0)) {
+                R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(val), phys_addr, 0, 0));
+            }
             return val;
 
         #else
@@ -90,11 +132,30 @@ namespace ams::dd {
         #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
 
             u32 out_val;
-            R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(out_val), phys_addr, 0xFFFFFFFF, value));
+            if (!TryReadModifyWritePmcRegister(std::addressof(out_val), phys_addr, value, 0xFFFFFFFF)) {
+                R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(out_val), phys_addr, 0xFFFFFFFF, value));
+            }
             AMS_UNUSED(out_val);
 
         #else
             #error "Unknown execution context for ams::dd::WriteIoRegister!"
+        #endif
+    }
+
+    u32 ReadModifyWriteIoRegister(PhysicalAddress phys_addr, u32 value, u32 mask) {
+        #if defined(ATMOSPHERE_IS_EXOSPHERE) || defined(ATMOSPHERE_IS_MESOSPHERE)
+            AMS_UNUSED(phys_addr, value, mask);
+            AMS_ABORT("ReadModifyWriteIoRegister TODO under non-stratosphere");
+        #elif defined(ATMOSPHERE_IS_STRATOSPHERE)
+
+            u32 out_val;
+            if (!TryReadModifyWritePmcRegister(std::addressof(out_val), phys_addr, value, mask)) {
+                R_ABORT_UNLESS(svc::ReadWriteRegister(std::addressof(out_val), phys_addr, mask, value));
+            }
+            return out_val;
+
+        #else
+            #error "Unknown execution context for ams::dd::ReadModifyWriteIoRegister!"
         #endif
     }
 

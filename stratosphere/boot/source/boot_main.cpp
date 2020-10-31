@@ -22,7 +22,6 @@
 #include "boot_fan_enable.hpp"
 #include "boot_repair_boot_images.hpp"
 #include "boot_splash_screen.hpp"
-#include "boot_wake_pins.hpp"
 
 #include "pinmux/pinmux_initial_configuration.hpp"
 
@@ -207,7 +206,7 @@ int main(int argc, char **argv)
     pinmux::SetInitialConfiguration();
 
     /* Configure the PMC wake pin settings. */
-    boot::SetInitialWakePinConfiguration();
+    gpio::driver::SetInitialWakePinConfig();
 
     /* Configure output clock. */
     if (hw_type != spl::HardwareType::Copper && hw_type != spl::HardwareType::Calcio) {
