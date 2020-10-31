@@ -19,6 +19,7 @@
 #include "boot_check_battery.hpp"
 #include "boot_check_clock.hpp"
 #include "boot_clock_initial_configuration.hpp"
+#include "boot_driver_management.hpp"
 #include "boot_fan_enable.hpp"
 #include "boot_repair_boot_images.hpp"
 #include "boot_splash_screen.hpp"
@@ -71,13 +72,13 @@ using namespace ams;
 
 namespace {
 
-    u8 g_exp_heap_memory[20_KB];
-    u8 g_unit_heap_memory[5_KB];
-    lmem::HeapHandle g_exp_heap_handle;
-    lmem::HeapHandle g_unit_heap_handle;
+    constinit u8 g_exp_heap_memory[20_KB];
+    constinit u8 g_unit_heap_memory[5_KB];
+    constinit lmem::HeapHandle g_exp_heap_handle;
+    constinit lmem::HeapHandle g_unit_heap_handle;
 
-    std::optional<sf::ExpHeapMemoryResource>  g_exp_heap_memory_resource;
-    std::optional<sf::UnitHeapMemoryResource> g_unit_heap_memory_resource;
+    constinit sf::ExpHeapMemoryResource  g_exp_heap_memory_resource;
+    constinit sf::UnitHeapMemoryResource g_unit_heap_memory_resource;
 
     void *Allocate(size_t size) {
         void *mem = lmem::AllocateFromExpHeap(g_exp_heap_handle, size);
@@ -94,13 +95,13 @@ namespace {
         g_exp_heap_handle  = lmem::CreateExpHeap(g_exp_heap_memory, sizeof(g_exp_heap_memory), lmem::CreateOption_ThreadSafe);
         g_unit_heap_handle = lmem::CreateUnitHeap(g_unit_heap_memory, sizeof(g_unit_heap_memory), sizeof(ddsf::DeviceCodeEntryHolder), lmem::CreateOption_ThreadSafe);
 
-        /* Create the memory resources. */
-        g_exp_heap_memory_resource.emplace(g_exp_heap_handle);
-        g_unit_heap_memory_resource.emplace(g_unit_heap_handle);
+        /* Attach the memory resources. */
+        g_exp_heap_memory_resource.Attach(g_exp_heap_handle);
+        g_unit_heap_memory_resource.Attach(g_unit_heap_handle);
 
         /* Register with ddsf. */
-        ddsf::SetMemoryResource(std::addressof(*g_exp_heap_memory_resource));
-        ddsf::SetDeviceCodeEntryHolderMemoryResource(std::addressof(*g_unit_heap_memory_resource));
+        ddsf::SetMemoryResource(std::addressof(g_exp_heap_memory_resource));
+        ddsf::SetDeviceCodeEntryHolderMemoryResource(std::addressof(g_unit_heap_memory_resource));
     }
 
 }
@@ -184,8 +185,11 @@ int main(int argc, char **argv)
     /* Change voltage from 3.3v to 1.8v for select devices. */
     boot::ChangeGpioVoltageTo1_8v();
 
-    /* Setup GPIO. */
+    /* Setup gpio. */
     gpio::driver::SetInitialGpioConfig();
+
+    /* Initialize the gpio server library. */
+    boot::InitializeGpioDriverLibrary();
 
     /* Check USB PLL/UTMIP clock. */
     boot::CheckClock();

@@ -59,7 +59,7 @@ namespace ams::ddsf {
             template<typename T>
             constexpr const T &SafeCastTo() const {
                 this->AssertCastableTo<T>();
-                return static_cast<T &>(*this);
+                return static_cast<const T &>(*this);
             }
 
             template<typename T>
@@ -71,7 +71,7 @@ namespace ams::ddsf {
             template<typename T>
             constexpr const T *SafeCastToPointer() const {
                 this->AssertCastableTo<T>();
-                return static_cast<T *>(this);
+                return static_cast<const T *>(this);
             }
 
             #if defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)

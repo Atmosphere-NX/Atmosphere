@@ -23,6 +23,7 @@ namespace ams::gpio {
         /* TODO: Manager object. */
         constinit os::SdkMutex g_init_mutex;
         constinit int g_initialize_count = 0;
+        constinit bool g_remote = false;
         std::shared_ptr<sf::IManager> g_manager;
 
         using InternalSession = std::shared_ptr<gpio::sf::IPadSession>;
@@ -40,7 +41,17 @@ namespace ams::gpio {
         if ((g_initialize_count++) == 0) {
             R_ABORT_UNLESS(::gpioInitialize());
             g_manager = ams::sf::MakeShared<sf::IManager, RemoteManagerImpl>();
+            g_remote  = true;
         }
+    }
+
+    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp) {
+        std::scoped_lock lk(g_init_mutex);
+
+        AMS_ABORT_UNLESS(g_initialize_count == 0);
+
+        g_manager = std::move(sp);
+        g_initialize_count = 1;
     }
 
     void Finalize() {
@@ -50,7 +61,9 @@ namespace ams::gpio {
 
         if ((--g_initialize_count) == 0) {
             g_manager.reset();
-            ::gpioExit();
+            if (g_remote) {
+                ::gpioExit();
+            }
         }
     }
 

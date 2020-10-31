@@ -21,3 +21,6 @@
 #include <stratosphere/gpio/gpio_api.hpp>
 #include <stratosphere/gpio/gpio_pad_api.hpp>
 #include <stratosphere/gpio/driver/gpio_select_driver_api.hpp>
+#include <stratosphere/gpio/driver/gpio_pad_accessor.hpp>
+#include <stratosphere/gpio/driver/impl/gpio_pad_session_impl.hpp>
+#include <stratosphere/gpio/server/gpio_server_api.hpp>

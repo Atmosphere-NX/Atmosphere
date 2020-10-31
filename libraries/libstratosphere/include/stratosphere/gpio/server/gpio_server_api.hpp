@@ -18,11 +18,8 @@
 #include <stratosphere/gpio/gpio_types.hpp>
 #include <stratosphere/gpio/sf/gpio_sf_i_manager.hpp>
 
-namespace ams::gpio {
+namespace ams::gpio::server {
 
-    void Initialize();
-    void Finalize();
-
-    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp);
+    std::shared_ptr<gpio::sf::IManager> GetServiceObject();
 
 }
