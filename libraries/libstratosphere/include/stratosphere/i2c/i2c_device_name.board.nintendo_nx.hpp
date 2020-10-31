@@ -19,6 +19,46 @@
 
 namespace ams::i2c {
 
+    enum I2cBus {
+        I2cBus_I2c1 = 0,
+        I2cBus_I2c2 = 1,
+        I2cBus_I2c3 = 2,
+        I2cBus_I2c4 = 3,
+        I2cBus_I2c5 = 4,
+        I2cBus_I2c6 = 5,
+    };
+
+    constexpr inline const DeviceCode DeviceCode_I2c1 = 0x02000001;
+    constexpr inline const DeviceCode DeviceCode_I2c2 = 0x02000002;
+    constexpr inline const DeviceCode DeviceCode_I2c3 = 0x02000003;
+    constexpr inline const DeviceCode DeviceCode_I2c4 = 0x02000004;
+    constexpr inline const DeviceCode DeviceCode_I2c5 = 0x02000005;
+    constexpr inline const DeviceCode DeviceCode_I2c6 = 0x02000006;
+
+    constexpr inline DeviceCode ConvertToDeviceCode(I2cBus bus) {
+        switch (bus) {
+            case I2cBus_I2c1: return DeviceCode_I2c1;
+            case I2cBus_I2c2: return DeviceCode_I2c2;
+            case I2cBus_I2c3: return DeviceCode_I2c3;
+            case I2cBus_I2c4: return DeviceCode_I2c4;
+            case I2cBus_I2c5: return DeviceCode_I2c5;
+            case I2cBus_I2c6: return DeviceCode_I2c6;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    constexpr inline DeviceCode ConvertToI2cBus(DeviceCode dc) {
+        switch (dc.GetInternalValue()) {
+            case DeviceCode_I2c1.GetInternalValue(): return I2cBus_I2c1;
+            case DeviceCode_I2c2.GetInternalValue(): return I2cBus_I2c2;
+            case DeviceCode_I2c3.GetInternalValue(): return I2cBus_I2c3;
+            case DeviceCode_I2c4.GetInternalValue(): return I2cBus_I2c4;
+            case DeviceCode_I2c5.GetInternalValue(): return I2cBus_I2c5;
+            case DeviceCode_I2c6.GetInternalValue(): return I2cBus_I2c6;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
     enum I2cDevice : u32 {
         I2cDevice_ClassicController   =  0,
         I2cDevice_Ftm3bd56            =  1,
