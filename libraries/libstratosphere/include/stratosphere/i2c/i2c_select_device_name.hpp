@@ -14,12 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/i2c/i2c_types.hpp>
 
-namespace ams::boot {
-
-    void InitializeGpioDriverLibrary();
-    void InitializeI2cDriverLibrary();
-
-
-}
-
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+    #include <stratosphere/i2c/i2c_device_name.board.nintendo_nx.hpp>
+#else
+    /* Error? */
+#endif

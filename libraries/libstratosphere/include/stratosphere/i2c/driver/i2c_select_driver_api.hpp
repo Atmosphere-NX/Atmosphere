@@ -14,12 +14,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/i2c/i2c_types.hpp>
+#include <stratosphere/i2c/driver/i2c_i_i2c_driver.hpp>
+#include <stratosphere/i2c/driver/i2c_i2c_device_property.hpp>
 
-namespace ams::boot {
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    void InitializeGpioDriverLibrary();
-    void InitializeI2cDriverLibrary();
+    #include <stratosphere/i2c/driver/board/nintendo_nx/i2c_driver_api.hpp>
 
+    namespace ams::i2c::driver::board {
 
-}
+        using namespace ams::i2c::driver::board::nintendo_nx;
+
+    }
+
+#else
+
+    #error "Unknown board for ams::gpio::driver::"
+
+#endif
 

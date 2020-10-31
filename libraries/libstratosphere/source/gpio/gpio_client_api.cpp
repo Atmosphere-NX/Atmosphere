@@ -20,7 +20,6 @@ namespace ams::gpio {
 
     namespace {
 
-        /* TODO: Manager object. */
         constinit os::SdkMutex g_init_mutex;
         constinit int g_initialize_count = 0;
         constinit bool g_remote = false;

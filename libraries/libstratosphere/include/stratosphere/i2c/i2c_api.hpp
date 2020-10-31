@@ -14,12 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/i2c/i2c_types.hpp>
+#include <stratosphere/i2c/sf/i2c_sf_i_manager.hpp>
 
-namespace ams::boot {
+namespace ams::i2c {
 
-    void InitializeGpioDriverLibrary();
-    void InitializeI2cDriverLibrary();
+    void InitializeWith(std::shared_ptr<i2c::sf::IManager> &&sp, std::shared_ptr<i2c::sf::IManager> &&sp_pcv);
+    void InitializeEmpty();
 
+    void Finalize();
 
 }
-

@@ -14,12 +14,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
 
-namespace ams::boot {
+namespace ams::i2c {
 
-    void InitializeGpioDriverLibrary();
-    void InitializeI2cDriverLibrary();
+    enum TransactionOption : u32 {
+        TransactionOption_StartCondition = (1u <<  0),
+        TransactionOption_TopCondition   = (1u <<  1),
+        TransactionOption_MaxBits        = (1u << 30),
+    };
 
+    enum AddressingMode : u32 {
+        AddressingMode_SevenBit = 0,
+    };
+
+    enum SpeedMode : u32 {
+        SpeedMode_Normal    = 100000,
+        SpeedMode_Fast      = 400000,
+        SpeedMode_FastPlus  = 1000000,
+        SpeedMode_HighSpeed = 3400000,
+    };
+
+    using I2cCommand = u8;
 
 }
-
