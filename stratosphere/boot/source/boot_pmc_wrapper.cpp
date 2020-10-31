@@ -21,8 +21,6 @@ namespace ams::boot {
     namespace {
 
         /* Convenience definitions. */
-        constexpr u32 SmcFunctionId_AtmosphereReadWriteRegister = 0xF0000002;
-
         constexpr dd::PhysicalAddress PmcPhysStart = 0x7000E400;
         constexpr dd::PhysicalAddress PmcPhysLast  = 0x7000EFFF;
 
