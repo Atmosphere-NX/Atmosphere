@@ -27,6 +27,6 @@ namespace ams::i2c {
 
     R_DEFINE_ERROR_RESULT(UnknownDevice,   5);
 
-    R_DEFINE_ERROR_RESULT(InterruptTimeout, 253);
+    R_DEFINE_ERROR_RESULT(Timeout,       253);
 
 }

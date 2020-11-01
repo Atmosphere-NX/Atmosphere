@@ -31,6 +31,6 @@ namespace ams::i2c {
 
     Result ExecuteCommandList(void *dst, size_t dst_size, const I2cSession &session, const void *src, size_t src_size);
 
-    void SetRetryPolicy(const I2cSession &session, int max_retry_count, int retry_interval_ms);
+    void SetRetryPolicy(const I2cSession &session, int max_retry_count, int retry_interval_us);
 
 }

@@ -27,7 +27,7 @@ namespace ams::i2c::sf {
         AMS_SF_METHOD_INFO(C, H, 10, Result, Send,                  (const ams::sf::InAutoSelectBuffer &in_data, i2c::TransactionOption option)                                                                        ) \
         AMS_SF_METHOD_INFO(C, H, 11, Result, Receive,               (const ams::sf::OutAutoSelectBuffer &out_data, i2c::TransactionOption option)                                                                      ) \
         AMS_SF_METHOD_INFO(C, H, 12, Result, ExecuteCommandList,    (const ams::sf::OutAutoSelectBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list)                                        ) \
-        AMS_SF_METHOD_INFO(C, H, 13, Result, SetRetryPolicy,        (s32 max_retry_count, s32 retry_interval_ms),                                                                hos::Version_6_0_0                    )
+        AMS_SF_METHOD_INFO(C, H, 13, Result, SetRetryPolicy,        (s32 max_retry_count, s32 retry_interval_us),                                                                hos::Version_6_0_0                    )
 
     AMS_SF_DEFINE_INTERFACE(ISession, AMS_I2C_I_SESSION_INTERFACE_INFO)
 

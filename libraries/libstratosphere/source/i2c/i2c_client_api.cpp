@@ -151,11 +151,11 @@ namespace ams::i2c {
         return GetInterface(session)->ExecuteCommandList(buf, arr);
     }
 
-    void SetRetryPolicy(const I2cSession &session, int max_retry_count, int retry_interval_ms) {
+    void SetRetryPolicy(const I2cSession &session, int max_retry_count, int retry_interval_us) {
         AMS_ASSERT(max_retry_count >= 0);
-        AMS_ASSERT(retry_interval_ms >= 0);
+        AMS_ASSERT(retry_interval_us >= 0);
 
-        R_ABORT_UNLESS(GetInterface(session)->SetRetryPolicy(max_retry_count, retry_interval_ms));
+        R_ABORT_UNLESS(GetInterface(session)->SetRetryPolicy(max_retry_count, retry_interval_us));
     }
 
 }

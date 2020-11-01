@@ -24,7 +24,7 @@ namespace ams::boot {
             i2c::driver::I2cSession i2c_session;
         public:
             PmicDriver() {
-                i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Max77620Pmic);
+                R_ABORT_UNLESS(i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Max77620Pmic));
             }
 
             ~PmicDriver() {

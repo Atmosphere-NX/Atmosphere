@@ -397,7 +397,7 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
 
                 this->DisableInterruptMask();
                 os::ClearInterruptEvent(std::addressof(this->interrupt_event));
-                return i2c::ResultInterruptTimeout();
+                return i2c::ResultTimeout();
             }
 
             /* Check and handle any errors. */
@@ -427,7 +427,7 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
 
                 this->DisableInterruptMask();
                 os::ClearInterruptEvent(std::addressof(this->interrupt_event));
-                return i2c::ResultInterruptTimeout();
+                return i2c::ResultTimeout();
             }
         }
 
@@ -472,7 +472,7 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
 
                 this->DisableInterruptMask();
                 os::ClearInterruptEvent(std::addressof(this->interrupt_event));
-                return i2c::ResultInterruptTimeout();
+                return i2c::ResultTimeout();
             }
 
             /* Check and handle any errors. */
