@@ -39,8 +39,8 @@ namespace ams::regulator {
         return true;
     }
 
-    Result SetVoltageEnabled(RegulatorSession *session) {
-        AMS_UNUSED(session);
+    Result SetVoltageEnabled(RegulatorSession *session, bool enabled) {
+        AMS_UNUSED(session, enabled);
         return ResultSuccess();
     }
 
