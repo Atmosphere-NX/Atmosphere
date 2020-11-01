@@ -73,14 +73,6 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
             dd::PhysicalAddress GetRegistersPhysicalAddress() const { return this->registers_phys_addr; }
             size_t GetRegistersSize() const { return this->registers_size; }
             os::InterruptName GetInterruptName() const { return this->interrupt_name; }
-
-            void RemoveFrom(BusAccessorList &lst) {
-                lst.erase(lst.iterator_to(*this));
-            }
-
-            bool IsLinkedToList() const {
-                return this->bus_accessor_list_node.IsLinked();
-            }
         private:
             Result TryOpenRegulatorSession();
 
