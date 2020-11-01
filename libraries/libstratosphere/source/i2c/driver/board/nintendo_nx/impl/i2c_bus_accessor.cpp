@@ -18,6 +18,40 @@
 
 namespace ams::i2c::driver::board::nintendo_nx::impl {
 
+    namespace {
+
+        #define IO_PACKET_BITS_MASK(NAME)                                      REG_NAMED_BITS_MASK    (_IMPL_IO_PACKET_, NAME)
+        #define IO_PACKET_BITS_VALUE(NAME, VALUE)                              REG_NAMED_BITS_VALUE   (_IMPL_IO_PACKET_, NAME, VALUE)
+        #define IO_PACKET_BITS_ENUM(NAME, ENUM)                                REG_NAMED_BITS_ENUM    (_IMPL_IO_PACKET_, NAME, ENUM)
+        #define IO_PACKET_BITS_ENUM_SEL(NAME, __COND__, TRUE_ENUM, FALSE_ENUM) REG_NAMED_BITS_ENUM_SEL(_IMPL_IO_PACKET_, NAME, __COND__, TRUE_ENUM, FALSE_ENUM)
+
+        #define DEFINE_IO_PACKET_REG(NAME, __OFFSET__, __WIDTH__)                                                                                                                  REG_DEFINE_NAMED_REG           (_IMPL_IO_PACKET_, NAME, __OFFSET__, __WIDTH__)
+        #define DEFINE_IO_PACKET_REG_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE)                                                                                                         REG_DEFINE_NAMED_BIT_ENUM      (_IMPL_IO_PACKET_, NAME, __OFFSET__, ZERO, ONE)
+        #define DEFINE_IO_PACKET_REG_TWO_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE, TWO, THREE)                                                                                         REG_DEFINE_NAMED_TWO_BIT_ENUM  (_IMPL_IO_PACKET_, NAME, __OFFSET__, ZERO, ONE, TWO, THREE)
+        #define DEFINE_IO_PACKET_REG_THREE_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN)                                                               REG_DEFINE_NAMED_THREE_BIT_ENUM(_IMPL_IO_PACKET_, NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN)
+        #define DEFINE_IO_PACKET_REG_FOUR_BIT_ENUM(NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE, THIRTEEN, FOURTEEN, FIFTEEN) REG_DEFINE_NAMED_FOUR_BIT_ENUM (_IMPL_IO_PACKET_, NAME, __OFFSET__, ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, ELEVEN, TWELVE, THIRTEEN, FOURTEEN, FIFTEEN)
+
+        DEFINE_IO_PACKET_REG_THREE_BIT_ENUM(HEADER_WORD0_PKT_TYPE, 0, REQUEST, RESPONSE, INTERRUPT, STOP, RSVD4, RSVD5, RSVD6, RSVD7);
+        DEFINE_IO_PACKET_REG_FOUR_BIT_ENUM(HEADER_WORD0_PROTOCOL,  4, RSVD0, I2C, RSVD2, RSVD3, RSVD4, RSVD5, RSVD6, RSVD7, RSVD8, RSVD9, RSVD10, RSVD11, RSVD12, RSVD13, RSVD14, RSVD15)
+        DEFINE_IO_PACKET_REG(HEADER_WORD0_CONTROLLER_ID, 12, 4);
+        DEFINE_IO_PACKET_REG(HEADER_WORD0_PKT_ID, 16, 8);
+        DEFINE_IO_PACKET_REG_TWO_BIT_ENUM(HEADER_WORD0_PROT_HDR_SZ, 28, 1_WORD, 2_WORD, 3_WORD, 4_WORD);
+
+        DEFINE_IO_PACKET_REG(HEADER_WORD1_PAYLOAD_SIZE, 0, 11);
+
+        DEFINE_IO_PACKET_REG(PROTOCOL_HEADER_SLAVE_ADDR, 0, 10);
+        DEFINE_IO_PACKET_REG(PROTOCOL_HEADER_HS_MASTER_ADDR, 12, 3);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_CONTINUE_XFER, 15, USE_REPEAT_START_TOP, CONTINUE);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_REPEAT_START_STOP, 16, STOP_CONDITION, REPEAT_START_CONDITION);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_IE, 17, DISABLE, ENABLE);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_ADDRESS_MODE, 18, SEVEN_BIT, TEN_BIT);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_READ_WRITE, 19, WRITE, READ);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_SEND_START_BYTE, 20, DISABLE, ENABLE);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_CONTINUE_ON_NACK, 21, DISABLE, ENABLE);
+        DEFINE_IO_PACKET_REG_BIT_ENUM(PROTOCOL_HEADER_HS_MODE, 22, DISABLE, ENABLE);
+
+    }
+
     void I2cBusAccessor::Initialize(dd::PhysicalAddress reg_paddr, size_t reg_size, os::InterruptName intr, bool pb, SpeedMode sm) {
         AMS_ASSERT(this->state == State::NotInitialized);
 
@@ -313,8 +347,37 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
     }
 
     void I2cBusAccessor::WriteHeader(Xfer xfer, size_t size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
-        /* TODO */
-        AMS_ABORT();
+        /* Parse interesting values from our arguments. */
+        const bool is_read   = xfer == Xfer_Read;
+        const bool is_7_bit  = addressing_mode == AddressingMode_SevenBit;
+        const bool is_stop   = (option & TransactionOption_StopCondition) != 0;
+        const bool is_hs     = this->speed_mode == SpeedMode_HighSpeed;
+        const u32 slave_addr = ((static_cast<u32>(slave_address) & 0x7F) << 1) | (is_read ? 1 : 0);
+
+        /* Flush fifos. */
+        this->FlushFifos();
+
+        /* Enqueue the first header word. */
+        reg::Write(this->registers->tx_packet_fifo, IO_PACKET_BITS_ENUM (HEADER_WORD0_PROT_HDR_SZ,    1_WORD),
+                                                    IO_PACKET_BITS_VALUE(HEADER_WORD0_PKT_ID,              0),
+                                                    IO_PACKET_BITS_VALUE(HEADER_WORD0_CONTROLLER_ID,       0),
+                                                    IO_PACKET_BITS_ENUM (HEADER_WORD0_PROTOCOL,          I2C),
+                                                    IO_PACKET_BITS_ENUM (HEADER_WORD0_PKT_TYPE,      REQUEST));
+
+        /* Enqueue the second header word. */
+        reg::Write(this->registers->tx_packet_fifo, IO_PACKET_BITS_VALUE(HEADER_WORD1_PAYLOAD_SIZE, static_cast<u32>(size - 1)));
+
+        /* Enqueue the protocol header word. */
+        reg::Write(this->registers->tx_packet_fifo, IO_PACKET_BITS_ENUM_SEL(PROTOCOL_HEADER_HS_MODE,             is_hs,          ENABLE,                DISABLE),
+                                                    IO_PACKET_BITS_ENUM    (PROTOCOL_HEADER_CONTINUE_ON_NACK,                                           DISABLE),
+                                                    IO_PACKET_BITS_ENUM    (PROTOCOL_HEADER_SEND_START_BYTE,                                            DISABLE),
+                                                    IO_PACKET_BITS_ENUM_SEL(PROTOCOL_HEADER_READ_WRITE,        is_read,            READ,                  WRITE),
+                                                    IO_PACKET_BITS_ENUM_SEL(PROTOCOL_HEADER_ADDRESS_MODE,      is_7_bit,      SEVEN_BIT,                TEN_BIT),
+                                                    IO_PACKET_BITS_ENUM    (PROTOCOL_HEADER_IE,                                                          ENABLE),
+                                                    IO_PACKET_BITS_ENUM_SEL(PROTOCOL_HEADER_REPEAT_START_STOP, is_stop,  STOP_CONDITION, REPEAT_START_CONDITION),
+                                                    IO_PACKET_BITS_ENUM    (PROTOCOL_HEADER_CONTINUE_XFER,                                 USE_REPEAT_START_TOP),
+                                                    IO_PACKET_BITS_VALUE   (PROTOCOL_HEADER_HS_MASTER_ADDR,                                                   0),
+                                                    IO_PACKET_BITS_VALUE   (PROTOCOL_HEADER_SLAVE_ADDR,                                              slave_addr));
     }
 
     void I2cBusAccessor::ResetController() const {
