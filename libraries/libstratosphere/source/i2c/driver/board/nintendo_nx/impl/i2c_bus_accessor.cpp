@@ -20,6 +20,8 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
 
     namespace {
 
+        constexpr inline TimeSpan Timeout = TimeSpan::FromMilliSeconds(100);
+
         #define IO_PACKET_BITS_MASK(NAME)                                      REG_NAMED_BITS_MASK    (_IMPL_IO_PACKET_, NAME)
         #define IO_PACKET_BITS_VALUE(NAME, VALUE)                              REG_NAMED_BITS_VALUE   (_IMPL_IO_PACKET_, NAME, VALUE)
         #define IO_PACKET_BITS_ENUM(NAME, ENUM)                                REG_NAMED_BITS_ENUM    (_IMPL_IO_PACKET_, NAME, ENUM)
@@ -37,7 +39,7 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
         DEFINE_IO_PACKET_REG(HEADER_WORD0_PKT_ID, 16, 8);
         DEFINE_IO_PACKET_REG_TWO_BIT_ENUM(HEADER_WORD0_PROT_HDR_SZ, 28, 1_WORD, 2_WORD, 3_WORD, 4_WORD);
 
-        DEFINE_IO_PACKET_REG(HEADER_WORD1_PAYLOAD_SIZE, 0, 11);
+        DEFINE_IO_PACKET_REG(HEADER_WORD1_PAYLOAD_SIZE, 0, 12);
 
         DEFINE_IO_PACKET_REG(PROTOCOL_HEADER_SLAVE_ADDR, 0, 10);
         DEFINE_IO_PACKET_REG(PROTOCOL_HEADER_HS_MASTER_ADDR, 12, 3);
@@ -337,13 +339,170 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
     }
 
     Result I2cBusAccessor::Send(const u8 *src, size_t src_size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
-        /* TODO */
-        AMS_ABORT();
+        /* Acquire exclusive access to the registers. */
+        std::scoped_lock lk(this->register_mutex);
+
+        /* Configure interrupt mask, clear interrupt status. */
+        reg::Write(this->registers->interrupt_mask_register, I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_TFIFO_DATA_REQ_INT_EN,       ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_ARB_LOST_INT_EN,             ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_NOACK_INT_EN,                ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_PACKET_XFER_COMPLETE_INT_EN, ENABLE));
+
+        reg::Write(this->registers->interrupt_status_register, I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_ARB_LOST,                  SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_NOACK,                     SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_RFIFO_UNF,                 SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_TFIFO_OVF,                 SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_PACKET_XFER_COMPLETE,      SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_ALL_PACKETS_XFER_COMPLETE, SET));
+
+        /* Write the header. */
+        this->WriteHeader(Xfer_Write, src_size, option, slave_address, addressing_mode);
+
+        /* Setup tracking variables for the data. */
+        const u8 *cur    = src;
+        size_t remaining = src_size;
+
+        while (true) {
+            /* Get the number of empty bytes in the fifo status. */
+            const u32 empty = reg::GetValue(this->registers->fifo_status, I2C_REG_BITS_MASK(FIFO_STATUS_TX_FIFO_EMPTY_CNT));
+
+            /* Write up to (empty) bytes to the fifo. */
+            for (u32 i = 0; remaining > 0 && i < empty; ++i) {
+                /* Build the data word to send. */
+                const size_t cur_bytes = std::min(remaining, sizeof(u32));
+
+                u32 word = 0;
+                for (size_t j = 0; j < cur_bytes; ++j) {
+                    word |= cur[j] << (BITSIZEOF(u8) * j);
+                }
+
+                /* Write the data word. */
+                reg::Write(this->registers->tx_packet_fifo, word);
+
+                /* Advance. */
+                cur       += cur_bytes;
+                remaining -= cur_bytes;
+            }
+
+            /* If we're done, break. */
+            if (remaining == 0) {
+                break;
+            }
+
+            /* Wait for our current data to send. */
+            os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+            if (!os::TimedWaitInterruptEvent(std::addressof(this->interrupt_event), Timeout)) {
+                /* We timed out. */
+                this->HandleTransactionError(i2c::ResultBusBusy());
+
+                this->DisableInterruptMask();
+                os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+                return i2c::ResultInterruptTimeout();
+            }
+
+            /* Check and handle any errors. */
+            R_TRY(this->CheckAndHandleError());
+        }
+
+        /* Configure interrupt mask to not care about tfifo data req. */
+        reg::Write(this->registers->interrupt_mask_register, I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_ARB_LOST_INT_EN,             ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_NOACK_INT_EN,                ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_PACKET_XFER_COMPLETE_INT_EN, ENABLE));
+
+        /* Wait for the packet transfer to complete. */
+        while (true) {
+            /* Check and handle any errors. */
+            R_TRY(this->CheckAndHandleError());
+
+            /* Check if packet transfer is done. */
+            if (reg::HasValue(this->registers->interrupt_status_register, I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_PACKET_XFER_COMPLETE, SET))) {
+                break;
+            }
+
+            /* Wait for our the packet to transfer. */
+            os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+            if (!os::TimedWaitInterruptEvent(std::addressof(this->interrupt_event), Timeout)) {
+                /* We timed out. */
+                this->HandleTransactionError(i2c::ResultBusBusy());
+
+                this->DisableInterruptMask();
+                os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+                return i2c::ResultInterruptTimeout();
+            }
+        }
+
+        /* Check and handle any errors. */
+        R_TRY(this->CheckAndHandleError());
+
+        /* We're done. */
+        this->DisableInterruptMask();
+        return ResultSuccess();
     }
 
     Result I2cBusAccessor::Receive(u8 *dst, size_t dst_size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
-        /* TODO */
-        AMS_ABORT();
+        /* Acquire exclusive access to the registers. */
+        std::scoped_lock lk(this->register_mutex);
+
+        /* Configure interrupt mask, clear interrupt status. */
+        reg::Write(this->registers->interrupt_mask_register, I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_RFIFO_DATA_REQ_INT_EN,       ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_ARB_LOST_INT_EN,             ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_NOACK_INT_EN,                ENABLE),
+                                                             I2C_REG_BITS_ENUM(INTERRUPT_MASK_REGISTER_PACKET_XFER_COMPLETE_INT_EN, ENABLE));
+
+        reg::Write(this->registers->interrupt_status_register, I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_ARB_LOST,                  SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_NOACK,                     SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_RFIFO_UNF,                 SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_TFIFO_OVF,                 SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_PACKET_XFER_COMPLETE,      SET),
+                                                               I2C_REG_BITS_ENUM(INTERRUPT_STATUS_REGISTER_ALL_PACKETS_XFER_COMPLETE, SET));
+
+        /* Write the header. */
+        this->WriteHeader(Xfer_Read, dst_size, option, slave_address, addressing_mode);
+
+        /* Setup tracking variables for the data. */
+        u8 *cur          = dst;
+        size_t remaining = dst_size;
+
+        while (remaining > 0) {
+            /* Wait for data to come in. */
+            os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+            if (!os::TimedWaitInterruptEvent(std::addressof(this->interrupt_event), Timeout)) {
+                /* We timed out. */
+                this->HandleTransactionError(i2c::ResultBusBusy());
+
+                this->DisableInterruptMask();
+                os::ClearInterruptEvent(std::addressof(this->interrupt_event));
+                return i2c::ResultInterruptTimeout();
+            }
+
+            /* Check and handle any errors. */
+            R_TRY(this->CheckAndHandleError());
+
+            /* Get the number of full bytes in the fifo status. */
+            const u32 full = reg::GetValue(this->registers->fifo_status, I2C_REG_BITS_MASK(FIFO_STATUS_RX_FIFO_FULL_CNT));
+
+            /* Determine how many words we can read. */
+            const size_t cur_words = std::min(util::DivideUp(remaining, sizeof(u32)), static_cast<size_t>(full));
+
+            /* Read the correct number of words from the fifo. */
+            for (size_t i = 0; i < cur_words; ++i) {
+                /* Read the word from the fifo. */
+                const u32 word = reg::Read(this->registers->rx_fifo);
+
+                /* Copy bytes from the word. */
+                const size_t cur_bytes = std::min(remaining, sizeof(u32));
+                for (size_t j = 0; j < cur_bytes; ++j) {
+                    cur[j] = (word >> (BITSIZEOF(u8) * j)) & 0xFF;
+                }
+
+                /* Advance. */
+                cur       += cur_bytes;
+                remaining -= cur_bytes;
+            }
+        }
+
+        /* We're done. */
+        return ResultSuccess();
     }
 
     void I2cBusAccessor::WriteHeader(Xfer xfer, size_t size, TransactionOption option, u16 slave_address, AddressingMode addressing_mode) {
@@ -473,6 +632,7 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
             t_low    = 0x04;
             clk_div  = 0x05;
             debounce = 0x02;
+            src_div  = 0; /* unused */
         } else {
             switch (speed_mode) {
                 case SpeedMode_Standard:
