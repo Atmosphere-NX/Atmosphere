@@ -27,7 +27,7 @@ namespace ams::regulator {
     void CloseSession(RegulatorSession *session);
 
     bool GetVoltageEnabled(RegulatorSession *session);
-    Result SetVoltageEnabled(RegulatorSession *session);
+    Result SetVoltageEnabled(RegulatorSession *session, bool enabled);
 
     Result SetVoltageValue(RegulatorSession *session, u32 micro_volts);
 
