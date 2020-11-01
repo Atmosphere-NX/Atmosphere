@@ -62,33 +62,44 @@ namespace ams::sf {
         return std::make_shared<typename Interface::ImplSharedPointer<Impl>>(std::make_shared<Impl>(std::forward<Arguments>(args)...));
     }
 
-    template<typename Interface, typename Impl>
-    class ServiceObjectAllocator {
+    template<typename T>
+    class ServiceObjectAllocatorImpl {
+        private:
+            template<typename>
+            friend class ServiceObjectAllocatorImpl;
         public:
-            using value_type = typename Interface::ImplHolder<Impl>;
+            using value_type = T;
         private:
             MemoryResource * const memory_resource;
         public:
-            constexpr ServiceObjectAllocator(MemoryResource *mr) : memory_resource(mr) { /* ... */ }
+            constexpr ServiceObjectAllocatorImpl(MemoryResource *mr) : memory_resource(mr) { /* ... */ }
+
+            template<typename U>
+            constexpr ServiceObjectAllocatorImpl(const ServiceObjectAllocatorImpl<U> &rhs) : memory_resource(rhs.memory_resource) { /* ... */ }
 
             value_type *allocate(size_t n) const {
                 void *mem = this->memory_resource->Allocate(n * sizeof(value_type), alignof(value_type));
                 AMS_ABORT_UNLESS(mem != nullptr);
-                return mem;
+                return static_cast<value_type *>(mem);
             }
 
             void deallocate(void *p, size_t n) const {
                 this->memory_resource->Deallocate(p, n * sizeof(value_type), alignof(value_type));
             }
 
-            inline bool operator==(const ServiceObjectAllocator &rhs) const {
+            template<typename U>
+            inline bool operator==(const ServiceObjectAllocatorImpl<U> &rhs) const {
                 return this->memory_resource->is_equal(*rhs->memory_resource);
             }
 
-            inline bool operator!=(const ServiceObjectAllocator &rhs) const {
+            template<typename U>
+            inline bool operator!=(const ServiceObjectAllocatorImpl<U> &rhs) const {
                 return !(*this == rhs);
             }
     };
+
+    template <typename Interface, typename Impl>
+    using ServiceObjectAllocator = ServiceObjectAllocatorImpl<typename Interface::ImplHolder<Impl>>;
 
     template<typename Interface, typename Impl, typename Allocator, typename... Arguments>
         requires std::constructible_from<Impl, Arguments...>

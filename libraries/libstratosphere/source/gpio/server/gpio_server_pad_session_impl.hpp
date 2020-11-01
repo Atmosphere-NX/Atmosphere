@@ -35,10 +35,10 @@ namespace ams::gpio::server {
                 }
             }
 
-            Result OpenSession(DeviceCode device_code) {
+            Result OpenSession(DeviceCode device_code, ddsf::AccessMode access_mode) {
                 AMS_ABORT_UNLESS(!this->has_session);
 
-                R_TRY(gpio::driver::OpenSession(std::addressof(this->internal_pad_session), device_code));
+                R_TRY(gpio::driver::OpenSession(std::addressof(this->internal_pad_session), device_code, access_mode));
                 this->has_session = true;
                 return ResultSuccess();
             }

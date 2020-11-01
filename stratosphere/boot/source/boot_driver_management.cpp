@@ -33,11 +33,20 @@ namespace ams::boot {
         /* Initialize the i2c client library with the server manager object. */
         i2c::InitializeWith(i2c::server::GetServiceObject(), i2c::server::GetServiceObjectPowerBus());
 
-        /* Initialize the board driver without enabling interrupt handlers. */
+        /* Initialize the board driver. */
         i2c::driver::board::Initialize();
 
         /* Initialize the driver library. */
         i2c::driver::Initialize();
+
+        /* Initialize the pwm client library with the server manager object. */
+        /* TODO: pwm::InitializeWith(pwm::server::GetServiceObject()); */
+
+        /* Initialize the pwm board driver. */
+        /* TODO: pwm::driver::board::Initialize(); */
+
+        /* Initialize the pwm driver library. */
+        /* TODO: pwm::driver::Initialize();
     }
 
 }

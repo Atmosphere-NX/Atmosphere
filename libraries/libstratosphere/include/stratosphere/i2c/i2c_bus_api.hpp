@@ -13,17 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <vapours.hpp>
 #include <stratosphere/i2c/i2c_types.hpp>
-#include <stratosphere/i2c/i2c_select_device_name.hpp>
-#include <stratosphere/i2c/sf/i2c_sf_i_session.hpp>
-#include <stratosphere/i2c/sf/i2c_sf_i_manager.hpp>
-#include <stratosphere/i2c/server/i2c_server_api.hpp>
-#include <stratosphere/i2c/driver/i2c_select_driver_api.hpp>
-#include <stratosphere/i2c/driver/i2c_driver_service_api.hpp>
-#include <stratosphere/i2c/driver/i2c_driver_client_api.hpp>
-#include <stratosphere/i2c/driver/i2c_bus_api.hpp>
-#include <stratosphere/i2c/driver/impl/i2c_i2c_session_impl.hpp>
-#include <stratosphere/i2c/i2c_api.hpp>
-#include <stratosphere/i2c/i2c_bus_api.hpp>
+
+namespace ams::i2c {
+
+    struct I2cSession {
+        void *_session;
+    };
+
+    Result OpenSession(I2cSession *out, DeviceCode device_code);
+    void CloseSession(I2cSession &session);
+
+    Result Send(const I2cSession &session, const void *src, size_t src_size, TransactionOption option);
+    Result Receive(void *dst, size_t dst_size, const I2cSession &session, TransactionOption option);
+
+    Result ExecuteCommandList(void *dst, size_t dst_size, const I2cSession &session, const void *src, size_t src_size);
+
+    void SetRetryPolicy(const I2cSession &session, int max_retry_count, int retry_interval_ms);
+
+}
