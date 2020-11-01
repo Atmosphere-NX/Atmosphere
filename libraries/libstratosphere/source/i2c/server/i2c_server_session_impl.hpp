@@ -67,8 +67,8 @@ namespace ams::i2c::server {
                 return i2c::driver::ExecuteCommandList(rcv_buf.GetPointer(), rcv_buf.GetSize(), this->internal_session, command_list.GetPointer(), command_list.GetSize() * sizeof(i2c::I2cCommand));
             }
 
-            Result SetRetryPolicy(s32 max_retry_count, s32 retry_interval_ms) {
-                return i2c::driver::SetRetryPolicy(this->internal_session, max_retry_count, retry_interval_ms);
+            Result SetRetryPolicy(s32 max_retry_count, s32 retry_interval_us) {
+                return i2c::driver::SetRetryPolicy(this->internal_session, max_retry_count, retry_interval_us);
             }
     };
     static_assert(i2c::sf::IsISession<SessionImpl>);

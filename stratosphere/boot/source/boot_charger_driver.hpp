@@ -26,7 +26,7 @@ namespace ams::boot {
             i2c::driver::I2cSession i2c_session;
         public:
             ChargerDriver() {
-                i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Bq24193);
+                R_ABORT_UNLESS(i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Bq24193));
 
                 //boot::gpio::Configure(GpioPadName_Bq24193Charger);
                 //boot::gpio::SetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);

@@ -57,7 +57,7 @@ namespace ams::i2c::driver::impl {
             Result Send(const void *src, size_t src_size, TransactionOption option);
             Result Receive(void *dst, size_t dst_size, TransactionOption option);
             Result ExecuteCommandList(void *dst, size_t dst_size, const void *src, size_t src_size);
-            Result SetRetryPolicy(int mr, int interval_ms);
+            Result SetRetryPolicy(int mr, int interval_us);
     };
     static_assert( sizeof(I2cSessionImpl) <= I2cSessionSize);
     static_assert(alignof(I2cSessionImpl) <= I2cSessionAlign);

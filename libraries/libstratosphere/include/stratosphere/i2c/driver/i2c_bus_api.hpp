@@ -39,7 +39,7 @@ namespace ams::i2c::driver {
 
     Result ExecuteCommandList(void *dst, size_t dst_size, I2cSession &session, const void *src, size_t src_size);
 
-    Result SetRetryPolicy(I2cSession &session, int max_retry_count, int retry_interval_ms);
+    Result SetRetryPolicy(I2cSession &session, int max_retry_count, int retry_interval_us);
 
 }
 

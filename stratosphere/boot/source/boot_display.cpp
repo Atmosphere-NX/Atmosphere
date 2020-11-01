@@ -197,7 +197,7 @@ namespace ams::boot {
         /* Turn on DSI/voltage rail. */
         {
             i2c::driver::I2cSession i2c_session;
-            i2c::driver::OpenSession(std::addressof(i2c_session), i2c::DeviceCode_Max77620Pmic);
+            R_ABORT_UNLESS(i2c::driver::OpenSession(std::addressof(i2c_session), i2c::DeviceCode_Max77620Pmic));
 
             if (g_soc_type == spl::SocType_Mariko) {
                 WriteI2cRegister(i2c_session, 0x18, 0x3A);
