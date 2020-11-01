@@ -20,16 +20,14 @@ namespace ams::boot {
 
     class RtcDriver {
         private:
-            i2c::driver::Session i2c_session;
+            i2c::driver::I2cSession i2c_session;
         public:
             RtcDriver() {
-                i2c::driver::Initialize();
-                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max77620Rtc);
+                R_ABORT_UNLESS(i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Max77620Rtc));
             }
 
             ~RtcDriver() {
                 i2c::driver::CloseSession(this->i2c_session);
-                i2c::driver::Finalize();
             }
         private:
             Result ReadRtcRegister(u8 *out, u8 address);

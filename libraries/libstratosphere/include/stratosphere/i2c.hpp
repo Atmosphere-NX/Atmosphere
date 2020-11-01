@@ -17,6 +17,7 @@
 #pragma once
 #include <stratosphere/i2c/i2c_types.hpp>
 #include <stratosphere/i2c/i2c_select_device_name.hpp>
+#include <stratosphere/i2c/i2c_command_list_formatter.hpp>
 #include <stratosphere/i2c/sf/i2c_sf_i_session.hpp>
 #include <stratosphere/i2c/sf/i2c_sf_i_manager.hpp>
 #include <stratosphere/i2c/server/i2c_server_api.hpp>

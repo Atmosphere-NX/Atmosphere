@@ -16,13 +16,11 @@
 #pragma once
 #include <stratosphere.hpp>
 
-#include "i2c/driver/i2c_api.hpp"
-
 namespace ams::boot {
 
     /* I2C Utilities. */
-    Result ReadI2cRegister(i2c::driver::Session &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);
-    Result WriteI2cRegister(i2c::driver::Session &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size);
-    Result WriteI2cRegister(i2c::driver::Session &session, const u8 address, const u8 value);
+    Result ReadI2cRegister(i2c::driver::I2cSession &session, u8 *dst, size_t dst_size, const u8 *cmd, size_t cmd_size);
+    Result WriteI2cRegister(i2c::driver::I2cSession &session, const u8 *src, size_t src_size, const u8 *cmd, size_t cmd_size);
+    Result WriteI2cRegister(i2c::driver::I2cSession &session, const u8 address, const u8 value);
 
 }

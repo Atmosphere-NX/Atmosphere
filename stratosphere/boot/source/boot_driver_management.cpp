@@ -46,7 +46,7 @@ namespace ams::boot {
         /* TODO: pwm::driver::board::Initialize(); */
 
         /* Initialize the pwm driver library. */
-        /* TODO: pwm::driver::Initialize();
+        /* TODO: pwm::driver::Initialize(); */
     }
 
 }
