@@ -14,22 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "i2c/driver/i2c_api.hpp"
 
 namespace ams::boot {
 
     class BatteryDriver {
         private:
-            i2c::driver::Session i2c_session;
+            i2c::driver::I2cSession i2c_session;
         public:
             BatteryDriver() {
-                i2c::driver::Initialize();
-                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max17050);
+                i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Max17050);
             }
 
             ~BatteryDriver() {
                 i2c::driver::CloseSession(this->i2c_session);
-                i2c::driver::Finalize();
             }
         private:
             Result Read(u8 addr, u16 *out_data);

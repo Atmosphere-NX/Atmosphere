@@ -23,11 +23,10 @@ namespace ams::boot {
         private:
             static constexpr u32 GpioPadName_Bq24193Charger = 0xA;
         private:
-            i2c::driver::Session i2c_session;
+            i2c::driver::I2cSession i2c_session;
         public:
             ChargerDriver() {
-                i2c::driver::Initialize();
-                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Bq24193);
+                i2c::driver::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Bq24193);
 
                 //boot::gpio::Configure(GpioPadName_Bq24193Charger);
                 //boot::gpio::SetDirection(GpioPadName_Bq24193Charger, GpioDirection_Output);
@@ -35,7 +34,6 @@ namespace ams::boot {
 
             ~ChargerDriver() {
                 i2c::driver::CloseSession(this->i2c_session);
-                i2c::driver::Finalize();
             }
         private:
             Result Read(u8 addr, u8 *out_data);
