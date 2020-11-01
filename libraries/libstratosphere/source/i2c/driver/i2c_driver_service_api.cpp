@@ -13,14 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
 
-#pragma once
-#include <stratosphere/i2c/i2c_types.hpp>
-#include <stratosphere/i2c/i2c_select_device_name.hpp>
-#include <stratosphere/i2c/sf/i2c_sf_i_session.hpp>
-#include <stratosphere/i2c/sf/i2c_sf_i_manager.hpp>
-#include <stratosphere/i2c/server/i2c_server_api.hpp>
-#include <stratosphere/i2c/driver/i2c_select_driver_api.hpp>
-#include <stratosphere/i2c/driver/i2c_driver_service_api.hpp>
-#include <stratosphere/i2c/driver/i2c_driver_client_api.hpp>
-#include <stratosphere/i2c/i2c_api.hpp>
+#include "impl/i2c_driver_core.hpp"
+
+namespace ams::i2c::driver {
+
+    void RegisterDriver(II2cDriver *driver) {
+        return impl::RegisterDriver(driver);
+    }
+
+    void UnregisterDriver(II2cDriver *driver) {
+        return impl::UnregisterDriver(driver);
+    }
+
+    Result RegisterDeviceCode(DeviceCode device_code, I2cDeviceProperty *device) {
+        return impl::RegisterDeviceCode(device_code, device);
+    }
+
+    bool UnregisterDeviceCode(DeviceCode device_code) {
+        return impl::UnregisterDeviceCode(device_code);
+    }
+
+}
