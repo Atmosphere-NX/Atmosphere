@@ -194,4 +194,57 @@ namespace ams::i2c {
         }
     }
 
+    constexpr inline I2cDevice ConvertToI2cDevice(DeviceCode dc) {
+        switch (dc.GetInternalValue()) {
+            case DeviceCode_ClassicController.GetInternalValue(): return I2cDevice_ClassicController;
+            case DeviceCode_Ftm3bd56         .GetInternalValue(): return I2cDevice_Ftm3bd56;
+            case DeviceCode_Tmp451           .GetInternalValue(): return I2cDevice_Tmp451;
+         /* case DeviceCode_Nct72            .GetInternalValue(): return I2cDevice_Nct72; */
+            case DeviceCode_Alc5639          .GetInternalValue(): return I2cDevice_Alc5639;
+            case DeviceCode_Max77620Rtc      .GetInternalValue(): return I2cDevice_Max77620Rtc;
+            case DeviceCode_Max77620Pmic     .GetInternalValue(): return I2cDevice_Max77620Pmic;
+            case DeviceCode_Max77621Cpu      .GetInternalValue(): return I2cDevice_Max77621Cpu;
+            case DeviceCode_Max77621Gpu      .GetInternalValue(): return I2cDevice_Max77621Gpu;
+            case DeviceCode_Bq24193          .GetInternalValue(): return I2cDevice_Bq24193;
+            case DeviceCode_Max17050         .GetInternalValue(): return I2cDevice_Max17050;
+            case DeviceCode_Bm92t30mwv       .GetInternalValue(): return I2cDevice_Bm92t30mwv;
+            case DeviceCode_Ina226Vdd15v0Hb  .GetInternalValue(): return I2cDevice_Ina226Vdd15v0Hb;
+            case DeviceCode_Ina226VsysCpuDs  .GetInternalValue(): return I2cDevice_Ina226VsysCpuDs;
+            case DeviceCode_Ina226VsysGpuDs  .GetInternalValue(): return I2cDevice_Ina226VsysGpuDs;
+            case DeviceCode_Ina226VsysDdrDs  .GetInternalValue(): return I2cDevice_Ina226VsysDdrDs;
+            case DeviceCode_Ina226VsysAp     .GetInternalValue(): return I2cDevice_Ina226VsysAp;
+            case DeviceCode_Ina226VsysBlDs   .GetInternalValue(): return I2cDevice_Ina226VsysBlDs;
+            case DeviceCode_Bh1730           .GetInternalValue(): return I2cDevice_Bh1730;
+            case DeviceCode_Ina226VsysCore   .GetInternalValue(): return I2cDevice_Ina226VsysCore;
+            case DeviceCode_Ina226Soc1V8     .GetInternalValue(): return I2cDevice_Ina226Soc1V8;
+            case DeviceCode_Ina226Lpddr1V8   .GetInternalValue(): return I2cDevice_Ina226Lpddr1V8;
+            case DeviceCode_Ina226Reg1V32    .GetInternalValue(): return I2cDevice_Ina226Reg1V32;
+            case DeviceCode_Ina226Vdd3V3Sys  .GetInternalValue(): return I2cDevice_Ina226Vdd3V3Sys;
+            case DeviceCode_HdmiDdc          .GetInternalValue(): return I2cDevice_HdmiDdc;
+            case DeviceCode_HdmiScdc         .GetInternalValue(): return I2cDevice_HdmiScdc;
+            case DeviceCode_HdmiHdcp         .GetInternalValue(): return I2cDevice_HdmiHdcp;
+            case DeviceCode_Fan53528         .GetInternalValue(): return I2cDevice_Fan53528;
+            case DeviceCode_Max77812_3       .GetInternalValue(): return I2cDevice_Max77812_3;
+            case DeviceCode_Max77812_2       .GetInternalValue(): return I2cDevice_Max77812_2;
+            case DeviceCode_Ina226VddDdr0V6  .GetInternalValue(): return I2cDevice_Ina226VddDdr0V6;
+            case DeviceCode_HoagNfcIc        .GetInternalValue(): return I2cDevice_HoagNfcIc;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+    constexpr bool IsPowerBusDeviceCode(DeviceCode device_code) {
+        switch (device_code.GetInternalValue()) {
+            case DeviceCode_Max77620Pmic.GetInternalValue():
+            case DeviceCode_Max77812_3  .GetInternalValue():
+            case DeviceCode_Max77621Cpu .GetInternalValue():
+            case DeviceCode_Max77621Gpu .GetInternalValue():
+            case DeviceCode_Fan53528    .GetInternalValue():
+            case DeviceCode_Max77812_2  .GetInternalValue():
+            case DeviceCode_Max77620Rtc .GetInternalValue():
+                return true;
+            default:
+                return false;
+        }
+    }
+
 }

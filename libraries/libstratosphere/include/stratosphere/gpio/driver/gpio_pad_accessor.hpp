@@ -31,7 +31,7 @@ namespace ams::gpio::driver {
         util::TypedStorage<impl::GpioPadSessionImplPadded, impl::GpioPadSessionSize, impl::GpioPadSessionAlign> _impl;
     };
 
-    Result OpenSession(GpioPadSession *out, DeviceCode device_code);
+    Result OpenSession(GpioPadSession *out, DeviceCode device_code, ddsf::AccessMode access_mode);
     void CloseSession(GpioPadSession *session);
 
     Result SetDirection(GpioPadSession *session, gpio::Direction direction);
