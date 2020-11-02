@@ -13,16 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "pwm_server_manager_impl.hpp"
 
-#pragma once
-#include <stratosphere/pwm/pwm_types.hpp>
-#include <stratosphere/pwm/pwm_select_channel_name.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_channel_session.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_manager.hpp>
-#include <stratosphere/pwm/server/pwm_server_api.hpp>
-#include <stratosphere/pwm/driver/pwm_select_driver_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_service_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_client_api.hpp>
-#include <stratosphere/pwm/driver/pwm_channel_api.hpp>
-#include <stratosphere/pwm/pwm_api.hpp>
-#include <stratosphere/pwm/pwm_channel_api.hpp>
+namespace ams::pwm::server {
+
+    namespace {
+
+        ManagerImpl g_manager_impl;
+
+        std::shared_ptr<pwm::sf::IManager> GetManagerServiceObject() {
+            static std::shared_ptr<pwm::sf::IManager> s_sp = ams::sf::GetSharedPointerTo<pwm::sf::IManager>(g_manager_impl);
+            return s_sp;
+        }
+
+    }
+
+    std::shared_ptr<pwm::sf::IManager> GetServiceObject() {
+        return GetManagerServiceObject();
+    }
+
+}

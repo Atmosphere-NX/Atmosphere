@@ -15,14 +15,12 @@
  */
 
 #pragma once
-#include <stratosphere/pwm/pwm_types.hpp>
-#include <stratosphere/pwm/pwm_select_channel_name.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_channel_session.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_manager.hpp>
-#include <stratosphere/pwm/server/pwm_server_api.hpp>
-#include <stratosphere/pwm/driver/pwm_select_driver_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_service_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_client_api.hpp>
-#include <stratosphere/pwm/driver/pwm_channel_api.hpp>
-#include <stratosphere/pwm/pwm_api.hpp>
-#include <stratosphere/pwm/pwm_channel_api.hpp>
+#include <vapours/results/results_common.hpp>
+
+namespace ams::pwm {
+
+    R_DEFINE_NAMESPACE_RESULT_MODULE(189);
+
+    R_DEFINE_ERROR_RESULT(InvalidArgument, 2);
+
+}

@@ -13,16 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <vapours.hpp>
 #include <stratosphere/pwm/pwm_types.hpp>
-#include <stratosphere/pwm/pwm_select_channel_name.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_channel_session.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_manager.hpp>
-#include <stratosphere/pwm/server/pwm_server_api.hpp>
-#include <stratosphere/pwm/driver/pwm_select_driver_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_service_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_client_api.hpp>
-#include <stratosphere/pwm/driver/pwm_channel_api.hpp>
-#include <stratosphere/pwm/pwm_api.hpp>
-#include <stratosphere/pwm/pwm_channel_api.hpp>
+#include <stratosphere/ddsf.hpp>
+
+namespace ams::pwm::driver {
+
+    class IPwmDevice : public ::ams::ddsf::IDevice {
+        NON_COPYABLE(IPwmDevice);
+        NON_MOVEABLE(IPwmDevice);
+        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::IPwmDevice, ::ams::ddsf::IDriver);
+        private:
+            int channel_index;
+        public:
+            IPwmDevice(int id) : IDevice(false), channel_index(id) { /* ... */ }
+            virtual ~IPwmDevice() { /* ... */ }
+
+            constexpr int GetChannelIndex() const { return this->channel_index; }
+    };
+
+}

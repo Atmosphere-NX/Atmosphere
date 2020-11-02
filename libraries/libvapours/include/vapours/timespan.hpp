@@ -95,6 +95,10 @@ namespace ams {
 
             constexpr ALWAYS_INLINE friend TimeSpan operator+(const TimeSpan &lhs, const TimeSpan &rhs) { TimeSpan r(lhs); return r += rhs; }
             constexpr ALWAYS_INLINE friend TimeSpan operator-(const TimeSpan &lhs, const TimeSpan &rhs) { TimeSpan r(lhs); return r -= rhs; }
+
+            constexpr ALWAYS_INLINE operator TimeSpanType() const {
+                return this->ts;
+            }
     };
 
 }

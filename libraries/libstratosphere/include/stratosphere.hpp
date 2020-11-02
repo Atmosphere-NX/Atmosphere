@@ -61,6 +61,7 @@
 #include <stratosphere/nim.hpp>
 #include <stratosphere/ns.hpp>
 #include <stratosphere/patcher.hpp>
+#include <stratosphere/pcv.hpp>
 #include <stratosphere/pgl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
