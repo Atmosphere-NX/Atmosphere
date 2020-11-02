@@ -26,4 +26,6 @@ namespace ams::gpio {
     R_DEFINE_ERROR_RESULT(DeviceNotFound,  3);
     R_DEFINE_ERROR_RESULT(InvalidArgument, 4);
 
+    R_DEFINE_ERROR_RESULT(NotOpen,         6);
+
 }
