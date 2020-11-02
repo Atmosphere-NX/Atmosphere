@@ -13,16 +13,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
+#include <vapours.hpp>
 #include <stratosphere/pwm/pwm_types.hpp>
-#include <stratosphere/pwm/pwm_select_channel_name.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_channel_session.hpp>
-#include <stratosphere/pwm/sf/pwm_sf_i_manager.hpp>
-#include <stratosphere/pwm/server/pwm_server_api.hpp>
-#include <stratosphere/pwm/driver/pwm_select_driver_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_service_api.hpp>
-#include <stratosphere/pwm/driver/pwm_driver_client_api.hpp>
-#include <stratosphere/pwm/driver/pwm_channel_api.hpp>
-#include <stratosphere/pwm/pwm_api.hpp>
-#include <stratosphere/pwm/pwm_channel_api.hpp>
+
+namespace ams::pwm {
+
+    struct ChannelSession {
+        void *_session;
+    };
+
+    Result OpenSession(ChannelSession *out, DeviceCode device_code);
+    void CloseSession(ChannelSession &session);
+
+    void     SetPeriod(ChannelSession &session, TimeSpan period);
+    TimeSpan GetPeriod(ChannelSession &session);
+
+    void SetDuty(ChannelSession &session, int duty);
+    int  GetDuty(ChannelSession &session);
+
+    void SetEnabled(ChannelSession &session, bool en);
+    bool GetEnabled(ChannelSession &session);
+
+    void   SetScale(ChannelSession &session, double scale);
+    double GetScale(ChannelSession &session);
+
+}

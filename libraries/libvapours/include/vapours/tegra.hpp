@@ -35,6 +35,7 @@
 #include <vapours/tegra/tegra_pinmux.hpp>
 #include <vapours/tegra/tegra_pg_up.hpp>
 #include <vapours/tegra/tegra_pmc.hpp>
+#include <vapours/tegra/tegra_pwm.hpp>
 #include <vapours/tegra/tegra_sb.hpp>
 #include <vapours/tegra/tegra_sysctr0.hpp>
 #include <vapours/tegra/tegra_timer.hpp>

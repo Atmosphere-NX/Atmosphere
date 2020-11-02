@@ -47,6 +47,7 @@
 #include <vapours/results/pgl_results.hpp>
 #include <vapours/results/pm_results.hpp>
 #include <vapours/results/psc_results.hpp>
+#include <vapours/results/pwm_results.hpp>
 #include <vapours/results/ro_results.hpp>
 #include <vapours/results/sdmmc_results.hpp>
 #include <vapours/results/settings_results.hpp>
