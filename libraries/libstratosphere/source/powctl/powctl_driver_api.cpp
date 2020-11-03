@@ -14,17 +14,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#include "impl/powctl_select_board_driver.hpp"
+#include "impl/powctl_device_management.hpp"
 
-namespace ams::boot {
+namespace ams::powctl {
 
-    void SetFanPowerEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
+    void Initialize(bool enable_interrupt_handlers) {
+        /* Initialize the board driver. */
+        impl::board::Initialize(enable_interrupt_handlers);
+
+        /* Initialize drivers. */
+        impl::InitializeDrivers();
+
+    }
+
+    void Finalize() {
+        /* Finalize drivers. */
+        impl::FinalizeDrivers();
+
+        /* Finalize the board driver. */
+        impl::board::Finalize();
     }
 
 }

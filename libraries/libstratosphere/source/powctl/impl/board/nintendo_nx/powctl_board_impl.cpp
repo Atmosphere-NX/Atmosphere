@@ -14,17 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#include "powctl_board_impl.hpp"
 
-namespace ams::boot {
+namespace ams::powctl::impl::board::nintendo_nx {
 
-    void SetFanPowerEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
+    void Initialize(bool use_event_handlers) {
+        /* TODO */
+        AMS_ABORT();
+    }
+
+    void Finalize() {
+        /* TODO */
+        AMS_ABORT();
     }
 
 }

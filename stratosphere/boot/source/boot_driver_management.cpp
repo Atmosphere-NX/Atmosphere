@@ -49,4 +49,9 @@ namespace ams::boot {
         pwm::driver::Initialize();
     }
 
+    void FinalizeI2cDriverLibrary() {
+        /* TODO */
+        AMS_ABORT();
+    }
+
 }

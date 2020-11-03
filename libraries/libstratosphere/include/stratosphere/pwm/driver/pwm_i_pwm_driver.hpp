@@ -24,7 +24,7 @@ namespace ams::pwm::driver {
     class IPwmDriver : public ::ams::ddsf::IDriver {
         NON_COPYABLE(IPwmDriver);
         NON_MOVEABLE(IPwmDriver);
-        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::IPwmDriver, ::ams::ddsf::IDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::IPwmDriver, ::ams::ddsf::IDriver);
         public:
             IPwmDriver() : IDriver() { /* ... */ }
             virtual ~IPwmDriver() { /* ... */ }

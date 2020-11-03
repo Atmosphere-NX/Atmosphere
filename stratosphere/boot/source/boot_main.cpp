@@ -191,14 +191,25 @@ int main(int argc, char **argv)
     /* Initialize the gpio server library. */
     boot::InitializeGpioDriverLibrary();
 
+    /* Initialize the i2c server library. */
+    boot::InitializeI2cDriverLibrary();
+
+    /* Get the hardware type. */
+    const auto hw_type = spl::GetHardwareType();
+
+    /* Initialize the power control library without interrupt event handling. */
+    if (hw_type != spl::HardwareType::Calcio) {
+        powctl::Initialize(false);
+    }
+
     /* Check USB PLL/UTMIP clock. */
     boot::CheckClock();
 
     /* Talk to PMIC/RTC, set boot reason with SPL. */
     boot::DetectBootReason();
 
-    const auto hw_type = spl::GetHardwareType();
-    if (hw_type != spl::HardwareType::Copper && hw_type != spl::HardwareType::Calcio) {
+    /* Display the splash screen and check the battery charge. */
+    if (hw_type != spl::HardwareType::Calcio) {
         /* Display splash screen for two seconds. */
         boot::ShowSplashScreen();
 
@@ -213,15 +224,23 @@ int main(int argc, char **argv)
     gpio::driver::SetInitialWakePinConfig();
 
     /* Configure output clock. */
-    if (hw_type != spl::HardwareType::Copper && hw_type != spl::HardwareType::Calcio) {
+    if (hw_type != spl::HardwareType::Calcio) {
         boot::SetInitialClockConfiguration();
     }
 
     /* Set Fan enable config (Copper only). */
-    boot::SetFanEnabled();
+    boot::SetFanPowerEnabled();
 
     /* Repair boot partitions in NAND if needed. */
     boot::CheckAndRepairBootImages();
+
+    /* Finalize the power control library. */
+    if (hw_type != spl::HardwareType::Calcio) {
+        powctl::Finalize();
+    }
+
+    /* Finalize the i2c server library. */
+    boot::FinalizeI2cDriverLibrary();
 
     /* Tell PM to start boot2. */
     R_ABORT_UNLESS(pmshellNotifyBootFinished());

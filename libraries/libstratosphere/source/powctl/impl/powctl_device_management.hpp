@@ -13,18 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#include "powctl_i_power_control_driver.hpp"
 
-namespace ams::boot {
+namespace ams::powctl::impl {
 
-    void SetFanPowerEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
-    }
+    void InitializeDrivers();
+    void FinalizeDrivers();
+
+    void RegisterDriver(IPowerControlDriver *driver);
+    void UnregisterDriver(IPowerControlDriver *driver);
+
+    Result RegisterDeviceCode(DeviceCode device_code, IDevice *device);
+    bool UnregisterDeviceCode(DeviceCode device_code);
+
+    void RegisterInterruptHandler(ddsf::IEventHandler *handler);
+    void UnregisterInterruptHandler(ddsf::IEventHandler *handler);
+
+    Result FindDevice(IDevice **out, DeviceCode device_code);
 
 }

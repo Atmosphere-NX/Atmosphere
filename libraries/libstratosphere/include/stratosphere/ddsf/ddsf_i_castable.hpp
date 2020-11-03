@@ -23,6 +23,7 @@ namespace ams::ddsf {
     #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
 
         #define AMS_DDSF_CASTABLE_TRAITS(__CLASS__, __BASE__)                                                                                           \
+            static_assert(std::convertible_to<__CLASS__ *, __BASE__ *>);                                                                                \
             public:                                                                                                                                     \
                 static constexpr inline ::ams::ddsf::impl::TypeTag s_ams_ddsf_castable_type_tag{#__CLASS__, __BASE__::s_ams_ddsf_castable_type_tag};    \
                 constexpr virtual const ::ams::ddsf::impl::TypeTag &GetTypeTag() const override { return s_ams_ddsf_castable_type_tag; }
@@ -30,6 +31,7 @@ namespace ams::ddsf {
     #else
 
         #define AMS_DDSF_CASTABLE_TRAITS(__CLASS__, __BASE__)                                                                                           \
+            static_assert(std::convertible_to<__CLASS__ *, __BASE__ *>);                                                                                \
             public:                                                                                                                                     \
                 static constexpr inline ::ams::ddsf::impl::TypeTag s_ams_ddsf_castable_type_tag{__BASE__::s_ams_ddsf_castable_type_tag};                \
                 constexpr virtual const ::ams::ddsf::impl::TypeTag &GetTypeTag() const override { return s_ams_ddsf_castable_type_tag; }

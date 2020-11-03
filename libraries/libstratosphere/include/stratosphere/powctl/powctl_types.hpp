@@ -14,10 +14,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
+#include <vapours.hpp>
 
-namespace ams::boot {
+namespace ams::powctl {
 
-    void SetFanPowerEnabled();
+    /* Charger types. */
+    enum ChargerStatus {
+        ChargerStatus_Charging              = 1,
+
+        ChargerStatus_NotCharging           = 3,
+        ChargerStatus_ChargeTerminationDone = 4,
+    };
+
+    enum ChargerConfiguration {
+        ChargerConfiguration_ChargeDisable = 0,
+        ChargerConfiguration_ChargeBattery = 1,
+        ChargerConfiguration_Otg           = 2,
+    };
+
+    enum ChargeCurrentState {
+        ChargeCurrentState_NotCharging            = 0x1,
+        ChargeCurrentState_ChargingForce20Percent = 0x2,
+        ChargeCurrentState_Charging               = 0x3,
+    };
 
 }

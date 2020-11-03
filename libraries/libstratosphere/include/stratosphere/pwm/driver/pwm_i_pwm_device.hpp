@@ -23,7 +23,7 @@ namespace ams::pwm::driver {
     class IPwmDevice : public ::ams::ddsf::IDevice {
         NON_COPYABLE(IPwmDevice);
         NON_MOVEABLE(IPwmDevice);
-        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::IPwmDevice, ::ams::ddsf::IDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::IPwmDevice, ::ams::ddsf::IDevice);
         private:
             int channel_index;
         public:
