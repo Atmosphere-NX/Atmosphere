@@ -25,7 +25,7 @@ namespace ams::gpio::driver {
     class IGpioDriver : public ::ams::ddsf::IDriver {
         NON_COPYABLE(IGpioDriver);
         NON_MOVEABLE(IGpioDriver);
-        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::IGpioDriver, ::ams::ddsf::IDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::IGpioDriver, ::ams::ddsf::IDriver);
         public:
             IGpioDriver() : IDriver() { /* ... */ }
             virtual ~IGpioDriver() { /* ... */ }

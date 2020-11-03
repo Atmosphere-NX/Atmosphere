@@ -25,7 +25,7 @@ namespace ams::i2c::driver {
     class II2cDriver : public ::ams::ddsf::IDriver {
         NON_COPYABLE(II2cDriver);
         NON_MOVEABLE(II2cDriver);
-        AMS_DDSF_CASTABLE_TRAITS(ams::i2c::II2cDriver, ::ams::ddsf::IDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::i2c::driver::II2cDriver, ::ams::ddsf::IDriver);
         public:
             II2cDriver() : IDriver() { /* ... */ }
             virtual ~II2cDriver() { /* ... */ }

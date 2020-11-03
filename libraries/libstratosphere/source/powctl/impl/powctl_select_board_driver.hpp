@@ -13,18 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#pragma once
 #include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#include "powctl_i_power_control_driver.hpp"
 
-namespace ams::boot {
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    void SetFanPowerEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
+    #include "board/nintendo_nx/powctl_board_impl.hpp"
+
+    namespace ams::powctl::impl::board {
+        using namespace ams::powctl::impl::board::nintendo_nx;
     }
 
-}
+#else
+
+    #error "Unknown board for ams::powctl::impl"
+
+#endif

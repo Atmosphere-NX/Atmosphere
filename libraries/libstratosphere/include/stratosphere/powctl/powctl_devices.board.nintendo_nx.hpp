@@ -13,18 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
+#pragma once
+#include <vapours.hpp>
+#include <stratosphere/i2c.hpp>
+#include <stratosphere/powctl/powctl_types.hpp>
 
-namespace ams::boot {
+namespace ams::powctl {
 
-    void SetFanPowerEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
-    }
+    /* Fuel Gauge. */
+    constexpr inline const DeviceCode DeviceCode_Max17050 = i2c::DeviceCode_Max17050;
+
+    /* Charger. */
+    constexpr inline const DeviceCode DeviceCode_Bq24193  = i2c::DeviceCode_Bq24193;
 
 }

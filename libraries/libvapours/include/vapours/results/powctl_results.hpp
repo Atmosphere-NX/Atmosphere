@@ -13,18 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "boot_fan_enable.hpp"
 
-namespace ams::boot {
+#pragma once
+#include <vapours/results/results_common.hpp>
 
-    void SetFanPowerEnabled() {
-        if (spl::GetHardwareType() == spl::HardwareType::Copper) {
-            /* TODO */
-            /* boot::gpio::Configure(GpioPadName_FanEnable);                          */
-            /* boot::gpio::SetDirection(GpioPadName_FanEnable, GpioDirection_Output); */
-            /* boot::gpio::SetValue(GpioPadName_FanEnable, GpioValue_High);           */
-        }
-    }
+namespace ams::powctl {
+
+    R_DEFINE_NAMESPACE_RESULT_MODULE(198);
+
+    R_DEFINE_ERROR_RESULT(NotSupported,    1);
+    R_DEFINE_ERROR_RESULT(InvalidArgument, 2);
+    R_DEFINE_ERROR_RESULT(NotAvailable,    3);
 
 }

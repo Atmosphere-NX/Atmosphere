@@ -23,7 +23,7 @@ namespace ams::i2c::driver {
     class I2cDeviceProperty : public ::ams::ddsf::IDevice {
         NON_COPYABLE(I2cDeviceProperty);
         NON_MOVEABLE(I2cDeviceProperty);
-        AMS_DDSF_CASTABLE_TRAITS(ams::i2c::I2cDeviceProperty, ::ams::ddsf::IDevice);
+        AMS_DDSF_CASTABLE_TRAITS(ams::i2c::driver::I2cDeviceProperty, ::ams::ddsf::IDevice);
         private:
             u16 address;
             AddressingMode addressing_mode;

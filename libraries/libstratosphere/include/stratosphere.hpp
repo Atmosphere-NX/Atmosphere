@@ -63,6 +63,7 @@
 #include <stratosphere/patcher.hpp>
 #include <stratosphere/pcv.hpp>
 #include <stratosphere/pgl.hpp>
+#include <stratosphere/powctl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
 #include <stratosphere/pwm.hpp>

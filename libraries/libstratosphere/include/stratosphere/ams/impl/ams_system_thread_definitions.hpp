@@ -95,6 +95,9 @@ namespace ams::impl {
     /* bpc. */
     AMS_DEFINE_SYSTEM_THREAD(4, bpc, IpcServer);
 
+    /* powctl. */
+    AMS_DEFINE_SYSTEM_THREAD(9, powctl, InterruptHandler);
+
     /* hid. */
     AMS_DEFINE_SYSTEM_THREAD(-10, hid, IpcServer);
 
