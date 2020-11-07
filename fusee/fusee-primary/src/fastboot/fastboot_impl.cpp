@@ -21,12 +21,16 @@
 extern "C" {
 #include "../lib/log.h"
 #include "../utils.h"
+#include "../fs_utils.h"
+#include "../sdmmc/sdmmc.h"
 #include "../chainloader.h"
 #include "../lib/fatfs/ff.h"
 }
 
 #include<array>
 #include<stdio.h>
+
+#include<vapours/util/util_scope_guard.hpp>
 
 uint32_t crc32(uint32_t crc, const uint8_t *buf, size_t len) {
     int k;
@@ -203,6 +207,10 @@ namespace ams {
                     return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "failed to initialize zip reader");
                 }
 
+                if (!mount_sd()) {
+                    return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "failed to mount sd card");
+                }
+
                 this->flash_ams.num_files = mz_zip_reader_get_num_files(&this->flash_ams.zip);
                 this->flash_ams.file_index = 0;
                 this->flash_ams.error = nullptr;
@@ -210,6 +218,32 @@ namespace ams {
                 this->current_action = Action::FlashAms;
             
                 return this->ContinueFlashAms();
+            } else if (!strcmp(argument, "sd")) {
+                if (this->gadget.GetLastDownloadSize() % 512 != 0) {
+                    return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "image size is not a multiple of 512 bytes");
+                }
+                
+                bool was_sd_mounted = false;
+
+                if (!acquire_sd_device()) {
+                    return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "Failed to initialize SD card. Check that it is inserted.");
+                }
+
+                temporary_unmount_sd(&was_sd_mounted);
+                
+                ON_SCOPE_EXIT {
+                    if (was_sd_mounted) {
+                        temporary_remount_sd();
+                    }
+                    
+                    release_sd_device();
+                };
+
+                if (sdmmc_device_write(&g_sd_device, 0, this->gadget.GetLastDownloadSize() / 512, this->gadget.GetLastDownloadBuffer())) {
+                    return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::OKAY, "");
+                } else {
+                    return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "I/O error");
+                }
             } else {
                 return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, "unknown partition");
             }
@@ -300,10 +334,14 @@ namespace ams {
     
         Result FastbootImpl::ContinueFlashAms() {
             if (this->flash_ams.error != nullptr) {
+                unmount_sd();
+                
                 return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::FAIL, this->flash_ams.error);
             }
             
             if (this->flash_ams.file_index == this->flash_ams.num_files) {
+                unmount_sd();
+                
                 return this->gadget.SendResponse(ResponseDisposition::ReadHostCommand, ResponseToken::OKAY, "");
             }
 
