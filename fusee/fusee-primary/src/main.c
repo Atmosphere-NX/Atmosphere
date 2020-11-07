@@ -81,7 +81,9 @@ static void setup_env(void) {
     setup_exception_handlers();
 
     /* Mount the SD card. */
-    mount_sd();
+    if (!mount_sd()) {
+	    fatal_error("Failed to mount SD card!\n");
+    }
 }
 
 static void cleanup_env(void) {
