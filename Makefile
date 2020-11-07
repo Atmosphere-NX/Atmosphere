@@ -39,87 +39,79 @@ clean:
 	$(MAKE) -C fusee clean
 	rm -rf out
 
-dist-no-debug: all
-	$(eval MAJORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MAJOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
+MAJORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MAJOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
+			| tr -s [:blank:] \
+			| cut -d' ' -f3)
+MINORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MINOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
 		| tr -s [:blank:] \
-		| cut -d' ' -f3))
-	$(eval MINORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MINOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
+		| cut -d' ' -f3)
+MICROVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MICRO\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
 		| tr -s [:blank:] \
-		| cut -d' ' -f3))
-	$(eval MICROVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MICRO\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
-		| tr -s [:blank:] \
-		| cut -d' ' -f3))
-	$(eval AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER)-$(AMSREV))
-	rm -rf atmosphere-$(AMSVER)
-	rm -rf out
-	mkdir atmosphere-$(AMSVER)
-	mkdir atmosphere-$(AMSVER)/atmosphere
-	mkdir atmosphere-$(AMSVER)/sept
-	mkdir atmosphere-$(AMSVER)/switch
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000008
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000000D
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000002B
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000034
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000042
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
-	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
-	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
-	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
-	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/sept/payload.bin
-	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/sept/sept-primary.bin
-	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin || true
-	cp sept/sept-secondary/sept-secondary_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
-	cp sept/sept-secondary/sept-secondary_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
-	cp sept/sept-secondary/sept-secondary_dev_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_00.enc
-	cp sept/sept-secondary/sept-secondary_dev_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_01.enc
-	cp config_templates/BCT.ini atmosphere-$(AMSVER)/atmosphere/config/BCT.ini
-	cp config_templates/override_config.ini atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini
-	cp config_templates/system_settings.ini atmosphere-$(AMSVER)/atmosphere/config_templates/system_settings.ini
-	cp config_templates/exosphere.ini atmosphere-$(AMSVER)/atmosphere/config_templates/exosphere.ini
-	cp -r config_templates/kip_patches atmosphere-$(AMSVER)/atmosphere/kip_patches
-	cp -r config_templates/hbl_html atmosphere-$(AMSVER)/atmosphere/hbl_html
-	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000008/exefs.nsp
-	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmosphere/contents/010000000000000D/exefs.nsp
-	cp stratosphere/erpt/erpt.nsp atmosphere-$(AMSVER)/atmosphere/contents/010000000000002B/exefs.nsp
-	cp stratosphere/eclct.stub/eclct.stub.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/exefs.nsp
-	cp stratosphere/fatal/fatal.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000034/exefs.nsp
-	cp stratosphere/creport/creport.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036/exefs.nsp
-	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/exefs.nsp
-	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C/exefs.nsp
-	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000042/exefs.nsp
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags
-	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags/boot2.flag
-	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags
-	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags/boot2.flag
-	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
-	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/switch/daybreak.nro
-	cd atmosphere-$(AMSVER); zip -r ../atmosphere-EXPERIMENTAL-$(AMSVER).zip ./*; cd ../;
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
-	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
-	rm -r atmosphere-$(AMSVER)
-	mkdir out
-	mv atmosphere-EXPERIMENTAL-$(AMSVER).zip out/atmosphere-EXPERIMENTAL-$(AMSVER).zip
-	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
+		| cut -d' ' -f3)
+AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER)-$(AMSREV)
+
+out/atmosphere-$(AMSVER): all
+	rm -rf out/atmosphere-$(AMSVER)
+	mkdir -p out/atmosphere-$(AMSVER)
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere
+	mkdir -p out/atmosphere-$(AMSVER)/sept
+	mkdir -p out/atmosphere-$(AMSVER)/switch
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000008
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/010000000000000D
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/010000000000002B
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000034
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000042
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/fatal_errors
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/config_templates
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/config
+	cp fusee/fusee-primary/fusee-primary.bin out/atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
+	cp fusee/fusee-mtc/fusee-mtc.bin out/atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
+	cp fusee/fusee-secondary/fusee-secondary-experimental.bin out/atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
+	cp fusee/fusee-secondary/fusee-secondary-experimental.bin out/atmosphere-$(AMSVER)/sept/payload.bin
+	cp sept/sept-primary/sept-primary.bin out/atmosphere-$(AMSVER)/sept/sept-primary.bin
+	cp sept/sept-secondary/sept-secondary.bin out/atmosphere-$(AMSVER)/sept/sept-secondary.bin || true
+	cp sept/sept-secondary/sept-secondary_00.enc out/atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
+	cp sept/sept-secondary/sept-secondary_01.enc out/atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
+	cp sept/sept-secondary/sept-secondary_dev_00.enc out/atmosphere-$(AMSVER)/sept/sept-secondary_dev_00.enc
+	cp sept/sept-secondary/sept-secondary_dev_01.enc out/atmosphere-$(AMSVER)/sept/sept-secondary_dev_01.enc
+	cp config_templates/BCT.ini out/atmosphere-$(AMSVER)/atmosphere/config/BCT.ini
+	cp config_templates/override_config.ini out/atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini
+	cp config_templates/system_settings.ini out/atmosphere-$(AMSVER)/atmosphere/config_templates/system_settings.ini
+	cp config_templates/exosphere.ini out/atmosphere-$(AMSVER)/atmosphere/config_templates/exosphere.ini
+	cp -r config_templates/kip_patches out/atmosphere-$(AMSVER)/atmosphere/kip_patches
+	cp -r config_templates/hbl_html out/atmosphere-$(AMSVER)/atmosphere/hbl_html
+	cp stratosphere/boot2/boot2.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000008/exefs.nsp
+	cp stratosphere/dmnt/dmnt.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/010000000000000D/exefs.nsp
+	cp stratosphere/erpt/erpt.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/010000000000002B/exefs.nsp
+	cp stratosphere/eclct.stub/eclct.stub.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/exefs.nsp
+	cp stratosphere/fatal/fatal.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000034/exefs.nsp
+	cp stratosphere/creport/creport.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000036/exefs.nsp
+	cp stratosphere/ro/ro.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/exefs.nsp
+	cp stratosphere/jpegdec/jpegdec.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C/exefs.nsp
+	cp stratosphere/pgl/pgl.nsp out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000042/exefs.nsp
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags
+	touch out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags/boot2.flag
+	mkdir -p out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags
+	touch out/atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags/boot2.flag
+	cp troposphere/reboot_to_payload/reboot_to_payload.nro out/atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
+	cp troposphere/daybreak/daybreak.nro out/atmosphere-$(AMSVER)/switch/daybreak.nro
+
+out/atmosphere-EXPERIMENTAL-$(AMSVER): out/atmosphere-$(AMSVER)
+	rm -rf out/atmosphere-EXPERIMENTAL-$(AMSVER)
+	cp -r out/atmosphere-$(AMSVER) out/atmosphere-EXPERIMENTAL-$(AMSVER)
+	cp fusee/fusee-secondary/fusee-secondary.bin out/atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
+	cp fusee/fusee-secondary/fusee-secondary.bin out/atmosphere-$(AMSVER)/sept/payload.bin
+
+dist-no-debug: out/atmosphere-$(AMSVER) out/atmosphere-EXPERIMENTAL-$(AMSVER)
+	cd out/atmosphere-EXPERIMENTAL-$(AMSVER); zip -r ../atmosphere-EXPERIMENTAL-$(AMSVER).zip ./*; cd ../;
+	cd out/atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
 
 dist: dist-no-debug
-	$(eval MAJORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MAJOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
-		| tr -s [:blank:] \
-		| cut -d' ' -f3))
-	$(eval MINORVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MINOR\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
-		| tr -s [:blank:] \
-		| cut -d' ' -f3))
-	$(eval MICROVER = $(shell grep 'define ATMOSPHERE_RELEASE_VERSION_MICRO\b' libraries/libvapours/include/vapours/ams/ams_api_version.h \
-		| tr -s [:blank:] \
-		| cut -d' ' -f3))
-	$(eval AMSVER = $(MAJORVER).$(MINORVER).$(MICROVER)-$(AMSREV))
 	rm -rf atmosphere-$(AMSVER)-debug
 	mkdir atmosphere-$(AMSVER)-debug
 	cp fusee/fusee-primary/fusee-primary.elf atmosphere-$(AMSVER)-debug/fusee-primary.elf
@@ -154,5 +146,25 @@ dist: dist-no-debug
 	rm -r atmosphere-$(AMSVER)-debug
 	mv atmosphere-$(AMSVER)-debug.zip out/atmosphere-$(AMSVER)-debug.zip
 
+image: out/sd.img
 
-.PHONY: $(TOPTARGETS) $(COMPONENTS)
+extras:
+	mkdir -p extras
+
+out/sd.img: out/atmosphere-$(AMSVER) extras
+	@dd if=/dev/zero of=out/sd.img bs=1M count=64 status=noxfer
+	@mformat -i out/sd.img -F -v "Atmosphere"
+	@mkdir -p out/sd/
+# rsync is the best solution that:
+#   copies directory contents without copying directory itself
+#   doesn't fail on empty directories
+#   resolves symbolic links (this is useful for symlinking sysmodules into extras/)
+	rsync -Lr --delete out/atmosphere-$(AMSVER)/ extras/ out/sd/
+	rsync -Lr extras/ out/sd/
+	@cd out/sd; mcopy -i ../sd.img -bsQ ./* '::'
+	@echo 'Produced out/sd.img.'
+
+flash: image
+	fastboot -S 2G flash sd out/sd.img reboot
+
+.PHONY: $(TOPTARGETS) $(COMPONENTS) dist-no-debug dist image flash
