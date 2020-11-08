@@ -16,12 +16,8 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::boot {
+namespace ams::cal::impl {
 
-    constexpr inline dd::PhysicalAddress PmcBase = 0x7000E400;
-
-    /* PMC Access Utilities. */
-    u32 ReadPmcRegister(dd::PhysicalAddress phys_addr);
-    void WritePmcRegister(dd::PhysicalAddress phys_addr, u32 value, u32 mask = std::numeric_limits<u32>::max());
+    Result ReadCalibrationBlock(s64 offset, void *dst, size_t block_size);
 
 }

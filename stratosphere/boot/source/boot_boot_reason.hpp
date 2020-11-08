@@ -20,6 +20,6 @@ namespace ams::boot {
 
     /* Boot Reason utilities. */
     void DetectBootReason();
-    u32 GetBootReason();
+    spl::BootReason GetBootReason();
 
 }

@@ -23,29 +23,29 @@ namespace ams::boot {
     namespace {
 
         /* Globals. */
-        u32 g_boot_reason = 0;
-        bool g_detected_boot_reason = false;
+        constinit spl::BootReason g_boot_reason = spl::BootReason_Unknown;
+        constinit bool g_detected_boot_reason = false;
 
         /* Helpers. */
-        u32 MakeBootReason(u32 power_intr, u8 rtc_intr, u8 nv_erc, bool ac_ok) {
+        spl::BootReason DetectBootReason(u32 power_intr, u8 rtc_intr, u8 nv_erc, bool ac_ok) {
             if (power_intr & 0x08) {
-                return 2;
+                return spl::BootReason_OnKey;
             }
             if (rtc_intr & 0x02)  {
-                return 3;
+                return spl::BootReason_RtcAlarm1;
             }
             if (power_intr & 0x80) {
-                return 1;
+                return spl::BootReason_AcOk;
             }
             if (rtc_intr & 0x04) {
                 if (nv_erc != 0x80 && !spl::IsRecoveryBoot()) {
-                    return 4;
+                    return spl::BootReason_RtcAlarm2;
                 }
             }
             if ((nv_erc & 0x40) && ac_ok) {
-                return 1;
+                return spl::BootReason_AcOk;
             }
-            return 0;
+            return spl::BootReason_Unknown;
         }
 
     }
@@ -60,37 +60,38 @@ namespace ams::boot {
         /* Get values from PMIC. */
         {
             PmicDriver pmic_driver;
-            R_ABORT_UNLESS(pmic_driver.GetPowerIntr(&power_intr));
-            R_ABORT_UNLESS(pmic_driver.GetNvErc(&nv_erc));
-            R_ABORT_UNLESS(pmic_driver.GetAcOk(&ac_ok));
+            R_ABORT_UNLESS(pmic_driver.GetOnOffIrq(std::addressof(power_intr)));
+            R_ABORT_UNLESS(pmic_driver.GetNvErc(std::addressof(nv_erc)));
+            R_ABORT_UNLESS(pmic_driver.GetAcOk(std::addressof(ac_ok)));
         }
 
         /* Get values from RTC. */
         {
             RtcDriver rtc_driver;
-            R_ABORT_UNLESS(rtc_driver.GetRtcIntr(&rtc_intr));
-            R_ABORT_UNLESS(rtc_driver.GetRtcIntrM(&rtc_intr_m));
+            R_ABORT_UNLESS(rtc_driver.GetRtcIntr(std::addressof(rtc_intr)));
+            R_ABORT_UNLESS(rtc_driver.GetRtcIntrM(std::addressof(rtc_intr_m)));
         }
 
         /* Set global derived boot reason. */
-        g_boot_reason = MakeBootReason(power_intr, rtc_intr & ~rtc_intr_m, nv_erc, ac_ok);
+        g_boot_reason = DetectBootReason(power_intr, rtc_intr & ~rtc_intr_m, nv_erc, ac_ok);
 
         /* Set boot reason for SPL. */
         if (hos::GetVersion() >= hos::Version_3_0_0) {
+            /* Create the boot reason value. */
             spl::BootReasonValue boot_reason_value = {};
-
             boot_reason_value.power_intr  = power_intr;
             boot_reason_value.rtc_intr    = rtc_intr & ~rtc_intr_m;
             boot_reason_value.nv_erc      = nv_erc;
             boot_reason_value.boot_reason = g_boot_reason;
 
+            /* Set the boot reason value. */
             R_ABORT_UNLESS(spl::SetBootReason(boot_reason_value));
         }
 
         g_detected_boot_reason = true;
     }
 
-    u32 GetBootReason() {
+    spl::BootReason GetBootReason() {
         AMS_ABORT_UNLESS(g_detected_boot_reason);
         return g_boot_reason;
     }

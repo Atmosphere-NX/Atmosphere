@@ -32,13 +32,13 @@ namespace ams::boot {
             }
         private:
             Result GetPowerStatus(u8 *out);
-            Result ShutdownSystem(bool reboot);
-            void FinalizeBattery(BatteryDriver *battery_driver);
+            void ShutdownSystem(bool reboot);
+            void FinalizeBattery(BatteryDriver &battery_driver);
         public:
             void ShutdownSystem();
             void RebootSystem();
             Result GetAcOk(bool *out);
-            Result GetPowerIntr(u8 *out);
+            Result GetOnOffIrq(u8 *out);
             Result GetNvErc(u8 *out);
             Result GetPowerButtonPressed(bool *out);
     };

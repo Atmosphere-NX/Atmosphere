@@ -24,22 +24,22 @@ namespace ams::powctl {
     Result GetChargerChargeCurrentState(ChargeCurrentState *out, Session &session);
     Result SetChargerChargeCurrentState(Session &session, ChargeCurrentState state);
 
-    Result GetChargerFastChargeCurrentLimit(u32 *out_ma, Session &session);
-    Result SetChargerFastChargeCurrentLimit(Session &session, u32 ma);
+    Result GetChargerFastChargeCurrentLimit(int *out_ma, Session &session);
+    Result SetChargerFastChargeCurrentLimit(Session &session, int ma);
 
-    Result GetChargerChargeVoltageLimit(u32 *out_mv, Session &session);
-    Result SetChargerChargeVoltageLimit(Session &session, u32 mv);
+    Result GetChargerChargeVoltageLimit(int *out_mv, Session &session);
+    Result SetChargerChargeVoltageLimit(Session &session, int mv);
 
     Result SetChargerChargerConfiguration(Session &session, ChargerConfiguration cfg);
 
     Result IsChargerHiZEnabled(bool *out, Session &session);
     Result SetChargerHiZEnabled(Session &session, bool en);
 
-    Result GetChargerInputCurrentLimit(u32 *out_ma, Session &session);
-    Result SetChargerInputCurrentLimit(Session &session, u32 ma);
+    Result GetChargerInputCurrentLimit(int *out_ma, Session &session);
+    Result SetChargerInputCurrentLimit(Session &session, int ma);
 
-    Result GetChargerInputVoltageLimit(u32 *out_mv, Session &session);
-    Result SetChargerInputVoltageLimit(Session &session, u32 mv);
+    Result GetChargerInputVoltageLimit(int *out_mv, Session &session);
+    Result SetChargerInputVoltageLimit(Session &session, int mv);
 
     Result GetChargerChargerStatus(ChargerStatus *out, Session &session);
 
@@ -49,10 +49,10 @@ namespace ams::powctl {
     Result SetChargerWatchdogTimerTimeout(Session &session, TimeSpan timeout);
     Result ResetChargerWatchdogTimer(Session &session);
 
-    Result GetChargerBatteryCompensation(u32 *out_mo, Session &session);
-    Result SetChargerBatteryCompensation(Session &session, u32 mo);
+    Result GetChargerBatteryCompensation(int *out_mo, Session &session);
+    Result SetChargerBatteryCompensation(Session &session, int mo);
 
-    Result GetChargerVoltageClamp(u32 *out_mv, Session &session);
-    Result SetChargerVoltageClamp(Session &session, u32 mv);
+    Result GetChargerVoltageClamp(int *out_mv, Session &session);
+    Result SetChargerVoltageClamp(Session &session, int mv);
 
 }

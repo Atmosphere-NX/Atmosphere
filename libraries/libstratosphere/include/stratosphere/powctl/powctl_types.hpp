@@ -27,15 +27,31 @@ namespace ams::powctl {
     };
 
     enum ChargerConfiguration {
-        ChargerConfiguration_ChargeDisable = 0,
-        ChargerConfiguration_ChargeBattery = 1,
-        ChargerConfiguration_Otg           = 2,
+        ChargerConfiguration_ChargeDisable = 1,
+        ChargerConfiguration_ChargeBattery = 2,
+        ChargerConfiguration_Otg           = 3,
     };
 
     enum ChargeCurrentState {
         ChargeCurrentState_NotCharging            = 0x1,
         ChargeCurrentState_ChargingForce20Percent = 0x2,
         ChargeCurrentState_Charging               = 0x3,
+    };
+
+    enum class BatteryTemperatureLevel {
+        TooLow  = 0,
+        Low     = 1,
+        Medium  = 2,
+        High    = 3,
+        TooHigh = 4,
+    };
+
+    enum class PowerState {
+        FullAwake          = 0,
+        MinimumAwake       = 1,
+        SleepCharge        = 2,
+        SleepDischarge     = 3,
+        ShutdownChargeMain = 4,
     };
 
 }

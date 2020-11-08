@@ -13,14 +13,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stratosphere.hpp>
+#include "cal_crc_utils.hpp"
+#include "cal_fs_utils.hpp"
 
-#pragma once
-#include <stratosphere/powctl/powctl_types.hpp>
-#include <stratosphere/powctl/powctl_select_devices.hpp>
-#include <stratosphere/powctl/powctl_session_api.hpp>
-#include <stratosphere/powctl/powctl_battery_api.hpp>
-#include <stratosphere/powctl/powctl_charger_api.hpp>
-#include <stratosphere/powctl/impl/powctl_battery_charge_percentage.hpp>
-#include <stratosphere/powctl/driver/powctl_driver_api.hpp>
-#include <stratosphere/powctl/driver/impl/powctl_select_charger_parameters.hpp>
-#include <stratosphere/powctl/driver/impl/powctl_charge_arbiter.hpp>
+namespace ams::cal::impl {
+
+    Result ReadCalibrationBlock(s64 offset, void *dst, size_t block_size) {
+        /* Open the calibration binary partition. */
+        std::unique_ptr<fs::IStorage> storage;
+        R_TRY(fs::OpenBisPartition(std::addressof(storage), fs::BisPartitionId::CalibrationBinary));
+
+        /* Read data from the partition. */
+        R_TRY(storage->Read(offset, dst, block_size));
+
+        /* Validate the crc. */
+        R_TRY(ValidateCalibrationCrc(dst, block_size));
+
+        return ResultSuccess();
+    }
+
+}
