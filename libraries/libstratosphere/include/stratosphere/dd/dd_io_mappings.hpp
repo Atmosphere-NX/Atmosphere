@@ -19,10 +19,6 @@
 
 namespace ams::dd {
 
-    u32 ReadRegister(dd::PhysicalAddress phys_addr);
-    void WriteRegister(dd::PhysicalAddress phys_addr, u32 value);
-    u32 ReadWriteRegister(dd::PhysicalAddress phys_addr, u32 value, u32 mask);
-
     /* Convenience Helper. */
     inline uintptr_t GetIoMapping(dd::PhysicalAddress phys_addr, size_t size) {
         const uintptr_t io_mapping = dd::QueryIoMapping(phys_addr, size);

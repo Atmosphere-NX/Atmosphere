@@ -19,6 +19,8 @@
 
 namespace ams::dd {
 
-    ProcessHandle GetCurrentProcessHandle();
+    using DeviceName = ::ams::svc::DeviceName;
+
+    constexpr inline u64 DeviceAddressSpaceMemoryRegionAlignment = 4_KB;
 
 }

@@ -14,11 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/dd/dd_types.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::dd {
-
-    ProcessHandle GetCurrentProcessHandle();
-
-}
+#if defined(ATMOSPHERE_OS_HORIZON)
+    #include "dd_device_address_space_impl.os.horizon.hpp"
+#else
+    #error "Unknown os for dd::DeviceAddressSpaceImpl"
+#endif

@@ -15,10 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/dd/dd_types.hpp>
 
-namespace ams::dd {
-
-    ProcessHandle GetCurrentProcessHandle();
-
-}
+#include <stratosphere/dd/dd_device_address_space_common.hpp>
+#include <stratosphere/dd/dd_device_address_space_types.hpp>
+#include <stratosphere/dd/dd_device_address_space_api.hpp>
