@@ -23,4 +23,6 @@ namespace ams::boot {
     void ShowDisplay(size_t x, size_t y, size_t width, size_t height, const u32 *img);
     void FinalizeDisplay();
 
+    void SetDisplayBrightness(int percentage);
+
 }

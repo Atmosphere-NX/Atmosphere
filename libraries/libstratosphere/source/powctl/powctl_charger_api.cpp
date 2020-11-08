@@ -58,7 +58,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerChargeCurrentState(std::addressof(device), state);
     }
 
-    Result GetChargerFastChargeCurrentLimit(u32 *out_ma, Session &session) {
+    Result GetChargerFastChargeCurrentLimit(int *out_ma, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -72,7 +72,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerFastChargeCurrentLimit(out_ma, std::addressof(device));
     }
 
-    Result SetChargerFastChargeCurrentLimit(Session &session, u32 ma) {
+    Result SetChargerFastChargeCurrentLimit(Session &session, int ma) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -86,7 +86,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerFastChargeCurrentLimit(std::addressof(device), ma);
     }
 
-    Result GetChargerChargeVoltageLimit(u32 *out_mv, Session &session) {
+    Result GetChargerChargeVoltageLimit(int *out_mv, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -100,7 +100,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerChargeVoltageLimit(out_mv, std::addressof(device));
     }
 
-    Result SetChargerChargeVoltageLimit(Session &session, u32 mv) {
+    Result SetChargerChargeVoltageLimit(Session &session, int mv) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -156,7 +156,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerHiZEnabled(std::addressof(device), en);
     }
 
-    Result GetChargerInputCurrentLimit(u32 *out_ma, Session &session) {
+    Result GetChargerInputCurrentLimit(int *out_ma, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -170,7 +170,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerInputCurrentLimit(out_ma, std::addressof(device));
     }
 
-    Result SetChargerInputCurrentLimit(Session &session, u32 ma) {
+    Result SetChargerInputCurrentLimit(Session &session, int ma) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -184,7 +184,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerInputCurrentLimit(std::addressof(device), ma);
     }
 
-    Result GetChargerInputVoltageLimit(u32 *out_mv, Session &session) {
+    Result GetChargerInputVoltageLimit(int *out_mv, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -198,7 +198,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerInputVoltageLimit(out_mv, std::addressof(device));
     }
 
-    Result SetChargerInputVoltageLimit(Session &session, u32 mv) {
+    Result SetChargerInputVoltageLimit(Session &session, int mv) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -270,7 +270,7 @@ namespace ams::powctl {
 
     Result ResetChargerWatchdogTimer(Session &session);
 
-    Result GetChargerBatteryCompensation(u32 *out_mo, Session &session) {
+    Result GetChargerBatteryCompensation(int *out_mo, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -284,7 +284,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerBatteryCompensation(out_mo, std::addressof(device));
     }
 
-    Result SetChargerBatteryCompensation(Session &session, u32 mo) {
+    Result SetChargerBatteryCompensation(Session &session, int mo) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -298,7 +298,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerBatteryCompensation(std::addressof(device), mo);
     }
 
-    Result GetChargerVoltageClamp(u32 *out_mv, Session &session) {
+    Result GetChargerVoltageClamp(int *out_mv, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -312,7 +312,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerVoltageClamp(out_mv, std::addressof(device));
     }
 
-    Result SetChargerVoltageClamp(Session &session, u32 mv) {
+    Result SetChargerVoltageClamp(Session &session, int mv) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 

@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "boot_power_utils.hpp"
+#include "boot_pmic_driver.hpp"
 #include "fusee-primary_bin.h"
 
 namespace ams::boot {
@@ -65,7 +66,16 @@ namespace ams::boot {
     }
 
     void RebootSystem() {
-        DoRebootToPayload(nullptr);
+        if (spl::GetSocType() == spl::SocType_Erista) {
+            DoRebootToPayload(nullptr);
+        } else {
+            /* On Mariko, we can't reboot to payload, so we should just do a reboot. */
+            PmicDriver().RebootSystem();
+        }
+    }
+
+    void ShutdownSystem() {
+        PmicDriver().ShutdownSystem();
     }
 
     void SetInitialRebootPayload() {

@@ -58,7 +58,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatterySocVf(out_percent, std::addressof(device));
     }
 
-    Result GetBatteryFullCapacity(u32 *out_mah, Session &session) {
+    Result GetBatteryFullCapacity(int *out_mah, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -72,7 +72,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryFullCapacity(out_mah, std::addressof(device));
     }
 
-    Result GetBatteryRemainingCapacity(u32 *out_mah, Session &session) {
+    Result GetBatteryRemainingCapacity(int *out_mah, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -128,7 +128,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryPercentageFullThreshold(std::addressof(device), percentage);
     }
 
-    Result GetBatteryAverageCurrent(u32 *out_ma, Session &session) {
+    Result GetBatteryAverageCurrent(int *out_ma, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -142,7 +142,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryAverageCurrent(out_ma, std::addressof(device));
     }
 
-    Result GetBatteryCurrent(u32 *out_ma, Session &session) {
+    Result GetBatteryCurrent(int *out_ma, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -240,7 +240,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryI2cShutdownEnabled(std::addressof(device), en);
     }
 
-    Result IsBatteryRemoved(bool *out, Session &session) {
+    Result IsBatteryPresent(bool *out, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -251,10 +251,10 @@ namespace ams::powctl {
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
 
         /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().IsBatteryRemoved(out, std::addressof(device));
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().IsBatteryPresent(out, std::addressof(device));
     }
 
-    Result GetBatteryCycles(u32 *out, Session &session) {
+    Result GetBatteryCycles(int *out, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -268,7 +268,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryCycles(out, std::addressof(device));
     }
 
-    Result SetBatteryCycles(Session &session, u32 cycles) {
+    Result SetBatteryCycles(Session &session, int cycles) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -352,7 +352,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryTemperatureMaximumAlertThreshold(std::addressof(device), c);
     }
 
-    Result GetBatteryVCell(u32 *out_mv, Session &session) {
+    Result GetBatteryVCell(int *out_mv, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -366,7 +366,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryVCell(out_mv, std::addressof(device));
     }
 
-    Result GetBatteryAverageVCell(u32 *out_mv, Session &session) {
+    Result GetBatteryAverageVCell(int *out_mv, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -394,7 +394,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryAverageVCellTime(out, std::addressof(device));
     }
 
-    Result GetBatteryOpenCircuitVoltage(u32 *out_mv, Session &session) {
+    Result GetBatteryOpenCircuitVoltage(int *out_mv, Session &session) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -408,7 +408,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetBatteryOpenCircuitVoltage(out_mv, std::addressof(device));
     }
 
-    Result SetBatteryVoltageMinimumAlertThreshold(Session &session, u32 mv) {
+    Result SetBatteryVoltageMinimumAlertThreshold(Session &session, int mv) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 
@@ -422,7 +422,7 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetBatteryVoltageMinimumAlertThreshold(std::addressof(device), mv);
     }
 
-    Result SetBatteryVoltageMaximumAlertThreshold(Session &session, u32 mv) {
+    Result SetBatteryVoltageMaximumAlertThreshold(Session &session, int mv) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
 

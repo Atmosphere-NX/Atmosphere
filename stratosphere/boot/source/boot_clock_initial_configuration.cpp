@@ -15,11 +15,12 @@
  */
 #include <stratosphere.hpp>
 #include "boot_clock_initial_configuration.hpp"
-#include "boot_pmc_wrapper.hpp"
 
 namespace ams::boot {
 
     namespace {
+
+        constexpr inline dd::PhysicalAddress PmcBase = 0x7000E400;
 
         /* Convenience definitions. */
         constexpr u32 InitialClockOutMask1x = 0x00C4;
@@ -30,7 +31,7 @@ namespace ams::boot {
     void SetInitialClockConfiguration() {
         /* Write mask to APBDEV_PMC_PWR_DET, then clear APBDEV_PMC_PWR_DET_VAL. */
         const u32 mask = hos::GetVersion() >= hos::Version_6_0_0 ? InitialClockOutMask6x : InitialClockOutMask1x;
-        WritePmcRegister(PmcBase + APBDEV_PMC_CLK_OUT_CNTRL, mask, mask);
+        dd::ReadModifyWriteIoRegister(PmcBase + APBDEV_PMC_CLK_OUT_CNTRL, mask, mask);
     }
 
 }

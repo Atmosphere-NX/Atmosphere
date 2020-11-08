@@ -15,12 +15,5 @@
  */
 
 #pragma once
-#include <stratosphere/powctl/powctl_types.hpp>
-#include <stratosphere/powctl/powctl_select_devices.hpp>
-#include <stratosphere/powctl/powctl_session_api.hpp>
-#include <stratosphere/powctl/powctl_battery_api.hpp>
-#include <stratosphere/powctl/powctl_charger_api.hpp>
-#include <stratosphere/powctl/impl/powctl_battery_charge_percentage.hpp>
-#include <stratosphere/powctl/driver/powctl_driver_api.hpp>
-#include <stratosphere/powctl/driver/impl/powctl_select_charger_parameters.hpp>
-#include <stratosphere/powctl/driver/impl/powctl_charge_arbiter.hpp>
+
+#include <stratosphere/cal/cal_battery_api.hpp>

@@ -16,10 +16,9 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::boot {
+namespace ams::cal::impl {
 
-    /* Calibration utilities. */
-    u32 GetBatteryVersion();
-    u32 GetBatteryVendor();
+    u16 CalculateCrc16(const void *data, size_t size);
+    Result ValidateCalibrationCrc(const void *data, size_t size);
 
 }

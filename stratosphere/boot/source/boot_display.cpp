@@ -16,7 +16,6 @@
 #include <stratosphere.hpp>
 #include "boot_display.hpp"
 #include "boot_i2c_utils.hpp"
-#include "boot_pmc_wrapper.hpp"
 
 #include "boot_registers_di.hpp"
 
@@ -25,7 +24,7 @@ namespace ams::boot {
     /* Display configuration included into anonymous namespace. */
     namespace {
 
-#include "boot_display_config.inc"
+        #include "boot_display_config.inc"
 
     }
 
@@ -38,6 +37,8 @@ namespace ams::boot {
         constexpr size_t FrameBufferWidth = 768;
         constexpr size_t FrameBufferHeight = 1280;
         constexpr size_t FrameBufferSize = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
+
+        constexpr inline dd::PhysicalAddress PmcBase = 0x7000E400;
 
         constexpr uintptr_t Disp1Base   = 0x54200000ul;
         constexpr uintptr_t DsiBase     = 0x54300000ul;
@@ -68,19 +69,20 @@ namespace ams::boot {
         /* Types. */
 
         /* Globals. */
-        bool g_is_display_intialized = false;
-        u32 *g_frame_buffer = nullptr;
-        spl::SocType g_soc_type = spl::SocType_Erista;
-        u32 g_lcd_vendor = 0;
-        Handle g_dc_das_hnd = INVALID_HANDLE;
-        u8 g_frame_buffer_storage[DeviceAddressSpaceAlignSize + FrameBufferSize];
+        constinit bool g_is_display_intialized = false;
+        constinit u32 *g_frame_buffer = nullptr;
+        constinit spl::SocType g_soc_type = spl::SocType_Erista;
+        constinit u32 g_lcd_vendor = 0;
+        constinit Handle g_dc_das_hnd = INVALID_HANDLE;
+        constinit int g_display_brightness = 100;
+        constinit u8 g_frame_buffer_storage[DeviceAddressSpaceAlignSize + FrameBufferSize];
 
-        uintptr_t g_disp1_regs = 0;
-        uintptr_t g_dsi_regs = 0;
-        uintptr_t g_clk_rst_regs = 0;
-        uintptr_t g_gpio_regs = 0;
-        uintptr_t g_apb_misc_regs = 0;
-        uintptr_t g_mipi_cal_regs = 0;
+        constinit uintptr_t g_disp1_regs = 0;
+        constinit uintptr_t g_dsi_regs = 0;
+        constinit uintptr_t g_clk_rst_regs = 0;
+        constinit uintptr_t g_gpio_regs = 0;
+        constinit uintptr_t g_apb_misc_regs = 0;
+        constinit uintptr_t g_mipi_cal_regs = 0;
 
         /* Helper functions. */
         void InitializeRegisterBaseAddresses() {
@@ -119,9 +121,9 @@ namespace ams::boot {
             }
         }
 
-#define DO_REGISTER_WRITES(base_address, writes) DoRegisterWrites(base_address, writes, util::size(writes))
-#define DO_SOC_DEPENDENT_REGISTER_WRITES(base_address, writes) DoSocDependentRegisterWrites(base_address, writes##Erista, util::size(writes##Erista), writes##Mariko, util::size(writes##Mariko))
-#define DO_DSI_SLEEP_OR_REGISTER_WRITES(writes) DoDsiSleepOrRegisterWrites(writes, util::size(writes))
+        #define DO_REGISTER_WRITES(base_address, writes) DoRegisterWrites(base_address, writes, util::size(writes))
+        #define DO_SOC_DEPENDENT_REGISTER_WRITES(base_address, writes) DoSocDependentRegisterWrites(base_address, writes##Erista, util::size(writes##Erista), writes##Mariko, util::size(writes##Mariko))
+        #define DO_DSI_SLEEP_OR_REGISTER_WRITES(writes) DoDsiSleepOrRegisterWrites(writes, util::size(writes))
 
         void InitializeFrameBuffer() {
             if (g_frame_buffer != nullptr) {
@@ -217,8 +219,8 @@ namespace ams::boot {
         reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_SOURCE_DSIA_LP, 0xA);
 
         /* DPD idle. */
-        WritePmcRegister(PmcBase + APBDEV_PMC_IO_DPD_REQ,  0x40000000);
-        WritePmcRegister(PmcBase + APBDEV_PMC_IO_DPD2_REQ, 0x40000000);
+        dd::WriteIoRegister(PmcBase + APBDEV_PMC_IO_DPD_REQ,  0x40000000);
+        dd::WriteIoRegister(PmcBase + APBDEV_PMC_IO_DPD2_REQ, 0x40000000);
 
         /* Configure LCD pinmux tristate + passthrough. */
         reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_NFC_EN,     reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
@@ -500,6 +502,10 @@ namespace ams::boot {
         /* Unmap framebuffer from DC virtual address space. */
         FinalizeFrameBuffer();
         g_is_display_intialized = false;
+    }
+
+    void SetDisplayBrightness(int percentage) {
+        g_display_brightness = percentage;
     }
 
 }

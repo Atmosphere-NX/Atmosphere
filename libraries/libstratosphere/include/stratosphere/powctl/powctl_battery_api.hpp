@@ -25,15 +25,15 @@ namespace ams::powctl {
 
     Result GetBatterySocVf(float *out_percent, Session &session);
 
-    Result GetBatteryFullCapacity(u32 *out_mah, Session &session);
-    Result GetBatteryRemainingCapacity(u32 *out_mah, Session &session);
+    Result GetBatteryFullCapacity(int *out_mah, Session &session);
+    Result GetBatteryRemainingCapacity(int *out_mah, Session &session);
 
     Result SetBatteryPercentageMinimumAlertThreshold(Session &session, float percentage);
     Result SetBatteryPercentageMaximumAlertThreshold(Session &session, float percentage);
     Result SetBatteryPercentageFullThreshold(Session &session, float percentage);
 
-    Result GetBatteryAverageCurrent(u32 *out_ma, Session &session);
-    Result GetBatteryCurrent(u32 *out_ma, Session &session);
+    Result GetBatteryAverageCurrent(int *out_ma, Session &session);
+    Result GetBatteryCurrent(int *out_ma, Session &session);
 
     Result GetBatteryInternalState(void *dst, size_t *out_size, Session &session, size_t dst_size);
     Result SetBatteryInternalState(Session &session, const void *src, size_t src_size);
@@ -44,10 +44,10 @@ namespace ams::powctl {
     Result IsBatteryI2cShutdownEnabled(bool *out, Session &session);
     Result SetBatteryI2cShutdownEnabled(Session &session, bool en);
 
-    Result IsBatteryRemoved(bool *out, Session &session);
+    Result IsBatteryPresent(bool *out, Session &session);
 
-    Result GetBatteryCycles(u32 *out, Session &session);
-    Result SetBatteryCycles(Session &session, u32 cycles);
+    Result GetBatteryCycles(int *out, Session &session);
+    Result SetBatteryCycles(Session &session, int cycles);
 
     Result GetBatteryAge(float *out_percent, Session &session);
 
@@ -57,14 +57,14 @@ namespace ams::powctl {
     Result SetBatteryTemperatureMinimumAlertThreshold(Session &session, float c);
     Result SetBatteryTemperatureMaximumAlertThreshold(Session &session, float c);
 
-    Result GetBatteryVCell(u32 *out_mv, Session &session);
-    Result GetBatteryAverageVCell(u32 *out_mv, Session &session);
+    Result GetBatteryVCell(int *out_mv, Session &session);
+    Result GetBatteryAverageVCell(int *out_mv, Session &session);
 
     Result GetBatteryAverageVCellTime(TimeSpan *out, Session &session);
 
-    Result GetBatteryOpenCircuitVoltage(u32 *out_mv, Session &session);
+    Result GetBatteryOpenCircuitVoltage(int *out_mv, Session &session);
 
-    Result SetBatteryVoltageMinimumAlertThreshold(Session &session, u32 mv);
-    Result SetBatteryVoltageMaximumAlertThreshold(Session &session, u32 mv);
+    Result SetBatteryVoltageMinimumAlertThreshold(Session &session, int mv);
+    Result SetBatteryVoltageMaximumAlertThreshold(Session &session, int mv);
 
 }
