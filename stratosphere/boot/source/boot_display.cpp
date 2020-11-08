@@ -31,21 +31,21 @@ namespace ams::boot {
     namespace {
 
         /* Helpful defines. */
-        constexpr size_t DeviceAddressSpaceAlignSize = 0x400000;
-        constexpr size_t DeviceAddressSpaceAlignMask = DeviceAddressSpaceAlignSize - 1;
-        constexpr uintptr_t FrameBufferPaddr = DisplayConfigFrameBufferAddress;
-        constexpr size_t FrameBufferWidth = 768;
+        constexpr size_t DeviceAddressSpaceAlignSize = 4_MB;
+
+        constexpr dd::DeviceVirtualAddress FrameBufferDeviceAddress = DisplayConfigFrameBufferAddress;
+
+        constexpr size_t FrameBufferWidth  = 768;
         constexpr size_t FrameBufferHeight = 1280;
-        constexpr size_t FrameBufferSize = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
+        constexpr size_t FrameBufferSize   = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
 
-        constexpr inline dd::PhysicalAddress PmcBase = 0x7000E400;
-
-        constexpr uintptr_t Disp1Base   = 0x54200000ul;
-        constexpr uintptr_t DsiBase     = 0x54300000ul;
-        constexpr uintptr_t ClkRstBase  = 0x60006000ul;
-        constexpr uintptr_t GpioBase    = 0x6000D000ul;
-        constexpr uintptr_t ApbMiscBase = 0x70000000ul;
-        constexpr uintptr_t MipiCalBase = 0x700E3000ul;
+        constexpr dd::PhysicalAddress PmcBase     = 0x7000E400ul;
+        constexpr dd::PhysicalAddress Disp1Base   = 0x54200000ul;
+        constexpr dd::PhysicalAddress DsiBase     = 0x54300000ul;
+        constexpr dd::PhysicalAddress ClkRstBase  = 0x60006000ul;
+        constexpr dd::PhysicalAddress GpioBase    = 0x6000D000ul;
+        constexpr dd::PhysicalAddress ApbMiscBase = 0x70000000ul;
+        constexpr dd::PhysicalAddress MipiCalBase = 0x700E3000ul;
 
         constexpr size_t Disp1Size   = 3 * os::MemoryPageSize;
         constexpr size_t DsiSize     =     os::MemoryPageSize;
@@ -54,9 +54,9 @@ namespace ams::boot {
         constexpr size_t ApbMiscSize =     os::MemoryPageSize;
         constexpr size_t MipiCalSize =     os::MemoryPageSize;
 
-        constexpr s32 DsiWaitForCommandMilliSecondsMax        = 250;
-        constexpr s32 DsiWaitForCommandCompletionMilliSeconds = 5;
-        constexpr s32 DsiWaitForHostControlMilliSecondsMax    = 150;
+        constexpr int DsiWaitForCommandMilliSecondsMax        = 250;
+        constexpr int DsiWaitForCommandCompletionMilliSeconds = 5;
+        constexpr int DsiWaitForHostControlMilliSecondsMax    = 150;
 
         constexpr size_t GPIO_PORT3_CNF_0 = 0x200;
         constexpr size_t GPIO_PORT3_OE_0  = 0x210;
@@ -66,32 +66,40 @@ namespace ams::boot {
         constexpr size_t GPIO_PORT6_OE_1  = 0x514;
         constexpr size_t GPIO_PORT6_OUT_1 = 0x524;
 
-        /* Types. */
-
         /* Globals. */
         constinit bool g_is_display_intialized = false;
-        constinit u32 *g_frame_buffer = nullptr;
         constinit spl::SocType g_soc_type = spl::SocType_Erista;
+
         constinit u32 g_lcd_vendor = 0;
-        constinit Handle g_dc_das_hnd = INVALID_HANDLE;
         constinit int g_display_brightness = 100;
+
+        constinit dd::DeviceAddressSpaceType g_device_address_space;
+
+        constinit u32 *g_frame_buffer = nullptr;
         constinit u8 g_frame_buffer_storage[DeviceAddressSpaceAlignSize + FrameBufferSize];
 
-        constinit uintptr_t g_disp1_regs = 0;
-        constinit uintptr_t g_dsi_regs = 0;
-        constinit uintptr_t g_clk_rst_regs = 0;
-        constinit uintptr_t g_gpio_regs = 0;
+        constinit uintptr_t g_disp1_regs    = 0;
+        constinit uintptr_t g_dsi_regs      = 0;
+        constinit uintptr_t g_clk_rst_regs  = 0;
+        constinit uintptr_t g_gpio_regs     = 0;
         constinit uintptr_t g_apb_misc_regs = 0;
         constinit uintptr_t g_mipi_cal_regs = 0;
 
         /* Helper functions. */
-        void InitializeRegisterBaseAddresses() {
-            g_disp1_regs    = dd::GetIoMapping(Disp1Base, Disp1Size);
-            g_dsi_regs      = dd::GetIoMapping(DsiBase, DsiSize);
-            g_clk_rst_regs  = dd::GetIoMapping(ClkRstBase, ClkRstSize);
-            g_gpio_regs     = dd::GetIoMapping(GpioBase, GpioSize);
-            g_apb_misc_regs = dd::GetIoMapping(ApbMiscBase, ApbMiscSize);
-            g_mipi_cal_regs = dd::GetIoMapping(MipiCalBase, MipiCalSize);
+        void InitializeRegisterVirtualAddresses() {
+            g_disp1_regs    = dd::QueryIoMapping(Disp1Base,   Disp1Size);
+            g_dsi_regs      = dd::QueryIoMapping(DsiBase,     DsiSize);
+            g_clk_rst_regs  = dd::QueryIoMapping(ClkRstBase,  ClkRstSize);
+            g_gpio_regs     = dd::QueryIoMapping(GpioBase,    GpioSize);
+            g_apb_misc_regs = dd::QueryIoMapping(ApbMiscBase, ApbMiscSize);
+            g_mipi_cal_regs = dd::QueryIoMapping(MipiCalBase, MipiCalSize);
+
+            AMS_ABORT_UNLESS(g_disp1_regs != 0);
+            AMS_ABORT_UNLESS(g_dsi_regs != 0);
+            AMS_ABORT_UNLESS(g_clk_rst_regs != 0);
+            AMS_ABORT_UNLESS(g_gpio_regs != 0);
+            AMS_ABORT_UNLESS(g_apb_misc_regs != 0);
+            AMS_ABORT_UNLESS(g_mipi_cal_regs != 0);
         }
 
         inline void DoRegisterWrites(uintptr_t base_address, const RegisterWrite *reg_writes, size_t num_writes) {
@@ -128,34 +136,38 @@ namespace ams::boot {
         void InitializeFrameBuffer() {
             if (g_frame_buffer != nullptr) {
                 std::memset(g_frame_buffer, 0x00, FrameBufferSize);
-                armDCacheFlush(g_frame_buffer, FrameBufferSize);
+                dd::FlushDataCache(g_frame_buffer, FrameBufferSize);
             } else {
-                const uintptr_t frame_buffer_aligned = ((reinterpret_cast<uintptr_t>(g_frame_buffer_storage) + DeviceAddressSpaceAlignMask) & ~uintptr_t(DeviceAddressSpaceAlignMask));
+                const uintptr_t frame_buffer_aligned = util::AlignUp(reinterpret_cast<uintptr_t>(g_frame_buffer_storage), DeviceAddressSpaceAlignSize);
                 g_frame_buffer = reinterpret_cast<u32 *>(frame_buffer_aligned);
+
                 std::memset(g_frame_buffer, 0x00, FrameBufferSize);
-                armDCacheFlush(g_frame_buffer, FrameBufferSize);
+                dd::FlushDataCache(g_frame_buffer, FrameBufferSize);
 
                 /* Create Address Space. */
-                R_ABORT_UNLESS(svcCreateDeviceAddressSpace(&g_dc_das_hnd, 0, (1ul << 32)));
+                R_ABORT_UNLESS(dd::CreateDeviceAddressSpace(std::addressof(g_device_address_space), 0, (UINT64_C(1) << 32)));
+
                 /* Attach it to the DC. */
-                R_ABORT_UNLESS(svcAttachDeviceAddressSpace(svc::DeviceName_Dc, g_dc_das_hnd));
+                R_ABORT_UNLESS(dd::AttachDeviceAddressSpace(std::addressof(g_device_address_space), svc::DeviceName_Dc));
 
                 /* Map the framebuffer for the DC as read-only. */
-                R_ABORT_UNLESS(svcMapDeviceAddressSpaceAligned(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr, 1));
+                R_ABORT_UNLESS(dd::MapDeviceAddressSpaceAligned(std::addressof(g_device_address_space), dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferDeviceAddress, dd::MemoryPermission_ReadOnly));
             }
         }
 
         void FinalizeFrameBuffer() {
             if (g_frame_buffer != nullptr) {
-                const uintptr_t frame_buffer_aligned = reinterpret_cast<uintptr_t>(g_frame_buffer);
+                const uintptr_t frame_buffer_aligned = util::AlignUp(reinterpret_cast<uintptr_t>(g_frame_buffer), DeviceAddressSpaceAlignSize);
 
                 /* Unmap the framebuffer from the DC. */
-                R_ABORT_UNLESS(svcUnmapDeviceAddressSpace(g_dc_das_hnd, dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferPaddr));
+                dd::UnmapDeviceAddressSpace(std::addressof(g_device_address_space), dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferDeviceAddress);
+
                 /* Detach address space from the DC. */
-                R_ABORT_UNLESS(svcDetachDeviceAddressSpace(svc::DeviceName_Dc, g_dc_das_hnd));
-                /* Close the address space. */
-                R_ABORT_UNLESS(svcCloseHandle(g_dc_das_hnd));
-                g_dc_das_hnd = INVALID_HANDLE;
+                dd::DetachDeviceAddressSpace(std::addressof(g_device_address_space), svc::DeviceName_Dc);
+
+                /* Destroy the address space. */
+                dd::DestroyDeviceAddressSpace(std::addressof(g_device_address_space));
+
                 g_frame_buffer = nullptr;
             }
         }
@@ -192,7 +204,7 @@ namespace ams::boot {
 
     void InitializeDisplay() {
         /* Setup globals. */
-        InitializeRegisterBaseAddresses();
+        InitializeRegisterVirtualAddresses();
         g_soc_type = spl::GetSocType();
         InitializeFrameBuffer();
 

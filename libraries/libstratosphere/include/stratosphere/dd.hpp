@@ -16,5 +16,7 @@
 
 #pragma once
 
-#include "dd/dd_io_mappings.hpp"
-#include "dd/dd_process_handle.hpp"
+#include <stratosphere/dd/dd_types.hpp>
+#include <stratosphere/dd/dd_device_address_space.hpp>
+#include <stratosphere/dd/dd_io_mappings.hpp>
+#include <stratosphere/dd/dd_process_handle.hpp>

@@ -13,12 +13,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/dd/dd_types.hpp>
+#include <vapours/results/results_common.hpp>
 
 namespace ams::dd {
 
-    ProcessHandle GetCurrentProcessHandle();
+    R_DEFINE_NAMESPACE_RESULT_MODULE(6);
+
+    R_DEFINE_ERROR_RESULT(EndOfQuery,              1);
+    R_DEFINE_ERROR_RESULT(InvalidCurrentMemory,    2);
+    R_DEFINE_ERROR_RESULT(NotSingleRegion,         3);
+    R_DEFINE_ERROR_RESULT(InvalidMemoryState,      4);
+    R_DEFINE_ERROR_RESULT(OutOfMemory,             5);
+    R_DEFINE_ERROR_RESULT(OutOfResource,           6);
+    R_DEFINE_ERROR_RESULT(NotSupported,            7);
+    R_DEFINE_ERROR_RESULT(InvalidHandle,           8);
+
+    R_DEFINE_ERROR_RESULT(InternalError,        1023);
 
 }
