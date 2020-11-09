@@ -75,6 +75,8 @@ namespace ams::boot {
 
         constinit dd::DeviceAddressSpaceType g_device_address_space;
 
+        constinit pwm::driver::ChannelSession g_lcd_backlight_session;
+
         constinit u32 *g_frame_buffer = nullptr;
         constinit u8 g_frame_buffer_storage[DeviceAddressSpaceAlignSize + FrameBufferSize];
 
@@ -112,17 +114,18 @@ namespace ams::boot {
             switch (g_soc_type) {
                 case spl::SocType_Erista: DoRegisterWrites(base_address, reg_writes_erista, num_writes_erista); break;
                 case spl::SocType_Mariko: DoRegisterWrites(base_address, reg_writes_mariko, num_writes_mariko); break;
+                AMS_UNREACHABLE_DEFAULT_CASE();
             }
         }
 
-        inline void DoDsiSleepOrRegisterWrites(const DsiSleepOrRegisterWrite *reg_writes, size_t num_writes) {
+        inline void DoSleepOrRegisterWrites(uintptr_t base_address, const SleepOrRegisterWrite *reg_writes, size_t num_writes) {
             for (size_t i = 0; i < num_writes; i++) {
                 switch (reg_writes[i].kind) {
-                    case DsiSleepOrRegisterWriteKind_Write:
-                        reg::Write(g_dsi_regs + sizeof(u32) * reg_writes[i].offset, reg_writes[i].value);
+                    case SleepOrRegisterWriteKind_Write:
+                        reg::Write(base_address + sizeof(u32) * reg_writes[i].offset, reg_writes[i].value);
                         break;
-                    case DsiSleepOrRegisterWriteKind_Sleep:
-                        svcSleepThread(1'000'000ul * u64(reg_writes[i].offset));
+                    case SleepOrRegisterWriteKind_Sleep:
+                        os::SleepThread(TimeSpan::FromMilliSeconds(reg_writes[i].offset));
                         break;
                     AMS_UNREACHABLE_DEFAULT_CASE();
                 }
@@ -131,7 +134,7 @@ namespace ams::boot {
 
         #define DO_REGISTER_WRITES(base_address, writes) DoRegisterWrites(base_address, writes, util::size(writes))
         #define DO_SOC_DEPENDENT_REGISTER_WRITES(base_address, writes) DoSocDependentRegisterWrites(base_address, writes##Erista, util::size(writes##Erista), writes##Mariko, util::size(writes##Mariko))
-        #define DO_DSI_SLEEP_OR_REGISTER_WRITES(writes) DoDsiSleepOrRegisterWrites(writes, util::size(writes))
+        #define DO_SLEEP_OR_REGISTER_WRITES(base_address, writes) DoSleepOrRegisterWrites(base_address, writes, util::size(writes))
 
         void InitializeFrameBuffer() {
             if (g_frame_buffer != nullptr) {
@@ -157,7 +160,7 @@ namespace ams::boot {
 
         void FinalizeFrameBuffer() {
             if (g_frame_buffer != nullptr) {
-                const uintptr_t frame_buffer_aligned = util::AlignUp(reinterpret_cast<uintptr_t>(g_frame_buffer), DeviceAddressSpaceAlignSize);
+                const uintptr_t frame_buffer_aligned = util::AlignUp(reinterpret_cast<uintptr_t>(g_frame_buffer_storage), DeviceAddressSpaceAlignSize);
 
                 /* Unmap the framebuffer from the DC. */
                 dd::UnmapDeviceAddressSpace(std::addressof(g_device_address_space), dd::GetCurrentProcessHandle(), frame_buffer_aligned, FrameBufferSize, FrameBufferDeviceAddress);
@@ -200,6 +203,48 @@ namespace ams::boot {
             }
         }
 
+        void EnableBacklightForVendor2050ForHardwareTypeFive(int brightness) {
+            /* Enable FRAME_END_INT */
+            reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_INT_ENABLE, 2);
+
+            /* Configure DSI_LINE_TYPE as FOUR */
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_VIDEO_MODE_CONTROL, 1);
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_VIDEO_MODE_CONTROL, 9);
+
+            /* Set and wait for FRAME_END_INT */
+            reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_INT_STATUS, 2);
+            while ((reg::Read(g_disp1_regs + sizeof(u32) * DC_CMD_INT_STATUS) & 2) != 0) { /* ... */ }
+
+            /* Configure display brightness. */
+            const u32 brightness_val = ((0x7FF * brightness) / 100);
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x339);
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, (brightness_val & 0x700) | ((brightness_val & 0xFF) << 16) | 0x51);
+
+            /* Set and wait for FRAME_END_INT */
+            reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_INT_STATUS, 2);
+            while ((reg::Read(g_disp1_regs + sizeof(u32) * DC_CMD_INT_STATUS) & 2) != 0) { /* ... */ }
+
+            /* Set client sync point block reset. */
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_INCR_SYNCPT_CNTRL, 1);
+            os::SleepThread(TimeSpan::FromMilliSeconds(300));
+
+            /* Clear client sync point block resest. */
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_INCR_SYNCPT_CNTRL, 0);
+            os::SleepThread(TimeSpan::FromMilliSeconds(300));
+
+            /* Clear DSI_LINE_TYPE config. */
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_VIDEO_MODE_CONTROL, 0);
+
+            /* Disable FRAME_END_INT */
+            reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_INT_ENABLE, 0);
+            reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_INT_STATUS, 2);
+        }
+
+        void EnableBacklightForGeneric(int brightness) {
+            pwm::driver::SetScale(g_lcd_backlight_session, static_cast<double>(brightness));
+            pwm::driver::SetEnabled(g_lcd_backlight_session, true);
+        }
+
     }
 
     void InitializeDisplay() {
@@ -207,6 +252,9 @@ namespace ams::boot {
         InitializeRegisterVirtualAddresses();
         g_soc_type = spl::GetSocType();
         InitializeFrameBuffer();
+
+        /* Get the hardware type. */
+        const auto hw_type = spl::GetHardwareType();
 
         /* Turn on DSI/voltage rail. */
         {
@@ -218,21 +266,37 @@ namespace ams::boot {
                 WriteI2cRegister(i2c_session, 0x1F, 0x71);
             }
             WriteI2cRegister(i2c_session, 0x23, 0xD0);
+
+            i2c::driver::CloseSession(i2c_session);
         }
 
         /* Enable MIPI CAL, DSI, DISP1, HOST1X, UART_FST_MIPI_CAL, DSIA LP clocks. */
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_H_CLR, 0x1010000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_H_SET, 0x1010000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_L_CLR, 0x18000000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_L_SET, 0x18000000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_X_SET, 0x20000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_SOURCE_UART_FST_MIPI_CAL, 0xA);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_W_SET, 0x80000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_SOURCE_DSIA_LP, 0xA);
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_H_CLR, CLK_RST_REG_BITS_ENUM(RST_DEV_H_CLR_CLR_MIPI_CAL_RST, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(RST_DEV_H_CLR_CLR_DSI_RST,      ENABLE));
 
-        /* DPD idle. */
-        dd::WriteIoRegister(PmcBase + APBDEV_PMC_IO_DPD_REQ,  0x40000000);
-        dd::WriteIoRegister(PmcBase + APBDEV_PMC_IO_DPD2_REQ, 0x40000000);
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_H_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_H_SET_SET_CLK_ENB_MIPI_CAL, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(CLK_ENB_H_SET_SET_CLK_ENB_DSI,      ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_L_CLR, CLK_RST_REG_BITS_ENUM(RST_DEV_L_CLR_CLR_HOST1X_RST, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(RST_DEV_L_CLR_CLR_DISP1_RST,  ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_L_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_L_SET_SET_CLK_ENB_HOST1X, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(CLK_ENB_L_SET_SET_CLK_ENB_DISP1,  ENABLE));
+
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_X_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_X_SET_SET_CLK_ENB_UART_FST_MIPI_CAL, ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_SOURCE_UART_FST_MIPI_CAL, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_UART_FST_MIPI_CAL_UART_FST_MIPI_CAL_CLK_DIVISOR,        10),
+                                                                                     CLK_RST_REG_BITS_ENUM (CLK_SOURCE_UART_FST_MIPI_CAL_UART_FST_MIPI_CAL_CLK_SRC,     PLLP_OUT3));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_W_SET, CLK_RST_REG_BITS_ENUM(CLK_ENB_W_SET_SET_CLK_ENB_DSIA_LP, ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_SOURCE_DSIA_LP, CLK_RST_REG_BITS_VALUE(CLK_SOURCE_DSIA_LP_DSIA_LP_CLK_DIVISOR,        10),
+                                                                           CLK_RST_REG_BITS_ENUM (CLK_SOURCE_DSIA_LP_DSIA_LP_CLK_SRC,     PLLP_OUT0));
+
+        /* Set IO_DPD_REQ to DPD_OFF. */
+        dd::WriteIoRegister(PmcBase + APBDEV_PMC_IO_DPD_REQ,  reg::Encode(PMC_REG_BITS_ENUM(IO_DPD_REQ_CODE,  DPD_OFF)));
+        dd::WriteIoRegister(PmcBase + APBDEV_PMC_IO_DPD2_REQ, reg::Encode(PMC_REG_BITS_ENUM(IO_DPD2_REQ_CODE, DPD_OFF)));
 
         /* Configure LCD pinmux tristate + passthrough. */
         reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_NFC_EN,     reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
@@ -241,29 +305,39 @@ namespace ams::boot {
         reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_EN,  reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
         reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_RST,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
 
-        /* Configure LCD power, VDD. */
-        reg::SetBits(g_gpio_regs + GPIO_PORT3_CNF_0, 0x3);
-        reg::SetBits(g_gpio_regs + GPIO_PORT3_OE_0,  0x3);
-        reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x1);
-        svcSleepThread(10'000'000ul);
-        reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
-        svcSleepThread(10'000'000ul);
+        if (hw_type == spl::HardwareType::_Five_) {
+            /* Configure LCD backlight. */
+            reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x4);
+            reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x4);
+        } else {
+            /* Configure LCD power, VDD. */
+            reg::SetBits(g_gpio_regs + GPIO_PORT3_CNF_0, 0x3);
+            reg::SetBits(g_gpio_regs + GPIO_PORT3_OE_0,  0x3);
+            reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x1);
+            os::SleepThread(TimeSpan::FromMilliSeconds(10));
 
-        /* Configure LCD backlight. */
-        reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x7);
-        reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x7);
-        reg::SetBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x2);
+            reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
+            os::SleepThread(TimeSpan::FromMilliSeconds(10));
+
+            /* Configure LCD backlight. */
+            R_ABORT_UNLESS(pwm::driver::OpenSession(std::addressof(g_lcd_backlight_session), pwm::DeviceCode_LcdBacklight));
+            pwm::driver::SetPeriod(g_lcd_backlight_session, TimeSpan::FromNanoSeconds(33898));
+
+            reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x6);
+            reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x6);
+            reg::SetBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x2);
+        }
 
         /* Configure display interface and display. */
-        reg::Write(g_mipi_cal_regs + 0x060, 0);
+        reg::Write(g_mipi_cal_regs + MIPI_CAL_MIPI_BIAS_PAD_CFG2, 0);
         if (g_soc_type == spl::SocType_Mariko) {
-            reg::Write(g_mipi_cal_regs + 0x058, 0);
-            reg::Write(g_apb_misc_regs + 0xAC0, 0);
+            reg::Write(g_mipi_cal_regs + MIPI_CAL_MIPI_BIAS_PAD_CFG0, 0);
+            reg::Write(g_apb_misc_regs + APB_MISC_GP_DSI_PAD_CONTROL, 0);
         }
 
         /* Execute configs. */
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_clk_rst_regs, DisplayConfigPlld01);
-        DO_REGISTER_WRITES(g_disp1_regs, DisplayConfigDc01);
+        DO_SLEEP_OR_REGISTER_WRITES(g_disp1_regs, DisplayConfigDc01);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init01);
         /* NOTE: Nintendo bug here. */
         /* As of 8.0.0, Nintendo writes this list to CAR instead of DSI */
@@ -276,14 +350,18 @@ namespace ams::boot {
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init06);
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsiPhyTiming);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init07);
-
-        svcSleepThread(10'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(10));
 
         /* Enable backlight reset. */
         reg::SetBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x4);
-        svcSleepThread(60'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(60));
 
-        reg::Write(g_dsi_regs + sizeof(u32) * DSI_BTA_TIMING, 0x50204);
+        if (hw_type == spl::HardwareType::_Five_) {
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_BTA_TIMING, 0x40103);
+        } else {
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_BTA_TIMING, 0x50204);
+        }
+
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x337);
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
         WaitDsiTrigger();
@@ -294,7 +372,7 @@ namespace ams::boot {
 
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_HOST_CONTROL, DSI_HOST_CONTROL_TX_TRIG_HOST | DSI_HOST_CONTROL_IMM_BTA | DSI_HOST_CONTROL_CS | DSI_HOST_CONTROL_ECC);
         WaitDsiHostControl();
-        svcSleepThread(5'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(5));
 
         /* Parse LCD vendor. */
         {
@@ -318,62 +396,77 @@ namespace ams::boot {
 
         /* LCD vendor specific configuration. */
         switch (g_lcd_vendor) {
-            case 0xF30: /* AUO first revision screens. */
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(180'000'000ul);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x739);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x711148B1);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x143209);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
-                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+            case 0x10: /* Japan Display Inc screens. */
+                DO_SLEEP_OR_REGISTER_WRITES(g_dsi_regs, DisplayConfigJdiSpecificInit01);
                 break;
             case 0xF20: /* Innolux first revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(180'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(180));
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x739);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x751548B1);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x143209);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 break;
-            case 0x10: /* Japan Display Inc screens. */
-                DO_DSI_SLEEP_OR_REGISTER_WRITES(DisplayConfigJdiSpecificInit01);
+            case 0xF30: /* AUO first revision screens. */
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(180));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x739);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x711148B1);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x143209);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 break;
+            case 0x2050: /* Unknown (hardware type 5) screen. */
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(180));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0xA015);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x205315);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x339);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x51);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                break;
+            case 0x1020: /* Innolux second revision screen. */
+            case 0x1030: /* AUO second revision screen. */
+            case 0x1040: /* Unknown second revision screen. */
             default:
-                /* Innolux and AUO second revision screens. */
-                if ((g_lcd_vendor | 0x10) == 0x1030) {
-                    reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
-                    reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                    svcSleepThread(120'000'000ul);
-                    reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
-                    reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                }
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1105);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(120));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x2905);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
                 break;
         }
-        svcSleepThread(20'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(20));
 
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_clk_rst_regs, DisplayConfigPlld02);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init08);
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsiPhyTiming);
-        DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init09);
+        DO_SLEEP_OR_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init09);
 
         reg::Write(g_disp1_regs + sizeof(u32) * DC_DISP_DISP_CLOCK_CONTROL, SHIFT_CLK_DIVIDER(4));
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init10);
-        svcSleepThread(10'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(10));
 
         /* Configure MIPI CAL. */
         DO_REGISTER_WRITES(g_mipi_cal_regs, DisplayConfigMipiCal01);
@@ -388,12 +481,14 @@ namespace ams::boot {
             DO_SOC_DEPENDENT_REGISTER_WRITES(g_mipi_cal_regs, DisplayConfigMipiCal03);
             DO_REGISTER_WRITES(g_mipi_cal_regs, DisplayConfigMipiCal04);
         }
-        svcSleepThread(10'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(10));
 
         /* Write DISP1, FrameBuffer config. */
-        DO_REGISTER_WRITES(g_disp1_regs, DisplayConfigDc02);
-        DO_REGISTER_WRITES(g_disp1_regs, DisplayConfigFrameBuffer);
-        svcSleepThread(35'000'000ul);
+        DO_SLEEP_OR_REGISTER_WRITES(g_disp1_regs, DisplayConfigDc02);
+        DO_SLEEP_OR_REGISTER_WRITES(g_disp1_regs, DisplayConfigFrameBuffer);
+        if (g_lcd_vendor != 0x2050) {
+            os::SleepThread(TimeSpan::FromMilliSeconds(35));
+        }
         g_is_display_intialized = true;
     }
 
@@ -411,10 +506,14 @@ namespace ams::boot {
                 }
             }
         }
-        armDCacheFlush(g_frame_buffer, FrameBufferSize);
+        dd::FlushDataCache(g_frame_buffer, FrameBufferSize);
 
         /* Enable backlight. */
-        reg::SetBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x1);
+        if (g_lcd_vendor == 0x2050) {
+            EnableBacklightForVendor2050ForHardwareTypeFive(g_display_brightness);
+        } else {
+            EnableBacklightForGeneric(g_display_brightness);
+        }
     }
 
     void FinalizeDisplay() {
@@ -423,14 +522,19 @@ namespace ams::boot {
         }
 
         /* Disable backlight. */
-        reg::ClearBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x1);
+        if (g_lcd_vendor == 0x2050) {
+            EnableBacklightForVendor2050ForHardwareTypeFive(0);
+        } else {
+            pwm::driver::SetEnabled(g_lcd_backlight_session, true);
+            pwm::driver::CloseSession(g_lcd_backlight_session);
+        }
 
         reg::Write(g_disp1_regs + sizeof(u32) * DSI_VIDEO_MODE_CONTROL, 1);
         reg::Write(g_disp1_regs + sizeof(u32) * DSI_WR_DATA, 0x2805);
 
         /* Nintendo waits 5 frames before continuing. */
         {
-            const uintptr_t host1x_vaddr = dd::GetIoMapping(0x500030a4, 4);
+            const uintptr_t host1x_vaddr = dd::GetIoMapping(0x500030A4, 4);
             const u32 start_val = reg::Read(host1x_vaddr);
             while (reg::Read(host1x_vaddr) < start_val + 5) {
                 /* spinlock here. */
@@ -440,76 +544,99 @@ namespace ams::boot {
         reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_STATE_ACCESS, (READ_MUX | WRITE_MUX));
         reg::Write(g_disp1_regs + sizeof(u32) * DSI_VIDEO_MODE_CONTROL, 0);
 
+        DO_REGISTER_WRITES(g_disp1_regs, DisplayConfigDc01Fini01);
+        os::SleepThread(TimeSpan::FromMilliSeconds(40));
 
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_clk_rst_regs, DisplayConfigPlld01);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Fini01);
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsiPhyTiming);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Fini02);
 
+        if (g_lcd_vendor != 0x2050) {
+            os::SleepThread(TimeSpan::FromMilliSeconds(10));
+        }
+
         svcSleepThread(10'000'000ul);
 
         /* Vendor specific shutdown. */
         switch (g_lcd_vendor) {
             case 0x10:   /* Japan Display Inc screens. */
-                DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigJdiSpecificFini01);
+                DO_SLEEP_OR_REGISTER_WRITES(g_dsi_regs, DisplayConfigJdiSpecificFini01);
                 break;
             case 0xF30:  /* AUO first revision screens. */
-                DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigAuoRev1SpecificFini01);
-                svcSleepThread(5'000'000ul);
+                DO_SLEEP_OR_REGISTER_WRITES(g_dsi_regs, DisplayConfigAuoRev1SpecificFini01);
                 break;
             case 0x1020: /* Innolux second revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0xB39);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x751548B1);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x71143209);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x115631);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
                 break;
             case 0x1030: /* AUO second revision screens. */
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0xB39);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x711148B1);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x71143209);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x114D31);
                 reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-                svcSleepThread(5'000'000ul);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
+                break;
+            case 0x1040: /* Unknown second revision screens. */
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x439);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x9483FFB9);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0xB39);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x731348B1);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x71243209);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x4C31);
+                reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
+                os::SleepThread(TimeSpan::FromMilliSeconds(5));
                 break;
             default:
                 break;
         }
-        svcSleepThread(5'000'000ul);
 
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_WR_DATA, 0x1005);
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_TRIGGER, DSI_TRIGGER_HOST);
-        svcSleepThread(50'000'000ul);
+        os::SleepThread(g_lcd_vendor == 0x2050 ? TimeSpan::FromMilliSeconds(120) : TimeSpan::FromMilliSeconds(50));
 
         /* Disable backlight RST/Voltage. */
         reg::ClearBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x4);
-        svcSleepThread(10'000'000ul);
-        reg::ClearBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
-        svcSleepThread(10'000'000ul);
-        reg::ClearBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x1);
-        svcSleepThread(10'000'000ul);
+        if (g_lcd_vendor == 0x2050) {
+            os::SleepThread(TimeSpan::FromMilliSeconds(30));
+        } else {
+            os::SleepThread(TimeSpan::FromMilliSeconds(10));
+            reg::ClearBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
+            os::SleepThread(TimeSpan::FromMilliSeconds(10));
+            reg::ClearBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x1);
+            os::SleepThread(TimeSpan::FromMilliSeconds(10));
+        }
 
         /* Cut clock to DSI. */
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_H_SET, 0x1010000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_H_CLR, 0x1010000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_L_SET, 0x18000000);
-        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_L_CLR, 0x18000000);
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_H_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_H_SET_SET_MIPI_CAL_RST, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(RST_DEV_H_SET_SET_DSI_RST,      ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_H_CLR, CLK_RST_REG_BITS_ENUM(CLK_ENB_H_CLR_CLR_CLK_ENB_MIPI_CAL, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(CLK_ENB_H_CLR_CLR_CLK_ENB_DSI,      ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_L_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_HOST1X_RST, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_DISP1_RST,  ENABLE));
+
+        reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_L_CLR, CLK_RST_REG_BITS_ENUM(CLK_ENB_L_CLR_CLR_CLK_ENB_HOST1X, ENABLE),
+                                                                      CLK_RST_REG_BITS_ENUM(CLK_ENB_L_CLR_CLR_CLK_ENB_DISP1,  ENABLE));
+
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_PAD_CONTROL_0, (DSI_PAD_CONTROL_VS1_PULLDN_CLK | DSI_PAD_CONTROL_VS1_PULLDN(0xF) | DSI_PAD_CONTROL_VS1_PDIO_CLK | DSI_PAD_CONTROL_VS1_PDIO(0xF)));
         reg::Write(g_dsi_regs + sizeof(u32) * DSI_POWER_CONTROL, 0);
-
-        /* Final LCD config for PWM */
-        reg::ClearBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x1);
-        reg::SetBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
-        reg::ReadWrite(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, 1, 0x3);
 
         /* Unmap framebuffer from DC virtual address space. */
         FinalizeFrameBuffer();
