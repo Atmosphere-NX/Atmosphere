@@ -44,6 +44,7 @@
 #define  PM0_ENABLE (1 << 16)
 #define  PM1_ENABLE (1 << 18)
 
+#define DC_CMD_INT_STATUS 0x37
 #define DC_CMD_INT_MASK 0x38
 #define DC_CMD_INT_ENABLE 0x39
 
@@ -241,6 +242,8 @@
 /*! Display serial interface registers. */
 #define _DSIREG(reg) ((reg) * 4)
 
+#define DSI_INCR_SYNCPT_CNTRL 0x1
+
 #define DSI_RD_DATA 0x9
 #define DSI_WR_DATA 0xA
 
@@ -346,5 +349,4 @@
 #define DSI_PAD_CONTROL_7_MARIKO 0x55
 #define DSI_INIT_SEQ_DATA_15 0x5F
 
-#define MIPI_CAL_MIPI_BIAS_PAD_CFG2 0x60
 #define DSI_INIT_SEQ_DATA_15_MARIKO 0x62

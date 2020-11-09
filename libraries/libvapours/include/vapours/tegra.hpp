@@ -31,6 +31,7 @@
 #include <vapours/tegra/tegra_i2c.hpp>
 #include <vapours/tegra/tegra_ictlr.hpp>
 #include <vapours/tegra/tegra_mc.hpp>
+#include <vapours/tegra/tegra_mipi_cal.hpp>
 #include <vapours/tegra/tegra_mselect.hpp>
 #include <vapours/tegra/tegra_pinmux.hpp>
 #include <vapours/tegra/tegra_pg_up.hpp>

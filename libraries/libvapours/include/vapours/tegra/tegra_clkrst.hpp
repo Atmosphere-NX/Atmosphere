@@ -240,11 +240,17 @@ DEFINE_CLK_RST_REG(CLK_SOURCE_MSELECT_MSELECT_CLK_DIVISOR, 0, 8);
 
 DEFINE_CLK_RST_REG_THREE_BIT_ENUM(CLK_SOURCE_ACTMON_ACTMON_CLK_SRC, 29, PLLP_OUT0, PLLC2_OUT0, PLLC_OUT0, PLLC4_OUT0, CLK_S, PLLC4_OUT1, CLK_M, PLLC4_OUT2);
 
+DEFINE_CLK_RST_REG(CLK_SOURCE_DSIA_LP_DSIA_LP_CLK_DIVISOR, 0, 8);
+DEFINE_CLK_RST_REG_THREE_BIT_ENUM(CLK_SOURCE_DSIA_LP_DSIA_LP_CLK_SRC, 29, PLLP_OUT0, RSVD1, PLLC_OUT0, PLLC4_OUT0, PLLC4_OUT1, PLLC4_OUT2, CLK_M, RSVD7);
+
 DEFINE_CLK_RST_REG(CLK_SOURCE_DVFS_REF_DVFS_REF_DIVISOR, 0, 8);
 DEFINE_CLK_RST_REG_THREE_BIT_ENUM(CLK_SOURCE_DVFS_REF_DVFS_REF_CLK_SRC, 29, PLLP_OUT0, PLLC2_OUT0, PLLC_OUT0, PLLC4_OUT0, RESERVED4, PLLC4_OUT1, CLK_M, PLLC4_OUT2);
 
 DEFINE_CLK_RST_REG(CLK_SOURCE_DVFS_SOC_DVFS_SOC_DIVISOR, 0, 8);
 DEFINE_CLK_RST_REG_THREE_BIT_ENUM(CLK_SOURCE_DVFS_SOC_DVFS_SOC_CLK_SRC, 29, PLLP_OUT0, PLLC2_OUT0, PLLC_OUT0, PLLC4_OUT0, RESERVED4, PLLC4_OUT1, CLK_M, PLLC4_OUT2);
+
+DEFINE_CLK_RST_REG(CLK_SOURCE_UART_FST_MIPI_CAL_UART_FST_MIPI_CAL_CLK_DIVISOR, 0, 8);
+DEFINE_CLK_RST_REG_THREE_BIT_ENUM(CLK_SOURCE_UART_FST_MIPI_CAL_UART_FST_MIPI_CAL_CLK_SRC, 29, PLLP_OUT3, PLLC_OUT0, PLLC2_OUT0_2, RSVD3, PLLC2_OUT0_4, RSVD5, CLK_M, RSVD7);
 
 DEFINE_CLK_RST_REG(CLK_SOURCE_LEGACY_TM_CLK_DIVISOR, 0, 8);
 DEFINE_CLK_RST_REG_THREE_BIT_ENUM(CLK_SOURCE_LEGACY_TM_CLK_SRC, 29, PLLP_OUT3, PLLC_OUT0, PLLC2_OUT0, CLK_M, PLLP_OUT0, PLLC4_OUT0, PLLC4_OUT1, PLLC4_OUT2);
@@ -264,59 +270,65 @@ DEFINE_CLK_RST_REG_BIT_ENUM(RST_CPUG_CMPLX_CLR_CLR_CORERESET3,  19, DISABLE, ENA
 DEFINE_CLK_RST_REG_BIT_ENUM(RST_CPUG_CMPLX_CLR_CLR_NONCPURESET, 29, DISABLE, ENABLE);
 
 /* TODO: Actually include all devices. */
-#define CLK_RST_FOREACH_DEVICE(HANDLER) \
-    HANDLER(L, CPU,           0,  0)    \
-    HANDLER(L, RTC,           0,  4)    \
-    HANDLER(L, TMR,           0,  5)    \
-    HANDLER(L, GPIO,          0,  8)    \
-    HANDLER(L, SDMMC2,        0,  9)    \
-    HANDLER(L, SDMMC1,        0, 14)    \
-    HANDLER(L, SDMMC4,        0, 15)    \
-    HANDLER(L, USBD,          0, 22)    \
-    HANDLER(L, CACHE2,        0, 31)    \
-    HANDLER(H, MEM,           1,  0)    \
-    HANDLER(H, AHBDMA,        1,  1)    \
-    HANDLER(H, APBDMA,        1,  2)    \
-    HANDLER(H, PMC,           1,  6)    \
-    HANDLER(H, FUSE,          1,  7)    \
-    HANDLER(H, KFUSE,         1,  8)    \
-    HANDLER(H, I2C5,          1, 15)    \
-    HANDLER(H, EMC,           1, 25)    \
-    HANDLER(H, USB2,          1, 26)    \
-    HANDLER(U, SDMMC3,        2,  5)    \
-    HANDLER(U, CSITE,         2,  9)    \
-    HANDLER(U, IRAMA,         2, 20)    \
-    HANDLER(U, IRAMB,         2, 21)    \
-    HANDLER(U, IRAMC,         2, 22)    \
-    HANDLER(U, IRAMD,         2, 23)    \
-    HANDLER(U, CRAM2,         2, 24)    \
-    HANDLER(V, CPUG,          3,  0)    \
-    HANDLER(V, MSELECT,       3,  3)    \
-    HANDLER(V, SPDIF_DOUBLER, 3, 22)    \
-    HANDLER(V, ACTMON,        3, 23)    \
-    HANDLER(V, TZRAM,         3, 30)    \
-    HANDLER(V, SE,            3, 31)    \
-    HANDLER(W, PCIERX0,       4,  2)    \
-    HANDLER(W, PCIERX1,       4,  3)    \
-    HANDLER(W, PCIERX2,       4,  4)    \
-    HANDLER(W, PCIERX3,       4,  5)    \
-    HANDLER(W, PCIERX4,       4,  6)    \
-    HANDLER(W, PCIERX5,       4,  7)    \
-    HANDLER(W, ENTROPY,       4, 21)    \
-    HANDLER(W, DVFS,          4, 27)    \
-    HANDLER(W, MC1,           4, 30)    \
-    HANDLER(X, MC_CAPA,       5,  7)    \
-    HANDLER(X, MC_CBPA,       5,  8)    \
-    HANDLER(X, MC_CPU,        5,  9)    \
-    HANDLER(X, MC_BBC,        5, 10)    \
-    HANDLER(X, EMC_DLL,       5, 14)    \
-    HANDLER(X, GPU,           5, 24)    \
-    HANDLER(X, DBGAPB,        5, 25)    \
-    HANDLER(X, PLLG_REF,      5, 29)    \
-    HANDLER(Y, LEGACY_TM,     6,  1)    \
-    HANDLER(Y, MC_CCPA,       6,  8)    \
-    HANDLER(Y, MC_CDPA,       6,  9)    \
-    HANDLER(Y, PLLP_OUT_CPU,  6, 31)
+#define CLK_RST_FOREACH_DEVICE(HANDLER)     \
+    HANDLER(L, CPU,               0,  0)    \
+    HANDLER(L, RTC,               0,  4)    \
+    HANDLER(L, TMR,               0,  5)    \
+    HANDLER(L, GPIO,              0,  8)    \
+    HANDLER(L, SDMMC2,            0,  9)    \
+    HANDLER(L, SDMMC1,            0, 14)    \
+    HANDLER(L, SDMMC4,            0, 15)    \
+    HANDLER(L, USBD,              0, 22)    \
+    HANDLER(L, DISP1,             0, 27)    \
+    HANDLER(L, HOST1X,            0, 28)    \
+    HANDLER(L, CACHE2,            0, 31)    \
+    HANDLER(H, MEM,               1,  0)    \
+    HANDLER(H, AHBDMA,            1,  1)    \
+    HANDLER(H, APBDMA,            1,  2)    \
+    HANDLER(H, PMC,               1,  6)    \
+    HANDLER(H, FUSE,              1,  7)    \
+    HANDLER(H, KFUSE,             1,  8)    \
+    HANDLER(H, I2C5,              1, 15)    \
+    HANDLER(H, DSI,               1, 16)    \
+    HANDLER(H, MIPI_CAL,          1, 24)    \
+    HANDLER(H, EMC,               1, 25)    \
+    HANDLER(H, USB2,              1, 26)    \
+    HANDLER(U, SDMMC3,            2,  5)    \
+    HANDLER(U, CSITE,             2,  9)    \
+    HANDLER(U, IRAMA,             2, 20)    \
+    HANDLER(U, IRAMB,             2, 21)    \
+    HANDLER(U, IRAMC,             2, 22)    \
+    HANDLER(U, IRAMD,             2, 23)    \
+    HANDLER(U, CRAM2,             2, 24)    \
+    HANDLER(V, CPUG,              3,  0)    \
+    HANDLER(V, MSELECT,           3,  3)    \
+    HANDLER(V, SPDIF_DOUBLER,     3, 22)    \
+    HANDLER(V, ACTMON,            3, 23)    \
+    HANDLER(V, TZRAM,             3, 30)    \
+    HANDLER(V, SE,                3, 31)    \
+    HANDLER(W, PCIERX0,           4,  2)    \
+    HANDLER(W, PCIERX1,           4,  3)    \
+    HANDLER(W, PCIERX2,           4,  4)    \
+    HANDLER(W, PCIERX3,           4,  5)    \
+    HANDLER(W, PCIERX4,           4,  6)    \
+    HANDLER(W, PCIERX5,           4,  7)    \
+    HANDLER(W, DSIA_LP,           4, 19)    \
+    HANDLER(W, ENTROPY,           4, 21)    \
+    HANDLER(W, DVFS,              4, 27)    \
+    HANDLER(W, MC1,               4, 30)    \
+    HANDLER(X, MC_CAPA,           5,  7)    \
+    HANDLER(X, MC_CBPA,           5,  8)    \
+    HANDLER(X, MC_CPU,            5,  9)    \
+    HANDLER(X, MC_BBC,            5, 10)    \
+    HANDLER(X, EMC_DLL,           5, 14)    \
+    HANDLER(X, UART_FST_MIPI_CAL, 5, 17)    \
+    HANDLER(X, GPU,               5, 24)    \
+    HANDLER(X, DBGAPB,            5, 25)    \
+    HANDLER(X, PLLG_REF,          5, 29)    \
+    HANDLER(Y, LEGACY_TM,         6,  1)    \
+    HANDLER(Y, MC_CCPA,           6,  8)    \
+    HANDLER(Y, MC_CDPA,           6,  9)    \
+    HANDLER(Y, PLLP_OUT_CPU,      6, 31)
 
 #define CLK_RST_DEFINE_SET_CLR_REG(REGISTER, DEVICE, REGISTER_INDEX, DEVICE_INDEX)                             \
     DEFINE_CLK_RST_REG_BIT_ENUM(CLK_ENB_##REGISTER##_SET_SET_CLK_ENB_##DEVICE, DEVICE_INDEX, DISABLE, ENABLE); \
