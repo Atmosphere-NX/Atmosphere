@@ -16,8 +16,15 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pinmux {
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    void SetInitialConfiguration();
+    #include "board/nintendo_nx/pinmux_board_driver_api.hpp"
+    namespace ams::pinmux::driver::board {
+        using namespace ams::pinmux::driver::board::nintendo_nx;
+    }
 
-}
+#else
+
+    #error "Unknown board for pinmux driver"
+
+#endif

@@ -556,8 +556,6 @@ namespace ams::boot {
             os::SleepThread(TimeSpan::FromMilliSeconds(10));
         }
 
-        svcSleepThread(10'000'000ul);
-
         /* Vendor specific shutdown. */
         switch (g_lcd_vendor) {
             case 0x10:   /* Japan Display Inc screens. */

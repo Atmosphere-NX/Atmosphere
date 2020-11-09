@@ -64,6 +64,7 @@
 #include <stratosphere/patcher.hpp>
 #include <stratosphere/pcv.hpp>
 #include <stratosphere/pgl.hpp>
+#include <stratosphere/pinmux.hpp>
 #include <stratosphere/powctl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
