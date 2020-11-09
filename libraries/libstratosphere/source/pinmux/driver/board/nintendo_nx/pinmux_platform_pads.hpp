@@ -16,16 +16,23 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pinmux {
+namespace ams::pinmux::driver::board::nintendo_nx {
 
-    /* Pinmux Utilities. */
-    u32 UpdatePark(u32 pinmux_name);
-    u32 UpdatePad(u32 pinmux_name, u32 config_val, u32 config_mask);
-    u32 UpdateDrivePad(u32 pinmux_drivepad_name, u32 config_val, u32 config_mask);
-    u32 DummyReadDrivePad(u32 pinmux_drivepad_name);
+    struct PinmuxPadConfig {
+        u32 index;
+        u32 option;
+        u32 option_mask;
+    };
 
-    /* Helper API. */
-    void UpdateAllParks();
-    void DummyReadAllDrivePads();
+    struct PinmuxDrivePadConfig {
+        u32 index;
+        u32 option;
+        u32 option_mask;
+    };
+
+    void InitializePlatformPads();
+
+    void UpdateSinglePinmuxPad(const PinmuxPadConfig &config);
+    void UpdateSinglePinmuxDrivePad(const PinmuxDrivePadConfig &config);
 
 }

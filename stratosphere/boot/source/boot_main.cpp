@@ -21,10 +21,9 @@
 #include "boot_clock_initial_configuration.hpp"
 #include "boot_driver_management.hpp"
 #include "boot_fan_enable.hpp"
+#include "boot_pinmux_initial_configuration.hpp"
 #include "boot_repair_boot_images.hpp"
 #include "boot_splash_screen.hpp"
-
-#include "pinmux/pinmux_initial_configuration.hpp"
 
 #include "boot_power_utils.hpp"
 
@@ -218,7 +217,7 @@ int main(int argc, char **argv)
     }
 
     /* Configure pinmux + drive pads. */
-    pinmux::SetInitialConfiguration();
+    boot::SetInitialPinmuxConfiguration();
 
     /* Configure the PMC wake pin settings. */
     gpio::driver::SetInitialWakePinConfig();

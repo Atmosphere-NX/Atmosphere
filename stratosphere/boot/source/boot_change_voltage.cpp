@@ -39,7 +39,7 @@ namespace ams::boot {
         dd::ReadModifyWriteIoRegister(PmcPwrDetVal,                 0, VoltageChangeMask);
 
         /* Sleep for 100 us. */
-        svcSleepThread(100'000ul);
+        os::SleepThread(TimeSpan::FromMicroSeconds(100));
     }
 
 }
