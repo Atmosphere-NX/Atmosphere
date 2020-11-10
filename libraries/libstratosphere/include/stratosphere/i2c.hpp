@@ -28,3 +28,4 @@
 #include <stratosphere/i2c/driver/impl/i2c_i2c_session_impl.hpp>
 #include <stratosphere/i2c/i2c_api.hpp>
 #include <stratosphere/i2c/i2c_bus_api.hpp>
+#include <stratosphere/i2c/i2c_register_accessor.hpp>

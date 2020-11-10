@@ -77,6 +77,8 @@ namespace ams::powctl::impl::board::nintendo_nx {
             }
 
             void SignalEvent(IDevice *device);
+        public:
+            ChargerInterruptEventHandler(IDevice *dv) : InterruptEventHandler<ChargerInterruptEventHandler>(dv) { /* ... */ }
     };
 
     class BatteryInterruptEventHandler : public InterruptEventHandler<BatteryInterruptEventHandler> {
@@ -95,6 +97,8 @@ namespace ams::powctl::impl::board::nintendo_nx {
             }
 
             void SignalEvent(IDevice *device);
+        public:
+            BatteryInterruptEventHandler(IDevice *dv) : InterruptEventHandler<BatteryInterruptEventHandler>(dv) { /* ... */ }
     };
 
 }
