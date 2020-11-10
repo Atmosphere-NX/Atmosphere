@@ -42,6 +42,22 @@ namespace ams::powctl::impl::board::nintendo_nx {
             powctl::impl::RegisterDriver(std::addressof(*g_battery_driver));
         }
 
+        void FinalizeChargerDriver() {
+            /* Unregister the driver. */
+            powctl::impl::UnregisterDriver(std::addressof(*g_charger_driver));
+
+            /* Destroy the battery driver. */
+            g_charger_driver = std::nullopt;
+        }
+
+        void FinalizeBatteryDriver() {
+            /* Unregister the driver. */
+            powctl::impl::UnregisterDriver(std::addressof(*g_battery_driver));
+
+            /* Destroy the battery driver. */
+            g_battery_driver = std::nullopt;
+        }
+
     }
 
     void Initialize(bool use_event_handlers) {
@@ -50,8 +66,8 @@ namespace ams::powctl::impl::board::nintendo_nx {
     }
 
     void Finalize() {
-        /* TODO */
-        AMS_ABORT();
+        FinalizeBatteryDriver();
+        FinalizeChargerDriver();
     }
 
 }

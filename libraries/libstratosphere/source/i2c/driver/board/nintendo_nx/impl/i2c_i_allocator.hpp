@@ -30,8 +30,16 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
             IAllocator(ams::MemoryResource *mr) : memory_resource(mr), list(), list_lock() { /* ... */ }
 
             ~IAllocator() {
-                /* TODO: Remove all entries, etc */
-                AMS_ABORT("BusAccessorManager not destructible");
+                std::scoped_lock lk(this->list_lock);
+
+                /* Remove all entries. */
+                auto it = this->list.begin();
+                while (it != this->list.end()) {
+                    T *obj = std::addressof(*it);
+                    it = this->list.erase(it);
+
+                    this->memory_resource->Deallocate(obj, sizeof(T));
+                }
             }
 
             template<typename ...Args>

@@ -35,7 +35,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -49,7 +49,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -63,7 +63,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -77,7 +77,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -91,7 +91,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -105,7 +105,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -119,7 +119,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -133,7 +133,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -147,7 +147,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -161,7 +161,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -175,7 +175,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -189,7 +189,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -203,7 +203,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -217,7 +217,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -231,7 +231,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -245,7 +245,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -259,7 +259,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -273,7 +273,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -287,7 +287,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -301,7 +301,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -315,7 +315,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -329,7 +329,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -343,7 +343,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -357,7 +357,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -371,7 +371,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -385,7 +385,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -399,7 +399,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Read), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -413,7 +413,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
@@ -427,7 +427,7 @@ namespace ams::powctl {
         auto &impl = GetOpenSessionImpl(session);
 
         /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+        R_UNLESS(impl.CheckAccess(ddsf::AccessMode_Write), ddsf::ResultPermissionDenied());
 
         /* Get the device. */
         auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
