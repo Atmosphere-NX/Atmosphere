@@ -39,6 +39,12 @@ namespace ams::powctl::impl::board::nintendo_nx {
                 return std::addressof(this->gpio_system_event);
             }
 
+            void SetInterruptEnabled(bool en) {
+                std::scoped_lock lk(this->mutex);
+
+                gpio::SetInterruptEnable(std::addressof(this->gpio_session), en);
+            }
+
             virtual void HandleEvent() override final {
                 /* Acquire exclusive access to ourselves. */
                 std::scoped_lock lk(this->mutex);
@@ -50,7 +56,7 @@ namespace ams::powctl::impl::board::nintendo_nx {
                 os::ClearSystemEvent(std::addressof(this->gpio_system_event));
 
                 /* Signal the event. */
-                Derived::SignalEvent(this->device);
+                static_cast<Derived *>(this)->SignalEvent(this->device);
             }
     };
 
