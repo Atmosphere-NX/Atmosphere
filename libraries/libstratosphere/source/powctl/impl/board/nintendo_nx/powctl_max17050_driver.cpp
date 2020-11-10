@@ -156,6 +156,7 @@ namespace ams::powctl::impl::board::nintendo_nx {
                 }
             }
 
+
         }
 
     }
@@ -415,6 +416,10 @@ namespace ams::powctl::impl::board::nintendo_nx {
 
     Result Max17050Driver::SetNeedToRestoreParameters(bool en) {
         return ReadWriteRegister(this->i2c_session, max17050::MiscCfg, 0x8000, en ? 0x8000 : 0);
+    }
+
+    Result Max17050Driver::ResetCycles() {
+        return WriteRegister(this->i2c_session, max17050::Cycles, 0x0060);
     }
 
 }
