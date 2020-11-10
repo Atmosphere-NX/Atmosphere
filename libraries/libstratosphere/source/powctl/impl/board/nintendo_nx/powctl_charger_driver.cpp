@@ -81,6 +81,12 @@ namespace ams::powctl::impl::board::nintendo_nx {
 
         /* Destroy the charger device. */
         g_charger_device = std::nullopt;
+
+        /* Finalize gpio library. */
+        gpio::Finalize();
+
+        /* Finalize Bq24193Driver. */
+        GetBq24193Driver().Finalize();
     }
 
     Result ChargerDriver::GetDeviceSystemEvent(os::SystemEventType **out, IDevice *device) {

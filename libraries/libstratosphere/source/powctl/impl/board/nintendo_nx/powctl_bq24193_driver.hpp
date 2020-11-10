@@ -50,7 +50,25 @@ namespace ams::powctl::impl::board::nintendo_nx {
             void Initialize() {
                 std::scoped_lock lk(this->mutex);
                 if ((this->init_count++) == 0) {
+                    /* Initialize i2c library. */
+                    i2c::InitializeEmpty();
+
+                    /* Open session. */
+                    R_ABORT_UNLESS(i2c::OpenSession(std::addressof(this->i2c_session), i2c::DeviceCode_Bq24193));
+
+                    /* Initialize session. */
                     R_ABORT_UNLESS(this->InitializeSession());
+                }
+            }
+
+            void Finalize() {
+                std::scoped_lock lk(this->mutex);
+                if ((--this->init_count) == 0) {
+                    /* Close session. */
+                    i2c::CloseSession(this->i2c_session);
+
+                    /* Finalize i2c library. */
+                    i2c::Finalize();
                 }
             }
 
