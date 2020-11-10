@@ -184,20 +184,6 @@ namespace ams::powctl {
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerInputCurrentLimit(std::addressof(device), ma);
     }
 
-    Result GetChargerInputVoltageLimit(int *out_mv, Session &session) {
-        /* Get the session impl. */
-        auto &impl = GetOpenSessionImpl(session);
-
-        /* Check the access mode. */
-        R_TRY(impl.CheckAccess(ddsf::AccessMode_Read));
-
-        /* Get the device. */
-        auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
-
-        /* Call into the driver. */
-        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().GetChargerInputVoltageLimit(out_mv, std::addressof(device));
-    }
-
     Result SetChargerInputVoltageLimit(Session &session, int mv) {
         /* Get the session impl. */
         auto &impl = GetOpenSessionImpl(session);
@@ -210,6 +196,20 @@ namespace ams::powctl {
 
         /* Call into the driver. */
         return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerInputVoltageLimit(std::addressof(device), mv);
+    }
+
+    Result SetChargerBoostModeCurrentLimit(Session &session, int ma) {
+        /* Get the session impl. */
+        auto &impl = GetOpenSessionImpl(session);
+
+        /* Check the access mode. */
+        R_TRY(impl.CheckAccess(ddsf::AccessMode_Write));
+
+        /* Get the device. */
+        auto &device = impl.GetDevice().SafeCastTo<impl::IDevice>();
+
+        /* Call into the driver. */
+        return device.GetDriver().SafeCastTo<impl::IPowerControlDriver>().SetChargerBoostModeCurrentLimit(std::addressof(device), ma);
     }
 
     Result GetChargerChargerStatus(ChargerStatus *out, Session &session) {

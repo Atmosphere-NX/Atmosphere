@@ -38,8 +38,9 @@ namespace ams::powctl {
     Result GetChargerInputCurrentLimit(int *out_ma, Session &session);
     Result SetChargerInputCurrentLimit(Session &session, int ma);
 
-    Result GetChargerInputVoltageLimit(int *out_mv, Session &session);
     Result SetChargerInputVoltageLimit(Session &session, int mv);
+
+    Result SetChargerBoostModeCurrentLimit(Session &session, int ma);
 
     Result GetChargerChargerStatus(ChargerStatus *out, Session &session);
 

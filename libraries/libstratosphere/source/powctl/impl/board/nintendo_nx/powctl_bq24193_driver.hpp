@@ -49,7 +49,9 @@ namespace ams::powctl::impl::board::nintendo_nx {
 
             void Initialize() {
                 std::scoped_lock lk(this->mutex);
-                R_ABORT_UNLESS(this->InitializeSession());
+                if ((this->init_count++) == 0) {
+                    R_ABORT_UNLESS(this->InitializeSession());
+                }
             }
 
             Result SetPreChargeCurrentLimit(int ma);
@@ -76,8 +78,9 @@ namespace ams::powctl::impl::board::nintendo_nx {
             Result GetInputCurrentLimit(int *out_ma);
             Result SetInputCurrentLimit(int ma);
 
-            Result GetInputVoltageLimit(int *out_mv);
             Result SetInputVoltageLimit(int mv);
+
+            Result SetBoostModeCurrentLimit(int ma);
 
             Result GetChargerStatus(bq24193::ChargerStatus *out);
 

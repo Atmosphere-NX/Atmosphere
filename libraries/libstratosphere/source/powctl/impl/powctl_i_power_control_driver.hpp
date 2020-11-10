@@ -82,8 +82,9 @@ namespace ams::powctl::impl {
             virtual Result GetChargerInputCurrentLimit(int *out_ma, IDevice *device) = 0;
             virtual Result SetChargerInputCurrentLimit(IDevice *device, int ma) = 0;
 
-            virtual Result GetChargerInputVoltageLimit(int *out_mv, IDevice *device) = 0;
             virtual Result SetChargerInputVoltageLimit(IDevice *device, int mv) = 0;
+
+            virtual Result SetChargerBoostModeCurrentLimit(IDevice *device, int ma) = 0;
 
             virtual Result GetBatteryInternalState(void *dst, size_t *out_size, IDevice *device, size_t dst_size) = 0;
             virtual Result SetBatteryInternalState(IDevice *device, const void *src, size_t src_size) = 0;
