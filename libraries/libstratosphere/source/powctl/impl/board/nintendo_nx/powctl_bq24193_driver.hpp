@@ -52,6 +52,13 @@ namespace ams::powctl::impl::board::nintendo_nx {
                 R_ABORT_UNLESS(this->InitializeSession());
             }
 
+            Result SetPreChargeCurrentLimit(int ma);
+            Result SetTerminationCurrentLimit(int ma);
+
+            Result SetMinimumSystemVoltageLimit(int mv);
+
+            Result SetChargingSafetyTimerEnabled(bool en);
+
             Result GetForce20PercentChargeCurrent(bool *out);
             Result SetForce20PercentChargeCurrent(bool en);
 
