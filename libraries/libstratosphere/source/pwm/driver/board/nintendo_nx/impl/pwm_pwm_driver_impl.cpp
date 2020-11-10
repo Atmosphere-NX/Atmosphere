@@ -141,7 +141,7 @@ namespace ams::pwm::driver::board::nintendo_nx::impl {
         AMS_ASSERT(device != nullptr);
 
         /* Validate the duty. */
-        R_UNLESS(0 <= duty && duty < MaxDuty, pwm::ResultInvalidArgument());
+        R_UNLESS(0 <= duty && duty <= MaxDuty, pwm::ResultInvalidArgument());
 
         /* Acquire exclusive access to the device registers. */
         std::scoped_lock lk(device->SafeCastTo<PwmDeviceImpl>());

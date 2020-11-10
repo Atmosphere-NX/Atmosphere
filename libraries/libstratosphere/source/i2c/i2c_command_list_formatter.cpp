@@ -32,7 +32,7 @@ namespace ams::i2c {
         util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(this->command_list);
 
         /* Get references to the header. */
-        auto &header0  = cmd_list[this->current_index++];
+        auto &header0 = cmd_list[this->current_index++];
         auto &header1 = cmd_list[this->current_index++];
 
         /* Set the header. */
@@ -54,7 +54,7 @@ namespace ams::i2c {
         util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(this->command_list);
 
         /* Get references to the header. */
-        auto &header0  = cmd_list[this->current_index++];
+        auto &header0 = cmd_list[this->current_index++];
         auto &header1 = cmd_list[this->current_index++];
 
         /* Set the header. */
@@ -80,7 +80,7 @@ namespace ams::i2c {
         util::BitPack8 *cmd_list = static_cast<util::BitPack8 *>(this->command_list);
 
         /* Get references to the header. */
-        auto &header0  = cmd_list[this->current_index++];
+        auto &header0 = cmd_list[this->current_index++];
         auto &header1 = cmd_list[this->current_index++];
 
         /* Set the header. */

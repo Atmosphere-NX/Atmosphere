@@ -67,8 +67,8 @@ namespace ams::i2c::driver::impl {
 
     Result I2cSessionImpl::SendHandler(const u8 **cur_cmd, u8 **cur_dst) {
         /* Read the header bytes. */
-        const util::BitPack8 hdr0{*(*cur_cmd++)};
-        const util::BitPack8 hdr1{*(*cur_cmd++)};
+        const util::BitPack8 hdr0{*((*cur_cmd)++)};
+        const util::BitPack8 hdr1{*((*cur_cmd)++)};
 
         /* Decode the header. */
         const bool start  = hdr0.Get<i2c::impl::SendCommandFormat::StartCondition>();
@@ -86,8 +86,8 @@ namespace ams::i2c::driver::impl {
 
     Result I2cSessionImpl::ReceiveHandler(const u8 **cur_cmd, u8 **cur_dst) {
         /* Read the header bytes. */
-        const util::BitPack8 hdr0{*(*cur_cmd++)};
-        const util::BitPack8 hdr1{*(*cur_cmd++)};
+        const util::BitPack8 hdr0{*((*cur_cmd)++)};
+        const util::BitPack8 hdr1{*((*cur_cmd)++)};
 
         /* Decode the header. */
         const bool start  = hdr0.Get<i2c::impl::ReceiveCommandFormat::StartCondition>();
@@ -105,13 +105,13 @@ namespace ams::i2c::driver::impl {
 
     Result I2cSessionImpl::ExtensionHandler(const u8 **cur_cmd, u8 **cur_dst) {
         /* Read the header bytes. */
-        const util::BitPack8 hdr0{*(*cur_cmd++)};
+        const util::BitPack8 hdr0{*((*cur_cmd)++)};
 
         /* Execute the subcommand. */
         switch (hdr0.Get<i2c::impl::CommonCommandFormat::SubCommandId>()) {
             case i2c::impl::SubCommandId_Sleep:
                 {
-                    const util::BitPack8 param{*(*cur_cmd++)};
+                    const util::BitPack8 param{*((*cur_cmd)++)};
 
                     os::SleepThread(TimeSpan::FromMicroSeconds(param.Get<i2c::impl::SleepCommandFormat::MicroSeconds>()));
                 }

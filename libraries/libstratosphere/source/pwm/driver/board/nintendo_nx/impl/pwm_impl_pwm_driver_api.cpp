@@ -25,8 +25,8 @@ namespace ams::pwm::driver::board::nintendo_nx::impl {
         constexpr inline size_t PwmRegistersSize = 0x100;
 
         constexpr const ChannelDefinition SupportedChannels[] = {
-            { pwm::DeviceCode_CpuFan,       0 },
-            { pwm::DeviceCode_LcdBacklight, 1 },
+            { pwm::DeviceCode_LcdBacklight, 0 },
+            { pwm::DeviceCode_CpuFan,       1 },
         };
 
     }
