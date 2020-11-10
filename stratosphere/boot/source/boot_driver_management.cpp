@@ -50,8 +50,16 @@ namespace ams::boot {
     }
 
     void FinalizeI2cDriverLibrary() {
-        /* TODO */
-        AMS_ABORT();
+        /* Finalize the i2c driver library. */
+        i2c::driver::Finalize();
+
+        /* Finalize the i2c client library. */
+        i2c::Finalize();
+
+        /* NOTE: Unknown finalize function is called here by Nintendo. */
+
+        /* Finalize the pwm client library. */
+        pwm::Finalize();
     }
 
 }

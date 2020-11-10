@@ -84,15 +84,19 @@ namespace ams::i2c {
             {
                 std::scoped_lock lk(g_i2c_mutex);
                 AMS_ASSERT(g_i2c_count > 0);
-                if ((--g_i2c_count) == 0) {
-                    g_i2c_manager.reset();
+                if (g_i2c_count > 0) {
+                    if ((--g_i2c_count) == 0) {
+                        g_i2c_manager.reset();
+                    }
                 }
             }
             {
                 std::scoped_lock lk(g_i2c_pcv_mutex);
                 AMS_ASSERT(g_i2c_pcv_count > 0);
-                if ((--g_i2c_pcv_count) == 0) {
-                    g_i2c_pcv_manager.reset();
+                if (g_i2c_pcv_count > 0) {
+                    if ((--g_i2c_pcv_count) == 0) {
+                        g_i2c_pcv_manager.reset();
+                    }
                 }
             }
         }

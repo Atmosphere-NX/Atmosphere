@@ -319,6 +319,11 @@ namespace ams::boot {
             reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
             os::SleepThread(TimeSpan::FromMilliSeconds(10));
 
+            /* Configure LCD backlight to use PWM. */
+            reg::ClearBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x1);
+            reg::Write(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, PINMUX_REG_BITS_ENUM(AUX_LCD_BL_PWM_PM,      PWM0),
+                                                                PINMUX_REG_BITS_ENUM(AUX_PUPD,          PULL_DOWN));
+
             /* Configure LCD backlight. */
             R_ABORT_UNLESS(pwm::driver::OpenSession(std::addressof(g_lcd_backlight_session), pwm::DeviceCode_LcdBacklight));
             pwm::driver::SetPeriod(g_lcd_backlight_session, TimeSpan::FromNanoSeconds(33898));
