@@ -24,8 +24,7 @@
 #include "panic.h"
 #include "car.h"
 #include "btn.h"
-
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 
 #include <inttypes.h>
 

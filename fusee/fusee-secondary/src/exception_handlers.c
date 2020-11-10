@@ -19,8 +19,8 @@
 
 #include "exception_handlers.h"
 #include "utils.h"
-#include "display/video_fb.h"
-#include "lib/log.h"
+#include "../../../fusee/common/display/video_fb.h"
+#include "../../../fusee/common/log.h"
 
 #define CODE_DUMP_SIZE      0x30
 #define STACK_DUMP_SIZE     0x30

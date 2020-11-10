@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "sdmmc/sdmmc.h"
+#include "../../../fusee/common/sdmmc/sdmmc.h"
 #include "utils.h"
 
 extern sdmmc_t g_sd_sdmmc;

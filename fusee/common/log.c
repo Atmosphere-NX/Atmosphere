@@ -15,11 +15,16 @@
  */
 
 #include "log.h"
-#include "../console.h"
 
+#ifdef FUSEE_STAGE2_SRC
+#include "../../../fusee/fusee-secondary/src/console.h"
 #include <stdio.h>
+#else
+#include "display/video_fb.h"
+#include "vsprintf.h"
+#endif
 
-/* default log level for screen output */
+/* Default log level for screen output. */
 ScreenLogLevel g_screen_log_level = SCREEN_LOG_LEVEL_NONE;
 
 void log_set_log_level(ScreenLogLevel log_level) {
@@ -31,14 +36,18 @@ ScreenLogLevel log_get_log_level() {
 }
 
 void log_to_uart(const char *message) {
-    /* TODO: add UART logging */
+    /* TODO: Add UART logging. */
 }
 
 static void print_to_screen(ScreenLogLevel screen_log_level, char *message) {
-    /* don't print to screen if below log level */
+    /* Don't print to screen if below log level */
     if(screen_log_level > g_screen_log_level) return;
-
+    
+    #ifdef FUSEE_STAGE2_SRC
     printf(message);
+    #else
+    video_puts(message);
+    #endif
 }
 
 /**
@@ -53,10 +62,10 @@ void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args)
     char buf[PRINT_MESSAGE_MAX_LENGTH];
     vsnprintf(buf, PRINT_MESSAGE_MAX_LENGTH, fmt, args);
 
-    /* we don't need that flag here, but if it gets used, strip it so we print correctly */
+    /* We don't need that flag here, but if it gets used, strip it so we print correctly. */
     screen_log_level &= ~SCREEN_LOG_LEVEL_NO_PREFIX;
 
-    /* log to UART */
+    /* Log to UART. */
     log_to_uart(buf);
 
     print_to_screen(screen_log_level, buf);
@@ -65,8 +74,8 @@ void vprint(ScreenLogLevel screen_log_level, const char *fmt, va_list args)
 static void add_prefix(ScreenLogLevel screen_log_level, const char *fmt, char *buf) {
     char typebuf[] = "[%s] %s";
 
-    /* apply prefix and append message format */
-    /* TODO: add coloring to the output */
+    /* Apply prefix and append message format. */
+    /* TODO: Add coloring to the output. */
     switch(screen_log_level)
     {
         case SCREEN_LOG_LEVEL_ERROR:
@@ -91,7 +100,7 @@ static void add_prefix(ScreenLogLevel screen_log_level, const char *fmt, char *b
 
 /**
  * print - logs a message and prints it to screen based on its screen_log_level
- *
+ * 
  * If the level is below g_screen_log_level it will not be shown but logged to UART
  * Use SCREEN_LOG_LEVEL_NO_PREFIX if you don't want a prefix to be added
  * UART is TODO
@@ -101,14 +110,16 @@ void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
     char buf[PRINT_MESSAGE_MAX_LENGTH] = {};
     char message[PRINT_MESSAGE_MAX_LENGTH] = {};
 
-    /* Make splash disappear if level is ERROR or WARNING */
+    /* Make splash disappear if level is ERROR or WARNING. */
+    #ifdef FUSEE_STAGE2_SRC
     if (screen_log_level < SCREEN_LOG_LEVEL_MANDATORY) {
         console_resume();
     }
+    #endif
 
-    /* make prefix free messages with log_level possible */
+    /* Make prefix free messages with log_level possible. */
     if(screen_log_level & SCREEN_LOG_LEVEL_NO_PREFIX) {
-        /* remove the NO_PREFIX flag so the enum can be recognized later on */
+        /* Remove the NO_PREFIX flag so the enum can be recognized later on. */
         screen_log_level &= ~SCREEN_LOG_LEVEL_NO_PREFIX;
 
         snprintf(buf, PRINT_MESSAGE_MAX_LENGTH, "%s", fmt);
@@ -117,13 +128,13 @@ void print(ScreenLogLevel screen_log_level, const char * fmt, ...)
         add_prefix(screen_log_level, fmt, buf);
     }
 
-    /* input arguments */
+    /* Input arguments. */
     va_list args;
     va_start(args, fmt);
     vsnprintf(message, PRINT_MESSAGE_MAX_LENGTH, buf, args);
     va_end(args);
 
-    /* log to UART */
+    /* Log to UART. */
     log_to_uart(message);
 
     print_to_screen(screen_log_level, message);

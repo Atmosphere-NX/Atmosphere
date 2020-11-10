@@ -25,9 +25,9 @@
 #include "panic.h"
 #include "car.h"
 #include "btn.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/vsprintf.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 #include <inttypes.h>
 

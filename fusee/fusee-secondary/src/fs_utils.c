@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <sys/stat.h>
-#include "lib/fatfs/ff.h"
+#include "../../../fusee/common/fatfs/ff.h"
 #include "fs_utils.h"
 #include "fs_dev.h"
 

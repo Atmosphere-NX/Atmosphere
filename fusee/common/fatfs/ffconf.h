@@ -49,8 +49,11 @@
 #define FF_USE_EXPAND	0
 /* This option switches f_expand function. (0:Disable or 1:Enable) */
 
-
+#ifdef FUSEE_STAGE2_SRC
+#define FF_USE_CHMOD	1
+#else
 #define FF_USE_CHMOD	0
+#endif
 /* This option switches attribute manipulation functions, f_chmod() and f_utime().
 /  (0:Disable or 1:Enable) Also FF_FS_READONLY needs to be 0 to enable this option. */
 
@@ -149,8 +152,11 @@
 /   3: Unicode in UTF-8
 */
 
-
+#ifdef FUSEE_STAGE2_SRC
+#define FF_FS_RPATH		2
+#else
 #define FF_FS_RPATH		0
+#endif
 /* This option configures support for relative path.
 /
 /   0: Disable relative path and remove related functions.
@@ -162,13 +168,20 @@
 /*---------------------------------------------------------------------------/
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
-
+#ifdef FUSEE_STAGE2_SRC
+#define FF_VOLUMES		10
+#else
 #define FF_VOLUMES		1
+#endif
 /* Number of volumes (logical drives) to be used. (1-10) */
 
-
+#ifdef FUSEE_STAGE2_SRC
+#define FF_STR_VOLUME_ID	1
+//#define FF_VOLUME_STRS		"sdmc"
+#else
 #define FF_STR_VOLUME_ID	0
 #define FF_VOLUME_STRS		"sdmc"
+#endif
 /* FF_STR_VOLUME_ID switches support for volume ID in arbitrary strings.
 /  When FF_STR_VOLUME_ID is set to 1 or 2, arbitrary strings can be used as drive
 /  number in the path name. FF_VOLUME_STRS defines the volume ID strings for each
@@ -191,7 +204,11 @@
 
 
 #define FF_MIN_SS		512
+#ifdef FUSEE_STAGE2_SRC
+#define FF_MAX_SS		4096
+#else
 #define FF_MAX_SS		512
+#endif
 /* This set of options configures the range of sector size to be supported. (512,
 /  1024, 2048 or 4096) Always set both 512 for most systems, generic memory card and
 /  harddisk. But a larger value may be required for on-board flash memory and some

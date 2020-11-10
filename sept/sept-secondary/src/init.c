@@ -49,7 +49,7 @@ static void __program_init_newlib_hooks(void) {
 }
 
 static void __program_move_additional_sections(void) {
-#if defined(FUSEE_STAGE1_SRC) || defined(FUSEE_STAGE2_SRC)
+#if defined(SEPT_STAGE1_SRC) || defined(SEPT_STAGE2_SRC)
     extern uint8_t __chainloader_lma__[], __chainloader_start__[], __chainloader_bss_start__[], __chainloader_end__[];
     memcpy(__chainloader_start__, __chainloader_lma__, __chainloader_bss_start__ - __chainloader_start__);
     memset(__chainloader_bss_start__, 0, __chainloader_end__ - __chainloader_bss_start__);
@@ -81,12 +81,12 @@ void __program_exit(int rc) {
     for (;;);
 }
 
-#ifdef FUSEE_STAGE1_SRC
+#ifdef SEPT_STAGE1_SRC
 static void __program_parse_argc_argv(int argc, char *argdata) {
     __program_argc = 0;
     __program_argv = NULL;
 }
-#elif defined(FUSEE_STAGE2_SRC)
+#elif defined(SEPT_STAGE2_SRC)
 #include "stage2.h"
 static void __program_parse_argc_argv(int argc, char *argdata) {
     size_t pos = 0, len;
@@ -136,7 +136,7 @@ static void __program_parse_argc_argv(int argc, char *argdata) {
 #endif
 
 static void __program_cleanup_argv(void) {
-#ifndef FUSEE_STAGE1_SRC
+#ifndef SEPT_STAGE1_SRC
     for (int i = 0; i < __program_argc; i++) {
         free(__program_argv[i]);
         __program_argv[i] = NULL;

@@ -27,7 +27,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/lib src/display
+SOURCES		:=	src ../../fusee/common ../../fusee/common/display
 DATA		:=	data
 INCLUDES	:=	include ../../libraries/libvapours/include
 
@@ -35,7 +35,7 @@ INCLUDES	:=	include ../../libraries/libvapours/include
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
-DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+DEFINES :=	-D__BPMP__ -DFUSEE_MTC_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
 CFLAGS	:= \
 	-g \

@@ -16,8 +16,8 @@
 
 #include "fs_utils.h"
 #include "mc.h"
-#include "lib/fatfs/ff.h"
-#include "lib/log.h"
+#include "../../../fusee/common/fatfs/ff.h"
+#include "../../../fusee/common/log.h"
 
 FATFS sd_fs;
 static bool g_sd_mounted = false;

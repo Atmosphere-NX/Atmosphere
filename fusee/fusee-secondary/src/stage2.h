@@ -17,7 +17,7 @@
 #ifndef FUSEE_STAGE2_H
 #define FUSEE_STAGE2_H
 
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 #include "utils.h"
 
 /* TODO: Is there a more concise way to do this? */

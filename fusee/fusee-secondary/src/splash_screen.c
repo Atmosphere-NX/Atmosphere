@@ -19,7 +19,7 @@
 #include "timers.h"
 #include "splash_screen.h"
 #include "fs_utils.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 #define u8 uint8_t
 #define u32 uint32_t

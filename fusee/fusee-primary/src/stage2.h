@@ -20,11 +20,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "display/video_fb.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "lib/ini.h"
-#include "lib/fatfs/ff.h"
+#include "../../../fusee/common/display/video_fb.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/vsprintf.h"
+#include "../../../fusee/common/ini.h"
+#include "../../../fusee/common/fatfs/ff.h"
 
 /* TODO: Is there a more concise way to do this? */
 #define STAGE2_ARGV_PROGRAM_PATH 0

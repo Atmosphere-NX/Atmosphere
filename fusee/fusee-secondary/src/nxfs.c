@@ -25,10 +25,9 @@
 #include "se.h"
 #include "utils.h"
 #include "fs_utils.h"
-#include "sdmmc/sdmmc.h"
-
-#include "lib/log.h"
-#include "lib/fatfs/ff.h"
+#include "../../../fusee/common/sdmmc/sdmmc.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/fatfs/ff.h"
 
 static bool g_ahb_redirect_enabled = false;
 static bool g_sd_device_initialized = false;

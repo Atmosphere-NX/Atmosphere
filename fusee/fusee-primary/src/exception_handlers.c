@@ -18,8 +18,8 @@
 
 #include "exception_handlers.h"
 #include "utils.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/vsprintf.h"
 
 #define CODE_DUMP_SIZE      0x30
 #define STACK_DUMP_SIZE     0x30

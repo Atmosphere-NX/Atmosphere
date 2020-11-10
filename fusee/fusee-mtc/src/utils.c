@@ -17,8 +17,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include "utils.h"
-#include "display/video_fb.h"
-#include "lib/log.h"
+#include "../../../fusee/common/display/video_fb.h"
+#include "../../../fusee/common/log.h"
 
 __attribute__ ((noreturn)) void generic_panic(void) {
     while (true) {

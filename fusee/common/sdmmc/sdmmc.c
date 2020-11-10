@@ -25,7 +25,14 @@
 #include "sdmmc.h"
 #include "mmc.h"
 #include "sd.h"
-#include "../timers.h"
+
+#if defined(FUSEE_STAGE1_SRC)
+#include "../../../fusee/fusee-primary/src/timers.h"
+#elif defined(FUSEE_STAGE2_SRC)
+#include "../../../fusee/fusee-secondary/src/timers.h"
+#elif defined(SEPT_STAGE2_SRC)
+#include "../../../sept/sept-secondary/src/timers.h"
+#endif
 
 #define UNSTUFF_BITS(resp,start,size)                               \
 ({                                                                  \

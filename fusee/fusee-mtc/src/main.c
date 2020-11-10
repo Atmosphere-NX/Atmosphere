@@ -17,7 +17,7 @@
 #include <string.h>
 #include "mtc.h"
 #include "stage2.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 static void *g_framebuffer;
 static __attribute__((__aligned__(0x200))) stage2_mtc_args_t g_mtc_args_store;

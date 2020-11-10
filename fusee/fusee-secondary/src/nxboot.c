@@ -47,9 +47,9 @@
 #include "lp0.h"
 #include "loader.h"
 #include "exocfg.h"
-#include "display/video_fb.h"
-#include "lib/ini.h"
-#include "lib/log.h"
+#include "../../../fusee/common/display/video_fb.h"
+#include "../../../fusee/common/ini.h"
+#include "../../../fusee/common/log.h"
 #include "splash_screen.h"
 
 #define u8 uint8_t

@@ -23,14 +23,32 @@
 #include <inttypes.h>
 
 #include "sdmmc_core.h"
-#include "../car.h"
-#include "../pinmux.h"
-#include "../timers.h"
-#include "../apb_misc.h"
-#include "../gpio.h"
-#include "../pmc.h"
-#include "../max7762x.h"
-#include "../lib/log.h"
+#if defined(FUSEE_STAGE1_SRC)
+#include "../../../fusee/fusee-primary/src/car.h"
+#include "../../../fusee/fusee-primary/src/pinmux.h"
+#include "../../../fusee/fusee-primary/src/timers.h"
+#include "../../../fusee/fusee-primary/src/apb_misc.h"
+#include "../../../fusee/fusee-primary/src/gpio.h"
+#include "../../../fusee/fusee-primary/src/pmc.h"
+#include "../../../fusee/fusee-primary/src/max7762x.h"
+#elif defined(FUSEE_STAGE2_SRC)
+#include "../../../fusee/fusee-secondary/src/car.h"
+#include "../../../fusee/fusee-secondary/src/pinmux.h"
+#include "../../../fusee/fusee-secondary/src/timers.h"
+#include "../../../fusee/fusee-secondary/src/apb_misc.h"
+#include "../../../fusee/fusee-secondary/src/gpio.h"
+#include "../../../fusee/fusee-secondary/src/pmc.h"
+#include "../../../fusee/fusee-secondary/src/max7762x.h"
+#elif defined(SEPT_STAGE2_SRC)
+#include "../../../sept/sept-secondary/src/car.h"
+#include "../../../sept/sept-secondary/src/pinmux.h"
+#include "../../../sept/sept-secondary/src/timers.h"
+#include "../../../sept/sept-secondary/src/apb_misc.h"
+#include "../../../sept/sept-secondary/src/gpio.h"
+#include "../../../sept/sept-secondary/src/pmc.h"
+#include "../../../sept/sept-secondary/src/max7762x.h"
+#endif
+#include "../log.h"
 
 static void sdmmc_print(sdmmc_t *sdmmc, ScreenLogLevel screen_log_level, char *fmt, va_list list)
 {
