@@ -14,13 +14,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "../../powctl_device_management.hpp"
 #include "powctl_board_impl.hpp"
+#include "powctl_battery_driver.hpp"
+#include "powctl_charger_driver.hpp"
 
 namespace ams::powctl::impl::board::nintendo_nx {
 
+    namespace {
+
+        constinit std::optional<ChargerDriver> g_charger_driver;
+        constinit std::optional<BatteryDriver> g_battery_driver;
+
+        void InitializeChargerDriver(bool use_event_handlers) {
+            /* Create the charger driver. */
+            g_charger_driver.emplace(use_event_handlers);
+
+            /* Register the driver. */
+            powctl::impl::RegisterDriver(std::addressof(*g_charger_driver));
+        }
+
+        void InitializeBatteryDriver(bool use_event_handlers) {
+            /* Create the battery driver. */
+            g_battery_driver.emplace(use_event_handlers);
+
+            /* Register the driver. */
+            powctl::impl::RegisterDriver(std::addressof(*g_battery_driver));
+        }
+
+    }
+
     void Initialize(bool use_event_handlers) {
-        /* TODO */
-        AMS_ABORT();
+        InitializeChargerDriver(use_event_handlers);
+        InitializeBatteryDriver(use_event_handlers);
     }
 
     void Finalize() {

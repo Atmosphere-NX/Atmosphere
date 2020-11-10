@@ -33,6 +33,7 @@ namespace ams::powctl {
     };
 
     enum ChargeCurrentState {
+        ChargeCurrentState_Unknown                = 0x0,
         ChargeCurrentState_NotCharging            = 0x1,
         ChargeCurrentState_ChargingForce20Percent = 0x2,
         ChargeCurrentState_Charging               = 0x3,

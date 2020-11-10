@@ -44,7 +44,7 @@ namespace ams::powctl::impl {
             virtual void InitializeDriver() = 0;
             virtual void FinalizeDriver() = 0;
 
-            virtual Result GetDeviceSystemEvent(IDevice *device) = 0;
+            virtual Result GetDeviceSystemEvent(os::SystemEventType **out, IDevice *device) = 0;
             virtual Result SetDeviceInterruptEnabled(IDevice *device, bool enable) = 0;
 
             /* TODO: Eventually implement proper error status enum? */
