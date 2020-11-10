@@ -34,6 +34,19 @@ namespace ams::powctl::impl::board::nintendo_nx {
 
     }
 
+    BatteryDevice::BatteryDevice(bool ev) : use_event_handler(ev), event_handler() {
+        if (this->use_event_handler) {
+            /* Create the system event. */
+            os::CreateSystemEvent(std::addressof(this->system_event), os::EventClearMode_ManualClear, true);
+
+            /* Create the handler. */
+            this->event_handler.emplace(this);
+
+            /* Register the event handler. */
+            powctl::impl::RegisterInterruptHandler(std::addressof(*this->event_handler));
+        }
+    }
+
     /* Generic API. */
     void BatteryDriver::InitializeDriver() {
         /* Initialize gpio library. */
