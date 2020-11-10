@@ -85,8 +85,16 @@ namespace ams::powctl::impl {
         os::WaitThread(std::addressof(g_interrupt_thread));
         os::DestroyThread(std::addressof(g_interrupt_thread));
 
-        /* TODO: What else? */
-        AMS_ABORT();
+        /* Reset all device code entries. */
+        GetDeviceCodeEntryManager().Reset();
+
+        /* Finalize all registered drivers. */
+        for (auto &driver : GetDriverList()) {
+            driver.SafeCastTo<IPowerControlDriver>().FinalizeDriver();
+        }
+
+        /* Finalize the interrupt handler manager. */
+        GetInterruptHandlerManager().Finalize();
     }
 
     void RegisterDriver(IPowerControlDriver *driver) {

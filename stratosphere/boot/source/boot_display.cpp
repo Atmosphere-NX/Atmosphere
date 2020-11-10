@@ -530,7 +530,7 @@ namespace ams::boot {
         if (g_lcd_vendor == 0x2050) {
             EnableBacklightForVendor2050ForHardwareTypeFive(0);
         } else {
-            pwm::driver::SetEnabled(g_lcd_backlight_session, true);
+            pwm::driver::SetEnabled(g_lcd_backlight_session, false);
             pwm::driver::CloseSession(g_lcd_backlight_session);
         }
 
