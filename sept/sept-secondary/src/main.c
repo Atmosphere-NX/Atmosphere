@@ -29,12 +29,12 @@
 #include "stage2.h"
 #include "splash.h"
 #include "chainloader.h"
-#include "sdmmc/sdmmc.h"
-#include "lib/fatfs/ff.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "lib/ini.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/sdmmc/sdmmc.h"
+#include "../../../fusee/common/fatfs/ff.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/vsprintf.h"
+#include "../../../fusee/common/ini.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 extern void (*__program_exit_callback)(int rc);
 

@@ -21,7 +21,7 @@
 #include "car.h"
 #include "fuse.h"
 #include "timers.h"
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 
 /*
  * Macros.

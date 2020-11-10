@@ -23,7 +23,7 @@
 #include "utils.h"
 #include "exocfg.h"
 #include "se.h"
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 #include "ips.h"
 
 /* IPS Patching adapted from Luma3DS (https://github.com/AuroraWright/Luma3DS/blob/master/sysmodules/loader/source/patcher.c) */

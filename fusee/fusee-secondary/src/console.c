@@ -16,7 +16,7 @@
  
 #include "console.h"
 #include "di.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 static void *g_framebuffer = NULL;
 static bool g_display_initialized = false;

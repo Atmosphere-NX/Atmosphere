@@ -31,9 +31,9 @@
 #include "fs_utils.h"
 #include "nxfs.h"
 #include "gpt.h"
-#include "display/video_fb.h"
-#include "sdmmc/sdmmc.h"
-#include "lib/log.h"
+#include "../../../fusee/common/display/video_fb.h"
+#include "../../../fusee/common/sdmmc/sdmmc.h"
+#include "../../../fusee/common/log.h"
 
 extern void (*__program_exit_callback)(int rc);
 

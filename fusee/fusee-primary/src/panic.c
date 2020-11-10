@@ -21,8 +21,8 @@
 #include "fuse.h"
 #include "utils.h"
 #include "fs_utils.h"
-#include "lib/log.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 #define PROGRAM_ID_AMS_MITM 0x010041544D530000ull
 #define PROGRAM_ID_BOOT     0x0100000000000005ull

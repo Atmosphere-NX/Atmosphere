@@ -25,7 +25,7 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-#include "lib/fatfs/ff.h"
+#include "../../../fusee/common/fatfs/ff.h"
 
 #if FF_VOLUMES != 10
 #error "FatFs misconfigured, expected FF_VOLUMES == 10"

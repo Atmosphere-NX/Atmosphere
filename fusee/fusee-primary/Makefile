@@ -27,7 +27,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
+SOURCES		:=	src ../../fusee/common ../../fusee/common/display ../../fusee/common/fatfs ../../fusee/common/sdmmc
 DATA		:=	data
 INCLUDES	:=	include  ../../libraries/libvapours/include
 

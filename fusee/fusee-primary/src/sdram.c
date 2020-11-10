@@ -29,7 +29,7 @@
 #define CONFIG_SDRAM_COMPRESS_CFG
 
 #ifdef CONFIG_SDRAM_COMPRESS_CFG
-#include "lib/lz.h"
+#include "../../../fusee/common/lz.h"
 #include "sdram_lz.inl"
 #else
 #include "sdram.inl"
