@@ -123,8 +123,9 @@ namespace ams::powctl::impl::board::nintendo_nx {
             virtual Result GetChargerInputCurrentLimit(int *out_ma, IDevice *device) override { return powctl::ResultNotSupported(); }
             virtual Result SetChargerInputCurrentLimit(IDevice *device, int ma) override { return powctl::ResultNotSupported(); }
 
-            virtual Result GetChargerInputVoltageLimit(int *out_mv, IDevice *device) override { return powctl::ResultNotSupported(); }
             virtual Result SetChargerInputVoltageLimit(IDevice *device, int mv) override { return powctl::ResultNotSupported(); }
+
+            virtual Result SetChargerBoostModeCurrentLimit(IDevice *device, int ma) override { return powctl::ResultNotSupported(); }
 
             virtual Result GetChargerChargerStatus(ChargerStatus *out, IDevice *device) override { return powctl::ResultNotSupported(); }
 

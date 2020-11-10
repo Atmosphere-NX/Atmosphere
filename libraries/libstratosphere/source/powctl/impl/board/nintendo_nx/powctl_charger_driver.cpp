@@ -244,20 +244,19 @@ namespace ams::powctl::impl::board::nintendo_nx {
         return ResultSuccess();
     }
 
-    Result ChargerDriver::GetChargerInputVoltageLimit(int *out_mv, IDevice *device) {
-        /* Validate arguments. */
-        R_UNLESS(out_mv != nullptr, powctl::ResultInvalidArgument());
-        R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
-
-        AMS_POWCTL_R_TRY_WITH_RETRY(GetBq24193Driver().GetInputVoltageLimit(out_mv));
-        return ResultSuccess();
-    }
-
     Result ChargerDriver::SetChargerInputVoltageLimit(IDevice *device, int mv) {
         /* Validate arguments. */
         R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
 
         AMS_POWCTL_R_TRY_WITH_RETRY(GetBq24193Driver().SetInputVoltageLimit(mv));
+        return ResultSuccess();
+    }
+
+    Result ChargerDriver::SetChargerBoostModeCurrentLimit(IDevice *device, int ma) {
+        /* Validate arguments. */
+        R_UNLESS(device != nullptr, powctl::ResultInvalidArgument());
+
+        AMS_POWCTL_R_TRY_WITH_RETRY(GetBq24193Driver().SetBoostModeCurrentLimit(ma));
         return ResultSuccess();
     }
 
