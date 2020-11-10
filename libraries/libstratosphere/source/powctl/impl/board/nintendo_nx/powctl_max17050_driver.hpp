@@ -20,6 +20,19 @@ namespace ams::powctl::impl::board::nintendo_nx {
 
     namespace max17050 {
 
+        struct InternalState {
+            u16 rcomp0;
+            u16 tempco;
+            u16 fullcap;
+            u16 cycles;
+            u16 fullcapnom;
+            u16 iavgempty;
+            u16 qresidual00;
+            u16 qresidual10;
+            u16 qresidual20;
+            u16 qresidual30;
+        };
+
     }
 
     class Max17050Driver {
@@ -27,6 +40,7 @@ namespace ams::powctl::impl::board::nintendo_nx {
             os::SdkMutex mutex;
             int init_count;
             i2c::I2cSession i2c_session;
+            max17050::InternalState internal_state;
         private:
             Result InitializeSession(const char *battery_vendor, u8 battery_version);
             Result SetMaximumShutdownTimerThreshold();
@@ -40,7 +54,7 @@ namespace ams::powctl::impl::board::nintendo_nx {
             Result SetModelTable(const u16 *model_table);
             bool IsModelTableSet(const u16 *model_table);
         public:
-            Max17050Driver() : mutex(), init_count(0), i2c_session() {
+            Max17050Driver() : mutex(), init_count(0), i2c_session(), internal_state() {
                 /* ... */
             }
 
@@ -72,8 +86,59 @@ namespace ams::powctl::impl::board::nintendo_nx {
                 }
             }
 
+            Result ReadInternalState();
+            Result WriteInternalState();
+
+            void GetInternalState(max17050::InternalState *dst) {
+                *dst = this->internal_state;
+            }
+
+            void SetInternalState(const max17050::InternalState &src) {
+                this->internal_state = src;
+            }
+
+            Result GetSocRep(double *out);
+            Result GetSocVf(double *out);
+
+            Result GetFullCapacity(double *out, double sense_resistor);
+            Result GetRemainingCapacity(double *out, double sense_resistor);
+
+            Result SetPercentageMinimumAlertThreshold(int percentage);
+            Result SetPercentageMaximumAlertThreshold(int percentage);
+
+            Result SetPercentageFullThreshold(double percentage);
+
+            Result GetAverageCurrent(double *out, double sense_resistor);
+            Result GetCurrent(double *out, double sense_resistor);
+
             Result GetNeedToRestoreParameters(bool *out);
             Result SetNeedToRestoreParameters(bool en);
+
+            Result IsI2cShutdownEnabled(bool *out);
+            Result SetI2cShutdownEnabled(bool en);
+
+            Result GetStatus(u16 *out);
+
+            Result GetCycles(u16 *out);
+            Result ResetCycles();
+
+            Result GetAge(double *out);
+
+            Result GetTemperature(double *out);
+
+            Result GetMaximumTemperature(u8 *out);
+
+            Result SetTemperatureMinimumAlertThreshold(int c);
+            Result SetTemperatureMaximumAlertThreshold(int c);
+
+            Result GetVCell(int *out);
+            Result GetAverageVCell(int *out);
+            Result GetAverageVCellTime(double *out);
+
+            Result GetOpenCircuitVoltage(int *out);
+
+            Result SetVoltageMinimumAlertThreshold(int mv);
+            Result SetVoltageMaximumAlertThreshold(int mv);
     };
 
 }
