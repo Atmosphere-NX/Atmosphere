@@ -190,53 +190,53 @@ typedef enum {
 } SdmmcControllerNum;
 
 typedef enum {
-    SDMMC_PARTITION_INVALID  = -1,
-    SDMMC_PARTITION_USER  = 0,
-    SDMMC_PARTITION_BOOT0 = 1,
-    SDMMC_PARTITION_BOOT1 = 2,
-    SDMMC_PARTITION_RPMB = 3
+    SDMMC_PARTITION_INVALID = -1,
+    SDMMC_PARTITION_USER    = 0,
+    SDMMC_PARTITION_BOOT0   = 1,
+    SDMMC_PARTITION_BOOT1   = 2,
+    SDMMC_PARTITION_RPMB    = 3
 } SdmmcPartitionNum;
 
 typedef enum {
-    SDMMC_VOLTAGE_NONE = 0,
-    SDMMC_VOLTAGE_1V8 = 1,
-    SDMMC_VOLTAGE_3V3 = 2
+    SDMMC_VOLTAGE_NONE  = 0,
+    SDMMC_VOLTAGE_1V8   = 1,
+    SDMMC_VOLTAGE_3V3   = 2
 } SdmmcBusVoltage;
 
 typedef enum {
-    SDMMC_BUS_WIDTH_1BIT = 0,
-    SDMMC_BUS_WIDTH_4BIT = 1,
-    SDMMC_BUS_WIDTH_8BIT = 2
+    SDMMC_BUS_WIDTH_1BIT  = 0,
+    SDMMC_BUS_WIDTH_4BIT  = 1,
+    SDMMC_BUS_WIDTH_8BIT  = 2
 } SdmmcBusWidth;
 
 typedef enum {
-    SDMMC_SPEED_MMC_INIT        = 0,
+    SDMMC_SPEED_MMC_IDENT       = 0,
     SDMMC_SPEED_MMC_LEGACY      = 1,
     SDMMC_SPEED_MMC_HS          = 2,
     SDMMC_SPEED_MMC_HS200       = 3,
     SDMMC_SPEED_MMC_HS400       = 4,
-    SDMMC_SPEED_SD_INIT         = 5,
-    SDMMC_SPEED_SD_LEGACY       = 6,
+    SDMMC_SPEED_SD_IDENT        = 5,
+    SDMMC_SPEED_SD_DS           = 6,
     SDMMC_SPEED_SD_HS           = 7,
-    SDMMC_SPEED_UHS_SDR12       = 8,
-    SDMMC_SPEED_UHS_SDR25       = 9,
-    SDMMC_SPEED_UHS_SDR50       = 10,
-    SDMMC_SPEED_UHS_SDR104      = 11,
-    SDMMC_SPEED_UHS_RESERVED    = 12,
-    SDMMC_SPEED_UHS_DDR50       = 13,
-    SDMMC_SPEED_MMC_DDR52       = 14,
+    SDMMC_SPEED_SD_SDR12        = 8,
+    SDMMC_SPEED_SD_SDR25        = 9,
+    SDMMC_SPEED_SD_SDR50        = 10,
+    SDMMC_SPEED_SD_SDR104       = 11,
+    SDMMC_SPEED_SD_DDR50        = 12,
+    SDMMC_SPEED_GC_ASIC_FPGA    = 13,
+    SDMMC_SPEED_GC_ASIC         = 14,
     SDMMC_SPEED_EMU_SDR104      = 255, /* Custom speed mode. Prevents low voltage switch in MMC emulation. */
 } SdmmcBusSpeed;
 
 typedef enum {
-    SDMMC_CAR_DIVIDER_UHS_SDR12     = 31, /* (16.5 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_UHS_SDR25     = 15, /* (8.5 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_UHS_SDR50     = 7,  /* (4.5 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_UHS_SDR104    = 2,  /* (2 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_UHS_DDR50     = 18, /* (5 * 2 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_MMC_LEGACY    = 30, /* (16 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_MMC_HS        = 14, /* (8 * 2) - 2 */
-    SDMMC_CAR_DIVIDER_MMC_HS200     = 3,  /* (2.5 * 2) - 2 (for PLLP_OUT0, same as HS400) */
+    SDMMC_CAR_DIVIDER_MMC_LEGACY        = 30, /* (16 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_MMC_HS            = 14, /* (8 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_MMC_HS200         = 3,  /* (2.5 * 2) - 2 (for PLLP_OUT0, same as HS400) */
+    SDMMC_CAR_DIVIDER_SD_SDR12          = 31, /* (16.5 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_SD_SDR25          = 15, /* (8.5 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_SD_SDR50          = 7,  /* (4.5 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_SD_SDR104         = 2,  /* (2 * 2) - 2 */
+    SDMMC_CAR_DIVIDER_GC_ASIC_FPGA      = 18, /* (5 * 2 * 2) - 2 */
 } SdmmcCarDivider;
 
 /* Structure for describing a SDMMC device. */

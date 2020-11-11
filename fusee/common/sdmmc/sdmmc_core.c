@@ -307,28 +307,28 @@ static int sdmmc_get_sdclk_freq(SdmmcBusSpeed bus_speed)
 {
     switch (bus_speed)
     {
-        case SDMMC_SPEED_MMC_INIT:
+        case SDMMC_SPEED_MMC_IDENT:
         case SDMMC_SPEED_MMC_LEGACY:
             return 26000;
         case SDMMC_SPEED_MMC_HS:
             return 52000;
         case SDMMC_SPEED_MMC_HS200:
         case SDMMC_SPEED_MMC_HS400:
-        case SDMMC_SPEED_UHS_SDR104:
+        case SDMMC_SPEED_SD_SDR104:
         case SDMMC_SPEED_EMU_SDR104:
             return 200000;
-        case SDMMC_SPEED_SD_INIT:
-        case SDMMC_SPEED_SD_LEGACY:
-        case SDMMC_SPEED_UHS_SDR12:
+        case SDMMC_SPEED_SD_IDENT:
+        case SDMMC_SPEED_SD_DS:
+        case SDMMC_SPEED_SD_SDR12:
             return 25000;
         case SDMMC_SPEED_SD_HS:
-        case SDMMC_SPEED_UHS_SDR25:
+        case SDMMC_SPEED_SD_SDR25:
             return 50000;
-        case SDMMC_SPEED_UHS_SDR50:
+        case SDMMC_SPEED_SD_SDR50:
             return 100000;
-        case SDMMC_SPEED_UHS_DDR50:
+        case SDMMC_SPEED_GC_ASIC_FPGA:
             return 40800;
-        case SDMMC_SPEED_MMC_DDR52:
+        case SDMMC_SPEED_GC_ASIC:
             return 200000;
         default:
             return 0;
@@ -340,23 +340,23 @@ static int sdmmc_get_sdclk_div(SdmmcBusSpeed bus_speed)
 {
     switch (bus_speed)
     {
-        case SDMMC_SPEED_MMC_INIT:
+        case SDMMC_SPEED_MMC_IDENT:
             return 66;
-        case SDMMC_SPEED_SD_INIT:
+        case SDMMC_SPEED_SD_IDENT:
         case SDMMC_SPEED_MMC_LEGACY:
         case SDMMC_SPEED_MMC_HS:
         case SDMMC_SPEED_MMC_HS200:
         case SDMMC_SPEED_MMC_HS400:
-        case SDMMC_SPEED_SD_LEGACY:
+        case SDMMC_SPEED_SD_DS:
         case SDMMC_SPEED_SD_HS:
-        case SDMMC_SPEED_UHS_SDR12:
-        case SDMMC_SPEED_UHS_SDR25:
-        case SDMMC_SPEED_UHS_SDR50:
-        case SDMMC_SPEED_UHS_SDR104:
-        case SDMMC_SPEED_UHS_DDR50:
+        case SDMMC_SPEED_SD_SDR12:
+        case SDMMC_SPEED_SD_SDR25:
+        case SDMMC_SPEED_SD_SDR50:
+        case SDMMC_SPEED_SD_SDR104:
+        case SDMMC_SPEED_GC_ASIC_FPGA:
         case SDMMC_SPEED_EMU_SDR104:
             return 1;
-        case SDMMC_SPEED_MMC_DDR52:
+        case SDMMC_SPEED_GC_ASIC:
             return 2;
         default:
             return 0;
@@ -375,7 +375,7 @@ static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq
     {
         case 25000:
             out_freq = 24728;
-            car_div = SDMMC_CAR_DIVIDER_UHS_SDR12;
+            car_div = SDMMC_CAR_DIVIDER_SD_SDR12;
             break;
         case 26000:
             out_freq = 25500;
@@ -383,11 +383,11 @@ static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq
             break;
         case 40800:
             out_freq = 40800;
-            car_div = SDMMC_CAR_DIVIDER_UHS_DDR50;
+            car_div = SDMMC_CAR_DIVIDER_GC_ASIC_FPGA;
             break;
         case 50000:
             out_freq = 48000;
-            car_div = SDMMC_CAR_DIVIDER_UHS_SDR25;
+            car_div = SDMMC_CAR_DIVIDER_SD_SDR25;
             break;
         case 52000:
             out_freq = 51000;
@@ -395,7 +395,7 @@ static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq
             break;
         case 100000:
             out_freq = 90667;
-            car_div = SDMMC_CAR_DIVIDER_UHS_SDR50;
+            car_div = SDMMC_CAR_DIVIDER_SD_SDR50;
             break;
         case 200000:
             out_freq = 163200;
@@ -403,7 +403,7 @@ static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq
             break;
         case 208000:
             out_freq = 204000;
-            car_div = SDMMC_CAR_DIVIDER_UHS_SDR104;
+            car_div = SDMMC_CAR_DIVIDER_SD_SDR104;
             break;
         default:
             return 0;
@@ -884,10 +884,10 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
     /* Set the appropriate host speed. */
     switch (bus_speed) {
         /* 400kHz initialization mode and a few others. */
-        case SDMMC_SPEED_MMC_INIT:
+        case SDMMC_SPEED_MMC_IDENT:
         case SDMMC_SPEED_MMC_LEGACY:
-        case SDMMC_SPEED_SD_INIT:
-        case SDMMC_SPEED_SD_LEGACY:
+        case SDMMC_SPEED_SD_IDENT:
+        case SDMMC_SPEED_SD_DS:
             sdmmc->regs->host_control &= ~(SDHCI_CTRL_HISPD);
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_VDD_180);
             break;
@@ -895,17 +895,17 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
         /* 50MHz high speed (SD) and 52MHz high speed (MMC). */
         case SDMMC_SPEED_SD_HS:
         case SDMMC_SPEED_MMC_HS:
-        case SDMMC_SPEED_UHS_SDR25:
+        case SDMMC_SPEED_SD_SDR25:
             sdmmc->regs->host_control |= SDHCI_CTRL_HISPD;
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_VDD_180);
             break;
             
         /* 200MHz UHS-I (SD) and other modes due to errata. */
         case SDMMC_SPEED_MMC_HS200:
-        case SDMMC_SPEED_UHS_SDR104:
-        case SDMMC_SPEED_UHS_DDR50:
-        case SDMMC_SPEED_UHS_SDR50:
-        case SDMMC_SPEED_MMC_DDR52:
+        case SDMMC_SPEED_SD_SDR104:
+        case SDMMC_SPEED_GC_ASIC_FPGA:
+        case SDMMC_SPEED_SD_SDR50:
+        case SDMMC_SPEED_GC_ASIC:
         case SDMMC_SPEED_EMU_SDR104:
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
             sdmmc->regs->host_control2 |= SDHCI_CTRL_UHS_SDR104;
@@ -920,7 +920,7 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
             break;
             
         /* 25MHz default speed (SD). */
-        case SDMMC_SPEED_UHS_SDR12:
+        case SDMMC_SPEED_SD_SDR12:
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
             sdmmc->regs->host_control2 |= SDHCI_CTRL_UHS_SDR12;
             sdmmc->regs->host_control2 |= SDHCI_CTRL_VDD_180;
@@ -1754,7 +1754,7 @@ int sdmmc_switch_voltage(sdmmc_t *sdmmc)
     sdmmc_disable_sd_clock(sdmmc);
     
     /* Reconfigure the internal clock. */
-    if (!sdmmc_select_speed(sdmmc, SDMMC_SPEED_UHS_SDR12))
+    if (!sdmmc_select_speed(sdmmc, SDMMC_SPEED_SD_SDR12))
     {
         sdmmc_error(sdmmc, "Failed to apply the correct bus speed for low voltage support!");
         return 0;
@@ -1919,14 +1919,14 @@ int sdmmc_execute_tuning(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed, uint32_t opcod
     {
         case SDMMC_SPEED_MMC_HS200:
         case SDMMC_SPEED_MMC_HS400:
-        case SDMMC_SPEED_UHS_SDR104:
+        case SDMMC_SPEED_SD_SDR104:
         case SDMMC_SPEED_EMU_SDR104:
             max_tuning_loop = 0x80;
             tuning_cntrl_flag = 0x4000;
             break;
-        case SDMMC_SPEED_UHS_SDR50:
-        case SDMMC_SPEED_UHS_DDR50:
-        case SDMMC_SPEED_MMC_DDR52:
+        case SDMMC_SPEED_SD_SDR50:
+        case SDMMC_SPEED_GC_ASIC_FPGA:
+        case SDMMC_SPEED_GC_ASIC:
             max_tuning_loop = 0x100;
             tuning_cntrl_flag = 0x8000;
             break;
