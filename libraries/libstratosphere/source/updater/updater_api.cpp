@@ -158,9 +158,16 @@ namespace ams::updater {
                 R_TRY(boot0_accessor.Initialize());
                 ON_SCOPE_EXIT { boot0_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to validate BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
+
                 /* Compare BCT hashes. */
-                R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctNormalMain));
-                R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctNormalMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                if (!custom_public_key) {
+                    R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctNormalMain));
+                    R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctNormalMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                }
 
                 /* Compare BCT Sub hashes. */
                 R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctNormalSub));
@@ -213,10 +220,16 @@ namespace ams::updater {
                 R_TRY(boot1_accessor.Initialize());
                 ON_SCOPE_EXIT { boot1_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to validate BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
 
                 /* Compare BCT hashes. */
-                R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctSafeMain));
-                R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctSafeMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                if (!custom_public_key) {
+                    R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctSafeMain));
+                    R_TRY(ValidateBctFileHash(boot0_accessor, Boot0Partition::BctSafeMain, nand_hash, work_buffer, work_buffer_size, boot_image_update_type));
+                }
 
                 /* Compare BCT Sub hashes. */
                 R_TRY(boot0_accessor.GetHash(nand_hash, BctSize, work_buffer, work_buffer_size, Boot0Partition::BctSafeSub));
@@ -260,6 +273,11 @@ namespace ams::updater {
                 R_TRY(boot0_accessor.Initialize());
                 ON_SCOPE_EXIT { boot0_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to update BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
+
                 /* Write Package1 sub. */
                 R_TRY(boot0_accessor.Clear(work_buffer, work_buffer_size, Boot0Partition::Package1NormalSub));
                 R_TRY(boot0_accessor.Write(GetPackage1Path(boot_image_update_type), work_buffer, work_buffer_size, Boot0Partition::Package1NormalSub));
@@ -282,11 +300,15 @@ namespace ams::updater {
                     if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
-                        R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalMain));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctNormalMain));
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        }
                     } else {
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalSub));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctNormalMain));
+                        }
                     }
                 }
 
@@ -321,6 +343,10 @@ namespace ams::updater {
                 R_TRY(boot1_accessor.Initialize());
                 ON_SCOPE_EXIT { boot1_accessor.Finalize(); };
 
+                /* Detect the use of custom public key. */
+                /* If custom public key is present, we want to update BCT Sub but not Main */
+                bool custom_public_key = false;
+                R_TRY(boot0_accessor.DetectCustomPublicKey(std::addressof(custom_public_key), work_buffer, boot_image_update_type));
 
                 /* Write Package1 sub. */
                 R_TRY(boot1_accessor.Clear(work_buffer, work_buffer_size, Boot1Partition::Package1SafeSub));
@@ -343,11 +369,15 @@ namespace ams::updater {
                     if (HasAutoRcmPreserve(boot_image_update_type) && !exosphere::IsRcmBugPatched()) {
                         R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeSub));
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
-                        R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeMain));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.PreserveAutoRcm(bct, work, Boot0Partition::BctSafeMain));
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        }
                     } else {
                         R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeSub));
-                        R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        if (!custom_public_key) {
+                            R_TRY(boot0_accessor.Write(bct, BctSize, Boot0Partition::BctSafeMain));
+                        }
                     }
                 }
 
