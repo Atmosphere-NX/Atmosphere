@@ -40,7 +40,7 @@ bool mount_sd(void)
 
     if (!g_sd_initialized) {
         /* Initialize SD. */
-        if (sdmmc_device_sd_init(&g_sd_device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_UHS_SDR104))
+        if (sdmmc_device_sd_init(&g_sd_device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_SD_SDR104))
         {
             g_sd_initialized = true;
 
