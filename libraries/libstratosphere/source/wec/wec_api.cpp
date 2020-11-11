@@ -59,10 +59,6 @@ namespace ams::wec {
 
     }
 
-    /* 0C, 160 */
-    /* 10, 164 */
-    /* DC, 170 */
-
     void Initialize() {
         /* Set initial wake configuration. */
         if (!g_initialized) {
@@ -100,7 +96,7 @@ namespace ams::wec {
             UpdateControlBit(ApbdevPmc + level_ofs, (1u << index), false);
 
             /* Set or clear the bit in the auto mask register. */
-            UpdateControlBit(ApbdevPmc + level_ofs, (1u << index), level != wec::WakeEventLevel_Low);
+            UpdateControlBit(ApbdevPmc + auto_mask_ofs, (1u << index), level != wec::WakeEventLevel_Low);
         }
     }
 
