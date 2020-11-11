@@ -33,9 +33,26 @@ namespace ams::mitm::fs {
         constexpr const char AtmosphereHblWebContentDir[] = "/atmosphere/hbl_html/";
         constexpr const char ProgramWebContentDir[] = "/manual_html/";
 
-        os::Mutex g_data_storage_lock(false);
-        os::Mutex g_storage_cache_lock(false);
+        constinit os::SdkMutex g_data_storage_lock;
+        constinit os::SdkMutex g_storage_cache_lock;
         std::unordered_map<u64, std::weak_ptr<ams::fssrv::sf::IStorage>> g_storage_cache;
+
+        constinit os::SdkMutex g_boot0_detect_lock;
+        constinit bool g_detected_boot0_kind = false;
+        constinit bool g_is_boot0_custom_public_key = false;
+
+        bool IsBoot0CustomPublicKey(::FsStorage &storage) {
+            if (AMS_UNLIKELY(!g_detected_boot0_kind)) {
+                std::scoped_lock lk(g_boot0_detect_lock);
+
+                if (AMS_LIKELY(!g_detected_boot0_kind)) {
+                    g_is_boot0_custom_public_key = DetectBoot0CustomPublicKey(storage);
+                    g_detected_boot0_kind = true;
+                }
+            }
+
+            return g_is_boot0_custom_public_key;
+        }
 
         std::shared_ptr<ams::fssrv::sf::IStorage> GetStorageCacheEntry(ncm::ProgramId program_id) {
             std::scoped_lock lk(g_storage_cache_lock);
@@ -275,7 +292,11 @@ namespace ams::mitm::fs {
 
         /* Set output storage. */
         if (bis_partition_id == FsBisPartitionId_BootPartition1Root) {
-            out.SetValue(MakeSharedStorage(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
+            if (IsBoot0CustomPublicKey(bis_storage)) {
+                out.SetValue(MakeSharedStorage(new CustomPublicKeyBoot0Storage(bis_storage, this->client_info, spl::GetSocType())), target_object_id);
+            } else {
+                out.SetValue(MakeSharedStorage(new Boot0Storage(bis_storage, this->client_info)), target_object_id);
+            }
         } else if (bis_partition_id == FsBisPartitionId_CalibrationBinary) {
             out.SetValue(MakeSharedStorage(new CalibrationBinaryStorage(bis_storage, this->client_info)), target_object_id);
         } else {

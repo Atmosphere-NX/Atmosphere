@@ -140,10 +140,25 @@ namespace ams::mitm::fs {
         private:
             bool CanModifyBctPublicKey();
         public:
-            Boot0Storage(FsStorage &s,  const sm::MitmProcessInfo &c) : Base(s), client_info(c) { /* ... */ }
+            Boot0Storage(FsStorage &s, const sm::MitmProcessInfo &c) : Base(s), client_info(c) { /* ... */ }
         public:
             virtual Result Read(s64 offset, void *_buffer, size_t size) override;
             virtual Result Write(s64 offset, const void *_buffer, size_t size) override;
     };
+
+    class CustomPublicKeyBoot0Storage : public SectoredStorageAdapter<ams::fs::RemoteStorage, 0x200> {
+        public:
+            using Base = SectoredStorageAdapter<ams::fs::RemoteStorage, 0x200>;
+        private:
+            sm::MitmProcessInfo client_info;
+            spl::SocType soc_type;
+        public:
+            CustomPublicKeyBoot0Storage(FsStorage &s, const sm::MitmProcessInfo &c, spl::SocType soc);
+        public:
+            virtual Result Read(s64 offset, void *_buffer, size_t size) override;
+            virtual Result Write(s64 offset, const void *_buffer, size_t size) override;
+    };
+
+    bool DetectBoot0CustomPublicKey(::FsStorage &storage);
 
 }
