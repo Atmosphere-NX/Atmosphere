@@ -328,3 +328,13 @@ R0.13c (October 14, 2018)
   Fixed creating a sub-directory in the fragmented sub-directory on the exFAT volume collapses FAT chain of the parent directory. (appeared at R0.12)
   Fixed f_getcwd() cause output buffer overrun when the buffer has a valid drive number. (appeared at R0.13b)
 
+
+
+R0.14 (October 14, 2019)
+  Added support for 64-bit LBA and GUID partition table (FF_LBA64 = 1)
+  Changed some API functions, f_mkfs() and f_fdisk().
+  Fixed f_open() function cannot find the file with file name in length of FF_MAX_LFN characters.
+  Fixed f_readdir() function cannot retrieve long file names in length of FF_MAX_LFN - 1 characters.
+  Fixed f_readdir() function returns file names with wrong case conversion. (appeared at R0.12)
+  Fixed f_mkfs() function can fail to create exFAT volume in the second partition. (appeared at R0.12)
+
