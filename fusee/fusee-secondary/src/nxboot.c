@@ -794,7 +794,7 @@ uint32_t nxboot_main(void) {
         }
 
         if (tsec_fw_size == 0x3000) {
-            if (fuse_get_retail_type() != 0) {
+            if (fuse_get_hardware_state() != 0) {
                 sept_secondary_enc = sept_secondary_00_enc;
                 sept_secondary_enc_size = sept_secondary_00_enc_size;
             } else {
@@ -802,7 +802,7 @@ uint32_t nxboot_main(void) {
                 sept_secondary_enc_size = sept_secondary_dev_00_enc_size;
             }
         } else if (tsec_fw_size == 0x3300) {
-            if (fuse_get_retail_type() != 0) {
+            if (fuse_get_hardware_state() != 0) {
                 sept_secondary_enc = sept_secondary_01_enc;
                 sept_secondary_enc_size = sept_secondary_01_enc_size;
             } else {
@@ -817,7 +817,7 @@ uint32_t nxboot_main(void) {
             fatal_error("[NXBOOT] Failed to read the TSEC firmware from Package1loader!\n");
         }
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
-            if (fuse_get_retail_type() != 0) {
+            if (fuse_get_hardware_state() != 0) {
                 sept_secondary_enc = sept_secondary_01_enc;
                 sept_secondary_enc_size = sept_secondary_01_enc_size;
             } else {
@@ -826,7 +826,7 @@ uint32_t nxboot_main(void) {
             }
             tsec_fw_size = 0x3300;
         } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-            if (fuse_get_retail_type() != 0) {
+            if (fuse_get_hardware_state() != 0) {
                 sept_secondary_enc = sept_secondary_00_enc;
                 sept_secondary_enc_size = sept_secondary_00_enc_size;
             } else {
@@ -851,7 +851,7 @@ uint32_t nxboot_main(void) {
         if (!get_and_clear_has_run_sept()) {
             reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary_enc, sept_secondary_enc_size);
         } else {
-            if (mkey_detect_revision(fuse_get_retail_type() != 0) != 0) {
+            if (mkey_detect_revision(fuse_get_hardware_state() != 0) != 0) {
                 fatal_error("[NXBOOT] Sept derived incorrect keys!\n");
             }
         }
@@ -885,7 +885,7 @@ uint32_t nxboot_main(void) {
 
     /* Derive new device keys. */
     {
-        derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
+        derive_new_device_keys(fuse_get_hardware_state() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
     }
 
     /* Set the system partition's keys. */
@@ -957,7 +957,7 @@ uint32_t nxboot_main(void) {
             ams_header->ams_metadata.target_firmware = target_firmware;
 
             /* Set RSA modulus */
-            const uint8_t *pkc_modulus = fuse_get_retail_type() != 0 ? retail_pkc_modulus : dev_pkc_modulus;
+            const uint8_t *pkc_modulus = fuse_get_hardware_state() != 0 ? retail_pkc_modulus : dev_pkc_modulus;
             memcpy(ams_header->rsa_modulus, pkc_modulus, sizeof(ams_header->rsa_modulus));
         }
     }
