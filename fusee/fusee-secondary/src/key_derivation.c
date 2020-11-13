@@ -169,7 +169,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
 
         if (memcmp(g_dec_keyblobs[desired_keyblob].master_kek, zeroes, 0x10) == 0) {
             /* Try reading the keys from a file. */
-            const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
+            const char *keyfile = fuse_get_hardware_state() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
             FILE *extkey_file = fopen(keyfile, "r");
             AL16 fusee_extkeys_t extkeys = {0};
             if (extkey_file == NULL) {
@@ -212,7 +212,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     decrypt_data_into_keyslot(0xD, 0xD, masterkey_seed,    0x10);
 
     /* Setup master key revision, derive older master keys for use. */
-    return mkey_detect_revision(fuse_get_retail_type() != 0);
+    return mkey_detect_revision(fuse_get_hardware_state() != 0);
 }
 
 static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool should_mask, uint32_t target_firmware, uint32_t generation) {
@@ -273,7 +273,7 @@ void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmwa
         }
     };
 
-    uint32_t bis_key_generation = fuse_get_5x_key_generation();
+    uint32_t bis_key_generation = fuse_get_device_unique_key_generation();
     if (bis_key_generation > 0) {
         bis_key_generation -= 1;
     }
