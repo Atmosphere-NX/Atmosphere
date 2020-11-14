@@ -41,6 +41,7 @@ namespace ams::secmon {
 
         constexpr void UnmapBootCodeImpl(u64 *l1, u64 *l2, u64 *l3, uintptr_t boot_code, size_t boot_code_size) {
             /* Unmap the L3 entries corresponding to the boot code. */
+            AMS_UNUSED(l1, l2);
             InvalidateL3Entries(l3, boot_code, boot_code_size);
         }
 
@@ -95,10 +96,6 @@ namespace ams::secmon {
             util::ClearMemory(reinterpret_cast<void *>(address + size / 2), size / 2);
         }
 
-        bool IsPhysicalMemoryAddress(uintptr_t address) {
-            return (address - MemoryRegionDram.GetAddress()) < GetPhysicalMemorySize();
-        }
-
     }
 
     void ClearBootCodeHigh() {
@@ -127,6 +124,10 @@ namespace ams::secmon {
             case pkg1::MemorySize_8GB: return 8_GB;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
+    }
+
+    bool IsPhysicalMemoryAddress(uintptr_t address) {
+        return (address - MemoryRegionDram.GetAddress()) < GetPhysicalMemorySize();
     }
 
     void UnmapTzram() {
@@ -192,6 +193,11 @@ namespace ams::secmon {
 
         /* Validate that the page is an IRAM page. */
         if (!MemoryRegionPhysicalIram.Contains(address, 1)) {
+            return 0;
+        }
+
+        /* Validate that the page isn't a secure monitor debug page. */
+        if (MemoryRegionPhysicalIramSecureMonitorDebug.Contains(address, 1)) {
             return 0;
         }
 

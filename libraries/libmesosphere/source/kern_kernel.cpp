@@ -139,7 +139,7 @@ namespace ams::kern {
         PrintMemoryRegion("        Misc",           KMemoryLayout::GetKernelMiscRegionExtents());
         PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionExtents());
         PrintMemoryRegion("    CoreLocalRegion",    KMemoryLayout::GetCoreLocalRegion());
-        PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionExtents());
+        PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionVirtualExtents());
         MESOSPHERE_LOG("\n");
 
         MESOSPHERE_LOG("Physical Memory Layout\n");
@@ -152,11 +152,21 @@ namespace ams::kern {
         PrintMemoryRegion("        PageTableHeap",  KMemoryLayout::GetKernelPageTableHeapRegionPhysicalExtents());
         PrintMemoryRegion("        InitPageTable",  KMemoryLayout::GetKernelInitPageTableRegionPhysicalExtents());
         PrintMemoryRegion("    MemoryPoolRegion",   KMemoryLayout::GetKernelPoolPartitionRegionPhysicalExtents());
-        PrintMemoryRegion("        System",         KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
-        PrintMemoryRegion("        Internal",       KMemoryLayout::GetKernelMetadataPoolRegionPhysicalExtents());
-        PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
-        PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
-        PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+        if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
+            PrintMemoryRegion("        System",         KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
+            PrintMemoryRegion("        Management",     KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
+            PrintMemoryRegion("        SystemUnsafe",   KMemoryLayout::GetKernelSystemNonSecurePoolRegionPhysicalExtents());
+            PrintMemoryRegion("        Applet",         KMemoryLayout::GetKernelAppletPoolRegionPhysicalExtents());
+            PrintMemoryRegion("        Application",    KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+        } else {
+            PrintMemoryRegion("        Secure",     KMemoryLayout::GetKernelSystemPoolRegionPhysicalExtents());
+            PrintMemoryRegion("        Management", KMemoryLayout::GetKernelPoolManagementRegionPhysicalExtents());
+            PrintMemoryRegion("        Unsafe",     KMemoryLayout::GetKernelApplicationPoolRegionPhysicalExtents());
+        }
+        if constexpr (IsKTraceEnabled) {
+            MESOSPHERE_LOG("    Debug\n");
+            PrintMemoryRegion("        Trace Buffer",   KMemoryLayout::GetKernelTraceBufferRegionPhysicalExtents());
+        }
         MESOSPHERE_LOG("\n");
     }
 

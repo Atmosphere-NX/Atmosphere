@@ -167,20 +167,19 @@ namespace ams::boot2 {
             }
         }
 
-        bool GetGpioPadLow(GpioPadName pad) {
-            GpioPadSession button;
-            if (R_FAILED(gpioOpenSession(&button, pad))) {
+        bool GetGpioPadLow(DeviceCode device_code) {
+            gpio::GpioPadSession button;
+            if (R_FAILED(gpio::OpenSession(std::addressof(button), device_code))) {
                 return false;
             }
 
             /* Ensure we close even on early return. */
-            ON_SCOPE_EXIT { gpioPadClose(&button); };
+            ON_SCOPE_EXIT { gpio::CloseSession(std::addressof(button)); };
 
             /* Set direction input. */
-            gpioPadSetDirection(&button, GpioDirection_Input);
+            gpio::SetDirection(std::addressof(button), gpio::Direction_Input);
 
-            GpioValue val;
-            return R_SUCCEEDED(gpioPadGetValue(&button, &val)) && val == GpioValue_Low;
+            return gpio::GetValue(std::addressof(button)) == gpio::GpioValue_Low;
         }
 
         bool IsForceMaintenance() {
@@ -197,7 +196,7 @@ namespace ams::boot2 {
 
             /* Contact GPIO, read plus/minus buttons. */
             {
-                return GetGpioPadLow(GpioPadName_ButtonVolUp) && GetGpioPadLow(GpioPadName_ButtonVolDown);
+                return GetGpioPadLow(gpio::DeviceCode_ButtonVolUp) && GetGpioPadLow(gpio::DeviceCode_ButtonVolDn);
             }
         }
 
@@ -353,10 +352,12 @@ namespace ams::boot2 {
 
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
-        if (hos::GetVersion() >= hos::Version_2_0_0) {
-            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
-        } else {
-            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+        if (spl::GetSocType() == spl::SocType_Erista) {
+            if (hos::GetVersion() >= hos::Version_2_0_0) {
+                R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
+            } else {
+                R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+            }
         }
 
         /* Launch Atmosphere boot2, using NcmStorageId_None to force SD card boot. */

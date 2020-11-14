@@ -71,6 +71,8 @@ namespace ams::diag {
         secmon::ErrorReboot();
     }
 
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
+
 }
 
 namespace ams::secmon {

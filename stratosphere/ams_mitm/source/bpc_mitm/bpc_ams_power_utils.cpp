@@ -25,7 +25,7 @@ namespace ams::mitm::bpc {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x2E000;
+        constexpr size_t IramPayloadMaxSize = 0x20000;
 
         /* Helper enum. */
         enum class RebootType : u32 {
@@ -107,6 +107,9 @@ namespace ams::mitm::bpc {
 
         /* Copy in payload. */
         std::memcpy(g_reboot_payload, payload, payload_size);
+
+        /* Note to the secure monitor that we have a payload. */
+        spl::smc::SetConfig(spl::ConfigItem::ExospherePayloadAddress, g_reboot_payload, nullptr, 0);
 
         /* NOTE: Preferred reboot type may be overrwritten when parsed from settings during boot. */
         g_reboot_type = RebootType::ToPayload;

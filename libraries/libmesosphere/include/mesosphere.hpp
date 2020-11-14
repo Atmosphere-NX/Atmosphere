@@ -27,6 +27,9 @@
 #include <mesosphere/kern_initial_process.hpp>
 #include <mesosphere/kern_k_exception_context.hpp>
 
+/* Tracing functionality. */
+#include <mesosphere/kern_k_trace.hpp>
+
 /* Core pre-initialization includes. */
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_select_system_control.hpp>

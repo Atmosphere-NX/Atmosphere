@@ -17,15 +17,33 @@
 #include <vapours/includes.hpp>
 #include <vapours/defines.hpp>
 
-#if 0
-#define AMS_BUILD_FOR_AUDITING
+#if defined(AMS_FORCE_DISABLE_DETAILED_ASSERTIONS) && defined(AMS_FORCE_ENABLE_DETAILED_ASSERTIONS)
+    #error "Invalid detailed assertions state"
 #endif
 
 #ifdef  AMS_BUILD_FOR_AUDITING
-#define AMS_BUILD_FOR_DEBUGGING
+
+    #define AMS_BUILD_FOR_DEBUGGING
+
+    #if !defined(AMS_FORCE_DISABLE_DETAILED_ASSERTIONS)
+        #define AMS_ENABLE_DETAILED_ASSERTIONS
+    #endif
+
 #endif
 
 #ifdef  AMS_BUILD_FOR_DEBUGGING
-#define AMS_ENABLE_ASSERTIONS
-#define AMS_ENABLE_DEBUG_PRINT
+
+    #define AMS_ENABLE_ASSERTIONS
+
+    #if !defined(AMS_ENABLE_DETAILED_ASSERTIONS) && !defined(AMS_FORCE_DISABLE_DETAILED_ASSERTIONS)
+
+        #if !defined(ATMOSPHERE_IS_EXOSPHERE) || defined(AMS_FORCE_ENABLE_DETAILED_ASSERTIONS)
+
+            #define AMS_ENABLE_DETAILED_ASSERTIONS
+
+        #endif
+
+    #endif
+
+
 #endif

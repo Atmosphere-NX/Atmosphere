@@ -24,5 +24,10 @@
     }
 
 #else
-    #error "Unknown board for KDevicePageTable"
+    #include <mesosphere/board/generic/kern_k_device_page_table.hpp>
+
+    namespace ams::kern {
+        using ams::kern::board::generic::KDevicePageTable;
+    }
+
 #endif

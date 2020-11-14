@@ -273,11 +273,12 @@ def get_full(nxo):
             s.resolved = LOAD_BASE + s.value
             if s.name:
                 if s.type == STT_FUNC:
-                    print(hex(s.resolved), s.name)
-                    idaapi.add_entry(s.resolved, s.resolved, s.name, 0)
+                    #print(hex(s.resolved), s.name)
+                    #idaapi.add_entry(s.resolved, s.resolved, s.name, 0)
+                    pass
                 else:
-                    idaapi.force_name(s.resolved, s.name)
-
+                    #idaapi.force_name(s.resolved, s.name)
+                    pass
         else:
             # NULL symbol
             s.resolved = 0
@@ -353,12 +354,18 @@ def find_categories(full, num_fields):
     return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
 def find_types(full, num_fields):
-    KNOWN = range(10) + [4, 4, 2, 4]
-    ind = full.index(''.join(pk('<I', i) for i in KNOWN))
+    KNOWN     = range(10) + [4, 4, 2, 4]
+    KNOWN_OLD = range(10) + [4, 4, 0, 4]
+    try:
+        ind = full.index(''.join(pk('<I', i) for i in KNOWN))
+    except ValueError:
+        ind = full.index(''.join(pk('<I', i) for i in KNOWN_OLD))
     return list(up('<'+'I'*num_fields, full[ind:ind+4*num_fields]))
 
 def find_flags(full, num_fields):
     KNOWN = '\x00' + ('\x01'*6) + '\x00\x01\x01\x00'
+    if num_fields < 443 + len(KNOWN):
+        return [0] * num_fields
     ind = full.index(KNOWN) - 443
     return list(up('<'+'B'*num_fields, full[ind:ind+num_fields]))
 
@@ -372,10 +379,10 @@ def flg_to_string(f):
     return FIELD_FLAGS[f] if f in FIELD_FLAGS else 'FieldFlag_Unknown%d' % f
 
 def main(argc, argv):
-    if argc != 2:
-        print 'Usage: %s erpt_nso' % argv[0]
+    if argc != 2 and not (argc == 3 and argv[1] == '-f'):
+        print 'Usage: %s [-f] erpt_nso' % argv[0]
         return 1
-    f = open(argv[1], 'rb')
+    f = open(argv[-1], 'rb')
     nxo = nxo64.load_nxo(f)
     full = get_full(nxo)
     field_table = locate_fields(full)
@@ -389,11 +396,13 @@ def main(argc, argv):
     mc = max(len(cat_to_string(c)) for c in cats)
     mt = max(len(typ_to_string(t)) for t in types)
     ml = max(len(flg_to_string(f)) for f in flags)
+    if argc == 3:
+        mf, mc, mt, ml = (64, 48, 32, 32)
     format_string = '- %%-%ds %%-%ds %%-%ds %%-%ds' % (mf+1, mc+1, mt+1, ml)
     for i in xrange(NUM_FIELDS):
         f, c, t, l = fields[i], cat_to_string(cats[i]), typ_to_string(types[i]), flg_to_string(flags[i])
         print format_string % (f+',', c+',', t+',', l)
-    with open(argv[1]+'.hpp', 'w') as out:
+    with open(argv[-1]+'.hpp', 'w') as out:
         out.write(HEADER)
         out.write('#define AMS_ERPT_FOREACH_FIELD_TYPE(HANDLER) \\\n')
         for tp in sorted(list(set(types + FIELD_TYPES.keys()))):

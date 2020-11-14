@@ -498,6 +498,7 @@ namespace ams::svc::ipc {
             }
 
             static constexpr ALWAYS_INLINE s32 GetSpecialDataIndex(const MessageHeader &hdr, const SpecialHeader &spc) {
+                AMS_UNUSED(hdr);
                 return (MessageHeader::GetDataSize() / sizeof(util::BitPack32)) + (spc.GetHeaderSize() / sizeof(util::BitPack32));
             }
 

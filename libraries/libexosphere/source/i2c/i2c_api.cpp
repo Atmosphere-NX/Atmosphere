@@ -14,7 +14,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "i2c_registers.hpp"
 
 namespace ams::i2c {
 
@@ -88,6 +87,8 @@ namespace ams::i2c {
         }
 
         bool Write(uintptr_t base_address, Port port, int address, const void *src, size_t src_size, bool unused) {
+            AMS_UNUSED(port, unused);
+
             /* Ensure we don't write too much. */
             u32 data = 0;
             if (src_size > MaxTransferSize) {
@@ -125,6 +126,8 @@ namespace ams::i2c {
         }
 
         bool Read(uintptr_t base_address, Port port, void *dst, size_t dst_size, int address, bool unused) {
+            AMS_UNUSED(port, unused);
+
             /* Ensure we don't read too much. */
             if (dst_size > MaxTransferSize) {
                 return false;

@@ -90,7 +90,9 @@ namespace ams::warmboot {
     NORETURN void ExceptionHandler() {
         /* Write enable to MAIN_RESET. */
         reg::Write(PMC + APBDEV_PMC_CNTRL, PMC_REG_BITS_ENUM(CNTRL_MAIN_RESET, ENABLE));
-        while (true) { /* ... */ }
+
+        /* Wait forever until we're reset. */
+        AMS_INFINITE_LOOP();
     }
 
 }

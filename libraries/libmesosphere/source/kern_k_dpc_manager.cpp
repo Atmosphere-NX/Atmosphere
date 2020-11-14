@@ -86,6 +86,10 @@ namespace ams::kern {
 
         /* Manager thread functions. */
         void DpcManagerNormalThreadFunction(uintptr_t arg) {
+            /* Input argument goes unused. */
+            MESOSPHERE_UNUSED(arg);
+
+            /* Forever wait and service requests. */
             while (true) {
                 KDpcTask::WaitForRequest();
                 KDpcTask::HandleRequest();
@@ -93,6 +97,10 @@ namespace ams::kern {
         }
 
         void DpcManagerPreemptionThreadFunction(uintptr_t arg) {
+            /* Input argument goes unused. */
+            MESOSPHERE_UNUSED(arg);
+
+            /* Forever wait and service requests, rotating the scheduled queue every 10 ms. */
             s64 timeout = KHardwareTimer::GetTick() + DpcManagerTimeout;
             while (true) {
                 if (KDpcTask::TimedWaitForRequest(timeout)) {

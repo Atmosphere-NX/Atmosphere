@@ -34,8 +34,10 @@
 #include <vapours/util/util_intrusive_list.hpp>
 #include <vapours/util/util_intrusive_red_black_tree.hpp>
 #include <vapours/util/util_tinymt.hpp>
+#include <vapours/util/util_timer.hpp>
 #include <vapours/util/util_uuid.hpp>
 #include <vapours/util/util_bounded_map.hpp>
 #include <vapours/util/util_overlap.hpp>
 #include <vapours/util/util_string_util.hpp>
 #include <vapours/util/util_variadic.hpp>
+#include <vapours/util/util_format_string.hpp>

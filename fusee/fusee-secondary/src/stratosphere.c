@@ -48,7 +48,7 @@ static bool g_stratosphere_pm_enabled = true;
 static bool g_stratosphere_ams_mitm_enabled = true;
 static bool g_stratosphere_spl_enabled = true;
 static bool g_stratosphere_boot_enabled = true;
-static bool g_stratosphere_ncm_enabled = false;
+static bool g_stratosphere_ncm_enabled = true;
 
 extern const uint8_t loader_kip[], pm_kip[], sm_kip[], spl_kip[], boot_kip[], ncm_kip[], ams_mitm_kip[];
 
@@ -58,17 +58,17 @@ emummc_fs_ver_t stratosphere_get_fs_version(void) {
     return g_fs_ver;
 }
 
-void stratosphere_enable_ncm(void) {
+void stratosphere_disable_ncm(void) {
     /* The Atmosphere team believes our implementation of NCM to be extremely accurate, */
     /* and does not think it likely there is any possibility of undesirable behavior */
     /* when using the NCM reimplementation. However, because NCM manages critical save games */
-    /* the implementation will default to off for some time, until the code has been thoroughly */
-    /* tested in practice. */
+    /* the implementation may be optionally disabled for those not comfortable using it. */
 
-    /* PLEASE NOTE: The default behavior will be NCM on in a future atmosphere release, */
-    /* and this opt-in functionality will be removed at that time. */
 
-    g_stratosphere_ncm_enabled = true;
+    /* PLEASE NOTE: The NCM reimplementation has been well-tested, and correspondingly opt-out */
+    /*              functionality will be removed in Atmosphere 1.0.0. */
+
+    g_stratosphere_ncm_enabled = false;
 }
 
 /* GCC doesn't consider the size as const... we have to write it ourselves. */

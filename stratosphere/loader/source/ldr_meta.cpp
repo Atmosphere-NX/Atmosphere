@@ -107,7 +107,7 @@ namespace ams::ldr {
         Result ValidateAcidSignature(Meta *meta) {
             /* Loader did not check signatures prior to 10.0.0. */
             if (hos::GetVersion() < hos::Version_10_0_0) {
-                meta->is_signed = false;
+                meta->check_verification_data = false;
                 return ResultSuccess();
             }
 
@@ -123,7 +123,7 @@ namespace ams::ldr {
             const bool is_signature_valid = crypto::VerifyRsa2048PssSha256(sig, sig_size, mod, mod_size, exp, exp_size, msg, msg_size);
             R_UNLESS(is_signature_valid || !IsEnabledProgramVerification(), ResultInvalidAcidSignature());
 
-            meta->is_signed = is_signature_valid;
+            meta->check_verification_data = is_signature_valid;
             return ResultSuccess();
         }
 
@@ -198,6 +198,8 @@ namespace ams::ldr {
         if (status.IsHbl()) {
             if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), SdOrBaseMetaPath, fs::OpenMode_Read))) {
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
+
+
                 if (R_SUCCEEDED(LoadMetaFromFile(file, &g_original_meta_cache))) {
                     Meta *o_meta = &g_original_meta_cache.meta;
 
@@ -212,6 +214,15 @@ namespace ams::ldr {
                     caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
                 }
             }
+
+            /* When hbl is applet, adjust main thread priority. */
+            if ((caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
+                constexpr auto HblMainThreadPriorityApplication = 44;
+                constexpr auto HblMainThreadPriorityApplet      = 40;
+                if (meta->npdm->main_thread_priority == HblMainThreadPriorityApplication) {
+                    meta->npdm->main_thread_priority = HblMainThreadPriorityApplet;
+                }
+            }
         } else if (hos::GetVersion() >= hos::Version_10_0_0) {
             /* If storage id is none, there is no base code filesystem, and thus it is impossible for us to validate. */
             /* However, if we're an application, we are guaranteed a base code filesystem. */
@@ -220,10 +231,15 @@ namespace ams::ldr {
                 ON_SCOPE_EXIT { fs::CloseFile(file); };
                 R_TRY(LoadMetaFromFile(file, &g_original_meta_cache));
                 R_TRY(ValidateAcidSignature(&g_original_meta_cache.meta));
-                meta->modulus   = g_original_meta_cache.meta.modulus;
-                meta->is_signed = g_original_meta_cache.meta.is_signed;
+                meta->modulus                 = g_original_meta_cache.meta.modulus;
+                meta->check_verification_data = g_original_meta_cache.meta.check_verification_data;
             }
         }
+
+        /* Pre-process the capabilities. */
+        /* This is used to e.g. avoid passing memory region descriptor to older kernels. */
+        caps::ProcessCapabilities(meta->acid_kac, meta->acid->kac_size);
+        caps::ProcessCapabilities(meta->aci_kac, meta->aci->kac_size);
 
         /* Set output. */
         g_cached_program_id = loc.program_id;

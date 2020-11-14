@@ -35,7 +35,8 @@ namespace ams::boot {
 
         /* Helpers. */
         bool IsUsbClockValid() {
-            uintptr_t car_regs = dd::GetIoMapping(0x60006000ul, os::MemoryPageSize);
+            uintptr_t car_regs = dd::QueryIoMapping(0x60006000ul, os::MemoryPageSize);
+            AMS_ASSERT(car_regs != 0);
 
             const u32 pllu = reg::Read(car_regs + 0xC0);
             const u32 utmip = reg::Read(car_regs + 0x480);
@@ -47,7 +48,7 @@ namespace ams::boot {
     void CheckClock() {
         if (!IsUsbClockValid()) {
             /* Sleep for 1s, then reboot. */
-            svcSleepThread(1'000'000'000ul);
+            os::SleepThread(TimeSpan::FromSeconds(1));
             RebootSystem();
         }
     }

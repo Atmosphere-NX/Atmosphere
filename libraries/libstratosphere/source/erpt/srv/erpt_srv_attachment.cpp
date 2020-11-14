@@ -24,7 +24,7 @@ namespace ams::erpt::srv {
         attachment_id.uuid.ToString(uuid_str, sizeof(uuid_str));
 
         AttachmentFileName attachment_name;
-        std::snprintf(attachment_name.name, sizeof(attachment_name.name), "%s/%s.att", ReportStoragePath, uuid_str);
+        std::snprintf(attachment_name.name, sizeof(attachment_name.name), "%s:/%s.att", ReportStoragePath, uuid_str);
         return attachment_name;
     }
 

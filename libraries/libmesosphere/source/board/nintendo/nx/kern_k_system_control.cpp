@@ -179,12 +179,12 @@ namespace ams::kern::board::nintendo::nx {
 
         bool IsRegisterAccessibleToPrivileged(ams::svc::PhysicalAddress address) {
             /* Find the region for the address. */
-            KMemoryRegionTree::const_iterator it = KMemoryLayout::FindContainingRegion(KPhysicalAddress(address));
-            if (AMS_LIKELY(it != KMemoryLayout::GetPhysicalMemoryRegionTree().end())) {
-                if (AMS_LIKELY(it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController))) {
+            const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
+            if (AMS_LIKELY(region != nullptr)) {
+                if (AMS_LIKELY(region->IsDerivedFrom(KMemoryRegionType_MemoryController))) {
                     /* Get the offset within the region. */
-                    const size_t offset = address - it->GetAddress();
-                    MESOSPHERE_ABORT_UNLESS(offset < it->GetSize());
+                    const size_t offset = address - region->GetAddress();
+                    MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
 
                     /* Check the whitelist. */
                     if (AMS_LIKELY(CheckRegisterAllowedTable(McKernelRegisterWhitelist, offset))) {
@@ -198,21 +198,21 @@ namespace ams::kern::board::nintendo::nx {
 
         bool IsRegisterAccessibleToUser(ams::svc::PhysicalAddress address) {
             /* Find the region for the address. */
-            KMemoryRegionTree::const_iterator it = KMemoryLayout::FindContainingRegion(KPhysicalAddress(address));
-            if (AMS_LIKELY(it != KMemoryLayout::GetPhysicalMemoryRegionTree().end())) {
+            const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
+            if (AMS_LIKELY(region != nullptr)) {
                 /* The PMC is always allowed. */
-                if (it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_PowerManagementController)) {
+                if (region->IsDerivedFrom(KMemoryRegionType_PowerManagementController)) {
                     return true;
                 }
 
                 /* Memory controller is allowed if the register is whitelisted. */
-                if (it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController ) ||
-                    it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController0) ||
-                    it->IsDerivedFrom(KMemoryRegionAttr_NoUserMap | KMemoryRegionType_MemoryController1))
+                if (region->IsDerivedFrom(KMemoryRegionType_MemoryController ) ||
+                    region->IsDerivedFrom(KMemoryRegionType_MemoryController0) ||
+                    region->IsDerivedFrom(KMemoryRegionType_MemoryController1))
                 {
                     /* Get the offset within the region. */
-                    const size_t offset = address - it->GetAddress();
-                    MESOSPHERE_ABORT_UNLESS(offset < it->GetSize());
+                    const size_t offset = address - region->GetAddress();
+                    MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
 
                     /* Check the whitelist. */
                     if (AMS_LIKELY(CheckRegisterAllowedTable(McUserRegisterWhitelist, offset))) {
@@ -308,6 +308,15 @@ namespace ams::kern::board::nintendo::nx {
             g_secure_applet_memory_used = false;
         }
 
+        u64 GetVersionIdentifier() {
+            u64 value = kern::GetTargetFirmware();
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO) << 32;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR) << 40;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR) << 48;
+            value |= static_cast<u64>('M') << 56;
+            return value;
+        }
+
     }
 
     /* Initialization. */
@@ -338,44 +347,60 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     size_t KSystemControl::Init::GetApplicationPoolSize() {
-        switch (GetMemoryArrangeForInit()) {
-            case smc::MemoryArrangement_4GB:
-            default:
-                return 3285_MB;
-            case smc::MemoryArrangement_4GBForAppletDev:
-                return 2048_MB;
-            case smc::MemoryArrangement_4GBForSystemDev:
-                return 3285_MB;
-            case smc::MemoryArrangement_6GB:
-                return 4916_MB;
-            case smc::MemoryArrangement_6GBForAppletDev:
-                return 3285_MB;
-            case smc::MemoryArrangement_8GB:
-                return 4916_MB;
-        }
+        /* Get the base pool size. */
+        const size_t base_pool_size = [] ALWAYS_INLINE_LAMBDA () -> size_t {
+            switch (GetMemoryArrangeForInit()) {
+                case smc::MemoryArrangement_4GB:
+                default:
+                    return 3285_MB;
+                case smc::MemoryArrangement_4GBForAppletDev:
+                    return 2048_MB;
+                case smc::MemoryArrangement_4GBForSystemDev:
+                    return 3285_MB;
+                case smc::MemoryArrangement_6GB:
+                    return 4916_MB;
+                case smc::MemoryArrangement_6GBForAppletDev:
+                    return 3285_MB;
+                case smc::MemoryArrangement_8GB:
+                    return 4916_MB;
+            }
+        }();
+
+        /* Return (possibly) adjusted size. */
+        return base_pool_size;
     }
 
     size_t KSystemControl::Init::GetAppletPoolSize() {
-        switch (GetMemoryArrangeForInit()) {
-            case smc::MemoryArrangement_4GB:
-            default:
-                return 507_MB;
-            case smc::MemoryArrangement_4GBForAppletDev:
-                return 1554_MB;
-            case smc::MemoryArrangement_4GBForSystemDev:
-                return 448_MB;
-            case smc::MemoryArrangement_6GB:
-                return 562_MB;
-            case smc::MemoryArrangement_6GBForAppletDev:
-                return 2193_MB;
-            case smc::MemoryArrangement_8GB:
-                return 2193_MB;
-        }
+        /* Get the base pool size. */
+        const size_t base_pool_size = [] ALWAYS_INLINE_LAMBDA () -> size_t {
+            switch (GetMemoryArrangeForInit()) {
+                case smc::MemoryArrangement_4GB:
+                default:
+                    return 507_MB;
+                case smc::MemoryArrangement_4GBForAppletDev:
+                    return 1554_MB;
+                case smc::MemoryArrangement_4GBForSystemDev:
+                    return 448_MB;
+                case smc::MemoryArrangement_6GB:
+                    return 562_MB;
+                case smc::MemoryArrangement_6GBForAppletDev:
+                    return 2193_MB;
+                case smc::MemoryArrangement_8GB:
+                    return 2193_MB;
+            }
+        }();
+
+        /* Return (possibly) adjusted size. */
+        constexpr size_t ExtraSystemMemoryForAtmosphere = 33_MB;
+        return base_pool_size - ExtraSystemMemoryForAtmosphere - KTraceBufferSize;
     }
 
     size_t KSystemControl::Init::GetMinimumNonSecureSystemPoolSize() {
-        /* TODO: Where does this constant actually come from? */
-        return 0x29C8000;
+        /* Verify that our minimum is at least as large as Nintendo's. */
+        constexpr size_t MinimumSize = ::ams::svc::RequiredNonSecureSystemMemorySize;
+        static_assert(MinimumSize >= 0x29C8000);
+
+        return MinimumSize;
     }
 
     void KSystemControl::Init::CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
@@ -453,7 +478,7 @@ namespace ams::kern::board::nintendo::nx {
         KSleepManager::Initialize();
 
         /* Reserve secure applet memory. */
-        {
+        if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address == Null<KVirtualAddress>);
             MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
 
@@ -461,10 +486,16 @@ namespace ams::kern::board::nintendo::nx {
             g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
         }
+
+        /* Initialize KTrace. */
+        if constexpr (IsKTraceEnabled) {
+            const auto &ktrace = KMemoryLayout::GetKernelTraceBufferRegion();
+            KTrace::Initialize(ktrace.GetAddress(), ktrace.GetSize());
+        }
     }
 
-    u32 KSystemControl::GetInitialProcessBinaryPool() {
-        return KMemoryManager::Pool_Application;
+    u32 KSystemControl::GetCreateProcessMemoryPool() {
+        return KMemoryManager::Pool_Unsafe;
     }
 
     /* Privileged Access. */
@@ -510,14 +541,91 @@ namespace ams::kern::board::nintendo::nx {
         KSleepManager::SleepSystem();
     }
 
-    void KSystemControl::StopSystem() {
+    void KSystemControl::StopSystem(void *arg) {
+        if (arg != nullptr) {
+            /* Get the address of the legacy IRAM region. */
+            const KVirtualAddress iram_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsIram) + 64_KB;
+            constexpr size_t RebootPayloadSize = 0x2E000;
+
+            /* NOTE: Atmosphere extension; if we received an exception context from Panic(), */
+            /*       generate a fatal error report using it. */
+            const KExceptionContext *e_ctx = static_cast<const KExceptionContext *>(arg);
+            auto *f_ctx = GetPointer<::ams::impl::FatalErrorContext>(iram_address + RebootPayloadSize);
+
+            /* Clear the fatal context. */
+            std::memset(f_ctx, 0xCC, sizeof(*f_ctx));
+
+            /* Set metadata. */
+            f_ctx->magic      = ::ams::impl::FatalErrorContext::Magic;
+            f_ctx->error_desc = ::ams::impl::FatalErrorContext::KernelPanicDesc;
+            f_ctx->program_id = (static_cast<u64>(util::FourCC<'M', 'E', 'S', 'O'>::Code) << 0) | (static_cast<u64>(util::FourCC<'S', 'P', 'H', 'R'>::Code) << 32);
+
+            /* Set identifier. */
+            f_ctx->report_identifier = KHardwareTimer::GetTick();
+
+            /* Set module base. */
+            f_ctx->module_base = KMemoryLayout::GetKernelCodeRegionExtents().GetAddress();
+
+            /* Set afsr1. */
+            f_ctx->afsr0 = 0;
+            f_ctx->afsr1 = GetVersionIdentifier();
+
+            /* Copy registers. */
+            for (size_t i = 0; i < util::size(e_ctx->x); ++i) {
+                f_ctx->gprs[i] = e_ctx->x[i];
+            }
+            f_ctx->sp = e_ctx->sp;
+
+            /* Dump stack trace. */
+            {
+                uintptr_t fp = e_ctx->x[29];
+                for (f_ctx->stack_trace_size = 0; f_ctx->stack_trace_size < ::ams::impl::FatalErrorContext::MaxStackTrace && fp != 0 && util::IsAligned(fp, 0x10) && cpu::GetPhysicalAddressWritable(nullptr, fp, true); ++(f_ctx->stack_trace_size)) {
+                    struct {
+                        uintptr_t fp;
+                        uintptr_t lr;
+                    } *stack_frame = reinterpret_cast<decltype(stack_frame)>(fp);
+
+                    f_ctx->stack_trace[f_ctx->stack_trace_size] = stack_frame->lr;
+                    fp = stack_frame->fp;
+                }
+            }
+
+            /* Dump stack. */
+            {
+                uintptr_t sp = e_ctx->sp;
+                for (f_ctx->stack_dump_size = 0; f_ctx->stack_dump_size < ::ams::impl::FatalErrorContext::MaxStackDumpSize && cpu::GetPhysicalAddressWritable(nullptr, sp + f_ctx->stack_dump_size, true); f_ctx->stack_dump_size += sizeof(u64)) {
+                    *reinterpret_cast<u64 *>(f_ctx->stack_dump + f_ctx->stack_dump_size) = *reinterpret_cast<u64 *>(sp + f_ctx->stack_dump_size);
+                }
+            }
+
+            /* Try to get a payload address. */
+            const KMemoryRegion *cached_region = nullptr;
+            u64 reboot_payload_paddr = 0;
+            if (smc::TryGetConfig(std::addressof(reboot_payload_paddr), 1, smc::ConfigItem::ExospherePayloadAddress) && KMemoryLayout::IsLinearMappedPhysicalAddress(cached_region, reboot_payload_paddr, RebootPayloadSize)) {
+                /* If we have a payload, reboot to it. */
+                const KVirtualAddress reboot_payload = KMemoryLayout::GetLinearVirtualAddress(KPhysicalAddress(reboot_payload_paddr));
+
+                /* Clear IRAM. */
+                std::memset(GetVoidPointer(iram_address), 0xCC, RebootPayloadSize);
+
+                /* Copy the payload to iram. */
+                for (size_t i = 0; i < RebootPayloadSize / sizeof(u32); ++i) {
+                    GetPointer<volatile u32>(iram_address)[i] = GetPointer<volatile u32>(reboot_payload)[i];
+                }
+
+                /* Reboot. */
+                smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToPayload);
+            } else {
+                /* If we don't have a payload, reboot to rcm. */
+                smc::SetConfig(smc::ConfigItem::ExosphereNeedsReboot, smc::UserRebootType_ToRcm);
+            }
+        }
+
         if (g_call_smc_on_panic) {
-            /* Display a panic screen via secure monitor. */
+            /* If we should, instruct the secure monitor to display a panic screen. */
             smc::Panic(0xF00);
         }
-        u32 dummy;
-        smc::init::ReadWriteRegister(std::addressof(dummy), 0x7000E400, 0x10, 0x10);
-        while (true) { /* ... */ }
+        AMS_INFINITE_LOOP();
     }
 
     /* User access. */

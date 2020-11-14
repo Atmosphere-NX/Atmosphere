@@ -71,8 +71,8 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
 	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/atmosphere/reboot_payload.bin
 	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmosphere/fusee-mtc.bin
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
+	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
+	cp fusee/fusee-secondary/fusee-secondary-experimental.bin atmosphere-$(AMSVER)/sept/payload.bin
 	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/sept/sept-primary.bin
 	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/sept/sept-secondary.bin
 	cp sept/sept-secondary/sept-secondary_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_00.enc
@@ -101,9 +101,13 @@ dist-no-debug: all
 	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags/boot2.flag
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
 	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/switch/daybreak.nro
+	cd atmosphere-$(AMSVER); zip -r ../atmosphere-EXPERIMENTAL-$(AMSVER).zip ./*; cd ../;
+	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
+	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out
+	mv atmosphere-EXPERIMENTAL-$(AMSVER).zip out/atmosphere-EXPERIMENTAL-$(AMSVER).zip
 	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
 	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
 
@@ -122,7 +126,7 @@ dist: dist-no-debug
 	mkdir atmosphere-$(AMSVER)-debug
 	cp fusee/fusee-primary/fusee-primary.elf atmosphere-$(AMSVER)-debug/fusee-primary.elf
 	cp fusee/fusee-mtc/fusee-mtc.elf atmosphere-$(AMSVER)-debug/fusee-mtc.elf
-	cp fusee/fusee-secondary/fusee-secondary.elf atmosphere-$(AMSVER)-debug/fusee-secondary.elf
+	cp fusee/fusee-secondary/fusee-secondary-experimental.elf atmosphere-$(AMSVER)-debug/fusee-secondary.elf
 	cp sept/sept-primary/sept-primary.elf atmosphere-$(AMSVER)-debug/sept-primary.elf
 	cp sept/sept-secondary/sept-secondary.elf atmosphere-$(AMSVER)-debug/sept-secondary.elf
 	cp sept/sept-secondary/key_derivation/key_derivation.elf atmosphere-$(AMSVER)-debug/sept-secondary-key-derivation.elf

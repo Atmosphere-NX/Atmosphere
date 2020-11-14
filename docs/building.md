@@ -4,7 +4,7 @@ Building Atmosphère is a very straightforward process that relies almost exclus
 ## Dependencies
 + [devkitA64](https://devkitpro.org)
 + [devkitARM](https://devkitpro.org)
-+ [Python 2 or 3](https://www.python.org) (optional)
++ [Python 2](https://www.python.org) (Python 3 may work as well, but this is not guaranteed)
 + [PyCryptodome](https://pypi.org/project/pycryptodome) (optional)
 
 ## Instructions

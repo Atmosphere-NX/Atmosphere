@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "boot_power_utils.hpp"
+#include "boot_pmic_driver.hpp"
 #include "fusee-primary_bin.h"
 
 namespace ams::boot {
@@ -25,7 +26,7 @@ namespace ams::boot {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x2E000;
+        constexpr size_t IramPayloadMaxSize = 0x20000;
 
         /* Globals. */
         alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
@@ -65,7 +66,16 @@ namespace ams::boot {
     }
 
     void RebootSystem() {
-        DoRebootToPayload(nullptr);
+        if (spl::GetSocType() == spl::SocType_Erista) {
+            DoRebootToPayload(nullptr);
+        } else {
+            /* On Mariko, we can't reboot to payload, so we should just do a reboot. */
+            PmicDriver().RebootSystem();
+        }
+    }
+
+    void ShutdownSystem() {
+        PmicDriver().ShutdownSystem();
     }
 
     void SetInitialRebootPayload() {

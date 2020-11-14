@@ -74,7 +74,10 @@ namespace ams {
             ams_ctx.pc = ctx->pc.x;
             ams_ctx.pstate = ctx->pstate;
             ams_ctx.afsr0 = ctx->afsr0;
-            ams_ctx.afsr1 = ctx->afsr1;
+            ams_ctx.afsr1 = (static_cast<u64>(::ams::exosphere::GetVersion(ATMOSPHERE_RELEASE_VERSION)) << 32) | static_cast<u64>(hos::GetVersion());
+            if (svc::IsKernelMesosphere()) {
+                ams_ctx.afsr1 |= (static_cast<u64>('M') << (BITSIZEOF(u64) - BITSIZEOF(u8)));
+            }
             ams_ctx.far = ctx->far.x;
             ams_ctx.report_identifier = armGetSystemTick();
 

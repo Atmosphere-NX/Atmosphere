@@ -27,7 +27,7 @@ namespace ams::ro {
         impl::SetDevelopmentFunctionEnabled(is_development_function_enabled);
     }
 
-    RoService::RoService(ModuleType t) : context_id(impl::InvalidContextId), type(t) {
+    RoService::RoService(NrrKind k) : context_id(impl::InvalidContextId), nrr_kind(k) {
         /* ... */
     }
 
@@ -47,7 +47,7 @@ namespace ams::ro {
 
     Result RoService::RegisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size) {
         R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::RegisterModuleInfo(this->context_id, svc::InvalidHandle, nrr_address, nrr_size, ModuleType::ForSelf, true);
+        return impl::RegisterModuleInfo(this->context_id, svc::InvalidHandle, nrr_address, nrr_size, NrrKind_User, true);
     }
 
     Result RoService::UnregisterModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address) {
@@ -56,12 +56,20 @@ namespace ams::ro {
     }
 
     Result RoService::RegisterProcessHandle(const sf::ClientProcessId &client_pid, sf::CopyHandle process_h) {
-        return impl::RegisterProcess(std::addressof(this->context_id), process_h.GetValue(), client_pid.GetValue());
+        /* Ensure we manage references to the process handle correctly. */
+        os::ManagedHandle process_handle(process_h.GetValue());
+
+        /* Register the process. */
+        return impl::RegisterProcess(std::addressof(this->context_id), std::move(process_handle), client_pid.GetValue());
     }
 
-    Result RoService::RegisterModuleInfoEx(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h) {
+    Result RoService::RegisterProcessModuleInfo(const sf::ClientProcessId &client_pid, u64 nrr_address, u64 nrr_size, sf::CopyHandle process_h) {
+        /* Ensure we manage references to the process handle correctly. */
+        os::ManagedHandle process_handle(process_h.GetValue());
+
+        /* Register the module. */
         R_TRY(impl::ValidateProcess(this->context_id, client_pid.GetValue()));
-        return impl::RegisterModuleInfo(this->context_id, process_h.GetValue(), nrr_address, nrr_size, this->type, this->type == ModuleType::ForOthers);
+        return impl::RegisterModuleInfo(this->context_id, std::move(process_handle), nrr_address, nrr_size, this->nrr_kind, this->nrr_kind == NrrKind_JitPlugin);
     }
 
 }

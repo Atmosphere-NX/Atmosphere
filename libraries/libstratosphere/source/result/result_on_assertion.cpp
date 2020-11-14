@@ -33,7 +33,7 @@ namespace ams::result::impl {
 
             /* TODO: ams::fatal:: */
             fatalThrow(result.GetValue());
-            while (true) { /* ... */ }
+            AMS_INFINITE_LOOP();
         }
 
         NORETURN WEAK_SYMBOL void OnResultAbort(Result result) {
@@ -50,7 +50,7 @@ namespace ams::result::impl {
 
             /* TODO: ams::fatal:: */
             fatalThrow(result.GetValue());
-            while (true) { /* ... */ }
+            AMS_INFINITE_LOOP();
         }
 
         NORETURN WEAK_SYMBOL void OnResultAssertion(Result result) {

@@ -36,7 +36,7 @@
 typedef struct {
     uint32_t magic;
     uint32_t error_desc;
-    uint64_t title_id;
+    uint64_t program_id;
     union {
         uint64_t gprs[32];
         struct {

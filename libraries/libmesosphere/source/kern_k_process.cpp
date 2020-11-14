@@ -146,8 +146,11 @@ namespace ams::kern {
     }
 
     Result KProcess::Initialize(const ams::svc::CreateProcessParameter &params) {
-        /* TODO: Validate intended kernel version. */
-        /* How should we do this? */
+        /* Validate that the intended kernel version is high enough for us to support. */
+        R_UNLESS(this->capabilities.GetIntendedKernelVersion() >= ams::svc::RequiredKernelVersion,  svc::ResultInvalidCombination());
+
+        /* Validate that the intended kernel version isn't too high for us to support. */
+        R_UNLESS(this->capabilities.GetIntendedKernelVersion() <= ams::svc::SupportedKernelVersion, svc::ResultInvalidCombination());
 
         /* Create and clear the process local region. */
         R_TRY(this->CreateThreadLocalRegion(std::addressof(this->plr_address)));
@@ -493,6 +496,9 @@ namespace ams::kern {
         /* Lock ourselves, to prevent concurrent access. */
         KScopedLightLock lk(this->state_lock);
 
+        /* Address and size parameters aren't used. */
+        MESOSPHERE_UNUSED(address, size);
+
         /* Try to find an existing info for the memory. */
         KSharedMemoryInfo *info = nullptr;
         for (auto it = this->shared_memory_list.begin(); it != this->shared_memory_list.end(); ++it) {
@@ -523,6 +529,9 @@ namespace ams::kern {
     void KProcess::RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size) {
         /* Lock ourselves, to prevent concurrent access. */
         KScopedLightLock lk(this->state_lock);
+
+        /* Address and size parameters aren't used. */
+        MESOSPHERE_UNUSED(address, size);
 
         /* Find an existing info for the memory. */
         KSharedMemoryInfo *info = nullptr;
@@ -731,6 +740,8 @@ namespace ams::kern {
                     this->exception_thread->AddWaiter(cur_thread);
                     if (cur_thread->GetState() == KThread::ThreadState_Runnable) {
                         cur_thread->SetState(KThread::ThreadState_Waiting);
+                    } else {
+                        KScheduler::SetSchedulerUpdateNeeded();
                     }
                 }
                 /* Remove the thread as a waiter from the lock owner. */
@@ -739,6 +750,7 @@ namespace ams::kern {
                     KThread *owner_thread = cur_thread->GetLockOwner();
                     if (owner_thread != nullptr) {
                         owner_thread->RemoveWaiter(cur_thread);
+                        KScheduler::SetSchedulerUpdateNeeded();
                     }
                 }
             }
@@ -763,6 +775,8 @@ namespace ams::kern {
             if (next != nullptr) {
                 if (next->GetState() == KThread::ThreadState_Waiting) {
                     next->SetState(KThread::ThreadState_Runnable);
+                } else {
+                    KScheduler::SetSchedulerUpdateNeeded();
                 }
             }
 
@@ -972,6 +986,36 @@ namespace ams::kern {
         }
 
         return ResultSuccess();
+    }
+
+    void KProcess::PinCurrentThread() {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Get the current thread. */
+        const s32 core_id   = GetCurrentCoreId();
+        KThread *cur_thread = GetCurrentThreadPointer();
+
+        /* Pin it. */
+        this->PinThread(core_id, cur_thread);
+        cur_thread->Pin();
+
+        /* An update is needed. */
+        KScheduler::SetSchedulerUpdateNeeded();
+    }
+
+    void KProcess::UnpinCurrentThread() {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        /* Get the current thread. */
+        const s32 core_id   = GetCurrentCoreId();
+        KThread *cur_thread = GetCurrentThreadPointer();
+
+        /* Unpin it. */
+        cur_thread->Unpin();
+        this->UnpinThread(core_id, cur_thread);
+
+        /* An update is needed. */
+        KScheduler::SetSchedulerUpdateNeeded();
     }
 
     Result KProcess::GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count) {

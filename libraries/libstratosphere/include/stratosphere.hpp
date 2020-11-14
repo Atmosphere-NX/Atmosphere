@@ -41,14 +41,19 @@
 /* At this point, just include the rest alphabetically. */
 /* TODO: Figure out optimal order. */
 #include <stratosphere/boot2.hpp>
+#include <stratosphere/cal.hpp>
 #include <stratosphere/capsrv.hpp>
 #include <stratosphere/cfg.hpp>
+#include <stratosphere/clkrst.hpp>
+#include <stratosphere/ddsf.hpp>
 #include <stratosphere/dmnt.hpp>
 #include <stratosphere/erpt.hpp>
 #include <stratosphere/err.hpp>
 #include <stratosphere/fatal.hpp>
+#include <stratosphere/gpio.hpp>
 #include <stratosphere/hid.hpp>
 #include <stratosphere/hos.hpp>
+#include <stratosphere/i2c.hpp>
 #include <stratosphere/kvdb.hpp>
 #include <stratosphere/ldr.hpp>
 #include <stratosphere/lr.hpp>
@@ -57,10 +62,14 @@
 #include <stratosphere/nim.hpp>
 #include <stratosphere/ns.hpp>
 #include <stratosphere/patcher.hpp>
+#include <stratosphere/pcv.hpp>
 #include <stratosphere/pgl.hpp>
+#include <stratosphere/pinmux.hpp>
+#include <stratosphere/powctl.hpp>
 #include <stratosphere/psc.hpp>
 #include <stratosphere/pm.hpp>
-#include <stratosphere/reg.hpp>
+#include <stratosphere/pwm.hpp>
+#include <stratosphere/regulator.hpp>
 #include <stratosphere/ro.hpp>
 #include <stratosphere/settings.hpp>
 #include <stratosphere/sf.hpp>
@@ -68,6 +77,7 @@
 #include <stratosphere/spl.hpp>
 #include <stratosphere/time.hpp>
 #include <stratosphere/updater.hpp>
+#include <stratosphere/wec.hpp>
 
 /* Include FS last. */
 #include <stratosphere/fs.hpp>

@@ -43,7 +43,7 @@ namespace ams::diag {
 
         inline void DebugLog(const char *format, ...) __attribute__((format(printf, 1, 2)));
 
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
         os::Mutex g_debug_log_lock(true);
         char g_debug_buffer[0x400];
 
@@ -73,9 +73,9 @@ namespace ams::diag {
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
         {
             ::std::va_list vl;
             va_start(vl, format);
@@ -93,7 +93,7 @@ namespace ams::diag {
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
         DebugLog("\n");
 
@@ -105,9 +105,9 @@ namespace ams::diag {
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
         {
             ::std::va_list vl;
             va_start(vl, format);
@@ -125,7 +125,7 @@ namespace ams::diag {
         DebugLog("        Location:   %s:%d\n", file, line);
         DebugLog("        Function:   %s\n", func);
         DebugLog("        Expression: %s\n", expr);
-        DebugLog("        Value:      %016lx\n", value);
+        DebugLog("        Value:      %016" PRIx64 "\n", value);
         DebugLog("\n");
         DebugLog("\n");
 

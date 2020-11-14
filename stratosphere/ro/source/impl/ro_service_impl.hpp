@@ -30,12 +30,12 @@ namespace ams::ro::impl {
     bool ShouldEaseNroRestriction();
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, Handle process_handle, os::ProcessId process_id);
+    Result RegisterProcess(size_t *out_context_id, os::ManagedHandle process_handle, os::ProcessId process_id);
     Result ValidateProcess(size_t context_id, os::ProcessId process_id);
     void   UnregisterProcess(size_t context_id);
 
     /* Service implementations. */
-    Result RegisterModuleInfo(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type);
+    Result RegisterModuleInfo(size_t context_id, os::ManagedHandle process_h, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind);
     Result UnregisterModuleInfo(size_t context_id, u64 nrr_address);
     Result MapManualLoadModuleMemory(u64 *out_address, size_t context_id, u64 nro_address, u64 nro_size, u64 bss_address, u64 bss_size);
     Result UnmapManualLoadModuleMemory(size_t context_id, u64 nro_address);

@@ -24,6 +24,10 @@ namespace ams::kern::board::nintendo::nx::smc {
             u64 x[8];
         };
 
+        enum UserFunctionId : u32 {
+            UserFunctionId_SetConfig = 0xC3000401,
+        };
+
         enum FunctionId : u32 {
             FunctionId_CpuSuspend          = 0xC4000001,
             FunctionId_CpuOff              = 0x84000002,
@@ -33,6 +37,9 @@ namespace ams::kern::board::nintendo::nx::smc {
             FunctionId_Panic               = 0xC3000006,
             FunctionId_ConfigureCarveout   = 0xC3000007,
             FunctionId_ReadWriteRegister   = 0xC3000008,
+
+            /* NOTE: Atmosphere extension for mesosphere. This ID is subject to change at any time. */
+            FunctionId_SetConfig           = 0xC3000409,
         };
 
         void CallPrivilegedSecureMonitorFunction(SecureMonitorArguments &args) {
@@ -179,13 +186,28 @@ namespace ams::kern::board::nintendo::nx::smc {
 
     }
 
-    void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
+    bool TryGetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
         SecureMonitorArguments args = { FunctionId_GetConfig, static_cast<u32>(config_item) };
         CallPrivilegedSecureMonitorFunction(args);
-        MESOSPHERE_ABORT_UNLESS((static_cast<SmcResult>(args.x[0]) == SmcResult::Success));
+        if (static_cast<SmcResult>(args.x[0]) != SmcResult::Success) {
+            return false;
+        }
+
         for (size_t i = 0; i < num_qwords && i < 7; i++) {
             out[i] = args.x[1 + i];
         }
+
+        return true;
+    }
+
+    void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item) {
+        MESOSPHERE_ABORT_UNLESS(TryGetConfig(out, num_qwords, config_item));
+    }
+
+    bool SetConfig(ConfigItem config_item, u64 value) {
+        SecureMonitorArguments args = { FunctionId_SetConfig, static_cast<u32>(config_item), 0, value };
+        CallPrivilegedSecureMonitorFunction(args);
+        return static_cast<SmcResult>(args.x[0]) == SmcResult::Success;
     }
 
     bool ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value) {
@@ -227,7 +249,7 @@ namespace ams::kern::board::nintendo::nx::smc {
     void NORETURN Panic(u32 color) {
         SecureMonitorArguments args = { FunctionId_Panic, color };
         CallPrivilegedSecureMonitorFunction(args);
-        while (true) { /* ... */ }
+        AMS_INFINITE_LOOP();
     }
 
     void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args) {

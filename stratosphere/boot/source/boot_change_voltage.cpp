@@ -15,7 +15,6 @@
  */
 #include <stratosphere.hpp>
 #include "boot_change_voltage.hpp"
-#include "boot_pmc_wrapper.hpp"
 
 namespace ams::boot {
 
@@ -36,11 +35,11 @@ namespace ams::boot {
 
     void ChangeGpioVoltageTo1_8v() {
         /* Write mask to APBDEV_PMC_PWR_DET, then clear APBDEV_PMC_PWR_DET_VAL. */
-        WritePmcRegister(PmcPwrDet, VoltageChangeMask, VoltageChangeMask);
-        WritePmcRegister(PmcPwrDetVal, 0, VoltageChangeMask);
+        dd::ReadModifyWriteIoRegister(PmcPwrDet,    VoltageChangeMask, VoltageChangeMask);
+        dd::ReadModifyWriteIoRegister(PmcPwrDetVal,                 0, VoltageChangeMask);
 
         /* Sleep for 100 us. */
-        svcSleepThread(100'000ul);
+        os::SleepThread(TimeSpan::FromMicroSeconds(100));
     }
 
 }

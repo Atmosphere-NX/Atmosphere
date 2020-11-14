@@ -18,6 +18,6 @@
 
 namespace ams::boot {
 
-    void SetFanEnabled();
+    void SetFanPowerEnabled();
 
 }

@@ -48,6 +48,7 @@ namespace ams::secmon::smc {
         ExosphereBlankProdInfo  = 65005,
         ExosphereAllowCalWrites = 65006,
         ExosphereEmummcType     = 65007,
+        ExospherePayloadAddress = 65008,
     };
 
     SmcResult SmcGetConfigUser(SmcArguments &args);

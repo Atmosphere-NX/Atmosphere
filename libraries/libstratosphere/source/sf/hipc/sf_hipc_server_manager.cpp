@@ -27,6 +27,10 @@ namespace ams::sf::hipc {
 
         /* Register the query handle. */
         impl::RegisterMitmQueryHandle(query_handle, query_func);
+
+        /* Clear future declarations if any, now that our query handler is present. */
+        R_ABORT_UNLESS(sm::mitm::ClearFutureMitm(service_name));
+
         return ResultSuccess();
     }
 

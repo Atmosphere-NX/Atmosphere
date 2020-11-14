@@ -30,7 +30,7 @@ _ZN3ams8warmboot5StartEv:
 
     /* Invoke main. */
     ldr r0, =_metadata
-    bl _ZN3ams8warmboot4MainEPKNS0_8MetadataE
+    b _ZN3ams8warmboot4MainEPKNS0_8MetadataE
 
     /* Infinite loop. */
     1: b 1b

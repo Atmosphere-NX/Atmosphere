@@ -27,8 +27,10 @@ namespace ams::kern {
         /* Initial processes may use any user priority they like. */
         this->priority_mask = ~0xFul;
 
-        /* TODO: Here, Nintendo sets the kernel version to (current kernel version). */
-        /* How should we handle this? Not a MESOSPHERE_TODO because it's not critical. */
+        /* Here, Nintendo sets the kernel version to the current kernel version. */
+        /* We will follow suit and set the version to the highest supported kernel version. */
+        this->intended_kernel_version.Set<KernelVersion::MajorVersion>(ams::svc::SupportedKernelMajorVersion);
+        this->intended_kernel_version.Set<KernelVersion::MinorVersion>(ams::svc::SupportedKernelMinorVersion);
 
         /* Parse the capabilities array. */
         return this->SetCapabilities(caps, num_caps, page_table);
@@ -157,6 +159,7 @@ namespace ams::kern {
                 case RegionType::OnMemoryBootImage:
                 case RegionType::DTB:
                     R_TRY(page_table->MapRegion(MemoryRegions[static_cast<u32>(type)], perm));
+                    break;
                 default:
                     return svc::ResultNotFound();
             }

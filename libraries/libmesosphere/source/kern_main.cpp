@@ -51,8 +51,8 @@ namespace ams::kern {
 
             /* Initialize the memory manager and the KPageBuffer slabheap. */
             {
-                const auto &metadata_region = KMemoryLayout::GetMetadataPoolRegion();
-                Kernel::GetMemoryManager().Initialize(metadata_region.GetAddress(), metadata_region.GetSize());
+                const auto &management_region = KMemoryLayout::GetPoolManagementRegion();
+                Kernel::GetMemoryManager().Initialize(management_region.GetAddress(), management_region.GetSize());
                 init::InitializeKPageBufferSlabHeap();
             }
 
@@ -139,7 +139,7 @@ namespace ams::kern {
 
         /* Main() is done, and we should never get to this point. */
         MESOSPHERE_PANIC("Main Thread continued after exit.");
-        while (true) { /* ... */ }
+        AMS_INFINITE_LOOP();
     }
 
 }

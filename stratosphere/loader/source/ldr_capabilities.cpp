@@ -26,6 +26,7 @@ namespace ams::ldr::caps {
             SyscallMask     = 4,
             MapRange        = 6,
             MapPage         = 7,
+            MapRegion       = 10,
             InterruptPair   = 11,
             ApplicationType = 13,
             KernelVersion   = 14,
@@ -45,6 +46,9 @@ namespace ams::ldr::caps {
         constexpr ALWAYS_INLINE CapabilityId GetCapabilityId(util::BitPack32 cap) {
             return static_cast<CapabilityId>(__builtin_ctz(~cap.value));
         }
+
+        constexpr inline util::BitPack32 EmptyCapability = {~u32{}};
+        static_assert(GetCapabilityId(EmptyCapability) == CapabilityId::Empty);
 
 #define CAPABILITY_CLASS_NAME(id) Capability##id
 
@@ -166,6 +170,35 @@ namespace ams::ldr::caps {
 
         DEFINE_CAPABILITY_CLASS(MapPage,
             DEFINE_CAPABILITY_FIELD(Address, IdBits, 24);
+
+            bool IsValid(const util::BitPack32 *kac, size_t kac_count) const {
+                for (size_t i = 0; i < kac_count; i++) {
+                    if (GetCapabilityId(kac[i]) == Id) {
+                        const auto restriction = Decode(kac[i]);
+
+                        if (this->GetValue() == restriction.GetValue()) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        );
+
+        enum class MemoryRegionType : u32 {
+            None              = 0,
+            KernelTraceBuffer = 1,
+            OnMemoryBootImage = 2,
+            DTB               = 3,
+        };
+
+        DEFINE_CAPABILITY_CLASS(MapRegion,
+            DEFINE_CAPABILITY_FIELD(Region0,   IdBits,    6, MemoryRegionType);
+            DEFINE_CAPABILITY_FIELD(ReadOnly0, Region0,   1, bool);
+            DEFINE_CAPABILITY_FIELD(Region1,   ReadOnly0, 6, MemoryRegionType);
+            DEFINE_CAPABILITY_FIELD(ReadOnly1, Region1,   1, bool);
+            DEFINE_CAPABILITY_FIELD(Region2,   ReadOnly1, 6, MemoryRegionType);
+            DEFINE_CAPABILITY_FIELD(ReadOnly2, Region2,   1, bool);
 
             bool IsValid(const util::BitPack32 *kac, size_t kac_count) const {
                 for (size_t i = 0; i < kac_count; i++) {
@@ -304,6 +337,7 @@ namespace ams::ldr::caps {
                 VALIDATE_CASE(KernelFlags);
                 VALIDATE_CASE(SyscallMask);
                 VALIDATE_CASE(MapPage);
+                VALIDATE_CASE(MapRegion);
                 VALIDATE_CASE(InterruptPair);
                 VALIDATE_CASE(ApplicationType);
                 VALIDATE_CASE(KernelVersion);
@@ -369,6 +403,30 @@ namespace ams::ldr::caps {
                     break;
                 case CapabilityId::DebugFlags:
                     caps[i] = CapabilityDebugFlags::Encode((flags & ProgramInfoFlag_AllowDebug) != 0, CapabilityDebugFlags::Decode(cur_cap).GetForceDebug());
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    void ProcessCapabilities(void *kac, size_t kac_size) {
+        util::BitPack32 *caps = reinterpret_cast<util::BitPack32 *>(kac);
+        const size_t num_caps = kac_size / sizeof(*caps);
+
+        for (size_t i = 0; i < num_caps; i++) {
+            const auto cur_cap = caps[i];
+            switch (GetCapabilityId(cur_cap)) {
+                case CapabilityId::MapRegion:
+                    {
+                        /* MapRegion was added in 8.0.0+. */
+                        /* To prevent kernel error, we should reject the descriptor on lower firmwares. */
+                        /* NOTE: We also allow it on any firmware under mesosphere, as an extension. */
+                        const bool is_allowed = (hos::GetVersion() >= hos::Version_8_0_0 || svc::IsKernelMesosphere());
+                        if (!is_allowed) {
+                            caps[i] = EmptyCapability;
+                        }
+                    }
                     break;
                 default:
                     break;

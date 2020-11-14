@@ -19,6 +19,9 @@
 
 namespace ams::sm::impl {
 
+    /* Client disconnection callback. */
+    void OnClientDisconnected(os::ProcessId process_id);
+
     /* Process management. */
     Result RegisterProcess(os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus, const void *acid_sac, size_t acid_sac_size, const void *aci_sac, size_t aci_sac_size);
     Result UnregisterProcess(os::ProcessId process_id);
@@ -37,6 +40,7 @@ namespace ams::sm::impl {
     Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId process_id, ServiceName service);
     Result UninstallMitm(os::ProcessId process_id, ServiceName service);
     Result DeclareFutureMitm(os::ProcessId process_id, ServiceName service);
+    Result ClearFutureMitm(os::ProcessId process_id, ServiceName service);
     Result AcknowledgeMitmSession(MitmProcessInfo *out_info, Handle *out_hnd, os::ProcessId process_id, ServiceName service);
 
     /* Dmnt record extensions. */

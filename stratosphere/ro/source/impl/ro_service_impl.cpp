@@ -382,13 +382,13 @@ namespace ams::ro::impl {
     }
 
     /* Context utilities. */
-    Result RegisterProcess(size_t *out_context_id, Handle process_handle, os::ProcessId process_id) {
+    Result RegisterProcess(size_t *out_context_id, os::ManagedHandle process_handle, os::ProcessId process_id) {
         /* Validate process handle. */
         {
             os::ProcessId handle_pid = os::InvalidProcessId;
 
             /* Validate handle is a valid process handle. */
-            R_UNLESS(R_SUCCEEDED(os::TryGetProcessId(&handle_pid, process_handle)), ResultInvalidProcess());
+            R_UNLESS(R_SUCCEEDED(os::TryGetProcessId(&handle_pid, process_handle.Get())), ResultInvalidProcess());
 
             /* Validate process id. */
             R_UNLESS(handle_pid == process_id, ResultInvalidProcess());
@@ -397,7 +397,7 @@ namespace ams::ro::impl {
         /* Check if a process context already exists. */
         R_UNLESS(GetContextByProcessId(process_id) == nullptr, ResultInvalidSession());
 
-        *out_context_id = AllocateContext(process_handle, process_id);
+        *out_context_id = AllocateContext(process_handle.Move(), process_id);
         return ResultSuccess();
     }
 
@@ -413,13 +413,13 @@ namespace ams::ro::impl {
     }
 
     /* Service implementations. */
-    Result RegisterModuleInfo(size_t context_id, Handle process_h, u64 nrr_address, u64 nrr_size, ModuleType expected_type, bool enforce_type) {
+    Result RegisterModuleInfo(size_t context_id, os::ManagedHandle process_handle, u64 nrr_address, u64 nrr_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
         /* Get context. */
         ProcessContext *context = GetContextById(context_id);
         AMS_ABORT_UNLESS(context != nullptr);
 
         /* Get program id. */
-        const ncm::ProgramId program_id = context->GetProgramId(process_h);
+        const ncm::ProgramId program_id = context->GetProgramId(process_handle.Get());
 
         /* Validate address/size. */
         R_TRY(ValidateAddressAndNonZeroSize(nrr_address, nrr_size));
@@ -435,7 +435,7 @@ namespace ams::ro::impl {
         /* Map. */
         NrrHeader *header = nullptr;
         u64 mapped_code_address = 0;
-        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, expected_type, enforce_type));
+        R_TRY(MapAndValidateNrr(&header, &mapped_code_address, std::addressof(signed_area_hash), sizeof(signed_area_hash), context->process_handle, program_id, nrr_address, nrr_size, nrr_kind, enforce_nrr_kind));
 
         /* Set NRR info. */
         context->SetNrrInfoInUse(nrr_info, true);

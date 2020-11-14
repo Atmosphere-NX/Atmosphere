@@ -28,8 +28,11 @@ namespace ams::kern {
 
     void KServerPort::CleanupSessions() {
         /* Ensure our preconditions are met. */
-        MESOSPHERE_ASSERT(this->IsLight()  || this->session_list.empty());
-        MESOSPHERE_ASSERT(!this->IsLight() || this->light_session_list.empty());
+        if (this->IsLight()) {
+            MESOSPHERE_ASSERT(this->session_list.empty());
+        } else {
+            MESOSPHERE_ASSERT(this->light_session_list.empty());
+        }
 
         /* Cleanup the session list. */
         while (true) {

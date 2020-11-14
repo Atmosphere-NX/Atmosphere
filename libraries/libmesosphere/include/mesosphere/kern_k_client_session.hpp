@@ -35,7 +35,7 @@ namespace ams::kern {
             }
 
             virtual void Destroy() override;
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr KSession *GetParent() const { return this->parent; }
 

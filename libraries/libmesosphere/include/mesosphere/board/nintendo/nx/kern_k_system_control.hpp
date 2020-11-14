@@ -39,7 +39,7 @@ namespace ams::kern::board::nintendo::nx {
             /* Initialization. */
             static NOINLINE void InitializePhase1();
             static NOINLINE void InitializePhase2();
-            static NOINLINE u32 GetInitialProcessBinaryPool();
+            static NOINLINE u32 GetCreateProcessMemoryPool();
 
             /* Randomness. */
             static void GenerateRandomBytes(void *dst, size_t size);
@@ -63,7 +63,7 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Power management. */
             static void SleepSystem();
-            static NORETURN void StopSystem();
+            static NORETURN void StopSystem(void *arg = nullptr);
 
             /* User access. */
             static void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);

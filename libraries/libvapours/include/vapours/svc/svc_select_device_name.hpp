@@ -26,6 +26,9 @@
 
 #else
 
-    #error "Unknown board for svc::DeviceName"
+    #include <vapours/svc/board/generic/svc_device_name.hpp>
+    namespace ams::svc {
+        using namespace ams::svc::board::generic;
+    }
 
 #endif

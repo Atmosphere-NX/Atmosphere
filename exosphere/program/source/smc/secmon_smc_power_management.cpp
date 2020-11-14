@@ -492,6 +492,8 @@ namespace ams::secmon::smc {
     }
 
     SmcResult SmcPowerOffCpu(SmcArguments &args) {
+        AMS_UNUSED(args);
+
         /* Get the current core id. */
         const auto core_id = hw::GetCurrentCoreId();
 

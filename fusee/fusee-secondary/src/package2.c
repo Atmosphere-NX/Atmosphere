@@ -44,7 +44,7 @@ static inline size_t align_to_4(size_t s) {
     return ((s + 3) >> 2) << 2;
 }
 
-void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware, void *emummc, size_t emummc_size) {
+void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware, void *mesosphere, size_t mesosphere_size, void *emummc, size_t emummc_size) {
     package2_header_t *rebuilt_package2;
     size_t rebuilt_package2_size;
     void *kernel;
@@ -95,10 +95,28 @@ void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firm
         fatal_error("Error: inappropriate kernel embedded ini context");
     }
 
+    /* Use mesosphere instead of Nintendo's kernel when present. */
+    const bool is_mesosphere = mesosphere != NULL && mesosphere_size != 0;
+    if (is_mesosphere) {
+        kernel = mesosphere;
+        kernel_size = mesosphere_size;
+
+        /* Patch mesosphere to use our rebuilt ini. */
+        *(volatile uint64_t *)((uintptr_t)mesosphere + 8) = (uint64_t)mesosphere_size;
+
+        /* Place the kernel section at the correct location. */
+        package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL] = 0x60000;
+        package2->metadata.entrypoint                               = 0x60000;
+
+        print(SCREEN_LOG_LEVEL_DEBUG, "Using Mesosphere...\n");
+    }
+
     print(SCREEN_LOG_LEVEL_DEBUG, "Rebuilding the INI1 section...\n");
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_8_0_0) {
         package2_get_src_section((void *)&orig_ini1, package2, PACKAGE2_SECTION_INI1);
-    } else {
+    }
+
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_0_0 || is_mesosphere) {
         /* On 8.0.0, place INI1 right after kernelldr for our sanity. */
         package2->metadata.section_offsets[PACKAGE2_SECTION_INI1] = package2->metadata.section_offsets[PACKAGE2_SECTION_KERNEL] + kernel_size;
     }

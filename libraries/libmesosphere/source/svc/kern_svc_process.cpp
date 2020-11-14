@@ -131,15 +131,16 @@ namespace ams::kern::svc {
             }
 
             /* Validate the pool partition. */
-            /* TODO: 4.0.0 UseSecureMemory flag, pre-4.0.0 behavior. */
-            switch (params.flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
-                case ams::svc::CreateProcessFlag_PoolPartitionApplication:
-                case ams::svc::CreateProcessFlag_PoolPartitionApplet:
-                case ams::svc::CreateProcessFlag_PoolPartitionSystem:
-                case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
-                    break;
-                default:
-                    return svc::ResultInvalidEnumValue();
+            if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
+                switch (params.flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
+                    case ams::svc::CreateProcessFlag_PoolPartitionApplication:
+                    case ams::svc::CreateProcessFlag_PoolPartitionApplet:
+                    case ams::svc::CreateProcessFlag_PoolPartitionSystem:
+                    case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
+                        break;
+                    default:
+                        return svc::ResultInvalidEnumValue();
+                }
             }
 
             /* Check that the code address is aligned. */
@@ -201,23 +202,29 @@ namespace ams::kern::svc {
             KResourceLimit *process_resource_limit = resource_limit.IsNotNull() ? resource_limit.GetPointerUnsafe() : std::addressof(Kernel::GetSystemResourceLimit());
 
             /* Get the pool for the process. */
-            /* TODO: 4.0.0 UseSecureMemory flag, pre-4.0.0 behavior. */
-            KMemoryManager::Pool pool;
-            switch (params.flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
-                case ams::svc::CreateProcessFlag_PoolPartitionApplication:
-                    pool = KMemoryManager::Pool_Application;
-                    break;
-                case ams::svc::CreateProcessFlag_PoolPartitionApplet:
-                    pool = KMemoryManager::Pool_Applet;
-                    break;
-                case ams::svc::CreateProcessFlag_PoolPartitionSystem:
-                    pool = KMemoryManager::Pool_System;
-                    break;
-                case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
-                default:
-                    pool = KMemoryManager::Pool_SystemNonSecure;
-                    break;
-            }
+            const auto pool = [] ALWAYS_INLINE_LAMBDA (u32 flags) -> KMemoryManager::Pool {
+                if (GetTargetFirmware() >= TargetFirmware_5_0_0) {
+                    switch (flags & ams::svc::CreateProcessFlag_PoolPartitionMask) {
+                        case ams::svc::CreateProcessFlag_PoolPartitionApplication:
+                            return KMemoryManager::Pool_Application;
+                        case ams::svc::CreateProcessFlag_PoolPartitionApplet:
+                            return KMemoryManager::Pool_Applet;
+                        case ams::svc::CreateProcessFlag_PoolPartitionSystem:
+                            return KMemoryManager::Pool_System;
+                        case ams::svc::CreateProcessFlag_PoolPartitionSystemNonSecure:
+                        default:
+                            return KMemoryManager::Pool_SystemNonSecure;
+                    }
+                } else if (GetTargetFirmware() >= TargetFirmware_4_0_0) {
+                    if ((flags & ams::svc::CreateProcessFlag_DeprecatedUseSecureMemory) != 0) {
+                        return KMemoryManager::Pool_Secure;
+                    } else {
+                        return static_cast<KMemoryManager::Pool>(KSystemControl::GetCreateProcessMemoryPool());
+                    }
+                } else {
+                    return static_cast<KMemoryManager::Pool>(KSystemControl::GetCreateProcessMemoryPool());
+                }
+            }(params.flags);
 
             /* Initialize the process. */
             R_TRY(process->Initialize(params, user_caps, num_caps, process_resource_limit, pool));

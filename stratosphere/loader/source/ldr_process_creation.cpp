@@ -210,7 +210,7 @@ namespace ams::ldr {
             return ResultSuccess();
         }
 
-        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc, const fs::CodeInfo &code_info) {
+        Result ValidateMeta(const Meta *meta, const ncm::ProgramLocation &loc, const fs::CodeVerificationData &code_verification_data) {
             /* Validate version. */
             R_TRY(ValidateProgramVersion(loc.program_id, meta->npdm->version));
 
@@ -222,15 +222,15 @@ namespace ams::ldr {
             R_TRY(caps::ValidateCapabilities(meta->acid_kac, meta->acid->kac_size, meta->aci_kac, meta->aci->kac_size));
 
             /* If we have data to validate, validate it. */
-            if (code_info.is_signed && meta->is_signed) {
-                const u8 *sig         = code_info.signature;
-                const size_t sig_size = sizeof(code_info.signature);
+            if (code_verification_data.has_data && meta->check_verification_data) {
+                const u8 *sig         = code_verification_data.signature;
+                const size_t sig_size = sizeof(code_verification_data.signature);
                 const u8 *mod         = static_cast<u8 *>(meta->modulus);
                 const size_t mod_size = crypto::Rsa2048PssSha256Verifier::ModulusSize;
                 const u8 *exp         = fssystem::GetAcidSignatureKeyPublicExponent();
                 const size_t exp_size = fssystem::AcidSignatureKeyPublicExponentSize;
-                const u8 *hsh         = code_info.hash;
-                const size_t hsh_size = sizeof(code_info.hash);
+                const u8 *hsh         = code_verification_data.target_hash;
+                const size_t hsh_size = sizeof(code_verification_data.target_hash);
                 const bool is_signature_valid = crypto::VerifyRsa2048PssSha256WithHash(sig, sig_size, mod, mod_size, exp, exp_size, hsh, hsh_size);
 
                 R_UNLESS(is_signature_valid, ResultInvalidNcaSignature());
@@ -596,7 +596,7 @@ namespace ams::ldr {
             R_TRY(LoadMetaFromCache(&meta, loc, override_status));
 
             /* Validate meta. */
-            R_TRY(ValidateMeta(&meta, loc, mount.GetCodeInfo()));
+            R_TRY(ValidateMeta(&meta, loc, mount.GetCodeVerificationData()));
 
             /* Load, validate NSOs. */
             R_TRY(LoadNsoHeaders(nso_headers, has_nso));

@@ -20,7 +20,7 @@
 namespace ams::kern {
 
     constexpr u32 InitialProcessBinaryMagic      = util::FourCC<'I','N','I','1'>::Code;
-    constexpr size_t InitialProcessBinarySizeMax = 0xC00000;
+    constexpr size_t InitialProcessBinarySizeMax = 12_MB;
 
     struct InitialProcessBinaryHeader {
         u32 magic;
@@ -34,5 +34,6 @@ namespace ams::kern {
 
     u64 GetInitialProcessIdMin();
     u64 GetInitialProcessIdMax();
+    size_t GetInitialProcessesSecureMemorySize();
 
 }

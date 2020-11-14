@@ -94,6 +94,6 @@ static inline uint8_t package2_meta_get_header_version(const package2_meta_t *me
     return (uint8_t)((metadata->ctr_dwords[1] ^ (metadata->ctr_dwords[1] >> 16) ^ (metadata->ctr_dwords[1] >> 24)) & 0xFF);
 }
 
-void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware, void *emummc, size_t emummc_size);
+void package2_rebuild_and_copy(package2_header_t *package2, uint32_t target_firmware, void *mesosphere, size_t mesosphere_size, void *emummc, size_t emummc_size);
 
 #endif

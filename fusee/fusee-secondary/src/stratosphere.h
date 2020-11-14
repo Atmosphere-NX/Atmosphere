@@ -30,7 +30,7 @@ ini1_header_t *stratosphere_get_ini1(uint32_t target_firmware);
 ini1_header_t *stratosphere_get_sd_files_ini1(void);
 void stratosphere_free_ini1(void);
 
-void stratosphere_enable_ncm(void);
+void stratosphere_disable_ncm(void);
 
 emummc_fs_ver_t stratosphere_get_fs_version(void);
 
@@ -39,10 +39,10 @@ ini1_header_t *stratosphere_merge_inis(ini1_header_t **inis, unsigned int num_in
 typedef struct {
     bool has_nogc_config;
     bool enable_nogc;
-    bool ncm_enabled;
+    bool ncm_disabled;
 } stratosphere_cfg_t;
 
 #define STRATOSPHERE_NOGC_KEY "nogc"
-#define STRATOSPHERE_ENABLE_NCM_KEY "enable_ncm"
+#define STRATOSPHERE_DISABLE_NCM_KEY "disable_ncm"
 
 #endif

@@ -1582,28 +1582,30 @@ namespace ams::kern {
         const size_t          region_num_pages = region_size / PageSize;
 
         /* Locate the memory region. */
-        auto region_it    = KMemoryLayout::FindContainingRegion(phys_addr);
-        const auto end_it = KMemoryLayout::GetEnd(phys_addr);
-        R_UNLESS(region_it != end_it, svc::ResultInvalidAddress());
+        const KMemoryRegion *region = KMemoryLayout::Find(phys_addr);
+        R_UNLESS(region != nullptr, svc::ResultInvalidAddress());
 
-        MESOSPHERE_ASSERT(region_it->Contains(GetInteger(phys_addr)));
+        MESOSPHERE_ASSERT(region->Contains(GetInteger(phys_addr)));
 
         /* Ensure that the region is mappable. */
         const bool is_rw = perm == KMemoryPermission_UserReadWrite;
-        do {
+        while (true) {
+            /* Check that the region exists. */
+            R_UNLESS(region != nullptr, svc::ResultInvalidAddress());
+
             /* Check the region attributes. */
-            R_UNLESS(!region_it->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
-            R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
-            R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
+            R_UNLESS(!region->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
+            R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
+            R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
 
             /* Check if we're done. */
-            if (GetInteger(last) <= region_it->GetLastAddress()) {
+            if (GetInteger(last) <= region->GetLastAddress()) {
                 break;
             }
 
             /* Advance. */
-            region_it++;
-        } while (region_it != end_it);
+            region = region->GetNext();
+        };
 
         /* Lock the table. */
         KScopedLightLock lk(this->general_lock);
@@ -1660,18 +1662,17 @@ namespace ams::kern {
         const size_t          region_num_pages = region_size / PageSize;
 
         /* Locate the memory region. */
-        auto region_it    = KMemoryLayout::FindContainingRegion(phys_addr);
-        const auto end_it = KMemoryLayout::GetEnd(phys_addr);
-        R_UNLESS(region_it != end_it, svc::ResultInvalidAddress());
+        const KMemoryRegion *region = KMemoryLayout::Find(phys_addr);
+        R_UNLESS(region != nullptr, svc::ResultInvalidAddress());
 
-        MESOSPHERE_ASSERT(region_it->Contains(GetInteger(phys_addr)));
-        R_UNLESS(GetInteger(last) <= region_it->GetLastAddress(), svc::ResultInvalidAddress());
+        MESOSPHERE_ASSERT(region->Contains(GetInteger(phys_addr)));
+        R_UNLESS(GetInteger(last) <= region->GetLastAddress(), svc::ResultInvalidAddress());
 
         /* Check the region attributes. */
         const bool is_rw = perm == KMemoryPermission_UserReadWrite;
-        R_UNLESS( region_it->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
-        R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
-        R_UNLESS(!region_it->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
+        R_UNLESS( region->IsDerivedFrom(KMemoryRegionType_Dram),                      svc::ResultInvalidAddress());
+        R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_NoUserMap),              svc::ResultInvalidAddress());
+        R_UNLESS(!region->HasTypeAttribute(KMemoryRegionAttr_UserReadOnly) || !is_rw, svc::ResultInvalidAddress());
 
         /* Lock the table. */
         KScopedLightLock lk(this->general_lock);
@@ -1716,12 +1717,11 @@ namespace ams::kern {
 
     Result KPageTableBase::MapRegion(KMemoryRegionType region_type, KMemoryPermission perm) {
         /* Get the memory region. */
-        auto &tree = KMemoryLayout::GetPhysicalMemoryRegionTree();
-        auto it    = tree.TryFindFirstDerivedRegion(region_type);
-        R_UNLESS(it != tree.end(), svc::ResultOutOfRange());
+        const KMemoryRegion *region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(region_type);
+        R_UNLESS(region != nullptr, svc::ResultOutOfRange());
 
         /* Map the region. */
-        R_TRY_CATCH(this->MapStatic(it->GetAddress(), it->GetSize(), perm)) {
+        R_TRY_CATCH(this->MapStatic(region->GetAddress(), region->GetSize(), perm)) {
             R_CONVERT(svc::ResultInvalidAddress, svc::ResultOutOfRange())
         } R_END_TRY_CATCH;
 
@@ -2157,6 +2157,8 @@ namespace ams::kern {
             if (cur_size >= sizeof(u32)) {
                 const size_t copy_size = util::AlignDown(cur_size, sizeof(u32));
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, copy_size), svc::ResultInvalidCurrentMemory());
+                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), copy_size);
+
                 buffer    = reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(buffer) + copy_size);
                 cur_addr += copy_size;
                 cur_size -= copy_size;
@@ -2165,6 +2167,7 @@ namespace ams::kern {
             /* Copy remaining data. */
             if (cur_size > 0) {
                 R_UNLESS(UserspaceAccess::CopyMemoryFromUser(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), buffer, cur_size), svc::ResultInvalidCurrentMemory());
+                cpu::StoreDataCache(GetVoidPointer(GetLinearMappedVirtualAddress(cur_addr)), cur_size);
             }
 
             return ResultSuccess();
@@ -2199,6 +2202,9 @@ namespace ams::kern {
 
         /* Perform copy for the last block. */
         R_TRY(PerformCopy());
+
+        /* Invalidate the entire instruction cache, as this svc allows modifying executable pages. */
+        cpu::InvalidateEntireInstructionCache();
 
         return ResultSuccess();
     }
@@ -2761,8 +2767,11 @@ namespace ams::kern {
                 lk1.emplace(lock_1);
             }
 
-            /* Check memory state. */
+            /* Check memory state for source. */
             R_TRY(src_page_table.CheckMemoryStateContiguous(src_addr, size, src_state_mask, src_state, src_test_perm, src_test_perm, src_attr_mask | KMemoryAttribute_Uncached, src_attr));
+
+            /* Destination state is intentionally unchecked. */
+            MESOSPHERE_UNUSED(dst_state_mask, dst_state, dst_test_perm, dst_attr_mask, dst_attr);
 
             /* Get implementations. */
             auto &src_impl = src_page_table.GetImpl();
@@ -2906,35 +2915,10 @@ namespace ams::kern {
 
         /* Ensure that on failure, we roll back appropriately. */
         size_t mapped_size = 0;
-        auto unmap_guard = SCOPE_GUARD {
+        auto cleanup_guard = SCOPE_GUARD {
             if (mapped_size > 0) {
-                /* Determine where the mapping ends. */
-                const auto mapped_end  = GetInteger(mapping_src_start) + mapped_size;
-                const auto mapped_last = mapped_end - 1;
-
-                KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(mapping_src_start);
-                while (true) {
-                    const KMemoryInfo info = it->GetMemoryInfo();
-
-                    const auto cur_start  = info.GetAddress() >= GetInteger(mapping_src_start) ? info.GetAddress() : GetInteger(mapping_src_start);
-                    const auto cur_end    = mapped_last <= info.GetLastAddress() ? mapped_end : info.GetEndAddress();
-                    const size_t cur_size = cur_end - cur_start;
-
-                    /* Fix the permissions, if we need to. */
-                    if ((info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
-                        const KPageProperties properties = { info.GetPermission(), false, false, false };
-                        MESOSPHERE_R_ABORT_UNLESS(this->Operate(page_list, cur_start, cur_size / PageSize, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, true));
-                    }
-
-                    /* If the block is at the end, we're done. */
-                    if (mapped_last <= info.GetLastAddress()) {
-                        break;
-                    }
-
-                    /* Advance. */
-                    ++it;
-                    MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
-                }
+                /* NOTE: Nintendo does not check that this cleanup succeeds. */
+                this->CleanupForIpcClientOnServerSetupFailure(page_list, mapping_src_start, mapped_size, test_perm);
             }
         };
 
@@ -2971,8 +2955,8 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
         }
 
-        /* We succeeded, so no need to unmap. */
-        unmap_guard.Cancel();
+        /* We succeeded, so no need to cleanup. */
+        cleanup_guard.Cancel();
 
         return ResultSuccess();
     }

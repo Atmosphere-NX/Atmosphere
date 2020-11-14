@@ -472,6 +472,7 @@ namespace ams::kern {
             void AddCpuTime(s32 core_id, s64 amount) {
                 this->cpu_time += amount;
                 /* TODO: Debug kernels track per-core tick counts. Should we? */
+                MESOSPHERE_UNUSED(core_id);
             }
 
             s64 GetCpuTime() const { return this->cpu_time; }
@@ -523,7 +524,7 @@ namespace ams::kern {
 
         public:
             /* Overridden parent functions. */
-            virtual u64 GetId() const override { return this->GetThreadId(); }
+            virtual u64 GetId() const override final { return this->GetThreadId(); }
 
             virtual bool IsInitialized() const override { return this->initialized; }
             virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->parent) | (this->resource_limit_release_hint ? 1 : 0); }
@@ -558,20 +559,7 @@ namespace ams::kern {
                 GetCurrentThread().DisableDispatch();
             }
 
-            ALWAYS_INLINE ~KScopedDisableDispatch() {
-                GetCurrentThread().EnableDispatch();
-            }
-    };
-
-    class KScopedEnableDispatch {
-        public:
-            explicit ALWAYS_INLINE KScopedEnableDispatch() {
-                GetCurrentThread().EnableDispatch();
-            }
-
-            ALWAYS_INLINE ~KScopedEnableDispatch() {
-                GetCurrentThread().DisableDispatch();
-            }
+            ~KScopedDisableDispatch();
     };
 
     ALWAYS_INLINE KExceptionContext *GetExceptionContext(KThread *thread) {

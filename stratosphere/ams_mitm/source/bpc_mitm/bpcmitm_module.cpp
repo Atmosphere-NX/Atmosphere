@@ -37,6 +37,11 @@ namespace ams::mitm::bpc {
         /* Wait until initialization is complete. */
         mitm::WaitInitialized();
 
+        /* On Mariko, we can't reboot to payload/do exosphere-shutdown...so there is no point in bpc.mitm. */
+        if (spl::GetSocType() == spl::SocType_Mariko) {
+            return;
+        }
+
         /* Create bpc mitm. */
         const sm::ServiceName service_name = (hos::GetVersion() >= hos::Version_2_0_0) ? MitmServiceName : DeprecatedMitmServiceName;
         R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<impl::IBpcMitmInterface, BpcMitmService>(service_name)));

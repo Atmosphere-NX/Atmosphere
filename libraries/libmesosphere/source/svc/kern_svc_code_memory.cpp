@@ -110,7 +110,7 @@ namespace ams::kern::svc {
                 case ams::svc::CodeMemoryOperation_MapToOwner:
                     {
                         /* Check that the region is in range. */
-                        R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, KMemoryState_GeneratedCode), svc::ResultInvalidMemoryRegion());
+                        R_UNLESS(code_mem->GetOwner()->GetPageTable().CanContain(address, size, KMemoryState_GeneratedCode), svc::ResultInvalidMemoryRegion());
 
                         /* Check the memory permission. */
                         R_UNLESS(IsValidMapToOwnerCodeMemoryPermission(perm), svc::ResultInvalidNewMemoryPermission());
@@ -122,7 +122,7 @@ namespace ams::kern::svc {
                 case ams::svc::CodeMemoryOperation_UnmapFromOwner:
                     {
                         /* Check that the region is in range. */
-                        R_UNLESS(GetCurrentProcess().GetPageTable().CanContain(address, size, KMemoryState_GeneratedCode), svc::ResultInvalidMemoryRegion());
+                        R_UNLESS(code_mem->GetOwner()->GetPageTable().CanContain(address, size, KMemoryState_GeneratedCode), svc::ResultInvalidMemoryRegion());
 
                         /* Check the memory permission. */
                         R_UNLESS(IsValidUnmapFromOwnerCodeMemoryPermission(perm), svc::ResultInvalidNewMemoryPermission());

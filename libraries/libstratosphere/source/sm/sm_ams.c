@@ -107,6 +107,10 @@ Result smAtmosphereMitmDeclareFuture(SmServiceName name) {
     return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65006);
 }
 
+Result smAtmosphereMitmClearFuture(SmServiceName name) {
+    return _smAtmosphereCmdInServiceNameNoOut(name, smGetServiceSession(), 65007);
+}
+
 Result smAtmosphereMitmAcknowledgeSession(Service *srv_out, void *_out, SmServiceName name) {
     struct {
         u64 process_id;

@@ -41,7 +41,7 @@ namespace ams::kern {
 
             virtual bool IsInitialized() const override { return this->is_initialized; }
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             constexpr s32 GetInterruptId() const { return this->interrupt_id; }
     };

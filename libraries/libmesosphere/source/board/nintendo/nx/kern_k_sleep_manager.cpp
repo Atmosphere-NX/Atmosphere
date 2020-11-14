@@ -16,6 +16,7 @@
 #include <mesosphere.hpp>
 #include "kern_k_sleep_manager.hpp"
 #include "kern_secure_monitor.hpp"
+#include "kern_lps_driver.hpp"
 
 namespace ams::kern::board::nintendo::nx {
 
@@ -77,13 +78,11 @@ namespace ams::kern::board::nintendo::nx {
 
         void WaitOtherCpuPowerOff() {
             constexpr u64 PmcPhysicalAddress = 0x7000E400;
-            constexpr u64 APBDEV_PMC_PWRGATE_STATUS = PmcPhysicalAddress + 0x38;
-
             constexpr u32 PWRGATE_STATUS_CE123_MASK = ((1u << 3) - 1) << 9;
 
             u32 value;
             do {
-                bool res = smc::ReadWriteRegister(std::addressof(value), APBDEV_PMC_PWRGATE_STATUS, 0, 0);
+                bool res = smc::ReadWriteRegister(std::addressof(value), PmcPhysicalAddress + APBDEV_PMC_PWRGATE_STATUS, 0, 0);
                 MESOSPHERE_ASSERT(res);
             } while ((value & PWRGATE_STATUS_CE123_MASK) != 0);
         }
@@ -472,7 +471,8 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     void KSleepManager::ProcessRequests(uintptr_t buffer) {
-        const s32 core_id = GetCurrentCoreId();
+        const auto target_fw = GetTargetFirmware();
+        const s32 core_id    = GetCurrentCoreId();
         KPhysicalAddress resume_entry_phys_addr = Null<KPhysicalAddress>;
 
         /* Get the physical addresses we'll need. */
@@ -484,6 +484,8 @@ namespace ams::kern::board::nintendo::nx {
         const KPhysicalAddress sleep_buffer_phys_addr = g_sleep_buffer_phys_addrs[core_id];
         const u64 target_core_mask = (1ul << core_id);
 
+        const bool use_legacy_lps_driver = target_fw < TargetFirmware_2_0_0;
+
         /* Loop, processing sleep when requested. */
         while (true) {
             /* Wait for a request. */
@@ -492,6 +494,11 @@ namespace ams::kern::board::nintendo::nx {
                 while (!(g_sleep_target_cores & target_core_mask)) {
                     g_cv.Wait(std::addressof(g_cv_lock));
                 }
+            }
+
+            /* If on core 0, ensure the legacy lps driver is initialized. */
+            if (use_legacy_lps_driver && core_id == 0) {
+                lps::Initialize();
             }
 
             /* Perform Sleep/Wake sequence. */
@@ -550,6 +557,11 @@ namespace ams::kern::board::nintendo::nx {
                     /* Wait for all other cores to be powered off. */
                     WaitOtherCpuPowerOff();
 
+                    /* If we're using the legacy lps driver, enable suspend. */
+                    if (use_legacy_lps_driver) {
+                        MESOSPHERE_R_ABORT_UNLESS(lps::EnableSuspend(true));
+                    }
+
                     /* Log that we're about to enter SC7. */
                     MESOSPHERE_LOG("Entering SC7\n");
 
@@ -557,7 +569,12 @@ namespace ams::kern::board::nintendo::nx {
                     KDebugLog::Save();
 
                     /* Invoke the sleep handler. */
-                    CpuSleepHandler(GetInteger(sleep_buffer_phys_addr), GetInteger(resume_entry_phys_addr));
+                    if (!use_legacy_lps_driver) {
+                        /* When not using the legacy driver, invoke directly. */
+                        CpuSleepHandler(GetInteger(sleep_buffer_phys_addr), GetInteger(resume_entry_phys_addr));
+                    } else {
+                        lps::InvokeCpuSleepHandler(GetInteger(sleep_buffer_phys_addr), GetInteger(resume_entry_phys_addr));
+                    }
 
                     /* Restore the debug log state. */
                     KDebugLog::Restore();
@@ -586,6 +603,11 @@ namespace ams::kern::board::nintendo::nx {
                 /* If on core 0, wake up the device page tables. */
                 if (core_id == 0) {
                     KDevicePageTable::Wakeup();
+
+                    /* If we're using the legacy driver, resume the bpmp firmware. */
+                    if (use_legacy_lps_driver) {
+                        lps::ResumeBpmpFirmware();
+                    }
                 }
 
                 /* Ensure that all cores get to this point before continuing. */

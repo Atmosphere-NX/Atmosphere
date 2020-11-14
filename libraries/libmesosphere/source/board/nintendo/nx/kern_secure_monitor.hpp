@@ -60,6 +60,10 @@ namespace ams::kern::board::nintendo::nx::smc {
         ExosphereNeedsShutdown  = 65002,
         ExosphereGitCommitHash  = 65003,
         ExosphereHasRcmBugPatch = 65004,
+        ExosphereBlankProdInfo  = 65005,
+        ExosphereAllowCalWrites = 65006,
+        ExosphereEmummcType     = 65007,
+        ExospherePayloadAddress = 65008,
     };
 
     enum class SmcResult {
@@ -83,11 +87,19 @@ namespace ams::kern::board::nintendo::nx::smc {
         using MemorySize                  = util::BitPack32::Field<Reserved9::Next,                   2, smc::MemorySize>;
     };
 
-    /* TODO: Rest of Secure Monitor API. */
+    enum UserRebootType {
+        UserRebootType_None      = 0,
+        UserRebootType_ToRcm     = 1,
+        UserRebootType_ToPayload = 2,
+    };
+
     void GenerateRandomBytes(void *dst, size_t size);
+    bool TryGetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
     void GetConfig(u64 *out, size_t num_qwords, ConfigItem config_item);
     bool ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
     void ConfigureCarveout(size_t which, uintptr_t address, size_t size);
+
+    bool SetConfig(ConfigItem config_item, u64 value);
 
     void CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg);
 

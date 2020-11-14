@@ -32,7 +32,7 @@ namespace ams::ldr {
         void *aci_kac;
 
         void *modulus;
-        bool is_signed;
+        bool check_verification_data;
     };
 
     /* Meta API. */

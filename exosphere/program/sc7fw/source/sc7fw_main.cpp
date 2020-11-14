@@ -90,7 +90,7 @@ namespace ams::sc7fw {
             reg::ReadWrite(PMC + APBDEV_PMC_DPD_ENABLE, PMC_REG_BITS_ENUM(DPD_ENABLE_ON, ENABLE));
 
             /* Wait forever until we're asleep. */
-            while (true) { /* ... */ }
+            AMS_INFINITE_LOOP();
         }
 
     }
@@ -102,7 +102,9 @@ namespace ams::sc7fw {
     NORETURN void ExceptionHandler() {
         /* Write enable to MAIN_RESET. */
         reg::Write(PMC + APBDEV_PMC_CNTRL, PMC_REG_BITS_ENUM(CNTRL_MAIN_RESET, ENABLE));
-        while (true) { /* ... */ }
+
+        /* Wait forever until we're reset. */
+        AMS_INFINITE_LOOP();
     }
 
 }
@@ -112,5 +114,7 @@ namespace ams::diag {
     void AbortImpl() {
         sc7fw::ExceptionHandler();
     }
+
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
 
 }

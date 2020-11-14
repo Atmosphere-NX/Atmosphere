@@ -27,6 +27,8 @@ namespace ams::sm {
         private:
             Result EnsureInitialized();
         public:
+            virtual ~UserService();
+        public:
             /* Official commands. */
             Result RegisterClient(const sf::ClientProcessId &client_process_id);
             Result GetServiceHandle(sf::OutMoveHandle out_h, ServiceName service);
@@ -40,6 +42,7 @@ namespace ams::sm {
             Result AtmosphereHasMitm(sf::Out<bool> out, ServiceName service);
             Result AtmosphereWaitMitm(ServiceName service);
             Result AtmosphereDeclareFutureMitm(ServiceName service);
+            Result AtmosphereClearFutureMitm(ServiceName service);
 
             Result AtmosphereHasService(sf::Out<bool> out, ServiceName service);
             Result AtmosphereWaitService(ServiceName service);

@@ -281,6 +281,7 @@ namespace ams::kern::arch::arm64 {
     }
 
     void KThreadContext::OnThreadTerminating(const KThread *thread) {
+        MESOSPHERE_UNUSED(thread);
         /* ... */
     }
 

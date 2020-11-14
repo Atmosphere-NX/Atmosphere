@@ -123,7 +123,7 @@ namespace ams::kern::svc {
                 GetCurrentThread().ClearInterruptFlag();
 
                 /* Unpin the current thread. */
-                KScheduler::UnpinCurrentThread(cur_process);
+                cur_process->UnpinCurrentThread();
             }
         }
 

@@ -22,7 +22,7 @@ namespace ams::boot {
         const u8 update_addr = 0x04;
         const u8 update_val = 0x10;
         R_TRY(WriteI2cRegister(this->i2c_session, &update_val, sizeof(update_val), &update_addr, sizeof(update_addr)));
-        svcSleepThread(16'000'000ul);
+        os::SleepThread(TimeSpan::FromMilliSeconds(16));
         return ReadI2cRegister(this->i2c_session, out, sizeof(*out), &address, sizeof(address));
     }
 

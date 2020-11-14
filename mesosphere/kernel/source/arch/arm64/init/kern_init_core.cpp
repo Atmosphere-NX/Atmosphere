@@ -31,30 +31,11 @@ namespace ams::kern::init {
 
     namespace {
 
-        constexpr size_t KernelResourceRegionSize = 0x1728000;
-        constexpr size_t ExtraKernelResourceSize  = 0x68000;
-        static_assert(ExtraKernelResourceSize + KernelResourceRegionSize == 0x1790000);
-        constexpr size_t KernelResourceReduction_10_0_0 = 0x10000;
-
         /* Global Allocator. */
         KInitialPageAllocator g_initial_page_allocator;
 
         /* Global initial arguments array. */
         KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
-
-        size_t GetResourceRegionSize() {
-            /* Decide if Kernel should have enlarged resource region. */
-            const bool use_extra_resources = KSystemControl::Init::ShouldIncreaseThreadResourceLimit();
-            size_t resource_region_size = KernelResourceRegionSize + (use_extra_resources ? ExtraKernelResourceSize : 0);
-            static_assert(KernelResourceRegionSize > InitialProcessBinarySizeMax);
-            static_assert(KernelResourceRegionSize + ExtraKernelResourceSize > InitialProcessBinarySizeMax);
-
-            /* 10.0.0 reduced the kernel resource region size by 64K. */
-            if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-                resource_region_size -= KernelResourceReduction_10_0_0;
-            }
-            return resource_region_size;
-        }
 
         /* Page table attributes. */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR,  PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
@@ -114,10 +95,10 @@ namespace ams::kern::init {
         InitializeSlabResourceCounts();
 
         /* Insert the root region for the virtual memory tree, from which all other regions will derive. */
-        KMemoryLayout::GetVirtualMemoryRegionTree().insert(*KMemoryLayout::GetMemoryRegionAllocator().Create(KernelVirtualAddressSpaceBase, KernelVirtualAddressSpaceSize, 0, 0));
+        KMemoryLayout::GetVirtualMemoryRegionTree().InsertDirectly(KernelVirtualAddressSpaceBase, KernelVirtualAddressSpaceSize);
 
         /* Insert the root region for the physical memory tree, from which all other regions will derive. */
-        KMemoryLayout::GetPhysicalMemoryRegionTree().insert(*KMemoryLayout::GetMemoryRegionAllocator().Create(KernelPhysicalAddressSpaceBase, KernelPhysicalAddressSpaceSize, 0, 0));
+        KMemoryLayout::GetPhysicalMemoryRegionTree().InsertDirectly(KernelPhysicalAddressSpaceBase, KernelPhysicalAddressSpaceSize);
 
         /* Save start and end for ease of use. */
         const uintptr_t code_start_virt_addr = reinterpret_cast<uintptr_t>(_start);
@@ -152,8 +133,8 @@ namespace ams::kern::init {
         const KVirtualAddress stack_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(StackRegionSize, StackRegionAlign, KMemoryRegionType_Kernel);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(stack_region_start), StackRegionSize, KMemoryRegionType_KernelStack));
 
-        /* Decide if Kernel should have enlarged resource region (slab region + page table heap region). */
-        const size_t resource_region_size = GetResourceRegionSize();
+        /* Determine the size of the resource region. */
+        const size_t resource_region_size = KMemoryLayout::GetResourceRegionSizeForInit();
 
         /* Determine the size of the slab region. */
         const size_t slab_region_size = util::AlignUp(CalculateTotalSlabHeapSize(), PageSize);
@@ -189,8 +170,13 @@ namespace ams::kern::init {
 
         /* Automatically map in devices that have auto-map attributes. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            /* We only care about automatically-mapped regions. */
-            if (!region.IsDerivedFrom(KMemoryRegionType_KernelAutoMap)) {
+            /* We only care about kernel regions. */
+            if (!region.IsDerivedFrom(KMemoryRegionType_Kernel)) {
+                continue;
+            }
+
+            /* Check whether we should map the region. */
+            if (!region.HasTypeAttribute(KMemoryRegionAttr_ShouldKernelMap)) {
                 continue;
             }
 
@@ -241,6 +227,14 @@ namespace ams::kern::init {
         /* Insert a physical region for the kernel page table heap region */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
 
+        /* Insert a physical region for the kernel trace buffer. */
+        static_assert(!IsKTraceEnabled || KTraceBufferSize > 0);
+        if constexpr (IsKTraceEnabled) {
+            const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
+            const KPhysicalAddress ktrace_buffer_phys_addr = dram_extents.GetEndAddress() - KTraceBufferSize;
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
+        }
+
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
             if (region.GetType() == KMemoryRegionType_Dram) {
@@ -258,17 +252,40 @@ namespace ams::kern::init {
         const uintptr_t linear_region_phys_to_virt_diff = GetInteger(linear_region_start) - GetInteger(aligned_linear_phys_start);
 
         /* Map and create regions for all the linearly-mapped data. */
-        for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
-                continue;
+        {
+            uintptr_t cur_phys_addr = 0;
+            uintptr_t cur_size = 0;
+            for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
+                if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
+                    continue;
+                }
+
+                if (cur_size == 0) {
+                    cur_phys_addr = region.GetAddress();
+                    cur_size      = region.GetSize();
+                } else if (cur_phys_addr + cur_size == region.GetAddress()) {
+                    cur_size     += region.GetSize();
+                } else {
+                    const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
+                    ttbr1_table.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+                    cur_phys_addr = region.GetAddress();
+                    cur_size      = region.GetSize();
+                }
+
+                const uintptr_t region_virt_addr = region.GetAddress() + linear_region_phys_to_virt_diff;
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(region_virt_addr, region.GetSize(), GetTypeForVirtualLinearMapping(region.GetType())));
+                region.SetPairAddress(region_virt_addr);
+
+                KMemoryRegion *virt_region = KMemoryLayout::GetVirtualMemoryRegionTree().FindModifiable(region_virt_addr);
+                MESOSPHERE_INIT_ABORT_UNLESS(virt_region != nullptr);
+                virt_region->SetPairAddress(region.GetAddress());
             }
 
-            const uintptr_t region_virt_addr = region.GetAddress() + linear_region_phys_to_virt_diff;
-            ttbr1_table.Map(region_virt_addr, region.GetSize(), region.GetAddress(), KernelRwDataAttribute, g_initial_page_allocator);
-
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(region_virt_addr, region.GetSize(), GetTypeForVirtualLinearMapping(region.GetType())));
-            region.SetPairAddress(region_virt_addr);
-            KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(region_virt_addr)->SetPairAddress(region.GetAddress());
+            /* Map the last block, which we may have skipped. */
+            if (cur_size != 0) {
+                const uintptr_t cur_virt_addr = cur_phys_addr + linear_region_phys_to_virt_diff;
+                ttbr1_table.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
+            }
         }
 
         /* Create regions for and map all core-specific stacks. */
@@ -289,11 +306,11 @@ namespace ams::kern::init {
 
         /* Insert regions for the initial page table region. */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr), init_page_table_region_size, KMemoryRegionType_DramKernelInitPt));
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr) + linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualKernelInitPt));
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(resource_end_phys_addr) + linear_region_phys_to_virt_diff, init_page_table_region_size, KMemoryRegionType_VirtualDramKernelInitPt));
 
         /* All linear-mapped DRAM regions that we haven't tagged by this point will be allocated to some pool partition. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
-            if (region.GetType() == KMemoryRegionType_DramLinearMapped) {
+            if (region.GetType() == (KMemoryRegionType_Dram | KMemoryRegionAttr_LinearMapped)) {
                 region.SetType(KMemoryRegionType_DramPoolPartition);
             }
         }
@@ -313,6 +330,7 @@ namespace ams::kern::init {
     }
 
     void SetInitArguments(s32 core_id, KPhysicalAddress address, uintptr_t arg) {
+        /* Set the arguments. */
         KInitArguments *init_args = reinterpret_cast<KInitArguments *>(GetInteger(address));
         init_args->ttbr0            = cpu::GetTtbr0El1();
         init_args->ttbr1            = arg;
@@ -325,12 +343,12 @@ namespace ams::kern::init {
         init_args->entrypoint       = reinterpret_cast<uintptr_t>(::ams::kern::HorizonKernelMain);
         init_args->argument         = static_cast<u64>(core_id);
         init_args->setup_function   = reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore);
+
+        /* Ensure the arguments are written to memory. */
+        StoreDataCache(init_args, sizeof(*init_args));
+
+        /* Save the pointer to the arguments to use as argument upon core wakeup. */
         g_init_arguments_phys_addr[core_id] = address;
-    }
-
-
-    void StoreInitArguments() {
-        StoreDataCache(g_init_arguments_phys_addr, sizeof(g_init_arguments_phys_addr));
     }
 
     void InitializeDebugRegisters() {
@@ -357,6 +375,7 @@ namespace ams::kern::init {
             case ID:                                           \
                 cpu::SetDbgWcr##ID##El1(__VA_ARGS__);          \
                 cpu::SetDbgWvr##ID##El1(__VA_ARGS__);          \
+            [[fallthrough]];
 
         #define MESOSPHERE_INITIALIZE_BREAKPOINT_CASE(ID, ...) \
             case ID:                                           \

@@ -24,6 +24,9 @@
 #include "lib/log.h"
 #include "display/video_fb.h"
 
+#define PROGRAM_ID_AMS_MITM 0x010041544D530000ull
+#define PROGRAM_ID_BOOT     0x0100000000000005ull
+
 static uint32_t g_panic_code = 0;
 
 static const char *get_error_desc_str(uint32_t error_desc) {
@@ -42,12 +45,69 @@ static const char *get_error_desc_str(uint32_t error_desc) {
             return "SError";
         case 0x301:
             return "Bad SVC";
+        case 0xF00:
+	        return "Kernel Panic";
         case 0xFFD:
 	        return "Stack overflow";
         case 0xFFE:
             return "std::abort() called";
         default:
             return "Unknown";
+    }
+}
+
+static void _try_suggest_fix(const atmosphere_fatal_error_ctx *ctx) {
+    /* Try to recognize certain errors automatically, and suggest fixes for them. */
+    const char *suggestion = NULL;
+
+    if (ctx->error_desc == 0xFFE) {
+        if (ctx->program_id == PROGRAM_ID_AMS_MITM) {
+            /* When a user has archive bits set improperly, attempting to create an automatic backup will fail */
+            /* to create the file path with error 0x202 (fs::ResultPathNotFound()) */
+            if (ctx->gprs[0] == 0x202) {
+                /* When the archive bit error is occurring, it manifests as failure to create automatic backup. */
+                /* Thus, we can search the stack for the automatic backups path. */
+                const char * const automatic_backups_prefix = "automatic_backups/X" /* ..... */;
+                const int prefix_len = strlen(automatic_backups_prefix);
+
+                for (size_t i = 0; i + prefix_len < ctx->stack_dump_size; ++i) {
+                    if (memcmp(&ctx->stack_dump[i], automatic_backups_prefix, prefix_len) == 0) {
+                        suggestion = "The atmosphere directory may improperly have archive\n"
+                                     "bits set. Please try running an archive bit fixer tool\n"
+                                     "(for example, the one in Hekate).\n";
+                        break;
+                    }
+                }
+            } else if (ctx->gprs[0] == 0x249A02) { /* fs::ResultResultExFatUnavailable() */
+                /* When a user installs non-exFAT firm but has an exFAT formatted SD card, this error will */
+                /* be returned on attempt to access the SD card. */
+                suggestion = "Your console has non-exFAT firmware installed, but your SD card\n"
+                             "is formatted as exFAT. Format your SD card as FAT32, or manually\n"
+                             "flash exFAT firmware to package2.\n";
+            }
+        } else if (ctx->program_id == PROGRAM_ID_BOOT) {
+            /* 9.x -> 10.x updated the API for SvcQueryIoMapping. */
+            /* This can cause the kernel to reject incorrect-ABI calls by boot when a partial update is applied */
+            /* (older kernel in package2, for some reason). */
+            for (size_t i = 0; i < 8; ++i) {
+                if (ctx->gprs[i] == 0xF201) {
+                    suggestion = "A partial update may have been improperly performed.\n"
+                                 "To fix, try manually flashing latest package2 to MMC.\n"
+                                 "\n"
+                                 "For help doing this, seek support in the ReSwitched or\n"
+                                 "Nintendo Homebrew discord servers.\n";
+                    break;
+                }
+            }
+        }
+    } else if (ctx->error_desc == 0xF00) { /* Kernel Panic */
+        suggestion = "Please contact SciresM#0524 on Discord, or create an issue\n"
+                     "on the Atmosphere GitHub issue tracker. Thank you very much\n"
+                     "for helping to test mesosphere.\n";
+    }
+
+    if (suggestion != NULL) {
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\n%s", suggestion);
     }
 }
 
@@ -84,7 +144,7 @@ static void _check_and_display_atmosphere_fatal_error(void) {
         ATMOSPHERE_FATAL_ERROR_CONTEXT->magic = 0xCCCCCCCC;
 
         print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "A fatal error occurred when running Atmosph\xe8re.\n");
-        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Title ID:   %016llx\n", ctx.title_id);
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Program ID: %016llx\n", ctx.program_id);
         print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Error Desc: %s (0x%x)\n", get_error_desc_str(ctx.error_desc), ctx.error_desc);
 
         /* Save context to the SD card. */
@@ -98,6 +158,9 @@ static void _check_and_display_atmosphere_fatal_error(void) {
                 print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Report saved to %s\n", filepath);
             }
         }
+
+        /* Try to print a fix suggestion via automatic error detection. */
+        _try_suggest_fix(&ctx);
 
         /* Display error. */
         print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nPress POWER to reboot\n");

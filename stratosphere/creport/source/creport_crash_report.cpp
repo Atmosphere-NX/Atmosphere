@@ -351,6 +351,10 @@ namespace ams::creport {
 
     void CrashReport::SaveToFile(ScopedFile &file) {
         file.WriteFormat("Atmosphère Crash Report (v1.5):\n");
+
+        /* TODO: Remove in Atmosphere 1.0.0. */
+        file.WriteFormat("Mesosphere:                      %s\n", svc::IsKernelMesosphere() ? "Enabled" : "Disabled");
+
         file.WriteFormat("Result:                          0x%X (2%03d-%04d)\n\n", this->result.GetValue(), this->result.GetModule(), this->result.GetDescription());
 
         /* Process Info. */

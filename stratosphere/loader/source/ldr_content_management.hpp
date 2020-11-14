@@ -25,9 +25,9 @@ namespace ams::ldr {
         private:
             std::scoped_lock<os::Mutex> lk;
             cfg::OverrideStatus override_status;
-            fs::CodeInfo ams_code_info;
-            fs::CodeInfo sd_or_base_code_info;
-            fs::CodeInfo base_code_info;
+            fs::CodeVerificationData ams_code_verification_data;
+            fs::CodeVerificationData sd_or_base_code_verification_data;
+            fs::CodeVerificationData base_code_verification_data;
             Result result;
             bool has_status;
             bool mounted_ams;
@@ -47,16 +47,16 @@ namespace ams::ldr {
                 return this->override_status;
             }
 
-            const fs::CodeInfo &GetAtmosphereCodeInfo() const {
-                return this->ams_code_info;
+            const fs::CodeVerificationData &GetAtmosphereCodeVerificationData() const {
+                return this->ams_code_verification_data;
             }
 
-            const fs::CodeInfo &GetSdOrBaseCodeInfo() const {
-                return this->sd_or_base_code_info;
+            const fs::CodeVerificationData &GetSdOrBaseCodeVerificationData() const {
+                return this->sd_or_base_code_verification_data;
             }
 
-            const fs::CodeInfo &GetCodeInfo() const {
-                return this->base_code_info;
+            const fs::CodeVerificationData &GetCodeVerificationData() const {
+                return this->base_code_verification_data;
             }
         private:
             Result Initialize(const ncm::ProgramLocation &loc);

@@ -14,48 +14,60 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "i2c/driver/i2c_api.hpp"
+#include <stratosphere.hpp>
 
 namespace ams::boot {
 
     class BatteryDriver {
         private:
-            i2c::driver::Session i2c_session;
+            powctl::Session battery_session;
         public:
-            BatteryDriver() {
-                i2c::driver::Initialize();
-                i2c::driver::OpenSession(&this->i2c_session, I2cDevice_Max17050);
+            BatteryDriver() : battery_session() {
+                R_ABORT_UNLESS(powctl::OpenSession(std::addressof(this->battery_session), powctl::DeviceCode_Max17050, ddsf::AccessMode_ReadWrite));
             }
 
             ~BatteryDriver() {
-                i2c::driver::CloseSession(this->i2c_session);
-                i2c::driver::Finalize();
+                powctl::CloseSession(this->battery_session);
             }
-        private:
-            Result Read(u8 addr, u16 *out_data);
-            Result Write(u8 addr, u16 val);
-            Result ReadWrite(u8 addr, u16 mask, u16 val);
-            bool WriteValidate(u8 addr, u16 val);
-
-            bool IsPowerOnReset();
-            Result LockVfSoc();
-            Result UnlockVfSoc();
-            Result LockModelTable();
-            Result UnlockModelTable();
-            bool IsModelTableLocked();
-            Result SetModelTable(const u16 *model_table);
-            bool IsModelTableSet(const u16 *model_table);
-
         public:
-            Result InitializeBatteryParameters();
-            Result IsBatteryRemoved(bool *out);
-            Result GetTemperature(double *out);
-            Result GetAverageVCell(u32 *out);
-            Result GetSocRep(double *out);
-            Result GetBatteryPercentage(size_t *out);
-            Result SetShutdownTimer();
-            Result GetShutdownEnabled(bool *out);
-            Result SetShutdownEnabled(bool enabled);
+            Result IsBatteryRemoved(bool *out) {
+                bool present;
+                R_TRY(powctl::IsBatteryPresent(std::addressof(present), this->battery_session));
+
+                return present == false;
+            }
+
+            Result GetSocRep(float *out) {
+                return powctl::GetBatterySocRep(out, this->battery_session);
+            }
+
+            Result GetAverageVCell(int *out) {
+                return powctl::GetBatteryAverageVCell(out, this->battery_session);
+            }
+
+            Result GetOpenCircuitVoltage(int *out) {
+                return powctl::GetBatteryOpenCircuitVoltage(out, this->battery_session);
+            }
+
+            Result GetAverageCurrent(int *out) {
+                return powctl::GetBatteryAverageCurrent(out, this->battery_session);
+            }
+
+            Result GetCurrent(int *out) {
+                return powctl::GetBatteryCurrent(out, this->battery_session);
+            }
+
+            Result GetTemperature(float *out) {
+                return powctl::GetBatteryTemperature(out, this->battery_session);
+            }
+
+            Result IsI2cShutdownEnabled(bool *out) {
+                return powctl::IsBatteryI2cShutdownEnabled(out, this->battery_session);
+            }
+
+            Result SetI2cShutdownEnabled(bool en) {
+                return powctl::SetBatteryI2cShutdownEnabled(this->battery_session, en);
+            }
     };
 
 }

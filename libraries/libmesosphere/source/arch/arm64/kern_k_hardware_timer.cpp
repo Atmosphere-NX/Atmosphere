@@ -24,6 +24,7 @@ namespace ams::kern::arch::arm64 {
                 constexpr KHardwareTimerInterruptTask() : KInterruptTask() { /* ... */ }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
                     return this;
                 }
 

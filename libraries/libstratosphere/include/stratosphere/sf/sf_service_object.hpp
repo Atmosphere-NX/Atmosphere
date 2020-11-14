@@ -62,6 +62,51 @@ namespace ams::sf {
         return std::make_shared<typename Interface::ImplSharedPointer<Impl>>(std::make_shared<Impl>(std::forward<Arguments>(args)...));
     }
 
+    template<typename T>
+    class ServiceObjectAllocatorImpl {
+        private:
+            template<typename>
+            friend class ServiceObjectAllocatorImpl;
+        public:
+            using value_type = T;
+        private:
+            MemoryResource * const memory_resource;
+        public:
+            constexpr ServiceObjectAllocatorImpl(MemoryResource *mr) : memory_resource(mr) { /* ... */ }
+
+            template<typename U>
+            constexpr ServiceObjectAllocatorImpl(const ServiceObjectAllocatorImpl<U> &rhs) : memory_resource(rhs.memory_resource) { /* ... */ }
+
+            value_type *allocate(size_t n) const {
+                void *mem = this->memory_resource->Allocate(n * sizeof(value_type), alignof(value_type));
+                AMS_ABORT_UNLESS(mem != nullptr);
+                return static_cast<value_type *>(mem);
+            }
+
+            void deallocate(void *p, size_t n) const {
+                this->memory_resource->Deallocate(p, n * sizeof(value_type), alignof(value_type));
+            }
+
+            template<typename U>
+            inline bool operator==(const ServiceObjectAllocatorImpl<U> &rhs) const {
+                return this->memory_resource->is_equal(*rhs->memory_resource);
+            }
+
+            template<typename U>
+            inline bool operator!=(const ServiceObjectAllocatorImpl<U> &rhs) const {
+                return !(*this == rhs);
+            }
+    };
+
+    template <typename Interface, typename Impl>
+    using ServiceObjectAllocator = ServiceObjectAllocatorImpl<typename Interface::ImplHolder<Impl>>;
+
+    template<typename Interface, typename Impl, typename Allocator, typename... Arguments>
+        requires std::constructible_from<Impl, Arguments...>
+    constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplHolder<Impl>> AllocateShared(const Allocator &allocator, Arguments &&... args) {
+        return std::allocate_shared<typename Interface::ImplHolder<Impl>>(allocator, std::forward<Arguments>(args)...);
+    }
+
     template<typename Interface, typename Impl>
     constexpr ALWAYS_INLINE std::shared_ptr<typename Interface::ImplPointer<Impl>> GetSharedPointerTo(Impl *impl) {
         return std::make_shared<typename Interface::ImplPointer<Impl>>(impl);

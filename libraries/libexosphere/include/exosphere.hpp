@@ -17,7 +17,6 @@
 #include <vapours.hpp>
 
 #include <exosphere/common.hpp>
-#include <exosphere/reg.hpp>
 #include <exosphere/hw.hpp>
 #include <exosphere/util.hpp>
 #include <exosphere/mmu.hpp>
@@ -41,4 +40,3 @@
 #include <exosphere/actmon.hpp>
 #include <exosphere/pmc.hpp>
 #include <exosphere/secmon.hpp>
-#include <exosphere/tegra.hpp>

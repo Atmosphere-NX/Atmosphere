@@ -33,8 +33,10 @@ namespace ams::mitm::settings {
             os::Mutex lock{false};
             cfg::OverrideLocale locale;
             bool got_locale = false;
+            bool is_valid_language = false;
+            bool is_valid_region   = false;
         public:
-            using MitmServiceImplBase::MitmServiceImplBase;
+            SetMitmService(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &c);
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
@@ -44,6 +46,7 @@ namespace ams::mitm::settings {
                 return client_info.program_id == ncm::SystemProgramId::Ns || is_game;
             }
         private:
+            void InvalidateLocale();
             Result EnsureLocale();
         public:
             Result GetLanguageCode(sf::Out<ams::settings::LanguageCode> out);

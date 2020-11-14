@@ -15,26 +15,19 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <mesosphere/kern_build_config.hpp>
+#include <mesosphere/svc/kern_svc_results.hpp>
 
 namespace ams::kern {
 
     constexpr size_t PageSize = 4_KB;
 
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
     ams::TargetFirmware GetTargetFirmware();
+#else
+    consteval ALWAYS_INLINE ams::TargetFirmware GetTargetFirmware() {
+        return ams::TargetFirmware_Current;
+    }
+#endif
 
 }
-
-#if 1 || defined(AMS_BUILD_FOR_AUDITING)
-#define MESOSPHERE_BUILD_FOR_AUDITING
-#endif
-
-#if defined(MESOSPHERE_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
-#define MESOSPHERE_BUILD_FOR_DEBUGGING
-#endif
-
-#ifdef  MESOSPHERE_BUILD_FOR_DEBUGGING
-#define MESOSPHERE_ENABLE_ASSERTIONS
-#define MESOSPHERE_ENABLE_DEBUG_PRINT
-#endif
-
-#include <mesosphere/svc/kern_svc_results.hpp>

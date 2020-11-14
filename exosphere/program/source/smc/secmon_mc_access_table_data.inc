@@ -22,7 +22,7 @@ SetRegisterAllowed(MC_SMMU_CONFIG);                           /* 0x010 */
 SetRegisterAllowed(MC_SMMU_PTB_ASID);                         /* 0x01C */
 SetRegisterAllowed(MC_SMMU_PTB_DATA);                         /* 0x020 */
 SetRegisterAllowed(MC_SMMU_TLB_FLUSH);                        /* 0x030 */
-SetRegisterAllowed(MC_SMMU_PTC_FLUSH);                        /* 0x034 */
+SetRegisterAllowed(MC_SMMU_PTC_FLUSH_0);                      /* 0x034 */
 SetRegisterAllowed(MC_EMEM_CFG);                              /* 0x050 */
 SetRegisterAllowed(MC_EMEM_ADR_CFG);                          /* 0x054 */
 SetRegisterAllowed(MC_EMEM_ARB_CFG);                          /* 0x090 */
@@ -53,7 +53,7 @@ SetRegisterAllowed(MC_SMMU_DCB_ASID);                         /* 0x244 */
 SetRegisterAllowed(MC_SMMU_HC_ASID);                          /* 0x250 */
 SetRegisterAllowed(MC_SMMU_HDA_ASID);                         /* 0x254 */
 SetRegisterAllowed(MC_SMMU_ISP2_ASID);                        /* 0x258 */
-SetRegisterAllowed(MC_SMMU_NVENC_ASID);                       /* 0x264 */
+SetRegisterAllowed(MC_SMMU_MSENC_NVENC_ASID);                 /* 0x264 */
 SetRegisterAllowed(MC_SMMU_NV_ASID);                          /* 0x268 */
 SetRegisterAllowed(MC_SMMU_NV2_ASID);                         /* 0x26C */
 SetRegisterAllowed(MC_SMMU_PPCS_ASID);                        /* 0x270 */

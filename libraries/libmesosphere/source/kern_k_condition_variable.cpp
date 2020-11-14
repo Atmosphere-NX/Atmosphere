@@ -205,13 +205,8 @@ namespace ams::kern {
         }
 
         /* Close threads in the list. */
-        if (num_waiters > MaxThreads) {
-            auto it = thread_list.begin();
-            while (it != thread_list.end()) {
-                KThread *thread = std::addressof(*it);
-                thread->Close();
-                it = thread_list.erase(it);
-            }
+        for (auto it = thread_list.begin(); it != thread_list.end(); it = thread_list.erase(it)) {
+            (*it).Close();
         }
     }
 

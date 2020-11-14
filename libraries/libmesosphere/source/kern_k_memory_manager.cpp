@@ -31,10 +31,10 @@ namespace ams::kern {
 
     }
 
-    void KMemoryManager::Initialize(KVirtualAddress metadata_region, size_t metadata_region_size) {
-        /* Clear the metadata region to zero. */
-        const KVirtualAddress metadata_region_end = metadata_region + metadata_region_size;
-        std::memset(GetVoidPointer(metadata_region), 0, metadata_region_size);
+    void KMemoryManager::Initialize(KVirtualAddress management_region, size_t management_region_size) {
+        /* Clear the management region to zero. */
+        const KVirtualAddress management_region_end = management_region + management_region_size;
+        std::memset(GetVoidPointer(management_region), 0, management_region_size);
 
         /* Traverse the virtual memory layout tree, initializing each manager as appropriate. */
         while (true) {
@@ -42,7 +42,7 @@ namespace ams::kern {
             const KMemoryRegion *region = nullptr;
             for (const auto &it : KMemoryLayout::GetVirtualMemoryRegionTree()) {
                 /* We only care about regions that we need to create managers for. */
-                if (!it.IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool)) {
+                if (!it.IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool)) {
                     continue;
                 }
 
@@ -64,7 +64,7 @@ namespace ams::kern {
             MESOSPHERE_ASSERT(region->GetAddress() != Null<decltype(region->GetAddress())>);
             MESOSPHERE_ASSERT(region->GetSize()    > 0);
             MESOSPHERE_ASSERT(region->GetEndAddress() >= region->GetAddress());
-            MESOSPHERE_ASSERT(region->IsDerivedFrom(KMemoryRegionType_VirtualDramManagedPool));
+            MESOSPHERE_ASSERT(region->IsDerivedFrom(KMemoryRegionType_VirtualDramUserPool));
             MESOSPHERE_ASSERT(region->GetAttributes() == this->num_managers);
 
             /* Initialize a new manager for the region. */
@@ -72,9 +72,9 @@ namespace ams::kern {
             Impl *manager = std::addressof(this->managers[this->num_managers++]);
             MESOSPHERE_ABORT_UNLESS(this->num_managers <= util::size(this->managers));
 
-            const size_t cur_size = manager->Initialize(region, pool, metadata_region, metadata_region_end);
-            metadata_region += cur_size;
-            MESOSPHERE_ABORT_UNLESS(metadata_region <= metadata_region_end);
+            const size_t cur_size = manager->Initialize(region, pool, management_region, management_region_end);
+            management_region += cur_size;
+            MESOSPHERE_ABORT_UNLESS(management_region <= management_region_end);
 
             /* Insert the manager into the pool list. */
             if (this->pool_managers_tail[pool] == nullptr) {
@@ -203,7 +203,6 @@ namespace ams::kern {
         }
 
         /* Only succeed if we allocated as many pages as we wanted. */
-        MESOSPHERE_ASSERT(num_pages >= 0);
         R_UNLESS(num_pages == 0, svc::ResultOutOfMemory());
 
         /* We succeeded! */
@@ -234,21 +233,24 @@ namespace ams::kern {
         const auto [pool, dir] = DecodeOption(option);
 
         /* Allocate the memory. */
-        bool has_optimized, is_optimized;
+        bool optimized;
         {
             /* Lock the pool that we're allocating from. */
             KScopedLightLock lk(this->pool_locks[pool]);
 
             /* Check if we have an optimized process. */
-            has_optimized = this->has_optimized_process[pool];
-            is_optimized  = this->optimized_process_ids[pool] == process_id;
+            const bool has_optimized = this->has_optimized_process[pool];
+            const bool is_optimized  = this->optimized_process_ids[pool] == process_id;
 
             /* Allocate the page group. */
             R_TRY(this->AllocatePageGroupImpl(out, num_pages, pool, dir, has_optimized && !is_optimized, false));
+
+            /* Set whether we should optimize. */
+            optimized = has_optimized && is_optimized;
         }
 
         /* Perform optimized memory tracking, if we should. */
-        if (has_optimized && is_optimized) {
+        if (optimized) {
             /* Iterate over the allocated blocks. */
             for (const auto &block : *out) {
                 /* Get the block extents. */
@@ -264,41 +266,41 @@ namespace ams::kern {
                 bool any_new = false;
                 {
                     KVirtualAddress cur_address = block_address;
-                    size_t cur_pages            = block_pages;
-                    while (cur_pages > 0) {
+                    size_t remaining_pages      = block_pages;
+                    while (remaining_pages > 0) {
                         /* Get the manager for the current address. */
                         auto &manager = this->GetManager(cur_address);
 
                         /* Process part or all of the block. */
-                        const size_t processed_pages = manager.ProcessOptimizedAllocation(std::addressof(any_new), cur_address, cur_pages, fill_pattern);
+                        const size_t cur_pages = std::min(remaining_pages, manager.GetPageOffsetToEnd(cur_address));
+                        any_new = manager.ProcessOptimizedAllocation(cur_address, cur_pages, fill_pattern);
 
                         /* Advance. */
-                        cur_address += processed_pages * PageSize;
-                        cur_pages   -= processed_pages;
+                        cur_address     += cur_pages * PageSize;
+                        remaining_pages -= cur_pages;
                     }
                 }
 
-                /* If there are no new pages, move on to the next block. */
-                if (!any_new) {
-                    continue;
-                }
+                /* If there are new pages, update tracking for the allocation. */
+                if (any_new) {
+                    /* Update tracking for the allocation. */
+                    KVirtualAddress cur_address = block_address;
+                    size_t remaining_pages      = block_pages;
+                    while (remaining_pages > 0) {
+                        /* Get the manager for the current address. */
+                        auto &manager = this->GetManager(cur_address);
 
-                /* Update tracking for the allocation. */
-                KVirtualAddress cur_address = block_address;
-                size_t cur_pages            = block_pages;
-                while (cur_pages > 0) {
-                    /* Get the manager for the current address. */
-                    auto &manager = this->GetManager(cur_address);
+                        /* Lock the pool for the manager. */
+                        KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
 
-                    /* Lock the pool for the manager. */
-                    KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+                        /* Track some or all of the current pages. */
+                        const size_t cur_pages = std::min(remaining_pages, manager.GetPageOffsetToEnd(cur_address));
+                        manager.TrackOptimizedAllocation(cur_address, cur_pages);
 
-                    /* Track some or all of the current pages. */
-                    const size_t processed_pages = manager.TrackOptimizedAllocation(cur_address, cur_pages);
-
-                    /* Advance. */
-                    cur_address += processed_pages * PageSize;
-                    cur_pages   -= processed_pages;
+                        /* Advance. */
+                        cur_address     += cur_pages * PageSize;
+                        remaining_pages -= cur_pages;
+                    }
                 }
             }
         } else {
@@ -311,25 +313,25 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress metadata, KVirtualAddress metadata_end) {
-        /* Calculate metadata sizes. */
+    size_t KMemoryManager::Impl::Initialize(const KMemoryRegion *region, Pool p, KVirtualAddress management, KVirtualAddress management_end) {
+        /* Calculate management sizes. */
         const size_t ref_count_size      = (region->GetSize() / PageSize) * sizeof(u16);
         const size_t optimize_map_size   = CalculateOptimizedProcessOverheadSize(region->GetSize());
         const size_t manager_size        = util::AlignUp(optimize_map_size + ref_count_size, PageSize);
-        const size_t page_heap_size      = KPageHeap::CalculateMetadataOverheadSize(region->GetSize());
-        const size_t total_metadata_size = manager_size + page_heap_size;
-        MESOSPHERE_ABORT_UNLESS(manager_size <= total_metadata_size);
-        MESOSPHERE_ABORT_UNLESS(metadata + total_metadata_size <= metadata_end);
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(total_metadata_size, PageSize));
+        const size_t page_heap_size      = KPageHeap::CalculateManagementOverheadSize(region->GetSize());
+        const size_t total_management_size = manager_size + page_heap_size;
+        MESOSPHERE_ABORT_UNLESS(manager_size <= total_management_size);
+        MESOSPHERE_ABORT_UNLESS(management + total_management_size <= management_end);
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(total_management_size, PageSize));
 
         /* Setup region. */
         this->pool = p;
-        this->metadata_region = metadata;
-        this->page_reference_counts = GetPointer<RefCount>(metadata + optimize_map_size);
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(this->metadata_region), PageSize));
+        this->management_region = management;
+        this->page_reference_counts = GetPointer<RefCount>(management + optimize_map_size);
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(this->management_region), PageSize));
 
         /* Initialize the manager's KPageHeap. */
-        this->heap.Initialize(region->GetAddress(), region->GetSize(), metadata + manager_size, page_heap_size);
+        this->heap.Initialize(region->GetAddress(), region->GetSize(), management + manager_size, page_heap_size);
 
         /* Free the memory to the heap. */
         this->heap.Free(region->GetAddress(), region->GetSize() / PageSize);
@@ -337,58 +339,54 @@ namespace ams::kern {
         /* Update the heap's used size. */
         this->heap.UpdateUsedSize();
 
-        return total_metadata_size;
+        return total_management_size;
     }
 
     void KMemoryManager::Impl::TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages) {
-        size_t offset = this->heap.GetPageOffset(block);
+        /* Get the range we're tracking. */
+        size_t offset = this->GetPageOffset(block);
         const size_t last = offset + num_pages - 1;
-        u64 *optimize_map = GetPointer<u64>(this->metadata_region);
+
+        /* Track. */
+        u64 *optimize_map = GetPointer<u64>(this->management_region);
         while (offset <= last) {
+            /* Mark the page as not being optimized-allocated. */
             optimize_map[offset / BITSIZEOF(u64)] &= ~(u64(1) << (offset % BITSIZEOF(u64)));
+
             offset++;
         }
     }
 
-    size_t KMemoryManager::Impl::TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages) {
-        /* Get the number of tracking pages. */
-        const size_t cur_pages = std::min(num_pages, this->heap.GetPageOffsetToEnd(block));
-
+    void KMemoryManager::Impl::TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages) {
         /* Get the range we're tracking. */
-        size_t offset = this->heap.GetPageOffset(block);
-        const size_t last = offset + cur_pages - 1;
+        size_t offset = this->GetPageOffset(block);
+        const size_t last = offset + num_pages - 1;
 
         /* Track. */
-        u64 *optimize_map = GetPointer<u64>(this->metadata_region);
+        u64 *optimize_map = GetPointer<u64>(this->management_region);
         while (offset <= last) {
             /* Mark the page as being optimized-allocated. */
             optimize_map[offset / BITSIZEOF(u64)] |= (u64(1) << (offset % BITSIZEOF(u64)));
 
             offset++;
         }
-
-        /* Return the number of pages we tracked. */
-        return cur_pages;
     }
 
-    size_t KMemoryManager::Impl::ProcessOptimizedAllocation(bool *out_any_new, KVirtualAddress block, size_t num_pages, u8 fill_pattern) {
-        /* Get the number of processable pages. */
-        const size_t cur_pages = std::min(num_pages, this->heap.GetPageOffsetToEnd(block));
-
-        /* Clear any new. */
-        *out_any_new = false;
+    bool KMemoryManager::Impl::ProcessOptimizedAllocation(KVirtualAddress block, size_t num_pages, u8 fill_pattern) {
+        /* We want to return whether any pages were newly allocated. */
+        bool any_new = false;
 
         /* Get the range we're processing. */
-        size_t offset = this->heap.GetPageOffset(block);
-        const size_t last = offset + cur_pages - 1;
+        size_t offset = this->GetPageOffset(block);
+        const size_t last = offset + num_pages - 1;
 
         /* Process. */
-        u64 *optimize_map = GetPointer<u64>(this->metadata_region);
+        u64 *optimize_map = GetPointer<u64>(this->management_region);
         while (offset <= last) {
             /* Check if the page has been optimized-allocated before. */
             if ((optimize_map[offset / BITSIZEOF(u64)] & (u64(1) << (offset % BITSIZEOF(u64)))) == 0) {
                 /* If not, it's new. */
-                *out_any_new = true;
+                any_new = true;
 
                 /* Fill the page. */
                 std::memset(GetVoidPointer(this->heap.GetAddress() + offset * PageSize), fill_pattern, PageSize);
@@ -398,14 +396,14 @@ namespace ams::kern {
         }
 
         /* Return the number of pages we processed. */
-        return cur_pages;
+        return any_new;
     }
 
-    size_t KMemoryManager::Impl::CalculateMetadataOverheadSize(size_t region_size) {
+    size_t KMemoryManager::Impl::CalculateManagementOverheadSize(size_t region_size) {
         const size_t ref_count_size     = (region_size / PageSize) * sizeof(u16);
         const size_t optimize_map_size  = (util::AlignUp((region_size / PageSize), BITSIZEOF(u64)) / BITSIZEOF(u64)) * sizeof(u64);
         const size_t manager_meta_size  = util::AlignUp(optimize_map_size + ref_count_size, PageSize);
-        const size_t page_heap_size     = KPageHeap::CalculateMetadataOverheadSize(region_size);
+        const size_t page_heap_size     = KPageHeap::CalculateManagementOverheadSize(region_size);
         return manager_meta_size + page_heap_size;
     }
 

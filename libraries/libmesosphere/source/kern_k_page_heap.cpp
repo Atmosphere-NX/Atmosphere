@@ -17,12 +17,12 @@
 
 namespace ams::kern {
 
-    void KPageHeap::Initialize(KVirtualAddress address, size_t size, KVirtualAddress metadata_address, size_t metadata_size, const size_t *block_shifts, size_t num_block_shifts) {
+    void KPageHeap::Initialize(KVirtualAddress address, size_t size, KVirtualAddress management_address, size_t management_size, const size_t *block_shifts, size_t num_block_shifts) {
         /* Check our assumptions. */
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(address), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(size, PageSize));
         MESOSPHERE_ASSERT(0 < num_block_shifts && num_block_shifts <= NumMemoryBlockPageShifts);
-        const KVirtualAddress metadata_end = metadata_address + metadata_size;
+        const KVirtualAddress management_end = management_address + management_size;
 
         /* Set our members. */
         this->heap_address = address;
@@ -30,7 +30,7 @@ namespace ams::kern {
         this->num_blocks = num_block_shifts;
 
         /* Setup bitmaps. */
-        u64 *cur_bitmap_storage = GetPointer<u64>(metadata_address);
+        u64 *cur_bitmap_storage = GetPointer<u64>(management_address);
         for (size_t i = 0; i < num_block_shifts; i++) {
             const size_t cur_block_shift  = block_shifts[i];
             const size_t next_block_shift = (i != num_block_shifts - 1) ? block_shifts[i + 1] : 0;
@@ -38,7 +38,7 @@ namespace ams::kern {
         }
 
         /* Ensure we didn't overextend our bounds. */
-        MESOSPHERE_ABORT_UNLESS(KVirtualAddress(cur_bitmap_storage) <= metadata_end);
+        MESOSPHERE_ABORT_UNLESS(KVirtualAddress(cur_bitmap_storage) <= management_end);
     }
 
     size_t KPageHeap::GetNumFreePages() const {
@@ -122,12 +122,12 @@ namespace ams::kern {
         }
     }
 
-    size_t KPageHeap::CalculateMetadataOverheadSize(size_t region_size, const size_t *block_shifts, size_t num_block_shifts) {
+    size_t KPageHeap::CalculateManagementOverheadSize(size_t region_size, const size_t *block_shifts, size_t num_block_shifts) {
         size_t overhead_size = 0;
         for (size_t i = 0; i < num_block_shifts; i++) {
             const size_t cur_block_shift  = block_shifts[i];
             const size_t next_block_shift = (i != num_block_shifts - 1) ? block_shifts[i + 1] : 0;
-            overhead_size += KPageHeap::Block::CalculateMetadataOverheadSize(region_size, cur_block_shift, next_block_shift);
+            overhead_size += KPageHeap::Block::CalculateManagementOverheadSize(region_size, cur_block_shift, next_block_shift);
         }
         return util::AlignUp(overhead_size, PageSize);
     }

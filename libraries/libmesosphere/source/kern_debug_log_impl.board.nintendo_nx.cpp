@@ -18,6 +18,8 @@
 
 namespace ams::kern {
 
+#if defined(MESOSPHERE_DEBUG_LOG_USE_UART_A) || defined(MESOSPHERE_DEBUG_LOG_USE_UART_B) || defined(MESOSPHERE_DEBUG_LOG_USE_UART_C) || defined(MESOSPHERE_DEBUG_LOG_USE_UART_D)
+
     namespace {
 
         enum UartRegister {
@@ -50,7 +52,7 @@ namespace ams::kern {
 
     bool KDebugLogImpl::Initialize() {
         /* Set the uart register base address. */
-        g_uart_address = KMemoryLayout::GetUartAddress();
+        g_uart_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_Uart);
 
         /* Parameters for uart. */
         constexpr u32 BaudRate = 115200;
@@ -137,5 +139,53 @@ namespace ams::kern {
         WriteUartRegister(UartRegister_IRDA_CSR, 0x02);
         ReadUartRegister(UartRegister_FCR);
     }
+
+#elif defined(MESOSPHERE_DEBUG_LOG_USE_IRAM_RINGBUFFER)
+
+    namespace {
+
+        constinit KVirtualAddress g_debug_iram_address = 0;
+
+        constexpr size_t RingBufferSize = 0x5000;
+        constinit uintptr_t g_offset = 0;
+
+        constinit u8 g_saved_buffer[RingBufferSize];
+
+    }
+
+    bool KDebugLogImpl::Initialize() {
+        /* Set the base address. */
+        g_debug_iram_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsIram) + 0x38000;
+
+        std::memset(GetVoidPointer(g_debug_iram_address), 0xFF, RingBufferSize);
+
+        return true;
+    }
+
+    void KDebugLogImpl::PutChar(char c) {
+        GetPointer<char>(g_debug_iram_address)[g_offset++] = c;
+
+        if (g_offset == RingBufferSize) {
+            g_offset = 0;
+        }
+    }
+
+    void KDebugLogImpl::Flush() {
+        /* ... */
+    }
+
+    void KDebugLogImpl::Save() {
+        std::memcpy(g_saved_buffer, GetVoidPointer(g_debug_iram_address), RingBufferSize);
+    }
+
+    void KDebugLogImpl::Restore() {
+        std::memcpy(GetVoidPointer(g_debug_iram_address), g_saved_buffer, RingBufferSize);
+    }
+
+#else
+
+    #error "Unknown Debug UART device!"
+
+#endif
 
 }

@@ -20,14 +20,6 @@ namespace ams::util {
 
     void SetRegisterAddress(uintptr_t address);
 
-    u32 GetMicroSeconds();
-    void WaitMicroSeconds(int us);
-
     void ClearMemory(void *ptr, size_t size);
-
-    template<typename T, typename U> requires std::integral<T> && std::integral<U>
-    constexpr T DivideUp(T x, U y) {
-        return (x + (y - 1)) / y;
-    }
 
 }

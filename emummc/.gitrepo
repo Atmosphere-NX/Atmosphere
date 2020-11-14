@@ -6,7 +6,7 @@
 [subrepo]
 	remote = https://github.com/m4xw/emuMMC
 	branch = exo2
-	commit = 06ab9b895c4264ecc14d3bf9be1260e2096f6037
-	parent = dccd41f6d25498c191a157123a27724203d3bc37
+	commit = 6a814ebbe72cf5245b863b9edea9cd3801437a12
+	parent = f551ca4461a79908c37307db10cd8cacf8b98f17
 	method = rebase
 	cmdver = 0.4.1

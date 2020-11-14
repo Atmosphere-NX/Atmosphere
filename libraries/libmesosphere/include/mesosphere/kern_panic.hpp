@@ -19,17 +19,12 @@
 
 namespace ams::kern {
 
-    template<typename... ArgTypes>
-    ALWAYS_INLINE void UnusedImpl(ArgTypes &&... args) {
-        (static_cast<void>(args), ...);
-    }
-
     NORETURN NOINLINE void Panic(const char *file, int line, const char *format, ...) __attribute__((format(printf, 3, 4)));
     NORETURN NOINLINE void Panic();
 
 }
 
-#define MESOSPHERE_UNUSED(...) ::ams::kern::UnusedImpl(__VA_ARGS__)
+#define MESOSPHERE_UNUSED(...) AMS_UNUSED(__VA_ARGS__)
 
 #ifdef MESOSPHERE_ENABLE_DEBUG_PRINT
 #define MESOSPHERE_PANIC(...) do { ::ams::kern::Panic(__FILE__, __LINE__, ## __VA_ARGS__); } while(0)
@@ -69,7 +64,7 @@ namespace ams::kern {
 #define MESOSPHERE_UNIMPLEMENTED() MESOSPHERE_PANIC("%s: Unimplemented\n", __PRETTY_FUNCTION__)
 
 #define MESOSPHERE_ABORT() MESOSPHERE_PANIC("Abort()\n");
-#define MESOSPHERE_INIT_ABORT() do { /* ... */ } while (true)
+#define MESOSPHERE_INIT_ABORT() AMS_INFINITE_LOOP()
 
 #define MESOSPHERE_ABORT_UNLESS(expr)               \
     ({                                              \

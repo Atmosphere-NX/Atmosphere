@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_CAR_H
 #define FUSEE_CAR_H
 
@@ -37,23 +37,27 @@
 
 /* Clock and reset devices. */
 typedef enum {
-    CARDEVICE_UARTA = ((0 << 5) | 0x6),
-    CARDEVICE_UARTB = ((0 << 5) | 0x7),
-    CARDEVICE_UARTC = ((1 << 5) | 0x17),
-    CARDEVICE_I2C1 = ((0 << 5) | 0xC),
-    CARDEVICE_I2C5 = ((1 << 5) | 0xF),
-    CARDEVICE_TZRAM = ((3 << 5) | 0x1E),
-    CARDEVICE_SE = ((3 << 5) | 0x1F),
-    CARDEVICE_HOST1X = ((0 << 5) | 0x1C),
-    CARDEVICE_TSEC = ((2 << 5) | 0x13),
-    CARDEVICE_SOR_SAFE = ((6 << 5) | 0x1E),
-    CARDEVICE_SOR0 = ((5 << 5) | 0x16),
-    CARDEVICE_SOR1 = ((5 << 5) | 0x17),
-    CARDEVICE_KFUSE = ((1 << 5) | 0x8),
-    CARDEVICE_CL_DVFS = ((4 << 5) | 0x1B),
+    CARDEVICE_BPMP      = ((0 << 5) | 0x1),
+    CARDEVICE_UARTA     = ((0 << 5) | 0x6),
+    CARDEVICE_UARTB     = ((0 << 5) | 0x7),
+    CARDEVICE_I2C1      = ((0 << 5) | 0xC),
+    CARDEVICE_USBD      = ((0 << 5) | 0x16),
+    CARDEVICE_HOST1X    = ((0 << 5) | 0x1C),
+    CARDEVICE_AHBDMA    = ((1 << 5) | 0x1),
+    CARDEVICE_APBDMA    = ((1 << 5) | 0x2),
+    CARDEVICE_KFUSE     = ((1 << 5) | 0x8),
+    CARDEVICE_I2C5      = ((1 << 5) | 0xF),
+    CARDEVICE_UARTC     = ((1 << 5) | 0x17),
+    CARDEVICE_USB2      = ((1 << 5) | 0x1A),
     CARDEVICE_CORESIGHT = ((2 << 5) | 0x9),
-    CARDEVICE_ACTMON = ((3 << 5) | 0x17),
-    CARDEVICE_BPMP = ((0 << 5) | 0x1)
+    CARDEVICE_TSEC      = ((2 << 5) | 0x13),
+    CARDEVICE_ACTMON    = ((3 << 5) | 0x17),
+    CARDEVICE_TZRAM     = ((3 << 5) | 0x1E),
+    CARDEVICE_SE        = ((3 << 5) | 0x1F),
+    CARDEVICE_CL_DVFS   = ((4 << 5) | 0x1B),
+    CARDEVICE_SOR0      = ((5 << 5) | 0x16),
+    CARDEVICE_SOR1      = ((5 << 5) | 0x17),
+    CARDEVICE_SOR_SAFE  = ((6 << 5) | 0x1E),
 } CarDevice;
 
 /* Clock/Reset Controller (CLK_RST_CONTROLLER_) regs */
@@ -97,31 +101,31 @@ typedef struct {
     uint32_t pllc_out;
     uint32_t pllc_misc0;
     uint32_t pllc_misc1;
-    
+
     /* PLLM 0x90-0x9c */
     uint32_t pllm_base;
     uint32_t pllm_out;
     uint32_t pllm_misc1;
     uint32_t pllm_misc2;
-    
+
     /* PLLP 0xa0-0xac */
     uint32_t pllp_base;
     uint32_t pllp_outa;
     uint32_t pllp_outb;
     uint32_t pllp_misc;
-    
+
     /* PLLA 0xb0-0xbc */
     uint32_t plla_base;
     uint32_t plla_out;
     uint32_t plla_misc0;
     uint32_t plla_misc1;
-    
+
     /* PLLU 0xc0-0xcc */
     uint32_t pllu_base;
     uint32_t pllu_out;
     uint32_t pllu_misc1;
     uint32_t pllu_misc2;
-    
+
     /* PLLD 0xd0-0xdc */
     uint32_t plld_base;
     uint32_t plld_out;
@@ -131,13 +135,13 @@ typedef struct {
     /* PLLX 0xe0-0xe4 */
     uint32_t pllx_base;
     uint32_t pllx_misc;
-    
+
     /* PLLE 0xe8-0xf4 */
     uint32_t plle_base;
     uint32_t plle_misc;
     uint32_t plle_ss_cntl1;
     uint32_t plle_ss_cntl2;
-    
+
     uint32_t lvl2_clk_gate_ovra;            /* _LVL2_CLK_GATE_OVRA_0,   0xf8 */
     uint32_t lvl2_clk_gate_ovrb;            /* _LVL2_CLK_GATE_OVRB_0,   0xfc */
 
@@ -188,7 +192,7 @@ typedef struct {
     uint32_t _0x1e0[5];
     uint32_t clk_source_tsec;               /* _CLK_SOURCE_TSEC_0,      0x1f4 */
     uint32_t _0x1f8;
-    
+
     uint32_t clk_spare2;                    /* _CLK_SPARE2_0,       0x1fc */
     uint32_t _0x200[32];
 
@@ -257,7 +261,7 @@ typedef struct {
     uint32_t lvl2_clk_gate_ovrc;        /* _LVL2_CLK_GATE_OVRC,     0x3a0 */
     uint32_t lvl2_clk_gate_ovrd;        /* _LVL2_CLK_GATE_OVRD,     0x3a4 */
     uint32_t _0x3a8[2];
-    
+
     uint32_t _0x3b0;
     uint32_t clk_source_mselect;        /* _CLK_SOURCE_MSELECT_0,       0x3b4 */
     uint32_t clk_source_tsensor;        /* _CLK_SOURCE_TSENSOR_0,       0x3b8 */
@@ -371,13 +375,13 @@ typedef struct {
     uint32_t spare_reg0;            /* _SPARE_REG0_0, 0x55c */
     uint32_t audio_sync_clk_dmic1;  /* _AUDIO_SYNC_CLK_DMIC1_0, 0x560 */
     uint32_t audio_sync_clk_dmic2;  /* _AUDIO_SYNC_CLK_DMIC2_0, 0x564 */
-    
+
     uint32_t _0x568[2];
     uint32_t plld2_ss_cfg;          /* _PLLD2_SS_CFG,           0x570 */
     uint32_t plld2_ss_ctrl1;        /* _PLLD2_SS_CTRL1_0,       0x574 */
     uint32_t plld2_ss_ctrl2;        /* _PLLD2_SS_CTRL2_0,       0x578 */
     uint32_t _0x57c[5];
-    
+
     uint32_t plldp_base;            /* _PLLDP_BASE, 0x590*/
     uint32_t plldp_misc;            /* _PLLDP_MISC, 0x594 */
     uint32_t plldp_ss_cfg;          /* _PLLDP_SS_CFG, 0x598 */
@@ -399,7 +403,7 @@ typedef struct {
     uint32_t pllx_misc4;            /* _PLLX_MISC_4_0, 0x5f0 */
     uint32_t pllx_misc5;            /* _PLLX_MISC_5_0, 0x5f4 */
     uint32_t _0x5f8[2];
-    
+
     uint32_t clk_source_xusb_core_host;             /* _CLK_SOURCE_XUSB_CORE_HOST_0,    0x600 */
     uint32_t clk_source_xusb_falcon;                /* _CLK_SOURCE_XUSB_FALCON_0,    0x604 */
     uint32_t clk_source_xusb_fs;                    /* _CLK_SOURCE_XUSB_FS_0,    0x608 */
@@ -428,7 +432,7 @@ typedef struct {
     uint32_t clk_source_uart_fst_mipi_cal;          /* _CLK_SOURCE_UART_FST_MIPI_CAL_0,    0x66c */
     uint32_t _0x670[2];
     uint32_t clk_source_vic;                        /* _CLK_SOURCE_VIC_0,    0x678 */
-    
+
     uint32_t pllp_outc;                             /* _PLLP_OUTC_0, 0x67c */
     uint32_t pllp_misc1;                            /* _PLLP_MISC1_0, 0x680 */
     uint32_t _0x684[2];
@@ -439,14 +443,14 @@ typedef struct {
     uint32_t clk_source_nvdec;                      /* _CLK_SOURCE_NVDEC_0,    0x698 */
     uint32_t clk_source_nvjpg;                      /* _CLK_SOURCE_NVJPG_0,    0x69c */
     uint32_t clk_source_nvenc;                      /* _CLK_SOURCE_NVENC_0,    0x6a0 */
-    
+
     uint32_t plla1_base;                            /* _PLLA1_BASE_0, 0x6a4 */
     uint32_t plla1_misc0;                           /* _PLLA1_MISC_0_0, 0x6a8 */
     uint32_t plla1_misc1;                           /* _PLLA1_MISC_1_0, 0x6ac */
     uint32_t plla1_misc2;                           /* _PLLA1_MISC_2_0, 0x6b0 */
     uint32_t plla1_misc3;                           /* _PLLA1_MISC_3_0, 0x6b4 */
     uint32_t audio_sync_clk_dmic3;                  /* _AUDIO_SYNC_CLK_DMIC3_0, 0x6b8 */
-    
+
     uint32_t clk_source_dmic3;                      /* _CLK_SOURCE_DMIC3_0,    0x6bc */
     uint32_t clk_source_ape;                        /* _CLK_SOURCE_APE_0,    0x6c0 */
     uint32_t clk_source_qspi;                       /* _CLK_SOURCE_QSPI_0,    0x6c4 */
@@ -455,11 +459,11 @@ typedef struct {
     uint32_t clk_source_pex_sata_usb_rx_byp;        /* _CLK_SOURCE_PEX_SATA_USB_RX_BYP_0,    0x6d0 */
     uint32_t clk_source_maud;                       /* _CLK_SOURCE_MAUD_0,    0x6d4 */
     uint32_t clk_source_tsecb;                      /* _CLK_SOURCE_TSECB_0,    0x6d8 */
-    
+
     uint32_t clk_cpug_misc1;                        /* _CLK_CPUG_MISC1_0, 0x6dc */
     uint32_t aclk_burst_policy;                     /* _ACLK_BURST_POLICY_0, 0x6e0 */
     uint32_t super_aclk_divider;                    /* _SUPER_ACLK_DIVIDER_0, 0x6e4 */
-    
+
     uint32_t nvenc_super_clk_divider;               /* _NVENC_SUPER_CLK_DIVIDER_0, 0x6e8 */
     uint32_t vi_super_clk_divider;                  /* _VI_SUPER_CLK_DIVIDER_0, 0x6ec */
     uint32_t vic_super_clk_divider;                 /* _VIC_SUPER_CLK_DIVIDER_0, 0x6f0 */
@@ -470,7 +474,7 @@ typedef struct {
     uint32_t se_super_clk_divider;                  /* _SE_SUPER_CLK_DIVIDER_0, 0x704 */
     uint32_t tsec_super_clk_divider;                /* _TSEC_SUPER_CLK_DIVIDER_0, 0x708 */
     uint32_t tsecb_super_clk_divider;               /* _TSECB_SUPER_CLK_DIVIDER_0, 0x70c */
-    
+
     uint32_t clk_source_uartape;                    /* _CLK_SOURCE_UARTAPE_0, 0x710 */
     uint32_t clk_cpug_misc2;                        /* _CLK_CPUG_MISC2_0, 0x714 */
     uint32_t clk_source_dbgapb;                     /* _CLK_SOURCE_DBGAPB_0, 0x718 */
@@ -484,7 +488,7 @@ typedef struct {
     uint32_t sdmmc4_pllc4_out0_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT0_SHAPER_CTRL_0, 0x738 */
     uint32_t sdmmc4_pllc4_out1_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT1_SHAPER_CTRL_0, 0x73c */
     uint32_t sdmmc4_pllc4_out2_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT2_SHAPER_CTRL_0, 0x740 */
-    uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */    
+    uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */
 } tegra_car_t;
 
 static inline volatile tegra_car_t *car_get_regs(void) {

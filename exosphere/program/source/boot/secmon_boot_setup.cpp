@@ -85,6 +85,8 @@ namespace ams::secmon::boot {
             if constexpr (false) {
                 /* TODO: Consider implementing this as a reference. */
             }
+
+            AMS_UNUSED(is_prod);
         }
 
         /* NOTE: These are just latest-master-kek encrypted with BEK. */
@@ -406,6 +408,7 @@ namespace ams::secmon::boot {
 
         constexpr void UnmapDramImpl(u64 *l1, u64 *l2, u64 *l3) {
             /* Unmap the L1 entry corresponding to to the Dram entries. */
+            AMS_UNUSED(l2, l3);
             InvalidateL1Entries(l1, MemoryRegionDram.GetAddress(), MemoryRegionDram.GetSize());
         }
 

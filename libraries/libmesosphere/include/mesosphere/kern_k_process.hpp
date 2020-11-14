@@ -123,6 +123,20 @@ namespace ams::kern {
 
             void StartTermination();
             void FinishTermination();
+
+            void PinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+                MESOSPHERE_ASSERT(thread != nullptr);
+                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == nullptr);
+                this->pinned_threads[core_id] = thread;
+            }
+
+            void UnpinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+                MESOSPHERE_ASSERT(thread != nullptr);
+                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == thread);
+                this->pinned_threads[core_id] = nullptr;
+            }
         public:
             KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
@@ -205,20 +219,6 @@ namespace ams::kern {
             KThread *GetPinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 return this->pinned_threads[core_id];
-            }
-
-            void PinThread(s32 core_id, KThread *thread) {
-                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
-                MESOSPHERE_ASSERT(thread != nullptr);
-                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == nullptr);
-                this->pinned_threads[core_id] = thread;
-            }
-
-            void UnpinThread(s32 core_id, KThread *thread) {
-                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
-                MESOSPHERE_ASSERT(thread != nullptr);
-                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == thread);
-                this->pinned_threads[core_id] = nullptr;
             }
 
             void CopySvcPermissionsTo(KThread::StackParameters &sp) {
@@ -327,6 +327,7 @@ namespace ams::kern {
             Result SetActivity(ams::svc::ProcessActivity activity);
 
             void PinCurrentThread();
+            void UnpinCurrentThread();
 
             Result SignalToAddress(KProcessAddress address) {
                 return this->cond_var.SignalToAddress(address);
@@ -358,6 +359,8 @@ namespace ams::kern {
             static Result GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count);
 
             static void Switch(KProcess *cur_process, KProcess *next_process) {
+                MESOSPHERE_UNUSED(cur_process);
+
                 /* Set the current process pointer. */
                 SetCurrentProcess(next_process);
 
@@ -372,11 +375,11 @@ namespace ams::kern {
             /* Overridden parent functions. */
             virtual bool IsInitialized() const override { return this->is_initialized; }
 
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             virtual void Finalize() override;
 
-            virtual u64 GetId() const override { return this->GetProcessId(); }
+            virtual u64 GetId() const override final { return this->GetProcessId(); }
 
             virtual bool IsSignaled() const override {
                 MESOSPHERE_ASSERT_THIS();

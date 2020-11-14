@@ -328,7 +328,7 @@ namespace ams::kern {
         if (this->parent != nullptr) {
             this->parent->ReleaseUserException(this);
             if (this->parent->GetPinnedThread(GetCurrentCoreId()) == this) {
-                KScheduler::UnpinCurrentThread(this->parent);
+                this->parent->UnpinCurrentThread();
             }
         }
 
@@ -1099,13 +1099,7 @@ namespace ams::kern {
         const bool first_request = [&] ALWAYS_INLINE_LAMBDA () -> bool {
             /* Perform an atomic compare-and-swap from false to true. */
             bool expected = false;
-            do {
-                if (expected) {
-                    return false;
-                }
-            } while (!this->termination_requested.compare_exchange_weak(expected, true));
-
-            return true;
+            return this->termination_requested.compare_exchange_strong(expected, true);
         }();
 
         /* If this is the first request, start termination procedure. */
@@ -1133,6 +1127,7 @@ namespace ams::kern {
             /* If the thread is runnable, send a termination interrupt to other cores. */
             if (this->GetState() == ThreadState_Runnable) {
                 if (const u64 core_mask = this->affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
+                    cpu::DataSynchronizationBarrier();
                     Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_ThreadTerminate, core_mask);
                 }
             }

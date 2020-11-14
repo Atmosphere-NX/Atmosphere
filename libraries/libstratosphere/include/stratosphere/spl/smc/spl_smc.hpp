@@ -29,7 +29,7 @@ namespace ams::spl::smc {
     }
 
     /* Functions. */
-    Result SetConfig(spl::ConfigItem which, const u64 *value, size_t num_qwords);
+    Result SetConfig(spl::ConfigItem which, const void *address, const u64 *value, size_t num_qwords);
     Result GetConfig(u64 *out, size_t num_qwords, spl::ConfigItem which);
     Result GetResult(Result *out, AsyncOperationKey op);
     Result GetResultData(Result *out, void *out_buf, size_t out_buf_size, AsyncOperationKey op);
@@ -59,8 +59,12 @@ namespace ams::spl::smc {
     Result AtmosphereGetEmummcConfig(void *out_config, void *out_paths, u32 storage_id);
 
     /* Helpers. */
+    inline Result SetConfig(spl::ConfigItem which, const u64 *value, size_t num_qwords) {
+        return SetConfig(which, nullptr, value, num_qwords);
+    }
+
     inline Result SetConfig(spl::ConfigItem which, const u64 value) {
-        return SetConfig(which, &value, 1);
+        return SetConfig(which, std::addressof(value), 1);
     }
 
 }

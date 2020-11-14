@@ -150,6 +150,15 @@ namespace ams::spl {
         };
     };
     static_assert(sizeof(BootReasonValue) == sizeof(u32), "BootReasonValue definition!");
+
+    enum BootReason {
+        BootReason_Unknown   = 0,
+        BootReason_AcOk      = 1,
+        BootReason_OnKey     = 2,
+        BootReason_RtcAlarm1 = 3,
+        BootReason_RtcAlarm2 = 4,
+    };
+
     #pragma pack(push, 1)
 
     struct AesKey {
@@ -222,6 +231,7 @@ namespace ams::spl {
         ExosphereBlankProdInfo  = 65005,
         ExosphereAllowCalWrites = 65006,
         ExosphereEmummcType     = 65007,
+        ExospherePayloadAddress = 65008,
     };
 
 }
@@ -235,3 +245,4 @@ constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch = static_ca
 constexpr inline SplConfigItem SplConfigItem_ExosphereBlankProdInfo  = static_cast<SplConfigItem>(65005);
 constexpr inline SplConfigItem SplConfigItem_ExosphereAllowCalWrites = static_cast<SplConfigItem>(65006);
 constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType     = static_cast<SplConfigItem>(65007);
+constexpr inline SplConfigItem SplConfigItem_ExospherePayloadAddress = static_cast<SplConfigItem>(65008);

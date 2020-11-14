@@ -24,6 +24,13 @@
         using ams::kern::arch::arm64::KInterruptController;
     }
 
+#elif defined(ATMOSPHERE_ARCH_ARM)
+
+    #include <mesosphere/arch/arm/kern_k_interrupt_controller.hpp>
+    namespace ams::kern {
+        using ams::kern::arch::arm::KInterruptController;
+    }
+
 #else
 
     #error "Unknown architecture for KInterruptController"

@@ -23,8 +23,10 @@ namespace ams::i2c {
 
     R_DEFINE_ERROR_RESULT(NoAck,           1);
     R_DEFINE_ERROR_RESULT(BusBusy,         2);
-    R_DEFINE_ERROR_RESULT(FullCommandList, 3);
-    R_DEFINE_ERROR_RESULT(TimedOut,        4);
+    R_DEFINE_ERROR_RESULT(CommandListFull, 3);
+
     R_DEFINE_ERROR_RESULT(UnknownDevice,   5);
+
+    R_DEFINE_ERROR_RESULT(Timeout,       253);
 
 }

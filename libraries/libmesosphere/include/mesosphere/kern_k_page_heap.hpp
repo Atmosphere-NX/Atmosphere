@@ -115,11 +115,11 @@ namespace ams::kern {
                         return this->heap_address + (offset << this->GetShift());
                     }
                 public:
-                    static constexpr size_t CalculateMetadataOverheadSize(size_t region_size, size_t cur_block_shift, size_t next_block_shift) {
+                    static constexpr size_t CalculateManagementOverheadSize(size_t region_size, size_t cur_block_shift, size_t next_block_shift) {
                         const size_t cur_block_size  = (u64(1) << cur_block_shift);
                         const size_t next_block_size = (u64(1) << next_block_shift);
                         const size_t align = (next_block_shift != 0) ? next_block_size : cur_block_size;
-                        return KPageBitmap::CalculateMetadataOverheadSize((align * 2 + util::AlignUp(region_size, align)) / cur_block_size);
+                        return KPageBitmap::CalculateManagementOverheadSize((align * 2 + util::AlignUp(region_size, align)) / cur_block_size);
                     }
             };
         private:
@@ -129,7 +129,7 @@ namespace ams::kern {
             size_t num_blocks;
             Block blocks[NumMemoryBlockPageShifts];
         private:
-            void Initialize(KVirtualAddress heap_address, size_t heap_size, KVirtualAddress metadata_address, size_t metadata_size, const size_t *block_shifts, size_t num_block_shifts);
+            void Initialize(KVirtualAddress heap_address, size_t heap_size, KVirtualAddress management_address, size_t management_size, const size_t *block_shifts, size_t num_block_shifts);
             size_t GetNumFreePages() const;
 
             void FreeBlock(KVirtualAddress block, s32 index);
@@ -142,8 +142,8 @@ namespace ams::kern {
             constexpr size_t GetPageOffset(KVirtualAddress block) const { return (block - this->GetAddress()) / PageSize; }
             constexpr size_t GetPageOffsetToEnd(KVirtualAddress block) const { return (this->GetEndAddress() - block) / PageSize; }
 
-            void Initialize(KVirtualAddress heap_address, size_t heap_size, KVirtualAddress metadata_address, size_t metadata_size) {
-                return Initialize(heap_address, heap_size, metadata_address, metadata_size, MemoryBlockPageShifts, NumMemoryBlockPageShifts);
+            void Initialize(KVirtualAddress heap_address, size_t heap_size, KVirtualAddress management_address, size_t management_size) {
+                return Initialize(heap_address, heap_size, management_address, management_size, MemoryBlockPageShifts, NumMemoryBlockPageShifts);
             }
 
             size_t GetFreeSize() const { return this->GetNumFreePages() * PageSize; }
@@ -155,10 +155,10 @@ namespace ams::kern {
             KVirtualAddress AllocateBlock(s32 index, bool random);
             void Free(KVirtualAddress addr, size_t num_pages);
         private:
-            static size_t CalculateMetadataOverheadSize(size_t region_size, const size_t *block_shifts, size_t num_block_shifts);
+            static size_t CalculateManagementOverheadSize(size_t region_size, const size_t *block_shifts, size_t num_block_shifts);
         public:
-            static size_t CalculateMetadataOverheadSize(size_t region_size) {
-                return CalculateMetadataOverheadSize(region_size, MemoryBlockPageShifts, NumMemoryBlockPageShifts);
+            static size_t CalculateManagementOverheadSize(size_t region_size) {
+                return CalculateManagementOverheadSize(region_size, MemoryBlockPageShifts, NumMemoryBlockPageShifts);
             }
     };
 

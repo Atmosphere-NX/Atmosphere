@@ -99,6 +99,7 @@ namespace ams::kern {
 
     Result KSharedMemory::Unmap(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process) {
         MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_UNUSED(process);
 
         /* Validate the size. */
         R_UNLESS(this->page_group.GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());

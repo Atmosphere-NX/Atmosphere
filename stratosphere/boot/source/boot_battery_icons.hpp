@@ -15,12 +15,21 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "boot_display.hpp"
 
 namespace ams::boot {
 
     /* Battery Display utilities. */
     void ShowLowBatteryIcon();
-    void StartShowChargingIcon(size_t battery_percentage, bool wait);
+    void StartShowChargingIcon(int battery_percentage, bool wait);
     void EndShowChargingIcon();
+
+    inline void StartShowChargingIcon(int battery_percentage) {
+        return StartShowChargingIcon(battery_percentage, true);
+    }
+
+    inline void StartShowLowBatteryChargingIcon() {
+        return StartShowChargingIcon(1, false);
+    }
 
 }

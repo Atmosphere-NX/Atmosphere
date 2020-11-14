@@ -37,7 +37,7 @@ namespace ams::kern {
             virtual void Finalize() override;
 
             virtual bool IsInitialized() const override { return this->is_initialized; }
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Attach(ams::svc::DeviceName device_name);
             Result Detach(ams::svc::DeviceName device_name);

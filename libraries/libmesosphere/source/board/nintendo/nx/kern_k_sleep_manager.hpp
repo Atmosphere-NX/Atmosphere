@@ -20,7 +20,6 @@ namespace ams::kern::board::nintendo::nx {
 
     class KSleepManager {
         private:
-            static void CpuSleepHandler(uintptr_t arg, uintptr_t entry);
             static void ResumeEntry(uintptr_t arg);
 
             static void InvalidateDataCacheForResumeEntry(uintptr_t level);
@@ -29,6 +28,8 @@ namespace ams::kern::board::nintendo::nx {
         public:
             static void Initialize();
             static void SleepSystem();
+        public:
+            static void CpuSleepHandler(uintptr_t arg, uintptr_t entry);
     };
 
 

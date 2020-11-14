@@ -20,10 +20,22 @@
 #include <vapours/literals.hpp>
 
 #include <vapours/allocator.hpp>
+#include <vapours/device_code.hpp>
 #include <vapours/timespan.hpp>
 #include <vapours/span.hpp>
 
 #include <vapours/util.hpp>
 #include <vapours/results.hpp>
+#include <vapours/reg.hpp>
+
+#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
+#include <vapours/tegra.hpp>
+#endif
+
 #include <vapours/crypto.hpp>
 #include <vapours/svc.hpp>
+
+#include <vapours/ams/ams_fatal_error_context.hpp>
+
+#include <vapours/dd.hpp>
+#include <vapours/sdmmc.hpp>

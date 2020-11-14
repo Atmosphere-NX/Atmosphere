@@ -83,7 +83,7 @@ namespace ams {
             constexpr Result(typename Base::BaseType v) : value(v) { static_assert(std::is_same<typename Base::BaseType, ::Result>::value); }
 
             constexpr ALWAYS_INLINE operator ResultSuccess() const;
-            NX_CONSTEXPR bool CanAccept(Result result) { return true; }
+            NX_CONSTEXPR bool CanAccept(Result) { return true; }
 
             constexpr ALWAYS_INLINE bool IsSuccess() const { return this->GetValue() == Base::SuccessValue; }
             constexpr ALWAYS_INLINE bool IsFailure() const { return !this->IsSuccess(); }

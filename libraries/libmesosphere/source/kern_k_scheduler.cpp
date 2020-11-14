@@ -28,6 +28,7 @@ namespace ams::kern {
                 constexpr KSchedulerInterruptTask() : KInterruptTask() { /* ... */ }
 
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                    MESOSPHERE_UNUSED(interrupt_id);
                     return GetDummyInterruptTask();
                 }
 
@@ -98,6 +99,8 @@ namespace ams::kern {
                 }
             }
 
+            MESOSPHERE_KTRACE_SCHEDULE_UPDATE(this->core_id, (prev_highest_thread != nullptr ? prev_highest_thread : this->idle_thread), (highest_thread != nullptr ? highest_thread : this->idle_thread));
+
             this->state.highest_priority_thread = highest_thread;
             this->state.needs_scheduling = true;
             return (1ul << this->core_id);
@@ -162,6 +165,7 @@ namespace ams::kern {
                         /* The suggested thread isn't bound to its core, so we can migrate it! */
                         suggested->SetActiveCore(core_id);
                         priority_queue.ChangeCore(suggested_core, suggested);
+                        MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), suggested_core, core_id, 1);
                         top_threads[core_id] = suggested;
                         cores_needing_scheduling |= Kernel::GetScheduler(core_id).UpdateHighestPriorityThread(top_threads[core_id]);
                         break;
@@ -187,6 +191,7 @@ namespace ams::kern {
                             /* Perform the migration. */
                             suggested->SetActiveCore(core_id);
                             priority_queue.ChangeCore(candidate_core, suggested);
+                            MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), candidate_core, core_id, 2);
                             top_threads[core_id] = suggested;
                             cores_needing_scheduling |= Kernel::GetScheduler(core_id).UpdateHighestPriorityThread(top_threads[core_id]);
                             break;
@@ -252,6 +257,8 @@ namespace ams::kern {
             this->prev_thread = nullptr;
         }
 
+        MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
+
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
             /* MESOSPHERE_LOG("!!! PROCESS SWITCH !!! %s -> %s\n", cur_process != nullptr ? cur_process->GetName() : nullptr, next_process != nullptr ? next_process->GetName() : nullptr); */
@@ -269,41 +276,14 @@ namespace ams::kern {
     void KScheduler::ClearPreviousThread(KThread *thread) {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
         for (size_t i = 0; i < cpu::NumCores; ++i) {
-            std::atomic<KThread *> *prev_thread_ptr = reinterpret_cast<std::atomic<KThread *> *>(std::addressof(Kernel::GetScheduler(static_cast<s32>(i)).prev_thread));
-            static_assert(sizeof(*prev_thread_ptr) == sizeof(KThread *));
+            /* Get an atomic reference to the core scheduler's previous thread. */
+            std::atomic_ref<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).prev_thread);
+            static_assert(std::atomic_ref<KThread *>::is_always_lock_free);
 
-            prev_thread_ptr->compare_exchange_weak(thread, nullptr);
+            /* Atomically clear the previous thread if it's our target. */
+            KThread *compare = thread;
+            prev_thread.compare_exchange_strong(compare, nullptr);
         }
-    }
-
-    void KScheduler::PinCurrentThread(KProcess *cur_process) {
-        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
-
-        /* Get the current thread. */
-        const s32 core_id   = GetCurrentCoreId();
-        KThread *cur_thread = GetCurrentThreadPointer();
-
-        /* Pin it. */
-        cur_process->PinThread(core_id, cur_thread);
-        cur_thread->Pin();
-
-        /* An update is needed. */
-        SetSchedulerUpdateNeeded();
-    }
-
-    void KScheduler::UnpinCurrentThread(KProcess *cur_process) {
-        MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
-
-        /* Get the current thread. */
-        const s32 core_id   = GetCurrentCoreId();
-        KThread *cur_thread = GetCurrentThreadPointer();
-
-        /* Unpin it. */
-        cur_thread->Unpin();
-        cur_process->UnpinThread(core_id, cur_thread);
-
-        /* An update is needed. */
-        SetSchedulerUpdateNeeded();
     }
 
     void KScheduler::OnThreadStateChanged(KThread *thread, KThread::ThreadState old_state) {
@@ -525,6 +505,7 @@ namespace ams::kern {
                         if (running_on_suggested_core == nullptr || running_on_suggested_core->GetPriority() >= HighestCoreMigrationAllowedPriority) {
                             suggested->SetActiveCore(core_id);
                             priority_queue.ChangeCore(suggested_core, suggested, true);
+                            MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), suggested_core, core_id, 3);
                             IncrementScheduledCount(suggested);
                             break;
                         } else {
@@ -578,6 +559,7 @@ namespace ams::kern {
                 /* Migrate the current thread to core -1. */
                 cur_thread.SetActiveCore(-1);
                 priority_queue.ChangeCore(core_id, std::addressof(cur_thread));
+                MESOSPHERE_KTRACE_CORE_MIGRATION(cur_thread.GetId(), core_id, -1, 4);
                 IncrementScheduledCount(std::addressof(cur_thread));
 
                 /* If there's nothing scheduled, we can try to perform a migration. */
@@ -592,6 +574,7 @@ namespace ams::kern {
                             if (top_on_suggested_core == nullptr || top_on_suggested_core->GetPriority() >= HighestCoreMigrationAllowedPriority) {
                                 suggested->SetActiveCore(core_id);
                                 priority_queue.ChangeCore(suggested_core, suggested);
+                                MESOSPHERE_KTRACE_CORE_MIGRATION(suggested->GetId(), suggested_core, core_id, 5);
                                 IncrementScheduledCount(suggested);
                             }
 

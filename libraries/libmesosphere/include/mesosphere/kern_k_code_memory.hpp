@@ -46,7 +46,7 @@ namespace ams::kern {
             Result UnmapFromOwner(KProcessAddress address, size_t size);
 
             virtual bool IsInitialized() const override { return this->is_initialized; }
-            static void PostDestroy(uintptr_t arg) { /* ... */ }
+            static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             KProcess *GetOwner() const { return this->owner; }
             KProcessAddress GetSourceAddress() { return this->address; }

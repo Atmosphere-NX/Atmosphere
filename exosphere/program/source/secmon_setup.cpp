@@ -648,7 +648,7 @@ namespace ams::secmon {
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire page table cache, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_PTC_FLUSH, 0);
+            reg::Write(MC + MC_SMMU_PTC_FLUSH_0, 0);
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */
@@ -907,7 +907,7 @@ namespace ams::secmon {
             reg::Write(MC + MC_SMMU_PPCS1_ASID, MC_REG_BITS_ENUM(SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE, ENABLE), MC_REG_BITS_VALUE(SMMU_PPCS1_ASID_PPCS1_ASID, BpmpAsid));
 
             /* Flush the entire page table cache, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_PTC_FLUSH, 0);
+            reg::Write(MC + MC_SMMU_PTC_FLUSH_0, 0);
             reg::Read (MC + MC_SMMU_TLB_CONFIG);
 
             /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */

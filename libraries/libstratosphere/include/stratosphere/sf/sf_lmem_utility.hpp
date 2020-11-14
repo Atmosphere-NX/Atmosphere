@@ -24,7 +24,13 @@ namespace ams::sf {
         private:
             lmem::HeapHandle handle;
         public:
-            explicit ExpHeapMemoryResource(lmem::HeapHandle h) : handle(h) { /* ... */ }
+            constexpr ExpHeapMemoryResource() : handle() { /* ... */ }
+            constexpr explicit ExpHeapMemoryResource(lmem::HeapHandle h) : handle(h) { /* ... */ }
+
+            void Attach(lmem::HeapHandle h) {
+                AMS_ABORT_UNLESS(this->handle == lmem::HeapHandle());
+                this->handle = h;
+            }
 
             lmem::HeapHandle GetHandle() const { return this->handle; }
         private:
@@ -45,7 +51,13 @@ namespace ams::sf {
         private:
             lmem::HeapHandle handle;
         public:
-            explicit UnitHeapMemoryResource(lmem::HeapHandle h) : handle(h) { /* ... */ }
+            constexpr UnitHeapMemoryResource() : handle() { /* ... */ }
+            constexpr explicit UnitHeapMemoryResource(lmem::HeapHandle h) : handle(h) { /* ... */ }
+
+            void Attach(lmem::HeapHandle h) {
+                AMS_ABORT_UNLESS(this->handle == lmem::HeapHandle());
+                this->handle = h;
+            }
 
             lmem::HeapHandle GetHandle() const { return this->handle; }
         private:

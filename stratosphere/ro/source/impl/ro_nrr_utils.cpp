@@ -157,7 +157,7 @@ namespace ams::ro::impl {
             return ResultSuccess();
         }
 
-        Result ValidateNrr(const NrrHeader *header, u64 size, ncm::ProgramId program_id, ModuleType expected_type, bool enforce_type) {
+        Result ValidateNrr(const NrrHeader *header, u64 size, ncm::ProgramId program_id, NrrKind nrr_kind, bool enforce_nrr_kind) {
             /* Check magic. */
             R_UNLESS(header->IsMagicValid(), ResultInvalidNrr());
 
@@ -182,9 +182,9 @@ namespace ams::ro::impl {
                 /* Check program id. */
                 R_UNLESS(header->GetProgramId() == program_id, ResultInvalidNrr());
 
-                /* Check type. */
-                if (hos::GetVersion() >= hos::Version_7_0_0 && enforce_type) {
-                    R_UNLESS(header->GetType() == expected_type, ResultInvalidNrrType());
+                /* Check nrr kind. */
+                if (hos::GetVersion() >= hos::Version_7_0_0 && enforce_nrr_kind) {
+                    R_UNLESS(header->GetNrrKind() == nrr_kind, ResultInvalidNrrKind());
                 }
             }
 
@@ -194,7 +194,7 @@ namespace ams::ro::impl {
     }
 
     /* Utilities for working with NRRs. */
-    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, void *out_hash, size_t out_hash_size, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, ModuleType expected_type, bool enforce_type) {
+    Result MapAndValidateNrr(NrrHeader **out_header, u64 *out_mapped_code_address, void *out_hash, size_t out_hash_size, Handle process_handle, ncm::ProgramId program_id, u64 nrr_heap_address, u64 nrr_heap_size, NrrKind nrr_kind, bool enforce_nrr_kind) {
         map::MappedCodeMemory nrr_mcm(ResultInternalError{});
 
         /* First, map the NRR. */
@@ -209,7 +209,7 @@ namespace ams::ro::impl {
         R_TRY(nrr_map.GetResult());
 
         NrrHeader *nrr_header = reinterpret_cast<NrrHeader *>(map_address);
-        R_TRY(ValidateNrr(nrr_header, nrr_heap_size, program_id, expected_type, enforce_type));
+        R_TRY(ValidateNrr(nrr_header, nrr_heap_size, program_id, nrr_kind, enforce_nrr_kind));
 
         /* Invalidation here actually prevents them from unmapping at scope exit. */
         nrr_map.Invalidate();

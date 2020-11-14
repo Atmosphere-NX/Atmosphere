@@ -71,8 +71,12 @@ namespace ams::kern::init {
 
         constexpr size_t SlabCountExtraKThread          = 160;
 
-        /* This is used for gaps between the slab allocators. */
-        constexpr size_t SlabRegionReservedSize         = 2_MB;
+        namespace test {
+
+            constexpr size_t RequiredSizeForExtraThreadCount = SlabCountExtraKThread * (sizeof(KThread) + (sizeof(KLinkedListNode) * 17) + (sizeof(KThreadLocalPage) / 8) + sizeof(KEventInfo));
+            static_assert(RequiredSizeForExtraThreadCount <= KernelSlabHeapAdditionalSize);
+
+        }
 
         /* Global to hold our resource counts. */
         KSlabResourceCounts g_slab_resource_counts = {
@@ -98,7 +102,9 @@ namespace ams::kern::init {
             KVirtualAddress start = util::AlignUp(GetInteger(address), alignof(T));
 
             if (size > 0) {
-                MESOSPHERE_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().FindContainingRegion(GetInteger(start) + size - 1)->IsDerivedFrom(KMemoryRegionType_KernelSlab));
+                const KMemoryRegion *region = KMemoryLayout::Find(start + size - 1);
+                MESOSPHERE_ABORT_UNLESS(region != nullptr);
+                MESOSPHERE_ABORT_UNLESS(region->IsDerivedFrom(KMemoryRegionType_KernelSlab));
                 T::InitializeSlabHeap(GetVoidPointer(start), size);
             }
 
@@ -119,6 +125,10 @@ namespace ams::kern::init {
         }
     }
 
+    size_t CalculateSlabHeapGapSize() {
+        return (kern::GetTargetFirmware() >= TargetFirmware_10_0_0) ? KernelSlabHeapGapsSize : KernelSlabHeapGapsSizeDeprecated;
+    }
+
     size_t CalculateTotalSlabHeapSize() {
         size_t size = 0;
 
@@ -133,7 +143,7 @@ namespace ams::kern::init {
         #undef ADD_SLAB_SIZE
 
         /* Add the reserved size. */
-        size += SlabRegionReservedSize;
+        size += CalculateSlabHeapGapSize();
 
         return size;
     }
@@ -173,11 +183,12 @@ namespace ams::kern::init {
         }
 
         /* Create an array to represent the gaps between the slabs. */
+        const size_t total_gap_size = CalculateSlabHeapGapSize();
         size_t slab_gaps[util::size(slab_types)];
         for (size_t i = 0; i < util::size(slab_gaps); i++) {
             /* Note: This is an off-by-one error from Nintendo's intention, because GenerateRandomRange is inclusive. */
             /* However, Nintendo also has the off-by-one error, and it's "harmless", so we will include it ourselves. */
-            slab_gaps[i] = KSystemControl::GenerateRandomRange(0, SlabRegionReservedSize);
+            slab_gaps[i] = KSystemControl::GenerateRandomRange(0, total_gap_size);
         }
 
         /* Sort the array, so that we can treat differences between values as offsets to the starts of slabs. */

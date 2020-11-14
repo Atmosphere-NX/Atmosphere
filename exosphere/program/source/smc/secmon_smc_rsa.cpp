@@ -75,6 +75,7 @@ namespace ams::secmon::smc {
                 u8 msg[se::RsaSize];
             public:
                 void Set(const void *m, size_t m_size) {
+                    AMS_UNUSED(m_size);
                     std::memcpy(this->msg, m, sizeof(this->msg));
                 }
 

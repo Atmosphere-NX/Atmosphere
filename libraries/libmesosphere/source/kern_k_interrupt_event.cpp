@@ -128,7 +128,7 @@ namespace ams::kern {
 
     KInterruptTask *KInterruptEventTask::OnInterrupt(s32 interrupt_id) {
         MESOSPHERE_ASSERT_THIS();
-
+        MESOSPHERE_UNUSED(interrupt_id);
         return this;
     }
 

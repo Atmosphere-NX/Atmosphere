@@ -235,6 +235,30 @@ namespace ams::kern::svc {
                         *out = tick_count;
                     }
                     break;
+                case ams::svc::InfoType_MesosphereMeta:
+                    {
+                        /* Verify the handle is invalid. */
+                        R_UNLESS(handle == ams::svc::InvalidHandle, svc::ResultInvalidHandle());
+
+                        switch (static_cast<ams::svc::MesosphereMetaInfo>(info_subtype)) {
+                            case ams::svc::MesosphereMetaInfo_KernelVersion:
+                                {
+                                    /* Return the supported kernel version. */
+                                    *out = ams::svc::SupportedKernelVersion;
+                                }
+                                break;
+                            case ams::svc::MesosphereMetaInfo_IsKTraceEnabled:
+                                {
+                                    /* Return whether the kernel supports tracing. */
+                                    constexpr u64 KTraceValue = ams::kern::IsKTraceEnabled ? 1 : 0;
+                                    *out = KTraceValue;
+                                }
+                                break;
+                            default:
+                                return svc::ResultInvalidCombination();
+                        }
+                    }
+                    break;
                 default:
                     {
                         /* For debug, log the invalid info call. */
