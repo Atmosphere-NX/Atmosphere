@@ -58,4 +58,6 @@ namespace ams::diag {
         __builtin_unreachable();
     }
 
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
+
 }
