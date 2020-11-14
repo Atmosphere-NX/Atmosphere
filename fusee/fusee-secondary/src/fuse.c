@@ -68,8 +68,9 @@ static void fuse_wait_idle(void) {
     uint32_t ctrl_val = 0;
 
     /* Wait for STATE_IDLE */
-    while ((ctrl_val & (0xF0000)) != 0x40000)
+    while ((ctrl_val & (0xF0000)) != 0x40000) {
         ctrl_val = fuse->FUSE_FUSECTRL;
+    }
 }
 
 /* Read a fuse from the hardware array. */
@@ -134,34 +135,54 @@ void fuse_hw_sense(void) {
 
 /* Read the SKU info register. */
 uint32_t fuse_get_sku_info(void) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     return fuse_chip->FUSE_SKU_INFO;
 }
 
 /* Read the bootrom patch version. */
 uint32_t fuse_get_bootrom_patch_version(void) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     return fuse_chip->FUSE_SOC_SPEEDO_1_CALIB;
 }
 
 /* Read a spare bit register. */
-uint32_t fuse_get_spare_bit(uint32_t idx) {
-    if (idx < 32) {
-        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
-        return fuse_chip->FUSE_SPARE_BIT[idx];
-    } else {
-        return 0;
+uint32_t fuse_get_spare_bit(uint32_t index) {
+    uint32_t soc_type = fuse_get_soc_type();
+    if (soc_type == 0) {
+        if (index < 32) {
+            volatile tegra_fuse_chip_erista_t *fuse_chip = fuse_chip_erista_get_regs();
+            return fuse_chip->FUSE_SPARE_BIT[index];
+        }
+    } else if (soc_type == 1) {
+        if (index < 30) {
+            volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
+            return fuse_chip->FUSE_SPARE_BIT[index];
+        }
     }
+    return 0;
 }
 
 /* Read a reserved ODM register. */
-uint32_t fuse_get_reserved_odm(uint32_t idx) {
-    if (idx < 8) {
-        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
-        return fuse_chip->FUSE_RESERVED_ODM[idx];
-    } else {
-        return 0;
+uint32_t fuse_get_reserved_odm(uint32_t index) {
+    uint32_t soc_type = fuse_get_soc_type();
+    if (index < 8) {
+        volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
+        return fuse_chip->FUSE_RESERVED_ODM0[index];
+    } else if (soc_type == 1) {
+        volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
+        if (index < 22) {
+            return fuse_chip->FUSE_RESERVED_ODM8[index - 8];
+        } else if (index < 25) {
+            return fuse_chip->FUSE_RESERVED_ODM22[index - 22];
+        } else if (index < 26) {
+            return fuse_chip->FUSE_RESERVED_ODM25;
+        } else if (index < 29) {
+            return fuse_chip->FUSE_RESERVED_ODM26[index - 26];
+        } else if (index < 30) {
+            return fuse_chip->FUSE_RESERVED_ODM29;
+        }
     }
+    return 0;
 }
 
 /* Get the DramId. */
@@ -171,7 +192,7 @@ uint32_t fuse_get_dram_id(void) {
 
 /* Derive the DeviceId. */
 uint64_t fuse_get_device_id(void) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
 
     uint64_t device_id = 0;
     uint64_t y_coord = fuse_chip->FUSE_OPT_Y_COORDINATE & 0x1FF;
@@ -201,7 +222,7 @@ uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware) {
     uint32_t hardware_type = (((fuse_reserved_odm4 >> 7) & 2) | ((fuse_reserved_odm4 >> 2) & 1));
 
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+        volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
         uint32_t fuse_spare_bit9 = (fuse_chip->FUSE_SPARE_BIT[9] & 1);
         
         switch (hardware_type) {
@@ -262,7 +283,7 @@ uint32_t fuse_get_hardware_state(void) {
 
 /* Derive the 16-byte HardwareInfo and copy to output buffer. */
 void fuse_get_hardware_info(void *dst) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     uint32_t hw_info[0x4];
 
     uint32_t ops_reserved = fuse_chip->FUSE_OPT_OPS_RESERVED & 0x3F;
@@ -283,9 +304,14 @@ void fuse_get_hardware_info(void *dst) {
     memcpy(dst, hw_info, 0x10);
 }
 
+/* Check if have a new ODM fuse format. */
+bool fuse_is_new_format(void) {
+    return ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2));
+}
+
 /* Get the DeviceUniqueKeyGeneration. */
 uint32_t fuse_get_device_unique_key_generation(void) {
-    if ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2)) {
+    if (fuse_is_new_format()) {
         return (fuse_get_reserved_odm(2) & 0x1F);
     } else {
         return 0;
@@ -305,5 +331,14 @@ uint32_t fuse_get_soc_type(void) {
             return 1;           /* SocType_Mariko */
         default:
             return 0xF;         /* SocType_Undefined */
+    }
+}
+
+/* Get the Regulator type. */
+uint32_t fuse_get_regulator(void) {
+    if (fuse_get_soc_type() == 1) {
+        return ((fuse_get_reserved_odm(28) & 1) + 1);   /* Regulator_Mariko_Max77812_A or Regulator_Mariko_Max77812_B */
+    } else {
+        return 0;               /* Regulator_Erista_Max77621 */
     }
 }

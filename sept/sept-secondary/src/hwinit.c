@@ -153,7 +153,7 @@ void mbist_workaround()
 
 void config_se_brom()
 {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     volatile tegra_se_t *se = se_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     
