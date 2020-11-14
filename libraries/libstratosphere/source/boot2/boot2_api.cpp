@@ -352,10 +352,12 @@ namespace ams::boot2 {
 
         /* Wait for other atmosphere mitm modules to initialize. */
         R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("set:sys")));
-        if (hos::GetVersion() >= hos::Version_2_0_0) {
-            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
-        } else {
-            R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+        if (spl::GetSocType() == spl::SocType_Erista) {
+            if (hos::GetVersion() >= hos::Version_2_0_0) {
+                R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc")));
+            } else {
+                R_ABORT_UNLESS(sm::mitm::WaitMitm(sm::ServiceName::Encode("bpc:c")));
+            }
         }
 
         /* Launch Atmosphere boot2, using NcmStorageId_None to force SD card boot. */
