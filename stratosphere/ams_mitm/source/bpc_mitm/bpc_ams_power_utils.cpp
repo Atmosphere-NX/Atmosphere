@@ -25,7 +25,7 @@ namespace ams::mitm::bpc {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x2E000;
+        constexpr size_t IramPayloadMaxSize = 0x20000;
 
         /* Helper enum. */
         enum class RebootType : u32 {

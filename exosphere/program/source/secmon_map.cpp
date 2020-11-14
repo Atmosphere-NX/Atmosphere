@@ -196,6 +196,11 @@ namespace ams::secmon {
             return 0;
         }
 
+        /* Validate that the page isn't a secure monitor debug page. */
+        if (MemoryRegionPhysicalIramSecureMonitorDebug.Contains(address, 1)) {
+            return 0;
+        }
+
         /* Validate that the page is aligned. */
         if (!util::IsAligned(address, 4_KB)) {
             return 0;

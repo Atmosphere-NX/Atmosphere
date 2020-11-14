@@ -26,7 +26,7 @@ namespace ams::boot {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x2E000;
+        constexpr size_t IramPayloadMaxSize = 0x20000;
 
         /* Globals. */
         alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];

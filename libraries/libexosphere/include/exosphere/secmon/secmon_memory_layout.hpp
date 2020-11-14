@@ -89,8 +89,10 @@ namespace ams::secmon {
 
     constexpr inline const MemoryRegion MemoryRegionPhysicalIram  = MemoryRegion(UINT64_C(0x40000000), 0x40000);
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzram = MemoryRegion(UINT64_C(0x7C010000), 0x10000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramMariko = MemoryRegion(UINT64_C(0x7C010000), 0x40000);
     static_assert(MemoryRegionPhysical.Contains(MemoryRegionPhysicalIram));
     static_assert(MemoryRegionPhysical.Contains(MemoryRegionPhysicalTzram));
+    static_assert(MemoryRegionPhysicalTzramMariko.Contains(MemoryRegionPhysicalTzram));
 
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramVolatile(UINT64_C(0x7C010000),  0x2000);
     static_assert(MemoryRegionPhysicalTzram.Contains(MemoryRegionPhysicalTzramVolatile));
@@ -193,6 +195,10 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramProgramExceptionVectors(UINT64_C(0x1F00C0000), 0x800);
     static_assert(MemoryRegionVirtualTzramProgram.Contains(MemoryRegionVirtualTzramProgramExceptionVectors));
 
+    constexpr inline const MemoryRegion MemoryRegionVirtualTzramMarikoProgram(UINT64_C(0x1F00D0000), 0x20000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramMarikoProgram(UINT64_C(0x7C020000), 0x20000);
+    static_assert(MemoryRegionPhysicalTzramMariko.Contains(MemoryRegionVirtualTzramMarikoProgram));
+
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramProgramMain(UINT64_C(0x1F00C0800), 0xB800);
     static_assert(MemoryRegionVirtualTzramProgram.Contains(MemoryRegionVirtualTzramProgramMain));
 
@@ -218,6 +224,13 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualIramSc7Firmware));
     static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSc7Firmware));
 
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramSecureMonitorDebug(UINT64_C(0x40030000), 0x8000);
+    static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSecureMonitorDebug));
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDebugCode = MemoryRegion(UINT64_C(0x1F0150000), 0x4000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDebugCode = MemoryRegion(UINT64_C(0x40034000), 0x4000);
+    static_assert(MemoryRegionPhysicalIramSecureMonitorDebug.Contains(MemoryRegionPhysicalDebugCode));
+
     constexpr inline const MemoryRegion MemoryRegionVirtualDebug = MemoryRegion(UINT64_C(0x1F0160000), 0x10000);
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDebug));
 
@@ -230,6 +243,11 @@ namespace ams::secmon {
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStore  = MemoryRegion(UINT64_C(0x1F0100000), 0x10000);
     constexpr inline const MemoryRegion MemoryRegionPhysicalDramSecureDataStore = MemoryRegion( UINT64_C(0x80010000), 0x10000);
+    static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDramSecureDataStore));
+    static_assert(MemoryRegionDram.Contains(MemoryRegionPhysicalDramSecureDataStore));
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramDebugDataStore  = MemoryRegion(UINT64_C(0x1F0110000), 0x4000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramDebugDataStore = MemoryRegion( UINT64_C(0x8000C000), 0x4000);
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDramSecureDataStore));
     static_assert(MemoryRegionDram.Contains(MemoryRegionPhysicalDramSecureDataStore));
 

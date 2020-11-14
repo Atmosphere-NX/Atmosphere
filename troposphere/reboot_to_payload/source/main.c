@@ -4,7 +4,7 @@
 
 #include <switch.h>
 
-#define IRAM_PAYLOAD_MAX_SIZE 0x2F000
+#define IRAM_PAYLOAD_MAX_SIZE 0x20000
 #define IRAM_PAYLOAD_BASE 0x40010000
 
 static alignas(0x1000) u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];
@@ -13,7 +13,7 @@ static alignas(0x1000) u8 g_work_page[0x1000];
 
 void do_iram_dram_copy(void *buf, uintptr_t iram_addr, size_t size, int option) {
     memcpy(g_work_page, buf, size);
-    
+
     SecmonArgs args = {0};
     args.X[0] = 0xF0000201;             /* smcAmsIramCopy */
     args.X[1] = (uintptr_t)g_work_page;  /* DRAM Address */
@@ -21,7 +21,7 @@ void do_iram_dram_copy(void *buf, uintptr_t iram_addr, size_t size, int option) 
     args.X[3] = size;                   /* Copy size */
     args.X[4] = option;                 /* 0 = Read, 1 = Write */
     svcCallSecureMonitor(&args);
-    
+
     memcpy(buf, g_work_page, size);
 }
 
@@ -42,18 +42,18 @@ static void clear_iram(void) {
 
 static void reboot_to_payload(void) {
     clear_iram();
-    
+
     for (size_t i = 0; i < IRAM_PAYLOAD_MAX_SIZE; i += 0x1000) {
         copy_to_iram(IRAM_PAYLOAD_BASE + i, &g_reboot_payload[i], 0x1000);
     }
-    
+
     splSetConfig((SplConfigItem)65001, 2);
 }
 
 int main(int argc, char **argv)
 {
     consoleInit(NULL);
-    
+
     bool can_reboot = true;
     Result rc = splInitialize();
     if (R_FAILED(rc)) {
@@ -70,7 +70,7 @@ int main(int argc, char **argv)
             printf("Press [-] to reboot to payload\n");
         }
     }
-        
+
     printf("Press [L] to exit\n");
 
     // Main loop
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
         if (can_reboot && kDown & KEY_MINUS) {
             reboot_to_payload();
         }
-        if (kDown & KEY_L)  { break; } // break in order to return to hbmenu 
+        if (kDown & KEY_L)  { break; } // break in order to return to hbmenu
 
         consoleUpdate(NULL);
     }
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     if (can_reboot) {
         splExit();
     }
-    
+
     consoleExit(NULL);
     return 0;
 }
