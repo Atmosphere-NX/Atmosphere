@@ -109,7 +109,7 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 
 $(OUTPUT).lz4	:	$(OUTPUT).bin
-	@python $(TOPDIR)/split_program.py $(OUTPUT).bin $(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX) $(dir $(OUTPUT))
+	@python $(TOPDIR)/split_program.py $(OUTPUT).bin "$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX)" $(dir $(OUTPUT))
 	@echo built ... $(notdir $@)
 
 $(OUTPUT).bin	:	$(OUTPUT).elf
@@ -122,7 +122,9 @@ $(OFILES)	:	$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/$(ATMOSPHERE_LIBRARY_DIR)/l
 
 secmon_crt0_cpp.o secmon_make_page_table.o : CFLAGS += -fno-builtin
 
-rebootstub.bin.o	rebootstub_bin.h:	$(TOPDIR)/rebootstub/rebootstub$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).bin
+rebootstub.bin.o: rebootstub_bin.h
+
+rebootstub_bin.h:	$(TOPDIR)/rebootstub/rebootstub$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).bin
 	@echo $(notdir $<)
 	@rm -rf tmp_rebootstub_$(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
 	@mkdir -p tmp_rebootstub_$(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
@@ -131,7 +133,9 @@ rebootstub.bin.o	rebootstub_bin.h:	$(TOPDIR)/rebootstub/rebootstub$(ATMOSPHERE_B
 	@rm -rf tmp_rebootstub_$(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
 
 $(TOPDIR)/rebootstub/rebootstub$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).bin:
-	@$(MAKE) --no-print-directory -C $(TOPDIR)/rebootstub $(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
+	@$(MAKE) __RECURSIVE__=0 --no-print-directory -C $(TOPDIR)/rebootstub $(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
+
+sc7fw.bin.o: sc7fw_bin.h
 
 sc7fw.bin.o	sc7fw_bin.h:	$(TOPDIR)/sc7fw/sc7fw$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).bin
 	@echo $(notdir $<)
@@ -142,7 +146,7 @@ sc7fw.bin.o	sc7fw_bin.h:	$(TOPDIR)/sc7fw/sc7fw$(ATMOSPHERE_BUILD_TARGET_BINARY_S
 	@rm -rf tmp_sc7fw_$(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
 
 $(TOPDIR)/sc7fw/sc7fw$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).bin:
-	@$(MAKE) --no-print-directory -C $(TOPDIR)/sc7fw $(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
+	@$(MAKE) __RECURSIVE__=0 --no-print-directory -C $(TOPDIR)/sc7fw $(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
 
 %.elf:
 	@echo linking $(notdir $@)
