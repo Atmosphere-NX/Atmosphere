@@ -197,7 +197,7 @@ namespace ams::secmon {
 
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramMarikoProgram(UINT64_C(0x1F00D0000), 0x20000);
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramMarikoProgram(UINT64_C(0x7C020000), 0x20000);
-    static_assert(MemoryRegionPhysicalTzramMariko.Contains(MemoryRegionVirtualTzramMarikoProgram));
+    static_assert(MemoryRegionPhysicalTzramMariko.Contains(MemoryRegionPhysicalTzramMarikoProgram));
 
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramProgramMain(UINT64_C(0x1F00C0800), 0xB800);
     static_assert(MemoryRegionVirtualTzramProgram.Contains(MemoryRegionVirtualTzramProgramMain));
