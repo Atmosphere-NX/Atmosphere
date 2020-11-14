@@ -38,6 +38,7 @@ namespace ams::i2c::driver::board::nintendo_nx::impl {
                     T *obj = std::addressof(*it);
                     it = this->list.erase(it);
 
+                    obj->~T();
                     this->memory_resource->Deallocate(obj, sizeof(T));
                 }
             }
