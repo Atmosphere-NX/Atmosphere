@@ -42,8 +42,8 @@ namespace ams::kern {
             virtual bool IsSignaled() const = 0;
             virtual void DebugWaiters();
 
-            iterator AddWaiterThread(KThread *thread);
-            iterator RemoveWaiterThread(iterator it);
+            iterator RegisterWaitingThread(KThread *thread);
+            iterator UnregisterWaitingThread(iterator it);
 
             iterator begin();
             iterator end();

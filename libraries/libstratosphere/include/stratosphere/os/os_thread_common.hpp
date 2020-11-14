@@ -27,6 +27,8 @@ namespace ams::os {
     constexpr inline s32 DefaultThreadPriority   = ThreadPriorityRangeSize / 2;
     constexpr inline s32 LowestThreadPriority    = ThreadPriorityRangeSize - 1;
 
+    constexpr inline s32 InvalidThreadPriority   = 127;
+
     constexpr inline s32 LowestSystemThreadPriority  = 35;
     constexpr inline s32 HighestSystemThreadPriority = -12;
 

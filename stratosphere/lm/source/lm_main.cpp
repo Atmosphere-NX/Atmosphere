@@ -13,8 +13,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stratosphere.hpp>
-#include "lm_service.hpp"
+#include "lm_log_service.hpp"
+#include "lm_log_getter.hpp"
+#include "lm_threads.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -62,83 +63,77 @@ void __appInit(void) {
     hos::InitializeForStratosphere();
 
     /* Initialize services. */
-    sm::DoWithSession([&]() {
-        R_ABORT_UNLESS(pminfoInitialize());
-        R_ABORT_UNLESS(fsInitialize());
-        R_ABORT_UNLESS(pscmInitialize());
+    sm::DoWithSession([]() {
         R_ABORT_UNLESS(setsysInitialize());
+        R_ABORT_UNLESS(pscmInitialize());
     });
-
-    R_ABORT_UNLESS(fs::MountSdCard("sdmc"));
 
     ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    fs::Unmount("sdmc");
-
     /* Cleanup services. */
-    setsysExit();
     pscmExit();
-    fsExit();
-    pminfoExit();
+    setsysExit();
 }
 
 namespace {
 
     /* TODO: these domain/domain object amounts work fine, but which ones does N actually use? */
     struct ServerOptions {
-        static constexpr size_t PointerBufferSize = 0;
+        static constexpr size_t PointerBufferSize = 0x400;
         static constexpr size_t MaxDomains = 0x40;
         static constexpr size_t MaxDomainObjects = 0x200;
     };
 
-    constexpr sm::ServiceName LmServiceName = sm::ServiceName::Encode("lm");
-    constexpr size_t LmMaxSessions = 42;
+    constexpr sm::ServiceName LogServiceName = sm::ServiceName::Encode("lm");
+    constexpr size_t LogServiceMaxSessions = 30;
 
-    /* lm */
-    constexpr size_t NumServers = 1;
-    sf::hipc::ServerManager<NumServers, ServerOptions, LmMaxSessions> g_server_manager;
+    constexpr sm::ServiceName LogGetterServiceName = sm::ServiceName::Encode("lm:get");
+    constexpr size_t LogGetterServiceMaxSessions = 1;
+
+    /* lm, lm:get */
+    constexpr size_t NumServers = 2;
+    constexpr size_t MaxSessions = LogServiceMaxSessions + LogGetterServiceMaxSessions;
+    sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> g_server_manager;
 
     psc::PmModule g_pm_module;
-    os::WaitableHolderType g_module_waitable_holder;
+    os::WaitableHolderType g_pm_module_waitable_holder;
 
 }
 
-namespace ams::lm {
+extern std::atomic_bool g_flag;
+
+namespace {
 
     void StartAndLoopProcess() {
         /* Get our psc:m module to handle requests. */
-        R_ABORT_UNLESS(g_pm_module.Initialize(psc::PmModuleId_Lm, nullptr, 0, os::EventClearMode_ManualClear));
-        os::InitializeWaitableHolder(std::addressof(g_module_waitable_holder), g_pm_module.GetEventPointer()->GetBase());
-        os::SetWaitableHolderUserData(std::addressof(g_module_waitable_holder), static_cast<uintptr_t>(psc::PmModuleId_Lm));
-        g_server_manager.AddUserWaitableHolder(std::addressof(g_module_waitable_holder));
+        const psc::PmModuleId dependencies[] = { psc::PmModuleId_Fs, psc::PmModuleId_TmaHostIo };
+        R_ABORT_UNLESS(g_pm_module.Initialize(psc::PmModuleId_Lm, dependencies, util::size(dependencies), os::EventClearMode_ManualClear));
+
+        os::InitializeWaitableHolder(std::addressof(g_pm_module_waitable_holder), g_pm_module.GetEventPointer()->GetBase());
+        os::SetWaitableHolderUserData(std::addressof(g_pm_module_waitable_holder), static_cast<uintptr_t>(psc::PmModuleId_Lm));
+
+        g_server_manager.AddUserWaitableHolder(std::addressof(g_pm_module_waitable_holder));
         
-        psc::PmState pm_state;
+        psc::PmState prev_state;
+        psc::PmState cur_state;
         psc::PmFlagSet pm_flags;
         while(true) {
             auto *signaled_holder = g_server_manager.WaitSignaled();
-            if(signaled_holder != std::addressof(g_module_waitable_holder)) {
+            if (signaled_holder != std::addressof(g_pm_module_waitable_holder)) {
+                /* Process IPC requests. */
                 R_ABORT_UNLESS(g_server_manager.Process(signaled_holder));
             }
             else {
+                /* Handle our module. */
                 g_pm_module.GetEventPointer()->Clear();
-                if(R_SUCCEEDED(g_pm_module.GetRequest(std::addressof(pm_state), std::addressof(pm_flags)))) {
-                    switch(pm_state) {
-                        case psc::PmState_Awake:
-                        case psc::PmState_ReadyAwaken:
-                            /* Awake, enable logging. */
-                            impl::SetCanAccessFs(true);
-                            break;
-                        case psc::PmState_ReadySleep:
-                        case psc::PmState_ReadyShutdown:
-                            /* Sleep, disable logging. */
-                            impl::SetCanAccessFs(false);
-                            break;
-                        default:
-                            break;
+                if(R_SUCCEEDED(g_pm_module.GetRequest(std::addressof(cur_state), std::addressof(pm_flags)))) {
+                    if (((prev_state == psc::PmState_ReadyAwakenCritical) && (cur_state == psc::PmState_ReadyAwaken)) || ((prev_state == psc::PmState_ReadyAwaken) && (cur_state == psc::PmState_ReadySleep)) || (cur_state == psc::PmState_ReadyShutdown)) {
+                        // TODO: set some atomic flag
                     }
-                    R_ABORT_UNLESS(g_pm_module.Acknowledge(pm_state, ResultSuccess()));
+                    R_ABORT_UNLESS(g_pm_module.Acknowledge(cur_state, ResultSuccess()));
+                    prev_state = cur_state;
                 }
                 g_server_manager.AddUserWaitableHolder(signaled_holder);
             }
@@ -152,15 +147,22 @@ int main(int argc, char **argv) {
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(lm, IpcServer));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(lm, IpcServer));
 
-    /* Clear logs directory. */
-    lm::impl::ClearDebugLogs();
+    /* Start threads. */
+    lm::StartHtcsThread();
+    lm::StartFlushThread();
 
-    /* Add service to manager. */
-    R_ABORT_UNLESS(g_server_manager.RegisterServer<lm::LogService>(LmServiceName, LmMaxSessions));
- 
+    /* Register lm */
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<lm::impl::ILogService, lm::LogService>(LogServiceName, LogServiceMaxSessions)));
+    
+    /* Register lm:get */
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<lm::impl::ILogGetter, lm::LogGetter>(LogGetterServiceName, LogGetterServiceMaxSessions)));
+    
     /* Loop forever, servicing our services. */
-    lm::StartAndLoopProcess();
+    StartAndLoopProcess();
+
+    /* Dispose threads. */
+    lm::DisposeFlushThread();
+    lm::DisposeHtcsThread();
  
-    /* Cleanup */
     return 0;
 }

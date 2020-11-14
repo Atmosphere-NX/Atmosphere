@@ -13,26 +13,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <stratosphere.hpp>
 
 namespace ams::mitm::bpc {
 
-    class AtmosphereService final : public sf::IServiceObject {
-        private:
-            enum class CommandId {
-                RebootToFatalError = 65000,
-                SetRebootPayload   = 65001,
-            };
-        private:
+    namespace impl {
+
+        #define AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO(C, H)                                     \
+            AMS_SF_METHOD_INFO(C, H, 65000, void, RebootToFatalError, (const ams::FatalErrorContext &ctx)) \
+            AMS_SF_METHOD_INFO(C, H, 65001, void, SetRebootPayload,   (const ams::sf::InBuffer &payload))
+
+        AMS_SF_DEFINE_INTERFACE(IAtmosphereInterface, AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO)
+
+    }
+
+    class AtmosphereService final {
+        public:
             void RebootToFatalError(const ams::FatalErrorContext &ctx);
             void SetRebootPayload(const ams::sf::InBuffer &payload);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(RebootToFatalError),
-                MAKE_SERVICE_COMMAND_META(SetRebootPayload),
-            };
     };
+    static_assert(impl::IsIAtmosphereInterface<AtmosphereService>);
 
 }

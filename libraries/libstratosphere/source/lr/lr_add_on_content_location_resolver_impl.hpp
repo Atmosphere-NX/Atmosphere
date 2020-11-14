@@ -21,7 +21,7 @@
 
 namespace ams::lr {
 
-    class AddOnContentLocationResolverImpl : public IAddOnContentLocationResolver {
+    class AddOnContentLocationResolverImpl {
         private:
             /* Storage for RegisteredData entries by data id. */
             RegisteredStorages<ncm::DataId, 0x800> registered_storages;
@@ -29,12 +29,13 @@ namespace ams::lr {
             AddOnContentLocationResolverImpl() : registered_storages(hos::GetVersion() < hos::Version_9_0_0 ? 0x800 : 0x2) { /* ... */ }
 
             /* Actual commands. */
-            virtual Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id) override;
-            virtual Result RegisterAddOnContentStorageDeprecated(ncm::DataId id, ncm::StorageId storage_id) override;
-            virtual Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id) override;
-            virtual Result UnregisterAllAddOnContentPath() override;
-            virtual Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids) override;
-            virtual Result UnregisterApplicationAddOnContent(ncm::ApplicationId id) override;
+            Result ResolveAddOnContentPath(sf::Out<Path> out, ncm::DataId id);
+            Result RegisterAddOnContentStorageDeprecated(ncm::DataId id, ncm::StorageId storage_id);
+            Result RegisterAddOnContentStorage(ncm::DataId id, ncm::ApplicationId application_id, ncm::StorageId storage_id);
+            Result UnregisterAllAddOnContentPath();
+            Result RefreshApplicationAddOnContent(const sf::InArray<ncm::ApplicationId> &ids);
+            Result UnregisterApplicationAddOnContent(ncm::ApplicationId id);
     };
+    static_assert(lr::IsIAddOnContentLocationResolver<AddOnContentLocationResolverImpl>);
 
 }

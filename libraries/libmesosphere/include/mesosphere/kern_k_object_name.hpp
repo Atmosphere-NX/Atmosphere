@@ -49,6 +49,11 @@ namespace ams::kern {
 
                 return Delete(obj.GetPointerUnsafe(), name);
             }
+
+            template<typename Derived> requires std::derived_from<Derived, KAutoObject>
+            static KScopedAutoObject<Derived> Find(const char *name) {
+                return Find(name);
+            }
         private:
             static KScopedAutoObject<KAutoObject> FindImpl(const char *name);
 

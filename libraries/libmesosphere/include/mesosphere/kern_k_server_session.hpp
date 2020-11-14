@@ -36,13 +36,23 @@ namespace ams::kern {
             constexpr KServerSession() : parent(), request_list(), current_request(), lock() { /* ... */ }
             virtual ~KServerSession() { /* ... */ }
 
-            void Initialize(KSession *parent);
+            virtual void Destroy() override;
+
+            void Initialize(KSession *p) { this->parent = p; }
 
             constexpr const KSession *GetParent() const { return this->parent; }
 
-            virtual bool IsSignaled() const override { MESOSPHERE_UNIMPLEMENTED(); }
+            virtual bool IsSignaled() const override;
 
-            /* TODO: More of KServerSession. */
+            Result OnRequest(KSessionRequest *request);
+
+            Result ReceiveRequest(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr);
+            Result SendReply(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr);
+
+            void OnClientClosed();
+        private:
+            bool IsSignaledImpl() const;
+            void CleanupRequests();
     };
 
 }

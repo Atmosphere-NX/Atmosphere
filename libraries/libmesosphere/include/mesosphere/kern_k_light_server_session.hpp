@@ -35,13 +35,22 @@ namespace ams::kern {
             constexpr KLightServerSession() : parent(), request_queue(), server_queue(), current_request(), server_thread() { /* ... */ }
             virtual ~KLightServerSession() { /* ... */ }
 
-            void Initialize(KLightSession *parent);
+            void Initialize(KLightSession *parent) {
+                /* Set member variables. */
+                this->parent = parent;
+            }
 
+            virtual void Destroy() override;
             static void PostDestroy(uintptr_t arg) { /* ... */ }
 
             constexpr const KLightSession *GetParent() const { return this->parent; }
 
-            /* TODO: More of KLightServerSession. */
+            Result OnRequest(KThread *request_thread);
+            Result ReplyAndReceive(u32 *data);
+
+            void OnClientClosed();
+        private:
+            void CleanupRequests();
     };
 
 }

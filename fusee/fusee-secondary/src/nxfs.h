@@ -19,7 +19,6 @@
 
 #include "fs_dev.h"
 #include "raw_dev.h"
-#include "emu_dev.h"
 
 int nxfs_init();
 int nxfs_end();

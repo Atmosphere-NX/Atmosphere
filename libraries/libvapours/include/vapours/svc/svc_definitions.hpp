@@ -52,7 +52,7 @@
     HANDLER(0x15, Result,  CreateTransferMemory,           OUTPUT(::ams::svc::Handle, out_handle), INPUT(::ams::svc::Address, address), INPUT(::ams::svc::Size, size), INPUT(::ams::svc::MemoryPermission, map_perm))                                                                                                                       \
     HANDLER(0x16, Result,  CloseHandle,                    INPUT(::ams::svc::Handle, handle))                                                                                                                                                                                                                                               \
     HANDLER(0x17, Result,  ResetSignal,                    INPUT(::ams::svc::Handle, handle))                                                                                                                                                                                                                                               \
-    HANDLER(0x18, Result,  WaitSynchronization,            OUTPUT(int32_t, out_index), INPTR(::ams::svc::Handle, handles), INPUT(int32_t, numHandles), INPUT(int64_t, timeout_ns))                                                                                                                                                          \
+    HANDLER(0x18, Result,  WaitSynchronization,            OUTPUT(int32_t, out_index), INPTR(::ams::svc::Handle, handles), INPUT(int32_t, num_handles), INPUT(int64_t, timeout_ns))                                                                                                                                                         \
     HANDLER(0x19, Result,  CancelSynchronization,          INPUT(::ams::svc::Handle, handle))                                                                                                                                                                                                                                               \
     HANDLER(0x1A, Result,  ArbitrateLock,                  INPUT(::ams::svc::Handle, thread_handle), INPUT(::ams::svc::Address, address), INPUT(uint32_t, tag))                                                                                                                                                                             \
     HANDLER(0x1B, Result,  ArbitrateUnlock,                INPUT(::ams::svc::Address, address))                                                                                                                                                                                                                                             \
@@ -107,7 +107,7 @@
     HANDLER(0x52, Result,  UnmapTransferMemory,            INPUT(::ams::svc::Handle, trmem_handle), INPUT(::ams::svc::Address, address), INPUT(::ams::svc::Size, size))                                                                                                                                                                     \
     HANDLER(0x53, Result,  CreateInterruptEvent,           OUTPUT(::ams::svc::Handle, out_read_handle), INPUT(int32_t, interrupt_id), INPUT(::ams::svc::InterruptType, interrupt_type))                                                                                                                                                     \
     HANDLER(0x54, Result,  QueryPhysicalAddress,           OUTPUT(::ams::svc::NAMESPACE::PhysicalMemoryInfo, out_info), INPUT(::ams::svc::Address, address))                                                                                                                                                                                \
-    HANDLER(0x55, Result,  QueryIoMapping,                 OUTPUT(::ams::svc::Address, out_address), INPUT(::ams::svc::PhysicalAddress, physical_address), INPUT(::ams::svc::Size, size))                                                                                                                                                   \
+    HANDLER(0x55, Result,  QueryIoMapping,                 OUTPUT(::ams::svc::Address, out_address), OUTPUT(::ams::svc::Size, out_size), INPUT(::ams::svc::PhysicalAddress, physical_address), INPUT(::ams::svc::Size, size))                                                                                                               \
     HANDLER(0x56, Result,  CreateDeviceAddressSpace,       OUTPUT(::ams::svc::Handle, out_handle), INPUT(uint64_t, das_address), INPUT(uint64_t, das_size))                                                                                                                                                                                 \
     HANDLER(0x57, Result,  AttachDeviceAddressSpace,       INPUT(::ams::svc::DeviceName, device_name), INPUT(::ams::svc::Handle, das_handle))                                                                                                                                                                                               \
     HANDLER(0x58, Result,  DetachDeviceAddressSpace,       INPUT(::ams::svc::DeviceName, device_name), INPUT(::ams::svc::Handle, das_handle))                                                                                                                                                                                               \
@@ -149,13 +149,29 @@
     HANDLER(0x7C, Result,  GetProcessInfo,                 OUTPUT(int64_t, out_info), INPUT(::ams::svc::Handle, process_handle), INPUT(::ams::svc::ProcessInfoType, info_type))                                                                                                                                                             \
     HANDLER(0x7D, Result,  CreateResourceLimit,            OUTPUT(::ams::svc::Handle, out_handle))                                                                                                                                                                                                                                          \
     HANDLER(0x7E, Result,  SetResourceLimitLimitValue,     INPUT(::ams::svc::Handle, resource_limit_handle), INPUT(::ams::svc::LimitableResource, which), INPUT(int64_t, limit_value))                                                                                                                                                      \
-    HANDLER(0x7F, void,    CallSecureMonitor,              OUTPUT(::ams::svc::NAMESPACE::SecureMonitorArguments, args))
+    HANDLER(0x7F, void,    CallSecureMonitor,              OUTPUT(::ams::svc::NAMESPACE::SecureMonitorArguments, args))                                                                                                                                                                                                                     \
+                                                                                                                                                                                                                                                                                                                                            \
+    HANDLER(0x55, Result,  LegacyQueryIoMapping,           OUTPUT(::ams::svc::Address, out_address), INPUT(::ams::svc::PhysicalAddress, physical_address), INPUT(::ams::svc::Size, size))                                                                                                                                                   \
+    HANDLER(0x64, Result,  LegacyContinueDebugEvent,       INPUT(::ams::svc::Handle, debug_handle), INPUT(uint32_t, flags), INPUT(uint64_t, thread_id))
 
 #define AMS_SVC_FOREACH_USER_DEFINITION(HANDLER, NAMESPACE) AMS_SVC_FOREACH_DEFINITION_IMPL(HANDLER, NAMESPACE, AMS_SVC_USER_INPUT_HANDLER, AMS_SVC_USER_OUTPUT_HANDLER, AMS_SVC_USER_INPTR_HANDLER, AMS_SVC_USER_OUTPTR_HANDLER)
 #define AMS_SVC_FOREACH_KERN_DEFINITION(HANDLER, NAMESPACE) AMS_SVC_FOREACH_DEFINITION_IMPL(HANDLER, NAMESPACE, AMS_SVC_KERN_INPUT_HANDLER, AMS_SVC_KERN_OUTPUT_HANDLER, AMS_SVC_KERN_INPTR_HANDLER, AMS_SVC_KERN_OUTPTR_HANDLER)
 
 #define AMS_SVC_DECLARE_FUNCTION_PROTOTYPE(ID, RETURN_TYPE, NAME, ...) \
     RETURN_TYPE NAME(__VA_ARGS__);
+
+namespace ams::svc {
+
+    #define AMS_SVC_DEFINE_ID_ENUM_MEMBER(ID, RETURN_TYPE, NAME, ...) \
+    SvcId_##NAME = ID,
+
+    enum SvcId : u32 {
+        AMS_SVC_FOREACH_KERN_DEFINITION(AMS_SVC_DEFINE_ID_ENUM_MEMBER, _)
+    };
+
+    #undef AMS_SVC_DEFINE_ID_ENUM_MEMBER
+
+}
 
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 

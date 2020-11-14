@@ -60,22 +60,26 @@ namespace ams::fs {
 
         /* It can take some time for the system partition to be ready (if it's on the SD card). */
         /* Thus, we will retry up to 10 times, waiting one second each time. */
-        constexpr size_t MaxRetries = 10;
-        constexpr u64 RetryInterval = 1'000'000'000ul;
+        constexpr size_t MaxRetries  = 10;
+        constexpr auto RetryInterval = TimeSpan::FromSeconds(1);
 
         /* Mount the content storage, use libnx bindings. */
         ::FsFileSystem fs;
         for (size_t i = 0; i < MaxRetries; i++) {
+            /* Try to open the filesystem. */
             R_TRY_CATCH(fsOpenContentStorageFileSystem(std::addressof(fs), static_cast<::FsContentStorageId>(id))) {
                 R_CATCH(fs::ResultSystemPartitionNotReady) {
                     if (i < MaxRetries - 1) {
-                        /* TODO: os::SleepThread */
-                        svcSleepThread(RetryInterval);
+                        os::SleepThread(RetryInterval);
+                        continue;
                     } else {
                         return fs::ResultSystemPartitionNotReady();
                     }
                 }
             } R_END_TRY_CATCH;
+
+            /* The filesystem was opened successfully. */
+            break;
         }
 
         /* Allocate a new filesystem wrapper. */

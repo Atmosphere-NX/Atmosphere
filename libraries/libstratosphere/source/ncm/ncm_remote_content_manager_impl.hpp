@@ -20,80 +20,81 @@
 
 namespace ams::ncm {
 
-    class RemoteContentManagerImpl final : public IContentManager {
+    class RemoteContentManagerImpl final {
         public:
             RemoteContentManagerImpl() { /* ... */ }
 
             ~RemoteContentManagerImpl() { /* ... */ }
         public:
-            virtual Result CreateContentStorage(StorageId storage_id) override {
+            Result CreateContentStorage(StorageId storage_id) {
                 return ::ncmCreateContentStorage(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result CreateContentMetaDatabase(StorageId storage_id) override {
+            Result CreateContentMetaDatabase(StorageId storage_id) {
                 return ::ncmCreateContentMetaDatabase(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result VerifyContentStorage(StorageId storage_id) override {
+            Result VerifyContentStorage(StorageId storage_id) {
                 return ::ncmVerifyContentStorage(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result VerifyContentMetaDatabase(StorageId storage_id) override {
+            Result VerifyContentMetaDatabase(StorageId storage_id) {
                 return ::ncmVerifyContentMetaDatabase(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id) override {
+            Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id) {
                 NcmContentStorage cs;
                 R_TRY(::ncmOpenContentStorage(std::addressof(cs), static_cast<NcmStorageId>(storage_id)));
 
-                out.SetValue(std::make_shared<RemoteContentStorageImpl>(cs));
+                out.SetValue(sf::MakeShared<IContentStorage, RemoteContentStorageImpl>(cs));
                 return ResultSuccess();
             }
 
-            virtual Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id) override {
+            Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id) {
                 NcmContentMetaDatabase db;
                 R_TRY(::ncmOpenContentMetaDatabase(std::addressof(db), static_cast<NcmStorageId>(storage_id)));
 
-                out.SetValue(std::make_shared<RemoteContentMetaDatabaseImpl>(db));
+                out.SetValue(sf::MakeShared<IContentMetaDatabase, RemoteContentMetaDatabaseImpl>(db));
                 return ResultSuccess();
             }
 
-            virtual Result CloseContentStorageForcibly(StorageId storage_id) override {
+            Result CloseContentStorageForcibly(StorageId storage_id) {
                 return ::ncmCloseContentStorageForcibly(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result CloseContentMetaDatabaseForcibly(StorageId storage_id) override {
+            Result CloseContentMetaDatabaseForcibly(StorageId storage_id) {
                 return ::ncmCloseContentMetaDatabaseForcibly(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result CleanupContentMetaDatabase(StorageId storage_id) override {
+            Result CleanupContentMetaDatabase(StorageId storage_id) {
                 return ::ncmCleanupContentMetaDatabase(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result ActivateContentStorage(StorageId storage_id) override {
+            Result ActivateContentStorage(StorageId storage_id) {
                 return ::ncmActivateContentStorage(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result InactivateContentStorage(StorageId storage_id) override {
+            Result InactivateContentStorage(StorageId storage_id) {
                 return ::ncmInactivateContentStorage(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result ActivateContentMetaDatabase(StorageId storage_id) override {
+            Result ActivateContentMetaDatabase(StorageId storage_id) {
                 return ::ncmActivateContentMetaDatabase(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result InactivateContentMetaDatabase(StorageId storage_id) override {
+            Result InactivateContentMetaDatabase(StorageId storage_id) {
                 return ::ncmInactivateContentMetaDatabase(static_cast<NcmStorageId>(storage_id));
             }
 
-            virtual Result InvalidateRightsIdCache() override {
+            Result InvalidateRightsIdCache() {
                 return ::ncmInvalidateRightsIdCache();
             }
 
-            virtual Result GetMemoryReport(sf::Out<MemoryReport> out) override {
+            Result GetMemoryReport(sf::Out<MemoryReport> out) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
     };
+    static_assert(ncm::IsIContentManager<RemoteContentManagerImpl>);
 
 }

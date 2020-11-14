@@ -24,12 +24,12 @@ namespace ams::fssystem {
 
         /* Official FS has a 4.5 MB exp heap, a 6 MB buffer pool, an 8 MB device buffer manager heap, and a 14 MB buffer manager heap. */
         /* We don't need so much memory for ams.mitm (as we're servicing a much more limited context). */
-        /* We'll give ourselves a 2.5 MB exp heap, a 2 MB buffer pool, a 2 MB device buffer manager heap, and a 2 MB buffer manager heap. */
-        /* These numbers match signed-system-partition safe FS. */
-        constexpr size_t ExpHeapSize           = 2_MB + 512_KB;
-        constexpr size_t BufferPoolSize        = 2_MB;
-        constexpr size_t DeviceBufferSize      = 2_MB;
-        constexpr size_t BufferManagerHeapSize = 2_MB;
+        /* We'll give ourselves a 1.5 MB exp heap, a 1 MB buffer pool, a 1 MB device buffer manager heap, and a 1 MB buffer manager heap. */
+        /* These numbers are 1 MB less than signed-system-partition safe FS in all pools. */
+        constexpr size_t ExpHeapSize           = 1_MB + 512_KB;
+        constexpr size_t BufferPoolSize        = 1_MB;
+        constexpr size_t DeviceBufferSize      = 1_MB;
+        constexpr size_t BufferManagerHeapSize = 1_MB;
 
         constexpr size_t MaxCacheCount = 1024;
         constexpr size_t BlockSize     = 16_KB;

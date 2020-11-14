@@ -69,12 +69,12 @@ namespace ams::sf::hipc {
                     virtual void CreateSessionObjectHolder(cmif::ServiceObjectHolder *out_obj, std::shared_ptr<::Service> *out_fsrv) const = 0;
             };
 
-            template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
+            template<typename Interface, auto MakeShared>
             class Server : public ServerBase {
                 NON_COPYABLE(Server);
                 NON_MOVEABLE(Server);
                 private:
-                    static constexpr bool IsMitmServer = ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject;
+                    static constexpr bool IsMitmServer = sf::IsMitmServiceObject<Interface>;
                 public:
                     Server(Handle ph, sm::ServiceName sn, bool m, cmif::ServiceObjectHolder &&sh) : ServerBase(ph, sn, m, std::forward<cmif::ServiceObjectHolder>(sh)) {
                         /* ... */
@@ -145,14 +145,14 @@ namespace ams::sf::hipc {
 
             void   ProcessDeferredSessions();
 
-            template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
+            template<typename Interface, auto MakeShared>
             void RegisterServerImpl(Handle port_handle, sm::ServiceName service_name, bool managed, cmif::ServiceObjectHolder &&static_holder) {
                 /* Allocate server memory. */
                 auto *server = this->AllocateServer();
                 AMS_ABORT_UNLESS(server != nullptr);
-                new (server) Server<ServiceImpl, MakeShared>(port_handle, service_name, managed, std::forward<cmif::ServiceObjectHolder>(static_holder));
+                new (server) Server<Interface, MakeShared>(port_handle, service_name, managed, std::forward<cmif::ServiceObjectHolder>(static_holder));
 
-                if constexpr (!ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject) {
+                if constexpr (!sf::IsMitmServiceObject<Interface>) {
                     /* Non-mitm server. */
                     os::SetWaitableHolderUserData(server, static_cast<uintptr_t>(UserDataTag::Server));
                 } else {
@@ -163,9 +163,9 @@ namespace ams::sf::hipc {
                 os::LinkWaitableHolder(std::addressof(this->waitable_manager), server);
             }
 
-            template<typename ServiceImpl>
-            static constexpr inline std::shared_ptr<ServiceImpl> MakeSharedMitm(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &client_info) {
-                return std::make_shared<ServiceImpl>(std::forward<std::shared_ptr<::Service>>(s), client_info);
+            template<typename Interface, typename ServiceImpl>
+            static constexpr inline std::shared_ptr<Interface> MakeSharedMitm(std::shared_ptr<::Service> &&s, const sm::MitmProcessInfo &client_info) {
+                return sf::MakeShared<Interface, ServiceImpl>(std::forward<std::shared_ptr<::Service>>(s), client_info);
             }
 
             Result InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, MitmQueryFunction query_func);
@@ -187,21 +187,18 @@ namespace ams::sf::hipc {
                 os::InitializeWaitableManager(std::addressof(this->waitlist));
             }
 
-            template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
-            void RegisterServer(Handle port_handle, std::shared_ptr<ServiceImpl> static_object = nullptr) {
-                static_assert(!ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject, "RegisterServer requires non-mitm object. Use RegisterMitmServer instead.");
+            template<typename Interface, typename ServiceImpl, auto MakeShared = sf::MakeShared<Interface, ServiceImpl>> requires (sf::IsServiceObject<Interface> && !sf::IsMitmServiceObject<Interface>)
+            void RegisterServer(Handle port_handle, std::shared_ptr<Interface> static_object = nullptr) {
                 /* Register server. */
                 cmif::ServiceObjectHolder static_holder;
                 if (static_object != nullptr) {
                     static_holder = cmif::ServiceObjectHolder(std::move(static_object));
                 }
-                this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, sm::InvalidServiceName, false, std::move(static_holder));
+                this->RegisterServerImpl<Interface, MakeShared>(port_handle, sm::InvalidServiceName, false, std::move(static_holder));
             }
 
-            template<typename ServiceImpl, auto MakeShared = std::make_shared<ServiceImpl>>
-            Result RegisterServer(sm::ServiceName service_name, size_t max_sessions, std::shared_ptr<ServiceImpl> static_object = nullptr) {
-                static_assert(!ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject, "RegisterServer requires non-mitm object. Use RegisterMitmServer instead.");
-
+            template<typename Interface, typename ServiceImpl, auto MakeShared = sf::MakeShared<Interface, ServiceImpl>> requires (sf::IsServiceObject<Interface> && !sf::IsMitmServiceObject<Interface>)
+            Result RegisterServer(sm::ServiceName service_name, size_t max_sessions, std::shared_ptr<Interface> static_object = nullptr) {
                 /* Register service. */
                 Handle port_handle;
                 R_TRY(sm::RegisterService(&port_handle, service_name, max_sessions, false));
@@ -211,19 +208,18 @@ namespace ams::sf::hipc {
                 if (static_object != nullptr) {
                     static_holder = cmif::ServiceObjectHolder(std::move(static_object));
                 }
-                this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, service_name, true, std::move(static_holder));
+                this->RegisterServerImpl<Interface, MakeShared>(port_handle, service_name, true, std::move(static_holder));
                 return ResultSuccess();
             }
 
-            template<typename ServiceImpl, auto MakeShared = MakeSharedMitm<ServiceImpl>>
+            template<typename Interface, typename ServiceImpl, auto MakeShared = MakeSharedMitm<Interface, ServiceImpl>>
+                requires (sf::IsMitmServiceObject<Interface> && sf::IsMitmServiceImpl<ServiceImpl>)
             Result RegisterMitmServer(sm::ServiceName service_name) {
-                static_assert(ServiceObjectTraits<ServiceImpl>::IsMitmServiceObject, "RegisterMitmServer requires mitm object. Use RegisterServer instead.");
-
                 /* Install mitm service. */
                 Handle port_handle;
                 R_TRY(this->InstallMitmServerImpl(&port_handle, service_name, &ServiceImpl::ShouldMitm));
 
-                this->RegisterServerImpl<ServiceImpl, MakeShared>(port_handle, service_name, true, cmif::ServiceObjectHolder());
+                this->RegisterServerImpl<Interface, MakeShared>(port_handle, service_name, true, cmif::ServiceObjectHolder());
                 return ResultSuccess();
             }
 

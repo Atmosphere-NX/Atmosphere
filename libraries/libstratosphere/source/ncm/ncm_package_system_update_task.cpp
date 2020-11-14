@@ -58,7 +58,7 @@ namespace ams::ncm {
         R_TRY(this->data.Initialize(context_path));
 
         /* Initialize PackageInstallTaskBase. */
-        u32 config = requires_exfat_driver ? InstallConfig_SystemUpdate : InstallConfig_SystemUpdate | InstallConfig_RequiresExFatDriver;
+        u32 config = !requires_exfat_driver ? InstallConfig_SystemUpdate : InstallConfig_SystemUpdate | InstallConfig_RequiresExFatDriver;
         R_TRY(PackageInstallTaskBase::Initialize(package_root, buffer, buffer_size, StorageId::BuiltInSystem, std::addressof(this->data), config));
 
         /* Cancel guards. */

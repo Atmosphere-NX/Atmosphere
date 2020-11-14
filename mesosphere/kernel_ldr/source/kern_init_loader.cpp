@@ -55,7 +55,6 @@ namespace ams::kern::init::loader {
         }
 
         void RelocateKernelPhysically(uintptr_t &base_address, KernelLayout *&layout) {
-            /* TODO: Proper secure monitor call. */
             KPhysicalAddress correct_base = KSystemControl::Init::GetKernelPhysicalBaseAddress(base_address);
             if (correct_base != base_address) {
                 const uintptr_t diff = GetInteger(correct_base) - base_address;
@@ -241,9 +240,6 @@ namespace ams::kern::init::loader {
         RelocateKernelPhysically(base_address, layout);
 
         /* Validate kernel layout. */
-        /* TODO: constexpr 0x1000 definition somewhere. */
-        /* In stratosphere, this is os::MemoryPageSize. */
-        /* We don't have ams::os, this may go in hw:: or something. */
         const uintptr_t rx_offset      = layout->rx_offset;
         const uintptr_t rx_end_offset  = layout->rx_end_offset;
         const uintptr_t ro_offset      = layout->ro_offset;
@@ -251,12 +247,12 @@ namespace ams::kern::init::loader {
         const uintptr_t rw_offset      = layout->rw_offset;
         /* UNUSED: const uintptr_t rw_end_offset  = layout->rw_end_offset; */
         const uintptr_t bss_end_offset = layout->bss_end_offset;
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_offset,      0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_end_offset,  0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_offset,      0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_end_offset,  0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      0x1000));
-        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, 0x1000));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_offset,      PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rx_end_offset,  PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_offset,      PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(ro_end_offset,  PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(rw_offset,      PageSize));
+        MESOSPHERE_INIT_ABORT_UNLESS(util::IsAligned(bss_end_offset, PageSize));
         const uintptr_t bss_offset            = layout->bss_offset;
         const uintptr_t ini_load_offset       = layout->ini_load_offset;
         const uintptr_t dynamic_offset        = layout->dynamic_offset;
@@ -317,11 +313,13 @@ namespace ams::kern::init::loader {
         const Elf::Dyn *kernel_dynamic = reinterpret_cast<const Elf::Dyn *>(GetInteger(virtual_base_address) + dynamic_offset);
         Elf::ApplyRelocations(GetInteger(virtual_base_address), kernel_dynamic);
 
+        /* Call the kernel's init array functions. */
+        /* NOTE: The kernel does this after reprotecting .rodata, but we do it before. */
+        /* This allows our global constructors to edit .rodata, which is valuable for editing the SVC tables to support older firmwares' ABIs. */
+        Elf::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
+
         /* Reprotect .rodata as R-- */
         ttbr1_table.Reprotect(virtual_base_address + ro_offset, ro_end_offset - ro_offset, KernelRwDataAttribute, KernelRoDataAttribute);
-
-        /* Call the kernel's init array functions. */
-        Elf::CallInitArrayFuncs(GetInteger(virtual_base_address) + init_array_offset, GetInteger(virtual_base_address) + init_array_end_offset);
 
         /* Return the difference between the random virtual base and the physical base. */
         return GetInteger(virtual_base_address) - base_address;

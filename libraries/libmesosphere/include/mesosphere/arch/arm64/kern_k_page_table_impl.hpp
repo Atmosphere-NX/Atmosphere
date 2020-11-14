@@ -106,6 +106,8 @@ namespace ams::kern::arch::arm64 {
             NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);
             L1PageTableEntry *Finalize();
 
+            void Dump(uintptr_t start, size_t size) const;
+
             bool BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const;
             bool ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const;
 

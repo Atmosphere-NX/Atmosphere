@@ -20,30 +20,26 @@
 
 namespace ams::mitm::fs {
 
-    using IStorageInterface    = ams::fssrv::impl::StorageInterfaceAdapter;
-    using IFileSystemInterface = ams::fssrv::impl::FileSystemInterfaceAdapter;
+    namespace {
 
-    /* TODO: Consider re-enabling the mitm flag logic. */
+        #define AMS_FS_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                  \
+            AMS_SF_METHOD_INFO(C, H,   7, Result, OpenFileSystemWithPatch,         (sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type),                              hos::Version_2_0_0) \
+            AMS_SF_METHOD_INFO(C, H,   8, Result, OpenFileSystemWithId,            (sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type), hos::Version_2_0_0) \
+            AMS_SF_METHOD_INFO(C, H,  18, Result, OpenSdCardFileSystem,            (sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out))                                                                                                   \
+            AMS_SF_METHOD_INFO(C, H,  51, Result, OpenSaveDataFileSystem,          (sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, u8 space_id, const ams::fs::SaveDataAttribute &attribute))                                         \
+            AMS_SF_METHOD_INFO(C, H,  12, Result, OpenBisStorage,                  (sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out, u32 bis_partition_id))                                                                                \
+            AMS_SF_METHOD_INFO(C, H, 200, Result, OpenDataStorageByCurrentProcess, (sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out))                                                                                                      \
+            AMS_SF_METHOD_INFO(C, H, 202, Result, OpenDataStorageByDataId,         (sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id))
 
-    class FsMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                OpenFileSystemDeprecated        = 0,
+        AMS_SF_DEFINE_MITM_INTERFACE(IFsMitmInterface, AMS_FS_MITM_INTERFACE_INFO)
 
-                SetCurrentProcess               = 1,
-                OpenFileSystemWithPatch         = 7,
-                OpenFileSystemWithId            = 8,
+    }
 
-                OpenSdCardFileSystem            = 18,
-
-                OpenSaveDataFileSystem          = 51,
-
-                OpenBisStorage                  = 12,
-                OpenDataStorageByCurrentProcess = 200,
-                OpenDataStorageByDataId         = 202,
-            };
+    class FsMitmService  : public sf::MitmServiceImplBase {
         public:
-            NX_CONSTEXPR bool ShouldMitmProgramId(const ncm::ProgramId program_id) {
+            using MitmServiceImplBase::MitmServiceImplBase;
+        public:
+            static constexpr ALWAYS_INLINE bool ShouldMitmProgramId(const ncm::ProgramId program_id) {
                 /* We want to mitm everything that isn't a system-module. */
                 if (!ncm::IsSystemProgramId(program_id)) {
                     return true;
@@ -81,26 +77,14 @@ namespace ams::mitm::fs {
                 return has_launched_qlaunch || ShouldMitmProgramId(client_info.program_id);
             }
         public:
-            SF_MITM_SERVICE_OBJECT_CTOR(FsMitmService) { /* ... */ }
-        protected:
             /* Overridden commands. */
-            Result OpenFileSystemWithPatch(sf::Out<std::shared_ptr<IFileSystemInterface>> out, ncm::ProgramId program_id, u32 _filesystem_type);
-            Result OpenFileSystemWithId(sf::Out<std::shared_ptr<IFileSystemInterface>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type);
-            Result OpenSdCardFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out);
-            Result OpenSaveDataFileSystem(sf::Out<std::shared_ptr<IFileSystemInterface>> out, u8 space_id, const ams::fs::SaveDataAttribute &attribute);
-            Result OpenBisStorage(sf::Out<std::shared_ptr<IStorageInterface>> out, u32 bis_partition_id);
-            Result OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<IStorageInterface>> out);
-            Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<IStorageInterface>> out, ncm::DataId data_id, u8 storage_id);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithPatch, hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(OpenFileSystemWithId,    hos::Version_2_0_0),
-                MAKE_SERVICE_COMMAND_META(OpenSdCardFileSystem),
-                MAKE_SERVICE_COMMAND_META(OpenSaveDataFileSystem),
-                MAKE_SERVICE_COMMAND_META(OpenBisStorage),
-                MAKE_SERVICE_COMMAND_META(OpenDataStorageByCurrentProcess),
-                MAKE_SERVICE_COMMAND_META(OpenDataStorageByDataId),
-            };
+            Result OpenFileSystemWithPatch(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, ncm::ProgramId program_id, u32 _filesystem_type);
+            Result OpenFileSystemWithId(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, const fssrv::sf::Path &path, ncm::ProgramId program_id, u32 _filesystem_type);
+            Result OpenSdCardFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out);
+            Result OpenSaveDataFileSystem(sf::Out<std::shared_ptr<ams::fssrv::sf::IFileSystem>> out, u8 space_id, const ams::fs::SaveDataAttribute &attribute);
+            Result OpenBisStorage(sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out, u32 bis_partition_id);
+            Result OpenDataStorageByCurrentProcess(sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out);
+            Result OpenDataStorageByDataId(sf::Out<std::shared_ptr<ams::fssrv::sf::IStorage>> out, ncm::DataId data_id, u8 storage_id);
     };
 
 }

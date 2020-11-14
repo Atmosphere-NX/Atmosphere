@@ -34,11 +34,15 @@ namespace ams::kern {
                 this->parent = parent;
             }
 
+            virtual void Destroy() override;
             static void PostDestroy(uintptr_t arg) { /* ... */ }
 
-            constexpr const KSession *GetParent() const { return this->parent; }
+            constexpr KSession *GetParent() const { return this->parent; }
 
-            /* TODO: More of KClientSession. */
+            Result SendSyncRequest(uintptr_t address, size_t size);
+            Result SendAsyncRequest(KWritableEvent *event, uintptr_t address, size_t size);
+
+            void OnServerClosed();
     };
 
 }

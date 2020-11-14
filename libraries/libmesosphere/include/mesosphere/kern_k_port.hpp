@@ -22,6 +22,9 @@
 
 namespace ams::kern {
 
+    class KServerSession;
+    class KLightServerSession;
+
     class KPort final : public KAutoObjectWithSlabHeapAndContainer<KPort, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KPort, KAutoObject);
         private:
@@ -50,7 +53,8 @@ namespace ams::kern {
             uintptr_t GetName() const { return this->name; }
             bool IsLight() const { return this->is_light; }
 
-            /* TODO: More of KPort */
+            Result EnqueueSession(KServerSession *session);
+            Result EnqueueSession(KLightServerSession *session);
 
             KClientPort &GetClientPort() { return this->client; }
             KServerPort &GetServerPort() { return this->server; }

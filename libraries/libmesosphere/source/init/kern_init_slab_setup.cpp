@@ -127,10 +127,13 @@ namespace ams::kern::init {
             size += util::AlignUp(sizeof(NAME) * (COUNT), alignof(void *)); \
         });
 
-        /* NOTE: This can't be used right now because we don't have all these types implemented. */
-        /* Once we do, uncomment the following and stop using the hardcoded size. */
-        /* TODO: FOREACH_SLAB_TYPE(ADD_SLAB_SIZE) */
-        size = 0x647000;
+        /* Add the size required for each slab. */
+        FOREACH_SLAB_TYPE(ADD_SLAB_SIZE)
+
+        #undef ADD_SLAB_SIZE
+
+        /* Add the reserved size. */
+        size += SlabRegionReservedSize;
 
         return size;
     }

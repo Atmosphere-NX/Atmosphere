@@ -593,7 +593,7 @@ namespace ams::ncm {
             R_UNLESS(std::memcmp(hash, content_info->digest.data, crypto::Sha256Generator::HashSize) == 0, ncm::ResultInvalidContentHash());
         }
 
-        if (!(this->config & InstallConfig_IgnoreTicket)) {
+        if (hos::GetVersion() >= hos::Version_2_0_0 && !(this->config & InstallConfig_IgnoreTicket)) {
             ncm::RightsId rights_id;
             {
                 /* Open the content storage and obtain the rights id. */
@@ -1000,7 +1000,7 @@ namespace ams::ncm {
     Result InstallTaskBase::GetInstallContentMetaDataFromPath(AutoBuffer *out, const Path &path, const InstallContentInfo &content_info, std::optional<u32> source_version) {
         AutoBuffer meta;
         {
-            /* TODO: fs::ScopedAutoAbortDisabler aad; */
+            fs::ScopedAutoAbortDisabler aad;
             R_TRY(ReadContentMetaPath(std::addressof(meta), path.str));
         }
 

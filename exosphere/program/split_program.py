@@ -3,7 +3,11 @@ import sys, lz4
 from struct import unpack as up
 
 def lz4_compress(data):
-    return lz4.block.compress(data, 'high_compression', store_size=False)
+    try:
+        import lz4.block as block
+    except ImportError:
+        block = lz4.LZ4_compress
+    return block.compress(data, 'high_compression', store_size=False)
 
 def split_binary(data):
     A, B, START, BOOT_CODE_START, BOOT_CODE_END, PROGRAM_START, C, D = up('<QQQQQQQQ', data[:0x40])
@@ -19,7 +23,7 @@ def split_binary(data):
 
 def main(argc, argv):
     if argc != 3:
-        print 'Usage: %s in outdir' % argv[0]
+        print('Usage: %s in outdir' % argv[0])
         return 1
     with open(argv[1], 'rb') as f:
         data = f.read()

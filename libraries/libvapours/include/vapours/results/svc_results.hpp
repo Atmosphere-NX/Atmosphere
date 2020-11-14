@@ -27,6 +27,8 @@ namespace ams::svc {
 
     R_DEFINE_ERROR_RESULT(NotImplemented,               33);
 
+    R_DEFINE_ERROR_RESULT(StopProcessingException,      54);
+
     R_DEFINE_ERROR_RESULT(NoSynchronizationObject,      57);
 
     R_DEFINE_ERROR_RESULT(TerminationRequested,         59);
@@ -40,7 +42,7 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(OutOfHandles,                 105);
     R_DEFINE_ERROR_RESULT(InvalidCurrentMemory,         106);
 
-    R_DEFINE_ERROR_RESULT(InvalidNewMemoryPermissions,  108);
+    R_DEFINE_ERROR_RESULT(InvalidNewMemoryPermission,   108);
 
     R_DEFINE_ERROR_RESULT(InvalidMemoryRegion,          110);
 
@@ -61,15 +63,19 @@ namespace ams::svc {
     R_DEFINE_ERROR_RESULT(ReservedUsed,                 126);
     R_DEFINE_ERROR_RESULT(NotSupported,                 127);
     R_DEFINE_ERROR_RESULT(Debug,                        128);
-    R_DEFINE_ERROR_RESULT(ThreadNotOwned,               129);
-
+    R_DEFINE_ERROR_RESULT(NoThread,                     129);
+    R_DEFINE_ERROR_RESULT(UnknownThread,                130);
     R_DEFINE_ERROR_RESULT(PortClosed,                   131);
     R_DEFINE_ERROR_RESULT(LimitReached,                 132);
+    R_DEFINE_ERROR_RESULT(InvalidMemoryPool,            133);
 
     R_DEFINE_ERROR_RESULT(ReceiveListBroken,            258);
     R_DEFINE_ERROR_RESULT(OutOfAddressSpace,            259);
     R_DEFINE_ERROR_RESULT(MessageTooLarge,              260);
 
+    R_DEFINE_ERROR_RESULT(InvalidProcessId,             517);
+    R_DEFINE_ERROR_RESULT(InvalidThreadId,              518);
+    R_DEFINE_ERROR_RESULT(InvalidId,                    519);
     R_DEFINE_ERROR_RESULT(ProcessTerminated,            520);
 
 }

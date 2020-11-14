@@ -257,7 +257,7 @@ namespace ams::secmon::smc {
         }
 
         int PrepareDeviceMasterKey(int generation) {
-            if (generation == pkg1::KeyGeneration_1_0_0) {
+            if (generation == pkg1::KeyGeneration_1_0_0 && GetSocType() == fuse::SocType_Erista) {
                 return pkg1::AesKeySlot_Device;
             }
             if (generation == GetKeyGeneration()) {

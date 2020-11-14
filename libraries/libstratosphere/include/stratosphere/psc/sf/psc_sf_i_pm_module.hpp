@@ -21,30 +21,13 @@
 
 namespace ams::psc::sf {
 
-    class IPmModule : public ams::sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                Initialize    = 0,
-                GetRequest    = 1,
-                Acknowledge   = 2,
-                Finalize      = 3,
-                AcknowledgeEx = 4,
-            };
-        public:
-            /* Actual commands. */
-            virtual Result Initialize(ams::sf::OutCopyHandle out, psc::PmModuleId module_id, const ams::sf::InBuffer &child_list) = 0;
-            virtual Result GetRequest(ams::sf::Out<PmState> out_state, ams::sf::Out<PmFlagSet> out_flags) = 0;
-            virtual Result Acknowledge() = 0;
-            virtual Result Finalize() = 0;
-            virtual Result AcknowledgeEx(PmState state) = 0;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(Initialize),
-                MAKE_SERVICE_COMMAND_META(GetRequest),
-                MAKE_SERVICE_COMMAND_META(Acknowledge),
-                MAKE_SERVICE_COMMAND_META(Finalize),
-                MAKE_SERVICE_COMMAND_META(AcknowledgeEx, hos::Version_5_1_0),
-            };
-    };
+    #define AMS_PSC_I_PM_MODULE_INTERFACE_INFO(C, H)                                                                                                                         \
+        AMS_SF_METHOD_INFO(C, H, 0, Result, Initialize,    (ams::sf::OutCopyHandle out, psc::PmModuleId module_id, const ams::sf::InBuffer &child_list))                     \
+        AMS_SF_METHOD_INFO(C, H, 1, Result, GetRequest,    (ams::sf::Out<PmState> out_state, ams::sf::Out<PmFlagSet> out_flags))                                             \
+        AMS_SF_METHOD_INFO(C, H, 2, Result, Acknowledge,   ())                                                                                                               \
+        AMS_SF_METHOD_INFO(C, H, 3, Result, Finalize,      ())                                                                                                               \
+        AMS_SF_METHOD_INFO(C, H, 4, Result, AcknowledgeEx, (PmState state),                                                                              hos::Version_5_1_0)
+
+    AMS_SF_DEFINE_INTERFACE(IPmModule, AMS_PSC_I_PM_MODULE_INTERFACE_INFO)
 
 }

@@ -64,6 +64,10 @@ namespace ams::kern::arch::arm64::cpu {
         EnsureInstructionConsistency();
     }
 
+    ALWAYS_INLINE void Yield() {
+        __asm__ __volatile__("yield" ::: "memory");
+    }
+
     ALWAYS_INLINE void SwitchProcess(u64 ttbr, u32 proc_id) {
         SetTtbr0El1(ttbr);
         ContextIdRegisterAccessor(0).SetProcId(proc_id).Store();
@@ -149,6 +153,25 @@ namespace ams::kern::arch::arm64::cpu {
         return true;
     }
 
+    ALWAYS_INLINE bool CanAccessAtomic(KProcessAddress addr, bool privileged = false) {
+        const uintptr_t va = GetInteger(addr);
+
+        if (privileged) {
+            __asm__ __volatile__("at s1e1w, %[va]" :: [va]"r"(va) : "memory");
+        } else {
+            __asm__ __volatile__("at s1e0w, %[va]" :: [va]"r"(va) : "memory");
+        }
+        InstructionMemoryBarrier();
+
+        u64 par = GetParEl1();
+
+        if (par & 0x1) {
+            return false;
+        }
+
+        return (par >> (BITSIZEOF(par) - BITSIZEOF(u8))) == 0xFF;
+    }
+
     /* Synchronization helpers. */
     NOINLINE void SynchronizeAllCores();
 
@@ -173,7 +196,7 @@ namespace ams::kern::arch::arm64::cpu {
 
     ALWAYS_INLINE void InvalidateTlbByAsid(u32 asid) {
         const u64 value = (static_cast<u64>(asid) << 48);
-        __asm__ __volatile__("tlbi aside1is, %[value]" :: [value]"r"(static_cast<u64>(value) << 48) : "memory");
+        __asm__ __volatile__("tlbi aside1is, %[value]" :: [value]"r"(value) : "memory");
         EnsureInstructionConsistency();
     }
 

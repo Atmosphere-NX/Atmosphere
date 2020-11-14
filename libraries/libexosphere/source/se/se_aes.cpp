@@ -362,22 +362,29 @@ namespace ams::se {
             StartOperationRaw(SE, SE_OPERATION_OP_START, out_ll_address, in_ll_address);
         }
 
+        void ClearAesKeySlot(volatile SecurityEngineRegisters *SE, int slot) {
+            /* Validate the key slot. */
+            AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+
+            for (int i = 0; i < 16; ++i) {
+                /* Select the keyslot. */
+                reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT, slot), SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_WORD, i));
+
+                /* Write the data. */
+                SE->SE_CRYPTO_KEYTABLE_DATA = 0;
+            }
+        }
+
     }
 
     void ClearAesKeySlot(int slot) {
-        /* Validate the key slot. */
-        AMS_ABORT_UNLESS(0 <= slot && slot < AesKeySlotCount);
+        /* Clear the slot in SE1. */
+        ClearAesKeySlot(GetRegisters(), slot);
+    }
 
-        /* Get the engine. */
-        auto *SE = GetRegisters();
-
-        for (int i = 0; i < 16; ++i) {
-            /* Select the keyslot. */
-            reg::Write(SE->SE_CRYPTO_KEYTABLE_ADDR, SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_KEY_SLOT, slot), SE_REG_BITS_VALUE(CRYPTO_KEYTABLE_ADDR_KEYIV_WORD, i));
-
-            /* Write the data. */
-            SE->SE_CRYPTO_KEYTABLE_DATA = 0;
-        }
+    void ClearAesKeySlot2(int slot) {
+        /* Clear the slot in SE2. */
+        ClearAesKeySlot(GetRegisters2(), slot);
     }
 
     void ClearAesKeyIv(int slot) {

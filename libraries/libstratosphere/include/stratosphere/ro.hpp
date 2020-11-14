@@ -16,4 +16,6 @@
 
 #pragma once
 
-#include "ro/ro_types.hpp"
+#include <stratosphere/ro/ro_types.hpp>
+#include <stratosphere/ro/impl/ro_ro_interface.hpp>
+#include <stratosphere/ro/impl/ro_debug_monitor_interface.hpp>

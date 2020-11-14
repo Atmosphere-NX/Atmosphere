@@ -21,20 +21,26 @@ namespace ams::kern::svc {
 
     namespace {
 
+        Result ReadWriteRegister(uint32_t *out, ams::svc::PhysicalAddress address, uint32_t mask, uint32_t value) {
+            /* Clear the output unconditionally. */
+            *out = 0;
 
+            /* Read/write the register. */
+            return KSystemControl::ReadWriteRegister(out, address, mask, value);
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result ReadWriteRegister64(uint32_t *out_value, ams::svc::PhysicalAddress address, uint32_t mask, uint32_t value) {
-        MESOSPHERE_PANIC("Stubbed SvcReadWriteRegister64 was called.");
+        return ReadWriteRegister(out_value, address, mask, value);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result ReadWriteRegister64From32(uint32_t *out_value, ams::svc::PhysicalAddress address, uint32_t mask, uint32_t value) {
-        MESOSPHERE_PANIC("Stubbed SvcReadWriteRegister64From32 was called.");
+        return ReadWriteRegister(out_value, address, mask, value);
     }
 
 }

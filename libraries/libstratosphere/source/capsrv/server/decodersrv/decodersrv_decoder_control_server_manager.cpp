@@ -24,7 +24,7 @@ namespace ams::capsrv::server {
         this->server_manager_holder.emplace();
 
         /* Register the service. */
-        R_ABORT_UNLESS(this->server_manager_holder->RegisterServer<Service>(ServiceName, MaxSessions, sf::ServiceObjectTraits<Service>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(*this->service_holder))));
+        R_ABORT_UNLESS((this->server_manager_holder->RegisterServer<Interface, Service>(ServiceName, MaxSessions, sf::GetSharedPointerTo<Interface>(*this->service_holder))));
 
         /* Initialize the idle event, we're idle initially. */
         os::InitializeEvent(std::addressof(this->idle_event), true, os::EventClearMode_ManualClear);

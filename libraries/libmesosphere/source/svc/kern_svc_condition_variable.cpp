@@ -21,28 +21,60 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsKernelAddress(uintptr_t address) {
+            return KernelVirtualAddressSpaceBase <= address && address < KernelVirtualAddressSpaceEnd;
+        }
 
+        Result WaitProcessWideKeyAtomic(uintptr_t address, uintptr_t cv_key, uint32_t tag, int64_t timeout_ns) {
+            /* Validate input. */
+            R_UNLESS(AMS_LIKELY(!IsKernelAddress(address)),     svc::ResultInvalidCurrentMemory());
+            R_UNLESS(util::IsAligned(address, sizeof(int32_t)), svc::ResultInvalidAddress());
+
+            /* Convert timeout from nanoseconds to ticks. */
+            s64 timeout;
+            if (timeout_ns > 0) {
+                const ams::svc::Tick offset_tick(TimeSpan::FromNanoSeconds(timeout_ns));
+                if (AMS_LIKELY(offset_tick > 0)) {
+                    timeout = KHardwareTimer::GetTick() + offset_tick + 2;
+                    if (AMS_UNLIKELY(timeout <= 0)) {
+                        timeout = std::numeric_limits<s64>::max();
+                    }
+                } else {
+                    timeout = std::numeric_limits<s64>::max();
+                }
+            } else {
+                timeout = timeout_ns;
+            }
+
+            /* Wait on the condition variable. */
+            return GetCurrentProcess().WaitConditionVariable(address, util::AlignDown(cv_key, sizeof(u32)), tag, timeout);
+        }
+
+        void SignalProcessWideKey(uintptr_t cv_key, int32_t count) {
+            /* Signal the condition variable. */
+            return GetCurrentProcess().SignalConditionVariable(util::AlignDown(cv_key, sizeof(u32)), count);
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result WaitProcessWideKeyAtomic64(ams::svc::Address address, ams::svc::Address cv_key, uint32_t tag, int64_t timeout_ns) {
-        MESOSPHERE_PANIC("Stubbed SvcWaitProcessWideKeyAtomic64 was called.");
+        return WaitProcessWideKeyAtomic(address, cv_key, tag, timeout_ns);
     }
 
     void SignalProcessWideKey64(ams::svc::Address cv_key, int32_t count) {
-        MESOSPHERE_PANIC("Stubbed SvcSignalProcessWideKey64 was called.");
+        return SignalProcessWideKey(cv_key, count);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result WaitProcessWideKeyAtomic64From32(ams::svc::Address address, ams::svc::Address cv_key, uint32_t tag, int64_t timeout_ns) {
-        MESOSPHERE_PANIC("Stubbed SvcWaitProcessWideKeyAtomic64From32 was called.");
+        return WaitProcessWideKeyAtomic(address, cv_key, tag, timeout_ns);
     }
 
     void SignalProcessWideKey64From32(ams::svc::Address cv_key, int32_t count) {
-        MESOSPHERE_PANIC("Stubbed SvcSignalProcessWideKey64From32 was called.");
+        return SignalProcessWideKey(cv_key, count);
     }
 
 }

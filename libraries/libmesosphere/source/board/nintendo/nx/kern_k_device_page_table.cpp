@@ -31,11 +31,17 @@ namespace ams::kern::board::nintendo::nx {
         constexpr size_t DeviceVirtualAddressBits = 34;
         constexpr size_t DeviceVirtualAddressMask = (1ul << DeviceVirtualAddressBits) - 1ul;
 
-        constexpr size_t DevicePageBits      = 12;
-        constexpr size_t DevicePageSize      = (1ul << DevicePageBits);
-        constexpr size_t DeviceLargePageBits = 22;
-        constexpr size_t DeviceLargePageSize = (1ul << DevicePageBits);
+        constexpr size_t DevicePageBits = 12;
+        constexpr size_t DevicePageSize = (1ul << DevicePageBits);
         static_assert(DevicePageSize == PageSize);
+
+        constexpr size_t DeviceLargePageBits = 22;
+        constexpr size_t DeviceLargePageSize = (1ul << DeviceLargePageBits);
+        static_assert(DeviceLargePageSize % DevicePageSize == 0);
+
+        constexpr size_t DeviceRegionBits = 32;
+        constexpr size_t DeviceRegionSize = (1ul << DeviceRegionBits);
+        static_assert(DeviceRegionSize % DeviceLargePageSize == 0);
 
         constexpr size_t DeviceAsidRegisterOffsets[] = {
             [ams::svc::DeviceName_Afi]        = MC_SMMU_AFI_ASID,
@@ -140,6 +146,57 @@ namespace ams::kern::board::nintendo::nx {
             return (static_cast<u64>(GetInteger(addr)) & ~PhysicalAddressMask) == 0;
         }
 
+        constexpr struct { u64 start; u64 end; } SmmuSupportedRanges[] = {
+            [ams::svc::DeviceName_Afi]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Avpc]       = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Dc]         = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Dcb]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Hc]         = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Hda]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Isp2]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_MsencNvenc] = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nv]         = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nv2]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Ppcs]       = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Sata]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Vi]         = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Vic]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_XusbHost]   = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_XusbDev]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsec]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Ppcs1]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Dc1]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc1a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc2a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc3a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Sdmmc4a]    = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Isp2b]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Gpu]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Gpub]       = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Ppcs2]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nvdec]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Ape]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Se]         = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Nvjpg]      = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Hc1]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Se1]        = { 0x00000000ul, 0x0FFFFFFFFul },
+            [ams::svc::DeviceName_Axiap]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Etr]        = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsecb]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsec1]      = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Tsecb1]     = { 0x00000000ul, 0x3FFFFFFFFul },
+            [ams::svc::DeviceName_Nvdec1]     = { 0x00000000ul, 0x0FFFFFFFFul },
+        };
+        static_assert(util::size(SmmuSupportedRanges) == ams::svc::DeviceName_Count);
+
+        constexpr bool IsAttachable(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) {
+            if (0 <= device_name && device_name < ams::svc::DeviceName_Count) {
+                const auto &range = SmmuSupportedRanges[device_name];
+                return range.start <= space_address && (space_address + space_size - 1) <= range.end;
+            }
+            return false;
+        }
+
         /* Types. */
         class EntryBase {
             protected:
@@ -186,7 +243,7 @@ namespace ams::kern::board::nintendo::nx {
 
                 constexpr ALWAYS_INLINE u32 GetAttributes() const { return this->SelectBit(Bit_NonSecure) | this->SelectBit(Bit_Writeable) | this->SelectBit(Bit_Readable); }
 
-                constexpr ALWAYS_INLINE KPhysicalAddress GetPhysicalAddress() { return (static_cast<u64>(this->value) << DevicePageBits) & PhysicalAddressMask; }
+                constexpr ALWAYS_INLINE KPhysicalAddress GetPhysicalAddress() const { return (static_cast<u64>(this->value) << DevicePageBits) & PhysicalAddressMask; }
 
                 ALWAYS_INLINE void Invalidate() { this->SetValue(0); }
         };
@@ -280,6 +337,8 @@ namespace ams::kern::board::nintendo::nx {
         KPhysicalAddress   g_memory_controller_address;
         KPhysicalAddress   g_reserved_table_phys_addr;
         KDeviceAsidManager g_asid_manager;
+        u32 g_saved_page_tables[AsidCount];
+        u32 g_saved_asid_registers[ams::svc::DeviceName_Count];
 
         /* Memory controller access functionality. */
         void WriteMcRegister(size_t offset, u32 value) {
@@ -298,12 +357,10 @@ namespace ams::kern::board::nintendo::nx {
             WriteMcRegister(MC_SMMU_PTC_FLUSH_0, 0);
         }
 
-/*
         void InvalidatePtc(KPhysicalAddress address) {
             WriteMcRegister(MC_SMMU_PTC_FLUSH_1, (static_cast<u64>(GetInteger(address)) >> 32));
             WriteMcRegister(MC_SMMU_PTC_FLUSH_0, (GetInteger(address) & 0xFFFFFFF0u) | 1u);
         }
-*/
 
         enum TlbFlushVaMatch : u32 {
             TlbFlushVaMatch_All     = 0,
@@ -323,11 +380,9 @@ namespace ams::kern::board::nintendo::nx {
             return WriteMcRegister(MC_SMMU_TLB_FLUSH, EncodeTlbFlushValue(true, asid, 0, TlbFlushVaMatch_All));
         }
 
-/*
         void InvalidateTlbSection(u8 asid, KDeviceVirtualAddress address) {
             return WriteMcRegister(MC_SMMU_TLB_FLUSH, EncodeTlbFlushValue(true, asid, address, TlbFlushVaMatch_Section));
         }
-*/
 
         void SetTable(u8 asid, KPhysicalAddress address) {
             /* Write the table address. */
@@ -402,6 +457,702 @@ namespace ams::kern::board::nintendo::nx {
         SmmuSynchronizationBarrier();
 
         /* TODO: Install interrupt handler. */
+    }
+
+    void KDevicePageTable::Lock() {
+        g_lock.Lock();
+    }
+
+    void KDevicePageTable::Unlock() {
+        g_lock.Unlock();
+    }
+
+    void KDevicePageTable::Sleep() {
+        /* Save all page tables. */
+        for (size_t i = 0; i < AsidCount; ++i) {
+            WriteMcRegister(MC_SMMU_PTB_ASID, i);
+            SmmuSynchronizationBarrier();
+            g_saved_page_tables[i] = ReadMcRegister(MC_SMMU_PTB_DATA);
+        }
+
+        /* Save all asid registers. */
+        for (size_t i = 0; i < ams::svc::DeviceName_Count; ++i) {
+            g_saved_asid_registers[i] = ReadMcRegister(GetDeviceAsidRegisterOffset(static_cast<ams::svc::DeviceName>(i)));
+        }
+    }
+
+    void KDevicePageTable::Wakeup() {
+        /* Synchronize. */
+        InvalidatePtc();
+        InvalidateTlb();
+        SmmuSynchronizationBarrier();
+
+        /* Disable the SMMU */
+        WriteMcRegister(MC_SMMU_CONFIG, 0);
+
+        /* Restore the page tables. */
+        for (size_t i = 0; i < AsidCount; ++i) {
+            WriteMcRegister(MC_SMMU_PTB_ASID, i);
+            SmmuSynchronizationBarrier();
+            WriteMcRegister(MC_SMMU_PTB_DATA, g_saved_page_tables[i]);
+        }
+        SmmuSynchronizationBarrier();
+
+        /* Restore the asid registers. */
+        for (size_t i = 0; i < ams::svc::DeviceName_Count; ++i) {
+            WriteMcRegister(GetDeviceAsidRegisterOffset(static_cast<ams::svc::DeviceName>(i)), g_saved_asid_registers[i]);
+            SmmuSynchronizationBarrier();
+        }
+
+        /* Synchronize. */
+        InvalidatePtc();
+        InvalidateTlb();
+        SmmuSynchronizationBarrier();
+
+        /* Enable the SMMU */
+        WriteMcRegister(MC_SMMU_CONFIG, 1);
+        SmmuSynchronizationBarrier();
+    }
+
+    /* Member functions. */
+
+    Result KDevicePageTable::Initialize(u64 space_address, u64 space_size) {
+        /* Ensure space is valid. */
+        R_UNLESS(((space_address + space_size - 1) & ~DeviceVirtualAddressMask) == 0, svc::ResultInvalidMemoryRegion());
+
+        /* Determine extents. */
+        const size_t start_index = space_address / DeviceRegionSize;
+        const size_t end_index   = (space_address + space_size - 1) / DeviceRegionSize;
+
+        /* Get the page table manager. */
+        auto &ptm = Kernel::GetPageTableManager();
+
+        /* Clear the tables. */
+        static_assert(TableCount == (1ul << DeviceVirtualAddressBits) / DeviceRegionSize);
+        for (size_t i = 0; i < TableCount; ++i) {
+            this->tables[i] = Null<KVirtualAddress>;
+        }
+
+        /* Ensure that we clean up the tables on failure. */
+        auto table_guard = SCOPE_GUARD {
+            for (size_t i = start_index; i <= end_index; ++i) {
+                if (this->tables[i] != Null<KVirtualAddress> && ptm.Close(this->tables[i], 1)) {
+                    ptm.Free(this->tables[i]);
+                }
+            }
+        };
+
+        /* Allocate a table for all required indices. */
+        for (size_t i = start_index; i <= end_index; ++i) {
+            const KVirtualAddress table_vaddr = ptm.Allocate();
+            R_UNLESS(table_vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+
+            MESOSPHERE_ASSERT(IsValidPhysicalAddress(GetPageTablePhysicalAddress(table_vaddr)));
+
+            ptm.Open(table_vaddr, 1);
+            cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageDirectorySize);
+            this->tables[i] = table_vaddr;
+        }
+
+        /* Clear asids. */
+        for (size_t i = 0; i < TableCount; ++i) {
+            this->table_asids[i] = g_reserved_asid;
+        }
+
+        /* Reserve asids for the tables. */
+        R_TRY(g_asid_manager.Reserve(std::addressof(this->table_asids[start_index]), end_index - start_index + 1));
+
+        /* Associate tables with asids. */
+        for (size_t i = start_index; i <= end_index; ++i) {
+            SetTable(this->table_asids[i], GetPageTablePhysicalAddress(this->tables[i]));
+        }
+
+        /* Set member variables. */
+        this->attached_device = 0;
+        this->attached_value  = (1u << 31) | this->table_asids[0];
+        this->detached_value  = (1u << 31) | g_reserved_asid;
+
+        this->hs_attached_value = (1u << 31);
+        this->hs_detached_value = (1u << 31);
+        for (size_t i = 0; i < TableCount; ++i) {
+            this->hs_attached_value |= (this->table_asids[i] << (i * BITSIZEOF(u8)));
+            this->hs_detached_value |= (g_reserved_asid      << (i * BITSIZEOF(u8)));
+        }
+
+        /* We succeeded. */
+        table_guard.Cancel();
+        return ResultSuccess();
+    }
+
+    void KDevicePageTable::Finalize() {
+        /* Get the page table manager. */
+        auto &ptm = Kernel::GetPageTableManager();
+
+        /* Detach from all devices. */
+        {
+            KScopedLightLock lk(g_lock);
+            for (size_t i = 0; i < ams::svc::DeviceName_Count; ++i) {
+                const auto device_name = static_cast<ams::svc::DeviceName>(i);
+                if ((this->attached_device & (1ul << device_name)) != 0) {
+                    WriteMcRegister(GetDeviceAsidRegisterOffset(device_name), IsHsSupported(device_name) ? this->hs_detached_value : this->detached_value);
+                    SmmuSynchronizationBarrier();
+                }
+            }
+        }
+
+        /* Forcibly unmap all pages. */
+        this->UnmapImpl(0, (1ul << DeviceVirtualAddressBits), true);
+
+        /* Release all asids. */
+        for (size_t i = 0; i < TableCount; ++i) {
+            if (this->table_asids[i] != g_reserved_asid) {
+                /* Set the table to the reserved table. */
+                SetTable(this->table_asids[i], g_reserved_table_phys_addr);
+
+                /* Close the table. */
+                const KVirtualAddress table_vaddr = this->tables[i];
+                MESOSPHERE_ASSERT(ptm.GetRefCount(table_vaddr) == 1);
+                MESOSPHERE_ABORT_UNLESS(ptm.Close(table_vaddr, 1));
+
+                /* Free the table. */
+                ptm.Free(table_vaddr);
+
+                /* Release the asid. */
+                g_asid_manager.Release(this->table_asids[i]);
+            }
+        }
+    }
+
+    Result KDevicePageTable::Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) {
+        /* Validate the device name. */
+        R_UNLESS(0 <= device_name,                         svc::ResultNotFound());
+        R_UNLESS(device_name < ams::svc::DeviceName_Count, svc::ResultNotFound());
+
+        /* Check that the device isn't already attached. */
+        R_UNLESS((this->attached_device & (1ul << device_name)) == 0, svc::ResultBusy());
+
+        /* Validate that the space is allowed for the device. */
+        const size_t end_index = (space_address + space_size - 1) / DeviceRegionSize;
+        R_UNLESS(end_index == 0 || IsHsSupported(device_name), svc::ResultInvalidCombination());
+
+        /* Validate that the device can be attached. */
+        R_UNLESS(IsAttachable(device_name, space_address, space_size), svc::ResultInvalidCombination());
+
+        /* Get the device asid register offset. */
+        const int reg_offset = GetDeviceAsidRegisterOffset(device_name);
+        R_UNLESS(reg_offset >= 0, svc::ResultNotFound());
+
+        /* Determine the old/new values. */
+        const u32 old_val = IsHsSupported(device_name) ? this->hs_detached_value : this->detached_value;
+        const u32 new_val = IsHsSupported(device_name) ? this->hs_attached_value : this->attached_value;
+
+        /* Attach the device. */
+        {
+            KScopedLightLock lk(g_lock);
+
+            /* Validate that the device is unclaimed. */
+            R_UNLESS((ReadMcRegister(reg_offset) | (1u << 31)) == (old_val | (1u << 31)), svc::ResultBusy());
+
+            /* Claim the device. */
+            WriteMcRegister(reg_offset, new_val);
+            SmmuSynchronizationBarrier();
+
+            /* Ensure that we claimed it successfully. */
+            if (ReadMcRegister(reg_offset) != new_val) {
+                WriteMcRegister(reg_offset, old_val);
+                SmmuSynchronizationBarrier();
+                return svc::ResultNotFound();
+            }
+        }
+
+        /* Mark the device as attached. */
+        this->attached_device |= (1ul << device_name);
+
+        return ResultSuccess();
+    }
+
+    Result KDevicePageTable::Detach(ams::svc::DeviceName device_name) {
+        /* Validate the device name. */
+        R_UNLESS(0 <= device_name,                         svc::ResultNotFound());
+        R_UNLESS(device_name < ams::svc::DeviceName_Count, svc::ResultNotFound());
+
+        /* Check that the device is already attached. */
+        R_UNLESS((this->attached_device & (1ul << device_name)) != 0, svc::ResultInvalidState());
+
+        /* Get the device asid register offset. */
+        const int reg_offset = GetDeviceAsidRegisterOffset(device_name);
+        R_UNLESS(reg_offset >= 0, svc::ResultNotFound());
+
+        /* Determine the old/new values. */
+        const u32 old_val = IsHsSupported(device_name) ? this->hs_attached_value : this->attached_value;
+        const u32 new_val = IsHsSupported(device_name) ? this->hs_detached_value : this->detached_value;
+
+        /* When not building for debug, the old value might be unused. */
+        AMS_UNUSED(old_val);
+
+        /* Detach the device. */
+        {
+            KScopedLightLock lk(g_lock);
+
+            /* Check that the device is attached. */
+            MESOSPHERE_ASSERT(ReadMcRegister(reg_offset) == old_val);
+
+            /* Release the device. */
+            WriteMcRegister(reg_offset, new_val);
+            SmmuSynchronizationBarrier();
+
+            /* Check that the device was released. */
+            MESOSPHERE_ASSERT((ReadMcRegister(reg_offset) | (1u << 31)) == (new_val | 1u << 31));
+        }
+
+        /* Mark the device as detached. */
+        this->attached_device &= ~(1ul << device_name);
+
+        return ResultSuccess();
+    }
+
+    bool KDevicePageTable::IsFree(KDeviceVirtualAddress address, u64 size) const {
+        MESOSPHERE_ASSERT((address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Walk the directory, looking for entries. */
+        u64 remaining = size;
+        while (remaining > 0) {
+            const size_t l0_index = (address / DeviceRegionSize);
+            const size_t l1_index = (address % DeviceRegionSize)    / DeviceLargePageSize;
+            const size_t l2_index = (address % DeviceLargePageSize) / DevicePageSize;
+
+            const PageDirectoryEntry *l1 = GetPointer<PageDirectoryEntry>(this->tables[l0_index]);
+            if (l1 == nullptr || !l1[l1_index].IsValid()) {
+                const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
+                const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
+
+                address   += DevicePageSize * map_count;
+                remaining -= DevicePageSize * map_count;
+            } else if (l1[l1_index].IsTable()) {
+                const PageTableEntry *l2 = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(l1[l1_index].GetPhysicalAddress()));
+
+                const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
+                const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
+
+                for (size_t i = 0; i < map_count; ++i) {
+                    if (l2[l2_index + i].IsValid()) {
+                        return false;
+                    }
+                }
+
+                address   += DevicePageSize * map_count;
+                remaining -= DevicePageSize * map_count;
+            } else {
+                /* If we have an entry, we're not free. */
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    Result KDevicePageTable::MapDevicePage(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm) {
+        /* Clear the output size. */
+        *out_mapped_size = 0;
+
+        /* Ensure that the physical address is valid. */
+        R_UNLESS(IsValidPhysicalAddress(static_cast<u64>(GetInteger(phys_addr)) + size - 1), svc::ResultInvalidCurrentMemory());
+        MESOSPHERE_ASSERT((address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Get the memory manager and page table manager. */
+        KMemoryManager &mm     = Kernel::GetMemoryManager();
+        KPageTableManager &ptm = Kernel::GetPageTableManager();
+
+        /* Cache permissions. */
+        const bool read  = (device_perm & ams::svc::MemoryPermission_Read)  != 0;
+        const bool write = (device_perm & ams::svc::MemoryPermission_Write) != 0;
+
+        /* Walk the directory. */
+        u64 remaining = size;
+        while (remaining > 0) {
+            const size_t l0_index = (address / DeviceRegionSize);
+            const size_t l1_index = (address % DeviceRegionSize)    / DeviceLargePageSize;
+            const size_t l2_index = (address % DeviceLargePageSize) / DevicePageSize;
+
+            /* Get and validate l1. */
+            PageDirectoryEntry *l1 = GetPointer<PageDirectoryEntry>(this->tables[l0_index]);
+            MESOSPHERE_ASSERT(l1 != nullptr);
+
+            /* Setup an l1 table/entry, if needed. */
+            if (!l1[l1_index].IsTable()) {
+                /* Check that an entry doesn't already exist. */
+                MESOSPHERE_ASSERT(!l1[l1_index].IsValid());
+
+                /* If we can make an l1 entry, do so. */
+                if (l2_index == 0 && util::IsAligned(GetInteger(phys_addr), DeviceLargePageSize) && remaining >= DeviceLargePageSize) {
+                    /* Set the large page. */
+                    l1[l1_index].SetLargePage(read, write, true, phys_addr);
+                    cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+
+                    /* Synchronize. */
+                    InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
+                    InvalidateTlbSection(this->table_asids[l0_index], address);
+                    SmmuSynchronizationBarrier();
+
+                    /* Open references to the pages. */
+                    mm.Open(GetHeapVirtualAddress(phys_addr), DeviceLargePageSize / PageSize);
+
+                    /* Advance. */
+                    phys_addr        += DeviceLargePageSize;
+                    address          += DeviceLargePageSize;
+                    *out_mapped_size += DeviceLargePageSize;
+                    remaining        -= DeviceLargePageSize;
+                    continue;
+                } else if (num_pt == max_pt) {
+                    break;
+                } else {
+                    /* Make an l1 table. */
+                    const KVirtualAddress table_vaddr = ptm.Allocate();
+                    R_UNLESS(table_vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
+                    MESOSPHERE_ASSERT(IsValidPhysicalAddress(GetPageTablePhysicalAddress(table_vaddr)));
+                    cpu::StoreDataCache(GetVoidPointer(table_vaddr), PageTableSize);
+
+                    /* Set the l1 table. */
+                    l1[l1_index].SetTable(true, true, true, GetPageTablePhysicalAddress(table_vaddr));
+                    cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+
+                    /* Synchronize. */
+                    InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
+                    InvalidateTlbSection(this->table_asids[l0_index], address);
+                    SmmuSynchronizationBarrier();
+
+                    /* Increment the page table count. */
+                    ++num_pt;
+                }
+            }
+
+            /* If we get to this point, l1 must be a table. */
+            MESOSPHERE_ASSERT(l1[l1_index].IsTable());
+
+            /* Map l2 entries. */
+            {
+                PageTableEntry *l2 = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(l1[l1_index].GetPhysicalAddress()));
+
+                const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
+                const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
+
+                /* Set the entries. */
+                for (size_t i = 0; i < map_count; ++i) {
+                    MESOSPHERE_ASSERT(!l2[l2_index + i].IsValid());
+                    l2[l2_index + i].SetPage(read, write, true, phys_addr + DevicePageSize * i);
+
+                    /* Add a reference to the l2 page (from the l2 entry page). */
+                    ptm.Open(KVirtualAddress(l2), 1);
+                }
+                cpu::StoreDataCache(std::addressof(l2[l2_index]), map_count * sizeof(PageTableEntry));
+
+                /* Invalidate the page table cache. */
+                for (size_t i = util::AlignDown(l2_index, 4); i <= util::AlignDown(l2_index + map_count - 1, 4); i += 4) {
+                    InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l2[i]))));
+                }
+
+                /* Synchronize. */
+                InvalidateTlbSection(this->table_asids[l0_index], address);
+                SmmuSynchronizationBarrier();
+
+                /* Open references to the pages. */
+                mm.Open(GetHeapVirtualAddress(phys_addr), (map_count * DevicePageSize) / PageSize);
+
+                /* Advance. */
+                phys_addr        += map_count * DevicePageSize;
+                address          += map_count * DevicePageSize;
+                *out_mapped_size += map_count * DevicePageSize;
+                remaining        -= map_count * DevicePageSize;
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KDevicePageTable::MapImpl(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm) {
+        /* Clear the output size. */
+        *out_mapped_size = 0;
+
+        /* Get the size, and validate the address. */
+        const u64 size = pg.GetNumPages() * PageSize;
+        MESOSPHERE_ASSERT((device_address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Ensure that the region we're mapping to is free. */
+        R_UNLESS(this->IsFree(device_address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Ensure that if we fail, we unmap anything we mapped. */
+        auto unmap_guard = SCOPE_GUARD { this->UnmapImpl(device_address, size, true); };
+
+        /* Iterate, mapping device pages. */
+        KDeviceVirtualAddress cur_addr = device_address;
+        for (auto it = pg.begin(); it != pg.end(); ++it) {
+            /* Require that we be able to map the device page. */
+            R_UNLESS(IsHeapVirtualAddress(it->GetAddress()), svc::ResultInvalidCurrentMemory());
+
+            /* Get the physical address for the page. */
+            const KPhysicalAddress phys_addr = GetHeapPhysicalAddress(it->GetAddress());
+
+            /* Map the device page. */
+            const u64 block_size = it->GetSize();
+            size_t mapped_size = 0;
+            R_TRY(this->MapDevicePage(std::addressof(mapped_size), num_pt, max_pt, phys_addr, block_size, cur_addr, device_perm));
+
+            /* Advance. */
+            cur_addr         += block_size;
+            *out_mapped_size += mapped_size;
+
+            /* If we didn't map as much as we wanted, break. */
+            if (mapped_size < block_size) {
+                break;
+            }
+        }
+
+        /* We're done, so cancel our guard. */
+        unmap_guard.Cancel();
+
+        return ResultSuccess();
+    }
+
+    void KDevicePageTable::UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force) {
+        MESOSPHERE_ASSERT((address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Get the memory manager and page table manager. */
+        KMemoryManager &mm     = Kernel::GetMemoryManager();
+        KPageTableManager &ptm = Kernel::GetPageTableManager();
+
+        /* Make a page group for the pages we're closing. */
+        KPageGroup pg(std::addressof(Kernel::GetBlockInfoManager()));
+
+        /* Walk the directory. */
+        u64 remaining = size;
+        while (remaining > 0) {
+            const size_t l0_index = (address / DeviceRegionSize);
+            const size_t l1_index = (address % DeviceRegionSize)    / DeviceLargePageSize;
+            const size_t l2_index = (address % DeviceLargePageSize) / DevicePageSize;
+
+            /* Get and validate l1. */
+            PageDirectoryEntry *l1 = GetPointer<PageDirectoryEntry>(this->tables[l0_index]);
+
+            /* Check if there's nothing mapped at l1. */
+            if (l1 == nullptr || !l1[l1_index].IsValid()) {
+                MESOSPHERE_ASSERT(force);
+
+                const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
+                const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
+
+                /* Advance. */
+                address   += map_count * DevicePageSize;
+                remaining -= map_count * DevicePageSize;
+            } else if (l1[l1_index].IsTable()) {
+                /* Dealing with an l1 table. */
+                PageTableEntry *l2 = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(l1[l1_index].GetPhysicalAddress()));
+
+                const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
+                const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
+                size_t num_closed = 0;
+                bool invalidated_tlb = false;
+
+                for (size_t i = 0; i < map_count; ++i) {
+                    if (l2[l2_index + i].IsValid()) {
+                        /* Get the physical address. */
+                        const KPhysicalAddress phys_addr = l2[l2_index + i].GetPhysicalAddress();
+                        MESOSPHERE_ASSERT(IsHeapPhysicalAddress(phys_addr));
+
+                        /* Invalidate the entry. */
+                        l2[l2_index + i].Invalidate();
+                        ++num_closed;
+
+                        /* Try to add the page to the group. */
+                        if (R_FAILED(pg.AddBlock(GetHeapVirtualAddress(phys_addr), DevicePageSize / PageSize))) {
+                            /* If we can't add it for deferred close, close it now. */
+                            cpu::StoreDataCache(std::addressof(l2[l2_index + i]), sizeof(PageTableEntry));
+                            InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l2[l2_index + i]))));
+                            SmmuSynchronizationBarrier();
+
+                            /* Close the page's reference. */
+                            mm.Close(GetHeapVirtualAddress(phys_addr), 1);
+                        }
+                    } else {
+                        MESOSPHERE_ASSERT(force);
+                    }
+                }
+                cpu::StoreDataCache(std::addressof(l2[l2_index]), map_count * sizeof(PageTableEntry));
+
+                /* Invalidate the page table cache. */
+                for (size_t i = util::AlignDown(l2_index, 4); i <= util::AlignDown(l2_index + map_count - 1, 4); i += 4) {
+                    InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l2[i]))));
+                }
+                SmmuSynchronizationBarrier();
+
+                /* Close the pages. */
+                if (ptm.Close(KVirtualAddress(l2), num_closed)) {
+                    /* Invalidate the l1 entry. */
+                    l1[l1_index].Invalidate();
+                    cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+
+                    /* Synchronize. */
+                    InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
+                    InvalidateTlbSection(this->table_asids[l0_index], address);
+                    SmmuSynchronizationBarrier();
+
+                    /* We invalidated the tlb. */
+                    invalidated_tlb = true;
+
+                    /* Free the l2 page. */
+                    ptm.Free(KVirtualAddress(l2));
+                }
+
+                /* Invalidate the tlb if we haven't already. */
+                if (!invalidated_tlb) {
+                    InvalidateTlbSection(this->table_asids[l0_index], address);
+                    SmmuSynchronizationBarrier();
+                }
+
+                /* Advance. */
+                address   += map_count * DevicePageSize;
+                remaining -= map_count * DevicePageSize;
+            } else {
+                /* Dealing with an l1 entry. */
+                MESOSPHERE_ASSERT(l2_index == 0);
+
+                /* Get the physical address. */
+                const KPhysicalAddress phys_addr = l1[l1_index].GetPhysicalAddress();
+                MESOSPHERE_ASSERT(IsHeapPhysicalAddress(phys_addr));
+
+                /* Invalidate the entry. */
+                l1[l1_index].Invalidate();
+                cpu::StoreDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
+
+                /* Synchronize. */
+                InvalidatePtc(GetPageTablePhysicalAddress(KVirtualAddress(std::addressof(l1[l1_index]))));
+                InvalidateTlbSection(this->table_asids[l0_index], address);
+                SmmuSynchronizationBarrier();
+
+                /* Close references. */
+                mm.Close(GetHeapVirtualAddress(phys_addr), DeviceLargePageSize / PageSize);
+
+                /* Advance. */
+                address   += DeviceLargePageSize;
+                remaining -= DeviceLargePageSize;
+            }
+        }
+
+        /* Close references to the pages in the group. */
+        pg.Close();
+    }
+
+    Result KDevicePageTable::MakePageGroup(KPageGroup *out, KDeviceVirtualAddress address, u64 size) const {
+        MESOSPHERE_ASSERT((address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Walk the directory. */
+        u64 remaining = size;
+        bool first = true;
+        u32 attr = 0;
+        while (remaining > 0) {
+            const size_t l0_index = (address / DeviceRegionSize);
+            const size_t l1_index = (address % DeviceRegionSize)    / DeviceLargePageSize;
+            const size_t l2_index = (address % DeviceLargePageSize) / DevicePageSize;
+
+            /* Get and validate l1. */
+            const PageDirectoryEntry *l1 = GetPointer<PageDirectoryEntry>(this->tables[l0_index]);
+            R_UNLESS(l1 != nullptr,          svc::ResultInvalidCurrentMemory());
+            R_UNLESS(l1[l1_index].IsValid(), svc::ResultInvalidCurrentMemory());
+
+            if (l1[l1_index].IsTable()) {
+                /* We're acting on an l2 entry. */
+                const PageTableEntry *l2 = GetPointer<PageTableEntry>(GetPageTableVirtualAddress(l1[l1_index].GetPhysicalAddress()));
+
+                const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
+                const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
+
+                for (size_t i = 0; i < map_count; ++i) {
+                    /* Ensure the l2 entry is valid. */
+                    R_UNLESS(l2[l2_index + i].IsValid(), svc::ResultInvalidCurrentMemory());
+
+                    /* Get the physical address. */
+                    const KPhysicalAddress phys_addr = l2[l2_index + i].GetPhysicalAddress();
+                    MESOSPHERE_ASSERT(IsHeapPhysicalAddress(phys_addr));
+
+                    /* Add to the group. */
+                    R_TRY(out->AddBlock(GetHeapVirtualAddress(phys_addr), DevicePageSize / PageSize));
+
+                    /* If this is our first entry, get the attribute. */
+                    if (first) {
+                        attr = l2[l2_index + i].GetAttributes();
+                        first = false;
+                    } else {
+                        /* Validate the attributes match the first entry. */
+                        R_UNLESS(l2[l2_index + i].GetAttributes() == attr, svc::ResultInvalidCurrentMemory());
+                    }
+                }
+
+                /* Advance. */
+                address   += DevicePageSize * map_count;
+                remaining -= DevicePageSize * map_count;
+            } else {
+                /* We're acting on an l1 entry. */
+                R_UNLESS(l2_index == 0,                    svc::ResultInvalidCurrentMemory());
+                R_UNLESS(remaining >= DeviceLargePageSize, svc::ResultInvalidCurrentMemory());
+
+                /* Get the physical address. */
+                const KPhysicalAddress phys_addr = l1[l1_index].GetPhysicalAddress();
+                MESOSPHERE_ASSERT(IsHeapPhysicalAddress(phys_addr));
+
+                /* Add to the group. */
+                R_TRY(out->AddBlock(GetHeapVirtualAddress(phys_addr), DeviceLargePageSize / PageSize));
+
+                /* If this is our first entry, get the attribute. */
+                if (first) {
+                    attr = l1[l1_index].GetAttributes();
+                    first = false;
+                } else {
+                    /* Validate the attributes match the first entry. */
+                    R_UNLESS(l1[l1_index].GetAttributes() == attr, svc::ResultInvalidCurrentMemory());
+                }
+
+                /* Advance. */
+                address   += DeviceLargePageSize;
+                remaining -= DeviceLargePageSize;
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    bool KDevicePageTable::Compare(const KPageGroup &compare_pg, KDeviceVirtualAddress device_address) const {
+        /* Check whether the page group we expect for the virtual address matches the page group we're validating. */
+        KPageGroup calc_pg(std::addressof(Kernel::GetBlockInfoManager()));
+        return (R_SUCCEEDED(this->MakePageGroup(std::addressof(calc_pg), device_address, compare_pg.GetNumPages() * PageSize))) &&
+               calc_pg.IsEquivalentTo(compare_pg);
+    }
+
+    Result KDevicePageTable::Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+        /* Clear the output size. */
+        *out_mapped_size = 0;
+
+        /* Map the pages. */
+        s32 num_pt = 0;
+        return this->MapImpl(out_mapped_size, num_pt, refresh_mappings ? 1 : std::numeric_limits<s32>::max(), pg, device_address, device_perm);
+    }
+
+    Result KDevicePageTable::Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address) {
+        /* Validate address/size. */
+        const size_t size = pg.GetNumPages() * PageSize;
+        MESOSPHERE_ASSERT((device_address & ~DeviceVirtualAddressMask) == 0);
+        MESOSPHERE_ASSERT(((device_address + size - 1) & ~DeviceVirtualAddressMask) == 0);
+
+        /* Ensure the page group is correct. */
+        R_UNLESS(this->Compare(pg, device_address), svc::ResultInvalidCurrentMemory());
+
+        /* Unmap the pages. */
+        this->UnmapImpl(device_address, size, false);
+
+        return ResultSuccess();
     }
 
 }

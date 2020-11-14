@@ -22,6 +22,20 @@
 
 namespace ams::kern::svc {
 
+    /* Declare special prototypes for the light ipc handlers. */
+    void CallSendSyncRequestLight64();
+    void CallSendSyncRequestLight64From32();
+
+    void CallReplyAndReceiveLight64();
+    void CallReplyAndReceiveLight64From32();
+
+    /* Declare special prototypes for ReturnFromException. */
+    void CallReturnFromException64();
+    void CallReturnFromException64From32();
+
+    /* Declare special prototype for (unsupported) CallCallSecureMonitor64From32. */
+    void CallCallSecureMonitor64From32();
+
     namespace {
 
         #ifndef MESOSPHERE_USE_STUBBED_SVC_TABLES
@@ -30,7 +44,7 @@ namespace ams::kern::svc {
                     private:                                                                                                              \
                         using Impl = ::ams::svc::codegen::KernelSvcWrapper<::ams::kern::svc::NAME##64, ::ams::kern::svc::NAME##64From32>; \
                     public:                                                                                                               \
-                        static NOINLINE void Call64() { return Impl::Call64(); }                                                          \
+                        static NOINLINE void       Call64() { return Impl::Call64(); }                                                    \
                         static NOINLINE void Call64From32() { return Impl::Call64From32(); }                                              \
                 };
         #else
@@ -51,28 +65,102 @@ namespace ams::kern::svc {
 
         #pragma GCC pop_options
 
+        constexpr const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32Impl = [] {
+            std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+
+            #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
+                if (table[ID] == nullptr) { table[ID] = NAME::Call64From32; }
+            AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
+            #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+
+            table[svc::SvcId_SendSyncRequestLight] = CallSendSyncRequestLight64From32;
+            table[svc::SvcId_ReplyAndReceiveLight] = CallReplyAndReceiveLight64From32;
+
+            table[svc::SvcId_ReturnFromException]  = CallReturnFromException64From32;
+
+            table[svc::SvcId_CallSecureMonitor]    = CallCallSecureMonitor64From32;
+
+            return table;
+        }();
+
+        constexpr const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64Impl = [] {
+            std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+
+            #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
+                if (table[ID] == nullptr) { table[ID] = NAME::Call64; }
+            AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
+            #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+
+            table[svc::SvcId_SendSyncRequestLight] = CallSendSyncRequestLight64;
+            table[svc::SvcId_ReplyAndReceiveLight] = CallReplyAndReceiveLight64;
+
+            table[svc::SvcId_ReturnFromException]  = CallReturnFromException64;
+
+            return table;
+        }();
+
+        constexpr bool IsValidSvcTable(const std::array<SvcTableEntry, NumSupervisorCalls> &table) {
+            for (size_t i = 0; i < NumSupervisorCalls; i++) {
+                if (table[i] != nullptr) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static_assert(IsValidSvcTable(SvcTable64Impl));
+        static_assert(IsValidSvcTable(SvcTable64From32Impl));
+
     }
 
-    const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32 = [] {
-        std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+    constinit const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64       = SvcTable64Impl;
 
-        #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
-            table[ID] = NAME::Call64From32;
-        AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
-        #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+    constinit const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64From32 = SvcTable64From32Impl;
 
-        return table;
-    }();
+    void PatchSvcTableEntry(const SvcTableEntry *table, u32 id, SvcTableEntry entry);
 
-    const std::array<SvcTableEntry, NumSupervisorCalls> SvcTable64 = [] {
-        std::array<SvcTableEntry, NumSupervisorCalls> table = {};
+    namespace {
 
-        #define AMS_KERN_SVC_SET_TABLE_ENTRY(ID, RETURN_TYPE, NAME, ...) \
-            table[ID] = NAME::Call64;
-        AMS_SVC_FOREACH_KERN_DEFINITION(AMS_KERN_SVC_SET_TABLE_ENTRY, _)
-        #undef AMS_KERN_SVC_SET_TABLE_ENTRY
+        /* NOTE: Although the SVC tables are constants, our global constructor will run before .rodata is protected R--. */
+        class SvcTablePatcher {
+            private:
+                using SvcTable = std::array<SvcTableEntry, NumSupervisorCalls>;
+            private:
+                static SvcTablePatcher s_instance;
+            private:
+                ALWAYS_INLINE const SvcTableEntry *GetTableData(const SvcTable *table) {
+                    if (table != nullptr) {
+                        return table->data();
+                    } else {
+                        return nullptr;
+                    }
+                }
 
-        return table;
-    }();
+                NOINLINE void PatchTables(const SvcTableEntry *table_64, const SvcTableEntry *table_64_from_32) {
+                    /* Get the target firmware. */
+                    const auto target_fw = kern::GetTargetFirmware();
+
+                    /* 10.0.0 broke the ABI for QueryIoMapping. */
+                    if (target_fw < TargetFirmware_10_0_0) {
+                        if (table_64)         { ::ams::kern::svc::PatchSvcTableEntry(table_64,         svc::SvcId_QueryIoMapping, LegacyQueryIoMapping::Call64); }
+                        if (table_64_from_32) { ::ams::kern::svc::PatchSvcTableEntry(table_64_from_32, svc::SvcId_QueryIoMapping, LegacyQueryIoMapping::Call64From32); }
+                    }
+
+                    /* 3.0.0 broke the ABI for ContinueDebugEvent. */
+                    if (target_fw < TargetFirmware_3_0_0) {
+                        if (table_64)         { ::ams::kern::svc::PatchSvcTableEntry(table_64,         svc::SvcId_ContinueDebugEvent, LegacyContinueDebugEvent::Call64); }
+                        if (table_64_from_32) { ::ams::kern::svc::PatchSvcTableEntry(table_64_from_32, svc::SvcId_ContinueDebugEvent, LegacyContinueDebugEvent::Call64From32); }
+                    }
+                }
+            public:
+                SvcTablePatcher(const SvcTable *table_64, const SvcTable *table_64_from_32) {
+                    PatchTables(GetTableData(table_64), GetTableData(table_64_from_32));
+                }
+        };
+
+        SvcTablePatcher SvcTablePatcher::s_instance(std::addressof(SvcTable64), std::addressof(SvcTable64From32));
+
+    }
 
 }

@@ -57,7 +57,8 @@ namespace ams::dmnt {
 
     static_assert(util::is_pod<TargetIOFileHandle>::value && sizeof(TargetIOFileHandle) == sizeof(u64), "TargetIOFileHandle");
 
-    class DebugMonitorService final : public sf::IServiceObject {
+    /* TODO: Convert to new sf format in the future. */
+    class DebugMonitorService final {
         private:
             enum class CommandId {
                 BreakDebugProcess               = 0,
@@ -131,61 +132,6 @@ namespace ams::dmnt {
             Result TargetIO_FileSetSize(const sf::InBuffer &input, s64 size);
             Result TargetIO_FileDelete(const sf::InBuffer &path);
             Result TargetIO_FileMove(const sf::InBuffer &src_path, const sf::InBuffer &dst_path);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(BreakDebugProcess),
-                MAKE_SERVICE_COMMAND_META(TerminateDebugProcess),
-                MAKE_SERVICE_COMMAND_META(CloseHandle),
-                // MAKE_SERVICE_COMMAND_META(LoadImage),
-                MAKE_SERVICE_COMMAND_META(GetProcessId),
-                MAKE_SERVICE_COMMAND_META(GetProcessHandle),
-                MAKE_SERVICE_COMMAND_META(WaitSynchronization),
-                //MAKE_SERVICE_COMMAND_META(GetDebugEvent),
-                // MAKE_SERVICE_COMMAND_META(GetProcessModuleInfo),
-                // MAKE_SERVICE_COMMAND_META(GetProcessList),
-                // MAKE_SERVICE_COMMAND_META(GetThreadList),
-                // MAKE_SERVICE_COMMAND_META(GetDebugThreadContext),
-                // MAKE_SERVICE_COMMAND_META(ContinueDebugEvent),
-                // MAKE_SERVICE_COMMAND_META(ReadDebugProcessMemory),
-                // MAKE_SERVICE_COMMAND_META(WriteDebugProcessMemory),
-                // MAKE_SERVICE_COMMAND_META(SetDebugThreadContext),
-                // MAKE_SERVICE_COMMAND_META(GetDebugThreadParam),
-                // MAKE_SERVICE_COMMAND_META(InitializeThreadInfo),
-                // MAKE_SERVICE_COMMAND_META(SetHardwareBreakPoint),
-                // MAKE_SERVICE_COMMAND_META(QueryDebugProcessMemory),
-                // MAKE_SERVICE_COMMAND_META(GetProcessMemoryDetails),
-                // MAKE_SERVICE_COMMAND_META(AttachByProgramId),
-                // MAKE_SERVICE_COMMAND_META(AttachOnLaunch),
-                // MAKE_SERVICE_COMMAND_META(GetDebugMonitorProcessId),
-                // MAKE_SERVICE_COMMAND_META(GetJitDebugProcessList),
-                // MAKE_SERVICE_COMMAND_META(CreateCoreDump),
-                // MAKE_SERVICE_COMMAND_META(GetAllDebugThreadInfo),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileOpen),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileClose),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileRead),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileWrite),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileSetAttributes),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileGetInformation),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileSetTime),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileSetSize),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileDelete),
-                MAKE_SERVICE_COMMAND_META(TargetIO_FileMove),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryCreate),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryDelete),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryRename),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryGetCount),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryOpen),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryGetNext),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_DirectoryClose),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_GetFreeSpace),
-                // MAKE_SERVICE_COMMAND_META(TargetIO_GetVolumeInformation),
-                // MAKE_SERVICE_COMMAND_META(InitiateCoreDump),
-                // MAKE_SERVICE_COMMAND_META(ContinueCoreDump),
-                // MAKE_SERVICE_COMMAND_META(AddTTYToCoreDump),
-                // MAKE_SERVICE_COMMAND_META(AddImageToCoreDump),
-                // MAKE_SERVICE_COMMAND_META(CloseCoreDump),
-                // MAKE_SERVICE_COMMAND_META(CancelAttach),
-            };
     };
 
 }

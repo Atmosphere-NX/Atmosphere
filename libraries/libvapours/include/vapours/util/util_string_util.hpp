@@ -21,6 +21,54 @@
 namespace ams::util {
 
     template<typename T>
+    constexpr T ToLower(T c) {
+        return ('A' <= c && c <= 'Z') ? (c - 'A' + 'a') : c;
+    }
+
+    template<typename T>
+    constexpr T ToUpper(T c) {
+        return ('a' <= c && c <= 'z') ? (c - 'a' + 'A') : c;
+    }
+
+    template<typename T>
+    int Strncmp(const T *lhs, const T *rhs, int count) {
+        AMS_ASSERT(lhs != nullptr);
+        AMS_ASSERT(rhs != nullptr);
+        AMS_ABORT_UNLESS(count >= 0);
+
+        if (count == 0) {
+            return 0;
+        }
+
+        T l, r;
+        do {
+            l = *(lhs++);
+            r = *(rhs++);
+        } while (l && (l == r) && (--count));
+
+        return l - r;
+    }
+
+    template<typename T>
+    int Strnicmp(const T *lhs, const T *rhs, int count) {
+        AMS_ASSERT(lhs != nullptr);
+        AMS_ASSERT(rhs != nullptr);
+        AMS_ABORT_UNLESS(count >= 0);
+
+        if (count == 0) {
+            return 0;
+        }
+
+        T l, r;
+        do {
+            l = ::ams::util::ToLower(*(lhs++));
+            r = ::ams::util::ToLower(*(rhs++));
+        } while (l && (l == r) && (--count));
+
+        return l - r;
+    }
+
+    template<typename T>
     constexpr int Strlcpy(T *dst, const T *src, int count) {
         AMS_ASSERT(dst != nullptr);
         AMS_ASSERT(src != nullptr);

@@ -21,7 +21,7 @@
 
 namespace ams::lr {
 
-    class LocationResolverManagerImpl final : public ILocationResolverManager {
+    class LocationResolverManagerImpl final {
         private:
             /* Resolver storage. */
             ncm::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> location_resolvers;
@@ -31,17 +31,11 @@ namespace ams::lr {
             os::Mutex mutex{false};
         public:
             /* Actual commands. */
-            virtual Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id) override;
-            virtual Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out) override;
-            virtual Result RefreshLocationResolver(ncm::StorageId storage_id) override;
-            virtual Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out) override;
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(OpenLocationResolver),
-                MAKE_SERVICE_COMMAND_META(OpenRegisteredLocationResolver),
-                MAKE_SERVICE_COMMAND_META(RefreshLocationResolver),
-                MAKE_SERVICE_COMMAND_META(OpenAddOnContentLocationResolver, hos::Version_2_0_0),
-            };
+            Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
+            Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out);
+            Result RefreshLocationResolver(ncm::StorageId storage_id);
+            Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out);
     };
+    static_assert(IsILocationResolverManager<LocationResolverManagerImpl>);
 
 }

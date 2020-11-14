@@ -48,7 +48,7 @@ namespace ams::kern::board::nintendo::nx {
 
             /* Privileged Access. */
             static void ReadWriteRegisterPrivileged(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
-            static void ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
+            static Result ReadWriteRegister(u32 *out, ams::svc::PhysicalAddress address, u32 mask, u32 value);
 
             static ALWAYS_INLINE u32 ReadRegisterPrivileged(ams::svc::PhysicalAddress address) {
                 u32 v;
@@ -67,6 +67,11 @@ namespace ams::kern::board::nintendo::nx {
 
             /* User access. */
             static void CallSecureMonitorFromUser(ams::svc::lp64::SecureMonitorArguments *args);
+
+            /* Secure Memory. */
+            static size_t CalculateRequiredSecureMemorySize(size_t size, u32 pool);
+            static Result AllocateSecureMemory(KVirtualAddress *out, size_t size, u32 pool);
+            static void FreeSecureMemory(KVirtualAddress address, size_t size, u32 pool);
     };
 
 }

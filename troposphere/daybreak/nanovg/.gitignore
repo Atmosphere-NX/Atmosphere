@@ -1,0 +1,93 @@
+# deko3d shaders
+*.dksh
+
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+*.lst
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.lz4
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Switch Executables
+*.nso
+*.nro
+*.nacp
+*.npdm
+*.pfs0
+*.nsp
+*.kip
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Distribution files
+*.tgz
+*.zip
+*.bz2
+
+# IDA binaries
+*.id0
+*.id1
+*.id2
+*.idb
+*.i64
+*.nam
+*.til
+
+# KEYS file for sept-secondary.
+*.pyc
+sept/sept-secondary/KEYS.py
+
+.**/
+
+# NOTE: make sure to make exceptions to this pattern when needed!
+*.bin
+*.enc
+
+**/out
+**/build

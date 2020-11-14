@@ -23,9 +23,9 @@ namespace ams::kern::arch::arm64 {
     class KSupervisorPageTable {
         private:
             KPageTable page_table;
-            u64 ttbr0[cpu::NumCores];
+            u64 ttbr0_identity[cpu::NumCores];
         public:
-            constexpr KSupervisorPageTable() : page_table(), ttbr0() { /* ... */ }
+            constexpr KSupervisorPageTable() : page_table(), ttbr0_identity() { /* ... */ }
 
             NOINLINE void Initialize(s32 core_id);
 
@@ -40,8 +40,6 @@ namespace ams::kern::arch::arm64 {
                 /* Invalidate entire TLB. */
                 cpu::InvalidateEntireTlb();
             }
-
-            void Finalize(s32 core_id);
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
                 return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm);
@@ -62,6 +60,8 @@ namespace ams::kern::arch::arm64 {
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
                 return this->page_table.GetPhysicalAddress(out, address);
             }
+
+            constexpr u64 GetIdentityMapTtbr0(s32 core_id) const { return this->ttbr0_identity[core_id]; }
     };
 
 }

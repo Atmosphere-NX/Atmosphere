@@ -21,28 +21,68 @@ namespace ams::kern::svc {
 
     namespace {
 
+        [[maybe_unused]] void PrintBreak(ams::svc::BreakReason break_reason) {
+            /* Print that break was called. */
+            MESOSPHERE_RELEASE_LOG("%s: svc::Break(%d) was called, pid=%ld, tid=%ld\n", GetCurrentProcess().GetName(), static_cast<s32>(break_reason), GetCurrentProcess().GetId(), GetCurrentThread().GetId());
 
+            /* Print the current thread's registers. */
+            /* TODO: KDebug::PrintRegisters(); */
+
+            /* Print a backtrace. */
+            /* TODO: KDebug::PrintBacktrace(); */
+        }
+
+        void Break(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
+            /* Determine whether the break is only a notification. */
+            const bool is_notification = (break_reason & ams::svc::BreakReason_NotificationOnlyFlag) != 0;
+
+            /* If the break isn't a notification, print it. */
+            if (!is_notification) {
+                #ifdef MESOSPHERE_BUILD_FOR_DEBUGGING
+                PrintBreak(break_reason);
+                #endif
+            }
+
+            /* If the current process is attached to debugger, try to notify it. */
+            if (GetCurrentProcess().IsAttachedToDebugger()) {
+                if (R_SUCCEEDED(KDebug::BreakIfAttached(break_reason, address, size))) {
+                    /* If we attached, set the pc to the instruction before the current one and return. */
+                    KDebug::SetPreviousProgramCounter();
+                    return;
+                }
+            }
+
+            /* If the break is only a notification, we're done. */
+            if (is_notification) {
+                return;
+            }
+
+            /* Print that break was called. */
+            MESOSPHERE_RELEASE_LOG("Break() called. %016lx\n", GetCurrentProcess().GetProgramId());
+
+            /* Try to enter JIT debug state. */
+            if (GetCurrentProcess().EnterJitDebug(ams::svc::DebugEvent_Exception, ams::svc::DebugException_UserBreak, KDebug::GetProgramCounter(GetCurrentThread()), break_reason, address, size)) {
+                /* We entered JIT debug, so set the pc to the instruction before the current one and return. */
+                KDebug::SetPreviousProgramCounter();
+                return;
+            }
+
+            /* Exit the current process. */
+            GetCurrentProcess().Exit();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     void Break64(ams::svc::BreakReason break_reason, ams::svc::Address arg, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcBreak64 was called.");
-    }
-
-    void ReturnFromException64(ams::Result result) {
-        MESOSPHERE_PANIC("Stubbed SvcReturnFromException64 was called.");
+        return Break(break_reason, arg, size);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     void Break64From32(ams::svc::BreakReason break_reason, ams::svc::Address arg, ams::svc::Size size) {
-        MESOSPHERE_PANIC("Stubbed SvcBreak64From32 was called.");
-    }
-
-    void ReturnFromException64From32(ams::Result result) {
-        MESOSPHERE_PANIC("Stubbed SvcReturnFromException64From32 was called.");
+        return Break(break_reason, arg, size);
     }
 
 }

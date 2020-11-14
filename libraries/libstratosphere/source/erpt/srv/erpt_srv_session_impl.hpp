@@ -18,11 +18,12 @@
 
 namespace ams::erpt::srv {
 
-    class SessionImpl final : public erpt::sf::ISession {
+    class SessionImpl final {
         public:
-            virtual Result OpenReport(ams::sf::Out<std::shared_ptr<erpt::sf::IReport>> out) override final;
-            virtual Result OpenManager(ams::sf::Out<std::shared_ptr<erpt::sf::IManager>> out) override final;
-            virtual Result OpenAttachment(ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out) override final;
+            Result OpenReport(ams::sf::Out<std::shared_ptr<erpt::sf::IReport>> out);
+            Result OpenManager(ams::sf::Out<std::shared_ptr<erpt::sf::IManager>> out);
+            Result OpenAttachment(ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out);
     };
+    static_assert(erpt::sf::IsISession<SessionImpl>);
 
 }

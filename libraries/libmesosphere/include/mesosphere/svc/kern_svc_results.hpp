@@ -24,6 +24,8 @@ namespace ams::kern::svc {
 
     /*  33 */ using ::ams::svc::ResultNotImplemented;
 
+    /*  54 */ using ::ams::svc::ResultStopProcessingException;
+
     /*  57 */ using ::ams::svc::ResultNoSynchronizationObject;
 
     /*  59 */ using ::ams::svc::ResultTerminationRequested;
@@ -37,7 +39,7 @@ namespace ams::kern::svc {
     /* 105 */ using ::ams::svc::ResultOutOfHandles;
     /* 106 */ using ::ams::svc::ResultInvalidCurrentMemory;
 
-    /* 108 */ using ::ams::svc::ResultInvalidNewMemoryPermissions;
+    /* 108 */ using ::ams::svc::ResultInvalidNewMemoryPermission;
 
     /* 110 */ using ::ams::svc::ResultInvalidMemoryRegion;
 
@@ -58,15 +60,19 @@ namespace ams::kern::svc {
     /* 126 */ using ::ams::svc::ResultReservedUsed;
     /* 127 */ using ::ams::svc::ResultNotSupported;
     /* 128 */ using ::ams::svc::ResultDebug;
-    /* 129 */ using ::ams::svc::ResultThreadNotOwned;
-
+    /* 129 */ using ::ams::svc::ResultNoThread;
+    /* 130 */ using ::ams::svc::ResultUnknownThread;
     /* 131 */ using ::ams::svc::ResultPortClosed;
     /* 132 */ using ::ams::svc::ResultLimitReached;
+    /* 133 */ using ::ams::svc::ResultInvalidMemoryPool;
 
     /* 258 */ using ::ams::svc::ResultReceiveListBroken;
     /* 259 */ using ::ams::svc::ResultOutOfAddressSpace;
     /* 260 */ using ::ams::svc::ResultMessageTooLarge;
 
+    /* 517 */ using ::ams::svc::ResultInvalidProcessId;
+    /* 518 */ using ::ams::svc::ResultInvalidThreadId;
+    /* 519 */ using ::ams::svc::ResultInvalidId;
     /* 520 */ using ::ams::svc::ResultProcessTerminated;
 
 }

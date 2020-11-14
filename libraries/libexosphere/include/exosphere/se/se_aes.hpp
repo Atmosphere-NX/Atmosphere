@@ -26,6 +26,9 @@ namespace ams::se {
     void ClearAesKeyIv(int slot);
     void LockAesKeySlot(int slot, u32 flags);
 
+    /* NOTE: This is Nintendo's API, but if we actually want to use SE2 we should use a different one. */
+    void ClearAesKeySlot2(int slot);
+
     void SetAesKey(int slot, const void *key, size_t key_size);
 
     void SetEncryptedAesKey128(int dst_slot, int kek_slot, const void *key, size_t key_size);

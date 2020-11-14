@@ -16,10 +16,24 @@
 #include <exosphere.hpp>
 #include "secmon_error.hpp"
 
-namespace {
+namespace ams {
 
-    constexpr bool SaveSystemStateForDebug = false;
+    namespace {
 
+        constexpr bool SaveSystemStateForDebug = false;
+        constexpr bool LogSystemStateForDebug = false;
+
+        void LogU64(u64 value) {
+            char buffer[2 * sizeof(value)];
+            for (size_t i = 0; i < sizeof(value); ++i) {
+                buffer[sizeof(buffer) - 1 - (2 * i) - 0] = "0123456789ABCDEF"[(value >> 0) & 0xF];
+                buffer[sizeof(buffer) - 1 - (2 * i) - 1] = "0123456789ABCDEF"[(value >> 4) & 0xF];
+                value >>= 8;
+            }
+            log::SendText(buffer, sizeof(buffer));
+        }
+
+    }
 }
 
 namespace ams::diag {
@@ -98,6 +112,57 @@ namespace ams::secmon {
             util::WaitMicroSeconds(1000);
         }
 
+        ALWAYS_INLINE void LogSystemStateForDebugErrorReboot(u64 lr, u64 sp) {
+            log::SendText("*** Error Reboot ***\n", 21);
+            log::Flush();
+
+            u64 temp_reg;
+
+            __asm__ __volatile__("mrs %0, esr_el3" : "=r"(temp_reg) :: "memory");
+            log::SendText("ESR_EL3: ", 9);
+            LogU64(temp_reg);
+            log::SendText("\n", 1);
+            log::Flush();
+
+            __asm__ __volatile__("mrs %0, elr_el3" : "=r"(temp_reg) :: "memory");
+            log::SendText("ELR_EL3: ", 9);
+            LogU64(temp_reg);
+            log::SendText("\n", 1);
+            log::Flush();
+
+            __asm__ __volatile__("mrs %0, far_el3" : "=r"(temp_reg) :: "memory");
+            log::SendText("FAR_EL3: ", 9);
+            LogU64(temp_reg);
+            log::SendText("\n", 1);
+            log::Flush();
+
+            log::SendText("LR:      ", 9);
+            LogU64(lr);
+            log::SendText("\n", 1);
+            log::Flush();
+
+            log::SendText("SP:      ", 9);
+            LogU64(sp);
+            log::SendText("\n", 1);
+            log::Flush();
+
+            log::SendText("Stack:\n", 7);
+            log::Flush();
+
+            char buf[2];
+            for (int i = 0; i < 0x100; ++i) {
+                const u8 byte = *(volatile u8 *)(sp + i);
+                buf[0] = "0123456789ABCDEF"[(byte >> 4) & 0xF];
+                buf[1] = "0123456789ABCDEF"[(byte >> 0) & 0xF];
+                log::SendText(buf, 2);
+                log::Flush();
+                if (util::IsAligned(i + 1, 0x10)) {
+                    log::SendText("\n", 1);
+                    log::Flush();
+                }
+            }
+        }
+
     }
 
     void SetError(pkg1::ErrorInfo info) {
@@ -112,6 +177,14 @@ namespace ams::secmon {
         /* Perform any necessary (typically none) debugging. */
         if constexpr (SaveSystemStateForDebug) {
             SaveSystemStateForDebugErrorReboot();
+        }
+
+        if constexpr (LogSystemStateForDebug) {
+            u64 lr, sp;
+            __asm__ __volatile__("mov %0, lr" : "=r"(lr) :: "memory");
+            __asm__ __volatile__("mov %0, sp" : "=r"(sp) :: "memory");
+
+            LogSystemStateForDebugErrorReboot(lr, sp);
         }
 
         /* Lockout the security engine. */

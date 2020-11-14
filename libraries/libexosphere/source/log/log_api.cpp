@@ -48,12 +48,14 @@ namespace ams::log {
                 clkrst::EnableUartAClock();
             } else if constexpr (UartLogPort == uart::Port_LeftJoyCon) {
                 /* Logging to left joy-con (e.g. with Joyless). */
-                pinmux::SetupUartB();
-                clkrst::EnableUartBClock();
-            } else if constexpr (UartLogPort == uart::Port_RightJoyCon) {
-                /* Logging to right joy-con (e.g. with Joyless). */
+                static_assert(uart::Port_LeftJoyCon == uart::Port_C);
                 pinmux::SetupUartC();
                 clkrst::EnableUartCClock();
+            } else if constexpr (UartLogPort == uart::Port_RightJoyCon) {
+                /* Logging to right joy-con (e.g. with Joyless). */
+                static_assert(uart::Port_RightJoyCon == uart::Port_B);
+                pinmux::SetupUartB();
+                clkrst::EnableUartBClock();
             } else {
                 __builtin_unreachable();
             }

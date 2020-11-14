@@ -42,7 +42,7 @@ namespace ams::lr {
         LrLocationResolver lr;
         R_TRY(lrOpenLocationResolver(static_cast<NcmStorageId>(storage_id), std::addressof(lr)));
 
-        *out = LocationResolver(std::make_shared<RemoteLocationResolverImpl>(lr));
+        *out = LocationResolver(sf::MakeShared<ILocationResolver, RemoteLocationResolverImpl>(lr));
         return ResultSuccess();
     }
 
@@ -50,7 +50,7 @@ namespace ams::lr {
         LrRegisteredLocationResolver lr;
         R_TRY(lrOpenRegisteredLocationResolver(std::addressof(lr)));
 
-        *out = RegisteredLocationResolver(std::make_shared<RemoteRegisteredLocationResolverImpl>(lr));
+        *out = RegisteredLocationResolver(sf::MakeShared<IRegisteredLocationResolver, RemoteRegisteredLocationResolverImpl>(lr));
         return ResultSuccess();
     }
 

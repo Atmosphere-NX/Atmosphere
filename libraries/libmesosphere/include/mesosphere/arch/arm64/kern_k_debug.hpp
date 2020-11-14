@@ -30,6 +30,38 @@ namespace ams::kern::arch::arm64 {
     class KDebug final : public KAutoObjectWithSlabHeapAndContainer<KDebug, KDebugBase> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDebug, KSynchronizationObject);
         public:
+            explicit KDebug() { /* ... */ }
+            virtual ~KDebug() { /* ... */ }
+
+            static void PostDestroy(uintptr_t arg) { /* ... */ }
+        public:
+            virtual Result GetThreadContextImpl(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags) override;
+            virtual Result SetThreadContextImpl(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags) override;
+        private:
+            Result GetFpuContext(ams::svc::ThreadContext *out, KThread *thread, u32 context_flags);
+            Result SetFpuContext(const ams::svc::ThreadContext &ctx, KThread *thread, u32 context_flags);
+        public:
+            static uintptr_t GetProgramCounter(const KThread &thread);
+            static void SetPreviousProgramCounter();
+
+            static Result BreakIfAttached(ams::svc::BreakReason break_reason, uintptr_t address, size_t size);
+            static Result SetHardwareBreakPoint(ams::svc::HardwareBreakPointRegisterName name, u64 flags, u64 value);
+
+            static constexpr bool IsBreakInstruction(u32 insn, u32 psr) {
+                constexpr u32 BreakInstructionAarch64 = 0xE7FFFFFF;
+                constexpr u32 BreakInstructionAarch32 = 0xE7FFDEFE;
+                constexpr u32 BreakInstructionThumb32 = 0xB68E;
+                if ((psr & 0x10) == 0) {
+                    return insn == BreakInstructionAarch64;
+                } else {
+                    if ((psr & 0x20) == 0) {
+                        return insn == BreakInstructionAarch32;
+                    } else {
+                        return insn == BreakInstructionThumb32;
+                    }
+                }
+            }
+
             /* TODO: This is a placeholder definition. */
     };
 

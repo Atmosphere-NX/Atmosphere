@@ -17,6 +17,21 @@
 #include <mesosphere/kern_common.hpp>
 #include <mesosphere/kern_k_typed_address.hpp>
 
+#if defined(ATMOSPHERE_ARCH_ARM64)
+
+    #include <mesosphere/arch/arm64/kern_k_slab_heap_impl.hpp>
+    namespace ams::kern {
+        using ams::kern::arch::arm64::AllocateFromSlabAtomic;
+        using ams::kern::arch::arm64::FreeToSlabAtomic;
+    }
+
+#else
+
+    #error "Unknown architecture for KSlabHeapImpl"
+
+#endif
+
+
 namespace ams::kern {
 
     namespace impl {
@@ -29,8 +44,8 @@ namespace ams::kern {
                     Node *next;
                 };
             private:
-                std::atomic<Node *> head;
-                size_t              obj_size;
+                Node * head;
+                size_t obj_size;
             public:
                 constexpr KSlabHeapImpl() : head(nullptr), obj_size(0) { MESOSPHERE_ASSERT_THIS(); }
 
@@ -50,15 +65,7 @@ namespace ams::kern {
                 void *Allocate() {
                     MESOSPHERE_ASSERT_THIS();
 
-                    Node *ret = this->head.load();
-
-                    do {
-                        if (AMS_UNLIKELY(ret == nullptr)) {
-                            break;
-                        }
-                    } while (!this->head.compare_exchange_weak(ret, ret->next));
-
-                    return ret;
+                    return AllocateFromSlabAtomic(std::addressof(this->head));
                 }
 
                 void Free(void *obj) {
@@ -66,10 +73,7 @@ namespace ams::kern {
 
                     Node *node = reinterpret_cast<Node *>(obj);
 
-                    Node *cur_head = this->head.load();
-                    do {
-                        node->next = cur_head;
-                    } while (!this->head.compare_exchange_weak(cur_head, node));
+                    return FreeToSlabAtomic(std::addressof(this->head), node);
                 }
         };
 

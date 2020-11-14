@@ -514,7 +514,8 @@ namespace ams::svc::codegen::impl {
         private:
             using Traits = FunctionTraits<Function>;
         public:
-            using Impl   = KernelSvcWrapperHelperImpl<_SvcAbiType, _UserAbiType, _KernelAbiType, typename Traits::ReturnType, typename Traits::ArgsType>;
+            using Impl       = KernelSvcWrapperHelperImpl<_SvcAbiType, _UserAbiType, _KernelAbiType, typename Traits::ReturnType, typename Traits::ArgsType>;
+            using ReturnType = typename Traits::ReturnType;
 
             static constexpr bool IsAarch64Kernel = std::is_same<_KernelAbiType, Aarch64Lp64Abi>::value;
             static constexpr bool IsAarch32Kernel = std::is_same<_KernelAbiType, Aarch32Ilp32Abi>::value;
@@ -525,17 +526,16 @@ namespace ams::svc::codegen::impl {
             static constexpr auto BeforeMetaCode = Impl::OptimizedBeforeMetaCode;
             static constexpr auto AfterMetaCode  = Impl::OptimizedAfterMetaCode;
 
-
 /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
 #pragma GCC push_options
 #pragma GCC optimize ("omit-frame-pointer")
 
-            static ALWAYS_INLINE void WrapSvcFunction() {
+            static ALWAYS_INLINE ReturnType WrapSvcFunction() {
                 /* Generate appropriate assembly. */
                 GenerateCodeForMetaCode<CodeGenerator, BeforeMetaCode>();
                 ON_SCOPE_EXIT { GenerateCodeForMetaCode<CodeGenerator, AfterMetaCode>(); };
 
-                return reinterpret_cast<void (*)()>(Function)();
+                return reinterpret_cast<ReturnType (*)()>(Function)();
             }
 
 #pragma GCC pop_options

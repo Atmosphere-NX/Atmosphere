@@ -404,17 +404,51 @@ namespace ams::kern {
         char g_print_buffer[0x400];
 
         void PutString(const char *str) {
-            if (g_initialized_impl) {
-                while (*str) {
-                    const char c = *(str++);
-                    if (c == '\n') {
-                        KDebugLogImpl::PutChar('\r');
-                    }
-                    KDebugLogImpl::PutChar(c);
-                }
-                KDebugLogImpl::Flush();
+            /* Only print if the implementation is initialized. */
+            if (!g_initialized_impl) {
+                return;
             }
+
+            while (*str) {
+                /* Get a character. */
+                const char c = *(str++);
+
+                /* Print the character. */
+                if (c == '\n') {
+                    KDebugLogImpl::PutChar('\r');
+                }
+                KDebugLogImpl::PutChar(c);
+            }
+
+            KDebugLogImpl::Flush();
         }
+
+        #if defined(MESOSPHERE_ENABLE_DEBUG_PRINT)
+
+        Result PutUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len) {
+            /* Only print if the implementation is initialized. */
+            if (!g_initialized_impl) {
+                return ResultSuccess();
+            }
+
+            for (size_t i = 0; i < len; ++i) {
+                /* Get a character. */
+                char c;
+                R_TRY(user_str.CopyArrayElementTo(std::addressof(c), i));
+
+                /* Print the character. */
+                if (c == '\n') {
+                    KDebugLogImpl::PutChar('\r');
+                }
+                KDebugLogImpl::PutChar(c);
+            }
+
+            KDebugLogImpl::Flush();
+
+            return ResultSuccess();
+        }
+
+        #endif
 
     }
 
@@ -453,6 +487,38 @@ namespace ams::kern {
 
     void KDebugLog::VSNPrintf(char *dst, const size_t dst_size, const char *format, ::std::va_list vl) {
         VSNPrintfImpl(dst, dst_size, format, vl);
+    }
+
+    Result KDebugLog::PrintUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len) {
+        /* If printing is enabled, print the user string. */
+        #if defined(MESOSPHERE_ENABLE_DEBUG_PRINT)
+            if (KTargetSystem::IsDebugLoggingEnabled()) {
+                KScopedInterruptDisable di;
+                KScopedSpinLock lk(g_debug_log_lock);
+
+                R_TRY(PutUserString(user_str, len));
+            }
+        #endif
+
+        return ResultSuccess();
+    }
+
+    void KDebugLog::Save() {
+        if (KTargetSystem::IsDebugLoggingEnabled()) {
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_debug_log_lock);
+
+            KDebugLogImpl::Save();
+        }
+    }
+
+    void KDebugLog::Restore() {
+        if (KTargetSystem::IsDebugLoggingEnabled()) {
+            KScopedInterruptDisable di;
+            KScopedSpinLock lk(g_debug_log_lock);
+
+            KDebugLogImpl::Restore();
+        }
     }
 
 }

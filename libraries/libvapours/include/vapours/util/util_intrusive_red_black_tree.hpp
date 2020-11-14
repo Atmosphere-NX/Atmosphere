@@ -279,6 +279,40 @@ namespace ams::util {
             static_assert(GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage));
     };
 
+    template<auto T, class Derived = util::impl::GetParentType<T>>
+    class IntrusiveRedBlackTreeMemberTraitsDeferredAssert;
+
+    template<class Parent, IntrusiveRedBlackTreeNode Parent::*Member, class Derived>
+    class IntrusiveRedBlackTreeMemberTraitsDeferredAssert<Member, Derived> {
+        public:
+            template<class Comparator>
+            using TreeType = IntrusiveRedBlackTree<Derived, IntrusiveRedBlackTreeMemberTraitsDeferredAssert, Comparator>;
+
+            static constexpr bool IsValid() {
+                TYPED_STORAGE(Derived) DerivedStorage = {};
+                return GetParent(GetNode(GetPointer(DerivedStorage))) == GetPointer(DerivedStorage);
+            }
+        private:
+            template<class, class, class>
+            friend class IntrusiveRedBlackTree;
+
+            static constexpr IntrusiveRedBlackTreeNode *GetNode(Derived *parent) {
+                return std::addressof(parent->*Member);
+            }
+
+            static constexpr IntrusiveRedBlackTreeNode const *GetNode(Derived const *parent) {
+                return std::addressof(parent->*Member);
+            }
+
+            static constexpr Derived *GetParent(IntrusiveRedBlackTreeNode *node) {
+                return util::GetParentPointer<Member, Derived>(node);
+            }
+
+            static constexpr Derived const *GetParent(IntrusiveRedBlackTreeNode const *node) {
+                return util::GetParentPointer<Member, Derived>(node);
+            }
+    };
+
     template<class Derived>
     class IntrusiveRedBlackTreeBaseNode : public IntrusiveRedBlackTreeNode{};
 

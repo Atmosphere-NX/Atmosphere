@@ -84,13 +84,70 @@ namespace ams::kern {
     }
 
     bool KServerPort::IsSignaled() const {
-        /* TODO: Check preconditions later. */
         MESOSPHERE_ASSERT_THIS();
         if (this->IsLight()) {
             return !this->light_session_list.empty();
         } else {
-            return this->session_list.empty();
+            return !this->session_list.empty();
         }
+    }
+
+    void KServerPort::EnqueueSession(KServerSession *session) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(!this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Add the session to our queue. */
+        this->session_list.push_back(*session);
+        if (this->session_list.size() == 1) {
+            this->NotifyAvailable();
+        }
+    }
+
+    void KServerPort::EnqueueSession(KLightServerSession *session) {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Add the session to our queue. */
+        this->light_session_list.push_back(*session);
+        if (this->light_session_list.size() == 1) {
+            this->NotifyAvailable();
+        }
+    }
+
+    KServerSession *KServerPort::AcceptSession() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(!this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Return the first session in the list. */
+        if (this->session_list.empty()) {
+            return nullptr;
+        }
+
+        KServerSession *session = std::addressof(this->session_list.front());
+        this->session_list.pop_front();
+        return session;
+    }
+
+    KLightServerSession *KServerPort::AcceptLightSession() {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this->IsLight());
+
+        KScopedSchedulerLock sl;
+
+        /* Return the first session in the list. */
+        if (this->light_session_list.empty()) {
+            return nullptr;
+        }
+
+        KLightServerSession *session = std::addressof(this->light_session_list.front());
+        this->light_session_list.pop_front();
+        return session;
     }
 
 }

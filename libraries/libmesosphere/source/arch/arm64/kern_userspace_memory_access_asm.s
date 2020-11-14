@@ -428,6 +428,95 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess20ClearMemorySize32BitEPv:
     mov     x0, #1
     ret
 
+/* ams::kern::arch::arm64::UserspaceAccess::UpdateLockAtomic(u32 *out, u32 *address, u32 if_zero, u32 new_orr_mask) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj:
+    /* Load the value from the address. */
+    ldaxr   w4, [x1]
+
+    /* Orr in the new mask. */
+    orr     w5, w4, w3
+
+    /* If the value is zero, use the if_zero value, otherwise use the newly orr'd value. */
+    cmp     w4, wzr
+    csel    w5, w2, w5, eq
+
+    /* Try to store. */
+    stlxr   w6, w5, [x1]
+
+    /* If we failed to store, try again. */
+    cbnz    w6, _ZN3ams4kern4arch5arm6415UserspaceAccess16UpdateLockAtomicEPjS4_jj
+
+    /* We're done. */
+    str     w4, [x0]
+    mov     x0, #1
+    ret
+
+
+/* ams::kern::arch::arm64::UserspaceAccess::UpdateIfEqualAtomic(s32 *out, s32 *address, s32 compare_value, s32 new_value) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii:
+    /* Load the value from the address. */
+    ldaxr   w4, [x1]
+
+    /* Compare it to the desired one. */
+    cmp     w4, w2
+
+    /* If equal, we want to try to write the new value. */
+    b.eq    1f
+
+    /* Otherwise, clear our exclusive hold and finish. */
+    clrex
+    b       2f
+
+1:  /* Try to store. */
+    stlxr   w5, w3, [x1]
+
+    /* If we failed to store, try again. */
+    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess19UpdateIfEqualAtomicEPiS4_ii
+
+2:  /* We're done. */
+    str     w4, [x0]
+    mov     x0, #1
+    ret
+
+/* ams::kern::arch::arm64::UserspaceAccess::DecrementIfLessThanAtomic(s32 *out, s32 *address, s32 compare) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i:
+    /* Load the value from the address. */
+    ldaxr   w3, [x1]
+
+    /* Compare it to the desired one. */
+    cmp     w3, w2
+
+    /* If less than, we want to try to decrement. */
+    b.lt    1f
+
+    /* Otherwise, clear our exclusive hold and finish. */
+    clrex
+    b       2f
+
+1:  /* Decrement and try to store. */
+    sub     w4, w3, #1
+    stlxr   w5, w4, [x1]
+
+    /* If we failed to store, try again. */
+    cbnz    w5, _ZN3ams4kern4arch5arm6415UserspaceAccess25DecrementIfLessThanAtomicEPiS4_i
+
+2:  /* We're done. */
+    str     w3, [x0]
+    mov     x0, #1
+    ret
+
 /* ams::kern::arch::arm64::UserspaceAccess::StoreDataCache(uintptr_t start, uintptr_t end) */
 .section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm, "ax", %progbits
 .global     _ZN3ams4kern4arch5arm6415UserspaceAccess14StoreDataCacheEmm
@@ -505,6 +594,276 @@ _ZN3ams4kern4arch5arm6415UserspaceAccess26InvalidateInstructionCacheEmm:
     b.ne    1b
 
 2:  /* We're done! */
+    mov     x0, #1
+    ret
+
+/* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory32Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory32BitEPvPKvm:
+    /* Check if we have any work to do. */
+    cmp     x2, #0
+    b.eq    3f
+
+    /* Save variables in temporary registers. */
+    mov     x4, x0
+    mov     x5, x1
+    mov     x6, x2
+    add     x7, x5, x6
+
+    /* Save our return address. */
+    mov     x8, x30
+
+1:  /* Set our return address so that on read failure we continue as though we read -1. */
+    adr     x30, 4f
+
+    /* Read the word from io. */
+    ldtr    w9, [x5]
+    dsb     sy
+    nop
+
+2:  /* Restore our return address. */
+    mov     x30, x8
+
+    /* Write the value we read. */
+    sttr    w9, [x4]
+
+    /* Advance. */
+    add     x4, x4, #4
+    add     x5, x5, #4
+    cmp     x5, x7
+    b.ne    1b
+
+3:  /* We're done! */
+    mov     x0, #1
+    ret
+
+4:  /* We failed to read a value, so continue as though we read -1. */
+    mov     w9, #0xFFFFFFFF
+    b       2b
+
+/* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory16Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess17ReadIoMemory16BitEPvPKvm:
+    /* Check if we have any work to do. */
+    cmp     x2, #0
+    b.eq    3f
+
+    /* Save variables in temporary registers. */
+    mov     x4, x0
+    mov     x5, x1
+    mov     x6, x2
+    add     x7, x5, x6
+
+    /* Save our return address. */
+    mov     x8, x30
+
+1:  /* Set our return address so that on read failure we continue as though we read -1. */
+    adr     x30, 4f
+
+    /* Read the word from io. */
+    ldtrh   w9, [x5]
+    dsb     sy
+    nop
+
+2:  /* Restore our return address. */
+    mov     x30, x8
+
+    /* Write the value we read. */
+    sttrh   w9, [x4]
+
+    /* Advance. */
+    add     x4, x4, #2
+    add     x5, x5, #2
+    cmp     x5, x7
+    b.ne    1b
+
+3:  /* We're done! */
+    mov     x0, #1
+    ret
+
+4:  /* We failed to read a value, so continue as though we read -1. */
+    mov     w9, #0xFFFFFFFF
+    b       2b
+
+/* ams::kern::arch::arm64::UserspaceAccess::ReadIoMemory8Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess16ReadIoMemory8BitEPvPKvm:
+    /* Check if we have any work to do. */
+    cmp     x2, #0
+    b.eq    3f
+
+    /* Save variables in temporary registers. */
+    mov     x4, x0
+    mov     x5, x1
+    mov     x6, x2
+    add     x7, x5, x6
+
+    /* Save our return address. */
+    mov     x8, x30
+
+1:  /* Set our return address so that on read failure we continue as though we read -1. */
+    adr     x30, 4f
+
+    /* Read the word from io. */
+    ldtrb   w9, [x5]
+    dsb     sy
+    nop
+
+2:  /* Restore our return address. */
+    mov     x30, x8
+
+    /* Write the value we read. */
+    sttrb   w9, [x4]
+
+    /* Advance. */
+    add     x4, x4, #1
+    add     x5, x5, #1
+    cmp     x5, x7
+    b.ne    1b
+
+3:  /* We're done! */
+    mov     x0, #1
+    ret
+
+4:  /* We failed to read a value, so continue as though we read -1. */
+    mov     w9, #0xFFFFFFFF
+    b       2b
+
+/* ams::kern::arch::arm64::UserspaceAccess::WriteIoMemory32Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory32BitEPvPKvm:
+    /* Check if we have any work to do. */
+    cmp     x2, #0
+    b.eq    3f
+
+    /* Save variables in temporary registers. */
+    mov     x4, x0
+    mov     x5, x1
+    mov     x6, x2
+    add     x7, x5, x6
+
+    /* Save our return address. */
+    mov     x8, x30
+
+1:  /* Read the word from normal memory. */
+    mov     x30, x8
+    ldtr    w9, [x5]
+
+    /* Set our return address so that on read failure we continue. */
+    adr     x30, 2f
+
+    /* Write the word to io. */
+    sttr    w9, [x5]
+    dsb     sy
+
+2:  /* Continue. */
+    nop
+
+    /* Advance. */
+    add     x4, x4, #4
+    add     x5, x5, #4
+    cmp     x5, x7
+    b.ne    1b
+
+3:  /* We're done! */
+    mov     x0, #1
+    ret
+
+/* ams::kern::arch::arm64::UserspaceAccess::WriteIoMemory16Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess18WriteIoMemory16BitEPvPKvm:
+    /* Check if we have any work to do. */
+    cmp     x2, #0
+    b.eq    3f
+
+    /* Save variables in temporary registers. */
+    mov     x4, x0
+    mov     x5, x1
+    mov     x6, x2
+    add     x7, x5, x6
+
+    /* Save our return address. */
+    mov     x8, x30
+
+1:  /* Read the word from normal memory. */
+    mov     x30, x8
+    ldtrh   w9, [x5]
+
+    /* Set our return address so that on read failure we continue. */
+    adr     x30, 2f
+
+    /* Write the word to io. */
+    sttrh   w9, [x5]
+    dsb     sy
+
+2:  /* Continue. */
+    nop
+
+    /* Advance. */
+    add     x4, x4, #2
+    add     x5, x5, #2
+    cmp     x5, x7
+    b.ne    1b
+
+3:  /* We're done! */
+    mov     x0, #1
+    ret
+
+/* ams::kern::arch::arm64::UserspaceAccess::WriteIoMemory8Bit(void *dst, const void *src, size_t size) */
+.section    .text._ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm, "ax", %progbits
+.global     _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm
+.type       _ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm, %function
+.balign 0x10
+_ZN3ams4kern4arch5arm6415UserspaceAccess17WriteIoMemory8BitEPvPKvm:
+    /* Check if we have any work to do. */
+    cmp     x2, #0
+    b.eq    3f
+
+    /* Save variables in temporary registers. */
+    mov     x4, x0
+    mov     x5, x1
+    mov     x6, x2
+    add     x7, x5, x6
+
+    /* Save our return address. */
+    mov     x8, x30
+
+1:  /* Read the word from normal memory. */
+    mov     x30, x8
+    ldtrb   w9, [x5]
+
+    /* Set our return address so that on read failure we continue. */
+    adr     x30, 2f
+
+    /* Write the word to io. */
+    sttrb   w9, [x5]
+    dsb     sy
+
+2:  /* Continue. */
+    nop
+
+    /* Advance. */
+    add     x4, x4, #1
+    add     x5, x5, #1
+    cmp     x5, x7
+    b.ne    1b
+
+3:  /* We're done! */
     mov     x0, #1
     ret
 

@@ -18,13 +18,14 @@
 
 namespace ams::se {
 
-    void SetRegisterAddress(uintptr_t address);
+    void SetRegisterAddress(uintptr_t address, uintptr_t address2);
 
     void Initialize();
 
     void SetSecure(bool secure);
     void SetTzramSecure();
     void SetPerKeySecure();
+    void SetContextSaveSecure();
 
     void Lockout();
 

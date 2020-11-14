@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <mesosphere/kern_common.hpp>
+#include <mesosphere/svc/kern_svc_k_user_pointer.hpp>
 
 namespace ams::kern {
 
@@ -26,6 +27,12 @@ namespace ams::kern {
 
             static NOINLINE void Printf(const char *format, ...) __attribute__((format(printf, 1, 2)));
             static NOINLINE void VPrintf(const char *format, ::std::va_list vl);
+
+            static NOINLINE Result PrintUserString(ams::kern::svc::KUserPointer<const char *> user_str, size_t len);
+
+            /* Functionality for preserving across sleep. */
+            static NOINLINE void Save();
+            static NOINLINE void Restore();
     };
 
 }

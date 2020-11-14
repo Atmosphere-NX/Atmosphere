@@ -178,17 +178,17 @@ namespace ams::fatal::srv {
         /* First things first, check if process is 64 bits, and get list of thread infos. */
         std::unordered_map<u64, u64> thread_id_to_tls;
         {
-            bool got_attach_process = false;
+            bool got_create_process = false;
             svc::DebugEventInfo d;
             while (R_SUCCEEDED(svcGetDebugEvent(reinterpret_cast<u8 *>(&d), debug_handle.Get()))) {
                 switch (d.type) {
-                    case svc::DebugEvent_AttachProcess:
-                        ctx->cpu_ctx.architecture = (d.info.attach_process.flags & 1) ? CpuContext::Architecture_Aarch64 : CpuContext::Architecture_Aarch32;
-                        std::memcpy(ctx->proc_name, d.info.attach_process.name, sizeof(d.info.attach_process.name));
-                        got_attach_process = true;
+                    case svc::DebugEvent_CreateProcess:
+                        ctx->cpu_ctx.architecture = (d.info.create_process.flags & 1) ? CpuContext::Architecture_Aarch64 : CpuContext::Architecture_Aarch32;
+                        std::memcpy(ctx->proc_name, d.info.create_process.name, sizeof(d.info.create_process.name));
+                        got_create_process = true;
                         break;
-                    case svc::DebugEvent_AttachThread:
-                        thread_id_to_tls[d.info.attach_thread.thread_id] = d.info.attach_thread.tls_address;
+                    case svc::DebugEvent_CreateThread:
+                        thread_id_to_tls[d.info.create_thread.thread_id] = d.info.create_thread.tls_address;
                         break;
                     case svc::DebugEvent_Exception:
                     case svc::DebugEvent_ExitProcess:
@@ -197,7 +197,7 @@ namespace ams::fatal::srv {
                 }
             }
 
-            if (!got_attach_process) {
+            if (!got_create_process) {
                 return;
             }
         }

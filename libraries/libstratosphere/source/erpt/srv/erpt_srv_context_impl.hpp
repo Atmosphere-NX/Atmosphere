@@ -18,19 +18,20 @@
 
 namespace ams::erpt::srv {
 
-    class ContextImpl final : public erpt::sf::IContext {
+    class ContextImpl final {
         public:
-            virtual Result SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer) override final;
-            virtual Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) override final;
-            virtual Result SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) override final;
-            virtual Result ClearInitialLaunchSettingsCompletionTime() override final;
-            virtual Result UpdatePowerOnTime() override final;
-            virtual Result UpdateAwakeTime() override final;
-            virtual Result SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer) override final;
-            virtual Result UpdateApplicationLaunchTime() override final;
-            virtual Result ClearApplicationLaunchTime() override final;
-            virtual Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data) override final;
-            virtual Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) override final;
+            Result SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer);
+            Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer);
+            Result SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point);
+            Result ClearInitialLaunchSettingsCompletionTime();
+            Result UpdatePowerOnTime();
+            Result UpdateAwakeTime();
+            Result SubmitMultipleCategoryContext(const MultipleCategoryContextEntry &ctx_entry, const ams::sf::InBuffer &str_buffer);
+            Result UpdateApplicationLaunchTime();
+            Result ClearApplicationLaunchTime();
+            Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
+            Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
     };
+    static_assert(erpt::sf::IsIContext<ContextImpl>);
 
 }

@@ -888,7 +888,7 @@ namespace ams::fssystem {
 
         /* Set the storage holder's storages. */
         storage->SetStorage(0, original_storage.get(), 0, original_data_size);
-        storage->SetStorage(1, indirect_table_storage.get(), 0, indirect_data_size);
+        storage->SetStorage(1, indirect_data_storage.get(), 0, indirect_data_size);
         storage->Set(std::move(base_storage), std::move(original_storage), std::move(indirect_table_storage), std::move(indirect_data_storage));
 
         /* Set the indirect storage. */

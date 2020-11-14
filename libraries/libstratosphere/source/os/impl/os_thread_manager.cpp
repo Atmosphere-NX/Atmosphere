@@ -41,6 +41,9 @@ namespace ams::os::impl {
         thread->name_buffer[0] = '\x00';
         thread->name_pointer   = thread->name_buffer;
 
+        /* Set internal tls variables. */
+        thread->atomic_sf_inline_context = 0;
+
         /* Mark initialized. */
         thread->state = ThreadType::State_Initialized;
     }

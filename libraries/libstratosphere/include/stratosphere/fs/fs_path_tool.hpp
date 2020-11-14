@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_common.hpp"
-#include "../fssrv/fssrv_sf_path.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_path.hpp>
 
 namespace ams::fs {
 

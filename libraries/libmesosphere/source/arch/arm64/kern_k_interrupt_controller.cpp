@@ -84,4 +84,114 @@ namespace ams::kern::arch::arm64 {
         this->gicc = nullptr;
     }
 
+    void KInterruptController::SaveCoreLocal(LocalState *state) const {
+        /* Save isenabler. */
+        for (size_t i = 0; i < util::size(state->isenabler); ++i) {
+            constexpr size_t Offset = 0;
+            state->isenabler[i] = this->gicd->isenabler[i + Offset];
+            this->gicd->isenabler[i + Offset] = 0xFFFFFFFF;
+        }
+
+        /* Save ipriorityr. */
+        for (size_t i = 0; i < util::size(state->ipriorityr); ++i) {
+            constexpr size_t Offset = 0;
+            state->ipriorityr[i] = this->gicd->ipriorityr.words[i + Offset];
+            this->gicd->ipriorityr.words[i + Offset] = 0xFFFFFFFF;
+        }
+
+        /* Save itargetsr. */
+        for (size_t i = 0; i < util::size(state->itargetsr); ++i) {
+            constexpr size_t Offset = 0;
+            state->itargetsr[i] = this->gicd->itargetsr.words[i + Offset];
+        }
+
+        /* Save icfgr. */
+        for (size_t i = 0; i < util::size(state->icfgr); ++i) {
+            constexpr size_t Offset = 0;
+            state->icfgr[i] = this->gicd->icfgr[i + Offset];
+        }
+    }
+
+    void KInterruptController::SaveGlobal(GlobalState *state) const {
+        /* Save isenabler. */
+        for (size_t i = 0; i < util::size(state->isenabler); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.isenabler);
+            state->isenabler[i] = this->gicd->isenabler[i + Offset];
+            this->gicd->isenabler[i + Offset] = 0xFFFFFFFF;
+        }
+
+        /* Save ipriorityr. */
+        for (size_t i = 0; i < util::size(state->ipriorityr); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.ipriorityr);
+            state->ipriorityr[i] = this->gicd->ipriorityr.words[i + Offset];
+            this->gicd->ipriorityr.words[i + Offset] = 0xFFFFFFFF;
+        }
+
+        /* Save itargetsr. */
+        for (size_t i = 0; i < util::size(state->itargetsr); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.itargetsr);
+            state->itargetsr[i] = this->gicd->itargetsr.words[i + Offset];
+        }
+
+        /* Save icfgr. */
+        for (size_t i = 0; i < util::size(state->icfgr); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.icfgr);
+            state->icfgr[i] = this->gicd->icfgr[i + Offset];
+        }
+    }
+
+    void KInterruptController::RestoreCoreLocal(const LocalState *state) const {
+        /* Restore ipriorityr. */
+        for (size_t i = 0; i < util::size(state->ipriorityr); ++i) {
+            constexpr size_t Offset = 0;
+            this->gicd->ipriorityr.words[i + Offset] = state->ipriorityr[i];
+        }
+
+        /* Restore itargetsr. */
+        for (size_t i = 0; i < util::size(state->itargetsr); ++i) {
+            constexpr size_t Offset = 0;
+            this->gicd->itargetsr.words[i + Offset] = state->itargetsr[i];
+        }
+
+        /* Restore icfgr. */
+        for (size_t i = 0; i < util::size(state->icfgr); ++i) {
+            constexpr size_t Offset = 0;
+            this->gicd->icfgr[i + Offset] = state->icfgr[i];
+        }
+
+        /* Restore isenabler. */
+        for (size_t i = 0; i < util::size(state->isenabler); ++i) {
+            constexpr size_t Offset = 0;
+            this->gicd->icenabler[i + Offset] = 0xFFFFFFFF;
+            this->gicd->isenabler[i + Offset] = state->isenabler[i];
+        }
+    }
+
+    void KInterruptController::RestoreGlobal(const GlobalState *state) const {
+        /* Restore ipriorityr. */
+        for (size_t i = 0; i < util::size(state->ipriorityr); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.ipriorityr);
+            this->gicd->ipriorityr.words[i + Offset] = state->ipriorityr[i];
+        }
+
+        /* Restore itargetsr. */
+        for (size_t i = 0; i < util::size(state->itargetsr); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.itargetsr);
+            this->gicd->itargetsr.words[i + Offset] = state->itargetsr[i];
+        }
+
+        /* Restore icfgr. */
+        for (size_t i = 0; i < util::size(state->icfgr); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.icfgr);
+            this->gicd->icfgr[i + Offset] = state->icfgr[i];
+        }
+
+        /* Restore isenabler. */
+        for (size_t i = 0; i < util::size(state->isenabler); ++i) {
+            constexpr size_t Offset = util::size(LocalState{}.isenabler);
+            this->gicd->icenabler[i + Offset] = 0xFFFFFFFF;
+            this->gicd->isenabler[i + Offset] = state->isenabler[i];
+        }
+    }
+
 }

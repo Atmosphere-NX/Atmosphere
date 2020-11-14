@@ -112,17 +112,17 @@ namespace ams::kern::arch::arm64 {
             static constexpr s32 NumPriorityLevels = 4;
         public:
             struct LocalState {
-                u32 local_isenabler[NumLocalInterrupts / 32];
-                u32 local_ipriorityr[NumLocalInterrupts / 4];
-                u32 local_targetsr[NumLocalInterrupts / 4];
-                u32 local_icfgr[NumLocalInterrupts / 16];
+                u32 isenabler[NumLocalInterrupts / 32];
+                u32 ipriorityr[NumLocalInterrupts / 4];
+                u32 itargetsr[NumLocalInterrupts / 4];
+                u32 icfgr[NumLocalInterrupts / 16];
             };
 
             struct GlobalState {
-                u32 global_isenabler[NumGlobalInterrupts / 32];
-                u32 global_ipriorityr[NumGlobalInterrupts / 4];
-                u32 global_targetsr[NumGlobalInterrupts / 4];
-                u32 global_icfgr[NumGlobalInterrupts / 16];
+                u32 isenabler[NumGlobalInterrupts / 32];
+                u32 ipriorityr[NumGlobalInterrupts / 4];
+                u32 itargetsr[NumGlobalInterrupts / 4];
+                u32 icfgr[NumGlobalInterrupts / 16];
             };
 
             enum PriorityLevel : u8 {
@@ -142,6 +142,11 @@ namespace ams::kern::arch::arm64 {
 
             void Initialize(s32 core_id);
             void Finalize(s32 core_id);
+
+            void SaveCoreLocal(LocalState *state) const;
+            void SaveGlobal(GlobalState *state) const;
+            void RestoreCoreLocal(const LocalState *state) const;
+            void RestoreGlobal(const GlobalState *state) const;
         public:
             u32 GetIrq() const {
                 return this->gicc->iar;
@@ -213,12 +218,10 @@ namespace ams::kern::arch::arm64 {
                 this->gicc->eoir = irq;
             }
 
-            bool IsInterruptDefined(s32 irq) {
+            bool IsInterruptDefined(s32 irq) const {
                 const s32 num_interrupts = std::min(32 + 32 * (this->gicd->typer & 0x1F), static_cast<u32>(NumInterrupts));
                 return (0 <= irq && irq < num_interrupts);
             }
-
-            /* TODO: Implement more KInterruptController functionality. */
         public:
             static constexpr ALWAYS_INLINE bool IsSoftware(s32 id) {
                 MESOSPHERE_ASSERT(0 <= id && id < NumInterrupts);

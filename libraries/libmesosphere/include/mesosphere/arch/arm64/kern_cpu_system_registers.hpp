@@ -56,26 +56,69 @@ namespace ams::kern::arch::arm64::cpu {
 
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(OslarEl1, oslar_el1)
 
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(TpidrEl0,   tpidr_el0)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(TpidrRoEl0, tpidrro_el0)
 
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(EsrEl1, esr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(ElrEl1,   elr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(EsrEl1,   esr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(SpsrEl1,  spsr_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Afsr0El1, afsr0_el1)
     MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Afsr1El1, afsr1_el1)
 
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmUserEnrEl0, pmuserenr_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmcCntrEl0,   pmccntr_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr0El0, pmevcntr0_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr1El0, pmevcntr1_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr2El0, pmevcntr2_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr3El0, pmevcntr3_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr4El0, pmevcntr4_el0)
-    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr5El0, pmevcntr5_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(MdscrEl1, mdscr_el1)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CpacrEl1, cpacr_el1)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(ContextidrEl1, contextidr_el1)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntkCtlEl1,  cntkctl_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCtlEl0,  cntp_ctl_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(CntpCvalEl0, cntp_cval_el0)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(Daif, daif)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(SpEl0, sp_el0)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(IdAa64Dfr0El1, id_aa64dfr0_el1)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmcrEl0,       pmcr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmUserEnrEl0,  pmuserenr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmcCntrEl0,    pmccntr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmSelrEl0,     pmselr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmcCfiltrEl0,  pmccfiltr_el0)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmIntEnSetEl1, pmintenset_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmCntEnSetEl0, pmcntenset_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmOvsSetEl0,   pmovsset_el0)
+
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmIntEnClrEl1, pmintenclr_el1)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmCntEnClrEl0, pmcntenclr_el0)
+    MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmOvsClrEl0,   pmovsclr_el0)
+
+    #define FOR_I_IN_0_TO_30(HANDLER, ...)                                                                              \
+        HANDLER(0,  ## __VA_ARGS__) HANDLER(1,  ## __VA_ARGS__) HANDLER(2,  ## __VA_ARGS__) HANDLER(3,  ## __VA_ARGS__) \
+        HANDLER(4,  ## __VA_ARGS__) HANDLER(5,  ## __VA_ARGS__) HANDLER(6,  ## __VA_ARGS__) HANDLER(7,  ## __VA_ARGS__) \
+        HANDLER(8,  ## __VA_ARGS__) HANDLER(9,  ## __VA_ARGS__) HANDLER(10, ## __VA_ARGS__) HANDLER(11, ## __VA_ARGS__) \
+        HANDLER(12, ## __VA_ARGS__) HANDLER(13, ## __VA_ARGS__) HANDLER(14, ## __VA_ARGS__) HANDLER(15, ## __VA_ARGS__) \
+        HANDLER(16, ## __VA_ARGS__) HANDLER(17, ## __VA_ARGS__) HANDLER(18, ## __VA_ARGS__) HANDLER(19, ## __VA_ARGS__) \
+        HANDLER(20, ## __VA_ARGS__) HANDLER(21, ## __VA_ARGS__) HANDLER(22, ## __VA_ARGS__) HANDLER(23, ## __VA_ARGS__) \
+        HANDLER(24, ## __VA_ARGS__) HANDLER(25, ## __VA_ARGS__) HANDLER(26, ## __VA_ARGS__) HANDLER(27, ## __VA_ARGS__) \
+        HANDLER(28, ## __VA_ARGS__) HANDLER(29, ## __VA_ARGS__) HANDLER(30, ## __VA_ARGS__)
+
+    #define MESOSPHERE_CPU_DEFINE_PMEV_ACCESSORS(ID, ...)                               \
+        MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevCntr##ID##El0,  pmevcntr##ID##_el0)  \
+        MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(PmevTyper##ID##El0, pmevtyper##ID##_el0)
+
+    FOR_I_IN_0_TO_30(MESOSPHERE_CPU_DEFINE_PMEV_ACCESSORS)
+
+    #undef MESOSPHERE_CPU_DEFINE_PMEV_ACCESSORS
+    #undef FOR_I_IN_0_TO_30
 
     #define FOR_I_IN_0_TO_15(HANDLER, ...)                                                                              \
         HANDLER(0,  ## __VA_ARGS__) HANDLER(1,  ## __VA_ARGS__) HANDLER(2,  ## __VA_ARGS__) HANDLER(3,  ## __VA_ARGS__) \
         HANDLER(4,  ## __VA_ARGS__) HANDLER(5,  ## __VA_ARGS__) HANDLER(6,  ## __VA_ARGS__) HANDLER(7,  ## __VA_ARGS__) \
         HANDLER(8,  ## __VA_ARGS__) HANDLER(9,  ## __VA_ARGS__) HANDLER(10, ## __VA_ARGS__) HANDLER(11, ## __VA_ARGS__) \
-        HANDLER(12, ## __VA_ARGS__) HANDLER(13, ## __VA_ARGS__) HANDLER(14, ## __VA_ARGS__) HANDLER(15, ## __VA_ARGS__) \
+        HANDLER(12, ## __VA_ARGS__) HANDLER(13, ## __VA_ARGS__) HANDLER(14, ## __VA_ARGS__) HANDLER(15, ## __VA_ARGS__)
 
     #define MESOSPHERE_CPU_DEFINE_DBG_SYSREG_ACCESSORS(ID, ...)                     \
         MESOSPHERE_CPU_DEFINE_SYSREG_ACCESSORS(DbgWcr##ID##El1, dbgwcr##ID##_el1)   \
@@ -158,6 +201,15 @@ namespace ams::kern::arch::arm64::cpu {
                 const size_t shift_value = this->GetBits(16, 6);
                 return size_t(1) << (size_t(64) - shift_value);
             }
+
+            constexpr ALWAYS_INLINE bool GetEpd0() const {
+                return this->GetBits(7, 1) != 0;
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetEpd0(bool set) {
+                this->SetBit(7, set);
+                return *this;
+            }
     };
 
     MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(ArchitecturalFeatureAccessControl) {
@@ -188,6 +240,10 @@ namespace ams::kern::arch::arm64::cpu {
 
             constexpr ALWAYS_INLINE size_t GetNumBreakpoints() const {
                 return this->GetBits(12, 4);
+            }
+
+            constexpr ALWAYS_INLINE size_t GetNumContextAwareBreakpoints() const {
+                return this->GetBits(28, 4);
             }
     };
 
@@ -382,6 +438,27 @@ namespace ams::kern::arch::arm64::cpu {
 
             constexpr ALWAYS_INLINE int GetLineSize() const {
                 return static_cast<int>(this->GetBits(0, 3));
+            }
+
+            /* TODO: Other bitfield accessors? */
+    };
+
+    MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS(PerformanceMonitorsControl) {
+        public:
+            MESOSPHERE_CPU_SYSREG_ACCESSOR_CLASS_FUNCTIONS(PerformanceMonitorsControl, pmcr_el0)
+        public:
+            constexpr ALWAYS_INLINE u64 GetN() const {
+                return this->GetBits(11, 5);
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetEventCounterReset(bool en) {
+                this->SetBit(1, en);
+                return *this;
+            }
+
+            constexpr ALWAYS_INLINE decltype(auto) SetCycleCounterReset(bool en) {
+                this->SetBit(2, en);
+                return *this;
             }
 
             /* TODO: Other bitfield accessors? */

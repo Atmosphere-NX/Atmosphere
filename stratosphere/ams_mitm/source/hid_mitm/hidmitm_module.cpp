@@ -59,7 +59,7 @@ namespace ams::mitm::hid {
         }
 
         /* Create hid mitm. */
-        R_ABORT_UNLESS(g_server_manager.RegisterMitmServer<HidMitmService>(MitmServiceName));
+        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<IHidMitmInterface, HidMitmService>(MitmServiceName)));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

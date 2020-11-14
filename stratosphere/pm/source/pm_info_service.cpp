@@ -17,11 +17,15 @@
 #include "pm_info_service.hpp"
 #include "impl/pm_process_manager.hpp"
 
-namespace ams::pm::info {
+namespace ams::pm {
 
     /* Overrides for libstratosphere pm::info commands. */
-    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
-        return ldr::pm::HasLaunchedProgram(out, program_id);
+    namespace info {
+
+        Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
+            return ldr::pm::HasLaunchedProgram(out, program_id);
+        }
+
     }
 
     /* Actual command implementations. */

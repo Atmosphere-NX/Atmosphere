@@ -156,7 +156,7 @@ namespace ams::kern::init {
         const size_t resource_region_size = GetResourceRegionSize();
 
         /* Determine the size of the slab region. */
-        const size_t slab_region_size = CalculateTotalSlabHeapSize();
+        const size_t slab_region_size = util::AlignUp(CalculateTotalSlabHeapSize(), PageSize);
         MESOSPHERE_INIT_ABORT_UNLESS(slab_region_size <= resource_region_size);
 
         /* Setup the slab region. */

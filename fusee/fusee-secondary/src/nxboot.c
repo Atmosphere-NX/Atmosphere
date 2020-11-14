@@ -64,7 +64,6 @@
 #undef u32
 
 extern const uint8_t warmboot_bin[];
-extern const uint32_t warmboot_bin_size;
 
 static const uint8_t retail_pkc_modulus[0x100] = {
     0xF7, 0x86, 0x47, 0xAB, 0x71, 0x89, 0x81, 0xB5, 0xCF, 0x0C, 0xB0, 0xE8, 0x48, 0xA7, 0xFD, 0xAD,
@@ -236,6 +235,8 @@ static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
+        CHECK_NCA("5077973537f6735b564dd7475b779f87", 10_1_1); /* Exclusive to China. */
+        CHECK_NCA("fd1faed0ca750700d254c0915b93d506", 10_1_0);
         CHECK_NCA("34728c771299443420820d8ae490ea41", 10_0_4);
         CHECK_NCA("5b1df84f88c3334335bbb45d8522cbb4", 10_0_3);
         CHECK_NCA("e951bc9dedcd54f65ffd83d4d050f9e0", 10_0_2);
@@ -649,7 +650,7 @@ uint32_t nxboot_main(void) {
     } else {
         emummc_size = get_file_size("atmosphere/emummc.kip");
         if (emummc_size != 0) {
-            /* Allocate memory for the TSEC firmware. */
+            /* Allocate memory for the emummc KIP. */
             emummc = memalign(0x100, emummc_size);
 
             if (emummc == NULL) {
@@ -838,13 +839,7 @@ uint32_t nxboot_main(void) {
 
     /* Derive new device keys. */
     {
-        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_5_0_0) {
-            derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
-        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-            derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_4XNEWDEVICEKEYGENKEY, target_firmware);
-        } else {
-            /* No new keys to derive */
-        }
+        derive_new_device_keys(fuse_get_retail_type() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
     }
 
     /* Set the system partition's keys. */

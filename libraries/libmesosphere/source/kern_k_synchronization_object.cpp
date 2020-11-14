@@ -32,6 +32,19 @@ namespace ams::kern {
     void KSynchronizationObject::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
+        /* If auditing, ensure that the object has no waiters. */
+        #if defined(MESOSPHERE_BUILD_FOR_AUDITING)
+        {
+            KScopedSchedulerLock sl;
+
+            auto end = this->end();
+            for (auto it = this->begin(); it != end; ++it) {
+                KThread *thread = std::addressof(*it);
+                MESOSPHERE_LOG("KSynchronizationObject::Finalize(%p) with %p (id=%ld) waiting.\n", this, thread, thread->GetId());
+            }
+        }
+        #endif
+
         this->OnFinalizeSynchronizationObject();
         KAutoObject::Finalize();
     }
@@ -39,16 +52,42 @@ namespace ams::kern {
     void KSynchronizationObject::DebugWaiters() {
         MESOSPHERE_ASSERT_THIS();
 
-        MESOSPHERE_TODO("Do useful debug operation here.");
+        /* If debugging, dump the list of waiters. */
+        #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
+        {
+            KScopedSchedulerLock sl;
+
+            MESOSPHERE_RELEASE_LOG("Threads waiting on %p:\n", this);
+
+            bool has_waiters = false;
+            auto end = this->end();
+            for (auto it = this->begin(); it != end; ++it) {
+                KThread *thread = std::addressof(*it);
+
+                if (KProcess *process = thread->GetOwnerProcess(); process != nullptr) {
+                    MESOSPHERE_RELEASE_LOG("    %p tid=%ld pid=%ld (%s)\n", thread, thread->GetId(), process->GetId(), process->GetName());
+                } else {
+                    MESOSPHERE_RELEASE_LOG("    %p tid=%ld (Kernel)\n", thread, thread->GetId());
+                }
+
+                has_waiters = true;
+            }
+
+            /* If we didn't have any waiters, print so. */
+            if (!has_waiters) {
+                MESOSPHERE_RELEASE_LOG("    None\n");
+            }
+        }
+        #endif
     }
 
-    KSynchronizationObject::iterator KSynchronizationObject::AddWaiterThread(KThread *thread) {
+    KSynchronizationObject::iterator KSynchronizationObject::RegisterWaitingThread(KThread *thread) {
         MESOSPHERE_ASSERT_THIS();
 
         return this->thread_list.insert(this->thread_list.end(), *thread);
     }
 
-    KSynchronizationObject::iterator KSynchronizationObject::RemoveWaiterThread(KSynchronizationObject::iterator it) {
+    KSynchronizationObject::iterator KSynchronizationObject::UnregisterWaitingThread(KSynchronizationObject::iterator it) {
         MESOSPHERE_ASSERT_THIS();
 
         return this->thread_list.erase(it);

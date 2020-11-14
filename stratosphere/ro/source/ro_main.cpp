@@ -14,8 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "ro_debug_monitor.hpp"
-#include "ro_service.hpp"
+#include "ro_debug_monitor_service.hpp"
+#include "ro_ro_service.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -84,10 +84,6 @@ void __appExit(void) {
     setsysExit();
 }
 
-/* Helpers to create RO objects. */
-static constexpr auto MakeRoServiceForSelf = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForSelf); };
-static constexpr auto MakeRoServiceForOthers = []() { return std::make_shared<ro::Service>(ro::ModuleType::ForOthers); };
-
 namespace {
 
     /* ldr:ro, ro:dmnt, ro:1. */
@@ -122,11 +118,11 @@ int main(int argc, char **argv)
     }
 
     /* Create services. */
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IDebugMonitorInterface, ro::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IRoInterface, ro::RoServiceForSelf>(ForSelfServiceName, ForSelfMaxSessions)));
     if (hos::GetVersion() >= hos::Version_7_0_0) {
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::Service, +MakeRoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
+        R_ABORT_UNLESS((g_server_manager.RegisterServer<ro::impl::IRoInterface, ro::RoServiceForOthers>(ForOthersServiceName, ForOthersMaxSessions)));
     }
 
     /* Loop forever, servicing our services. */

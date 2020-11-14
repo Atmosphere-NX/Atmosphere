@@ -18,9 +18,9 @@
 namespace ams::kern {
 
     void KInterruptTaskManager::TaskQueue::Enqueue(KInterruptTask *task) {
-        MESOSPHERE_ASSERT(task->GetNextTask() == nullptr);
         MESOSPHERE_ASSERT(task != this->head);
         MESOSPHERE_ASSERT(task != this->tail);
+        MESOSPHERE_AUDIT(task->GetNextTask() == nullptr);
 
         /* Insert the task into the queue. */
         if (this->tail != nullptr) {
@@ -30,19 +30,33 @@ namespace ams::kern {
         }
 
         this->tail = task;
+
+        /* Set the next task for auditing. */
+        #if defined (MESOSPHERE_BUILD_FOR_AUDITING)
+        task->SetNextTask(GetDummyInterruptTask());
+        #endif
     }
 
     void KInterruptTaskManager::TaskQueue::Dequeue() {
         MESOSPHERE_ASSERT(this->head != nullptr);
         MESOSPHERE_ASSERT(this->tail != nullptr);
+        MESOSPHERE_AUDIT(this->tail->GetNextTask() == GetDummyInterruptTask());
 
         /* Pop the task from the front of the queue. */
+        KInterruptTask *old_head = this->head;
+
         if (this->head == this->tail) {
             this->head = nullptr;
             this->tail = nullptr;
         } else {
             this->head = this->head->GetNextTask();
         }
+
+        #if defined (MESOSPHERE_BUILD_FOR_AUDITING)
+        old_head->SetNextTask(nullptr);
+        #else
+        AMS_UNUSED(old_head);
+        #endif
     }
 
     void KInterruptTaskManager::ThreadFunction(uintptr_t arg) {
@@ -91,7 +105,7 @@ namespace ams::kern {
 
         /* Enqueue the task and signal the scheduler. */
         this->task_queue.Enqueue(task);
-        Kernel::GetScheduler().SetInterruptTaskThreadRunnable();
+        Kernel::GetScheduler().SetInterruptTaskRunnable();
     }
 
 }

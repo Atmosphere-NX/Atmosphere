@@ -34,6 +34,14 @@ namespace ams::kern {
         return this->SetCapabilities(caps, num_caps, page_table);
     }
 
+     Result KCapabilities::Initialize(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table) {
+        /* We're initializing a user process. */
+        /* Most fields have already been cleared by our constructor. */
+
+        /* Parse the user capabilities array. */
+        return this->SetCapabilities(user_caps, num_caps, page_table);
+     }
+
     Result KCapabilities::SetCorePriorityCapability(const util::BitPack32 cap) {
         /* We can't set core/priority if we've already set them. */
         R_UNLESS(this->core_mask    == 0,  svc::ResultInvalidArgument());
@@ -164,7 +172,7 @@ namespace ams::kern {
         for (size_t i = 0; i < util::size(ids); i++) {
             if (ids[i] != PaddingInterruptId) {
                 R_UNLESS(Kernel::GetInterruptManager().IsInterruptDefined(ids[i]), svc::ResultOutOfRange());
-                R_UNLESS(this->SetInterruptAllowed(ids[i]),                        svc::ResultOutOfRange());
+                R_UNLESS(this->SetInterruptPermitted(ids[i]),                      svc::ResultOutOfRange());
             }
         }
 
@@ -246,6 +254,37 @@ namespace ams::kern {
 
                 /* Check the pair cap is a map range cap. */
                 const util::BitPack32 size_cap = { caps[i] };
+                R_UNLESS(GetCapabilityType(size_cap) == CapabilityType::MapRange, svc::ResultInvalidCombination());
+
+                /* Map the range. */
+                R_TRY(this->MapRange(cap, size_cap, page_table));
+            } else {
+                R_TRY(this->SetCapability(cap, set_flags, set_svc, page_table));
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KCapabilities::SetCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table) {
+        u32 set_flags = 0, set_svc = 0;
+
+        for (s32 i = 0; i < num_caps; i++) {
+            /* Read the cap from userspace. */
+            u32 cap0;
+            R_TRY(user_caps.CopyArrayElementTo(std::addressof(cap0), i));
+
+            const util::BitPack32 cap = { cap0 };
+            if (GetCapabilityType(cap) == CapabilityType::MapRange) {
+                /* Check that the pair cap exists. */
+                R_UNLESS((++i) < num_caps, svc::ResultInvalidCombination());
+
+                /* Read the second cap from userspace. */
+                u32 cap1;
+                R_TRY(user_caps.CopyArrayElementTo(std::addressof(cap1), i));
+
+                /* Check the pair cap is a map range cap. */
+                const util::BitPack32 size_cap = { cap1 };
                 R_UNLESS(GetCapabilityType(size_cap) == CapabilityType::MapRange, svc::ResultInvalidCombination());
 
                 /* Map the range. */

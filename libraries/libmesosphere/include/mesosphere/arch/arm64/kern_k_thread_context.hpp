@@ -66,7 +66,21 @@ namespace ams::kern::arch::arm64 {
 
             static void FpuContextSwitchHandler(KThread *thread);
 
-            /* TODO: More methods (especially FPU management) */
+            u32 GetFpcr() const { return this->fpcr; }
+            u32 GetFpsr() const { return this->fpsr; }
+
+            void SetFpcr(u32 v) { this->fpcr = v; }
+            void SetFpsr(u32 v) { this->fpsr = v; }
+
+            void CloneFpuStatus();
+
+            void SetFpuRegisters(const u128 *v, bool is_64_bit);
+
+            const u128 *GetFpuRegisters() const { return this->fpu_registers; }
+        public:
+            static void OnThreadTerminating(const KThread *thread);
     };
+
+    void GetUserContext(ams::svc::ThreadContext *out, const KThread *thread);
 
 }

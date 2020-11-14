@@ -20,26 +20,11 @@
 
 namespace ams::kern {
 
-    struct KConditionVariableComparator {
-        static constexpr ALWAYS_INLINE int Compare(const KThread &lhs, const KThread &rhs) {
-            const uintptr_t l_key = lhs.GetConditionVariableKey();
-            const uintptr_t r_key = rhs.GetConditionVariableKey();
-
-            if (l_key < r_key) {
-                /* Sort first by key */
-                return -1;
-            } else if (l_key == r_key && lhs.GetPriority() < rhs.GetPriority()) {
-                /* And then by priority. */
-                return -1;
-            } else {
-                return 1;
-            }
-        }
-    };
+    extern KThread g_cv_arbiter_compare_thread;
 
     class KConditionVariable {
         public:
-            using ThreadTree = util::IntrusiveRedBlackTreeMemberTraits<&KThread::condvar_arbiter_tree_node>::TreeType<KConditionVariableComparator>;
+            using ThreadTree = typename KThread::ConditionVariableThreadTreeType;
         private:
             ThreadTree tree;
         public:
@@ -52,18 +37,20 @@ namespace ams::kern {
             /* Condition variable. */
             void Signal(uintptr_t cv_key, s32 count);
             Result Wait(KProcessAddress addr, uintptr_t key, u32 value, s64 timeout);
-
-            ALWAYS_INLINE void BeforeUpdatePriority(KThread *thread) {
-                MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-
-                this->tree.erase(this->tree.iterator_to(*thread));
-            }
-
-            ALWAYS_INLINE void AfterUpdatePriority(KThread *thread) {
-                MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-
-                this->tree.insert(*thread);
-            }
+        private:
+            KThread *SignalImpl(KThread *thread);
     };
+
+    ALWAYS_INLINE void BeforeUpdatePriority(KConditionVariable::ThreadTree *tree, KThread *thread) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        tree->erase(tree->iterator_to(*thread));
+    }
+
+    ALWAYS_INLINE void AfterUpdatePriority(KConditionVariable::ThreadTree *tree, KThread *thread) {
+        MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
+
+        tree->insert(*thread);
+    }
 
 }

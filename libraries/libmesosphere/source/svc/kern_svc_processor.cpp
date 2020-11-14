@@ -21,20 +21,22 @@ namespace ams::kern::svc {
 
     namespace {
 
-
+        int32_t GetCurrentProcessorNumber() {
+            return GetCurrentCoreId();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     int32_t GetCurrentProcessorNumber64() {
-        MESOSPHERE_PANIC("Stubbed SvcGetCurrentProcessorNumber64 was called.");
+        return GetCurrentProcessorNumber();
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     int32_t GetCurrentProcessorNumber64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcGetCurrentProcessorNumber64From32 was called.");
+        return GetCurrentProcessorNumber();
     }
 
 }

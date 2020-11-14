@@ -32,7 +32,7 @@ namespace ams::svc {
         HandleWaitMask = (1u << 30),
     };
 
-    constexpr inline size_t MaxWaitSynchronizationHandleCount = 0x40;
+    constexpr inline s32 ArgumentHandleCountMax = 0x40;
 
     constexpr inline s64 WaitInfinite = -1;
 

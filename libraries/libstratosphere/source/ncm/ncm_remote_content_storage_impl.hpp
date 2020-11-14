@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    class RemoteContentStorageImpl final : public IContentStorage {
+    class RemoteContentStorageImpl final {
         private:
             ::NcmContentStorage srv;
         public:
@@ -46,85 +46,85 @@ namespace ams::ncm {
                 return reinterpret_cast<::NcmContentId *>(std::addressof(c));
             }
         public:
-            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) override {
+            Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) {
                 return ncmContentStorageGeneratePlaceHolderId(std::addressof(this->srv), Convert(out.GetPointer()));
             }
 
-            virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) override {
+            Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) {
                 static_assert(alignof(ContentId) < alignof(PlaceHolderId));
                 return ncmContentStorageCreatePlaceHolder(std::addressof(this->srv), Convert(content_id), Convert(placeholder_id), size);
             }
 
-            virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) override {
+            Result DeletePlaceHolder(PlaceHolderId placeholder_id) {
                 return ncmContentStorageDeletePlaceHolder(std::addressof(this->srv), Convert(placeholder_id));
             }
 
-            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) override {
+            Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) {
                 return ncmContentStorageHasPlaceHolder(std::addressof(this->srv), out.GetPointer(), Convert(placeholder_id));
             }
 
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) override {
+            Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) {
                 return ncmContentStorageWritePlaceHolder(std::addressof(this->srv), Convert(placeholder_id), offset, data.GetPointer(), data.GetSize());
             }
 
-            virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) override {
+            Result Register(PlaceHolderId placeholder_id, ContentId content_id) {
                 static_assert(alignof(ContentId) < alignof(PlaceHolderId));
                 return ncmContentStorageRegister(std::addressof(this->srv), Convert(content_id), Convert(placeholder_id));
             }
 
-            virtual Result Delete(ContentId content_id) override {
+            Result Delete(ContentId content_id) {
                 return ncmContentStorageDelete(std::addressof(this->srv), Convert(content_id));
             }
 
-            virtual Result Has(sf::Out<bool> out, ContentId content_id) override {
+            Result Has(sf::Out<bool> out, ContentId content_id) {
                 return ncmContentStorageHas(std::addressof(this->srv), out.GetPointer(), Convert(content_id));
             }
 
-            virtual Result GetPath(sf::Out<Path> out, ContentId content_id) override {
+            Result GetPath(sf::Out<Path> out, ContentId content_id) {
                 return ncmContentStorageGetPath(std::addressof(this->srv), out.GetPointer()->str, sizeof(out.GetPointer()->str), Convert(content_id));
             }
 
-            virtual Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) override {
+            Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) {
                 return ncmContentStorageGetPlaceHolderPath(std::addressof(this->srv), out.GetPointer()->str, sizeof(out.GetPointer()->str), Convert(placeholder_id));
             }
 
-            virtual Result CleanupAllPlaceHolder() override {
+            Result CleanupAllPlaceHolder() {
                 return ncmContentStorageCleanupAllPlaceHolder(std::addressof(this->srv));
             }
 
-            virtual Result ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) override {
+            Result ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) {
                 return ncmContentStorageListPlaceHolder(std::addressof(this->srv), Convert(out_buf.GetPointer()), out_buf.GetSize(), out_count.GetPointer());
             }
 
-            virtual Result GetContentCount(sf::Out<s32> out_count) override {
+            Result GetContentCount(sf::Out<s32> out_count) {
                 return ncmContentStorageGetContentCount(std::addressof(this->srv), out_count.GetPointer());
             }
 
-            virtual Result ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) override {
+            Result ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 offset) {
                 return ncmContentStorageListContentId(std::addressof(this->srv), Convert(out_buf.GetPointer()), out_buf.GetSize(), out_count.GetPointer(), offset);
             }
 
-            virtual Result GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) override {
+            Result GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) {
                 return ncmContentStorageGetSizeFromContentId(std::addressof(this->srv), out_size.GetPointer(), Convert(content_id));
             }
 
-            virtual Result DisableForcibly() override {
+            Result DisableForcibly() {
                 return ncmContentStorageDisableForcibly(std::addressof(this->srv));
             }
 
-            virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) override {
+            Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) {
                 return ncmContentStorageRevertToPlaceHolder(std::addressof(this->srv), Convert(placeholder_id), Convert(old_content_id), Convert(new_content_id));
             }
 
-            virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) override {
+            Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) {
                 return ncmContentStorageSetPlaceHolderSize(std::addressof(this->srv), Convert(placeholder_id), size);
             }
 
-            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) override {
+            Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) {
                 return ncmContentStorageReadContentIdFile(std::addressof(this->srv), buf.GetPointer(), buf.GetSize(), Convert(content_id), offset);
             }
 
-            virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) override {
+            Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
                 ::NcmRightsId rights_id;
                 R_TRY(ncmContentStorageGetRightsIdFromPlaceHolderId(std::addressof(this->srv), std::addressof(rights_id), Convert(placeholder_id)));
 
@@ -133,7 +133,7 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) override {
+            Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) {
                 ::NcmRightsId rights_id;
                 R_TRY(ncmContentStorageGetRightsIdFromPlaceHolderId(std::addressof(this->srv), std::addressof(rights_id), Convert(placeholder_id)));
 
@@ -142,7 +142,7 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) override {
+            Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) {
                 ::NcmRightsId rights_id;
                 R_TRY(ncmContentStorageGetRightsIdFromContentId(std::addressof(this->srv), std::addressof(rights_id), Convert(content_id)));
 
@@ -151,7 +151,7 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) override {
+            Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) {
                 ::NcmRightsId rights_id;
                 R_TRY(ncmContentStorageGetRightsIdFromContentId(std::addressof(this->srv), std::addressof(rights_id), Convert(content_id)));
 
@@ -160,35 +160,36 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) override {
+            Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) {
                 return ncmContentStorageWriteContentForDebug(std::addressof(this->srv), Convert(content_id), offset, data.GetPointer(), data.GetSize());
             }
 
-            virtual Result GetFreeSpaceSize(sf::Out<s64> out_size) override {
+            Result GetFreeSpaceSize(sf::Out<s64> out_size) {
                 return ncmContentStorageGetFreeSpaceSize(std::addressof(this->srv), out_size.GetPointer());
             }
 
-            virtual Result GetTotalSpaceSize(sf::Out<s64> out_size) override {
+            Result GetTotalSpaceSize(sf::Out<s64> out_size) {
                 return ncmContentStorageGetTotalSpaceSize(std::addressof(this->srv), out_size.GetPointer());
             }
 
-            virtual Result FlushPlaceHolder() override {
+            Result FlushPlaceHolder() {
                 return ncmContentStorageFlushPlaceHolder(std::addressof(this->srv));
             }
 
-            virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out_size, PlaceHolderId placeholder_id) override {
+            Result GetSizeFromPlaceHolderId(sf::Out<s64> out_size, PlaceHolderId placeholder_id) {
                 return ncmContentStorageGetSizeFromPlaceHolderId(std::addressof(this->srv), out_size.GetPointer(), Convert(placeholder_id));
             }
 
-            virtual Result RepairInvalidFileAttribute() override {
+            Result RepairInvalidFileAttribute() {
                 return ncmContentStorageRepairInvalidFileAttribute(std::addressof(this->srv));
             }
 
-            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) override {
+            Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) {
                 static_assert(sizeof(::NcmRightsId) == sizeof(ncm::RightsId));
                 ::NcmRightsId *out = reinterpret_cast<::NcmRightsId *>(out_rights_id.GetPointer());
                 return ncmContentStorageGetRightsIdFromPlaceHolderIdWithCache(std::addressof(this->srv), out, Convert(placeholder_id), Convert(cache_content_id));
             }
     };
+    static_assert(ncm::IsIContentStorage<RemoteContentStorageImpl>);
 
 }

@@ -963,6 +963,11 @@ void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel
     }
 
     if (kernel_info == NULL && is_sd_kernel) {
+        /* If the kernel is mesosphere, patch it. */
+        if (*(volatile uint32_t *)((uintptr_t)_kernel + 4) == 0x3053534D) {
+            *out_ini1 = (void *)((uintptr_t)_kernel + *(volatile uint32_t *)((uintptr_t)_kernel + 8));
+            *(volatile uint64_t *)((uintptr_t)_kernel + 8) = (uint64_t)*kernel_size;
+        }
         return;
     }
 
@@ -970,12 +975,6 @@ void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel
         /* Copy in our kernel loader. */
         const uint32_t kernel_ldr_offset = *((volatile uint64_t *)((uintptr_t)_kernel + kernel_info->embedded_ini_ptr + 8));
         memcpy((void *)((uintptr_t)_kernel + kernel_ldr_offset), kernel_ldr_bin, kernel_ldr_bin_size);
-
-        /* Set target firmware for our kernel loader. */
-        uint32_t *kldr_u32 = (uint32_t *)((uintptr_t)_kernel + kernel_ldr_offset);
-        if (kldr_u32[1] == 0x30444C4D) {
-            kldr_u32[2] = target_firmware;
-        }
 
         /* Update size. */
         *kernel_size = kernel_ldr_offset + kernel_ldr_bin_size;

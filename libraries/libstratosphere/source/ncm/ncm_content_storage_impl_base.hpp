@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    class ContentStorageImplBase : public IContentStorage {
+    class ContentStorageImplBase {
         NON_COPYABLE(ContentStorageImplBase);
         NON_MOVEABLE(ContentStorageImplBase);
         protected:
@@ -43,6 +43,39 @@ namespace ams::ncm {
                 }
                 return ResultSuccess();
             }
+        public:
+            /* Actual commands. */
+            virtual Result GeneratePlaceHolderId(sf::Out<PlaceHolderId> out) = 0;
+            virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) = 0;
+            virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) = 0;
+            virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) = 0;
+            virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) = 0;
+            virtual Result Delete(ContentId content_id) = 0;
+            virtual Result Has(sf::Out<bool> out, ContentId content_id) = 0;
+            virtual Result GetPath(sf::Out<Path> out, ContentId content_id) = 0;
+            virtual Result GetPlaceHolderPath(sf::Out<Path> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result CleanupAllPlaceHolder() = 0;
+            virtual Result ListPlaceHolder(sf::Out<s32> out_count, const sf::OutArray<PlaceHolderId> &out_buf) = 0;
+            virtual Result GetContentCount(sf::Out<s32> out_count) = 0;
+            virtual Result ListContentId(sf::Out<s32> out_count, const sf::OutArray<ContentId> &out_buf, s32 start_offset) = 0;
+            virtual Result GetSizeFromContentId(sf::Out<s64> out_size, ContentId content_id) = 0;
+            virtual Result DisableForcibly() = 0;
+            virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) = 0;
+            virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) = 0;
+            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
+            virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) = 0;
+            virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) = 0;
+            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) = 0;
+            virtual Result GetFreeSpaceSize(sf::Out<s64> out_size) = 0;
+            virtual Result GetTotalSpaceSize(sf::Out<s64> out_size) = 0;
+            virtual Result FlushPlaceHolder() = 0;
+            virtual Result GetSizeFromPlaceHolderId(sf::Out<s64> out, PlaceHolderId placeholder_id) = 0;
+            virtual Result RepairInvalidFileAttribute() = 0;
+            virtual Result GetRightsIdFromPlaceHolderIdWithCache(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id, ContentId cache_content_id) = 0;
     };
+    static_assert(ncm::IsIContentStorage<ContentStorageImplBase>);
 
 }

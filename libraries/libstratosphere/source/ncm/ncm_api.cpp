@@ -27,7 +27,7 @@ namespace ams::ncm {
     void Initialize() {
         AMS_ASSERT(g_content_manager == nullptr);
         R_ABORT_UNLESS(ncmInitialize());
-        g_content_manager = std::make_shared<RemoteContentManagerImpl>();
+        g_content_manager = sf::MakeShared<IContentManager, RemoteContentManagerImpl>();
     }
 
     void Finalize() {
@@ -88,10 +88,14 @@ namespace ams::ncm {
     }
 
     Result ActivateContentMetaDatabase(StorageId storage_id) {
+        /* On < 2.0.0, this command doesn't exist, and databases are activated as needed on open. */
+        R_SUCCEED_IF(hos::GetVersion() < hos::Version_2_0_0);
         return g_content_manager->ActivateContentMetaDatabase(storage_id);
     }
 
     Result InactivateContentMetaDatabase(StorageId storage_id) {
+        /* On < 2.0.0, this command doesn't exist. */
+        R_SUCCEED_IF(hos::GetVersion() < hos::Version_2_0_0);
         return g_content_manager->InactivateContentMetaDatabase(storage_id);
     }
 

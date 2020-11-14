@@ -17,9 +17,15 @@
 #pragma once
 #include <stratosphere/sf/sf_common.hpp>
 
+namespace ams::os {
+
+    struct ThreadType;
+
+}
+
 namespace ams::sf {
 
-    u8 GetFsInlineContext();
-    u8 SetFsInlineContext(u8 ctx);
+    u8 GetFsInlineContext(os::ThreadType *thread);
+    u8 SetFsInlineContext(os::ThreadType *thread, u8 ctx);
 
 }

@@ -40,6 +40,9 @@
 
 #define BITSIZEOF(x) (sizeof(x) * CHAR_BIT)
 
+#define STRINGIZE(x) STRINGIZE_IMPL(x)
+#define STRINGIZE_IMPL(x) #x
+
 #ifdef __COUNTER__
 #define ANONYMOUS_VARIABLE(pref) CONCATENATE(pref, __COUNTER__)
 #else

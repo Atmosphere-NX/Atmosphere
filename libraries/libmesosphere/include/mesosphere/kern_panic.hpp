@@ -20,7 +20,7 @@
 namespace ams::kern {
 
     template<typename... ArgTypes>
-    ALWAYS_INLINE void UnusedImpl(ArgTypes... args) {
+    ALWAYS_INLINE void UnusedImpl(ArgTypes &&... args) {
         (static_cast<void>(args), ...);
     }
 

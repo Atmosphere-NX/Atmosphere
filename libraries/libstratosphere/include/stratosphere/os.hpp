@@ -29,12 +29,14 @@
 #include <stratosphere/os/os_condition_variable.hpp>
 #include <stratosphere/os/os_sdk_mutex.hpp>
 #include <stratosphere/os/os_rw_lock.hpp>
+#include <stratosphere/os/os_transfer_memory.hpp>
 #include <stratosphere/os/os_semaphore.hpp>
 #include <stratosphere/os/os_event.hpp>
 #include <stratosphere/os/os_system_event.hpp>
 #include <stratosphere/os/os_interrupt_event.hpp>
 #include <stratosphere/os/os_timer_event.hpp>
-#include <stratosphere/os/os_thread_local_storage_api.hpp>
+#include <stratosphere/os/os_thread_local_storage.hpp>
+#include <stratosphere/os/os_sdk_thread_local_storage.hpp>
 #include <stratosphere/os/os_thread.hpp>
 #include <stratosphere/os/os_message_queue.hpp>
 #include <stratosphere/os/os_waitable.hpp>

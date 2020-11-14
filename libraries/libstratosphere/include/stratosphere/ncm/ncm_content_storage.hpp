@@ -142,28 +142,30 @@ namespace ams::ncm {
                 return this->interface->ReadContentIdFile(sf::OutBuffer(dst, size), content_id, offset);
             }
 
-            Result GetRightsId(ams::fs::RightsId *out_rights_id, PlaceHolderId placeholder_id) {
-                AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() < hos::Version_3_0_0);
-                return this->interface->GetRightsIdFromPlaceHolderIdDeprecated(out_rights_id, placeholder_id);
-            }
-
             Result GetRightsId(ncm::RightsId *out_rights_id, PlaceHolderId placeholder_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_3_0_0);
-                return this->interface->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id);
-            }
 
-            Result GetRightsId(ams::fs::RightsId *out_rights_id, ContentId content_id) {
-                AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() < hos::Version_3_0_0);
-                return this->interface->GetRightsIdFromContentIdDeprecated(out_rights_id, content_id);
+                const auto vers = hos::GetVersion();
+                if (vers >= hos::Version_3_0_0) {
+                    return this->interface->GetRightsIdFromPlaceHolderId(out_rights_id, placeholder_id);
+                } else {
+                    AMS_ABORT_UNLESS(vers >= hos::Version_2_0_0);
+                    *out_rights_id = {};
+                    return this->interface->GetRightsIdFromPlaceHolderIdDeprecated(std::addressof(out_rights_id->id), placeholder_id);
+                }
             }
 
             Result GetRightsId(ncm::RightsId *out_rights_id, ContentId content_id) {
                 AMS_ASSERT(this->interface != nullptr);
-                AMS_ABORT_UNLESS(hos::GetVersion() >= hos::Version_3_0_0);
-                return this->interface->GetRightsIdFromContentId(out_rights_id, content_id);
+
+                const auto vers = hos::GetVersion();
+                if (vers >= hos::Version_3_0_0) {
+                    return this->interface->GetRightsIdFromContentId(out_rights_id, content_id);
+                } else {
+                    AMS_ABORT_UNLESS(vers >= hos::Version_2_0_0);
+                    *out_rights_id = {};
+                    return this->interface->GetRightsIdFromContentIdDeprecated(std::addressof(out_rights_id->id), content_id);
+                }
             }
 
             Result WriteContentForDebug(ContentId content_id, s64 offset, const void *buf, size_t size) {

@@ -53,4 +53,8 @@ namespace ams::se {
     bool ValidateStickyBits(const StickyBits &bits);
     void SaveContext(Context *dst);
 
+    void ConfigureAutomaticContextSave();
+    void SaveContextAutomatic();
+    void SaveTzramAutomatic();
+
 }

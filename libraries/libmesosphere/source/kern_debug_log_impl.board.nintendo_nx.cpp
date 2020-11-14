@@ -28,13 +28,15 @@ namespace ams::kern {
 
             UartRegister_LSR = 5,
 
-            UartRegister_IRSA_CSR = 8,
+            UartRegister_IRDA_CSR = 8,
 
             UartRegister_DLL = 0,
             UartRegister_DLH = 1,
         };
 
         KVirtualAddress g_uart_address = 0;
+
+        constinit u32 g_saved_registers[5];
 
         NOINLINE u32 ReadUartRegister(UartRegister which) {
             return GetPointer<volatile u32>(g_uart_address)[which];
@@ -75,7 +77,7 @@ namespace ams::kern {
 
         /* Configure the FIFO to be enabled and clear receive. */
         WriteUartRegister(UartRegister_FCR, 0x03);
-        WriteUartRegister(UartRegister_IRSA_CSR, 0x02);
+        WriteUartRegister(UartRegister_IRDA_CSR, 0x02);
         ReadUartRegister(UartRegister_FCR);
 
         return true;
@@ -84,7 +86,7 @@ namespace ams::kern {
     void KDebugLogImpl::PutChar(char c) {
         while (ReadUartRegister(UartRegister_LSR) & 0x100) {
             /* While the FIFO is full, yield. */
-            __asm__ __volatile__("yield" ::: "memory");
+            cpu::Yield();
         }
         WriteUartRegister(UartRegister_THR, c);
         cpu::DataSynchronizationBarrier();
@@ -94,6 +96,46 @@ namespace ams::kern {
         while ((ReadUartRegister(UartRegister_LSR) & 0x40) == 0) {
             /* Wait for the TMTY bit to be one (transmit empty). */
         }
+    }
+
+    void KDebugLogImpl::Save() {
+        /* Save LCR, IER, FCR. */
+        g_saved_registers[0] = ReadUartRegister(UartRegister_LCR);
+        g_saved_registers[1] = ReadUartRegister(UartRegister_IER);
+        g_saved_registers[2] = ReadUartRegister(UartRegister_FCR);
+
+        /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
+        WriteUartRegister(UartRegister_LCR, 0x80);
+        ReadUartRegister(UartRegister_LCR);
+
+        /* Save DLL/DLH. */
+        g_saved_registers[3] = ReadUartRegister(UartRegister_DLL);
+        g_saved_registers[4] = ReadUartRegister(UartRegister_DLH);
+
+        /* Restore Divisor Latch Access bit. */
+        WriteUartRegister(UartRegister_LCR, g_saved_registers[0]);
+        ReadUartRegister(UartRegister_LCR);
+    }
+
+    void KDebugLogImpl::Restore() {
+        /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
+        WriteUartRegister(UartRegister_LCR, 0x80);
+        ReadUartRegister(UartRegister_LCR);
+
+        /* Restore DLL/DLH. */
+        WriteUartRegister(UartRegister_DLL, g_saved_registers[3]);
+        WriteUartRegister(UartRegister_DLH, g_saved_registers[4]);
+        ReadUartRegister(UartRegister_DLH);
+
+        /* Restore Divisor Latch Access bit. */
+        WriteUartRegister(UartRegister_LCR, g_saved_registers[0]);
+        ReadUartRegister(UartRegister_LCR);
+
+        /* Restore IER and FCR. */
+        WriteUartRegister(UartRegister_IER, g_saved_registers[1]);
+        WriteUartRegister(UartRegister_FCR, g_saved_registers[2] | 2);
+        WriteUartRegister(UartRegister_IRDA_CSR, 0x02);
+        ReadUartRegister(UartRegister_FCR);
     }
 
 }

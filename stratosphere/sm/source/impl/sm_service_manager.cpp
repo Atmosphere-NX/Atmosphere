@@ -364,8 +364,8 @@ namespace ams::sm::impl {
             /* Create both handles. */
             {
                 os::ManagedHandle fwd_hnd, hnd;
-                R_TRY(svcConnectToPort(fwd_hnd.GetPointer(), service_info->port_h.Get()));
-                R_TRY(svcConnectToPort(hnd.GetPointer(), service_info->mitm_port_h.Get()));
+                R_ABORT_UNLESS(svcConnectToPort(fwd_hnd.GetPointer(), service_info->port_h.Get()));
+                R_ABORT_UNLESS(svcConnectToPort(hnd.GetPointer(), service_info->mitm_port_h.Get()));
                 service_info->mitm_fwd_sess_h = std::move(fwd_hnd);
                 *out = hnd.Move();
             }

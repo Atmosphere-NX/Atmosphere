@@ -18,16 +18,23 @@
 
 namespace ams::mitm::settings {
 
-    class SetMitmService  : public sf::IMitmServiceObject {
-        private:
-            enum class CommandId {
-                GetLanguageCode = 0,
-                GetRegionCode   = 4,
-            };
+    namespace {
+
+        #define AMS_SETTINGS_MITM_INTERFACE_INFO(C, H)                                                       \
+            AMS_SF_METHOD_INFO(C, H, 0, Result, GetLanguageCode, (sf::Out<ams::settings::LanguageCode> out)) \
+            AMS_SF_METHOD_INFO(C, H, 4, Result, GetRegionCode,   (sf::Out<ams::settings::RegionCode> out))
+
+        AMS_SF_DEFINE_MITM_INTERFACE(ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO)
+
+    }
+
+    class SetMitmService : public sf::MitmServiceImplBase {
         private:
             os::Mutex lock{false};
             cfg::OverrideLocale locale;
-            bool got_locale;
+            bool got_locale = false;
+        public:
+            using MitmServiceImplBase::MitmServiceImplBase;
         public:
             static bool ShouldMitm(const sm::MitmProcessInfo &client_info) {
                 /* We will mitm:
@@ -36,20 +43,12 @@ namespace ams::mitm::settings {
                 const bool is_game = (ncm::IsApplicationId(client_info.program_id) && !client_info.override_status.IsHbl());
                 return client_info.program_id == ncm::SystemProgramId::Ns || is_game;
             }
-        public:
-            SF_MITM_SERVICE_OBJECT_CTOR(SetMitmService) {
-                this->got_locale = false;
-            }
         private:
             Result EnsureLocale();
-        protected:
+        public:
             Result GetLanguageCode(sf::Out<ams::settings::LanguageCode> out);
             Result GetRegionCode(sf::Out<ams::settings::RegionCode> out);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(GetLanguageCode),
-                MAKE_SERVICE_COMMAND_META(GetRegionCode),
-            };
     };
+    static_assert(IsISetMitmInterface<SetMitmService>);
 
 }

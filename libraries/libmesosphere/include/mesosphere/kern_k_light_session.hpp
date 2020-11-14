@@ -34,6 +34,9 @@ namespace ams::kern {
                 ClientClosed = 2,
                 ServerClosed = 3,
             };
+        public:
+            static constexpr size_t DataSize = sizeof(u32) * 7;
+            static constexpr u32 ReplyFlag   = (1u << (BITSIZEOF(u32) - 1));
         private:
             KLightServerSession server;
             KLightClientSession client;
@@ -51,12 +54,21 @@ namespace ams::kern {
 
             virtual ~KLightSession() { /* ... */ }
 
+            void Initialize(KClientPort *client_port, uintptr_t name);
+            virtual void Finalize() override;
+
             virtual bool IsInitialized() const override { return this->initialized; }
             virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->process); }
 
             static void PostDestroy(uintptr_t arg);
 
-            /* TODO: This is a placeholder definition. */
+            void OnServerClosed();
+            void OnClientClosed();
+
+            bool IsServerClosed() const { return this->state != State::Normal; }
+            bool IsClientClosed() const { return this->state != State::Normal; }
+
+            Result OnRequest(KThread *request_thread) { return this->server.OnRequest(request_thread); }
 
             KLightClientSession &GetClientSession() { return this->client; }
             KLightServerSession &GetServerSession() { return this->server; }

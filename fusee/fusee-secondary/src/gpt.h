@@ -56,6 +56,5 @@ typedef int (*gpt_emu_entry_iterator_t)(const efi_entry_t *entry, void *param, s
 
 int gpt_get_header(efi_header_t *out, FILE *disk, size_t sector_size);
 int gpt_iterate_through_entries(FILE *disk, size_t sector_size, gpt_entry_iterator_t callback, void *param);
-int gpt_iterate_through_emu_entries(FILE *disk, size_t sector_size, gpt_emu_entry_iterator_t callback, void *param, const char *origin_path, int num_parts, uint64_t part_limit);
 
 #endif

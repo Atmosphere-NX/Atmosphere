@@ -51,13 +51,21 @@ SECTIONS
 		. = ALIGN(8);
 	} :code
 
-
 	/* .vectors. */
 	. = ALIGN(2K);
 	__vectors_start__ = . ;
   .vectors :
 	{
 		KEEP( *(.vectors) )
+		. = ALIGN(8);
+	} :code
+
+	/* .sleep. */
+	. = ALIGN(4K);
+	__sleep_start__ = . ;
+  .sleep :
+	{
+		KEEP( *(.sleep .sleep.*) )
 		. = ALIGN(8);
 	} :code
 

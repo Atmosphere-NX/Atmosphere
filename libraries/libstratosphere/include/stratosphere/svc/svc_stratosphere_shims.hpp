@@ -110,8 +110,8 @@ namespace ams::svc::aarch64::lp64 {
         return ::svcResetSignal(handle);
     }
 
-    ALWAYS_INLINE Result WaitSynchronization(int32_t *out_index, ::ams::svc::UserPointer<const ::ams::svc::Handle *> handles, int32_t numHandles, int64_t timeout_ns) {
-        return ::svcWaitSynchronization(out_index, handles.GetPointerUnsafe(), numHandles, timeout_ns);
+    ALWAYS_INLINE Result WaitSynchronization(int32_t *out_index, ::ams::svc::UserPointer<const ::ams::svc::Handle *> handles, int32_t num_handles, int64_t timeout_ns) {
+        return ::svcWaitSynchronization(out_index, handles.GetPointerUnsafe(), num_handles, timeout_ns);
     }
 
     ALWAYS_INLINE Result CancelSynchronization(::ams::svc::Handle handle) {

@@ -18,17 +18,15 @@
 
 namespace ams::capsrv::server {
 
-    class DecoderControlService final : public sf::IServiceObject {
-        protected:
-            enum class CommandId {
-                DecodeJpeg  = 3001,
-            };
+    #define AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO(C, H)                                                                                                                  \
+        AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option))
+
+    AMS_SF_DEFINE_INTERFACE(IDecoderControlService, AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO)
+
+    class DecoderControlService final {
         public:
-            /* Actual commands. */
-            virtual Result DecodeJpeg(const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option);
-        public:
-            DEFINE_SERVICE_DISPATCH_TABLE {
-                MAKE_SERVICE_COMMAND_META(DecodeJpeg)
-            };
+            Result DecodeJpeg(const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option);
     };
+    static_assert(IsIDecoderControlService<DecoderControlService>);
+
 }

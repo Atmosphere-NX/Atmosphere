@@ -42,6 +42,8 @@ static const char *get_error_desc_str(uint32_t error_desc) {
             return "SError";
         case 0x301:
             return "Bad SVC";
+        case 0xFFD:
+	        return "Stack overflow";
         case 0xFFE:
             return "std::abort() called";
         default:
@@ -90,12 +92,15 @@ static void _check_and_display_atmosphere_fatal_error(void) {
             char filepath[0x40];
             snprintf(filepath, sizeof(filepath) - 1, "/atmosphere/fatal_errors/report_%016llx.bin", ctx.report_identifier);
             filepath[sizeof(filepath)-1] = 0;
-            write_to_file(&ctx, sizeof(ctx), filepath);
-            print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"Report saved to %s\n", filepath);
+            if (write_to_file(&ctx, sizeof(ctx), filepath) != sizeof(ctx)) {
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Failed to save report to the SD card!\n");
+            } else {
+                print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Report saved to %s\n", filepath);
+            }
         }
 
         /* Display error. */
-        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
+        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "\nPress POWER to reboot\n");
     }
 
     /* Wait for button and reboot. */

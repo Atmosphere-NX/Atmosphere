@@ -172,7 +172,7 @@ namespace ams::kern::arch::arm64 {
         const KVirtualAddress page = this->manager->Allocate();
         MESOSPHERE_ASSERT(page != Null<KVirtualAddress>);
         cpu::ClearPageToZero(GetVoidPointer(page));
-        this->ttbr = GetInteger(KPageTableBase::GetLinearPhysicalAddress(page)) | asid_tag;
+        this->ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
 
         /* Initialize the base page table. */
         MESOSPHERE_R_ABORT_UNLESS(KPageTableBase::InitializeForKernel(true, table, start, end));
@@ -212,7 +212,103 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KPageTable::Finalize() {
-        MESOSPHERE_UNIMPLEMENTED();
+        /* Only process tables should be finalized. */
+        MESOSPHERE_ASSERT(!this->IsKernel());
+
+        /* Note that we've updated (to ensure we're synchronized). */
+        this->NoteUpdated();
+
+        /* Free all pages in the table. */
+        {
+            /* Get implementation objects. */
+            auto &impl = this->GetImpl();
+            auto &mm   = Kernel::GetMemoryManager();
+
+            /* Traverse, freeing all pages. */
+            {
+                /* Get the address space size. */
+                const size_t as_size = this->GetAddressSpaceSize();
+
+                /* Begin the traversal. */
+                TraversalContext context;
+                TraversalEntry   cur_entry  = {};
+                bool             cur_valid  = false;
+                TraversalEntry   next_entry;
+                bool             next_valid;
+                size_t           tot_size   = 0;
+
+                next_valid = impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), this->GetAddressSpaceStart());
+
+                /* Iterate over entries. */
+                while (true) {
+                    if ((!next_valid && !cur_valid) || (next_valid && cur_valid && next_entry.phys_addr == cur_entry.phys_addr + cur_entry.block_size)) {
+                        cur_entry.block_size += next_entry.block_size;
+                    } else {
+                        if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
+                            mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                        }
+
+                        /* Update tracking variables. */
+                        tot_size += cur_entry.block_size;
+                        cur_entry = next_entry;
+                        cur_valid = next_valid;
+                    }
+
+                    if (cur_entry.block_size + tot_size >= as_size) {
+                        break;
+                    }
+
+                    next_valid = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
+                }
+
+                /* Handle the last block. */
+                if (cur_valid && IsHeapPhysicalAddressForFinalize(cur_entry.phys_addr)) {
+                    mm.Close(GetHeapVirtualAddress(cur_entry.phys_addr), cur_entry.block_size / PageSize);
+                }
+            }
+
+            /* Cache address space extents for convenience. */
+            const KProcessAddress as_start = this->GetAddressSpaceStart();
+            const KProcessAddress as_last  = as_start + this->GetAddressSpaceSize() - 1;
+
+            /* Free all L3 tables. */
+            for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L2BlockSize) {
+                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
+                if (l1_entry->IsTable()) {
+                    L2PageTableEntry *l2_entry = impl.GetL2Entry(l1_entry, cur_address);
+                    if (l2_entry->IsTable()) {
+                        KVirtualAddress l3_table = GetPageTableVirtualAddress(l2_entry->GetTable());
+                        if (this->GetPageTableManager().IsInPageTableHeap(l3_table)) {
+                            while (!this->GetPageTableManager().Close(l3_table, 1)) { /* ... */ }
+                            this->GetPageTableManager().Free(l3_table);
+                        }
+                    }
+                }
+            }
+
+            /* Free all L2 tables. */
+            for (KProcessAddress cur_address = as_start; cur_address <= as_last; cur_address += L1BlockSize) {
+                L1PageTableEntry *l1_entry = impl.GetL1Entry(cur_address);
+                if (l1_entry->IsTable()) {
+                    KVirtualAddress l2_table = GetPageTableVirtualAddress(l1_entry->GetTable());
+                    if (this->GetPageTableManager().IsInPageTableHeap(l2_table)) {
+                        while (!this->GetPageTableManager().Close(l2_table, 1)) { /* ... */ }
+                        this->GetPageTableManager().Free(l2_table);
+                    }
+                }
+            }
+
+            /* Free the L1 table. */
+            this->GetPageTableManager().Free(reinterpret_cast<uintptr_t>(impl.Finalize()));
+
+            /* Perform inherited finalization. */
+            KPageTableBase::Finalize();
+        }
+
+        /* Release our asid. */
+        g_asid_manager.Release(this->asid);
+
+        return ResultSuccess();
     }
 
     Result KPageTable::Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) {
@@ -262,7 +358,82 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
-    Result KPageTable::Map(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+    Result KPageTable::MapL1Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L1BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L1BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L1BlockSize));
+
+        auto &impl = this->GetImpl();
+
+        /* Iterate, mapping each block. */
+        for (size_t i = 0; i < num_pages; i += L1BlockSize / PageSize) {
+            /* Map the block. */
+            *impl.GetL1Entry(virt_addr) = L1PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            virt_addr += L1BlockSize;
+            phys_addr += L1BlockSize;
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTable::MapL2Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
+        MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), L2BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), L2BlockSize));
+        MESOSPHERE_ASSERT(util::IsAligned(num_pages * PageSize,  L2BlockSize));
+
+        auto &impl = this->GetImpl();
+        KVirtualAddress l2_virt = Null<KVirtualAddress>;
+        int l2_open_count = 0;
+
+        /* Iterate, mapping each block. */
+        for (size_t i = 0; i < num_pages; i += L2BlockSize / PageSize) {
+            KPhysicalAddress l2_phys = Null<KPhysicalAddress>;
+
+            /* If we have no L2 table, we should get or allocate one. */
+            if (l2_virt == Null<KVirtualAddress>) {
+                if (L1PageTableEntry *l1_entry = impl.GetL1Entry(virt_addr); !l1_entry->GetTable(l2_phys)) {
+                    /* Allocate table. */
+                    l2_virt = AllocatePageTable(page_list, reuse_ll);
+                    R_UNLESS(l2_virt != Null<KVirtualAddress>, svc::ResultOutOfResource());
+
+                    /* Set the entry. */
+                    l2_phys = GetPageTablePhysicalAddress(l2_virt);
+                    PteDataSynchronizationBarrier();
+                    *l1_entry = L1PageTableEntry(PageTableEntry::TableTag{}, l2_phys, this->IsKernel(), true);
+                    PteDataSynchronizationBarrier();
+                } else {
+                    l2_virt = GetPageTableVirtualAddress(l2_phys);
+                }
+            }
+            MESOSPHERE_ASSERT(l2_virt != Null<KVirtualAddress>);
+
+            /* Map the block. */
+            *impl.GetL2EntryFromTable(l2_virt, virt_addr) = L2PageTableEntry(PageTableEntry::BlockTag{}, phys_addr, PageTableEntry(entry_template), false);
+            l2_open_count++;
+            virt_addr += L2BlockSize;
+            phys_addr += L2BlockSize;
+
+            /* Account for hitting end of table. */
+            if (util::IsAligned(GetInteger(virt_addr), L1BlockSize)) {
+                if (this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
+                    this->GetPageTableManager().Open(l2_virt, l2_open_count);
+                }
+                l2_virt = Null<KVirtualAddress>;
+                l2_open_count = 0;
+            }
+        }
+
+        /* Perform any remaining opens. */
+        if (l2_open_count > 0 && this->GetPageTableManager().IsInPageTableHeap(l2_virt)) {
+            this->GetPageTableManager().Open(l2_virt, l2_open_count);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KPageTable::MapL3Blocks(KProcessAddress virt_addr, KPhysicalAddress phys_addr, size_t num_pages, PageTableEntry entry_template, PageLinkedList *page_list, bool reuse_ll) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(virt_addr), PageSize));
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(phys_addr), PageSize));
@@ -401,7 +572,8 @@ namespace ams::kern::arch::arm64 {
                 MESOSPHERE_ABORT_UNLESS(force);
                 const size_t cur_size = std::min(next_entry.block_size - (GetInteger(virt_addr) & (next_entry.block_size - 1)), remaining_pages * PageSize);
                 remaining_pages -= cur_size / PageSize;
-                virt_addr += cur_size;
+                virt_addr       += cur_size;
+                next_valid       = impl.ContinueTraversal(std::addressof(next_entry), std::addressof(context));
                 continue;
             }
 
@@ -548,7 +720,7 @@ namespace ams::kern::arch::arm64 {
                 size_t alignment;
                 for (alignment = ContiguousPageSize; (virt_addr & (alignment - 1)) == (phys_addr & (alignment - 1)); alignment = GetLargerAlignment(alignment)) {
                     /* Check if this would be our last map. */
-                    const size_t pages_to_map = (alignment - (virt_addr & (alignment - 1))) & (alignment - 1);
+                    const size_t pages_to_map = ((alignment - (virt_addr & (alignment - 1))) & (alignment - 1)) / PageSize;
                     if (pages_to_map + (alignment / PageSize) > remaining_pages) {
                         break;
                     }
@@ -619,7 +791,7 @@ namespace ams::kern::arch::arm64 {
 
             if (num_pages < ContiguousPageSize / PageSize) {
                 for (const auto &block : pg) {
-                    const KPhysicalAddress block_phys_addr = GetLinearPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
                     const size_t cur_pages = block.GetNumPages();
                     R_TRY(this->Map(virt_addr, block_phys_addr, cur_pages, entry_template, L3BlockSize, page_list, reuse_ll));
 
@@ -631,7 +803,7 @@ namespace ams::kern::arch::arm64 {
                 AlignedMemoryBlock virt_block(GetInteger(virt_addr), num_pages, L1BlockSize);
                 for (const auto &block : pg) {
                     /* Create a block representing this physical group, synchronize its alignment to our virtual block. */
-                    const KPhysicalAddress block_phys_addr = GetLinearPhysicalAddress(block.GetAddress());
+                    const KPhysicalAddress block_phys_addr = GetLinearMappedPhysicalAddress(block.GetAddress());
                     size_t cur_pages = block.GetNumPages();
 
                     AlignedMemoryBlock phys_block(GetInteger(block_phys_addr), cur_pages, virt_block.GetAlignment());
@@ -858,7 +1030,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Open references to the L2 table. */
-            Kernel::GetPageTableManager().Open(l2_table, L1BlockSize / L2BlockSize);
+            this->GetPageTableManager().Open(l2_table, L1BlockSize / L2BlockSize);
 
             /* Replace the L1 entry with one to the new table. */
             PteDataSynchronizationBarrier();
@@ -905,7 +1077,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             /* Open references to the L3 table. */
-            Kernel::GetPageTableManager().Open(l3_table, L2BlockSize / L3BlockSize);
+            this->GetPageTableManager().Open(l3_table, L2BlockSize / L3BlockSize);
 
             /* Replace the L2 entry with one to the new table. */
             PteDataSynchronizationBarrier();

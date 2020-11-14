@@ -53,6 +53,12 @@ namespace ams::kern {
             class Impl {
                 private:
                     using RefCount = u16;
+                public:
+                    static size_t CalculateMetadataOverheadSize(size_t region_size);
+
+                    static constexpr size_t CalculateOptimizedProcessOverheadSize(size_t region_size) {
+                        return (util::AlignUp((region_size / PageSize), BITSIZEOF(u64)) / BITSIZEOF(u64)) * sizeof(u64);
+                    }
                 private:
                     KPageHeap heap;
                     RefCount *page_reference_counts;
@@ -68,10 +74,18 @@ namespace ams::kern {
                     KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
 
-                    void TrackAllocationForOptimizedProcess(KVirtualAddress block, size_t num_pages);
+                    void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->metadata_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
 
+                    void TrackUnoptimizedAllocation(KVirtualAddress block, size_t num_pages);
+                    size_t TrackOptimizedAllocation(KVirtualAddress block, size_t num_pages);
+
+                    size_t ProcessOptimizedAllocation(bool *out_any_new, KVirtualAddress block, size_t num_pages, u8 fill_pattern);
+
+                    constexpr Pool GetPool() const { return this->pool; }
                     constexpr size_t GetSize() const { return this->heap.GetSize(); }
                     constexpr KVirtualAddress GetEndAddress() const { return this->heap.GetEndAddress(); }
+
+                    size_t GetFreeSize() const { return this->heap.GetFreeSize(); }
 
                     constexpr void SetNext(Impl *n) { this->next = n; }
                     constexpr void SetPrev(Impl *n) { this->prev = n; }
@@ -125,8 +139,6 @@ namespace ams::kern {
                             this->Free(this->heap.GetAddress() + free_start * PageSize, free_count);
                         }
                     }
-                public:
-                    static size_t CalculateMetadataOverheadSize(size_t region_size);
             };
         private:
             KLightLock pool_locks[Pool_Count];
@@ -153,7 +165,7 @@ namespace ams::kern {
                 }
             }
 
-            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool optimize, bool random);
+            Result AllocatePageGroupImpl(KPageGroup *out, size_t num_pages, Pool pool, Direction dir, bool unoptimized, bool random);
         public:
             KMemoryManager()
                 : pool_locks(), pool_managers_head(), pool_managers_tail(), managers(), num_managers(), optimized_process_ids(), has_optimized_process()
@@ -163,8 +175,12 @@ namespace ams::kern {
 
             NOINLINE void Initialize(KVirtualAddress metadata_region, size_t metadata_region_size);
 
+            NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
+            NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
+
             NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
             NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);
+            NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
             void Open(KVirtualAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */
@@ -201,6 +217,23 @@ namespace ams::kern {
                 size_t total = 0;
                 for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
                     total += manager->GetSize();
+                }
+                return total;
+            }
+
+            size_t GetFreeSize() {
+                size_t total = 0;
+                for (size_t i = 0; i < this->num_managers; i++) {
+                    total += this->managers[i].GetFreeSize();
+                }
+                return total;
+            }
+
+            size_t GetFreeSize(Pool pool) {
+                constexpr Direction GetSizeDirection = Direction_FromFront;
+                size_t total = 0;
+                for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
+                    total += manager->GetFreeSize();
                 }
                 return total;
             }

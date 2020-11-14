@@ -26,6 +26,7 @@ namespace ams::capsrv::server {
             static constexpr inline size_t MaxSessions          = 2;
             static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("caps:dc");
 
+            using Interface     = IDecoderControlService;
             using Service       = DecoderControlService;
             using ServerOptions = sf::hipc::DefaultServerManagerOptions;
             using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;

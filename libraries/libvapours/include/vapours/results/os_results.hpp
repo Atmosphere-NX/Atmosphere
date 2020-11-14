@@ -21,12 +21,20 @@ namespace ams::os {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(3);
 
-    R_DEFINE_ERROR_RESULT(Busy,                     4);
+    R_DEFINE_ERROR_RESULT(Busy,                         4);
 
-    R_DEFINE_ERROR_RESULT(OutOfMemory,              8);
-    R_DEFINE_ERROR_RESULT(OutOfResource,            9);
+    R_DEFINE_ERROR_RESULT(OutOfMemory,                  8);
+    R_DEFINE_ERROR_RESULT(OutOfResource,                9);
 
-    R_DEFINE_ERROR_RESULT(OutOfVirtualAddressSpace, 12);
-    R_DEFINE_ERROR_RESULT(ResourceLimit,            13);
+    R_DEFINE_ERROR_RESULT(OutOfVirtualAddressSpace,    12);
+    R_DEFINE_ERROR_RESULT(ResourceLimit,               13);
+
+    R_DEFINE_ERROR_RESULT(OutOfHandles,               500);
+    R_DEFINE_ERROR_RESULT(InvalidHandle,              501);
+    R_DEFINE_ERROR_RESULT(InvalidCurrentMemoryState,  502);
+    R_DEFINE_ERROR_RESULT(InvalidTransferMemoryState, 503);
+    R_DEFINE_ERROR_RESULT(InvalidTransferMemorySize,  504);
+    R_DEFINE_ERROR_RESULT(OutOfTransferMemory,        505);
+    R_DEFINE_ERROR_RESULT(OutOfAddressSpace,          506);
 
 }

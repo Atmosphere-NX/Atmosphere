@@ -51,27 +51,27 @@ namespace ams::secmon {
 
         constinit bool g_is_cold_boot = true;
 
-        constinit const se::StickyBits ExpectedSeStickyBits = {
+        constinit se::StickyBits ExpectedSeStickyBits = {
             .se_security            = (1 << 0), /* SE_HARD_SETTING */
             .tzram_security         = 0,
             .crypto_security_perkey = (1 << pkg1::AesKeySlot_UserEnd) - 1,
             .crypto_keytable_access = {
-                (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  0: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  1: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  2: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  3: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  4: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  5: User    keyslot. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /*  6: Unused  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /*  7: Unused  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  8: Temp    keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
-                (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  9: SmcTemp keyslot. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 10: Wrap1   keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 11: Wrap2   keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 12: DMaster keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 13: Master  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 14: Unused  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
-                (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 13: Device  keyslot. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (0 << 7) | (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  0: User    keyslot. KEY. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 7) | (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  1: User    keyslot. KEY. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 7) | (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  2: User    keyslot. KEY. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 7) | (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  3: User    keyslot. KEY. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 7) | (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  4: User    keyslot. KEY. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 7) | (1 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  5: User    keyslot. KEY. KEYUSE, UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. UIVREAD, OIVREAD, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /*  6: Unused  keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /*  7: Unused  keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (0 << 7) | (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  8: Temp    keyslot. KEY. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
+                (0 << 7) | (0 << 6) | (1 << 5) | (0 << 4) | (1 << 3) | (0 << 2) | (1 << 1) | (0 << 0), /*  9: SmcTemp keyslot. KEY. UIVUPDATE, OIVUPDATE, KEYUPDATE enabled. KEYUSE, UIVREAD, OIVREAD, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 10: Wrap1   keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (0 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 11: Wrap2   keyslot. KEY. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 12: DMaster keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 13: Master  keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 14: Unused  keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
+                (1 << 7) | (0 << 6) | (0 << 5) | (0 << 4) | (0 << 3) | (0 << 2) | (0 << 1) | (0 << 0), /* 13: Device  keyslot. KEK. KEYUSE, UIVUPDATE, UIVREAD, OIVUPDATE, OIVREAD, KEYUPDATE, KEYREAD disabled. */
             },
             .rsa_security_perkey = 0,
             .rsa_keytable_access = {
@@ -139,6 +139,16 @@ namespace ams::secmon {
         }
 
         void VerifySecurityEngineStickyBits() {
+            /* On mariko, an extra sticky bit is set. */
+            if (GetSocType() == fuse::SocType_Mariko) {
+                ExpectedSeStickyBits.se_security |= (1 << 5);
+            } else /* if (GetSocType() == fuse::SocType_Erista) */ {
+                /* Erista does not support DST_KEYTABLE_ONLY, and so all keys will have the bit clear. */
+                for (size_t i = 0; i < util::size(ExpectedSeStickyBits.crypto_keytable_access); ++i) {
+                    ExpectedSeStickyBits.crypto_keytable_access[i] &= ~(1 << 7);
+                }
+            }
+
             if (!se::ValidateStickyBits(ExpectedSeStickyBits)) {
                 SetError(pkg1::ErrorInfo_InvalidSecurityEngineStickyBits);
                 AMS_ABORT("Invalid sticky bits");
@@ -938,12 +948,16 @@ namespace ams::secmon {
             return reg::Read(MC + MC_SECURITY_CFG3) == 0;
         }
 
+        void SetupLogForBoot() {
+            log::Initialize();
+            log::SendText("OHAYO\n", 6);
+            log::Flush();
+        }
+
         void LogExitLp0() {
             /* NOTE: Nintendo only does this on dev, but we will always do it. */
             if (true /* !pkg1::IsProduction() */) {
-                log::Initialize();
-                log::SendText("OHAYO\n", 6);
-                log::Flush();
+                SetupLogForBoot();
             }
         }
 
@@ -969,7 +983,7 @@ namespace ams::secmon {
         InitializeConfigurationContext();
 
         /* Initialize uart for logging. */
-        log::Initialize();
+        SetupLogForBoot();
 
         /* Initialize the security engine. */
         se::Initialize();
@@ -1017,12 +1031,16 @@ namespace ams::secmon {
 
         /* Overwrite keys that we want to be random with random contents. */
         se::InitializeRandom();
+        se::ConfigureAutomaticContextSave();
         se::SetRandomKey(pkg1::AesKeySlot_Temporary);
         se::GenerateSrk();
         se::SetRandomKey(pkg1::AesKeySlot_TzramSaveKek);
 
         /* Initialize pmc secure scratch. */
-        pmc::InitializeRandomScratch();
+        if (GetSocType() == fuse::SocType_Erista) {
+            pmc::InitializeRandomScratch();
+        }
+        pmc::LockSecureRegister(pmc::SecureRegister_Srk);
 
         /* Setup secure registers. */
         SetupSecureRegisters();

@@ -66,12 +66,8 @@ namespace ams::pgl {
 
         constinit pgl::srv::ShellInterface g_shell_interface;
 
-        ALWAYS_INLINE std::shared_ptr<pgl::srv::ShellInterface> GetSharedPointerToShellInterface() {
-            return ams::sf::ServiceObjectTraits<pgl::srv::ShellInterface>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_shell_interface));
-        }
-
         void RegisterServiceSession() {
-            R_ABORT_UNLESS(g_server_manager.RegisterServer<pgl::srv::ShellInterface>(ShellServiceName, ShellMaxSessions, GetSharedPointerToShellInterface()));
+            R_ABORT_UNLESS((g_server_manager.RegisterServer<pgl::sf::IShellInterface, pgl::srv::ShellInterface>(ShellServiceName, ShellMaxSessions, ams::sf::GetSharedPointerTo<pgl::sf::IShellInterface>(g_shell_interface))));
         }
 
         void LoopProcess() {
@@ -145,6 +141,9 @@ void __appExit(void) {
 
 int main(int argc, char **argv)
 {
+    /* Disable auto-abort in fs operations. */
+    fs::SetEnabledAutoAbort(false);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(pgl, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(pgl, Main));

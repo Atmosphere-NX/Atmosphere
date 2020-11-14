@@ -69,20 +69,22 @@ namespace ams::pgl::srv {
     }
 
     Result ShellInterface::GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) {
+        using Interface = typename pgl::sf::IEventObserver::ImplHolder<ShellEventObserver>;
+
         /* Allocate a new interface. */
-        auto *observer_memory = this->memory_resource->Allocate(sizeof(EventObserverInterface), alignof(EventObserverInterface));
+        auto *observer_memory = this->memory_resource->Allocate(sizeof(Interface), alignof(Interface));
         AMS_ABORT_UNLESS(observer_memory != nullptr);
 
         /* Create the interface object. */
-        new (observer_memory) EventObserverInterface;
+        new (observer_memory) Interface;
 
         /* Set the output. */
-        out.SetValue(std::shared_ptr<EventObserverInterface>(reinterpret_cast<EventObserverInterface *>(observer_memory), [&](EventObserverInterface *obj) {
+        out.SetValue(std::shared_ptr<pgl::sf::IEventObserver>(reinterpret_cast<Interface *>(observer_memory), [&](Interface *obj) {
             /* Destroy the object. */
-            obj->~EventObserverInterface();
+            obj->~Interface();
 
             /* Custom deleter: use the memory resource to free. */
-            this->memory_resource->Deallocate(obj, sizeof(EventObserverInterface), alignof(EventObserverInterface));
+            this->memory_resource->Deallocate(obj, sizeof(Interface), alignof(Interface));
         }));
         return ResultSuccess();
     }

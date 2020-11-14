@@ -17,7 +17,7 @@
 #ifndef FUSEE_LOG_H
 #define FUSEE_LOG_H
 
-#define PRINT_MESSAGE_MAX_LENGTH 512
+#define PRINT_MESSAGE_MAX_LENGTH 1024
 
 #include <stdarg.h>
 

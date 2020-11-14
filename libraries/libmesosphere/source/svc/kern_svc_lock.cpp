@@ -21,28 +21,46 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsKernelAddress(uintptr_t address) {
+            return KernelVirtualAddressSpaceBase <= address && address < KernelVirtualAddressSpaceEnd;
+        }
 
+        Result ArbitrateLock(ams::svc::Handle thread_handle, uintptr_t address, uint32_t tag) {
+            /* Validate the input address. */
+            R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
+            R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
+
+            return GetCurrentProcess().WaitForAddress(thread_handle, address, tag);
+        }
+
+        Result ArbitrateUnlock(uintptr_t address) {
+            /* Validate the input address. */
+            R_UNLESS(!IsKernelAddress(address),             svc::ResultInvalidCurrentMemory());
+            R_UNLESS(util::IsAligned(address, sizeof(u32)), svc::ResultInvalidAddress());
+
+            return GetCurrentProcess().SignalToAddress(address);
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result ArbitrateLock64(ams::svc::Handle thread_handle, ams::svc::Address address, uint32_t tag) {
-        MESOSPHERE_PANIC("Stubbed SvcArbitrateLock64 was called.");
+        return ArbitrateLock(thread_handle, address, tag);
     }
 
     Result ArbitrateUnlock64(ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcArbitrateUnlock64 was called.");
+        return ArbitrateUnlock(address);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result ArbitrateLock64From32(ams::svc::Handle thread_handle, ams::svc::Address address, uint32_t tag) {
-        MESOSPHERE_PANIC("Stubbed SvcArbitrateLock64From32 was called.");
+        return ArbitrateLock(thread_handle, address, tag);
     }
 
     Result ArbitrateUnlock64From32(ams::svc::Address address) {
-        MESOSPHERE_PANIC("Stubbed SvcArbitrateUnlock64From32 was called.");
+        return ArbitrateUnlock(address);
     }
 
 }

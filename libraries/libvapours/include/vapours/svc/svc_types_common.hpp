@@ -116,8 +116,18 @@ namespace ams::svc {
         MemoryAttribute_Uncached     = (1 << 3),
     };
 
+    constexpr inline size_t HeapSizeAlignment = 2_MB;
+
     struct PageInfo {
         u32 flags;
+    };
+
+    enum MemoryRegionType {
+        MemoryRegionType_None              = 0,
+        MemoryRegionType_KernelTraceBuffer = 1,
+        MemoryRegionType_OnMemoryBootImage = 2,
+        MemoryRegionType_DTB               = 3,
+        MemoryRegionType_Count,
     };
 
     /* Info Types. */
@@ -178,7 +188,7 @@ namespace ams::svc {
     };
 
     enum LastThreadInfoFlag : u32 {
-        /* TODO */
+        LastThreadInfoFlag_ThreadInSystemCall = (1u << 0),
     };
 
     enum LimitableResource : u32 {
@@ -282,6 +292,15 @@ namespace ams::svc {
         ThreadContextFlag_All = (ThreadContextFlag_General | ThreadContextFlag_Control | ThreadContextFlag_Fpu | ThreadContextFlag_FpuControl),
     };
 
+    enum ContinueFlag : u32 {
+        ContinueFlag_ExceptionHandled     = (1u << 0),
+        ContinueFlag_EnableExceptionEvent = (1u << 1),
+        ContinueFlag_ContinueAll          = (1u << 2),
+        ContinueFlag_ContinueOthers       = (1u << 3),
+
+        ContinueFlag_AllMask              = (1u << 4) - 1,
+    };
+
     enum ThreadExitReason : u32 {
         ThreadExitReason_ExitThread       = 0,
         ThreadExitReason_TerminateThread  = 1,
@@ -364,12 +383,21 @@ namespace ams::svc {
 
         /* 7.x+ Should memory allocation be optimized? This requires IsApplication. */
         CreateProcessFlag_OptimizeMemoryAllocation = (1 << 11),
+
+        /* Mask of all flags. */
+        CreateProcessFlag_All = CreateProcessFlag_Is64Bit                  |
+                                CreateProcessFlag_AddressSpaceMask         |
+                                CreateProcessFlag_EnableDebug              |
+                                CreateProcessFlag_EnableAslr               |
+                                CreateProcessFlag_IsApplication            |
+                                CreateProcessFlag_PoolPartitionMask        |
+                                CreateProcessFlag_OptimizeMemoryAllocation,
     };
 
     /* Debug types. */
     enum DebugEvent : u32 {
-        DebugEvent_AttachProcess = 0,
-        DebugEvent_AttachThread  = 1,
+        DebugEvent_CreateProcess = 0,
+        DebugEvent_CreateThread  = 1,
         DebugEvent_ExitProcess   = 2,
         DebugEvent_ExitThread    = 3,
         DebugEvent_Exception     = 4,
@@ -396,6 +424,10 @@ namespace ams::svc {
         DebugException_MemorySystemError    = 9,
     };
 
+    enum DebugEventFlag : u32 {
+        DebugEventFlag_Stopped = (1u << 0),
+    };
+
     enum ExceptionType : u32 {
         ExceptionType_Init                 = 0x000,
         ExceptionType_InstructionAbort     = 0x100,
@@ -413,7 +445,16 @@ namespace ams::svc {
     };
 
     enum BreakReason : u32 {
-        /* TODO */
+        BreakReason_Panic         = 0,
+        BreakReason_Assert        = 1,
+        BreakReason_User          = 2,
+        BreakReason_PreLoadDll    = 3,
+        BreakReason_PostLoadDll   = 4,
+        BreakReason_PreUnloadDll  = 5,
+        BreakReason_PostUnloadDll = 6,
+        BreakReason_CppException  = 7,
+
+        BreakReason_NotificationOnlyFlag = 0x80000000,
     };
 
     enum KernelDebugType : u32 {
@@ -507,6 +548,7 @@ namespace ams::svc {
         struct ExceptionInfoStatus64 {
             u32 pstate;
             u32 afsr0;
+            u32 afsr1;
             u32 esr;
             u32 far;
         };

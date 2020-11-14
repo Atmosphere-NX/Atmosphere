@@ -48,6 +48,8 @@ namespace ams::kern {
             };
 
             using ThreadList = util::IntrusiveListMemberTraits<&KThread::process_list_node>::ListType;
+
+            static constexpr size_t AslrAlignment = KernelAslrAlignment;
         private:
             using SharedMemoryInfoList = util::IntrusiveListBaseTraits<KSharedMemoryInfo>::ListType;
             using TLPTree = util::IntrusiveRedBlackTreeBaseTraits<KThreadLocalPage>::TreeType<KThreadLocalPage>;
@@ -64,7 +66,7 @@ namespace ams::kern {
             size_t                      system_resource_num_pages{};
             size_t                      memory_release_hint{};
             State                       state{};
-            KLightLock                  lock{};
+            KLightLock                  state_lock{};
             KLightLock                  list_lock{};
             KConditionVariable          cond_var{};
             KAddressArbiter             address_arbiter{};
@@ -118,36 +120,125 @@ namespace ams::kern {
             KPageTableManager           page_table_manager{};
         private:
             Result Initialize(const ams::svc::CreateProcessParameter &params);
+
+            void StartTermination();
+            void FinishTermination();
         public:
             KProcess() { /* ... */ }
             virtual ~KProcess() { /* ... */ }
 
             Result Initialize(const ams::svc::CreateProcessParameter &params, const KPageGroup &pg, const u32 *caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            Result Initialize(const ams::svc::CreateProcessParameter &params, svc::KUserPointer<const u32 *> caps, s32 num_caps, KResourceLimit *res_limit, KMemoryManager::Pool pool);
+            void Exit();
 
             constexpr const char *GetName() const { return this->name; }
 
+            constexpr ams::svc::ProgramId GetProgramId() const { return this->program_id; }
+
             constexpr u64 GetProcessId() const { return this->process_id; }
+
+            constexpr State GetState() const { return this->state; }
 
             constexpr u64 GetCoreMask() const { return this->capabilities.GetCoreMask(); }
             constexpr u64 GetPriorityMask() const { return this->capabilities.GetPriorityMask(); }
 
+            constexpr s32 GetIdealCoreId() const { return this->ideal_core_id; }
             constexpr void SetIdealCoreId(s32 core_id) { this->ideal_core_id = core_id; }
+
+            constexpr bool CheckThreadPriority(s32 prio) const { return ((1ul << prio) & this->GetPriorityMask()) != 0; }
+
+            constexpr u32 GetCreateProcessFlags() const { return this->flags; }
 
             constexpr bool Is64Bit() const { return this->flags & ams::svc::CreateProcessFlag_Is64Bit; }
 
             constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
 
-            constexpr bool IsSuspended() const {
-                return this->is_suspended;
+            constexpr KMemoryManager::Pool GetMemoryPool() const { return this->memory_pool; }
+
+            constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }
+
+            constexpr bool IsApplication() const { return this->is_application; }
+
+            constexpr bool IsSuspended() const { return this->is_suspended; }
+            constexpr void SetSuspended(bool suspended) { this->is_suspended = suspended; }
+
+            Result Terminate();
+
+            constexpr bool IsTerminated() const {
+                return this->state == State_Terminated;
             }
 
-            KThread *GetPreemptionStatePinnedThread(s32 core_id) const {
+            constexpr bool IsAttachedToDebugger() const {
+                return this->attached_object != nullptr;
+            }
+
+            constexpr bool IsPermittedInterrupt(int32_t interrupt_id) const {
+                return this->capabilities.IsPermittedInterrupt(interrupt_id);
+            }
+
+            constexpr bool IsPermittedDebug() const {
+                return this->capabilities.IsPermittedDebug();
+            }
+
+            constexpr bool CanForceDebug() const {
+                return this->capabilities.CanForceDebug();
+            }
+
+            u32 GetAllocateOption() const { return this->page_table.GetAllocateOption(); }
+
+            ThreadList &GetThreadList() { return this->thread_list; }
+            const ThreadList &GetThreadList() const { return this->thread_list; }
+
+            constexpr void *GetDebugObject() const { return this->attached_object; }
+            KProcess::State SetDebugObject(void *debug_object);
+            void ClearDebugObject(KProcess::State state);
+
+            bool EnterJitDebug(ams::svc::DebugEvent event, ams::svc::DebugException exception, uintptr_t param1 = 0, uintptr_t param2 = 0, uintptr_t param3 = 0, uintptr_t param4 = 0);
+
+            KEventInfo *GetJitDebugInfo();
+            void ClearJitDebugInfo();
+
+            bool EnterUserException();
+            bool LeaveUserException();
+            bool ReleaseUserException(KThread *thread);
+
+            KThread *GetPinnedThread(s32 core_id) const {
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 return this->pinned_threads[core_id];
             }
 
+            void PinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+                MESOSPHERE_ASSERT(thread != nullptr);
+                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == nullptr);
+                this->pinned_threads[core_id] = thread;
+            }
+
+            void UnpinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
+                MESOSPHERE_ASSERT(thread != nullptr);
+                MESOSPHERE_ASSERT(this->pinned_threads[core_id] == thread);
+                this->pinned_threads[core_id] = nullptr;
+            }
+
             void CopySvcPermissionsTo(KThread::StackParameters &sp) {
                 this->capabilities.CopySvcPermissionsTo(sp);
+            }
+
+            void CopyPinnedSvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopyPinnedSvcPermissionsTo(sp);
+            }
+
+            void CopyUnpinnedSvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopyUnpinnedSvcPermissionsTo(sp);
+            }
+
+            void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopyEnterExceptionSvcPermissionsTo(sp);
+            }
+
+            void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                this->capabilities.CopyLeaveExceptionSvcPermissionsTo(sp);
             }
 
             constexpr KResourceLimit *GetResourceLimit() const { return this->resource_limit; }
@@ -157,27 +248,114 @@ namespace ams::kern {
             void ReleaseResource(ams::svc::LimitableResource which, s64 value);
             void ReleaseResource(ams::svc::LimitableResource which, s64 value, s64 hint);
 
+            constexpr KLightLock &GetStateLock() { return this->state_lock; }
+            constexpr KLightLock &GetListLock() { return this->list_lock; }
+
             constexpr KProcessPageTable &GetPageTable() { return this->page_table; }
             constexpr const KProcessPageTable &GetPageTable() const { return this->page_table; }
 
             constexpr KHandleTable &GetHandleTable() { return this->handle_table; }
             constexpr const KHandleTable &GetHandleTable() const { return this->handle_table; }
 
+            KWaitObject *GetWaitObjectPointer() { return std::addressof(this->wait_object); }
+
+            size_t GetUsedUserPhysicalMemorySize() const;
+            size_t GetTotalUserPhysicalMemorySize() const;
+            size_t GetUsedNonSystemUserPhysicalMemorySize() const;
+            size_t GetTotalNonSystemUserPhysicalMemorySize() const;
+
+            Result AddSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
+            void RemoveSharedMemory(KSharedMemory *shmem, KProcessAddress address, size_t size);
+
             Result CreateThreadLocalRegion(KProcessAddress *out);
+            Result DeleteThreadLocalRegion(KProcessAddress addr);
             void *GetThreadLocalRegionPointer(KProcessAddress addr);
 
+            constexpr KProcessAddress GetProcessLocalRegionAddress() const { return this->plr_address; }
+
             void AddCpuTime(s64 diff) { this->cpu_time += diff; }
+
+            constexpr s64 GetScheduledCount() const { return this->schedule_count; }
             void IncrementScheduledCount() { ++this->schedule_count; }
 
             void IncrementThreadCount();
             void DecrementThreadCount();
+
+            size_t GetTotalSystemResourceSize() const { return this->system_resource_num_pages * PageSize; }
+            size_t GetUsedSystemResourceSize() const {
+                if (this->system_resource_num_pages == 0) {
+                    return 0;
+                }
+                return this->dynamic_page_manager.GetUsed() * PageSize;
+            }
+
+            void SetRunningThread(s32 core, KThread *thread, u64 idle_count) {
+                this->running_threads[core]            = thread;
+                this->running_thread_idle_counts[core] = idle_count;
+            }
+
+            void ClearRunningThread(KThread *thread) {
+                for (size_t i = 0; i < util::size(this->running_threads); ++i) {
+                    if (this->running_threads[i] == thread) {
+                        this->running_threads[i] = nullptr;
+                    }
+                }
+            }
+
+            constexpr KThread *GetRunningThread(s32 core) const { return this->running_threads[core]; }
+            constexpr u64 GetRunningThreadIdleCount(s32 core) const { return this->running_thread_idle_counts[core]; }
 
             void RegisterThread(KThread *thread);
             void UnregisterThread(KThread *thread);
 
             Result Run(s32 priority, size_t stack_size);
 
-            void SetPreemptionState();
+            Result Reset();
+
+            void SetDebugBreak() {
+                if (this->state == State_RunningAttached) {
+                    this->ChangeState(State_DebugBreak);
+                }
+            }
+
+            void SetAttached() {
+                if (this->state == State_DebugBreak) {
+                    this->ChangeState(State_RunningAttached);
+                }
+            }
+
+            Result SetActivity(ams::svc::ProcessActivity activity);
+
+            void PinCurrentThread();
+
+            Result SignalToAddress(KProcessAddress address) {
+                return this->cond_var.SignalToAddress(address);
+            }
+
+            Result WaitForAddress(ams::svc::Handle handle, KProcessAddress address, u32 tag) {
+                return this->cond_var.WaitForAddress(handle, address, tag);
+            }
+
+            void SignalConditionVariable(uintptr_t cv_key, int32_t count) {
+                return this->cond_var.Signal(cv_key, count);
+            }
+
+            Result WaitConditionVariable(KProcessAddress address, uintptr_t cv_key, u32 tag, s64 ns) {
+                return this->cond_var.Wait(address, cv_key, tag, ns);
+            }
+
+            Result SignalAddressArbiter(uintptr_t address, ams::svc::SignalType signal_type, s32 value, s32 count) {
+                return this->address_arbiter.SignalToAddress(address, signal_type, value, count);
+            }
+
+            Result WaitAddressArbiter(uintptr_t address, ams::svc::ArbitrationType arb_type, s32 value, s64 timeout) {
+                return this->address_arbiter.WaitForAddress(address, arb_type, value, timeout);
+            }
+
+            Result GetThreadList(s32 *out_num_threads, ams::kern::svc::KUserPointer<u64 *> out_thread_ids, s32 max_out_count);
+
+            static KProcess *GetProcessFromId(u64 process_id);
+            static Result GetProcessList(s32 *out_num_processes, ams::kern::svc::KUserPointer<u64 *> out_process_ids, s32 max_out_count);
 
             static void Switch(KProcess *cur_process, KProcess *next_process) {
                 /* Set the current process pointer. */

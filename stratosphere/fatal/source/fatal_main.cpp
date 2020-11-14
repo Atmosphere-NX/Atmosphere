@@ -142,6 +142,9 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Disable auto-abort in fs operations. */
+    fs::SetEnabledAutoAbort(false);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(fatal, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(fatal, Main));
@@ -153,11 +156,10 @@ int main(int argc, char **argv)
     fatal::srv::CheckRepairStatus();
 
     /* Create services. */
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<fatal::srv::PrivateService>(PrivateServiceName, PrivateMaxSessions)));
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<fatal::srv::UserService>(UserServiceName, UserMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<fatal::impl::IPrivateService, fatal::srv::PrivateService>(PrivateServiceName, PrivateMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<fatal::impl::IService, fatal::srv::Service>(UserServiceName, UserMaxSessions)));
 
     /* Add dirty event holder. */
-    /* TODO: s_server_manager.AddWaitable(ams::fatal::srv::GetFatalDirtyEvent()); */
     auto *dirty_event_holder = ams::fatal::srv::GetFatalDirtyWaitableHolder();
     g_server_manager.AddUserWaitableHolder(dirty_event_holder);
 

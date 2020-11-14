@@ -273,7 +273,10 @@ void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmwa
         }
     };
 
-    const uint32_t bis_key_generation = fuse_get_5x_key_generation();
+    uint32_t bis_key_generation = fuse_get_5x_key_generation();
+    if (bis_key_generation > 0) {
+        bis_key_generation -= 1;
+    }
 
     static const uint8_t AL16 bis_kek_source[0x10] = {0x34, 0xC1, 0xA0, 0xC4, 0x82, 0x58, 0xF8, 0xB4, 0xFA, 0x9E, 0x5E, 0x6A, 0xDA, 0xFC, 0x7E, 0x4F};
     switch (partition_id) {

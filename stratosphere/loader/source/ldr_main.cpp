@@ -115,6 +115,9 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Disable auto-abort in fs operations. */
+    fs::SetEnabledAutoAbort(false);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(ldr, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(ldr, Main));
@@ -126,9 +129,9 @@ int main(int argc, char **argv)
     ldr::SetDevelopmentForAcidSignatureCheck(spl::IsDevelopment());
 
     /* Add services to manager. */
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::pm::ProcessManagerInterface>(ProcessManagerServiceName, ProcessManagerMaxSessions)));
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::shell::ShellInterface>(ShellServiceName, ShellMaxSessions)));
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::dmnt::DebugMonitorInterface>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::impl::IProcessManagerInterface, ldr::LoaderService>(ProcessManagerServiceName, ProcessManagerMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::impl::IShellInterface,          ldr::LoaderService>(ShellServiceName, ShellMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<ldr::impl::IDebugMonitorInterface,   ldr::LoaderService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
 
     /* Loop forever, servicing our services. */
     g_server_manager.LoopProcess();

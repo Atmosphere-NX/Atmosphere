@@ -31,7 +31,7 @@ namespace ams {
             static constexpr ALWAYS_INLINE TimeSpanType FromSeconds(s64 s)       { return FromMilliSeconds(s * INT64_C(1000)); }
             static constexpr ALWAYS_INLINE TimeSpanType FromMinutes(s64 m)       { return FromSeconds(m * INT64_C(60)); }
             static constexpr ALWAYS_INLINE TimeSpanType FromHours(s64 h)         { return FromMinutes(h * INT64_C(60)); }
-            static constexpr ALWAYS_INLINE TimeSpanType FromDays(s64 d)          { return FromMinutes(d * INT64_C(24)); }
+            static constexpr ALWAYS_INLINE TimeSpanType FromDays(s64 d)          { return FromHours(d * INT64_C(24)); }
 
             constexpr ALWAYS_INLINE s64 GetNanoSeconds()  const { return this->ns; }
             constexpr ALWAYS_INLINE s64 GetMicroSeconds() const { return this->GetNanoSeconds() / (INT64_C(1000)); }

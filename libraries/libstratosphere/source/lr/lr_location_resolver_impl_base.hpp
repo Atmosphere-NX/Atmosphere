@@ -20,7 +20,7 @@
 
 namespace ams::lr {
 
-    class LocationResolverImplBase : public ILocationResolver {
+    class LocationResolverImplBase {
         NON_COPYABLE(LocationResolverImplBase);
         NON_MOVEABLE(LocationResolverImplBase);
         protected:

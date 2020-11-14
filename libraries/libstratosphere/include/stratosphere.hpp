@@ -45,6 +45,7 @@
 #include <stratosphere/cfg.hpp>
 #include <stratosphere/dmnt.hpp>
 #include <stratosphere/erpt.hpp>
+#include <stratosphere/err.hpp>
 #include <stratosphere/fatal.hpp>
 #include <stratosphere/hid.hpp>
 #include <stratosphere/hos.hpp>
@@ -54,6 +55,7 @@
 #include <stratosphere/map.hpp>
 #include <stratosphere/ncm.hpp>
 #include <stratosphere/nim.hpp>
+#include <stratosphere/ns.hpp>
 #include <stratosphere/patcher.hpp>
 #include <stratosphere/pgl.hpp>
 #include <stratosphere/psc.hpp>

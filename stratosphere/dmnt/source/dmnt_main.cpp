@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     /* Create services. */
     /* TODO: Implement rest of dmnt:- in ams.tma development branch. */
     /* R_ABORT_UNLESS((g_server_manager.RegisterServer<dmnt::cheat::CheatService>(DebugMonitorServiceName, DebugMonitorMaxSessions))); */
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<dmnt::cheat::CheatService>(CheatServiceName, CheatMaxSessions)));
+    R_ABORT_UNLESS((g_server_manager.RegisterServer<dmnt::cheat::impl::ICheatInterface, dmnt::cheat::CheatService>(CheatServiceName, CheatMaxSessions)));
 
     /* Loop forever, servicing our services. */
     /* Nintendo loops four threads processing on the manager -- we'll loop an extra fifth for our cheat service. */

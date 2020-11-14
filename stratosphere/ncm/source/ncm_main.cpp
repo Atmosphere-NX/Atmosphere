@@ -153,24 +153,21 @@ namespace {
 
     class ContentManagerServerManager : public sf::hipc::ServerManager<ContentManagerNumServers, ContentManagerServerOptions, ContentManagerMaxSessions> {
         private:
-            using ServiceType = ncm::ContentManagerImpl;
+            using Interface   = ncm::IContentManager;
+            using ServiceImpl = ncm::ContentManagerImpl;
         private:
             os::ThreadType thread;
-            std::shared_ptr<ServiceType> ncm_manager;
+            std::shared_ptr<Interface> ncm_manager;
         private:
             static void ThreadFunction(void *_this) {
                 reinterpret_cast<ContentManagerServerManager *>(_this)->LoopProcess();
             }
         public:
-            ContentManagerServerManager(ServiceType *m)
-                : ncm_manager()
-            {
-                /* ... */
-            }
+            ContentManagerServerManager() : ncm_manager() { /* ... */ }
 
-            ams::Result Initialize(std::shared_ptr<ServiceType> manager_obj) {
+            ams::Result Initialize(std::shared_ptr<Interface> manager_obj) {
                 this->ncm_manager = manager_obj;
-                return this->RegisterServer<ServiceType>(ContentManagerServiceName, ContentManagerManagerSessions, this->ncm_manager);
+                return this->RegisterServer<Interface, ServiceImpl>(ContentManagerServiceName, ContentManagerManagerSessions, this->ncm_manager);
             }
 
             ams::Result StartThreads() {
@@ -200,23 +197,20 @@ namespace {
 
     class LocationResolverServerManager : public sf::hipc::ServerManager<LocationResolverNumServers, LocationResolverServerOptions, LocationResolverMaxSessions> {
         private:
-            using ServiceType = lr::LocationResolverManagerImpl;
+            using Interface   = lr::ILocationResolverManager;
+            using ServiceImpl = lr::LocationResolverManagerImpl;
         private:
             os::ThreadType thread;
-            std::shared_ptr<ServiceType> lr_manager;
+            std::shared_ptr<Interface> lr_manager;
         private:
             static void ThreadFunction(void *_this) {
                 reinterpret_cast<LocationResolverServerManager *>(_this)->LoopProcess();
             }
         public:
-            LocationResolverServerManager(ServiceType *m)
-                : lr_manager(sf::ServiceObjectTraits<ServiceType>::SharedPointerHelper::GetEmptyDeleteSharedPointer(m))
-            {
-                /* ... */
-            }
+            LocationResolverServerManager(ServiceImpl &m) : lr_manager(sf::GetSharedPointerTo<Interface>(m)) { /* ... */ }
 
             ams::Result Initialize() {
-                return this->RegisterServer<ServiceType>(LocationResolverServiceName, LocationResolverManagerSessions, this->lr_manager);
+                return this->RegisterServer<Interface, ServiceImpl>(LocationResolverServiceName, LocationResolverManagerSessions, this->lr_manager);
             }
 
             ams::Result StartThreads() {
@@ -232,14 +226,10 @@ namespace {
     };
 
     ncm::ContentManagerImpl g_ncm_manager_service_object;
-    ContentManagerServerManager g_ncm_server_manager(std::addressof(g_ncm_manager_service_object));
+    ContentManagerServerManager g_ncm_server_manager;
 
     lr::LocationResolverManagerImpl g_lr_manager_service_object;
-    LocationResolverServerManager g_lr_server_manager(std::addressof(g_lr_manager_service_object));
-
-    ALWAYS_INLINE std::shared_ptr<ncm::ContentManagerImpl> GetSharedPointerToContentManager() {
-        return sf::ServiceObjectTraits<ncm::ContentManagerImpl>::SharedPointerHelper::GetEmptyDeleteSharedPointer(std::addressof(g_ncm_manager_service_object));
-    }
+    LocationResolverServerManager g_lr_server_manager(g_lr_manager_service_object);
 
     /* Compile-time configuration. */
 #ifdef NCM_BUILD_FOR_INTITIALIZE
@@ -262,13 +252,16 @@ namespace {
 
 int main(int argc, char **argv)
 {
+    /* Disable auto-abort in fs operations. */
+    fs::SetEnabledAutoAbort(false);
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(ncm, MainWaitThreads));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(ncm, MainWaitThreads));
 
     /* Create and initialize the content manager. */
-    auto content_manager = GetSharedPointerToContentManager();
-    R_ABORT_UNLESS(content_manager->Initialize(ManagerConfig));
+    auto content_manager = sf::GetSharedPointerTo<ncm::IContentManager>(g_ncm_manager_service_object);
+    R_ABORT_UNLESS(content_manager->GetImpl().Initialize(ManagerConfig));
 
     /* Initialize ncm's server and start threads. */
     R_ABORT_UNLESS(g_ncm_server_manager.Initialize(content_manager));

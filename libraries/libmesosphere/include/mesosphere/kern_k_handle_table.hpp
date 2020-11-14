@@ -126,20 +126,7 @@ namespace ams::kern {
             NOINLINE bool Remove(ams::svc::Handle handle);
 
             template<typename T = KAutoObject>
-            ALWAYS_INLINE KScopedAutoObject<T> GetObject(ams::svc::Handle handle) const {
-                MESOSPHERE_ASSERT_THIS();
-
-                /* Handle pseudo-handles. */
-                if constexpr (std::is_base_of<T, KProcess>::value) {
-                    if (handle == ams::svc::PseudoHandle::CurrentProcess) {
-                        return GetCurrentProcessPointer();
-                    }
-                } else if constexpr (std::is_base_of<T, KThread>::value) {
-                    if (handle == ams::svc::PseudoHandle::CurrentThread) {
-                        return GetCurrentThreadPointer();
-                    }
-                }
-
+            ALWAYS_INLINE KScopedAutoObject<T> GetObjectWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
                 KScopedSpinLock lk(this->lock);
@@ -147,25 +134,33 @@ namespace ams::kern {
                 if constexpr (std::is_same<T, KAutoObject>::value) {
                     return this->GetObjectImpl(handle);
                 } else {
-                    return this->GetObjectImpl(handle)->DynamicCast<T*>();
+                    if (auto *obj = this->GetObjectImpl(handle); obj != nullptr) {
+                        return obj->DynamicCast<T*>();
+                    } else {
+                        return nullptr;
+                    }
                 }
             }
 
             template<typename T = KAutoObject>
-            ALWAYS_INLINE KScopedAutoObject<T> GetObjectForIpc(ams::svc::Handle handle) const {
-                static_assert(!std::is_base_of<KInterruptEvent, T>::value);
+            ALWAYS_INLINE KScopedAutoObject<T> GetObject(ams::svc::Handle handle) const {
+                MESOSPHERE_ASSERT_THIS();
 
                 /* Handle pseudo-handles. */
-                if constexpr (std::is_base_of<T, KProcess>::value) {
+                if constexpr (std::derived_from<KProcess, T>) {
                     if (handle == ams::svc::PseudoHandle::CurrentProcess) {
                         return GetCurrentProcessPointer();
                     }
-                } else if constexpr (std::is_base_of<T, KThread>::value) {
+                } else if constexpr (std::derived_from<KThread, T>) {
                     if (handle == ams::svc::PseudoHandle::CurrentThread) {
                         return GetCurrentThreadPointer();
                     }
                 }
 
+                return this->template GetObjectWithoutPseudoHandle<T>(handle);
+            }
+
+            ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpcWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
                 KScopedSpinLock lk(this->lock);
@@ -174,11 +169,20 @@ namespace ams::kern {
                 if (obj->DynamicCast<KInterruptEvent *>() != nullptr) {
                     return nullptr;
                 }
-                if constexpr (std::is_same<T, KAutoObject>::value) {
-                    return obj;
-                } else {
-                    return obj->DynamicCast<T*>();
+
+                return obj;
+            }
+
+            ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpc(ams::svc::Handle handle, KThread *cur_thread) const {
+                /* Handle pseudo-handles. */
+                if (handle == ams::svc::PseudoHandle::CurrentProcess) {
+                    return static_cast<KAutoObject *>(static_cast<void *>(cur_thread->GetOwnerProcess()));
                 }
+                if (handle == ams::svc::PseudoHandle::CurrentThread) {
+                    return static_cast<KAutoObject *>(cur_thread);
+                }
+
+                return GetObjectForIpcWithoutPseudoHandle(handle);
             }
 
             ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectByIndex(ams::svc::Handle *out_handle, size_t index) const {
@@ -202,6 +206,49 @@ namespace ams::kern {
             ALWAYS_INLINE void Register(ams::svc::Handle handle, T *obj) {
                 static_assert(std::is_base_of<KAutoObject, T>::value);
                 return this->Register(handle, obj, obj->GetTypeObj().GetClassToken());
+            }
+
+            template<typename T>
+            ALWAYS_INLINE bool GetMultipleObjects(T **out, const ams::svc::Handle *handles, size_t num_handles) const {
+                /* Try to convert and open all the handles. */
+                size_t num_opened;
+                {
+                    /* Lock the table. */
+                    KScopedDisableDispatch dd;
+                    KScopedSpinLock lk(this->lock);
+                    for (num_opened = 0; num_opened < num_handles; num_opened++) {
+                        /* Get the current handle. */
+                        const auto cur_handle = handles[num_opened];
+
+                        /* Get the object for the current handle. */
+                        KAutoObject *cur_object = this->GetObjectImpl(cur_handle);
+                        if (AMS_UNLIKELY(cur_object == nullptr)) {
+                            break;
+                        }
+
+                        /* Cast the current object to the desired type. */
+                        T *cur_t = cur_object->DynamicCast<T*>();
+                        if (AMS_UNLIKELY(cur_t == nullptr)) {
+                            break;
+                        }
+
+                        /* Open a reference to the current object. */
+                        cur_t->Open();
+                        out[num_opened] = cur_t;
+                    }
+                }
+
+                /* If we converted every object, succeed. */
+                if (AMS_LIKELY(num_opened == num_handles)) {
+                    return true;
+                }
+
+                /* If we didn't convert entry object, close the ones we opened. */
+                for (size_t i = 0; i < num_opened; i++) {
+                    out[i]->Close();
+                }
+
+                return false;
             }
         private:
             NOINLINE Result Add(ams::svc::Handle *out_handle, KAutoObject *obj, u16 type);
@@ -309,49 +356,6 @@ namespace ams::kern {
 
                 *out_handle = EncodeHandle(index, entry->GetLinearId());
                 return entry->GetObject();
-            }
-
-            template<typename T>
-            ALWAYS_INLINE bool GetMultipleObjects(T **out, const ams::svc::Handle *handles, size_t num_handles) const {
-                /* Try to convert and open all the handles. */
-                size_t num_opened;
-                {
-                    /* Lock the table. */
-                    KScopedDisableDispatch dd;
-                    KScopedSpinLock lk(this->lock);
-                    for (num_opened = 0; num_opened < num_handles; num_opened++) {
-                        /* Get the current handle. */
-                        const auto cur_handle = handles[num_opened];
-
-                        /* Get the object for the current handle. */
-                        KAutoObject *cur_object = this->GetObjectImpl(cur_handle);
-                        if (AMS_UNLIKELY(cur_object == nullptr)) {
-                            break;
-                        }
-
-                        /* Cast the current object to the desired type. */
-                        T *cur_t = cur_object->DynamicCast<T*>();
-                        if (AMS_UNLIKELY(cur_t == nullptr)) {
-                            break;
-                        }
-
-                        /* Open a reference to the current object. */
-                        cur_t->Open();
-                        out[num_opened] = cur_t;
-                    }
-                }
-
-                /* If we converted every object, succeed. */
-                if (AMS_LIKELY(num_opened == num_handles)) {
-                    return true;
-                }
-
-                /* If we didn't convert entry object, close the ones we opened. */
-                for (size_t i = 0; i < num_opened; i++) {
-                    out[i]->Close();
-                }
-
-                return false;
             }
     };
 

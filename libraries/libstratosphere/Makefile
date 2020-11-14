@@ -116,12 +116,12 @@ dist: dist-src dist-bin
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr release lib *.bz2
+	@rm -fr release lib *.bz2 include/stratosphere.hpp.gch
 
 #---------------------------------------------------------------------------------
 else
 
-DEPENDS	:=	$(OFILES:.o=.d)
+DEPENDS	:=	$(OFILES:.o=.d) $(GCH_FILES:.gch=.d)
 
 #---------------------------------------------------------------------------------
 # main targets

@@ -38,6 +38,11 @@ namespace ams::kern {
             virtual ~KServerPort() { /* ... */ }
 
             void Initialize(KPort *parent);
+            void EnqueueSession(KServerSession *session);
+            void EnqueueSession(KLightServerSession *session);
+
+            KServerSession *AcceptSession();
+            KLightServerSession *AcceptLightSession();
 
             constexpr const KPort *GetParent() const { return this->parent; }
 
@@ -46,11 +51,8 @@ namespace ams::kern {
             /* Overridden virtual functions. */
             virtual void Destroy() override;
             virtual bool IsSignaled() const override;
-
-            /* TODO: More of KClientPort. */
         private:
             void CleanupSessions();
-            /* TODO: This is a placeholder definition. */
     };
 
 }

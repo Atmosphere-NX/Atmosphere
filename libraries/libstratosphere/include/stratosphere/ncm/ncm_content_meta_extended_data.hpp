@@ -64,7 +64,7 @@ namespace ams::ncm {
     };
 
     struct SystemUpdateMetaExtendedDataHeader {
-        u32 unk;                      // Always seems to be set to 2
+        u32 version;
         u32 firmware_variation_count;
     };
 
@@ -318,12 +318,12 @@ namespace ams::ncm {
                 return reinterpret_cast<uintptr_t>(this->data);
             }
 
-            uintptr_t GetFirmwarVariationIdStartAddress() const {
+            uintptr_t GetFirmwareVariationIdStartAddress() const {
                 return this->GetHeaderAddress() + sizeof(SystemUpdateMetaExtendedDataHeader);
             }
 
             uintptr_t GetFirmwareVariationIdAddress(size_t i) const {
-                return this->GetFirmwarVariationIdStartAddress() + i * sizeof(FirmwareVariationId);
+                return this->GetFirmwareVariationIdStartAddress() + i * sizeof(FirmwareVariationId);
             }
 
             uintptr_t GetFirmwareVariationInfoStartAddress() const {
@@ -331,7 +331,7 @@ namespace ams::ncm {
             }
 
             uintptr_t GetFirmwareVariationInfoAddress(size_t i) const {
-                return this->GetFirmwarVariationIdStartAddress() + i * sizeof(FirmwareVariationInfo);
+                return this->GetFirmwareVariationInfoStartAddress() + i * sizeof(FirmwareVariationInfo);
             }
 
             uintptr_t GetContentMetaInfoStartAddress() const {

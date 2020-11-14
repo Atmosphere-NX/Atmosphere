@@ -21,20 +21,56 @@ namespace ams::kern::svc {
 
     namespace {
 
+        constexpr bool IsValidInterruptType(ams::svc::InterruptType type) {
+            switch (type) {
+                case ams::svc::InterruptType_Edge:
+                case ams::svc::InterruptType_Level:
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
+        Result CreateInterruptEvent(ams::svc::Handle *out, int32_t interrupt_id, ams::svc::InterruptType type) {
+            /* Validate the type. */
+            R_UNLESS(IsValidInterruptType(type), svc::ResultInvalidEnumValue());
+
+            /* Check whether the interrupt is allowed. */
+            auto &process = GetCurrentProcess();
+            R_UNLESS(process.IsPermittedInterrupt(interrupt_id), svc::ResultNotFound());
+
+            /* Get the current handle table. */
+            auto &handle_table = process.GetHandleTable();
+
+            /* Create the interrupt event. */
+            KInterruptEvent *event = KInterruptEvent::Create();
+            R_UNLESS(event != nullptr, svc::ResultOutOfResource());
+            ON_SCOPE_EXIT { event->Close(); };
+
+            /* Initialize the event. */
+            R_TRY(event->Initialize(interrupt_id, type));
+
+            /* Register the event. */
+            R_TRY(KInterruptEvent::Register(event));
+
+            /* Add the event to the handle table. */
+            R_TRY(handle_table.Add(out, event));
+
+            return ResultSuccess();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     Result CreateInterruptEvent64(ams::svc::Handle *out_read_handle, int32_t interrupt_id, ams::svc::InterruptType interrupt_type) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateInterruptEvent64 was called.");
+        return CreateInterruptEvent(out_read_handle, interrupt_id, interrupt_type);
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     Result CreateInterruptEvent64From32(ams::svc::Handle *out_read_handle, int32_t interrupt_id, ams::svc::InterruptType interrupt_type) {
-        MESOSPHERE_PANIC("Stubbed SvcCreateInterruptEvent64From32 was called.");
+        return CreateInterruptEvent(out_read_handle, interrupt_id, interrupt_type);
     }
 
 }

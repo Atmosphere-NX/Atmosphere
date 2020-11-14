@@ -21,20 +21,22 @@ namespace ams::kern::svc {
 
     namespace {
 
-
+        int64_t GetSystemTick() {
+            return KHardwareTimer::GetTick();
+        }
 
     }
 
     /* =============================    64 ABI    ============================= */
 
     int64_t GetSystemTick64() {
-        MESOSPHERE_PANIC("Stubbed SvcGetSystemTick64 was called.");
+        return GetSystemTick();
     }
 
     /* ============================= 64From32 ABI ============================= */
 
     int64_t GetSystemTick64From32() {
-        MESOSPHERE_PANIC("Stubbed SvcGetSystemTick64From32 was called.");
+        return GetSystemTick();
     }
 
 }

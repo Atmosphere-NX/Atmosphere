@@ -16,6 +16,15 @@
 
 #pragma once
 
-#include "spl/spl_types.hpp"
-#include "spl/spl_api.hpp"
-#include "spl/smc/spl_smc.hpp"
+#include <stratosphere/spl/spl_types.hpp>
+#include <stratosphere/spl/spl_api.hpp>
+#include <stratosphere/spl/smc/spl_smc.hpp>
+#include <stratosphere/spl/impl/spl_random_interface.hpp>
+#include <stratosphere/spl/impl/spl_deprecated_general_interface.hpp>
+#include <stratosphere/spl/impl/spl_general_interface.hpp>
+#include <stratosphere/spl/impl/spl_crypto_interface.hpp>
+#include <stratosphere/spl/impl/spl_device_unique_data_interface.hpp>
+#include <stratosphere/spl/impl/spl_ssl_interface.hpp>
+#include <stratosphere/spl/impl/spl_es_interface.hpp>
+#include <stratosphere/spl/impl/spl_manu_interface.hpp>
+#include <stratosphere/spl/impl/spl_fs_interface.hpp>

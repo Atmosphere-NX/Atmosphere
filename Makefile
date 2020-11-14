@@ -65,6 +65,7 @@ dist-no-debug: all
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000015
+	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000042
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/fatal_errors
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config_templates
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/config
@@ -93,11 +94,13 @@ dist-no-debug: all
 	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/exefs.nsp
 	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/atmosphere/contents/010000000000003C/exefs.nsp
 	cp stratosphere/lm/lm.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000015/exefs.nsp
+	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/atmosphere/contents/0100000000000042/exefs.nsp
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags
 	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000032/flags/boot2.flag
 	mkdir -p atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags
 	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags/boot2.flag
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
+	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/switch/daybreak.nro
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out
@@ -144,6 +147,8 @@ dist: dist-no-debug
 	cp stratosphere/erpt/erpt.elf atmosphere-$(AMSVER)-debug/erpt.elf
 	cp stratosphere/jpegdec/jpegdec.elf atmosphere-$(AMSVER)-debug/jpegdec.elf
 	cp stratosphere/lm/lm.elf atmosphere-$(AMSVER)-debug/lm.elf
+	cp stratosphere/pgl/pgl.elf atmosphere-$(AMSVER)-debug/pgl.elf
+	cp troposphere/daybreak/daybreak.elf atmosphere-$(AMSVER)-debug/daybreak.elf
 	cd atmosphere-$(AMSVER)-debug; zip -r ../atmosphere-$(AMSVER)-debug.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)-debug
 	mv atmosphere-$(AMSVER)-debug.zip out/atmosphere-$(AMSVER)-debug.zip

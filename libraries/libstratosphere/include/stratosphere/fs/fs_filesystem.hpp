@@ -53,8 +53,6 @@ namespace ams::fs {
         CreateOption_BigFile = ::FsCreateOption_BigFile,
     };
 
-    using FileTimeStampRaw = ::FsTimeStampRaw;
-
     struct FileHandle;
     struct DirectoryHandle;
 
@@ -74,7 +72,6 @@ namespace ams::fs {
     Result GetTotalSpaceSize(s64 *out, const char *path);
 
     Result SetConcatenationFileAttribute(const char *path);
-    Result GetFileTimeStampRaw(FileTimeStampRaw *out, const char *path);
 
     Result OpenFile(FileHandle *out, std::unique_ptr<fsa::IFile> &&file, int mode);
 

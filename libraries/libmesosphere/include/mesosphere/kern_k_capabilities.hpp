@@ -221,6 +221,12 @@ namespace ams::kern {
                 data[id / BitsPerWord] &= ~(1ul << (id % BitsPerWord));
             }
 
+            static constexpr ALWAYS_INLINE bool GetSvcAllowedImpl(u8 *data, u32 id) {
+                constexpr size_t BitsPerWord = BITSIZEOF(*data);
+                MESOSPHERE_ASSERT(id < svc::SvcId_Count);
+                return (data[id / BitsPerWord] & (1ul << (id % BitsPerWord))) != 0;
+            }
+
             bool SetSvcAllowed(u32 id) {
                 if (id < BITSIZEOF(this->svc_access_flags)) {
                     SetSvcAllowedImpl(this->svc_access_flags, id);
@@ -230,10 +236,10 @@ namespace ams::kern {
                 }
             }
 
-            bool SetInterruptAllowed(u32 id) {
+            bool SetInterruptPermitted(u32 id) {
                 constexpr size_t BitsPerWord = BITSIZEOF(this->irq_access_flags[0]);
                 if (id < BITSIZEOF(this->irq_access_flags)) {
-                    this->irq_access_flags[id / BitsPerWord] = (1ul << (id % BitsPerWord));
+                    this->irq_access_flags[id / BitsPerWord] |= (1ul << (id % BitsPerWord));
                     return true;
                 } else {
                     return false;
@@ -253,10 +259,12 @@ namespace ams::kern {
 
             Result SetCapability(const util::BitPack32 cap, u32 &set_flags, u32 &set_svc, KProcessPageTable *page_table);
             Result SetCapabilities(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
+            Result SetCapabilities(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
         public:
             constexpr KCapabilities() = default;
 
             Result Initialize(const u32 *caps, s32 num_caps, KProcessPageTable *page_table);
+            Result Initialize(svc::KUserPointer<const u32 *> user_caps, s32 num_caps, KProcessPageTable *page_table);
 
             constexpr u64 GetCoreMask() const { return this->core_mask; }
             constexpr u64 GetPriorityMask() const { return this->priority_mask; }
@@ -264,17 +272,88 @@ namespace ams::kern {
 
             ALWAYS_INLINE void CopySvcPermissionsTo(KThread::StackParameters &sp) const {
                 static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                /* Copy permissions. */
                 std::memcpy(sp.svc_permission, this->svc_access_flags, sizeof(this->svc_access_flags));
 
                 /* Clear specific SVCs based on our state. */
                 ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
                 ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
-                if (sp.is_preemption_state_pinned) {
+                if (sp.is_pinned) {
                     ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
                 }
             }
 
-            /* TODO: Member functions. */
+            ALWAYS_INLINE void CopyPinnedSvcPermissionsTo(KThread::StackParameters &sp) const {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                /* Clear all permissions. */
+                std::memset(sp.svc_permission, 0, sizeof(this->svc_access_flags));
+
+                /* Set specific SVCs based on our state. */
+                SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
+                if (GetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException)) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            ALWAYS_INLINE void CopyUnpinnedSvcPermissionsTo(KThread::StackParameters &sp) const {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+                /* Get whether we have access to return from exception. */
+                const bool return_from_exception = GetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+
+                /* Copy permissions. */
+                std::memcpy(sp.svc_permission, this->svc_access_flags, sizeof(this->svc_access_flags));
+
+                /* Clear/Set specific SVCs based on our state. */
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_SynchronizePreemptionState);
+                if (return_from_exception) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                }
+            }
+
+            ALWAYS_INLINE void CopyEnterExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+
+                /* Set ReturnFromException if allowed. */
+                if (GetSvcAllowedImpl(this->svc_access_flags, svc::SvcId_ReturnFromException)) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+                }
+
+                /* Set GetInfo if allowed. */
+                if (GetSvcAllowedImpl(this->svc_access_flags, svc::SvcId_GetInfo)) {
+                    SetSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            ALWAYS_INLINE void CopyLeaveExceptionSvcPermissionsTo(KThread::StackParameters &sp) {
+                static_assert(sizeof(svc_access_flags) == sizeof(sp.svc_permission));
+
+                /* Clear ReturnFromException. */
+                ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_ReturnFromException);
+
+                /* If pinned, clear GetInfo. */
+                if (sp.is_pinned) {
+                    ClearSvcAllowedImpl(sp.svc_permission, svc::SvcId_GetInfo);
+                }
+            }
+
+            constexpr bool IsPermittedInterrupt(u32 id) const {
+                constexpr size_t BitsPerWord = BITSIZEOF(this->irq_access_flags[0]);
+                if (id < BITSIZEOF(this->irq_access_flags)) {
+                    return (this->irq_access_flags[id / BitsPerWord] & (1ul << (id % BitsPerWord))) != 0;
+                } else {
+                    return false;
+                }
+            }
+
+            constexpr bool IsPermittedDebug() const {
+                return this->debug_capabilities.Get<DebugFlags::AllowDebug>();
+            }
+
+            constexpr bool CanForceDebug() const {
+                return this->debug_capabilities.Get<DebugFlags::ForceDebug>();
+            }
     };
 
 }

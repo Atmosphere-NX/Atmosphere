@@ -138,10 +138,7 @@ int main(int argc, char **argv)
         settings::system::GetSerialNumber(std::addressof(serial_number));
 
         char os_private[0x60];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
         const auto os_priv_len = std::snprintf(os_private, sizeof(os_private), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
-#pragma GCC diagnostic pop
         AMS_ASSERT(static_cast<size_t>(os_priv_len) < sizeof(os_private));
 
         R_ABORT_UNLESS(erpt::srv::SetSerialNumberAndOsVersion(serial_number.str,

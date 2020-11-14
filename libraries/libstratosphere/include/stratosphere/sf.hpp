@@ -28,6 +28,7 @@
 #include <stratosphere/sf/sf_out.hpp>
 #include <stratosphere/sf/sf_buffers.hpp>
 #include <stratosphere/sf/impl/sf_impl_command_serialization.hpp>
+#include <stratosphere/sf/impl/sf_impl_service_object_macros.hpp>
 
 #include <stratosphere/sf/hipc/sf_hipc_server_manager.hpp>
 

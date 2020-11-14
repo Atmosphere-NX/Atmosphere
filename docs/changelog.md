@@ -1,4 +1,31 @@
 # Changelog
+## 0.14.1
++ An issue was fixed in 0.14.0 that would cause a black screen on boot when the INI1's size was not aligned to 8 bytes.
++ General system stability improvements to enhance the user's experience.
+## 0.14.0
++ An API (`ams:su`) was added to allow homebrew to safely install system upgrades or downgrades.
+  + This is a re-implementation of the logic that `ns` uses to install gamecard system updates.
+  + Nintendo (and now atmosphère) uses an installation process that can recover no matter where a failure occurs, which should significantly improve the safety of custom system update installation.
++ Support was added to `exosphère` for running on Mariko hardware.
+  + **Please note**: Atmosphère still does not support Mariko, and should not be run on Mariko yet.
+    + Certain stratosphere components do not handle mariko-specific logic fully correctly yet, and may initialize or interact with hardware incorrectly.
+    + This will be fixed and support will be added over the remainder of the Summer.
++ A homebrew application (`daybreak`) was added that uses the system updater API (with thanks to @Adubbz for both design and implementation).
+  + `daybreak` is included with atmosphère, and functions as a safer/more accurate equivalent to e.g. ChoiDujourNX.
+  + Upgrades/downgrades can be installed from a folder containing the update NCAs on the SD card.
+  + Because the update logic functions identically to Nintendo's, `daybreak` will be safe to use on Mariko when the rest of atmosphère has support.
+  + **Please note**: Daybreak requires that meta (.cnmt) NCAs have the correct extension `.cnmt.nca`.
+    + This is because gamecard system update logic uses extension to determine whether to mount the content.
+    + [Several](https://gist.github.com/HookedBehemoth/df36b5970e1c5b1b512ec7bdd9043c6e) [scripts](https://gist.github.com/antiKk/279966c27fdfd9c7fe63b4ae410f89c4) have been made by community members to automatically rename folders with incorrect extensions.
++ A bug was fixed that would cause file-based emummc to throw an error (showing a hexdump) on boot.
+  + Major thanks to @hexkyz for tracking down and resolving this.
++ A number of minor issues were resolved, including:
+  + fusee now prints information to the screen when an error occurs, instead of getting stuck trying to initialize the display.
+  + A race condition in Horizon was worked around that could prevent boot under certain circumstances.
+  + A bug was fixed that would cause atmosphère modules to open ten copies of certain filesystems instead of one.
+    + This could cause object exhaustion under certain circumstances.
++ For those interested in atmosphère's future development plans, the project's [roadmap](https://github.com/Atmosphere-NX/Atmosphere/blob/ac9832c5ce7be5832f6d29f6564a9c03e7efd22f/docs/roadmap.md) was updated.
++ General system stability improvements to enhance the user's experience.
 ## 0.13.0
 + `exosphère`, atmosphère's secure monitor re-implementation, was completely re-written.
   + `exosphère` was the first component authored for the project in early 2018. It is written in C, and in a style very different from the rest of atmosphère's code.

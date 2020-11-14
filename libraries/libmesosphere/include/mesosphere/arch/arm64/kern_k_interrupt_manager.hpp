@@ -67,8 +67,19 @@ namespace ams::kern::arch::arm64 {
             NOINLINE void Initialize(s32 core_id);
             NOINLINE void Finalize(s32 core_id);
 
-            bool IsInterruptDefined(s32 irq) {
+            NOINLINE void Save(s32 core_id);
+            NOINLINE void Restore(s32 core_id);
+
+            bool IsInterruptDefined(s32 irq) const {
                 return this->interrupt_controller.IsInterruptDefined(irq);
+            }
+
+            bool IsGlobal(s32 irq) const {
+                return this->interrupt_controller.IsGlobal(irq);
+            }
+
+            bool IsLocal(s32 irq) const {
+                return this->interrupt_controller.IsLocal(irq);
             }
 
             NOINLINE Result BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level);

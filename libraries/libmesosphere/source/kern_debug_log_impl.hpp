@@ -23,6 +23,10 @@ namespace ams::kern {
             static NOINLINE bool Initialize();
             static NOINLINE void PutChar(char c);
             static NOINLINE void Flush();
+
+            /* Functionality for preserving across sleep. */
+            static NOINLINE void Save();
+            static NOINLINE void Restore();
     };
 
 }

@@ -57,10 +57,12 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(-1, boot, Main);
 
     /* Mitm. */
-    AMS_DEFINE_SYSTEM_THREAD(-7, mitm,    InitializeThread);
-    AMS_DEFINE_SYSTEM_THREAD(-1, mitm_sf, QueryServerProcessThread);
-    AMS_DEFINE_SYSTEM_THREAD(16, mitm_fs, RomFileSystemInitializeThread);
-    AMS_DEFINE_SYSTEM_THREAD(21, mitm,    DebugThrowThread);
+    AMS_DEFINE_SYSTEM_THREAD(-7, mitm,            InitializeThread);
+    AMS_DEFINE_SYSTEM_THREAD(-1, mitm_sf,         QueryServerProcessThread);
+    AMS_DEFINE_SYSTEM_THREAD(16, mitm_fs,         RomFileSystemInitializeThread);
+    AMS_DEFINE_SYSTEM_THREAD(21, mitm,            DebugThrowThread);
+    AMS_DEFINE_SYSTEM_THREAD(21, mitm_sysupdater, IpcServer);
+    AMS_DEFINE_SYSTEM_THREAD(21, mitm_sysupdater, AsyncPrepareSdCardUpdateTask);
 
     /* boot2. */
     AMS_DEFINE_SYSTEM_THREAD(20, boot2, Main);
@@ -93,6 +95,7 @@ namespace ams::impl {
 
     /* ns.*/
     AMS_DEFINE_SYSTEM_THREAD(21, ns, ApplicationManagerIpcSession);
+    AMS_DEFINE_SYSTEM_THREAD(21, nssrv, AsyncPrepareCardUpdateTask);
 
     /* settings. */
     AMS_DEFINE_SYSTEM_THREAD(21, settings, Main);
@@ -110,7 +113,9 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, ProcessControlTask);
 
     /* lm. */
-    AMS_DEFINE_SYSTEM_THREAD(-18, lm, IpcServer);
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, IpcServer);
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, Flush);
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, HtcsConnection);
 
     #undef AMS_DEFINE_SYSTEM_THREAD
 
