@@ -33,3 +33,22 @@ __gnu_thumb1_case_uqi:
     bx      lr
 .type __gnu_thumb1_case_uqi, %function
 .size __gnu_thumb1_case_uqi, .-__gnu_thumb1_case_uqi
+
+.section    .text.__gnu_thumb1_case_uhi, "ax", %progbits
+.globl __gnu_thumb1_case_uhi
+.align      0
+.thumb_func
+.syntax unified
+__gnu_thumb1_case_uhi:
+    push    {r0, r1}
+    mov     r1, lr
+    lsrs    r1, r1, #1
+    lsls    r0, r0, #1
+    lsls    r1, r1, #1
+    ldrh    r1, [r1, r0]
+    lsls    r1, r1, #1
+    add     lr, lr, r1
+    pop     {r0, r1}
+    bx  lr
+.type __gnu_thumb1_case_uhi, %function
+.size __gnu_thumb1_case_uhi, .-__gnu_thumb1_case_uhi

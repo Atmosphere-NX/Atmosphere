@@ -37,7 +37,7 @@ export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,_ZSt20__throw_length_errorPKc \
 			-Wl,--wrap,_ZNSt11logic_errorC2EPKc
 
-export LIBS := -lexosphere
+export LIBS := -l$(LIBEXOSPHERE_NAME)
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing

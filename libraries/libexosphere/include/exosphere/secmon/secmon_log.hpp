@@ -14,32 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours/includes.hpp>
-#include <vapours/defines.hpp>
+#include <vapours.hpp>
+#include <exosphere/log.hpp>
 
-#ifdef  AMS_BUILD_FOR_AUDITING
-
-#define AMS_BUILD_FOR_DEBUGGING
-
-#if !defined(AMS_FORCE_DISABLE_DETAILED_ASSERTIONS)
-    #define AMS_ENABLE_DETAILED_ASSERTIONS
-#endif
-
-#endif
-
-#ifdef  AMS_BUILD_FOR_DEBUGGING
-
-#define AMS_ENABLE_ASSERTIONS
-
-    #if !defined(AMS_ENABLE_DETAILED_ASSERTIONS) && !defined(AMS_FORCE_DISABLE_DETAILED_ASSERTIONS)
-
-        #if !defined(ATMOSPHERE_IS_EXOSPHERE) || defined(AMS_FORCE_ENABLE_DETAILED_ASSERTIONS)
-
-            #define AMS_ENABLE_DETAILED_ASSERTIONS
-
-        #endif
-
-    #endif
-
-
-#endif
+#define AMS_SECMON_LOG(...) AMS_LOG("   [secmon] " __VA_ARGS__)

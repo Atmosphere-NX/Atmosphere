@@ -20,8 +20,8 @@ namespace ams::log {
     namespace {
 
         constexpr inline uart::Port UartLogPort = uart::Port_ReservedDebug;
+        constexpr inline int UartBaudRate = 115200;
         constinit bool g_initialized_uart = false;
-        constinit bool g_logging_enabled  = false;
 
         constexpr inline u32 UartPortFlags = [] {
             if constexpr (UartLogPort == uart::Port_ReservedDebug) {
@@ -78,18 +78,49 @@ namespace ams::log {
         g_initialized_uart = false;
     }
 
-    void SetDebugLogEnabled(bool en) {
-        g_logging_enabled = en;
+    NOINLINE void VPrintf(const char *fmt, ::std::va_list vl) {
+        /* TODO: What's a good size for the log buffer? Nintendo uses 0x100, but this seems big. */
+        char log_buf[0x80];
+        const auto len = util::TVSNPrintf(log_buf, sizeof(log_buf), fmt, vl);
+
+        if (g_initialized_uart) {
+            uart::SendText(UartLogPort, log_buf, len);
+        }
     }
 
+    NOINLINE void Printf(const char *fmt, ...)  {
+        ::std::va_list vl;
+        va_start(vl, fmt);
+        VPrintf(fmt, vl);
+        va_end(vl);
+    }
+
+    NOINLINE void Dump(const void *src, size_t size) {
+        const u8 *src_u8 = static_cast<const u8 *>(src);
+
+        for (size_t i = 0; i < size; ++i) {
+            if ((i % 0x20) == 0x00) {
+                Printf("%03zx| ", i);
+            }
+            Printf("%02x ", src_u8[i]);
+            if ((i % 0x20) == 0x1F) {
+                Printf("\n");
+            }
+        }
+        if ((size % 0x20) != 0) {
+            Printf("\n");
+        }
+     }
+
+
     void SendText(const void *text, size_t size) {
-        if (g_initialized_uart && g_logging_enabled) {
+        if (g_initialized_uart) {
             uart::SendText(UartLogPort, text, size);
         }
     }
 
     void Flush() {
-        if (g_initialized_uart && g_logging_enabled) {
+        if (g_initialized_uart) {
             uart::WaitFlush(UartLogPort);
         }
     }

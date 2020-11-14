@@ -27,7 +27,7 @@ namespace ams::diag {
 
 }
 
-#ifdef AMS_ENABLE_DEBUG_PRINT
+#ifdef AMS_ENABLE_DETAILED_ASSERTIONS
 #define AMS_CALL_ASSERT_FAIL_IMPL(cond, ...) ::ams::diag::AssertionFailureImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)
 #define AMS_CALL_ABORT_IMPL(cond, ...)  ::ams::diag::AbortImpl(__FILE__, __LINE__, __PRETTY_FUNCTION__, cond, 0, ## __VA_ARGS__)
 #else

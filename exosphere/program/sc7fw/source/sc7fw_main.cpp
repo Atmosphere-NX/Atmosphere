@@ -115,4 +115,6 @@ namespace ams::diag {
         sc7fw::ExceptionHandler();
     }
 
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
+
 }
