@@ -68,7 +68,7 @@ namespace ams::log {
         SetupUart();
 
         /* Initialize the target uart port. */
-        uart::Initialize(UartLogPort, 115200, UartPortFlags);
+        uart::Initialize(UartLogPort, UartBaudRate, UartPortFlags);
 
         /* Note that we've initialized. */
         g_initialized_uart = true;
