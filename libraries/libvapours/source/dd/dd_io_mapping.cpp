@@ -37,6 +37,12 @@ namespace ams::dd {
                     return secmon::MemoryRegionVirtualDeviceApbMisc.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
                 } else if (secmon::MemoryRegionPhysicalDeviceSdmmc.Contains(phys_addr, size)) {
                     return secmon::MemoryRegionVirtualDeviceSdmmc.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceSdmmc.GetAddress();
+                } else if (secmon::MemoryRegionPhysicalDevicePmc.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDevicePmc.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDevicePmc.GetAddress();
+                } else if (secmon::MemoryRegionPhysicalDeviceI2c5.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDeviceI2c5.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceI2c5.GetAddress();
+                } else if (secmon::MemoryRegionPhysicalDeviceI2c1.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDeviceI2c1.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceI2c1.GetAddress();
                 } else {
                     AMS_UNUSED(size);
                     return static_cast<uintptr_t>(phys_addr);

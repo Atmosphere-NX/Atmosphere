@@ -18,6 +18,12 @@
 
 namespace ams::secmon::fatal {
 
+    namespace {
+
+        constinit u8 g_test_buffer[sdmmc::SectorSize * 2];
+
+    }
+
     void Main() {
         /* Set library register addresses. */
         actmon::SetRegisterAddress(MemoryRegionVirtualDeviceActivityMonitor.GetAddress());
@@ -42,6 +48,20 @@ namespace ams::secmon::fatal {
         /* Initialize the sdmmc driver. */
         Result result = InitializeSdCard();
         AMS_SECMON_LOG("InitializeSdCard: %08x\n", result.GetValue());
+
+        /* Get the connection status. */
+        sdmmc::SpeedMode speed_mode;
+        sdmmc::BusWidth bus_width;
+        result = CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width));
+        AMS_SECMON_LOG("CheckSdCardConnection: %08x\n", result.GetValue());
+        AMS_SECMON_LOG("    Speed Mode: %u\n", static_cast<u32>(speed_mode));
+        AMS_SECMON_LOG("    Bus Width:  %u\n", static_cast<u32>(bus_width));
+
+        /* Read the first two sectors from the SD Card. */
+        std::memset(g_test_buffer, 0xCC, sizeof(g_test_buffer));
+        result = ReadSdCard(g_test_buffer, sizeof(g_test_buffer), 0, sizeof(g_test_buffer) / sdmmc::SectorSize);
+        AMS_SECMON_LOG("ReadSdCard: %08x\n", result.GetValue());
+        AMS_DUMP(g_test_buffer, sizeof(g_test_buffer));
 
         /* TODO */
         AMS_INFINITE_LOOP();
