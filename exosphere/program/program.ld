@@ -106,6 +106,17 @@ SECTIONS
     .debug_code : {
         KEEP (*(.text._ZN3ams3log6PrintfEPKcz .text._ZN3ams3log7VPrintfEPKcSt9__va_list .text._ZN3ams3log4DumpEPKvm))
         KEEP (*(.text._ZN3ams4util10TVSNPrintfEPcmPKcSt9__va_list .text._ZN3ams4util12_GLOBAL__N_114TVSNPrintfImplEPcmPKcSt9__va_list .text._ZZN3ams4util12_GLOBAL__N_114TVSNPrintfImplEPcmPKcSt9__va_listENKUlbmE3_clEbm))
+        KEEP(secmon_exception_handler.o(.text*))
+        secmon_exception_handler.o(.rodata*)
+        secmon_exception_handler.o(.data*)
+    } >debug_code AT>glob
+
+    .debug_code.bss_fill :
+    {
+        FILL(0x00000000);
+        secmon_exception_handler.o(.bss* COMMON)
+        . = ORIGIN(debug_code) + LENGTH(debug_code) - 1;
+        BYTE(0x00);
     } >debug_code AT>glob
 
     __bootcode_end__ = ABSOLUTE(.) - ORIGIN(debug_code) + 0x40034000;
@@ -138,8 +149,9 @@ SECTIONS
         . = ALIGN(8);
     } >tzram_boot AT>glob
 
-    .tzram_boot_code.bss :
+    .tzram_boot_code.bss_fill :
     {
+        FILL(0x00000000);
         __boot_bss_start__ = ABSOLUTE(.);
         secmon_main.o(.bss* COMMON)
         secmon_boot_functions.o(.bss* COMMON)
@@ -149,11 +161,6 @@ SECTIONS
         secmon_boot_rsa.o(.bss* COMMON)
         secmon_package2.o(.bss* COMMON)
         __boot_bss_end__ = ABSOLUTE(.);
-    } >tzram_boot AT>glob
-
-    .tzram_boot_code.fill :
-    {
-        FILL(0x00000000);
         . = ORIGIN(tzram_boot) + LENGTH(tzram_boot) - 1;
         BYTE(0x00);
     } > tzram_boot AT>glob

@@ -13,21 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <exosphere.hpp>
 
-namespace ams::secmon {
+.section    .crt0.text.start, "ax", %progbits
+.align      6
+.global     _start
+_start:
+    /* Set the stack pointer to a temporary location. */
+    ldr x20, =0x1F00FC000
+    mov sp, x20
 
-    enum UserRebootType {
-        UserRebootType_None         = 0,
-        UserRebootType_ToRcm        = 1,
-        UserRebootType_ToPayload    = 2,
-        UserRebootType_ToFatalError = 3,
-    };
+    /* Initialize all memory to expected state. */
+    ldr x0, =__bss_start__
+    ldr x1, =__bss_end__
+    bl _ZN3ams6secmon5fatal10InitializeEmm
 
-    void PerformUserRebootToRcm();
-    void PerformUserRebootToPayload();
-    void PerformUserRebootToFatalError();
-    void PerformUserShutDown();
-
-}
+    /* Jump to the fatal program. */
+    ldr x16, =_ZN3ams6secmon5fatal4MainEv
+    br x16

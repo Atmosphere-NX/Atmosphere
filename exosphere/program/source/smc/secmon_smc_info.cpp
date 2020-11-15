@@ -304,11 +304,20 @@ namespace ams::secmon::smc {
                             case UserRebootType_ToPayload:
                                 PerformUserRebootToPayload();
                                 break;
+                            case UserRebootType_ToFatalError:
+                                PerformUserRebootToFatalError();
+                                break;
                             default:
                                 return SmcResult::InvalidArgument;
                         }
                     } else /* if (soc_type == fuse::SocType_Mariko) */ {
-                        return SmcResult::NotImplemented;
+                        switch (static_cast<UserRebootType>(args.r[3])) {
+                            case UserRebootType_ToFatalError:
+                                PerformUserRebootToFatalError();
+                                break;
+                            default:
+                                return SmcResult::InvalidArgument;
+                        }
                     }
                     break;
                 case ConfigItem::ExosphereNeedsShutdown:

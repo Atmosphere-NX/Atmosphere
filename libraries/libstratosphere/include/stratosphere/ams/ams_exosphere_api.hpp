@@ -23,6 +23,7 @@ namespace ams::exosphere {
 
     void ForceRebootToRcm();
     void ForceRebootToIramPayload();
+    void ForceRebootToFatalError();
     void ForceShutdown();
 
     bool IsRcmBugPatched();

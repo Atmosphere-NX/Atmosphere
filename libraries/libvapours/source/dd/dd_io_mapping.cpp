@@ -28,9 +28,20 @@ namespace ams::dd {
     uintptr_t QueryIoMapping(dd::PhysicalAddress phys_addr, size_t size) {
         #if defined(ATMOSPHERE_IS_EXOSPHERE)
             #if defined(ATMOSPHERE_ARCH_ARM64)
-                /* TODO: Secure Monitor translation? */
-                AMS_UNUSED(size);
-                return static_cast<uintptr_t>(phys_addr);
+                /* TODO: Do this in a less shitty way. */
+                if (secmon::MemoryRegionPhysicalDeviceClkRst.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDeviceClkRst.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceClkRst.GetAddress();
+                } else if (secmon::MemoryRegionPhysicalDeviceGpio.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDeviceGpio.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceGpio.GetAddress();
+                } else if (secmon::MemoryRegionPhysicalDeviceApbMisc.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDeviceApbMisc.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceApbMisc.GetAddress();
+                } else if (secmon::MemoryRegionPhysicalDeviceSdmmc.Contains(phys_addr, size)) {
+                    return secmon::MemoryRegionVirtualDeviceSdmmc.GetAddress() + phys_addr - secmon::MemoryRegionPhysicalDeviceSdmmc.GetAddress();
+                } else {
+                    AMS_UNUSED(size);
+                    return static_cast<uintptr_t>(phys_addr);
+                }
+
             #elif defined(ATMOSPHERE_ARCH_ARM)
                 /* TODO: BPMP translation? */
                 AMS_UNUSED(size);

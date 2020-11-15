@@ -143,7 +143,8 @@ namespace ams::secmon {
         HANDLER(I2c1,                           Gpio, UINT64_C(0x7000C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
         HANDLER(ExceptionVectors,               I2c1, UINT64_C(0x6000F000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
         HANDLER(MemoryController0,  ExceptionVectors, UINT64_C(0x7001C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
-        HANDLER(MemoryController1, MemoryController0, UINT64_C(0x7001D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__)
+        HANDLER(MemoryController1, MemoryController0, UINT64_C(0x7001D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+        HANDLER(Sdmmc,             MemoryController1, UINT64_C(0x700B0000),  UINT64_C(0x1000),  true, ## __VA_ARGS__)
 
     #define DEFINE_DEVICE_REGION(_NAME_, _PREV_, _ADDRESS_, _SIZE_, _SECURE_)                                                                                      \
         constexpr inline const MemoryRegion MemoryRegionVirtualDevice##_NAME_  = MemoryRegion(MemoryRegionVirtualDevice##_PREV_.GetEndAddress() + 0x1000, _SIZE_); \
@@ -257,6 +258,15 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionPhysicalDramDebugDataStore = MemoryRegion( UINT64_C(0x8000C000), 0x4000);
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDramSecureDataStore));
     static_assert(MemoryRegionDram.Contains(MemoryRegionPhysicalDramSecureDataStore));
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L0DevicePageTable  = MemoryRegion(UINT64_C(0x1F010F000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L0DevicePageTable = MemoryRegion( UINT64_C(0x8001F000), 0x1000);
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L1DevicePageTable  = MemoryRegion(UINT64_C(0x1F010E000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L1DevicePageTable = MemoryRegion( UINT64_C(0x8001E000), 0x1000);
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmcMappedData = MemoryRegion(UINT64_C(0x1F0100000), 0xE000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmcMappedData = MemoryRegion(UINT64_C(0x80010000), 0xE000);
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStoreTzram               = MemoryRegion(UINT64_C(0x1F0100000), 0xE000);
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStoreWarmbootFirmware    = MemoryRegion(UINT64_C(0x1F010E000), 0x17C0);

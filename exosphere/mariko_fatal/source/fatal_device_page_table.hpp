@@ -16,18 +16,8 @@
 #pragma once
 #include <exosphere.hpp>
 
-namespace ams::secmon {
+namespace ams::secmon::fatal {
 
-    enum UserRebootType {
-        UserRebootType_None         = 0,
-        UserRebootType_ToRcm        = 1,
-        UserRebootType_ToPayload    = 2,
-        UserRebootType_ToFatalError = 3,
-    };
-
-    void PerformUserRebootToRcm();
-    void PerformUserRebootToPayload();
-    void PerformUserRebootToFatalError();
-    void PerformUserShutDown();
+    void InitializeDevicePageTableForSdmmc1();
 
 }

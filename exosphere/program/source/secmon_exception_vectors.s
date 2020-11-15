@@ -76,6 +76,11 @@ vector_entry synch_sp0
     .endfunc
     .cfi_endproc
 _ZN3ams6secmon26UnexpectedExceptionHandlerEv:
+    #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+    /* Jump to the debug exception handler. */
+    ldr x16, =_ZN3ams6secmon16ExceptionHandlerEv
+    br  x16
+    #else
     /* Load the ErrorInfo scratch. */
     ldr x0, =0x1F004AC40
 
@@ -85,6 +90,7 @@ _ZN3ams6secmon26UnexpectedExceptionHandlerEv:
 
     /* Perform an error reboot. */
     b _ZN3ams6secmon11ErrorRebootEv
+    #endif
 
 vector_entry irq_sp0
     /* An unexpected exception was taken. */
