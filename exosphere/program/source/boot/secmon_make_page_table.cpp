@@ -128,6 +128,9 @@ namespace ams::secmon::boot {
                 /* Map the mariko program region as rwx. */
                 SetL3BlockEntry(l3, MemoryRegionVirtualTzramMarikoProgram.GetAddress(), MemoryRegionPhysicalTzramMarikoProgram.GetAddress(), MemoryRegionPhysicalTzramMarikoProgram.GetSize(), MappingAttributesEl3SecureRwCode);
 
+                /* Map the mariko program region as rwx. */
+                SetL3BlockEntry(l3, MemoryRegionVirtualTzramMarikoProgramStack.GetAddress(), MemoryRegionPhysicalTzramMarikoProgramStack.GetAddress(), MemoryRegionPhysicalTzramMarikoProgramStack.GetSize(), MappingAttributesEl3SecureRwData);
+
                 /* Map the boot code region. */
                 SetL3BlockEntry(l3, MemoryRegionVirtualTzramBootCode.GetAddress(), MemoryRegionPhysicalTzramBootCode.GetAddress(), MemoryRegionVirtualTzramBootCode.GetSize(), MappingAttributesEl3SecureRwCode);
 
