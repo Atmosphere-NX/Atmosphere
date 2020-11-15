@@ -49,9 +49,19 @@ namespace ams::secmon::boot {
         }
     }
 
-    void ClearIram() {
+    void ClearIramBootCode() {
         /* Clear the boot code image from where it was loaded in IRAM. */
-        util::ClearMemory(MemoryRegionPhysicalIramBootCodeImage.GetPointer(), MemoryRegionPhysicalIramBootCodeImage.GetSize());
+        util::ClearMemory(MemoryRegionPhysicalIramBootCodeCode.GetPointer(), MemoryRegionPhysicalIramBootCodeCode.GetSize());
+    }
+
+    void ClearIramBootKeys() {
+        /* Clear the boot keys from where they were loaded in IRAM. */
+        util::ClearMemory(MemoryRegionPhysicalIramBootCodeKeys.GetPointer(), MemoryRegionPhysicalIramBootCodeKeys.GetSize());
+    }
+
+    void ClearIramDebugCode() {
+        /* Clear the boot code image from where it was loaded in IRAM. */
+        util::ClearMemory(MemoryRegionPhysicalDebugCode.GetPointer(), MemoryRegionPhysicalDebugCode.GetSize());
     }
 
     void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state) {

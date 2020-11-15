@@ -32,7 +32,6 @@ namespace ams::secmon::loader {
         /* Uncompress the boot image. */
         Uncompress(secmon::MemoryRegionPhysicalIramBootCodeImage.GetPointer(), secmon::MemoryRegionPhysicalIramBootCodeImage.GetSize(), relocated_boot_code, boot_code_lz4_size);
 
-
         /* Jump to the boot image. */
         reinterpret_cast<void (*)()>(secmon::MemoryRegionPhysicalIramBootCodeImage.GetAddress())();
 

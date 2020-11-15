@@ -5,7 +5,7 @@ define ATMOSPHERE_ADD_TARGET
 
 ATMOSPHERE_BUILD_CONFIGS += $(strip $1)
 
-$(strip $1): exosphere$(strip $2).bin warmboot/warmboot$(strip $2).bin
+$(strip $1): exosphere$(strip $2).bin check_warmboot_$(strip $1)
 	@cp warmboot/warmboot$(strip $2).bin warmboot$(strip $2).bin
 
 exosphere$(strip $2).bin: loader_stub/loader_stub$(strip $2).bin
@@ -13,10 +13,13 @@ exosphere$(strip $2).bin: loader_stub/loader_stub$(strip $2).bin
 	@printf LENY >> exosphere$(strip $2).bin
 	@echo "Built exosphere$(strip $2).bin..."
 
-warmboot/warmboot$(strip $2).bin:
+check_program_$(strip $1):
+	@$$(MAKE) -C program $(strip $1)
+
+check_warmboot_$(strip $1):
 	@$$(MAKE) -C warmboot $(strip $1)
 
-loader_stub/loader_stub$(strip $2).bin:
+loader_stub/loader_stub$(strip $2).bin: check_program_$(strip $1)
 	@$$(MAKE) -C loader_stub $(strip $1)
 
 clean-$(strip $1): clean-program-$(strip $1) clean-loader_stub-$(strip $1) clean-warmboot-$(strip $1)
@@ -49,4 +52,4 @@ clean-loader_stub:
 clean-warmboot:
 	@$(MAKE) -C warmboot clean
 
-.PHONY: all clean clean-program clean-loader_stub clean-warmboot $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),clean-$(config) clean-program-$(config) clean-loader_stub-$(config) clean-warmboot-$(config))
+.PHONY: all clean clean-program clean-loader_stub clean-warmboot $(foreach config,$(ATMOSPHERE_BUILD_CONFIGS),check_program_$(config) check_warmboot_$(strip $1) clean-$(config) clean-program-$(config) clean-loader_stub-$(config) clean-warmboot-$(config))

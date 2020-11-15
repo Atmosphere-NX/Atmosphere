@@ -5,7 +5,8 @@ MEMORY
 {
     NULL           : ORIGIN = 0,           LENGTH = 4K
     unused_region  : ORIGIN =      0x1000, LENGTH = 4K
-    iram_boot_code : ORIGIN = 0x040032000, LENGTH = 48K
+    iram_boot_code : ORIGIN = 0x040032000, LENGTH = 4K
+    iram_boot_keys : ORIGIN = 0x040033000, LENGTH = 4K
     tzram          : ORIGIN = 0x07C010000, LENGTH = 64K
 
     /* Warmboot code follows the vectors in memory. */
@@ -13,9 +14,10 @@ MEMORY
     warmboot_text : ORIGIN = ORIGIN(tzram) + 10K, LENGTH = 2K
 
     main       : ORIGIN = 0x1F00C0000, LENGTH = 48K
-    tzram_boot : ORIGIN = 0x1F01C0000, LENGTH = 8K
+    debug_code : ORIGIN = 0x1F0150000, LENGTH = 16K
+    tzram_boot : ORIGIN = 0x1F01C0800, LENGTH = 6K
 
-    glob       : ORIGIN = 0x040032000, LENGTH = 64K
+    glob       : ORIGIN = 0x040032000, LENGTH = 128K
 }
 
 SECTIONS
@@ -85,19 +87,30 @@ SECTIONS
 		KEEP (*(.dtors))
 	} >iram_boot_code AT>glob
 
-    __bootcode_end__ = ABSOLUTE(.);
-
-    __program_start__ = ABSOLUTE(.);
-
-    .tzram_boot_volatile_data : {
-		KEEP (*(.volatile_keys .volatile_keys.*))
-    } >tzram_boot AT>glob
-
-    .tzram_boot_volatile_data.fill : {
+    .boot_code.fill : {
         FILL(0x00000000);
-        . = ORIGIN(tzram_boot) + 0x7FF;
+        . = ORIGIN(iram_boot_code) + 0xFFF;
         BYTE(0x00);
-    } >tzram_boot AT>glob
+    } >iram_boot_code AT>glob
+
+    .boot_code_volatile_keys : {
+		KEEP (*(.volatile_keys .volatile_keys.*))
+    } >iram_boot_keys AT>glob
+
+    .boot_keys.fill : {
+        FILL(0x00000000);
+        . = ORIGIN(iram_boot_keys) + 0xFFF;
+        BYTE(0x00);
+    } >iram_boot_keys AT>glob
+
+    .debug_code : {
+        KEEP (*(.text._ZN3ams3log6PrintfEPKcz .text._ZN3ams3log7VPrintfEPKcSt9__va_list .text._ZN3ams3log4DumpEPKvm))
+        KEEP (*(.text._ZN3ams4util10TVSNPrintfEPcmPKcSt9__va_list .text._ZN3ams4util12_GLOBAL__N_114TVSNPrintfImplEPcmPKcSt9__va_list .text._ZZN3ams4util12_GLOBAL__N_114TVSNPrintfImplEPcmPKcSt9__va_listENKUlbmE3_clEbm))
+    } >debug_code AT>glob
+
+    __bootcode_end__ = ABSOLUTE(.) - ORIGIN(debug_code) + 0x40034000;
+
+    __program_start__ = __bootcode_end__;
 
     .tzram_boot_code :
     {
@@ -146,7 +159,6 @@ SECTIONS
         KEEP (*(.vectors*))
         . = ALIGN(0x100);
     } >main AT>glob
-
 
     .warmboot :
     {

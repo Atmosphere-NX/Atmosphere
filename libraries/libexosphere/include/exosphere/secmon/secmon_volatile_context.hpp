@@ -30,17 +30,19 @@ namespace ams::secmon {
         u8 package2_dev_rsa_modulus[0x100];
         u8 package2_prod_rsa_modulus[0x100];
         u8 package2_aes_key[0x10];
+        u8 padding[0xCF0];
     };
+    static_assert(util::is_pod<VolatileKeys>::value);
+    static_assert(sizeof(VolatileKeys) == 0x1000);
 
     /* Nintendo uses the bottom 0x740 of this as a stack for warmboot setup, and another 0x740 for the core 0/1/2 SMC stacks. */
     /* This is...wasteful. The warmboot stack is not deep. We will thus save 1K+ of nonvolatile storage by keeping the random cache in here. */
     struct VolatileData {
+        u8 se_work_block[crypto::AesEncryptor128::BlockSize];
         union {
             u8 random_cache[0x400];
-            VolatileKeys keys;
             pkg2::Package2Meta pkg2_meta;
         };
-        u8 se_work_block[crypto::AesEncryptor128::BlockSize];
         u8 reserved_danger_zone[0x30]; /* This memory is "available", but careful consideration must be taken before declaring it used. */
         u8 warmboot_stack[0x380];
         u8 core012_smc_stack[0x6C0];
@@ -48,8 +50,6 @@ namespace ams::secmon {
     };
     static_assert(util::is_pod<VolatileData>::value);
     static_assert(sizeof(VolatileData) == 0x1000);
-    static_assert(sizeof(VolatileKeys{}.boot_config_rsa_modulus) == sizeof(pkg2::Package2Meta));
-    static_assert(offsetof(VolatileData, keys.boot_config_rsa_modulus) == offsetof(VolatileData, pkg2_meta));
 
     ALWAYS_INLINE VolatileData &GetVolatileData() {
         return *MemoryRegionVirtualTzramVolatileData.GetPointer<VolatileData>();
@@ -69,17 +69,21 @@ namespace ams::secmon {
 
     namespace boot {
 
+        ALWAYS_INLINE VolatileKeys &GetVolatileKeys() {
+            return *MemoryRegionPhysicalIramBootCodeKeys.GetPointer<VolatileKeys>();
+        }
+
         ALWAYS_INLINE const u8 *GetBootConfigRsaModulus() {
-            return GetVolatileData().keys.boot_config_rsa_modulus;
+            return GetVolatileKeys().boot_config_rsa_modulus;
         }
 
         ALWAYS_INLINE const u8 *GetPackage2RsaModulus(bool is_prod) {
-            auto &volatile_data = GetVolatileData();
-            return is_prod ? volatile_data.keys.package2_prod_rsa_modulus : volatile_data.keys.package2_dev_rsa_modulus;
+            auto &keys = GetVolatileKeys();
+            return is_prod ? keys.package2_prod_rsa_modulus : keys.package2_dev_rsa_modulus;
         }
 
         ALWAYS_INLINE const u8 *GetPackage2AesKey() {
-            return GetVolatileData().keys.package2_aes_key;
+            return GetVolatileKeys().package2_aes_key;
         }
 
         ALWAYS_INLINE pkg2::Package2Meta &GetEphemeralPackage2Meta() {

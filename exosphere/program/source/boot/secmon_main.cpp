@@ -70,7 +70,12 @@ namespace ams::secmon {
             secmon::SetupCpuCoreContext();
 
             /* Clear the crt0 code that was present in iram. */
-            secmon::boot::ClearIram();
+            secmon::boot::ClearIramBootCode();
+
+            /* Clear the debug code from iram, if we're not in debug config. */
+            #if !defined(AMS_BUILD_FOR_DEBUGGING) && !defined(AMS_BUILD_FOR_AUDITING)
+            secmon::boot::ClearIramDebugCode();
+            #endif
 
             /* Alert the bootloader that we're initialized. */
             secmon_params.secmon_state = pkg1::SecureMonitorState_Initialized;
@@ -116,9 +121,6 @@ namespace ams::secmon {
             /* Copy warmboot.bin to its secure dram location. */
             std::memcpy(dst, src, size);
         }
-
-        /* Unmap the identity mapping. */
-        secmon::boot::UnmapPhysicalIdentityMapping();
 
         /* Setup the GPU carveout's magic numbers. */
         secmon::boot::WriteGpuCarveoutMagicNumbers();
@@ -171,6 +173,12 @@ namespace ams::secmon {
 
         /* Set the core's entrypoint and argument. */
         secmon::SetEntryContext(0, Package2LoadAddress + pkg2_meta.entrypoint, 0);
+
+        /* Clear the boot keys from iram. */
+        secmon::boot::ClearIramBootKeys();
+
+        /* Unmap the identity mapping. */
+        secmon::boot::UnmapPhysicalIdentityMapping();
 
         /* Unmap DRAM. */
         secmon::boot::UnmapDram();

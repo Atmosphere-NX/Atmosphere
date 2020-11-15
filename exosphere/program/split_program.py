@@ -17,6 +17,7 @@ def split_binary(data):
     assert D == 0xDDDDDDDDDDDDDDDD
     data = data[0x40:]
 
+    #print ('%X %X %X %X' % (START, BOOT_CODE_START, BOOT_CODE_END, PROGRAM_START))
     boot_code = data[BOOT_CODE_START - START:BOOT_CODE_END - BOOT_CODE_START]
     program   = data[PROGRAM_START   - START:]
     return [('boot_code%s.lz4', lz4_compress(boot_code)), ('program%s.lz4', lz4_compress(program))]

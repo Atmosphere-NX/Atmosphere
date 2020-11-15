@@ -224,7 +224,7 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualIramSc7Firmware));
     static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSc7Firmware));
 
-    constexpr inline const MemoryRegion MemoryRegionPhysicalIramSecureMonitorDebug(UINT64_C(0x40030000), 0x8000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramSecureMonitorDebug(UINT64_C(0x40034000), 0x4000);
     static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSecureMonitorDebug));
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDebugCode = MemoryRegion(UINT64_C(0x1F0150000), 0x4000);
@@ -289,7 +289,6 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualTzramConfigurationData));
     static_assert(MemoryRegionPhysicalTzramNonVolatile.Contains(MemoryRegionPhysicalTzramConfigurationData));
 
-
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramL1PageTable  = MemoryRegion(UINT64_C(0x1F01FCFC0), 0x40);
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramL1PageTable = MemoryRegion( UINT64_C(0x7C01EFC0), 0x40);
     static_assert(MemoryRegionPhysicalTzramConfigurationData.Contains(MemoryRegionPhysicalTzramL1PageTable));
@@ -299,8 +298,11 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualTzramL2L3PageTable));
     static_assert(MemoryRegionPhysicalTzramNonVolatile.Contains(MemoryRegionPhysicalTzramL2L3PageTable));
 
-    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(UINT64_C(0x7C010000), 0xE000);
-    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(UINT64_C(0x40032000), 0xC000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(UINT64_C(0x7C010800), 0xD800);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(UINT64_C(0x40032000), 0x6000);
+
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeCode      = MemoryRegion(UINT64_C(0x40032000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeKeys      = MemoryRegion(UINT64_C(0x40033000), 0x1000);
 
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramWarmbootBin = MemoryRegion(UINT64_C(0x4003E000), 0x17F0);
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootConfig  = MemoryRegion(UINT64_C(0x4003F800), 0x400);

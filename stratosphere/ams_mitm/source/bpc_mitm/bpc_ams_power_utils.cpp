@@ -25,7 +25,8 @@ namespace ams::mitm::bpc {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x20000;
+        constexpr size_t IramPayloadMaxSize = 0x24000;
+        constexpr size_t IramFatalErrorContextOffset = 0x2E000;
 
         /* Helper enum. */
         enum class RebootType : u32 {
@@ -64,7 +65,7 @@ namespace ams::mitm::bpc {
             if (ctx != nullptr) {
                 std::memset(g_work_page, 0xCC, sizeof(g_work_page));
                 std::memcpy(g_work_page, ctx, sizeof(*ctx));
-                exosphere::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+                exosphere::CopyToIram(IramPayloadBase + IramFatalErrorContextOffset, g_work_page, sizeof(g_work_page));
             }
 
             exosphere::ForceRebootToIramPayload();
