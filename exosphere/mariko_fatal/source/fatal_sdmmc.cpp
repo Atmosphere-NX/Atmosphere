@@ -26,23 +26,55 @@ namespace ams::secmon::fatal {
             return MemoryRegionVirtualDramSdmmcMappedData.GetPointer<u8>() + MemoryRegionVirtualDramSdmmcMappedData.GetSize() - mmu::PageSize;
         }
 
+        ALWAYS_INLINE u8 *GetSdCardDmaBuffer() {
+            return MemoryRegionVirtualDramSdmmcMappedData.GetPointer<u8>();
+        }
+
+        constexpr inline size_t SdCardDmaBufferSize = MemoryRegionVirtualDramSdmmcMappedData.GetSize() - mmu::PageSize;
+        constexpr inline size_t SdCardDmaBufferSectors = SdCardDmaBufferSize / sdmmc::SectorSize;
+        static_assert(util::IsAligned(SdCardDmaBufferSize, sdmmc::SectorSize));
+
     }
 
     Result InitializeSdCard() {
         /* Map main memory for the sdmmc device. */
-        AMS_SECMON_LOG("%s\n", "Initializing Device Page Table.");
         InitializeDevicePageTableForSdmmc1();
-        AMS_SECMON_LOG("%s\n", "Initialized Device Page Table.");
 
         /* Initialize sdmmc library. */
         sdmmc::Initialize(Port);
-        AMS_SECMON_LOG("%s\n", "Initialized Sdmmc Port.");
 
         sdmmc::SetSdCardWorkBuffer(Port, GetSdCardWorkBuffer(), sdmmc::SdCardWorkBufferSize);
-        AMS_SECMON_LOG("%s\n", "Set SD Card Work Buffer.");
 
         R_TRY(sdmmc::Activate(Port));
-        AMS_SECMON_LOG("%s\n", "Activated.");
+
+        return ResultSuccess();
+    }
+
+    Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw) {
+        return sdmmc::CheckSdCardConnection(out_sm, out_bw, Port);
+    }
+
+    Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count) {
+        /* Validate that our buffer is valid. */
+        AMS_ASSERT(size >= sector_count * sdmmc::SectorSize);
+
+        /* Repeatedly read sectors. */
+        u8 *dst_u8 = static_cast<u8 *>(dst);
+        void * const dma_buffer = GetSdCardDmaBuffer();
+        while (sector_count > 0) {
+            /* Read sectors into the DMA buffer. */
+            const size_t cur_sectors = std::min(sector_count, SdCardDmaBufferSectors);
+            const size_t cur_size    = cur_sectors * sdmmc::SectorSize;
+            R_TRY(sdmmc::Read(dma_buffer, cur_size, Port, sector_index, cur_sectors));
+
+            /* Copy data from the DMA buffer to the output. */
+            std::memcpy(dst_u8, dma_buffer, cur_size);
+
+            /* Advance. */
+            dst_u8       += cur_size;
+            sector_index += cur_sectors;
+            sector_count -= cur_sectors;
+        }
 
         return ResultSuccess();
     }

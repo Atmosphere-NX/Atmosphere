@@ -69,7 +69,7 @@ namespace ams::secmon {
         }
 
         /* Acquire exclusive access to exception handling logic. */
-        if (g_is_locked.exchange(true)) {
+        if (!g_is_locked.exchange(true)) {
             /* Invoke the exception handler impl. */
             ExceptionHandlerImpl(lr, sp);
 
