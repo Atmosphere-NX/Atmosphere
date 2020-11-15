@@ -333,12 +333,24 @@ namespace ams::secmon::smc {
         }
 
         void SaveSecureContext() {
+            /* Save the appropriate secure context. */
             const auto soc_type = GetSocType();
             if (soc_type == fuse::SocType_Erista) {
                 SaveSecureContextForErista();
             } else /* if (soc_type == fuse::SocType_Mariko) */ {
                 SaveSecureContextForMariko();
             }
+
+            /* Save the debug code. */
+            #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+            {
+                const void * const debug_code_src = MemoryRegionVirtualDebugCode.GetPointer<void>();
+                      void * const debug_code_dst = MemoryRegionVirtualDramDebugDataStore.GetPointer<void>();
+                std::memcpy(debug_code_dst, debug_code_src, MemoryRegionVirtualDebugCode.GetSize());
+                hw::FlushDataCache(debug_code_dst, MemoryRegionVirtualDebugCode.GetSize());
+                hw::DataSynchronizationBarrierInnerShareable();
+            }
+            #endif
         }
 
         void LoadAndStartSc7BpmpFirmware() {

@@ -56,6 +56,7 @@ namespace ams::secmon {
             /* This checks the security engine's validity, and configures common interrupts in the GIC. */
             /* This also initializes the global configuration context. */
             secmon::Setup1();
+            AMS_SECMON_LOG("%s\n", "SecureMonitor boot begin.");
 
             /* Save the boot info. */
             secmon::SaveBootInfo(secmon_params);
@@ -192,6 +193,8 @@ namespace ams::secmon {
 
         /* Configure the smc handler tables to reflect the current target firmware. */
         secmon::smc::ConfigureSmcHandlersForTargetFirmware();
+
+        AMS_SECMON_LOG("%s\n", "SecureMonitor boot end.");
     }
 
 }

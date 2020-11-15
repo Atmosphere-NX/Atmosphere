@@ -84,6 +84,17 @@ namespace ams::secmon::boot {
                 /* Identity-map IRAM boot code as rwx. */
                 SetL3BlockEntry(l3, MemoryRegionPhysicalIramBootCode.GetAddress(), MemoryRegionPhysicalIramBootCode.GetAddress(), MemoryRegionPhysicalIramBootCode.GetSize(), MappingAttributesEl3SecureRwCode);
 
+                #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+                {
+                    /* Map the debug code region as rwx. */
+                    SetL3BlockEntry(l3, MemoryRegionVirtualDebugCode.GetAddress(), MemoryRegionPhysicalDebugCode.GetAddress(), MemoryRegionPhysicalDebugCode.GetSize(), MappingAttributesEl3SecureRwCode);
+
+
+                    /* Map the DRAM debug code store region as rw. */
+                    SetL3BlockEntry(l3, MemoryRegionVirtualDramDebugDataStore.GetAddress(), MemoryRegionPhysicalDramDebugDataStore.GetAddress(), MemoryRegionPhysicalDramDebugDataStore.GetSize(), MappingAttributesEl3NonSecureRwData);
+                }
+                #endif
+
                 /* Map all devices. */
                 {
                     #define MAP_DEVICE_REGION(_NAME_, _PREV_, _ADDRESS_, _SIZE_, _SECURE_) \

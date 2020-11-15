@@ -201,6 +201,18 @@ namespace ams::secmon {
             if (!std::is_constant_evaluated()) { hw::InvalidateDataCacheLine(l1 + GetL1EntryIndex(start_address)); }
         }
 
+        void RestoreDebugCode() {
+            #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+            {
+                const u64 *src = MemoryRegionPhysicalDramDebugDataStore.GetPointer<u64>();
+                volatile u64 *dst = MemoryRegionPhysicalDebugCode.GetPointer<u64>();
+                for (size_t i = 0; i < MemoryRegionPhysicalDramDebugDataStore.GetSize() / sizeof(u64); ++i) {
+                    dst[i] = src[i];
+                }
+            }
+            #endif
+        }
+
         void AddPhysicalTzramIdentityMapping() {
             /* Get page table extents. */
             u64 * const l1    = MemoryRegionPhysicalTzramL1PageTable.GetPointer<u64>();
@@ -276,6 +288,7 @@ namespace ams::secmon {
     void SetupSocDmaControllersCpuMemoryControllersEnableMmuWarmboot() {
         /* If this is being called from lp0 exit, we want to setup the soc dma controllers. */
         if (IsExitLp0()) {
+            RestoreDebugCode();
             SetupSocDmaControllers();
         }
 
