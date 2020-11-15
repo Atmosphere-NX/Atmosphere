@@ -814,6 +814,16 @@ namespace ams::secmon {
             reg::Read(MC + MC_IRAM_REG_CTRL);
         }
 
+        void DisableUntranslatedDeviceMemoryAccess() {
+            /* If we can (mariko only), disable GMMU accesses that bypass the SMMU. */
+            /* Additionally, force all untranslated acccesses to hit one of the carveouts. */
+            if (GetSocType() == fuse::SocType_Mariko) {
+                reg::Write(MC + MC_UNTRANSLATED_REGION_CHECK, MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_UNTRANSLATED_REGION_CHECK_ACCESS,          DISABLED),
+                                                              MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_REQUIRE_UNTRANSLATED_CLIENTS_HIT_CARVEOUT,  ENABLED),
+                                                              MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_REQUIRE_UNTRANSLATED_GPU_HIT_CARVEOUT,      ENABLED));
+            }
+        }
+
         void FinalizeCarveoutSecureScratchRegisters() {
             /* Define carveout scratch values. */
             constexpr uintptr_t WarmbootCarveoutAddress = MemoryRegionDram.GetAddress();
@@ -1144,6 +1154,9 @@ namespace ams::secmon {
 
         /* Disable the ARC. */
         DisableArc();
+
+        /* Disable untranslated memory accesses by devices. */
+        DisableUntranslatedDeviceMemoryAccess();
 
         /* Further protections aren't applied on <= 1.0.0. */
         if (GetTargetFirmware() <= TargetFirmware_1_0_0) {
