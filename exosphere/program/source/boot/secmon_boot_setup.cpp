@@ -179,7 +179,7 @@ namespace ams::secmon::boot {
         void DeriveAllMasterKeys(bool is_prod, u8 * const work_block) {
             /* Determine the generation. */
             const int generation = DetermineKeyGeneration(is_prod);
-            AMS_SECMON_LOG("Using Key Generation %02X\n", static_cast<unsigned int>(generation));
+            AMS_SECMON_LOG("KeyGen: %02X\n", static_cast<unsigned int>(generation));
 
             /* Set the global generation. */
             ::ams::secmon::impl::SetKeyGeneration(generation);

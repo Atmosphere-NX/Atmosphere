@@ -116,21 +116,24 @@ SECTIONS
     {
         KEEP(secmon_main.o(.text*))
         KEEP(secmon_boot_functions.o(.text*))
-        KEEP (secmon_boot_cache.o(.text*))
+        KEEP(secmon_boot_cache.o(.text*))
         KEEP(secmon_boot_config.o(.text*))
         KEEP(secmon_boot_setup.o(.text*))
+        KEEP(secmon_boot_rsa.o(.text*))
         KEEP(secmon_package2.o(.text*))
         secmon_main.o(.rodata*)
         secmon_boot_functions.o(.rodata*)
         secmon_boot_cache.o(.rodata*)
         secmon_boot_config.o(.rodata*)
         secmon_boot_setup.o(.rodata*)
+        secmon_boot_rsa.o(.rodata*)
         secmon_package2.o(.rodata*)
         secmon_main.o(.data*)
         secmon_boot_functions.o(.data*)
         secmon_boot_cache.o(.data*)
         secmon_boot_config.o(.data*)
         secmon_boot_setup.o(.data*)
+        secmon_boot_rsa.o(.data*)
         secmon_package2.o(.data*)
         . = ALIGN(8);
     } >tzram_boot AT>glob
@@ -143,6 +146,7 @@ SECTIONS
         secmon_boot_cache.o(.bss* COMMON)
         secmon_boot_config.o(.bss* COMMON)
         secmon_boot_setup.o(.bss* COMMON)
+        secmon_boot_rsa.o(.bss* COMMON)
         secmon_package2.o(.bss* COMMON)
         __boot_bss_end__ = ABSOLUTE(.);
     } >tzram_boot AT>glob

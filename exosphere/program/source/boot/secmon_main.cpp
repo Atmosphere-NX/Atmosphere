@@ -56,7 +56,7 @@ namespace ams::secmon {
             /* This checks the security engine's validity, and configures common interrupts in the GIC. */
             /* This also initializes the global configuration context. */
             secmon::Setup1();
-            AMS_SECMON_LOG("%s\n", "SecureMonitor boot begin.");
+            AMS_SECMON_LOG("%s\n", "Boot begin.");
 
             /* Save the boot info. */
             secmon::SaveBootInfo(secmon_params);
@@ -163,7 +163,7 @@ namespace ams::secmon {
         }
 
         /* Verify the package2 payloads. */
-        secmon::boot::CheckVerifyResult(secmon::boot::VerifyPackage2Payloads(pkg2_meta, pkg2_payloads_start), pkg1::ErrorInfo_InvalidPackage2Payload, "package2 payload verification failed");
+        secmon::boot::CheckVerifyResult(secmon::boot::VerifyPackage2Payloads(pkg2_meta, pkg2_payloads_start), pkg1::ErrorInfo_InvalidPackage2Payload, "pkg2 payload FAIL");
 
         /* Decrypt/Move the package2 payloads to the right places. */
         secmon::boot::DecryptAndLoadPackage2Payloads(Package2LoadAddress, pkg2_meta, pkg2_payloads_start, !bc.signed_data.IsPackage2EncryptionDisabled());
@@ -194,7 +194,7 @@ namespace ams::secmon {
         /* Configure the smc handler tables to reflect the current target firmware. */
         secmon::smc::ConfigureSmcHandlersForTargetFirmware();
 
-        AMS_SECMON_LOG("%s\n", "SecureMonitor boot end.");
+        AMS_SECMON_LOG("%s\n", "Boot end.");
     }
 
 }
