@@ -332,6 +332,12 @@ namespace ams::secmon::boot {
             InvalidateL1Entries(l1, MemoryRegionDram.GetAddress(), MemoryRegionDram.GetSize());
         }
 
+        constexpr void UnmapMarikoProgramImpl(u64 *l1, u64 *l2, u64 *l3) {
+            /* Unmap the L1 entry corresponding to to the Dram entries. */
+            AMS_UNUSED(l1, l2);
+            InvalidateL3Entries(l3, MemoryRegionVirtualTzramMarikoProgram.GetAddress(), MemoryRegionVirtualTzramMarikoProgram.GetSize());
+        }
+
     }
 
     void InitializeColdBoot() {
@@ -382,6 +388,32 @@ namespace ams::secmon::boot {
 
         /* Unmap. */
         UnmapDramImpl(l1, l2_l3, l2_l3);
+
+        /* Ensure the mappings are consistent. */
+        secmon::boot::EnsureMappingConsistency();
+    }
+
+    void LoadMarikoProgram() {
+        void * const mariko_program_dst  = MemoryRegionVirtualTzramMarikoProgram.GetPointer<void>();
+        void * const mariko_program_src  = MemoryRegionPhysicalMarikoProgramImage.GetPointer<void>();
+        const size_t mariko_program_size = MemoryRegionVirtualTzramMarikoProgram.GetSize();
+
+        if (fuse::GetSocType() == fuse::SocType_Mariko) {
+            /* On Mariko, we want to load the mariko program image into mariko tzram. */
+            std::memcpy(mariko_program_dst, mariko_program_src, mariko_program_size);
+            hw::FlushDataCache(mariko_program_dst, mariko_program_size);
+        } else {
+            /* On Erista, we don't have mariko-only-tzram, so unmap it. */
+            u64 * const l1    = MemoryRegionVirtualTzramL1PageTable.GetPointer<u64>();
+            u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
+
+            UnmapMarikoProgramImpl(l1, l2_l3, l2_l3);
+        }
+
+        /* Clear the Mariko program image from DRAM. */
+        util::ClearMemory(mariko_program_src, mariko_program_size);
+        hw::FlushDataCache(mariko_program_src, mariko_program_size);
+        hw::DataSynchronizationBarrierInnerShareable();
 
         /* Ensure the mappings are consistent. */
         secmon::boot::EnsureMappingConsistency();

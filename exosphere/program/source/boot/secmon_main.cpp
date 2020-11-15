@@ -123,6 +123,9 @@ namespace ams::secmon {
             std::memcpy(dst, src, size);
         }
 
+        /* Load the mariko program image. */
+        secmon::boot::LoadMarikoProgram();
+
         /* Setup the GPU carveout's magic numbers. */
         secmon::boot::WriteGpuCarveoutMagicNumbers();
 
