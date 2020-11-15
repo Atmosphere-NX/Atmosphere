@@ -84,6 +84,26 @@ namespace ams::secmon {
         PerformPmcReboot();
     }
 
+    void PerformUserRebootToFatalError() {
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
+            /* On Erista, we reboot to fatal error by jumping to fusee primary's handler. */
+            return PerformUserRebootToPayload();
+        } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
+            /* TODO: Send a SGI FIQ to the other CPUs, so that user code stops executing. */
+
+            /* TODO: On cores other than 3, halt/wfi. */
+
+            AMS_SECMON_LOG("%s\n", "Jumping to Mariko Fatal.");
+            AMS_LOG_FLUSH();
+
+            /* Jump to the mariko fatal program. */
+            reinterpret_cast<void (*)()>(secmon::MemoryRegionVirtualTzramMarikoProgram.GetAddress())();
+
+            /* The mariko fatal program never returns. */
+            __builtin_unreachable();
+        }
+    }
+
     void PerformUserShutDown() {
         /* Load our reboot stub to iram. */
         LoadRebootStub(RebootStubAction_ShutDown);

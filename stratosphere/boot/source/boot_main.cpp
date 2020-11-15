@@ -216,6 +216,8 @@ int main(int argc, char **argv)
         boot::CheckBatteryCharge();
     }
 
+    AMS_ABORT_UNLESS(spl::GetSocType() != spl::SocType_Mariko);
+
     /* Configure pinmux + drive pads. */
     boot::SetInitialPinmuxConfiguration();
 

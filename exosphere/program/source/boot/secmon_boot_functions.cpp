@@ -188,7 +188,7 @@ namespace ams::secmon::boot {
         const u8 key_generation = meta.GetKeyGeneration();
         /* Decrypt or load each payload in order. */
         for (int i = 0; i < pkg2::PayloadCount; ++i) {
-            AMS_SECMON_LOG("pkg2 payload[%d]: %09lx -> %09lx size=%08x\n", i, dst + meta.payload_offsets[i], src, meta.payload_sizes[i]);
+            AMS_SECMON_LOG("pkg2 payload[%d]: %09lx -> %09lx size=%08x\n", i, src, dst + meta.payload_offsets[i], meta.payload_sizes[i]);
 
             if (encrypted) {
                 DecryptPayload(dst + meta.payload_offsets[i], src, meta.payload_sizes[i], meta.payload_ivs[i], sizeof(meta.payload_ivs[i]), key_generation);

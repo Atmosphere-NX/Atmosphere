@@ -13,21 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <exosphere.hpp>
 
-namespace ams::secmon {
+namespace ams::diag {
 
-    enum UserRebootType {
-        UserRebootType_None         = 0,
-        UserRebootType_ToRcm        = 1,
-        UserRebootType_ToPayload    = 2,
-        UserRebootType_ToFatalError = 3,
-    };
+    void AbortImpl() {
+        AMS_SECMON_LOG("AbortImpl was called\n");
 
-    void PerformUserRebootToRcm();
-    void PerformUserRebootToPayload();
-    void PerformUserRebootToFatalError();
-    void PerformUserShutDown();
+        /* TODO: Reboot */
+        AMS_INFINITE_LOOP();
+    }
+
+    #include <exosphere/diag/diag_detailed_assertion_impl.inc>
 
 }

@@ -143,9 +143,9 @@ namespace ams::sdmmc::impl {
             virtual void SetWorkBuffer(void *wb, size_t wb_size) = 0;
 
             virtual Result Startup(BusPower bus_power, BusWidth bus_width, SpeedMode speed_mode, bool power_saving_enable) = 0;
-            virtual void Shutdown();
-            virtual void PutToSleep();
-            virtual Result Awaken();
+            virtual void Shutdown()   = 0;
+            virtual void PutToSleep() = 0;
+            virtual Result Awaken()   = 0;
 
             virtual Result SwitchToSdr12();
 

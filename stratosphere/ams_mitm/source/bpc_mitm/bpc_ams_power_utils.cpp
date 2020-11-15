@@ -68,7 +68,7 @@ namespace ams::mitm::bpc {
                 exosphere::CopyToIram(IramPayloadBase + IramFatalErrorContextOffset, g_work_page, sizeof(g_work_page));
             }
 
-            exosphere::ForceRebootToIramPayload();
+            exosphere::ForceRebootToFatalError();
         }
 
     }
