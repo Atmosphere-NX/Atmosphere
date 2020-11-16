@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "secmon_map.hpp"
 #include "secmon_page_mapper.hpp"
 #include "secmon_user_power_management.hpp"
 
@@ -92,6 +93,9 @@ namespace ams::secmon {
             /* TODO: Send a SGI FIQ to the other CPUs, so that user code stops executing. */
 
             /* TODO: On cores other than 3, halt/wfi. */
+
+            /* Map Dram for the mariko program. */
+            MapDramForMarikoProgram();
 
             AMS_SECMON_LOG("%s\n", "Jumping to Mariko Fatal.");
             AMS_LOG_FLUSH();

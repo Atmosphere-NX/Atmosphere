@@ -19,5 +19,6 @@
 namespace ams::secmon::fatal {
 
     void InitializeDevicePageTableForSdmmc1();
+    void InitializeDevicePageTableForDc();
 
 }
