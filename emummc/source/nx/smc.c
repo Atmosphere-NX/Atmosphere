@@ -59,6 +59,35 @@ Result smcGetConfig(SplConfigItem config_item, u64 *out_config)
     return rc;
 }
 
+SplHardwareType splGetHardwareType(void)
+{
+    u64 value;
+    Result rc = smcGetConfig(SplConfigItem_HardwareType, &value);
+    if (rc != 0)
+    {
+        fatal_abort(Fatal_BadResult);
+    }
+    return (SplHardwareType)value;
+}
+
+SplSocType splGetSocType(void)
+{
+    switch (splGetHardwareType())
+    {
+        case SplHardwareType_Icosa:
+        case SplHardwareType_Copper:
+            return SplSocType_Erista;
+        case SplHardwareType_Hoag:
+        case SplHardwareType_Iowa:
+        case SplHardwareType_Calcio:
+        case SplHardwareType_Five:
+            return SplSocType_Mariko;
+        default:
+            fatal_abort(Fatal_InvalidEnum);
+    }
+}
+
+
 Result smcCopyToIram(uintptr_t iram_addr, const void *src_addr, u32 size)
 {
     SecmonArgs args;
