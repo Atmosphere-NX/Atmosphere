@@ -25,6 +25,7 @@
 #include "sdmmc_core.h"
 #if defined(FUSEE_STAGE1_SRC)
 #include "../../../fusee/fusee-primary/src/car.h"
+#include "../../../fusee/fusee-primary/src/fuse.h"
 #include "../../../fusee/fusee-primary/src/pinmux.h"
 #include "../../../fusee/fusee-primary/src/timers.h"
 #include "../../../fusee/fusee-primary/src/apb_misc.h"
@@ -33,6 +34,7 @@
 #include "../../../fusee/fusee-primary/src/max7762x.h"
 #elif defined(FUSEE_STAGE2_SRC)
 #include "../../../fusee/fusee-secondary/src/car.h"
+#include "../../../fusee/fusee-secondary/src/fuse.h"
 #include "../../../fusee/fusee-secondary/src/pinmux.h"
 #include "../../../fusee/fusee-secondary/src/timers.h"
 #include "../../../fusee/fusee-secondary/src/apb_misc.h"
@@ -41,6 +43,7 @@
 #include "../../../fusee/fusee-secondary/src/max7762x.h"
 #elif defined(SEPT_STAGE2_SRC)
 #include "../../../sept/sept-secondary/src/car.h"
+#include "../../../sept/sept-secondary/src/fuse.h"
 #include "../../../sept/sept-secondary/src/pinmux.h"
 #include "../../../sept/sept-secondary/src/timers.h"
 #include "../../../sept/sept-secondary/src/apb_misc.h"
@@ -179,6 +182,11 @@ typedef struct {
 } sdmmc_clk_source_t;
 
 static sdmmc_clk_source_t sdmmc_clk_sources[4] = {0};
+
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
 
 /* Check if the SDMMC device clock is held in reset. */
 static bool is_sdmmc_clk_rst(SdmmcControllerNum controller)
@@ -343,6 +351,7 @@ static int sdmmc_get_sdclk_div(SdmmcBusSpeed bus_speed)
         case SDMMC_SPEED_MMC_IDENT:
             return 66;
         case SDMMC_SPEED_SD_IDENT:
+         /* return 64; */
         case SDMMC_SPEED_MMC_LEGACY:
         case SDMMC_SPEED_MMC_HS:
         case SDMMC_SPEED_MMC_HS200:
@@ -537,24 +546,27 @@ static void sdmmc_vendor_clock_cntrl_config(sdmmc_t *sdmmc)
     /* Clear the I/O conditioning constants. */
     sdmmc->regs->vendor_clock_cntrl &= ~(SDMMC_CLOCK_TRIM_MASK | SDMMC_CLOCK_TAP_MASK);
 
-    /* Per the TRM, set the PADPIPE clock enable */
+    /* Set the PADPIPE clock enable */
     sdmmc->regs->vendor_clock_cntrl |= SDMMC_CLOCK_PADPIPE_CLKEN_OVERRIDE;
     
     /* Set the appropriate trim value. */
     switch (sdmmc->controller) {
         case SDMMC_1:
-            sdmmc->regs->vendor_clock_cntrl |= SDMMC_CLOCK_TRIM_SDMMC1;            
+            sdmmc->regs->vendor_clock_cntrl |= (is_soc_mariko() ? SDMMC_CLOCK_TRIM_SDMMC1_MARIKO : SDMMC_CLOCK_TRIM_SDMMC1_ERISTA);
             break;
         case SDMMC_2:
-            sdmmc->regs->vendor_clock_cntrl |= SDMMC_CLOCK_TRIM_SDMMC2;
+            sdmmc->regs->vendor_clock_cntrl |= (is_soc_mariko() ? SDMMC_CLOCK_TRIM_SDMMC2_MARIKO : SDMMC_CLOCK_TRIM_SDMMC2_ERISTA);
             break;
         case SDMMC_3:
             sdmmc->regs->vendor_clock_cntrl |= SDMMC_CLOCK_TRIM_SDMMC3;
             break;
         case SDMMC_4:
-            sdmmc->regs->vendor_clock_cntrl |= SDMMC_CLOCK_TRIM_SDMMC4;
+            sdmmc->regs->vendor_clock_cntrl |= (is_soc_mariko() ? SDMMC_CLOCK_TRIM_SDMMC4_MARIKO : SDMMC_CLOCK_TRIM_SDMMC4_ERISTA);
             break;
     }
+    
+    /* Clear the SPI_MODE clock enable. */
+    sdmmc->regs->vendor_clock_cntrl &= ~(SDMMC_CLOCK_SPI_MODE_CLKEN_OVERRIDE);
 }
 
 /* Configure automatic calibration. */
@@ -566,11 +578,11 @@ static int sdmmc_autocal_config(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
             switch (voltage) {
                 case SDMMC_VOLTAGE_1V8:
                     sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_PDPU_CONFIG_MASK);
-                    sdmmc->regs->auto_cal_config |= SDMMC_AUTOCAL_PDPU_SDMMC1_1V8;
+                    sdmmc->regs->auto_cal_config |= (is_soc_mariko() ? SDMMC_AUTOCAL_PDPU_SDMMC1_1V8_MARIKO : SDMMC_AUTOCAL_PDPU_SDMMC1_1V8_ERISTA);
                     break;
                 case SDMMC_VOLTAGE_3V3:
                     sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_PDPU_CONFIG_MASK);
-                    sdmmc->regs->auto_cal_config |= SDMMC_AUTOCAL_PDPU_SDMMC1_3V3;
+                    sdmmc->regs->auto_cal_config |= (is_soc_mariko() ? SDMMC_AUTOCAL_PDPU_SDMMC1_3V3_MARIKO : SDMMC_AUTOCAL_PDPU_SDMMC1_3V3_ERISTA);
                     break;
                 default:
                     sdmmc_error(sdmmc, "uSD does not support requested voltage!");
@@ -624,7 +636,7 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
     sdmmc_get_sd_clock_control(sdmmc);
     
     /* Delay. */
-    udelay(1);
+    udelay(2);
 
     /* Get current time. */
     uint32_t timebase = get_time();
@@ -640,18 +652,51 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
             
             /* Upon timeout, fall back to standard values. */
             if (sdmmc->controller == SDMMC_1) {
-                uint32_t drvup = (voltage == SDMMC_VOLTAGE_3V3) ? 0x12 : 0x11;
-                uint32_t drvdn = (voltage == SDMMC_VOLTAGE_3V3) ? 0x12 : 0x15;
+                uint32_t drvup, drvdn = 0;
+                if (is_soc_mariko()) {
+                    drvup = 0x8;
+                    drvdn = 0x8;
+                } else {
+                    drvup = (voltage == SDMMC_VOLTAGE_3V3) ? 0xC : 0xB;
+                    drvdn = (voltage == SDMMC_VOLTAGE_3V3) ? 0xC : 0xF;
+                }
                 uint32_t value = padctl->sdmmc1_pad_cfgpadctrl;
                 value &= ~(SDMMC1_PAD_CAL_DRVUP_MASK | SDMMC1_PAD_CAL_DRVDN_MASK);
                 value |= (drvup << SDMMC1_PAD_CAL_DRVUP_SHIFT);
                 value |= (drvdn << SDMMC1_PAD_CAL_DRVDN_SHIFT);
                 padctl->sdmmc1_pad_cfgpadctrl = value;
+            } else if (sdmmc->controller == SDMMC_2) {
+                uint32_t drvup, drvdn = 0;
+                if (is_soc_mariko()) {
+                    drvup = 0xA;
+                    drvdn = 0xA;
+                    uint32_t value = padctl->emmc2_pad_cfgpadctrl;
+                    value &= ~(SDMMC2_PAD_CAL_DRVUP_MASK | SDMMC2_PAD_CAL_DRVDN_MASK);
+                    value |= (drvup << SDMMC2_PAD_CAL_DRVUP_SHIFT);
+                    value |= (drvdn << SDMMC2_PAD_CAL_DRVDN_SHIFT);
+                    padctl->emmc2_pad_cfgpadctrl = value;
+                } else {
+                    drvup = 0x10;
+                    drvdn = 0x10;
+                    uint32_t value = padctl->emmc2_pad_cfgpadctrl;
+                    value &= ~(EMMC2_PAD_DRVUP_COMP_MASK | EMMC2_PAD_DRVDN_COMP_MASK);
+                    value |= (drvup << EMMC2_PAD_DRVUP_COMP_SHIFT);
+                    value |= (drvdn << EMMC2_PAD_DRVDN_COMP_SHIFT);
+                    padctl->emmc2_pad_cfgpadctrl = value;
+                }
             } else if (sdmmc->controller == SDMMC_4) {
+                uint32_t drvup, drvdn = 0;
+                if (is_soc_mariko()) {
+                    drvup = 0xA;
+                    drvdn = 0xA;
+                } else {
+                    drvup = 0x10;
+                    drvdn = 0x10;
+                }
                 uint32_t value = padctl->emmc4_pad_cfgpadctrl;
-                value &= ~(CFG2TMC_EMMC4_PAD_DRVUP_COMP_MASK | CFG2TMC_EMMC4_PAD_DRVDN_COMP_MASK);
-                value |= (0x10 << CFG2TMC_EMMC4_PAD_DRVUP_COMP_SHIFT);
-                value |= (0x10 << CFG2TMC_EMMC4_PAD_DRVDN_COMP_SHIFT);
+                value &= ~(EMMC4_PAD_DRVUP_COMP_MASK | EMMC4_PAD_DRVDN_COMP_MASK);
+                value |= (drvup << EMMC4_PAD_DRVUP_COMP_SHIFT);
+                value |= (drvdn << EMMC4_PAD_DRVDN_COMP_SHIFT);
                 padctl->emmc4_pad_cfgpadctrl = value;
             }
             
@@ -794,11 +839,11 @@ static void sdmmc_tap_config(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
         switch (sdmmc->controller)
         {
             case SDMMC_1:
-                sdmmc->tap_val = 4;
+                sdmmc->tap_val = (is_soc_mariko() ? 0xB : 4);
                 break;
             case SDMMC_2:
             case SDMMC_4:
-                sdmmc->tap_val = 0;
+                sdmmc->tap_val = (is_soc_mariko() ? 0xB : 0);
                 break;
             case SDMMC_3:
                 sdmmc->tap_val = 3;
@@ -982,6 +1027,7 @@ static int sdmmc1_config()
     if (gpio_read(GPIO_MICROSD_CARD_DETECT))
         return 0;
     
+    /* Enable loopback control.  */
     padctl->sdmmc1_clk_lpbk_control = 1;
     
     /* Set up the SDMMC1 pinmux. */
@@ -993,8 +1039,7 @@ static int sdmmc1_config()
     pinmux->sdmmc1_dat0 = PINMUX_DRIVE_2X | PINMUX_PARKED | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT | PINMUX_PULL_UP;
 
     /* Ensure the PMC is prepared for the SDMMC1 card to receive power. */
-    pmc->no_iopower  &= ~PMC_CONTROL_SDMMC1;
-    pmc->pwr_det_val |= PMC_CONTROL_SDMMC1;
+    pmc->no_iopower &= ~PMC_CONTROL_SDMMC1;
     
     /* Configure the enable line for the SD card power. */
     pinmux->dmic3_clk  =  PINMUX_SELECT_FUNCTION1 | PINMUX_PULL_DOWN | PINMUX_INPUT;
@@ -1002,17 +1047,16 @@ static int sdmmc1_config()
     gpio_write(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_LEVEL_HIGH);
     gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_OUTPUT);
     
-    udelay(1000);
+    /* Delay. */
+    udelay(10000);
     
-    /* Set up SD card voltages. */
+    /* Configure Sdmmc1 IO as 3.3V. */
+    pmc->pwr_det_val |= PMC_CONTROL_SDMMC1;
     max77620_regulator_set_voltage(REGULATOR_LDO2, 3300000);
     max77620_regulator_enable(REGULATOR_LDO2, 1);
     
-    udelay(1000);
-    
-    padctl->sdmmc1_pad_cfgpadctrl = 0x10000000;
-
-    udelay(1000);
+    /* Delay. */
+    udelay(130);
 
     return 1;
 }
@@ -1153,19 +1197,32 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
     
     /* Update the clock status. */
     sdmmc->is_clk_running = true;
-    
-    // Set IO_SPARE[19] (one cycle delay)
+
+    /* Set IO_SPARE[19] (one cycle delay) */
     sdmmc->regs->io_spare |= 0x80000;
 
-    // Clear SEL_VREG
+    /* Clear SEL_VREG */
     sdmmc->regs->vendor_io_trim_cntrl &= ~(0x04);
     
     /* Configure vendor clocking. */
     sdmmc_vendor_clock_cntrl_config(sdmmc);
+    
+    /* Set slew codes for SDMMC1 (Erista only). */
+    if ((controller == SDMMC_1) && !(is_soc_mariko())) {
+        volatile tegra_padctl_t *padctl = padctl_get_regs();
+        uint32_t value = padctl->sdmmc1_pad_cfgpadctrl;
+        value &= ~(SDMMC1_CLK_CFG_CAL_DRVDN_SLWR_MASK | SDMMC1_CLK_CFG_CAL_DRVDN_SLWF_MASK);
+        value |= (0x01 << SDMMC1_CLK_CFG_CAL_DRVDN_SLWR_SHIFT);
+        value |= (0x01 << SDMMC1_CLK_CFG_CAL_DRVDN_SLWF_SHIFT);
+        padctl->sdmmc1_pad_cfgpadctrl = value;
+    }
 
-    // Set SDMMC2TMC_CFG_SDMEMCOMP_VREF_SEL to 0x07
+    /* Set vref sel. */
     sdmmc->regs->sdmemcomppadctrl &= 0x0F;
-    sdmmc->regs->sdmemcomppadctrl |= 0x07;
+    if ((controller == SDMMC_1) && is_soc_mariko())
+        sdmmc->regs->sdmemcomppadctrl |= 0x00;
+    else
+        sdmmc->regs->sdmemcomppadctrl |= 0x07;
     
     /* Configure autocal offsets. */
     if (!sdmmc_autocal_config(sdmmc, bus_voltage)) {
@@ -1635,8 +1692,8 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
     uint32_t cmd_result = 0;
     bool shutdown_sd_clock = false;
         
-    /* Run automatic calibration on each command submission for SDMMC1. */
-    if ((sdmmc->controller == SDMMC_1) && !(sdmmc->has_sd))
+    /* Run automatic calibration on each command submission for SDMMC1 (Erista only). */
+    if ((sdmmc->controller == SDMMC_1) && !(sdmmc->has_sd) && !(is_soc_mariko()))
         sdmmc_autocal_run(sdmmc, sdmmc->bus_voltage);
     
     /* SD clock is disabled. Enable it. */
@@ -1765,8 +1822,10 @@ int sdmmc_switch_voltage(sdmmc_t *sdmmc)
 
     /* Reconfigure the regulator. */
     max77620_regulator_set_voltage(REGULATOR_LDO2, 1800000);
+    max77620_regulator_enable(REGULATOR_LDO2, 1);
+    udelay(150);
     pmc->pwr_det_val &= ~(PMC_CONTROL_SDMMC1);
-    
+
     /* Reconfigure autocal offsets. */
     if (!sdmmc_autocal_config(sdmmc, SDMMC_VOLTAGE_1V8))
     {
