@@ -48,16 +48,21 @@ namespace ams::secmon::fatal {
 
         constexpr size_t TableCount = (1ul << DeviceVirtualAddressBits) / DeviceRegionSize;
 
-        constexpr u8 SdmmcAsid = 1;
-
-        constexpr u32 SdmmcAsidRegisterValue = [] {
+        consteval u32 EncodeAsidRegisterValue(u8 asid) {
             u32 value = 0x80000000u;
             for (size_t t = 0; t < TableCount; t++) {
-                value |= (SdmmcAsid << (BITSIZEOF(u8) * t));
+                value |= (asid << (BITSIZEOF(u8) * t));
             }
             return value;
-        }();
+        }
 
+        constexpr u8 SdmmcAsid = 1;
+        constexpr u8 DcAsid    = 2;
+
+        constexpr u32 SdmmcAsidRegisterValue = EncodeAsidRegisterValue(SdmmcAsid);
+        constexpr u32 DcAsidRegisterValue    = EncodeAsidRegisterValue(DcAsid);
+
+        constexpr dd::PhysicalAddress DcL0PageTablePhysical    = MemoryRegionPhysicalDramDcL0DevicePageTable.GetAddress();
         constexpr dd::PhysicalAddress SdmmcL0PageTablePhysical = MemoryRegionPhysicalDramSdmmc1L0DevicePageTable.GetAddress();
         constexpr dd::PhysicalAddress SdmmcL1PageTablePhysical = MemoryRegionPhysicalDramSdmmc1L1DevicePageTable.GetAddress();
 
@@ -195,7 +200,11 @@ namespace ams::secmon::fatal {
             SmmuSynchronizationBarrier();
         }
 
-        void MapImpl(dd::PhysicalAddress phys_addr, size_t size, DeviceVirtualAddress address) {
+        void MapImpl(dd::PhysicalAddress phys_addr, size_t size, DeviceVirtualAddress address, u8 asid, void *l0_table, dd::PhysicalAddress l0_phys, void *l1_table, dd::PhysicalAddress l1_phys) {
+            /* Validate L0. */
+            AMS_ABORT_UNLESS(l0_table != nullptr);
+            AMS_ABORT_UNLESS(l0_phys != 0);
+
             /* Cache permissions. */
             const bool read  = true;
             const bool write = true;
@@ -207,7 +216,7 @@ namespace ams::secmon::fatal {
                 const size_t l2_index = (address % DeviceLargePageSize) / DevicePageSize;
 
                 /* Get and validate l1. */
-                PageDirectoryEntry *l1 = static_cast<PageDirectoryEntry *>(MemoryRegionVirtualDramSdmmc1L0DevicePageTable.GetPointer<void>());
+                PageDirectoryEntry *l1 = static_cast<PageDirectoryEntry *>(l0_table);
                 AMS_ASSERT(l1 != nullptr);
 
                 /* Setup an l1 table/entry, if needed. */
@@ -222,8 +231,8 @@ namespace ams::secmon::fatal {
                         hw::FlushDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
 
                         /* Synchronize. */
-                        InvalidatePtc(SdmmcL1PageTablePhysical);
-                        InvalidateTlbSection(SdmmcAsid, address);
+                        InvalidatePtc(l0_phys + l1_index * sizeof(PageDirectoryEntry));
+                        InvalidateTlbSection(asid, address);
                         SmmuSynchronizationBarrier();
 
                         /* Advance. */
@@ -233,26 +242,32 @@ namespace ams::secmon::fatal {
                         continue;
                     } else {
                         /* Make an l1 table. */
-                        std::memset(MemoryRegionVirtualDramSdmmc1L1DevicePageTable.GetPointer<void>(), 0, mmu::PageSize);
-                        hw::FlushDataCache(MemoryRegionVirtualDramSdmmc1L1DevicePageTable.GetPointer<void>(), mmu::PageSize);
+                        AMS_ABORT_UNLESS(l1_table != nullptr);
+                        AMS_ABORT_UNLESS(l1_phys != 0);
+
+                        /* Clear the l1 table. */
+                        std::memset(l1_table, 0, mmu::PageSize);
+                        hw::FlushDataCache(l1_table, mmu::PageSize);
 
                         /* Set the l1 table. */
-                        l1[l1_index].SetTable(true, true, true, SdmmcL1PageTablePhysical);
+                        l1[l1_index].SetTable(true, true, true, l1_phys);
                         hw::FlushDataCache(std::addressof(l1[l1_index]), sizeof(PageDirectoryEntry));
 
                         /* Synchronize. */
-                        InvalidatePtc(SdmmcL1PageTablePhysical);
-                        InvalidateTlbSection(SdmmcAsid, address);
+                        InvalidatePtc(l0_phys + l1_index * sizeof(PageDirectoryEntry));
+                        InvalidateTlbSection(asid, address);
                         SmmuSynchronizationBarrier();
                     }
                 }
 
                 /* If we get to this point, l1 must be a table. */
                 AMS_ASSERT(l1[l1_index].IsTable());
+                AMS_ABORT_UNLESS(l1_table != nullptr);
+                AMS_ABORT_UNLESS(l1_phys != 0);
 
                 /* Map l2 entries. */
                 {
-                    PageTableEntry *l2 = static_cast<PageTableEntry *>(MemoryRegionVirtualDramSdmmc1L1DevicePageTable.GetPointer<void>());
+                    PageTableEntry *l2 = static_cast<PageTableEntry *>(l1_table);
 
                     const size_t remaining_in_entry = (PageTableSize / sizeof(PageTableEntry)) - l2_index;
                     const size_t map_count = std::min<size_t>(remaining_in_entry, remaining / DevicePageSize);
@@ -266,11 +281,11 @@ namespace ams::secmon::fatal {
 
                     /* Invalidate the page table cache. */
                     for (size_t i = util::AlignDown(l2_index, 4); i <= util::AlignDown(l2_index + map_count - 1, 4); i += 4) {
-                        InvalidatePtc(SdmmcL1PageTablePhysical + i * sizeof(PageTableEntry));
+                        InvalidatePtc(l1_phys + i * sizeof(PageTableEntry));
                     }
 
                     /* Synchronize. */
-                    InvalidateTlbSection(SdmmcAsid, address);
+                    InvalidateTlbSection(asid, address);
                     SmmuSynchronizationBarrier();
 
                     /* Advance. */
@@ -301,7 +316,37 @@ namespace ams::secmon::fatal {
         SetTable(SdmmcAsid, SdmmcL0PageTablePhysical);
 
         /* Map the appropriate region into the asid. */
-        MapImpl(MemoryRegionPhysicalDramSdmmcMappedData.GetAddress(), MemoryRegionPhysicalDramSdmmcMappedData.GetSize(), MemoryRegionVirtualDramSdmmcMappedData.GetAddress());
+        MapImpl(MemoryRegionPhysicalDramSdmmcMappedData.GetAddress(), MemoryRegionPhysicalDramSdmmcMappedData.GetSize(), MemoryRegionVirtualDramSdmmcMappedData.GetAddress(),
+                SdmmcAsid,
+                MemoryRegionVirtualDramSdmmc1L0DevicePageTable.GetPointer<void>(), SdmmcL0PageTablePhysical,
+                MemoryRegionVirtualDramSdmmc1L1DevicePageTable.GetPointer<void>(), SdmmcL1PageTablePhysical);
+    }
+
+    void InitializeDevicePageTableForDc() {
+        /* Configure dc to use our new page table. */
+        WriteMcRegister(MC_SMMU_DC_ASID, DcAsidRegisterValue);
+        SmmuSynchronizationBarrier();
+
+        /* Ensure consistency. */
+        InvalidatePtc();
+        InvalidateTlb();
+        SmmuSynchronizationBarrier();
+
+        /* Clear the L0 Page Table. */
+        std::memset(MemoryRegionVirtualDramDcL0DevicePageTable.GetPointer<void>(), 0, mmu::PageSize);
+        hw::FlushDataCache(MemoryRegionVirtualDramDcL0DevicePageTable.GetPointer<void>(), mmu::PageSize);
+
+        /* Set the page table for the dc asid. */
+        SetTable(DcAsid, DcL0PageTablePhysical);
+
+        /* Map the appropriate region into the asid. */
+        static_assert(util::IsAligned(MemoryRegionDramDcFramebuffer.GetAddress(), DeviceLargePageSize));
+        static_assert(util::IsAligned(MemoryRegionDramDcFramebuffer.GetSize(),    DeviceLargePageSize));
+
+        MapImpl(MemoryRegionDramDcFramebuffer.GetAddress(), MemoryRegionDramDcFramebuffer.GetSize(), MemoryRegionDramDcFramebuffer.GetAddress(),
+                DcAsid,
+                MemoryRegionVirtualDramDcL0DevicePageTable.GetPointer<void>(), DcL0PageTablePhysical,
+                nullptr, 0);
     }
 
 }

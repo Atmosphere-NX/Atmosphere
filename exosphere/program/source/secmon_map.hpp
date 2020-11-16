@@ -32,4 +32,6 @@ namespace ams::secmon {
     uintptr_t MapAtmosphereUserPage(uintptr_t address);
     void UnmapAtmosphereUserPage();
 
+    void MapDramForMarikoProgram();
+
 }

@@ -75,6 +75,11 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionDram     = MemoryRegion(UINT64_C( 0x80000000), 2_GB);
     constexpr inline const MemoryRegion MemoryRegionDramHigh = MemoryRegion(MemoryRegionDram.GetEndAddress(), 2_GB);
 
+    constexpr inline const MemoryRegion MemoryRegionDramForMarikoProgram = MemoryRegion(UINT64_C(0xC0000000), 1_GB);
+    constexpr inline const MemoryRegion MemoryRegionDramDcFramebuffer = MemoryRegion(UINT64_C(0xC0000000), 4_MB);
+    static_assert(MemoryRegionDram.Contains(MemoryRegionDramForMarikoProgram));
+    static_assert(MemoryRegionDramForMarikoProgram.Contains(MemoryRegionDramDcFramebuffer));
+
     constexpr inline const MemoryRegion MemoryRegionDramGpuCarveout = MemoryRegion(UINT64_C(0x80020000), UINT64_C(0x40000));
     static_assert(MemoryRegionDram.Contains(MemoryRegionDramGpuCarveout));
 
@@ -259,14 +264,17 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDramSecureDataStore));
     static_assert(MemoryRegionDram.Contains(MemoryRegionPhysicalDramSecureDataStore));
 
-    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L0DevicePageTable  = MemoryRegion(UINT64_C(0x1F010F000), 0x1000);
-    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L0DevicePageTable = MemoryRegion( UINT64_C(0x8001F000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmcMappedData = MemoryRegion(UINT64_C(0x1F0100000), 0xC000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmcMappedData = MemoryRegion(UINT64_C(0x80010000), 0xC000);
 
-    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L1DevicePageTable  = MemoryRegion(UINT64_C(0x1F010E000), 0x1000);
-    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L1DevicePageTable = MemoryRegion( UINT64_C(0x8001E000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramDcL0DevicePageTable  = MemoryRegion(UINT64_C(0x1F010C000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramDcL0DevicePageTable = MemoryRegion( UINT64_C(0x8001C000), 0x1000);
 
-    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmcMappedData = MemoryRegion(UINT64_C(0x1F0100000), 0xE000);
-    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmcMappedData = MemoryRegion(UINT64_C(0x80010000), 0xE000);
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L0DevicePageTable  = MemoryRegion(UINT64_C(0x1F010E000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L0DevicePageTable = MemoryRegion( UINT64_C(0x8001E000), 0x1000);
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L1DevicePageTable  = MemoryRegion(UINT64_C(0x1F010F000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L1DevicePageTable = MemoryRegion( UINT64_C(0x8001F000), 0x1000);
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStoreTzram               = MemoryRegion(UINT64_C(0x1F0100000), 0xE000);
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStoreWarmbootFirmware    = MemoryRegion(UINT64_C(0x1F010E000), 0x17C0);
