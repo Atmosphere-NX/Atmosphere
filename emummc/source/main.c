@@ -155,8 +155,8 @@ void __initheap(void)
 static void _receive_process_handle_thread(void *_session_handle) {
     Result rc;
 
-    // Convert the argument to a handle we can use.
-    Handle session_handle = (Handle)(uintptr_t)_session_handle;
+    // Convert the argument to a handle copy we can use.
+    Handle session_handle = *(Handle*)_session_handle;
 
     // Receive the request from the client thread.
     memset(armGetTls(), 0, 0x10);
@@ -194,7 +194,7 @@ static void _init_process_handle(void) {
 
     // Create a new thread to receive our handle.
     Handle thread_handle;
-    rc = svcCreateThread(&thread_handle, _receive_process_handle_thread, (void *)(uintptr_t)server_handle, temp_thread_stack + sizeof(temp_thread_stack), 0x20, 3);
+    rc = svcCreateThread(&thread_handle, _receive_process_handle_thread, &server_handle, temp_thread_stack + sizeof(temp_thread_stack), 0x20, 3);
     if (rc != 0)
     {
         fatal_abort(Fatal_BadResult);
