@@ -103,16 +103,22 @@
 #define SDMMC_CLOCK_TAP_SDMMC3                  (0x03 << 16)
 #define SDMMC_CLOCK_TAP_SDMMC4                  (0x00 << 16)
 #define SDMMC_CLOCK_TRIM_MASK                   (0xFF << 24)
-#define SDMMC_CLOCK_TRIM_SDMMC1                 (0x02 << 24)
-#define SDMMC_CLOCK_TRIM_SDMMC2                 (0x08 << 24)
+#define SDMMC_CLOCK_TRIM_SDMMC1_ERISTA          (0x02 << 24)
+#define SDMMC_CLOCK_TRIM_SDMMC1_MARIKO          (0x0E << 24)
+#define SDMMC_CLOCK_TRIM_SDMMC2_ERISTA          (0x08 << 24)
+#define SDMMC_CLOCK_TRIM_SDMMC2_MARIKO          (0x0D << 24)
 #define SDMMC_CLOCK_TRIM_SDMMC3                 (0x03 << 24)
-#define SDMMC_CLOCK_TRIM_SDMMC4                 (0x08 << 24)
+#define SDMMC_CLOCK_TRIM_SDMMC4_ERISTA          (0x08 << 24)
+#define SDMMC_CLOCK_TRIM_SDMMC4_MARIKO          (0x0D << 24)
+#define SDMMC_CLOCK_SPI_MODE_CLKEN_OVERRIDE     (1 << 2)
 #define SDMMC_CLOCK_PADPIPE_CLKEN_OVERRIDE      (1 << 3)
 
 /* Autocal configuration */
 #define SDMMC_AUTOCAL_PDPU_CONFIG_MASK          0x7F7F
-#define SDMMC_AUTOCAL_PDPU_SDMMC1_1V8           0x7B7B
-#define SDMMC_AUTOCAL_PDPU_SDMMC1_3V3           0x7D00
+#define SDMMC_AUTOCAL_PDPU_SDMMC1_1V8_ERISTA    0x7B7B
+#define SDMMC_AUTOCAL_PDPU_SDMMC1_1V8_MARIKO    0x0606
+#define SDMMC_AUTOCAL_PDPU_SDMMC1_3V3_ERISTA    0x7D00
+#define SDMMC_AUTOCAL_PDPU_SDMMC1_3V3_MARIKO    0x0000
 #define SDMMC_AUTOCAL_PDPU_SDMMC4_1V8           0x0505
 #define SDMMC_AUTOCAL_START                     (1 << 31)
 #define SDMMC_AUTOCAL_ENABLE                    (1 << 29)
