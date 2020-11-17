@@ -15,12 +15,15 @@
  */
 #include <exosphere.hpp>
 #include "fatal_sdmmc.hpp"
+#include "fatal_save_context.hpp"
 
 namespace ams::secmon::fatal {
 
     namespace {
 
-        constinit u8 g_test_buffer[sdmmc::SectorSize * 2];
+        ALWAYS_INLINE const ams::impl::FatalErrorContext *GetFatalErrorContext() {
+            return MemoryRegionVirtualTzramMarikoProgramFatalErrorContext.GetPointer<ams::impl::FatalErrorContext>();
+        }
 
     }
 
@@ -50,18 +53,27 @@ namespace ams::secmon::fatal {
         AMS_SECMON_LOG("InitializeSdCard: %08x\n", result.GetValue());
 
         /* Get the connection status. */
-        sdmmc::SpeedMode speed_mode;
-        sdmmc::BusWidth bus_width;
-        result = CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width));
-        AMS_SECMON_LOG("CheckSdCardConnection: %08x\n", result.GetValue());
-        AMS_SECMON_LOG("    Speed Mode: %u\n", static_cast<u32>(speed_mode));
-        AMS_SECMON_LOG("    Bus Width:  %u\n", static_cast<u32>(bus_width));
+        #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+        {
+            sdmmc::SpeedMode speed_mode;
+            sdmmc::BusWidth bus_width;
+            result = CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width));
+            AMS_SECMON_LOG("CheckSdCardConnection: %08x\n", result.GetValue());
+            AMS_SECMON_LOG("    Speed Mode: %u\n", static_cast<u32>(speed_mode));
+            AMS_SECMON_LOG("    Bus Width:  %u\n", static_cast<u32>(bus_width));
+        }
+        #endif
 
-        /* Read the first two sectors from the SD Card. */
-        std::memset(g_test_buffer, 0xCC, sizeof(g_test_buffer));
-        result = ReadSdCard(g_test_buffer, sizeof(g_test_buffer), 0, sizeof(g_test_buffer) / sdmmc::SectorSize);
-        AMS_SECMON_LOG("ReadSdCard: %08x\n", result.GetValue());
-        AMS_DUMP(g_test_buffer, sizeof(g_test_buffer));
+        /* Save the fatal error context. */
+        const auto *f_ctx = GetFatalErrorContext();
+        AMS_DUMP(f_ctx, sizeof(*f_ctx));
+
+        result = SaveFatalErrorContext(f_ctx);
+        if (R_SUCCEEDED(result)) {
+            AMS_SECMON_LOG("Saved fatal error context to /atmosphere/fatal_reports/report_%016" PRIx64 ".bin!\n", f_ctx->report_identifier);
+        } else {
+            AMS_SECMON_LOG("Failed to save fatal error context: %08x\n", result.GetValue());
+        }
 
         /* TODO */
         AMS_INFINITE_LOOP();

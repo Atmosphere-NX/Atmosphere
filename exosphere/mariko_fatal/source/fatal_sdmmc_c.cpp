@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <exosphere.hpp>
+#include "fatal_sdmmc_c.h"
+#include "fatal_sdmmc.hpp"
 
-namespace ams::secmon::fatal {
+bool sdmmc_read_sd_card(void *dst, size_t size, size_t sector_index, size_t sector_count) {
+    return R_SUCCEEDED(ams::secmon::fatal::ReadSdCard(dst, size, sector_index, sector_count));
+}
 
-    Result InitializeSdCard();
-    Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw);
-    Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count);
-    Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size);
-
+bool sdmmc_write_sd_card(size_t sector_index, size_t sector_count, const void *src, size_t size) {
+    return R_SUCCEEDED(ams::secmon::fatal::WriteSdCard(sector_index, sector_count, src, size));
 }
