@@ -79,4 +79,29 @@ namespace ams::secmon::fatal {
         return ResultSuccess();
     }
 
+    Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size) {
+        /* Validate that our buffer is valid. */
+        AMS_ASSERT(size >= sector_count * sdmmc::SectorSize);
+
+        /* Repeatedly read sectors. */
+        const u8 *src_u8 = static_cast<const u8 *>(src);
+        void * const dma_buffer = GetSdCardDmaBuffer();
+        while (sector_count > 0) {
+            /* Copy sectors into the DMA buffer. */
+            const size_t cur_sectors = std::min(sector_count, SdCardDmaBufferSectors);
+            const size_t cur_size    = cur_sectors * sdmmc::SectorSize;
+            std::memcpy(dma_buffer, src_u8, cur_size);
+
+            /* Write sectors to the sd card. */
+            R_TRY(sdmmc::Write(Port, sector_index, cur_sectors, dma_buffer, cur_size));
+
+            /* Advance. */
+            src_u8       += cur_size;
+            sector_index += cur_sectors;
+            sector_count -= cur_sectors;
+        }
+
+        return ResultSuccess();
+    }
+
 }
