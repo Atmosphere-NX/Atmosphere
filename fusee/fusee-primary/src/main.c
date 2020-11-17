@@ -17,6 +17,7 @@
 #include "utils.h"
 #include "exception_handlers.h"
 #include "panic.h"
+#include "fuse.h"
 #include "hwinit.h"
 #include "di.h"
 #include "timers.h"
@@ -118,7 +119,11 @@ static void cleanup_display(void) {
 
 static void setup_env(void) {
     /* Initialize hardware. */
-    nx_hwinit();
+    if (fuse_get_soc_type() == 1) {
+        nx_hwinit_mariko(false);
+    } else {
+        nx_hwinit_erista(false);
+    }
 
     /* Set up the exception handlers. */
     setup_exception_handlers();
