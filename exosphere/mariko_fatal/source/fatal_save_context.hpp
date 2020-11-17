@@ -18,9 +18,6 @@
 
 namespace ams::secmon::fatal {
 
-    Result InitializeSdCard();
-    Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw);
-    Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count);
-    Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size);
+    Result SaveFatalErrorContext(const ams::impl::FatalErrorContext *ctx);
 
 }

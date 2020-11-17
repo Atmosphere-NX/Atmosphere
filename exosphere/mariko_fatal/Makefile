@@ -121,6 +121,8 @@ $(OFILES)	:	$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/$(ATMOSPHERE_LIBRARY_DIR)/l
 	$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
 
+diskio.o ff.o: CFLAGS += -Wno-error
+
 $(OFILES_SRC)	: $(HFILES_BIN)
 
 #---------------------------------------------------------------------------------

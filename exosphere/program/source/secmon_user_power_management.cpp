@@ -94,6 +94,19 @@ namespace ams::secmon {
 
             /* TODO: On cores other than 3, halt/wfi. */
 
+            /* Copy the fatal error context to mariko tzram. */
+            {
+                /* Map the iram page. */
+                constexpr uintptr_t FatalErrorPhysicalAddress = MemoryRegionPhysicalIramFatalErrorContext.GetAddress();
+                AtmosphereIramPageMapper mapper(FatalErrorPhysicalAddress);
+                if (mapper.Map()) {
+                    /* Copy the fatal error context. */
+                          void *dst = MemoryRegionVirtualTzramMarikoProgramFatalErrorContext.GetPointer<void>();
+                    const void *src = mapper.GetPointerTo(FatalErrorPhysicalAddress, sizeof(ams::impl::FatalErrorContext));
+                    std::memcpy(dst, src, sizeof(ams::impl::FatalErrorContext));
+                }
+            }
+
             /* Map Dram for the mariko program. */
             MapDramForMarikoProgram();
 

@@ -14,13 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <exosphere.hpp>
+#include <stdint.h>
 
-namespace ams::secmon::fatal {
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    Result InitializeSdCard();
-    Result CheckSdCardConnection(sdmmc::SpeedMode *out_sm, sdmmc::BusWidth *out_bw);
-    Result ReadSdCard(void *dst, size_t size, size_t sector_index, size_t sector_count);
-    Result WriteSdCard(size_t sector_index, size_t sector_count, const void *src, size_t size);
+bool sdmmc_read_sd_card(void *dst, size_t size, size_t sector_index, size_t sector_count);
+bool sdmmc_write_sd_card(size_t sector_index, size_t sector_count, const void *src, size_t size);
 
+#ifdef __cplusplus
 }
+#endif
