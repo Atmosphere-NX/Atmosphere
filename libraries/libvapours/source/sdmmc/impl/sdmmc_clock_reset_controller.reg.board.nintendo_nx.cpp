@@ -264,6 +264,9 @@ namespace ams::sdmmc::impl::ClockResetController::reg {
             /* Check that we have registers we can write to. */
             AMS_ABORT_UNLESS(g_clkrst_registers_address != 0);
 
+            AMS_LOG("Setting Clock source: target = %u, actual = %u, CLK_SOURCE = %08x\n", target_frequency_khz, *out_actual_frequency_khz, clk_m | static_cast<u32>(n));
+            AMS_LOG("PLLC4_BASE: %08x\n", ams::reg::Read(g_clkrst_registers_address + CLK_RST_CONTROLLER_PLLC4_BASE));
+
             /* Update the clock source. */
             switch (module) {
                 case Module_Sdmmc1: ams::reg::Write(g_clkrst_registers_address + CLK_RST_CONTROLLER_CLK_SOURCE_SDMMC1, clk_m | static_cast<u32>(n)); break;

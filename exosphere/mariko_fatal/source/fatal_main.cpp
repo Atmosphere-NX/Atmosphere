@@ -76,6 +76,7 @@ namespace ams::secmon::fatal {
         }
 
         /* TODO */
+        AMS_LOG_FLUSH();
         AMS_INFINITE_LOOP();
     }
 
