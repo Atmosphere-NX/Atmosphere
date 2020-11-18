@@ -16,6 +16,7 @@
 #include <exosphere.hpp>
 #include "fatal_sdmmc.hpp"
 #include "fatal_save_context.hpp"
+#include "fatal_display.hpp"
 
 namespace ams::secmon::fatal {
 
@@ -48,35 +49,26 @@ namespace ams::secmon::fatal {
 
         AMS_SECMON_LOG("%s\n", "Fatal start.");
 
-        /* Initialize the sdmmc driver. */
-        Result result = InitializeSdCard();
-        AMS_SECMON_LOG("InitializeSdCard: %08x\n", result.GetValue());
-
-        /* Get the connection status. */
-        #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
-        {
-            sdmmc::SpeedMode speed_mode;
-            sdmmc::BusWidth bus_width;
-            result = CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width));
-            AMS_SECMON_LOG("CheckSdCardConnection: %08x\n", result.GetValue());
-            AMS_SECMON_LOG("    Speed Mode: %u\n", static_cast<u32>(speed_mode));
-            AMS_SECMON_LOG("    Bus Width:  %u\n", static_cast<u32>(bus_width));
-        }
-        #endif
-
         /* Save the fatal error context. */
         const auto *f_ctx = GetFatalErrorContext();
-        AMS_DUMP(f_ctx, sizeof(*f_ctx));
-
-        result = SaveFatalErrorContext(f_ctx);
+        Result result = SaveFatalErrorContext(f_ctx);
         if (R_SUCCEEDED(result)) {
             AMS_SECMON_LOG("Saved fatal error context to /atmosphere/fatal_reports/report_%016" PRIx64 ".bin!\n", f_ctx->report_identifier);
         } else {
             AMS_SECMON_LOG("Failed to save fatal error context: %08x\n", result.GetValue());
         }
 
-        /* TODO */
+        /* Display the fatal error. */
+        {
+            InitializeDisplay();
+            ShowDisplay(f_ctx, result);
+            FinalizeDisplay();
+        }
+
+        /* Ensure we have nothing waiting to be logged. */
         AMS_LOG_FLUSH();
+
+        /* TODO: Wait for a button press, then reboot. */
         AMS_INFINITE_LOOP();
     }
 

@@ -15,11 +15,26 @@
  */
 #include <exosphere.hpp>
 #include "fatal_save_context.hpp"
+#include "fatal_sdmmc.hpp"
 #include "fs/fatal_fs_api.hpp"
 
 namespace ams::secmon::fatal {
 
     Result SaveFatalErrorContext(const ams::impl::FatalErrorContext *ctx) {
+        /* Initialize the sdmmc driver. */
+        R_TRY(InitializeSdCard());
+
+        /* Get the connection status. */
+        #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+        {
+            sdmmc::SpeedMode speed_mode;
+            sdmmc::BusWidth bus_width;
+            R_TRY(CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width)));
+            AMS_SECMON_LOG("    Speed Mode: %u\n", static_cast<u32>(speed_mode));
+            AMS_SECMON_LOG("    Bus Width:  %u\n", static_cast<u32>(bus_width));
+        }
+        #endif
+
         /* Mount the SD card. */
         R_UNLESS(fs::MountSdCard(), fs::ResultPartitionNotFound());
 
