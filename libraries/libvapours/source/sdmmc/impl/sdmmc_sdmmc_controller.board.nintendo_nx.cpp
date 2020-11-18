@@ -532,6 +532,11 @@ namespace ams::sdmmc::impl {
         /* Set the offsets. */
         reg::ReadWrite(this->sdmmc_registers->auto_cal_config, SD_REG_BITS_VALUE(AUTO_CAL_CONFIG_AUTO_CAL_PD_OFFSET, pd),
                                                                SD_REG_BITS_VALUE(AUTO_CAL_CONFIG_AUTO_CAL_PU_OFFSET, pu));
+
+        /* Wait for 1ms to ensure that our configuration takes. */
+        /* NOTE/HACK: Nintendo does not (need) to do this, but they use SvcSleepThread for waits. */
+        /* It's unclear why this wait is necessary, but not doing it causes drive strength calibration to fail if done immediately afterwards. */
+        util::WaitMicroSeconds(1000);
     }
 
     void SdmmcController::CalibrateDriveStrength(BusPower bus_power) {
@@ -578,8 +583,6 @@ namespace ams::sdmmc::impl {
                             this->drive_strength_calibration_status = sdmmc::ResultSdmmcCompOpen();
                         }
 
-                        AMS_LOG("[sdmmc] IsSocMariko(): %d\n", IsSocMariko());
-                        AMS_LOG("[sdmmc] AUTO_CAL_STATUS: %08x\n", reg::Read(this->sdmmc_registers->auto_cal_status));
                         break;
                     }
 
@@ -856,16 +859,11 @@ namespace ams::sdmmc::impl {
             if (i >= num_tries) {
                 break;
             }
-            ++i;
 
             if (reg::HasValue(this->sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_EXECUTE_TUNING, TUNING_COMPLETED))) {
                 break;
             }
         }
-
-        AMS_LOG("normal_status: %08x\n", reg::Read(this->sdmmc_registers->sd_host_standard_registers.normal_int_status));
-        AMS_LOG("error_status: %08x\n", reg::Read(this->sdmmc_registers->sd_host_standard_registers.error_int_status));
-        AMS_LOG("HOST_CONTROL2: %08x\n", reg::Read(this->sdmmc_registers->sd_host_standard_registers.host_control2));
 
         /* Check if we're using the tuned clock. */
         R_UNLESS(reg::HasValue(this->sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_SAMPLING_CLOCK, USING_TUNED_CLOCK)), sdmmc::ResultTuningFailed());
