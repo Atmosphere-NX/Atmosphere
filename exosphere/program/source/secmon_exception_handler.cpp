@@ -27,6 +27,9 @@ namespace ams::secmon {
     }
 
     void ExceptionHandlerImpl(uintptr_t lr, uintptr_t sp) {
+        /* On release config, we won't actually use the passed parameters. */
+        AMS_UNUSED(lr, sp);
+
         /* Ensure that previous logs have been flushed. */
         AMS_LOG_FLUSH();
 
