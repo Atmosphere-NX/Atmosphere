@@ -40,7 +40,7 @@ endif
 #---------------------------------------------------------------------------------
 
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
-export OFILES 	:=	$(OFILES_BIN) $(OFILES_SRC) rebootstub.bin.o sc7fw.bin.o
+export OFILES 	:= $(OFILES_SRC) rebootstub.bin.o sc7fw.bin.o
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
