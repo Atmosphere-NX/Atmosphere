@@ -216,8 +216,6 @@ int main(int argc, char **argv)
         boot::CheckBatteryCharge();
     }
 
-    AMS_ABORT_UNLESS(spl::GetSocType() != spl::SocType_Mariko);
-
     /* Configure pinmux + drive pads. */
     boot::SetInitialPinmuxConfiguration();
 
@@ -242,6 +240,8 @@ int main(int argc, char **argv)
 
     /* Finalize the i2c server library. */
     boot::FinalizeI2cDriverLibrary();
+
+    AMS_ABORT_UNLESS(spl::GetSocType() != spl::SocType_Mariko);
 
     /* Tell PM to start boot2. */
     R_ABORT_UNLESS(pmshellNotifyBootFinished());

@@ -458,7 +458,7 @@ namespace ams::sdmmc::impl {
 
         /* Set the buffer read ready enable, and read status to ensure it takes. */
         reg::ReadWrite(this->sdmmc_registers->sd_host_standard_registers.normal_int_enable, SD_REG_BITS_ENUM(NORMAL_INTERRUPT_BUFFER_READ_READY, ENABLED));
-        reg::Read(this->sdmmc_registers->sd_host_standard_registers.normal_int_status);
+        reg::Write(this->sdmmc_registers->sd_host_standard_registers.normal_int_status, reg::Read(this->sdmmc_registers->sd_host_standard_registers.normal_int_status));
 
         /* Issue command with clock disabled. */
         reg::ReadWrite(this->sdmmc_registers->sd_host_standard_registers.clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, DISABLE));
@@ -578,6 +578,8 @@ namespace ams::sdmmc::impl {
                             this->drive_strength_calibration_status = sdmmc::ResultSdmmcCompOpen();
                         }
 
+                        AMS_LOG("[sdmmc] IsSocMariko(): %d\n", IsSocMariko());
+                        AMS_LOG("[sdmmc] AUTO_CAL_STATUS: %08x\n", reg::Read(this->sdmmc_registers->auto_cal_status));
                         break;
                     }
 
@@ -726,6 +728,9 @@ namespace ams::sdmmc::impl {
         /* Check that the dat lines are all low. */
         R_UNLESS(reg::HasValue(this->sdmmc_registers->sd_host_standard_registers.present_state, SD_REG_BITS_VALUE(PRESENT_STATE_DAT0_3_LINE_SIGNAL_LEVEL, 0b0000)), sdmmc::ResultSdCardNotReadyToVoltageSwitch());
 
+        /* Set Speed Mode. */
+        R_TRY(this->SetSpeedMode(SpeedMode_SdCardSdr12));
+
         /* Set voltage to 1.8V. */
         SdHostStandardController::EnsureControl();
         R_TRY(this->LowerBusPower());
@@ -746,7 +751,7 @@ namespace ams::sdmmc::impl {
         R_UNLESS(reg::HasValue(this->sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_1_8V_SIGNALING_ENABLE, 1_8V_SIGNALING)), sdmmc::ResultSdHostStandardFailSwitchTo1_8V());
 
         /* Enable clock, and wait 1ms. */
-        reg::ReadWrite(this->sdmmc_registers->sd_host_standard_registers.clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, DISABLE));
+        reg::ReadWrite(this->sdmmc_registers->sd_host_standard_registers.clock_control, SD_REG_BITS_ENUM(CLOCK_CONTROL_SD_CLOCK_ENABLE, ENABLE));
         SdHostStandardController::EnsureControl();
         WaitMicroSeconds(1000);
 
@@ -858,6 +863,10 @@ namespace ams::sdmmc::impl {
             }
         }
 
+        AMS_LOG("normal_status: %08x\n", reg::Read(this->sdmmc_registers->sd_host_standard_registers.normal_int_status));
+        AMS_LOG("error_status: %08x\n", reg::Read(this->sdmmc_registers->sd_host_standard_registers.error_int_status));
+        AMS_LOG("HOST_CONTROL2: %08x\n", reg::Read(this->sdmmc_registers->sd_host_standard_registers.host_control2));
+
         /* Check if we're using the tuned clock. */
         R_UNLESS(reg::HasValue(this->sdmmc_registers->sd_host_standard_registers.host_control2, SD_REG_BITS_ENUM(HOST_CONTROL2_SAMPLING_CLOCK, USING_TUNED_CLOCK)), sdmmc::ResultTuningFailed());
 
@@ -889,7 +898,7 @@ namespace ams::sdmmc::impl {
         }
 
         /* If we're at 3.3V, lower to 1.8V. */
-        {
+        if (this->current_bus_power == BusPower_3_3V) {
             /* pcv::ChangeVoltage(pcv::PowerControlTarget_SdCard, 1800000); */
             this->power_controller->LowerBusPower();
 

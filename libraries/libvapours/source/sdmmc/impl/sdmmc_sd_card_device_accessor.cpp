@@ -494,9 +494,11 @@ namespace ams::sdmmc::impl {
         /* Check that we're in 4bit bus mode. */
         IHostController *hc = BaseDeviceAccessor::GetHostController();
         R_UNLESS(hc->GetBusWidth() == BusWidth_4Bit, sdmmc::ResultSdCardNot4BitBusWidthAtUhsIMode());
+        AMS_LOG("%s\n", "BusWidth good\n");
 
         /* Determine what speed mode/access mode we should switch to. */
         R_TRY(this->IssueCommandCheckSupportedFunction(wb, wb_size));
+        AMS_LOG("%s\n", "IssueCommandCheckSupportedFunction\n");
         SwitchFunctionAccessMode target_am;
         SpeedMode target_sm;
         if (max_sm == SpeedMode_SdCardSdr104 && IsSupportedAccessMode(static_cast<const u8 *>(wb), SwitchFunctionAccessMode_Sdr104)) {
@@ -508,16 +510,21 @@ namespace ams::sdmmc::impl {
         } else {
             return sdmmc::ResultSdCardNotSupportSdr104AndSdr50();
         }
+        AMS_LOG("Try Switch to %u %u\n", (u32)target_am, (u32)target_sm);
 
         /* Switch the access mode. */
         R_TRY(this->SwitchAccessMode(target_am, wb, wb_size));
+        AMS_LOG("%s\n", "SwitchAccessMode\n");
 
         /* Set the host controller speed mode and perform tuning using command index 19. */
         R_TRY(hc->SetSpeedMode(target_sm));
+        AMS_LOG("%s\n", "SetSpeedMode\n");
         R_TRY(hc->Tuning(target_sm, 19));
+        AMS_LOG("%s\n", "Tuning\n");
 
         /* Check status. */
         R_TRY(BaseDeviceAccessor::IssueCommandSendStatus());
+        AMS_LOG("%s\n", "IssueCommandSendStatus\n");
 
         return ResultSuccess();
     }
@@ -573,11 +580,17 @@ namespace ams::sdmmc::impl {
         /* Wait 1ms for configuration to take. */
         WaitMicroSeconds(1000);
 
+        AMS_LOG("%s\n", "Did hc->Startup()\n");
+
         /* Wait an additional 74 clocks for configuration to take. */
         WaitClocks(74, hc->GetDeviceClockFrequencyKHz());
 
+        AMS_LOG("%s\n", "Wait 74 clocks\n");
+
         /* Go to idle state. */
         R_TRY(BaseDeviceAccessor::IssueCommandGoIdleState());
+
+        AMS_LOG("%s\n", "Go Idle State\n");
 
         /* Check whether the spec is under 2.0. */
         bool spec_under_2 = false;
@@ -585,53 +598,75 @@ namespace ams::sdmmc::impl {
             R_CATCH(sdmmc::ResultResponseTimeoutError) { spec_under_2 = true; }
         } R_END_TRY_CATCH;
 
+        AMS_LOG("%s\n", "Send If Cond\n");
+
         /* Set the rca to 0. */
         this->sd_card_device.SetRca(0);
+
+        AMS_LOG("%s\n", "SetRca\n");
 
         /* Go to ready state. */
         const bool can_use_uhs_i_mode = (max_bw != BusWidth_1Bit) && (max_sm == SpeedMode_SdCardSdr104 || max_sm == SpeedMode_SdCardSdr50);
         const bool uhs_i_supported    = hc->IsSupportedTuning() && hc->IsSupportedBusPower(BusPower_1_8V);
         R_TRY(this->ChangeToReadyState(spec_under_2, can_use_uhs_i_mode && uhs_i_supported));
 
+        AMS_LOG("%s\n", "ChangeToReadyState\n");
+
         /* Get the CID. */
         R_TRY(BaseDeviceAccessor::IssueCommandAllSendCid(wb, wb_size));
         this->sd_card_device.SetCid(wb, wb_size);
 
+        AMS_LOG("%s\n", "IssueCommandAllSendCid\n");
+
         /* Go to stby state and get the RCA. */
         R_TRY(this->ChangeToStbyStateAndGetRca());
+
+        AMS_LOG("%s\n", "ChangeToStbyStateAndGetRca\n");
 
         /* Get the CSD. */
         R_TRY(BaseDeviceAccessor::IssueCommandSendCsd(wb, wb_size));
         this->sd_card_device.SetCsd(wb, wb_size);
+        AMS_LOG("%s\n", "IssueCommandSendCsd\n");
         R_TRY(this->SetMemoryCapacity(wb));
+
+        AMS_LOG("%s\n", "SetMemoryCapacity\n");
 
         /* Set the host controller speed mode to default if we're not in uhs i mode. */
         if (!this->sd_card_device.IsUhsIMode()) {
             R_TRY(hc->SetSpeedMode(SpeedMode_SdCardDefaultSpeed));
         }
+        AMS_LOG("%s\n", "SetSpeedMode\n");
 
         /* Issue select card command. */
         R_TRY(BaseDeviceAccessor::IssueCommandSelectCard());
+        AMS_LOG("%s\n", "IssueCommandSelectCard\n");
 
         /* Set block length to sector size. */
         R_TRY(BaseDeviceAccessor::IssueCommandSetBlockLenToSectorSize());
+        AMS_LOG("%s\n", "IssueCommandSetBlockLenToSectorSize\n");
+
 
         /* Try to disconnect dat3 pullup resistor. */
         TryDisconnectDat3PullUpResistor();
+        AMS_LOG("%s\n", "TryDisconnectDat3PullUpResistor\n");
 
         /* Get the SCR. */
         R_TRY(this->GetScr(wb, wb_size));
         const u8 sd_bw = GetSdBusWidths(static_cast<const u8 *>(wb));
         const bool spec_under_1_1 = IsLessThanSpecification1_1(static_cast<const u8 *>(wb));
+        AMS_LOG("%s\n", "GetScr\n");
 
         /* Extend the bus width to the largest that we can. */
         R_TRY(this->ExtendBusWidth(max_bw, sd_bw));
+        AMS_LOG("%s\n", "ExtendBusWidth\n");
 
         /* Extend the bus speed to as fast as we can. */
         if (this->sd_card_device.IsUhsIMode()) {
             R_TRY(this->ExtendBusSpeedAtUhsIMode(max_sm, wb, wb_size));
+            AMS_LOG("%s\n", "ExtendBusSpeedAtUhsIMode\n");
         } else {
             R_TRY(this->ExtendBusSpeedAtNonUhsIMode(max_sm, spec_under_1_1, wb, wb_size));
+            AMS_LOG("%s\n", "ExtendBusSpeedAtNonUhsIMode\n");
         }
 
         /* Enable power saving. */
@@ -681,6 +716,8 @@ namespace ams::sdmmc::impl {
 
                 return ResultSuccess();
             }
+
+            AMS_LOG("Startup Failed, Result = %08x\n", result.GetValue());
 
             /* Check if we were removed. */
             AMS_SDMMC_CHECK_SD_CARD_REMOVED();

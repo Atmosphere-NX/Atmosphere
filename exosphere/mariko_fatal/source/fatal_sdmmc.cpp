@@ -45,6 +45,7 @@ namespace ams::secmon::fatal {
 
         sdmmc::SetSdCardWorkBuffer(Port, GetSdCardWorkBuffer(), sdmmc::SdCardWorkBufferSize);
 
+        //sdmmc::Deactivate(Port);
         R_TRY(sdmmc::Activate(Port));
 
         return ResultSuccess();
