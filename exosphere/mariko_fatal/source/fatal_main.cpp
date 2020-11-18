@@ -60,6 +60,7 @@ namespace ams::secmon::fatal {
 
         /* Display the fatal error. */
         {
+            AMS_SECMON_LOG("Showing Display, LCD Vendor = %04x\n", GetLcdVendor());
             InitializeDisplay();
             ShowDisplay(f_ctx, result);
             FinalizeDisplay();

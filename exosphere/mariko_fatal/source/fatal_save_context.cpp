@@ -30,6 +30,7 @@ namespace ams::secmon::fatal {
             sdmmc::SpeedMode speed_mode;
             sdmmc::BusWidth bus_width;
             R_TRY(CheckSdCardConnection(std::addressof(speed_mode), std::addressof(bus_width)));
+            AMS_SECMON_LOG("Sd Card Connection:\n");
             AMS_SECMON_LOG("    Speed Mode: %u\n", static_cast<u32>(speed_mode));
             AMS_SECMON_LOG("    Bus Width:  %u\n", static_cast<u32>(bus_width));
         }
