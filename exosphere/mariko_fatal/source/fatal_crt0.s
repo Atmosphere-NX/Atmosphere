@@ -22,10 +22,16 @@ _start:
     ldr x20, =0x1F00FC000
     mov sp, x20
 
+    /* Save any arguments we may have. */
+    stp x0, x1, [sp, #-16]!
+
     /* Initialize all memory to expected state. */
     ldr x0, =__bss_start__
     ldr x1, =__bss_end__
     bl _ZN3ams6secmon5fatal10InitializeEmm
+
+    /* Restore any arguments we may have. */
+    ldp x0, x1, [sp], #16
 
     /* Jump to the fatal program. */
     ldr x16, =_ZN3ams6secmon5fatal4MainEv

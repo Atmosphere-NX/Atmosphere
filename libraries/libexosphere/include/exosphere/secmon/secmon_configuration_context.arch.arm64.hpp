@@ -112,6 +112,10 @@ namespace ams::secmon {
         return GetSecmonConfiguration().GetHardwareState();
     }
 
+    ALWAYS_INLINE u16 GetLcdVendor() {
+        return GetSecmonConfiguration().GetLcdVendor();
+    }
+
     ALWAYS_INLINE bool IsProduction() {
         return GetSecmonConfiguration().IsProduction();
     }
