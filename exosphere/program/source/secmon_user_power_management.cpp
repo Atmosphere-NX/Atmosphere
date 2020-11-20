@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
-#include "secmon_map.hpp"
+#include "secmon_cpu_context.hpp"
 #include "secmon_page_mapper.hpp"
+#include "secmon_mariko_fatal_error.hpp"
 #include "secmon_user_power_management.hpp"
 
 #include "rebootstub_bin.h"
@@ -90,34 +91,11 @@ namespace ams::secmon {
             /* On Erista, we reboot to fatal error by jumping to fusee primary's handler. */
             return PerformUserRebootToPayload();
         } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
-            /* TODO: Send a SGI FIQ to the other CPUs, so that user code stops executing. */
+            /* Call the fatal error handler. */
+            HandleMarikoFatalErrorInterrupt();
 
-            /* TODO: On cores other than 3, halt/wfi. */
-
-            /* Copy the fatal error context to mariko tzram. */
-            {
-                /* Map the iram page. */
-                constexpr uintptr_t FatalErrorPhysicalAddress = MemoryRegionPhysicalIramFatalErrorContext.GetAddress();
-                AtmosphereIramPageMapper mapper(FatalErrorPhysicalAddress);
-                if (mapper.Map()) {
-                    /* Copy the fatal error context. */
-                          void *dst = MemoryRegionVirtualTzramMarikoProgramFatalErrorContext.GetPointer<void>();
-                    const void *src = mapper.GetPointerTo(FatalErrorPhysicalAddress, sizeof(ams::impl::FatalErrorContext));
-                    std::memcpy(dst, src, sizeof(ams::impl::FatalErrorContext));
-                }
-            }
-
-            /* Map Dram for the mariko program. */
-            MapDramForMarikoProgram();
-
-            AMS_SECMON_LOG("%s\n", "Jumping to Mariko Fatal.");
-            AMS_LOG_FLUSH();
-
-            /* Jump to the mariko fatal program. */
-            reinterpret_cast<void (*)()>(secmon::MemoryRegionVirtualTzramMarikoProgram.GetAddress())();
-
-            /* The mariko fatal program never returns. */
-            __builtin_unreachable();
+            /* We should never get to this point. */
+            AMS_ABORT("Returned from Mariko Fatal handler?\n");
         }
     }
 
