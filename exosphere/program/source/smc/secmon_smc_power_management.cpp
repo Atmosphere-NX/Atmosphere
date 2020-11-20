@@ -133,7 +133,7 @@ namespace ams::secmon::smc {
                                                                         REG_BITS_VALUE(which_core + 0x10, 1, 1)); /* CORERESETn */
         }
 
-        void PowerOffCpu() {
+        void PowerOffCpuImpl() {
             /* Get the current core id. */
             const auto core_id = hw::GetCurrentCoreId();
 
@@ -503,9 +503,7 @@ namespace ams::secmon::smc {
 
     }
 
-    SmcResult SmcPowerOffCpu(SmcArguments &args) {
-        AMS_UNUSED(args);
-
+    void PowerOffCpu() {
         /* Get the current core id. */
         const auto core_id = hw::GetCurrentCoreId();
 
@@ -514,13 +512,19 @@ namespace ams::secmon::smc {
 
         /* If we're on the final core, shut down directly. Otherwise, invoke with special stack. */
         if (core_id == NumCores - 1) {
-            PowerOffCpu();
+            PowerOffCpuImpl();
         } else {
-            PivotStackAndInvoke(GetCoreExceptionStackVirtual(), PowerOffCpu);
+            PivotStackAndInvoke(GetCoreExceptionStackVirtual(), PowerOffCpuImpl);
         }
 
         /* This code will never be reached. */
         __builtin_unreachable();
+    }
+
+    SmcResult SmcPowerOffCpu(SmcArguments &args) {
+        AMS_UNUSED(args);
+
+        PowerOffCpu();
     }
 
     SmcResult SmcPowerOnCpu(SmcArguments &args) {

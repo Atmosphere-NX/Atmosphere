@@ -25,14 +25,16 @@ namespace ams::secmon {
 
         constinit InterruptHandler g_handlers[InterruptHandlersMax] = {};
         constinit int g_interrupt_ids[InterruptHandlersMax]         = {};
+        constinit u8 g_interrupt_core_masks[InterruptHandlersMax]   = {};
 
     }
 
-    void SetInterruptHandler(int interrupt_id, InterruptHandler handler) {
+    void SetInterruptHandler(int interrupt_id, u8 core_mask, InterruptHandler handler) {
         for (int i = 0; i < InterruptHandlersMax; ++i) {
             if (g_interrupt_ids[i] == 0) {
-                g_interrupt_ids[i] = interrupt_id;
-                g_handlers[i]      = handler;
+                g_interrupt_ids[i]        = interrupt_id;
+                g_handlers[i]             = handler;
+                g_interrupt_core_masks[i] = core_mask;
                 return;
             }
         }
@@ -51,6 +53,9 @@ namespace ams::secmon {
         /* Check each handler. */
         for (int i = 0; i < InterruptHandlersMax; ++i) {
             if (g_interrupt_ids[i] == interrupt_id) {
+                /* Validate that we can invoke the handler. */
+                AMS_ABORT_UNLESS((g_interrupt_core_masks[i] & (1u << hw::GetCurrentCoreId())) != 0);
+
                 /* Invoke the handler. */
                 g_handlers[i]();
                 gic::SetEndOfInterrupt(interrupt_id);

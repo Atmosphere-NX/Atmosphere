@@ -15,18 +15,11 @@
  */
 #pragma once
 #include <exosphere.hpp>
-#include "secmon_smc_common.hpp"
 
-namespace ams::secmon::smc {
+namespace ams::secmon {
 
-    NORETURN void PowerOffCpu();
+    constexpr inline int MarikoFatalErrorInterruptId = 198;
 
-    SmcResult SmcPowerOffCpu(SmcArguments &args);
-    SmcResult SmcPowerOnCpu(SmcArguments &args);
-
-    SmcResult SmcSuspendCpu(SmcArguments &args);
-
-    bool IsChargerHiZModeEnabled();
-    void SetChargerHiZModeEnabled(bool en);
+    NORETURN void HandleMarikoFatalErrorInterrupt();
 
 }
