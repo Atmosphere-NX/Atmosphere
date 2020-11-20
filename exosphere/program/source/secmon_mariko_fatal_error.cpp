@@ -42,7 +42,6 @@ namespace ams::secmon {
 
         /* If not all cores have received the fatal, we need to trigger the interrupt on other cores. */
         if (g_fatal_error_mask != (1u << NumCores) - 1) {
-
             /* Configure and send the interrupt to the next core. */
             const auto next_core = __builtin_ctz(~g_fatal_error_mask);
             gic::SetSpiTargetCpu(MarikoFatalErrorInterruptId, (1u << next_core));

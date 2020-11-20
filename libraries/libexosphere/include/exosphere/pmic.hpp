@@ -32,6 +32,8 @@ namespace ams::pmic {
     void DisableVddCpu(Regulator regulator);
     void EnableSleep();
     void PowerOff();
+    void ShutdownSystem(bool reboot);
     bool IsAcOk();
+    bool IsPowerButtonPressed();
 
 }
