@@ -18,12 +18,7 @@
 
 namespace ams::secmon::fatal {
 
-    constexpr inline size_t FrameBufferHeight = 768;
-    constexpr inline size_t FrameBufferWidth  = 1280;
-    constexpr inline size_t FrameBufferSize   = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
-
-    void InitializeDisplay();
-    void ShowDisplay(const ams::impl::FatalErrorContext *f_ctx, const Result save_result);
-    void FinalizeDisplay();
+    void InitializeConsole(u32 *frame_buffer);
+    void Print(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
 }

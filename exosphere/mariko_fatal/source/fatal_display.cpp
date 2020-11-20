@@ -16,6 +16,8 @@
 #include <exosphere.hpp>
 #include "fatal_device_page_table.hpp"
 #include "fatal_registers_di.hpp"
+#include "fatal_display.hpp"
+#include "fatal_print.hpp"
 
 namespace ams::secmon::fatal {
 
@@ -28,10 +30,6 @@ namespace ams::secmon::fatal {
     namespace {
 
         /* Helpful defines. */
-        constexpr size_t FrameBufferHeight = 768;
-        constexpr size_t FrameBufferWidth  = 1280;
-        constexpr size_t FrameBufferSize   = FrameBufferHeight * FrameBufferWidth * sizeof(u32);
-
         constexpr int DsiWaitForCommandMilliSecondsMax        = 250;
         constexpr int DsiWaitForCommandCompletionMilliSeconds = 5;
         constexpr int DsiWaitForHostControlMilliSecondsMax    = 150;
@@ -177,6 +175,89 @@ namespace ams::secmon::fatal {
 
         void FinalizeFrameBuffer() {
             /* We don't actually support finalizing the framebuffer, so do nothing here. */
+        }
+
+        constexpr const char *GetErrorDescription(u32 error_desc) {
+            switch (error_desc) {
+                case 0x100:
+                    return "Instruction Abort";
+                case 0x101:
+                    return "Data Abort";
+                case 0x102:
+                    return "PC Misalignment";
+                case 0x103:
+                    return "SP Misalignment";
+                case 0x104:
+                    return "Trap";
+                case 0x106:
+                    return "SError";
+                case 0x301:
+                    return "Bad SVC";
+                case 0xF00:
+                    return "Kernel Panic";
+                case 0xFFD:
+                    return "Stack overflow";
+                case 0xFFE:
+                    return "std::abort() called";
+                default:
+                    return "Unknown";
+            }
+        }
+
+        void PrintSuggestedErrorFix(const ams::impl::FatalErrorContext *f_ctx) {
+            /* Try to recognize certain errors automatically, and suggest fixes for them. */
+            const char *suggestion = nullptr;
+
+            constexpr u64 ProgramIdAmsMitm = UINT64_C(0x010041544D530000);
+            constexpr u64 ProgramIdBoot    = UINT64_C(0x0100000000000005);
+            if (f_ctx->error_desc == 0xFFE) {
+                if (f_ctx->program_id == ProgramIdAmsMitm) {
+                    /* When a user has archive bits set improperly, attempting to create an automatic backup will fail */
+                    /* to create the file path with error 0x202 */
+                    if (f_ctx->gprs[0] == fs::ResultPathNotFound().GetValue()) {
+                        /* When the archive bit error is occurring, it manifests as failure to create automatic backup. */
+                        /* Thus, we can search the stack for the automatic backups path. */
+                        const char * const automatic_backups_prefix = "automatic_backups/X" /* ..... */;
+                        const int prefix_len = std::strlen(automatic_backups_prefix);
+
+                        for (size_t i = 0; i + prefix_len < f_ctx->stack_dump_size; ++i) {
+                            if (std::memcmp(&f_ctx->stack_dump[i], automatic_backups_prefix, prefix_len) == 0) {
+                                suggestion = "The atmosphere directory may improperly have archive bits set.\n"
+                                             "Please try running an archive bit fixer tool for example, the one in Hekate).\n";
+                                break;
+                            }
+                        }
+                    } else if (f_ctx->gprs[0] == fs::ResultExFatUnavailable().GetValue()) {
+                        /* When a user installs non-exFAT firm but has an exFAT formatted SD card, this error will */
+                        /* be returned on attempt to access the SD card. */
+                        suggestion = "Your console has non-exFAT firmware installed, but your SD card\n"
+                                     "is formatted as exFAT. Format your SD card as FAT32, or manually\n"
+                                     "flash exFAT firmware to package2.\n";
+                    }
+                } else if (f_ctx->program_id == ProgramIdBoot) {
+                    /* 9.x -> 10.x updated the API for SvcQueryIoMapping. */
+                    /* This can cause the kernel to reject incorrect-ABI calls by boot when a partial update is applied */
+                    /* (older kernel in package2, for some reason). */
+                    for (size_t i = 0; i < 8; ++i) {
+                        if (f_ctx->gprs[i] == svc::ResultNotFound().GetValue()) {
+                            suggestion = "A partial update may have been improperly performed.\n"
+                                         "To fix, try manually flashing latest package2 to MMC.\n"
+                                         "\n"
+                                         "For help doing this, seek support in the ReSwitched or\n"
+                                         "Nintendo Homebrew discord servers.\n";
+                            break;
+                        }
+                    }
+                }
+            } else if (f_ctx->error_desc == 0xF00) { /* Kernel Panic */
+                suggestion = "Please contact SciresM#0524 on Discord, or create an issue on the Atmosphere\n"
+                             "GitHub issue tracker. Thank you very much for helping to test mesosphere.\n";
+            }
+
+            /* If we found a suggestion, print it. */
+            if (suggestion != nullptr) {
+                Print("%s", suggestion);
+            }
         }
 
     }
@@ -425,20 +506,26 @@ namespace ams::secmon::fatal {
     }
 
     void ShowDisplay(const ams::impl::FatalErrorContext *f_ctx, const Result save_result) {
-        /* Draw the image to the screen. */
-        std::memset(g_frame_buffer, 0, FrameBufferSize);
+        /* Initialize the console. */
+        InitializeConsole(g_frame_buffer);
         {
-            /* TODO: Actually print the contents of the report. */
-            AMS_UNUSED(f_ctx, save_result);
-            for (size_t n = 0; n < 8; n++) {
-                const size_t x = n * (FrameBufferWidth / 8);
-                for (size_t cur_y = 0; cur_y < FrameBufferHeight; cur_y++) {
-                    for (size_t cur_x = 0; cur_x < (FrameBufferWidth / 8); cur_x++) {
-                        g_frame_buffer[(FrameBufferWidth - (x + cur_x)) * FrameBufferHeight + 0 + cur_y] = ((0x20 * n) | 0x1F);
-                    }
-                }
+            Print("%s\n", "A fatal error occurred when running Atmosph\xe8re.");
+            Print("Program ID: %016" PRIx64 "\n", f_ctx->program_id);
+            Print("Error Desc: %s (0x%x)\n", GetErrorDescription(f_ctx->error_desc), f_ctx->error_desc);
+            Print("\n");
+
+            if (R_SUCCEEDED(save_result)) {
+                Print("Report saved to /atmosphere/fatal_errors/report_%016" PRIx64 ".bin", f_ctx->report_identifier);
+            } else {
+                Print("Failed to save report to the SD card! (%08x)\n", save_result.GetValue());
             }
+
+            PrintSuggestedErrorFix(f_ctx);
+
+            Print("\nPress POWER to reboot.\n");
         }
+
+        /* Ensure the device will see consistent data. */
         hw::FlushDataCache(g_frame_buffer, FrameBufferSize);
 
         /* Enable backlight. */
