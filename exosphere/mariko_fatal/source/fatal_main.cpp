@@ -22,6 +22,8 @@ namespace ams::secmon::fatal {
 
     namespace {
 
+        constexpr inline int I2cAddressMax77620Pmic = 0x3C;
+
         ALWAYS_INLINE const ams::impl::FatalErrorContext *GetFatalErrorContext() {
             return MemoryRegionVirtualTzramMarikoProgramFatalErrorContext.GetPointer<ams::impl::FatalErrorContext>();
         }
@@ -58,6 +60,10 @@ namespace ams::secmon::fatal {
             AMS_SECMON_LOG("Failed to save fatal error context: %08x\n", result.GetValue());
         }
 
+        /* Ensure that i2c-5 is usable for communicating with the pmic. */
+        clkrst::EnableI2c5Clock();
+        i2c::Initialize(i2c::Port_5);
+
         /* Display the fatal error. */
         {
             AMS_SECMON_LOG("Showing Display, LCD Vendor = %04x\n", GetLcdVendor());
@@ -69,7 +75,15 @@ namespace ams::secmon::fatal {
         /* Ensure we have nothing waiting to be logged. */
         AMS_LOG_FLUSH();
 
-        /* TODO: Wait for a button press, then reboot. */
+        /* Wait for power button to be pressed. */
+        while (!pmic::IsPowerButtonPressed()) {
+            util::WaitMicroSeconds(100);
+        }
+
+        /* Reboot. */
+        pmic::ShutdownSystem(true);
+
+        /* Wait for our reboot to complete. */
         AMS_INFINITE_LOOP();
     }
 
