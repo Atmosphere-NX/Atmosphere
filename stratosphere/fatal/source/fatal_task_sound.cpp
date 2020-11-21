@@ -43,25 +43,21 @@ namespace ams::fatal::srv {
                     ON_SCOPE_EXIT { i2csessionClose(&audio); };
 
                     struct {
-                        u16 dev;
-                        u8 val;
+                        u8 reg;
+                        u16 val;
                     } __attribute__((packed)) cmd;
                     static_assert(sizeof(cmd) == 3, "I2C command definition!");
 
-                    cmd.dev = 0xC801;
-                    cmd.val = 200;
+                    cmd.reg = 0x01;
+                    cmd.val = 0xC8C8;
                     i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
 
-                    cmd.dev = 0xC802;
-                    cmd.val = 200;
+                    cmd.reg = 0x02;
+                    cmd.val = 0xC8C8;
                     i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
 
-                    cmd.dev = 0xC802;
-                    cmd.val = 200;
-                    i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
-
-                    for (u16 dev = 97; dev <= 102; dev++) {
-                        cmd.dev = dev;
+                    for (u8 reg = 97; reg <= 102; reg++) {
+                        cmd.reg = reg;
                         cmd.val = 0;
                         i2csessionSendAuto(&audio, &cmd, sizeof(cmd), I2cTransactionOption_All);
                     }
