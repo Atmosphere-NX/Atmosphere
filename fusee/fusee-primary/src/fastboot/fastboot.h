@@ -29,7 +29,7 @@ enum fastboot_return {
 	FASTBOOT_CHAINLOAD,
 };
 
-enum fastboot_return fastboot_enter(const bct0_t *bct0);
+enum fastboot_return fastboot_enter(const bct0_t *bct0, bool force);
 
 #ifdef __cplusplus
 }

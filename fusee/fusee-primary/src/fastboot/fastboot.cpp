@@ -26,16 +26,19 @@ extern "C" {
 
 static ams::fastboot::FastbootGadget fastboot_gadget((uint8_t*) 0xf0000000, 1024 * 1024 * 256); // 256 MiB download buffer reaches end of address space
 
-extern "C" fastboot_return fastboot_enter(const bct0_t *bct0) {
-    bool should_enter = bct0->fastboot_force_enable;
+extern "C" fastboot_return fastboot_enter(const bct0_t *bct0, bool force) {
+    bool should_enter = force || bct0->fastboot_force_enable;
 
-    log_setup_display();
-    
-    if (!should_enter) {
+    if(should_enter) {
+        log_setup_display();
+    } else {
         if (bct0->fastboot_button_timeout > 0) {
+            log_setup_display();
+
             uint32_t timeout = bct0->fastboot_button_timeout;
             uint32_t start_time = get_time_ms();
             uint32_t last_message_secs = 0;
+
             while (get_time_ms() - start_time < timeout) {
                 uint32_t seconds_remaining = (start_time + timeout - get_time_ms() + 999) / 1000;
                 if (seconds_remaining != last_message_secs) {
@@ -48,20 +51,25 @@ extern "C" fastboot_return fastboot_enter(const bct0_t *bct0) {
                     break;
                 }
             }
+
             print((ScreenLogLevel) (SCREEN_LOG_LEVEL_NONE | SCREEN_LOG_LEVEL_NO_PREFIX), "\n\n");
+
+            if (!should_enter) {
+                log_cleanup_display();
+                return FASTBOOT_SKIPPED;
+            }
+        } else {
+            /* We did not initialize the display, so don't need to clean it up here. */
+
+            return FASTBOOT_SKIPPED;
         }
     }
 
-    if (!should_enter) {
-        log_cleanup_display();
-        return FASTBOOT_SKIPPED;
-    }
-    
-    print(SCREEN_LOG_LEVEL_DEBUG, "Entering fastboot.\n");
+    print(SCREEN_LOG_LEVEL_DEBUG, "Entering fastboot. (forced = %d)\n", force);
     ams::xusb::Initialize();
     print(SCREEN_LOG_LEVEL_DEBUG, "Finished initializing USB hardware.\n");
     ams::xusb::EnableDevice(fastboot_gadget);
-    
+
     print((ScreenLogLevel) (SCREEN_LOG_LEVEL_NONE | SCREEN_LOG_LEVEL_NO_PREFIX), "Fastboot mode:\n");
     print((ScreenLogLevel) (SCREEN_LOG_LEVEL_NONE | SCREEN_LOG_LEVEL_NO_PREFIX), "-------------------------------\n");
     print((ScreenLogLevel) (SCREEN_LOG_LEVEL_NONE | SCREEN_LOG_LEVEL_NO_PREFIX), "Volume up: Reboot to RCM.\n");
@@ -71,6 +79,6 @@ extern "C" fastboot_return fastboot_enter(const bct0_t *bct0) {
     fastboot_return r = fastboot_gadget.Run();
 
     log_cleanup_display();
-    
+
     return r;
 }

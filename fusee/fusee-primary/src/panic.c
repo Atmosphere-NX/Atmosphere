@@ -148,7 +148,7 @@ static void _check_and_display_atmosphere_fatal_error(void) {
         print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Error Desc: %s (0x%x)\n", get_error_desc_str(ctx.error_desc), ctx.error_desc);
 
         /* Save context to the SD card. */
-        {
+        if (mount_sd()) {
             char filepath[0x40];
             snprintf(filepath, sizeof(filepath) - 1, "/atmosphere/fatal_errors/report_%016llx.bin", ctx.report_identifier);
             filepath[sizeof(filepath)-1] = 0;
@@ -157,6 +157,10 @@ static void _check_and_display_atmosphere_fatal_error(void) {
             } else {
                 print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Report saved to %s\n", filepath);
             }
+
+            unmount_sd();
+        } else {
+	        print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX, "Failed to mount SD card to save report!\n");
         }
 
         /* Try to print a fix suggestion via automatic error detection. */

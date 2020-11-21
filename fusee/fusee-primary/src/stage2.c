@@ -20,8 +20,13 @@
 #include "utils.h"
 
 bool stage2_run_mtc(const bct0_t *bct0) {
+    static bool has_run_mtc = false;
     FILINFO info;
     size_t size;
+
+    if (has_run_mtc) {
+        return true;
+    }
     
     /* Check if the MTC binary is present. */
     if (f_stat(bct0->stage2_mtc_path, &info) != FR_OK) {
@@ -51,6 +56,8 @@ bool stage2_run_mtc(const bct0_t *bct0) {
     
     /* Cleanup right away. */
     memset((void *)bct0->stage2_load_address, 0, size);
+
+    has_run_mtc = true;
     
     return mtc_res;
 }
