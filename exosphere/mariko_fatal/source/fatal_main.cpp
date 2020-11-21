@@ -16,6 +16,7 @@
 #include <exosphere.hpp>
 #include "fatal_sdmmc.hpp"
 #include "fatal_save_context.hpp"
+#include "fatal_sound.hpp"
 #include "fatal_display.hpp"
 
 namespace ams::secmon::fatal {
@@ -60,9 +61,16 @@ namespace ams::secmon::fatal {
             AMS_SECMON_LOG("Failed to save fatal error context: %08x\n", result.GetValue());
         }
 
-        /* Ensure that i2c-5 is usable for communicating with the pmic. */
+        /* Ensure that i2c-1/i2c-5 are usable for communicating with the audio device/pmic. */
+        clkrst::EnableI2c1Clock();
         clkrst::EnableI2c5Clock();
+        i2c::Initialize(i2c::Port_1);
         i2c::Initialize(i2c::Port_5);
+
+        /* Shut down audio. */
+        {
+            StopSound();
+        }
 
         /* Display the fatal error. */
         {
