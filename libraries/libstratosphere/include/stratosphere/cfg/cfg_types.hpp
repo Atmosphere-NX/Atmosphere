@@ -23,9 +23,17 @@ namespace ams::cfg {
     namespace impl {
 
         enum OverrideStatusFlag : u64 {
-            OverrideStatusFlag_Hbl             = BIT(0),
-            OverrideStatusFlag_ProgramSpecific = BIT(1),
-            OverrideStatusFlag_CheatEnabled    = BIT(2),
+            OverrideStatusFlag_Hbl               = (1u << 0),
+            OverrideStatusFlag_ProgramSpecific   = (1u << 1),
+            OverrideStatusFlag_CheatEnabled      = (1u << 2),
+
+            OverrideStatusFlag_AddressSpaceShift = 3,
+            OverrideStatusFlag_AddressSpaceMask  = ((1u << 2) - 1) << OverrideStatusFlag_AddressSpaceShift,
+
+            OverrideStatusFlag_AddressSpace32Bit             = (svc::CreateProcessFlag_AddressSpace32Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace64BitDeprecated   = (svc::CreateProcessFlag_AddressSpace64BitDeprecated   >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace32BitWithoutAlias = (svc::CreateProcessFlag_AddressSpace32BitWithoutAlias >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
+            OverrideStatusFlag_AddressSpace64Bit             = (svc::CreateProcessFlag_AddressSpace64Bit             >> svc::CreateProcessFlag_AddressSpaceShift) << OverrideStatusFlag_AddressSpaceShift,
         };
 
     }
@@ -46,6 +54,9 @@ namespace ams::cfg {
         DEFINE_FLAG_ACCESSORS(CheatEnabled)
 
         #undef DEFINE_FLAG_ACCESSORS
+
+        constexpr inline u64 GetOverrideAddressSpaceFlags() const { return this->flags & impl::OverrideStatusFlag_AddressSpaceMask; }
+        constexpr inline bool HasOverrideAddressSpace() const { return this->IsHbl() && this->GetOverrideAddressSpaceFlags() != 0; }
     };
 
     static_assert(sizeof(OverrideStatus) == 0x10, "sizeof(OverrideStatus)");

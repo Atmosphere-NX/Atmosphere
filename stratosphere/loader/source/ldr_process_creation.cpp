@@ -262,7 +262,11 @@ namespace ams::ldr {
                     flags |= svc::CreateProcessFlag_AddressSpace32BitWithoutAlias;
                     break;
                 case Npdm::AddressSpaceType_64Bit:
-                    flags |= svc::CreateProcessFlag_AddressSpace64Bit;
+                    if (hos::GetVersion() >= hos::Version_2_0_0 || svc::IsKernelMesosphere()) {
+                        flags |= svc::CreateProcessFlag_AddressSpace64Bit;
+                    } else {
+                        flags |= svc::CreateProcessFlag_AddressSpace64BitDeprecated;
+                    }
                     break;
                 default:
                     return ResultInvalidMeta();

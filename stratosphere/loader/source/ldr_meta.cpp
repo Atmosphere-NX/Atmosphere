@@ -215,6 +215,21 @@ namespace ams::ldr {
                 }
             }
 
+            /* Perform address space override. */
+            if (status.HasOverrideAddressSpace()) {
+                /* Clear the existing address space. */
+                meta->npdm->flags &= ~Npdm::MetaFlag_AddressSpaceTypeMask;
+
+                /* Set the new address space flag. */
+                switch (status.GetOverrideAddressSpaceFlags()) {
+                    case cfg::impl::OverrideStatusFlag_AddressSpace32Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_32Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace64BitDeprecated:   meta->npdm->flags |= (Npdm::AddressSpaceType_64BitDeprecated)   << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias: meta->npdm->flags |= (Npdm::AddressSpaceType_32BitWithoutAlias) << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace64Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
+                }
+            }
+
             /* When hbl is applet, adjust main thread priority. */
             if ((caps::GetProgramInfoFlags(meta->aci_kac, meta->aci->kac_size) & ProgramInfoFlag_ApplicationTypeMask) == ProgramInfoFlag_Applet) {
                 constexpr auto HblMainThreadPriorityApplication = 44;
