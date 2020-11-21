@@ -256,4 +256,6 @@ SECTIONS
     PROVIDE(__kernel_ldr_bin_size__ = kernel_ldr_bin_end - kernel_ldr_bin);
     PROVIDE(__mesosphere_bin_start__ = mesosphere_bin - __start__);
     PROVIDE(__mesosphere_bin_size__ = mesosphere_bin_end - mesosphere_bin);
+    PROVIDE(__mariko_fatal_bin_start__ = mariko_fatal_bin - __start__);
+    PROVIDE(__mariko_fatal_bin_size__ = mariko_fatal_bin_end - mariko_fatal_bin);
 }

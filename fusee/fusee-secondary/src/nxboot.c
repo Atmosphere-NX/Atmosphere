@@ -55,6 +55,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
+#include "mariko_fatal_bin.h"
 #include "mesosphere_bin.h"
 #include "sept_secondary_00_enc.h"
 #include "sept_secondary_01_enc.h"
@@ -1004,6 +1005,24 @@ uint32_t nxboot_main(void) {
         }
     } else {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
+    }
+
+    /* Copy the exosphere mariko fatal program to a good location. */
+    {
+        void * const mariko_fatal_dst = (void *)0x80020000;
+        memset(mariko_fatal_dst, 0, 0x20000);
+
+        const size_t sd_mf_size = get_file_size("atmosphere/mariko_fatal.bin");
+        if (sd_mf_size != 0) {
+            if (sd_mf_size > 0x20000) {
+                fatal_error("Error: atmosphere/mariko_fatal.bin is too large!\n");
+            }
+            if (read_from_file(mariko_fatal_dst, sd_mf_size, "atmosphere/mariko_fatal.bin") != sd_mf_size) {
+                fatal_error("Error: failed to read atmosphere/mariko_fatal.bin");
+            }
+        } else {
+            memcpy(mariko_fatal_dst, mariko_fatal_bin, mariko_fatal_bin_size);
+        }
     }
 
     /* Move BootConfig. */

@@ -107,6 +107,7 @@ _metadata:
 #define CONTENT_TYPE_EMC 8
 #define CONTENT_TYPE_KLD 9
 #define CONTENT_TYPE_KRN 10
+#define CONTENT_TYPE_EXF 11
 
 #define CONTENT_FLAG_NONE          (0 << 0)
 
@@ -288,6 +289,18 @@ _content_headers:
 .word 0xCCCCCCCC
 .asciz "emummc"
 .align 5
+
+/* exosphere mariko fatal program content header */
+.word __mariko_fatal_bin_start__
+.word __mariko_fatal_bin_size__
+.byte CONTENT_TYPE_EXF
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.byte CONTENT_FLAG_NONE
+.word 0xCCCCCCCC
+.asciz "exosphere_fatal"
+.align 5
+
 
 /* splash_screen content header */
 .word __splash_screen_bmp_start__
