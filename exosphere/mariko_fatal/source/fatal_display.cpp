@@ -173,7 +173,7 @@ namespace ams::secmon::fatal {
             }
         }
 
-        void FinalizeFrameBuffer() {
+        [[maybe_unused]] void FinalizeFrameBuffer() {
             /* We don't actually support finalizing the framebuffer, so do nothing here. */
         }
 
@@ -260,17 +260,79 @@ namespace ams::secmon::fatal {
             }
         }
 
-    }
+        void FinalizeDisplay() {
+            /* TODO: What other configuration is needed, if any? */
 
-    void FinalizeDisplay() {
-        FinalizeFrameBuffer();
-        /* TODO */
-        AMS_SECMON_LOG("FinalizeDisplay not yet implemented\n");
+            /* Configure LCD pinmux tristate + passthrough. */
+            reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_NFC_EN,     reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+            reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_NFC_INT,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+            reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_PWM, reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+            reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_EN,  reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+            reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_RST,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
+
+            if (fuse::GetHardwareType() == fuse::HardwareType_Five) {
+                /* Configure LCD backlight. */
+                reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x4);
+                reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x4);
+            } else {
+                /* Configure LCD power, VDD. */
+                reg::SetBits(g_gpio_regs + GPIO_PORT3_CNF_0, 0x3);
+                reg::SetBits(g_gpio_regs + GPIO_PORT3_OE_0,  0x3);
+                reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x1);
+                util::WaitMicroSeconds(10'000ul);
+
+                reg::SetBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
+                util::WaitMicroSeconds(10'000ul);
+
+                /* Configure LCD backlight. */
+                reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x7);
+                reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x7);
+                reg::SetBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x2);
+            }
+
+            /* Disable the LCD backlight. */
+            if (GetLcdVendor() == 0x2050) {
+                /* TODO: We're not sure display is alive. How to manage this? */
+                /* This is probably incorrect backlight disable for hw-type 5. */
+                reg::ClearBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x1);
+            } else {
+                reg::ClearBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x1);
+            }
+
+            /* Disable backlight RST/Voltage. */
+            reg::ClearBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x4);
+            if (GetLcdVendor() == 0x2050) {
+                util::WaitMicroSeconds(30'000ul);
+            } else {
+                util::WaitMicroSeconds(10'000ul);
+                reg::ClearBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x2);
+                util::WaitMicroSeconds(10'000ul);
+                reg::ClearBits(g_gpio_regs + GPIO_PORT3_OUT_0, 0x1);
+                util::WaitMicroSeconds(10'000ul);
+            }
+
+            /* Cut clock to DSI. */
+            reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_H_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_H_SET_SET_MIPI_CAL_RST, ENABLE),
+                                                                          CLK_RST_REG_BITS_ENUM(RST_DEV_H_SET_SET_DSI_RST,      ENABLE));
+
+            reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_H_CLR, CLK_RST_REG_BITS_ENUM(CLK_ENB_H_CLR_CLR_CLK_ENB_MIPI_CAL, ENABLE),
+                                                                          CLK_RST_REG_BITS_ENUM(CLK_ENB_H_CLR_CLR_CLK_ENB_DSI,      ENABLE));
+
+            reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_RST_DEV_L_SET, CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_HOST1X_RST, ENABLE),
+                                                                          CLK_RST_REG_BITS_ENUM(RST_DEV_L_SET_SET_DISP1_RST,  ENABLE));
+
+            reg::Write(g_clk_rst_regs + CLK_RST_CONTROLLER_CLK_ENB_L_CLR, CLK_RST_REG_BITS_ENUM(CLK_ENB_L_CLR_CLR_CLK_ENB_HOST1X, ENABLE),
+                                                                          CLK_RST_REG_BITS_ENUM(CLK_ENB_L_CLR_CLR_CLK_ENB_DISP1,  ENABLE));
+
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_PAD_CONTROL_0, (DSI_PAD_CONTROL_VS1_PULLDN_CLK | DSI_PAD_CONTROL_VS1_PULLDN(0xF) | DSI_PAD_CONTROL_VS1_PDIO_CLK | DSI_PAD_CONTROL_VS1_PDIO(0xF)));
+            reg::Write(g_dsi_regs + sizeof(u32) * DSI_POWER_CONTROL, 0);
+        }
+
     }
 
     void InitializeDisplay() {
         /* Ensure that the display is finalized. */
-        /* TODO */
+        FinalizeDisplay();
 
         /* Setup the framebuffer. */
         InitializeFrameBuffer();

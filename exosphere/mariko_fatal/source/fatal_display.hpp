@@ -24,6 +24,5 @@ namespace ams::secmon::fatal {
 
     void InitializeDisplay();
     void ShowDisplay(const ams::impl::FatalErrorContext *f_ctx, const Result save_result);
-    void FinalizeDisplay();
 
 }

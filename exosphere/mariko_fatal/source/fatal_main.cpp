@@ -77,7 +77,6 @@ namespace ams::secmon::fatal {
             AMS_SECMON_LOG("Showing Display, LCD Vendor = %04x\n", GetLcdVendor());
             InitializeDisplay();
             ShowDisplay(f_ctx, result);
-            FinalizeDisplay();
         }
 
         /* Ensure we have nothing waiting to be logged. */
