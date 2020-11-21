@@ -132,7 +132,6 @@ namespace ams::os {
         /* Try to map up to 64 times. */
         for (int i = 0; i < 64; ++i) {
             /* Reserve space to map the memory. */
-            /* TODO: os::AslrSpaceManager */
             void *map_address = impl::GetAslrSpaceManager().AllocateSpace(tmem->size);
             R_UNLESS(map_address != nullptr, os::ResultOutOfAddressSpace());
 
