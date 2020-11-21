@@ -223,7 +223,7 @@ namespace ams::secmon::fatal {
                         for (size_t i = 0; i + prefix_len < f_ctx->stack_dump_size; ++i) {
                             if (std::memcmp(&f_ctx->stack_dump[i], automatic_backups_prefix, prefix_len) == 0) {
                                 suggestion = "The atmosphere directory may improperly have archive bits set.\n"
-                                             "Please try running an archive bit fixer tool for example, the one in Hekate).\n";
+                                             "Please try running an archive bit fixer tool (for example, the one in Hekate).\n";
                                 break;
                             }
                         }
