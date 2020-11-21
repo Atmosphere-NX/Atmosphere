@@ -18,12 +18,14 @@
 #include "os_rng_manager_impl.hpp"
 #include "os_thread_manager_types.hpp"
 #include "os_tick_manager_impl.hpp"
+#include "os_aslr_space_manager_types.hpp"
 
 namespace ams::os::impl {
 
     class OsResourceManager {
         private:
             RngManager  rng_manager{};
+            AslrSpaceManager aslr_space_manager;
             /* TODO */
             ThreadManager thread_manager{};
             /* TODO */
@@ -33,6 +35,7 @@ namespace ams::os::impl {
             OsResourceManager() = default;
 
             constexpr ALWAYS_INLINE RngManager &GetRngManager() { return this->rng_manager; }
+            constexpr ALWAYS_INLINE AslrSpaceManager &GetAslrSpaceManager() { return this->aslr_space_manager; }
             constexpr ALWAYS_INLINE ThreadManager &GetThreadManager() { return this->thread_manager; }
             constexpr ALWAYS_INLINE TickManager &GetTickManager() { return this->tick_manager; }
     };
