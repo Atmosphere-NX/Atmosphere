@@ -15,6 +15,7 @@ MEMORY
     NULL        : ORIGIN = 0x00000000, LENGTH = 0x1000
     main        : ORIGIN = 0x40010000, LENGTH = 0x20000
     low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
+    dram        : ORIGIN = 0xC0000000, LENGTH = 0x40000000
 }
 
 SECTIONS
@@ -149,6 +150,16 @@ SECTIONS
         PROVIDE (__bss_end__ = ABSOLUTE(.));
     } >main :NONE
     __end__ = ABSOLUTE(.) ;
+
+    .dram (NOLOAD) :
+    {
+        . = ALIGN(32);
+        PROVIDE (__dram_start__ = ABSOLUTE(.));
+        *(.framebuffer)
+        *(.dram)
+        . = ALIGN(32);
+        PROVIDE (__dram_end__ = ABSOLUTE(.));
+    } >dram :NONE
 
     /* ==================
        ==== Metadata ====

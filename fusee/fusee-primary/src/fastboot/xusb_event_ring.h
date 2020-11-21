@@ -14,28 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FUSEE_FS_UTILS_H
-#define FUSEE_FS_UTILS_H
+#pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "xusb_trb.h"
+    
+namespace ams {
 
-#include "sdmmc/sdmmc.h"
-#include "utils.h"
+    namespace xusb {
+    
+        class EventRing {
+            public:
+            void Initialize();
+            void Process();
+            private:
+            TRB storage[0x20];
+            
+            TRB *consumer_dequeue_ptr;
+            bool consumer_cycle_state;
+        } __attribute__((aligned(16)));
+    
+    } // namespace xusb
 
-extern sdmmc_t g_sd_sdmmc;
-extern sdmmc_device_t g_sd_device;
-
-bool acquire_sd_device(void);
-void release_sd_device(void);
-bool mount_sd(void);
-void unmount_sd(void);
-
-void temporary_unmount_sd(bool *was_mounted);
-void temporary_remount_sd(void);
-
-uint32_t get_file_size(const char *filename);
-int read_from_file(void *dst, uint32_t dst_size, const char *filename);
-int write_to_file(void *src, uint32_t src_size, const char *filename);
-
-#endif
+} // namespace ams

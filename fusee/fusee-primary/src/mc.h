@@ -598,8 +598,8 @@ typedef enum {
 void mc_config_tsec_carveout(uint32_t bom, uint32_t size1mb, bool lock);
 void mc_config_carveout();
 void mc_config_carveout_finalize();
-void mc_enable_ahb_redirect();
-void mc_disable_ahb_redirect();
+void mc_acquire_ahb_redirect();
+void mc_release_ahb_redirect();
 void mc_enable();
 
 #endif

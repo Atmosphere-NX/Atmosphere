@@ -14,28 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FUSEE_FS_UTILS_H
-#define FUSEE_FS_UTILS_H
+#pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "reg_util.h"
 
-#include "sdmmc/sdmmc.h"
-#include "utils.h"
+namespace t210 {
 
-extern sdmmc_t g_sd_sdmmc;
-extern sdmmc_device_t g_sd_device;
+    const struct APBDEV_PMC {
+        static const uintptr_t base_addr = 0x7000e400;
+        using Peripheral = APBDEV_PMC;
 
-bool acquire_sd_device(void);
-void release_sd_device(void);
-bool mount_sd(void);
-void unmount_sd(void);
-
-void temporary_unmount_sd(bool *was_mounted);
-void temporary_remount_sd(void);
-
-uint32_t get_file_size(const char *filename);
-int read_from_file(void *dst, uint32_t dst_size, const char *filename);
-int write_to_file(void *src, uint32_t src_size, const char *filename);
-
-#endif
+        BEGIN_DEFINE_REGISTER(USB_AO_0, uint32_t, 0xf0)
+            DEFINE_RW_FIELD(ID_PD_P0, 3)
+            DEFINE_RW_FIELD(VBUS_WAKEUP_PD_P0, 2)
+        END_DEFINE_REGISTER(USB_AO_0)
+    } APBDEV_PMC;
+    
+} // namespace t210

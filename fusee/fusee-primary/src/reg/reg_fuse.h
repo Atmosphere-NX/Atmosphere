@@ -14,28 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef FUSEE_FS_UTILS_H
-#define FUSEE_FS_UTILS_H
+#pragma once
 
-#include <stdbool.h>
-#include <stdint.h>
+#include "reg_util.h"
 
-#include "sdmmc/sdmmc.h"
-#include "utils.h"
+namespace t210 {
 
-extern sdmmc_t g_sd_sdmmc;
-extern sdmmc_device_t g_sd_device;
+    const struct FUSE {
+        static const uintptr_t base_addr = 0x7000f800;
+        using Peripheral = FUSE;
 
-bool acquire_sd_device(void);
-void release_sd_device(void);
-bool mount_sd(void);
-void unmount_sd(void);
+        BEGIN_DEFINE_REGISTER(SKU_USB_CALIB, uint32_t, 0x1f0)
+            DEFINE_RO_FIELD(TERM_RANGE_ADJ, 7, 10) // TODO: check?
+            DEFINE_RO_FIELD(HS_CURR_LEVEL, 0, 5) // TODO: check?
+        END_DEFINE_REGISTER(SKU_USB_CALIB)
 
-void temporary_unmount_sd(bool *was_mounted);
-void temporary_remount_sd(void);
+        BEGIN_DEFINE_REGISTER(USB_CALIB_EXT, uint32_t, 0x350)
+            DEFINE_RO_FIELD(RPD_CTRL, 0, 5)
+        END_DEFINE_REGISTER(USB_CALIB_EXT)
 
-uint32_t get_file_size(const char *filename);
-int read_from_file(void *dst, uint32_t dst_size, const char *filename);
-int write_to_file(void *src, uint32_t src_size, const char *filename);
-
-#endif
+    } FUSE;
+    
+} // namespace t210

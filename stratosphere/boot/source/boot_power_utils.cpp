@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "boot_power_utils.hpp"
 #include "boot_pmic_driver.hpp"
-#include "fusee-primary_bin.h"
+#include "fusee_primary_bin.h"
 
 namespace ams::boot {
 

@@ -124,16 +124,21 @@ void mc_config_carveout_finalize()
     MAKE_MC_REG(MC_SECURITY_CARVEOUT2_CFG0) = 0x440167E;
 }
 
-void mc_enable_ahb_redirect()
+static int mc_ahb_redirect_users = 0;
+
+void mc_acquire_ahb_redirect()
 {
-    volatile tegra_car_t *car = car_get_regs();
-    car->lvl2_clk_gate_ovrd = ((car->lvl2_clk_gate_ovrd & 0xFFF7FFFF) | 0x80000);
+    if ((mc_ahb_redirect_users++) == 0)
+    {
+        volatile tegra_car_t *car = car_get_regs();
+        car->lvl2_clk_gate_ovrd = ((car->lvl2_clk_gate_ovrd & 0xFFF7FFFF) | 0x80000);
     
-    MAKE_MC_REG(MC_IRAM_BOM) = 0x40000000;
-    MAKE_MC_REG(MC_IRAM_TOM) = 0x4003F000;
+        MAKE_MC_REG(MC_IRAM_BOM) = 0x40000000;
+        MAKE_MC_REG(MC_IRAM_TOM) = 0x4003F000;
+    }
 }
 
-void mc_disable_ahb_redirect()
+static void mc_disable_ahb_redirect()
 {
     volatile tegra_car_t *car = car_get_regs();
     
@@ -141,6 +146,16 @@ void mc_disable_ahb_redirect()
     MAKE_MC_REG(MC_IRAM_TOM) = 0;
     
     car->lvl2_clk_gate_ovrd &= 0xFFF7FFFF;
+
+    mc_ahb_redirect_users = 0;
+}
+
+void mc_release_ahb_redirect()
+{
+    if ((--mc_ahb_redirect_users) == 0)
+    {
+        mc_disable_ahb_redirect();
+    }
 }
 
 void mc_enable()

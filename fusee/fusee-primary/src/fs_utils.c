@@ -20,64 +20,98 @@
 #include "lib/log.h"
 
 FATFS sd_fs;
-static bool g_sd_mounted = false;
-static bool g_sd_initialized = false;
-static bool g_ahb_redirect_enabled = false;
+static int g_sd_device_rc = 0;
+static int g_sd_fs_rc = 0;
 sdmmc_t g_sd_sdmmc;
 sdmmc_device_t g_sd_device;
 
+bool acquire_sd_device(void)
+{
+	/* Already initialized. */
+	if (g_sd_device_rc++ > 0)
+		return true;
+
+    /* Enable AHB redirection if necessary. */
+    mc_acquire_ahb_redirect();
+	
+	if (sdmmc_device_sd_init(&g_sd_device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_UHS_SDR104))
+		return true;
+
+	mc_release_ahb_redirect();
+	
+	g_sd_device_rc--;
+
+	return false;
+}
+
+void release_sd_device(void)
+{
+	/* No need to finalize. */
+	if (--g_sd_device_rc > 0)
+		return;
+
+	sdmmc_device_finish(&g_sd_device);
+
+	/* Disable AHB redirection if necessary. */
+	mc_release_ahb_redirect();
+}
 
 bool mount_sd(void)
 {
     /* Already mounted. */
-    if (g_sd_mounted)
+    if (g_sd_fs_rc++ > 0)
         return true;
 
-    /* Enable AHB redirection if necessary. */
-    if (!g_ahb_redirect_enabled) {
-        mc_enable_ahb_redirect();
-        g_ahb_redirect_enabled = true;
+    /* Make sure SD device is initialized. */
+    if (!acquire_sd_device()) {
+	    g_sd_fs_rc--;
+	    return false;
+    }
+    
+    /* Mount SD filesystem. */
+    if (f_mount(&sd_fs, "", 1) == FR_OK) {
+	    print(SCREEN_LOG_LEVEL_INFO, "Mounted SD card!\n");
+	    return true;
     }
 
-    if (!g_sd_initialized) {
-        /* Initialize SD. */
-        if (sdmmc_device_sd_init(&g_sd_device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_UHS_SDR104))
-        {
-            g_sd_initialized = true;
+    release_sd_device();
 
-            /* Mount SD. */
-            if (f_mount(&sd_fs, "", 1) == FR_OK) {
-                print(SCREEN_LOG_LEVEL_INFO, "Mounted SD card!\n");
-                g_sd_mounted = true;
-            }
-        }
-        else
-            fatal_error("Failed to initialize the SD card!.\n");
-    }
+    g_sd_fs_rc--;
 
-    return g_sd_mounted;
+    return false;
 }
 
 void unmount_sd(void)
 {
-    if (g_sd_mounted)
-    {
-        f_mount(NULL, "", 1);
-        sdmmc_device_finish(&g_sd_device);
-        g_sd_mounted = false;
-    }
+	if (--g_sd_fs_rc > 0)
+		return;
+	
+	f_mount(NULL, "", 1);
 
-    /* Disable AHB redirection if necessary. */
-    if (g_ahb_redirect_enabled) {
-        mc_disable_ahb_redirect();
-        g_ahb_redirect_enabled = false;
+	release_sd_device();
+}
+
+void temporary_unmount_sd(bool *was_mounted)
+{
+	if (g_sd_fs_rc > 0) {
+		f_mount(NULL, "", 1);
+		*was_mounted = true;
+	} else {
+		*was_mounted = false;
+	}
+}
+
+void temporary_remount_sd(void)
+{
+    if (f_mount(&sd_fs, "", 1) != FR_OK) {
+	    fatal_error("Failed to remount SD card after temporary operation!\n");
     }
 }
 
 uint32_t get_file_size(const char *filename)
 {
     /* SD card hasn't been mounted yet. */
-    if (!g_sd_mounted)
+    if (g_sd_fs_rc == 0)
         return 0;
 
     /* Open the file for reading. */
@@ -97,7 +131,7 @@ uint32_t get_file_size(const char *filename)
 int read_from_file(void *dst, uint32_t dst_size, const char *filename)
 {
     /* SD card hasn't been mounted yet. */
-    if (!g_sd_mounted)
+    if (g_sd_fs_rc == 0)
         return 0;
 
     /* Open the file for reading. */
@@ -119,7 +153,7 @@ int read_from_file(void *dst, uint32_t dst_size, const char *filename)
 int write_to_file(void *src, uint32_t src_size, const char *filename)
 {
     /* SD card hasn't been mounted yet. */
-    if (!g_sd_mounted)
+    if (g_sd_fs_rc == 0)
         return 0;
 
     /* Open the file for writing. */

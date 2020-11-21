@@ -27,7 +27,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
+SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display src/fastboot
 DATA		:=	data
 INCLUDES	:=	include  ../../libraries/libvapours/include
 
@@ -39,11 +39,10 @@ DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\
 
 CFLAGS	:= \
 	-g \
-	-O2 \
+	-Os \
 	-fomit-frame-pointer \
 	-ffunction-sections \
 	-fdata-sections \
-	-std=gnu11 \
 	-Werror \
 	-Wall \
 	-fstrict-volatile-bitfields \
@@ -51,7 +50,7 @@ CFLAGS	:= \
 
 CFLAGS	+=	$(INCLUDE)
 
-CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
+CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=c++2a
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(TOPDIR)/linker.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)

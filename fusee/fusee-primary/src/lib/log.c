@@ -17,6 +17,8 @@
 #include "log.h"
 
 #include "../display/video_fb.h"
+#include "../di.h"
+#include "../uart.h"
 #include "vsprintf.h"
 
 /* default log level for screen output */
@@ -30,8 +32,42 @@ ScreenLogLevel log_get_log_level() {
     return g_screen_log_level;
 }
 
+static uint32_t g_framebuffer[1280*768] __attribute__((section(".framebuffer"))) = {0};
+static int g_log_display_reference_count = 0;
+
+void log_setup_display() {
+    if (g_log_display_reference_count++ == 0) {
+        /* Zero-fill the framebuffer and register it as printk provider. */
+        video_init(g_framebuffer);
+
+        /* Initialize the display. */
+        display_init();
+
+        /* Set the framebuffer. */
+        display_init_framebuffer(g_framebuffer);
+
+        /* Turn on the backlight after initializing the lfb */
+        /* to avoid flickering. */
+        display_backlight(true);
+    }
+}
+
+void log_cleanup_display() {
+    if (--g_log_display_reference_count == 0) {
+        /* Turn off the backlight. */
+        display_backlight(false);
+
+        /* Terminate the display. */
+        display_end();
+    }
+}
+
+void *log_get_display_framebuffer() {
+    return g_framebuffer;
+}
+
 void log_to_uart(const char *message) {
-    /* TODO: add UART logging */
+    uart_send(UART_B, message, strlen(message));
 }
 
 static void print_to_screen(ScreenLogLevel screen_log_level, char *message) {

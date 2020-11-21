@@ -65,9 +65,9 @@ void config_gpios()
     pinmux->uart3_tx = 0;
     pinmux->pe6 = PINMUX_INPUT;
     pinmux->ph6 = PINMUX_INPUT;
-    
-    gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
-    gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
+
+    gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_SFIO);
+    gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_SFIO);
     gpio_configure_mode(TEGRA_GPIO(E, 6), GPIO_MODE_GPIO);
     gpio_configure_mode(TEGRA_GPIO(H, 6), GPIO_MODE_GPIO);
     gpio_configure_direction(TEGRA_GPIO(G, 0), GPIO_DIRECTION_INPUT);
@@ -78,6 +78,7 @@ void config_gpios()
     i2c_config(I2C_1);
     i2c_config(I2C_5);
     uart_config(UART_A);
+    uart_config(UART_B);
 
     /* Configure volume up/down as inputs. */
     gpio_configure_mode(GPIO_BUTTON_VOL_UP, GPIO_MODE_GPIO);
@@ -178,6 +179,8 @@ void config_se_brom()
     pmc->reset_status = 0;
 }
 
+extern uint8_t __dram_start__[], __dram_end__[];
+
 void nx_hwinit()
 {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
@@ -213,10 +216,9 @@ void nx_hwinit()
     config_gpios();
 
     /* Uncomment for UART debugging. */
-    /*
-    clkrst_reboot(CARDEVICE_UARTC);
-    uart_init(UART_C, 115200);
-    */
+
+    clkrst_reboot(CARDEVICE_UARTB);
+    uart_init(UART_B, 115200);
     
     /* Reboot CL-DVFS. */
     clkrst_reboot(CARDEVICE_CL_DVFS);
@@ -291,6 +293,9 @@ void nx_hwinit()
 
     /* Initialize SDRAM. */
     sdram_init();
+
+    /* Zero-fill the .dram section */
+    memset(__dram_start__, 0, __dram_end__ - __dram_start__);
     
     /* Save SDRAM LP0 parameters. */
     sdram_lp0_save_params(sdram_get_params());
