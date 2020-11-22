@@ -51,7 +51,20 @@ namespace ams::mitm::bpc {
             }
         }
 
-        void DoRebootToPayload(const ams::FatalErrorContext *ctx) {
+        void DoRebootToPayload() {
+            /* Ensure clean IRAM state. */
+            ClearIram();
+
+            /* Copy in payload. */
+            for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &g_reboot_payload[ofs], std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
+            }
+
+            exosphere::ForceRebootToIramPayload();
+        }
+
+        void DoRebootToFatalError(const ams::FatalErrorContext *ctx) {
             /* Ensure clean IRAM state. */
             ClearIram();
 
@@ -85,7 +98,7 @@ namespace ams::mitm::bpc {
                 break;
             case RebootType::ToPayload:
             default: /* This should never be called with ::Standard */
-                DoRebootToPayload(nullptr);
+                DoRebootToPayload();
                 break;
         }
     }
@@ -96,7 +109,7 @@ namespace ams::mitm::bpc {
 
     /* Atmosphere power utilities. */
     void RebootForFatalError(const ams::FatalErrorContext *ctx) {
-        DoRebootToPayload(ctx);
+        DoRebootToFatalError(ctx);
     }
 
     void SetRebootPayload(const void *payload, size_t payload_size) {

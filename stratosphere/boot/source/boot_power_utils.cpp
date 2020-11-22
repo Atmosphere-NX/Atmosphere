@@ -56,7 +56,7 @@ namespace ams::boot {
             exosphere::ForceRebootToIramPayload();
         }
 
-        void DoRebootToFatalError(ams::FatalErrorContext *ctx) {
+        void DoRebootToFatalError(const ams::FatalErrorContext *ctx) {
             /* Ensure clean IRAM state. */
             ClearIram();
 
