@@ -1086,4 +1086,44 @@
 #define EMC_PMC_SCRATCH2                    0x444
 #define EMC_PMC_SCRATCH3                    0x448
 
+#define EMC_PMACRO_PERBIT_FGCG_CTRL_0                    0xd40
+#define EMC_PMACRO_PERBIT_FGCG_CTRL_1                    0xd44
+#define EMC_PMACRO_PERBIT_FGCG_CTRL_2                    0xd48
+#define EMC_PMACRO_PERBIT_FGCG_CTRL_3                    0xd4c
+#define EMC_PMACRO_PERBIT_FGCG_CTRL_4                    0xd50
+#define EMC_PMACRO_PERBIT_FGCG_CTRL_5                    0xd54
+#define EMC_PMACRO_PERBIT_RFU_CTRL_0                    0xd60
+#define EMC_PMACRO_PERBIT_RFU_CTRL_1                    0xd64
+#define EMC_PMACRO_PERBIT_RFU_CTRL_2                    0xd68
+#define EMC_PMACRO_PERBIT_RFU_CTRL_3                    0xd6c
+#define EMC_PMACRO_PERBIT_RFU_CTRL_4                    0xd70
+#define EMC_PMACRO_PERBIT_RFU_CTRL_5                    0xd74
+#define EMC_PMACRO_PERBIT_RFU1_CTRL_0                    0xd80
+#define EMC_PMACRO_PERBIT_RFU1_CTRL_1                    0xd84
+#define EMC_PMACRO_PERBIT_RFU1_CTRL_2                    0xd88
+#define EMC_PMACRO_PERBIT_RFU1_CTRL_3                    0xd8c
+#define EMC_PMACRO_PERBIT_RFU1_CTRL_4                    0xd90
+#define EMC_PMACRO_PERBIT_RFU1_CTRL_5                    0xd94
+
+#define EMC_PMACRO_PMU_OUT_EOFF1_0                    0xda0
+#define EMC_PMACRO_PMU_OUT_EOFF1_1                    0xda4
+#define EMC_PMACRO_PMU_OUT_EOFF1_2                    0xda8
+#define EMC_PMACRO_PMU_OUT_EOFF1_3                    0xdac
+#define EMC_PMACRO_PMU_OUT_EOFF1_4                    0xdb0
+#define EMC_PMACRO_PMU_OUT_EOFF1_5                    0xdb4
+
+#define EMC_PMACRO_COMP_PMU_OUT                    0xdc0
+#define EMC_PMACRO_DATA_PI_CTRL                    0x110
+#define EMC_PMACRO_CMD_PI_CTRL                    0x114
+
+#define EMC_AUTO_CAL_CONFIG9                    0x42c
+
+#define EMC_TRTM                    0xbc
+#define EMC_TWTM                    0xf8
+#define EMC_TRATM                    0xfc
+#define EMC_TWATM                    0x108
+#define EMC_TR2REF                    0x10c
+
+#define EMC_PMACRO_DSR_VTTGEN_CTRL_0                    0xc6c
+
 #endif
