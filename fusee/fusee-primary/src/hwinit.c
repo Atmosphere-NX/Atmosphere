@@ -320,10 +320,10 @@ void nx_hwinit_erista(bool enable_log) {
     /* mc_config_carveout(); */
 
     /* Initialize SDRAM. */
-    sdram_init();
+    sdram_init_erista();
     
-    /* Save SDRAM LP0 parameters. */
-    sdram_lp0_save_params(sdram_get_params());
+    /* Save SDRAM parameters to scratch. */
+    sdram_save_params_erista(sdram_get_params_erista(fuse_get_dram_id()));
 }
 
 void nx_hwinit_mariko(bool enable_log) {
@@ -394,4 +394,10 @@ void nx_hwinit_mariko(bool enable_log) {
     MAKE_PMC_REG(0xBE8) &= 0xFFFFFFFE;
     MAKE_PMC_REG(0xBF0) = 0x3;
     MAKE_PMC_REG(0xBEC) = 0x3;
+    
+    /* Initialize SDRAM. */
+    sdram_init_mariko();
+    
+    /* Save SDRAM parameters to scratch. */
+    sdram_save_params_mariko(sdram_get_params_mariko(fuse_get_dram_id()));
 }

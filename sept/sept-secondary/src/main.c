@@ -108,7 +108,7 @@ static void setup_env(void) {
     g_framebuffer = (void *)0xC0000000;
 
     /* Initialize hardware. */
-    nx_hwinit();
+    nx_hwinit_erista(false);
 
     /* Zero-fill the framebuffer and register it as printk provider. */
     video_init(g_framebuffer);

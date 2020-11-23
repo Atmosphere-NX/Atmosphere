@@ -187,7 +187,7 @@ uint32_t fuse_get_reserved_odm(uint32_t index) {
 
 /* Get the DramId. */
 uint32_t fuse_get_dram_id(void) {
-    return ((fuse_get_reserved_odm(4) >> 3) & 0x7);
+    return ((fuse_get_reserved_odm(4) >> 3) & 0x1F);
 }
 
 /* Derive the DeviceId. */
