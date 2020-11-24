@@ -12,6 +12,7 @@ Building Atmosphère is a very straightforward process that relies almost exclus
 
 2. Install the following packages via (dkp-)pacman:
     + `switch-dev`
+    + `switch-glm`
     + `switch-libjpeg-turbo`
     + `devkitARM`
     + `devkitarm-rules`
