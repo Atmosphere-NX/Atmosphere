@@ -72,19 +72,31 @@ SplHardwareType splGetHardwareType(void)
 
 SplSocType splGetSocType(void)
 {
+    static SplSocType soc_type;
+    static bool soc_type_set = false;
+
+    if (soc_type_set)
+        return soc_type;
+
     switch (splGetHardwareType())
     {
         case SplHardwareType_Icosa:
         case SplHardwareType_Copper:
-            return SplSocType_Erista;
+            soc_type = SplSocType_Erista;
+            break;
         case SplHardwareType_Hoag:
         case SplHardwareType_Iowa:
         case SplHardwareType_Calcio:
         case SplHardwareType_Five:
-            return SplSocType_Mariko;
+            soc_type = SplSocType_Mariko;
+            break;
         default:
             fatal_abort(Fatal_InvalidEnum);
     }
+
+    soc_type_set = true;
+
+    return soc_type;
 }
 
 

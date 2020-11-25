@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
+ * Copyright (c) 2019 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -21,10 +22,23 @@
 
 #define GPIO_MODE_SPIO 0
 #define GPIO_MODE_GPIO 1
+
 #define GPIO_OUTPUT_DISABLE 0
 #define GPIO_OUTPUT_ENABLE 1
+
+#define GPIO_IRQ_DISABLE 0
+#define GPIO_IRQ_ENABLE 1
+
 #define GPIO_LOW 0
 #define GPIO_HIGH 1
+#define GPIO_FALLING 0
+#define GPIO_RISING 1
+
+#define GPIO_LEVEL 0
+#define GPIO_EDGE 1
+
+#define GPIO_CONFIGURED_EDGE 0
+#define GPIO_ANY_EDGE_CHANGE 1
 
 /*! GPIO pins (0-7 for each port). */
 #define GPIO_PIN_0 (1 << 0)
@@ -72,6 +86,10 @@
 void gpio_config(u32 port, u32 pins, int mode);
 void gpio_output_enable(u32 port, u32 pins, int enable);
 void gpio_write(u32 port, u32 pins, int high);
-int gpio_read(u32 port, u32 pins);
+int  gpio_read(u32 port, u32 pins);
+int  gpio_interrupt_status(u32 port, u32 pins);
+void gpio_interrupt_enable(u32 port, u32 pins, int enable);
+void gpio_interrupt_level(u32 port, u32 pins, int high, int edge, int delta);
+u32  gpio_get_bank_irq_id(u32 port);
 
 #endif

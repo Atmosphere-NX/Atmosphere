@@ -103,6 +103,7 @@ typedef struct _t210_sdmmc_t
 	vu32 iospare;
 	vu32 mcciffifoctl;
 	vu32 timeoutwcoal;
+	vu32 unk1;
 } t210_sdmmc_t;
 
 #endif

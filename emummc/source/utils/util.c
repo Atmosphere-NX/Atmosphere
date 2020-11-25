@@ -49,7 +49,7 @@ static inline uintptr_t _GetIoMapping(u64 io_addr, u64 io_size)
             fatal_abort(Fatal_IoMappingLegacy);
         }
     }
-	
+
     return (uintptr_t)(vaddr + (io_addr - aligned_addr));
 }
 
