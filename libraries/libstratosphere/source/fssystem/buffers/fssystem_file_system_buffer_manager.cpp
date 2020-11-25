@@ -228,7 +228,7 @@ namespace ams::fssystem {
 
     FileSystemBufferManager::CacheHandleTable::AttrInfo *FileSystemBufferManager::CacheHandleTable::FindAttrInfo(const BufferAttribute &attr) {
         const auto it = std::find_if(this->attr_list.begin(), this->attr_list.end(), [&attr](const AttrInfo &info) {
-            return attr.GetLevel() == attr.GetLevel();
+            return attr.GetLevel() == info.GetLevel();
         });
 
         return it != this->attr_list.end() ? std::addressof(*it) : nullptr;
