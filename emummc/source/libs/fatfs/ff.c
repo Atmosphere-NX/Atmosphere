@@ -3304,7 +3304,7 @@ static FRESULT find_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 	}
 	if (fmt == 4) {
 		EFSPRINTF("BRNL");
-		return FR_DISK_ERR;		/* An error occured in the disk I/O layer */
+		return FR_DISK_ERR;		/* An error occurred in the disk I/O layer */
 	}
 	if (fmt >= 2) {
 		EFSPRINTF("NOFAT");

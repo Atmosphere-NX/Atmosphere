@@ -3284,7 +3284,7 @@ static FRESULT find_volume (	/* FR_OK(0): successful, !=0: an error occurred */
 			fmt = bsect ? check_fs(fs, bsect) : 3;	/* Check the partition */
 		} while (LD2PT(vol) == 0 && fmt >= 2 && ++i < 4);
 	}
-	if (fmt == 4) return FR_DISK_ERR;		/* An error occured in the disk I/O layer */
+	if (fmt == 4) return FR_DISK_ERR;		/* An error occurred in the disk I/O layer */
 	if (fmt >= 2) return FR_NO_FILESYSTEM;	/* No FAT volume is found */
 
 	/* An FAT volume is found (bsect). Following code initializes the filesystem object */

@@ -19,7 +19,7 @@
         ldr     sp, =_regs
         stmia   sp!, {r0-r7}
 
-        /* Adjust lr to make it point to the location where the exception occured. */
+        /* Adjust lr to make it point to the location where the exception occurred. */
         mrs     r1, spsr
         tst     r1, #0x20
         subeq   lr, lr, #\lr_arm_displ

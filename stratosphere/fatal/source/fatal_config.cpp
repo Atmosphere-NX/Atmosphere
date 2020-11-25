@@ -82,7 +82,7 @@ namespace ams::fatal::srv {
         {
             this->error_msg = "Error Code: 2%03d-%04d (0x%x)\n";
 
-            this->error_desc = "An error has occured.\n\n"
+            this->error_desc = "An error has occurred.\n\n"
                                  "Please press the POWER Button to restart the console normally, or a VOL button\n"
                                  "to reboot to a payload (or RCM, if none is present). If you are unable to\n"
                                  "restart the console, hold the POWER Button for 12 seconds to turn the console off.\n\n"
