@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours/prfile2/pf/prfile2_pf_config.hpp>
 #include <vapours/prfile2/pf/prfile2_pf_types.hpp>
+#include <vapours/prfile2/prfile2_critical_section.hpp>
 
 namespace ams::prfile2::pf {
 

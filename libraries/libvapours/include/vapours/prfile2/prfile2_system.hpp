@@ -13,13 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
-#include <vapours/util.hpp>
-#include <vapours/svc.hpp>
-
 #include <vapours/prfile2/prfile2_common.hpp>
-#include <vapours/prfile2/prfile2_system.hpp>
+
+namespace ams::prfile2::system {
+
+    void Initialize();
+
+    pf::Error GetCurrentContextId(u64 *out);
+
+}
