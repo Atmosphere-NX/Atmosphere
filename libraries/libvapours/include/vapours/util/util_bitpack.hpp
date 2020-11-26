@@ -75,6 +75,14 @@ namespace ams::util {
                     this->value &= ~FieldMask;
                     this->value |= (static_cast<IntegralStorageType>(field_value) << FieldType::Index) & FieldMask;
                 }
+
+                constexpr ALWAYS_INLINE bool operator==(const BitPack &rhs) {
+                    return this->value == rhs.value;
+                }
+
+                constexpr ALWAYS_INLINE bool operator!=(const BitPack &rhs) {
+                    return !(*this == rhs);
+                }
         };
 
     }

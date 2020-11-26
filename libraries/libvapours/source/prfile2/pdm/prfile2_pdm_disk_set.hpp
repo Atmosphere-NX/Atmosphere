@@ -41,6 +41,27 @@ namespace ams::prfile2::pdm {
         return nullptr;
     }
 
+    ALWAYS_INLINE Disk *GetDiskUnsafe(HandleType handle) {
+        return std::addressof(impl::g_disk_set.disks[GetHandleId(handle)]);
+    }
+
+    ALWAYS_INLINE DiskHolder *GetDiskHolder(HandleType handle) {
+        if (AMS_LIKELY(IsDiskHandle(handle))) {
+            if (const auto id = GetHandleId(handle); AMS_LIKELY(id < MaxDisks)) {
+                const auto signature = GetHandleSignature(handle);
+                Disk *disk = std::addressof(impl::g_disk_set.disks[id]);
+
+                for (auto &holder : impl::g_disk_set.disk_holders) {
+                    if (holder.disk == disk && holder.signature == signature) {
+                        return std::addressof(holder);
+                    }
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
     ALWAYS_INLINE Partition *GetPartition(HandleType handle) {
         if (AMS_LIKELY(IsPartitionHandle(handle))) {
             if (const auto id = GetHandleId(handle); AMS_LIKELY(id < MaxPartitions)) {
@@ -50,6 +71,27 @@ namespace ams::prfile2::pdm {
                 for (const auto &holder : impl::g_disk_set.partition_holders) {
                     if (holder.partition == part && holder.signature == signature) {
                         return part;
+                    }
+                }
+            }
+        }
+
+        return nullptr;
+    }
+
+    ALWAYS_INLINE Partition *GetPartitionUnsafe(HandleType handle) {
+        return std::addressof(impl::g_disk_set.partitions[GetHandleId(handle)]);
+    }
+
+    ALWAYS_INLINE PartitionHolder *GetPartitionHolder(HandleType handle) {
+        if (AMS_LIKELY(IsPartitionHandle(handle))) {
+            if (const auto id = GetHandleId(handle); AMS_LIKELY(id < MaxPartitions)) {
+                const auto signature = GetHandleSignature(handle);
+                Partition *part = std::addressof(impl::g_disk_set.partitions[id]);
+
+                for (auto &holder : impl::g_disk_set.partition_holders) {
+                    if (holder.partition == part && holder.signature == signature) {
+                        return std::addressof(holder);
                     }
                 }
             }

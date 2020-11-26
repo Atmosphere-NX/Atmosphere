@@ -28,7 +28,7 @@ namespace ams::prfile2::pdm {
         Disk *lock_handle;
         DiskInfo disk_info;
         InitDisk *init_disk_table;
-        Partition *current_partition;
+        HandleType current_partition_handle;
         DiskCallback erase_callback;
         bool is_inserted;
         volatile NonBlockingProtocolType nbc;

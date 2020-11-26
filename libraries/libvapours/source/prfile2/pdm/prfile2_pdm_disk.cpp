@@ -115,12 +115,18 @@ namespace ams::prfile2::pdm::disk {
             return pdm::Error_StateLocked;
         }
 
+        /* Get the disk holder. */
+        DiskHolder *holder = GetDiskHolder(handle);
+        if (holder == nullptr) {
+            return pdm::Error_InvalidParameter;
+        }
+
         /* Close the disk. */
         if (disk->open_count == 1) {
             /* Finalize the disk. */
             if (auto err = disk->disk_table.function_table->finalize(handle); err != pdm::Error_Ok) {
-                if (auto *part = disk->current_partition; part != nullptr) {
-                    /* TODO: part::SetDriverErrorCode(part, err); */
+                if (auto part = disk->current_partition_handle; part != InvalidHandle) {
+                    part::SetDriverErrorCode(part, err);
                 }
                 return pdm::Error_DriverError;
             }
@@ -130,7 +136,7 @@ namespace ams::prfile2::pdm::disk {
             --impl::g_disk_set.num_allocated_disks;
 
             /* Clear the disk holder. */
-            impl::g_disk_set.disk_holders[GetHandleId(handle)].disk = nullptr;
+            holder->disk = nullptr;
         }
 
         /* Decrement the disk's open count. */

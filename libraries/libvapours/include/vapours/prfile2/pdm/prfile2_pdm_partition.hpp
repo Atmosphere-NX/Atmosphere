@@ -21,7 +21,7 @@ namespace ams::prfile2::pdm {
 
     struct Partition {
         u32 status;
-        Disk *disk;
+        HandleType disk_handle;
         u32 signature;
         u16 partition_id;
         u16 open_count;
@@ -35,17 +35,39 @@ namespace ams::prfile2::pdm {
         volatile NonBlockingProtocolType nbc_detect;
         PartitionEventCallback event_callback;
         void *event_callback_param;
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE bool GetStatusBit() const {
+            constexpr u32 Mask = (1u << Ix);
+            return (this->status & Mask) != 0;
+        }
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE void SetStatusBit(bool en) {
+            constexpr u32 Mask = (1u << Ix);
+            if (en) {
+                this->status |= Mask;
+            } else {
+                this->status &= ~Mask;
+            }
+        }
+
+        constexpr bool IsOpen() const { return this->GetStatusBit<0>(); }
+        constexpr void SetOpen(bool en) { this->SetStatusBit<0>(en); }
+
+        constexpr bool IsLocked() const { return this->GetStatusBit<1>(); }
+        constexpr void SetLocked(bool en) { this->SetStatusBit<1>(en); }
     };
 
     namespace part {
 
-        pdm::Error OpenPartition(Disk *disk, u16 partition_id, Partition **out);
-        pdm::Error ClosePartition(Partition *part);
+        pdm::Error OpenPartition(HandleType disk_handle, u16 partition_id, HandleType *out);
+        pdm::Error ClosePartition(HandleType part_handle);
 
-        void SetDriverErrorCode(Partition *part, pdm::Error err);
+        void SetDriverErrorCode(HandleType part_handle, pdm::Error err);
 
-        void CheckPartitionOpen(Disk *disk, bool *out);
-        void NotifyMediaEvent(Disk *disk, u32 event);
+        void CheckPartitionOpen(HandleType disk_handle, bool *out);
+        void NotifyMediaEvent(HandleType disk_handle, u32 event);
 
     }
 
