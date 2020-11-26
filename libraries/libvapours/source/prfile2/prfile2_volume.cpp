@@ -273,7 +273,9 @@ namespace ams::prfile2::vol {
             vol->tail_entry.tracker_bits = vol->tail_entry.tracker_buf;
 
             /* Initialize driver for volume. */
-            /* TODO: drv::Initialize(vol); + error checking */
+            if (auto err = drv::Initialize(vol); err != pf::Error_Ok) {
+                return SetLastErrorAndReturn(err);
+            }
 
             /* Setup the cache. */
             /* TODO: cache::SetCache(vol, drive_table->cache->pages, drive_table->cache->buffers, drive_table->cache->num_fat_pages, drive_table->cache->num_data_pages); */

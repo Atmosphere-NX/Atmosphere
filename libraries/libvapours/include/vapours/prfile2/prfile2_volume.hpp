@@ -17,6 +17,7 @@
 #include <vapours/prfile2/prfile2_common.hpp>
 #include <vapours/prfile2/prfile2_cache.hpp>
 #include <vapours/prfile2/prfile2_critical_section.hpp>
+#include <vapours/prfile2/prfile2_drv.hpp>
 #include <vapours/prfile2/prfile2_entry.hpp>
 #include <vapours/prfile2/prfile2_fat.hpp>
 
@@ -193,8 +194,14 @@ namespace ams::prfile2 {
         constexpr bool IsMounted() const { return this->GetFlagsBit<1>(); }
         constexpr void SetMounted(bool en) { this->SetFlagsBit<1>(en); }
 
-        constexpr bool IsDiskInserted() const { return this->GetFlagsBit<2>(); }
-        constexpr void SetDiskInserted(bool en) { this->SetFlagsBit<2>(en); }
+        constexpr bool IsFormatAfterMountRequested() const { return this->GetFlagsBit<4>(); }
+        constexpr void SetFormatAfterMountRequested(bool en) { this->SetFlagsBit<4>(en); }
+
+        constexpr bool IsNoFormattingByFatFsLayer() const { return this->GetFlagsBit<5>(); }
+        constexpr void SetNoFormattingByFatFsLayer(bool en) { this->SetFlagsBit<5>(en); }
+
+        constexpr bool IsDataEraseRequested() const { return this->GetFlagsBit<6>(); }
+        constexpr void SetDataEraseRequested(bool en) { this->SetFlagsBit<6>(en); }
 
         constexpr bool IsFlag12() const { return this->GetFlagsBit<12>(); }
         constexpr void SetFlag12(bool en) { this->SetFlagsBit<12>(en); }
