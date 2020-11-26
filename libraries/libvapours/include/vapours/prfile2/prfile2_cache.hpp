@@ -30,6 +30,7 @@ namespace ams::prfile2 {
         u32 mode;
         u16 num_fat_pages;
         u16 num_data_pages;
+        pf::CachePage *pages;
         pf::CachePage *current_fat;
         pf::CachePage *current_data;
         pf::SectorBuffer *buffers;
@@ -38,10 +39,14 @@ namespace ams::prfile2 {
         void *signature;
     };
 
+    struct Volume;
+
 }
 
 namespace ams::prfile2::cache {
 
-    /* ... */
+    void SetCache(Volume *vol, pf::CachePage *cache_page, pf::SectorBuffer *cache_buf, u16 num_fat_pages, u16 num_data_pages);
+    void SetFatBufferSize(Volume *vol, u32 size);
+    void SetDataBufferSize(Volume *vol, u32 size);
 
 }

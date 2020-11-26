@@ -278,9 +278,9 @@ namespace ams::prfile2::vol {
             }
 
             /* Setup the cache. */
-            /* TODO: cache::SetCache(vol, drive_table->cache->pages, drive_table->cache->buffers, drive_table->cache->num_fat_pages, drive_table->cache->num_data_pages); */
-            /* TODO: cache::SetFatBufferSize(vol, drive_table->cache->fat_buf_size); */
-            /* TODO: cache::SetDataBufferSize(vol, drive_table->cache->data_buf_size); */
+            cache::SetCache(vol, drive_table->cache->pages, drive_table->cache->buffers, drive_table->cache->num_fat_pages, drive_table->cache->num_data_pages);
+            cache::SetFatBufferSize(vol, drive_table->cache->fat_buf_size);
+            cache::SetDataBufferSize(vol, drive_table->cache->data_buf_size);
 
             /* Set flags. */
             vol->SetAttached(true);
