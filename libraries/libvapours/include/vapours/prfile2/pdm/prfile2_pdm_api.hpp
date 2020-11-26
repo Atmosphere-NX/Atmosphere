@@ -13,15 +13,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
-#include <vapours/util.hpp>
-#include <vapours/svc.hpp>
-
-#include <vapours/prfile2/prfile2_common.hpp>
-#include <vapours/prfile2/prfile2_system.hpp>
-#include <vapours/prfile2/pdm/prfile2_pdm_api.hpp>
+#include <vapours/prfile2/pdm/prfile2_pdm_types.hpp>
+#include <vapours/prfile2/pdm/prfile2_pdm_common.hpp>
 #include <vapours/prfile2/pdm/prfile2_pdm_disk_management.hpp>
+
+namespace ams::prfile2::pdm {
+
+    pdm::Error Initialize(u32 config, void *param);
+
+}

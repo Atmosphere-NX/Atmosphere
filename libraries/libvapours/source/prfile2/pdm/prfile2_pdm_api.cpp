@@ -13,15 +13,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined(ATMOSPHERE_IS_STRATOSPHERE)
+#include <stratosphere.hpp>
+#elif defined(ATMOSPHERE_IS_MESOSPHERE)
+#include <mesosphere.hpp>
+#elif defined(ATMOSPHERE_IS_EXOSPHERE)
+#include <exosphere.hpp>
+#else
+#include <vapours.hpp>
+#endif
+#include "prfile2_pdm_disk_set.hpp"
 
-#pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
-#include <vapours/util.hpp>
-#include <vapours/svc.hpp>
+namespace ams::prfile2::pdm {
 
-#include <vapours/prfile2/prfile2_common.hpp>
-#include <vapours/prfile2/prfile2_system.hpp>
-#include <vapours/prfile2/pdm/prfile2_pdm_api.hpp>
-#include <vapours/prfile2/pdm/prfile2_pdm_disk_management.hpp>
+    namespace impl {
+
+        constinit DiskSet g_disk_set;
+
+    }
+
+    pdm::Error Initialize(u32 config, void *param) {
+        AMS_UNUSED(config, param);
+
+        /* Clear the disk set. */
+        std::memset(std::addressof(impl::g_disk_set), 0, sizeof(impl::g_disk_set));
+
+        return pdm::Error_Ok;
+    }
+
+}
