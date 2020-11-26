@@ -13,30 +13,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/literals.hpp>
+#include <vapours/prfile2/prfile2_build_config.hpp>
 
-#include <vapours/allocator.hpp>
-#include <vapours/device_code.hpp>
-#include <vapours/timespan.hpp>
-#include <vapours/span.hpp>
+namespace ams::prfile2::pf {
 
-#include <vapours/util.hpp>
-#include <vapours/results.hpp>
-#include <vapours/reg.hpp>
+    constexpr inline const auto MaximumFileCount      = 256;
+    constexpr inline const auto MaximumDirectoryCount = 32;
 
-#if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
-#include <vapours/tegra.hpp>
-#endif
-
-#include <vapours/crypto.hpp>
-#include <vapours/svc.hpp>
-
-#include <vapours/ams/ams_fatal_error_context.hpp>
-
-#include <vapours/dd.hpp>
-#include <vapours/sdmmc.hpp>
-#include <vapours/prfile2.hpp>
+}
