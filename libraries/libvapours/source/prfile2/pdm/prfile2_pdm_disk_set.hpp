@@ -26,8 +26,8 @@ namespace ams::prfile2::pdm {
 
     ALWAYS_INLINE Disk *GetDisk(HandleType handle) {
         if (AMS_LIKELY(IsDiskHandle(handle))) {
-            if (const auto id = handle.Get<HandleField::Id>(); AMS_LIKELY(id < MaxDisks)) {
-                const auto signature = handle.Get<HandleField::Signature>();
+            if (const auto id = GetHandleId(handle); AMS_LIKELY(id < MaxDisks)) {
+                const auto signature = GetHandleSignature(handle);
                 Disk *disk = std::addressof(impl::g_disk_set.disks[id]);
 
                 for (const auto &holder : impl::g_disk_set.disk_holders) {
@@ -43,8 +43,8 @@ namespace ams::prfile2::pdm {
 
     ALWAYS_INLINE Partition *GetPartition(HandleType handle) {
         if (AMS_LIKELY(IsPartitionHandle(handle))) {
-            if (const auto id = handle.Get<HandleField::Id>(); AMS_LIKELY(id < MaxPartitions)) {
-                const auto signature = handle.Get<HandleField::Signature>();
+            if (const auto id = GetHandleId(handle); AMS_LIKELY(id < MaxPartitions)) {
+                const auto signature = GetHandleSignature(handle);
                 Partition *part = std::addressof(impl::g_disk_set.partitions[id]);
 
                 for (const auto &holder : impl::g_disk_set.partition_holders) {

@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours/prfile2/prfile2_build_config.hpp>
+#include <vapours/prfile2/prfile2_handle.hpp>
 #include <vapours/prfile2/pdm/prfile2_pdm_types.hpp>
 
 namespace ams::prfile2::pdm {
@@ -41,14 +42,14 @@ namespace ams::prfile2::pdm {
     };
 
     struct FunctionTable {
-        pdm::Error (*initialize)(Disk *);
-        pdm::Error (*finalize)(Disk *);
-        pdm::Error (*mount)(Disk *);
-        pdm::Error (*unmount)(Disk *);
-        pdm::Error (*format)(Disk *, const u8 *);
-        pdm::Error (*physical_read)(Disk *disk, u8 *dst, u32 block, u32 count, u32 *num_read);
-        pdm::Error (*physical_write)(Disk *disk, const u8 *src, u32 block, u32 count, u32 *num_read);
-        pdm::Error (*get_disk_info)(Disk *disk, DiskInfo *out);
+        pdm::Error (*initialize)(HandleType disk_handle);
+        pdm::Error (*finalize)(HandleType disk_handle);
+        pdm::Error (*mount)(HandleType disk_handle);
+        pdm::Error (*unmount)(HandleType disk_handle);
+        pdm::Error (*format)(HandleType disk_handle, const u8 *);
+        pdm::Error (*physical_read)(HandleType disk_handle, u8 *dst, u32 block, u32 count, u32 *num_read);
+        pdm::Error (*physical_write)(HandleType disk_handle, const u8 *src, u32 block, u32 count, u32 *num_read);
+        pdm::Error (*get_disk_info)(HandleType disk_handle, DiskInfo *out);
     };
 
     struct DiskTable {

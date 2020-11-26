@@ -34,12 +34,34 @@ namespace ams::prfile2::pdm {
         volatile NonBlockingProtocolType nbc;
         volatile NonBlockingProtocolType nbc_detect;
         volatile NonBlockingProtocolType nbc_req;
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE bool GetStatusBit() const {
+            constexpr u32 Mask = (1u << Ix);
+            return (this->status & Mask) != 0;
+        }
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE void SetStatusBit(bool en) {
+            constexpr u32 Mask = (1u << Ix);
+            if (en) {
+                this->status |= Mask;
+            } else {
+                this->status &= ~Mask;
+            }
+        }
+
+        constexpr bool IsOpen() const { return this->GetStatusBit<0>(); }
+        constexpr void SetOpen(bool en) { this->SetStatusBit<0>(en); }
+
+        constexpr bool IsLocked() const { return this->GetStatusBit<1>(); }
+        constexpr void SetLocked(bool en) { this->SetStatusBit<1>(en); }
     };
 
     namespace disk {
 
-        pdm::Error OpenDisk(InitDisk *init_disk_table, Disk **out);
-        pdm::Error CloseDisk(Disk *disk);
+        pdm::Error OpenDisk(InitDisk *init_disk_table, HandleType *out);
+        pdm::Error CloseDisk(HandleType handle);
 
         /* ... */
 

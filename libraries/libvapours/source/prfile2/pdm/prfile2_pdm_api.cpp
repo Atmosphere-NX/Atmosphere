@@ -41,4 +41,27 @@ namespace ams::prfile2::pdm {
         return pdm::Error_Ok;
     }
 
+    pdm::Error OpenDisk(InitDisk *init_disk_table, HandleType *out) {
+        /* Check the arguments. */
+        if (out == nullptr) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Set the output as invalid. */
+        *out = InvalidHandle;
+
+        /* Open the disk. */
+        return disk::OpenDisk(init_disk_table, out);
+    }
+
+    pdm::Error CloseDisk(HandleType handle) {
+        /* Check the input. */
+        if (IsInvalidHandle(handle)) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Close the disk. */
+        return disk::CloseDisk(handle);
+    }
+
 }

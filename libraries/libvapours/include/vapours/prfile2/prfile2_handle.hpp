@@ -40,6 +40,21 @@ namespace ams::prfile2 {
         return val;
     };
 
+    constexpr ALWAYS_INLINE u8 GetHandleId(HandleType handle) {
+        return handle.Get<HandleField::Id>();
+    }
+
+    constexpr ALWAYS_INLINE u16 GetHandleSignature(HandleType handle) {
+        return handle.Get<HandleField::Signature>();
+    }
+
+    constexpr inline const HandleType InvalidHandle = {};
+
+    constexpr ALWAYS_INLINE bool IsInvalidHandle(HandleType handle) {
+        return handle.value == 0;
+    }
+    static_assert(IsInvalidHandle(InvalidHandle));
+
     constexpr ALWAYS_INLINE HandleType ConstructDiskHandle(u8 id, u16 signature) { return ConstructHandle(id, HandleKind_Disk, signature); }
     constexpr ALWAYS_INLINE HandleType ConstructPartitionHandle(u8 id, u16 signature) { return ConstructHandle(id, HandleKind_Partition, signature); }
 

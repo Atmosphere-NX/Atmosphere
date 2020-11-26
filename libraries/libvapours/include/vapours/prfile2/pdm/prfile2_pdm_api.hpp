@@ -22,4 +22,7 @@ namespace ams::prfile2::pdm {
 
     pdm::Error Initialize(u32 config, void *param);
 
+    pdm::Error OpenDisk(InitDisk *init_disk_table, HandleType *out);
+    pdm::Error CloseDisk(HandleType handle);
+
 }
