@@ -55,6 +55,48 @@ namespace ams::prfile2::vol {
             return nullptr;
         }
 
+        VolumeContext *GetCurrentVolumeContext(u64 *out_context_id) {
+            /* Get the volume set. */
+            auto &vol_set = GetVolumeSet();
+
+            /* Acquire exclusive access to the volume set. */
+            ScopedCriticalSection lk(vol_set.critical_section);
+
+            /* Get the current context id. */
+            u64 context_id = 0;
+            system::GetCurrentContextId(std::addressof(context_id));
+            if (out_context_id != nullptr) {
+                *out_context_id = context_id;
+            }
+
+            if (auto *ctx = GetVolumeContextById(context_id); ctx != nullptr) {
+                return ctx;
+            } else {
+                return std::addressof(vol_set.default_context);
+            }
+        }
+
+        bool IsValidDriveCharacter(pf::DriveCharacter drive_char) {
+            return static_cast<u8>((drive_char & 0xDF) - 'A') < 26;
+        }
+
+        Volume *GetVolumeByDriveCharacter(pf::DriveCharacter drive_char) {
+            /* Get the volume set. */
+            auto &vol_set = GetVolumeSet();
+
+            /* Calculate the volume index. */
+            const auto index = std::toupper(static_cast<unsigned char>(drive_char)) - 'A';
+
+            /* Acquire exclusive access to the volume set. */
+            ScopedCriticalSection lk(vol_set.critical_section);
+
+            if (index < MaxVolumes) {
+                return std::addressof(vol_set.volumes[index]);
+            } else {
+                return nullptr;
+            }
+        }
+
     }
 
     pf::Error Initialize(u32 config, void *param) {
@@ -120,8 +162,168 @@ namespace ams::prfile2::vol {
     }
 
     pf::Error Attach(pf::DriveTable *drive_table) {
-        AMS_UNUSED(drive_table);
-        AMS_ABORT("vol::Attach");
+        /* Get the volume set. */
+        auto &vol_set = GetVolumeSet();
+
+        /* Get the volume context for error tracking. */
+        u64 context_id = 0;
+        auto *vol_ctx = GetCurrentVolumeContext(std::addressof(context_id));
+
+        auto SetLastErrorAndReturn = [&] ALWAYS_INLINE_LAMBDA (pf::Error err) -> pf::Error { vol_ctx->last_error = err; return err; };
+
+        /* Check the drive table. */
+        if (drive_table == nullptr) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+
+        /* Clear the drive table's character/status. */
+        const auto drive_char = drive_table->drive_char;
+        drive_table->drive_char = 0;
+        drive_table->status     = 0;
+
+        /* Check that we can attach. */
+        if (vol_set.num_attached_drives >= MaxVolumes) {
+            return SetLastErrorAndReturn(pf::Error_TooManyVolumesAttached);
+        }
+
+        /* Check the cache setting. */
+        auto *cache_setting = drive_table->cache;
+        if (cache_setting == nullptr) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (cache_setting->fat_buf_size > MaximumFatBufferSize) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (cache_setting->data_buf_size > MaximumDataBufferSize) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (cache_setting->num_fat_pages < MinimumFatPages) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (cache_setting->num_data_pages < MinimumDataPages) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (cache_setting->pages == nullptr) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (cache_setting->buffers == nullptr) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (!util::IsAligned(reinterpret_cast<uintptr_t>(cache_setting->pages), alignof(u32))) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if (!util::IsAligned(reinterpret_cast<uintptr_t>(cache_setting->buffers), alignof(u32))) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+
+        /* Adjust the cache setting. */
+        cache_setting->fat_buf_size  = std::max<u32>(cache_setting->fat_buf_size, MinimumFatBufferSize);
+        cache_setting->data_buf_size = std::max<u32>(cache_setting->data_buf_size, MinimumDataBufferSize);
+
+        /* Check the adjusted setting. */
+        if (cache_setting->fat_buf_size > cache_setting->num_fat_pages) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+        if ((cache_setting->num_data_pages / cache_setting->data_buf_size) < MinimumDataPages) {
+            return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+        }
+
+        /* Validate the drive character. */
+        if (drive_char != 0) {
+            if (!IsValidDriveCharacter(drive_char)) {
+                return SetLastErrorAndReturn(pf::Error_InvalidParameter);
+            }
+
+            if (auto *vol = GetVolumeByDriveCharacter(drive_char); vol == nullptr || vol->IsAttached()) {
+                return SetLastErrorAndReturn(pf::Error_InvalidVolumeLabel);
+            }
+        }
+
+        /* Perform the bulk of the attach. */
+        Volume *vol = nullptr;
+        {
+            /* Lock the volume set. */
+            ScopedCriticalSection lk(vol_set.critical_section);
+
+            /* Find a free volume. */
+            for (auto &v : vol_set.volumes) {
+                if (!v.IsAttached()) {
+                    vol = std::addressof(v);
+                    break;
+                }
+            }
+            if (vol == nullptr) {
+                return SetLastErrorAndReturn(pf::Error_TooManyVolumesAttached);
+            }
+            const auto vol_id = vol - vol_set.volumes;
+
+            /* Clear the volume. */
+            std::memset(vol, 0, sizeof(*vol));
+
+            /* Initialize the volume. */
+            vol->num_free_clusters  = InvalidCluster;
+            vol->num_free_clusters_ = InvalidCluster;
+            vol->last_free_cluster  = InvalidCluster;
+            vol->partition_handle   = drive_table->partition_handle;
+            InitializeCriticalSection(std::addressof(vol->critical_section));
+            vol->drive_char         = 'A' + vol_id;
+
+            /* Setup directory tail. */
+            vol->tail_entry.tracker_size = util::size(vol->tail_entry.tracker_buf);
+            vol->tail_entry.tracker_bits = vol->tail_entry.tracker_buf;
+
+            /* Initialize driver for volume. */
+            /* TODO: drv::Initialize(vol); + error checking */
+
+            /* Setup the cache. */
+            /* TODO: cache::SetCache(vol, drive_table->cache->pages, drive_table->cache->buffers, drive_table->cache->num_fat_pages, drive_table->cache->num_data_pages); */
+            /* TODO: cache::SetFatBufferSize(vol, drive_table->cache->fat_buf_size); */
+            /* TODO: cache::SetDataBufferSize(vol, drive_table->cache->data_buf_size); */
+
+            /* Set flags. */
+            vol->SetAttached(true);
+            vol->SetFlag12(true);
+
+            /* Update the drive table. */
+            drive_table->SetAttached(true);
+            drive_table->drive_char = vol->drive_char;
+
+            /* Update the number of attached drives. */
+            if ((vol_set.num_attached_drives++) == 0) {
+                vol_set.default_context.volume_id = vol_id;
+            }
+        }
+
+        /* Acquire exclusive access to the volume set. */
+        ScopedCriticalSection lk(vol_set.critical_section);
+
+        /* Associate the volume to our context while we operate on it. */
+        vol->context    = vol_ctx;
+        vol->context_id = context_id;
+        ON_SCOPE_EXIT { vol->context_id = 0; };
+
+        /* TODO: Copy volume root dir entry to all contexts. */
+
+        /* TODO: Clear tracking fields at the end of the volume. */
+
+        /* Perform mount as appropriate. */
+        const auto check_mount_err = /* TODO vol::CheckMediaInsertForAttachMount(vol) */ pf::Error_Ok;
+        const bool inserted        = /* TODO: drv::IsInserted(vol) */ false;
+        if (check_mount_err != pf::Error_Ok) {
+            if (inserted) {
+                drive_table->SetDiskInserted(true);
+            }
+            vol_ctx->last_error = check_mount_err;
+        } else if (inserted) {
+            drive_table->SetDiskInserted(true);
+            if (auto mount_err = /* TODO vol::MountImpl(vol, 0x1B, false) */pf::Error_InternalError; mount_err != pf::Error_Ok) {
+                vol_ctx->last_error = mount_err;
+            } else {
+                drive_table->SetMounted(true);
+            }
+        }
+
+        return pf::Error_Ok;
     }
 
     VolumeContext *RegisterContext(u64 *out_context_id) {

@@ -117,6 +117,34 @@ namespace ams::prfile2::pf {
         HandleType partition_handle;
         DriveCharacter drive_char;
         u8 status;
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE bool GetStatusBit() const {
+            constexpr u32 Mask = (1u << Ix);
+            return (this->status & Mask) != 0;
+        }
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE void SetStatusBit(bool en) {
+            constexpr u32 Mask = (1u << Ix);
+            if (en) {
+                this->status |= Mask;
+            } else {
+                this->status &= ~Mask;
+            }
+        }
+
+        constexpr bool IsAttached() const { return this->GetStatusBit<0>(); }
+        constexpr void SetAttached(bool en) { this->SetStatusBit<0>(en); }
+
+        constexpr bool IsMounted() const { return this->GetStatusBit<1>(); }
+        constexpr void SetMounted(bool en) { this->SetStatusBit<1>(en); }
+
+        constexpr bool IsDiskInserted() const { return this->GetStatusBit<2>(); }
+        constexpr void SetDiskInserted(bool en) { this->SetStatusBit<2>(en); }
+
+        constexpr bool IsFlag12() const { return this->GetStatusBit<12>(); }
+        constexpr void SetFlag12(bool en) { this->SetStatusBit<12>(en); }
     };
 
     using TailBuf = u32;

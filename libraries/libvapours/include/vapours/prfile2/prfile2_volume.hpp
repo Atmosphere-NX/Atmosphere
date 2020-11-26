@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours/prfile2/prfile2_common.hpp>
+#include <vapours/prfile2/prfile2_cache.hpp>
 #include <vapours/prfile2/prfile2_critical_section.hpp>
 #include <vapours/prfile2/prfile2_entry.hpp>
 #include <vapours/prfile2/prfile2_fat.hpp>
@@ -129,6 +130,12 @@ namespace ams::prfile2 {
         };
     };
 
+    namespace pdm {
+
+        struct Partition;
+
+    }
+
     struct Volume {
         BiosParameterBlock bpb;
         u32 num_free_clusters;
@@ -142,7 +149,7 @@ namespace ams::prfile2 {
         u32 num_open_files;
         u32 num_open_directories;
         /* ... */
-        /* TODO: SectorCache cache; */
+        SectorCache cache;
         VolumeContext *context;
         u64 context_id;
         DirectoryTail tail_entry;
@@ -156,13 +163,41 @@ namespace ams::prfile2 {
         pf::Error last_error;
         pf::Error last_driver_error;
         /* ... */
-        void *partition;
+        HandleType partition_handle;
         VolumeCallback callback;
         const u8 *format_param;
         /* ... */
         /* TODO: ExtensionTable extension_table; */
         /* TODO: ExtensionData ext; */
         /* ... */
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE bool GetFlagsBit() const {
+            constexpr u32 Mask = (1u << Ix);
+            return (this->flags & Mask) != 0;
+        }
+
+        template<size_t Ix>
+        constexpr ALWAYS_INLINE void SetFlagsBit(bool en) {
+            constexpr u32 Mask = (1u << Ix);
+            if (en) {
+                this->flags |= Mask;
+            } else {
+                this->flags &= ~Mask;
+            }
+        }
+
+        constexpr bool IsAttached() const { return this->GetFlagsBit<0>(); }
+        constexpr void SetAttached(bool en) { this->SetFlagsBit<0>(en); }
+
+        constexpr bool IsMounted() const { return this->GetFlagsBit<1>(); }
+        constexpr void SetMounted(bool en) { this->SetFlagsBit<1>(en); }
+
+        constexpr bool IsDiskInserted() const { return this->GetFlagsBit<2>(); }
+        constexpr void SetDiskInserted(bool en) { this->SetFlagsBit<2>(en); }
+
+        constexpr bool IsFlag12() const { return this->GetFlagsBit<12>(); }
+        constexpr void SetFlag12(bool en) { this->SetFlagsBit<12>(en); }
     };
 
     struct VolumeSet {

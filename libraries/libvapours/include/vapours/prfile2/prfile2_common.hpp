@@ -64,7 +64,8 @@ namespace ams::prfile2 {
         Error_SYSTEM         = -1,
     };
 
-    constexpr inline const u32 InvalidSector = std::numeric_limits<u32>::max();
+    constexpr inline const u32 InvalidSector  = std::numeric_limits<u32>::max();
+    constexpr inline const u32 InvalidCluster = std::numeric_limits<u32>::max();
 
     enum OpenMode {
         OpenMode_None        = 0,
