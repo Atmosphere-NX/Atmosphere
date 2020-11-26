@@ -23,26 +23,10 @@
 #include <vapours.hpp>
 #endif
 
-namespace ams::prfile2::system {
+namespace ams::prfile2::fatfs {
 
-    void Initialize() {
-        /* ... */
-    }
-
-    int GetCurrentContextId(u64 *out) {
-        /* Check that out isn't null. */
-        if (out == nullptr) {
-            return -2;
-        }
-
-        /* Set the output. */
-        #if defined(AMS_PRFILE2_THREAD_SAFE)
-        *out = reinterpret_cast<u64>(os::GetCurrentThread());
-        #else
-        *out = 0;
-        #endif
-
-        return 0;
+    pf::Error Initialize(u32 config, void *param) {
+        return vol::Initialize(config, param);
     }
 
 }

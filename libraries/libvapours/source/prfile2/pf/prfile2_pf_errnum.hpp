@@ -13,36 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#if defined(ATMOSPHERE_IS_STRATOSPHERE)
-#include <stratosphere.hpp>
-#elif defined(ATMOSPHERE_IS_MESOSPHERE)
-#include <mesosphere.hpp>
-#elif defined(ATMOSPHERE_IS_EXOSPHERE)
-#include <exosphere.hpp>
-#else
+#pragma once
 #include <vapours.hpp>
-#endif
 
-namespace ams::prfile2::system {
+namespace ams::prfile2::pf {
 
-    void Initialize() {
-        /* ... */
-    }
+    void SetInternalError(pf::Error err);
 
-    int GetCurrentContextId(u64 *out) {
-        /* Check that out isn't null. */
-        if (out == nullptr) {
-            return -2;
-        }
-
-        /* Set the output. */
-        #if defined(AMS_PRFILE2_THREAD_SAFE)
-        *out = reinterpret_cast<u64>(os::GetCurrentThread());
-        #else
-        *out = 0;
-        #endif
-
-        return 0;
+    ALWAYS_INLINE pf::Error SetInternalErrorAndReturn(pf::Error err) {
+        SetInternalError(err);
+        return err;
     }
 
 }

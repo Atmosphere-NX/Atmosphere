@@ -34,7 +34,7 @@ namespace ams::prfile2 {
 
         namespace {
 
-            constexpr inline const auto NumCriticalSectionResources = 5 /* TODO: NumVolumes */;
+            constexpr inline const auto NumCriticalSectionResources = MaxVolumes + 1;
 
             constinit os::SdkMutex g_crit_resource_mutex;
             constinit CriticalSection::Resource g_crit_resources[NumCriticalSectionResources];

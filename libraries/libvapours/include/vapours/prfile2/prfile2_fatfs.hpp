@@ -14,14 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours/prfile2/pf/prfile2_pf_config.hpp>
-#include <vapours/prfile2/pf/prfile2_pf_types.hpp>
-#include <vapours/prfile2/prfile2_critical_section.hpp>
+#include <vapours/prfile2/prfile2_common.hpp>
 
-namespace ams::prfile2::pf {
+namespace ams::prfile2::fatfs {
 
-    int Initialize(u32 config, void *param);
-
-    int Attach(DriveTable **drive_table);
+    pf::Error Initialize(u32 config, void *param);
 
 }

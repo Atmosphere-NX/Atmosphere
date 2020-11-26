@@ -20,6 +20,6 @@ namespace ams::prfile2::system {
 
     void Initialize();
 
-    pf::Error GetCurrentContextId(u64 *out);
+    int GetCurrentContextId(u64 *out);
 
 }

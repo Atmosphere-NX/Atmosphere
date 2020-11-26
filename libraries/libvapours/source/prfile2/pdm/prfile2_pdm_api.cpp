@@ -64,4 +64,27 @@ namespace ams::prfile2::pdm {
         return disk::CloseDisk(handle);
     }
 
+    pdm::Error OpenPartition(HandleType disk_handle, u16 part_id, HandleType *out) {
+        /* Check the arguments. */
+        if (out == nullptr || IsInvalidHandle(disk_handle)) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Set the output as invalid. */
+        *out = InvalidHandle;
+
+        /* Open the partition. */
+        return part::OpenPartition(disk_handle, part_id, out);
+    }
+
+    pdm::Error ClosePartition(HandleType handle) {
+        /* Check the input. */
+        if (IsInvalidHandle(handle)) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Close the partition. */
+        return part::ClosePartition(handle);
+    }
+
 }

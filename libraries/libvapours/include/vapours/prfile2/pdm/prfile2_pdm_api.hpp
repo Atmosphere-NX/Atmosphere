@@ -25,4 +25,7 @@ namespace ams::prfile2::pdm {
     pdm::Error OpenDisk(InitDisk *init_disk_table, HandleType *out);
     pdm::Error CloseDisk(HandleType handle);
 
+    pdm::Error OpenPartition(HandleType disk_handle, u16 part_id, HandleType *out);
+    pdm::Error ClosePartition(HandleType handle);
+
 }

@@ -15,46 +15,59 @@
  */
 #pragma once
 #include <vapours/prfile2/prfile2_build_config.hpp>
+#include <vapours/prfile2/prfile2_handle.hpp>
 
 namespace ams::prfile2::pf {
 
+    using DriveCharacter = char;
+
     enum Error {
-        Error_NoError        =   0,
-        Error_Ok             =   Error_NoError,
+        Error_NoError = 0,
+        Error_Ok      = Error_NoError,
 
-        Error_EPERM          =   1,
-        Error_ENOENT         =   2,
-        Error_ESRCH          =   3,
-        Error_EIO            =   5,
-        Error_ENOEXEC        =   8,
-        Error_EBADF          =   9,
-        Error_ENOMEM         =  12,
-        Error_EACCES         =  13,
-        Error_EBUSY          =  16,
-        Error_EEXIST         =  17,
-        Error_ENODEV         =  19,
-        Error_EISDIR         =  21,
-        Error_EINVAL         =  22,
-        Error_ENFILE         =  23,
-        Error_EMFILE         =  24,
-        Error_EFBIG          =  27,
-        Error_ENOSPC         =  28,
-        Error_ENOLCK         =  46,
-        Error_ENOSYS         =  88,
-        Error_ENOTEMPTY      =  90,
+        Error_Generic = -1,
 
-        Error_EMOD_NOTREG    = 100,
-        Error_EMOD_NOTSPRT   = 101,
-        Error_EMOD_FCS       = 102,
-        Error_EMOD_SAFE      = 103,
-
-        Error_ENOMEDIUM      = 123,
-
-        Error_EEXFAT_NOTSPRT = 200,
-
-        Error_DFNC           = 0x1000,
-
-        Error_SYSTEM         = -1,
+        Error_InvalidFileName        =  1,
+        Error_InvalidPathName        =  2,
+        Error_FileNotFound           =  3,
+        Error_TooManyVolumesAttached =  4,
+        Error_DirectoryFull          =  5,
+        Error_VolumeFull             =  6,
+        Error_InvalidDiskFormat      =  7,
+        Error_FileAlreadyExists      =  8,
+        Error_VolumeNotMounted       =  9,
+        Error_InvalidParameter       = 10,
+        Error_WriteProtected         = 11,
+        Error_UnsupportedFormat      = 12,
+        Error_BrokenClusterChain     = 13,
+        Error_InvalidClusterNum      = 14,
+        Error_InvalidBpb             = 15,
+        Error_AccessOutOfVolume      = 16,
+        Error_DriverError            = 17,
+        Error_InvalidVolumeLabel     = 18,
+        Error_FileOpened             = 19,
+        Error_NotADirectory          = 20,
+        Error_TooManyFilesOpenedS    = 21,
+        Error_TooManyFilesOpenedU    = 22,
+        Error_NotAFile               = 23,
+        Error_ReadOnly               = 24,
+        Error_LockError              = 25,
+        Error_InternalError          = 26,
+        Error_EndOfFile              = 27,
+        Error_AccessNotAllowed       = 28,
+        Error_DirectoryNotEmpty      = 29,
+        Error_NotEnoughCachePages    = 30,
+        Error_DifferentDrive         = 31,
+        Error_DifferentEntry         = 32,
+        Error_InvalidEntry           = 33,
+        Error_InvalidSector          = 34,
+        Error_BrokenVolume           = 35,
+        Error_NotEffective           = 36,
+        Error_FileSizeOver           = 37,
+        Error_InvalidFileDiscriptor  = 38,
+        Error_InvalidLockFile        = 39,
+        Error_ExtensionNotRegistered = 40,
+        Error_ExtensionError         = 41,
     };
 
     constexpr inline const int ReturnValueNoError = 0;
@@ -67,5 +80,45 @@ namespace ams::prfile2::pf {
             return ReturnValueError;
         }
     }
+
+    struct CachePage {
+        u16 status;
+        u16 option;
+        u8 *buffer_head;
+        u8 *buffer_cur;
+        u8 *buffer_dirty_start;
+        u8 *buffer_dirty_end;
+        u32 size;
+        u32 sector;
+        void *signature;
+        CachePage *next;
+        CachePage *prev;
+    };
+    static_assert(util::is_pod<CachePage>::value);
+
+    constexpr inline auto SectorBufferSize     = 0x200;
+    constexpr inline auto Log2SectorBufferSize = 9;
+    static_assert((1u << Log2SectorBufferSize) == SectorBufferSize);
+
+    using SectorBuffer = u8[SectorBufferSize];
+    static_assert(sizeof(SectorBuffer) == SectorBufferSize);
+
+    struct CacheSetting {
+        CachePage *pages;
+        SectorBuffer *buffers;
+        u16 num_fat_pages;
+        u16 num_data_pages;
+        u32 fat_buf_size;
+        u32 data_buf_size;
+    };
+
+    struct DriveTable {
+        CacheSetting *cache;
+        HandleType partition_handle;
+        DriveCharacter drive_char;
+        u8 status;
+    };
+
+    using TailBuf = u32;
 
 }

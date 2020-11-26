@@ -25,3 +25,5 @@
 #include <vapours/prfile2/prfile2_system.hpp>
 #include <vapours/prfile2/pdm/prfile2_pdm_api.hpp>
 #include <vapours/prfile2/pdm/prfile2_pdm_disk_management.hpp>
+#include <vapours/prfile2/prfile2_fatfs.hpp>
+#include <vapours/prfile2/prfile2_volume.hpp>

@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours/prfile2/prfile2_common.hpp>
+#include <vapours/prfile2/prfile2_build_config.hpp>
 
 namespace ams::prfile2 {
 
