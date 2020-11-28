@@ -206,7 +206,7 @@ static void config_se_brom(void) {
     
     /* Clear the boot reason to avoid problems later */
     pmc->scratch200 = 0;
-    pmc->reset_status = 0;
+    pmc->rst_status = 0;
 }
 
 void nx_hwinit_erista(bool enable_log) {
@@ -318,15 +318,16 @@ void nx_hwinit_erista(bool enable_log) {
     /* Configure memory controller carveouts. */
     /* NOTE: [4.0.0+] This is now done in the Secure Monitor. */
     /* mc_config_carveout(); */
-
-    /* Initialize SDRAM. */
-    sdram_init_erista();
     
     /* Save SDRAM parameters to scratch. */
     sdram_save_params_erista(sdram_get_params_erista(fuse_get_dram_id()));
+    
+    /* Initialize SDRAM. */
+    sdram_init_erista();
 }
 
 void nx_hwinit_mariko(bool enable_log) {
+    volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_car_t *car = car_get_regs();
     
     /* Enable SE clock. */
@@ -390,14 +391,14 @@ void nx_hwinit_mariko(bool enable_log) {
     /* Set super clock burst policy. */
     car->sclk_brst_pol = ((car->sclk_brst_pol & 0xFFFF8888) | 0x3333);
     
-    /* Mariko only PMC configuration. */
-    MAKE_PMC_REG(0xBE8) &= 0xFFFFFFFE;
-    MAKE_PMC_REG(0xBF0) = 0x3;
-    MAKE_PMC_REG(0xBEC) = 0x3;
-    
-    /* Initialize SDRAM. */
-    sdram_init_mariko();
+    /* Mariko only PMC configuration for TZRAM. */
+    pmc->tzram_pwr_cntrl &= 0xFFFFFFFE;
+    pmc->tzram_non_sec_disable = 0x3;
+    pmc->tzram_sec_disable = 0x3;
     
     /* Save SDRAM parameters to scratch. */
     sdram_save_params_mariko(sdram_get_params_mariko(fuse_get_dram_id()));
+    
+    /* Initialize SDRAM. */
+    sdram_init_mariko();
 }
