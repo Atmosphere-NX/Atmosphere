@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -24,14 +24,14 @@
 
 #include "sdmmc_core.h"
 #if defined(FUSEE_STAGE1_SRC)
-#include "../../../fusee/fusee-primary/src/car.h"
-#include "../../../fusee/fusee-primary/src/fuse.h"
-#include "../../../fusee/fusee-primary/src/pinmux.h"
-#include "../../../fusee/fusee-primary/src/timers.h"
-#include "../../../fusee/fusee-primary/src/apb_misc.h"
-#include "../../../fusee/fusee-primary/src/gpio.h"
-#include "../../../fusee/fusee-primary/src/pmc.h"
-#include "../../../fusee/fusee-primary/src/max7762x.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/car.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/fuse.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/pinmux.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/timers.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/apb_misc.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/gpio.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/pmc.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/max7762x.h"
 #elif defined(FUSEE_STAGE2_SRC)
 #include "../../../fusee/fusee-secondary/src/car.h"
 #include "../../../fusee/fusee-secondary/src/fuse.h"
@@ -57,7 +57,7 @@ static void sdmmc_print(sdmmc_t *sdmmc, ScreenLogLevel screen_log_level, char *f
 {
     if (screen_log_level > log_get_log_level())
         return;
-    
+
     print(screen_log_level, "%s: ", sdmmc->name);
     vprint(screen_log_level, fmt, list);
     print(screen_log_level | SCREEN_LOG_LEVEL_NO_PREFIX, "\n");
@@ -66,7 +66,7 @@ static void sdmmc_print(sdmmc_t *sdmmc, ScreenLogLevel screen_log_level, char *f
 void sdmmc_error(sdmmc_t *sdmmc, char *fmt, ...)
 {
     va_list list;
-    
+
     va_start(list, fmt);
     sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_ERROR, fmt, list);
     va_end(list);
@@ -75,7 +75,7 @@ void sdmmc_error(sdmmc_t *sdmmc, char *fmt, ...)
 void sdmmc_warn(sdmmc_t *sdmmc, char *fmt, ...)
 {
     va_list list;
-    
+
     va_start(list, fmt);
     sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_WARNING, fmt, list);
     va_end(list);
@@ -84,7 +84,7 @@ void sdmmc_warn(sdmmc_t *sdmmc, char *fmt, ...)
 void sdmmc_info(sdmmc_t *sdmmc, char *fmt, ...)
 {
     va_list list;
-    
+
     va_start(list, fmt);
     sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_INFO, fmt, list);
     va_end(list);
@@ -93,7 +93,7 @@ void sdmmc_info(sdmmc_t *sdmmc, char *fmt, ...)
 void sdmmc_debug(sdmmc_t *sdmmc, char *fmt, ...)
 {
     va_list list;
-    
+
     va_start(list, fmt);
     sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_DEBUG, fmt, list);
     va_end(list);
@@ -192,7 +192,7 @@ static bool is_soc_mariko() {
 static bool is_sdmmc_clk_rst(SdmmcControllerNum controller)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     switch (controller) {
         case SDMMC_1:
             return (car->rst_dev_l & CLK_L_SDMMC1);
@@ -203,7 +203,7 @@ static bool is_sdmmc_clk_rst(SdmmcControllerNum controller)
         case SDMMC_4:
             return (car->rst_dev_l & CLK_L_SDMMC4);
     }
-    
+
     return false;
 }
 
@@ -211,7 +211,7 @@ static bool is_sdmmc_clk_rst(SdmmcControllerNum controller)
 static void sdmmc_clk_set_rst(SdmmcControllerNum controller)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     switch (controller) {
         case SDMMC_1:
             car->rst_dev_l_set = CLK_L_SDMMC1;
@@ -232,7 +232,7 @@ static void sdmmc_clk_set_rst(SdmmcControllerNum controller)
 static void sdmmc_clk_clear_rst(SdmmcControllerNum controller)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     switch (controller) {
         case SDMMC_1:
             car->rst_dev_l_clr = CLK_L_SDMMC1;
@@ -253,7 +253,7 @@ static void sdmmc_clk_clear_rst(SdmmcControllerNum controller)
 static bool is_sdmmc_clk_enb(SdmmcControllerNum controller)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     switch (controller) {
         case SDMMC_1:
             return (car->clk_out_enb_l & CLK_L_SDMMC1);
@@ -264,7 +264,7 @@ static bool is_sdmmc_clk_enb(SdmmcControllerNum controller)
         case SDMMC_4:
             return (car->clk_out_enb_l & CLK_L_SDMMC4);
     }
-    
+
     return false;
 }
 
@@ -272,7 +272,7 @@ static bool is_sdmmc_clk_enb(SdmmcControllerNum controller)
 static void sdmmc_clk_set_enb(SdmmcControllerNum controller)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     switch (controller) {
         case SDMMC_1:
             car->clk_enb_l_set = CLK_L_SDMMC1;
@@ -293,7 +293,7 @@ static void sdmmc_clk_set_enb(SdmmcControllerNum controller)
 static void sdmmc_clk_clear_enb(SdmmcControllerNum controller)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     switch (controller) {
         case SDMMC_1:
             car->clk_enb_l_clr = CLK_L_SDMMC1;
@@ -376,7 +376,7 @@ static int sdmmc_get_sdclk_div(SdmmcBusSpeed bus_speed)
 static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq)
 {
     volatile tegra_car_t *car = car_get_regs();
-    
+
     uint32_t car_div = 0;
     uint32_t out_freq = 0;
 
@@ -417,7 +417,7 @@ static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq
         default:
             return 0;
     }
-    
+
     sdmmc_clk_sources[controller].clk_source_val = clk_freq;
     sdmmc_clk_sources[controller].clk_div_val = out_freq;
 
@@ -444,27 +444,27 @@ static int sdmmc_clk_set_source(SdmmcControllerNum controller, uint32_t clk_freq
 static int sdmmc_clk_adjust_source(SdmmcControllerNum controller, uint32_t clk_source_val)
 {
     uint32_t out_val = 0;
-    
+
     if (sdmmc_clk_sources[controller].clk_source_val == clk_source_val)
         out_val = sdmmc_clk_sources[controller].clk_div_val;
     else
     {
         bool was_sdmmc_clk_enb = is_sdmmc_clk_enb(controller);
-        
+
         /* Clock was already enabled. Disable it. */
         if (was_sdmmc_clk_enb)
             sdmmc_clk_clear_enb(controller);
-        
+
         out_val = sdmmc_clk_set_source(controller, clk_source_val);
-        
+
         /* Clock was already enabled. Enable it back. */
         if (was_sdmmc_clk_enb)
             sdmmc_clk_set_enb(controller);
-        
+
         /* Dummy read for value refreshing. */
         is_sdmmc_clk_rst(controller);
     }
-    
+
     return out_val;
 }
 
@@ -504,25 +504,25 @@ static void sdmmc_clk_start(SdmmcControllerNum controller, uint32_t clk_source_v
     /* Clock was already enabled. Disable it. */
     if (is_sdmmc_clk_enb(controller))
         sdmmc_clk_clear_enb(controller);
-    
+
     /* Put the device clock in reset. */
     sdmmc_clk_set_rst(controller);
-    
+
     /* Configure the device clock source. */
     uint32_t clk_div = sdmmc_clk_set_source(controller, clk_source_val);
-    
+
     /* Enable the device clock. */
     sdmmc_clk_set_enb(controller);
-    
+
     /* Dummy read for value refreshing. */
     is_sdmmc_clk_rst(controller);
-    
+
     /* Synchronize. */
     udelay((100000 + clk_div - 1) / clk_div);
-    
+
     /* Take the device clock out of reset. */
     sdmmc_clk_clear_rst(controller);
-    
+
     /* Dummy read for value refreshing. */
     is_sdmmc_clk_rst(controller);
 }
@@ -532,10 +532,10 @@ static void sdmmc_clk_stop(SdmmcControllerNum controller)
 {
     /* Put the device clock in reset. */
     sdmmc_clk_set_rst(controller);
-    
+
     /* Disable the device clock. */
     sdmmc_clk_clear_enb(controller);
-    
+
     /* Dummy read for value refreshing. */
     is_sdmmc_clk_rst(controller);
 }
@@ -548,7 +548,7 @@ static void sdmmc_vendor_clock_cntrl_config(sdmmc_t *sdmmc)
 
     /* Set the PADPIPE clock enable */
     sdmmc->regs->vendor_clock_cntrl |= SDMMC_CLOCK_PADPIPE_CLKEN_OVERRIDE;
-    
+
     /* Set the appropriate trim value. */
     switch (sdmmc->controller) {
         case SDMMC_1:
@@ -564,7 +564,7 @@ static void sdmmc_vendor_clock_cntrl_config(sdmmc_t *sdmmc)
             sdmmc->regs->vendor_clock_cntrl |= (is_soc_mariko() ? SDMMC_CLOCK_TRIM_SDMMC4_MARIKO : SDMMC_CLOCK_TRIM_SDMMC4_ERISTA);
             break;
     }
-    
+
     /* Clear the SPI_MODE clock enable. */
     sdmmc->regs->vendor_clock_cntrl &= ~(SDMMC_CLOCK_SPI_MODE_CLKEN_OVERRIDE);
 }
@@ -588,7 +588,7 @@ static int sdmmc_autocal_config(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
                     sdmmc_error(sdmmc, "uSD does not support requested voltage!");
                     return 0;
             }
-            
+
             break;
         case SDMMC_2:
         case SDMMC_4:
@@ -609,32 +609,32 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
 {
     volatile tegra_padctl_t *padctl = padctl_get_regs();
     bool restart_sd_clock = false;
-    
+
     /* SD clock is enabled. Disable it and restart later. */
     if (sdmmc->is_sd_clk_enabled)
     {
         restart_sd_clock = true;
         sdmmc_disable_sd_clock(sdmmc);
     }
-    
+
     /* Set PAD_E_INPUT_OR_E_PWRD */
     if (!(sdmmc->regs->sdmemcomppadctrl & 0x80000000))
     {
         sdmmc->regs->sdmemcomppadctrl |= 0x80000000;
-        
+
         /* Force a register read to refresh the clock control value. */
         sdmmc_get_sd_clock_control(sdmmc);
-        
+
         /* Delay. */
         udelay(1);
     }
-    
+
     /* Start automatic calibration. */
     sdmmc->regs->auto_cal_config |= (SDMMC_AUTOCAL_START | SDMMC_AUTOCAL_ENABLE);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Delay. */
     udelay(2);
 
@@ -646,10 +646,10 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
         /* Ensure we haven't timed out. */
         if (get_time_since(timebase) > SDMMC_AUTOCAL_TIMEOUT) {
             sdmmc_warn(sdmmc, "Auto-calibration timed out!");
-            
+
             /* Force a register read to refresh the clock control value. */
             sdmmc_get_sd_clock_control(sdmmc);
-            
+
             /* Upon timeout, fall back to standard values. */
             if (sdmmc->controller == SDMMC_1) {
                 uint32_t drvup, drvdn = 0;
@@ -699,16 +699,16 @@ static void sdmmc_autocal_run(sdmmc_t *sdmmc, SdmmcBusVoltage voltage)
                 value |= (drvdn << EMMC4_PAD_DRVDN_COMP_SHIFT);
                 padctl->emmc4_pad_cfgpadctrl = value;
             }
-            
+
             /* Manually clear the autocal enable bit. */
             sdmmc->regs->auto_cal_config &= ~(SDMMC_AUTOCAL_ENABLE);
             break;
         }
     }
-    
+
     /* Clear PAD_E_INPUT_OR_E_PWRD (relevant for eMMC only) */
     sdmmc->regs->sdmemcomppadctrl &= ~(0x80000000);
-    
+
     /* If requested, enable the SD clock. */
     if (restart_sd_clock)
         sdmmc_enable_sd_clock(sdmmc);
@@ -721,7 +721,7 @@ static int sdmmc_int_clk_enable(sdmmc_t *sdmmc)
 
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-            
+
     /* Program a timeout of 2000ms. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
@@ -742,23 +742,23 @@ static int sdmmc_int_clk_enable(sdmmc_t *sdmmc)
     sdmmc->regs->host_control2 &= ~SDHCI_CTRL_PRESET_VAL_ENABLE;
     sdmmc->regs->clock_control &= ~TEGRA_MMC_CLKCON_PROG_CLOCK_MODE;
     sdmmc->regs->host_control2 |= SDHCI_HOST_VERSION_4_EN;
-    
+
     /* Ensure 64bit addressing is supported. */
     if (!(sdmmc->regs->capabilities & SDHCI_CAN_64BIT)) {
         sdmmc_error(sdmmc, "64bit addressing is unsupported!");
         return 0;
     }
-    
+
     /* Enable 64bit addressing. */
     sdmmc->regs->host_control2 |= SDHCI_ADDRESSING_64BIT_EN;
-    
+
     /* Use SDMA by default. */
     sdmmc->regs->host_control &= ~SDHCI_CTRL_DMA_MASK;
 
     /* Change to ADMA if possible. */
     if (sdmmc->regs->capabilities & SDHCI_CAN_DO_ADMA2)
         sdmmc->use_adma = true;
-    
+
     /* Set the timeout to be the maximum value. */
     sdmmc->regs->timeout_control &= 0xF0;
     sdmmc->regs->timeout_control |= 0x0E;
@@ -819,10 +819,10 @@ static void sdmmc_tap_config(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
         sdmmc->regs->vendor_cap_overrides &= ~(0x3F00);
         sdmmc->regs->vendor_cap_overrides |= 0x2800;
     }
-    
+
     /* Clear TAP_VAL_UPDATED_BY_HW */
     sdmmc->regs->vendor_tuning_cntrl0 &= ~(0x20000);
-    
+
     if (bus_speed == SDMMC_SPEED_MMC_HS400)
     {
         /* We must have obtained the tap value from the tuning procedure here. */
@@ -849,7 +849,7 @@ static void sdmmc_tap_config(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
                 sdmmc->tap_val = 3;
                 break;
         }
-        
+
         /* Clear and set the tap value. */
         sdmmc->regs->vendor_clock_cntrl &= ~(0xFF0000);
         sdmmc->regs->vendor_clock_cntrl |= (sdmmc->tap_val << 16);
@@ -859,20 +859,20 @@ static void sdmmc_tap_config(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
 static int sdmmc_dllcal_run(sdmmc_t *sdmmc)
 {
     bool shutdown_sd_clock = false;
-    
+
     /* SD clock is disabled. Enable it. */
     if (!sdmmc->is_sd_clk_enabled)
     {
         shutdown_sd_clock = true;
         sdmmc_enable_sd_clock(sdmmc);
     }
-    
+
     /* Set the CALIBRATE bit. */
     sdmmc->regs->vendor_dllcal_cfg |= 0x80000000;
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Program a timeout of 5ms. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
@@ -888,7 +888,7 @@ static int sdmmc_dllcal_run(sdmmc_t *sdmmc)
         sdmmc_error(sdmmc, "DLLCAL failed!");
         return 0;
     }
-    
+
     /* Program a timeout of 10ms. */
     timebase = get_time();
     is_timeout = false;
@@ -908,24 +908,24 @@ static int sdmmc_dllcal_run(sdmmc_t *sdmmc)
     /* If requested, disable the SD clock. */
     if (shutdown_sd_clock)
         sdmmc_disable_sd_clock(sdmmc);
-    
+
     return 1;
 }
 
 int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
 {
     bool restart_sd_clock = false;
-    
+
     /* SD clock is enabled. Disable it and restart later. */
     if (sdmmc->is_sd_clk_enabled)
     {
         restart_sd_clock = true;
         sdmmc_disable_sd_clock(sdmmc);
     }
-    
+
     /* Configure tap values as necessary. */
     sdmmc_tap_config(sdmmc, bus_speed);
-    
+
     /* Set the appropriate host speed. */
     switch (bus_speed) {
         /* 400kHz initialization mode and a few others. */
@@ -944,7 +944,7 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
             sdmmc->regs->host_control |= SDHCI_CTRL_HISPD;
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_VDD_180);
             break;
-            
+
         /* 200MHz UHS-I (SD) and other modes due to errata. */
         case SDMMC_SPEED_MMC_HS200:
         case SDMMC_SPEED_SD_SDR104:
@@ -956,14 +956,14 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
             sdmmc->regs->host_control2 |= SDHCI_CTRL_UHS_SDR104;
             sdmmc->regs->host_control2 |= SDHCI_CTRL_VDD_180;
             break;
-            
+
         /* 200MHz single-data rate (MMC). */
         case SDMMC_SPEED_MMC_HS400:
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
             sdmmc->regs->host_control2 |= SDHCI_CTRL_HS400;
             sdmmc->regs->host_control2 |= SDHCI_CTRL_VDD_180;
             break;
-            
+
         /* 25MHz default speed (SD). */
         case SDMMC_SPEED_SD_SDR12:
             sdmmc->regs->host_control2 &= ~(SDHCI_CTRL_UHS_MASK);
@@ -975,38 +975,38 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed)
             sdmmc_error(sdmmc, "Switching to unsupported speed!");
             return 0;
     }
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Get the clock's frequency and divider. */
     uint32_t freq_val = sdmmc_get_sdclk_freq(bus_speed);
     uint32_t div_val = sdmmc_get_sdclk_div(bus_speed);
-    
+
     /* Adjust the CAR side of the clock. */
     uint32_t out_freq_val = sdmmc_clk_adjust_source(sdmmc->controller, freq_val);
-    
+
     /* Save the internal divider value. */
     sdmmc->internal_divider = ((out_freq_val + div_val - 1) / div_val);
-    
+
     uint16_t div_val_lo = div_val >> 1;
     uint16_t div_val_hi = 0;
-    
+
     if (div_val_lo > 0xFF)
         div_val_hi = (div_val_lo >> 8);
-    
+
     /* Set the clock control divider values. */
     sdmmc->regs->clock_control &= ~((SDHCI_DIV_HI_MASK | SDHCI_DIV_MASK) << 6);
     sdmmc->regs->clock_control |= ((div_val_hi << SDHCI_DIVIDER_HI_SHIFT) | (div_val_lo << SDHCI_DIVIDER_SHIFT));
-    
+
     /* If requested, enable the SD clock. */
     if (restart_sd_clock)
         sdmmc_enable_sd_clock(sdmmc);
-    
+
     /* Run DLLCAL for HS400 only */
     if (bus_speed == SDMMC_SPEED_MMC_HS400)
         return sdmmc_dllcal_run(sdmmc);
-    
+
     return 1;
 }
 
@@ -1015,21 +1015,21 @@ static int sdmmc1_config()
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
     volatile tegra_padctl_t *padctl = padctl_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
+
     /* Set up the card detect pin as a GPIO input */
     pinmux->pz1 = PINMUX_SELECT_FUNCTION1 | PINMUX_PULL_UP | PINMUX_INPUT;
     padctl->vgpio_gpio_mux_sel = 0;
     gpio_configure_mode(GPIO_MICROSD_CARD_DETECT, GPIO_MODE_GPIO);
     gpio_configure_direction(GPIO_MICROSD_CARD_DETECT, GPIO_DIRECTION_INPUT);
     udelay(100);
-    
+
     /* Check the GPIO. */
     if (gpio_read(GPIO_MICROSD_CARD_DETECT))
         return 0;
-    
+
     /* Enable loopback control.  */
     padctl->sdmmc1_clk_lpbk_control = 1;
-    
+
     /* Set up the SDMMC1 pinmux. */
     pinmux->sdmmc1_clk  = PINMUX_DRIVE_2X | PINMUX_PARKED | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT;
     pinmux->sdmmc1_cmd  = PINMUX_DRIVE_2X | PINMUX_PARKED | PINMUX_SELECT_FUNCTION0 | PINMUX_INPUT | PINMUX_PULL_UP;
@@ -1040,21 +1040,21 @@ static int sdmmc1_config()
 
     /* Ensure the PMC is prepared for the SDMMC1 card to receive power. */
     pmc->no_iopower &= ~PMC_CONTROL_SDMMC1;
-    
+
     /* Configure the enable line for the SD card power. */
     pinmux->dmic3_clk  =  PINMUX_SELECT_FUNCTION1 | PINMUX_PULL_DOWN | PINMUX_INPUT;
     gpio_configure_mode(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_MODE_GPIO);
     gpio_write(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_LEVEL_HIGH);
     gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_OUTPUT);
-    
+
     /* Delay. */
     udelay(10000);
-    
+
     /* Configure Sdmmc1 IO as 3.3V. */
     pmc->pwr_det_val |= PMC_CONTROL_SDMMC1;
     max77620_regulator_set_voltage(REGULATOR_LDO2, 3300000);
     max77620_regulator_enable(REGULATOR_LDO2, 1);
-    
+
     /* Delay. */
     udelay(130);
 
@@ -1081,14 +1081,14 @@ static int sdmmc_init_controller(sdmmc_t *sdmmc, SdmmcControllerNum controller)
     /* Sanitize input number for the controller. */
     if ((controller < SDMMC_1) || (controller > SDMMC_4))
         return 0;
-    
+
     /* Clear up memory for our struct. */
     memset(sdmmc, 0, sizeof(sdmmc_t));
-    
+
     /* Bind the appropriate controller and it's register space to our struct. */
     sdmmc->controller = controller;
     sdmmc->regs = sdmmc_get_regs(controller);
-    
+
     /* Set up per-device pointers and properties. */
     switch (sdmmc->controller) {
         case SDMMC_1:
@@ -1107,7 +1107,7 @@ static int sdmmc_init_controller(sdmmc_t *sdmmc, SdmmcControllerNum controller)
             /* Function pointers. */
             sdmmc->sdmmc_config = sdmmc1_config;
             break;
-            
+
         case SDMMC_2:
             /* Controller properties. */
             sdmmc->name = "GC";
@@ -1124,7 +1124,7 @@ static int sdmmc_init_controller(sdmmc_t *sdmmc, SdmmcControllerNum controller)
             /* Function pointers. */
             sdmmc->sdmmc_config = sdmmc2_config;
             break;
-            
+
         case SDMMC_3:
             /* Controller properties. */
             sdmmc->name = "UNUSED";
@@ -1141,7 +1141,7 @@ static int sdmmc_init_controller(sdmmc_t *sdmmc, SdmmcControllerNum controller)
             /* Function pointers. */
             sdmmc->sdmmc_config = sdmmc3_config;
             break;
-            
+
         case SDMMC_4:
             /* Controller properties. */
             sdmmc->name = "eMMC";
@@ -1170,13 +1170,13 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
         sdmmc_error(sdmmc, "Failed to initialize SDMMC%d", controller + 1);
         return 0;
     }
-    
+
     /* Perform initial configuration steps if necessary. */
     if (!sdmmc->sdmmc_config()) {
         sdmmc_error(sdmmc, "Failed to configure controller!");
         return 0;
     }
-    
+
     /* Initialize the clock status. */
     sdmmc->is_clk_running = false;
 
@@ -1184,17 +1184,17 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
     if (!is_sdmmc_clk_rst(controller) && is_sdmmc_clk_enb(controller)) {
         /* Disable the SD clock. */
         sdmmc_disable_sd_clock(sdmmc);
-        
+
         /* Force a register read to refresh the clock control value. */
         sdmmc_get_sd_clock_control(sdmmc);
     }
-    
+
     /* Sort out the clock's frequency. */
     uint32_t clk_freq_val = sdmmc_get_sdclk_freq(bus_speed);
-    
+
     /* Start the SDMMC clock. */
     sdmmc_clk_start(controller, clk_freq_val);
-    
+
     /* Update the clock status. */
     sdmmc->is_clk_running = true;
 
@@ -1203,10 +1203,10 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
 
     /* Clear SEL_VREG */
     sdmmc->regs->vendor_io_trim_cntrl &= ~(0x04);
-    
+
     /* Configure vendor clocking. */
     sdmmc_vendor_clock_cntrl_config(sdmmc);
-    
+
     /* Set slew codes for SDMMC1 (Erista only). */
     if ((controller == SDMMC_1) && !(is_soc_mariko())) {
         volatile tegra_padctl_t *padctl = padctl_get_regs();
@@ -1223,28 +1223,28 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
         sdmmc->regs->sdmemcomppadctrl |= 0x00;
     else
         sdmmc->regs->sdmemcomppadctrl |= 0x07;
-    
+
     /* Configure autocal offsets. */
     if (!sdmmc_autocal_config(sdmmc, bus_voltage)) {
         sdmmc_error(sdmmc, "Failed to configure automatic calibration!");
         return 0;
     }
-    
+
     /* Do autocal. */
     sdmmc_autocal_run(sdmmc, bus_voltage);
-    
+
     /* Enable the internal clock. */
     if (!sdmmc_int_clk_enable(sdmmc)) {
         sdmmc_error(sdmmc, "Failed to enable the internal clock!");
         return 0;
     }
-    
+
     /* Select the desired bus width. */
     sdmmc_select_bus_width(sdmmc, bus_width);
 
     /* Select the desired voltage. */
     sdmmc_select_voltage(sdmmc, bus_voltage);
-    
+
     /* Enable the internal clock. */
     if (!sdmmc_select_speed(sdmmc, bus_speed)) {
         sdmmc_error(sdmmc, "Failed to apply the correct bus speed!");
@@ -1253,13 +1253,13 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
 
     /* Correct any inconsistent states. */
     sdmmc_adjust_sd_clock(sdmmc);
-    
+
     /* Enable the SD clock. */
     sdmmc_enable_sd_clock(sdmmc);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     return 1;
 }
 
@@ -1270,29 +1270,29 @@ void sdmmc_finish(sdmmc_t *sdmmc)
     {
         /* Disable the SD clock. */
         sdmmc_disable_sd_clock(sdmmc);
-        
+
         /* Disable SDMMC power. */
         sdmmc_select_voltage(sdmmc, SDMMC_VOLTAGE_NONE);
-        
+
         /* Disable the SD card power. */
         if (sdmmc->controller == SDMMC_1)
         {
             /* Disable GPIO output. */
             gpio_configure_direction(GPIO_MICROSD_SUPPLY_ENABLE, GPIO_DIRECTION_INPUT);
-            
+
             /* Power cycle for 100ms without power. */
             mdelay(100);
-            
+
             /* Disable the regulator. */
             max77620_regulator_enable(REGULATOR_LDO2, 0);
         }
-        
+
         /* Force a register read to refresh the clock control value. */
         sdmmc_get_sd_clock_control(sdmmc);
-        
+
         /* Stop the SDMMC clock. */
         sdmmc_clk_stop(sdmmc->controller);
-        
+
         /* Clock is no longer running by now. */
         sdmmc->is_clk_running = false;
     }
@@ -1302,10 +1302,10 @@ static void sdmmc_do_sw_reset(sdmmc_t *sdmmc)
 {
     /* Assert a software reset. */
     sdmmc->regs->software_reset |= (TEGRA_MMC_SWRST_SW_RESET_FOR_CMD_LINE | TEGRA_MMC_SWRST_SW_RESET_FOR_DAT_LINE);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Program a timeout of 100ms. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
@@ -1321,7 +1321,7 @@ static int sdmmc_wait_for_inhibit(sdmmc_t *sdmmc, bool wait_for_dat)
 {
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Program a timeout of 10ms. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
@@ -1331,14 +1331,14 @@ static int sdmmc_wait_for_inhibit(sdmmc_t *sdmmc, bool wait_for_dat)
         /* Keep checking if timeout expired. */
         is_timeout = (get_time_since(timebase) > 10000);
     }
-    
+
     /* Bit was never released. Reset. */
     if (is_timeout)
     {
         sdmmc_do_sw_reset(sdmmc);
         return 0;
     }
-    
+
     if (wait_for_dat)
     {
         /* Program a timeout of 10ms. */
@@ -1350,7 +1350,7 @@ static int sdmmc_wait_for_inhibit(sdmmc_t *sdmmc, bool wait_for_dat)
             /* Keep checking if timeout expired. */
             is_timeout = (get_time_since(timebase) > 10000);
         }
-        
+
         /* Bit was never released, reset. */
         if (is_timeout)
         {
@@ -1366,7 +1366,7 @@ static int sdmmc_wait_busy(sdmmc_t *sdmmc)
 {
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Program a timeout of 10ms. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
@@ -1376,7 +1376,7 @@ static int sdmmc_wait_busy(sdmmc_t *sdmmc)
         /* Keep checking if timeout expired. */
         is_timeout = (get_time_since(timebase) > 10000);
     }
-    
+
     /* Bit was never released. Reset. */
     if (is_timeout)
     {
@@ -1392,7 +1392,7 @@ static void sdmmc_intr_enable(sdmmc_t *sdmmc)
     /* Enable the relevant interrupts and set all error bits. */
     sdmmc->regs->int_enable |= (TEGRA_MMC_NORINTSTSEN_CMD_COMPLETE | TEGRA_MMC_NORINTSTSEN_XFER_COMPLETE | TEGRA_MMC_NORINTSTSEN_DMA_INTERRUPT);
     sdmmc->regs->int_enable |= 0x017F0000;
-    
+
     /* Refresh status. */
     sdmmc->regs->int_status = sdmmc->regs->int_status;
 }
@@ -1407,13 +1407,13 @@ static void sdmmc_intr_disable(sdmmc_t *sdmmc)
 static int sdmmc_intr_check(sdmmc_t *sdmmc, uint16_t *status_out, uint16_t status_mask)
 {
     uint32_t int_status = sdmmc->regs->int_status;
-    
+
     sdmmc_debug(sdmmc, "INTSTS: %08X", int_status);
-    
+
     /* Return the status, if necessary. */
     if (status_out)
         *status_out = (int_status & 0xFFFF);
-    
+
     if (int_status & TEGRA_MMC_NORINTSTS_ERR_INTERRUPT)
     {
         /* Acknowledge error by refreshing status. */
@@ -1426,7 +1426,7 @@ static int sdmmc_intr_check(sdmmc_t *sdmmc, uint16_t *status_out, uint16_t statu
         sdmmc->regs->int_status = (int_status & status_mask);
         return 1;
     }
-    
+
     return 0;
 }
 
@@ -1438,13 +1438,13 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
         sdmmc_error(sdmmc, "Empty DMA request!");
         return 0;
     }
-    
+
     uint32_t blkcnt = req->num_blocks;
-    
+
     /* Truncate block count. Length can't be over 65536 bytes. */
     if (blkcnt >= 0xFFFF)
         blkcnt = 0xFFFF;
-    
+
     /* Use our bounce buffer for SDMA or the request data buffer for ADMA. */
     uint32_t dma_base_addr = sdmmc->use_adma ? (uint32_t)req->data : (uint32_t)sdmmc->dma_bounce_buf;
 
@@ -1454,7 +1454,7 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
         sdmmc_error(sdmmc, "Invalid DMA request data buffer: 0x%08X", dma_base_addr);
         return 0;
     }
-    
+
     /* Write our address to the registers. */
     if (sdmmc->use_adma)
     {
@@ -1473,28 +1473,28 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
 
     /* Set the block size ORed with the DMA boundary mask. */
     sdmmc->regs->block_size = req->blksz | 0x7000;
-    
+
     /* Set the block count. */
     sdmmc->regs->block_count = blkcnt;
-    
+
     /* Select basic DMA transfer mode. */
     uint32_t transfer_mode = TEGRA_MMC_TRNMOD_DMA_ENABLE;
-    
+
     /* Select multi block. */
     if (req->is_multi_block)
         transfer_mode |= (TEGRA_MMC_TRNMOD_MULTI_BLOCK_SELECT | TEGRA_MMC_TRNMOD_BLOCK_COUNT_ENABLE);
-     
+
     /* Select read mode. */
     if (req->is_read)
         transfer_mode |= TEGRA_MMC_TRNMOD_DATA_XFER_DIR_SEL_READ;
-    
+
     /* Select AUTO_CMD12. */
     if (req->is_auto_cmd12)
     {
         transfer_mode &= ~(TEGRA_MMC_TRNMOD_AUTO_CMD12 & TEGRA_MMC_TRNMOD_AUTO_CMD23);
         transfer_mode |= TEGRA_MMC_TRNMOD_AUTO_CMD12;
     }
-    
+
     /* Set the transfer mode in the register. */
     sdmmc->regs->transfer_mode = transfer_mode;
 
@@ -1504,35 +1504,35 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req)
 static int sdmmc_dma_update(sdmmc_t *sdmmc)
 {
     uint16_t blkcnt = 0;
-    
+
     /* Loop until all blocks have been consumed. */
     do
     {
         /* Update block count. */
         blkcnt = sdmmc->regs->block_count;
-        
+
         /* Program a large timeout. */
         uint32_t timebase = get_time();
         bool is_timeout = false;
-    
+
         /* Watch over the DMA transfer. */
-        while (!is_timeout) 
+        while (!is_timeout)
         {
             /* Check interrupts. */
             uint16_t intr_status = 0;
             int intr_res = sdmmc_intr_check(sdmmc, &intr_status, TEGRA_MMC_NORINTSTS_XFER_COMPLETE | TEGRA_MMC_NORINTSTS_DMA_INTERRUPT);
-            
+
             /* An error has been raised. Reset. */
             if (intr_res < 0)
             {
                 sdmmc_do_sw_reset(sdmmc);
                 return 0;
             }
-            
+
             /* Transfer is over. */
             if (intr_status & TEGRA_MMC_NORINTSTS_XFER_COMPLETE)
                 return 1;
-            
+
             /* We have a DMA interrupt. Restart the transfer where it was interrupted. */
             if (intr_status & TEGRA_MMC_NORINTSTS_DMA_INTERRUPT)
             {
@@ -1547,15 +1547,15 @@ static int sdmmc_dma_update(sdmmc_t *sdmmc)
                     /* Update SDMA register. */
                     sdmmc->regs->dma_address = sdmmc->next_dma_addr;
                 }
-                
+
                 sdmmc->next_dma_addr += 0x80000;
             }
-            
+
             /* Keep checking if timeout expired. */
-            is_timeout = (get_time_since(timebase) > 2000000);            
+            is_timeout = (get_time_since(timebase) > 2000000);
         }
     } while (sdmmc->regs->block_count < blkcnt);
-    
+
     /* Should never get here. Reset. */
     sdmmc_do_sw_reset(sdmmc);
     return 0;
@@ -1564,7 +1564,7 @@ static int sdmmc_dma_update(sdmmc_t *sdmmc)
 static void sdmmc_set_cmd_flags(sdmmc_t *sdmmc, sdmmc_command_t *cmd, bool is_dma)
 {
     uint16_t cmd_reg_flags = 0;
-    
+
     /* Select length flags based on response type. */
     if (!(cmd->flags & SDMMC_RSP_PRESENT))
         cmd_reg_flags = TEGRA_MMC_CMDREG_RESP_TYPE_SELECT_NO_RESPONSE;
@@ -1574,19 +1574,19 @@ static void sdmmc_set_cmd_flags(sdmmc_t *sdmmc, sdmmc_command_t *cmd, bool is_dm
         cmd_reg_flags = TEGRA_MMC_CMDREG_RESP_TYPE_SELECT_LENGTH_48_BUSY;
     else
         cmd_reg_flags = TEGRA_MMC_CMDREG_RESP_TYPE_SELECT_LENGTH_48;
-    
+
     /* Select CRC flag based on response type. */
     if (cmd->flags & SDMMC_RSP_CRC)
         cmd_reg_flags |= TEGRA_MMC_TRNMOD_CMD_CRC_CHECK;
-    
+
     /* Select opcode flag based on response type. */
     if (cmd->flags & SDMMC_RSP_OPCODE)
         cmd_reg_flags |= TEGRA_MMC_TRNMOD_CMD_INDEX_CHECK;
-    
+
     /* Select data present flag. */
     if (is_dma)
         cmd_reg_flags |= TEGRA_MMC_TRNMOD_DATA_PRESENT_SELECT_DATA_TRANSFER;
-    
+
     /* Set the CMD's argument, opcode and flags. */
     sdmmc->regs->argument = cmd->arg;
     sdmmc->regs->command = ((cmd->opcode << 8) | cmd_reg_flags);
@@ -1596,11 +1596,11 @@ static int sdmmc_wait_for_cmd(sdmmc_t *sdmmc)
 {
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Program a large timeout. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
-    
+
     /* Set this for error checking. */
     bool is_err = false;
 
@@ -1608,18 +1608,18 @@ static int sdmmc_wait_for_cmd(sdmmc_t *sdmmc)
     while (!is_err && !is_timeout) {
         /* Check interrupts. */
         int intr_res = sdmmc_intr_check(sdmmc, 0, TEGRA_MMC_NORINTSTS_CMD_COMPLETE);
-        
+
         /* Command is done. */
         if (intr_res > 0)
             return 1;
-        
+
         /* Check for any raised errors. */
         is_err = (intr_res < 0);
-        
+
         /* Keep checking if timeout expired. */
         is_timeout = (get_time_since(timebase) > 2000000);
     }
-    
+
     /* Should never get here. Reset. */
     sdmmc_do_sw_reset(sdmmc);
     return 0;
@@ -1635,7 +1635,7 @@ static int sdmmc_save_response(sdmmc_t *sdmmc, uint32_t flags)
             /* CRC is stripped so we need to do some shifting. */
             for (int i = 0; i < 4; i++) {
                 sdmmc->resp[i] = (sdmmc->regs->response[3 - i] << 0x08);
-                
+
                 if (i != 0)
                     sdmmc->resp[i - 1] |= ((sdmmc->regs->response[3 - i] >> 24) & 0xFF);
             }
@@ -1649,14 +1649,14 @@ static int sdmmc_save_response(sdmmc_t *sdmmc, uint32_t flags)
                 if (!sdmmc_wait_busy(sdmmc))
                     return 0;
             }
-            
+
             /* Save our response. */
             sdmmc->resp[0] = sdmmc->regs->response[0];
         }
-        
+
         return 1;
     }
-    
+
     /* Invalid response. */
     return 0;
 }
@@ -1666,7 +1666,7 @@ int sdmmc_load_response(sdmmc_t *sdmmc, uint32_t flags, uint32_t *resp)
     /* Make sure our output buffer is valid. */
     if (!resp)
         return 0;
-    
+
     /* We have a valid response. */
     if (flags & SDMMC_RSP_PRESENT)
     {
@@ -1679,10 +1679,10 @@ int sdmmc_load_response(sdmmc_t *sdmmc, uint32_t flags, uint32_t *resp)
         }
         else
             resp[0] = sdmmc->resp[0];
-        
+
         return 1;
     }
-    
+
     /* Invalid response. */
     return 0;
 }
@@ -1691,68 +1691,68 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
 {
     uint32_t cmd_result = 0;
     bool shutdown_sd_clock = false;
-        
+
     /* Run automatic calibration on each command submission for SDMMC1 (Erista only). */
     if ((sdmmc->controller == SDMMC_1) && !(sdmmc->has_sd) && !(is_soc_mariko()))
         sdmmc_autocal_run(sdmmc, sdmmc->bus_voltage);
-    
+
     /* SD clock is disabled. Enable it. */
     if (!sdmmc->is_sd_clk_enabled)
     {
         shutdown_sd_clock = true;
         sdmmc_enable_sd_clock(sdmmc);
-        
+
         /* Force a register read to refresh the clock control value. */
         sdmmc_get_sd_clock_control(sdmmc);
-        
+
         /* Provide 8 clock cycles after enabling the clock. */
         udelay((8000 + sdmmc->internal_divider - 1) / sdmmc->internal_divider);
     }
 
     /* Determine if we should wait for data inhibit. */
     bool wait_for_dat = (req || (cmd->flags & SDMMC_RSP_BUSY));
-    
+
     /* Wait for CMD and DAT inhibit. */
     if (!sdmmc_wait_for_inhibit(sdmmc, wait_for_dat))
         return 0;
 
     uint32_t dma_blkcnt = 0;
     bool is_dma = false;
-    
+
     /* This is a data transfer. */
     if (req)
     {
         is_dma = true;
         dma_blkcnt = sdmmc_dma_init(sdmmc, req);
-        
+
         /* Abort in case initialization failed. */
         if (!dma_blkcnt)
         {
             sdmmc_error(sdmmc, "Failed to initialize the DMA transfer!");
             return 0;
         }
-        
+
         /* If this is a SDMA write operation, copy the data into our bounce buffer. */
         if (!sdmmc->use_adma && !req->is_read)
             memcpy((void *)sdmmc->dma_bounce_buf, (void *)req->data, req->blksz * req->num_blocks);
     }
-    
+
     /* Enable interrupts. */
     sdmmc_intr_enable(sdmmc);
 
     /* Parse and set the CMD's flags. */
     sdmmc_set_cmd_flags(sdmmc, cmd, is_dma);
-    
+
     /* Wait for the CMD to finish. */
     cmd_result = sdmmc_wait_for_cmd(sdmmc);
-    
+
     sdmmc_debug(sdmmc, "CMD(%d): %08X, %08X, %08X, %08X", cmd_result, sdmmc->regs->response[0], sdmmc->regs->response[1], sdmmc->regs->response[2], sdmmc->regs->response[3]);
-    
+
     if (cmd_result)
     {
         /* Save response, if necessary. */
         sdmmc_save_response(sdmmc, cmd->flags);
-        
+
         /* Update the DMA request. */
         if (req)
         {
@@ -1763,7 +1763,7 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
                 sdmmc_intr_disable(sdmmc);
                 return 0;
             }
-            
+
             /* If this is a SDMA read operation, copy the data from our bounce buffer. */
             if (!sdmmc->use_adma && req->is_read)
             {
@@ -1783,20 +1783,20 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
             /* Save back the number of DMA blocks. */
             if (num_blocks_out)
                 *num_blocks_out = dma_blkcnt;
-            
+
              /* Save the response for AUTO_CMD12. */
             if (req->is_auto_cmd12)
                 sdmmc->resp_auto_cmd12 = sdmmc->regs->response[3];
         }
-        
+
         /* Wait for DAT0 to be 0. */
         if (req || (cmd->flags & SDMMC_RSP_BUSY))
             cmd_result = sdmmc_wait_busy(sdmmc);
     }
-    
+
     /* Provide 8 clock cycles before disabling the clock. */
     udelay((8000 + sdmmc->internal_divider - 1) / sdmmc->internal_divider);
-    
+
     if (shutdown_sd_clock)
         sdmmc_disable_sd_clock(sdmmc);
 
@@ -1806,17 +1806,17 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
 int sdmmc_switch_voltage(sdmmc_t *sdmmc)
 {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
+
     /* Disable the SD clock. */
     sdmmc_disable_sd_clock(sdmmc);
-    
+
     /* Reconfigure the internal clock. */
     if (!sdmmc_select_speed(sdmmc, SDMMC_SPEED_SD_SDR12))
     {
         sdmmc_error(sdmmc, "Failed to apply the correct bus speed for low voltage support!");
         return 0;
     }
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
 
@@ -1832,31 +1832,31 @@ int sdmmc_switch_voltage(sdmmc_t *sdmmc)
         sdmmc_error(sdmmc, "Failed to configure automatic calibration for low voltage support!");
         return 0;
     }
-    
+
     /* Do autocal again. */
     sdmmc_autocal_run(sdmmc, SDMMC_VOLTAGE_1V8);
-    
+
     /* Change the desired voltage. */
     sdmmc_select_voltage(sdmmc, SDMMC_VOLTAGE_1V8);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Wait a while. */
     mdelay(5);
-    
+
     /* Host control 2 flag should be set by now. */
     if (sdmmc->regs->host_control2 & SDHCI_CTRL_VDD_180)
     {
         /* Enable the SD clock. */
         sdmmc_enable_sd_clock(sdmmc);
-        
+
         /* Force a register read to refresh the clock control value. */
         sdmmc_get_sd_clock_control(sdmmc);
-        
+
         /* Wait a while. */
         mdelay(1);
-        
+
         /* Data level is up. Voltage switching is done.*/
         if (sdmmc->regs->present_state & SDHCI_DATA_LVL_MASK)
             return 1;
@@ -1870,11 +1870,11 @@ static int sdmmc_send_tuning(sdmmc_t *sdmmc, uint32_t opcode)
     /* Nothing to do. */
     if (!sdmmc->has_sd)
         return 0;
-    
+
     /* Wait for CMD and DAT inhibit. */
     if (!sdmmc_wait_for_inhibit(sdmmc, true))
         return 0;
-    
+
     /* Select the right size for sending the tuning block. */
     if (sdmmc->bus_width == SDMMC_BUS_WIDTH_4BIT)
         sdmmc->regs->block_size = 0x40;
@@ -1882,48 +1882,48 @@ static int sdmmc_send_tuning(sdmmc_t *sdmmc, uint32_t opcode)
         sdmmc->regs->block_size = 0x80;
     else
         return 0;
-    
+
     /* Select the block count and transfer mode. */
     sdmmc->regs->block_count = 1;
     sdmmc->regs->transfer_mode = TEGRA_MMC_TRNMOD_DATA_XFER_DIR_SEL_READ;
-    
+
     /* Manually enable the Buffer Read Ready interrupt. */
     sdmmc->regs->int_enable |= TEGRA_MMC_NORINTSTSEN_BUFFER_READ_READY;
-    
+
     /* Refresh status. */
     sdmmc->regs->int_status = sdmmc->regs->int_status;
-    
+
     /* Disable the SD clock. */
     sdmmc_disable_sd_clock(sdmmc);
-    
+
     /* Prepare the tuning command. */
     sdmmc_command_t cmd = {};
     cmd.opcode = opcode;
     cmd.arg = 0;
     cmd.flags = SDMMC_RSP_R1;
-    
+
     /* Parse and set the CMD's flags. */
     sdmmc_set_cmd_flags(sdmmc, &cmd, true);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Wait a while. */
     udelay(1);
-    
+
     /* Reset. */
     sdmmc_do_sw_reset(sdmmc);
-    
+
     /* Enable back the SD clock. */
     sdmmc_enable_sd_clock(sdmmc);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Program a 50ms timeout. */
     uint32_t timebase = get_time();
     bool is_timeout = false;
-    
+
     /* Wait for Buffer Read Ready interrupt. */
     while (!is_timeout)
     {
@@ -1932,13 +1932,13 @@ static int sdmmc_send_tuning(sdmmc_t *sdmmc, uint32_t opcode)
         {
             /* Manually disable the Buffer Read Ready interrupt. */
             sdmmc->regs->int_enable &= ~(TEGRA_MMC_NORINTSTSEN_BUFFER_READ_READY);
-            
+
             /* Force a register read to refresh the clock control value. */
             sdmmc_get_sd_clock_control(sdmmc);
-            
+
             /* Provide 8 clock cycles. */
             udelay((8000 + sdmmc->internal_divider - 1) / sdmmc->internal_divider);
-            
+
             return 1;
         }
 
@@ -1948,16 +1948,16 @@ static int sdmmc_send_tuning(sdmmc_t *sdmmc, uint32_t opcode)
 
     /* Reset. */
     sdmmc_do_sw_reset(sdmmc);
-    
+
     /* Manually disable the Buffer Read Ready interrupt. */
     sdmmc->regs->int_enable &= ~(TEGRA_MMC_NORINTSTSEN_BUFFER_READ_READY);
-    
+
     /* Force a register read to refresh the clock control value. */
     sdmmc_get_sd_clock_control(sdmmc);
-    
+
     /* Provide 8 clock cycles. */
     udelay((8000 + sdmmc->internal_divider - 1) / sdmmc->internal_divider);
-    
+
     return 0;
 }
 
@@ -1973,7 +1973,7 @@ int sdmmc_execute_tuning(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed, uint32_t opcod
     uint32_t tuning_cntrl_flag = 0;
 
     sdmmc->regs->vendor_tuning_cntrl1 = 0;
-    
+
     switch (bus_speed)
     {
         case SDMMC_SPEED_MMC_HS200:
@@ -1995,12 +1995,12 @@ int sdmmc_execute_tuning(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed, uint32_t opcod
 
     sdmmc->regs->vendor_tuning_cntrl0 &= ~(0xE000);
     sdmmc->regs->vendor_tuning_cntrl0 |= tuning_cntrl_flag;
-    
+
     sdmmc->regs->vendor_tuning_cntrl0 &= ~(0x1FC0);
     sdmmc->regs->vendor_tuning_cntrl0 |= 0x40;
-    
+
     sdmmc->regs->vendor_tuning_cntrl0 |= 0x20000;
-    
+
     /* Start tuning. */
     sdmmc->regs->host_control2 |= SDHCI_CTRL_EXEC_TUNING;
 
@@ -2008,7 +2008,7 @@ int sdmmc_execute_tuning(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed, uint32_t opcod
     for (uint32_t i = 0; i < max_tuning_loop; i++)
     {
         sdmmc_send_tuning(sdmmc, opcode);
-        
+
         /* Tuning is done. */
         if (!(sdmmc->regs->host_control2 & SDHCI_CTRL_EXEC_TUNING))
             break;
@@ -2017,7 +2017,7 @@ int sdmmc_execute_tuning(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed, uint32_t opcod
     /* Success! */
     if (sdmmc->regs->host_control2 & SDHCI_CTRL_TUNED_CLK)
         return 1;
-    
+
     return 0;
 }
 
@@ -2026,20 +2026,20 @@ int sdmmc_abort(sdmmc_t *sdmmc, uint32_t opcode)
     uint32_t result = 0;
     uint32_t cmd_result = 0;
     bool shutdown_sd_clock = false;
-    
+
     /* SD clock is disabled. Enable it. */
     if (!sdmmc->is_sd_clk_enabled)
     {
         shutdown_sd_clock = true;
         sdmmc_enable_sd_clock(sdmmc);
-        
+
         /* Force a register read to refresh the clock control value. */
         sdmmc_get_sd_clock_control(sdmmc);
-        
+
         /* Provide 8 clock cycles after enabling the clock. */
         udelay((8000 + sdmmc->internal_divider - 1) / sdmmc->internal_divider);
     }
-    
+
     /* Wait for CMD and DAT inhibit. */
     if (sdmmc_wait_for_inhibit(sdmmc, false))
     {
@@ -2051,29 +2051,29 @@ int sdmmc_abort(sdmmc_t *sdmmc, uint32_t opcode)
         cmd.opcode = opcode;
         cmd.arg = 0;
         cmd.flags = SDMMC_RSP_R1B;
-        
+
         /* Parse and set the CMD's flags. */
         sdmmc_set_cmd_flags(sdmmc, &cmd, false);
-        
+
         /* Wait for the CMD to finish. */
         cmd_result = sdmmc_wait_for_cmd(sdmmc);
-        
+
         /* Disable interrupts. */
         sdmmc_intr_disable(sdmmc);
-    
+
         if (cmd_result)
         {
             /* Save response, if necessary. */
             sdmmc_save_response(sdmmc, cmd.flags);
-            
+
             /* Wait for DAT0 to be 0. */
             result = sdmmc_wait_busy(sdmmc);
         }
     }
-    
+
     /* Provide 8 clock cycles before disabling the clock. */
     udelay((8000 + sdmmc->internal_divider - 1) / sdmmc->internal_divider);
-    
+
     /* Disable the SD clock if requested. */
     if (shutdown_sd_clock)
         sdmmc_disable_sd_clock(sdmmc);

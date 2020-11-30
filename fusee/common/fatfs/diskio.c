@@ -14,7 +14,7 @@
 #include "ffconf.h"
 
 #if defined(FUSEE_STAGE1_SRC)
-#include "../../../fusee/fusee-primary/src/fs_utils.h"
+#include "../../../fusee/fusee-primary/fusee-primary-main/src/fs_utils.h"
 #elif defined(FUSEE_STAGE2_SRC)
 #include "../../../fusee/fusee-secondary/src/device_partition.h"
 #elif defined(SEPT_STAGE2_SRC)
@@ -63,7 +63,7 @@ DSTATUS disk_initialize (
         return STA_NODISK;
     else if (devpart->initializer)
         return devpart->initializer(devpart) ? STA_NOINIT : RES_OK;
-    else 
+    else
         return RES_OK;
     #else
     return RES_OK;
