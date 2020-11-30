@@ -381,7 +381,7 @@ namespace ams::ncm {
 
         /* Read content meta infos from the given offset up to the given count. */
         size_t count;
-        for (count = 0; count < out_meta_info.GetSize() && count + offset <= reader.GetContentMetaCount(); count++) {
+        for (count = 0; count < out_meta_info.GetSize() && count + offset < reader.GetContentMetaCount(); count++) {
             out_meta_info[count] = *reader.GetContentMetaInfo(count + offset);
         }
 
