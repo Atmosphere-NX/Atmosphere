@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define CHAINLOADER_ARG_DATA_MAX_SIZE 0x640
+#define CHAINLOADER_ARG_DATA_MAX_SIZE 0x5400
 #define CHAINLOADER_MAX_ENTRIES       128
 
 typedef struct chainloader_entry_t {
