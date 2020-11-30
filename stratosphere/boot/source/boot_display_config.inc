@@ -180,6 +180,7 @@ constexpr const RegisterWrite DisplayConfigDsi01Init03[] = {
     {sizeof(u32) * DSI_PKT_SEQ_3_HI, 0},
     {sizeof(u32) * DSI_PKT_SEQ_4_HI, 0},
     {sizeof(u32) * DSI_PKT_SEQ_5_HI, 0},
+    {sizeof(u32) * DSI_CONTROL,      0},
 };
 
 constexpr const RegisterWrite DisplayConfigDsi01Init04Erista[] = {
