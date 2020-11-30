@@ -99,8 +99,12 @@ static void setup_display(void) {
     video_init(g_framebuffer);
 
     /* Initialize the display. */
-    display_init();
-
+    if (fuse_get_soc_type() == 1) {
+        display_init_mariko();
+    } else {
+        display_init_erista();
+    }
+    
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
 
@@ -114,7 +118,11 @@ static void cleanup_display(void) {
     display_backlight(false);
 
     /* Terminate the display. */
-    display_end();
+    if (fuse_get_soc_type() == 1) {
+        display_end_mariko();
+    } else {
+        display_end_erista();
+    }
 }
 
 static void setup_env(void) {

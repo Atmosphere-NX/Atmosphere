@@ -114,7 +114,7 @@ static void setup_env(void) {
     video_init(g_framebuffer);
 
     /* Initialize the display. */
-    display_init();
+    display_init_erista();
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
@@ -131,7 +131,7 @@ static void cleanup_env(void) {
     unmount_sd();
     
     /* Terminate the display. */
-    display_end();
+    display_end_erista();
 }
 
 static void exit_callback(int rc) {
