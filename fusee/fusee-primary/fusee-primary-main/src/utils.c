@@ -130,7 +130,11 @@ __attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
         video_init((void *)0xC0000000);
 
         /* Initialize the display. */
-        display_init();
+        if (fuse_get_soc_type() == 1) {
+            display_init_mariko();
+        } else {
+            display_init_erista();
+        }
 
         /* Set the framebuffer. */
         display_init_framebuffer((void *)0xC0000000);
