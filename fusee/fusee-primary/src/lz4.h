@@ -15,5 +15,4 @@
  */
 #pragma once
 
-void loader_memcpy(void *dst, const void *src, size_t size);
-void loader_memmove(void *dst, const void *src, size_t size);
+void lz4_uncompress(void *dst, size_t dst_size, const void *src, size_t src_size);

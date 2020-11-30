@@ -224,7 +224,7 @@ uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware) {
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
         volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
         uint32_t fuse_spare_bit9 = (fuse_chip->FUSE_SPARE_BIT[9] & 1);
-        
+
         switch (hardware_type) {
             case 0x00: return (fuse_spare_bit9 == 0) ? 0 : 3;
             case 0x01: return 0;        /* HardwareType_Icosa */
@@ -233,7 +233,7 @@ uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware) {
         }
     } else {
         hardware_type |= ((fuse_reserved_odm4 >> 14) & 0x3C);
-        
+
         if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
             switch (hardware_type) {
                 case 0x01: return 0;        /* HardwareType_Icosa */
@@ -273,7 +273,7 @@ uint32_t fuse_get_hardware_type(void) {
 uint32_t fuse_get_hardware_state(void) {
     uint32_t fuse_reserved_odm4 = fuse_get_reserved_odm(4);
     uint32_t hardware_state = (((fuse_reserved_odm4 >> 7) & 4) | (fuse_reserved_odm4 & 3));
-    
+
     switch (hardware_state) {
         case 0x03: return 0;        /* HardwareState_Development */
         case 0x04: return 1;        /* HardwareState_Production */
