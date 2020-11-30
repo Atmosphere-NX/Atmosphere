@@ -164,22 +164,24 @@ uint32_t fuse_get_spare_bit(uint32_t index) {
 
 /* Read a reserved ODM register. */
 uint32_t fuse_get_reserved_odm(uint32_t index) {
-    uint32_t soc_type = fuse_get_soc_type();
     if (index < 8) {
         volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
         return fuse_chip->FUSE_RESERVED_ODM0[index];
-    } else if (soc_type == 1) {
-        volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
-        if (index < 22) {
-            return fuse_chip->FUSE_RESERVED_ODM8[index - 8];
-        } else if (index < 25) {
-            return fuse_chip->FUSE_RESERVED_ODM22[index - 22];
-        } else if (index < 26) {
-            return fuse_chip->FUSE_RESERVED_ODM25;
-        } else if (index < 29) {
-            return fuse_chip->FUSE_RESERVED_ODM26[index - 26];
-        } else if (index < 30) {
-            return fuse_chip->FUSE_RESERVED_ODM29;
+    } else {
+        uint32_t soc_type = fuse_get_soc_type();
+        if (soc_type == 1) {
+            volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
+            if (index < 22) {
+                return fuse_chip->FUSE_RESERVED_ODM8[index - 8];
+            } else if (index < 25) {
+                return fuse_chip->FUSE_RESERVED_ODM22[index - 22];
+            } else if (index < 26) {
+                return fuse_chip->FUSE_RESERVED_ODM25;
+            } else if (index < 29) {
+                return fuse_chip->FUSE_RESERVED_ODM26[index - 26];
+            } else if (index < 30) {
+                return fuse_chip->FUSE_RESERVED_ODM29;
+            }
         }
     }
     return 0;
@@ -224,7 +226,7 @@ uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware) {
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
         volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
         uint32_t fuse_spare_bit9 = (fuse_chip->FUSE_SPARE_BIT[9] & 1);
-        
+
         switch (hardware_type) {
             case 0x00: return (fuse_spare_bit9 == 0) ? 0 : 3;
             case 0x01: return 0;        /* HardwareType_Icosa */
@@ -233,7 +235,7 @@ uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware) {
         }
     } else {
         hardware_type |= ((fuse_reserved_odm4 >> 14) & 0x3C);
-        
+
         if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
             switch (hardware_type) {
                 case 0x01: return 0;        /* HardwareType_Icosa */
@@ -273,7 +275,7 @@ uint32_t fuse_get_hardware_type(void) {
 uint32_t fuse_get_hardware_state(void) {
     uint32_t fuse_reserved_odm4 = fuse_get_reserved_odm(4);
     uint32_t hardware_state = (((fuse_reserved_odm4 >> 7) & 4) | (fuse_reserved_odm4 & 3));
-    
+
     switch (hardware_state) {
         case 0x03: return 0;        /* HardwareState_Development */
         case 0x04: return 1;        /* HardwareState_Production */
