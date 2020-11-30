@@ -37,6 +37,8 @@
 #undef u8
 #undef u32
 
+extern uint8_t __reboot_start__[], __reboot_end__[];
+
 void wait(uint32_t microseconds) {
     uint32_t old_time = TIMERUS_CNTR_1US_0;
     while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
@@ -80,8 +82,31 @@ __attribute__((noreturn)) void reboot_to_self(void) {
         write32le((void *)0x4003F000, i, read32le(rebootstub_bin, i));
     }
 
+    /* Copy our low part into safe IRAM. */
+    for (size_t i = 0; i < 0x8000; i += sizeof(uint32_t)) {
+        write32le((void *)0x40030000, i, read32le((void *)0x40008000, i));
+    }
+
+    /* Copy our start page into fatal IRAM. */
+    for (size_t i = 0; i < 0x1000; i += sizeof(uint32_t)) {
+        write32le((void *)0x4003D000, i, read32le((void *)0x40010000, i));
+    }
+
+    /* Copy our reboot handler to the rebootstub target. */
+    for (size_t i = 0; i < (__reboot_end__ - __reboot_start__); i += sizeof(uint32_t)) {
+        write32le((void *)0x40010000, i, read32le(__reboot_start__, i));
+    }
+
     /* Trigger warm reboot. */
-    pmc_reboot(1 << 0);
+    APBDEV_PMC_SCRATCH0_0 = (1 << 0);
+
+    /* Reset the processor. */
+    APBDEV_PMC_CONTROL = BIT(4);
+
+    while (true) {
+        /* Wait for reboot. */
+    }
+
 }
 
 __attribute__((noreturn)) void wait_for_button_and_reboot(void) {

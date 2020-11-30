@@ -32,6 +32,11 @@ SECTIONS
         KEEP( *(.text.start) )
         KEEP( *(.init) )
         . = ALIGN(32);
+        PROVIDE (__reboot_start__ = ABSOLUTE(.));
+        KEEP( *(.reboot*) )
+        . = ALIGN(4);
+        PROVIDE (__reboot_end__   = ABSOLUTE(.));
+        . = ALIGN(32);
     } >main :crt0
 
     .chainloader_loadable :
@@ -59,6 +64,7 @@ SECTIONS
     {
         . = ALIGN(32);
         /* .text */
+        *(.text.reboot_to_self)
         *(.text)
         *(.text.*)
         *(.glue_7)
