@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_STAGE2_H
 #define FUSEE_STAGE2_H
 
@@ -25,7 +25,7 @@
 #define STAGE2_ARGV_ARGUMENT_STRUCT 1
 #define STAGE2_ARGC 2
 
-#define BCTO_MAX_SIZE 0x5800
+#define BCTO_MAX_SIZE 0x5000
 
 typedef struct {
     uint32_t version;

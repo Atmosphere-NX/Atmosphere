@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_STAGE2_H
 #define FUSEE_STAGE2_H
 
@@ -36,7 +36,7 @@
 #define STAGE2_ADDRESS_KEY "stage2_addr"
 #define STAGE2_ENTRYPOINT_KEY "stage2_entrypoint"
 
-#define BCTO_MAX_SIZE 0x5800
+#define BCTO_MAX_SIZE 0x5000
 
 typedef struct {
     char path[0x100];
