@@ -164,22 +164,24 @@ uint32_t fuse_get_spare_bit(uint32_t index) {
 
 /* Read a reserved ODM register. */
 uint32_t fuse_get_reserved_odm(uint32_t index) {
-    uint32_t soc_type = fuse_get_soc_type();
     if (index < 8) {
         volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
         return fuse_chip->FUSE_RESERVED_ODM0[index];
-    } else if (soc_type == 1) {
-        volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
-        if (index < 22) {
-            return fuse_chip->FUSE_RESERVED_ODM8[index - 8];
-        } else if (index < 25) {
-            return fuse_chip->FUSE_RESERVED_ODM22[index - 22];
-        } else if (index < 26) {
-            return fuse_chip->FUSE_RESERVED_ODM25;
-        } else if (index < 29) {
-            return fuse_chip->FUSE_RESERVED_ODM26[index - 26];
-        } else if (index < 30) {
-            return fuse_chip->FUSE_RESERVED_ODM29;
+    } else {
+        uint32_t soc_type = fuse_get_soc_type();
+        if (soc_type == 1) {
+            volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
+            if (index < 22) {
+                return fuse_chip->FUSE_RESERVED_ODM8[index - 8];
+            } else if (index < 25) {
+                return fuse_chip->FUSE_RESERVED_ODM22[index - 22];
+            } else if (index < 26) {
+                return fuse_chip->FUSE_RESERVED_ODM25;
+            } else if (index < 29) {
+                return fuse_chip->FUSE_RESERVED_ODM26[index - 26];
+            } else if (index < 30) {
+                return fuse_chip->FUSE_RESERVED_ODM29;
+            }
         }
     }
     return 0;
