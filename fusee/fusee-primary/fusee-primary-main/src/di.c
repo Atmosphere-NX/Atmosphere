@@ -120,9 +120,9 @@ void display_init_erista(void) {
     do_register_writes(DI_BASE, display_config_dc_01, 94);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_01, 8);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_02_erista, 1);
-    do_register_writes(DSI_BASE, display_config_dsi_01_init_03, 13);
+    do_register_writes(DSI_BASE, display_config_dsi_01_init_03, 14);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_04_erista, 0);
-    do_register_writes(DSI_BASE, display_config_dsi_01_init_05, 11);
+    do_register_writes(DSI_BASE, display_config_dsi_01_init_05, 10);
     do_register_writes(DSI_BASE, display_config_dsi_phy_timing_erista, 1);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_06, 12);
     do_register_writes(DSI_BASE, display_config_dsi_phy_timing_erista, 1);
@@ -276,9 +276,9 @@ void display_init_mariko(void) {
     do_register_writes(DI_BASE, display_config_dc_01, 94);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_01, 8);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_02_mariko, 1);
-    do_register_writes(DSI_BASE, display_config_dsi_01_init_03, 13);
+    do_register_writes(DSI_BASE, display_config_dsi_01_init_03, 14);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_04_mariko, 7);
-    do_register_writes(DSI_BASE, display_config_dsi_01_init_05, 11);
+    do_register_writes(DSI_BASE, display_config_dsi_01_init_05, 10);
     do_register_writes(DSI_BASE, display_config_dsi_phy_timing_mariko, 1);
     do_register_writes(DSI_BASE, display_config_dsi_01_init_06, 12);
     do_register_writes(DSI_BASE, display_config_dsi_phy_timing_mariko, 1);

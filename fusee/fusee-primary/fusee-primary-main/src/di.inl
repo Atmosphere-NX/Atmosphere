@@ -159,7 +159,7 @@ static const register_write_t display_config_dsi_01_init_02_mariko[1] = {
     {sizeof(uint32_t) * DSI_INIT_SEQ_DATA_15_MARIKO, 0x0},
 };
 
-static const register_write_t display_config_dsi_01_init_03[13] = {
+static const register_write_t display_config_dsi_01_init_03[14] = {
     {sizeof(uint32_t) * DSI_DCS_CMDS,     0},
     {sizeof(uint32_t) * DSI_PKT_SEQ_0_LO, 0},
     {sizeof(uint32_t) * DSI_PKT_SEQ_1_LO, 0},
@@ -173,6 +173,7 @@ static const register_write_t display_config_dsi_01_init_03[13] = {
     {sizeof(uint32_t) * DSI_PKT_SEQ_3_HI, 0},
     {sizeof(uint32_t) * DSI_PKT_SEQ_4_HI, 0},
     {sizeof(uint32_t) * DSI_PKT_SEQ_5_HI, 0},
+    {sizeof(uint32_t) * DSI_CONTROL,      0},
 };
 
 static const register_write_t display_config_dsi_01_init_04_erista[0] = {
@@ -189,8 +190,7 @@ static const register_write_t display_config_dsi_01_init_04_mariko[7] = {
     {sizeof(uint32_t) * DSI_PAD_CONTROL_7_MARIKO, 0},
 };
 
-static const register_write_t display_config_dsi_01_init_05[11] = {
-    {sizeof(uint32_t) * DSI_CONTROL,          0},
+static const register_write_t display_config_dsi_01_init_05[10] = {
     {sizeof(uint32_t) * DSI_PAD_CONTROL_CD,   0},
     {sizeof(uint32_t) * DSI_SOL_DELAY,        0x18},
     {sizeof(uint32_t) * DSI_MAX_THRESHOLD,    0x1E0},
