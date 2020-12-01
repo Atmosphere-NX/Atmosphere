@@ -345,7 +345,6 @@ namespace ams::kern {
             Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state);
 
             Result MakeAndOpenPageGroup(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr);
-            Result MakeAndOpenPageGroupContiguous(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr);
 
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size);
 
