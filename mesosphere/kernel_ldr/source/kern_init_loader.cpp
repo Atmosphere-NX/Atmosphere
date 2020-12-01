@@ -207,9 +207,9 @@ namespace ams::kern::init::loader {
 
             /* Repeatedly generate a random virtual address until we get one that's unmapped in the destination page table. */
             while (true) {
-                const KVirtualAddress random_kaslr_slide  = KSystemControl::Init::GenerateRandomRange(KernelBaseRangeMin, KernelBaseRangeEnd);
-                const KVirtualAddress kernel_region_start = util::AlignDown(GetInteger(random_kaslr_slide), KernelBaseAlignment);
-                const KVirtualAddress kernel_region_end   = util::AlignUp(GetInteger(kernel_region_start) + kernel_offset + kernel_size, KernelBaseAlignment);
+                const uintptr_t       random_kaslr_slide  = KSystemControl::Init::GenerateRandomRange(KernelBaseRangeMin / KernelBaseAlignment, KernelBaseRangeEnd / KernelBaseAlignment);
+                const KVirtualAddress kernel_region_start = random_kaslr_slide * KernelBaseAlignment;
+                const KVirtualAddress kernel_region_end   = kernel_region_start + util::AlignUp(kernel_offset + kernel_size, KernelBaseAlignment);
                 const size_t          kernel_region_size  = GetInteger(kernel_region_end) - GetInteger(kernel_region_start);
 
                 /* Make sure the region has not overflowed */
