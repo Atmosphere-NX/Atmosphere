@@ -29,6 +29,7 @@ namespace ams::kern {
     constinit KSynchronization        Kernel::s_synchronization;
     constinit KUnsafeMemory           Kernel::s_unsafe_memory;
     constinit KWorkerTaskManager      Kernel::s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
+    constinit KInterruptManager       Kernel::s_interrupt_manager;
 
     namespace {
 
