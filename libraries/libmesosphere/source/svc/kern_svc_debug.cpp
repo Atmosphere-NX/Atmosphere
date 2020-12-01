@@ -363,7 +363,11 @@ namespace ams::kern::svc {
                 case ams::svc::DebugThreadParam_IdealCore:
                     {
                         /* Get the ideal core. */
-                        *out_32 = thread->GetIdealCore();
+                        s32 core_id;
+                        u64 affinity_mask;
+                        thread->GetPhysicalCoreMask(std::addressof(core_id), std::addressof(affinity_mask));
+
+                        *out_32 = core_id;
                     }
                     break;
                 case ams::svc::DebugThreadParam_CurrentCore:
@@ -375,7 +379,11 @@ namespace ams::kern::svc {
                 case ams::svc::DebugThreadParam_AffinityMask:
                     {
                         /* Get the affinity mask. */
-                        *out_32 = thread->GetAffinityMask().GetAffinityMask();
+                        s32 core_id;
+                        u64 affinity_mask;
+                        thread->GetPhysicalCoreMask(std::addressof(core_id), std::addressof(affinity_mask));
+
+                        *out_32 = affinity_mask;
                     }
                     break;
                 default:

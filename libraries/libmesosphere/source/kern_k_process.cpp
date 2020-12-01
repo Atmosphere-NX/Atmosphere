@@ -922,7 +922,7 @@ namespace ams::kern {
         mem_reservation.Commit();
 
         /* Note for debug that we're running a new process. */
-        MESOSPHERE_LOG("KProcess::Run() pid=%ld name=%-12s thread=%ld affinity=0x%lx ideal_core=%d active_core=%d\n", this->process_id, this->name, main_thread->GetId(), main_thread->GetAffinityMask().GetAffinityMask(), main_thread->GetIdealCore(), main_thread->GetActiveCore());
+        MESOSPHERE_LOG("KProcess::Run() pid=%ld name=%-12s thread=%ld affinity=0x%lx ideal_core=%d active_core=%d\n", this->process_id, this->name, main_thread->GetId(), main_thread->GetVirtualAffinityMask(), main_thread->GetIdealVirtualCore(), main_thread->GetActiveCore());
 
         return ResultSuccess();
     }

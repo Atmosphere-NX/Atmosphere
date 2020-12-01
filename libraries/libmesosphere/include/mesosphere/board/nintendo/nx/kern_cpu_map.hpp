@@ -16,36 +16,18 @@
 #pragma once
 #include <mesosphere/kern_common.hpp>
 
-#ifdef ATMOSPHERE_ARCH_ARM64
-    #include <mesosphere/arch/arm64/kern_cpu.hpp>
+namespace ams::kern::board::nintendo::nx::impl::cpu {
 
-    namespace ams::kern::cpu {
-
-        using namespace ams::kern::arch::arm64::cpu;
-
-    }
-
-#else
-    #error "Unknown architecture for CPU"
-#endif
-
-#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-
-    #include <mesosphere/board/nintendo/nx/kern_cpu_map.hpp>
-
-    namespace ams::kern::cpu {
-
-        using namespace ams::kern::board::nintendo::nx::impl::cpu;
-
-    }
-
-#else
-    #error "Unknown board for CPU Map"
-#endif
-
-namespace ams::kern {
-
-    static_assert(cpu::NumCores <= static_cast<s32>(BITSIZEOF(u64)));
-    static_assert(util::size(cpu::VirtualToPhysicalCoreMap) == BITSIZEOF(u64));
+    /* Virtual to Physical core map. */
+    constexpr inline const s32 VirtualToPhysicalCoreMap[BITSIZEOF(u64)] = {
+        0, 1, 2, 3, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 3,
+    };
 
 }
