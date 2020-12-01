@@ -34,6 +34,7 @@ namespace ams::sm {
             Result GetServiceHandle(sf::OutMoveHandle out_h, ServiceName service);
             Result RegisterService(sf::OutMoveHandle out_h, ServiceName service, u32 max_sessions, bool is_light);
             Result UnregisterService(ServiceName service);
+            Result DetachClient(const sf::ClientProcessId &client_process_id);
 
             /* Atmosphere commands. */
             Result AtmosphereInstallMitm(sf::OutMoveHandle srv_h, sf::OutMoveHandle qry_h, ServiceName service);

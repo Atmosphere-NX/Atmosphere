@@ -51,6 +51,11 @@ namespace ams::sm {
         return impl::UnregisterService(this->process_id, service);
     }
 
+    Result UserService::DetachClient(const sf::ClientProcessId &client_process_id) {
+        this->has_initialized = false;
+        return ResultSuccess();
+    }
+
     Result UserService::AtmosphereInstallMitm(sf::OutMoveHandle srv_h, sf::OutMoveHandle qry_h, ServiceName service) {
         R_TRY(this->EnsureInitialized());
         return impl::InstallMitm(srv_h.GetHandlePointer(), qry_h.GetHandlePointer(), this->process_id, service);

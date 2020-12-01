@@ -26,6 +26,7 @@ namespace ams::sm::impl {
         AMS_SF_METHOD_INFO(C, H,     1, Result, GetServiceHandle,                 (sf::OutMoveHandle out_h, ServiceName service))                                       \
         AMS_SF_METHOD_INFO(C, H,     2, Result, RegisterService,                  (sf::OutMoveHandle out_h, ServiceName service, u32 max_sessions, bool is_light))      \
         AMS_SF_METHOD_INFO(C, H,     3, Result, UnregisterService,                (ServiceName service))                                                                \
+        AMS_SF_METHOD_INFO(C, H,     4, Result, DetachClient,                     (const sf::ClientProcessId &client_process_id))                                       \
         AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereInstallMitm,            (sf::OutMoveHandle srv_h, sf::OutMoveHandle qry_h, ServiceName service))              \
         AMS_SF_METHOD_INFO(C, H, 65001, Result, AtmosphereUninstallMitm,          (ServiceName service))                                                                \
         AMS_SF_METHOD_INFO(C, H, 65003, Result, AtmosphereAcknowledgeMitmSession, (sf::Out<MitmProcessInfo> client_info, sf::OutMoveHandle fwd_h, ServiceName service)) \
