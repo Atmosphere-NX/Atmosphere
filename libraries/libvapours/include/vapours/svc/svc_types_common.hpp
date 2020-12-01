@@ -391,6 +391,9 @@ namespace ams::svc {
         /* 7.x+ Should memory allocation be optimized? This requires IsApplication. */
         CreateProcessFlag_OptimizeMemoryAllocation = (1 << 11),
 
+        /* 11.x+ DisableDeviceAddressSpaceMerge. */
+        CreateProcessFlag_DisableDeviceAddressSpaceMerge = (1 << 12),
+
         /* Mask of all flags. */
         CreateProcessFlag_All = CreateProcessFlag_Is64Bit                  |
                                 CreateProcessFlag_AddressSpaceMask         |
@@ -398,7 +401,8 @@ namespace ams::svc {
                                 CreateProcessFlag_EnableAslr               |
                                 CreateProcessFlag_IsApplication            |
                                 CreateProcessFlag_PoolPartitionMask        |
-                                CreateProcessFlag_OptimizeMemoryAllocation,
+                                CreateProcessFlag_OptimizeMemoryAllocation |
+                                CreateProcessFlag_DisableDeviceAddressSpaceMerge,
     };
 
     /* Debug types. */
