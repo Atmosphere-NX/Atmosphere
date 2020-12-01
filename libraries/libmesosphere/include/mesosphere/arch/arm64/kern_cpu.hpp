@@ -220,16 +220,19 @@ namespace ams::kern::arch::arm64::cpu {
         DataSynchronizationBarrier();
     }
 
-    ALWAYS_INLINE uintptr_t GetCoreLocalRegionAddress() {
+    ALWAYS_INLINE uintptr_t GetCurrentThreadPointerValue() {
         register uintptr_t x18 asm("x18");
         __asm__ __volatile__("" : [x18]"=r"(x18));
         return x18;
     }
 
-    ALWAYS_INLINE void SetCoreLocalRegionAddress(uintptr_t value) {
+    ALWAYS_INLINE void SetCurrentThreadPointerValue(uintptr_t value) {
         register uintptr_t x18 asm("x18") = value;
         __asm__ __volatile__("":: [x18]"r"(x18));
-        SetTpidrEl1(value);
+    }
+
+    ALWAYS_INLINE void SetExceptionThreadStackTop(uintptr_t top) {
+        SetTpidrEl1(top);
     }
 
     ALWAYS_INLINE void SwitchThreadLocalRegion(uintptr_t tlr) {

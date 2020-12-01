@@ -19,7 +19,10 @@
 #include <mesosphere/kern_select_cpu.hpp>
 #include <mesosphere/kern_k_memory_layout.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
-#include <mesosphere/kern_k_core_local_region.hpp>
+#include <mesosphere/kern_k_scheduler.hpp>
+#include <mesosphere/kern_k_interrupt_task_manager.hpp>
+#include <mesosphere/kern_select_interrupt_manager.hpp>
+#include <mesosphere/kern_select_hardware_timer.hpp>
 #include <mesosphere/kern_k_worker_task_manager.hpp>
 
 namespace ams::kern {
@@ -77,13 +80,6 @@ namespace ams::kern {
             static KScheduler s_schedulers[cpu::NumCores];
             static KInterruptTaskManager s_interrupt_task_managers[cpu::NumCores];
             static KHardwareTimer s_hardware_timers[cpu::NumCores];
-        private:
-            static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
-                return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
-            }
-            static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext(s32 core_id) {
-                return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->absolute[core_id].context;
-            }
         public:
             static NOINLINE void InitializeCoreLocalRegion(s32 core_id);
             static NOINLINE void InitializeMainAndIdleThreads(s32 core_id);
@@ -95,10 +91,6 @@ namespace ams::kern {
 
             static KThread &GetMainThread(s32 core_id);
             static KThread &GetIdleThread(s32 core_id);
-
-            static ALWAYS_INLINE KCurrentContext &GetCurrentContext(s32 core_id) {
-                return GetCoreLocalContext(core_id).current;
-            }
 
             static ALWAYS_INLINE KScheduler &GetScheduler() {
                 return s_schedulers[GetCurrentCoreId()];
@@ -165,5 +157,9 @@ namespace ams::kern {
                 return s_worker_task_managers[type];
             }
     };
+
+    ALWAYS_INLINE KScheduler &GetCurrentScheduler() {
+        return Kernel::GetScheduler();
+    }
 
 }

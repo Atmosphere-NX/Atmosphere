@@ -249,7 +249,6 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
 
     /* Set the global context back into x18/tpidr. */
     msr     tpidr_el1, x2
-    mov     x18, x2
     dsb     sy
     isb
 

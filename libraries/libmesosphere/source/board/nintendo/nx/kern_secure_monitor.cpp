@@ -57,14 +57,18 @@ namespace ams::kern::board::nintendo::nx::smc {
             {
                 /* Disable interrupts while making the call. */
                 KScopedInterruptDisable intr_disable;
+
+                /* Backup the current thread pointer. */
+                const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
+
                 __asm__ __volatile__("smc #1"
                                     : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
                                     :
                                     : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
                                     );
 
-                /* Restore the CoreLocalRegion into X18. */
-                cpu::SetCoreLocalRegionAddress(cpu::GetTpidrEl1());
+                /* Restore the current thread pointer into X18. */
+                cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
             }
 
             /* Store arguments to output. */
@@ -93,14 +97,18 @@ namespace ams::kern::board::nintendo::nx::smc {
             {
                 /* Disable interrupts while making the call. */
                 KScopedInterruptDisable intr_disable;
+
+                /* Backup the current thread pointer. */
+                const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
+
                 __asm__ __volatile__("smc #0"
                                     : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
                                     :
                                     : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
                                     );
 
-                /* Restore the CoreLocalRegion into X18. */
-                cpu::SetCoreLocalRegionAddress(cpu::GetTpidrEl1());
+                /* Restore the current thread pointer into X18. */
+                cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
             }
 
             /* Store arguments to output. */

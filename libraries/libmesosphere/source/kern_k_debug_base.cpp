@@ -496,7 +496,7 @@ namespace ams::kern {
             if (thread->GetRawState() != KThread::ThreadState_Runnable) {
                 bool current = false;
                 for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
-                    if (thread == Kernel::GetCurrentContext(i).current_thread) {
+                    if (thread == Kernel::GetScheduler(i).GetSchedulerCurrentThread()) {
                         current = true;
                     }
                     break;
@@ -543,7 +543,7 @@ namespace ams::kern {
             if (thread->GetRawState() != KThread::ThreadState_Runnable) {
                 bool current = false;
                 for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
-                    if (thread == Kernel::GetCurrentContext(i).current_thread) {
+                    if (thread == Kernel::GetScheduler(i).GetSchedulerCurrentThread()) {
                         current = true;
                     }
                     break;

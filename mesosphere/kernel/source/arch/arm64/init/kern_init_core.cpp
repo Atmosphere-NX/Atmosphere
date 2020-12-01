@@ -37,6 +37,8 @@ namespace ams::kern::init {
         /* Global initial arguments array. */
         KPhysicalAddress g_init_arguments_phys_addr[cpu::NumCores];
 
+        KInitArguments g_init_arguments[cpu::NumCores];
+
         /* Page table attributes. */
         constexpr PageTableEntry KernelRoDataAttribute(PageTableEntry::Permission_KernelR,  PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
         constexpr PageTableEntry KernelRwDataAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
@@ -71,6 +73,48 @@ namespace ams::kern::init {
                     KSystemControl::Init::CpuOn(arg | i, start_other_core_phys, GetInteger(g_init_arguments_phys_addr[i]));
                 }
             }
+        }
+
+        void SetupInitialArguments(KInitialPageTable &ttbr1_table, KInitialPageAllocator &allocator) {
+            AMS_UNUSED(ttbr1_table, allocator);
+
+            /* Get parameters for initial arguments. */
+            const u64 ttbr0    = cpu::GetTtbr0El1();
+            const u64 ttbr1    = cpu::GetTtbr1El1();
+            const u64 tcr      = cpu::GetTcrEl1();
+            const u64 mair     = cpu::GetMairEl1();
+            const u64 cpuactlr = cpu::GetCpuActlrEl1();
+            const u64 cpuectlr = cpu::GetCpuEctlrEl1();
+            const u64 sctlr    = cpu::GetSctlrEl1();
+
+            for (s32 i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
+                /* Get the arguments. */
+                KInitArguments *init_args = g_init_arguments + i;
+
+                /* Translate to a physical address. */
+                /* KPhysicalAddress phys_addr = Null<KPhysicalAddress>;                                                */
+                /* if (cpu::GetPhysicalAddressWritable(std::addressof(phys_addr), KVirtualAddress(init_args), true)) { */
+                /*     g_init_arguments_phys_addr[i] = phys_addr;                                                      */
+                /* }                                                                                                   */
+                g_init_arguments_phys_addr[i] = ttbr1_table.GetPhysicalAddress(KVirtualAddress(init_args));
+
+                /* Set the arguments. */
+                init_args->ttbr0           = ttbr0;
+                init_args->ttbr1           = ttbr1;
+                init_args->tcr             = tcr;
+                init_args->mair            = mair;
+                init_args->cpuactlr        = cpuactlr;
+                init_args->cpuectlr        = cpuectlr;
+                init_args->sctlr           = sctlr;
+                init_args->sp              = GetInteger(KMemoryLayout::GetMainStackTopAddress(i)) - sizeof(KThread::StackParameters);
+                init_args->entrypoint      = reinterpret_cast<uintptr_t>(::ams::kern::HorizonKernelMain);
+                init_args->argument        = static_cast<u64>(i);
+                init_args->setup_function  = reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore);
+                init_args->exception_stack = GetInteger(KMemoryLayout::GetExceptionStackTopAddress(i)) - sizeof(KThread::StackParameters);
+            }
+
+            /* Ensure the arguments are written to memory. */
+            StoreDataCache(g_init_arguments, sizeof(g_init_arguments));
         }
 
     }
@@ -295,8 +339,8 @@ namespace ams::kern::init {
             MapStackForCore(ttbr1_table, KMemoryRegionType_KernelMiscExceptionStack, i);
         }
 
-        /* Setup the KCoreLocalRegion regions. */
-        SetupCoreLocalRegionMemoryRegions(ttbr1_table, g_initial_page_allocator);
+        /* Setup the initial arguments. */
+        SetupInitialArguments(ttbr1_table, g_initial_page_allocator);
 
         /* Finalize the page allocator, we're done allocating at this point. */
         KInitialPageAllocator::State final_init_page_table_state;
@@ -327,28 +371,6 @@ namespace ams::kern::init {
 
     KPhysicalAddress GetInitArgumentsAddress(s32 core_id) {
         return g_init_arguments_phys_addr[core_id];
-    }
-
-    void SetInitArguments(s32 core_id, KPhysicalAddress address, uintptr_t arg) {
-        /* Set the arguments. */
-        KInitArguments *init_args = reinterpret_cast<KInitArguments *>(GetInteger(address));
-        init_args->ttbr0            = cpu::GetTtbr0El1();
-        init_args->ttbr1            = arg;
-        init_args->tcr              = cpu::GetTcrEl1();
-        init_args->mair             = cpu::GetMairEl1();
-        init_args->cpuactlr         = cpu::GetCpuActlrEl1();
-        init_args->cpuectlr         = cpu::GetCpuEctlrEl1();
-        init_args->sctlr            = cpu::GetSctlrEl1();
-        init_args->sp               = GetInteger(KMemoryLayout::GetMainStackTopAddress(core_id)) - sizeof(KThread::StackParameters);
-        init_args->entrypoint       = reinterpret_cast<uintptr_t>(::ams::kern::HorizonKernelMain);
-        init_args->argument         = static_cast<u64>(core_id);
-        init_args->setup_function   = reinterpret_cast<uintptr_t>(::ams::kern::init::StartOtherCore);
-
-        /* Ensure the arguments are written to memory. */
-        StoreDataCache(init_args, sizeof(*init_args));
-
-        /* Save the pointer to the arguments to use as argument upon core wakeup. */
-        g_init_arguments_phys_addr[core_id] = address;
     }
 
     void InitializeDebugRegisters() {
@@ -417,6 +439,7 @@ namespace ams::kern::init {
 
     void InitializeExceptionVectors() {
         cpu::SetVbarEl1(reinterpret_cast<uintptr_t>(::ams::kern::ExceptionVectors));
+        cpu::SetExceptionThreadStackTop(0);
         cpu::EnsureInstructionConsistency();
     }
 

@@ -143,6 +143,9 @@ namespace ams::kern {
         this->num_kernel_waiters            = 0;
         this->entrypoint                    = reinterpret_cast<uintptr_t>(func);
 
+        /* Set our current core id. */
+        this->current_core_id               = core;
+
         /* We haven't released our resource limit hint, and we've spent no time on the cpu. */
         this->resource_limit_release_hint   = 0;
         this->cpu_time                      = 0;
@@ -177,6 +180,7 @@ namespace ams::kern {
             this->parent->CopySvcPermissionsTo(sp);
         }
         sp.context = std::addressof(this->thread_context);
+        sp.cur_thread = this;
         sp.disable_count = 1;
         this->SetInExceptionHandler();
 
@@ -362,7 +366,7 @@ namespace ams::kern {
             for (size_t i = 0; i < cpu::NumCores; ++i) {
                 KThread *core_thread;
                 do {
-                    core_thread = Kernel::GetCurrentContext(i).current_thread.load(std::memory_order_acquire);
+                    core_thread = Kernel::GetScheduler(i).GetSchedulerCurrentThread();
                 } while (core_thread == this);
             }
         }
@@ -619,7 +623,7 @@ namespace ams::kern {
                 bool thread_is_current = false;
                 s32 thread_core;
                 for (thread_core = 0; thread_core < static_cast<s32>(cpu::NumCores); ++thread_core) {
-                    if (Kernel::GetCurrentContext(thread_core).current_thread == this) {
+                    if (Kernel::GetScheduler(thread_core).GetSchedulerCurrentThread() == this) {
                         thread_is_current = true;
                         break;
                     }
@@ -834,7 +838,7 @@ namespace ams::kern {
                     thread_is_current = false;
 
                     for (auto i = 0; i < static_cast<s32>(cpu::NumCores); ++i) {
-                        if (Kernel::GetCurrentContext(i).current_thread == this) {
+                        if (Kernel::GetScheduler(i).GetSchedulerCurrentThread() == this) {
                             thread_is_current = true;
                             break;
                         }

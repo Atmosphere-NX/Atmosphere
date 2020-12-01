@@ -156,12 +156,13 @@ namespace ams::kern {
 
     constexpr inline const auto KMemoryRegionType_None = impl::KMemoryRegionTypeValue();
 
-    constexpr inline const auto KMemoryRegionType_Kernel          = KMemoryRegionType_None.DeriveInitial(0, 2);
-    constexpr inline const auto KMemoryRegionType_Dram            = KMemoryRegionType_None.DeriveInitial(1, 2);
-    constexpr inline const auto KMemoryRegionType_CoreLocalRegion = KMemoryRegionType_None.DeriveInitial(2).Finalize();
-    static_assert(KMemoryRegionType_Kernel         .GetValue() == 0x1);
-    static_assert(KMemoryRegionType_Dram           .GetValue() == 0x2);
-    static_assert(KMemoryRegionType_CoreLocalRegion.GetValue() == 0x4);
+    constexpr inline const auto KMemoryRegionType_Kernel = KMemoryRegionType_None.DeriveInitial(0, 2);
+    constexpr inline const auto KMemoryRegionType_Dram   = KMemoryRegionType_None.DeriveInitial(1, 2);
+    static_assert(KMemoryRegionType_Kernel.GetValue() == 0x1);
+    static_assert(KMemoryRegionType_Dram  .GetValue() == 0x2);
+
+    /* constexpr inline const auto KMemoryRegionType_CoreLocalRegion = KMemoryRegionType_None.DeriveInitial(2).Finalize(); */
+    /* static_assert(KMemoryRegionType_CoreLocalRegion.GetValue() == 0x4); */
 
     constexpr inline const auto KMemoryRegionType_DramKernelBase   = KMemoryRegionType_Dram.DeriveSparse(0, 3, 0).SetAttribute(KMemoryRegionAttr_NoUserMap).SetAttribute(KMemoryRegionAttr_CarveoutProtected);
     constexpr inline const auto KMemoryRegionType_DramReservedBase = KMemoryRegionType_Dram.DeriveSparse(0, 3, 1);
@@ -274,15 +275,15 @@ namespace ams::kern {
                                                                                                          /* UNUSED: .Derive(7, 0); */
     constexpr inline const auto KMemoryRegionType_KernelMiscMainStack      = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 1);
     constexpr inline const auto KMemoryRegionType_KernelMiscMappedDevice   = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 2);
-    constexpr inline const auto KMemoryRegionType_KernelMiscIdleStack      = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 3);
+    constexpr inline const auto KMemoryRegionType_KernelMiscExceptionStack = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 3);
     constexpr inline const auto KMemoryRegionType_KernelMiscUnknownDebug   = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 4);
                                                                                                          /* UNUSED: .Derive(7, 5); */
-    constexpr inline const auto KMemoryRegionType_KernelMiscExceptionStack = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 6);
+    constexpr inline const auto KMemoryRegionType_KernelMiscIdleStack = KMemoryRegionType_KernelMiscDerivedBase.Derive(7, 6);
     static_assert(KMemoryRegionType_KernelMiscMainStack     .GetValue() == 0xB49);
     static_assert(KMemoryRegionType_KernelMiscMappedDevice  .GetValue() == 0xD49);
-    static_assert(KMemoryRegionType_KernelMiscIdleStack     .GetValue() == 0x1349);
+    static_assert(KMemoryRegionType_KernelMiscExceptionStack.GetValue() == 0x1349);
     static_assert(KMemoryRegionType_KernelMiscUnknownDebug  .GetValue() == 0x1549);
-    static_assert(KMemoryRegionType_KernelMiscExceptionStack.GetValue() == 0x2349);
+    static_assert(KMemoryRegionType_KernelMiscIdleStack     .GetValue() == 0x2349);
 
     constexpr inline const auto KMemoryRegionType_KernelTemp = KMemoryRegionType_Kernel.Advance(2).Derive(2, 0);
     static_assert(KMemoryRegionType_KernelTemp.GetValue() == 0x31);

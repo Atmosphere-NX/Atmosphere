@@ -90,6 +90,7 @@ namespace ams::kern {
                 bool is_pinned;
                 s32 disable_count;
                 KThreadContext *context;
+                KThread *cur_thread;
             };
             static_assert(alignof(StackParameters) == 0x10);
 
@@ -181,6 +182,7 @@ namespace ams::kern {
             Result                          wait_result;
             Result                          debug_exception_result;
             s32                             priority{};
+            s32                             current_core_id{};
             s32                             core_id{};
             s32                             base_priority{};
             s32                             ideal_core_id{};
@@ -380,6 +382,9 @@ namespace ams::kern {
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }
 
+            constexpr ALWAYS_INLINE s32 GetCurrentCore() const { return this->current_core_id; }
+            constexpr void SetCurrentCore(s32 core) { this->current_core_id = core; }
+
             constexpr s32 GetPriority() const { return this->priority; }
             constexpr void SetPriority(s32 prio) { this->priority = prio; }
 
@@ -568,6 +573,18 @@ namespace ams::kern {
 
     ALWAYS_INLINE const KExceptionContext *GetExceptionContext(const KThread *thread) {
         return reinterpret_cast<const KExceptionContext *>(reinterpret_cast<uintptr_t>(thread->GetKernelStackTop()) - sizeof(KThread::StackParameters) - sizeof(KExceptionContext));
+    }
+
+    ALWAYS_INLINE KProcess *GetCurrentProcessPointer() {
+        return GetCurrentThread().GetOwnerProcess();
+    }
+
+    ALWAYS_INLINE KProcess &GetCurrentProcess() {
+        return *GetCurrentProcessPointer();
+    }
+
+    ALWAYS_INLINE s32 GetCurrentCoreId() {
+        return GetCurrentThread().GetCurrentCore();
     }
 
 }

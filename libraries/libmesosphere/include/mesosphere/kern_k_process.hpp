@@ -361,9 +361,6 @@ namespace ams::kern {
             static void Switch(KProcess *cur_process, KProcess *next_process) {
                 MESOSPHERE_UNUSED(cur_process);
 
-                /* Set the current process pointer. */
-                SetCurrentProcess(next_process);
-
                 /* Update the current page table. */
                 if (next_process) {
                     next_process->GetPageTable().Activate(next_process->GetProcessId());
