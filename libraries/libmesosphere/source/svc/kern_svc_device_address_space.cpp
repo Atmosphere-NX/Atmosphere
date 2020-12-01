@@ -43,7 +43,7 @@ namespace ams::kern::svc {
             R_TRY(das->Initialize(das_address, das_size));
 
             /* Register the device address space. */
-            R_TRY(KDeviceAddressSpace::Register(das));
+            KDeviceAddressSpace::Register(das);
 
             /* Add to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out, das));

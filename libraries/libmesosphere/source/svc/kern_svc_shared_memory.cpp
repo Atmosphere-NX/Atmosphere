@@ -117,7 +117,7 @@ namespace ams::kern::svc {
             R_TRY(shmem->Initialize(GetCurrentProcessPointer(), size, owner_perm, remote_perm));
 
             /* Register the shared memory. */
-            R_TRY(KSharedMemory::Register(shmem));
+            KSharedMemory::Register(shmem);
 
             /* Add the shared memory to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out, shmem));

@@ -46,7 +46,7 @@ namespace ams::kern::svc {
                 port->Initialize(max_sessions, false, 0);
 
                 /* Register the port. */
-                R_TRY(KPort::Register(port));
+                KPort::Register(port);
 
                 /* Register the handle in the table. */
                 handle_table.Register(*out_server_handle, std::addressof(port->GetServerPort()));
@@ -95,7 +95,7 @@ namespace ams::kern::svc {
             };
 
             /* Register the port. */
-            R_TRY(KPort::Register(port));
+            KPort::Register(port);
 
             /* Add the client to the handle table. */
             R_TRY(handle_table.Add(out_client, std::addressof(port->GetClientPort())));

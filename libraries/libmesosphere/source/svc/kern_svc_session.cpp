@@ -48,7 +48,7 @@ namespace ams::kern::svc {
             };
 
             /* Register the session. */
-            R_TRY(T::Register(session));
+            T::Register(session);
 
             /* Add the server session to the handle table. */
             R_TRY(handle_table.Add(out_server, std::addressof(session->GetServerSession())));
