@@ -21,6 +21,7 @@ namespace ams::pgl {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(228);
 
+    R_DEFINE_ERROR_RESULT(NotImplemented,             1);
     R_DEFINE_ERROR_RESULT(NotAvailable,               2);
     R_DEFINE_ERROR_RESULT(ApplicationNotRunning,      3);
     R_DEFINE_ERROR_RESULT(BufferNotEnough,            4);
