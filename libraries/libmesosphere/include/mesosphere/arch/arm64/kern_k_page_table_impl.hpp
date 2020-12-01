@@ -29,6 +29,11 @@ namespace ams::kern::arch::arm64 {
             struct TraversalEntry {
                 KPhysicalAddress phys_addr;
                 size_t block_size;
+                u8 sw_reserved_bits;
+
+                constexpr bool IsHeadMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHead) != 0; }
+                constexpr bool IsHeadAndBodyMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHeadAndBody) != 0; }
+                constexpr bool IsTailMergeDisabled() const { return (this->sw_reserved_bits & PageTableEntry::SoftwareReservedBit_DisableMergeHeadTail) != 0; }
             };
 
             struct TraversalContext {
