@@ -893,7 +893,7 @@ namespace ams::kern::arch::arm64 {
         if (l2_entry->IsTable()) {
             /* We have an L3 entry. */
             L3PageTableEntry *l3_entry = impl.GetL3Entry(l2_entry, virt_addr);
-            if (!l3_entry->IsBlock() || !l3_entry->IsContiguousAllowed()) {
+            if (!l3_entry->IsBlock() || !(/* TODO l3_entry->IsContiguousAllowed() */false)) {
                 return merged;
             }
 
@@ -950,7 +950,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* If the l2 entry is not a block or we can't make it contiguous, we're done. */
-        if (!l2_entry->IsBlock() || !l2_entry->IsContiguousAllowed()) {
+        if (!l2_entry->IsBlock() || !(/* TODO l2_entry->IsContiguousAllowed() */ false)) {
             return merged;
         }
 

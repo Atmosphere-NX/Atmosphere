@@ -134,9 +134,6 @@ namespace ams::kern::arch::arm64 {
                     entry.SetUserExecuteNever(true);
                 }
 
-                /* Set can be contiguous. */
-                entry.SetContiguousAllowed(!properties.non_contiguous);
-
                 /* Set AP[1] based on perm. */
                 switch (properties.perm & KMemoryPermission_UserReadWrite) {
                     case KMemoryPermission_UserReadWrite:
