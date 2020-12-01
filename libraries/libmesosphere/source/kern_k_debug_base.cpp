@@ -327,7 +327,7 @@ namespace ams::kern {
                             it->SetDebugAttached();
 
                             /* Send the event. */
-                            this->PushDebugEvent(ams::svc::DebugEvent_CreateThread, it->GetId(), GetInteger(it->GetThreadLocalRegionAddress()), it->GetEntrypoint());
+                            this->PushDebugEvent(ams::svc::DebugEvent_CreateThread, it->GetId(), GetInteger(it->GetThreadLocalRegionAddress()));
                         }
                     }
                 }
@@ -682,7 +682,6 @@ namespace ams::kern {
                         /* Set the thread creation info. */
                         info->info.create_thread.thread_id   = param0;
                         info->info.create_thread.tls_address = param1;
-                        info->info.create_thread.entrypoint  = param2;
                     }
                     break;
                 case ams::svc::DebugEvent_ExitProcess:
@@ -842,7 +841,6 @@ namespace ams::kern {
                 {
                     out->info.create_thread.thread_id   = info->info.create_thread.thread_id;
                     out->info.create_thread.tls_address = info->info.create_thread.tls_address;
-                    out->info.create_thread.entrypoint  = info->info.create_thread.entrypoint;
                 }
                 break;
             case ams::svc::DebugEvent_ExitProcess:

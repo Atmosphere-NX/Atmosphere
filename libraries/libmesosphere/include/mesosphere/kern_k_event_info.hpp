@@ -24,7 +24,6 @@ namespace ams::kern {
             struct InfoCreateThread {
                 u32 thread_id;
                 uintptr_t tls_address;
-                uintptr_t entrypoint;
             };
 
             struct InfoExitProcess {

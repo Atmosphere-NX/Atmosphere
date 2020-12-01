@@ -98,7 +98,6 @@ namespace ams::kern {
 
         /* Set sync booleans. */
         this->signaled                      = false;
-        this->ipc_cancelled                 = false;
         this->termination_requested         = false;
         this->wait_cancelled                = false;
         this->cancellable                   = false;
@@ -119,7 +118,6 @@ namespace ams::kern {
         this->waiting_lock                  = nullptr;
 
         /* Initialize sleeping queue. */
-        this->sleeping_queue_entry.Initialize();
         this->sleeping_queue                = nullptr;
 
         /* Set suspend flags. */
@@ -141,7 +139,6 @@ namespace ams::kern {
 
         /* We have no waiters, but we do have an entrypoint. */
         this->num_kernel_waiters            = 0;
-        this->entrypoint                    = reinterpret_cast<uintptr_t>(func);
 
         /* Set our current core id. */
         this->current_core_id               = core;
@@ -172,7 +169,7 @@ namespace ams::kern {
         const bool is_64_bit = this->parent ? this->parent->Is64Bit() : IsDefault64Bit;
         const bool is_user = (type == ThreadType_User);
         const bool is_main = (type == ThreadType_Main);
-        this->thread_context.Initialize(this->entrypoint, reinterpret_cast<uintptr_t>(this->GetStackTop()), GetInteger(user_stack_top), arg, is_user, is_64_bit, is_main);
+        this->thread_context.Initialize(reinterpret_cast<uintptr_t>(func), reinterpret_cast<uintptr_t>(this->GetStackTop()), GetInteger(user_stack_top), arg, is_user, is_64_bit, is_main);
 
         /* Setup the stack parameters. */
         StackParameters &sp = this->GetStackParameters();

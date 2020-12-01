@@ -74,7 +74,7 @@ namespace ams::kern {
             /* If we can reply, do so. */
             if (!this->current_request->IsTerminationRequested()) {
                 MESOSPHERE_ASSERT(this->current_request->GetState() == KThread::ThreadState_Waiting);
-                MESOSPHERE_ASSERT(this->current_request == this->request_queue.GetFront());
+                MESOSPHERE_ASSERT(this->request_queue.begin() != this->request_queue.end() && this->current_request == std::addressof(*this->request_queue.begin()));
                 std::memcpy(this->current_request->GetLightSessionData(), server_thread->GetLightSessionData(), KLightSession::DataSize);
                 this->request_queue.WakeupThread(this->current_request);
             }
@@ -110,8 +110,8 @@ namespace ams::kern {
             R_UNLESS(!this->parent->IsServerClosed(), svc::ResultSessionClosed());
 
             /* If we have a request available, use it. */
-            if (this->current_request == nullptr && this->request_queue.IsEmpty()) {
-                this->current_request = this->request_queue.GetFront();
+            if (this->current_request == nullptr && !this->request_queue.IsEmpty()) {
+                this->current_request = std::addressof(*this->request_queue.begin());
                 this->current_request->Open();
                 this->server_thread   = server_thread;
                 break;
@@ -148,7 +148,7 @@ namespace ams::kern {
                 /* Reply to the current request. */
                 if (!this->current_request->IsTerminationRequested()) {
                     MESOSPHERE_ASSERT(this->current_request->GetState() == KThread::ThreadState_Waiting);
-                    MESOSPHERE_ASSERT(this->current_request == this->request_queue.GetFront());
+                    MESOSPHERE_ASSERT(this->request_queue.begin() != this->request_queue.end() && this->current_request == std::addressof(*this->request_queue.begin()));
                     this->request_queue.WakeupThread(this->current_request);
                     this->current_request->SetSyncedObject(nullptr, svc::ResultSessionClosed());
                 }

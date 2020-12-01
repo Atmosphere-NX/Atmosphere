@@ -21,92 +21,38 @@ namespace ams::kern {
 
     class KThreadQueue {
         private:
-            using Entry = KThread::QueueEntry;
-        private:
-            Entry root;
+            KThread::WaiterList wait_list;
         public:
-            constexpr ALWAYS_INLINE KThreadQueue() : root() { /* ... */ }
+            constexpr ALWAYS_INLINE KThreadQueue() : wait_list() { /* ... */ }
 
-            constexpr ALWAYS_INLINE bool IsEmpty() const { return this->root.GetNext() == nullptr; }
+            bool IsEmpty() const { return this->wait_list.empty(); }
 
-            constexpr ALWAYS_INLINE KThread *GetFront() const { return this->root.GetNext(); }
-            constexpr ALWAYS_INLINE KThread *GetNext(KThread *t) const { return t->GetSleepingQueueEntry().GetNext(); }
-        private:
-            constexpr ALWAYS_INLINE KThread *GetBack() const { return this->root.GetPrev(); }
-
-            constexpr ALWAYS_INLINE void Enqueue(KThread *add) {
-                /* Get the entry associated with the added thread. */
-                Entry &add_entry = add->GetSleepingQueueEntry();
-
-                /* Get the entry associated with the end of the queue. */
-                KThread *tail       = this->GetBack();
-                Entry   &tail_entry = (tail != nullptr) ? tail->GetSleepingQueueEntry() : this->root;
-
-                /* Link the entries. */
-                add_entry.SetPrev(tail);
-                add_entry.SetNext(nullptr);
-                tail_entry.SetNext(add);
-                this->root.SetPrev(add);
-            }
-
-            constexpr ALWAYS_INLINE void Remove(KThread *remove) {
-                /* Get the entry associated with the thread. */
-                Entry &remove_entry = remove->GetSleepingQueueEntry();
-
-                /* Get the entries associated with next and prev. */
-                KThread *prev = remove_entry.GetPrev();
-                KThread *next = remove_entry.GetNext();
-                Entry   &prev_entry = (prev != nullptr) ? prev->GetSleepingQueueEntry() : this->root;
-                Entry   &next_entry = (next != nullptr) ? next->GetSleepingQueueEntry() : this->root;
-
-                /* Unlink. */
-                prev_entry.SetNext(next);
-                next_entry.SetPrev(prev);
-            }
-        public:
-            constexpr ALWAYS_INLINE void Dequeue() {
-                /* Get the front of the queue. */
-                KThread *head = this->GetFront();
-                if (head == nullptr) {
-                    return;
-                }
-
-                MESOSPHERE_ASSERT(head->GetState() == KThread::ThreadState_Waiting);
-
-                /* Get the entry for the next head. */
-                KThread *next = GetNext(head);
-                Entry   &next_entry = (next != nullptr) ? next->GetSleepingQueueEntry() : this->root;
-
-                /* Link the entries. */
-                this->root.SetNext(next);
-                next_entry.SetPrev(nullptr);
-
-                /* Clear the head's queue. */
-                head->SetSleepingQueue(nullptr);
-            }
+            KThread::WaiterList::iterator begin() { return this->wait_list.begin(); }
+            KThread::WaiterList::iterator end() { return this->wait_list.end(); }
 
             bool SleepThread(KThread *t) {
+                KScopedSchedulerLock sl;
+
+                /* If the thread needs terminating, don't enqueue it. */
+                if (t->IsTerminationRequested()) {
+                    return false;
+                }
+
                 /* Set the thread's queue and mark it as waiting. */
                 t->SetSleepingQueue(this);
                 t->SetState(KThread::ThreadState_Waiting);
 
                 /* Add the thread to the queue. */
-                this->Enqueue(t);
-
-                /* If the thread needs terminating, undo our work. */
-                if (t->IsTerminationRequested()) {
-                    this->WakeupThread(t);
-                    return false;
-                }
+                this->wait_list.push_back(*t);
 
                 return true;
             }
 
             void WakeupThread(KThread *t) {
-                MESOSPHERE_ASSERT(t->GetState() == KThread::ThreadState_Waiting);
+                KScopedSchedulerLock sl;
 
                 /* Remove the thread from the queue. */
-                this->Remove(t);
+                this->wait_list.erase(this->wait_list.iterator_to(*t));
 
                 /* Mark the thread as no longer sleeping. */
                 t->SetState(KThread::ThreadState_Runnable);
@@ -114,18 +60,24 @@ namespace ams::kern {
             }
 
             KThread *WakeupFrontThread() {
-                KThread *front = this->GetFront();
-                if (front != nullptr) {
-                    MESOSPHERE_ASSERT(front->GetState() == KThread::ThreadState_Waiting);
+                KScopedSchedulerLock sl;
 
+                if (this->wait_list.empty()) {
+                    return nullptr;
+                } else {
                     /* Remove the thread from the queue. */
-                    this->Dequeue();
+                    auto it = this->wait_list.begin();
+                    KThread *thread = std::addressof(*it);
+                    this->wait_list.erase(it);
+
+                    MESOSPHERE_ASSERT(thread->GetState() == KThread::ThreadState_Waiting);
 
                     /* Mark the thread as no longer sleeping. */
-                    front->SetState(KThread::ThreadState_Runnable);
-                    front->SetSleepingQueue(nullptr);
+                    thread->SetState(KThread::ThreadState_Runnable);
+                    thread->SetSleepingQueue(nullptr);
+
+                    return thread;
                 }
-                return front;
             }
     };
 
