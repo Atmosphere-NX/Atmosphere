@@ -140,6 +140,9 @@ namespace ams::kern {
             out->flags |= ams::svc::CreateProcessFlag_AddressSpace32Bit;
         }
 
+        /* All initial processes should disable device address space merge. */
+        out->flags |= ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
+
         return ResultSuccess();
     }
 

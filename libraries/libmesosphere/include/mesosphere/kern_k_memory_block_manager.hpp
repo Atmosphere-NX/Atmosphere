@@ -76,6 +76,7 @@ namespace ams::kern {
     class KMemoryBlockManager {
         public:
             using MemoryBlockTree = util::IntrusiveRedBlackTreeBaseTraits<KMemoryBlock>::TreeType<KMemoryBlock>;
+            using MemoryBlockLockFunction = void (KMemoryBlock::*)(KMemoryPermission new_perm, bool left, bool right);
             using iterator = MemoryBlockTree::iterator;
             using const_iterator = MemoryBlockTree::const_iterator;
         private:
@@ -97,7 +98,7 @@ namespace ams::kern {
             KProcessAddress FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const;
 
             void Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr, KMemoryBlockDisableMergeAttribute set_disable_attr, KMemoryBlockDisableMergeAttribute clear_disable_attr);
-            void UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, void (KMemoryBlock::*lock_func)(KMemoryPermission new_perm, bool left, bool right), KMemoryPermission perm);
+            void UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, MemoryBlockLockFunction lock_func, KMemoryPermission perm);
 
             void UpdateIfMatch(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState test_state, KMemoryPermission test_perm, KMemoryAttribute test_attr, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
 

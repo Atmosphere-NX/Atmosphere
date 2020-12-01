@@ -20,40 +20,41 @@ namespace ams::kern {
 
     Result KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize our members. */
-        this->address_space_width           = (is_64_bit) ? BITSIZEOF(u64) : BITSIZEOF(u32);
-        this->address_space_start           = KProcessAddress(GetInteger(start));
-        this->address_space_end             = KProcessAddress(GetInteger(end));
-        this->is_kernel                     = true;
-        this->enable_aslr                   = true;
+        this->address_space_width               = (is_64_bit) ? BITSIZEOF(u64) : BITSIZEOF(u32);
+        this->address_space_start               = KProcessAddress(GetInteger(start));
+        this->address_space_end                 = KProcessAddress(GetInteger(end));
+        this->is_kernel                         = true;
+        this->enable_aslr                       = true;
+        this->enable_device_address_space_merge = false;
 
-        this->heap_region_start             = 0;
-        this->heap_region_end               = 0;
-        this->current_heap_end              = 0;
-        this->alias_region_start            = 0;
-        this->alias_region_end              = 0;
-        this->stack_region_start            = 0;
-        this->stack_region_end              = 0;
-        this->kernel_map_region_start       = 0;
-        this->kernel_map_region_end         = 0;
-        this->alias_code_region_start       = 0;
-        this->alias_code_region_end         = 0;
-        this->code_region_start             = 0;
-        this->code_region_end               = 0;
-        this->max_heap_size                 = 0;
-        this->mapped_physical_memory_size   = 0;
-        this->mapped_unsafe_physical_memory = 0;
+        this->heap_region_start                 = 0;
+        this->heap_region_end                   = 0;
+        this->current_heap_end                  = 0;
+        this->alias_region_start                = 0;
+        this->alias_region_end                  = 0;
+        this->stack_region_start                = 0;
+        this->stack_region_end                  = 0;
+        this->kernel_map_region_start           = 0;
+        this->kernel_map_region_end             = 0;
+        this->alias_code_region_start           = 0;
+        this->alias_code_region_end             = 0;
+        this->code_region_start                 = 0;
+        this->code_region_end                   = 0;
+        this->max_heap_size                     = 0;
+        this->mapped_physical_memory_size       = 0;
+        this->mapped_unsafe_physical_memory     = 0;
 
-        this->memory_block_slab_manager     = std::addressof(Kernel::GetSystemMemoryBlockManager());
-        this->block_info_manager            = std::addressof(Kernel::GetBlockInfoManager());
+        this->memory_block_slab_manager         = std::addressof(Kernel::GetSystemMemoryBlockManager());
+        this->block_info_manager                = std::addressof(Kernel::GetBlockInfoManager());
 
-        this->allocate_option               = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-        this->heap_fill_value               = MemoryFillValue_Zero;
-        this->ipc_fill_value                = MemoryFillValue_Zero;
-        this->stack_fill_value              = MemoryFillValue_Zero;
+        this->allocate_option                   = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
+        this->heap_fill_value                   = MemoryFillValue_Zero;
+        this->ipc_fill_value                    = MemoryFillValue_Zero;
+        this->stack_fill_value                  = MemoryFillValue_Zero;
 
-        this->cached_physical_linear_region = nullptr;
-        this->cached_physical_heap_region   = nullptr;
-        this->cached_virtual_heap_region    = nullptr;
+        this->cached_physical_linear_region     = nullptr;
+        this->cached_physical_heap_region       = nullptr;
+        this->cached_virtual_heap_region        = nullptr;
 
         /* Initialize our implementation. */
         this->impl.InitializeForKernel(table, start, end);
@@ -64,7 +65,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager) {
+    Result KPageTableBase::InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager) {
         /* Validate the region. */
         MESOSPHERE_ABORT_UNLESS(start <= code_address);
         MESOSPHERE_ABORT_UNLESS(code_address < code_address + code_size);
@@ -123,12 +124,13 @@ namespace ams::kern {
         }
 
         /* Set other basic fields. */
-        this->enable_aslr               = enable_aslr;
-        this->address_space_start       = start;
-        this->address_space_end         = end;
-        this->is_kernel                 = false;
-        this->memory_block_slab_manager = mem_block_slab_manager;
-        this->block_info_manager        = block_info_manager;
+        this->enable_aslr                       = enable_aslr;
+        this->enable_device_address_space_merge = enable_das_merge;
+        this->address_space_start               = start;
+        this->address_space_end                 = end;
+        this->is_kernel                         = false;
+        this->memory_block_slab_manager         = mem_block_slab_manager;
+        this->block_info_manager                = block_info_manager;
 
         /* Determine the region we can place our undetermineds in. */
         KProcessAddress alloc_start;
@@ -2352,6 +2354,114 @@ namespace ams::kern {
 
         /* Update the memory blocks. */
         this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::UnshareToDevice, KMemoryPermission_None);
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::MakePageGroupForUnmapDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size) {
+        /* Lightly validate the range before doing anything else. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Check the memory state. */
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_allocator_blocks),
+                                               address, size,
+                                               KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap, KMemoryState_FlagReferenceCounted | KMemoryState_FlagCanDeviceMap,
+                                               KMemoryPermission_None, KMemoryPermission_None,
+                                               KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.Initialize(num_allocator_blocks));
+
+        /* Make the page group. */
+        R_TRY(this->MakePageGroup(*out, address, num_pages));
+
+        /* Update the memory blocks. */
+        const KMemoryBlockManager::MemoryBlockLockFunction lock_func = this->enable_device_address_space_merge ? &KMemoryBlock::UpdateDeviceDisableMergeStateForShare : &KMemoryBlock::UpdateDeviceDisableMergeStateForShareRight;
+        this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, lock_func, KMemoryPermission_None);
+
+        /* Open a reference to the pages in the page group. */
+        out->Open();
+
+        return ResultSuccess();
+    }
+
+    Result KPageTableBase::UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size) {
+        /* Lightly validate the range before doing anything else. */
+        const size_t num_pages = size / PageSize;
+        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
+
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Determine useful extents. */
+        const KProcessAddress mapped_end_address = address + mapped_size;
+        const size_t unmapped_size = size - mapped_size;
+
+        /* Check memory state. */
+        size_t allocator_num_blocks = 0, unmapped_allocator_num_blocks = 0;
+        if (unmapped_size) {
+            if (this->enable_device_address_space_merge) {
+                R_TRY(this->CheckMemoryState(std::addressof(allocator_num_blocks),
+                                             address, size,
+                                             KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                             KMemoryPermission_None, KMemoryPermission_None,
+                                             KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+            }
+            R_TRY(this->CheckMemoryState(std::addressof(unmapped_allocator_num_blocks),
+                                         mapped_end_address, unmapped_size,
+                                         KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                         KMemoryPermission_None, KMemoryPermission_None,
+                                         KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+        } else {
+            R_TRY(this->CheckMemoryState(std::addressof(allocator_num_blocks),
+                                         address, size,
+                                         KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
+                                         KMemoryPermission_None, KMemoryPermission_None,
+                                         KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+        }
+
+        /* Create an update allocator for the region. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.Initialize(allocator_num_blocks));
+
+        /* Create an update allocator for the unmapped region. */
+        KMemoryBlockManagerUpdateAllocator unmapped_allocator(this->memory_block_slab_manager);
+        R_TRY(unmapped_allocator.Initialize(unmapped_allocator_num_blocks));
+
+        /* Determine parameters for the update lock call. */
+        KMemoryBlockManagerUpdateAllocator *lock_allocator;
+        KProcessAddress lock_address;
+        size_t lock_num_pages;
+        KMemoryBlockManager::MemoryBlockLockFunction lock_func;
+        if (unmapped_size) {
+            /* If device address space merge is enabled, update tracking appropriately. */
+            if (this->enable_device_address_space_merge) {
+                this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshareLeft, KMemoryPermission_None);
+            }
+
+            lock_allocator = std::addressof(unmapped_allocator);
+            lock_address   = mapped_end_address;
+            lock_num_pages = unmapped_size / PageSize;
+            lock_func      = &KMemoryBlock::UnshareToDeviceRight;
+        } else {
+            lock_allocator = std::addressof(allocator);
+            lock_address   = address;
+            lock_num_pages = num_pages;
+            if (this->enable_device_address_space_merge) {
+                lock_func = &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshare;
+            } else {
+                lock_func = &KMemoryBlock::UpdateDeviceDisableMergeStateForUnshareRight;
+            }
+        }
+
+        /* Update the memory blocks. */
+        this->memory_block_manager.UpdateLock(lock_allocator, lock_address, lock_num_pages, lock_func, KMemoryPermission_None);
 
         return ResultSuccess();
     }

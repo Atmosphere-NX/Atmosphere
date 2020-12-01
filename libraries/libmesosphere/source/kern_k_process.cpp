@@ -237,13 +237,14 @@ namespace ams::kern {
         /* NOTE: Nintendo passes process ID despite not having set it yet. */
         /* This goes completely unused, but even so... */
         {
-            const auto as_type       = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
-            const bool enable_aslr   = (params.flags & ams::svc::CreateProcessFlag_EnableAslr);
-            const bool is_app        = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
-            auto *mem_block_manager  = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
-            auto *block_info_manager = std::addressof(Kernel::GetBlockInfoManager());
-            auto *pt_manager         = std::addressof(Kernel::GetPageTableManager());
-            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager));
+            const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
+            const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
+            const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
+            const bool is_app           = (params.flags & ams::svc::CreateProcessFlag_IsApplication) != 0;
+            auto *mem_block_manager     = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
+            auto *block_info_manager    = std::addressof(Kernel::GetBlockInfoManager());
+            auto *pt_manager            = std::addressof(Kernel::GetPageTableManager());
+            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager));
         }
         auto pt_guard = SCOPE_GUARD { this->page_table.Finalize(); };
 
@@ -344,9 +345,10 @@ namespace ams::kern {
         /* NOTE: Nintendo passes process ID despite not having set it yet. */
         /* This goes completely unused, but even so... */
         {
-            const auto as_type     = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
-            const bool enable_aslr = (params.flags & ams::svc::CreateProcessFlag_EnableAslr);
-            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
+            const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
+            const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
+            const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
+            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
         }
         auto pt_guard = SCOPE_GUARD { this->page_table.Finalize(); };
 

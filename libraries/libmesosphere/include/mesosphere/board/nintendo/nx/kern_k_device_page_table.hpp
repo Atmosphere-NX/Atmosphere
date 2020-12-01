@@ -71,6 +71,10 @@ namespace ams::kern::board::nintendo::nx {
 
             Result Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings);
             Result Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address);
+
+            void Unmap(KDeviceVirtualAddress device_address, size_t size) {
+                return this->UnmapImpl(device_address, size, false);
+            }
         private:
             Result MapDevicePage(size_t *out_mapped_size, s32 &num_pt, s32 max_pt, KPhysicalAddress phys_addr, u64 size, KDeviceVirtualAddress address, ams::svc::MemoryPermission device_perm);
 

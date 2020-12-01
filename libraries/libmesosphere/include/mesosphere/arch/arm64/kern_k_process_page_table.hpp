@@ -30,8 +30,8 @@ namespace ams::kern::arch::arm64 {
                 this->page_table.Activate(id);
             }
 
-            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
-                return this->page_table.InitializeForProcess(id, as_type, enable_aslr, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager);
+            Result Initialize(u32 id, ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_das_merge, bool from_back, KMemoryManager::Pool pool, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager, KPageTableManager *pt_manager) {
+                return this->page_table.InitializeForProcess(id, as_type, enable_aslr, enable_das_merge, from_back, pool, code_address, code_size, mem_block_slab_manager, block_info_manager, pt_manager);
             }
 
             void Finalize() { this->page_table.Finalize(); }
@@ -150,6 +150,14 @@ namespace ams::kern::arch::arm64 {
 
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size) {
                 return this->page_table.UnlockForDeviceAddressSpace(address, size);
+            }
+
+            Result MakePageGroupForUnmapDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size) {
+                return this->page_table.MakePageGroupForUnmapDeviceAddressSpace(out, address, size);
+            }
+
+            Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size) {
+                return this->page_table.UnlockForDeviceAddressSpacePartialMap(address, size, mapped_size);
             }
 
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size) {
