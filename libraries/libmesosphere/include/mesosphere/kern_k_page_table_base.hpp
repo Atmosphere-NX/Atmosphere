@@ -24,13 +24,28 @@
 
 namespace ams::kern {
 
+    enum DisableMergeAttribute : u8 {
+        DisableMergeAttribute_None                       = (0u << 0),
+
+        DisableMergeAttribute_DisableHead                = (1u << 0),
+        DisableMergeAttribute_DisableHeadAndBody         = (1u << 1),
+        DisableMergeAttribute_EnableHeadAndBody          = (1u << 2),
+        DisableMergeAttribute_DisableTail                = (1u << 3),
+        DisableMergeAttribute_EnableTail                 = (1u << 4),
+        DisableMergeAttribute_EnableAndMergeHeadBodyTail = (1u << 5),
+
+        DisableMergeAttribute_EnableHeadBodyTail         = DisableMergeAttribute_EnableHeadAndBody  | DisableMergeAttribute_EnableTail,
+        DisableMergeAttribute_DisableHeadBodyTail        = DisableMergeAttribute_DisableHeadAndBody | DisableMergeAttribute_DisableTail,
+    };
+
     struct KPageProperties {
         KMemoryPermission perm;
         bool io;
         bool uncached;
-        bool non_contiguous;
+        DisableMergeAttribute disable_merge_attributes;
     };
     static_assert(std::is_trivial<KPageProperties>::value);
+    static_assert(sizeof(KPageProperties) == sizeof(u32));
 
     class KPageTableBase {
         NON_COPYABLE(KPageTableBase);
@@ -266,8 +281,10 @@ namespace ams::kern {
 
             Result QueryMappingImpl(KProcessAddress *out, KPhysicalAddress address, size_t size, KMemoryState state) const;
 
-            Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, const KPageProperties properties);
+            Result AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, KMemoryPermission perm);
             Result MapPageGroupImpl(PageLinkedList *page_list, KProcessAddress address, const KPageGroup &pg, const KPageProperties properties, bool reuse_ll);
+
+            void RemapPageGroup(PageLinkedList *page_list, KProcessAddress address, size_t size, const KPageGroup &pg);
 
             Result MakePageGroup(KPageGroup &pg, KProcessAddress addr, size_t num_pages);
             bool IsValidPageGroup(const KPageGroup &pg, KProcessAddress addr, size_t num_pages);
@@ -276,7 +293,7 @@ namespace ams::kern {
 
             Result SetupForIpcClient(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state);
             Result SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send);
-            Result CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission test_perm);
+            void CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission prot_perm);
         public:
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const {
                 return this->GetImpl().GetPhysicalAddress(out, virt_addr);
