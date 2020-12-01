@@ -53,6 +53,20 @@ namespace ams::kern::svc {
             return ResultSuccess();
         }
 
+        Result GetResourceLimitPeakValue(int64_t *out_peak_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
+            /* Validate the resource. */
+            R_UNLESS(IsValidLimitableResource(which), svc::ResultInvalidEnumValue());
+
+            /* Get the resource limit. */
+            KScopedAutoObject resource_limit = GetCurrentProcess().GetHandleTable().GetObject<KResourceLimit>(resource_limit_handle);
+            R_UNLESS(resource_limit.IsNotNull(), svc::ResultInvalidHandle());
+
+            /* Get the peak value. */
+            *out_peak_value = resource_limit->GetCurrentValue(which);
+
+            return ResultSuccess();
+        }
+
         Result CreateResourceLimit(ams::svc::Handle *out_handle) {
             /* Create a new resource limit. */
             KResourceLimit *resource_limit = KResourceLimit::Create();
@@ -99,6 +113,10 @@ namespace ams::kern::svc {
         return GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which);
     }
 
+    Result GetResourceLimitPeakValue64(int64_t *out_peak_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
+        return GetResourceLimitPeakValue(out_peak_value, resource_limit_handle, which);
+    }
+
     Result CreateResourceLimit64(ams::svc::Handle *out_handle) {
         return CreateResourceLimit(out_handle);
     }
@@ -115,6 +133,10 @@ namespace ams::kern::svc {
 
     Result GetResourceLimitCurrentValue64From32(int64_t *out_current_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
         return GetResourceLimitCurrentValue(out_current_value, resource_limit_handle, which);
+    }
+
+    Result GetResourceLimitPeakValue64From32(int64_t *out_peak_value, ams::svc::Handle resource_limit_handle, ams::svc::LimitableResource which) {
+        return GetResourceLimitPeakValue(out_peak_value, resource_limit_handle, which);
     }
 
     Result CreateResourceLimit64From32(ams::svc::Handle *out_handle) {
