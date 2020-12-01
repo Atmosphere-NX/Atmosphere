@@ -147,7 +147,35 @@ namespace ams::kern {
         return Null<KProcessAddress>;
     }
 
-    void KMemoryBlockManager::Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr) {
+    void KMemoryBlockManager::CoalesceForUpdate(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages) {
+        /* Find the iterator now that we've updated. */
+        iterator it = this->FindIterator(address);
+        if (address != this->start_address) {
+            it--;
+        }
+
+        /* Coalesce blocks that we can. */
+        while (true) {
+            iterator prev = it++;
+            if (it == this->memory_block_tree.end()) {
+                break;
+            }
+
+            if (prev->CanMergeWith(*it)) {
+                KMemoryBlock *block = std::addressof(*it);
+                this->memory_block_tree.erase(it);
+                prev->Add(*block);
+                allocator->Free(block);
+                it = prev;
+            }
+
+            if (address + num_pages * PageSize < it->GetMemoryInfo().GetEndAddress()) {
+                break;
+            }
+        }
+    }
+
+    void KMemoryBlockManager::Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr, KMemoryBlockDisableMergeAttribute set_disable_attr, KMemoryBlockDisableMergeAttribute clear_disable_attr) {
         /* Ensure for auditing that we never end up with an invalid tree. */
         KScopedMemoryBlockManagerAuditor auditor(this);
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(address), PageSize));
@@ -193,39 +221,14 @@ namespace ams::kern {
                 }
 
                 /* Update block state. */
-                it->Update(state, perm, attr);
+                it->Update(state, perm, attr, cur_address == address, set_disable_attr, clear_disable_attr);
                 cur_address += cur_info.GetSize();
                 remaining_pages -= cur_info.GetNumPages();
             }
             it++;
         }
 
-        /* Find the iterator now that we've updated. */
-        it = this->FindIterator(address);
-        if (address != this->start_address) {
-            it--;
-        }
-
-        /* Coalesce blocks that we can. */
-        while (true) {
-            iterator prev = it++;
-            if (it == this->memory_block_tree.end()) {
-                break;
-            }
-
-            if (prev->HasSameProperties(*it)) {
-                KMemoryBlock *block = std::addressof(*it);
-                const size_t pages = it->GetNumPages();
-                this->memory_block_tree.erase(it);
-                allocator->Free(block);
-                prev->Add(pages);
-                it = prev;
-            }
-
-            if (address + num_pages * PageSize < it->GetMemoryInfo().GetEndAddress()) {
-                break;
-            }
-        }
+        this->CoalesceForUpdate(allocator, address, num_pages);
     }
 
     void KMemoryBlockManager::UpdateIfMatch(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState test_state, KMemoryPermission test_perm, KMemoryAttribute test_attr, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr) {
@@ -265,7 +268,7 @@ namespace ams::kern {
                 }
 
                 /* Update block state. */
-                it->Update(state, perm, attr);
+                it->Update(state, perm, attr, false, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
                 cur_address     += cur_info.GetSize();
                 remaining_pages -= cur_info.GetNumPages();
             } else {
@@ -281,35 +284,10 @@ namespace ams::kern {
             it++;
         }
 
-        /* Find the iterator now that we've updated. */
-        it = this->FindIterator(address);
-        if (address != this->start_address) {
-            it--;
-        }
-
-        /* Coalesce blocks that we can. */
-        while (true) {
-            iterator prev = it++;
-            if (it == this->memory_block_tree.end()) {
-                break;
-            }
-
-            if (prev->HasSameProperties(*it)) {
-                KMemoryBlock *block = std::addressof(*it);
-                const size_t pages = it->GetNumPages();
-                this->memory_block_tree.erase(it);
-                allocator->Free(block);
-                prev->Add(pages);
-                it = prev;
-            }
-
-            if (address + num_pages * PageSize < it->GetMemoryInfo().GetEndAddress()) {
-                break;
-            }
-        }
+        this->CoalesceForUpdate(allocator, address, num_pages);
     }
 
-    void KMemoryBlockManager::UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, void (KMemoryBlock::*lock_func)(KMemoryPermission new_perm), KMemoryPermission perm) {
+    void KMemoryBlockManager::UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, void (KMemoryBlock::*lock_func)(KMemoryPermission new_perm, bool left, bool right), KMemoryPermission perm) {
         /* Ensure for auditing that we never end up with an invalid tree. */
         KScopedMemoryBlockManagerAuditor auditor(this);
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(address), PageSize));
@@ -317,8 +295,8 @@ namespace ams::kern {
         KProcessAddress cur_address = address;
         size_t remaining_pages = num_pages;
         iterator it   = this->FindIterator(address);
-        iterator prev = it, next = it;
-        bool check_coalesce_prev = false, check_coalesce_next = false;
+
+        const KProcessAddress end_address = address + (num_pages * PageSize);
 
         while (remaining_pages > 0) {
             const size_t remaining_size = remaining_pages * PageSize;
@@ -334,10 +312,6 @@ namespace ams::kern {
 
                 cur_info = it->GetMemoryInfo();
                 cur_address = cur_info.GetAddress();
-            } else if (cur_address == address && cur_address != this->start_address) {
-                /* If there's a previous, we should check for coalescing. */
-                check_coalesce_prev = true;
-                prev--;
             }
 
             if (cur_info.GetSize() > remaining_size) {
@@ -348,47 +322,16 @@ namespace ams::kern {
                 it = this->memory_block_tree.insert(*new_block);
 
                 cur_info = it->GetMemoryInfo();
-            } else if (cur_info.GetSize() == remaining_size) {
-                /* Otherwise if we can map precisely, we may need to check for coalescing against next block. */
-                next = it;
-                ++next;
-                if (next != this->memory_block_tree.end()) {
-                    check_coalesce_next = true;
-                }
             }
 
             /* Call the locked update function. */
-            (std::addressof(*it)->*lock_func)(perm);
+            (std::addressof(*it)->*lock_func)(perm, cur_info.GetAddress() == address, cur_info.GetEndAddress() == end_address);
             cur_address += cur_info.GetSize();
             remaining_pages -= cur_info.GetNumPages();
             it++;
         }
 
-        /* If we should try to coalesce prev, do so. */
-        if (check_coalesce_prev) {
-            it = prev;
-            it++;
-            if (prev->HasSameProperties(*it)) {
-                KMemoryBlock *block = std::addressof(*it);
-                const size_t pages = it->GetNumPages();
-                this->memory_block_tree.erase(it);
-                allocator->Free(block);
-                prev->Add(pages);
-            }
-        }
-
-        /* If we should try to coalesce next, do so. */
-        if (check_coalesce_next) {
-            it = next;
-            it--;
-            if (it->HasSameProperties(*next)) {
-                KMemoryBlock *block = std::addressof(*next);
-                const size_t pages = next->GetNumPages();
-                this->memory_block_tree.erase(next);
-                allocator->Free(block);
-                it->Add(pages);
-            }
-        }
+        this->CoalesceForUpdate(allocator, address, num_pages);
     }
 
     /* Debug. */
@@ -403,8 +346,8 @@ namespace ams::kern {
             const KMemoryInfo prev_info = prev->GetMemoryInfo();
             const KMemoryInfo cur_info  = it->GetMemoryInfo();
 
-            /* Sequential blocks with same properties should be coalesced. */
-            if (prev->HasSameProperties(*it)) {
+            /* Sequential blocks which can be merged should be merged. */
+            if (prev->CanMergeWith(*it)) {
                 return false;
             }
 
