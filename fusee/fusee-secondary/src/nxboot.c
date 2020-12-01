@@ -525,6 +525,10 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_9_0_0 && !(fuse_get_reserved_odm(7) & ~0x000003FF)) {
             kip_patches_set_enable_nogc();
         }
+        /* Check if the fuses are < 11.0.0, but firmware is >= 11.0.0 */
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0 && !(fuse_get_reserved_odm(7) & ~0x00001FFF)) {
+            kip_patches_set_enable_nogc();
+        }
     }
 }
 
