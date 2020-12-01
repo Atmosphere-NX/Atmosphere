@@ -1069,7 +1069,7 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(map_end_address != map_address);
 
             /* Determine if we should disable head merge. */
-            const bool disable_head_merge = info.GetAddress() >= GetInteger(start_address);
+            const bool disable_head_merge = info.GetAddress() >= GetInteger(start_address) /* TODO */;
             const KPageProperties map_properties = { info.GetPermission(), false, false, disable_head_merge ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
 
             /* While we have pages to map, map them. */
