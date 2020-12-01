@@ -79,25 +79,30 @@ namespace ams::kern {
         ON_SCOPE_EXIT { pg.Close(); };
 
         /* Ensure that if we fail, we don't keep unmapped pages locked. */
-        ON_SCOPE_EXIT {
-            if (*out_mapped_size != size) {
-                page_table->UnlockForDeviceAddressSpace(process_address + *out_mapped_size, size - *out_mapped_size);
-            };
-        };
+        auto unlock_guard = SCOPE_GUARD { MESOSPHERE_R_ABORT_UNLESS(page_table->UnlockForDeviceAddressSpace(process_address, size)); };
 
         /* Map the pages. */
         {
             /* Clear the output size to zero on failure. */
-            auto map_guard = SCOPE_GUARD { *out_mapped_size = 0; };
+            auto mapped_size_guard = SCOPE_GUARD { *out_mapped_size = 0; };
 
             /* Perform the mapping. */
             R_TRY(this->table.Map(out_mapped_size, pg, device_address, device_perm, refresh_mappings));
 
-            /* We succeeded, so cancel our guard. */
+            /* Ensure that we unmap the pages if we fail to update the protections. */
+            /* NOTE: Nintendo does not check the result of this unmap call. */
+            auto map_guard = SCOPE_GUARD { this->table.Unmap(device_address, *out_mapped_size); };
+
+            /* Update the protections in accordance with how much we mapped. */
+            R_TRY(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, *out_mapped_size));
+
+            /* We succeeded, so cancel our guards. */
             map_guard.Cancel();
+            mapped_size_guard.Cancel();
         }
 
-
+        /* We succeeded, so we don't need to unlock our pages. */
+        unlock_guard.Cancel();
         return ResultSuccess();
     }
 
@@ -110,19 +115,23 @@ namespace ams::kern {
 
         /* Make and open a page group for the unmapped region. */
         KPageGroup pg(page_table->GetBlockInfoManager());
-        R_TRY(page_table->MakeAndOpenPageGroupContiguous(std::addressof(pg), process_address, size / PageSize,
-                                                         KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
-                                                         KMemoryPermission_None, KMemoryPermission_None,
-                                                         KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+        R_TRY(page_table->MakePageGroupForUnmapDeviceAddressSpace(std::addressof(pg), process_address, size));
 
         /* Ensure the page group is closed on scope exit. */
         ON_SCOPE_EXIT { pg.Close(); };
 
-        /* Unmap. */
-        R_TRY(this->table.Unmap(pg, device_address));
+        /* If we fail to unmap, we want to do a partial unlock. */
+        {
+            auto unlock_guard = SCOPE_GUARD { page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, size); };
+
+            /* Unmap. */
+            R_TRY(this->table.Unmap(pg, device_address));
+
+            unlock_guard.Cancel();
+        }
 
         /* Unlock the pages. */
-        R_TRY(page_table->UnlockForDeviceAddressSpace(process_address, size));
+        MESOSPHERE_R_ABORT_UNLESS(page_table->UnlockForDeviceAddressSpace(process_address, size));
 
         return ResultSuccess();
     }

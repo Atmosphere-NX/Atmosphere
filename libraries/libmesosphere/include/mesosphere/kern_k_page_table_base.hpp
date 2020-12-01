@@ -158,6 +158,7 @@ namespace ams::kern {
             u32 address_space_width;
             bool is_kernel;
             bool enable_aslr;
+            bool enable_device_address_space_merge;
             KMemoryBlockSlabManager *memory_block_slab_manager;
             KBlockInfoManager *block_info_manager;
             const KMemoryRegion *cached_physical_linear_region;
@@ -172,15 +173,15 @@ namespace ams::kern {
                 alias_region_start(), alias_region_end(), stack_region_start(), stack_region_end(), kernel_map_region_start(),
                 kernel_map_region_end(), alias_code_region_start(), alias_code_region_end(), code_region_start(), code_region_end(),
                 max_heap_size(), mapped_physical_memory_size(), mapped_unsafe_physical_memory(), general_lock(), map_physical_memory_lock(),
-                impl(), memory_block_manager(), allocate_option(), address_space_width(), is_kernel(), enable_aslr(), memory_block_slab_manager(),
-                block_info_manager(), cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_heap_region(),
+                impl(), memory_block_manager(), allocate_option(), address_space_width(), is_kernel(), enable_aslr(), enable_device_address_space_merge(),
+                memory_block_slab_manager(), block_info_manager(), cached_physical_linear_region(), cached_physical_heap_region(), cached_virtual_heap_region(),
                 heap_fill_value(), ipc_fill_value(), stack_fill_value()
             {
                 /* ... */
             }
 
             NOINLINE Result InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end);
-            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager);
+            NOINLINE Result InitializeForProcess(ams::svc::CreateProcessFlag as_type, bool enable_aslr, bool enable_device_address_space_merge, bool from_back, KMemoryManager::Pool pool, void *table, KProcessAddress start, KProcessAddress end, KProcessAddress code_address, size_t code_size, KMemoryBlockSlabManager *mem_block_slab_manager, KBlockInfoManager *block_info_manager);
 
             void Finalize();
 
@@ -353,6 +354,10 @@ namespace ams::kern {
 
             Result LockForDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm, bool is_aligned);
             Result UnlockForDeviceAddressSpace(KProcessAddress address, size_t size);
+
+            Result MakePageGroupForUnmapDeviceAddressSpace(KPageGroup *out, KProcessAddress address, size_t size);
+            Result UnlockForDeviceAddressSpacePartialMap(KProcessAddress address, size_t size, size_t mapped_size);
+
             Result LockForIpcUserBuffer(KPhysicalAddress *out, KProcessAddress address, size_t size);
             Result UnlockForIpcUserBuffer(KProcessAddress address, size_t size);
 

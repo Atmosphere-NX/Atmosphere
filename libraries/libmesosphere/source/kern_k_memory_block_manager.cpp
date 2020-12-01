@@ -287,7 +287,7 @@ namespace ams::kern {
         this->CoalesceForUpdate(allocator, address, num_pages);
     }
 
-    void KMemoryBlockManager::UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, void (KMemoryBlock::*lock_func)(KMemoryPermission new_perm, bool left, bool right), KMemoryPermission perm) {
+    void KMemoryBlockManager::UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, MemoryBlockLockFunction lock_func, KMemoryPermission perm) {
         /* Ensure for auditing that we never end up with an invalid tree. */
         KScopedMemoryBlockManagerAuditor auditor(this);
         MESOSPHERE_ASSERT(util::IsAligned(GetInteger(address), PageSize));
