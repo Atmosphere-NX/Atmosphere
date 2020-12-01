@@ -1080,7 +1080,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Get the addresses we're working with. */
             const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
-            const KPhysicalAddress block_phys_addr = util::AlignDown(GetInteger(l1_entry->GetBlock()), L1BlockSize);
+            const KPhysicalAddress block_phys_addr = l1_entry->GetBlock();
 
             /* Allocate a new page for the L2 table. */
             const KVirtualAddress l2_table = this->AllocatePageTable(page_list, reuse_ll);
