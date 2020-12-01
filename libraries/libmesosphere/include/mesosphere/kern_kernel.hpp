@@ -37,8 +37,6 @@ namespace ams::kern {
     class KSynchronization;
     class KUnsafeMemory;
 
-
-
 #if defined(ATMOSPHERE_ARCH_ARM64)
 
     namespace arch::arm64 {
@@ -75,6 +73,7 @@ namespace ams::kern {
             static KSynchronization s_synchronization;
             static KUnsafeMemory s_unsafe_memory;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
+            static KInterruptManager s_interrupt_manager;
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -111,7 +110,7 @@ namespace ams::kern {
             }
 
             static ALWAYS_INLINE KInterruptManager &GetInterruptManager() {
-                return GetCoreLocalContext().interrupt_manager;
+                return s_interrupt_manager;
             }
 
             static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
