@@ -31,7 +31,7 @@ namespace ams::kern {
 
     using KThreadFunction = void (*)(uintptr_t);
 
-    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>, public KTimerTask, public KWorkerTask {
+    class KThread final : public KAutoObjectWithSlabHeapAndContainer<KThread, KSynchronizationObject>, public util::IntrusiveListBaseNode<KThread>, public KTimerTask, public KWorkerTask {
         MESOSPHERE_AUTOOBJECT_TRAITS(KThread, KSynchronizationObject);
         private:
             friend class KProcess;
@@ -111,6 +111,8 @@ namespace ams::kern {
                     constexpr void SetPrev(KThread *t) { this->prev = t; }
                     constexpr void SetNext(KThread *t) { this->next = t; }
             };
+
+            using WaiterList = util::IntrusiveListBaseTraits<KThread>::ListType;
         private:
             static constexpr size_t PriorityInheritanceCountMax = 10;
             union SyncObjectBuffer {
@@ -141,13 +143,19 @@ namespace ams::kern {
             static inline std::atomic<u64> s_next_thread_id = 0;
         private:
             alignas(16) KThreadContext      thread_context{};
+            util::IntrusiveListNode         process_list_node{};
+            util::IntrusiveRedBlackTreeNode condvar_arbiter_tree_node{};
+            s32                             priority{};
+
+            using ConditionVariableThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::condvar_arbiter_tree_node>;
+            using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
+
+            ConditionVariableThreadTree    *condvar_tree{};
+            uintptr_t                       condvar_key{};
             KAffinityMask                   affinity_mask{};
             u64                             thread_id{};
             std::atomic<s64>                cpu_time{};
             KSynchronizationObject         *synced_object{};
-            KLightLock                     *waiting_lock{};
-            uintptr_t                       condvar_key{};
-            uintptr_t                       entrypoint{};
             KProcessAddress                 address_key{};
             KProcess                       *parent{};
             void                           *kernel_stack_top{};
@@ -159,43 +167,31 @@ namespace ams::kern {
             s64                             schedule_count{};
             s64                             last_scheduled_tick{};
             QueueEntry                      per_core_priority_queue_entry[cpu::NumCores]{};
-            QueueEntry                      sleeping_queue_entry{};
+            KLightLock                     *waiting_lock{};
+
             KThreadQueue                   *sleeping_queue{};
-            util::IntrusiveListNode         waiter_list_node{};
-            util::IntrusiveRedBlackTreeNode condvar_arbiter_tree_node{};
-            util::IntrusiveListNode         process_list_node{};
-
-            using WaiterListTraits = util::IntrusiveListMemberTraitsDeferredAssert<&KThread::waiter_list_node>;
-            using WaiterList       = WaiterListTraits::ListType;
-
-            using ConditionVariableThreadTreeTraits = util::IntrusiveRedBlackTreeMemberTraitsDeferredAssert<&KThread::condvar_arbiter_tree_node>;
-            using ConditionVariableThreadTree       = ConditionVariableThreadTreeTraits::TreeType<ConditionVariableComparator>;
 
             WaiterList                      waiter_list{};
             WaiterList                      pinned_waiter_list{};
             KThread                        *lock_owner{};
-            ConditionVariableThreadTree    *condvar_tree{};
             uintptr_t                       debug_params[3]{};
             u32                             address_key_value{};
             u32                             suspend_request_flags{};
             u32                             suspend_allowed_flags{};
             Result                          wait_result;
             Result                          debug_exception_result;
-            s32                             priority{};
-            s32                             current_core_id{};
-            s32                             core_id{};
             s32                             base_priority{};
             s32                             ideal_core_id{};
             s32                             num_kernel_waiters{};
+            s32                             current_core_id{};
+            s32                             core_id{};
             KAffinityMask                   original_affinity_mask{};
             s32                             original_ideal_core_id{};
             s32                             num_core_migration_disables{};
             ThreadState                     thread_state{};
             std::atomic<bool>               termination_requested{};
-            bool                            ipc_cancelled{};
             bool                            wait_cancelled{};
             bool                            cancellable{};
-            bool                            registered{};
             bool                            signaled{};
             bool                            initialized{};
             bool                            debug_attached{};
@@ -393,8 +389,6 @@ namespace ams::kern {
             constexpr QueueEntry &GetPriorityQueueEntry(s32 core) { return this->per_core_priority_queue_entry[core]; }
             constexpr const QueueEntry &GetPriorityQueueEntry(s32 core) const { return this->per_core_priority_queue_entry[core]; }
 
-            constexpr QueueEntry &GetSleepingQueueEntry() { return this->sleeping_queue_entry; }
-            constexpr const QueueEntry &GetSleepingQueueEntry() const { return this->sleeping_queue_entry; }
             constexpr void SetSleepingQueue(KThreadQueue *q) { this->sleeping_queue = q; }
 
             constexpr ConditionVariableThreadTree *GetConditionVariableTree() const { return this->condvar_tree; }
@@ -458,8 +452,6 @@ namespace ams::kern {
 
             constexpr KProcess *GetOwnerProcess() const { return this->parent; }
             constexpr bool IsUserThread() const { return this->parent != nullptr; }
-
-            constexpr uintptr_t GetEntrypoint() const { return this->entrypoint; }
 
             constexpr KProcessAddress GetThreadLocalRegionAddress() const { return this->tls_address; }
             constexpr void           *GetThreadLocalRegionHeapAddress() const { return this->tls_heap_address; }
@@ -541,10 +533,6 @@ namespace ams::kern {
             virtual void OnTimer() override;
             virtual void DoWorkerTask() override;
         public:
-            static constexpr bool IsWaiterListValid() {
-                return WaiterListTraits::IsValid();
-            }
-
             static constexpr bool IsConditionVariableThreadTreeValid() {
                 return ConditionVariableThreadTreeTraits::IsValid();
             }
@@ -555,7 +543,6 @@ namespace ams::kern {
             using ConditionVariableThreadTreeType = ConditionVariableThreadTree;
     };
     static_assert(alignof(KThread) == 0x10);
-    static_assert(KThread::IsWaiterListValid());
     static_assert(KThread::IsConditionVariableThreadTreeValid());
 
     class KScopedDisableDispatch {

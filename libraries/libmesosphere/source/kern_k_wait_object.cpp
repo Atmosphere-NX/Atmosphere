@@ -21,19 +21,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* Wake up all the waiting threads. */
-        Entry *entry = std::addressof(this->root);
-        while (true) {
-            /* Get the next thread. */
-            KThread *thread = entry->GetNext();
-            if (thread == nullptr) {
-                break;
-            }
-
-            /* Wake it up. */
-            thread->Wakeup();
-
-            /* Advance. */
-            entry = std::addressof(thread->GetSleepingQueueEntry());
+        for (KThread &thread : this->wait_list) {
+            thread.Wakeup();
         }
     }
 
@@ -73,7 +62,7 @@ namespace ams::kern {
                 this->OnTimer();
             } else {
                 /* Otherwise, sleep until the timeout occurs. */
-                this->Enqueue(cur_thread);
+                this->wait_list.push_back(GetCurrentThread());
                 cur_thread->SetState(KThread::ThreadState_Waiting);
                 cur_thread->SetSyncedObject(nullptr, svc::ResultTimedOut());
             }
@@ -93,7 +82,7 @@ namespace ams::kern {
 
             /* Remove the thread from our queue. */
             if (timeout != 0) {
-                this->Remove(cur_thread);
+                this->wait_list.erase(this->wait_list.iterator_to(GetCurrentThread()));
             }
         }
 
