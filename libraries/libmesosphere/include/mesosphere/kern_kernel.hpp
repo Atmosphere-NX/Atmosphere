@@ -74,6 +74,8 @@ namespace ams::kern {
             static KUnsafeMemory s_unsafe_memory;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
             static KInterruptManager s_interrupt_manager;
+            static KScheduler s_schedulers[cpu::NumCores];
+            static KInterruptTaskManager s_interrupt_task_managers[cpu::NumCores];
             static KHardwareTimer s_hardware_timers[cpu::NumCores];
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
@@ -99,15 +101,15 @@ namespace ams::kern {
             }
 
             static ALWAYS_INLINE KScheduler &GetScheduler() {
-                return GetCoreLocalContext().scheduler;
+                return s_schedulers[GetCurrentCoreId()];
             }
 
             static ALWAYS_INLINE KScheduler &GetScheduler(s32 core_id) {
-                return GetCoreLocalContext(core_id).scheduler;
+                return s_schedulers[core_id];
             }
 
             static ALWAYS_INLINE KInterruptTaskManager &GetInterruptTaskManager() {
-                return GetCoreLocalContext().interrupt_task_manager;
+                return s_interrupt_task_managers[GetCurrentCoreId()];
             }
 
             static ALWAYS_INLINE KInterruptManager &GetInterruptManager() {

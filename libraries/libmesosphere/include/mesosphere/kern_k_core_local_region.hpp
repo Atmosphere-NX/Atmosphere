@@ -27,8 +27,6 @@ namespace ams::kern {
 
     struct KCoreLocalContext {
         KCurrentContext current;
-        KScheduler scheduler;
-        KInterruptTaskManager interrupt_task_manager;
         /* Everything after this point is for debugging. */
         /* Retail kernel doesn't even consistently update these fields. */
         u64 num_sw_interrupts;
