@@ -544,7 +544,7 @@ namespace ams::kern {
         }
 
         /* Apply the memory block updates. */
-        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr);
+        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr, KMemoryBlockDisableMergeAttribute_Locked, KMemoryBlockDisableMergeAttribute_None);
 
         /* If we have an output group, open. */
         if (out_pg) {
@@ -598,7 +598,7 @@ namespace ams::kern {
         }
 
         /* Apply the memory block updates. */
-        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr);
+        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, old_state, new_perm, new_attr, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Locked);
 
         return ResultSuccess();
     }
@@ -741,8 +741,8 @@ namespace ams::kern {
             unprot_guard.Cancel();
 
             /* Apply the memory block updates. */
-            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state, new_src_perm, new_src_attr);
-            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_Stack, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state, new_src_perm, new_src_attr, KMemoryBlockDisableMergeAttribute_Locked, KMemoryBlockDisableMergeAttribute_None);
+            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_Stack, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
         }
 
         return ResultSuccess();
@@ -804,8 +804,8 @@ namespace ams::kern {
             remap_guard.Cancel();
 
             /* Apply the memory block updates. */
-            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,         KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
-            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None, KMemoryPermission_None,          KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,         KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Locked);
+            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None, KMemoryPermission_None,          KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
         }
 
         return ResultSuccess();
@@ -869,8 +869,8 @@ namespace ams::kern {
             unprot_guard.Cancel();
 
             /* Apply the memory block updates. */
-            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,              new_perm, KMemoryAttribute_Locked);
-            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_AliasCode, new_perm, KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,              new_perm, KMemoryAttribute_Locked, KMemoryBlockDisableMergeAttribute_Locked, KMemoryBlockDisableMergeAttribute_None);
+            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_AliasCode, new_perm, KMemoryAttribute_None,   KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
         }
 
         return ResultSuccess();
@@ -965,8 +965,8 @@ namespace ams::kern {
             remap_guard.Cancel();
 
             /* Apply the memory block updates. */
-            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
-            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None,   KMemoryPermission_None,          KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_None,   KMemoryPermission_None,          KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
+            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Locked);
 
             /* Note that we reprotected pages. */
             reprotected_pages = true;
@@ -1100,7 +1100,7 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(map_end_address != map_address);
 
             /* Determine if we should disable head merge. */
-            const bool disable_head_merge = info.GetAddress() >= GetInteger(start_address) /* TODO */;
+            const bool disable_head_merge = info.GetAddress() >= GetInteger(start_address) && (info.GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Normal) != 0;
             const KPageProperties map_properties = { info.GetPermission(), false, false, disable_head_merge ? DisableMergeAttribute_DisableHead : DisableMergeAttribute_None };
 
             /* While we have pages to map, map them. */
@@ -1311,7 +1311,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissions, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, old_state, new_perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, old_state, new_perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
         return ResultSuccess();
     }
@@ -1368,7 +1368,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, operation, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, new_state, new_perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, new_state, new_perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
         /* Ensure cache coherency, if we're setting pages as executable. */
         if (is_x) {
@@ -1415,7 +1415,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_ChangePermissionsAndRefresh, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, old_state, old_perm, new_attr);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, old_state, old_perm, new_attr, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
         return ResultSuccess();
     }
@@ -1463,7 +1463,7 @@ namespace ams::kern {
                 GetCurrentProcess().ReleaseResource(ams::svc::LimitableResource_PhysicalMemoryMax, num_pages * PageSize);
 
                 /* Apply the memory block update. */
-                this->memory_block_manager.Update(std::addressof(allocator), this->heap_region_start + size, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+                this->memory_block_manager.Update(std::addressof(allocator), this->heap_region_start + size, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, size == 0 ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None);
 
                 /* Update the current heap end. */
                 this->current_heap_end = this->heap_region_start + size;
@@ -1528,7 +1528,7 @@ namespace ams::kern {
             memory_reservation.Commit();
 
             /* Apply the memory block update. */
-            this->memory_block_manager.Update(std::addressof(allocator), this->current_heap_end, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(allocator), this->current_heap_end, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, this->heap_region_start == this->current_heap_end ? KMemoryBlockDisableMergeAttribute_Normal : KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
             /* Update the current heap end. */
             this->current_heap_end = this->heap_region_start + size;
@@ -1555,14 +1555,18 @@ namespace ams::kern {
         /* If the address is invalid, create a fake block. */
         if (!this->Contains(addr, 1)) {
             *out_info = {
-                .address          = GetInteger(this->address_space_end),
-                .size             = 0 - GetInteger(this->address_space_end),
-                .state            = static_cast<KMemoryState>(ams::svc::MemoryState_Inaccessible),
-                .perm             = KMemoryPermission_None,
-                .attribute        = KMemoryAttribute_None,
-                .original_perm    = KMemoryPermission_None,
-                .ipc_lock_count   = 0,
-                .device_use_count = 0,
+                .address                          = GetInteger(this->address_space_end),
+                .size                             = 0 - GetInteger(this->address_space_end),
+                .state                            = static_cast<KMemoryState>(ams::svc::MemoryState_Inaccessible),
+                .device_disable_merge_left_count  = 0,
+                .device_disable_merge_right_count = 0,
+                .ipc_lock_count                   = 0,
+                .device_use_count                 = 0,
+                .ipc_disable_merge_count          = 0,
+                .perm                             = KMemoryPermission_None,
+                .attribute                        = KMemoryAttribute_None,
+                .original_perm                    = KMemoryPermission_None,
+                .disable_merge_attribute          = KMemoryBlockDisableMergeAttribute_None,
             };
             out_page_info->flags = 0;
 
@@ -1724,7 +1728,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, KMemoryState_Io, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, KMemoryState_Io, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         return ResultSuccess();
@@ -1791,7 +1795,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), addr, num_pages, phys_addr, true, properties, OperationType_Map, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, KMemoryState_Static, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, KMemoryState_Static, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         return ResultSuccess();
@@ -1843,7 +1847,7 @@ namespace ams::kern {
         }
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, state, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), addr, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         *out_addr = addr;
@@ -1873,7 +1877,7 @@ namespace ams::kern {
         R_TRY(this->AllocateAndMapPagesImpl(updater.GetPageList(), address, num_pages, perm));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, state, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         return ResultSuccess();
     }
@@ -1902,7 +1906,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
         return ResultSuccess();
     }
@@ -1936,7 +1940,7 @@ namespace ams::kern {
         R_TRY(this->MapPageGroupImpl(updater.GetPageList(), addr, pg, properties, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         *out_addr = addr;
@@ -1970,7 +1974,7 @@ namespace ams::kern {
         R_TRY(this->MapPageGroupImpl(updater.GetPageList(), addr, pg, properties, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, addr, num_pages, state, perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* We successfully mapped the pages. */
         return ResultSuccess();
@@ -2006,7 +2010,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, properties, OperationType_Unmap, false));
 
         /* Update the blocks. */
-        this->memory_block_manager.Update(&allocator, address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+        this->memory_block_manager.Update(&allocator, address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
         return ResultSuccess();
     }
@@ -3261,7 +3265,7 @@ namespace ams::kern {
         }
 
         /* Update memory blocks to reflect our changes */
-        this->memory_block_manager.Update(std::addressof(allocator), dst_addr, aligned_src_size / PageSize, dst_state, test_perm, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), dst_addr, aligned_src_size / PageSize, dst_state, test_perm, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
         /* Set the output address. */
         *out_addr = dst_addr + (src_start - aligned_src_start);
@@ -3357,7 +3361,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), aligned_start, aligned_num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
         /* Update memory blocks. */
-        this->memory_block_manager.Update(std::addressof(allocator), aligned_start, aligned_num_pages, KMemoryState_None, KMemoryPermission_None, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), aligned_start, aligned_num_pages, KMemoryState_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
         /* Release from the resource limit as relevant. */
         if (auto *resource_limit = server_process->GetResourceLimit(); resource_limit != nullptr) {
@@ -3431,7 +3435,7 @@ namespace ams::kern {
                 size_t cur_size             = cur_info.GetSize();
                 bool cur_perm_eq            = cur_info.GetPermission() == cur_info.GetOriginalPermission();
                 bool cur_needs_set_perm     = !cur_perm_eq && cur_info.GetIpcLockCount() == 1;
-                bool first                  = false /* TODO */;
+                bool first                  = cur_info.GetIpcDisableMergeCount() == 1 && (cur_info.GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Locked) == 0;
 
                 while ((GetInteger(cur_address) + cur_size - 1) < mapped_last) {
                     /* Check that we have a next block. */
@@ -3490,7 +3494,7 @@ namespace ams::kern {
             size_t cur_size             = cur_info.GetSize();
             bool cur_perm_eq            = cur_info.GetPermission() == cur_info.GetOriginalPermission();
             bool cur_needs_set_perm     = !cur_perm_eq && cur_info.GetIpcLockCount() == 1;
-            bool first                  = false /* TODO */;
+            bool first                  = cur_info.GetIpcDisableMergeCount() == 1 && (cur_info.GetDisableMergeAttribute() & KMemoryBlockDisableMergeAttribute_Locked) == 0;
 
             while ((cur_address + cur_size - 1) < mapping_last) {
                 /* Check that we have a next block. */
@@ -3532,7 +3536,7 @@ namespace ams::kern {
             }
 
             /* Process the last block. */
-            const auto lock_count = cur_info.GetIpcLockCount() /* TODO */;
+            const auto lock_count = cur_info.GetIpcLockCount() + (next_it != this->memory_block_manager.end() ? (next_it->GetIpcDisableMergeCount() - next_it->GetIpcLockCount()) : 0);
             if ((first || cur_needs_set_perm || (lock_count == 1)) && !cur_perm_eq) {
                 const DisableMergeAttribute head_body_attr = first ? DisableMergeAttribute_EnableHeadAndBody : DisableMergeAttribute_None;
                 const DisableMergeAttribute tail_attr      = lock_count == 1 ? DisableMergeAttribute_EnableTail : DisableMergeAttribute_None;
@@ -3582,12 +3586,15 @@ namespace ams::kern {
             {
                 /* Check if we actually need to fix the protections on the block. */
                 if (cur_end == src_map_end || info.GetAddress() <= GetInteger(src_map_start) || (info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != prot_perm) {
-                    const bool start_nc = (info.GetAddress() == GetInteger(src_map_start)) ? (/* TODO */ true) : info.GetAddress() <= GetInteger(src_map_start);
+                    const bool start_nc = (info.GetAddress() == GetInteger(src_map_start)) ? ((info.GetDisableMergeAttribute() & (KMemoryBlockDisableMergeAttribute_Locked | KMemoryBlockDisableMergeAttribute_IpcLeft)) == 0) : info.GetAddress() <= GetInteger(src_map_start);
 
                     const DisableMergeAttribute head_body_attr = start_nc ? DisableMergeAttribute_EnableHeadAndBody : DisableMergeAttribute_None;
                     DisableMergeAttribute tail_attr;
                     if (cur_end == src_map_end && info.GetEndAddress() == src_map_end) {
-                        const auto lock_count = info.GetIpcLockCount() /* TODO */;
+                        auto next_it = it;
+                        ++next_it;
+
+                        const auto lock_count = info.GetIpcLockCount() + (next_it != this->memory_block_manager.end() ? (next_it->GetIpcDisableMergeCount() - next_it->GetIpcLockCount()) : 0);
                         tail_attr = lock_count == 0 ? DisableMergeAttribute_EnableTail : DisableMergeAttribute_None;
                     } else {
                         tail_attr = DisableMergeAttribute_None;
@@ -4074,7 +4081,7 @@ namespace ams::kern {
         GetCurrentProcess().ReleaseResource(ams::svc::LimitableResource_PhysicalMemoryMax, mapped_size);
 
         /* Update memory blocks. */
-        this->memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), address, size / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_None);
 
         /* We succeeded. */
         remap_guard.Cancel();
@@ -4125,7 +4132,7 @@ namespace ams::kern {
             R_TRY(this->Operate(updater.GetPageList(), address, num_pages, pg, map_properties, OperationType_MapGroup, false));
 
             /* Apply the memory block update. */
-            this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None);
+            this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Normal, KMemoryPermission_UserReadWrite, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_Normal, KMemoryBlockDisableMergeAttribute_None);
 
             /* Update our mapped unsafe size. */
             this->mapped_unsafe_physical_memory += size;
@@ -4160,7 +4167,7 @@ namespace ams::kern {
         R_TRY(this->Operate(updater.GetPageList(), address, num_pages, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, false));
 
         /* Apply the memory block update. */
-        this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+        this->memory_block_manager.Update(std::addressof(allocator), address, num_pages, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None, KMemoryBlockDisableMergeAttribute_None, KMemoryBlockDisableMergeAttribute_Normal);
 
         /* Release the unsafe memory from the limit. */
         Kernel::GetUnsafeMemory().Release(size);
