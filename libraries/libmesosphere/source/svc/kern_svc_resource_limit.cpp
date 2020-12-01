@@ -78,8 +78,8 @@ namespace ams::kern::svc {
             /* Initialize the resource limit. */
             resource_limit->Initialize();
 
-            /* Try to register the limit. */
-            R_TRY(KResourceLimit::Register(resource_limit));
+            /* Register the limit. */
+            KResourceLimit::Register(resource_limit);
 
             /* Add the limit to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out_handle, resource_limit));

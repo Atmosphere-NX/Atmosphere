@@ -81,7 +81,7 @@ namespace ams::kern::svc {
             };
 
             /* Register the event. */
-            R_TRY(KEvent::Register(event));
+            KEvent::Register(event);
 
             /* Add the writable event to the handle table. */
             R_TRY(handle_table.Add(out_write, std::addressof(event->GetWritableEvent())));

@@ -61,7 +61,7 @@ namespace ams::kern::svc {
             thread->GetContext().CloneFpuStatus();
 
             /* Register the new thread. */
-            R_TRY(KThread::Register(thread));
+            KThread::Register(thread);
 
             /* Add the thread to the handle table. */
             R_TRY(process.GetHandleTable().Add(out, thread));

@@ -108,7 +108,7 @@ namespace ams::kern {
                 return obj;
             }
 
-            static Result Register(Derived *obj) {
+            static void Register(Derived *obj) {
                 return s_container.Register(obj);
             }
 

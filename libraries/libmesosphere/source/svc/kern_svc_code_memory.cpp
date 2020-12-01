@@ -56,7 +56,7 @@ namespace ams::kern::svc {
             R_TRY(code_mem->Initialize(address, size));
 
             /* Register the code memory. */
-            R_TRY(KCodeMemory::Register(code_mem));
+            KCodeMemory::Register(code_mem);
 
             /* Add the code memory to the handle table. */
             R_TRY(GetCurrentProcess().GetHandleTable().Add(out, code_mem));
