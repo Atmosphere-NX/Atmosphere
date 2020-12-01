@@ -79,9 +79,6 @@ namespace ams::kern::arch::arm {
 
         /* Setup all interrupt lines. */
         SetupInterruptLines(core_id);
-
-        this->gicd = nullptr;
-        this->gicc = nullptr;
     }
 
     void KInterruptController::SaveCoreLocal(LocalState *state) const {
