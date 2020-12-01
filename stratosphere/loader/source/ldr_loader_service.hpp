@@ -25,7 +25,8 @@ namespace ams::ldr {
             Result GetProgramInfo(sf::Out<ProgramInfo> out_program_info, const ncm::ProgramLocation &loc);
             Result PinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc);
             Result UnpinProgram(PinId id);
-            Result SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size);
+            Result SetProgramArgumentsDeprecated(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size);
+            Result SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args);
             Result FlushArguments();
             Result GetProcessModuleInfo(sf::Out<u32> count, const sf::OutPointerArray<ModuleInfo> &out, os::ProcessId process_id);
             Result SetEnabledProgramVerification(bool enabled);
