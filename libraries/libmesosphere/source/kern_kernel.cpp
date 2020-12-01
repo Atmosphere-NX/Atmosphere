@@ -39,20 +39,9 @@ namespace ams::kern {
     }
 
     void Kernel::InitializeCoreLocalRegion(s32 core_id) {
-        /* Construct the core local region object in place. */
-        KCoreLocalContext *clc = GetPointer<KCoreLocalContext>(KMemoryLayout::GetCoreLocalRegionAddress());
-        new (clc) KCoreLocalContext;
-
-        /* Set the core local region address into the global register. */
-        cpu::SetCoreLocalRegionAddress(reinterpret_cast<uintptr_t>(clc));
-
-        /* Initialize current context. */
-        clc->current.current_thread = nullptr;
-        clc->current.current_process = nullptr;
-        clc->current.core_id = core_id;
-        clc->current.scheduler = std::addressof(Kernel::GetScheduler());
-        clc->current.interrupt_task_manager = std::addressof(Kernel::GetInterruptTaskManager());
-        clc->current.exception_stack_top = GetVoidPointer(KMemoryLayout::GetExceptionStackTopAddress(core_id) - sizeof(KThread::StackParameters));
+        /* The core local region no longer exists, so just clear the current thread. */
+        AMS_UNUSED(core_id);
+        SetCurrentThread(nullptr);
     }
 
     void Kernel::InitializeMainAndIdleThreads(s32 core_id) {
@@ -68,7 +57,6 @@ namespace ams::kern {
 
         /* Set the current thread to be the main thread, and we have no processes running yet. */
         SetCurrentThread(main_thread);
-        SetCurrentProcess(nullptr);
 
         /* Initialize the interrupt manager, hardware timer, and scheduler */
         GetInterruptManager().Initialize(core_id);
@@ -126,7 +114,6 @@ namespace ams::kern {
         PrintMemoryRegion("        Stack",          KMemoryLayout::GetKernelStackRegionExtents());
         PrintMemoryRegion("        Misc",           KMemoryLayout::GetKernelMiscRegionExtents());
         PrintMemoryRegion("        Slab",           KMemoryLayout::GetKernelSlabRegionExtents());
-        PrintMemoryRegion("    CoreLocalRegion",    KMemoryLayout::GetCoreLocalRegion());
         PrintMemoryRegion("    LinearRegion",       KMemoryLayout::GetLinearRegionVirtualExtents());
         MESOSPHERE_LOG("\n");
 

@@ -31,9 +31,8 @@ _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv:
     stp     x12, x13, [sp, #(8 * 12)]
     stp     x14, x15, [sp, #(8 * 14)]
     stp     x16, x17, [sp, #(8 * 16)]
-    stp     x18, x19, [sp, #(8 * 18)]
-    stp     x20, x21, [sp, #(8 * 20)]
-    stp     x22, x30, [sp, #(8 * 22)]
+    stp     x19, x20, [sp, #(8 * 18)]
+    stp     x21, x30, [sp, #(8 * 20)]
 
     mrs     x19, sp_el0
     mrs     x20, elr_el1
@@ -41,7 +40,6 @@ _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv:
     mov     w21, w21
 
     /* Invoke KInterruptManager::HandleInterrupt(bool user_mode). */
-    mrs     x18, tpidr_el1
     mov     x0, #0
     bl      _ZN3ams4kern4arch5arm6417KInterruptManager15HandleInterruptEb
 
@@ -59,9 +57,8 @@ _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv:
     ldp     x12, x13, [sp, #(8 * 12)]
     ldp     x14, x15, [sp, #(8 * 14)]
     ldp     x16, x17, [sp, #(8 * 16)]
-    ldp     x18, x19, [sp, #(8 * 18)]
-    ldp     x20, x21, [sp, #(8 * 20)]
-    ldp     x22, x30, [sp, #(8 * 22)]
+    ldp     x19, x20, [sp, #(8 * 18)]
+    ldp     x21, x30, [sp, #(8 * 20)]
 
     add     sp, sp, #(8 * 24)
 
@@ -74,7 +71,7 @@ _ZN3ams4kern4arch5arm6422EL1IrqExceptionHandlerEv:
 .type       _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv, %function
 _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     /* Save registers that need saving. */
-    sub     sp,  sp, #(8 * 36)
+    sub     sp,  sp, #0x120
 
     stp     x0,  x1,  [sp, #(8 *  0)]
     stp     x2,  x3,  [sp, #(8 *  2)]
@@ -102,7 +99,7 @@ _ZN3ams4kern4arch5arm6422EL0IrqExceptionHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Invoke KInterruptManager::HandleInterrupt(bool user_mode). */
-    mrs     x18, tpidr_el1
+    ldr     x18, [sp, #(0x120 + 0x28)]
     mov     x0, #1
     bl      _ZN3ams4kern4arch5arm6417KInterruptManager15HandleInterruptEb
 
@@ -199,7 +196,7 @@ _ZN3ams4kern4arch5arm6430EL0SynchronousExceptionHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
-    mrs     x18, tpidr_el1
+    ldr     x18, [sp, #(0x120 + 0x28)]
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
@@ -299,12 +296,8 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     b.eq    5f
 
 1:  /* The exception is not a data abort or instruction abort caused by a TLB conflict. */
-    /* Load the CoreLocalContext into x0. */
+    /* Load the exception stack top from tpidr_el1. */
     mrs     x0, tpidr_el1
-    cbz     x0, 2f
-
-    /* Load the exception stack top from the context. */
-    ldr     x0, [x0, #0x28]
 
     /* Setup the stack for a generic exception handle */
     sub     x0, x0, #0x20
@@ -342,21 +335,6 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     msr     elr_el1, x30
     eret
 
-2:  /* The CoreLocalContext is nullptr. */
-    /* Setup the stack for a generic exception handle. */
-    /* NOTE: Nintendo does not restore X0 here, and thus saves nullptr. */
-    /* This is probably not their intention, so we'll fix it. */
-    /* NOTE: Nintendo also does not really save SP correctly, and so we */
-    /* will also fix that. */
-    mov     x0, sp
-    sub     x0, x0, #0x20
-    str     x1, [x0, #16]
-    mov     x1, sp
-    str     x1, [x0]
-    mov     sp, x0
-    mrs     x0, cntv_cval_el0
-    str     x0, [sp, #8]
-
 3:  /* The exception wasn't an triggered by copying memory from userspace. */
     ldr     x0, [sp, #8]
     ldr     x1, [sp, #16]
@@ -388,7 +366,6 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
-    mrs     x18, tpidr_el1
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
@@ -440,7 +417,7 @@ _ZN3ams4kern4arch5arm6430EL1SynchronousExceptionHandlerEv:
 .type       _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv, %function
 _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
     /* Save registers that need saving. */
-    sub     sp,  sp, #(8 * 24)
+    sub     sp,  sp, #0x120
 
     stp     x0,  x1,  [sp, #(8 *  0)]
     stp     x2,  x3,  [sp, #(8 *  2)]
@@ -453,17 +430,23 @@ _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
     stp     x16, x17, [sp, #(8 * 16)]
     stp     x18, x19, [sp, #(8 * 18)]
     stp     x20, x21, [sp, #(8 * 20)]
-    stp     x22, x30, [sp, #(8 * 22)]
 
-    mrs     x18, tpidr_el1
     mrs     x19, sp_el0
     mrs     x20, elr_el1
     mrs     x21, spsr_el1
+    mov     w21, w21
+
+    stp     x30, x19, [sp, #(8 * 30)]
+    stp     x20, x21, [sp, #(8 * 32)]
 
     /* Invoke the FPU context switch handler. */
+    ldr     x18, [sp, #(0x120 + 0x28)]
     bl      _ZN3ams4kern4arch5arm6423FpuContextSwitchHandlerEv
 
     /* Restore registers that we saved. */
+    ldp     x30, x19, [sp, #(8 * 30)]
+    ldp     x20, x21, [sp, #(8 * 32)]
+
     msr     sp_el0, x19
     msr     elr_el1, x20
     msr     spsr_el1, x21
@@ -479,9 +462,8 @@ _ZN3ams4kern4arch5arm6425FpuAccessExceptionHandlerEv:
     ldp     x16, x17, [sp, #(8 * 16)]
     ldp     x18, x19, [sp, #(8 * 18)]
     ldp     x20, x21, [sp, #(8 * 20)]
-    ldp     x22, x30, [sp, #(8 * 22)]
 
-    add     sp, sp, #(8 * 24)
+    add     sp, sp, #0x120
 
     /* Return from the exception. */
     eret
@@ -494,8 +476,8 @@ _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv:
     /* Nintendo uses the "unused" virtual timer compare value as a scratch register. */
     msr     cntv_cval_el0, x0
 
-    /* Load the exception stack top from the context. */
-    ldr     x0, [x0, #0x28]
+    /* Load the exception stack top from tpidr_el1. */
+    mrs     x0, tpidr_el1
 
     /* Setup the stack for a generic exception handle */
     sub     x0, x0, #0x20
@@ -534,15 +516,11 @@ _ZN3ams4kern4arch5arm6421EL1SystemErrorHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Invoke ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *). */
-    mrs     x18, tpidr_el1
     mov     x0, sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
 1:  /* HandleException should never return. The best we can do is infinite loop. */
     b       1b
-
-    /* Return from the exception. */
-    eret
 
 /* ams::kern::arch::arm64::EL0SystemErrorHandler() */
 .section    .text._ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv, "ax", %progbits
@@ -576,7 +554,7 @@ _ZN3ams4kern4arch5arm6421EL0SystemErrorHandlerEv:
     str     x23, [sp, #(8 * 34)]
 
     /* Invoke ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *). */
-    mrs     x18, tpidr_el1
+    ldr     x18, [sp, #(0x120 + 0x28)]
     mov     x0, sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 

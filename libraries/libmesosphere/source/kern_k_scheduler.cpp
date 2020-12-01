@@ -66,6 +66,9 @@ namespace ams::kern {
 
         /* Bind interrupt handler. */
         Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptTask(), KInterruptName_Scheduler, this->core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+
+        /* Set the current thread. */
+        this->current_thread = GetCurrentThreadPointer();
     }
 
     void KScheduler::Activate() {
@@ -259,18 +262,21 @@ namespace ams::kern {
 
         MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
 
+        if (next_thread->GetCurrentCore() != this->core_id) {
+            next_thread->SetCurrentCore(this->core_id);
+        }
+
         /* Switch the current process, if we're switching processes. */
         if (KProcess *next_process = next_thread->GetOwnerProcess(); next_process != cur_process) {
-            /* MESOSPHERE_LOG("!!! PROCESS SWITCH !!! %s -> %s\n", cur_process != nullptr ? cur_process->GetName() : nullptr, next_process != nullptr ? next_process->GetName() : nullptr); */
             KProcess::Switch(cur_process, next_process);
         }
 
         /* Set the new thread. */
         SetCurrentThread(next_thread);
+        this->current_thread = next_thread;
 
         /* Set the new Thread Local region. */
         cpu::SwitchThreadLocalRegion(GetInteger(next_thread->GetThreadLocalRegionAddress()));
-        SetCurrentThreadLocalRegion(next_thread->GetThreadLocalRegionHeapAddress());
     }
 
     void KScheduler::ClearPreviousThread(KThread *thread) {

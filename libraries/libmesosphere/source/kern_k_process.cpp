@@ -78,11 +78,6 @@ namespace ams::kern {
     }
 
     void KProcess::Finalize() {
-        /* Ensure we're not executing on any core. */
-        for (size_t i = 0; i < cpu::NumCores; ++i) {
-            MESOSPHERE_ASSERT(Kernel::GetCurrentContext(static_cast<s32>(i)).current_process.load(std::memory_order_relaxed) != this);
-        }
-
         /* Delete the process local region. */
         this->DeleteThreadLocalRegion(this->plr_address);
 

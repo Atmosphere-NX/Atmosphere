@@ -56,9 +56,10 @@ namespace ams::kern {
             KThread *prev_thread;
             s64 last_context_switch_time;
             KThread *idle_thread;
+            std::atomic<KThread *> current_thread;
         public:
             constexpr KScheduler()
-                : state(), is_active(false), core_id(0), prev_thread(nullptr), last_context_switch_time(0), idle_thread(nullptr)
+                : state(), is_active(false), core_id(0), prev_thread(nullptr), last_context_switch_time(0), idle_thread(nullptr), current_thread(nullptr)
             {
                 this->state.needs_scheduling = true;
                 this->state.interrupt_task_thread_runnable = false;
@@ -94,6 +95,10 @@ namespace ams::kern {
 
             ALWAYS_INLINE KThread *GetPreviousThread() const {
                 return this->prev_thread;
+            }
+
+            ALWAYS_INLINE KThread *GetSchedulerCurrentThread() const {
+                return this->current_thread;
             }
 
             ALWAYS_INLINE s64 GetLastContextSwitchTime() const {

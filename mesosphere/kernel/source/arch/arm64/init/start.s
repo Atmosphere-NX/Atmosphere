@@ -227,6 +227,10 @@ _ZN3ams4kern4init16InvokeEntrypointEPKNS1_14KInitArgumentsE:
     /* Ensure that the exception vectors are setup. */
     bl _ZN3ams4kern4init26InitializeExceptionVectorsEv
 
+    /* Setup the exception stack in tpidr_el1. */
+    ldr x1, [x20, #0x58]
+    msr tpidr_el1, x1
+
     /* Jump to the entrypoint. */
     ldr x1, [x20, #0x40]
     ldr x0, [x20, #0x48]
