@@ -91,11 +91,11 @@ namespace ams::kern {
                     /* Allocate memory for the process. */
                     auto &mm = Kernel::GetMemoryManager();
                     const auto pool = reader.UsesSecureMemory() ? secure_pool : unsafe_pool;
-                    MESOSPHERE_R_ABORT_UNLESS(mm.Allocate(std::addressof(pg), params.code_num_pages, KMemoryManager::EncodeOption(pool, KMemoryManager::Direction_FromFront)));
+                    MESOSPHERE_R_ABORT_UNLESS(mm.AllocateAndOpen(std::addressof(pg), params.code_num_pages, KMemoryManager::EncodeOption(pool, KMemoryManager::Direction_FromFront)));
 
                     {
                         /* Ensure that we do not leak pages. */
-                        KScopedPageGroup spg(pg);
+                        ON_SCOPE_EXIT { pg.Close(); };
 
                         /* Map the process's memory into the temporary region. */
                         const auto &temp_region = KMemoryLayout::GetTempRegion();
@@ -170,9 +170,8 @@ namespace ams::kern {
             /* Allocate memory for the image. */
             const KMemoryManager::Pool pool = static_cast<KMemoryManager::Pool>(KSystemControl::GetCreateProcessMemoryPool());
             const auto allocate_option = KMemoryManager::EncodeOption(pool, KMemoryManager::Direction_FromFront);
-            KVirtualAddress allocated_memory = mm.AllocateContinuous(num_pages, 1, allocate_option);
+            KVirtualAddress allocated_memory = mm.AllocateAndOpenContinuous(num_pages, 1, allocate_option);
             MESOSPHERE_ABORT_UNLESS(allocated_memory != Null<KVirtualAddress>);
-            mm.Open(allocated_memory, num_pages);
 
             /* Relocate the image. */
             std::memmove(GetVoidPointer(allocated_memory), GetVoidPointer(GetInitialProcessBinaryAddress()), g_initial_process_binary_header.size);

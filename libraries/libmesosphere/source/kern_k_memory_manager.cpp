@@ -117,7 +117,7 @@ namespace ams::kern {
     }
 
 
-    KVirtualAddress KMemoryManager::AllocateContinuous(size_t num_pages, size_t align_pages, u32 option) {
+    KVirtualAddress KMemoryManager::AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option) {
         /* Early return if we're allocating no pages. */
         if (num_pages == 0) {
             return Null<KVirtualAddress>;
@@ -155,6 +155,9 @@ namespace ams::kern {
         if (this->has_optimized_process[pool]) {
             chosen_manager->TrackUnoptimizedAllocation(allocated_block, num_pages);
         }
+
+        /* Open the first reference to the pages. */
+        chosen_manager->OpenFirst(allocated_block, num_pages);
 
         return allocated_block;
     }
@@ -210,7 +213,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KMemoryManager::Allocate(KPageGroup *out, size_t num_pages, u32 option) {
+    Result KMemoryManager::AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option) {
         MESOSPHERE_ASSERT(out != nullptr);
         MESOSPHERE_ASSERT(out->GetNumPages() == 0);
 
@@ -222,10 +225,30 @@ namespace ams::kern {
         KScopedLightLock lk(this->pool_locks[pool]);
 
         /* Allocate the page group. */
-        return this->AllocatePageGroupImpl(out, num_pages, pool, dir, this->has_optimized_process[pool], true);
+        R_TRY(this->AllocatePageGroupImpl(out, num_pages, pool, dir, this->has_optimized_process[pool], true));
+
+        /* Open the first reference to the pages. */
+        for (const auto &block : *out) {
+            KVirtualAddress cur_address = block.GetAddress();
+            size_t remaining_pages      = block.GetNumPages();
+            while (remaining_pages > 0) {
+                /* Get the manager for the current address. */
+                auto &manager = this->GetManager(cur_address);
+
+                /* Process part or all of the block. */
+                const size_t cur_pages = std::min(remaining_pages, manager.GetPageOffsetToEnd(cur_address));
+                manager.OpenFirst(cur_address, cur_pages);
+
+                /* Advance. */
+                cur_address     += cur_pages * PageSize;
+                remaining_pages -= cur_pages;
+            }
+        }
+
+        return ResultSuccess();
     }
 
-    Result KMemoryManager::AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern) {
+    Result KMemoryManager::AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern) {
         MESOSPHERE_ASSERT(out != nullptr);
         MESOSPHERE_ASSERT(out->GetNumPages() == 0);
 
@@ -247,6 +270,24 @@ namespace ams::kern {
 
             /* Set whether we should optimize. */
             optimized = has_optimized && is_optimized;
+
+            /* Open the first reference to the pages. */
+            for (const auto &block : *out) {
+                KVirtualAddress cur_address = block.GetAddress();
+                size_t remaining_pages      = block.GetNumPages();
+                while (remaining_pages > 0) {
+                    /* Get the manager for the current address. */
+                    auto &manager = this->GetManager(cur_address);
+
+                    /* Process part or all of the block. */
+                    const size_t cur_pages = std::min(remaining_pages, manager.GetPageOffsetToEnd(cur_address));
+                    manager.OpenFirst(cur_address, cur_pages);
+
+                    /* Advance. */
+                    cur_address     += cur_pages * PageSize;
+                    remaining_pages -= cur_pages;
+                }
+            }
         }
 
         /* Perform optimized memory tracking, if we should. */

@@ -483,7 +483,7 @@ namespace ams::kern::board::nintendo::nx {
             MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
 
             constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
+            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
         }
 
@@ -691,11 +691,8 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Allocate the memory. */
         const size_t num_pages = size / PageSize;
-        const KVirtualAddress vaddr = Kernel::GetMemoryManager().AllocateContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
+        const KVirtualAddress vaddr = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
         R_UNLESS(vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
-
-        /* Open a reference to the memory. */
-        Kernel::GetMemoryManager().Open(vaddr, num_pages);
 
         /* Ensure we don't leak references to the memory on error. */
         auto mem_guard = SCOPE_GUARD { Kernel::GetMemoryManager().Close(vaddr, num_pages); };
