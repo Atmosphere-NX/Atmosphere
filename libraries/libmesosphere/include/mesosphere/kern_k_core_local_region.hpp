@@ -27,18 +27,6 @@ namespace ams::kern {
 
     struct KCoreLocalContext {
         KCurrentContext current;
-        /* Everything after this point is for debugging. */
-        /* Retail kernel doesn't even consistently update these fields. */
-        u64 num_sw_interrupts;
-        u64 num_hw_interrupts;
-        std::atomic<u64> num_svc;
-        u64 num_process_switches;
-        u64 num_thread_switches;
-        u64 num_fpu_switches;
-        u64 num_scheduler_updates;
-        u64 num_invoked_scheduler_updates;
-        std::atomic<u64> num_specific_svc[0x80];
-        u32 perf_counters[6];
     };
     static_assert(sizeof(KCoreLocalContext) < PageSize);
 

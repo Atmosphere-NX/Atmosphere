@@ -26,7 +26,7 @@ namespace ams::kern::arch::arm64 {
             constexpr KHardwareTimer() : KInterruptTask(), KHardwareTimerBase(), maximum_time(std::numeric_limits<s64>::max()) { /* ... */ }
         public:
             /* Public API. */
-            NOINLINE void Initialize(s32 core_id);
+            NOINLINE void Initialize();
             NOINLINE void Finalize();
 
             static s64 GetTick() {

@@ -17,7 +17,7 @@
 
 namespace ams::kern::arch::arm64 {
 
-    void KHardwareTimer::Initialize(s32 core_id) {
+    void KHardwareTimer::Initialize() {
         /* Setup the global timer for the core. */
         InitializeGlobalTimer();
 
@@ -25,7 +25,7 @@ namespace ams::kern::arch::arm64 {
         this->maximum_time = static_cast<s64>(std::min<u64>(std::numeric_limits<s64>::max(), cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor().GetCompareValue()));
 
         /* Bind the interrupt task for this core. */
-        Kernel::GetInterruptManager().BindHandler(std::addressof(Kernel::GetHardwareTimer(core_id)), KInterruptName_NonSecurePhysicalTimer, core_id, KInterruptController::PriorityLevel_Timer, true, true);
+        Kernel::GetInterruptManager().BindHandler(this, KInterruptName_NonSecurePhysicalTimer, GetCurrentCoreId(), KInterruptController::PriorityLevel_Timer, true, true);
     }
 
     void KHardwareTimer::Finalize() {
