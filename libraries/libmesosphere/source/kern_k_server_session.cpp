@@ -257,7 +257,7 @@ namespace ams::kern {
                     R_TRY(src_page_table.CopyMemoryFromHeapToHeapWithoutCheckDestination(dst_page_table, recv_pointer, recv_size,
                                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                                          static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                                                                         KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                                                                         KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked,
                                                                                          src_pointer,
                                                                                          KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                                          KMemoryPermission_UserRead,
@@ -291,15 +291,15 @@ namespace ams::kern {
             switch (state) {
                 case KMemoryState_Ipc:
                     out_state     = KMemoryState_FlagCanUseIpc;
-                    out_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                    out_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
                     break;
                 case KMemoryState_NonSecureIpc:
                     out_state     = KMemoryState_FlagCanUseNonSecureIpc;
-                    out_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                    out_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                     break;
                 case KMemoryState_NonDeviceIpc:
                     out_state     = KMemoryState_FlagCanUseNonDeviceIpc;
-                    out_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                    out_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                     break;
                 default:
                     return svc::ResultInvalidCombination();
@@ -654,7 +654,7 @@ namespace ams::kern {
                         R_TRY(src_page_table.CopyMemoryFromHeapToHeap(dst_page_table, dst_message_buffer + max_fast_size, raw_size - fast_size,
                                                                       KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                       static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                                                      KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                                                      KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked,
                                                                       src_message_buffer + max_fast_size,
                                                                       KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                       src_perm,
@@ -911,7 +911,7 @@ namespace ams::kern {
                                                                       src_message_buffer + max_fast_size,
                                                                       KMemoryState_FlagReferenceCounted, KMemoryState_FlagReferenceCounted,
                                                                       static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelRead),
-                                                                      KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
+                                                                      KMemoryAttribute_Uncached | KMemoryAttribute_Locked, KMemoryAttribute_Locked));
                     }
                 } else /* if (dst_user) */ {
                     /* The destination is a user buffer, so it should be unmapped + readable. */

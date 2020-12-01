@@ -723,7 +723,7 @@ namespace ams::kern {
 
             /* Reprotect the source as kernel-read/not mapped. */
             const KMemoryPermission new_src_perm = static_cast<KMemoryPermission>(KMemoryPermission_KernelRead | KMemoryPermission_NotMapped);
-            const KMemoryAttribute  new_src_attr = static_cast<KMemoryAttribute>(KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked);
+            const KMemoryAttribute  new_src_attr = KMemoryAttribute_Locked;
             const KPageProperties src_properties = { new_src_perm, false, false, DisableMergeAttribute_DisableHeadBodyTail };
             R_TRY(this->Operate(updater.GetPageList(), src_address, num_pages, Null<KPhysicalAddress>, false, src_properties, OperationType_ChangePermissions, false));
 
@@ -755,7 +755,7 @@ namespace ams::kern {
         /* Validate that the source address's state is valid. */
         KMemoryState src_state;
         size_t num_src_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_NotMapped | KMemoryPermission_KernelRead, KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
+        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_NotMapped | KMemoryPermission_KernelRead, KMemoryAttribute_All, KMemoryAttribute_Locked));
 
         /* Validate that the dst address's state is valid. */
         KMemoryPermission dst_perm;
@@ -869,7 +869,7 @@ namespace ams::kern {
             unprot_guard.Cancel();
 
             /* Apply the memory block updates. */
-            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,              new_perm, static_cast<KMemoryAttribute>(KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
+            this->memory_block_manager.Update(std::addressof(src_allocator), src_address, num_pages, src_state,              new_perm, KMemoryAttribute_Locked);
             this->memory_block_manager.Update(std::addressof(dst_allocator), dst_address, num_pages, KMemoryState_AliasCode, new_perm, KMemoryAttribute_None);
         }
 
@@ -885,7 +885,7 @@ namespace ams::kern {
 
         /* Verify that the source memory is locked normal heap. */
         size_t num_src_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, static_cast<KMemoryAttribute>(KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked)));
+        R_TRY(this->CheckMemoryState(std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_Locked));
 
         /* Verify that the destination memory is aliasable code. */
         size_t num_dst_allocator_blocks;
@@ -2305,7 +2305,7 @@ namespace ams::kern {
         /* Check the memory state. */
         const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
         size_t num_allocator_blocks;
-        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_AnyLocked | KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, 0, KMemoryAttribute_DeviceShared));
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, KMemoryAttribute_None, KMemoryAttribute_DeviceShared));
 
         /* Make the page group, if we should. */
         if (out != nullptr) {
@@ -2341,7 +2341,7 @@ namespace ams::kern {
                                                address, size,
                                                KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
                                                KMemoryPermission_None, KMemoryPermission_None,
-                                               KMemoryAttribute_AnyLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+                                               KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
@@ -2359,16 +2359,16 @@ namespace ams::kern {
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                       KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked);
     }
 
     Result KPageTableBase::UnlockForIpcUserBuffer(KProcessAddress address, size_t size) {
         return this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanIpcUserBuffer, KMemoryState_FlagCanIpcUserBuffer,
                                   KMemoryPermission_None, KMemoryPermission_None,
-                                  KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                  KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked, nullptr);
+                                  KMemoryAttribute_Locked, nullptr);
     }
 
     Result KPageTableBase::LockForTransferMemory(KPageGroup *out, KProcessAddress address, size_t size, KMemoryPermission perm) {
@@ -2377,16 +2377,16 @@ namespace ams::kern {
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        perm,
-                                       KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked);
     }
 
     Result KPageTableBase::UnlockForTransferMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
         return this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanTransfer, KMemoryState_FlagCanTransfer,
                                   KMemoryPermission_None, KMemoryPermission_None,
-                                  KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                  KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked, std::addressof(pg));
+                                  KMemoryAttribute_Locked, std::addressof(pg));
     }
 
     Result KPageTableBase::LockForCodeMemory(KPageGroup *out, KProcessAddress address, size_t size) {
@@ -2395,16 +2395,16 @@ namespace ams::kern {
                                        KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                        KMemoryAttribute_All, KMemoryAttribute_None,
                                        static_cast<KMemoryPermission>(KMemoryPermission_NotMapped | KMemoryPermission_KernelReadWrite),
-                                       KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked);
+                                       KMemoryAttribute_Locked);
     }
 
     Result KPageTableBase::UnlockForCodeMemory(KProcessAddress address, size_t size, const KPageGroup &pg) {
         return this->UnlockMemory(address, size,
                                   KMemoryState_FlagCanCodeMemory, KMemoryState_FlagCanCodeMemory,
                                   KMemoryPermission_None, KMemoryPermission_None,
-                                  KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked,
+                                  KMemoryAttribute_All, KMemoryAttribute_Locked,
                                   KMemoryPermission_UserReadWrite,
-                                  KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked, std::addressof(pg));
+                                  KMemoryAttribute_Locked, std::addressof(pg));
     }
 
     Result KPageTableBase::CopyMemoryFromLinearToUser(KProcessAddress dst_addr, size_t size, KProcessAddress src_addr, u32 src_state_mask, u32 src_state, KMemoryPermission src_test_perm, u32 src_attr_mask, u32 src_attr) {
@@ -2987,15 +2987,15 @@ namespace ams::kern {
         switch (dst_state) {
             case KMemoryState_Ipc:
                 test_state     = KMemoryState_FlagCanUseIpc;
-                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
                 break;
             case KMemoryState_NonSecureIpc:
                 test_state     = KMemoryState_FlagCanUseNonSecureIpc;
-                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                 break;
             case KMemoryState_NonDeviceIpc:
                 test_state     = KMemoryState_FlagCanUseNonDeviceIpc;
-                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                 break;
             default:
                 return svc::ResultInvalidCombination();
@@ -3389,15 +3389,15 @@ namespace ams::kern {
         switch (dst_state) {
             case KMemoryState_Ipc:
                 test_state     = KMemoryState_FlagCanUseIpc;
-                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked;
                 break;
             case KMemoryState_NonSecureIpc:
                 test_state     = KMemoryState_FlagCanUseNonSecureIpc;
-                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                 break;
             case KMemoryState_NonDeviceIpc:
                 test_state     = KMemoryState_FlagCanUseNonDeviceIpc;
-                test_attr_mask = KMemoryAttribute_AnyLocked | KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
+                test_attr_mask = KMemoryAttribute_Uncached | KMemoryAttribute_Locked;
                 break;
             default:
                 return svc::ResultInvalidCombination();

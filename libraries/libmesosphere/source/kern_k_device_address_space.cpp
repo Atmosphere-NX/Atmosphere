@@ -113,7 +113,7 @@ namespace ams::kern {
         R_TRY(page_table->MakeAndOpenPageGroupContiguous(std::addressof(pg), process_address, size / PageSize,
                                                          KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
                                                          KMemoryPermission_None, KMemoryPermission_None,
-                                                         KMemoryAttribute_AnyLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
+                                                         KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
 
         /* Ensure the page group is closed on scope exit. */
         ON_SCOPE_EXIT { pg.Close(); };

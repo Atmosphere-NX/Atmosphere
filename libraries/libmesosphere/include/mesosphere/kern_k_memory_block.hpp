@@ -165,15 +165,13 @@ namespace ams::kern {
 
     enum KMemoryAttribute : u8 {
         KMemoryAttribute_None           = 0x00,
-        KMemoryAttribute_UserMask       = 0x7F,
         KMemoryAttribute_All            = 0xFF,
+        KMemoryAttribute_UserMask       = KMemoryAttribute_All,
 
         KMemoryAttribute_Locked         = ams::svc::MemoryAttribute_Locked,
         KMemoryAttribute_IpcLocked      = ams::svc::MemoryAttribute_IpcLocked,
         KMemoryAttribute_DeviceShared   = ams::svc::MemoryAttribute_DeviceShared,
         KMemoryAttribute_Uncached       = ams::svc::MemoryAttribute_Uncached,
-
-        KMemoryAttribute_AnyLocked      = 0x80,
 
         KMemoryAttribute_SetMask        = KMemoryAttribute_Uncached,
     };
