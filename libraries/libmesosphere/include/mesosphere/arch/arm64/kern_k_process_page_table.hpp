@@ -128,10 +128,6 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.MakeAndOpenPageGroup(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
             }
 
-            Result MakeAndOpenPageGroupContiguous(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
-                return this->page_table.MakeAndOpenPageGroupContiguous(out, address, num_pages, state_mask, state, perm_mask, perm, attr_mask, attr);
-            }
-
             Result InvalidateProcessDataCache(KProcessAddress address, size_t size) {
                 return this->page_table.InvalidateProcessDataCache(address, size);
             }

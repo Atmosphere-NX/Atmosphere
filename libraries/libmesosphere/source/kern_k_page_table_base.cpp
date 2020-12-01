@@ -2039,29 +2039,6 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::MakeAndOpenPageGroupContiguous(KPageGroup *out, KProcessAddress address, size_t num_pages, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) {
-        /* Ensure that the page group isn't null. */
-        MESOSPHERE_ASSERT(out != nullptr);
-
-        /* Make sure that the region we're mapping is valid for the table. */
-        const size_t size = num_pages * PageSize;
-        R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
-
-        /* Lock the table. */
-        KScopedLightLock lk(this->general_lock);
-
-        /* Check if state allows us to create the group. */
-        R_TRY(this->CheckMemoryStateContiguous(address, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
-
-        /* Create a new page group for the region. */
-        R_TRY(this->MakePageGroup(*out, address, num_pages));
-
-        /* Open a new reference to the pages in the group. */
-        out->Open();
-
-        return ResultSuccess();
-    }
-
     Result KPageTableBase::InvalidateProcessDataCache(KProcessAddress address, size_t size) {
         /* Check that the region is in range. */
         R_UNLESS(this->Contains(address, size), svc::ResultInvalidCurrentMemory());
