@@ -96,7 +96,10 @@ namespace ams::ldr {
             size_t num_entries = 0;
 
             const auto hos_version = hos::GetVersion();
-            if (hos_version >= hos::Version_10_1_0) {
+            if (hos_version >= hos::Version_11_0_0) {
+                entries = g_MinimumProgramVersions1100;
+                num_entries = g_MinimumProgramVersionsCount1100;
+            } else if (hos_version >= hos::Version_10_1_0) {
                 entries = g_MinimumProgramVersions1010;
                 num_entries = g_MinimumProgramVersionsCount1010;
             } else if (hos_version >= hos::Version_10_0_0) {

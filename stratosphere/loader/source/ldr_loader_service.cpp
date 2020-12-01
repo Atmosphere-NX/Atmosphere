@@ -84,8 +84,12 @@ namespace ams::ldr {
         return ldr::ro::UnpinProgram(id);
     }
 
-    Result LoaderService::SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size) {
+    Result LoaderService::SetProgramArgumentsDeprecated(ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size) {
         return args::Set(program_id, args.GetPointer(), std::min(args.GetSize(), size_t(args_size)));
+    }
+
+    Result LoaderService::SetProgramArguments(ncm::ProgramId program_id, const sf::InPointerBuffer &args) {
+        return args::Set(program_id, args.GetPointer(), args.GetSize());
     }
 
     Result LoaderService::FlushArguments() {
