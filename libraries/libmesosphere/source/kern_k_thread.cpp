@@ -38,13 +38,17 @@ namespace ams::kern {
 
     }
 
-    Result KThread::Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type) {
+    Result KThread::Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type) {
         /* Assert parameters are valid. */
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(kern_stack_top != nullptr);
         MESOSPHERE_ASSERT((type == ThreadType_Main) || (ams::svc::HighestThreadPriority <= prio && prio <= ams::svc::LowestThreadPriority));
         MESOSPHERE_ASSERT((owner != nullptr) || (type != ThreadType_User));
-        MESOSPHERE_ASSERT(0 <= core && core < static_cast<s32>(cpu::NumCores));
+        MESOSPHERE_ASSERT(0 <= virt_core && virt_core < static_cast<s32>(BITSIZEOF(u64)));
+
+        /* Convert the virtual core to a physical core. */
+        const s32 phys_core = cpu::VirtualToPhysicalCoreMap[virt_core];
+        MESOSPHERE_ASSERT(0 <= phys_core && phys_core < static_cast<s32>(cpu::NumCores));
 
         /* First, clear the TLS address. */
         this->tls_address = Null<KProcessAddress>;
@@ -60,7 +64,7 @@ namespace ams::kern {
                 [[fallthrough]];
             case ThreadType_HighPriority:
                 {
-                    MESOSPHERE_ASSERT(core == GetCurrentCoreId());
+                    MESOSPHERE_ASSERT(phys_core == GetCurrentCoreId());
                 }
                 [[fallthrough]];
             case ThreadType_Kernel:
@@ -71,8 +75,8 @@ namespace ams::kern {
                 [[fallthrough]];
             case ThreadType_User:
                 {
-                    MESOSPHERE_ASSERT(((owner == nullptr) || (owner->GetCoreMask()     | (1ul << core)) == owner->GetCoreMask()));
-                    MESOSPHERE_ASSERT(((owner == nullptr) || (owner->GetPriorityMask() | (1ul << prio)) == owner->GetPriorityMask()));
+                    MESOSPHERE_ASSERT(((owner == nullptr) || (owner->GetCoreMask()     | (1ul << virt_core)) == owner->GetCoreMask()));
+                    MESOSPHERE_ASSERT(((owner == nullptr) || (owner->GetPriorityMask() | (1ul << prio))      == owner->GetPriorityMask()));
                 }
                 break;
             default:
@@ -81,8 +85,10 @@ namespace ams::kern {
         }
 
         /* Set the ideal core ID and affinity mask. */
-        this->ideal_core_id                 = core;
-        this->affinity_mask.SetAffinity(core, true);
+        this->virtual_ideal_core_id  = virt_core;
+        this->physical_ideal_core_id = phys_core;
+        this->virtual_affinity_mask = (static_cast<u64>(1) << virt_core);
+        this->physical_affinity_mask.SetAffinity(phys_core, true);
 
         /* Set the thread state. */
         this->thread_state                  = (type == ThreadType_Main) ? ThreadState_Runnable : ThreadState_Initialized;
@@ -103,7 +109,7 @@ namespace ams::kern {
         this->cancellable                   = false;
 
         /* Set core ID and wait result. */
-        this->core_id                       = this->ideal_core_id;
+        this->core_id                       = phys_core;
         this->wait_result                   = svc::ResultNoSynchronizationObject();
 
         /* Set the stack top. */
@@ -141,7 +147,7 @@ namespace ams::kern {
         this->num_kernel_waiters            = 0;
 
         /* Set our current core id. */
-        this->current_core_id               = core;
+        this->current_core_id               = phys_core;
 
         /* We haven't released our resource limit hint, and we've spent no time on the cpu. */
         this->resource_limit_release_hint   = 0;
@@ -390,20 +396,19 @@ namespace ams::kern {
             ++this->num_core_migration_disables;
 
             /* Save our ideal state to restore when we're unpinned. */
-            this->original_ideal_core_id = this->ideal_core_id;
-            this->original_affinity_mask = this->affinity_mask;
+            this->original_physical_ideal_core_id = this->physical_ideal_core_id;
+            this->original_physical_affinity_mask = this->physical_affinity_mask;
 
             /* Bind ourselves to this core. */
             const s32 active_core  = this->GetActiveCore();
             const s32 current_core = GetCurrentCoreId();
 
             this->SetActiveCore(current_core);
-            this->ideal_core_id = current_core;
+            this->physical_ideal_core_id = current_core;
+            this->physical_affinity_mask.SetAffinityMask(1ul << current_core);
 
-            this->affinity_mask.SetAffinityMask(1ul << current_core);
-
-            if (active_core != current_core || this->affinity_mask.GetAffinityMask() != this->original_affinity_mask.GetAffinityMask()) {
-                KScheduler::OnThreadAffinityMaskChanged(this, this->original_affinity_mask, active_core);
+            if (active_core != current_core || this->physical_affinity_mask.GetAffinityMask() != this->original_physical_affinity_mask.GetAffinityMask()) {
+                KScheduler::OnThreadAffinityMaskChanged(this, this->original_physical_affinity_mask, active_core);
             }
         }
 
@@ -438,19 +443,19 @@ namespace ams::kern {
             --this->num_core_migration_disables;
 
             /* Restore our original state. */
-            const KAffinityMask old_mask = this->affinity_mask;
+            const KAffinityMask old_mask = this->physical_affinity_mask;
 
-            this->ideal_core_id = this->original_ideal_core_id;
-            this->affinity_mask = this->original_affinity_mask;
+            this->physical_ideal_core_id = this->original_physical_ideal_core_id;
+            this->physical_affinity_mask = this->original_physical_affinity_mask;
 
-            if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+            if (this->physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                 const s32 active_core = this->GetActiveCore();
 
-                if (!this->affinity_mask.GetAffinity(active_core)) {
-                    if (this->ideal_core_id >= 0) {
-                        this->SetActiveCore(this->ideal_core_id);
+                if (!this->physical_affinity_mask.GetAffinity(active_core)) {
+                    if (this->physical_ideal_core_id >= 0) {
+                        this->SetActiveCore(this->physical_ideal_core_id);
                     } else {
-                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->affinity_mask.GetAffinityMask()));
+                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->physical_affinity_mask.GetAffinityMask()));
                     }
                 }
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
@@ -492,16 +497,16 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
         if ((this->num_core_migration_disables++) == 0) {
             /* Save our ideal state to restore when we can migrate again. */
-            this->original_ideal_core_id = this->ideal_core_id;
-            this->original_affinity_mask = this->affinity_mask;
+            this->original_physical_ideal_core_id = this->physical_ideal_core_id;
+            this->original_physical_affinity_mask = this->physical_affinity_mask;
 
             /* Bind ourselves to this core. */
             const s32 active_core = this->GetActiveCore();
-            this->ideal_core_id = active_core;
-            this->affinity_mask.SetAffinityMask(1ul << active_core);
+            this->physical_ideal_core_id = active_core;
+            this->physical_affinity_mask.SetAffinityMask(1ul << active_core);
 
-            if (this->affinity_mask.GetAffinityMask() != this->original_affinity_mask.GetAffinityMask()) {
-                KScheduler::OnThreadAffinityMaskChanged(this, this->original_affinity_mask, active_core);
+            if (this->physical_affinity_mask.GetAffinityMask() != this->original_physical_affinity_mask.GetAffinityMask()) {
+                KScheduler::OnThreadAffinityMaskChanged(this, this->original_physical_affinity_mask, active_core);
             }
         }
     }
@@ -513,20 +518,20 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
         MESOSPHERE_ASSERT(this->num_core_migration_disables > 0);
         if ((--this->num_core_migration_disables) == 0) {
-            const KAffinityMask old_mask = this->affinity_mask;
+            const KAffinityMask old_mask = this->physical_affinity_mask;
 
             /* Restore our ideals. */
-            this->ideal_core_id = this->original_ideal_core_id;
-            this->affinity_mask = this->original_affinity_mask;
+            this->physical_ideal_core_id = this->original_physical_ideal_core_id;
+            this->physical_affinity_mask = this->original_physical_affinity_mask;
 
-            if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+            if (this->physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                 const s32 active_core = this->GetActiveCore();
 
-                if (!this->affinity_mask.GetAffinity(active_core)) {
-                    if (this->ideal_core_id >= 0) {
-                        this->SetActiveCore(this->ideal_core_id);
+                if (!this->physical_affinity_mask.GetAffinity(active_core)) {
+                    if (this->physical_ideal_core_id >= 0) {
+                        this->SetActiveCore(this->physical_ideal_core_id);
                     } else {
-                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->affinity_mask.GetAffinityMask()));
+                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->physical_affinity_mask.GetAffinityMask()));
                     }
                 }
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
@@ -538,67 +543,89 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
         {
             KScopedSchedulerLock sl;
+
+            /* Get the virtual mask. */
+            *out_ideal_core    = this->virtual_ideal_core_id;
+            *out_affinity_mask = this->virtual_affinity_mask;
+        }
+
+        return ResultSuccess();
+    }
+
+    Result KThread::GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask) {
+        MESOSPHERE_ASSERT_THIS();
+        {
+            KScopedSchedulerLock sl;
             MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
 
             /* Select between core mask and original core mask. */
             if (this->num_core_migration_disables == 0) {
-                *out_ideal_core    = this->ideal_core_id;
-                *out_affinity_mask = this->affinity_mask.GetAffinityMask();
+                *out_ideal_core    = this->physical_ideal_core_id;
+                *out_affinity_mask = this->physical_affinity_mask.GetAffinityMask();
             } else {
-                *out_ideal_core    = this->original_ideal_core_id;
-                *out_affinity_mask = this->original_affinity_mask.GetAffinityMask();
+                *out_ideal_core    = this->original_physical_ideal_core_id;
+                *out_affinity_mask = this->original_physical_affinity_mask.GetAffinityMask();
             }
         }
 
         return ResultSuccess();
     }
 
-    Result KThread::SetCoreMask(int32_t ideal_core, u64 affinity_mask) {
+    Result KThread::SetCoreMask(int32_t core_id, u64 v_affinity_mask) {
         MESOSPHERE_ASSERT_THIS();
         MESOSPHERE_ASSERT(this->parent != nullptr);
-        MESOSPHERE_ASSERT(affinity_mask != 0);
+        MESOSPHERE_ASSERT(v_affinity_mask != 0);
         KScopedLightLock lk(this->activity_pause_lock);
 
         /* Set the core mask. */
+        u64 p_affinity_mask = 0;
         {
             KScopedSchedulerLock sl;
             MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
 
             /* If the core id is no-update magic, preserve the ideal core id. */
-            if (ideal_core == ams::svc::IdealCoreNoUpdate) {
-                if (this->num_core_migration_disables == 0) {
-                    ideal_core = this->ideal_core_id;
-                } else {
-                    ideal_core = this->original_ideal_core_id;
-                }
+            if (core_id == ams::svc::IdealCoreNoUpdate) {
+                core_id = this->virtual_ideal_core_id;
+                R_UNLESS(((1ul << core_id) & v_affinity_mask) != 0, svc::ResultInvalidCombination());
+            }
 
-                R_UNLESS(((1ul << ideal_core) & affinity_mask) != 0, svc::ResultInvalidCombination());
+            /* Set the virtual core/affinity mask. */
+            this->virtual_ideal_core_id = core_id;
+            this->virtual_affinity_mask = v_affinity_mask;
+
+            /* Translate the virtual core to a physical core. */
+            if (core_id >= 0) {
+                core_id = cpu::VirtualToPhysicalCoreMap[core_id];
+            }
+
+            /* Translate the virtual affinity mask to a physical one. */
+            while (v_affinity_mask != 0) {
+                const u64 next = __builtin_ctzll(v_affinity_mask);
+                v_affinity_mask &= ~(1ul << next);
+                p_affinity_mask |=  (1ul << cpu::VirtualToPhysicalCoreMap[next]);
             }
 
             /* If we haven't disabled migration, perform an affinity change. */
             if (this->num_core_migration_disables == 0) {
-                const KAffinityMask old_mask = this->affinity_mask;
+                const KAffinityMask old_mask = this->physical_affinity_mask;
 
                 /* Set our new ideals. */
-                this->ideal_core_id = ideal_core;
-                this->affinity_mask.SetAffinityMask(affinity_mask);
+                this->physical_ideal_core_id = core_id;
+                this->physical_affinity_mask.SetAffinityMask(p_affinity_mask);
 
-                if (this->affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+                if (this->physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                     const s32 active_core = this->GetActiveCore();
 
-                    if (active_core >= 0) {
-                        if (!this->affinity_mask.GetAffinity(active_core)) {
-                            this->SetActiveCore(this->ideal_core_id);
-                        } else {
-                            this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->affinity_mask.GetAffinityMask()));
-                        }
+                    if (active_core >= 0 && !this->physical_affinity_mask.GetAffinity(active_core)) {
+                        const s32 new_core = this->physical_ideal_core_id >= 0 ? this->physical_ideal_core_id : BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->physical_affinity_mask.GetAffinityMask());
+                        this->SetActiveCore(new_core);
                     }
                     KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
                 }
             } else {
                 /* Otherwise, we edit the original affinity for restoration later. */
-                this->original_ideal_core_id = ideal_core;
-                this->original_affinity_mask.SetAffinityMask(affinity_mask);
+                this->original_physical_ideal_core_id = core_id;
+                this->original_physical_affinity_mask.SetAffinityMask(p_affinity_mask);
             }
         }
 
@@ -627,7 +654,7 @@ namespace ams::kern {
                 }
 
                 /* If the thread is currently running, check whether it's no longer allowed under the new mask. */
-                if (thread_is_current && ((1ul << thread_core) & affinity_mask) == 0) {
+                if (thread_is_current && ((1ul << thread_core) & p_affinity_mask) == 0) {
                     /* If the thread is pinned, we want to wait until it's not pinned. */
                     if (this->GetStackParameters().is_pinned) {
                         /* Verify that the current thread isn't terminating. */
@@ -1127,7 +1154,7 @@ namespace ams::kern {
 
             /* If the thread is runnable, send a termination interrupt to other cores. */
             if (this->GetState() == ThreadState_Runnable) {
-                if (const u64 core_mask = this->affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
+                if (const u64 core_mask = this->physical_affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
                     cpu::DataSynchronizationBarrier();
                     Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_ThreadTerminate, core_mask);
                 }

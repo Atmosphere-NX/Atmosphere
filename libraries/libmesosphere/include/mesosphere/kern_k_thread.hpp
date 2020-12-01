@@ -152,7 +152,8 @@ namespace ams::kern {
 
             ConditionVariableThreadTree    *condvar_tree{};
             uintptr_t                       condvar_key{};
-            KAffinityMask                   affinity_mask{};
+            u64                             virtual_affinity_mask{};
+            KAffinityMask                   physical_affinity_mask{};
             u64                             thread_id{};
             std::atomic<s64>                cpu_time{};
             KSynchronizationObject         *synced_object{};
@@ -181,12 +182,13 @@ namespace ams::kern {
             Result                          wait_result;
             Result                          debug_exception_result;
             s32                             base_priority{};
-            s32                             ideal_core_id{};
+            s32                             physical_ideal_core_id{};
+            s32                             virtual_ideal_core_id{};
             s32                             num_kernel_waiters{};
             s32                             current_core_id{};
             s32                             core_id{};
-            KAffinityMask                   original_affinity_mask{};
-            s32                             original_ideal_core_id{};
+            KAffinityMask                   original_physical_affinity_mask{};
+            s32                             original_physical_ideal_core_id{};
             s32                             num_core_migration_disables{};
             ThreadState                     thread_state{};
             std::atomic<bool>               termination_requested{};
@@ -202,21 +204,21 @@ namespace ams::kern {
 
             virtual ~KThread() { /* ... */ }
 
-            Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type);
+            Result Initialize(KThreadFunction func, uintptr_t arg, void *kern_stack_top, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type);
 
         private:
-            static Result InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type);
+            static Result InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner, ThreadType type);
         public:
-            static Result InitializeKernelThread(KThread *thread, KThreadFunction func, uintptr_t arg, s32 prio, s32 core) {
-                return InitializeThread(thread, func, arg, Null<KProcessAddress>, prio, core, nullptr, ThreadType_Kernel);
+            static Result InitializeKernelThread(KThread *thread, KThreadFunction func, uintptr_t arg, s32 prio, s32 virt_core) {
+                return InitializeThread(thread, func, arg, Null<KProcessAddress>, prio, virt_core, nullptr, ThreadType_Kernel);
             }
 
             static Result InitializeHighPriorityThread(KThread *thread, KThreadFunction func, uintptr_t arg) {
                 return InitializeThread(thread, func, arg, Null<KProcessAddress>, 0, GetCurrentCoreId(), nullptr, ThreadType_HighPriority);
             }
 
-            static Result InitializeUserThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner) {
-                return InitializeThread(thread, func, arg, user_stack_top, prio, core, owner, ThreadType_User);
+            static Result InitializeUserThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 virt_core, KProcess *owner) {
+                return InitializeThread(thread, func, arg, user_stack_top, prio, virt_core, owner, ThreadType_User);
             }
 
             static void ResumeThreadsSuspendedForInit();
@@ -323,9 +325,13 @@ namespace ams::kern {
             constexpr KThreadContext &GetContext() { return this->thread_context; }
             constexpr const KThreadContext &GetContext() const { return this->thread_context; }
 
-            constexpr const KAffinityMask &GetAffinityMask() const { return this->affinity_mask; }
+            constexpr const u64 GetVirtualAffinityMask() const { return this->virtual_affinity_mask; }
+            constexpr const KAffinityMask &GetAffinityMask() const { return this->physical_affinity_mask; }
+
             Result GetCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
             Result SetCoreMask(int32_t ideal_core, u64 affinity_mask);
+
+            Result GetPhysicalCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
 
             constexpr ThreadState GetState() const { return static_cast<ThreadState>(this->thread_state & ThreadState_Mask); }
             constexpr ThreadState GetRawState() const { return this->thread_state; }
@@ -374,7 +380,9 @@ namespace ams::kern {
                 return this->condvar_tree != nullptr;
             }
 
-            constexpr s32 GetIdealCore() const { return this->ideal_core_id; }
+            constexpr s32 GetIdealVirtualCore() const { return this->virtual_ideal_core_id; }
+            constexpr s32 GetIdealPhysicalCore() const { return this->physical_ideal_core_id; }
+
             constexpr s32 GetActiveCore() const { return this->core_id; }
             constexpr void SetActiveCore(s32 core) { this->core_id = core; }
 
