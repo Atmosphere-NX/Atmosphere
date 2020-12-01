@@ -49,8 +49,8 @@ namespace ams::kern {
         /* Initialize current context. */
         clc->current.current_thread = nullptr;
         clc->current.current_process = nullptr;
-        clc->current.scheduler = std::addressof(clc->scheduler);
-        clc->current.interrupt_task_manager = std::addressof(clc->interrupt_task_manager);
+        clc->current.scheduler = std::addressof(Kernel::GetScheduler());
+        clc->current.interrupt_task_manager = std::addressof(Kernel::GetInterruptTaskManager());
         clc->current.core_id = core_id;
         clc->current.exception_stack_top = GetVoidPointer(KMemoryLayout::GetExceptionStackTopAddress(core_id) - sizeof(KThread::StackParameters));
 
