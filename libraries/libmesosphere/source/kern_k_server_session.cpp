@@ -1359,7 +1359,7 @@ namespace ams::kern {
         }
 
         /* Notify. */
-        this->NotifyAbort(svc::ResultSessionClosed());
+        this->NotifyAvailable(svc::ResultSessionClosed());
     }
 
 }

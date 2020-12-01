@@ -17,18 +17,6 @@
 
 namespace ams::kern {
 
-    void KSynchronizationObject::NotifyAvailable() {
-        MESOSPHERE_ASSERT_THIS();
-
-        Kernel::GetSynchronization().OnAvailable(this);
-    }
-
-    void KSynchronizationObject::NotifyAbort(Result abort_reason) {
-        MESOSPHERE_ASSERT_THIS();
-
-        Kernel::GetSynchronization().OnAbort(this, abort_reason);
-    }
-
     void KSynchronizationObject::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
@@ -37,9 +25,8 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto end = this->end();
-            for (auto it = this->begin(); it != end; ++it) {
-                KThread *thread = std::addressof(*it);
+            for (auto *cur_node = this->thread_list_root; cur_node != nullptr; cur_node = cur_node->next) {
+                KThread *thread = cur_node->thread;
                 MESOSPHERE_LOG("KSynchronizationObject::Finalize(%p) with %p (id=%ld) waiting.\n", this, thread, thread->GetId());
             }
         }
@@ -47,6 +34,118 @@ namespace ams::kern {
 
         this->OnFinalizeSynchronizationObject();
         KAutoObject::Finalize();
+    }
+
+    Result KSynchronizationObject::Wait(s32 *out_index, KSynchronizationObject **objects, const s32 num_objects, s64 timeout) {
+        /* Allocate space on stack for thread nodes. */
+        ThreadListNode *thread_nodes = static_cast<ThreadListNode *>(__builtin_alloca(sizeof(ThreadListNode) * num_objects));
+
+        /* Prepare for wait. */
+        KThread *thread = GetCurrentThreadPointer();
+        KHardwareTimer *timer;
+
+        {
+            /* Setup the scheduling lock and sleep. */
+            KScopedSchedulerLockAndSleep slp(std::addressof(timer), thread, timeout);
+
+            /* Check if any of the objects are already signaled. */
+            for (auto i = 0; i < num_objects; ++i) {
+                AMS_ASSERT(objects[i] != nullptr);
+
+                if (objects[i]->IsSignaled()) {
+                    *out_index = i;
+                    slp.CancelSleep();
+                    return ResultSuccess();
+                }
+            }
+
+            /* Check if the timeout is zero. */
+            if (timeout == 0) {
+                slp.CancelSleep();
+                return svc::ResultTimedOut();
+            }
+
+            /* Check if the thread should terminate. */
+            if (thread->IsTerminationRequested()) {
+                slp.CancelSleep();
+                return svc::ResultTerminationRequested();
+            }
+
+            /* Check if waiting was canceled. */
+            if (thread->IsWaitCancelled()) {
+                slp.CancelSleep();
+                thread->ClearWaitCancelled();
+                return svc::ResultCancelled();
+            }
+
+            /* Add the waiters. */
+            for (auto i = 0; i < num_objects; ++i) {
+                thread_nodes[i].thread      = thread;
+                thread_nodes[i].next        = objects[i]->thread_list_root;
+                objects[i]->thread_list_root = std::addressof(thread_nodes[i]);
+            }
+
+            /* Mark the thread as waiting. */
+            thread->SetCancellable();
+            thread->SetSyncedObject(nullptr, svc::ResultTimedOut());
+            thread->SetState(KThread::ThreadState_Waiting);
+        }
+
+        /* The lock/sleep is done, so we should be able to get our result. */
+
+        /* Thread is no longer cancellable. */
+        thread->ClearCancellable();
+
+        /* Cancel the timer as needed. */
+        if (timer != nullptr) {
+            timer->CancelTask(thread);
+        }
+
+        /* Get the wait result. */
+        Result wait_result;
+        s32 sync_index = -1;
+        {
+            KScopedSchedulerLock lk;
+            KSynchronizationObject *synced_obj;
+            wait_result = thread->GetWaitResult(std::addressof(synced_obj));
+
+            for (auto i = 0; i < num_objects; ++i) {
+                /* Unlink the object from the list. */
+                ThreadListNode **link = std::addressof(objects[i]->thread_list_root);
+                while (*link != std::addressof(thread_nodes[i])) {
+                    link = std::addressof((*link)->next);
+                }
+                *link = thread_nodes[i].next;
+
+                if (objects[i] == synced_obj) {
+                    sync_index = i;
+                }
+            }
+        }
+
+        /* Set output. */
+        *out_index = sync_index;
+        return wait_result;
+    }
+
+    void KSynchronizationObject::NotifyAvailable(Result result) {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedSchedulerLock sl;
+
+        /* If we're not signaled, we've nothing to notify. */
+        if (!this->IsSignaled()) {
+            return;
+        }
+
+        /* Iterate over each thread. */
+        for (auto *cur_node = this->thread_list_root; cur_node != nullptr; cur_node = cur_node->next) {
+            KThread *thread = cur_node->thread;
+            if (thread->GetState() == KThread::ThreadState_Waiting) {
+                thread->SetSyncedObject(this, result);
+                thread->SetState(KThread::ThreadState_Runnable);
+            }
+        }
     }
 
     void KSynchronizationObject::DebugWaiters() {
@@ -60,9 +159,8 @@ namespace ams::kern {
             MESOSPHERE_RELEASE_LOG("Threads waiting on %p:\n", this);
 
             bool has_waiters = false;
-            auto end = this->end();
-            for (auto it = this->begin(); it != end; ++it) {
-                KThread *thread = std::addressof(*it);
+            for (auto *cur_node = this->thread_list_root; cur_node != nullptr; cur_node = cur_node->next) {
+                KThread *thread = cur_node->thread;
 
                 if (KProcess *process = thread->GetOwnerProcess(); process != nullptr) {
                     MESOSPHERE_RELEASE_LOG("    %p tid=%ld pid=%ld (%s)\n", thread, thread->GetId(), process->GetId(), process->GetName());
@@ -79,30 +177,6 @@ namespace ams::kern {
             }
         }
         #endif
-    }
-
-    KSynchronizationObject::iterator KSynchronizationObject::RegisterWaitingThread(KThread *thread) {
-        MESOSPHERE_ASSERT_THIS();
-
-        return this->thread_list.insert(this->thread_list.end(), *thread);
-    }
-
-    KSynchronizationObject::iterator KSynchronizationObject::UnregisterWaitingThread(KSynchronizationObject::iterator it) {
-        MESOSPHERE_ASSERT_THIS();
-
-        return this->thread_list.erase(it);
-    }
-
-    KSynchronizationObject::iterator KSynchronizationObject::begin() {
-        MESOSPHERE_ASSERT_THIS();
-
-        return this->thread_list.begin();
-    }
-
-    KSynchronizationObject::iterator KSynchronizationObject::end() {
-        MESOSPHERE_ASSERT_THIS();
-
-        return this->thread_list.end();
     }
 
 }

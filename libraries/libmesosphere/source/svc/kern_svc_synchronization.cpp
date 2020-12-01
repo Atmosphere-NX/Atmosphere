@@ -63,7 +63,7 @@ namespace ams::kern::svc {
                 timeout = timeout_ns;
             }
 
-            return Kernel::GetSynchronization().Wait(out_index, objs, num_handles, timeout);
+            return KSynchronizationObject::Wait(out_index, objs, num_handles, timeout);
         }
 
         Result WaitSynchronization(int32_t *out_index, KUserPointer<const ams::svc::Handle *> user_handles, int32_t num_handles, int64_t timeout_ns) {

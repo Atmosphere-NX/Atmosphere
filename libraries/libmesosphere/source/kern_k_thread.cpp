@@ -1089,7 +1089,7 @@ namespace ams::kern {
             /* If the thread isn't terminated, wait for it to terminate. */
             s32 index;
             KSynchronizationObject *objects[] = { this };
-            Kernel::GetSynchronization().Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
+            KSynchronizationObject::Wait(std::addressof(index), objects, 1, ams::svc::WaitInfinite);
         }
     }
 
