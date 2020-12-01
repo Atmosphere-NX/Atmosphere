@@ -353,7 +353,7 @@ namespace ams::kern {
             }
 
             constexpr KMemoryBlock(KProcessAddress addr, size_t np, KMemoryState ms, KMemoryPermission p, KMemoryAttribute attr)
-                : device_disable_merge_left_count(), device_disable_merge_right_count(), address(addr), num_pages(np), memory_state(ms), ipc_lock_count(0), device_use_count(0), perm(p), ipc_disable_merge_count(), original_perm(KMemoryPermission_None), attribute(attr), disable_merge_attribute()
+                : device_disable_merge_left_count(), device_disable_merge_right_count(), address(addr), num_pages(np), memory_state(ms), ipc_lock_count(0), device_use_count(0), ipc_disable_merge_count(), perm(p), original_perm(KMemoryPermission_None), attribute(attr), disable_merge_attribute()
             {
                 /* ... */
             }
@@ -460,7 +460,7 @@ namespace ams::kern {
                 if (left) {
                     this->disable_merge_attribute = static_cast<KMemoryBlockDisableMergeAttribute>(this->disable_merge_attribute | KMemoryBlockDisableMergeAttribute_DeviceLeft);
                     const u16 new_device_disable_merge_left_count = ++this->device_disable_merge_left_count;
-                    MESOSPHERE_ABORT_UNLESS(device_disable_merge_left_count > 0);
+                    MESOSPHERE_ABORT_UNLESS(new_device_disable_merge_left_count > 0);
                 }
             }
 
