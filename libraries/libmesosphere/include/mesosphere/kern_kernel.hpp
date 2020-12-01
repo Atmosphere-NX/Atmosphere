@@ -74,6 +74,7 @@ namespace ams::kern {
             static KUnsafeMemory s_unsafe_memory;
             static KWorkerTaskManager s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
             static KInterruptManager s_interrupt_manager;
+            static KHardwareTimer s_hardware_timers[cpu::NumCores];
         private:
             static ALWAYS_INLINE KCoreLocalContext &GetCoreLocalContext() {
                 return reinterpret_cast<KCoreLocalRegion *>(cpu::GetCoreLocalRegionAddress())->current.context;
@@ -114,7 +115,11 @@ namespace ams::kern {
             }
 
             static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer() {
-                return GetCoreLocalContext(GetCurrentCoreId()).hardware_timer;
+                return s_hardware_timers[GetCurrentCoreId()];
+            }
+
+            static ALWAYS_INLINE KHardwareTimer &GetHardwareTimer(s32 core_id) {
+                return s_hardware_timers[core_id];
             }
 
             static ALWAYS_INLINE KResourceLimit &GetSystemResourceLimit() {
