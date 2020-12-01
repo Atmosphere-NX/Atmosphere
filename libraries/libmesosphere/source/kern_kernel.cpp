@@ -49,22 +49,10 @@ namespace ams::kern {
         /* Initialize current context. */
         clc->current.current_thread = nullptr;
         clc->current.current_process = nullptr;
+        clc->current.core_id = core_id;
         clc->current.scheduler = std::addressof(Kernel::GetScheduler());
         clc->current.interrupt_task_manager = std::addressof(Kernel::GetInterruptTaskManager());
-        clc->current.core_id = core_id;
         clc->current.exception_stack_top = GetVoidPointer(KMemoryLayout::GetExceptionStackTopAddress(core_id) - sizeof(KThread::StackParameters));
-
-        /* Clear debugging counters. */
-        clc->num_sw_interrupts = 0;
-        clc->num_hw_interrupts = 0;
-        clc->num_svc = 0;
-        clc->num_process_switches = 0;
-        clc->num_thread_switches = 0;
-        clc->num_fpu_switches = 0;
-
-        for (size_t i = 0; i < util::size(clc->perf_counters); i++) {
-            clc->perf_counters[i] = 0;
-        }
     }
 
     void Kernel::InitializeMainAndIdleThreads(s32 core_id) {
@@ -84,7 +72,7 @@ namespace ams::kern {
 
         /* Initialize the interrupt manager, hardware timer, and scheduler */
         GetInterruptManager().Initialize(core_id);
-        GetHardwareTimer().Initialize(core_id);
+        GetHardwareTimer().Initialize();
         GetScheduler().Initialize(idle_thread);
     }
 
