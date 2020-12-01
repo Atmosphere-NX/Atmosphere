@@ -570,11 +570,16 @@ namespace ams::kern::board::nintendo::nx {
             f_ctx->afsr0 = 0;
             f_ctx->afsr1 = GetVersionIdentifier();
 
+            /* Set efsr/far. */
+            f_ctx->far = cpu::GetFarEl1();
+            f_ctx->esr = cpu::GetEsrEl1();
+
             /* Copy registers. */
             for (size_t i = 0; i < util::size(e_ctx->x); ++i) {
                 f_ctx->gprs[i] = e_ctx->x[i];
             }
             f_ctx->sp = e_ctx->sp;
+            f_ctx->pc = cpu::GetElrEl1();
 
             /* Dump stack trace. */
             {
