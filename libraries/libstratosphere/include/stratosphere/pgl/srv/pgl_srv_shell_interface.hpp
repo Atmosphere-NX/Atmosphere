@@ -47,6 +47,7 @@ namespace ams::pgl::srv {
             Result TriggerApplicationSnapShotDumper(SnapShotDumpType dump_type, const ams::sf::InBuffer &arg);
 
             Result GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out);
+            Result Command21NotImplemented(ams::sf::Out<u64> out, u32 in, const ams::sf::InBuffer &buf1, const ams::sf::InBuffer &buf2);
     };
     static_assert(pgl::sf::IsIShellInterface<ShellInterface>);
 

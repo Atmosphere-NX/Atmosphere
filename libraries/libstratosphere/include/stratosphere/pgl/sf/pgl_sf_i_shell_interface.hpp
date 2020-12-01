@@ -35,7 +35,8 @@ namespace ams::pgl::sf {
         AMS_SF_METHOD_INFO(C, H,  9, Result, IsApplicationCrashReportEnabled,       (ams::sf::Out<bool> out))                                                                       \
         AMS_SF_METHOD_INFO(C, H, 10, Result, EnableApplicationAllThreadDumpOnCrash, (bool enabled))                                                                                 \
         AMS_SF_METHOD_INFO(C, H, 12, Result, TriggerApplicationSnapShotDumper,      (SnapShotDumpType dump_type, const ams::sf::InBuffer &arg))                                     \
-        AMS_SF_METHOD_INFO(C, H, 20, Result, GetShellEventObserver,                 (ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out))
+        AMS_SF_METHOD_INFO(C, H, 20, Result, GetShellEventObserver,                 (ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out))                                   \
+        AMS_SF_METHOD_INFO(C, H, 21, Result, Command21NotImplemented,               (ams::sf::Out<u64> out, u32 in, const ams::sf::InBuffer &buf1, const ams::sf::InBuffer &buf2))
 
     AMS_SF_DEFINE_INTERFACE(IShellInterface, AMS_PGL_I_SHELL_INTERFACE_INTERFACE_INFO);
 

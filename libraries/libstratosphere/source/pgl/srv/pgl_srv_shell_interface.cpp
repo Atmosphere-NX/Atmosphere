@@ -89,4 +89,8 @@ namespace ams::pgl::srv {
         return ResultSuccess();
     }
 
+    Result ShellInterface::Command21NotImplemented(ams::sf::Out<u64> out, u32 in, const ams::sf::InBuffer &buf1, const ams::sf::InBuffer &buf2) {
+        return pgl::ResultNotImplemented();
+    }
+
 }
