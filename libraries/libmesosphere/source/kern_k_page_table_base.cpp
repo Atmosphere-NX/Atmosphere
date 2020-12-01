@@ -402,13 +402,16 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::CheckMemoryStateContiguous(KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
+    Result KPageTableBase::CheckMemoryStateContiguous(size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr) const {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Get information about the first block. */
         const KProcessAddress last_addr = addr + size - 1;
         KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(addr);
         KMemoryInfo info = it->GetMemoryInfo();
+
+        /* If the start address isn't aligned, we need a block. */
+        const size_t blocks_for_start_align = (util::AlignDown(GetInteger(addr), PageSize) != info.GetAddress()) ? 1 : 0;
 
         while (true) {
             /* Validate against the provided masks. */
@@ -425,16 +428,26 @@ namespace ams::kern {
             info = it->GetMemoryInfo();
         }
 
+        /* If the end address isn't aligned, we need a block. */
+        const size_t blocks_for_end_align = (util::AlignUp(GetInteger(addr) + size, PageSize) != info.GetEndAddress()) ? 1 : 0;
+
+        if (out_blocks_needed != nullptr) {
+            *out_blocks_needed = blocks_for_start_align + blocks_for_end_align;
+        }
+
         return ResultSuccess();
     }
 
-    Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
+    Result KPageTableBase::CheckMemoryState(KMemoryState *out_state, KMemoryPermission *out_perm, KMemoryAttribute *out_attr, size_t *out_blocks_needed, KProcessAddress addr, size_t size, u32 state_mask, u32 state, u32 perm_mask, u32 perm, u32 attr_mask, u32 attr, u32 ignore_attr) const {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
         /* Get information about the first block. */
         const KProcessAddress last_addr = addr + size - 1;
         KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(addr);
         KMemoryInfo info = it->GetMemoryInfo();
+
+        /* If the start address isn't aligned, we need a block. */
+        const size_t blocks_for_start_align = (util::AlignDown(GetInteger(addr), PageSize) != info.GetAddress()) ? 1 : 0;
 
         /* Validate all blocks in the range have correct state. */
         const KMemoryState      first_state = info.state;
@@ -460,15 +473,21 @@ namespace ams::kern {
             info = it->GetMemoryInfo();
         }
 
+        /* If the end address isn't aligned, we need a block. */
+        const size_t blocks_for_end_align = (util::AlignUp(GetInteger(addr) + size, PageSize) != info.GetEndAddress()) ? 1 : 0;
+
         /* Write output state. */
-        if (out_state) {
+        if (out_state != nullptr) {
             *out_state = first_state;
         }
-        if (out_perm) {
+        if (out_perm != nullptr) {
             *out_perm = first_perm;
         }
-        if (out_attr) {
+        if (out_attr != nullptr) {
             *out_attr = static_cast<KMemoryAttribute>(first_attr & ~ignore_attr);
+        }
+        if (out_blocks_needed != nullptr) {
+            *out_blocks_needed = blocks_for_start_align + blocks_for_end_align;
         }
         return ResultSuccess();
     }
@@ -494,7 +513,8 @@ namespace ams::kern {
         KMemoryState old_state;
         KMemoryPermission old_perm;
         KMemoryAttribute old_attr;
-        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), addr, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), std::addressof(num_allocator_blocks), addr, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
 
         /* Get the physical address, if we're supposed to. */
         if (out_paddr != nullptr) {
@@ -508,7 +528,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* Decide on new perm and attr. */
         new_perm = (new_perm != KMemoryPermission_None) ? new_perm : old_perm;
@@ -550,7 +570,8 @@ namespace ams::kern {
         KMemoryState old_state;
         KMemoryPermission old_perm;
         KMemoryAttribute old_attr;
-        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), addr, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), std::addressof(num_allocator_blocks), addr, size, state_mask | KMemoryState_FlagReferenceCounted, state | KMemoryState_FlagReferenceCounted, perm_mask, perm, attr_mask, attr));
 
         /* Check the page group. */
         if (pg != nullptr) {
@@ -562,8 +583,10 @@ namespace ams::kern {
         KMemoryAttribute new_attr = static_cast<KMemoryAttribute>(old_attr & ~lock_attr);
 
         /* Create an update allocator. */
+        /* NOTE: Nintendo does not initialize the allocator with any blocks. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(0));
+        MESOSPHERE_UNUSED(num_allocator_blocks);
 
         /* Update permission, if we need to. */
         if (new_perm != old_perm) {
@@ -669,18 +692,20 @@ namespace ams::kern {
 
         /* Validate that the source address's state is valid. */
         KMemoryState src_state;
-        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_src_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Validate that the dst address's state is valid. */
-        R_TRY(this->CheckMemoryState(dst_address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+        size_t num_dst_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_dst_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Create an update allocator for the source. */
         KMemoryBlockManagerUpdateAllocator src_allocator(this->memory_block_slab_manager);
-        R_TRY(src_allocator.GetResult());
+        R_TRY(src_allocator.Initialize(num_src_allocator_blocks));
 
         /* Create an update allocator for the destination. */
         KMemoryBlockManagerUpdateAllocator dst_allocator(this->memory_block_slab_manager);
-        R_TRY(dst_allocator.GetResult());
+        R_TRY(dst_allocator.Initialize(num_dst_allocator_blocks));
 
         /* Map the memory. */
         {
@@ -729,19 +754,21 @@ namespace ams::kern {
 
         /* Validate that the source address's state is valid. */
         KMemoryState src_state;
-        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_NotMapped | KMemoryPermission_KernelRead, KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
+        size_t num_src_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(src_state), nullptr, nullptr, std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_FlagCanAlias, KMemoryState_FlagCanAlias, KMemoryPermission_All, KMemoryPermission_NotMapped | KMemoryPermission_KernelRead, KMemoryAttribute_All, KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked));
 
         /* Validate that the dst address's state is valid. */
         KMemoryPermission dst_perm;
-        R_TRY(this->CheckMemoryState(nullptr, std::addressof(dst_perm), nullptr, dst_address, size, KMemoryState_All, KMemoryState_Stack, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_dst_allocator_blocks;
+        R_TRY(this->CheckMemoryState(nullptr, std::addressof(dst_perm), nullptr, std::addressof(num_dst_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_Stack, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Create an update allocator for the source. */
         KMemoryBlockManagerUpdateAllocator src_allocator(this->memory_block_slab_manager);
-        R_TRY(src_allocator.GetResult());
+        R_TRY(src_allocator.Initialize(num_src_allocator_blocks));
 
         /* Create an update allocator for the destination. */
         KMemoryBlockManagerUpdateAllocator dst_allocator(this->memory_block_slab_manager);
-        R_TRY(dst_allocator.GetResult());
+        R_TRY(dst_allocator.Initialize(num_dst_allocator_blocks));
 
         /* Unmap the memory. */
         {
@@ -794,18 +821,20 @@ namespace ams::kern {
         /* Verify that the source memory is normal heap. */
         KMemoryState src_state;
         KMemoryPermission src_perm;
-        R_TRY(this->CheckMemoryState(std::addressof(src_state), std::addressof(src_perm), nullptr, src_address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_src_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(src_state), std::addressof(src_perm), nullptr, std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Verify that the destination memory is unmapped. */
-        R_TRY(this->CheckMemoryState(dst_address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+        size_t num_dst_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_dst_allocator_blocks), dst_address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Create an update allocator for the source. */
         KMemoryBlockManagerUpdateAllocator src_allocator(this->memory_block_slab_manager);
-        R_TRY(src_allocator.GetResult());
+        R_TRY(src_allocator.Initialize(num_src_allocator_blocks));
 
         /* Create an update allocator for the destination. */
         KMemoryBlockManagerUpdateAllocator dst_allocator(this->memory_block_slab_manager);
-        R_TRY(dst_allocator.GetResult());
+        R_TRY(dst_allocator.Initialize(num_dst_allocator_blocks));
 
         /* Map the code memory. */
         {
@@ -855,10 +884,12 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Verify that the source memory is locked normal heap. */
-        R_TRY(this->CheckMemoryState(src_address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, static_cast<KMemoryAttribute>(KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked)));
+        size_t num_src_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_src_allocator_blocks), src_address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, static_cast<KMemoryAttribute>(KMemoryAttribute_AnyLocked | KMemoryAttribute_Locked)));
 
         /* Verify that the destination memory is aliasable code. */
-        R_TRY(this->CheckMemoryStateContiguous(dst_address, size, KMemoryState_FlagCanCodeAlias, KMemoryState_FlagCanCodeAlias, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_dst_allocator_blocks;
+        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_dst_allocator_blocks), dst_address, size, KMemoryState_FlagCanCodeAlias, KMemoryState_FlagCanCodeAlias, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Determine whether any pages being unmapped are code. */
         bool any_code_pages = false;
@@ -908,11 +939,11 @@ namespace ams::kern {
 
             /* Create an update allocator for the source. */
             KMemoryBlockManagerUpdateAllocator src_allocator(this->memory_block_slab_manager);
-            R_TRY(src_allocator.GetResult());
+            R_TRY(src_allocator.Initialize(num_src_allocator_blocks));
 
             /* Create an update allocator for the destination. */
             KMemoryBlockManagerUpdateAllocator dst_allocator(this->memory_block_slab_manager);
-            R_TRY(dst_allocator.GetResult());
+            R_TRY(dst_allocator.Initialize(num_dst_allocator_blocks));
 
             /* We're going to perform an update, so create a helper. */
             KScopedPageTableUpdater updater(this);
@@ -1261,7 +1292,8 @@ namespace ams::kern {
         /* Verify we can change the memory permission. */
         KMemoryState old_state;
         KMemoryPermission old_perm;
-        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), nullptr, addr, size, KMemoryState_FlagCanReprotect, KMemoryState_FlagCanReprotect, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), nullptr, std::addressof(num_allocator_blocks), addr, size, KMemoryState_FlagCanReprotect, KMemoryState_FlagCanReprotect, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Determine new perm. */
         const KMemoryPermission new_perm = ConvertToKMemoryPermission(svc_perm);
@@ -1269,7 +1301,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1293,7 +1325,8 @@ namespace ams::kern {
         /* Verify we can change the memory permission. */
         KMemoryState old_state;
         KMemoryPermission old_perm;
-        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), nullptr, addr, size, KMemoryState_FlagCode, KMemoryState_FlagCode, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), nullptr, std::addressof(num_allocator_blocks), addr, size, KMemoryState_FlagCode, KMemoryState_FlagCode, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Make a new page group for the region. */
         KPageGroup pg(this->block_info_manager);
@@ -1324,7 +1357,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1359,8 +1392,9 @@ namespace ams::kern {
         KMemoryState old_state;
         KMemoryPermission old_perm;
         KMemoryAttribute old_attr;
+        size_t num_allocator_blocks;
         constexpr u32 AttributeTestMask = ~(KMemoryAttribute_SetMask | KMemoryAttribute_DeviceShared);
-        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr),
+        R_TRY(this->CheckMemoryState(std::addressof(old_state), std::addressof(old_perm), std::addressof(old_attr), std::addressof(num_allocator_blocks),
                                      addr, size,
                                      KMemoryState_FlagCanChangeAttribute, KMemoryState_FlagCanChangeAttribute,
                                      KMemoryPermission_None, KMemoryPermission_None,
@@ -1368,7 +1402,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1405,18 +1439,20 @@ namespace ams::kern {
             if (size < static_cast<size_t>(this->current_heap_end - this->heap_region_start)) {
                 /* The size being requested is less than the current size, so we need to free the end of the heap. */
 
-                /* Create an update allocator. */
-                KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-                R_TRY(allocator.GetResult());
-
-                /* We're going to perform an update, so create a helper. */
-                KScopedPageTableUpdater updater(this);
-
                 /* Validate memory state. */
-                R_TRY(this->CheckMemoryState(this->heap_region_start + size, (this->current_heap_end - this->heap_region_start) - size,
+                size_t num_allocator_blocks;
+                R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks),
+                                             this->heap_region_start + size, (this->current_heap_end - this->heap_region_start) - size,
                                              KMemoryState_All, KMemoryState_Normal,
                                              KMemoryPermission_All, KMemoryPermission_UserReadWrite,
                                              KMemoryAttribute_All,  KMemoryAttribute_None));
+
+                /* Create an update allocator. */
+                KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+                R_TRY(allocator.Initialize(num_allocator_blocks));
+
+                /* We're going to perform an update, so create a helper. */
+                KScopedPageTableUpdater updater(this);
 
                 /* Unmap the end of the heap. */
                 const size_t num_pages = ((this->current_heap_end - this->heap_region_start) - size) / PageSize;
@@ -1469,18 +1505,19 @@ namespace ams::kern {
             /* Lock the table. */
             KScopedLightLock lk(this->general_lock);
 
-            /* Create an update allocator. */
-            KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-            R_TRY(allocator.GetResult());
-
-            /* We're going to perform an update, so create a helper. */
-            KScopedPageTableUpdater updater(this);
-
             /* Ensure that the heap hasn't changed since we began executing. */
             MESOSPHERE_ABORT_UNLESS(cur_address == this->current_heap_end);
 
             /* Check the memory state. */
-            R_TRY(this->CheckMemoryState(this->current_heap_end, allocation_size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+            size_t num_allocator_blocks;
+            R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), this->current_heap_end, allocation_size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+
+            /* Create an update allocator. */
+            KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+            R_TRY(allocator.Initialize(num_allocator_blocks));
+
+            /* We're going to perform an update, so create a helper. */
+            KScopedPageTableUpdater updater(this);
 
             /* Map the pages. */
             const size_t num_pages = allocation_size / PageSize;
@@ -1677,7 +1714,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(KMemoryBlockManagerUpdateAllocator::MaxBlocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1744,7 +1781,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(KMemoryBlockManagerUpdateAllocator::MaxBlocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1792,7 +1829,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(KMemoryBlockManagerUpdateAllocator::MaxBlocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1822,11 +1859,12 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Check the memory state. */
-        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1849,11 +1887,12 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Check the memory state. */
-        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1887,7 +1926,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(KMemoryBlockManagerUpdateAllocator::MaxBlocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1916,11 +1955,12 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Check if state allows us to map. */
-        R_TRY(this->CheckMemoryState(addr, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), addr, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -1948,14 +1988,15 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Check if state allows us to unmap. */
-        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, state, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Check that the page group is valid. */
         R_UNLESS(this->IsValidPageGroup(pg, address, num_pages), svc::ResultInvalidCurrentMemory());
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -2263,7 +2304,8 @@ namespace ams::kern {
 
         /* Check the memory state. */
         const u32 test_state = (is_aligned ? KMemoryState_FlagCanAlignedDeviceMap : KMemoryState_FlagCanDeviceMap);
-        R_TRY(this->CheckMemoryState(address, size, test_state, test_state, perm, perm, KMemoryAttribute_AnyLocked | KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, 0, KMemoryAttribute_DeviceShared));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, test_state, test_state, perm, perm, KMemoryAttribute_AnyLocked | KMemoryAttribute_IpcLocked | KMemoryAttribute_Locked, 0, KMemoryAttribute_DeviceShared));
 
         /* Make the page group, if we should. */
         if (out != nullptr) {
@@ -2272,7 +2314,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* Update the memory blocks. */
         this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::ShareToDevice, KMemoryPermission_None);
@@ -2294,14 +2336,16 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Check the memory state. */
-        R_TRY(this->CheckMemoryStateContiguous(address, size,
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryStateContiguous(std::addressof(num_allocator_blocks),
+                                               address, size,
                                                KMemoryState_FlagCanDeviceMap, KMemoryState_FlagCanDeviceMap,
                                                KMemoryPermission_None, KMemoryPermission_None,
                                                KMemoryAttribute_AnyLocked | KMemoryAttribute_DeviceShared | KMemoryAttribute_Locked, KMemoryAttribute_DeviceShared));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* Update the memory blocks. */
         this->memory_block_manager.UpdateLock(std::addressof(allocator), address, num_pages, &KMemoryBlock::UnshareToDevice, KMemoryPermission_None);
@@ -2917,7 +2961,7 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
-    Result KPageTableBase::SetupForIpcClient(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state) {
+    Result KPageTableBase::SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state) {
         /* Validate pre-conditions. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
         MESOSPHERE_ASSERT(test_perm == KMemoryPermission_UserReadWrite || test_perm == KMemoryPermission_UserRead);
@@ -2965,6 +3009,8 @@ namespace ams::kern {
             }
         };
 
+        size_t blocks_needed = 0;
+
         /* Iterate, mapping as needed. */
         KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(aligned_src_start);
         while (true) {
@@ -2975,8 +3021,15 @@ namespace ams::kern {
 
             if (mapping_src_start < mapping_src_end && GetInteger(mapping_src_start) < info.GetEndAddress() && info.GetAddress() < GetInteger(mapping_src_end)) {
                 const auto cur_start  = info.GetAddress() >= GetInteger(mapping_src_start) ? info.GetAddress() : GetInteger(mapping_src_start);
-                const auto cur_end    = mapping_src_last <= info.GetLastAddress() ? GetInteger(mapping_src_end) : info.GetEndAddress();
+                const auto cur_end    = mapping_src_last >= info.GetLastAddress() ? info.GetEndAddress() : GetInteger(mapping_src_end);
                 const size_t cur_size = cur_end - cur_start;
+
+                if (info.GetAddress() < GetInteger(mapping_src_start)) {
+                    ++blocks_needed;
+                }
+                if (mapping_src_last < info.GetLastAddress()) {
+                    ++blocks_needed;
+                }
 
                 /* Set the permissions on the block, if we need to. */
                 if ((info.GetPermission() & KMemoryPermission_IpcLockChangeMask) != src_perm) {
@@ -3002,6 +3055,11 @@ namespace ams::kern {
 
         /* We succeeded, so no need to cleanup. */
         cleanup_guard.Cancel();
+
+        if (out_blocks_needed != nullptr) {
+            MESOSPHERE_ASSERT(blocks_needed <= KMemoryBlockManagerUpdateAllocator::MaxBlocks);
+            *out_blocks_needed = blocks_needed;
+        }
 
         return ResultSuccess();
     }
@@ -3043,7 +3101,7 @@ namespace ams::kern {
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(KMemoryBlockManagerUpdateAllocator::MaxBlocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -3231,15 +3289,16 @@ namespace ams::kern {
             lk1.emplace(lock_1);
         }
 
-        /* Create an update allocator. */
-        KMemoryBlockManagerUpdateAllocator allocator(src_page_table.memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
-
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(std::addressof(src_page_table));
 
         /* Perform client setup. */
-        R_TRY(src_page_table.SetupForIpcClient(updater.GetPageList(), src_addr, size, test_perm, dst_state));
+        size_t num_allocator_blocks;
+        R_TRY(src_page_table.SetupForIpcClient(updater.GetPageList(), std::addressof(num_allocator_blocks), src_addr, size, test_perm, dst_state));
+
+        /* Create an update allocator. */
+        KMemoryBlockManagerUpdateAllocator allocator(src_page_table.memory_block_slab_manager);
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* Get the mapped extents. */
         const KProcessAddress src_map_start = util::AlignUp(GetInteger(src_addr), PageSize);
@@ -3277,11 +3336,12 @@ namespace ams::kern {
         KScopedLightLock lk(this->general_lock);
 
         /* Validate the memory state. */
-        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, dst_state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, dst_state, KMemoryPermission_UserRead, KMemoryPermission_UserRead, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -3346,10 +3406,6 @@ namespace ams::kern {
         /* Lock the table. */
         /* NOTE: Nintendo does this *after* creating the updater below, but this does not follow convention elsewhere in KPageTableBase. */
         KScopedLightLock lk(this->general_lock);
-
-        /* Create an update allocator. */
-        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -3485,6 +3541,11 @@ namespace ams::kern {
             }
         }
 
+        /* Create an update allocator. */
+        /* NOTE: Guaranteed zero blocks needed here. */
+        KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
+        R_TRY(allocator.Initialize(0));
+
         /* Unlock the pages. */
         this->memory_block_manager.UpdateLock(std::addressof(allocator), mapping_start, mapping_size / PageSize, &KMemoryBlock::UnlockForIpc, KMemoryPermission_None);
 
@@ -3566,7 +3627,6 @@ namespace ams::kern {
                 /* Lock the table. */
                 KScopedLightLock lk(this->general_lock);
 
-
                 /* Iterate over the memory. */
                 cur_address = address;
                 mapped_size = 0;
@@ -3620,6 +3680,8 @@ namespace ams::kern {
                     /* Lock the table. */
                     KScopedLightLock lk(this->general_lock);
 
+                    size_t num_allocator_blocks = 0;
+
                     /* Verify that nobody has mapped memory since we first checked. */
                     {
                         /* Iterate over the memory. */
@@ -3634,16 +3696,26 @@ namespace ams::kern {
                             /* Get the memory info. */
                             const KMemoryInfo info = it->GetMemoryInfo();
 
+                            const bool is_free = info.GetState() == KMemoryState_Free;
+                            if (is_free) {
+                                if (info.GetAddress() < GetInteger(address)) {
+                                    ++num_allocator_blocks;
+                                }
+                                if (last_address < info.GetLastAddress()) {
+                                    ++num_allocator_blocks;
+                                }
+                            }
+
                             /* Check if we're done. */
                             if (last_address <= info.GetLastAddress()) {
-                                if (info.GetState() != KMemoryState_Free) {
+                                if (!is_free) {
                                     checked_mapped_size += (last_address + 1 - cur_address);
                                 }
                                 break;
                             }
 
                             /* Track the memory if it's mapped. */
-                            if (info.GetState() != KMemoryState_Free) {
+                            if (!is_free) {
                                 checked_mapped_size += KProcessAddress(info.GetEndAddress()) - cur_address;
                             }
 
@@ -3660,8 +3732,9 @@ namespace ams::kern {
                     }
 
                     /* Create an update allocator. */
+                    MESOSPHERE_ASSERT(num_allocator_blocks <= KMemoryBlockManagerUpdateAllocator::MaxBlocks);
                     KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-                    R_TRY(allocator.GetResult());
+                    R_TRY(allocator.Initialize(num_allocator_blocks));
 
                     /* We're going to perform an update, so create a helper. */
                     KScopedPageTableUpdater updater(this);
@@ -3793,6 +3866,7 @@ namespace ams::kern {
         /* Define iteration variables. */
         KProcessAddress cur_address;
         size_t mapped_size;
+        size_t num_allocator_blocks = 0;
 
         /* Check if the memory is mapped. */
         {
@@ -3812,6 +3886,17 @@ namespace ams::kern {
                 const bool is_normal = info.GetState() == KMemoryState_Normal && info.GetAttribute() == 0;
                 const bool is_free   = info.GetState() == KMemoryState_Free;
                 R_UNLESS(is_normal || is_free, svc::ResultInvalidCurrentMemory());
+
+                if (is_normal) {
+                    R_UNLESS(info.GetAttribute() == KMemoryAttribute_None, svc::ResultInvalidCurrentMemory());
+
+                    if (info.GetAddress() < GetInteger(address)) {
+                        ++num_allocator_blocks;
+                    }
+                    if (last_address < info.GetLastAddress()) {
+                        ++num_allocator_blocks;
+                    }
+                }
 
                 /* Check if we're done. */
                 if (last_address <= info.GetLastAddress()) {
@@ -3884,8 +3969,9 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(pg.GetNumPages() == mapped_size / PageSize);
 
         /* Create an update allocator. */
+        MESOSPHERE_ASSERT(num_allocator_blocks <= KMemoryBlockManagerUpdateAllocator::MaxBlocks);
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);
@@ -4024,11 +4110,12 @@ namespace ams::kern {
             KScopedLightLock lk(this->general_lock);
 
             /* Check the memory state. */
-            R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
+            size_t num_allocator_blocks;
+            R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, KMemoryState_Free, KMemoryPermission_None, KMemoryPermission_None, KMemoryAttribute_None, KMemoryAttribute_None));
 
             /* Create an update allocator. */
             KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-            R_TRY(allocator.GetResult());
+            R_TRY(allocator.Initialize(num_allocator_blocks));
 
             /* We're going to perform an update, so create a helper. */
             KScopedPageTableUpdater updater(this);
@@ -4057,11 +4144,12 @@ namespace ams::kern {
         R_UNLESS(size <= this->mapped_unsafe_physical_memory, svc::ResultInvalidCurrentMemory());
 
         /* Check the memory state. */
-        R_TRY(this->CheckMemoryState(address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
+        size_t num_allocator_blocks;
+        R_TRY(this->CheckMemoryState(std::addressof(num_allocator_blocks), address, size, KMemoryState_All, KMemoryState_Normal, KMemoryPermission_All, KMemoryPermission_UserReadWrite, KMemoryAttribute_All, KMemoryAttribute_None));
 
         /* Create an update allocator. */
         KMemoryBlockManagerUpdateAllocator allocator(this->memory_block_slab_manager);
-        R_TRY(allocator.GetResult());
+        R_TRY(allocator.Initialize(num_allocator_blocks));
 
         /* We're going to perform an update, so create a helper. */
         KScopedPageTableUpdater updater(this);

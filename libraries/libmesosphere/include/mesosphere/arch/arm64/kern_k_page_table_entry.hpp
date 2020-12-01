@@ -152,26 +152,26 @@ namespace ams::kern::arch::arm64 {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE u8 GetSoftwareReservedBits()        const { return this->GetBits(55, 3); }
-            constexpr ALWAYS_INLINE bool IsHeadMergeDisabled()          const { return (this->GetSoftwareReservedBits() & SoftwareReservedBit_DisableMergeHead) != 0; }
-            constexpr ALWAYS_INLINE bool IsHeadAndBodyMergeDisabled()   const { return (this->GetSoftwareReservedBits() & PageTableEntry::SoftwareReservedBit_DisableMergeHeadAndBody) != 0; }
-            constexpr ALWAYS_INLINE bool IsTailMergeDisabled()          const { return (this->GetSoftwareReservedBits() & PageTableEntry::SoftwareReservedBit_DisableMergeHeadTail) != 0; }
-            constexpr ALWAYS_INLINE bool IsUserExecuteNever()           const { return this->GetBits(54, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsPrivilegedExecuteNever()     const { return this->GetBits(53, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsContiguous()                 const { return this->GetBits(52, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsGlobal()                     const { return this->GetBits(11, 1) == 0; }
-            constexpr ALWAYS_INLINE AccessFlag GetAccessFlag()          const { return static_cast<AccessFlag>(this->GetBits(10, 1)); }
-            constexpr ALWAYS_INLINE Shareable GetShareable()            const { return static_cast<Shareable>(this->GetBits(8, 2)); }
-            constexpr ALWAYS_INLINE PageAttribute GetPageAttribute()    const { return static_cast<PageAttribute>(this->GetBits(2, 3)); }
-            constexpr ALWAYS_INLINE bool IsReadOnly()                   const { return this->GetBits(7, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsUserAccessible()             const { return this->GetBits(6, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsNonSecure()                  const { return this->GetBits(5, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsBlock()                      const { return (this->attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_Valid; }
-            constexpr ALWAYS_INLINE bool IsTable()                      const { return (this->attributes & ExtensionFlag_TestTableMask) == 2; }
-            constexpr ALWAYS_INLINE bool IsEmpty()                      const { return (this->attributes & ExtensionFlag_TestTableMask) == 0; }
-            constexpr ALWAYS_INLINE bool IsMapped()                     const { return this->GetBits(0, 1) != 0; }
+            constexpr ALWAYS_INLINE u8 GetSoftwareReservedBits()            const { return this->GetBits(55, 3); }
+            constexpr ALWAYS_INLINE bool IsHeadMergeDisabled()              const { return (this->GetSoftwareReservedBits() & SoftwareReservedBit_DisableMergeHead) != 0; }
+            constexpr ALWAYS_INLINE bool IsHeadAndBodyMergeDisabled()       const { return (this->GetSoftwareReservedBits() & SoftwareReservedBit_DisableMergeHeadAndBody) != 0; }
+            constexpr ALWAYS_INLINE bool IsTailMergeDisabled()              const { return (this->GetSoftwareReservedBits() & SoftwareReservedBit_DisableMergeHeadTail) != 0; }
+            constexpr ALWAYS_INLINE bool IsHeadOrHeadAndBodyMergeDisabled() const { return (this->GetSoftwareReservedBits() & (SoftwareReservedBit_DisableMergeHead | SoftwareReservedBit_DisableMergeHeadAndBody)) != 0; }
+            constexpr ALWAYS_INLINE bool IsUserExecuteNever()               const { return this->GetBits(54, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsPrivilegedExecuteNever()         const { return this->GetBits(53, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsContiguous()                     const { return this->GetBits(52, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsGlobal()                         const { return this->GetBits(11, 1) == 0; }
+            constexpr ALWAYS_INLINE AccessFlag GetAccessFlag()              const { return static_cast<AccessFlag>(this->GetBits(10, 1)); }
+            constexpr ALWAYS_INLINE Shareable GetShareable()                const { return static_cast<Shareable>(this->GetBits(8, 2)); }
+            constexpr ALWAYS_INLINE PageAttribute GetPageAttribute()        const { return static_cast<PageAttribute>(this->GetBits(2, 3)); }
+            constexpr ALWAYS_INLINE bool IsReadOnly()                       const { return this->GetBits(7, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsUserAccessible()                 const { return this->GetBits(6, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsNonSecure()                      const { return this->GetBits(5, 1) != 0; }
+            constexpr ALWAYS_INLINE bool IsBlock()                          const { return (this->attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_Valid; }
+            constexpr ALWAYS_INLINE bool IsTable()                          const { return (this->attributes & ExtensionFlag_TestTableMask) == 2; }
+            constexpr ALWAYS_INLINE bool IsEmpty()                          const { return (this->attributes & ExtensionFlag_TestTableMask) == 0; }
+            constexpr ALWAYS_INLINE bool IsMapped()                         const { return this->GetBits(0, 1) != 0; }
 
-            //constexpr ALWAYS_INLINE decltype(auto) SetContiguousAllowed(bool en)      { this->SetBit(55, !en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetUserExecuteNever(bool en)       { this->SetBit(54, en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetPrivilegedExecuteNever(bool en) { this->SetBit(53, en); return *this; }
             constexpr ALWAYS_INLINE decltype(auto) SetContiguous(bool en)             { this->SetBit(52, en); return *this; }

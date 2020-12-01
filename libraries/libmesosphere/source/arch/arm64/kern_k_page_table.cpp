@@ -918,7 +918,7 @@ namespace ams::kern::arch::arm64 {
                     if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L3BlockSize * i) | PageTableEntry::Type_L3Block)) {
                         return merged;
                     }
-                    if (i > 0 && (check_entry->IsHeadMergeDisabled() || check_entry->IsHeadAndBodyMergeDisabled())) {
+                    if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
                         return merged;
                     }
                     if ((i < (L3ContiguousBlockSize / L3BlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
@@ -953,7 +953,7 @@ namespace ams::kern::arch::arm64 {
                 if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L3ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L3Block)) {
                     return merged;
                 }
-                if (i > 0 && (check_entry->IsHeadMergeDisabled() || check_entry->IsHeadAndBodyMergeDisabled())) {
+                if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
                     return merged;
                 }
                 if ((i < (L2BlockSize / L3ContiguousBlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
@@ -1000,7 +1000,7 @@ namespace ams::kern::arch::arm64 {
                 if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L2BlockSize * i) | PageTableEntry::Type_L2Block)) {
                     return merged;
                 }
-                if (i > 0 && (check_entry->IsHeadMergeDisabled() || check_entry->IsHeadAndBodyMergeDisabled())) {
+                if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
                     return merged;
                 }
                 if ((i < (L2ContiguousBlockSize / L2BlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
@@ -1035,7 +1035,7 @@ namespace ams::kern::arch::arm64 {
             if (!check_entry->IsForMerge(entry_template | GetInteger(phys_addr + L2ContiguousBlockSize * i) | PageTableEntry::ContigType_Contiguous | PageTableEntry::Type_L2Block)) {
                 return merged;
             }
-            if (i > 0 && (check_entry->IsHeadMergeDisabled() || check_entry->IsHeadAndBodyMergeDisabled())) {
+            if (i > 0 && (check_entry->IsHeadOrHeadAndBodyMergeDisabled())) {
                 return merged;
             }
             if ((i < (L1ContiguousBlockSize / L2ContiguousBlockSize) - 1) && check_entry->IsTailMergeDisabled()) {
