@@ -21,7 +21,7 @@ namespace ams::erpt::srv {
     class ContextImpl final {
         public:
             Result SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer);
-            Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer);
+            Result CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer);
             Result SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point);
             Result ClearInitialLaunchSettingsCompletionTime();
             Result UpdatePowerOnTime();
@@ -30,7 +30,9 @@ namespace ams::erpt::srv {
             Result UpdateApplicationLaunchTime();
             Result ClearApplicationLaunchTime();
             Result SubmitAttachment(ams::sf::Out<AttachmentId> out, const ams::sf::InBuffer &attachment_name, const ams::sf::InBuffer &attachment_data);
-            Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
+            Result CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer);
+            Result CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, u32 context);
+            Result CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, u32 context);
     };
     static_assert(erpt::sf::IsIContext<ContextImpl>);
 
