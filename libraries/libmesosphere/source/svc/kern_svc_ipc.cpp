@@ -72,7 +72,7 @@ namespace ams::kern::svc {
                 /* Wait for a message. */
                 while (true) {
                     s32 index;
-                    Result result = Kernel::GetSynchronization().Wait(std::addressof(index), objs, num_objects, timeout);
+                    Result result = KSynchronizationObject::Wait(std::addressof(index), objs, num_objects, timeout);
                     if (svc::ResultTimedOut::Includes(result)) {
                         return result;
                     }
