@@ -96,12 +96,23 @@ namespace ams::kern {
                     constexpr Impl *GetNext() const { return this->next; }
                     constexpr Impl *GetPrev() const { return this->prev; }
 
+                    void OpenFirst(KVirtualAddress address, size_t num_pages) {
+                        size_t index = this->GetPageOffset(address);
+                        const size_t end = index + num_pages;
+                        while (index < end) {
+                            const RefCount ref_count = (++this->page_reference_counts[index]);
+                            MESOSPHERE_ABORT_UNLESS(ref_count == 1);
+
+                            index++;
+                        }
+                    }
+
                     void Open(KVirtualAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
                             const RefCount ref_count = (++this->page_reference_counts[index]);
-                            MESOSPHERE_ABORT_UNLESS(ref_count > 0);
+                            MESOSPHERE_ABORT_UNLESS(ref_count > 1);
 
                             index++;
                         }
@@ -178,9 +189,9 @@ namespace ams::kern {
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
 
-            NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
-            NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);
-            NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
+            NOINLINE KVirtualAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
+            NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
+            NOINLINE Result AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
             void Open(KVirtualAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */

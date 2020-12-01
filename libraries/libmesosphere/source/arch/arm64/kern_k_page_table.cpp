@@ -573,7 +573,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Ensure that any pages we track close on exit. */
         KPageGroup pages_to_close(this->GetBlockInfoManager());
-        KScopedPageGroup spg(pages_to_close);
+        ON_SCOPE_EXIT { pages_to_close.Close(); };
 
         /* Begin traversal. */
         TraversalContext context;

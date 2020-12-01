@@ -1023,10 +1023,10 @@ namespace ams::kern {
         KPageGroup pg(this->block_info_manager);
 
         /* Allocate the pages. */
-        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(pg), num_pages, this->allocate_option));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, this->allocate_option));
 
-        /* Ensure that the page group is open while we work with it. */
-        KScopedPageGroup spg(pg);
+        /* Ensure that the page group is closed when we're done working with it. */
+        ON_SCOPE_EXIT { pg.Close(); };
 
         /* Clear all pages. */
         for (const auto &it : pg) {
@@ -1488,11 +1488,10 @@ namespace ams::kern {
 
         /* Allocate pages for the heap extension. */
         KPageGroup pg(this->block_info_manager);
-        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(pg), allocation_size / PageSize, this->allocate_option));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), allocation_size / PageSize, this->allocate_option));
 
-        /* Open the pages in the group for the duration of the call, and close them at the end. */
+        /* Close the opened pages when we're done with them. */
         /* If the mapping succeeds, each page will gain an extra reference, otherwise they will be freed automatically. */
-        pg.Open();
         ON_SCOPE_EXIT { pg.Close(); };
 
         /* Clear all the newly allocated pages. */
@@ -3115,20 +3114,22 @@ namespace ams::kern {
         KScopedResourceReservation memory_reservation(GetCurrentProcess().GetResourceLimit(), ams::svc::LimitableResource_PhysicalMemoryMax, unmapped_size);
         R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
 
-        /* Ensure that we we clean up on failure. */
+        /* Ensure that we manage page references correctly. */
         KVirtualAddress start_partial_page = Null<KVirtualAddress>;
         KVirtualAddress end_partial_page   = Null<KVirtualAddress>;
         KProcessAddress cur_mapped_addr    = dst_addr;
 
-        auto cleanup_guard = SCOPE_GUARD {
+        /* If the partial pages are mapped, an extra reference will have been opened. Otherwise, they'll free on scope exit. */
+        ON_SCOPE_EXIT {
             if (start_partial_page != Null<KVirtualAddress>) {
-                Kernel::GetMemoryManager().Open(start_partial_page, 1);
                 Kernel::GetMemoryManager().Close(start_partial_page, 1);
             }
             if (end_partial_page != Null<KVirtualAddress>) {
-                Kernel::GetMemoryManager().Open(end_partial_page, 1);
                 Kernel::GetMemoryManager().Close(end_partial_page, 1);
             }
+        };
+
+        auto cleanup_guard = SCOPE_GUARD {
             if (cur_mapped_addr != dst_addr) {
                 const KPageProperties unmap_properties = { KMemoryPermission_None, false, false, DisableMergeAttribute_None };
                 MESOSPHERE_R_ABORT_UNLESS(this->Operate(updater.GetPageList(), dst_addr, (cur_mapped_addr - dst_addr) / PageSize, Null<KPhysicalAddress>, false, unmap_properties, OperationType_Unmap, true));
@@ -3137,13 +3138,13 @@ namespace ams::kern {
 
         /* Allocate the start page as needed. */
         if (aligned_src_start < mapping_src_start) {
-            start_partial_page = Kernel::GetMemoryManager().AllocateContinuous(1, 0, this->allocate_option);
+            start_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 0, this->allocate_option);
             R_UNLESS(start_partial_page != Null<KVirtualAddress>, svc::ResultOutOfMemory());
         }
 
         /* Allocate the end page as needed. */
         if (mapping_src_end < aligned_src_end && (aligned_src_start < mapping_src_end || aligned_src_start == mapping_src_start)) {
-            end_partial_page = Kernel::GetMemoryManager().AllocateContinuous(1, 0, this->allocate_option);
+            end_partial_page = Kernel::GetMemoryManager().AllocateAndOpenContinuous(1, 0, this->allocate_option);
             R_UNLESS(end_partial_page != Null<KVirtualAddress>, svc::ResultOutOfMemory());
         }
 
@@ -3676,10 +3677,9 @@ namespace ams::kern {
 
                 /* Allocate pages for the new memory. */
                 KPageGroup pg(this->block_info_manager);
-                R_TRY(Kernel::GetMemoryManager().AllocateForProcess(std::addressof(pg), (size - mapped_size) / PageSize, this->allocate_option, GetCurrentProcess().GetId(), this->heap_fill_value));
+                R_TRY(Kernel::GetMemoryManager().AllocateAndOpenForProcess(std::addressof(pg), (size - mapped_size) / PageSize, this->allocate_option, GetCurrentProcess().GetId(), this->heap_fill_value));
 
-                /* Open a reference to the pages we allocated, and close our reference when we're done. */
-                pg.Open();
+                /* Close our reference when we're done. */
                 ON_SCOPE_EXIT { pg.Close(); };
 
                 /* Map the memory. */
@@ -4100,10 +4100,9 @@ namespace ams::kern {
 
         /* Allocate the new memory. */
         const size_t num_pages = size / PageSize;
-        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(pg), num_pages, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(pg), num_pages, KMemoryManager::EncodeOption(KMemoryManager::Pool_Unsafe, KMemoryManager::Direction_FromFront)));
 
-        /* Open the page group, and close it when we're done with it. */
-        pg.Open();
+        /* Close the page group when we're done with it. */
         ON_SCOPE_EXIT { pg.Close(); };
 
         /* Clear the new memory. */
