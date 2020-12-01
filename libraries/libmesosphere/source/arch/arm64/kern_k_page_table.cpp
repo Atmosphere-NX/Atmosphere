@@ -1080,7 +1080,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Get the addresses we're working with. */
             const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L1BlockSize);
-            const KPhysicalAddress block_phys_addr = l1_entry->GetBlock();
+            const KPhysicalAddress block_phys_addr = util::AlignDown(GetInteger(l1_entry->GetBlock()), L1BlockSize);
 
             /* Allocate a new page for the L2 table. */
             const KVirtualAddress l2_table = this->AllocatePageTable(page_list, reuse_ll);
@@ -1114,12 +1114,13 @@ namespace ams::kern::arch::arm64 {
             /* If we're contiguous, try to separate. */
             if (l2_entry->IsContiguous()) {
                 const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L2ContiguousBlockSize);
-                const KPhysicalAddress block_phys_addr = l2_entry->GetBlock();
+                const KPhysicalAddress block_phys_addr = util::AlignDown(GetInteger(l2_entry->GetBlock()), L2ContiguousBlockSize);
 
                 /* Mark the entries as non-contiguous. */
                 for (size_t i = 0; i < L2ContiguousBlockSize / L2BlockSize; i++) {
-                    const u64 entry_template = l2_entry->GetEntryTemplateForL2Block(i);
-                    *(impl.GetL2Entry(l1_entry, block_virt_addr + L2BlockSize * i)) = L2PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L2BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, false);
+                    L2PageTableEntry *target = impl.GetL2Entry(l1_entry, block_virt_addr + L2BlockSize * i);
+                    const u64 entry_template = target->GetEntryTemplateForL2Block(i);
+                    *target = L2PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L2BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, false);
                 }
                 this->NoteUpdated();
             }
@@ -1162,12 +1163,13 @@ namespace ams::kern::arch::arm64 {
         L3PageTableEntry *l3_entry = impl.GetL3Entry(l2_entry, virt_addr);
         if (l3_entry->IsBlock() && l3_entry->IsContiguous()) {
             const KProcessAddress block_virt_addr  = util::AlignDown(GetInteger(virt_addr), L3ContiguousBlockSize);
-            const KPhysicalAddress block_phys_addr = l3_entry->GetBlock();
+            const KPhysicalAddress block_phys_addr = util::AlignDown(GetInteger(l3_entry->GetBlock()), L3ContiguousBlockSize);
 
             /* Mark the entries as non-contiguous. */
             for (size_t i = 0; i < L3ContiguousBlockSize / L3BlockSize; i++) {
-                const u64 entry_template = l3_entry->GetEntryTemplateForL3Block(i);
-                *(impl.GetL3Entry(l2_entry, block_virt_addr + L3BlockSize * i)) = L3PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L3BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, false);
+                L3PageTableEntry *target = impl.GetL3Entry(l2_entry, block_virt_addr + L3BlockSize * i);
+                const u64 entry_template = target->GetEntryTemplateForL3Block(i);
+                *target = L3PageTableEntry(PageTableEntry::BlockTag{}, block_phys_addr + L3BlockSize * i, PageTableEntry(entry_template), PageTableEntry::SoftwareReservedBit_None, false);
             }
             this->NoteUpdated();
         }
