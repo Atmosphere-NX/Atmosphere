@@ -17,6 +17,9 @@
 
 namespace ams::kern {
 
+    #pragma GCC push_options
+    #pragma GCC optimize ("-O2")
+
     namespace ipc {
 
         using MessageBuffer = ams::svc::ipc::MessageBuffer;
@@ -1361,5 +1364,7 @@ namespace ams::kern {
         /* Notify. */
         this->NotifyAvailable(svc::ResultSessionClosed());
     }
+
+    #pragma GCC pop_options
 
 }

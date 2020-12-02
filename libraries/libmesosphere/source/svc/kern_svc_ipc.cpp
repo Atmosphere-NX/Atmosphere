@@ -17,6 +17,9 @@
 
 namespace ams::kern::svc {
 
+    #pragma GCC push_options
+    #pragma GCC optimize ("-O2")
+
     /* =============================    Common    ============================= */
 
     namespace {
@@ -303,5 +306,7 @@ namespace ams::kern::svc {
     Result ReplyAndReceiveWithUserBuffer64From32(int32_t *out_index, ams::svc::Address message_buffer, ams::svc::Size message_buffer_size, KUserPointer<const ams::svc::Handle *> handles, int32_t num_handles, ams::svc::Handle reply_target, int64_t timeout_ns) {
         return ReplyAndReceiveWithUserBuffer(out_index, message_buffer, message_buffer_size, handles, num_handles, reply_target, timeout_ns);
     }
+
+    #pragma GCC pop_options
 
 }

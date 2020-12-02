@@ -3054,6 +3054,9 @@ namespace ams::kern {
         return ResultSuccess();
     }
 
+    #pragma GCC push_options
+    #pragma GCC optimize ("-O2")
+
     Result KPageTableBase::SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state) {
         /* Validate pre-conditions. */
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
@@ -3706,6 +3709,8 @@ namespace ams::kern {
             MESOSPHERE_ABORT_UNLESS(it != this->memory_block_manager.end());
         }
     }
+
+    #pragma GCC pop_options
 
     Result KPageTableBase::MapPhysicalMemory(KProcessAddress address, size_t size) {
         /* Lock the physical memory lock. */
