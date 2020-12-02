@@ -40,8 +40,6 @@ namespace ams::kern {
                     new (region) KMemoryRegion(std::forward<Args>(args)...);
 
                     return region;
-
-                    return &this->region_heap[this->num_regions++];
                 }
         };
 
@@ -55,8 +53,8 @@ namespace ams::kern {
 
     }
 
-    void KMemoryRegionTree::InsertDirectly(uintptr_t address, size_t size, u32 attr, u32 type_id) {
-        this->insert(*AllocateRegion(address, size, attr, type_id));
+    void KMemoryRegionTree::InsertDirectly(uintptr_t address, uintptr_t last_address, u32 attr, u32 type_id) {
+        this->insert(*AllocateRegion(address, last_address, attr, type_id));
     }
 
     bool KMemoryRegionTree::Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr, u32 old_attr) {
@@ -82,9 +80,7 @@ namespace ams::kern {
 
         /* Cache information from the region before we remove it. */
         const uintptr_t old_address = found->GetAddress();
-        const size_t    old_size    = found->GetSize();
-        const uintptr_t old_end     = old_address + old_size;
-        const uintptr_t old_last    = old_end - 1;
+        const uintptr_t old_last    = found->GetLastAddress();
         const uintptr_t old_pair    = found->GetPairAddress();
         const u32       old_type    = found->GetType();
 
@@ -92,24 +88,24 @@ namespace ams::kern {
         this->erase(this->iterator_to(*found));
 
         /* Insert the new region into the tree. */
-        const uintptr_t new_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (address - old_address) : old_pair;
         if (old_address == address) {
             /* Reuse the old object for the new region, if we can. */
-            found->Reset(address, size, new_pair, new_attr, type_id);
+            found->Reset(address, inserted_region_last, old_pair, new_attr, type_id);
             this->insert(*found);
         } else {
             /* If we can't re-use, adjust the old region. */
-            found->Reset(old_address, address - old_address, old_pair, old_attr, old_type);
+            found->Reset(old_address, address - 1, old_pair, old_attr, old_type);
             this->insert(*found);
 
             /* Insert a new region for the split. */
-            this->insert(*AllocateRegion(address, size, new_pair, new_attr, type_id));
+            const uintptr_t new_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (address - old_address) : old_pair;
+            this->insert(*AllocateRegion(address, inserted_region_last, new_pair, new_attr, type_id));
         }
 
         /* If we need to insert a region after the region, do so. */
         if (old_last != inserted_region_last) {
             const uintptr_t after_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (inserted_region_end - old_address) : old_pair;
-            this->insert(*AllocateRegion(inserted_region_end, old_end - inserted_region_end, after_pair, old_attr, old_type));
+            this->insert(*AllocateRegion(inserted_region_end, old_last, after_pair, old_attr, old_type));
         }
 
         return true;
@@ -125,8 +121,11 @@ namespace ams::kern {
         const uintptr_t first_address = extents.GetAddress();
         const uintptr_t last_address  = extents.GetLastAddress();
 
+        const uintptr_t first_index = first_address / alignment;
+        const uintptr_t last_index  = last_address / alignment;
+
         while (true) {
-            const uintptr_t candidate = util::AlignDown(KSystemControl::Init::GenerateRandomRange(first_address, last_address), alignment);
+            const uintptr_t candidate = KSystemControl::Init::GenerateRandomRange(first_index, last_index) * alignment;
 
             /* Ensure that the candidate doesn't overflow with the size. */
             if (!(candidate < candidate + size)) {
@@ -157,13 +156,13 @@ namespace ams::kern {
         /* Initialize linear trees. */
         for (auto &region : GetPhysicalMemoryRegionTree()) {
             if (region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
-                GetPhysicalLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType());
+                GetPhysicalLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetLastAddress(), region.GetAttributes(), region.GetType());
             }
         }
 
         for (auto &region : GetVirtualMemoryRegionTree()) {
             if (region.IsDerivedFrom(KMemoryRegionType_Dram)) {
-                GetVirtualLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType());
+                GetVirtualLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetLastAddress(), region.GetAttributes(), region.GetType());
             }
         }
     }

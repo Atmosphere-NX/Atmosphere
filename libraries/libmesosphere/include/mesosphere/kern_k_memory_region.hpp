@@ -29,7 +29,7 @@ namespace ams::kern {
         private:
             uintptr_t address;
             uintptr_t pair_address;
-            size_t region_size;
+            uintptr_t last_address;
             u32 attributes;
             u32 type_id;
         public:
@@ -43,18 +43,18 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KMemoryRegion() : address(0), pair_address(0), region_size(0), attributes(0), type_id(0) { /* ... */ }
-            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t rs, uintptr_t p, u32 r, u32 t) :
-                address(a), pair_address(p), region_size(rs), attributes(r), type_id(t)
+            constexpr ALWAYS_INLINE KMemoryRegion() : address(0), pair_address(0), last_address(0), attributes(0), type_id(0) { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, uintptr_t p, u32 r, u32 t) :
+                address(a), pair_address(p), last_address(la), attributes(r), type_id(t)
             {
                 /* ... */
             }
-            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t rs, u32 r, u32 t) : KMemoryRegion(a, rs, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, u32 r, u32 t) : KMemoryRegion(a, la, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
         private:
-            constexpr ALWAYS_INLINE void Reset(uintptr_t a, uintptr_t rs, uintptr_t p, u32 r, u32 t) {
+            constexpr ALWAYS_INLINE void Reset(uintptr_t a, uintptr_t la, uintptr_t p, u32 r, u32 t) {
                 this->address      = a;
                 this->pair_address = p;
-                this->region_size  = rs;
+                this->last_address  = la;
                 this->attributes   = r;
                 this->type_id      = t;
             }
@@ -67,16 +67,16 @@ namespace ams::kern {
                 return this->pair_address;
             }
 
-            constexpr ALWAYS_INLINE size_t GetSize() const {
-                return this->region_size;
+            constexpr ALWAYS_INLINE uintptr_t GetLastAddress() const {
+                return this->last_address;
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetEndAddress() const {
-                return this->GetAddress() + this->GetSize();
+                return this->GetLastAddress() + 1;
             }
 
-            constexpr ALWAYS_INLINE uintptr_t GetLastAddress() const {
-                return this->GetEndAddress() - 1;
+            constexpr ALWAYS_INLINE size_t GetSize() const {
+                return this->GetEndAddress() - this->GetAddress();
             }
 
             constexpr ALWAYS_INLINE u32 GetAttributes() const {
@@ -130,16 +130,16 @@ namespace ams::kern {
                     return this->first_region->GetAddress();
                 }
 
+                constexpr ALWAYS_INLINE uintptr_t GetLastAddress() const {
+                    return this->last_region->GetLastAddress();
+                }
+
                 constexpr ALWAYS_INLINE uintptr_t GetEndAddress() const {
-                    return this->last_region->GetEndAddress();
+                    return this->GetLastAddress() + 1;
                 }
 
                 constexpr ALWAYS_INLINE size_t GetSize() const {
                     return this->GetEndAddress() - this->GetAddress();
-                }
-
-                constexpr ALWAYS_INLINE uintptr_t GetLastAddress() const {
-                    return this->GetEndAddress() - 1;
                 }
             };
         private:
@@ -160,7 +160,7 @@ namespace ams::kern {
             constexpr ALWAYS_INLINE KMemoryRegionTree() : tree() { /* ... */ }
         public:
             KMemoryRegion *FindModifiable(uintptr_t address) {
-                if (auto it = this->find(KMemoryRegion(address, 1, 0, 0)); it != this->end()) {
+                if (auto it = this->find(KMemoryRegion(address, address, 0, 0)); it != this->end()) {
                     return std::addressof(*it);
                 } else {
                     return nullptr;
@@ -168,7 +168,7 @@ namespace ams::kern {
             }
 
             const KMemoryRegion *Find(uintptr_t address) const {
-                if (auto it = this->find(KMemoryRegion(address, 1, 0, 0)); it != this->cend()) {
+                if (auto it = this->find(KMemoryRegion(address, address, 0, 0)); it != this->cend()) {
                     return std::addressof(*it);
                 } else {
                     return nullptr;
@@ -234,7 +234,7 @@ namespace ams::kern {
                 return extents;
             }
         public:
-            NOINLINE void InsertDirectly(uintptr_t address, size_t size, u32 attr = 0, u32 type_id = 0);
+            NOINLINE void InsertDirectly(uintptr_t address, uintptr_t last_address, u32 attr = 0, u32 type_id = 0);
             NOINLINE bool Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr = 0, u32 old_attr = 0);
 
             NOINLINE KVirtualAddress GetRandomAlignedRegion(size_t size, size_t alignment, u32 type_id);
