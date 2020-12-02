@@ -55,11 +55,20 @@ namespace ams::ldr {
             R_UNLESS(npdm->magic == Npdm::Magic, ResultInvalidMeta());
 
             /* Validate flags. */
-            u32 mask = ~0x1F;
-            if (hos::GetVersion() < hos::Version_7_0_0) {
-                /* 7.0.0 added 0x10 as a valid bit to NPDM flags, so before that we only check 0xF. */
+            u32 mask;
+            if (hos::GetVersion() >= hos::Version_11_0_0) {
+                /* 11.0.0 added bit 5 = "DisableDeviceAddressSpaceMerge". */
+                mask = ~0x3F;
+            } else if (hos::GetVersion() >= hos::Version_7_0_0) {
+                /* 7.0.0 added bit 4 = "UseOptimizedMemory" */
+                mask = ~0x1F;
+            } else {
                 mask = ~0xF;
             }
+
+            /* We set the "DisableDeviceAddressSpaceMerge" bit on all versions, so be permissive with it. */
+            mask &= ~0x20;
+
             R_UNLESS(!(npdm->flags & mask), ResultInvalidMeta());
 
             /* Validate Acid extents. */
