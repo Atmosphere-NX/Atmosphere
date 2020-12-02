@@ -553,7 +553,7 @@ namespace ams::kern::board::nintendo::nx {
         if (arg != nullptr) {
             /* Get the address of the legacy IRAM region. */
             const KVirtualAddress iram_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsIram) + 64_KB;
-            constexpr size_t RebootPayloadSize = 0x2E000;
+            constexpr size_t RebootPayloadSize = 0x24000;
 
             /* NOTE: Atmosphere extension; if we received an exception context from Panic(), */
             /*       generate a fatal error report using it. */
