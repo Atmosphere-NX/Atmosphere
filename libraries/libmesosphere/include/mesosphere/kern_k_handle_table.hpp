@@ -166,8 +166,10 @@ namespace ams::kern {
                 KScopedSpinLock lk(this->lock);
 
                 KAutoObject *obj = this->GetObjectImpl(handle);
-                if (obj->DynamicCast<KInterruptEvent *>() != nullptr) {
-                    return nullptr;
+                if (AMS_LIKELY(obj != nullptr)) {
+                    if (AMS_UNLIKELY(obj->DynamicCast<KInterruptEvent *>() != nullptr)) {
+                        return nullptr;
+                    }
                 }
 
                 return obj;
