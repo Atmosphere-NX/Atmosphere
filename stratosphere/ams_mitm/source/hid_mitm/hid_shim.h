@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 /* Command forwarders. */
-Result hidSetSupportedNpadStyleSetFwd(Service* s, u64 process_id, u64 aruid, HidControllerType type);
+Result hidSetSupportedNpadStyleSetFwd(Service* s, u64 process_id, u64 aruid, u32 style_set);
 
 #ifdef __cplusplus
 }

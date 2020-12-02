@@ -21,8 +21,8 @@ namespace ams::mitm::hid {
 
     Result HidMitmService::SetSupportedNpadStyleSet(const sf::ClientAppletResourceUserId &client_aruid, u32 style_set) {
         /* This code applies only to hbl, guaranteed by the check in ShouldMitm. */
-        style_set |= TYPE_SYSTEM | TYPE_SYSTEM_EXT;
-        return hidSetSupportedNpadStyleSetFwd(this->forward_service.get(), static_cast<u64>(this->client_info.process_id), static_cast<u64>(client_aruid.GetValue()), static_cast<HidControllerType>(style_set));
+        style_set |= HidNpadStyleTag_NpadSystem | HidNpadStyleTag_NpadSystemExt;
+        return hidSetSupportedNpadStyleSetFwd(this->forward_service.get(), static_cast<u64>(this->client_info.process_id), static_cast<u64>(client_aruid.GetValue()), style_set);
     }
 
 }
