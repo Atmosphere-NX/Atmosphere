@@ -543,8 +543,8 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(1000, proc_id_recv)[] = {0xA9B
 
 /*
     stp x10, x11, [sp, #-0x10]!
-    ldr x11, [sp, #0x90]
-    mov w10, w28
+    ldr x11, [sp, #0x80]
+    mov w10, #3
     lsl x10, x10, #2
     ldr x10, [x11, x10]
     mov x9, #0x0000ffffffffffff
@@ -567,11 +567,11 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(1000, proc_id_recv)[] = {0xA9B
     mov x0, x8
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(1100, proc_id_send)[] = {0xE0, 0x03, 0x15, 0xAA, 0xA8, 0x02, 0x40, 0xF9, 0x08, 0x1D, 0x40, 0xF9, 0x00, 0x01, 0x3F, 0xD6, 0x88, 0x4A, 0x3C, 0x8B, 0x09, 0xFC, 0x60, 0xD3, 0x00, 0x25, 0x00, 0x29};
-static const instruction_t MAKE_KERNEL_PATCH_NAME(1100, proc_id_send)[] = {0xA9BF2FEA, 0xF9404BEB, 0x2A1C03EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54FFFFA0, 0xA9BF27E8, 0xF94002A8, 0xF9401D08, 0xAA1503E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(1100, proc_id_send)[] = {0xA9BF2FEA, 0xF94043EB, 0x5280006A, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF94002A8, 0xF9401D08, 0xAA1503E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
 /*
     stp x10, x11, [sp, #-0x10]!
     ldr x11, [sp, #0xE0]
-    ldr w10, [sp, #0xC0]
+    mov w10, #3
     lsl x10, x10, #2
     ldr x10, [x11, x10]
     mov x9, #0x0000ffffffffffff
@@ -594,7 +594,7 @@ static const instruction_t MAKE_KERNEL_PATCH_NAME(1100, proc_id_send)[] = {0xA9B
     mov x0, x8
 */
 static const uint8_t MAKE_KERNEL_PATTERN_NAME(1100, proc_id_recv)[] = {0x08, 0x03, 0x40, 0xF9, 0xE0, 0x03, 0x18, 0xAA, 0x08, 0x1D, 0x40, 0xF9, 0x00, 0x01, 0x3F, 0xD6, 0xE8, 0x7F, 0x40, 0xF9, 0x09, 0xFC, 0x60, 0xD3, 0xEA, 0x5B, 0x40, 0xF9};
-static const instruction_t MAKE_KERNEL_PATCH_NAME(1100, proc_id_recv)[] = {0xA9BF2FEA, 0xF94073EB, 0xB940C3EA, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54FFFFA0, 0xA9BF27E8, 0xF9400308, 0xF9401D08, 0xAA1803E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
+static const instruction_t MAKE_KERNEL_PATCH_NAME(1100, proc_id_recv)[] = {0xA9BF2FEA, 0xF94073EB, 0x5280006A, 0xD37EF54A, 0xF86A696A, 0x92FFFFE9, 0x8A090148, 0xD2FFFFE9, 0x8A09014A, 0xD2FFFFC9, 0xEB09015F, 0x54000100, 0xA9BF27E8, 0xF9400308, 0xF9401D08, 0xAA1803E0, 0xD63F0100, 0xA8C127E8, 0xAA0003E8, 0xA8C12FEA, 0xAA0803E0};
 
 /* svcControlCodeMemory Patches */
 /* b.eq -> nop */
@@ -1090,7 +1090,7 @@ void package2_patch_kernel(void *_kernel, size_t *kernel_size, bool is_sd_kernel
 
         uint8_t *pattern_loc = search_pattern(kernel, *kernel_size, kernel_info->patches[i].pattern, kernel_info->patches[i].pattern_size);
         if (pattern_loc == NULL) {
-            /* TODO: Should we print an error/abort here? */
+            fatal_error("kernel_patcher: failed to identify patch location!\n");
             continue;
         }
         /* Patch kernel to branch to our hook at the desired place. */
