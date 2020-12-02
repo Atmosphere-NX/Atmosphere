@@ -601,7 +601,7 @@ namespace ams::fssystem::save {
         this->base_storage   = base_storage;
         this->buffer_manager = buffer_manager;
         this->block_size     = block_size;
-        this->cache_count    = cache_count;
+        this->cache_count    = buffer_count;
 
         /* Allocate the caches. */
         this->caches.reset(new Cache[buffer_count]);
