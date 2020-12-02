@@ -164,10 +164,10 @@
     HANDLER(UsbStateInfo,                        123) \
     HANDLER(NvHostErrInfo,                       124) \
     HANDLER(RunningUlaInfo,                      125) \
-    HANDLER(Category_Unknown126,                 126) \
-    HANDLER(Category_Unknown127,                 127) \
-    HANDLER(Category_Unknown128,                 128) \
-    HANDLER(Category_Unknown129,                 129) \
+    HANDLER(InternalPanelInfo,                   126) \
+    HANDLER(ResourceLimitLimitInfo,              127) \
+    HANDLER(ResourceLimitPeakInfo,               128) \
+    HANDLER(TouchScreenInfo,                     129) \
 
 #define AMS_ERPT_FOREACH_FIELD(HANDLER) \
     HANDLER(TestU64,                                                  0,   Test,                                FieldType_NumericU64, FieldFlag_None   ) \
@@ -782,22 +782,22 @@
     HANDLER(NANDTotalSizeOfSystem,                                    609, NANDFreeSpaceInfo,                   FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(NANDFreeSpaceOfSystem,                                    610, NANDFreeSpaceInfo,                   FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(AccessPointSSIDAsHex,                                     611, AccessPointInfo,                     FieldType_String,     FieldFlag_None   ) \
-    HANDLER(PanelVendorId,                                            612, Category_Unknown126,                 FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(PanelRevisionId,                                          613, Category_Unknown126,                 FieldType_NumericU8,  FieldFlag_None   ) \
-    HANDLER(PanelModelId,                                             614, Category_Unknown126,                 FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(PanelVendorId,                                            612, InternalPanelInfo,                   FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(PanelRevisionId,                                          613, InternalPanelInfo,                   FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(PanelModelId,                                             614, InternalPanelInfo,                   FieldType_NumericU8,  FieldFlag_None   ) \
     HANDLER(ErrorContext,                                             615, ErrorInfoAuto,                       FieldType_U8Array,    FieldFlag_None   ) \
     HANDLER(ErrorContextSize,                                         616, ErrorInfoAuto,                       FieldType_NumericU64, FieldFlag_None   ) \
     HANDLER(ErrorContextTotalSize,                                    617, ErrorInfoAuto,                       FieldType_NumericU64, FieldFlag_None   ) \
-    HANDLER(SystemPhysicalMemoryLimit,                                618, Category_Unknown127,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemThreadCountLimit,                                   619, Category_Unknown127,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemEventCountLimit,                                    620, Category_Unknown127,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemTransferMemoryCountLimit,                           621, Category_Unknown127,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemSessionCountLimit,                                  622, Category_Unknown127,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemPhysicalMemoryPeak,                                 623, Category_Unknown128,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemThreadCountPeak,                                    624, Category_Unknown128,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemEventCountPeak,                                     625, Category_Unknown128,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemTransferMemoryCountPeak,                            626, Category_Unknown128,                 FieldType_NumericI64, FieldFlag_None   ) \
-    HANDLER(SystemSessionCountPeak,                                   627, Category_Unknown128,                 FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemPhysicalMemoryLimit,                                618, ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemThreadCountLimit,                                   619, ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemEventCountLimit,                                    620, ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemTransferMemoryCountLimit,                           621, ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemSessionCountLimit,                                  622, ResourceLimitLimitInfo,              FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemPhysicalMemoryPeak,                                 623, ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemThreadCountPeak,                                    624, ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemEventCountPeak,                                     625, ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemTransferMemoryCountPeak,                            626, ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
+    HANDLER(SystemSessionCountPeak,                                   627, ResourceLimitPeakInfo,               FieldType_NumericI64, FieldFlag_None   ) \
     HANDLER(GpuCrashHash,                                             628, GpuCrashInfo,                        FieldType_U8Array,    FieldFlag_None   ) \
-    HANDLER(TouchScreenPanelGpioValue,                                629, Category_Unknown129,                 FieldType_NumericU8,  FieldFlag_None   ) \
+    HANDLER(TouchScreenPanelGpioValue,                                629, TouchScreenInfo,                     FieldType_NumericU8,  FieldFlag_None   ) \
 
