@@ -37,7 +37,7 @@ namespace ams::kern {
                 *out_timer = this->timer;
             }
 
-            ALWAYS_INLINE ~KScopedSchedulerLockAndSleep() {
+            ~KScopedSchedulerLockAndSleep() {
                 /* Register the sleep. */
                 if (this->timeout_tick > 0) {
                     this->timer->RegisterAbsoluteTask(this->thread, this->timeout_tick);

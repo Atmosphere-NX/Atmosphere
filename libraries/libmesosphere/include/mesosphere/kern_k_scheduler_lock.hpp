@@ -67,7 +67,7 @@ namespace ams::kern {
                 }
             }
 
-            ALWAYS_INLINE void Unlock() {
+            void Unlock() {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
                 MESOSPHERE_ASSERT(this->lock_count > 0);
