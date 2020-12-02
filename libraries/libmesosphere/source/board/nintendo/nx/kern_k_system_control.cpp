@@ -182,6 +182,9 @@ namespace ams::kern::board::nintendo::nx {
             const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
             if (AMS_LIKELY(region != nullptr)) {
                 if (AMS_LIKELY(region->IsDerivedFrom(KMemoryRegionType_MemoryController))) {
+                    /* Check the region is valid. */
+                    MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
                     /* Get the offset within the region. */
                     const size_t offset = address - region->GetAddress();
                     MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
@@ -210,6 +213,9 @@ namespace ams::kern::board::nintendo::nx {
                     region->IsDerivedFrom(KMemoryRegionType_MemoryController0) ||
                     region->IsDerivedFrom(KMemoryRegionType_MemoryController1))
                 {
+                    /* Check the region is valid. */
+                    MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
                     /* Get the offset within the region. */
                     const size_t offset = address - region->GetAddress();
                     MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
@@ -449,6 +455,8 @@ namespace ams::kern::board::nintendo::nx {
         /* Configure the Kernel Carveout region. */
         {
             const auto carveout = KMemoryLayout::GetCarveoutRegionExtents();
+            MESOSPHERE_ABORT_UNLESS(carveout.GetEndAddress() != 0);
+
             smc::ConfigureCarveout(0, carveout.GetAddress(), carveout.GetSize());
         }
 

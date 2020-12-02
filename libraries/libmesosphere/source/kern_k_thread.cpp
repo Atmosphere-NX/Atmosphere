@@ -207,6 +207,7 @@ namespace ams::kern {
     Result KThread::InitializeThread(KThread *thread, KThreadFunction func, uintptr_t arg, KProcessAddress user_stack_top, s32 prio, s32 core, KProcess *owner, ThreadType type) {
         /* Get stack region for the thread. */
         const auto &stack_region = KMemoryLayout::GetKernelStackRegion();
+        MESOSPHERE_ABORT_UNLESS(stack_region.GetEndAddress() != 0);
 
         /* Allocate a page to use as the thread. */
         KPageBuffer *page = KPageBuffer::Allocate();

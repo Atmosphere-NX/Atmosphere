@@ -112,7 +112,9 @@ namespace ams::kern {
             }
 
             static ALWAYS_INLINE KVirtualAddress GetStackTopAddress(s32 core_id, KMemoryRegionType type) {
-                return Dereference(GetVirtualMemoryRegionTree().FindByTypeAndAttribute(type, static_cast<u32>(core_id))).GetEndAddress();
+                const auto &region = Dereference(GetVirtualMemoryRegionTree().FindByTypeAndAttribute(type, static_cast<u32>(core_id)));
+                MESOSPHERE_INIT_ABORT_UNLESS(region.GetEndAddress() != 0);
+                return region.GetEndAddress();
             }
         public:
             static ALWAYS_INLINE KMemoryRegionTree &GetVirtualMemoryRegionTree()        { return s_virtual_tree; }

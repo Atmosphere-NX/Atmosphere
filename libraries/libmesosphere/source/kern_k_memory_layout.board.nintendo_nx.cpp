@@ -55,6 +55,7 @@ namespace ams::kern {
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(start, size, phys_type, attr));
             const KMemoryRegion *phys = KMemoryLayout::GetPhysicalMemoryRegionTree().FindByTypeAndAttribute(phys_type, attr);
             MESOSPHERE_INIT_ABORT_UNLESS(phys != nullptr);
+            MESOSPHERE_INIT_ABORT_UNLESS(phys->GetEndAddress() != 0);
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(phys->GetPairAddress(), size, virt_type, attr));
         }
 
@@ -104,6 +105,7 @@ namespace ams::kern {
         void SetupPoolPartitionMemoryRegions() {
             /* Start by identifying the extents of the DRAM memory region. */
             const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
+            MESOSPHERE_INIT_ABORT_UNLESS(dram_extents.GetEndAddress() != 0);
 
             /* Determine the end of the pool region. */
             const uintptr_t pool_end = dram_extents.GetEndAddress() - KTraceBufferSize;

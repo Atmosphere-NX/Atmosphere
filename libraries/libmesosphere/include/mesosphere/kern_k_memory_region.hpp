@@ -93,6 +93,7 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE bool Contains(uintptr_t address) const {
+                MESOSPHERE_INIT_ABORT_UNLESS(this->GetEndAddress() != 0);
                 return this->GetAddress() <= address && address <= this->GetLastAddress();
             }
 
