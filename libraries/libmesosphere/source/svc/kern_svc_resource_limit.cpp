@@ -62,7 +62,7 @@ namespace ams::kern::svc {
             R_UNLESS(resource_limit.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Get the peak value. */
-            *out_peak_value = resource_limit->GetCurrentValue(which);
+            *out_peak_value = resource_limit->GetPeakValue(which);
 
             return ResultSuccess();
         }
