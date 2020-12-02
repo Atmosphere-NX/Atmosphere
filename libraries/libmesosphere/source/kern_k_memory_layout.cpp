@@ -23,7 +23,7 @@ namespace ams::kern {
             NON_COPYABLE(KMemoryRegionAllocator);
             NON_MOVEABLE(KMemoryRegionAllocator);
             public:
-                static constexpr size_t MaxMemoryRegions = 1000;
+                static constexpr size_t MaxMemoryRegions = 200;
             private:
                 KMemoryRegion region_heap[MaxMemoryRegions];
                 size_t num_regions;
