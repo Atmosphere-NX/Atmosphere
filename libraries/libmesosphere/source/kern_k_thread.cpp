@@ -63,7 +63,7 @@ namespace ams::kern {
                 }
                 [[fallthrough]];
             case ThreadType_HighPriority:
-                {
+                if (type != ThreadType_Main) {
                     MESOSPHERE_ASSERT(phys_core == GetCurrentCoreId());
                 }
                 [[fallthrough]];
