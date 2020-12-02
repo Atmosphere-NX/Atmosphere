@@ -192,7 +192,7 @@ namespace ams::kern {
             }
         public:
             constexpr ALWAYS_INLINE KScopedAutoObject() : obj(nullptr) { /* ... */ }
-            constexpr KScopedAutoObject(T *o) : obj(o) {
+            constexpr ALWAYS_INLINE KScopedAutoObject(T *o) : obj(o) {
                 if (this->obj != nullptr) {
                     this->obj->Open();
                 }
