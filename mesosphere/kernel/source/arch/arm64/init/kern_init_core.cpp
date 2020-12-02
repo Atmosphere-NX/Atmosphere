@@ -29,6 +29,8 @@ namespace ams::kern::init {
     /* Prototypes for functions declared in ASM that we need to reference. */
     void StartOtherCore(const ams::kern::init::KInitArguments *init_args);
 
+    size_t GetMiscUnknownDebugRegionSize();
+
     namespace {
 
         /* Global Allocator. */
@@ -165,11 +167,42 @@ namespace ams::kern::init {
         const size_t code_region_size = GetInteger(code_region_end) - GetInteger(code_region_start);
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(code_region_start), code_region_size, KMemoryRegionType_KernelCode));
 
-        /* Setup the misc region. */
-        constexpr size_t MiscRegionSize  = 32_MB;
+        /* Setup board-specific device physical regions. */
+        SetupDevicePhysicalMemoryRegions();
+
+        /* Determine the amount of space needed for the misc region. */
+        size_t misc_region_needed_size;
+        {
+            /* Each core has a one page stack for all three stack types (Main, Idle, Exception). */
+            misc_region_needed_size = cpu::NumCores * (3 * (PageSize + PageSize));
+
+            /* Account for each auto-map device. */
+            for (const auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
+                if (region.HasTypeAttribute(KMemoryRegionAttr_ShouldKernelMap)) {
+                    /* Check that the region is valid. */
+                    MESOSPHERE_INIT_ABORT_UNLESS(region.GetEndAddress() != 0);
+
+                    /* Account for the region. */
+                    misc_region_needed_size += PageSize + (util::AlignUp(region.GetLastAddress(), PageSize) - util::AlignDown(region.GetAddress(), PageSize));
+                }
+            }
+
+            /* Account for the unknown debug region. */
+            misc_region_needed_size += GetMiscUnknownDebugRegionSize();
+
+            /* Multiply the needed size by three, to account for the need for guard space. */
+            misc_region_needed_size *= 3;
+        }
+
+        /* Decide on the actual size for the misc region. */
         constexpr size_t MiscRegionAlign = KernelAslrAlignment;
-        const KVirtualAddress misc_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(MiscRegionSize, MiscRegionAlign, KMemoryRegionType_Kernel);
-        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_region_start), MiscRegionSize, KMemoryRegionType_KernelMisc));
+        constexpr size_t MiscRegionMinimumSize = 32_MB;
+        const size_t misc_region_size = util::AlignUp(std::max(misc_region_needed_size, MiscRegionMinimumSize), MiscRegionAlign);
+        MESOSPHERE_INIT_ABORT_UNLESS(misc_region_size > 0);
+
+        /* Setup the misc region. */
+        const KVirtualAddress misc_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(misc_region_size, MiscRegionAlign, KMemoryRegionType_Kernel);
+        MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_region_start), misc_region_size, KMemoryRegionType_KernelMisc));
 
         /* Setup the stack region. */
         constexpr size_t StackRegionSize  = 14_MB;
@@ -202,15 +235,12 @@ namespace ams::kern::init {
 
         /* Setup the Misc Unknown Debug region, if it's not zero. */
         if (misc_unk_debug_phys_addr) {
-            constexpr size_t MiscUnknownDebugRegionSize  = PageSize;
             constexpr size_t MiscUnknownDebugRegionAlign = PageSize;
-            const KVirtualAddress misc_unk_debug_virt_addr = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(MiscUnknownDebugRegionSize, MiscUnknownDebugRegionAlign, KMemoryRegionType_KernelMisc, PageSize);
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_unk_debug_virt_addr), MiscUnknownDebugRegionSize, KMemoryRegionType_KernelMiscUnknownDebug));
-            ttbr1_table.Map(misc_unk_debug_virt_addr, MiscUnknownDebugRegionSize, misc_unk_debug_phys_addr, KernelRoDataAttribute, g_initial_page_allocator);
+            const size_t misc_unk_debug_size = GetMiscUnknownDebugRegionSize();
+            const KVirtualAddress misc_unk_debug_virt_addr = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(misc_unk_debug_size, MiscUnknownDebugRegionAlign, KMemoryRegionType_KernelMisc, PageSize);
+            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(misc_unk_debug_virt_addr), misc_unk_debug_size, KMemoryRegionType_KernelMiscUnknownDebug));
+            ttbr1_table.Map(misc_unk_debug_virt_addr, misc_unk_debug_size, misc_unk_debug_phys_addr, KernelRoDataAttribute, g_initial_page_allocator);
         }
-
-        /* Setup board-specific device physical regions. */
-        SetupDevicePhysicalMemoryRegions();
 
         /* Automatically map in devices that have auto-map attributes. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
@@ -228,6 +258,9 @@ namespace ams::kern::init {
             if (region.HasTypeAttribute(KMemoryRegionAttr_DidKernelMap)) {
                 continue;
             }
+
+            /* Check that the region is valid. */
+            MESOSPHERE_INIT_ABORT_UNLESS(region.GetEndAddress() != 0);
 
             /* Set the attribute to note we've mapped this region. */
             region.SetTypeAttribute(KMemoryRegionAttr_DidKernelMap);
@@ -258,10 +291,6 @@ namespace ams::kern::init {
         /* Physically randomize the slab region. */
         /* NOTE: Nintendo does this only on 10.0.0+ */
         ttbr1_table.PhysicallyRandomize(slab_region_start, slab_region_size, false);
-        cpu::StoreEntireCacheForInit();
-
-        /* Clear the slab region. */
-        std::memset(GetVoidPointer(slab_region_start), 0, slab_region_size);
 
         /* Determine size available for kernel page table heaps, requiring > 8 MB. */
         const KPhysicalAddress resource_end_phys_addr = slab_start_phys_addr + resource_region_size;
@@ -282,15 +311,22 @@ namespace ams::kern::init {
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
             if (region.GetType() == KMemoryRegionType_Dram) {
+                /* Check that the region is valid. */
+                MESOSPHERE_INIT_ABORT_UNLESS(region.GetEndAddress() != 0);
+
+                /* Set the linear map attribute. */
                 region.SetTypeAttribute(KMemoryRegionAttr_LinearMapped);
             }
         }
 
+        /* Get the linear region extents. */
+        const auto linear_extents = KMemoryLayout::GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_LinearMapped);
+        MESOSPHERE_INIT_ABORT_UNLESS(linear_extents.GetEndAddress() != 0);
+
         /* Setup the linear mapping region. */
         constexpr size_t LinearRegionAlign = 1_GB;
-        const auto linear_extents = KMemoryLayout::GetPhysicalMemoryRegionTree().GetDerivedRegionExtents(KMemoryRegionAttr_LinearMapped);
-        const KPhysicalAddress aligned_linear_phys_start = util::AlignDown(linear_extents.first_region->GetAddress(), LinearRegionAlign);
-        const size_t linear_region_size = util::AlignUp(linear_extents.last_region->GetEndAddress(), LinearRegionAlign) - GetInteger(aligned_linear_phys_start);
+        const KPhysicalAddress aligned_linear_phys_start = util::AlignDown(linear_extents.GetAddress(), LinearRegionAlign);
+        const size_t linear_region_size = util::AlignUp(linear_extents.GetEndAddress(), LinearRegionAlign) - GetInteger(aligned_linear_phys_start);
         const KVirtualAddress linear_region_start = KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegionWithGuard(linear_region_size, LinearRegionAlign, KMemoryRegionType_None, LinearRegionAlign);
 
         const uintptr_t linear_region_phys_to_virt_diff = GetInteger(linear_region_start) - GetInteger(aligned_linear_phys_start);
@@ -303,6 +339,8 @@ namespace ams::kern::init {
                 if (!region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
                     continue;
                 }
+
+                MESOSPHERE_INIT_ABORT_UNLESS(region.GetEndAddress() != 0);
 
                 if (cur_size == 0) {
                     cur_phys_addr = region.GetAddress();
@@ -331,6 +369,13 @@ namespace ams::kern::init {
                 ttbr1_table.Map(cur_virt_addr, cur_size, cur_phys_addr, KernelRwDataAttribute, g_initial_page_allocator);
             }
         }
+
+        /* Clear the slab region. */
+        std::memset(GetVoidPointer(slab_region_start), 0, slab_region_size);
+
+        /* NOTE: Unknown function is called here which is ifdef'd out on retail kernel. */
+        /* The unknown function is immediately before the function which gets the unknown debug region size, inside this translation unit. */
+        /* It's likely that this is some kind of initializer for the unknown debug region. */
 
         /* Create regions for and map all core-specific stacks. */
         for (size_t i = 0; i < cpu::NumCores; i++) {
@@ -441,6 +486,10 @@ namespace ams::kern::init {
         cpu::SetVbarEl1(reinterpret_cast<uintptr_t>(::ams::kern::ExceptionVectors));
         cpu::SetExceptionThreadStackTop(0);
         cpu::EnsureInstructionConsistency();
+    }
+
+    size_t GetMiscUnknownDebugRegionSize() {
+        return 0;
     }
 
 }

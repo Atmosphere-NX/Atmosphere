@@ -668,6 +668,7 @@ namespace ams::kern::arch::arm64::init {
                 this->PhysicallyRandomize(virt_addr, size, L2BlockSize, do_copy);
                 this->PhysicallyRandomize(virt_addr, size, L3ContiguousBlockSize, do_copy);
                 this->PhysicallyRandomize(virt_addr, size, L3BlockSize, do_copy);
+                cpu::StoreEntireCacheForInit();
             }
 
     };
