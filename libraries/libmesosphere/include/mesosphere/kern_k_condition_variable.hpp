@@ -20,8 +20,6 @@
 
 namespace ams::kern {
 
-    extern KThread g_cv_arbiter_compare_thread;
-
     class KConditionVariable {
         public:
             using ThreadTree = typename KThread::ConditionVariableThreadTreeType;

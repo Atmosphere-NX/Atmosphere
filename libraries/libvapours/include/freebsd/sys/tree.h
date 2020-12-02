@@ -400,6 +400,8 @@ struct {								\
 	RB_PROTOTYPE_REMOVE(name, type, attr);				\
 	RB_PROTOTYPE_FIND(name, type, attr);				\
 	RB_PROTOTYPE_NFIND(name, type, attr);				\
+	RB_PROTOTYPE_FIND_LIGHT(name, type, attr);				\
+	RB_PROTOTYPE_NFIND_LIGHT(name, type, attr);				\
 	RB_PROTOTYPE_NEXT(name, type, attr);				\
 	RB_PROTOTYPE_PREV(name, type, attr);				\
 	RB_PROTOTYPE_MINMAX(name, type, attr);
@@ -415,6 +417,10 @@ struct {								\
 	attr struct type *name##_RB_FIND(struct name *, struct type *)
 #define RB_PROTOTYPE_NFIND(name, type, attr)				\
 	attr struct type *name##_RB_NFIND(struct name *, struct type *)
+#define RB_PROTOTYPE_FIND_LIGHT(name, type, attr)				\
+	attr struct type *name##_RB_FIND_LIGHT(struct name *, const void *)
+#define RB_PROTOTYPE_NFIND_LIGHT(name, type, attr)				\
+	attr struct type *name##_RB_NFIND_LIGHT(struct name *, const void *)
 #define RB_PROTOTYPE_NEXT(name, type, attr)				\
 	attr struct type *name##_RB_NEXT(struct type *)
 #define RB_PROTOTYPE_PREV(name, type, attr)				\
@@ -436,15 +442,17 @@ struct {								\
 	RB_GENERATE_PREV(name, type, field, attr)			\
 	RB_GENERATE_MINMAX(name, type, field, attr)
 
-#define	RB_GENERATE_WITH_COMPARE(name, type, field, cmp)				\
-	RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp,)
-#define	RB_GENERATE_WITH_COMPARE_STATIC(name, type, field, cmp)			\
-	RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, __unused static)
-#define RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, attr)		\
+#define	RB_GENERATE_WITH_COMPARE(name, type, field, cmp, lcmp)				\
+	RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, lcmp,)
+#define	RB_GENERATE_WITH_COMPARE_STATIC(name, type, field, cmp, lcmp)			\
+	RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, lcmp, __unused static)
+#define RB_GENERATE_WITH_COMPARE_INTERNAL(name, type, field, cmp, lcmp, attr)		\
 	RB_GENERATE_INSERT_COLOR(name, type, field, attr)		\
 	RB_GENERATE_INSERT(name, type, field, cmp, attr)		\
 	RB_GENERATE_FIND(name, type, field, cmp, attr)			\
-	RB_GENERATE_NFIND(name, type, field, cmp, attr)
+	RB_GENERATE_NFIND(name, type, field, cmp, attr)         \
+	RB_GENERATE_FIND_LIGHT(name, type, field, lcmp, attr)			\
+	RB_GENERATE_NFIND_LIGHT(name, type, field, lcmp, attr)
 
 #define	RB_GENERATE_ALL(name, type, field, cmp)				\
 	RB_GENERATE_ALL_INTERNAL(name, type, field, cmp,)
@@ -719,6 +727,47 @@ name##_RB_NFIND(struct name *head, struct type *elm)			\
 	return (res);							\
 }
 
+#define RB_GENERATE_FIND_LIGHT(name, type, field, lcmp, attr) \
+/* Finds the node with the same key as elm */				\
+attr struct type *							\
+name##_RB_FIND_LIGHT(struct name *head, const void *lelm)			\
+{									\
+	struct type *tmp = RB_ROOT(head);				\
+	int comp;							\
+	while (tmp) {							\
+		comp = lcmp(lelm, tmp);					\
+		if (comp < 0)						\
+			tmp = RB_LEFT(tmp, field);			\
+		else if (comp > 0)					\
+			tmp = RB_RIGHT(tmp, field);			\
+		else							\
+			return (tmp);					\
+	}								\
+	return (NULL);							\
+}
+
+#define RB_GENERATE_NFIND_LIGHT(name, type, field, lcmp, attr) \
+/* Finds the first node greater than or equal to the search key */	\
+attr struct type *							\
+name##_RB_NFIND_LIGHT(struct name *head, const void *lelm)			\
+{									\
+	struct type *tmp = RB_ROOT(head);				\
+	struct type *res = NULL;					\
+	int comp;							\
+	while (tmp) {							\
+		comp = lcmp(lelm, tmp);					\
+		if (comp < 0) {						\
+			res = tmp;					\
+			tmp = RB_LEFT(tmp, field);			\
+		}							\
+		else if (comp > 0)					\
+			tmp = RB_RIGHT(tmp, field);			\
+		else							\
+			return (tmp);					\
+	}								\
+	return (res);							\
+}
+
 #define RB_GENERATE_NEXT(name, type, field, attr)			\
 /* ARGSUSED */								\
 attr struct type *							\
@@ -788,6 +837,8 @@ name##_RB_MINMAX(struct name *head, int val)				\
 #define RB_REMOVE(name, x, y)	name##_RB_REMOVE(x, y)
 #define RB_FIND(name, x, y)	name##_RB_FIND(x, y)
 #define RB_NFIND(name, x, y)	name##_RB_NFIND(x, y)
+#define RB_FIND_LIGHT(name, x, y)	name##_RB_FIND_LIGHT(x, y)
+#define RB_NFIND_LIGHT(name, x, y)	name##_RB_NFIND_LIGHT(x, y)
 #define RB_NEXT(name, x, y)	name##_RB_NEXT(y)
 #define RB_PREV(name, x, y)	name##_RB_PREV(y)
 #define RB_MIN(name, x)		name##_RB_MINMAX(x, RB_NEGINF)

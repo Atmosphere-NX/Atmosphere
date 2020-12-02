@@ -50,9 +50,8 @@ namespace ams::kern {
         s32 num_waiters = 0;
         {
             KScopedSchedulerLock sl;
-            g_cv_arbiter_compare_thread.SetupForAddressArbiterCompare(addr, -1);
 
-            auto it = this->tree.nfind(g_cv_arbiter_compare_thread);
+            auto it = this->tree.nfind_light({ addr, -1 });
             while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
@@ -79,10 +78,7 @@ namespace ams::kern {
             R_UNLESS(UpdateIfEqual(std::addressof(user_value), addr, value, value + 1), svc::ResultInvalidCurrentMemory());
             R_UNLESS(user_value == value,                                               svc::ResultInvalidState());
 
-            g_cv_arbiter_compare_thread.SetupForAddressArbiterCompare(addr, -1);
-
-            auto it = this->tree.nfind(g_cv_arbiter_compare_thread);
-
+            auto it = this->tree.nfind_light({ addr, -1 });
             while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
@@ -103,10 +99,8 @@ namespace ams::kern {
         s32 num_waiters = 0;
         {
             KScopedSchedulerLock sl;
-            g_cv_arbiter_compare_thread.SetupForAddressArbiterCompare(addr, -1);
 
-            auto it = this->tree.nfind(g_cv_arbiter_compare_thread);
-
+            auto it = this->tree.nfind_light({ addr, -1 });
             /* Determine the updated value. */
             s32 new_value;
             if (GetTargetFirmware() >= TargetFirmware_7_0_0) {

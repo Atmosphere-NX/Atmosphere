@@ -235,6 +235,27 @@ namespace ams::util {
 
     }
 
+    template<typename T>
+    concept HasLightCompareType = requires {
+        { std::is_same<typename T::LightCompareType, void>::value } -> std::convertible_to<bool>;
+    };
+
+    namespace impl {
+
+        template<typename T, typename Default>
+        consteval auto *GetLightCompareType() {
+            if constexpr (HasLightCompareType<T>) {
+                return static_cast<typename T::LightCompareType *>(nullptr);
+            } else {
+                return static_cast<Default *>(nullptr);
+            }
+        }
+
+    }
+
+    template<typename T, typename Default>
+    using LightCompareType = typename std::remove_pointer<decltype(impl::GetLightCompareType<T, Default>())>::type;
+
     template<class T, class Traits, class Comparator>
     class IntrusiveRedBlackTree {
         NON_COPYABLE(IntrusiveRedBlackTree);
@@ -257,6 +278,10 @@ namespace ams::util {
             using const_reference = const T &;
             using iterator        = Iterator<false>;
             using const_iterator  = Iterator<true>;
+
+            using light_value_type      = LightCompareType<Comparator, value_type>;
+            using const_light_pointer   = const light_value_type *;
+            using const_light_reference = const light_value_type &;
 
             template<bool Const>
             class Iterator {
@@ -325,10 +350,14 @@ namespace ams::util {
             };
         private:
             /* Generate static implementations for comparison operations for IntrusiveRedBlackTreeRoot. */
-            RB_GENERATE_WITH_COMPARE_STATIC(IntrusiveRedBlackTreeRootWithCompare, IntrusiveRedBlackTreeNode, entry, CompareImpl);
+            RB_GENERATE_WITH_COMPARE_STATIC(IntrusiveRedBlackTreeRootWithCompare, IntrusiveRedBlackTreeNode, entry, CompareImpl, LightCompareImpl);
         private:
             static int CompareImpl(const IntrusiveRedBlackTreeNode *lhs, const IntrusiveRedBlackTreeNode *rhs) {
                 return Comparator::Compare(*Traits::GetParent(lhs), *Traits::GetParent(rhs));
+            }
+
+            static int LightCompareImpl(const void *elm, const IntrusiveRedBlackTreeNode *rhs) {
+                return Comparator::Compare(*static_cast<const_light_pointer>(elm), *Traits::GetParent(rhs));
             }
 
             /* Define accessors using RB_* functions. */
@@ -342,6 +371,14 @@ namespace ams::util {
 
             IntrusiveRedBlackTreeNode *NFindImpl(IntrusiveRedBlackTreeNode const *node) const {
                 return RB_NFIND(IntrusiveRedBlackTreeRootWithCompare, const_cast<IntrusiveRedBlackTreeRootWithCompare *>(static_cast<const IntrusiveRedBlackTreeRootWithCompare *>(&this->impl.root)), const_cast<IntrusiveRedBlackTreeNode *>(node));
+            }
+
+            IntrusiveRedBlackTreeNode *FindLightImpl(const_light_pointer lelm) const {
+                return RB_FIND_LIGHT(IntrusiveRedBlackTreeRootWithCompare, const_cast<IntrusiveRedBlackTreeRootWithCompare *>(static_cast<const IntrusiveRedBlackTreeRootWithCompare *>(&this->impl.root)), static_cast<const void *>(lelm));
+            }
+
+            IntrusiveRedBlackTreeNode *NFindLightImpl(const_light_pointer lelm) const {
+                return RB_NFIND_LIGHT(IntrusiveRedBlackTreeRootWithCompare, const_cast<IntrusiveRedBlackTreeRootWithCompare *>(static_cast<const IntrusiveRedBlackTreeRootWithCompare *>(&this->impl.root)), static_cast<const void *>(lelm));
             }
         public:
             constexpr ALWAYS_INLINE IntrusiveRedBlackTree() : impl() { /* ... */ }
@@ -416,6 +453,14 @@ namespace ams::util {
 
             iterator nfind(const_reference ref) const {
                 return iterator(this->NFindImpl(Traits::GetNode(std::addressof(ref))));
+            }
+
+            iterator find_light(const_light_reference ref) const {
+                return iterator(this->FindLightImpl(std::addressof(ref)));
+            }
+
+            iterator nfind_light(const_light_reference ref) const {
+                return iterator(this->NFindLightImpl(std::addressof(ref)));
             }
     };
 
