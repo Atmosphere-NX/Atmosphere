@@ -20,7 +20,7 @@
 namespace ams::svc::ipc {
 
     #pragma GCC push_options
-    #pragma GCC optimize ("-O2")
+    #pragma GCC optimize ("-O3")
 
     ALWAYS_INLINE u32 *GetMessageBuffer() {
         return GetThreadLocalRegion()->message_buffer;

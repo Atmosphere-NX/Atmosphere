@@ -3055,7 +3055,7 @@ namespace ams::kern {
     }
 
     #pragma GCC push_options
-    #pragma GCC optimize ("-O2")
+    #pragma GCC optimize ("-O3")
 
     Result KPageTableBase::SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state) {
         /* Validate pre-conditions. */

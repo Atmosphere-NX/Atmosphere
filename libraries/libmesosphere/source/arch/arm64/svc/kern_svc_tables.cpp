@@ -59,6 +59,7 @@ namespace ams::kern::svc {
 
         /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
         #pragma GCC push_options
+        #pragma GCC optimize ("-O2")
         #pragma GCC optimize ("omit-frame-pointer")
 
             AMS_SVC_FOREACH_KERN_DEFINITION(DECLARE_SVC_STRUCT, _)
