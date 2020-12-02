@@ -22,6 +22,7 @@
 #include <mesosphere/kern_k_thread.hpp>
 #include <mesosphere/kern_k_thread_local_page.hpp>
 #include <mesosphere/kern_k_shared_memory_info.hpp>
+#include <mesosphere/kern_k_beta.hpp>
 #include <mesosphere/kern_k_worker_task.hpp>
 #include <mesosphere/kern_select_page_table.hpp>
 #include <mesosphere/kern_k_condition_variable.hpp>
@@ -52,6 +53,7 @@ namespace ams::kern {
             static constexpr size_t AslrAlignment = KernelAslrAlignment;
         private:
             using SharedMemoryInfoList = util::IntrusiveListBaseTraits<KSharedMemoryInfo>::ListType;
+            using BetaList = util::IntrusiveListMemberTraits<&KBeta::process_list_node>::ListType;
             using TLPTree = util::IntrusiveRedBlackTreeBaseTraits<KThreadLocalPage>::TreeType<KThreadLocalPage>;
             using TLPIterator = TLPTree::iterator;
         private:
@@ -95,6 +97,7 @@ namespace ams::kern {
             KThread                    *exception_thread{};
             ThreadList                  thread_list{};
             SharedMemoryInfoList        shared_memory_list{};
+            BetaList                    beta_list{};
             bool                        is_suspended{};
             bool                        is_jit_debug{};
             ams::svc::DebugEvent        jit_debug_event_type{};
