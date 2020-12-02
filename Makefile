@@ -141,15 +141,16 @@ dist: dist-no-debug
 	cp stratosphere/creport/creport.elf atmosphere-$(AMSVER)-debug/creport.elf
 	cp stratosphere/dmnt/dmnt.elf atmosphere-$(AMSVER)-debug/dmnt.elf
 	cp stratosphere/eclct.stub/eclct.stub.elf atmosphere-$(AMSVER)-debug/eclct.stub.elf
+	cp stratosphere/erpt/erpt.elf atmosphere-$(AMSVER)-debug/erpt.elf
 	cp stratosphere/fatal/fatal.elf atmosphere-$(AMSVER)-debug/fatal.elf
+	cp stratosphere/jpegdec/jpegdec.elf atmosphere-$(AMSVER)-debug/jpegdec.elf
 	cp stratosphere/loader/loader.elf atmosphere-$(AMSVER)-debug/loader.elf
+	cp stratosphere/ncm/ncm.elf atmosphere-$(AMSVER)-debug/ncm.elf
+	cp stratosphere/pgl/pgl.elf atmosphere-$(AMSVER)-debug/pgl.elf
 	cp stratosphere/pm/pm.elf atmosphere-$(AMSVER)-debug/pm.elf
 	cp stratosphere/ro/ro.elf atmosphere-$(AMSVER)-debug/ro.elf
 	cp stratosphere/sm/sm.elf atmosphere-$(AMSVER)-debug/sm.elf
 	cp stratosphere/spl/spl.elf atmosphere-$(AMSVER)-debug/spl.elf
-	cp stratosphere/erpt/erpt.elf atmosphere-$(AMSVER)-debug/erpt.elf
-	cp stratosphere/jpegdec/jpegdec.elf atmosphere-$(AMSVER)-debug/jpegdec.elf
-	cp stratosphere/pgl/pgl.elf atmosphere-$(AMSVER)-debug/pgl.elf
 	cp troposphere/daybreak/daybreak.elf atmosphere-$(AMSVER)-debug/daybreak.elf
 	cd atmosphere-$(AMSVER)-debug; zip -r ../atmosphere-$(AMSVER)-debug.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)-debug
