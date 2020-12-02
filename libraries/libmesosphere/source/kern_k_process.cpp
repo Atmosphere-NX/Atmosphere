@@ -129,6 +129,17 @@ namespace ams::kern {
             }
         }
 
+        /* Close all references to our betas. */
+        {
+            auto it = this->beta_list.begin();
+            while (it != this->beta_list.end()) {
+                KBeta *beta = std::addressof(*it);
+                it = this->beta_list.erase(it);
+
+                beta->Close();
+            }
+        }
+
         /* Our thread local page list must be empty at this point. */
         MESOSPHERE_ABORT_UNLESS(this->partially_used_tlp_tree.empty());
         MESOSPHERE_ABORT_UNLESS(this->fully_used_tlp_tree.empty());

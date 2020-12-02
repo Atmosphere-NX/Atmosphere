@@ -39,7 +39,9 @@ namespace ams::kern::init {
         HANDLER(KObjectName,         (SLAB_COUNT(KObjectName)),                                                 ## __VA_ARGS__) \
         HANDLER(KResourceLimit,      (SLAB_COUNT(KResourceLimit)),                                              ## __VA_ARGS__) \
         HANDLER(KEventInfo,          (SLAB_COUNT(KThread) + SLAB_COUNT(KDebug)),                                ## __VA_ARGS__) \
-        HANDLER(KDebug,              (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__)
+        HANDLER(KDebug,              (SLAB_COUNT(KDebug)),                                                      ## __VA_ARGS__) \
+        HANDLER(KAlpha,              (SLAB_COUNT(KAlpha)),                                                      ## __VA_ARGS__) \
+        HANDLER(KBeta,               (SLAB_COUNT(KBeta)),                                                       ## __VA_ARGS__)
 
     namespace {
 
@@ -68,6 +70,8 @@ namespace ams::kern::init {
         constexpr size_t SlabCountKObjectName           = 7;
         constexpr size_t SlabCountKResourceLimit        = 5;
         constexpr size_t SlabCountKDebug                = cpu::NumCores;
+        constexpr size_t SlabCountKAlpha                = 1;
+        constexpr size_t SlabCountKBeta                 = 6;
 
         constexpr size_t SlabCountExtraKThread          = 160;
 
@@ -94,6 +98,8 @@ namespace ams::kern::init {
             .num_KObjectName            = SlabCountKObjectName,
             .num_KResourceLimit         = SlabCountKResourceLimit,
             .num_KDebug                 = SlabCountKDebug,
+            .num_KAlpha                 = SlabCountKAlpha,
+            .num_KBeta                  = SlabCountKBeta,
         };
 
         template<typename T>
