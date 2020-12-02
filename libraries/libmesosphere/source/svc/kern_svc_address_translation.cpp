@@ -92,6 +92,9 @@ namespace ams::kern::svc {
                     /* Ensure that we found the region. */
                     R_UNLESS(region != nullptr, svc::ResultNotFound());
 
+                    /* Chcek that the region is valid. */
+                    MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
                     R_TRY(pt.QueryStaticMapping(std::addressof(found_address), region->GetAddress(), region->GetSize()));
                     found_size = region->GetSize();
                 }

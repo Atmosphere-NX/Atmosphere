@@ -1807,6 +1807,9 @@ namespace ams::kern {
         const KMemoryRegion *region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(region_type);
         R_UNLESS(region != nullptr, svc::ResultOutOfRange());
 
+        /* Check that the region is valid. */
+        MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
         /* Map the region. */
         R_TRY_CATCH(this->MapStatic(region->GetAddress(), region->GetSize(), perm)) {
             R_CONVERT(svc::ResultInvalidAddress, svc::ResultOutOfRange())
