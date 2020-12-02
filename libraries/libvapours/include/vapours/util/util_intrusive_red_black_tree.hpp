@@ -85,7 +85,7 @@ namespace ams::util {
                     private:
                         pointer node;
                     public:
-                        explicit Iterator(pointer n) : node(n) { /* ... */ }
+                        explicit ALWAYS_INLINE Iterator(pointer n) : node(n) { /* ... */ }
 
                         ALWAYS_INLINE bool operator==(const Iterator &rhs) const {
                             return this->node == rhs.node;
@@ -301,11 +301,11 @@ namespace ams::util {
                 private:
                     ImplIterator iterator;
                 private:
-                    explicit Iterator(ImplIterator it) : iterator(it) { /* ... */ }
+                    explicit ALWAYS_INLINE Iterator(ImplIterator it) : iterator(it) { /* ... */ }
 
-                    explicit Iterator(ImplIterator::pointer p) : iterator(p) { /* ... */ }
+                    explicit ALWAYS_INLINE Iterator(ImplIterator::pointer p) : iterator(p) { /* ... */ }
 
-                    ImplIterator GetImplIterator() const {
+                    ALWAYS_INLINE ImplIterator GetImplIterator() const {
                         return this->iterator;
                     }
                 public:
