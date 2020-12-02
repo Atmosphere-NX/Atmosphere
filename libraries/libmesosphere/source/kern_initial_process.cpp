@@ -26,7 +26,9 @@ namespace ams::kern {
         };
 
         KVirtualAddress GetInitialProcessBinaryAddress() {
-            return KMemoryLayout::GetPageTableHeapRegion().GetEndAddress() - InitialProcessBinarySizeMax;
+            const uintptr_t end_address = KMemoryLayout::GetPageTableHeapRegion().GetEndAddress();
+            MESOSPHERE_ABORT_UNLESS(end_address != 0);
+            return end_address - InitialProcessBinarySizeMax;
         }
 
         void LoadInitialProcessBinaryHeader(InitialProcessBinaryHeader *header) {
@@ -97,8 +99,11 @@ namespace ams::kern {
                         /* Ensure that we do not leak pages. */
                         ON_SCOPE_EXIT { pg.Close(); };
 
-                        /* Map the process's memory into the temporary region. */
+                        /* Get the temporary region. */
                         const auto &temp_region = KMemoryLayout::GetTempRegion();
+                        MESOSPHERE_ABORT_UNLESS(temp_region.GetEndAddress() != 0);
+
+                        /* Map the process's memory into the temporary region. */
                         KProcessAddress temp_address = Null<KProcessAddress>;
                         MESOSPHERE_R_ABORT_UNLESS(Kernel::GetKernelPageTable().MapPageGroup(std::addressof(temp_address), pg, temp_region.GetAddress(), temp_region.GetSize() / PageSize, KMemoryState_Kernel, KMemoryPermission_KernelReadWrite));
 

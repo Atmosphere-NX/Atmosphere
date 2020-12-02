@@ -70,10 +70,12 @@ namespace ams::kern {
                 public:
                     Impl() : heap(), page_reference_counts(), management_region(), pool(), next(), prev() { /* ... */ }
 
-                    size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress management_region, KVirtualAddress management_region_end);
+                    size_t Initialize(uintptr_t address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p);
 
                     KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
+
+                    void UpdateUsedHeapSize() { this->heap.UpdateUsedSize(); }
 
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->management_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
 
