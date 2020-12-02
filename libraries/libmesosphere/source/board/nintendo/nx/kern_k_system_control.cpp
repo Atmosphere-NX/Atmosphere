@@ -182,6 +182,9 @@ namespace ams::kern::board::nintendo::nx {
             const KMemoryRegion *region = KMemoryLayout::Find(KPhysicalAddress(address));
             if (AMS_LIKELY(region != nullptr)) {
                 if (AMS_LIKELY(region->IsDerivedFrom(KMemoryRegionType_MemoryController))) {
+                    /* Check the region is valid. */
+                    MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
                     /* Get the offset within the region. */
                     const size_t offset = address - region->GetAddress();
                     MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
@@ -210,6 +213,9 @@ namespace ams::kern::board::nintendo::nx {
                     region->IsDerivedFrom(KMemoryRegionType_MemoryController0) ||
                     region->IsDerivedFrom(KMemoryRegionType_MemoryController1))
                 {
+                    /* Check the region is valid. */
+                    MESOSPHERE_ABORT_UNLESS(region->GetEndAddress() != 0);
+
                     /* Get the offset within the region. */
                     const size_t offset = address - region->GetAddress();
                     MESOSPHERE_ABORT_UNLESS(offset < region->GetSize());
@@ -449,6 +455,8 @@ namespace ams::kern::board::nintendo::nx {
         /* Configure the Kernel Carveout region. */
         {
             const auto carveout = KMemoryLayout::GetCarveoutRegionExtents();
+            MESOSPHERE_ABORT_UNLESS(carveout.GetEndAddress() != 0);
+
             smc::ConfigureCarveout(0, carveout.GetAddress(), carveout.GetSize());
         }
 
@@ -483,7 +491,7 @@ namespace ams::kern::board::nintendo::nx {
             MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_PhysicalMemoryMax, SecureAppletMemorySize));
 
             constexpr auto SecureAppletAllocateOption = KMemoryManager::EncodeOption(KMemoryManager::Pool_System, KMemoryManager::Direction_FromFront);
-            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
+            g_secure_applet_memory_address = Kernel::GetMemoryManager().AllocateAndOpenContinuous(SecureAppletMemorySize / PageSize, 1, SecureAppletAllocateOption);
             MESOSPHERE_ABORT_UNLESS(g_secure_applet_memory_address != Null<KVirtualAddress>);
         }
 
@@ -545,7 +553,7 @@ namespace ams::kern::board::nintendo::nx {
         if (arg != nullptr) {
             /* Get the address of the legacy IRAM region. */
             const KVirtualAddress iram_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_LegacyLpsIram) + 64_KB;
-            constexpr size_t RebootPayloadSize = 0x2E000;
+            constexpr size_t RebootPayloadSize = 0x24000;
 
             /* NOTE: Atmosphere extension; if we received an exception context from Panic(), */
             /*       generate a fatal error report using it. */
@@ -570,11 +578,16 @@ namespace ams::kern::board::nintendo::nx {
             f_ctx->afsr0 = 0;
             f_ctx->afsr1 = GetVersionIdentifier();
 
+            /* Set efsr/far. */
+            f_ctx->far = cpu::GetFarEl1();
+            f_ctx->esr = cpu::GetEsrEl1();
+
             /* Copy registers. */
             for (size_t i = 0; i < util::size(e_ctx->x); ++i) {
                 f_ctx->gprs[i] = e_ctx->x[i];
             }
             f_ctx->sp = e_ctx->sp;
+            f_ctx->pc = cpu::GetElrEl1();
 
             /* Dump stack trace. */
             {
@@ -691,11 +704,8 @@ namespace ams::kern::board::nintendo::nx {
 
         /* Allocate the memory. */
         const size_t num_pages = size / PageSize;
-        const KVirtualAddress vaddr = Kernel::GetMemoryManager().AllocateContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
+        const KVirtualAddress vaddr = Kernel::GetMemoryManager().AllocateAndOpenContinuous(num_pages, alignment / PageSize, KMemoryManager::EncodeOption(static_cast<KMemoryManager::Pool>(pool), KMemoryManager::Direction_FromFront));
         R_UNLESS(vaddr != Null<KVirtualAddress>, svc::ResultOutOfMemory());
-
-        /* Open a reference to the memory. */
-        Kernel::GetMemoryManager().Open(vaddr, num_pages);
 
         /* Ensure we don't leak references to the memory on error. */
         auto mem_guard = SCOPE_GUARD { Kernel::GetMemoryManager().Close(vaddr, num_pages); };

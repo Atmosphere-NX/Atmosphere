@@ -54,6 +54,11 @@ int main(int argc, char **argv)
 {
     consoleInit(NULL);
 
+    padConfigureInput(8, HidNpadStyleSet_NpadStandard);
+
+    PadState pad;
+    padInitializeAny(&pad);
+
     bool can_reboot = true;
     Result rc = splInitialize();
     if (R_FAILED(rc)) {
@@ -76,20 +81,13 @@ int main(int argc, char **argv)
     // Main loop
     while(appletMainLoop())
     {
-        //Scan all the inputs. This should be done once for each frame
-        hidScanInput();
+        padUpdate(&pad);
+        u64 kDown = padGetButtonsDown(&pad);
 
-        u64 kDown = 0;
-
-        for (int controller = 0; controller < 10; controller++) {
-            // hidKeysDown returns information about which buttons have been just pressed (and they weren't in the previous frame)
-            kDown |= hidKeysDown((HidControllerID) controller);
-        }
-
-        if (can_reboot && kDown & KEY_MINUS) {
+        if (can_reboot && (kDown & HidNpadButton_Minus)) {
             reboot_to_payload();
         }
-        if (kDown & KEY_L)  { break; } // break in order to return to hbmenu
+        if (kDown & HidNpadButton_L)  { break; } // break in order to return to hbmenu
 
         consoleUpdate(NULL);
     }

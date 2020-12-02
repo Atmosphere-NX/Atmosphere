@@ -230,7 +230,7 @@ namespace ams::kern::svc {
             R_TRY(process->Initialize(params, user_caps, num_caps, process_resource_limit, pool));
 
             /* Register the process. */
-            R_TRY(KProcess::Register(process));
+            KProcess::Register(process);
 
             /* Add the process to the handle table. */
             R_TRY(handle_table.Add(out, process));

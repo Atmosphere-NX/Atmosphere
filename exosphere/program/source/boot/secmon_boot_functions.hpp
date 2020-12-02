@@ -18,7 +18,9 @@
 
 namespace ams::secmon::boot {
 
-    void ClearIram();
+    void ClearIramBootCode();
+    void ClearIramBootKeys();
+    void ClearIramDebugCode();
 
     void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state);
 

@@ -26,9 +26,12 @@ namespace ams::kern {
     constinit KMemoryBlockSlabManager Kernel::s_sys_memory_block_manager;
     constinit KBlockInfoManager       Kernel::s_block_info_manager;
     constinit KSupervisorPageTable    Kernel::s_supervisor_page_table;
-    constinit KSynchronization        Kernel::s_synchronization;
     constinit KUnsafeMemory           Kernel::s_unsafe_memory;
     constinit KWorkerTaskManager      Kernel::s_worker_task_managers[KWorkerTaskManager::WorkerType_Count];
+    constinit KInterruptManager       Kernel::s_interrupt_manager;
+    constinit KScheduler              Kernel::s_schedulers[cpu::NumCores];
+    constinit KInterruptTaskManager   Kernel::s_interrupt_task_managers[cpu::NumCores];
+    constinit KHardwareTimer          Kernel::s_hardware_timers[cpu::NumCores];
 
     namespace {
 

@@ -584,8 +584,8 @@ namespace ams::fssystem {
                 AMS_ASSERT(out_entry != nullptr);
 
                 const Result dir_res = this->dir_table.Get(out_pos, out_entry, key);
-                R_UNLESS(R_FAILED(dir_res),                            dir_res);
-                R_UNLESS(!fs::ResultDbmKeyNotFound::Includes(dir_res), dir_res);
+                R_UNLESS(R_FAILED(dir_res),                           dir_res);
+                R_UNLESS(fs::ResultDbmKeyNotFound::Includes(dir_res), dir_res);
 
                 Position pos = 0;
                 RomFileEntry entry = {};
@@ -601,8 +601,8 @@ namespace ams::fssystem {
 
                 RomEntryKey key = {};
                 const Result dir_res = this->dir_table.GetByPosition(std::addressof(key), out_entry, nullptr, nullptr, pos);
-                R_UNLESS(R_FAILED(dir_res),                            dir_res);
-                R_UNLESS(!fs::ResultDbmKeyNotFound::Includes(dir_res), dir_res);
+                R_UNLESS(R_FAILED(dir_res),                           dir_res);
+                R_UNLESS(fs::ResultDbmKeyNotFound::Includes(dir_res), dir_res);
 
                 RomFileEntry entry = {};
                 const Result file_res = this->file_table.GetByPosition(std::addressof(key), std::addressof(entry), nullptr, nullptr, pos);
@@ -616,8 +616,8 @@ namespace ams::fssystem {
                 AMS_ASSERT(out_entry != nullptr);
 
                 const Result file_res = this->file_table.Get(out_pos, out_entry, key);
-                R_UNLESS(R_FAILED(file_res),                            file_res);
-                R_UNLESS(!fs::ResultDbmKeyNotFound::Includes(file_res), file_res);
+                R_UNLESS(R_FAILED(file_res),                           file_res);
+                R_UNLESS(fs::ResultDbmKeyNotFound::Includes(file_res), file_res);
 
                 Position pos = 0;
                 RomDirectoryEntry entry = {};
@@ -633,8 +633,8 @@ namespace ams::fssystem {
 
                 RomEntryKey key = {};
                 const Result file_res = this->file_table.GetByPosition(std::addressof(key), out_entry, nullptr, nullptr, pos);
-                R_UNLESS(R_FAILED(file_res),                            file_res);
-                R_UNLESS(!fs::ResultDbmKeyNotFound::Includes(file_res), file_res);
+                R_UNLESS(R_FAILED(file_res),                           file_res);
+                R_UNLESS(fs::ResultDbmKeyNotFound::Includes(file_res), file_res);
 
                 RomDirectoryEntry entry = {};
                 const Result dir_res = this->dir_table.GetByPosition(std::addressof(key), std::addressof(entry), nullptr, nullptr, pos);

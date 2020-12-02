@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
+ * Copyright (c) 2018-2020 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -410,7 +411,7 @@ void clock_sdmmc_get_card_clock_div(u32 *pclock, u16 *pdivisor, u32 type)
 		*pclock = 40800;
 		*pdivisor = 1;
 		break;
-	case SDHCI_TIMING_MMC_DDR52: // Actual IO Freq: 49.92 MHz.
+	case SDHCI_TIMING_MMC_HS102: // Actual IO Freq: 99.84 MHz.
 		*pclock = 200000;
 		*pdivisor = 2;
 		break;

@@ -22,39 +22,40 @@ namespace ams::kern {
 
     class KMemoryBlockManagerUpdateAllocator {
         public:
-            static constexpr size_t NumBlocks = 2;
+            static constexpr size_t MaxBlocks = 2;
         private:
-            KMemoryBlock *blocks[NumBlocks];
+            KMemoryBlock *blocks[MaxBlocks];
             size_t index;
             KMemoryBlockSlabManager *slab_manager;
-            Result result;
         public:
-            explicit KMemoryBlockManagerUpdateAllocator(KMemoryBlockSlabManager *sm) : blocks(), index(), slab_manager(sm), result(svc::ResultOutOfResource()) {
-                for (size_t i = 0; i < NumBlocks; i++) {
-                    this->blocks[i] = this->slab_manager->Allocate();
-                    if (this->blocks[i] == nullptr) {
-                        this->result = svc::ResultOutOfResource();
-                        return;
-                    }
-                }
-
-                this->result = ResultSuccess();
-            }
+            constexpr explicit KMemoryBlockManagerUpdateAllocator(KMemoryBlockSlabManager *sm) : blocks(), index(MaxBlocks), slab_manager(sm) { /* ... */ }
 
             ~KMemoryBlockManagerUpdateAllocator() {
-                for (size_t i = 0; i < NumBlocks; i++) {
-                    if (this->blocks[i] != nullptr) {
-                        this->slab_manager->Free(this->blocks[i]);
+                for (const auto &block : this->blocks) {
+                    if (block != nullptr) {
+                        this->slab_manager->Free(block);
                     }
                 }
             }
 
-            Result GetResult() const {
-                return this->result;
+            Result Initialize(size_t num_blocks) {
+                /* Check num blocks. */
+                MESOSPHERE_ASSERT(num_blocks <= MaxBlocks);
+
+                /* Set index. */
+                this->index = MaxBlocks - num_blocks;
+
+                /* Allocate the blocks. */
+                for (size_t i = 0; i < num_blocks && i < MaxBlocks; ++i) {
+                    this->blocks[this->index + i] = this->slab_manager->Allocate();
+                    R_UNLESS(this->blocks[this->index + i] != nullptr, svc::ResultOutOfResource());
+                }
+
+                return ResultSuccess();
             }
 
             KMemoryBlock *Allocate() {
-                MESOSPHERE_ABORT_UNLESS(this->index < NumBlocks);
+                MESOSPHERE_ABORT_UNLESS(this->index < MaxBlocks);
                 MESOSPHERE_ABORT_UNLESS(this->blocks[this->index] != nullptr);
                 KMemoryBlock *block = nullptr;
                 std::swap(block, this->blocks[this->index++]);
@@ -62,7 +63,7 @@ namespace ams::kern {
             }
 
             void Free(KMemoryBlock *block) {
-                MESOSPHERE_ABORT_UNLESS(this->index <= NumBlocks);
+                MESOSPHERE_ABORT_UNLESS(this->index <= MaxBlocks);
                 MESOSPHERE_ABORT_UNLESS(block != nullptr);
                 if (this->index == 0) {
                     this->slab_manager->Free(block);
@@ -75,12 +76,15 @@ namespace ams::kern {
     class KMemoryBlockManager {
         public:
             using MemoryBlockTree = util::IntrusiveRedBlackTreeBaseTraits<KMemoryBlock>::TreeType<KMemoryBlock>;
+            using MemoryBlockLockFunction = void (KMemoryBlock::*)(KMemoryPermission new_perm, bool left, bool right);
             using iterator = MemoryBlockTree::iterator;
             using const_iterator = MemoryBlockTree::const_iterator;
         private:
             MemoryBlockTree memory_block_tree;
             KProcessAddress start_address;
             KProcessAddress end_address;
+        private:
+            void CoalesceForUpdate(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages);
         public:
             constexpr KMemoryBlockManager() : memory_block_tree(), start_address(), end_address() { /* ... */ }
 
@@ -93,8 +97,8 @@ namespace ams::kern {
 
             KProcessAddress FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const;
 
-            void Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
-            void UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, void (KMemoryBlock::*lock_func)(KMemoryPermission new_perm), KMemoryPermission perm);
+            void Update(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr, KMemoryBlockDisableMergeAttribute set_disable_attr, KMemoryBlockDisableMergeAttribute clear_disable_attr);
+            void UpdateLock(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, MemoryBlockLockFunction lock_func, KMemoryPermission perm);
 
             void UpdateIfMatch(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages, KMemoryState test_state, KMemoryPermission test_perm, KMemoryAttribute test_attr, KMemoryState state, KMemoryPermission perm, KMemoryAttribute attr);
 

@@ -14,7 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <exosphere.hpp>
+#include "secmon_cpu_context.hpp"
 #include "secmon_page_mapper.hpp"
+#include "secmon_mariko_fatal_error.hpp"
 #include "secmon_user_power_management.hpp"
 
 #include "rebootstub_bin.h"
@@ -82,6 +84,19 @@ namespace ams::secmon {
 
         /* Reboot. */
         PerformPmcReboot();
+    }
+
+    void PerformUserRebootToFatalError() {
+        if (fuse::GetSocType() == fuse::SocType_Erista) {
+            /* On Erista, we reboot to fatal error by jumping to fusee primary's handler. */
+            return PerformUserRebootToPayload();
+        } else /* if (fuse::GetSocType() == fuse::SocType_Mariko) */ {
+            /* Call the fatal error handler. */
+            HandleMarikoFatalErrorInterrupt();
+
+            /* We should never get to this point. */
+            AMS_ABORT("Returned from Mariko Fatal handler?\n");
+        }
     }
 
     void PerformUserShutDown() {

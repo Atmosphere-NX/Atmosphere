@@ -45,11 +45,13 @@ namespace ams::kern::arch::arm64 {
             } else {
                 out_entry->block_size = L3BlockSize;
             }
+            out_entry->sw_reserved_bits = l3_entry->GetSoftwareReservedBits();
 
             return true;
         } else {
-            out_entry->phys_addr  = Null<KPhysicalAddress>;
-            out_entry->block_size = L3BlockSize;
+            out_entry->phys_addr        = Null<KPhysicalAddress>;
+            out_entry->block_size       = L3BlockSize;
+            out_entry->sw_reserved_bits = 0;
             return false;
         }
     }
@@ -66,14 +68,17 @@ namespace ams::kern::arch::arm64 {
             } else {
                 out_entry->block_size = L2BlockSize;
             }
+            out_entry->sw_reserved_bits = l2_entry->GetSoftwareReservedBits();
+
             /* Set the output context. */
             out_context->l3_entry = nullptr;
             return true;
         } else if (l2_entry->IsTable()) {
             return this->ExtractL3Entry(out_entry, out_context, this->GetL3EntryFromTable(GetPageTableVirtualAddress(l2_entry->GetTable()), virt_addr), virt_addr);
         } else {
-            out_entry->phys_addr  = Null<KPhysicalAddress>;
-            out_entry->block_size = L2BlockSize;
+            out_entry->phys_addr        = Null<KPhysicalAddress>;
+            out_entry->block_size       = L2BlockSize;
+            out_entry->sw_reserved_bits = 0;
             out_context->l3_entry = nullptr;
             return false;
         }
@@ -91,6 +96,8 @@ namespace ams::kern::arch::arm64 {
             } else {
                 out_entry->block_size = L1BlockSize;
             }
+            out_entry->sw_reserved_bits = l1_entry->GetSoftwareReservedBits();
+
             /* Set the output context. */
             out_context->l2_entry = nullptr;
             out_context->l3_entry = nullptr;
@@ -98,8 +105,9 @@ namespace ams::kern::arch::arm64 {
         } else if (l1_entry->IsTable()) {
             return this->ExtractL2Entry(out_entry, out_context, this->GetL2EntryFromTable(GetPageTableVirtualAddress(l1_entry->GetTable()), virt_addr), virt_addr);
         } else {
-            out_entry->phys_addr  = Null<KPhysicalAddress>;
-            out_entry->block_size = L1BlockSize;
+            out_entry->phys_addr        = Null<KPhysicalAddress>;
+            out_entry->block_size       = L1BlockSize;
+            out_entry->sw_reserved_bits = 0;
             out_context->l2_entry = nullptr;
             out_context->l3_entry = nullptr;
             return false;
@@ -108,8 +116,9 @@ namespace ams::kern::arch::arm64 {
 
     bool KPageTableImpl::BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const {
         /* Setup invalid defaults. */
-        out_entry->phys_addr  = Null<KPhysicalAddress>;
-        out_entry->block_size = L1BlockSize;
+        out_entry->phys_addr        = Null<KPhysicalAddress>;
+        out_entry->block_size       = L1BlockSize;
+        out_entry->sw_reserved_bits = 0;
         out_context->l1_entry = this->table + this->num_entries;
         out_context->l2_entry = nullptr;
         out_context->l3_entry = nullptr;
@@ -208,8 +217,9 @@ namespace ams::kern::arch::arm64 {
                 valid = this->ExtractL1Entry(out_entry, context, context->l1_entry, Null<KProcessAddress>);
             } else {
                 /* Invalid, end traversal. */
-                out_entry->phys_addr  = Null<KPhysicalAddress>;
-                out_entry->block_size = L1BlockSize;
+                out_entry->phys_addr        = Null<KPhysicalAddress>;
+                out_entry->block_size       = L1BlockSize;
+                out_entry->sw_reserved_bits = 0;
                 context->l1_entry = this->table + this->num_entries;
                 context->l2_entry = nullptr;
                 context->l3_entry = nullptr;

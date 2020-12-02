@@ -5,7 +5,8 @@ MEMORY
 {
     NULL           : ORIGIN = 0,           LENGTH = 4K
     unused_region  : ORIGIN =      0x1000, LENGTH = 4K
-    iram_boot_code : ORIGIN = 0x040032000, LENGTH = 48K
+    iram_boot_code : ORIGIN = 0x040032000, LENGTH = 4K
+    iram_boot_keys : ORIGIN = 0x040033000, LENGTH = 4K
     tzram          : ORIGIN = 0x07C010000, LENGTH = 64K
 
     /* Warmboot code follows the vectors in memory. */
@@ -13,9 +14,10 @@ MEMORY
     warmboot_text : ORIGIN = ORIGIN(tzram) + 10K, LENGTH = 2K
 
     main       : ORIGIN = 0x1F00C0000, LENGTH = 48K
-    tzram_boot : ORIGIN = 0x1F01C0000, LENGTH = 8K
+    debug_code : ORIGIN = 0x1F0150000, LENGTH = 16K
+    tzram_boot : ORIGIN = 0x1F01C0800, LENGTH = 6K
 
-    glob       : ORIGIN = 0x040032000, LENGTH = 64K
+    glob       : ORIGIN = 0x040032000, LENGTH = 128K
 }
 
 SECTIONS
@@ -85,58 +87,80 @@ SECTIONS
 		KEEP (*(.dtors))
 	} >iram_boot_code AT>glob
 
-    __bootcode_end__ = ABSOLUTE(.);
-
-    __program_start__ = ABSOLUTE(.);
-
-    .tzram_boot_volatile_data : {
-		KEEP (*(.volatile_keys .volatile_keys.*))
-    } >tzram_boot AT>glob
-
-    .tzram_boot_volatile_data.fill : {
+    .boot_code.fill : {
         FILL(0x00000000);
-        . = ORIGIN(tzram_boot) + 0x7FF;
+        . = ORIGIN(iram_boot_code) + 0xFFF;
         BYTE(0x00);
-    } >tzram_boot AT>glob
+    } >iram_boot_code AT>glob
+
+    .boot_code_volatile_keys : {
+		KEEP (*(.volatile_keys .volatile_keys.*))
+    } >iram_boot_keys AT>glob
+
+    .boot_keys.fill : {
+        FILL(0x00000000);
+        . = ORIGIN(iram_boot_keys) + 0xFFF;
+        BYTE(0x00);
+    } >iram_boot_keys AT>glob
+
+    .debug_code : {
+        KEEP (*(.text._ZN3ams3log6PrintfEPKcz .text._ZN3ams3log7VPrintfEPKcSt9__va_list .text._ZN3ams3log4DumpEPKvm))
+        KEEP (*(.text._ZN3ams4util10TVSNPrintfEPcmPKcSt9__va_list .text._ZN3ams4util12_GLOBAL__N_114TVSNPrintfImplEPcmPKcSt9__va_list .text._ZZN3ams4util12_GLOBAL__N_114TVSNPrintfImplEPcmPKcSt9__va_listENKUlbmE3_clEbm))
+        KEEP(secmon_exception_handler.o(.text*))
+        secmon_exception_handler.o(.rodata*)
+        secmon_exception_handler.o(.data*)
+    } >debug_code AT>glob
+
+    .debug_code.bss_fill :
+    {
+        FILL(0x00000000);
+        secmon_exception_handler.o(.bss* COMMON)
+        . = ORIGIN(debug_code) + LENGTH(debug_code) - 1;
+        BYTE(0x00);
+    } >debug_code AT>glob
+
+    __bootcode_end__ = ABSOLUTE(.) - ORIGIN(debug_code) + 0x40034000;
+
+    __program_start__ = __bootcode_end__;
 
     .tzram_boot_code :
     {
         KEEP(secmon_main.o(.text*))
         KEEP(secmon_boot_functions.o(.text*))
-        KEEP (secmon_boot_cache.o(.text*))
+        KEEP(secmon_boot_cache.o(.text*))
         KEEP(secmon_boot_config.o(.text*))
         KEEP(secmon_boot_setup.o(.text*))
+        KEEP(secmon_boot_rsa.o(.text*))
         KEEP(secmon_package2.o(.text*))
         secmon_main.o(.rodata*)
         secmon_boot_functions.o(.rodata*)
         secmon_boot_cache.o(.rodata*)
         secmon_boot_config.o(.rodata*)
         secmon_boot_setup.o(.rodata*)
+        secmon_boot_rsa.o(.rodata*)
         secmon_package2.o(.rodata*)
         secmon_main.o(.data*)
         secmon_boot_functions.o(.data*)
         secmon_boot_cache.o(.data*)
         secmon_boot_config.o(.data*)
         secmon_boot_setup.o(.data*)
+        secmon_boot_rsa.o(.data*)
         secmon_package2.o(.data*)
         . = ALIGN(8);
     } >tzram_boot AT>glob
 
-    .tzram_boot_code.bss :
+    .tzram_boot_code.bss_fill :
     {
+        FILL(0x00000000);
         __boot_bss_start__ = ABSOLUTE(.);
         secmon_main.o(.bss* COMMON)
         secmon_boot_functions.o(.bss* COMMON)
         secmon_boot_cache.o(.bss* COMMON)
         secmon_boot_config.o(.bss* COMMON)
         secmon_boot_setup.o(.bss* COMMON)
+        secmon_boot_rsa.o(.bss* COMMON)
         secmon_package2.o(.bss* COMMON)
         __boot_bss_end__ = ABSOLUTE(.);
-    } >tzram_boot AT>glob
-
-    .tzram_boot_code.fill :
-    {
-        FILL(0x00000000);
         . = ORIGIN(tzram_boot) + LENGTH(tzram_boot) - 1;
         BYTE(0x00);
     } > tzram_boot AT>glob
@@ -146,7 +170,6 @@ SECTIONS
         KEEP (*(.vectors*))
         . = ALIGN(0x100);
     } >main AT>glob
-
 
     .warmboot :
     {

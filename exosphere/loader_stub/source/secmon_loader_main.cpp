@@ -24,14 +24,12 @@ namespace ams::secmon::loader {
         /* Uncompress the program image. */
         Uncompress(secmon::MemoryRegionPhysicalTzramFullProgramImage.GetPointer(), secmon::MemoryRegionPhysicalTzramFullProgramImage.GetSize(), program_lz4, program_lz4_size);
 
-
         /* Copy the boot image to the end of IRAM */
         u8 *relocated_boot_code = secmon::MemoryRegionPhysicalIramBootCodeImage.GetEndPointer<u8>() - boot_code_lz4_size;
         std::memcpy(relocated_boot_code, boot_code_lz4, boot_code_lz4_size);
 
         /* Uncompress the boot image. */
         Uncompress(secmon::MemoryRegionPhysicalIramBootCodeImage.GetPointer(), secmon::MemoryRegionPhysicalIramBootCodeImage.GetSize(), relocated_boot_code, boot_code_lz4_size);
-
 
         /* Jump to the boot image. */
         reinterpret_cast<void (*)()>(secmon::MemoryRegionPhysicalIramBootCodeImage.GetAddress())();

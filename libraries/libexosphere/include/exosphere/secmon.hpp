@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <vapours.hpp>
+#include <exosphere/secmon/secmon_log.hpp>
 #include <exosphere/secmon/secmon_memory_layout.hpp>
 #include <exosphere/secmon/secmon_configuration_context.hpp>
 #include <exosphere/secmon/secmon_volatile_context.hpp>

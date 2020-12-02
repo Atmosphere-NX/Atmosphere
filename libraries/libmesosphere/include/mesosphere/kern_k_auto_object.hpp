@@ -198,7 +198,7 @@ namespace ams::kern {
                 }
             }
 
-            ALWAYS_INLINE ~KScopedAutoObject() {
+            ~KScopedAutoObject() {
                 if (this->obj != nullptr) {
                     this->obj->Close();
                 }
@@ -206,7 +206,7 @@ namespace ams::kern {
             }
 
             template<typename U> requires (std::derived_from<T, U> || std::derived_from<U, T>)
-            constexpr ALWAYS_INLINE KScopedAutoObject(KScopedAutoObject<U> &&rhs) {
+            constexpr KScopedAutoObject(KScopedAutoObject<U> &&rhs) {
                 if constexpr (std::derived_from<U, T>) {
                     /* Upcast. */
                     this->obj = rhs.obj;

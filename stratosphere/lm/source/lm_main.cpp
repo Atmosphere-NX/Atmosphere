@@ -23,7 +23,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
     
-    #define INNER_HEAP_SIZE 0x20000
+    #define INNER_HEAP_SIZE 0x8000
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -66,6 +66,7 @@ void __appInit(void) {
     sm::DoWithSession([]() {
         R_ABORT_UNLESS(setsysInitialize());
         R_ABORT_UNLESS(pscmInitialize());
+        R_ABORT_UNLESS(fsInitialize());
     });
 
     ams::CheckApiVersion();
@@ -73,6 +74,7 @@ void __appInit(void) {
 
 void __appExit(void) {
     /* Cleanup services. */
+    fsExit();
     pscmExit();
     setsysExit();
 }
@@ -102,13 +104,13 @@ namespace {
 
 }
 
-extern std::atomic_bool g_flag;
+extern std::atomic_bool g_disabled_flush;
 
 namespace {
 
     void StartAndLoopProcess() {
         /* Get our psc:m module to handle requests. */
-        const psc::PmModuleId dependencies[] = { psc::PmModuleId_Fs, psc::PmModuleId_TmaHostIo };
+        const psc::PmModuleId dependencies[] = { psc::PmModuleId_Fs /*, psc::PmModuleId_TmaHostIo*/ };
         R_ABORT_UNLESS(g_pm_module.Initialize(psc::PmModuleId_Lm, dependencies, util::size(dependencies), os::EventClearMode_ManualClear));
 
         os::InitializeWaitableHolder(std::addressof(g_pm_module_waitable_holder), g_pm_module.GetEventPointer()->GetBase());
@@ -116,10 +118,11 @@ namespace {
 
         g_server_manager.AddUserWaitableHolder(std::addressof(g_pm_module_waitable_holder));
         
-        psc::PmState prev_state;
-        psc::PmState cur_state;
+        /* Invalid initial state values. */
+        psc::PmState prev_state = (psc::PmState)6;
+        psc::PmState cur_state = (psc::PmState)6;
         psc::PmFlagSet pm_flags;
-        while(true) {
+        while (true) {
             auto *signaled_holder = g_server_manager.WaitSignaled();
             if (signaled_holder != std::addressof(g_pm_module_waitable_holder)) {
                 /* Process IPC requests. */
@@ -130,7 +133,8 @@ namespace {
                 g_pm_module.GetEventPointer()->Clear();
                 if(R_SUCCEEDED(g_pm_module.GetRequest(std::addressof(cur_state), std::addressof(pm_flags)))) {
                     if (((prev_state == psc::PmState_ReadyAwakenCritical) && (cur_state == psc::PmState_ReadyAwaken)) || ((prev_state == psc::PmState_ReadyAwaken) && (cur_state == psc::PmState_ReadySleep)) || (cur_state == psc::PmState_ReadyShutdown)) {
-                        // TODO: set some atomic flag
+                        /* State changed, so allow/disallow flushing. */
+                        g_disabled_flush = !g_disabled_flush;
                     }
                     R_ABORT_UNLESS(g_pm_module.Acknowledge(cur_state, ResultSuccess()));
                     prev_state = cur_state;
@@ -147,14 +151,14 @@ int main(int argc, char **argv) {
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(lm, IpcServer));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(lm, IpcServer));
 
-    /* Start threads. */
+    /* Start Htcs and Flush threads. */
     lm::StartHtcsThread();
     lm::StartFlushThread();
 
-    /* Register lm */
+    /* Register lm. */
     R_ABORT_UNLESS((g_server_manager.RegisterServer<lm::impl::ILogService, lm::LogService>(LogServiceName, LogServiceMaxSessions)));
     
-    /* Register lm:get */
+    /* Register lm:get. */
     R_ABORT_UNLESS((g_server_manager.RegisterServer<lm::impl::ILogGetter, lm::LogGetter>(LogGetterServiceName, LogGetterServiceMaxSessions)));
     
     /* Loop forever, servicing our services. */

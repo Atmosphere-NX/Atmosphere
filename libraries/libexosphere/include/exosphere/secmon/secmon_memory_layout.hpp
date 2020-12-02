@@ -75,6 +75,11 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionDram     = MemoryRegion(UINT64_C( 0x80000000), 2_GB);
     constexpr inline const MemoryRegion MemoryRegionDramHigh = MemoryRegion(MemoryRegionDram.GetEndAddress(), 2_GB);
 
+    constexpr inline const MemoryRegion MemoryRegionDramForMarikoProgram = MemoryRegion(UINT64_C(0xC0000000), 1_GB);
+    constexpr inline const MemoryRegion MemoryRegionDramDcFramebuffer = MemoryRegion(UINT64_C(0xC0000000), 4_MB);
+    static_assert(MemoryRegionDram.Contains(MemoryRegionDramForMarikoProgram));
+    static_assert(MemoryRegionDramForMarikoProgram.Contains(MemoryRegionDramDcFramebuffer));
+
     constexpr inline const MemoryRegion MemoryRegionDramGpuCarveout = MemoryRegion(UINT64_C(0x80020000), UINT64_C(0x40000));
     static_assert(MemoryRegionDram.Contains(MemoryRegionDramGpuCarveout));
 
@@ -143,7 +148,11 @@ namespace ams::secmon {
         HANDLER(I2c1,                           Gpio, UINT64_C(0x7000C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
         HANDLER(ExceptionVectors,               I2c1, UINT64_C(0x6000F000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
         HANDLER(MemoryController0,  ExceptionVectors, UINT64_C(0x7001C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
-        HANDLER(MemoryController1, MemoryController0, UINT64_C(0x7001D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__)
+        HANDLER(MemoryController1, MemoryController0, UINT64_C(0x7001D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+        HANDLER(Sdmmc,             MemoryController1, UINT64_C(0x700B0000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+        HANDLER(Disp1,                         Sdmmc, UINT64_C(0x54200000),  UINT64_C(0x3000),  true, ## __VA_ARGS__) \
+        HANDLER(Dsi,                           Disp1, UINT64_C(0x54300000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+        HANDLER(MipiCal,                         Dsi, UINT64_C(0x700E3000),  UINT64_C(0x1000),  true, ## __VA_ARGS__)
 
     #define DEFINE_DEVICE_REGION(_NAME_, _PREV_, _ADDRESS_, _SIZE_, _SECURE_)                                                                                      \
         constexpr inline const MemoryRegion MemoryRegionVirtualDevice##_NAME_  = MemoryRegion(MemoryRegionVirtualDevice##_PREV_.GetEndAddress() + 0x1000, _SIZE_); \
@@ -199,6 +208,19 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramMarikoProgram(UINT64_C(0x7C020000), 0x20000);
     static_assert(MemoryRegionPhysicalTzramMariko.Contains(MemoryRegionPhysicalTzramMarikoProgram));
 
+    constexpr inline const MemoryRegion MemoryRegionVirtualTzramMarikoProgramFatalErrorContext(UINT64_C(0x1F00EF000), 0x1000);
+    static_assert(MemoryRegionVirtualTzramMarikoProgram.Contains(MemoryRegionVirtualTzramMarikoProgramFatalErrorContext));
+
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramFatalErrorContext(UINT64_C(0x4003E000), 0x1000);
+    static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramFatalErrorContext));
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualTzramMarikoProgramStack(UINT64_C(0x1F00F4000), 0x8000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramMarikoProgramStack(UINT64_C(0x7C040000), 0x8000);
+    static_assert(MemoryRegionPhysicalTzramMariko.Contains(MemoryRegionPhysicalTzramMarikoProgramStack));
+
+    constexpr inline const MemoryRegion MemoryRegionPhysicalMarikoProgramImage(UINT64_C(0x80020000), 0x20000);
+    static_assert(MemoryRegionDram.Contains(MemoryRegionPhysicalMarikoProgramImage));
+
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramProgramMain(UINT64_C(0x1F00C0800), 0xB800);
     static_assert(MemoryRegionVirtualTzramProgram.Contains(MemoryRegionVirtualTzramProgramMain));
 
@@ -224,7 +246,7 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualIramSc7Firmware));
     static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSc7Firmware));
 
-    constexpr inline const MemoryRegion MemoryRegionPhysicalIramSecureMonitorDebug(UINT64_C(0x40030000), 0x8000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramSecureMonitorDebug(UINT64_C(0x40034000), 0x4000);
     static_assert(MemoryRegionPhysicalIram.Contains(MemoryRegionPhysicalIramSecureMonitorDebug));
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDebugCode = MemoryRegion(UINT64_C(0x1F0150000), 0x4000);
@@ -250,6 +272,18 @@ namespace ams::secmon {
     constexpr inline const MemoryRegion MemoryRegionPhysicalDramDebugDataStore = MemoryRegion( UINT64_C(0x8000C000), 0x4000);
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualDramSecureDataStore));
     static_assert(MemoryRegionDram.Contains(MemoryRegionPhysicalDramSecureDataStore));
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmcMappedData = MemoryRegion(UINT64_C(0x1F0100000), 0xC000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmcMappedData = MemoryRegion(UINT64_C(0x80010000), 0xC000);
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramDcL0DevicePageTable  = MemoryRegion(UINT64_C(0x1F010C000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramDcL0DevicePageTable = MemoryRegion( UINT64_C(0x8001C000), 0x1000);
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L0DevicePageTable  = MemoryRegion(UINT64_C(0x1F010E000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L0DevicePageTable = MemoryRegion( UINT64_C(0x8001E000), 0x1000);
+
+    constexpr inline const MemoryRegion MemoryRegionVirtualDramSdmmc1L1DevicePageTable  = MemoryRegion(UINT64_C(0x1F010F000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalDramSdmmc1L1DevicePageTable = MemoryRegion( UINT64_C(0x8001F000), 0x1000);
 
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStoreTzram               = MemoryRegion(UINT64_C(0x1F0100000), 0xE000);
     constexpr inline const MemoryRegion MemoryRegionVirtualDramSecureDataStoreWarmbootFirmware    = MemoryRegion(UINT64_C(0x1F010E000), 0x17C0);
@@ -289,7 +323,6 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualTzramConfigurationData));
     static_assert(MemoryRegionPhysicalTzramNonVolatile.Contains(MemoryRegionPhysicalTzramConfigurationData));
 
-
     constexpr inline const MemoryRegion MemoryRegionVirtualTzramL1PageTable  = MemoryRegion(UINT64_C(0x1F01FCFC0), 0x40);
     constexpr inline const MemoryRegion MemoryRegionPhysicalTzramL1PageTable = MemoryRegion( UINT64_C(0x7C01EFC0), 0x40);
     static_assert(MemoryRegionPhysicalTzramConfigurationData.Contains(MemoryRegionPhysicalTzramL1PageTable));
@@ -299,8 +332,11 @@ namespace ams::secmon {
     static_assert(MemoryRegionVirtual.Contains(MemoryRegionVirtualTzramL2L3PageTable));
     static_assert(MemoryRegionPhysicalTzramNonVolatile.Contains(MemoryRegionPhysicalTzramL2L3PageTable));
 
-    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(UINT64_C(0x7C010000), 0xE000);
-    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(UINT64_C(0x40032000), 0xC000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalTzramFullProgramImage = MemoryRegion(UINT64_C(0x7C010800), 0xD800);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeImage     = MemoryRegion(UINT64_C(0x40032000), 0x6000);
+
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeCode      = MemoryRegion(UINT64_C(0x40032000), 0x1000);
+    constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootCodeKeys      = MemoryRegion(UINT64_C(0x40033000), 0x1000);
 
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramWarmbootBin = MemoryRegion(UINT64_C(0x4003E000), 0x17F0);
     constexpr inline const MemoryRegion MemoryRegionPhysicalIramBootConfig  = MemoryRegion(UINT64_C(0x4003F800), 0x400);

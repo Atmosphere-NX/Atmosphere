@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
- * Copyright (c) 2018 CTCaer
+ * Copyright (c) 2018-2020 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -54,16 +54,19 @@ typedef struct _mmc_csd
 
 typedef struct _mmc_ext_csd
 {
-	u8  rev;
 	u32 sectors;
 	int bkops;        /* background support bit */
 	int bkops_en;     /* manual bkops enable bit */
+	u8  rev;
 	u8  ext_struct;   /* 194 */
 	u8  card_type;    /* 196 */
 	u8  bkops_status; /* 246 */
-	u16 dev_version;
+	u8  pre_eol_info;
+	u8  dev_life_est_a;
+	u8  dev_life_est_b;
 	u8  boot_mult;
 	u8  rpmb_mult;
+	u16 dev_version;
 } mmc_ext_csd_t;
 
 typedef struct _sd_scr
@@ -81,6 +84,7 @@ typedef struct _sd_ssr
 	u8 uhs_grade;
 	u8 video_class;
 	u8 app_class;
+	u32 protected_size;
 } sd_ssr_t;
 
 /*! SDMMC storage context. */
@@ -99,6 +103,7 @@ typedef struct _sdmmc_storage_t
 	mmc_csd_t     csd;
 	mmc_ext_csd_t ext_csd;
 	sd_scr_t      scr;
+	int initialized;
 } sdmmc_storage_t;
 
 extern sdmmc_accessor_t *_current_accessor;

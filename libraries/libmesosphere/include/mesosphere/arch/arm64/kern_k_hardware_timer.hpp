@@ -19,18 +19,14 @@
 
 namespace ams::kern::arch::arm64 {
 
-    namespace impl {
-
-        class KHardwareTimerInterruptTask;
-
-    }
-
-    class KHardwareTimer : public KHardwareTimerBase {
+    class KHardwareTimer : public KInterruptTask, public KHardwareTimerBase {
+        private:
+            s64 maximum_time;
         public:
-            constexpr KHardwareTimer() : KHardwareTimerBase() { /* ... */ }
+            constexpr KHardwareTimer() : KInterruptTask(), KHardwareTimerBase(), maximum_time(std::numeric_limits<s64>::max()) { /* ... */ }
         public:
             /* Public API. */
-            NOINLINE void Initialize(s32 core_id);
+            NOINLINE void Initialize();
             NOINLINE void Finalize();
 
             static s64 GetTick() {
@@ -42,13 +38,12 @@ namespace ams::kern::arch::arm64 {
                 KScopedSpinLock lk(this->GetLock());
 
                 if (this->RegisterAbsoluteTaskImpl(task, task_time)) {
-                    SetCompareValue(task_time);
-                    EnableInterrupt();
+                    if (task_time <= this->maximum_time) {
+                        SetCompareValue(task_time);
+                        EnableInterrupt();
+                    }
                 }
             }
-        private:
-            friend class impl::KHardwareTimerInterruptTask;
-            NOINLINE void DoInterruptTask();
         private:
             /* Hardware register accessors. */
             static ALWAYS_INLINE void InitializeGlobalTimer() {
@@ -88,7 +83,13 @@ namespace ams::kern::arch::arm64 {
             static ALWAYS_INLINE void SetCompareValue(s64 value) {
                 cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor(0).SetCompareValue(static_cast<u64>(value)).Store();
             }
+        public:
+            virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
+                MESOSPHERE_UNUSED(interrupt_id);
+                return this;
+            }
 
+            virtual void DoTask() override;
     };
 
 }

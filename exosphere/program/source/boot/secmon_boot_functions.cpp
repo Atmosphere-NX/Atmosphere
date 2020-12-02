@@ -49,9 +49,19 @@ namespace ams::secmon::boot {
         }
     }
 
-    void ClearIram() {
+    void ClearIramBootCode() {
         /* Clear the boot code image from where it was loaded in IRAM. */
-        util::ClearMemory(MemoryRegionPhysicalIramBootCodeImage.GetPointer(), MemoryRegionPhysicalIramBootCodeImage.GetSize());
+        util::ClearMemory(MemoryRegionPhysicalIramBootCodeCode.GetPointer(), MemoryRegionPhysicalIramBootCodeCode.GetSize());
+    }
+
+    void ClearIramBootKeys() {
+        /* Clear the boot keys from where they were loaded in IRAM. */
+        util::ClearMemory(MemoryRegionPhysicalIramBootCodeKeys.GetPointer(), MemoryRegionPhysicalIramBootCodeKeys.GetSize());
+    }
+
+    void ClearIramDebugCode() {
+        /* Clear the boot code image from where it was loaded in IRAM. */
+        util::ClearMemory(MemoryRegionPhysicalDebugCode.GetPointer(), MemoryRegionPhysicalDebugCode.GetSize());
     }
 
     void WaitForNxBootloader(const pkg1::SecureMonitorParameters &params, pkg1::BootloaderState state) {
@@ -147,7 +157,7 @@ namespace ams::secmon::boot {
         const u8 * const mod  = secmon::boot::GetPackage2RsaModulus(pkg1::IsProductionForPublicKey());
         const size_t mod_size = se::RsaSize;
         if (verify) {
-            CheckVerifyResult(secmon::boot::VerifyPackage2Signature(header, mod, mod_size), pkg1::ErrorInfo_InvalidPackage2Signature, "package2 header sign verification failed");
+            CheckVerifyResult(secmon::boot::VerifyPackage2Signature(header, mod, mod_size), pkg1::ErrorInfo_InvalidPackage2Signature, "pkg2 sign FAIL");
         }
     }
 
@@ -167,10 +177,10 @@ namespace ams::secmon::boot {
 
     void VerifyPackage2Header(const pkg2::Package2Meta &meta) {
         /* Validate the metadata. */
-        CheckVerifyResult(VerifyPackage2Meta(meta),    pkg1::ErrorInfo_InvalidPackage2Meta, "package2 meta verification failed");
+        CheckVerifyResult(VerifyPackage2Meta(meta),    pkg1::ErrorInfo_InvalidPackage2Meta, "pkg2 meta FAIL");
 
         /* Validate the version. */
-        CheckVerifyResult(VerifyPackage2Version(meta), pkg1::ErrorInfo_InvalidPackage2Version, "package2 version verification failed");
+        CheckVerifyResult(VerifyPackage2Version(meta), pkg1::ErrorInfo_InvalidPackage2Version, "pkg2 version FAIL");
     }
 
     void DecryptAndLoadPackage2Payloads(uintptr_t dst, const pkg2::Package2Meta &meta, uintptr_t src, bool encrypted) {
@@ -178,6 +188,8 @@ namespace ams::secmon::boot {
         const u8 key_generation = meta.GetKeyGeneration();
         /* Decrypt or load each payload in order. */
         for (int i = 0; i < pkg2::PayloadCount; ++i) {
+            AMS_SECMON_LOG("pkg2 payload[%d]: %09lx -> %09lx size=%08x\n", i, src, dst + meta.payload_offsets[i], meta.payload_sizes[i]);
+
             if (encrypted) {
                 DecryptPayload(dst + meta.payload_offsets[i], src, meta.payload_sizes[i], meta.payload_ivs[i], sizeof(meta.payload_ivs[i]), key_generation);
             } else {

@@ -51,6 +51,18 @@
 #define PINMUX_AUX_GPIO_PE6    0x248
 #define PINMUX_AUX_GPIO_PH6    0x250
 #define PINMUX_AUX_GPIO_PZ1    0x280
+/* Only in T210B01 */
+#define PINMUX_AUX_SDMMC2_DAT0     0x294
+#define PINMUX_AUX_SDMMC2_DAT1     0x298
+#define PINMUX_AUX_SDMMC2_DAT2     0x29C
+#define PINMUX_AUX_SDMMC2_DAT3     0x2A0
+#define PINMUX_AUX_SDMMC2_DAT4     0x2A4
+#define PINMUX_AUX_SDMMC2_DAT5     0x2A8
+#define PINMUX_AUX_SDMMC2_DAT6     0x2AC
+#define PINMUX_AUX_SDMMC2_DAT7     0x2B0
+#define PINMUX_AUX_SDMMC2_CLK      0x2B4
+#define PINMUX_AUX_SDMMC2_CMD      0x2BC
+
 /*! 0:UART-A, 1:UART-B, 3:UART-C, 3:UART-D */
 #define PINMUX_AUX_UARTX_TX(x)  (0xE4 + 0x10 * (x))
 #define PINMUX_AUX_UARTX_RX(x)  (0xE8 + 0x10 * (x))
@@ -78,7 +90,8 @@
 #define PINMUX_OPEN_DRAIN   (1 << 11)
 #define PINMUX_SCHMT        (1 << 12)
 
-#define PINMUX_DRIVE_1X     (0 << 13) 
+#define PINMUX_DRIVE_MASK   (3 << 13)
+#define PINMUX_DRIVE_1X     (0 << 13)
 #define PINMUX_DRIVE_2X     (1 << 13)
 #define PINMUX_DRIVE_3X     (2 << 13)
 #define PINMUX_DRIVE_4X     (3 << 13)

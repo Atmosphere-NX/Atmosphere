@@ -18,24 +18,20 @@
 namespace ams::kern {
 
 
-    Result KAutoObjectWithListContainer::Register(KAutoObjectWithList *obj) {
+    void KAutoObjectWithListContainer::Register(KAutoObjectWithList *obj) {
         MESOSPHERE_ASSERT_THIS();
 
         KScopedLightLock lk(this->lock);
 
         this->object_list.insert(*obj);
-
-        return ResultSuccess();
     }
 
-    Result KAutoObjectWithListContainer::Unregister(KAutoObjectWithList *obj) {
+    void KAutoObjectWithListContainer::Unregister(KAutoObjectWithList *obj) {
         MESOSPHERE_ASSERT_THIS();
 
         KScopedLightLock lk(this->lock);
 
         this->object_list.erase(this->object_list.iterator_to(*obj));
-
-        return ams::svc::ResultNotFound();
     }
 
     size_t KAutoObjectWithListContainer::GetOwnedCount(KProcess *owner) {

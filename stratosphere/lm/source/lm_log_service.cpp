@@ -1,32 +1,17 @@
 #include "lm_log_service.hpp"
 #include "lm_threads.hpp"
-#include "impl/lm_b_logger.hpp"
-#include "impl/lm_c_logger.hpp"
-#include "impl/lm_d_logger.hpp"
+#include "impl/lm_event_log_transmitter.hpp"
+#include "impl/lm_log_buffer.hpp"
+#include "impl/lm_custom_sink_buffer.hpp"
 
 namespace ams::lm {
 
-    /* Defined in DLogger's source code. */
-    extern bool g_log_getter_logging_enabled;
+    /* Defined in CustomSinkBuffer's source code. */
+    extern bool g_is_logging_to_custom_sink;
 
     namespace {
 
-        LogDestination g_log_destination = LogDestination_TMA;
-
-        inline void SomeLog(const sf::InAutoSelectBuffer &log_buffer, const bool increment_drop_count) {
-            if (increment_drop_count) {
-                impl::GetBLogger()->IncrementPacketDropCount();
-            }
-
-            if (!(g_log_destination & 2)) {
-                /* TODO: what's done here? */
-            }
-
-            if (g_log_getter_logging_enabled) {
-                /* Log to lm:get. */
-                impl::WriteLogToLogGetterDefault(log_buffer.GetPointer(), log_buffer.GetSize());
-            }
-        }
+        LogDestination g_log_destination = 1;
 
         u8 g_logger_heap_memory[0x4000];
         os::SdkMutex g_logger_heap_lock;
@@ -39,11 +24,11 @@ namespace ams::lm {
     }
 
     Logger::Logger(os::ProcessId process_id) : process_id(process_id) {
-        impl::GetBLogger()->SendLogSessionBeginPacket(static_cast<u64>(process_id));
+        impl::GetEventLogTransmitter()->SendLogSessionBeginPacket(static_cast<u64>(process_id));
     }
 
     Logger::~Logger() {
-        impl::GetBLogger()->SendLogSessionEndPacket(static_cast<u64>(this->process_id));
+        impl::GetEventLogTransmitter()->SendLogSessionEndPacket(static_cast<u64>(this->process_id));
     }
 
     void *Logger::operator new(size_t size) {
@@ -67,18 +52,21 @@ namespace ams::lm {
         /* Set process ID. */
         log_packet_header->SetProcessId(static_cast<u64>(this->process_id));
 
-        bool do_increment_drop_count = false;
         if (g_log_destination & 1) {
-            if (ShouldLogWithFlush()) {
-                do_increment_drop_count = !impl::GetCLogger()->Log(log_buffer.GetPointer(), log_buffer.GetSize());
-            }
-            else {
-                /* TODO: ? */
-                do_increment_drop_count = !impl::GetCLogger()->Log(log_buffer.GetPointer(), log_buffer.GetSize());
+            if (!impl::GetLogBuffer()->Log(log_buffer.GetPointer(), log_buffer.GetSize(), ShouldLogWithFlush())) {
+                /* If logging through LogBuffer failed, increment packet drop count. */
+                impl::GetEventLogTransmitter()->IncrementLogPacketDropCount();
             }
         }
-        
-        SomeLog(log_buffer, do_increment_drop_count);
+
+        if (!(g_log_destination & 2)) {
+            /* TODO: what's done here? */
+        }
+
+        if (g_is_logging_to_custom_sink) {
+            /* Log to custom sink if enabled. */
+            impl::WriteLogToCustomSink(const_cast<const detail::LogPacketHeader*>(log_packet_header), log_buffer.GetSize(), 0);
+        }
     }
 
     void Logger::SetDestination(LogDestination log_destination) {

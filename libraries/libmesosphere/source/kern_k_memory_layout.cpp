@@ -23,7 +23,7 @@ namespace ams::kern {
             NON_COPYABLE(KMemoryRegionAllocator);
             NON_MOVEABLE(KMemoryRegionAllocator);
             public:
-                static constexpr size_t MaxMemoryRegions = 1000;
+                static constexpr size_t MaxMemoryRegions = 200;
             private:
                 KMemoryRegion region_heap[MaxMemoryRegions];
                 size_t num_regions;
@@ -40,8 +40,6 @@ namespace ams::kern {
                     new (region) KMemoryRegion(std::forward<Args>(args)...);
 
                     return region;
-
-                    return &this->region_heap[this->num_regions++];
                 }
         };
 
@@ -55,8 +53,8 @@ namespace ams::kern {
 
     }
 
-    void KMemoryRegionTree::InsertDirectly(uintptr_t address, size_t size, u32 attr, u32 type_id) {
-        this->insert(*AllocateRegion(address, size, attr, type_id));
+    void KMemoryRegionTree::InsertDirectly(uintptr_t address, uintptr_t last_address, u32 attr, u32 type_id) {
+        this->insert(*AllocateRegion(address, last_address, attr, type_id));
     }
 
     bool KMemoryRegionTree::Insert(uintptr_t address, size_t size, u32 type_id, u32 new_attr, u32 old_attr) {
@@ -82,9 +80,7 @@ namespace ams::kern {
 
         /* Cache information from the region before we remove it. */
         const uintptr_t old_address = found->GetAddress();
-        const size_t    old_size    = found->GetSize();
-        const uintptr_t old_end     = old_address + old_size;
-        const uintptr_t old_last    = old_end - 1;
+        const uintptr_t old_last    = found->GetLastAddress();
         const uintptr_t old_pair    = found->GetPairAddress();
         const u32       old_type    = found->GetType();
 
@@ -92,24 +88,24 @@ namespace ams::kern {
         this->erase(this->iterator_to(*found));
 
         /* Insert the new region into the tree. */
-        const uintptr_t new_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (address - old_address) : old_pair;
         if (old_address == address) {
             /* Reuse the old object for the new region, if we can. */
-            found->Reset(address, size, new_pair, new_attr, type_id);
+            found->Reset(address, inserted_region_last, old_pair, new_attr, type_id);
             this->insert(*found);
         } else {
             /* If we can't re-use, adjust the old region. */
-            found->Reset(old_address, address - old_address, old_pair, old_attr, old_type);
+            found->Reset(old_address, address - 1, old_pair, old_attr, old_type);
             this->insert(*found);
 
             /* Insert a new region for the split. */
-            this->insert(*AllocateRegion(address, size, new_pair, new_attr, type_id));
+            const uintptr_t new_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (address - old_address) : old_pair;
+            this->insert(*AllocateRegion(address, inserted_region_last, new_pair, new_attr, type_id));
         }
 
         /* If we need to insert a region after the region, do so. */
         if (old_last != inserted_region_last) {
             const uintptr_t after_pair = (old_pair != std::numeric_limits<uintptr_t>::max()) ? old_pair + (inserted_region_end - old_address) : old_pair;
-            this->insert(*AllocateRegion(inserted_region_end, old_end - inserted_region_end, after_pair, old_attr, old_type));
+            this->insert(*AllocateRegion(inserted_region_end, old_last, after_pair, old_attr, old_type));
         }
 
         return true;
@@ -125,8 +121,11 @@ namespace ams::kern {
         const uintptr_t first_address = extents.GetAddress();
         const uintptr_t last_address  = extents.GetLastAddress();
 
+        const uintptr_t first_index = first_address / alignment;
+        const uintptr_t last_index  = last_address / alignment;
+
         while (true) {
-            const uintptr_t candidate = util::AlignDown(KSystemControl::Init::GenerateRandomRange(first_address, last_address), alignment);
+            const uintptr_t candidate = KSystemControl::Init::GenerateRandomRange(first_index, last_index) * alignment;
 
             /* Ensure that the candidate doesn't overflow with the size. */
             if (!(candidate < candidate + size)) {
@@ -157,13 +156,13 @@ namespace ams::kern {
         /* Initialize linear trees. */
         for (auto &region : GetPhysicalMemoryRegionTree()) {
             if (region.HasTypeAttribute(KMemoryRegionAttr_LinearMapped)) {
-                GetPhysicalLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType());
+                GetPhysicalLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetLastAddress(), region.GetAttributes(), region.GetType());
             }
         }
 
         for (auto &region : GetVirtualMemoryRegionTree()) {
             if (region.IsDerivedFrom(KMemoryRegionType_Dram)) {
-                GetVirtualLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetSize(), region.GetAttributes(), region.GetType());
+                GetVirtualLinearMemoryRegionTree().InsertDirectly(region.GetAddress(), region.GetLastAddress(), region.GetAttributes(), region.GetType());
             }
         }
     }
@@ -180,90 +179,5 @@ namespace ams::kern {
 
         return resource_region_size;
     }
-
-    namespace init {
-
-        namespace {
-
-            constexpr PageTableEntry KernelRwDataAttribute(PageTableEntry::Permission_KernelRW, PageTableEntry::PageAttribute_NormalMemory, PageTableEntry::Shareable_InnerShareable, PageTableEntry::MappingFlag_Mapped);
-
-            constexpr size_t CoreLocalRegionAlign          = PageSize;
-            constexpr size_t CoreLocalRegionSize           = PageSize * (1 + cpu::NumCores);
-            constexpr size_t CoreLocalRegionSizeWithGuards = CoreLocalRegionSize + 2 * PageSize;
-            constexpr size_t CoreLocalRegionBoundsAlign    = 1_GB;
-            static_assert(CoreLocalRegionSize == sizeof(KCoreLocalRegion));
-
-            KVirtualAddress GetCoreLocalRegionVirtualAddress() {
-                while (true) {
-                    const uintptr_t candidate_start = GetInteger(KMemoryLayout::GetVirtualMemoryRegionTree().GetRandomAlignedRegion(CoreLocalRegionSizeWithGuards, CoreLocalRegionAlign, KMemoryRegionType_None));
-                    const uintptr_t candidate_end   = candidate_start + CoreLocalRegionSizeWithGuards;
-                    const uintptr_t candidate_last  = candidate_end - 1;
-
-                    const auto &containing_region = *KMemoryLayout::GetVirtualMemoryRegionTree().Find(candidate_start);
-
-                    if (candidate_last > containing_region.GetLastAddress()) {
-                        continue;
-                    }
-
-                    if (containing_region.GetType() != KMemoryRegionType_None) {
-                        continue;
-                    }
-
-                    if (util::AlignDown(candidate_start, CoreLocalRegionBoundsAlign) != util::AlignDown(candidate_last, CoreLocalRegionBoundsAlign)) {
-                        continue;
-                    }
-
-                    if (containing_region.GetAddress() > util::AlignDown(candidate_start, CoreLocalRegionBoundsAlign)) {
-                        continue;
-                    }
-
-                    if (util::AlignUp(candidate_last, CoreLocalRegionBoundsAlign) - 1 > containing_region.GetLastAddress()) {
-                        continue;
-                    }
-
-                    return candidate_start + PageSize;
-                }
-
-            }
-
-        }
-
-        void SetupCoreLocalRegionMemoryRegions(KInitialPageTable &page_table, KInitialPageAllocator &page_allocator) {
-            /* NOTE: Nintendo passes page table here to use num_l1_entries; we don't use this at present. */
-            MESOSPHERE_UNUSED(page_table);
-
-            /* Get the virtual address of the core local reigon. */
-            const KVirtualAddress core_local_virt_start = GetCoreLocalRegionVirtualAddress();
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetVirtualMemoryRegionTree().Insert(GetInteger(core_local_virt_start), CoreLocalRegionSize, KMemoryRegionType_CoreLocalRegion));
-
-            /* Allocate a page for each core. */
-            KPhysicalAddress core_local_region_start_phys[cpu::NumCores] = {};
-            for (size_t i = 0; i < cpu::NumCores; i++) {
-                core_local_region_start_phys[i] = page_allocator.Allocate();
-            }
-
-            /* Allocate an l1 page table for each core. */
-            KPhysicalAddress core_l1_ttbr1_phys[cpu::NumCores] = {};
-            core_l1_ttbr1_phys[0] = util::AlignDown(cpu::GetTtbr1El1(), PageSize);
-            for (size_t i = 1; i < cpu::NumCores; i++) {
-                core_l1_ttbr1_phys[i] = page_allocator.Allocate();
-                std::memcpy(reinterpret_cast<void *>(GetInteger(core_l1_ttbr1_phys[i])), reinterpret_cast<void *>(GetInteger(core_l1_ttbr1_phys[0])), PageSize);
-            }
-
-            /* Use the l1 page table for each core to map the core local region for each core. */
-            for (size_t i = 0; i < cpu::NumCores; i++) {
-                KInitialPageTable temp_pt(core_l1_ttbr1_phys[i], KInitialPageTable::NoClear{});
-                temp_pt.Map(core_local_virt_start, PageSize, core_local_region_start_phys[i], KernelRwDataAttribute, page_allocator);
-                for (size_t j = 0; j < cpu::NumCores; j++) {
-                    temp_pt.Map(core_local_virt_start + (j + 1) * PageSize, PageSize, core_local_region_start_phys[j], KernelRwDataAttribute, page_allocator);
-                }
-
-                /* Setup the InitArguments. */
-                SetInitArguments(static_cast<s32>(i), core_local_region_start_phys[i], GetInteger(core_l1_ttbr1_phys[i]));
-            }
-        }
-
-    }
-
 
 }

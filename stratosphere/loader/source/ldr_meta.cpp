@@ -55,11 +55,20 @@ namespace ams::ldr {
             R_UNLESS(npdm->magic == Npdm::Magic, ResultInvalidMeta());
 
             /* Validate flags. */
-            u32 mask = ~0x1F;
-            if (hos::GetVersion() < hos::Version_7_0_0) {
-                /* 7.0.0 added 0x10 as a valid bit to NPDM flags, so before that we only check 0xF. */
+            u32 mask;
+            if (hos::GetVersion() >= hos::Version_11_0_0) {
+                /* 11.0.0 added bit 5 = "DisableDeviceAddressSpaceMerge". */
+                mask = ~0x3F;
+            } else if (hos::GetVersion() >= hos::Version_7_0_0) {
+                /* 7.0.0 added bit 4 = "UseOptimizedMemory" */
+                mask = ~0x1F;
+            } else {
                 mask = ~0xF;
             }
+
+            /* We set the "DisableDeviceAddressSpaceMerge" bit on all versions, so be permissive with it. */
+            mask &= ~0x20;
+
             R_UNLESS(!(npdm->flags & mask), ResultInvalidMeta());
 
             /* Validate Acid extents. */
@@ -212,6 +221,21 @@ namespace ams::ldr {
                     const u16 program_info_flags = caps::GetProgramInfoFlags(o_meta->aci_kac, o_meta->aci->kac_size);
                     caps::SetProgramInfoFlags(program_info_flags, meta->acid_kac, meta->acid->kac_size);
                     caps::SetProgramInfoFlags(program_info_flags, meta->aci_kac, meta->aci->kac_size);
+                }
+            }
+
+            /* Perform address space override. */
+            if (status.HasOverrideAddressSpace()) {
+                /* Clear the existing address space. */
+                meta->npdm->flags &= ~Npdm::MetaFlag_AddressSpaceTypeMask;
+
+                /* Set the new address space flag. */
+                switch (status.GetOverrideAddressSpaceFlags()) {
+                    case cfg::impl::OverrideStatusFlag_AddressSpace32Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_32Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace64BitDeprecated:   meta->npdm->flags |= (Npdm::AddressSpaceType_64BitDeprecated)   << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias: meta->npdm->flags |= (Npdm::AddressSpaceType_32BitWithoutAlias) << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    case cfg::impl::OverrideStatusFlag_AddressSpace64Bit:             meta->npdm->flags |= (Npdm::AddressSpaceType_64Bit)             << Npdm::MetaFlag_AddressSpaceTypeShift; break;
+                    AMS_UNREACHABLE_DEFAULT_CASE();
                 }
             }
 

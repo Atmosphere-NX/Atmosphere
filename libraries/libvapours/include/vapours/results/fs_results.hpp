@@ -257,6 +257,7 @@ namespace ams::fs {
                 R_DEFINE_ERROR_RESULT(GptHeaderVerificationFailed, 4662);
 
             R_DEFINE_ERROR_RANGE(FatFileSystemCorrupted, 4681, 4699);
+                R_DEFINE_ERROR_RESULT(ExFatUnavailable, 4685);
 
             R_DEFINE_ERROR_RANGE(HostFileSystemCorrupted, 4701, 4719);
                 R_DEFINE_ERROR_RESULT(HostEntryCorrupted,    4702);

@@ -133,6 +133,7 @@ dist: dist-no-debug
 	cp exosphere/loader_stub/loader_stub.elf atmosphere-$(AMSVER)-debug/exosphere-loader-stub.elf
 	cp exosphere/program/program.elf atmosphere-$(AMSVER)-debug/exosphere-program.elf
 	cp exosphere/warmboot/warmboot.elf atmosphere-$(AMSVER)-debug/exosphere-warmboot.elf
+	cp exosphere/mariko_fatal/mariko_fatal.elf atmosphere-$(AMSVER)-debug/exosphere-mariko-fatal.elf
 	cp exosphere/program/sc7fw/sc7fw.elf atmosphere-$(AMSVER)-debug/exosphere-sc7fw.elf
 	cp exosphere/program/rebootstub/rebootstub.elf atmosphere-$(AMSVER)-debug/exosphere-rebootstub.elf
 	cp mesosphere/kernel_ldr/kernel_ldr.elf atmosphere-$(AMSVER)-debug/kernel_ldr.elf
@@ -142,8 +143,12 @@ dist: dist-no-debug
 	cp stratosphere/creport/creport.elf atmosphere-$(AMSVER)-debug/creport.elf
 	cp stratosphere/dmnt/dmnt.elf atmosphere-$(AMSVER)-debug/dmnt.elf
 	cp stratosphere/eclct.stub/eclct.stub.elf atmosphere-$(AMSVER)-debug/eclct.stub.elf
+	cp stratosphere/erpt/erpt.elf atmosphere-$(AMSVER)-debug/erpt.elf
 	cp stratosphere/fatal/fatal.elf atmosphere-$(AMSVER)-debug/fatal.elf
+	cp stratosphere/jpegdec/jpegdec.elf atmosphere-$(AMSVER)-debug/jpegdec.elf
 	cp stratosphere/loader/loader.elf atmosphere-$(AMSVER)-debug/loader.elf
+	cp stratosphere/ncm/ncm.elf atmosphere-$(AMSVER)-debug/ncm.elf
+	cp stratosphere/pgl/pgl.elf atmosphere-$(AMSVER)-debug/pgl.elf
 	cp stratosphere/pm/pm.elf atmosphere-$(AMSVER)-debug/pm.elf
 	cp stratosphere/ro/ro.elf atmosphere-$(AMSVER)-debug/ro.elf
 	cp stratosphere/sm/sm.elf atmosphere-$(AMSVER)-debug/sm.elf

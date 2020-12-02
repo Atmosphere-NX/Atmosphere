@@ -210,7 +210,8 @@ namespace ams::ldr {
             MetaFlag_AddressSpaceTypeShift = 1,
             MetaFlag_AddressSpaceTypeMask = (7 << MetaFlag_AddressSpaceTypeShift),
 
-            MetaFlag_OptimizeMemoryAllocation = (1 << 4),
+            MetaFlag_OptimizeMemoryAllocation       = (1 << 4),
+            MetaFlag_DisableDeviceAddressSpaceMerge = (1 << 5),
         };
 
         enum AddressSpaceType {

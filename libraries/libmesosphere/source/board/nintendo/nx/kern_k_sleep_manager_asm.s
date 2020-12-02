@@ -29,8 +29,8 @@
 .type       _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm, %function
 _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
     /* Save arguments. */
-    mov     x17, x0
-    mov     x18, x1
+    mov     x16, x0
+    mov     x17, x1
 
     /* Enable access to FPU registers. */
     mrs     x1, cpacr_el1
@@ -40,12 +40,13 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
     isb
 
     /* Save callee-save registers. */
-    stp     x19, x20, [x0], #0x10
-    stp     x21, x22, [x0], #0x10
-    stp     x23, x24, [x0], #0x10
-    stp     x25, x26, [x0], #0x10
-    stp     x27, x28, [x0], #0x10
-    stp     x29, x30, [x0], #0x10
+    stp     x18, x19, [x0], #0x10
+    stp     x20, x21, [x0], #0x10
+    stp     x22, x23, [x0], #0x10
+    stp     x24, x25, [x0], #0x10
+    stp     x26, x27, [x0], #0x10
+    stp     x28, x29, [x0], #0x10
+    stp     x30, xzr, [x0], #0x10
 
     /* Save stack pointer. */
     mov     x1, sp
@@ -113,8 +114,8 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager15CpuSleepHandlerEmm:
 1:  /* Suspend. */
     LOAD_IMMEDIATE_32(x0, 0xC4000001)
     LOAD_IMMEDIATE_32(x1, 0x0201001B)
-    mov     x2, x18
-    mov     x3, x17
+    mov     x2, x17
+    mov     x3, x16
     smc     #1
 0:  b       0b
 
@@ -190,12 +191,13 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
     isb
 
     /* Restore callee-save registers. */
-    ldp     x19, x20, [x0], #0x10
-    ldp     x21, x22, [x0], #0x10
-    ldp     x23, x24, [x0], #0x10
-    ldp     x25, x26, [x0], #0x10
-    ldp     x27, x28, [x0], #0x10
-    ldp     x29, x30, [x0], #0x10
+    ldp     x18, x19, [x0], #0x10
+    ldp     x20, x21, [x0], #0x10
+    ldp     x22, x23, [x0], #0x10
+    ldp     x24, x25, [x0], #0x10
+    ldp     x26, x27, [x0], #0x10
+    ldp     x28, x29, [x0], #0x10
+    ldp     x30, xzr, [x0], #0x10
 
     /* Restore stack pointer. */
     ldr     x1, [x0], #8
@@ -249,7 +251,6 @@ _ZN3ams4kern5board8nintendo2nx13KSleepManager11ResumeEntryEm:
 
     /* Set the global context back into x18/tpidr. */
     msr     tpidr_el1, x2
-    mov     x18, x2
     dsb     sy
     isb
 

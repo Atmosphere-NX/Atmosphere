@@ -51,36 +51,21 @@ namespace ams::kern {
     }
 
     bool KDebugLogImpl::Initialize() {
+        /* Get the uart memory region. */
+        const KMemoryRegion *uart_region = KMemoryLayout::GetPhysicalMemoryRegionTree().FindFirstDerived(KMemoryRegionType_Uart);
+        if (uart_region == nullptr) {
+            return false;
+        }
+
         /* Set the uart register base address. */
-        g_uart_address = KMemoryLayout::GetDeviceVirtualAddress(KMemoryRegionType_Uart);
+        g_uart_address = uart_region->GetPairAddress();
+        if (g_uart_address == Null<KVirtualAddress>) {
+            return false;
+        }
 
-        /* Parameters for uart. */
-        constexpr u32 BaudRate = 115200;
-        constexpr u32 Pllp = 408000000;
-        constexpr u32 Rate = 16 * BaudRate;
-        constexpr u32 Divisor = (Pllp + Rate / 2) / Rate;
-
-        /* Initialize the UART registers. */
-        /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
-        WriteUartRegister(UartRegister_LCR, 0x80);
-        ReadUartRegister(UartRegister_LCR);
-
-        /* Program the divisor into DLL/DLH. */
-        WriteUartRegister(UartRegister_DLL, Divisor & 0xFF);
-        WriteUartRegister(UartRegister_DLH, (Divisor >> 8) & 0xFF);
-        ReadUartRegister(UartRegister_DLH);
-
-        /* Set word length to 3, clear Divisor Latch Access. */
-        WriteUartRegister(UartRegister_LCR, 0x03);
-        ReadUartRegister(UartRegister_LCR);
-
-        /* Disable UART interrupts. */
+        /* NOTE: We assume here that UART init/config has been done by the Secure Monitor. */
+        /* As such, we only need to disable interrupts. */
         WriteUartRegister(UartRegister_IER, 0x00);
-
-        /* Configure the FIFO to be enabled and clear receive. */
-        WriteUartRegister(UartRegister_FCR, 0x03);
-        WriteUartRegister(UartRegister_IRDA_CSR, 0x02);
-        ReadUartRegister(UartRegister_FCR);
 
         return true;
     }

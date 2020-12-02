@@ -16,6 +16,8 @@
 #include <stratosphere.hpp>
 #include "impl/os_thread_manager.hpp"
 #include "impl/os_transfer_memory_impl.hpp"
+#include "impl/os_aslr_space_manager_types.hpp"
+#include "impl/os_aslr_space_manager.hpp"
 
 namespace ams::os {
 
@@ -130,8 +132,7 @@ namespace ams::os {
         /* Try to map up to 64 times. */
         for (int i = 0; i < 64; ++i) {
             /* Reserve space to map the memory. */
-            /* TODO: os::AslrSpaceManager */
-            void *map_address = ::virtmemReserve(tmem->size);
+            void *map_address = impl::GetAslrSpaceManager().AllocateSpace(tmem->size);
             R_UNLESS(map_address != nullptr, os::ResultOutOfAddressSpace());
 
             /* Mark allocated. */
@@ -144,8 +145,13 @@ namespace ams::os {
                 R_CATCH(os::ResultInvalidCurrentMemoryState) { continue; }
             } R_END_TRY_CATCH;
 
-            /* TODO: Check guard space via aslr manager. */
-            if (false /* !impl::GetAslrSpaceManager()->CheckGuardSpace(reinterpret_cast<uintptr_t>(tmem->address), tmem->size) */) {
+            /* Check guard space via aslr manager. */
+            if (!impl::GetAslrSpaceManager().CheckGuardSpace(reinterpret_cast<uintptr_t>(tmem->address), tmem->size)) {
+                /* NOTE: Nintendo bug here. If this case occurs, they will return ResultSuccess() without actually mapping the transfer memory. */
+                /* This is because they basically do if (!os::ResultInvalidCurrentMemoryState::Includes(result)) { return result; }, and */
+                /* ResultSuccess() is not included by ResultInvalidCurrentMemoryState. */
+
+                /* We will do better than them, and will not falsely return ResultSuccess(). */
                 impl::TransferMemoryImpl::Unmap(tmem->handle, tmem->address, tmem->size);
                 continue;
             }

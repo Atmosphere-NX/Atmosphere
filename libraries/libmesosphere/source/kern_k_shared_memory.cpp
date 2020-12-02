@@ -37,7 +37,7 @@ namespace ams::kern {
         R_UNLESS(memory_reservation.Succeeded(), svc::ResultLimitReached());
 
         /* Allocate the memory. */
-        R_TRY(Kernel::GetMemoryManager().Allocate(std::addressof(this->page_group), num_pages, owner->GetAllocateOption()));
+        R_TRY(Kernel::GetMemoryManager().AllocateAndOpen(std::addressof(this->page_group), num_pages, owner->GetAllocateOption()));
 
         /* Commit our reservation. */
         memory_reservation.Commit();
@@ -45,9 +45,6 @@ namespace ams::kern {
         /* Set our resource limit. */
         this->resource_limit = reslimit;
         this->resource_limit->Open();
-
-        /* Open the memory. */
-        this->page_group.Open();
 
         /* Mark initialized. */
         this->is_initialized = true;

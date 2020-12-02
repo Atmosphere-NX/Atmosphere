@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2018 naehrwert
- * Copyright (c) 2018-2019 CTCaer
+ * Copyright (c) 2018-2020 CTCaer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -195,13 +195,13 @@
 #define SDHCI_TIMING_UHS_SDR104 11
 #define SDHCI_TIMING_UHS_SDR82  12 // SDR104 with a 163.2MHz -> 81.6MHz clock.
 #define SDHCI_TIMING_UHS_DDR50  13
-#define SDHCI_TIMING_MMC_DDR52  14
+#define SDHCI_TIMING_MMC_HS102  14
 
 #define SDHCI_CAN_64BIT 0x10000000
 
 /*! SDMMC Low power features. */
-#define SDMMC_AUTO_CAL_DISABLE 0
-#define SDMMC_AUTO_CAL_ENABLE  1
+#define SDMMC_POWER_SAVE_DISABLE 0
+#define SDMMC_POWER_SAVE_ENABLE  1
 
 /*! Helper for SWITCH command argument. */
 #define SDMMC_SWITCH(mode, index, value) (((mode) << 24) | ((index) << 16) | ((value) << 8))
@@ -213,7 +213,8 @@ typedef struct _sdmmc_t
 	u32 id;
 	u32 divisor;
 	u32 clock_stopped;
-	int auto_cal_enabled;
+	int powersave_enabled;
+	int manual_cal;
 	int card_clock_enabled;
 	int venclkctl_set;
 	u32 venclkctl_tap;
@@ -222,6 +223,7 @@ typedef struct _sdmmc_t
 	u64 dma_addr_next;
 	u32 rsp[4];
 	u32 rsp3;
+	int t210b01;
 } sdmmc_t;
 
 /*! SDMMC command. */
@@ -247,15 +249,15 @@ typedef struct _sdmmc_req_t
 int  sdmmc_get_io_power(sdmmc_t *sdmmc);
 u32  sdmmc_get_bus_width(sdmmc_t *sdmmc);
 void sdmmc_set_bus_width(sdmmc_t *sdmmc, u32 bus_width);
-void sdmmc_set_tap_value(sdmmc_t *sdmmc);
+void sdmmc_save_tap_value(sdmmc_t *sdmmc);
 int  sdmmc_setup_clock(sdmmc_t *sdmmc, u32 type);
-void sdmmc_card_clock_ctrl(sdmmc_t *sdmmc, int auto_cal_enable);
+void sdmmc_card_clock_powersave(sdmmc_t *sdmmc, int powersave_enable);
 int  sdmmc_get_rsp(sdmmc_t *sdmmc, u32 *rsp, u32 size, u32 type);
 int  sdmmc_tuning_execute(sdmmc_t *sdmmc, u32 type, u32 cmd);
 int  sdmmc_stop_transmission(sdmmc_t *sdmmc, u32 *rsp);
 int  sdmmc_get_sd_power_enabled();
 bool sdmmc_get_sd_inserted();
-int  sdmmc_init(sdmmc_t *sdmmc, u32 id, u32 power, u32 bus_width, u32 type, int auto_cal_enable);
+int  sdmmc_init(sdmmc_t *sdmmc, u32 id, u32 power, u32 bus_width, u32 type, int powersave_enable);
 void sdmmc_end(sdmmc_t *sdmmc);
 void sdmmc_init_cmd(sdmmc_cmd_t *cmdbuf, u16 cmd, u32 arg, u32 rsp_type, u32 check_busy);
 int  sdmmc_execute_cmd(sdmmc_t *sdmmc, sdmmc_cmd_t *cmd, sdmmc_req_t *req, u32 *blkcnt_out);

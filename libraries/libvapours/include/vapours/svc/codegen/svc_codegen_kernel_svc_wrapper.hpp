@@ -29,6 +29,7 @@ namespace ams::svc::codegen {
         public:
 /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
 #pragma GCC push_options
+#pragma GCC optimize ("-O2")
 #pragma GCC optimize ("omit-frame-pointer")
 
             static ALWAYS_INLINE void Call64() {

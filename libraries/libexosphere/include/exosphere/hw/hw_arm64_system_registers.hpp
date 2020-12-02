@@ -43,6 +43,15 @@ namespace ams::hw::arch::arm64 {
     #define HW_CPU_GET_VBAR_EL3(value) HW_CPU_GET_SYSREG(vbar_el3, value)
     #define HW_CPU_SET_VBAR_EL3(value) HW_CPU_SET_SYSREG(vbar_el3, value)
 
+    #define HW_CPU_GET_ELR_EL3(value) HW_CPU_GET_SYSREG(elr_el3, value)
+    #define HW_CPU_SET_ELR_EL3(value) HW_CPU_SET_SYSREG(elr_el3, value)
+
+    #define HW_CPU_GET_FAR_EL3(value) HW_CPU_GET_SYSREG(far_el3, value)
+    #define HW_CPU_SET_FAR_EL3(value) HW_CPU_SET_SYSREG(far_el3, value)
+
+    #define HW_CPU_GET_ESR_EL3(value) HW_CPU_GET_SYSREG(esr_el3, value)
+    #define HW_CPU_SET_ESR_EL3(value) HW_CPU_SET_SYSREG(esr_el3, value)
+
     #define HW_CPU_GET_CLIDR_EL1(value) HW_CPU_GET_SYSREG(clidr_el1, value)
     #define HW_CPU_SET_CLIDR_EL1(value) HW_CPU_SET_SYSREG(clidr_el1, value)
 
@@ -83,6 +92,9 @@ namespace ams::hw::arch::arm64 {
 
     #define HW_CPU_GET_DBGCLAIMCLR_EL1(value) HW_CPU_GET_SYSREG(dbgclaimclr_el1, value)
     #define HW_CPU_SET_DBGCLAIMCLR_EL1(value) HW_CPU_SET_SYSREG(dbgclaimclr_el1, value)
+
+    #define HW_CPU_GET_FAR_EL1(value) HW_CPU_GET_SYSREG(far_el1, value)
+    #define HW_CPU_SET_FAR_EL1(value) HW_CPU_SET_SYSREG(far_el1, value)
 
     #define HW_CPU_GET_DBGVCR32_EL2(value) HW_CPU_GET_SYSREG(dbgvcr32_el2, value)
     #define HW_CPU_SET_DBGVCR32_EL2(value) HW_CPU_SET_SYSREG(dbgvcr32_el2, value)
@@ -325,6 +337,12 @@ namespace ams::hw::arch::arm64 {
     /* https://developer.arm.com/docs/ddi0488/h/system-control/aarch64-register-descriptions/hypervisor-configuration-register-el2 */
     struct HcrEl2 {
         using Rw = util::BitPack64::Field<31, 1>;
+    };
+
+    struct EsrEl3 {
+        using Iss = util::BitPack32::Field< 0, 25>;
+        using Il  = util::BitPack32::Field<25,  1>;
+        using Ec  = util::BitPack32::Field<26,  6>;
     };
 
 }

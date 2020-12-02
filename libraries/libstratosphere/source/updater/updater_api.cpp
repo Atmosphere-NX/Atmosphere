@@ -463,6 +463,8 @@ namespace ams::updater {
                 return BootImageUpdateType::Erista;
             case spl::HardwareType::Hoag:
             case spl::HardwareType::Iowa:
+            case spl::HardwareType::Calcio:
+            case spl::HardwareType::_Five_:
                 return BootImageUpdateType::Mariko;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

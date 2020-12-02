@@ -25,28 +25,28 @@ namespace ams::kern {
     class KSynchronizationObject : public KAutoObjectWithList {
         MESOSPHERE_AUTOOBJECT_TRAITS(KSynchronizationObject, KAutoObject);
         public:
-            using ThreadList = KLinkedList<KThread>;
-            using iterator = ThreadList::iterator;
+            struct ThreadListNode {
+                ThreadListNode *next;
+                KThread *thread;
+            };
         private:
-            ThreadList thread_list;
+            ThreadListNode *thread_list_root;
         protected:
-            constexpr ALWAYS_INLINE explicit KSynchronizationObject() : KAutoObjectWithList(), thread_list() { MESOSPHERE_ASSERT_THIS(); }
+            constexpr ALWAYS_INLINE explicit KSynchronizationObject() : KAutoObjectWithList(), thread_list_root() { MESOSPHERE_ASSERT_THIS(); }
             virtual ~KSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 
             virtual void OnFinalizeSynchronizationObject() { MESOSPHERE_ASSERT_THIS(); }
 
-            void NotifyAvailable();
-            void NotifyAbort(Result abort_reason);
+            void NotifyAvailable(Result result);
+            void NotifyAvailable() {
+                return this->NotifyAvailable(ResultSuccess());
+            }
+        public:
+            static Result Wait(s32 *out_index, KSynchronizationObject **objects, const s32 num_objects, s64 timeout);
         public:
             virtual void Finalize() override;
             virtual bool IsSignaled() const = 0;
             virtual void DebugWaiters();
-
-            iterator RegisterWaitingThread(KThread *thread);
-            iterator UnregisterWaitingThread(iterator it);
-
-            iterator begin();
-            iterator end();
     };
 
 }

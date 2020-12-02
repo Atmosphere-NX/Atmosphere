@@ -51,7 +51,7 @@ namespace ams::kern::svc {
             R_TRY(event->Initialize(interrupt_id, type));
 
             /* Register the event. */
-            R_TRY(KInterruptEvent::Register(event));
+            KInterruptEvent::Register(event);
 
             /* Add the event to the handle table. */
             R_TRY(handle_table.Add(out, event));

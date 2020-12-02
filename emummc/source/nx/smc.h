@@ -38,6 +38,20 @@ typedef enum {
 } SplConfigItem;
 
 typedef enum {
+    SplSocType_Erista = 0,
+    SplSocType_Mariko = 1,
+} SplSocType;
+
+typedef enum {
+    SplHardwareType_Icosa = 0,
+    SplHardwareType_Copper = 1,
+    SplHardwareType_Hoag = 2,
+    SplHardwareType_Iowa = 3,
+    SplHardwareType_Calcio = 4,
+    SplHardwareType_Five = 5,
+} SplHardwareType;
+
+typedef enum {
    EXO_EMUMMC_TYPE_NONE = 0,
    EXO_EMUMMC_TYPE_PARTITION = 1,
    EXO_EMUMMC_TYPE_FILES = 2,
@@ -68,6 +82,9 @@ typedef struct {
 } exo_emummc_config_t;
 
 Result smcGetConfig(SplConfigItem config_item, u64 *out_config);
+
+SplHardwareType splGetHardwareType(void);
+SplSocType splGetSocType(void);
 
 void smcRebootToRcm(void);
 void smcRebootToIramPayload(void);

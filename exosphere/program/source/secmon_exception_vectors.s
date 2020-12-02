@@ -76,6 +76,11 @@ vector_entry synch_sp0
     .endfunc
     .cfi_endproc
 _ZN3ams6secmon26UnexpectedExceptionHandlerEv:
+    #if defined(AMS_BUILD_FOR_DEBUGGING) || defined(AMS_BUILD_FOR_AUDITING)
+    /* Jump to the debug exception handler. */
+    ldr x16, =_ZN3ams6secmon16ExceptionHandlerEv
+    br  x16
+    #else
     /* Load the ErrorInfo scratch. */
     ldr x0, =0x1F004AC40
 
@@ -85,6 +90,7 @@ _ZN3ams6secmon26UnexpectedExceptionHandlerEv:
 
     /* Perform an error reboot. */
     b _ZN3ams6secmon11ErrorRebootEv
+    #endif
 
 vector_entry irq_sp0
     /* An unexpected exception was taken. */
@@ -157,21 +163,21 @@ vector_entry irq_a64
     check_vector_size irq_a64
 
 vector_entry fiq_a64
-    /* Save X29, X30. */
+    /* Save x18, x26-x30. */
     stp x29, x30, [sp, #-0x10]!
-
-    /* Get the current core ID, ensure it's core 3. */
-    mrs x29, mpidr_el1
-    and x29, x29, #3
-    cmp x29, #3
-    b.ne _ZN3ams6secmon26UnexpectedExceptionHandlerEv
-
-    /* Save x26-x28, x18. */
     stp x28, x18, [sp, #-0x10]!
     stp x26, x27, [sp, #-0x10]!
 
     /* Set x18 to the global data region. */
     ldr x18, =0x1F01FA000
+
+    /* Get the current core. */
+    mrs x29, mpidr_el1
+    and x29, x29, #3
+
+    /* If we're not on core 3, take the core0-2 handler. */
+    cmp x29, #3
+    b.ne _ZN3ams6secmon25HandleFiqExceptionCore012Ev
 
     /* Handle the fiq exception. */
     bl _ZN3ams6secmon18HandleFiqExceptionEv
@@ -320,7 +326,41 @@ _ZN3ams6secmon18HandleFiqExceptionEv:
 vector_entry serror_a32
     /* An unexpected exception was taken. */
     b _ZN3ams6secmon26UnexpectedExceptionHandlerEv
-    check_vector_size serror_a32
+    .endfunc
+    .cfi_endproc
+_ZN3ams6secmon25HandleFiqExceptionCore012Ev:
+   /* Acquire exclusive access to the common smc stack. */
+    stp x4, x5, [sp, #-0x10]!
+    stp x2, x3, [sp, #-0x10]!
+    stp x0, x1, [sp, #-0x10]!
+    bl _ZN3ams6secmon25AcquireCommonSmcStackLockEv
+    ldp x0, x1, [sp], #0x10
+    ldp x2, x3, [sp], #0x10
+    ldp x4, x5, [sp], #0x10
+
+    /* Pivot to use the common smc stack. */
+    mov x30, sp
+    ldr x29, =0x1F01F6E80
+    mov sp, x29
+    stp x29, x30, [sp, #-0x10]!
+
+    /* Handle the fiq exception. */
+    bl _ZN3ams6secmon18HandleFiqExceptionEv
+
+    /* Restore our core-specific stack. */
+    ldp x29, x30, [sp], #0x10
+    mov sp, x30
+
+    /* Release our exclusive access to the common smc stack. */
+    stp x0, x1, [sp, #-0x10]!
+    bl _ZN3ams6secmon25ReleaseCommonSmcStackLockEv
+    ldp x0, x1, [sp], #0x10
+
+    /* Return. */
+    ldp x26, x27, [sp], #0x10
+    ldp x28, x18, [sp], #0x10
+    ldp x29, x30, [sp], #0x10
+    eret
 
     /* Instantiate the literal pool for the exception vectors. */
     .ltorg

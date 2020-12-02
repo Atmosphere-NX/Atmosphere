@@ -96,7 +96,10 @@ namespace ams::ldr {
             size_t num_entries = 0;
 
             const auto hos_version = hos::GetVersion();
-            if (hos_version >= hos::Version_10_1_0) {
+            if (hos_version >= hos::Version_11_0_0) {
+                entries = g_MinimumProgramVersions1100;
+                num_entries = g_MinimumProgramVersionsCount1100;
+            } else if (hos_version >= hos::Version_10_1_0) {
                 entries = g_MinimumProgramVersions1010;
                 num_entries = g_MinimumProgramVersionsCount1010;
             } else if (hos_version >= hos::Version_10_0_0) {
@@ -262,7 +265,11 @@ namespace ams::ldr {
                     flags |= svc::CreateProcessFlag_AddressSpace32BitWithoutAlias;
                     break;
                 case Npdm::AddressSpaceType_64Bit:
-                    flags |= svc::CreateProcessFlag_AddressSpace64Bit;
+                    if (hos::GetVersion() >= hos::Version_2_0_0 || svc::IsKernelMesosphere()) {
+                        flags |= svc::CreateProcessFlag_AddressSpace64Bit;
+                    } else {
+                        flags |= svc::CreateProcessFlag_AddressSpace64BitDeprecated;
+                    }
                     break;
                 default:
                     return ResultInvalidMeta();
@@ -316,6 +323,13 @@ namespace ams::ldr {
                 /* On 4.0.0+, the corresponding bit was simply "UseSecureMemory". */
                 if (meta->acid->flags & Acid::AcidFlag_DeprecatedUseSecureMemory) {
                     flags |= svc::CreateProcessFlag_DeprecatedUseSecureMemory;
+                }
+            }
+
+            /* 11.0.0+ Set Disable DAS merge. */
+            if (hos::GetVersion() >= hos::Version_11_0_0 || svc::IsKernelMesosphere()) {
+                if (meta_flags & Npdm::MetaFlag_DisableDeviceAddressSpaceMerge) {
+                    flags |= svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
                 }
             }
 

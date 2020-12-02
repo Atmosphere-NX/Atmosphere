@@ -20,6 +20,6 @@ namespace ams::secmon {
 
     using InterruptHandler = void (*)();
 
-    void SetInterruptHandler(int interrupt_id, InterruptHandler handler);
+    void SetInterruptHandler(int interrupt_id, u8 core_mask, InterruptHandler handler);
 
 }

@@ -344,9 +344,6 @@ namespace ams::boot {
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_clk_rst_regs, DisplayConfigPlld01);
         DO_SLEEP_OR_REGISTER_WRITES(g_disp1_regs, DisplayConfigDc01);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init01);
-        /* NOTE: Nintendo bug here. */
-        /* As of 8.0.0, Nintendo writes this list to CAR instead of DSI */
-        /* This results in them zeroing CLK_SOURCE_UARTA... */
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init02);
         DO_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init03);
         DO_SOC_DEPENDENT_REGISTER_WRITES(g_dsi_regs, DisplayConfigDsi01Init04);

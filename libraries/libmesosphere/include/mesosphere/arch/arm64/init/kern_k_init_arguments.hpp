@@ -29,6 +29,7 @@ namespace ams::kern::init {
         u64 entrypoint;
         u64 argument;
         u64 setup_function;
+        u64 exception_stack;
     };
 
 }

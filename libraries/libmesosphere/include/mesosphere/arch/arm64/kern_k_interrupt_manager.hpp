@@ -47,23 +47,23 @@ namespace ams::kern::arch::arm64 {
                 constexpr KGlobalInterruptEntry() : handler(nullptr), manually_cleared(false), needs_clear(false) { /* ... */ }
             };
         private:
-            static KSpinLock s_lock;
-            static std::array<KGlobalInterruptEntry, KInterruptController::NumGlobalInterrupts> s_global_interrupts;
-            static KInterruptController::GlobalState s_global_state;
-            static bool s_global_state_saved;
+            KCoreLocalInterruptEntry core_local_interrupts[cpu::NumCores][KInterruptController::NumLocalInterrupts]{};
+            KInterruptController interrupt_controller{};
+            KInterruptController::LocalState local_states[cpu::NumCores]{};
+            bool local_state_saved[cpu::NumCores]{};
+            mutable KSpinLock global_interrupt_lock{};
+            KGlobalInterruptEntry global_interrupts[KInterruptController::NumGlobalInterrupts]{};
+            KInterruptController::GlobalState global_state{};
+            bool global_state_saved{};
         private:
-            KCoreLocalInterruptEntry core_local_interrupts[KInterruptController::NumLocalInterrupts];
-            KInterruptController interrupt_controller;
-            KInterruptController::LocalState local_state;
-            bool local_state_saved;
-        private:
-            static ALWAYS_INLINE KSpinLock &GetLock() { return s_lock; }
-            static ALWAYS_INLINE KGlobalInterruptEntry &GetGlobalInterruptEntry(s32 irq) { return s_global_interrupts[KInterruptController::GetGlobalInterruptIndex(irq)]; }
-            ALWAYS_INLINE KCoreLocalInterruptEntry &GetLocalInterruptEntry(s32 irq) { return this->core_local_interrupts[KInterruptController::GetLocalInterruptIndex(irq)]; }
+            ALWAYS_INLINE KSpinLock &GetGlobalInterruptLock() const { return this->global_interrupt_lock; }
+            ALWAYS_INLINE KGlobalInterruptEntry &GetGlobalInterruptEntry(s32 irq) { return this->global_interrupts[KInterruptController::GetGlobalInterruptIndex(irq)]; }
+            ALWAYS_INLINE KCoreLocalInterruptEntry &GetLocalInterruptEntry(s32 irq) { return this->core_local_interrupts[GetCurrentCoreId()][KInterruptController::GetLocalInterruptIndex(irq)]; }
 
             bool OnHandleInterrupt();
         public:
-            constexpr KInterruptManager() : core_local_interrupts(), interrupt_controller(), local_state(), local_state_saved(false) { /* ... */ }
+            constexpr KInterruptManager() = default;
+
             NOINLINE void Initialize(s32 core_id);
             NOINLINE void Finalize(s32 core_id);
 

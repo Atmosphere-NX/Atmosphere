@@ -42,7 +42,7 @@ namespace ams::kern {
             u32 prev_intr_state;
         public:
             ALWAYS_INLINE KScopedInterruptDisable() : prev_intr_state(KInterruptManager::DisableInterrupts()) { /* ... */ }
-            ~KScopedInterruptDisable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
+            ALWAYS_INLINE ~KScopedInterruptDisable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
     };
 
     class KScopedInterruptEnable {
@@ -52,7 +52,7 @@ namespace ams::kern {
             u32 prev_intr_state;
         public:
             ALWAYS_INLINE KScopedInterruptEnable() : prev_intr_state(KInterruptManager::EnableInterrupts()) { /* ... */ }
-            ~KScopedInterruptEnable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
+            ALWAYS_INLINE ~KScopedInterruptEnable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
     };
 
 }

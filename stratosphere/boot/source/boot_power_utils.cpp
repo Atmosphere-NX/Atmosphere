@@ -26,7 +26,8 @@ namespace ams::boot {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x20000;
+        constexpr size_t IramPayloadMaxSize = 0x24000;
+        constexpr size_t IramFatalErrorContextOffset = 0x2E000;
 
         /* Globals. */
         alignas(os::MemoryPageSize) u8 g_work_page[os::MemoryPageSize];
@@ -42,7 +43,20 @@ namespace ams::boot {
             }
         }
 
-        void DoRebootToPayload(ams::FatalErrorContext *ctx) {
+        void DoRebootToPayload() {
+            /* Ensure clean IRAM state. */
+            ClearIram();
+
+            /* Copy in payload. */
+            for (size_t ofs = 0; ofs < fusee_primary_bin_size; ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &fusee_primary_bin[ofs], std::min(static_cast<size_t>(fusee_primary_bin_size - ofs), sizeof(g_work_page)));
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
+            }
+
+            exosphere::ForceRebootToIramPayload();
+        }
+
+        void DoRebootToFatalError(const ams::FatalErrorContext *ctx) {
             /* Ensure clean IRAM state. */
             ClearIram();
 
@@ -57,17 +71,17 @@ namespace ams::boot {
             if (ctx != nullptr) {
                 std::memset(g_work_page, 0xCC, sizeof(g_work_page));
                 std::memcpy(g_work_page, ctx, sizeof(*ctx));
-                exosphere::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+                exosphere::CopyToIram(IramPayloadBase + IramFatalErrorContextOffset, g_work_page, sizeof(g_work_page));
             }
 
-            exosphere::ForceRebootToIramPayload();
+            exosphere::ForceRebootToFatalError();
         }
 
     }
 
     void RebootSystem() {
         if (spl::GetSocType() == spl::SocType_Erista) {
-            DoRebootToPayload(nullptr);
+            DoRebootToPayload();
         } else {
             /* On Mariko, we can't reboot to payload, so we should just do a reboot. */
             PmicDriver().RebootSystem();
@@ -83,7 +97,7 @@ namespace ams::boot {
     }
 
     void RebootForFatalError(ams::FatalErrorContext *ctx) {
-        DoRebootToPayload(ctx);
+        DoRebootToFatalError(ctx);
     }
 
 }

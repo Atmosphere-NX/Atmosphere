@@ -18,8 +18,7 @@ for i in range(6):
     if i < len(section_names):
         section["Name"] = section_names[i]
 
-    section["OutOffset"], section["DecompressedSize"], section["CompressedSize"], section["Attribute"] = unpack(
-        "IIII", section_bytes)
+    section["OutOffset"], section["DecompressedSize"], section["CompressedSize"], section["Attribute"] = unpack("IIII", section_bytes)
     sections.append(section)
     print(section)
 

@@ -25,7 +25,8 @@ namespace ams::mitm::bpc {
         constexpr uintptr_t IramBase = 0x40000000ull;
         constexpr uintptr_t IramPayloadBase = 0x40010000ull;
         constexpr size_t IramSize = 0x40000;
-        constexpr size_t IramPayloadMaxSize = 0x20000;
+        constexpr size_t IramPayloadMaxSize = 0x24000;
+        constexpr size_t IramFatalErrorContextOffset = 0x2E000;
 
         /* Helper enum. */
         enum class RebootType : u32 {
@@ -50,7 +51,20 @@ namespace ams::mitm::bpc {
             }
         }
 
-        void DoRebootToPayload(const ams::FatalErrorContext *ctx) {
+        void DoRebootToPayload() {
+            /* Ensure clean IRAM state. */
+            ClearIram();
+
+            /* Copy in payload. */
+            for (size_t ofs = 0; ofs < sizeof(g_reboot_payload); ofs += sizeof(g_work_page)) {
+                std::memcpy(g_work_page, &g_reboot_payload[ofs], std::min(sizeof(g_reboot_payload) - ofs, sizeof(g_work_page)));
+                exosphere::CopyToIram(IramPayloadBase + ofs, g_work_page, sizeof(g_work_page));
+            }
+
+            exosphere::ForceRebootToIramPayload();
+        }
+
+        void DoRebootToFatalError(const ams::FatalErrorContext *ctx) {
             /* Ensure clean IRAM state. */
             ClearIram();
 
@@ -64,10 +78,10 @@ namespace ams::mitm::bpc {
             if (ctx != nullptr) {
                 std::memset(g_work_page, 0xCC, sizeof(g_work_page));
                 std::memcpy(g_work_page, ctx, sizeof(*ctx));
-                exosphere::CopyToIram(IramPayloadBase + IramPayloadMaxSize, g_work_page, sizeof(g_work_page));
+                exosphere::CopyToIram(IramPayloadBase + IramFatalErrorContextOffset, g_work_page, sizeof(g_work_page));
             }
 
-            exosphere::ForceRebootToIramPayload();
+            exosphere::ForceRebootToFatalError();
         }
 
     }
@@ -84,7 +98,7 @@ namespace ams::mitm::bpc {
                 break;
             case RebootType::ToPayload:
             default: /* This should never be called with ::Standard */
-                DoRebootToPayload(nullptr);
+                DoRebootToPayload();
                 break;
         }
     }
@@ -95,7 +109,7 @@ namespace ams::mitm::bpc {
 
     /* Atmosphere power utilities. */
     void RebootForFatalError(const ams::FatalErrorContext *ctx) {
-        DoRebootToPayload(ctx);
+        DoRebootToFatalError(ctx);
     }
 
     void SetRebootPayload(const void *payload, size_t payload_size) {

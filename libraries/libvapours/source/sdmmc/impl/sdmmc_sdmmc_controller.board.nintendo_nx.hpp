@@ -394,7 +394,7 @@ namespace ams::sdmmc::impl {
                                                                                 APB_MISC_REG_BITS_VALUE(GP_SDMMC1_PAD_CFGPADCTRL_CFG2TMC_SDMMC1_PAD_CAL_DRVUP, drvup));
 
                 /* Read to be sure our config takes. */
-                reg::Read(apb_address + APB_MISC_GP_EMMC4_PAD_CFGPADCTRL);
+                reg::Read(apb_address + APB_MISC_GP_SDMMC1_PAD_CFGPADCTRL);
             }
         public:
             Sdmmc1Controller() : SdmmcController(Sdmmc1RegistersPhysicalAddress) {

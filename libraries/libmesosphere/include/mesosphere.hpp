@@ -48,7 +48,6 @@
 #include <mesosphere/kern_k_spin_lock.hpp>
 #include <mesosphere/kern_k_memory_manager.hpp>
 #include <mesosphere/kern_k_interrupt_task_manager.hpp>
-#include <mesosphere/kern_k_core_local_region.hpp>
 #include <mesosphere/kern_k_slab_heap.hpp>
 #include <mesosphere/kern_k_light_lock.hpp>
 #include <mesosphere/kern_k_dpc_manager.hpp>
@@ -78,7 +77,8 @@
 #include <mesosphere/kern_select_debug.hpp>
 #include <mesosphere/kern_k_process.hpp>
 #include <mesosphere/kern_k_resource_limit.hpp>
-#include <mesosphere/kern_k_synchronization.hpp>
+#include <mesosphere/kern_k_alpha.hpp>
+#include <mesosphere/kern_k_beta.hpp>
 
 /* More Miscellaneous objects. */
 #include <mesosphere/kern_k_object_name.hpp>

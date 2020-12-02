@@ -18,6 +18,7 @@
 #include "secmon_error.hpp"
 #include "secmon_map.hpp"
 #include "secmon_cpu_context.hpp"
+#include "secmon_mariko_fatal_error.hpp"
 #include "secmon_interrupt_handler.hpp"
 #include "secmon_misc.hpp"
 #include "smc/secmon_random_cache.hpp"
@@ -814,6 +815,16 @@ namespace ams::secmon {
             reg::Read(MC + MC_IRAM_REG_CTRL);
         }
 
+        void DisableUntranslatedDeviceMemoryAccess() {
+            /* If we can (mariko only), disable GMMU accesses that bypass the SMMU. */
+            /* Additionally, force all untranslated acccesses to hit one of the carveouts. */
+            if (GetSocType() == fuse::SocType_Mariko) {
+                reg::Write(MC + MC_UNTRANSLATED_REGION_CHECK, MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_UNTRANSLATED_REGION_CHECK_ACCESS,          DISABLED),
+                                                              MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_REQUIRE_UNTRANSLATED_CLIENTS_HIT_CARVEOUT,  ENABLED),
+                                                              MC_REG_BITS_ENUM(UNTRANSLATED_REGION_CHECK_REQUIRE_UNTRANSLATED_GPU_HIT_CARVEOUT,      ENABLED));
+            }
+        }
+
         void FinalizeCarveoutSecureScratchRegisters() {
             /* Define carveout scratch values. */
             constexpr uintptr_t WarmbootCarveoutAddress = MemoryRegionDram.GetAddress();
@@ -1072,25 +1083,36 @@ namespace ams::secmon {
 
         /* Setup the security engine interrupt. */
         constexpr int SecurityEngineInterruptId = 90;
-        gic::SetPriority      (SecurityEngineInterruptId,     gic::HighestPriority);
-        gic::SetInterruptGroup(SecurityEngineInterruptId,                        0);
-        gic::SetEnable        (SecurityEngineInterruptId,                     true);
-        gic::SetSpiTargetCpu  (SecurityEngineInterruptId,                 (1 << 3));
-        gic::SetSpiMode       (SecurityEngineInterruptId, gic::InterruptMode_Level);
+        constexpr u8  SecurityEngineInterruptCoreMask = (1 << 3);
+        gic::SetPriority      (SecurityEngineInterruptId,            gic::HighestPriority);
+        gic::SetInterruptGroup(SecurityEngineInterruptId,                               0);
+        gic::SetEnable        (SecurityEngineInterruptId,                            true);
+        gic::SetSpiTargetCpu  (SecurityEngineInterruptId, SecurityEngineInterruptCoreMask);
+        gic::SetSpiMode       (SecurityEngineInterruptId,        gic::InterruptMode_Level);
 
         /* Setup the activity monitor interrupt. */
         constexpr int ActivityMonitorInterruptId = 77;
-        gic::SetPriority      (ActivityMonitorInterruptId,     gic::HighestPriority);
-        gic::SetInterruptGroup(ActivityMonitorInterruptId,                        0);
-        gic::SetEnable        (ActivityMonitorInterruptId,                     true);
-        gic::SetSpiTargetCpu  (ActivityMonitorInterruptId,                 (1 << 3));
-        gic::SetSpiMode       (ActivityMonitorInterruptId, gic::InterruptMode_Level);
+        constexpr u8  ActivityMonitorInterruptCoreMask = (1 << 3);
+        gic::SetPriority      (ActivityMonitorInterruptId,            gic::HighestPriority);
+        gic::SetInterruptGroup(ActivityMonitorInterruptId,                               0);
+        gic::SetEnable        (ActivityMonitorInterruptId,                            true);
+        gic::SetSpiTargetCpu  (ActivityMonitorInterruptId, ActivityMonitorInterruptCoreMask);
+        gic::SetSpiMode       (ActivityMonitorInterruptId,        gic::InterruptMode_Level);
+
+        /* Setup the mariko fatal error interrupt. */
+        constexpr u8 MarikoFatalInterruptCoreMask = 0b1111;
+        gic::SetPriority      (MarikoFatalErrorInterruptId,         gic::HighestPriority);
+        gic::SetInterruptGroup(MarikoFatalErrorInterruptId,                            0);
+        gic::SetEnable        (MarikoFatalErrorInterruptId,                         true);
+        gic::SetSpiTargetCpu  (MarikoFatalErrorInterruptId,                            0);
+        gic::SetSpiMode       (MarikoFatalErrorInterruptId,     gic::InterruptMode_Level);
 
         /* If we're coldboot, perform one-time setup. */
         if (g_is_cold_boot) {
-            /* Register both interrupt handlers. */
-            SetInterruptHandler(SecurityEngineInterruptId,      se::HandleInterrupt);
-            SetInterruptHandler(ActivityMonitorInterruptId, actmon::HandleInterrupt);
+            /* Register all interrupt handlers. */
+            SetInterruptHandler(SecurityEngineInterruptId,   SecurityEngineInterruptCoreMask,      se::HandleInterrupt);
+            SetInterruptHandler(ActivityMonitorInterruptId,  ActivityMonitorInterruptCoreMask, actmon::HandleInterrupt);
+            SetInterruptHandler(MarikoFatalErrorInterruptId, MarikoFatalInterruptCoreMask,     secmon::HandleMarikoFatalErrorInterrupt);
 
             /* We're expecting the other cores to come out of reset. */
             for (int i = 1; i < NumCores; ++i) {
@@ -1144,6 +1166,9 @@ namespace ams::secmon {
 
         /* Disable the ARC. */
         DisableArc();
+
+        /* Disable untranslated memory accesses by devices. */
+        DisableUntranslatedDeviceMemoryAccess();
 
         /* Further protections aren't applied on <= 1.0.0. */
         if (GetTargetFirmware() <= TargetFirmware_1_0_0) {

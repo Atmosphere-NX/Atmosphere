@@ -747,13 +747,7 @@ namespace ams::sdmmc::impl {
 
     SdHostStandardController::SdHostStandardController(dd::PhysicalAddress registers_phys_addr, size_t registers_size) {
         /* Translate the physical address to a address. */
-        #if defined(ATMOSPHERE_IS_STRATOSPHERE)
-            const uintptr_t registers_addr = dd::QueryIoMapping(registers_phys_addr, registers_size);
-        #else
-            /* TODO: Discriminate between bpmp, exosphere address? */
-            AMS_UNUSED(registers_size);
-            const uintptr_t registers_addr = static_cast<uintptr_t>(registers_phys_addr);
-        #endif
+        const uintptr_t registers_addr = dd::QueryIoMapping(registers_phys_addr, registers_size);
 
         /* Set registers. */
         AMS_ABORT_UNLESS(registers_addr != 0);

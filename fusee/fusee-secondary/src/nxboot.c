@@ -55,6 +55,7 @@
 #define u8 uint8_t
 #define u32 uint32_t
 #include "exosphere_bin.h"
+#include "mariko_fatal_bin.h"
 #include "mesosphere_bin.h"
 #include "sept_secondary_00_enc.h"
 #include "sept_secondary_01_enc.h"
@@ -238,7 +239,9 @@ static bool is_nca_present(const char *nca_name) {
 static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
+    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0) {
+        CHECK_NCA("594c90bcdbcccad6b062eadba0cd0e7e", 11_0_0);
+    } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
         CHECK_NCA("26325de4db3909e0ef2379787c7e671d", 10_2_0);
         CHECK_NCA("5077973537f6735b564dd7475b779f87", 10_1_1); /* Exclusive to China. */
         CHECK_NCA("fd1faed0ca750700d254c0915b93d506", 10_1_0);
@@ -336,6 +339,8 @@ static uint32_t nxboot_get_target_firmware(const void *package1loader) {
                 return ATMOSPHERE_TARGET_FIRMWARE_9_1_0;
             } else if (memcmp(package1loader_header->build_timestamp, "20200303", 8) == 0) {
                 return ATMOSPHERE_TARGET_FIRMWARE_10_0_0;
+            } else if (memcmp(package1loader_header->build_timestamp, "20201030", 8) == 0) {
+                return ATMOSPHERE_TARGET_FIRMWARE_11_0_0;
             } else {
                 fatal_error("[NXBOOT] Unable to identify package1!\n");
             }
@@ -518,6 +523,10 @@ static void nxboot_configure_stratosphere(uint32_t target_firmware) {
         }
         /* Check if the fuses are < 9.0.0, but firmware is >= 9.0.0 */
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_9_0_0 && !(fuse_get_reserved_odm(7) & ~0x000003FF)) {
+            kip_patches_set_enable_nogc();
+        }
+        /* Check if the fuses are < 11.0.0, but firmware is >= 11.0.0 */
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0 && !(fuse_get_reserved_odm(7) & ~0x00001FFF)) {
             kip_patches_set_enable_nogc();
         }
     }
@@ -1004,6 +1013,24 @@ uint32_t nxboot_main(void) {
         }
     } else {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
+    }
+
+    /* Copy the exosphere mariko fatal program to a good location. */
+    {
+        void * const mariko_fatal_dst = (void *)0x80020000;
+        memset(mariko_fatal_dst, 0, 0x20000);
+
+        const size_t sd_mf_size = get_file_size("atmosphere/mariko_fatal.bin");
+        if (sd_mf_size != 0) {
+            if (sd_mf_size > 0x20000) {
+                fatal_error("Error: atmosphere/mariko_fatal.bin is too large!\n");
+            }
+            if (read_from_file(mariko_fatal_dst, sd_mf_size, "atmosphere/mariko_fatal.bin") != sd_mf_size) {
+                fatal_error("Error: failed to read atmosphere/mariko_fatal.bin");
+            }
+        } else {
+            memcpy(mariko_fatal_dst, mariko_fatal_bin, mariko_fatal_bin_size);
+        }
     }
 
     /* Move BootConfig. */

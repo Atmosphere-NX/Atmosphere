@@ -1,0 +1,103 @@
+exosphere, storage requirements:
+
+Nonvolatile memory:
+0xE000
+
+Volatile memory: 0x2000
+
+Physical Address Space:
+-0x7C010000-0x7C012000 - boot code/volatile memory
+-0x7C012000-0x7C01E000 - program region
+-0x7C01E000-0x7C01F000 - global data/context
+-0x7C01F000-0x7C020000 - L2/L3 page table
+
+-0x7C020000-0x7C040000 - Mariko-only program region
+-0x7C040000-0x7C048000 - Mariko-only program stack
+-0x7C048000-0x7C050000 - Reserved Mariko TZRAM (SE context carveouts, etc)
+
+Virtual Address Space:
+
+L1: 0x40 bytes.
+
+L1 Entries:
+    -0 (0x000000000-0x040000000): Empty
+    -1 (0x040000000-0x080000000): Identity Mapping/Empty
+    -2 (0x080000000-0x0C0000000): DRAM Mapping/Empty
+    -3 (0x0C0000000-0x100000000): DRAM Mapping/Empty
+    -4 (0x100000000-0x140000000): Empty
+    -5 (0x140000000-0x180000000): Empty
+    -6 (0x180000000-0x1C0000000): Empty
+    -7 (0x1C0000000-0x200000000): Virtual Region
+
+L2 Page and L3 page are both0x7C01F000
+
+L2 Entries:
+    -0x040000000 (Identity IRAM Table)
+        - Entry Used: 0x000
+    -0x07C000000 (Identity TZRAM Table)
+        - Entry Used: 0x1E0
+    -0x1F0000000 (Virtual Region Table)
+        - Entry Used: 0x180
+
+L3 Entries:
+    - Identity TZRAM mapping (0x7C010000-0x7C020000)
+        - Entry Used: 0x010-0x01F
+    - Identity IRAM mapping  (0x40020000-0x40040000)
+        - Entry Used: 0x020-0x03F
+    - Virtual Device region (0x1F0040000-0x1F0080000)
+        - Entry Used: 0x040-0x07F
+    - Read Only TZRAM Alias (0x1F00A0000-0x1F00B0000)
+        - Entry Used: 0x0A0-0x0AF
+    - Program region        (0x1F00C0000-0x1F00CC000)
+        - Entry Used: 0x0C0-0x0CB
+    - Mariko Program region (0x1F00D0000-0x1F00F0000)
+        - Entry Used: 0x0D0-0x0EF
+    - Mariko Program stack  (0x1F00F4000-0x1F00FC000)
+        - Entry Used: 0x0F4-0x0FB
+    - Secure DRAM Storage   (0x1F0100000-0x1F0110000)
+        - Entry Used: 0x100-0x10F
+    - Debug DRAM Storage    (0x1F0110000-0x1F0114000)
+        - Entry Used: 0x110-0x113
+    - SC7 IRAM Work Space   (0x1F0120000-0x1F0130000)
+        - Entry Used: 0x120-0x12F
+    - SC7 IRAM Firmware     (0x1F0140000-0x1F0141000)
+        - Entry Used: 0x140-0x140
+    - Debug Code            (0x1F0150000-0x1F0154000)
+        - Entry Used: 0x150-0x153
+    - Reserved For Debug    (0x1F0160000-0x1F0170000)
+        - Entry Used: 0x160-0x16F
+    - Boot Code             (0x1F01C0000-0x1F01C2000)
+        - Entry Used: 0x1C0-0x1C1
+    - AMS IRAM Page         (0x1F01F2000-0x1F01F2000)
+        - Entry Used: 0x1F2-0x1F2
+    - AMS User Page         (0x1F01F4000-0x1F01F4000)
+        - Entry Used: 0x1F4-0x1F4
+    - SMC User Page         (0x1F01F6000-0x1F01F6000)
+        - Entry Used: 0x1F6-0x1F6
+    - Volatile (Data)       (0x1F01F8000-0x1F01F9000)
+        - Entry Used: 0x1F8-0x1F8
+    - Volatile (Stacks)     (0x1F01FA000-0x1F01FB000)
+        - Entry Used: 0x1FA-0x1FA
+    - Global Data           (0x1F01FC000-0x1F01FD000)
+
+
+NV Global Data needs:
+    Exosphere + Emummc Config (<=0x200)
+    Boot Config[0x400]
+    RSA Context(0x100)
+    Old Device Keys[0x20][0x10];
+    Old Master Keys[0x20][0x10];
+    Imported Rsa Keys[4][0x200];
+    CPU Ctx[4][0x100];
+
+Total: 0x1700
+
+Global Data Page (accessible via X18):
+    0x000-0x200: Exosphere Config
+    0x200-0x400: Emummc Config
+    0x400-0x800: Sealed AES Keys
+    0x800-0xC00: Boot Config
+    0xC00-0xFFF: CPU contexts. Can be replaced, but this fits exactly so minimizes program space waste.
+
+Volatile Global Data needs:
+    Random Cache 0x400 bytes

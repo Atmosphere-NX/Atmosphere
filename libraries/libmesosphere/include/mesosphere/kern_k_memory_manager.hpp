@@ -70,10 +70,12 @@ namespace ams::kern {
                 public:
                     Impl() : heap(), page_reference_counts(), management_region(), pool(), next(), prev() { /* ... */ }
 
-                    size_t Initialize(const KMemoryRegion *region, Pool pool, KVirtualAddress management_region, KVirtualAddress management_region_end);
+                    size_t Initialize(uintptr_t address, size_t size, KVirtualAddress management, KVirtualAddress management_end, Pool p);
 
                     KVirtualAddress AllocateBlock(s32 index, bool random) { return this->heap.AllocateBlock(index, random); }
                     void Free(KVirtualAddress addr, size_t num_pages) { this->heap.Free(addr, num_pages); }
+
+                    void UpdateUsedHeapSize() { this->heap.UpdateUsedSize(); }
 
                     void InitializeOptimizedMemory() { std::memset(GetVoidPointer(this->management_region), 0, CalculateOptimizedProcessOverheadSize(this->heap.GetSize())); }
 
@@ -96,12 +98,23 @@ namespace ams::kern {
                     constexpr Impl *GetNext() const { return this->next; }
                     constexpr Impl *GetPrev() const { return this->prev; }
 
+                    void OpenFirst(KVirtualAddress address, size_t num_pages) {
+                        size_t index = this->GetPageOffset(address);
+                        const size_t end = index + num_pages;
+                        while (index < end) {
+                            const RefCount ref_count = (++this->page_reference_counts[index]);
+                            MESOSPHERE_ABORT_UNLESS(ref_count == 1);
+
+                            index++;
+                        }
+                    }
+
                     void Open(KVirtualAddress address, size_t num_pages) {
                         size_t index = this->GetPageOffset(address);
                         const size_t end = index + num_pages;
                         while (index < end) {
                             const RefCount ref_count = (++this->page_reference_counts[index]);
-                            MESOSPHERE_ABORT_UNLESS(ref_count > 0);
+                            MESOSPHERE_ABORT_UNLESS(ref_count > 1);
 
                             index++;
                         }
@@ -178,9 +191,9 @@ namespace ams::kern {
             NOINLINE Result InitializeOptimizedMemory(u64 process_id, Pool pool);
             NOINLINE void FinalizeOptimizedMemory(u64 process_id, Pool pool);
 
-            NOINLINE KVirtualAddress AllocateContinuous(size_t num_pages, size_t align_pages, u32 option);
-            NOINLINE Result Allocate(KPageGroup *out, size_t num_pages, u32 option);
-            NOINLINE Result AllocateForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
+            NOINLINE KVirtualAddress AllocateAndOpenContinuous(size_t num_pages, size_t align_pages, u32 option);
+            NOINLINE Result AllocateAndOpen(KPageGroup *out, size_t num_pages, u32 option);
+            NOINLINE Result AllocateAndOpenForProcess(KPageGroup *out, size_t num_pages, u32 option, u64 process_id, u8 fill_pattern);
 
             void Open(KVirtualAddress address, size_t num_pages) {
                 /* Repeatedly open references until we've done so for all pages. */

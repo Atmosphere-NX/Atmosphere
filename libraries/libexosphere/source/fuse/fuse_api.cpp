@@ -165,6 +165,7 @@ namespace ams::fuse {
         }
 
         constexpr const TargetFirmware FuseVersionIncrementFirmwares[] = {
+            TargetFirmware_11_0_0,
             TargetFirmware_10_0_0,
             TargetFirmware_9_1_0,
             TargetFirmware_9_0_0,
@@ -207,7 +208,7 @@ namespace ams::fuse {
             return 0;
         }
 
-        static_assert(GetExpectedFuseVersionImpl(TargetFirmware_10_0_0)          == 13);
+        static_assert(GetExpectedFuseVersionImpl(TargetFirmware_11_0_0)          == 14);
         static_assert(GetExpectedFuseVersionImpl(TargetFirmware_1_0_0)           ==  1);
         static_assert(GetExpectedFuseVersionImpl(static_cast<TargetFirmware>(0)) ==  0);
 

@@ -28,11 +28,12 @@ namespace ams::kern {
             s64 limit_values[ams::svc::LimitableResource_Count];
             s64 current_values[ams::svc::LimitableResource_Count];
             s64 current_hints[ams::svc::LimitableResource_Count];
+            s64 peak_values[ams::svc::LimitableResource_Count];
             mutable KLightLock lock;
             s32 waiter_count;
             KLightConditionVariable cond_var;
         public:
-            constexpr ALWAYS_INLINE KResourceLimit() : limit_values(), current_values(), current_hints(), lock(), waiter_count(), cond_var() { /* ... */ }
+            constexpr ALWAYS_INLINE KResourceLimit() : limit_values(), current_values(), current_hints(), peak_values(), lock(), waiter_count(), cond_var() { /* ... */ }
             virtual ~KResourceLimit() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
@@ -42,6 +43,7 @@ namespace ams::kern {
 
             s64 GetLimitValue(ams::svc::LimitableResource which) const;
             s64 GetCurrentValue(ams::svc::LimitableResource which) const;
+            s64 GetPeakValue(ams::svc::LimitableResource which) const;
             s64 GetFreeValue(ams::svc::LimitableResource which) const;
 
             Result SetLimitValue(ams::svc::LimitableResource which, s64 value);

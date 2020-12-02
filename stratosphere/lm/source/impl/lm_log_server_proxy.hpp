@@ -14,46 +14,61 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "lm_a_logger.hpp"
+#include "lm_sd_card_logging.hpp"
 
 namespace ams::lm::impl {
 
     class LogServerProxy {
+        NON_COPYABLE(LogServerProxy);
+        NON_MOVEABLE(LogServerProxy);
         private:
             alignas(os::ThreadStackAlignment) u8 htcs_thread_stack[4_KB];
             os::ThreadType htcs_thread;
             os::SdkConditionVariable some_cond_var;
             os::Event finalize_event;
             os::SdkMutex some_cond_var_lock;
-            os::SdkMutex some_fn_lock;
-            u32 unk_3;
-            u32 unk_4;
-            ALoggerSomeFunction some_fn;
+            os::SdkMutex update_enabled_fn_lock;
+            std::atomic_int htcs_server_fd;
+            std::atomic_int htcs_client_fd;
+            UpdateEnabledFunction update_enabled_fn;
+            /*
             u64 data_4;
             char data_5[3566];
+            */
         public:
-            LogServerProxy() : htcs_thread_stack{}, htcs_thread(), some_cond_var(), finalize_event(os::EventClearMode_ManualClear), some_cond_var_lock(), some_fn_lock(), unk_3(0), some_fn(nullptr), data_4(0), data_5{} {}
+            LogServerProxy() : htcs_thread_stack{}, htcs_thread(), some_cond_var(), finalize_event(os::EventClearMode_ManualClear), some_cond_var_lock(), update_enabled_fn_lock(), htcs_server_fd(INT_MAX), htcs_client_fd(INT_MAX), update_enabled_fn(nullptr) /*, data_4(0), data_5{}*/ {}
 
-            void StartHtcsThread(ThreadFunc htcs_entry) {
-                R_ABORT_UNLESS(os::CreateThread(std::addressof(this->htcs_thread), htcs_entry, this, this->htcs_thread_stack, sizeof(this->htcs_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(lm, HtcsConnection)));
-                os::SetThreadNamePointer(std::addressof(this->htcs_thread), AMS_GET_SYSTEM_THREAD_NAME(lm, HtcsConnection));
-                os::StartThread(std::addressof(this->htcs_thread));
+            void StartHtcsThread(ThreadFunc htcs_entry);
+            void DisposeHtcsThread();
+            bool LogOverHtcs(const void *log_data, size_t log_size);
+
+            void SetUpdateEnabledFunction(UpdateEnabledFunction update_enabled_fn) {
+                std::scoped_lock lk(this->update_enabled_fn_lock);
+                this->update_enabled_fn = update_enabled_fn;
             }
 
-            void DisposeHtcsThread() {
-                this->finalize_event.Signal();
-                /* nn::htcs::Close(<htcs-fd>); */
-                os::WaitThread(std::addressof(this->htcs_thread));
-                os::DestroyThread(std::addressof(this->htcs_thread));
+            inline void SetHtcsClientFd(int fd) {
+                this->htcs_client_fd = fd;
+            }
+            
+            inline void SetHtcsServerFd(int fd) {
+                this->htcs_server_fd = fd;
             }
 
-            void SetSomeFunction(ALoggerSomeFunction some_fn) {
-                std::scoped_lock lk(this->some_fn_lock);
-                this->some_fn = some_fn;
-            }
-
-            os::Event &GetFinalizeEvent() {
+            inline os::Event &GetFinalizeEvent() {
                 return this->finalize_event;
+            }
+
+            void DoHtcsLoopThing() {
+                std::scoped_lock lk(this->some_cond_var_lock);
+                this->some_cond_var.Broadcast();
+            }
+
+            void SetEnabled(bool enabled) {
+                std::scoped_lock lk(this->update_enabled_fn_lock);
+                if (this->update_enabled_fn) {
+                    this->update_enabled_fn(enabled);
+                }
             }
     };
 

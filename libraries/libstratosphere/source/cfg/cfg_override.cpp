@@ -34,7 +34,7 @@ namespace ams::cfg {
 
         constexpr ProgramOverrideKey DefaultAppletPhotoViewerOverrideKey = {
             .override_key = {
-                .key_combination     = KEY_R,
+                .key_combination     = HidNpadButton_R,
                 .override_by_default = true,
             },
             .program_id = ncm::SystemAppletId::PhotoViewer,
@@ -44,7 +44,9 @@ namespace ams::cfg {
 
         struct HblOverrideConfig {
             ProgramOverrideKey program_configs[MaxProgramOverrideKeys];
+            impl::OverrideStatusFlag program_as_flags[MaxProgramOverrideKeys];
             OverrideKey override_any_app_key;
+            impl::OverrideStatusFlag override_any_app_as_flag;
             bool override_any_app;
         };
 
@@ -56,12 +58,12 @@ namespace ams::cfg {
 
         /* Override globals. */
         OverrideKey g_default_override_key = {
-            .key_combination = KEY_L,
+            .key_combination = HidNpadButton_L,
             .override_by_default = true,
         };
 
         OverrideKey g_default_cheat_enable_key = {
-            .key_combination = KEY_L,
+            .key_combination = HidNpadButton_L,
             .override_by_default = true,
         };
 
@@ -76,10 +78,21 @@ namespace ams::cfg {
                 InvalidProgramOverrideKey,
                 InvalidProgramOverrideKey,
             },
+            .program_as_flags = {
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+                impl::OverrideStatusFlag_AddressSpace64Bit,
+            },
             .override_any_app_key = {
-                .key_combination = KEY_R,
+                .key_combination = HidNpadButton_R,
                 .override_by_default = false,
             },
+            .override_any_app_as_flag = impl::OverrideStatusFlag_AddressSpace64Bit,
             .override_any_app = true,
         };
 
@@ -97,44 +110,67 @@ namespace ams::cfg {
 
             /* Parse key combination. */
             if (strcasecmp(value, "A") == 0) {
-                cfg.key_combination = KEY_A;
+                cfg.key_combination = HidNpadButton_A;
             } else if (strcasecmp(value, "B") == 0) {
-                cfg.key_combination = KEY_B;
+                cfg.key_combination = HidNpadButton_B;
             } else if (strcasecmp(value, "X") == 0) {
-                cfg.key_combination = KEY_X;
+                cfg.key_combination = HidNpadButton_X;
             } else if (strcasecmp(value, "Y") == 0) {
-                cfg.key_combination = KEY_Y;
+                cfg.key_combination = HidNpadButton_Y;
             } else if (strcasecmp(value, "LS") == 0) {
-                cfg.key_combination = KEY_LSTICK;
+                cfg.key_combination = HidNpadButton_StickL;
             } else if (strcasecmp(value, "RS") == 0) {
-                cfg.key_combination = KEY_RSTICK;
+                cfg.key_combination = HidNpadButton_StickR;
             } else if (strcasecmp(value, "L") == 0) {
-                cfg.key_combination = KEY_L;
+                cfg.key_combination = HidNpadButton_L;
             } else if (strcasecmp(value, "R") == 0) {
-                cfg.key_combination = KEY_R;
+                cfg.key_combination = HidNpadButton_R;
             } else if (strcasecmp(value, "ZL") == 0) {
-                cfg.key_combination = KEY_ZL;
+                cfg.key_combination = HidNpadButton_ZL;
             } else if (strcasecmp(value, "ZR") == 0) {
-                cfg.key_combination = KEY_ZR;
+                cfg.key_combination = HidNpadButton_ZR;
             } else if (strcasecmp(value, "PLUS") == 0) {
-                cfg.key_combination = KEY_PLUS;
+                cfg.key_combination = HidNpadButton_Plus;
             } else if (strcasecmp(value, "MINUS") == 0) {
-                cfg.key_combination = KEY_MINUS;
+                cfg.key_combination = HidNpadButton_Minus;
             } else if (strcasecmp(value, "DLEFT") == 0) {
-                cfg.key_combination = KEY_DLEFT;
+                cfg.key_combination = HidNpadButton_Left;
             } else if (strcasecmp(value, "DUP") == 0) {
-                cfg.key_combination = KEY_DUP;
+                cfg.key_combination = HidNpadButton_Up;
             } else if (strcasecmp(value, "DRIGHT") == 0) {
-                cfg.key_combination = KEY_DRIGHT;
+                cfg.key_combination = HidNpadButton_Right;
             } else if (strcasecmp(value, "DDOWN") == 0) {
-                cfg.key_combination = KEY_DDOWN;
+                cfg.key_combination = HidNpadButton_Down;
             } else if (strcasecmp(value, "SL") == 0) {
-                cfg.key_combination = KEY_SL;
+                cfg.key_combination = HidNpadButton_AnySL;
             } else if (strcasecmp(value, "SR") == 0) {
-                cfg.key_combination = KEY_SR;
+                cfg.key_combination = HidNpadButton_AnySR;
             }
 
             return cfg;
+        }
+
+        impl::OverrideStatusFlag ParseOverrideAddressSpace(const char *value) {
+            if (strcasecmp(value, "39_bit") == 0 || strcasecmp(value, "39") == 0) {
+                return impl::OverrideStatusFlag_AddressSpace64Bit;
+            } else if (strcasecmp(value, "36_bit") == 0 || strcasecmp(value, "36") == 0) {
+                return impl::OverrideStatusFlag_AddressSpace64BitDeprecated;
+            } else if (strcasecmp(value, "32_bit") == 0 || strcasecmp(value, "32") == 0) {
+                return impl::OverrideStatusFlag_AddressSpace32Bit;
+            } else if (strcasecmp(value, "32_bit_without_alias") == 0 ||
+                       strcasecmp(value, "32_bit_no_alias") == 0 ||
+                       strcasecmp(value, "32_without_alias") == 0 ||
+                       strcasecmp(value, "32_no_alias") ||
+                       strcasecmp(value, "32_bit_without_map") == 0 ||
+                       strcasecmp(value, "32_bit_no_map") == 0 ||
+                       strcasecmp(value, "32_without_map") == 0 ||
+                       strcasecmp(value, "32_no_map") == 0)
+            {
+                return impl::OverrideStatusFlag_AddressSpace32BitWithoutAlias;
+            } else {
+                /* Default to 39-bit. */
+                return impl::OverrideStatusFlag_AddressSpace64Bit;
+            }
         }
 
         inline void SetHblSpecificProgramId(size_t i, const char *value) {
@@ -143,6 +179,10 @@ namespace ams::cfg {
 
         inline void SetHblSpecificOverrideKey(size_t i, const char *value) {
             g_hbl_override_config.program_configs[i].override_key = ParseOverrideKey(value);
+        }
+
+        inline void SetHblSpecificAddressSpace(size_t i, const char *value) {
+            g_hbl_override_config.program_as_flags[i] = ParseOverrideAddressSpace(value);
         }
 
         int OverrideConfigIniHandler(void *user, const char *section, const char *name, const char *value) {
@@ -180,6 +220,22 @@ namespace ams::cfg {
                     SetHblSpecificOverrideKey(6, value);
                 } else if (strcasecmp(name, "override_key_7") == 0) {
                     SetHblSpecificOverrideKey(7, value);
+                } else if (strcasecmp(name, "override_address_space") == 0 || strcasecmp(name, "override_address_space_0") == 0) {
+                    SetHblSpecificAddressSpace(0, value);
+                } else if (strcasecmp(name, "override_address_space_1") == 0) {
+                    SetHblSpecificAddressSpace(1, value);
+                } else if (strcasecmp(name, "override_address_space_2") == 0) {
+                    SetHblSpecificAddressSpace(2, value);
+                } else if (strcasecmp(name, "override_address_space_3") == 0) {
+                    SetHblSpecificAddressSpace(3, value);
+                } else if (strcasecmp(name, "override_address_space_4") == 0) {
+                    SetHblSpecificAddressSpace(4, value);
+                } else if (strcasecmp(name, "override_address_space_5") == 0) {
+                    SetHblSpecificAddressSpace(5, value);
+                } else if (strcasecmp(name, "override_address_space_6") == 0) {
+                    SetHblSpecificAddressSpace(6, value);
+                } else if (strcasecmp(name, "override_address_space_7") == 0) {
+                    SetHblSpecificAddressSpace(7, value);
                 } else if (strcasecmp(name, "override_any_app") == 0) {
                    if (strcasecmp(value, "true") == 0 || strcasecmp(value, "1") == 0) {
                         g_hbl_override_config.override_any_app = true;
@@ -190,6 +246,8 @@ namespace ams::cfg {
                     }
                 } else if (strcasecmp(name, "override_any_app_key") == 0) {
                     g_hbl_override_config.override_any_app_key = ParseOverrideKey(value);
+                } else if (strcasecmp(name, "override_any_app_address_space") == 0) {
+                    g_hbl_override_config.override_any_app_as_flag = ParseOverrideAddressSpace(value);
                 } else if (strcasecmp(name, "path") == 0) {
                     while (*value == '/' || *value == '\\') {
                         value++;
@@ -346,10 +404,14 @@ namespace ams::cfg {
         /* Detect Hbl. */
         if (IsAnyApplicationHblProgramId(program_id)  && IsOverrideMatch(status, g_hbl_override_config.override_any_app_key)) {
             status.SetHbl();
+            status.flags &= ~impl::OverrideStatusFlag_AddressSpaceMask;
+            status.flags |= g_hbl_override_config.override_any_app_as_flag;
         }
         for (size_t i = 0; i < MaxProgramOverrideKeys; i++) {
             if (IsSpecificHblProgramId(i, program_id) && IsOverrideMatch(status, g_hbl_override_config.program_configs[i].override_key)) {
                 status.SetHbl();
+                status.flags &= ~impl::OverrideStatusFlag_AddressSpaceMask;
+                status.flags |= g_hbl_override_config.program_as_flags[i];
             }
         }
 

@@ -28,3 +28,24 @@
 #else
     #error "Unknown architecture for CPU"
 #endif
+
+#ifdef ATMOSPHERE_BOARD_NINTENDO_NX
+
+    #include <mesosphere/board/nintendo/nx/kern_cpu_map.hpp>
+
+    namespace ams::kern::cpu {
+
+        using namespace ams::kern::board::nintendo::nx::impl::cpu;
+
+    }
+
+#else
+    #error "Unknown board for CPU Map"
+#endif
+
+namespace ams::kern {
+
+    static_assert(cpu::NumCores <= static_cast<s32>(BITSIZEOF(u64)));
+    static_assert(util::size(cpu::VirtualToPhysicalCoreMap) == BITSIZEOF(u64));
+
+}

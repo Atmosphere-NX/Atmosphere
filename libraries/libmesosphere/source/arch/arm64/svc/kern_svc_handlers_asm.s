@@ -32,7 +32,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     mrs     x9, elr_el1
     mrs     x10, spsr_el1
     mrs     x11, tpidr_el0
-    mrs     x18, tpidr_el1
+    ldr     x18, [sp, #(0x120 + 0x28)]
 
     /* Save callee-saved registers. */
     stp     x19, x20, [sp, #(8 * 19)]
@@ -66,7 +66,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     b.eq    3f
 
     /* Check if our disable count allows us to call SVCs. */
-    ldr     x10, [x18, #0x30]
+    mrs     x10, tpidrro_el0
     ldrh    w10, [x10, #0x100]
     cbz     w10, 1f
 
@@ -138,7 +138,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     stp     xzr, xzr, [sp, #(8 * 12)]
     stp     xzr, xzr, [sp, #(8 * 14)]
     stp     xzr, xzr, [sp, #(8 * 16)]
-    stp     xzr, x19, [sp, #(8 * 18)]
+    str          x19, [sp, #(8 * 19)]
     stp     x20, x21, [sp, #(8 * 20)]
     stp     x22, x23, [sp, #(8 * 22)]
     stp     x24, x25, [sp, #(8 * 24)]
@@ -146,7 +146,6 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     stp     x28, x29, [sp, #(8 * 28)]
 
     /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
-    mrs     x18, tpidr_el1
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 
@@ -246,7 +245,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     mrs     x17, elr_el1
     mrs     x20, spsr_el1
     mrs     x19, tpidr_el0
-    mrs     x18, tpidr_el1
+    ldr     x18, [sp, #(0x120 + 0x28)]
     stp     x17, x20, [sp, #(8 * 32)]
     str     x19,      [sp, #(8 * 34)]
 
@@ -276,7 +275,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     b.eq    3f
 
     /* Check if our disable count allows us to call SVCs. */
-    ldr     x15, [x18, #0x30]
+    mrs     x15, tpidrro_el0
     ldrh    w15, [x15, #0x100]
     cbz     w15, 1f
 
@@ -353,7 +352,6 @@ _ZN3ams4kern4arch5arm6412SvcHandler32Ev:
     stp     xzr, xzr, [sp, #(8 * 30)]
 
     /* Call ams::kern::arch::arm64::HandleException(ams::kern::arch::arm64::KExceptionContext *) */
-    mrs     x18, tpidr_el1
     mov     x0,  sp
     bl      _ZN3ams4kern4arch5arm6415HandleExceptionEPNS2_17KExceptionContextE
 

@@ -21,6 +21,7 @@ namespace ams::secmon::boot {
     void MakePageTable();
     void UnmapPhysicalIdentityMapping();
     void UnmapDram();
+    void LoadMarikoProgram();
 
     void InitializeColdBoot();
 

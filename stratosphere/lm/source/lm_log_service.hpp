@@ -14,15 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "detail/lm_log_packet.hpp"
+#include <stratosphere.hpp>
 
 namespace ams::lm {
 
-    enum LogDestination : u32 {
-        LogDestination_TMA = (1 << 0),
-        LogDestination_UART = (1 << 1),
-        LogDestination_UARTSleeping = (1 << 2)
-    };
+    /* TODO: define a proper enum after identifying what each value means. */
+    using LogDestination = u32;
 
     namespace impl {
 

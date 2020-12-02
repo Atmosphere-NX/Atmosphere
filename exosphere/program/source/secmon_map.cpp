@@ -86,6 +86,12 @@ namespace ams::secmon {
             InvalidateL3Entries(l3, MemoryRegionVirtualAtmosphereUserPage.GetAddress(), MemoryRegionVirtualAtmosphereUserPage.GetSize());
         }
 
+        constexpr void MapDramForMarikoProgramImpl(u64 *l1, u64 *l2, u64 *l3) {
+            /* Map the L1 entry corresponding to the mariko program dram entry. */
+            AMS_UNUSED(l2, l3);
+            SetL1BlockEntry(l1, MemoryRegionDramForMarikoProgram.GetAddress(), MemoryRegionDramForMarikoProgram.GetAddress(), MemoryRegionDramForMarikoProgram.GetSize(), MappingAttributesEl3NonSecureRwData);
+        }
+
         void ClearLow(uintptr_t address, size_t size) {
             /* Clear the low part. */
             util::ClearMemory(reinterpret_cast<void *>(address), size / 2);
@@ -299,6 +305,18 @@ namespace ams::secmon {
         g_ams_user_page_physical_address = 0;
 
         ReleaseSpinLock(g_ams_user_page_spin_lock);
+    }
+
+    void MapDramForMarikoProgram() {
+        /* Get the tables. */
+        u64 * const l1    = MemoryRegionVirtualTzramL1PageTable.GetPointer<u64>();
+        u64 * const l2_l3 = MemoryRegionVirtualTzramL2L3PageTable.GetPointer<u64>();
+
+        /* Map. */
+        MapDramForMarikoProgramImpl(l1, l2_l3, l2_l3);
+
+        /* Ensure the mappings are consistent. */
+        secmon::EnsureMappingConsistency();
     }
 
 }

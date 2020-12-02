@@ -56,6 +56,7 @@ namespace ams::secmon {
             /* This checks the security engine's validity, and configures common interrupts in the GIC. */
             /* This also initializes the global configuration context. */
             secmon::Setup1();
+            AMS_SECMON_LOG("%s\n", "Boot begin.");
 
             /* Save the boot info. */
             secmon::SaveBootInfo(secmon_params);
@@ -70,7 +71,12 @@ namespace ams::secmon {
             secmon::SetupCpuCoreContext();
 
             /* Clear the crt0 code that was present in iram. */
-            secmon::boot::ClearIram();
+            secmon::boot::ClearIramBootCode();
+
+            /* Clear the debug code from iram, if we're not in debug config. */
+            #if !defined(AMS_BUILD_FOR_DEBUGGING) && !defined(AMS_BUILD_FOR_AUDITING)
+            secmon::boot::ClearIramDebugCode();
+            #endif
 
             /* Alert the bootloader that we're initialized. */
             secmon_params.secmon_state = pkg1::SecureMonitorState_Initialized;
@@ -117,8 +123,8 @@ namespace ams::secmon {
             std::memcpy(dst, src, size);
         }
 
-        /* Unmap the identity mapping. */
-        secmon::boot::UnmapPhysicalIdentityMapping();
+        /* Load the mariko program image. */
+        secmon::boot::LoadMarikoProgram();
 
         /* Setup the GPU carveout's magic numbers. */
         secmon::boot::WriteGpuCarveoutMagicNumbers();
@@ -160,7 +166,7 @@ namespace ams::secmon {
         }
 
         /* Verify the package2 payloads. */
-        secmon::boot::CheckVerifyResult(secmon::boot::VerifyPackage2Payloads(pkg2_meta, pkg2_payloads_start), pkg1::ErrorInfo_InvalidPackage2Payload, "package2 payload verification failed");
+        secmon::boot::CheckVerifyResult(secmon::boot::VerifyPackage2Payloads(pkg2_meta, pkg2_payloads_start), pkg1::ErrorInfo_InvalidPackage2Payload, "pkg2 payload FAIL");
 
         /* Decrypt/Move the package2 payloads to the right places. */
         secmon::boot::DecryptAndLoadPackage2Payloads(Package2LoadAddress, pkg2_meta, pkg2_payloads_start, !bc.signed_data.IsPackage2EncryptionDisabled());
@@ -171,6 +177,12 @@ namespace ams::secmon {
 
         /* Set the core's entrypoint and argument. */
         secmon::SetEntryContext(0, Package2LoadAddress + pkg2_meta.entrypoint, 0);
+
+        /* Clear the boot keys from iram. */
+        secmon::boot::ClearIramBootKeys();
+
+        /* Unmap the identity mapping. */
+        secmon::boot::UnmapPhysicalIdentityMapping();
 
         /* Unmap DRAM. */
         secmon::boot::UnmapDram();
@@ -184,6 +196,8 @@ namespace ams::secmon {
 
         /* Configure the smc handler tables to reflect the current target firmware. */
         secmon::smc::ConfigureSmcHandlersForTargetFirmware();
+
+        AMS_SECMON_LOG("%s\n", "Boot end.");
     }
 
 }

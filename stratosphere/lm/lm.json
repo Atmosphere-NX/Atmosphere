@@ -6,7 +6,7 @@
     "main_thread_stack_size": "0x00003000",
     "main_thread_priority": 38,
     "default_cpu_id": 3,
-    "process_category": 0,
+    "process_category": 1,
     "is_retail": true,
     "pool_partition": 2,
     "is_64_bit": true,
@@ -14,8 +14,8 @@
     "filesystem_access": {
         "permissions": "0xFFFFFFFFFFFFFFFF"
     },
-    "service_access": [ "fsp-srv", "pm:info", "psc:m", "set:sys" ],
-    "service_host": [ "lm" ],
+    "service_access": [ "fsp-srv", "psc:m", "set:sys", "time:u", "set" ],
+    "service_host": [ "lm", "lm:get" ],
     "kernel_capabilities": [
         {
             "type": "kernel_flags",
@@ -91,17 +91,6 @@
         {
             "type": "min_kernel_version",
             "value": "0x0030"
-        },
-        {
-			"type":	"handle_table_size",
-			"value":	64
-		},
-        {
-            "type": "debug_flags",
-            "value": {
-                "allow_debug": false,
-                "force_debug": true
-            }
         }
     ]
 }

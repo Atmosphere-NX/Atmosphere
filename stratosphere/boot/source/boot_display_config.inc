@@ -180,6 +180,7 @@ constexpr const RegisterWrite DisplayConfigDsi01Init03[] = {
     {sizeof(u32) * DSI_PKT_SEQ_3_HI, 0},
     {sizeof(u32) * DSI_PKT_SEQ_4_HI, 0},
     {sizeof(u32) * DSI_PKT_SEQ_5_HI, 0},
+    {sizeof(u32) * DSI_CONTROL,      0},
 };
 
 constexpr const RegisterWrite DisplayConfigDsi01Init04Erista[] = {
@@ -372,7 +373,7 @@ constexpr const RegisterWrite DisplayConfigDsi01Init11Mariko[] = {
 constexpr const RegisterWrite DisplayConfigMipiCal01[] = {
     {MIPI_CAL_MIPI_BIAS_PAD_CFG2,  0},
     {MIPI_CAL_CIL_MIPI_CAL_STATUS, 0xF3F10000},
-    {MIPI_CAL_MIPI_BIAS_PAD_CFG0,  1},
+    {MIPI_CAL_MIPI_BIAS_PAD_CFG0,  0},
     {MIPI_CAL_MIPI_BIAS_PAD_CFG2,  0},
 };
 

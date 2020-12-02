@@ -17,11 +17,11 @@
 #include <stratosphere/sf/sf_mitm_dispatch.h>
 
 /* Command forwarders. */
-Result hidSetSupportedNpadStyleSetFwd(Service* s, u64 process_id, u64 aruid, HidControllerType type) {
+Result hidSetSupportedNpadStyleSetFwd(Service* s, u64 process_id, u64 aruid, u32 style_set) {
     const struct {
-        u32 type;
+        u32 style_set;
         u32 pad;
         u64 aruid;
-    } in = { type, 0, aruid };
+    } in = { style_set, 0, aruid };
     return serviceMitmDispatchIn(s, 100, in, .in_send_pid = true, .override_pid = process_id);
 }

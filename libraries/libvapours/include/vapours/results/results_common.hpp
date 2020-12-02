@@ -171,8 +171,8 @@ namespace ams {
                 static constexpr typename ResultTraits::BaseType StartValue = ResultTraits::MakeStaticValue<Module, DescriptionStart>::value;
                 static constexpr typename ResultTraits::BaseType EndValue = ResultTraits::MakeStaticValue<Module, DescriptionEnd>::value;
             public:
-                NX_CONSTEXPR bool Includes(Result result) {
-                    return StartValue <= result.GetValue() && result.GetValue() <= EndValue;
+                static constexpr bool Includes(Result result) {
+                    return result.GetModule() == Module && DescriptionStart <= result.GetDescription() && result.GetDescription() <= DescriptionEnd;
                 }
         };
 

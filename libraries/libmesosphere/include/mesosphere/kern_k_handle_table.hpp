@@ -160,14 +160,16 @@ namespace ams::kern {
                 return this->template GetObjectWithoutPseudoHandle<T>(handle);
             }
 
-            ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectForIpcWithoutPseudoHandle(ams::svc::Handle handle) const {
+            KScopedAutoObject<KAutoObject> GetObjectForIpcWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
                 KScopedSpinLock lk(this->lock);
 
                 KAutoObject *obj = this->GetObjectImpl(handle);
-                if (obj->DynamicCast<KInterruptEvent *>() != nullptr) {
-                    return nullptr;
+                if (AMS_LIKELY(obj != nullptr)) {
+                    if (AMS_UNLIKELY(obj->DynamicCast<KInterruptEvent *>() != nullptr)) {
+                        return nullptr;
+                    }
                 }
 
                 return obj;

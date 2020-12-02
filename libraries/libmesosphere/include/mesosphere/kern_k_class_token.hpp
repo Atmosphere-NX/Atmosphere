@@ -112,6 +112,10 @@ namespace ams::kern {
                 KSessionRequest,
                 KCodeMemory,
 
+                /* NOTE: True order for these has not been determined yet. */
+                KAlpha,
+                KBeta,
+
                 FinalClassesEnd = FinalClassesStart + NumFinalClasses,
             };
 

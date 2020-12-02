@@ -78,11 +78,6 @@ namespace ams::kern {
     }
 
     void KProcess::Finalize() {
-        /* Ensure we're not executing on any core. */
-        for (size_t i = 0; i < cpu::NumCores; ++i) {
-            MESOSPHERE_ASSERT(Kernel::GetCurrentContext(static_cast<s32>(i)).current_process.load(std::memory_order_relaxed) != this);
-        }
-
         /* Delete the process local region. */
         this->DeleteThreadLocalRegion(this->plr_address);
 
@@ -131,6 +126,17 @@ namespace ams::kern {
 
                 it = this->shared_memory_list.erase(it);
                 KSharedMemoryInfo::Free(info);
+            }
+        }
+
+        /* Close all references to our betas. */
+        {
+            auto it = this->beta_list.begin();
+            while (it != this->beta_list.end()) {
+                KBeta *beta = std::addressof(*it);
+                it = this->beta_list.erase(it);
+
+                beta->Close();
             }
         }
 
@@ -237,13 +243,14 @@ namespace ams::kern {
         /* NOTE: Nintendo passes process ID despite not having set it yet. */
         /* This goes completely unused, but even so... */
         {
-            const auto as_type       = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
-            const bool enable_aslr   = (params.flags & ams::svc::CreateProcessFlag_EnableAslr);
-            const bool is_app        = (params.flags & ams::svc::CreateProcessFlag_IsApplication);
-            auto *mem_block_manager  = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
-            auto *block_info_manager = std::addressof(Kernel::GetBlockInfoManager());
-            auto *pt_manager         = std::addressof(Kernel::GetPageTableManager());
-            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager));
+            const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
+            const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
+            const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
+            const bool is_app           = (params.flags & ams::svc::CreateProcessFlag_IsApplication) != 0;
+            auto *mem_block_manager     = std::addressof(is_app ? Kernel::GetApplicationMemoryBlockManager() : Kernel::GetSystemMemoryBlockManager());
+            auto *block_info_manager    = std::addressof(Kernel::GetBlockInfoManager());
+            auto *pt_manager            = std::addressof(Kernel::GetPageTableManager());
+            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, params.code_num_pages * PageSize, mem_block_manager, block_info_manager, pt_manager));
         }
         auto pt_guard = SCOPE_GUARD { this->page_table.Finalize(); };
 
@@ -344,9 +351,10 @@ namespace ams::kern {
         /* NOTE: Nintendo passes process ID despite not having set it yet. */
         /* This goes completely unused, but even so... */
         {
-            const auto as_type     = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
-            const bool enable_aslr = (params.flags & ams::svc::CreateProcessFlag_EnableAslr);
-            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
+            const auto as_type          = static_cast<ams::svc::CreateProcessFlag>(params.flags & ams::svc::CreateProcessFlag_AddressSpaceMask);
+            const bool enable_aslr      = (params.flags & ams::svc::CreateProcessFlag_EnableAslr) != 0;
+            const bool enable_das_merge = (params.flags & ams::svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge) == 0;
+            R_TRY(this->page_table.Initialize(this->process_id, as_type, enable_aslr, enable_das_merge, !enable_aslr, pool, params.code_address, code_size, mem_block_manager, block_info_manager, pt_manager));
         }
         auto pt_guard = SCOPE_GUARD { this->page_table.Finalize(); };
 
@@ -925,7 +933,7 @@ namespace ams::kern {
         mem_reservation.Commit();
 
         /* Note for debug that we're running a new process. */
-        MESOSPHERE_LOG("KProcess::Run() pid=%ld name=%-12s thread=%ld affinity=0x%lx ideal_core=%d active_core=%d\n", this->process_id, this->name, main_thread->GetId(), main_thread->GetAffinityMask().GetAffinityMask(), main_thread->GetIdealCore(), main_thread->GetActiveCore());
+        MESOSPHERE_LOG("KProcess::Run() pid=%ld name=%-12s thread=%ld affinity=0x%lx ideal_core=%d active_core=%d\n", this->process_id, this->name, main_thread->GetId(), main_thread->GetVirtualAffinityMask(), main_thread->GetIdealVirtualCore(), main_thread->GetActiveCore());
 
         return ResultSuccess();
     }

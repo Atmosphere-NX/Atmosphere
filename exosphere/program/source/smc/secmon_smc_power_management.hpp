@@ -19,6 +19,8 @@
 
 namespace ams::secmon::smc {
 
+    NORETURN void PowerOffCpu();
+
     SmcResult SmcPowerOffCpu(SmcArguments &args);
     SmcResult SmcPowerOnCpu(SmcArguments &args);
 

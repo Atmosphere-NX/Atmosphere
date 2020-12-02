@@ -111,7 +111,7 @@ namespace ams::kern::svc {
             trmem_reservation.Commit();
 
             /* Register the transfer memory. */
-            R_TRY(KTransferMemory::Register(trmem));
+            KTransferMemory::Register(trmem);
 
             /* Add the transfer memory to the handle table. */
             R_TRY(handle_table.Add(out, trmem));
