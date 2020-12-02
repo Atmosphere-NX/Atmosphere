@@ -10,6 +10,8 @@
   + `erpt` was partially updated to provide compatibility with 11.0.0.
     + The latest firmware attaches additional fields and context information to logs.
     + A future atmosphère update will implement this logic, so that users who are interested can also get the new information when examining their logs.
+  + **Please Note**: 11.0.0 introduced breaking changes to the `usb` system module's APIs.
+    + Homebrew which uses `usb` services should rebuild with the latest libnx version to support running on 11.0.0.
 + The `boot` system module was rewritten to reflect the huge driver changes introduced in 8.0.0.
   + This includes a number of improvements to both logo display and battery management logic.
 + Support was added for configuring the address space width for `hbl`.
