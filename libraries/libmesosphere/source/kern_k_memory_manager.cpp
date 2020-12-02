@@ -68,7 +68,7 @@ namespace ams::kern {
                     region_size    = it.GetSize();
                     region_pool    = GetPoolFromMemoryRegionType(it.GetType());
                 } else {
-                    MESOSPHERE_ASSERT(it.GetAddress() > region_address + region_size);
+                    MESOSPHERE_ASSERT(it.GetAddress() == region_address + region_size);
 
                     /* Update the size. */
                     region_size = it.GetEndAddress() - region_address;
