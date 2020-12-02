@@ -45,7 +45,7 @@ namespace ams::kern {
                 return this->owner_thread == GetCurrentThreadPointer();
             }
 
-            ALWAYS_INLINE void Lock() {
+            void Lock() {
                 MESOSPHERE_ASSERT_THIS();
 
                 if (this->IsLockedByCurrentThread()) {
