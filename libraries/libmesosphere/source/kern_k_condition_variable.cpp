@@ -194,6 +194,12 @@ namespace ams::kern {
                 target_thread->ClearConditionVariable();
                 ++num_waiters;
             }
+
+            /* If we have no waiters, clear the has waiter flag. */
+            if (it == this->tree.end() || it->GetConditionVariableKey() != cv_key) {
+                const u32 has_waiter_flag = 0;
+                WriteToUser(cv_key, std::addressof(has_waiter_flag));
+            }
         }
 
         /* Close threads in the array. */
@@ -242,6 +248,13 @@ namespace ams::kern {
                     /* Wake up the next owner. */
                     next_owner_thread->SetSyncedObject(nullptr, ResultSuccess());
                     next_owner_thread->Wakeup();
+                }
+
+                /* Write to the cv key. */
+                {
+                    const u32 has_waiter_flag = 1;
+                    WriteToUser(key, std::addressof(has_waiter_flag));
+                    cpu::DataMemoryBarrier();
                 }
 
                 /* Write the value to userspace. */
