@@ -358,11 +358,6 @@ namespace ams::kern {
             constexpr uintptr_t GetConditionVariableKey() const { return this->condvar_key; }
             constexpr uintptr_t GetAddressArbiterKey() const { return this->condvar_key; }
 
-            constexpr void SetupForConditionVariableCompare(uintptr_t cv_key, int priority) {
-                this->condvar_key = cv_key;
-                this->priority    = priority;
-            }
-
             constexpr void SetConditionVariable(ConditionVariableThreadTree *tree, KProcessAddress address, uintptr_t cv_key, u32 value) {
                 this->condvar_tree      = tree;
                 this->condvar_key       = cv_key;
@@ -376,11 +371,6 @@ namespace ams::kern {
 
             constexpr bool IsWaitingForConditionVariable() const {
                 return this->condvar_tree != nullptr;
-            }
-
-            constexpr void SetupForAddressArbiterCompare(uintptr_t address, int priority) {
-                this->condvar_key = address;
-                this->priority    = priority;
             }
 
             constexpr void SetAddressArbiter(ConditionVariableThreadTree *tree, uintptr_t address) {
