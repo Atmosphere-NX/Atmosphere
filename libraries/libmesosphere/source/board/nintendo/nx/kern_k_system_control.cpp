@@ -558,7 +558,7 @@ namespace ams::kern::board::nintendo::nx {
             /* NOTE: Atmosphere extension; if we received an exception context from Panic(), */
             /*       generate a fatal error report using it. */
             const KExceptionContext *e_ctx = static_cast<const KExceptionContext *>(arg);
-            auto *f_ctx = GetPointer<::ams::impl::FatalErrorContext>(iram_address + RebootPayloadSize);
+            auto *f_ctx = GetPointer<::ams::impl::FatalErrorContext>(iram_address + 0x2E000);
 
             /* Clear the fatal context. */
             std::memset(f_ctx, 0xCC, sizeof(*f_ctx));
