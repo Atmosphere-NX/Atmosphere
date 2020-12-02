@@ -326,6 +326,13 @@ namespace ams::ldr {
                 }
             }
 
+            /* 11.0.0+ Set Disable DAS merge. */
+            if (hos::GetVersion() >= hos::Version_11_0_0 || svc::IsKernelMesosphere()) {
+                if (meta_flags & Npdm::MetaFlag_DisableDeviceAddressSpaceMerge) {
+                    flags |= svc::CreateProcessFlag_DisableDeviceAddressSpaceMerge;
+                }
+            }
+
             *out = flags;
             return ResultSuccess();
         }
