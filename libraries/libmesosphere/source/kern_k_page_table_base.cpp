@@ -908,7 +908,7 @@ namespace ams::kern {
                 }
 
                 /* Check if we're done. */
-                if (dst_address + size - 1 > info.GetLastAddress()) {
+                if (dst_address + size - 1 <= info.GetLastAddress()) {
                     break;
                 }
 
