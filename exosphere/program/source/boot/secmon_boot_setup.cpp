@@ -72,6 +72,9 @@ namespace ams::secmon::boot {
             /* care of it here. Perhaps we should read the number of anti-downgrade fuses burnt, and translate that */
             /* to the warmboot key? To be decided during the process of implementing ams-on-mariko support. */
             reg::Write(pmc + APBDEV_PMC_SECURE_SCRATCH32, 0x129);
+
+            /* TODO: Fix to ensure correct scratch contents on mariko, as otherwise wb is broken. */
+            AMS_ABORT_UNLESS(fuse::GetSocType() != fuse::SocType_Mariko);
         }
 
         /* This function derives the master kek and device keys using the tsec root key. */
