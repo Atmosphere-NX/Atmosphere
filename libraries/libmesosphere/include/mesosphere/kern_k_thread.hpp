@@ -341,7 +341,7 @@ namespace ams::kern {
             constexpr KThreadContext &GetContext() { return this->thread_context; }
             constexpr const KThreadContext &GetContext() const { return this->thread_context; }
 
-            constexpr const u64 GetVirtualAffinityMask() const { return this->virtual_affinity_mask; }
+            constexpr u64 GetVirtualAffinityMask() const { return this->virtual_affinity_mask; }
             constexpr const KAffinityMask &GetAffinityMask() const { return this->physical_affinity_mask; }
 
             Result GetCoreMask(int32_t *out_ideal_core, u64 *out_affinity_mask);
