@@ -21,6 +21,9 @@
 
 namespace ams::util {
 
+    #pragma GCC push_options
+    #pragma GCC optimize ("-O2")
+
     /* Forward declare implementation class for Node. */
     namespace impl {
 
@@ -628,5 +631,7 @@ namespace ams::util {
                 return static_cast<const Derived &>(node);
             }
     };
+
+    #pragma GCC pop_options
 
 }
