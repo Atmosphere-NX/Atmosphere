@@ -58,28 +58,30 @@ namespace ams::kern::board::nintendo::nx::smc {
                 /* Disable interrupts while making the call. */
                 KScopedInterruptDisable intr_disable;
 
-                /* Backup the current thread pointer. */
-                const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
+                {
+                    /* Backup the current thread pointer. */
+                    const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
 
-                __asm__ __volatile__("smc #1"
-                                    : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
-                                    :
-                                    : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
-                                    );
+                    __asm__ __volatile__("smc #1"
+                                        : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
+                                        :
+                                        : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
+                                        );
 
-                /* Restore the current thread pointer into X18. */
-                cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
+                    /* Restore the current thread pointer into X18. */
+                    cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
+
+                    /* Store arguments to output. */
+                    args.x[0] = x0;
+                    args.x[1] = x1;
+                    args.x[2] = x2;
+                    args.x[3] = x3;
+                    args.x[4] = x4;
+                    args.x[5] = x5;
+                    args.x[6] = x6;
+                    args.x[7] = x7;
+                }
             }
-
-            /* Store arguments to output. */
-            args.x[0] = x0;
-            args.x[1] = x1;
-            args.x[2] = x2;
-            args.x[3] = x3;
-            args.x[4] = x4;
-            args.x[5] = x5;
-            args.x[6] = x6;
-            args.x[7] = x7;
         }
 
         void CallUserSecureMonitorFunction(ams::svc::lp64::SecureMonitorArguments *args) {
@@ -98,28 +100,30 @@ namespace ams::kern::board::nintendo::nx::smc {
                 /* Disable interrupts while making the call. */
                 KScopedInterruptDisable intr_disable;
 
-                /* Backup the current thread pointer. */
-                const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
+                {
+                    /* Backup the current thread pointer. */
+                    const uintptr_t current_thread_pointer_value = cpu::GetCurrentThreadPointerValue();
 
-                __asm__ __volatile__("smc #0"
-                                    : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
-                                    :
-                                    : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
-                                    );
+                    __asm__ __volatile__("smc #1"
+                                        : "+r"(x0), "+r"(x1), "+r"(x2), "+r"(x3), "+r"(x4), "+r"(x5), "+r"(x6), "+r"(x7)
+                                        :
+                                        : "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18", "cc", "memory"
+                                        );
 
-                /* Restore the current thread pointer into X18. */
-                cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
+                    /* Restore the current thread pointer into X18. */
+                    cpu::SetCurrentThreadPointerValue(current_thread_pointer_value);
+
+                    /* Store arguments to output. */
+                    args->r[0] = x0;
+                    args->r[1] = x1;
+                    args->r[2] = x2;
+                    args->r[3] = x3;
+                    args->r[4] = x4;
+                    args->r[5] = x5;
+                    args->r[6] = x6;
+                    args->r[7] = x7;
+                }
             }
-
-            /* Store arguments to output. */
-            args->r[0] = x0;
-            args->r[1] = x1;
-            args->r[2] = x2;
-            args->r[3] = x3;
-            args->r[4] = x4;
-            args->r[5] = x5;
-            args->r[6] = x6;
-            args->r[7] = x7;
         }
 
         void CallPrivilegedSecureMonitorFunctionForInit(SecureMonitorArguments &args) {

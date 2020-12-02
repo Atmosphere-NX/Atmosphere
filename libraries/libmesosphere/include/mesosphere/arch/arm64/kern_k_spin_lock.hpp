@@ -25,7 +25,7 @@ namespace ams::kern::arch::arm64 {
         public:
             constexpr KNotAlignedSpinLock() : packed_tickets(0) { /* ... */ }
 
-            void Lock() {
+            ALWAYS_INLINE void Lock() {
                 u32 tmp0, tmp1, tmp2;
 
                 __asm__ __volatile__(
@@ -52,7 +52,7 @@ namespace ams::kern::arch::arm64 {
                 );
             }
 
-            void Unlock() {
+            ALWAYS_INLINE void Unlock() {
                 const u32 value = this->packed_tickets + 1;
                 __asm__ __volatile__(
                     "    stlrh %w[value], %[packed_tickets]\n"
@@ -71,7 +71,7 @@ namespace ams::kern::arch::arm64 {
         public:
             constexpr KAlignedSpinLock() : current_ticket(0), next_ticket(0) { /* ... */ }
 
-            void Lock() {
+            ALWAYS_INLINE void Lock() {
                 u32 tmp0, tmp1, got_lock;
 
                 __asm__ __volatile__(
@@ -94,7 +94,7 @@ namespace ams::kern::arch::arm64 {
                 );
             }
 
-            void Unlock() {
+            ALWAYS_INLINE void Unlock() {
                 const u32 value = this->current_ticket + 1;
                 __asm__ __volatile__(
                     "    stlrh %w[value], %[current_ticket]\n"
