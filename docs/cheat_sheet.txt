@@ -1,0 +1,18 @@
+export SEPT_01_ENC_PATH="~/sept/sept-secondary_01.enc"
+export SEPT_00_ENC_PATH="~/sept/sept-secondary_00.enc"
+export SEPT_DEV_00_ENC_PATH="~/sept/sept-secondary_dev_00.enc"
+export SEPT_DEV_01_ENC_PATH="~/sept/sept-secondary_dev_01.enc"
+
+ git remote add atmo https://github.com/Atmosphere-NX/Atmosphere.git
+ git fetch atmo
+ git pull atmo master
+
+ git checkout tags/0.15.0 -b 0.15.0
+
+ git clean -xdf
+
+git remote add fspusb https://github.com/XorTroll/Atmosphere.git
+git fetch fspusb
+git cherry-pick <commit>
+
+sudo nano ~/.bashrc - export 

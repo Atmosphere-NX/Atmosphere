@@ -28,11 +28,37 @@ namespace ams::mitm::settings {
         settings::FirmwareVersion g_firmware_version;
         settings::FirmwareVersion g_ams_firmware_version;
 
+        int g_kfr_firmware_version = 0;
+
         void CacheFirmwareVersion() {
             std::scoped_lock lk(g_firmware_version_lock);
 
             if (AMS_LIKELY(g_cached_firmware_version)) {
                 return;
+            }
+
+            {
+                /* Mount the SD card. */
+                if (R_SUCCEEDED(fs::MountSdCard("sdmc"))) {
+                    ams::fs::FileHandle file;
+                    if (R_SUCCEEDED(fs::OpenFile(std::addressof(file), "sdmc:/switch/kefirupdater/version", fs::OpenMode_Read))) {
+                        ON_SCOPE_EXIT { ams::fs::CloseFile(file); };
+
+                        /* Get file size. */
+                        s64 file_size;
+                        R_ABORT_UNLESS(fs::GetFileSize(std::addressof(file_size), file));
+
+                        /* Allocate cheat txt buffer. */
+                        char *kef_txt = static_cast<char *>(std::malloc(file_size + 1));
+                        ON_SCOPE_EXIT { std::free(kef_txt); };
+
+                        /* Read cheats into buffer. */
+                        R_ABORT_UNLESS(fs::ReadFile(file, 0, kef_txt, file_size));
+                        kef_txt[file_size] = '\x00';
+
+                        g_kfr_firmware_version = strtol(kef_txt, NULL, 10);
+                    }
+                }
             }
 
             /* Mount firmware version data archive. */
@@ -56,19 +82,19 @@ namespace ams::mitm::settings {
                 const auto api_info = exosphere::GetApiInfo();
                 const char emummc_char = emummc::IsActive() ? 'E' : 'S';
 
-                /* NOTE: While Mesosphere is in experimental/opt-in, we will display it as part of the firmware. */
-                const char mesosphere_char = svc::IsKernelMesosphere() ? 'M' : '0';
-
-                /* TODO: Remove separate display for mesosphere vs not mesosphere in Atmosphere 1.0.0. */
-                AMS_ABORT_UNLESS(api_info.GetMajorVersion() == 0);
-
-                /* NOTE: We have carefully accounted for the size of the string we print. */
-                /* No truncation occurs assuming two-digits for all version number components. */
-                char display_version[sizeof(g_ams_firmware_version.display_version)];
-
-                std::snprintf(display_version, sizeof(display_version), "%s|AMS %c.%u.%u|%c", g_ams_firmware_version.display_version, mesosphere_char, api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
-
-                std::memcpy(g_ams_firmware_version.display_version, display_version, sizeof(display_version));
+                /* GCC complains about the following snprintf possibly truncating, but this is not a problem and has been carefully accounted for. */
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wformat-truncation"
+                {
+                    char display_version[sizeof(g_ams_firmware_version.display_version)];
+                    if ( g_kfr_firmware_version != 0 )
+                        std::snprintf(display_version, sizeof(display_version), "%s|KEF%d-%u.%u.%u|%c", g_ams_firmware_version.display_version, g_kfr_firmware_version, api_info.GetMajorVersion(), api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
+                    else
+                        std::snprintf(display_version, sizeof(display_version), "%s|KEF-%u.%u.%u|%c", g_ams_firmware_version.display_version, api_info.GetMajorVersion(), api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
+                    
+                    std::memcpy(g_ams_firmware_version.display_version, display_version, sizeof(display_version));
+                }
+                #pragma GCC diagnostic pop
             }
 
             g_cached_firmware_version = true;

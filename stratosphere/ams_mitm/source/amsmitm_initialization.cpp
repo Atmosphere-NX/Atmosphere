@@ -65,8 +65,8 @@ namespace ams::mitm {
         FsFile g_emummc_file;
 
         /* Maintain exclusive access to the fusee-secondary archive. */
-        FsFile g_secondary_file;
-        FsFile g_sept_payload_file;
+        // FsFile g_secondary_file;
+        // FsFile g_sept_payload_file;
 
         constexpr inline bool IsHexadecimal(const char *str) {
             while (*str) {
@@ -134,14 +134,14 @@ namespace ams::mitm {
                 /* NOTE: g_bis_key_file is intentionally not closed here.  This prevents any other process from opening it. */
             }
 
-            /* Open a reference to the fusee-secondary archive. */
-            /* As upcoming/current atmosphere releases will contain more than one zip which users much choose between, */
-            /* maintaining an open reference prevents cleanly the issue of "automatic" updaters selecting the incorrect */
-            /* zip, and encourages good updating hygiene -- atmosphere should not be updated on SD while HOS is alive. */
-            {
-                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_secondary_file),    "/atmosphere/fusee-secondary.bin", ams::fs::OpenMode_Read));
-                R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_sept_payload_file), "/sept/payload.bin",               ams::fs::OpenMode_Read));
-            }
+            // /* Open a reference to the fusee-secondary archive. */
+            // /* As upcoming/current atmosphere releases will contain more than one zip which users much choose between, */
+            // /* maintaining an open reference prevents cleanly the issue of "automatic" updaters selecting the incorrect */
+            // /* zip, and encourages good updating hygiene -- atmosphere should not be updated on SD while HOS is alive. */
+            // {
+            //     R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_secondary_file),    "/atmosphere/fusee-secondary.bin", ams::fs::OpenMode_ReadWrite));
+            //     R_ABORT_UNLESS(mitm::fs::OpenSdFile(std::addressof(g_sept_payload_file), "/sept/payload.bin",               ams::fs::OpenMode_ReadWrite));
+            // }
         }
 
         /* Initialization implementation */
