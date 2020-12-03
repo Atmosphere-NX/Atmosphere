@@ -15,7 +15,7 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	["lm", "fsp-srv", "time:u", "set", "set:sys", "srepo:u", "psc:m", "csrng"],
+	"service_access":	["lm", "fsp-srv", "time:u", "set", "set:sys", "srepo:u", "psc:m", "csrng", "ectx:r"],
 	"service_host":	["erpt:r", "erpt:c"],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
