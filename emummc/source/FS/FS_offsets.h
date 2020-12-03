@@ -41,6 +41,7 @@ typedef struct {
     // Misc funcs
     uintptr_t lock_mutex;
     uintptr_t unlock_mutex;
+    uintptr_t sdmmc_accessor_controller_open;
     uintptr_t sdmmc_accessor_controller_close;
     // Misc data
     uintptr_t sd_mutex;

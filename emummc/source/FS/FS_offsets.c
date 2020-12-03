@@ -71,6 +71,7 @@ static const fs_offsets_t GET_OFFSET_STRUCT_NAME(vers) = { \
     .nand_mutex                      = FS_OFFSET##vers##_NAND_MUTEX, \
     .active_partition                = FS_OFFSET##vers##_ACTIVE_PARTITION, \
     .sdmmc_das_handle                = FS_OFFSET##vers##_SDMMC_DAS_HANDLE, \
+    .sdmmc_accessor_controller_open  = FS_OFFSET##vers##_SDMMC_WRAPPER_CONTROLLER_OPEN, \
     .sdmmc_accessor_controller_close = FS_OFFSET##vers##_SDMMC_WRAPPER_CONTROLLER_CLOSE, \
     .sd_das_init                     = FS_OFFSET##vers##_SD_DAS_INIT, \
     .nintendo_paths                  = FS_OFFSET##vers##_NINTENDO_PATHS, \
