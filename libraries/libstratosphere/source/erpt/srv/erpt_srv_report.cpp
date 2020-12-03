@@ -46,7 +46,7 @@ namespace ams::erpt::srv {
         }
     }
 
-    ReportFileName Report::FileName() {
+    ReportFileName Report::FileName() const {
         return FileName(this->record->info.id, this->redirect_to_sd_card);
     }
 
@@ -70,7 +70,7 @@ namespace ams::erpt::srv {
         return this->CloseStream();
     }
 
-    Result Report::GetFlags(ReportFlagSet *out) {
+    Result Report::GetFlags(ReportFlagSet *out) const {
         *out = this->record->info.flags;
         return ResultSuccess();
     }
@@ -83,7 +83,7 @@ namespace ams::erpt::srv {
         return ResultSuccess();
     }
 
-    Result Report::GetSize(s64 *out) {
+    Result Report::GetSize(s64 *out) const {
         return this->GetStreamSize(out);
     }
 

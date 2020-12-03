@@ -71,25 +71,23 @@ namespace ams::erpt::srv {
     }
 
     Result Context::AddContextToCategory(const ContextEntry *entry, const u8 *data, u32 data_size) {
-        ContextRecord *record = new ContextRecord();
+        auto record = std::make_unique<ContextRecord>();
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
-        auto guard = SCOPE_GUARD { delete record; };
 
         R_TRY(record->Initialize(entry, data, data_size));
 
-        guard.Cancel();
-        this->AddContextRecordToCategory(record);
+        this->AddContextRecordToCategory(std::move(record));
         return ResultSuccess();
     }
 
-    Result Context::AddContextRecordToCategory(ContextRecord *record) {
+    Result Context::AddContextRecordToCategory(std::unique_ptr<ContextRecord> record) {
         if (this->record_count < this->max_record_count) {
-            this->record_list.push_front(*record);
+            this->record_list.push_front(*record.release());
             this->record_count++;
         } else {
             ContextRecord *back = std::addressof(this->record_list.back());
             this->record_list.pop_back();
-            this->record_list.push_front(*record);
+            this->record_list.push_front(*record.release());
             delete back;
         }
 
@@ -97,21 +95,21 @@ namespace ams::erpt::srv {
     }
 
     Result Context::SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size) {
-        for (auto it = g_category_list.begin(); it != g_category_list.end(); it++) {
-            if (it->category == entry->category) {
-                return it->AddContextToCategory(entry, data, data_size);
-            }
-        }
-        return erpt::ResultCategoryNotFound();
+        auto it = util::range::find_if(g_category_list, [&](const Context &cur) {
+            return cur.category == entry->category;
+        });
+        R_UNLESS(it != g_category_list.end(), erpt::ResultCategoryNotFound());
+
+        return it->AddContextToCategory(entry, data, data_size);
     }
 
-    Result Context::SubmitContextRecord(ContextRecord *record) {
-        for (auto it = g_category_list.begin(); it != g_category_list.end(); it++) {
-            if (it->category == record->ctx.category) {
-                return it->AddContextRecordToCategory(record);
-            }
-        }
-        return erpt::ResultCategoryNotFound();
+    Result Context::SubmitContextRecord(std::unique_ptr<ContextRecord> record) {
+        auto it = util::range::find_if(g_category_list, [&](const Context &cur) {
+            return cur.category == record->ctx.category;
+        });
+        R_UNLESS(it != g_category_list.end(), erpt::ResultCategoryNotFound());
+
+        return it->AddContextRecordToCategory(std::move(record));
     }
 
     Result Context::WriteContextsToReport(Report *report) {

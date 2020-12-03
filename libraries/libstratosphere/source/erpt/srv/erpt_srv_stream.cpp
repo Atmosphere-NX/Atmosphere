@@ -173,7 +173,7 @@ namespace ams::erpt::srv {
         }
     }
 
-    Result Stream::GetStreamSize(s64 *out) {
+    Result Stream::GetStreamSize(s64 *out) const {
         return GetStreamSize(out, this->file_name);
     }
 

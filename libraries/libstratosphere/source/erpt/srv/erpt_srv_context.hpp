@@ -35,10 +35,10 @@ namespace ams::erpt::srv {
 
             Result AddCategoryToReport(Report *report);
             Result AddContextToCategory(const ContextEntry *entry, const u8 *data, u32 data_size);
-            Result AddContextRecordToCategory(ContextRecord *record);
+            Result AddContextRecordToCategory(std::unique_ptr<ContextRecord> record);
         public:
             static Result SubmitContext(const ContextEntry *entry, const u8 *data, u32 data_size);
-            static Result SubmitContextRecord(ContextRecord *record);
+            static Result SubmitContextRecord(std::unique_ptr<ContextRecord> record);
             static Result WriteContextsToReport(Report *report);
     };
 

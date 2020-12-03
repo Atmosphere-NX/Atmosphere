@@ -22,17 +22,158 @@
 
 namespace ams::erpt::srv {
 
-    bool Reporter::s_redirect_new_reports    = true;
-    char Reporter::s_serial_number[24]       = "Unknown";
-    char Reporter::s_os_version[24]          = "Unknown";
-    char Reporter::s_private_os_version[96]  = "Unknown";
-    std::optional<os::Tick> Reporter::s_application_launch_time;
-    std::optional<os::Tick> Reporter::s_awake_time;
-    std::optional<os::Tick> Reporter::s_power_on_time;
-    std::optional<time::SteadyClockTimePoint> Reporter::s_initial_launch_settings_completion_time;
+    constinit bool Reporter::s_redirect_new_reports    = true;
+    constinit char Reporter::s_serial_number[24]       = "Unknown";
+    constinit char Reporter::s_os_version[24]          = "Unknown";
+    constinit char Reporter::s_private_os_version[96]  = "Unknown";
+    constinit std::optional<os::Tick> Reporter::s_application_launch_time;
+    constinit std::optional<os::Tick> Reporter::s_awake_time;
+    constinit std::optional<os::Tick> Reporter::s_power_on_time;
+    constinit std::optional<time::SteadyClockTimePoint> Reporter::s_initial_launch_settings_completion_time;
 
-    Reporter::Reporter(ReportType type, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments)
-        : type(type), ctx(ctx), data(data), data_size(data_size), meta(meta), attachments(attachments), num_attachments(num_attachments), occurrence_tick()
+    namespace {
+
+        constinit os::SdkMutex g_limit_mutex;
+        constinit bool g_submitted_limit = false;
+
+        Result PullErrorContext(size_t *out_total_size, size_t *out_size, void *dst, size_t dst_size, const err::ContextDescriptor &descriptor, Result result) {
+            s32 unk0;
+            u32 total_size, size;
+            R_TRY(::ectxrPullContext(std::addressof(unk0), std::addressof(total_size), std::addressof(size), dst, dst_size, descriptor.value, result.GetValue()));
+
+            *out_total_size = total_size;
+            *out_size       = size;
+            return ResultSuccess();
+        }
+
+        void SubmitErrorContext(ContextRecord *record, Result result) {
+            /* Only support submitting context on 11.x. */
+            if (hos::GetVersion() < hos::Version_11_0_0) {
+                return;
+            }
+
+            /* Get the context descriptor. */
+            const auto descriptor = err::GetContextDescriptorFromResult(result);
+            if (descriptor == err::InvalidContextDescriptor) {
+                return;
+            }
+
+            /* Pull the error context. */
+            u8 error_context[0x200];
+            size_t error_context_total_size;
+            size_t error_context_size;
+            if (R_FAILED(PullErrorContext(std::addressof(error_context_total_size), std::addressof(error_context_size), error_context, util::size(error_context), descriptor, result))) {
+                return;
+            }
+
+            /* Set the total size. */
+            if (error_context_total_size == 0) {
+                return;
+            }
+            record->Add(FieldId_ErrorContextTotalSize, error_context_total_size);
+
+            /* Set the context. */
+            if (error_context_size == 0) {
+                return;
+            }
+            record->Add(FieldId_ErrorContextSize, error_context_size);
+            record->Add(FieldId_ErrorContext, error_context, error_context_size);
+        }
+
+        void SubmitResourceLimitLimitContext() {
+            std::scoped_lock lk(g_limit_mutex);
+            if (g_submitted_limit) {
+                return;
+            }
+
+            ON_SCOPE_EXIT { g_submitted_limit = true; };
+
+            /* Create and populate the record. */
+            auto record = std::make_unique<ContextRecord>(CategoryId_ResourceLimitLimitInfo);
+            if (record == nullptr) {
+                return;
+            }
+
+            u64 reslimit_handle_value;
+            if (R_FAILED(svc::GetInfo(std::addressof(reslimit_handle_value), svc::InfoType_ResourceLimit, svc::InvalidHandle, 0))) {
+                return;
+            }
+
+            const auto handle = static_cast<svc::Handle>(reslimit_handle_value);
+            ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(handle)); };
+
+            #define ADD_RESOURCE(__RESOURCE__)                                                                                                        \
+                do {                                                                                                                                  \
+                    s64 limit_value;                                                                                                                  \
+                    if (R_FAILED(svc::GetResourceLimitLimitValue(std::addressof(limit_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
+                        return;                                                                                                                       \
+                    }                                                                                                                                 \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Limit, limit_value))) {                                                    \
+                        return;                                                                                                                       \
+                    }                                                                                                                                 \
+                } while (0)
+
+            ADD_RESOURCE(PhysicalMemory);
+            ADD_RESOURCE(ThreadCount);
+            ADD_RESOURCE(EventCount);
+            ADD_RESOURCE(TransferMemoryCount);
+            ADD_RESOURCE(SessionCount);
+
+            #undef ADD_RESOURCE
+
+            Context::SubmitContextRecord(std::move(record));
+
+            g_submitted_limit = true;
+        }
+
+        void SubmitResourceLimitPeakContext() {
+            /* Create and populate the record. */
+            auto record = std::make_unique<ContextRecord>(CategoryId_ResourceLimitPeakInfo);
+            if (record == nullptr) {
+                return;
+            }
+
+            u64 reslimit_handle_value;
+            if (R_FAILED(svc::GetInfo(std::addressof(reslimit_handle_value), svc::InfoType_ResourceLimit, svc::InvalidHandle, 0))) {
+                return;
+            }
+
+            const auto handle = static_cast<svc::Handle>(reslimit_handle_value);
+            ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(handle)); };
+
+            #define ADD_RESOURCE(__RESOURCE__)                                                                                                      \
+                do {                                                                                                                                \
+                    s64 peak_value;                                                                                                                 \
+                    if (R_FAILED(svc::GetResourceLimitPeakValue(std::addressof(peak_value), handle, svc::LimitableResource_##__RESOURCE__##Max))) { \
+                        return;                                                                                                                     \
+                    }                                                                                                                               \
+                    if (R_FAILED(record->Add(FieldId_System##__RESOURCE__##Peak, peak_value))) {                                                    \
+                        return;                                                                                                                     \
+                    }                                                                                                                               \
+                } while (0)
+
+            ADD_RESOURCE(PhysicalMemory);
+            ADD_RESOURCE(ThreadCount);
+            ADD_RESOURCE(EventCount);
+            ADD_RESOURCE(TransferMemoryCount);
+            ADD_RESOURCE(SessionCount);
+
+            #undef ADD_RESOURCE
+
+            Context::SubmitContextRecord(std::move(record));
+        }
+
+        void SubmitResourceLimitContexts() {
+            if (hos::GetVersion() >= hos::Version_11_0_0 || svc::IsKernelMesosphere()) {
+                SubmitResourceLimitLimitContext();
+                SubmitResourceLimitPeakContext();
+            }
+        }
+
+    }
+
+    Reporter::Reporter(ReportType type, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, Result ctx_r)
+        : type(type), ctx(ctx), data(data), data_size(data_size), meta(meta), attachments(attachments), num_attachments(num_attachments), occurrence_tick(), ctx_result(ctx_r)
     {
         /* ... */
     }
@@ -53,13 +194,9 @@ namespace ams::erpt::srv {
         R_UNLESS(this->ctx->category == CategoryId_ErrorInfo, erpt::ResultRequiredContextMissing());
         R_UNLESS(this->ctx->field_count <= FieldsPerContext,  erpt::ResultInvalidArgument());
 
-        bool found_error_code = false;
-        for (u32 i = 0; i < this->ctx->field_count; i++) {
-            if (this->ctx->fields[i].id == FieldId_ErrorCode) {
-                found_error_code = true;
-                break;
-            }
-        }
+        const bool found_error_code = util::range::any_of(MakeSpan(this->ctx->fields, this->ctx->field_count), [] (const FieldEntry &entry) {
+            return entry.id == FieldId_ErrorCode;
+        });
         R_UNLESS(found_error_code, erpt::ResultRequiredFieldMissing());
 
         return ResultSuccess();
@@ -83,6 +220,9 @@ namespace ams::erpt::srv {
     }
 
     Result Reporter::SubmitReportDefaults() {
+        auto record = std::make_unique<ContextRecord>(CategoryId_ErrorInfoDefaults);
+        R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+
         bool found_abort_flag = false, found_syslog_flag = false;
         for (u32 i = 0; i < this->ctx->field_count; i++) {
             if (this->ctx->fields[i].id == FieldId_AbortFlag) {
@@ -96,10 +236,6 @@ namespace ams::erpt::srv {
             }
         }
 
-        ContextRecord *record = new ContextRecord(CategoryId_ErrorInfoDefaults);
-        R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
-        auto record_guard = SCOPE_GUARD { delete record; };
-
         if (!found_abort_flag) {
             record->Add(FieldId_AbortFlag, false);
         }
@@ -108,16 +244,19 @@ namespace ams::erpt::srv {
             record->Add(FieldId_HasSyslogFlag, true);
         }
 
-        R_TRY(Context::SubmitContextRecord(record));
+        R_TRY(Context::SubmitContextRecord(std::move(record)));
 
-        record_guard.Cancel();
         return ResultSuccess();
     }
 
     Result Reporter::SubmitReportContexts() {
-        ContextRecord *record = new ContextRecord(CategoryId_ErrorInfoAuto);
+        auto record = std::make_unique<ContextRecord>(CategoryId_ErrorInfoAuto);
         R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
-        auto record_guard = SCOPE_GUARD { delete record; };
+
+        /* Handle error context. */
+        if (R_FAILED(this->ctx_result)) {
+            SubmitErrorContext(record.get(), this->ctx_result);
+        }
 
         record->Add(FieldId_OsVersion,                        s_os_version,                                 strnlen(s_os_version, sizeof(s_os_version)));
         record->Add(FieldId_PrivateOsVersion,                 s_private_os_version,                         strnlen(s_private_os_version, sizeof(s_private_os_version)));
@@ -149,10 +288,12 @@ namespace ams::erpt::srv {
             record->Add(FieldId_ApplicationAliveTime, (this->occurrence_tick - *s_application_launch_time).ToTimeSpan().GetSeconds());
         }
 
-        R_TRY(Context::SubmitContextRecord(record));
-        record_guard.Cancel();
+        R_TRY(Context::SubmitContextRecord(std::move(record)));
 
         R_TRY(Context::SubmitContext(this->ctx, this->data, this->data_size));
+
+        /* Submit context for resource limits. */
+        SubmitResourceLimitContexts();
 
         return ResultSuccess();
     }
@@ -165,16 +306,21 @@ namespace ams::erpt::srv {
     }
 
     Result Reporter::CreateReportFile() {
-        /* Make a journal record. */
-        auto *record = new JournalRecord<ReportInfo>;
-        R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
-
-        record->AddReference();
-        ON_SCOPE_EXIT {
-            if (record->RemoveReference()) {
-                delete record;
+        /* Define journal record deleter. */
+        struct JournalRecordDeleter {
+            void operator()(JournalRecord<ReportInfo> *record) {
+                if (record != nullptr) {
+                    if (record->RemoveReference()) {
+                        delete record;
+                    }
+                }
             }
         };
+
+        /* Make a journal record. */
+        auto record = std::unique_ptr<JournalRecord<ReportInfo>, JournalRecordDeleter>{new JournalRecord<ReportInfo>, JournalRecordDeleter{}};
+        R_UNLESS(record != nullptr, erpt::ResultOutOfMemory());
+        record->AddReference();
 
         record->info.type              = this->type;
         record->info.id                = this->report_id;
@@ -188,15 +334,16 @@ namespace ams::erpt::srv {
             record->info.flags.Set<ReportFlag::HasAttachment>();
         }
 
-        auto report = std::make_unique<Report>(record, s_redirect_new_reports);
+        auto report = std::make_unique<Report>(record.get(), s_redirect_new_reports);
         R_UNLESS(report != nullptr, erpt::ResultOutOfMemory());
+        auto report_guard = SCOPE_GUARD { report->Delete(); };
 
         R_TRY(Context::WriteContextsToReport(report.get()));
         R_TRY(report->GetSize(std::addressof(record->info.report_size)));
 
         if (!s_redirect_new_reports) {
             /* If we're not redirecting new reports, then we want to store the report in the journal. */
-            R_TRY(Journal::Store(record));
+            R_TRY(Journal::Store(record.get()));
         } else {
             /* If we are redirecting new reports, we don't want to store the report in the journal. */
             /* We should take this opportunity to delete any attachments associated with the report. */
@@ -205,6 +352,7 @@ namespace ams::erpt::srv {
 
         R_TRY(Journal::Commit());
 
+        report_guard.Cancel();
         return ResultSuccess();
     }
 

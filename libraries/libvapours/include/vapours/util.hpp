@@ -41,3 +41,4 @@
 #include <vapours/util/util_string_util.hpp>
 #include <vapours/util/util_variadic.hpp>
 #include <vapours/util/util_format_string.hpp>
+#include <vapours/util/util_range.hpp>
