@@ -82,7 +82,7 @@ namespace ams::err {
         }
 
         /* Check the descriptor value. */
-        const ContextDescriptor descriptor{reserved & ~0x200};
+        const ContextDescriptor descriptor{static_cast<decltype(ContextDescriptor{}.value)>(reserved & ~0x200)};
         if (!(impl::ContextDescriptorMin <= descriptor && descriptor <= impl::ContextDescriptorMax)) {
             return InvalidContextDescriptor;
         }
