@@ -66,6 +66,7 @@
 #define  PM0_ENABLE (1 << 16)
 #define  PM1_ENABLE (1 << 18)
 
+#define DC_CMD_INT_STATUS 0x37
 #define DC_CMD_INT_MASK 0x38
 #define DC_CMD_INT_ENABLE 0x39
 
@@ -253,6 +254,8 @@
 #define DC_WINBUF_SURFACE_KIND 0x80B
 
 /* Display serial interface registers. */
+#define DSI_INCR_SYNCPT_CNTRL 0x1
+
 #define DSI_RD_DATA 0x9
 #define DSI_WR_DATA 0xA
 

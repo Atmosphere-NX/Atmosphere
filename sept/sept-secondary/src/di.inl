@@ -294,7 +294,7 @@ static const dsi_sleep_or_register_write_t display_config_jdi_specific_init_01[4
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
 };
 
-static const dsi_sleep_or_register_write_t display_config_innolux_rev1_specific_init_01[14] = {
+static const dsi_sleep_or_register_write_t display_config_innolux_nx_abca2_specific_init_01[14] = {
     {0, DSI_WR_DATA, 0x1105},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
     {1, 0xB4, 0},
@@ -311,7 +311,7 @@ static const dsi_sleep_or_register_write_t display_config_innolux_rev1_specific_
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
 };
 
-static const dsi_sleep_or_register_write_t display_config_auo_rev1_specific_init_01[14] = {
+static const dsi_sleep_or_register_write_t display_config_auo_nx_abca2_specific_init_01[14] = {
     {0, DSI_WR_DATA, 0x1105},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
     {1, 0xB4, 0},
@@ -328,10 +328,26 @@ static const dsi_sleep_or_register_write_t display_config_auo_rev1_specific_init
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
 };
 
-static const dsi_sleep_or_register_write_t display_config_innolux_auo_rev2_specific_init_01[5] = {
+static const dsi_sleep_or_register_write_t display_config_innolux_auo_40_nx_abcc_specific_init_01[5] = {
     {0, DSI_WR_DATA, 0x1105},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
     {1, 0x78, 0},
+    {0, DSI_WR_DATA, 0x2905},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+};
+
+static const dsi_sleep_or_register_write_t display_config_50_nx_abcd_specific_init_01[13] = {
+    {0, DSI_WR_DATA, 0x1105},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+    {1, 0xB4, 0},
+    {0, DSI_WR_DATA, 0xA015},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+    {0, DSI_WR_DATA, 0x205315},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+    {0, DSI_WR_DATA, 0x339},
+    {0, DSI_WR_DATA, 0xFF0751},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+    {1, 0x5, 0},
     {0, DSI_WR_DATA, 0x2905},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
 };
@@ -614,6 +630,22 @@ static const register_write_t display_config_solid_color[8] = {
     {sizeof(uint32_t) * DC_CMD_DISPLAY_COMMAND, DISP_CTRL_MODE_C_DISPLAY},
 };
 
+static const register_write_t display_config_dc_01_fini_01[13] = {
+    {sizeof(uint32_t) * DC_DISP_FRONT_PORCH,        0xA0088},
+    {sizeof(uint32_t) * DC_CMD_INT_MASK,            0},
+    {sizeof(uint32_t) * DC_CMD_STATE_ACCESS,        0},
+    {sizeof(uint32_t) * DC_CMD_INT_ENABLE,          0},
+    {sizeof(uint32_t) * DC_CMD_CONT_SYNCPT_VSYNC,   0},
+    {sizeof(uint32_t) * DC_CMD_DISPLAY_COMMAND,     DISP_CTRL_MODE_STOP},
+    {sizeof(uint32_t) * DC_CMD_STATE_CONTROL,       GENERAL_UPDATE},
+    {sizeof(uint32_t) * DC_CMD_STATE_CONTROL,       GENERAL_ACT_REQ},
+    {sizeof(uint32_t) * DC_CMD_STATE_CONTROL,       GENERAL_UPDATE},
+    {sizeof(uint32_t) * DC_CMD_GENERAL_INCR_SYNCPT, 0x301},
+    {sizeof(uint32_t) * DC_CMD_GENERAL_INCR_SYNCPT, 0x301},
+    {sizeof(uint32_t) * DC_CMD_STATE_CONTROL,       GENERAL_UPDATE},
+    {sizeof(uint32_t) * DC_CMD_STATE_CONTROL,       GENERAL_ACT_REQ},
+};
+
 static const register_write_t display_config_dsi_01_fini_01[2] = {
     {sizeof(uint32_t) * DSI_POWER_CONTROL, 0},
     {sizeof(uint32_t) * DSI_PAD_CONTROL_1, 0},
@@ -660,7 +692,7 @@ static const dsi_sleep_or_register_write_t display_config_jdi_specific_fini_01[2
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
 };
 
-static const dsi_sleep_or_register_write_t display_config_auo_rev1_specific_fini_01[38] = {
+static const dsi_sleep_or_register_write_t display_config_auo_nx_abca2_specific_fini_01[38] = {
     {0, DSI_WR_DATA, 0x439},
     {0, DSI_WR_DATA, 0x9483FFB9},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
@@ -701,7 +733,7 @@ static const dsi_sleep_or_register_write_t display_config_auo_rev1_specific_fini
     {1, 0x5, 0},
 };
 
-static const dsi_sleep_or_register_write_t display_config_innolux_rev2_specific_fini_01[10] = {
+static const dsi_sleep_or_register_write_t display_config_innolux_nx_abcc_specific_fini_01[10] = {
     {0, DSI_WR_DATA, 0x439},
     {0, DSI_WR_DATA, 0x9483FFB9},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
@@ -714,7 +746,7 @@ static const dsi_sleep_or_register_write_t display_config_innolux_rev2_specific_
     {1, 0x5, 0},
 };
 
-static const dsi_sleep_or_register_write_t display_config_auo_rev2_specific_fini_01[10] = {
+static const dsi_sleep_or_register_write_t display_config_auo_nx_abcc_specific_fini_01[10] = {
     {0, DSI_WR_DATA, 0x439},
     {0, DSI_WR_DATA, 0x9483FFB9},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
@@ -723,6 +755,19 @@ static const dsi_sleep_or_register_write_t display_config_auo_rev2_specific_fini
     {0, DSI_WR_DATA, 0x711148B1},
     {0, DSI_WR_DATA, 0x71143209},
     {0, DSI_WR_DATA, 0x114D31},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+    {1, 0x5, 0},
+};
+
+static const dsi_sleep_or_register_write_t display_config_40_nx_abcc_specific_fini_01[10] = {
+    {0, DSI_WR_DATA, 0x439},
+    {0, DSI_WR_DATA, 0x9483FFB9},
+    {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
+    {1, 0x5, 0},
+    {0, DSI_WR_DATA, 0xB39},
+    {0, DSI_WR_DATA, 0x731348B1},
+    {0, DSI_WR_DATA, 0x71243209},
+    {0, DSI_WR_DATA, 0x4C31},
     {0, DSI_TRIGGER, DSI_TRIGGER_HOST},
     {1, 0x5, 0},
 };
