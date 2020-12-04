@@ -176,16 +176,16 @@ static void display_init_erista(void) {
         case 0x10: /* Japan Display Inc screens. */
             do_dsi_sleep_or_register_writes(display_config_jdi_specific_init_01, 48);
             break;
-        case 0xF20: /* Innolux first revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_innolux_rev1_specific_init_01, 14);
+        case 0xF20: /* Innolux nx-abca2 screens. */
+            do_dsi_sleep_or_register_writes(display_config_innolux_nx_abca2_specific_init_01, 14);
             break;
-        case 0xF30: /* AUO first revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_auo_rev1_specific_init_01, 14);
+        case 0xF30: /* AUO nx-abca2 screens. */
+            do_dsi_sleep_or_register_writes(display_config_auo_nx_abca2_specific_init_01, 14);
             break;
         default:
-            /* Innolux and AUO second revision screens. */
+            /* Innolux and AUO nx-abcc screens. */
             if ((g_lcd_vendor | 0x10) == 0x1030) {
-                do_dsi_sleep_or_register_writes(display_config_innolux_auo_rev2_specific_init_01, 5);
+                do_dsi_sleep_or_register_writes(display_config_innolux_auo_40_nx_abcc_specific_init_01, 5);
             }
             break;
     }
@@ -216,6 +216,7 @@ static void display_init_mariko(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
+    uint32_t hardware_type = fuse_get_hardware_type();
     
     /* Power on. */
     uint8_t val = 0x3A;
@@ -246,37 +247,43 @@ static void display_init_mariko(void) {
     pinmux->lcd_bl_en &= ~PINMUX_TRISTATE;
     pinmux->lcd_rst &= ~PINMUX_TRISTATE;
     
-    /* Configure Backlight +-5V GPIOs. */
-    gpio_configure_mode(GPIO_LCD_BL_P5V, GPIO_MODE_GPIO);
-    gpio_configure_mode(GPIO_LCD_BL_N5V, GPIO_MODE_GPIO);
-    gpio_configure_direction(GPIO_LCD_BL_P5V, GPIO_DIRECTION_OUTPUT);
-    gpio_configure_direction(GPIO_LCD_BL_N5V, GPIO_DIRECTION_OUTPUT);
+    if (hardware_type == 5) {
+        /* HardwareType_Five only configures GPIO_LCD_BL_RST. */
+        gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);
+        gpio_configure_direction(GPIO_LCD_BL_RST, GPIO_DIRECTION_OUTPUT);
+    } else {
+        /* Configure Backlight +-5V GPIOs. */
+        gpio_configure_mode(GPIO_LCD_BL_P5V, GPIO_MODE_GPIO);
+        gpio_configure_mode(GPIO_LCD_BL_N5V, GPIO_MODE_GPIO);
+        gpio_configure_direction(GPIO_LCD_BL_P5V, GPIO_DIRECTION_OUTPUT);
+        gpio_configure_direction(GPIO_LCD_BL_N5V, GPIO_DIRECTION_OUTPUT);
+            
+        /* Enable Backlight +5V. */
+        gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_HIGH); 
+
+        udelay(10000);
+
+        /* Enable Backlight -5V. */
+        gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_HIGH); 
+
+        udelay(10000);
+
+        /* Configure Backlight PWM, EN and RST GPIOs. */
+        gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_GPIO);
+        gpio_configure_mode(GPIO_LCD_BL_EN, GPIO_MODE_GPIO);
+        gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);    
+        gpio_configure_direction(GPIO_LCD_BL_PWM, GPIO_DIRECTION_OUTPUT);
+        gpio_configure_direction(GPIO_LCD_BL_EN, GPIO_DIRECTION_OUTPUT);
+        gpio_configure_direction(GPIO_LCD_BL_RST, GPIO_DIRECTION_OUTPUT);
         
-    /* Enable Backlight +5V. */
-    gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_HIGH); 
-
-    udelay(10000);
-
-    /* Enable Backlight -5V. */
-    gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_HIGH); 
-
-    udelay(10000);
-
-    /* Configure Backlight PWM, EN and RST GPIOs. */
-    gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_GPIO);
-    gpio_configure_mode(GPIO_LCD_BL_EN, GPIO_MODE_GPIO);
-    gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);    
-    gpio_configure_direction(GPIO_LCD_BL_PWM, GPIO_DIRECTION_OUTPUT);
-    gpio_configure_direction(GPIO_LCD_BL_EN, GPIO_DIRECTION_OUTPUT);
-    gpio_configure_direction(GPIO_LCD_BL_RST, GPIO_DIRECTION_OUTPUT);
-    
-    /* Enable Backlight EN. */
-    gpio_write(GPIO_LCD_BL_EN, GPIO_LEVEL_HIGH);
+        /* Enable Backlight EN. */
+        gpio_write(GPIO_LCD_BL_EN, GPIO_LEVEL_HIGH);
+    }
 
     /* Configure display interface and display. */
     MAKE_MIPI_CAL_REG(MIPI_CAL_MIPI_BIAS_PAD_CFG2) = 0;
     MAKE_MIPI_CAL_REG(MIPI_CAL_MIPI_BIAS_PAD_CFG0) = 0;
-    MAKE_APB_MISC_REG(0xAC0) = 0;
+    APB_MISC_GP_DSI_PAD_CONTROL_0 = 0;
 
     do_register_writes(CAR_BASE, display_config_plld_01_mariko, 4);
     do_register_writes(DI_BASE, display_config_dc_01, 94);
@@ -296,8 +303,12 @@ static void display_init_mariko(void) {
     gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_HIGH);
 
     udelay(60000);
-
-    MAKE_DSI_REG(DSI_BTA_TIMING) = 0x50204;
+    
+    if (hardware_type == 5) {
+        MAKE_DSI_REG(DSI_BTA_TIMING) = 0x40103;
+    } else {
+        MAKE_DSI_REG(DSI_BTA_TIMING) = 0x50204;
+    }
     MAKE_DSI_REG(DSI_WR_DATA) = 0x337;
     MAKE_DSI_REG(DSI_TRIGGER) = DSI_TRIGGER_HOST;
     dsi_wait(250000, DSI_TRIGGER, (DSI_TRIGGER_HOST | DSI_TRIGGER_VIDEO), 5);
@@ -332,17 +343,20 @@ static void display_init_mariko(void) {
         case 0x10: /* Japan Display Inc screens. */
             do_dsi_sleep_or_register_writes(display_config_jdi_specific_init_01, 48);
             break;
-        case 0xF20: /* Innolux first revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_innolux_rev1_specific_init_01, 14);
+        case 0xF20: /* Innolux nx-abca2 screens. */
+            do_dsi_sleep_or_register_writes(display_config_innolux_nx_abca2_specific_init_01, 14);
             break;
-        case 0xF30: /* AUO first revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_auo_rev1_specific_init_01, 14);
+        case 0xF30: /* AUO nx-abca2 screens. */
+            do_dsi_sleep_or_register_writes(display_config_auo_nx_abca2_specific_init_01, 14);
             break;
+        case 0x2050: /* Unknown nx-abcd screens. */
+            do_dsi_sleep_or_register_writes(display_config_50_nx_abcd_specific_init_01, 13);
+            break;
+        case 0x1020: /* Innolux nx-abcc screens. */
+        case 0x1030: /* AUO nx-abcc screens. */
+        case 0x1040: /* Unknown nx-abcc screens. */
         default:
-            /* Innolux and AUO second revision screens. */
-            if ((g_lcd_vendor | 0x10) == 0x1030) {
-                do_dsi_sleep_or_register_writes(display_config_innolux_auo_rev2_specific_init_01, 5);
-            }
+            do_dsi_sleep_or_register_writes(display_config_innolux_auo_40_nx_abcc_specific_init_01, 5);
             break;
     }
     
@@ -391,6 +405,9 @@ static void display_end_erista(void) {
     MAKE_DI_REG(DC_CMD_STATE_ACCESS) = (READ_MUX | WRITE_MUX);
     MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 0;
     
+    do_register_writes(DI_BASE, display_config_dc_01_fini_01, 13);
+    udelay(40000);
+    
     do_register_writes(CAR_BASE, display_config_plld_01_erista, 4);
     do_register_writes(DSI_BASE, display_config_dsi_01_fini_01, 2);
     do_register_writes(DSI_BASE, display_config_dsi_phy_timing_erista, 1);
@@ -403,14 +420,14 @@ static void display_end_erista(void) {
         case 0x10: /* Japan Display Inc screens. */
             do_dsi_sleep_or_register_writes(display_config_jdi_specific_fini_01, 22);
             break;
-        case 0xF30: /* AUO first revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_auo_rev1_specific_fini_01, 38);
+        case 0xF30: /* AUO nx-abca2 screens. */
+            do_dsi_sleep_or_register_writes(display_config_auo_nx_abca2_specific_fini_01, 38);
             break;
-        case 0x1020: /* Innolux second revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_innolux_rev2_specific_fini_01, 10);
+        case 0x1020: /* Innolux nx-abcc screens. */
+            do_dsi_sleep_or_register_writes(display_config_innolux_nx_abcc_specific_fini_01, 10);
             break;
-        case 0x1030: /* AUO second revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_auo_rev2_specific_fini_01, 10);
+        case 0x1030: /* AUO nx-abcc screens. */
+            do_dsi_sleep_or_register_writes(display_config_auo_nx_abcc_specific_fini_01, 10);
             break;
         default:
             break;
@@ -456,7 +473,6 @@ static void display_end_erista(void) {
 
 static void display_end_mariko(void) {
     volatile tegra_car_t *car = car_get_regs();
-    volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
     
     /* Disable Backlight. */
     display_backlight(false);
@@ -473,52 +489,61 @@ static void display_end_mariko(void) {
     MAKE_DI_REG(DC_CMD_STATE_ACCESS) = (READ_MUX | WRITE_MUX);
     MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 0;
     
+    do_register_writes(DI_BASE, display_config_dc_01_fini_01, 13);
+    udelay(40000);
+    
     do_register_writes(CAR_BASE, display_config_plld_01_mariko, 4);
     do_register_writes(DSI_BASE, display_config_dsi_01_fini_01, 2);
     do_register_writes(DSI_BASE, display_config_dsi_phy_timing_mariko, 1);
     do_register_writes(DSI_BASE, display_config_dsi_01_fini_02, 13);
 
-    udelay(10000);
+    if (g_lcd_vendor != 0x2050) {
+        udelay(10000);
+    }
     
     /* LCD vendor specific shutdown. */
     switch (g_lcd_vendor) {
         case 0x10: /* Japan Display Inc screens. */
             do_dsi_sleep_or_register_writes(display_config_jdi_specific_fini_01, 22);
             break;
-        case 0xF30: /* AUO first revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_auo_rev1_specific_fini_01, 38);
+        case 0xF30: /* AUO nx-abca2 screens. */
+            do_dsi_sleep_or_register_writes(display_config_auo_nx_abca2_specific_fini_01, 38);
             break;
-        case 0x1020: /* Innolux second revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_innolux_rev2_specific_fini_01, 10);
+        case 0x1020: /* Innolux nx-abcc screens. */
+            do_dsi_sleep_or_register_writes(display_config_innolux_nx_abcc_specific_fini_01, 10);
             break;
-        case 0x1030: /* AUO second revision screens. */
-            do_dsi_sleep_or_register_writes(display_config_auo_rev2_specific_fini_01, 10);
+        case 0x1030: /* AUO nx-abcc screens. */
+            do_dsi_sleep_or_register_writes(display_config_auo_nx_abcc_specific_fini_01, 10);
+            break;
+        case 0x1040: /* Unknown nx-abcc screens. */
+            do_dsi_sleep_or_register_writes(display_config_40_nx_abcc_specific_fini_01, 10);
             break;
         default:
             break;
     }
     
-    udelay(5000);
-
     MAKE_DSI_REG(DSI_WR_DATA) = 0x1005;
     MAKE_DSI_REG(DSI_TRIGGER) = DSI_TRIGGER_HOST;
-
-    udelay(50000);
+    udelay((g_lcd_vendor == 0x2050) ? 120000 : 50000);
     
     /* Disable Backlight RST. */
-    gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_LOW); 
-
-    udelay(10000);
+    gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_LOW);
     
-    /* Disable Backlight -5V. */
-    gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_LOW); 
+    if (g_lcd_vendor == 0x2050) {
+        udelay(30000);
+    } else {
+        udelay(10000);
+    
+        /* Disable Backlight -5V. */
+        gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_LOW); 
 
-    udelay(10000);
+        udelay(10000);
 
-    /* Disable Backlight +5V. */
-    gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_LOW); 
+        /* Disable Backlight +5V. */
+        gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_LOW); 
 
-    udelay(10000);
+        udelay(10000);
+    }
 
     /* Disable clocks. */
     car->rst_dev_h_set = 0x1010000;
@@ -528,12 +553,6 @@ static void display_end_mariko(void) {
 
     MAKE_DSI_REG(DSI_PAD_CONTROL_0) = (DSI_PAD_CONTROL_VS1_PULLDN_CLK | DSI_PAD_CONTROL_VS1_PULLDN(0xF) | DSI_PAD_CONTROL_VS1_PDIO_CLK | DSI_PAD_CONTROL_VS1_PDIO(0xF));
     MAKE_DSI_REG(DSI_POWER_CONTROL) = 0;
-    
-    /* Backlight PWM. */
-    gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_SFIO);
-    
-    pinmux->lcd_bl_pwm = ((pinmux->lcd_bl_pwm & ~PINMUX_TRISTATE) | PINMUX_TRISTATE);
-    pinmux->lcd_bl_pwm = (((pinmux->lcd_bl_pwm >> 2) << 2) | 1);
 }
 
 void display_init(void) {
@@ -553,8 +572,51 @@ void display_end(void) {
 }
 
 void display_backlight(bool enable) {
-    /* Enable Backlight PWM. */
-    gpio_write(GPIO_LCD_BL_PWM, enable ? GPIO_LEVEL_HIGH : GPIO_LEVEL_LOW);
+    if (g_lcd_vendor == 0x2050) {
+        int brightness = enable ? 100 : 0;
+        
+        /* Enable FRAME_END_INT */
+        MAKE_DI_REG(DC_CMD_INT_ENABLE) = 2;
+        
+        /* Configure DSI_LINE_TYPE as FOUR */
+        MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 1;
+        MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 9;
+
+        /* Set and wait for FRAME_END_INT */
+        MAKE_DI_REG(DC_CMD_INT_STATUS) = 2;
+        while ((MAKE_DI_REG(DC_CMD_INT_STATUS) & 2) != 0) {
+            /* Wait */
+        }
+        
+        /* Configure display brightness. */
+        const uint32_t brightness_val = ((0x7FF * brightness) / 100);
+        MAKE_DSI_REG(DSI_WR_DATA) = 0x339;
+        MAKE_DSI_REG(DSI_WR_DATA) = (brightness_val & 0x700) | ((brightness_val & 0xFF) << 16) | 0x51;
+
+        /* Set and wait for FRAME_END_INT */
+        MAKE_DI_REG(DC_CMD_INT_STATUS) = 2;
+        while ((MAKE_DI_REG(DC_CMD_INT_STATUS) & 2) != 0) {
+            /* Wait */
+        }
+
+        /* Set client sync point block reset. */
+        MAKE_DSI_REG(DSI_INCR_SYNCPT_CNTRL) = 1;
+        udelay(300000);
+
+        /* Clear client sync point block resest. */
+        MAKE_DSI_REG(DSI_INCR_SYNCPT_CNTRL) = 0;
+        udelay(300000);
+
+        /* Clear DSI_LINE_TYPE config. */
+        MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 0;
+
+        /* Disable FRAME_END_INT */
+        MAKE_DI_REG(DC_CMD_INT_ENABLE) = 0;
+        MAKE_DI_REG(DC_CMD_INT_STATUS) = 2;
+    } else {
+        /* Enable Backlight PWM. */
+        gpio_write(GPIO_LCD_BL_PWM, enable ? GPIO_LEVEL_HIGH : GPIO_LEVEL_LOW);
+    }
 }
 
 void display_color_screen(uint32_t color) {
