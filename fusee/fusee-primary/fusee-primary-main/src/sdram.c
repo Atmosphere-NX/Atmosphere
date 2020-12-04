@@ -35,6 +35,11 @@
 #include "sdram.inl"
 #endif
 
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
+
 static void sdram_config_erista(const sdram_params_erista_t *params) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
@@ -1050,7 +1055,7 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     AHB_ARBITRATION_XBAR_CTRL_0 = ((AHB_ARBITRATION_XBAR_CTRL_0 & 0xFFFEFFFF) | ((params->AhbArbitrationXbarCtrlMemInitDone & 0xFFFF) << 16));
 }
 
-const void *sdram_get_params_erista(uint32_t dram_id) {
+static const void *sdram_get_params_erista(uint32_t dram_id) {
     uint32_t sdram_params_index = sdram_params_index_table_erista[dram_id];
 #ifdef CONFIG_SDRAM_COMPRESS
     uint8_t *buf = (uint8_t *)0x40030000;
@@ -1061,7 +1066,7 @@ const void *sdram_get_params_erista(uint32_t dram_id) {
 #endif
 }
 
-const void *sdram_get_params_mariko(uint32_t dram_id) {
+static const void *sdram_get_params_mariko(uint32_t dram_id) {
     uint32_t sdram_params_index = sdram_params_index_table_mariko[dram_id];
 #ifdef CONFIG_SDRAM_COMPRESS
     uint8_t *buf = (uint8_t *)0x40030000;
@@ -1072,7 +1077,7 @@ const void *sdram_get_params_mariko(uint32_t dram_id) {
 #endif
 }
 
-void sdram_init_erista(void) {
+static void sdram_init_erista(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     const sdram_params_erista_t *params = (const sdram_params_erista_t *)sdram_get_params_erista(fuse_get_dram_id());
 
@@ -1096,7 +1101,7 @@ void sdram_init_erista(void) {
     sdram_config_erista(params);
 }
 
-void sdram_init_mariko(void) {
+static void sdram_init_mariko(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     const sdram_params_mariko_t *params = (const sdram_params_mariko_t *)sdram_get_params_mariko(fuse_get_dram_id());
 
@@ -1117,7 +1122,7 @@ void sdram_init_mariko(void) {
     sdram_config_mariko(params);
 }
 
-void sdram_save_params_erista(const void *save_params) {
+static void sdram_save_params_erista(const void *save_params) {
     const sdram_params_erista_t *params = (const sdram_params_erista_t *)save_params;
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     
@@ -2218,7 +2223,7 @@ void sdram_save_params_erista(const void *save_params) {
     s(PllMStableTime, 9:0, scratch4, 9:0);
 }
 
-void sdram_save_params_mariko(const void *save_params) {
+static void sdram_save_params_mariko(const void *save_params) {
     const sdram_params_mariko_t *params = (const sdram_params_mariko_t *)save_params;
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     
@@ -3333,4 +3338,28 @@ void sdram_save_params_mariko(const void *save_params) {
 
     c32(0, scratch4);
     s(PllMStableTime, 19:0, scratch4, 19:0);
+}
+
+void sdram_init(void) {
+    if (is_soc_mariko()) {
+        sdram_init_mariko();
+    } else {
+        sdram_init_erista();
+    }
+}
+
+const void *sdram_get_params(uint32_t dram_id) {
+    if (is_soc_mariko()) {
+        return sdram_get_params_mariko(dram_id);
+    } else {
+        return sdram_get_params_erista(dram_id);
+    }
+}
+
+void sdram_save_params(const void *save_params) {
+    if (is_soc_mariko()) {
+        sdram_save_params_mariko(save_params);
+    } else {
+        sdram_save_params_erista(save_params);
+    }
 }

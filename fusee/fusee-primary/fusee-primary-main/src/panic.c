@@ -125,11 +125,7 @@ static void _check_and_display_atmosphere_fatal_error(void) {
         video_init((void *)0xC0000000);
 
         /* Initialize the display. */
-        if (fuse_get_soc_type() == 1) {
-            display_init_mariko();
-        } else {
-            display_init_erista();
-        }
+        display_init();
 
         /* Set the framebuffer. */
         display_init_framebuffer((void *)0xC0000000);
@@ -225,11 +221,7 @@ void check_and_display_panic(void) {
         }
 
         /* Initialize the display. */
-        if (fuse_get_soc_type() == 1) {
-            display_init_mariko();
-        } else {
-            display_init_erista();
-        }
+        display_init();
 
         /* Fill the screen. */
         display_color_screen(color);

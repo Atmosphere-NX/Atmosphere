@@ -108,13 +108,13 @@ static void setup_env(void) {
     g_framebuffer = (void *)0xC0000000;
 
     /* Initialize hardware. */
-    nx_hwinit_erista(false);
+    nx_hwinit(false);
 
     /* Zero-fill the framebuffer and register it as printk provider. */
     video_init(g_framebuffer);
 
     /* Initialize the display. */
-    display_init_erista();
+    display_init();
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
@@ -131,7 +131,7 @@ static void cleanup_env(void) {
     unmount_sd();
     
     /* Terminate the display. */
-    display_end_erista();
+    display_end();
 }
 
 static void exit_callback(int rc) {

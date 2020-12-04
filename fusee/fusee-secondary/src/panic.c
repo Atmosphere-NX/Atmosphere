@@ -70,11 +70,7 @@ void check_and_display_panic(void) {
         }
 
         /* Initialize the display. */
-        if (fuse_get_soc_type() == 1) {
-            display_init_mariko();
-        } else {
-            display_init_erista();
-        }
+        display_init();
         
         /* Fill the screen. */
         display_color_screen(color);

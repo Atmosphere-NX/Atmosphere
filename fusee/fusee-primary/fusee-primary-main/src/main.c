@@ -99,11 +99,7 @@ static void setup_display(void) {
     video_init(g_framebuffer);
 
     /* Initialize the display. */
-    if (fuse_get_soc_type() == 1) {
-        display_init_mariko();
-    } else {
-        display_init_erista();
-    }
+    display_init();
     
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
@@ -118,20 +114,12 @@ static void cleanup_display(void) {
     display_backlight(false);
 
     /* Terminate the display. */
-    if (fuse_get_soc_type() == 1) {
-        display_end_mariko();
-    } else {
-        display_end_erista();
-    }
+    display_end();
 }
 
 static void setup_env(void) {
     /* Initialize hardware. */
-    if (fuse_get_soc_type() == 1) {
-        nx_hwinit_mariko(false);
-    } else {
-        nx_hwinit_erista(false);
-    }
+    nx_hwinit(false);
 
     /* Set up the exception handlers. */
     setup_exception_handlers();

@@ -18,11 +18,8 @@
 #ifndef FUSEE_SDRAM_H_
 #define FUSEE_SDRAM_H_
 
-void sdram_init_erista(void);
-void sdram_init_mariko(void);
-const void *sdram_get_params_erista(uint32_t dram_id);
-const void *sdram_get_params_mariko(uint32_t dram_id);
-void sdram_save_params_erista(const void *save_params);
-void sdram_save_params_mariko(const void *save_params);
+void sdram_init(void);
+const void *sdram_get_params(uint32_t dram_id);
+void sdram_save_params(const void *save_params);
 
 #endif
