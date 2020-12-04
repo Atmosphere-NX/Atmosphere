@@ -34,6 +34,11 @@
 #include "timers.h"
 #include "uart.h"
 
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
+
 static void config_oscillators(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
@@ -209,7 +214,7 @@ static void config_se_brom(void) {
     pmc->rst_status = 0;
 }
 
-void nx_hwinit_erista(bool enable_log) {
+static void nx_hwinit_erista(bool enable_log) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_car_t *car = car_get_regs();
     
@@ -320,13 +325,13 @@ void nx_hwinit_erista(bool enable_log) {
     /* mc_config_carveout(); */
     
     /* Save SDRAM parameters to scratch. */
-    sdram_save_params_erista(sdram_get_params_erista(fuse_get_dram_id()));
+    sdram_save_params(sdram_get_params(fuse_get_dram_id()));
     
     /* Initialize SDRAM. */
-    sdram_init_erista();
+    sdram_init();
 }
 
-void nx_hwinit_mariko(bool enable_log) {
+static void nx_hwinit_mariko(bool enable_log) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_car_t *car = car_get_regs();
     
@@ -397,8 +402,16 @@ void nx_hwinit_mariko(bool enable_log) {
     pmc->tzram_sec_disable = 0x3;
     
     /* Save SDRAM parameters to scratch. */
-    sdram_save_params_mariko(sdram_get_params_mariko(fuse_get_dram_id()));
+    sdram_save_params(sdram_get_params(fuse_get_dram_id()));
     
     /* Initialize SDRAM. */
-    sdram_init_mariko();
+    sdram_init();
+}
+
+void nx_hwinit(bool enable_log) {
+    if (is_soc_mariko()) {
+        nx_hwinit_mariko(enable_log);
+    } else {
+        nx_hwinit_erista(enable_log);
+    }
 }

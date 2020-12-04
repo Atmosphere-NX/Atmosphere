@@ -382,10 +382,8 @@
 #define MIPI_CAL_DSIC_MIPI_CAL_CONFIG_2 0x70
 #define MIPI_CAL_DSID_MIPI_CAL_CONFIG_2 0x74
 
-void display_init_erista(void);
-void display_init_mariko(void);
-void display_end_erista(void);
-void display_end_mariko(void);
+void display_init(void);
+void display_end(void);
 
 /* Switches screen backlight ON/OFF. */
 void display_backlight(bool enable);

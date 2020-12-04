@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "di.h"
+#include "fuse.h"
 #include "timers.h"
 #include "i2c.h"
 #include "pmc.h"
@@ -31,6 +32,11 @@
 #include "di.inl"
 
 static uint32_t g_lcd_vendor = 0;
+
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
 
 static void do_dsi_sleep_or_register_writes(const dsi_sleep_or_register_write_t *writes, uint32_t num_writes) {
     for (uint32_t i = 0; i < num_writes; i++) {
@@ -56,7 +62,7 @@ static void dsi_wait(uint32_t timeout, uint32_t offset, uint32_t mask, uint32_t 
     udelay(delay);
 }
 
-void display_init_erista(void) {
+static void display_init_erista(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
@@ -206,7 +212,7 @@ void display_init_erista(void) {
     do_register_writes(DI_BASE, display_config_dc_02, 113);
 }
 
-void display_init_mariko(void) {
+static void display_init_mariko(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
@@ -366,7 +372,7 @@ void display_init_mariko(void) {
     do_register_writes(DI_BASE, display_config_dc_02, 113);
 }
 
-void display_end_erista(void) {
+static void display_end_erista(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
     
@@ -448,7 +454,7 @@ void display_end_erista(void) {
     pinmux->lcd_bl_pwm = (((pinmux->lcd_bl_pwm >> 2) << 2) | 1);
 }
 
-void display_end_mariko(void) {
+static void display_end_mariko(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
     
@@ -528,6 +534,22 @@ void display_end_mariko(void) {
     
     pinmux->lcd_bl_pwm = ((pinmux->lcd_bl_pwm & ~PINMUX_TRISTATE) | PINMUX_TRISTATE);
     pinmux->lcd_bl_pwm = (((pinmux->lcd_bl_pwm >> 2) << 2) | 1);
+}
+
+void display_init(void) {
+    if (is_soc_mariko()) {
+        display_init_mariko();
+    } else {
+        display_init_erista();
+    }
+}
+
+void display_end(void) {
+    if (is_soc_mariko()) {
+        display_end_mariko();
+    } else {
+        display_end_erista();
+    }
 }
 
 void display_backlight(bool enable) {
