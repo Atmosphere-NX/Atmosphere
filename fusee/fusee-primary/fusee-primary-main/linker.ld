@@ -13,7 +13,7 @@ PHDRS
 MEMORY
 {
     NULL        : ORIGIN = 0x00000000, LENGTH = 0x1000
-    main        : ORIGIN = 0x40008000, LENGTH = 0x28000
+    main        : ORIGIN = 0x40008000, LENGTH = 0x38000
     low_iram    : ORIGIN = 0x40000000, LENGTH = 0x6000
 }
 
