@@ -46,19 +46,19 @@ namespace ams::fssystem {
             Result CopySaveFromFileSystem(fs::fsa::IFileSystem *save_fs);
         public:
             /* Overridden from IPathResolutionFileSystem */
-            virtual Result OpenFileImpl(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) override;
-            virtual Result CommitImpl() override;
+            virtual Result DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) override;
+            virtual Result DoCommit() override;
 
             /* Overridden from IPathResolutionFileSystem but not commands. */
-            virtual Result CommitProvisionallyImpl(s64 counter) override;
-            virtual Result RollbackImpl() override;
+            virtual Result DoCommitProvisionally(s64 counter) override;
+            virtual Result DoRollback() override;
 
             /* Explicitly overridden to be not implemented. */
-            virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) override;
-            virtual Result GetTotalSpaceSizeImpl(s64 *out, const char *path) override;
-            virtual Result GetFileTimeStampRawImpl(fs::FileTimeStampRaw *out, const char *path) override;
-            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) override;
-            virtual Result FlushImpl() override;
+            virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override;
+            virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override;
+            virtual Result DoGetFileTimeStampRaw(fs::FileTimeStampRaw *out, const char *path) override;
+            virtual Result DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) override;
+            virtual Result DoFlush() override;
     };
 
 }

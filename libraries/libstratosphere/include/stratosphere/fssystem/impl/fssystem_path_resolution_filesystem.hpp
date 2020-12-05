@@ -46,7 +46,7 @@ namespace ams::fssystem::impl {
                 return this->unc_preserved;
             }
         public:
-            virtual Result CreateFileImpl(const char *path, s64 size, int option) override {
+            virtual Result DoCreateFile(const char *path, s64 size, int option) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -54,7 +54,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->CreateFile(full_path, size, option);
             }
 
-            virtual Result DeleteFileImpl(const char *path) override {
+            virtual Result DoDeleteFile(const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -62,7 +62,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->DeleteFile(full_path);
             }
 
-            virtual Result CreateDirectoryImpl(const char *path) override {
+            virtual Result DoCreateDirectory(const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -70,7 +70,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->CreateDirectory(full_path);
             }
 
-            virtual Result DeleteDirectoryImpl(const char *path) override {
+            virtual Result DoDeleteDirectory(const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -78,7 +78,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->DeleteDirectory(full_path);
             }
 
-            virtual Result DeleteDirectoryRecursivelyImpl(const char *path) override {
+            virtual Result DoDeleteDirectoryRecursively(const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -86,7 +86,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->DeleteDirectoryRecursively(full_path);
             }
 
-            virtual Result RenameFileImpl(const char *old_path, const char *new_path) override {
+            virtual Result DoRenameFile(const char *old_path, const char *new_path) override {
                 char old_full_path[fs::EntryNameLengthMax + 1];
                 char new_full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(old_full_path, sizeof(old_full_path), old_path));
@@ -96,7 +96,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->RenameFile(old_full_path, new_full_path);
             }
 
-            virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) override {
+            virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override {
                 char old_full_path[fs::EntryNameLengthMax + 1];
                 char new_full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(old_full_path, sizeof(old_full_path), old_path));
@@ -106,7 +106,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->RenameDirectory(old_full_path, new_full_path);
             }
 
-            virtual Result GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) override {
+            virtual Result DoGetEntryType(fs::DirectoryEntryType *out, const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -114,7 +114,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->GetEntryType(out, full_path);
             }
 
-            virtual Result OpenFileImpl(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) override {
+            virtual Result DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -122,7 +122,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->OpenFile(out_file, full_path, mode);
             }
 
-            virtual Result OpenDirectoryImpl(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) override {
+            virtual Result DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -130,12 +130,12 @@ namespace ams::fssystem::impl {
                 return this->base_fs->OpenDirectory(out_dir, full_path, mode);
             }
 
-            virtual Result CommitImpl() override {
+            virtual Result DoCommit() override {
                 std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->Commit();
             }
 
-            virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) override {
+            virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -143,7 +143,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->GetFreeSpaceSize(out, full_path);
             }
 
-            virtual Result GetTotalSpaceSizeImpl(s64 *out, const char *path) override {
+            virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -151,7 +151,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->GetTotalSpaceSize(out, full_path);
             }
 
-            virtual Result CleanDirectoryRecursivelyImpl(const char *path) override {
+            virtual Result DoCleanDirectoryRecursively(const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -159,7 +159,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->CleanDirectoryRecursively(full_path);
             }
 
-            virtual Result GetFileTimeStampRawImpl(fs::FileTimeStampRaw *out, const char *path) override {
+            virtual Result DoGetFileTimeStampRaw(fs::FileTimeStampRaw *out, const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -167,7 +167,7 @@ namespace ams::fssystem::impl {
                 return this->base_fs->GetFileTimeStampRaw(out, full_path);
             }
 
-            virtual Result QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) override {
+            virtual Result DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) override {
                 char full_path[fs::EntryNameLengthMax + 1];
                 R_TRY(static_cast<Impl*>(this)->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -176,17 +176,17 @@ namespace ams::fssystem::impl {
             }
 
             /* These aren't accessible as commands. */
-            virtual Result CommitProvisionallyImpl(s64 counter) override {
+            virtual Result DoCommitProvisionally(s64 counter) override {
                 std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->CommitProvisionally(counter);
             }
 
-            virtual Result RollbackImpl() override {
+            virtual Result DoRollback() override {
                 std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->Rollback();
             }
 
-            virtual Result FlushImpl() override {
+            virtual Result DoFlush() override {
                 std::optional optional_lock = static_cast<Impl*>(this)->GetAccessorLock();
                 return this->base_fs->Flush();
             }

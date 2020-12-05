@@ -42,27 +42,27 @@ namespace ams::fssystem {
                     }
                 }
             public:
-                virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override {
+                virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override {
                     return this->base_file->Read(out, offset, buffer, size, option);
                 }
 
-                virtual Result GetSizeImpl(s64 *out) override {
+                virtual Result DoGetSize(s64 *out) override {
                     return this->base_file->GetSize(out);
                 }
 
-                virtual Result FlushImpl() override {
+                virtual Result DoFlush() override {
                     return this->base_file->Flush();
                 }
 
-                virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
+                virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
                     return this->base_file->Write(offset, buffer, size, option);
                 }
 
-                virtual Result SetSizeImpl(s64 size) override {
+                virtual Result DoSetSize(s64 size) override {
                     return this->base_file->SetSize(size);
                 }
 
-                virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
                 }
             public:
@@ -192,7 +192,7 @@ namespace ams::fssystem {
     }
 
     /* Overridden from IPathResolutionFileSystem */
-    Result DirectorySaveDataFileSystem::OpenFileImpl(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
+    Result DirectorySaveDataFileSystem::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
         char full_path[fs::EntryNameLengthMax + 1];
         R_TRY(this->ResolveFullPath(full_path, sizeof(full_path), path));
 
@@ -211,7 +211,7 @@ namespace ams::fssystem {
         return ResultSuccess();
     }
 
-    Result DirectorySaveDataFileSystem::CommitImpl() {
+    Result DirectorySaveDataFileSystem::DoCommit() {
         /* Here, Nintendo does the following (with retries): */
         /* - Rename Committed -> Synchronizing. */
         /* - Synchronize Working -> Synchronizing (deleting Synchronizing). */
@@ -238,34 +238,34 @@ namespace ams::fssystem {
     }
 
     /* Overridden from IPathResolutionFileSystem but not commands. */
-    Result DirectorySaveDataFileSystem::CommitProvisionallyImpl(s64 counter) {
+    Result DirectorySaveDataFileSystem::DoCommitProvisionally(s64 counter) {
         /* Nintendo does nothing here. */
         return ResultSuccess();
     }
 
-    Result DirectorySaveDataFileSystem::RollbackImpl() {
+    Result DirectorySaveDataFileSystem::DoRollback() {
         /* Initialize overwrites the working directory with the committed directory. */
         return this->Initialize();
     }
 
     /* Explicitly overridden to be not implemented. */
-    Result DirectorySaveDataFileSystem::GetFreeSpaceSizeImpl(s64 *out, const char *path) {
+    Result DirectorySaveDataFileSystem::DoGetFreeSpaceSize(s64 *out, const char *path) {
         return fs::ResultNotImplemented();
     }
 
-    Result DirectorySaveDataFileSystem::GetTotalSpaceSizeImpl(s64 *out, const char *path) {
+    Result DirectorySaveDataFileSystem::DoGetTotalSpaceSize(s64 *out, const char *path) {
         return fs::ResultNotImplemented();
     }
 
-    Result DirectorySaveDataFileSystem::GetFileTimeStampRawImpl(fs::FileTimeStampRaw *out, const char *path) {
+    Result DirectorySaveDataFileSystem::DoGetFileTimeStampRaw(fs::FileTimeStampRaw *out, const char *path) {
         return fs::ResultNotImplemented();
     }
 
-    Result DirectorySaveDataFileSystem::QueryEntryImpl(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) {
+    Result DirectorySaveDataFileSystem::DoQueryEntry(char *dst, size_t dst_size, const char *src, size_t src_size, fs::fsa::QueryId query, const char *path) {
         return fs::ResultNotImplemented();
     }
 
-    Result DirectorySaveDataFileSystem::FlushImpl() {
+    Result DirectorySaveDataFileSystem::DoFlush() {
         return fs::ResultNotImplemented();
     }
 
