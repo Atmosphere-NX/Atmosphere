@@ -77,8 +77,8 @@ namespace ams::fs {
 
 
                 /* Validate arguments and read. */
-                R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+                R_UNLESS(buffer != nullptr,                                    fs::ResultNullptrArgument());
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
                 return this->base_storage->Read(this->offset + offset, buffer, size);
             }
 
@@ -90,8 +90,8 @@ namespace ams::fs {
                 R_SUCCEED_IF(size == 0);
 
                 /* Validate arguments and write. */
-                R_UNLESS(buffer != nullptr,                                fs::ResultNullptrArgument());
-                R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+                R_UNLESS(buffer != nullptr,                                    fs::ResultNullptrArgument());
+                R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
                 return this->base_storage->Write(this->offset + offset, buffer, size);
             }
 
@@ -102,9 +102,9 @@ namespace ams::fs {
 
             virtual Result SetSize(s64 size) override {
                 /* Ensure we're initialized and validate arguments. */
-                R_UNLESS(this->IsValid(),                                    fs::ResultNotInitialized());
-                R_UNLESS(this->resizable,                                    fs::ResultUnsupportedOperationInSubStorageA());
-                R_UNLESS(IStorage::IsOffsetAndSizeValid(this->offset, size), fs::ResultInvalidSize());
+                R_UNLESS(this->IsValid(),                                  fs::ResultNotInitialized());
+                R_UNLESS(this->resizable,                                  fs::ResultUnsupportedOperationInSubStorageA());
+                R_UNLESS(IStorage::CheckOffsetAndSize(this->offset, size), fs::ResultInvalidSize());
 
                 /* Ensure that we're allowed to set size. */
                 s64 cur_size;
@@ -134,7 +134,7 @@ namespace ams::fs {
                 R_SUCCEED_IF(size == 0);
 
                 /* Validate arguments and operate. */
-                R_UNLESS(IStorage::IsOffsetAndSizeValid(offset, size), fs::ResultOutOfRange());
+                R_UNLESS(IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
                 return this->base_storage->OperateRange(dst, dst_size, op_id, this->offset + offset, size, src, src_size);
             }
 
