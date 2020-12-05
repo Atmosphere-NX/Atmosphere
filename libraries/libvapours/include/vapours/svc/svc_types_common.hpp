@@ -156,6 +156,7 @@ namespace ams::svc {
         InfoType_TotalNonSystemMemorySize       = 21,
         InfoType_UsedNonSystemMemorySize        = 22,
         InfoType_IsApplication                  = 23,
+        InfoType_FreeThreadCount                = 24,
 
         InfoType_MesosphereMeta                 = 65000,
 

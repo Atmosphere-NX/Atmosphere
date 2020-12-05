@@ -59,6 +59,7 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_TotalNonSystemMemorySize:
                 case ams::svc::InfoType_UsedNonSystemMemorySize:
                 case ams::svc::InfoType_IsApplication:
+                case ams::svc::InfoType_FreeThreadCount:
                     {
                         /* These info types don't support non-zero subtypes. */
                         R_UNLESS(info_subtype == 0,  svc::ResultInvalidCombination());
@@ -124,6 +125,15 @@ namespace ams::kern::svc {
                                 break;
                             case ams::svc::InfoType_IsApplication:
                                 *out = process->IsApplication();
+                                break;
+                            case ams::svc::InfoType_FreeThreadCount:
+                                if (KResourceLimit *resource_limit = process->GetResourceLimit(); resource_limit != nullptr) {
+                                    const auto current_value = resource_limit->GetCurrentValue(ams::svc::LimitableResource_ThreadCountMax);
+                                    const auto limit_value   = resource_limit->GetLimitValue(ams::svc::LimitableResource_ThreadCountMax);
+                                    *out = limit_value - current_value;
+                                } else {
+                                    *out = 0;
+                                }
                                 break;
                             MESOSPHERE_UNREACHABLE_DEFAULT_CASE();
                         }
