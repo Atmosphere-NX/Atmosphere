@@ -19,7 +19,7 @@ namespace ams::fs {
 
     Result FileStorage::UpdateSize() {
         R_SUCCEED_IF(this->size != InvalidSize);
-        return this->base_file->GetSize(&this->size);
+        return this->base_file->GetSize(std::addressof(this->size));
     }
 
     Result FileStorage::Read(s64 offset, void *buffer, size_t size) {
@@ -36,7 +36,7 @@ namespace ams::fs {
         R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
 
         size_t read_size;
-        return this->base_file->Read(&read_size, offset, buffer, size);
+        return this->base_file->Read(std::addressof(read_size), offset, buffer, size);
     }
 
     Result FileStorage::Write(s64 offset, const void *buffer, size_t size) {
