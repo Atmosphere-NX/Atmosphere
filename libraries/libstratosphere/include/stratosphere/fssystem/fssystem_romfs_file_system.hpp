@@ -17,7 +17,7 @@
 #include <vapours.hpp>
 #include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
 #include <stratosphere/fs/impl/fs_newable.hpp>
-#include <stratosphere/fssystem/fssystem_dbm_hierarchical_rom_file_table.hpp>
+#include <stratosphere/fs/common/fs_dbm_hierarchical_rom_file_table.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
 
 namespace ams::fssystem {
@@ -25,7 +25,7 @@ namespace ams::fssystem {
     class RomFsFileSystem : public fs::fsa::IFileSystem, public fs::impl::Newable {
         NON_COPYABLE(RomFsFileSystem);
         public:
-            using RomFileTable = HierarchicalRomFileTable<fs::IStorage, fs::IStorage, fs::IStorage, fs::IStorage>;
+            using RomFileTable = fs::HierarchicalRomFileTable;
         private:
             RomFileTable rom_file_table;
             fs::IStorage *base_storage;

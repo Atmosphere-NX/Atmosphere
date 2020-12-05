@@ -19,7 +19,7 @@ namespace ams::fssystem {
 
     namespace {
 
-        constexpr size_t CalculateRequiredWorkingMemorySize(const RomFileSystemInformation &header) {
+        constexpr size_t CalculateRequiredWorkingMemorySize(const fs::RomFileSystemInformation &header) {
             return header.directory_bucket_size + header.directory_entry_size + header.file_bucket_size + header.file_entry_size;
         }
 
@@ -114,7 +114,7 @@ namespace ams::fssystem {
             public:
                 virtual Result ReadImpl(s64 *out_count, fs::DirectoryEntry *out_entries, s64 max_entries) {
                     R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
-                        return this->ReadImpl(out_count, std::addressof(this->current_find), out_entries, max_entries);
+                        return this->ReadInternal(out_count, std::addressof(this->current_find), out_entries, max_entries);
                     }, AMS_CURRENT_FUNCTION_NAME));
                     return ResultSuccess();
                 }
@@ -123,20 +123,20 @@ namespace ams::fssystem {
                     FindPosition find = this->first_find;
 
                     R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([&]() -> Result {
-                        R_TRY(this->ReadImpl(out, std::addressof(find), nullptr, 0));
+                        R_TRY(this->ReadInternal(out, std::addressof(find), nullptr, 0));
                         return ResultSuccess();
                     }, AMS_CURRENT_FUNCTION_NAME));
                     return ResultSuccess();
                 }
             private:
-                Result ReadImpl(s64 *out_count, FindPosition *find, fs::DirectoryEntry *out_entries, s64 max_entries) {
+                Result ReadInternal(s64 *out_count, FindPosition *find, fs::DirectoryEntry *out_entries, s64 max_entries) {
                     constexpr size_t NameBufferSize = fs::EntryNameLengthMax + 1;
-                    RomPathChar name[NameBufferSize];
+                    fs::RomPathChar name[NameBufferSize];
                     s32 i = 0;
 
                     if (this->mode & fs::OpenDirectoryMode_Directory) {
                         while (i < max_entries || out_entries == nullptr) {
-                            R_TRY_CATCH(this->parent->GetRomFileTable()->FindNextDirectory(name, find)) {
+                            R_TRY_CATCH(this->parent->GetRomFileTable()->FindNextDirectory(name, find, NameBufferSize)) {
                                 R_CATCH(fs::ResultDbmFindFinished) { break; }
                             } R_END_TRY_CATCH;
 
@@ -156,7 +156,7 @@ namespace ams::fssystem {
                         while (i < max_entries || out_entries == nullptr) {
                             auto file_pos = find->next_file;
 
-                            R_TRY_CATCH(this->parent->GetRomFileTable()->FindNextFile(name, find)) {
+                            R_TRY_CATCH(this->parent->GetRomFileTable()->FindNextFile(name, find, NameBufferSize)) {
                                 R_CATCH(fs::ResultDbmFindFinished) { break; }
                             } R_END_TRY_CATCH;
 
@@ -167,7 +167,7 @@ namespace ams::fssystem {
                                 out_entries[i].type = fs::DirectoryEntryType_File;
 
                                 RomFsFileSystem::RomFileTable::FileInfo file_info;
-                                R_TRY(this->parent->GetRomFileTable()->OpenFile(std::addressof(file_info), this->parent->GetRomFileTable()->ConvertToFileId(file_pos)));
+                                R_TRY(this->parent->GetRomFileTable()->OpenFile(std::addressof(file_info), this->parent->GetRomFileTable()->PositionToFileId(file_pos)));
                                 out_entries[i].file_size = file_info.size.Get();
                             }
 
@@ -204,7 +204,7 @@ namespace ams::fssystem {
     }
 
     Result RomFsFileSystem::GetRequiredWorkingMemorySize(size_t *out, fs::IStorage *storage) {
-        RomFileSystemInformation header;
+        fs::RomFileSystemInformation header;
 
         R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([&]() -> Result {
             R_TRY(storage->Read(0, std::addressof(header), sizeof(header)));
@@ -224,7 +224,7 @@ namespace ams::fssystem {
         buffers::EnableBlockingBufferManagerAllocation();
 
         /* Read the header. */
-        RomFileSystemInformation header;
+        fs::RomFileSystemInformation header;
         R_TRY(base->Read(0, std::addressof(header), sizeof(header)));
 
         /* Set up our storages. */
@@ -261,10 +261,10 @@ namespace ams::fssystem {
         R_UNLESS(this->file_entry_storage  != nullptr, fs::ResultAllocationFailureInRomFsFileSystemB());
 
         /* Initialize the rom table. */
-        R_TRY(this->rom_file_table.Initialize(this->dir_bucket_storage.get(),  0, static_cast<u32>(header.directory_bucket_size),
-                                              this->dir_entry_storage.get(),   0, static_cast<u32>(header.directory_entry_size),
-                                              this->file_bucket_storage.get(), 0, static_cast<u32>(header.file_bucket_size),
-                                              this->file_entry_storage.get(),  0, static_cast<u32>(header.file_entry_size)));
+        R_TRY(this->rom_file_table.Initialize(fs::SubStorage(this->dir_bucket_storage.get(),  0, static_cast<u32>(header.directory_bucket_size)),
+                                              fs::SubStorage(this->dir_entry_storage.get(),   0, static_cast<u32>(header.directory_entry_size)),
+                                              fs::SubStorage(this->file_bucket_storage.get(), 0, static_cast<u32>(header.file_bucket_size)),
+                                              fs::SubStorage(this->file_entry_storage.get(),  0, static_cast<u32>(header.file_entry_size))));
 
         /* Set members. */
         this->entry_size = header.body_offset;
@@ -326,7 +326,7 @@ namespace ams::fssystem {
 
     Result RomFsFileSystem::GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) {
         R_TRY(buffers::DoContinuouslyUntilBufferIsAllocated([=, this]() -> Result {
-            RomDirectoryInfo dir_info;
+            fs::RomDirectoryInfo dir_info;
 
             R_TRY_CATCH(this->rom_file_table.GetDirectoryInformation(std::addressof(dir_info), path)) {
                 R_CONVERT(fs::ResultDbmNotFound, fs::ResultPathNotFound())

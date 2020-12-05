@@ -14,12 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_common.hpp"
-#include "impl/fs_newable.hpp"
-#include "fsa/fs_ifile.hpp"
-#include "fsa/fs_idirectory.hpp"
-#include "fsa/fs_ifilesystem.hpp"
-#include "fs_dbm_hierarchical_rom_file_table.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/impl/fs_newable.hpp>
+#include <stratosphere/fs/fsa/fs_ifile.hpp>
+#include <stratosphere/fs/fsa/fs_idirectory.hpp>
+#include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
+#include <stratosphere/fs/common/fs_dbm_hierarchical_rom_file_table.hpp>
 
 namespace ams::fs {
 

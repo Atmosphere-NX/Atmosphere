@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere/fs/fs_common.hpp>
 
-namespace ams::fssystem {
+namespace ams::fs {
 
     using RomPathChar    = char;
     using RomFileId      = s32;
@@ -43,8 +43,8 @@ namespace ams::fssystem {
     static_assert(util::is_pod<RomDirectoryInfo>::value);
 
     struct RomFileInfo {
-        fs::Int64 offset;
-        fs::Int64 size;
+        Int64 offset;
+        Int64 size;
     };
     static_assert(util::is_pod<RomFileInfo>::value);
 

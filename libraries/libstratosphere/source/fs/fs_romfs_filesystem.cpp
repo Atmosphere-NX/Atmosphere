@@ -316,7 +316,7 @@ namespace ams::fs {
                                 out_entries[i].type = fs::DirectoryEntryType_File;
 
                                 RomFsFileSystem::RomFileTable::FileInfo file_info;
-                                R_TRY(this->parent->GetRomFileTable()->OpenFile(std::addressof(file_info), this->parent->GetRomFileTable()->ConvertToFileId(file_pos)));
+                                R_TRY(this->parent->GetRomFileTable()->OpenFile(std::addressof(file_info), this->parent->GetRomFileTable()->PositionToFileId(file_pos)));
                                 out_entries[i].file_size = file_info.size.Get();
                             }
 
