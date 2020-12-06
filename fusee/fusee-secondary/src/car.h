@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+ 
 #ifndef FUSEE_CAR_H
 #define FUSEE_CAR_H
 
@@ -287,7 +287,7 @@ typedef struct {
     uint32_t clk_source_sata_oob;       /* _CLK_SOURCE_SATA_OOB_0,      0x420 */
     uint32_t clk_source_sata;           /* _CLK_SOURCE_SATA_0,          0x424 */
     uint32_t clk_source_hda;            /* _CLK_SOURCE_HDA_0,           0x428 */
-    uint32_t _0x42c;
+    uint32_t clk_source_se;             /* _CLK_SOURCE_SE_0,            0x42c */
 
     /* _RST_DEV_V/W_SET_0 0x430-0x43c */
     uint32_t rst_dev_v_set;
@@ -488,7 +488,7 @@ typedef struct {
     uint32_t sdmmc4_pllc4_out0_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT0_SHAPER_CTRL_0, 0x738 */
     uint32_t sdmmc4_pllc4_out1_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT1_SHAPER_CTRL_0, 0x73c */
     uint32_t sdmmc4_pllc4_out2_shaper_ctrl;         /* _SDMMC4_PLLC4_OUT2_SHAPER_CTRL_0, 0x740 */
-    uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */
+    uint32_t sdmmc4_div_clk_shaper_ctrl;            /* _SDMMC4_DIV_CLK_SHAPER_CTRL_0, 0x744 */    
 } tegra_car_t;
 
 static inline volatile tegra_car_t *car_get_regs(void) {
