@@ -335,15 +335,13 @@ static void nx_hwinit_mariko(bool enable_log) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_car_t *car = car_get_regs();
     
-    /* Enable SE clock. */
+    /* Enable SE clock and lock it. */
     clkrst_reboot(CARDEVICE_SE);
+    car->clk_source_se |= 0x100;
 
-    /* Initialize the fuse driver. */
-    fuse_init();
-
-    /* Initialize the memory controller. */
-    mc_enable();
-
+    /* Make all fuse registers visible. */
+    clkrst_enable_fuse_regs(true);
+    
     /* Configure oscillators. */
     config_oscillators();
     
