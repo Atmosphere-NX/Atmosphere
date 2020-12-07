@@ -15,8 +15,8 @@
  */
  
 #include "car.h"
-#include "utils.h"
 #include "timers.h"
+#include "utils.h"
 
 static inline uint32_t get_clk_source_reg(CarDevice dev) {
     switch (dev) {
@@ -35,6 +35,7 @@ static inline uint32_t get_clk_source_reg(CarDevice dev) {
         case CARDEVICE_KFUSE: return 0;
         case CARDEVICE_CL_DVFS: return 0;
         case CARDEVICE_CORESIGHT: return 0x1D4;
+        case CARDEVICE_MSELECT: return 0x3B4;
         case CARDEVICE_ACTMON: return 0x3E8;
         case CARDEVICE_BPMP: return 0;
         default: generic_panic();
@@ -58,6 +59,7 @@ static inline uint32_t get_clk_source_val(CarDevice dev) {
         case CARDEVICE_KFUSE: return 0;
         case CARDEVICE_CL_DVFS: return 0;
         case CARDEVICE_CORESIGHT: return 0;
+        case CARDEVICE_MSELECT: return 0;
         case CARDEVICE_ACTMON: return 6;
         case CARDEVICE_BPMP: return 0;
         default: generic_panic();
@@ -81,6 +83,7 @@ static inline uint32_t get_clk_source_div(CarDevice dev) {
         case CARDEVICE_KFUSE: return 0;
         case CARDEVICE_CL_DVFS: return 0;
         case CARDEVICE_CORESIGHT: return 4;
+        case CARDEVICE_MSELECT: return 6;
         case CARDEVICE_ACTMON: return 0;
         case CARDEVICE_BPMP: return 0;
         default: generic_panic();

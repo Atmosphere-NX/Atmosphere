@@ -51,6 +51,7 @@ typedef enum {
     CARDEVICE_USB2      = ((1 << 5) | 0x1A),
     CARDEVICE_CORESIGHT = ((2 << 5) | 0x9),
     CARDEVICE_TSEC      = ((2 << 5) | 0x13),
+    CARDEVICE_MSELECT   = ((3 << 5) | 0x8),
     CARDEVICE_ACTMON    = ((3 << 5) | 0x17),
     CARDEVICE_TZRAM     = ((3 << 5) | 0x1E),
     CARDEVICE_SE        = ((3 << 5) | 0x1F),
