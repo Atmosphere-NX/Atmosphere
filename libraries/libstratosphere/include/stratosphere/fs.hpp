@@ -59,4 +59,5 @@
 #include <stratosphere/fs/fs_sd_card.hpp>
 #include <stratosphere/fs/fs_signed_system_partition.hpp>
 #include <stratosphere/fs/fs_system_data.hpp>
+#include <stratosphere/fs/fs_program_index_map_info.hpp>
 #include <stratosphere/fs/impl/fs_access_log_impl.hpp>
