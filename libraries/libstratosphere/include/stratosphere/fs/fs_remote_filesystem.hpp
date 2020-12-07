@@ -20,7 +20,6 @@
 #include <stratosphere/fs/fsa/fs_idirectory.hpp>
 #include <stratosphere/fs/fsa/fs_ifilesystem.hpp>
 #include <stratosphere/fs/fs_query_range.hpp>
-#include <stratosphere/fs/fs_path_tool.hpp>
 #include <stratosphere/fs/fs_path_utils.hpp>
 
 namespace ams::fs {
@@ -100,12 +99,12 @@ namespace ams::fs {
                 out_path->str[sizeof(out_path->str) - 1] = '\x00';
 
                 /* Replace directory separators. */
-                Replace(out_path->str, sizeof(out_path->str) - 1, StringTraits::AlternateDirectorySeparator, StringTraits::DirectorySeparator);
+                fs::Replace(out_path->str, sizeof(out_path->str) - 1, StringTraits::AlternateDirectorySeparator, StringTraits::DirectorySeparator);
 
                 /* Get lengths. */
-                const auto mount_name_len = PathTool::IsWindowsAbsolutePath(path) ? 2 : 0;
-                const auto rel_path = out_path->str + mount_name_len;
-                const auto max_len  = fs::EntryNameLengthMax - mount_name_len;
+                const auto skip_len = fs::GetWindowsPathSkipLength(path);
+                const auto rel_path = out_path->str + skip_len;
+                const auto max_len  = fs::EntryNameLengthMax - skip_len;
                 return VerifyPath(rel_path, max_len, max_len);
             }
         public:

@@ -241,7 +241,7 @@ namespace ams::fssystem {
                     dir_entry.type = fs::DirectoryEntryType_File;
                     dir_entry.file_size = this->parent->meta_data->GetEntry(this->cur_index)->size;
                     std::strncpy(dir_entry.name, this->parent->meta_data->GetEntryName(this->cur_index), sizeof(dir_entry.name) - 1);
-                    dir_entry.name[sizeof(dir_entry.name) - 1] = StringTraits::NullTerminator;
+                    dir_entry.name[sizeof(dir_entry.name) - 1] = fs::StringTraits::NullTerminator;
                 }
 
                 *out_count = entry_count;
@@ -349,11 +349,11 @@ namespace ams::fssystem {
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoGetEntryType(fs::DirectoryEntryType *out, const char *path) {
         /* Validate preconditions. */
-        R_UNLESS(this->initialized,              fs::ResultPreconditionViolation());
-        R_UNLESS(PathTool::IsSeparator(path[0]), fs::ResultInvalidPathFormat());
+        R_UNLESS(this->initialized,                        fs::ResultPreconditionViolation());
+        R_UNLESS(fs::PathNormalizer::IsSeparator(path[0]), fs::ResultInvalidPathFormat());
 
         /* Check if the path is for a directory. */
-        if (std::strncmp(path, PathTool::RootPath, sizeof(PathTool::RootPath)) == 0) {
+        if (std::strncmp(path, fs::PathNormalizer::RootPath, sizeof(fs::PathNormalizer::RootPath)) == 0) {
             *out = fs::DirectoryEntryType_Directory;
             return ResultSuccess();
         }
@@ -384,8 +384,8 @@ namespace ams::fssystem {
     template <typename MetaType>
     Result PartitionFileSystemCore<MetaType>::DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) {
         /* Validate preconditions. */
-        R_UNLESS(this->initialized,                                                       fs::ResultPreconditionViolation());
-        R_UNLESS(std::strncmp(path, PathTool::RootPath, sizeof(PathTool::RootPath)) == 0, fs::ResultPathNotFound());
+        R_UNLESS(this->initialized,                                                                           fs::ResultPreconditionViolation());
+        R_UNLESS(std::strncmp(path, fs::PathNormalizer::RootPath, sizeof(fs::PathNormalizer::RootPath)) == 0, fs::ResultPathNotFound());
 
         /* Create and output the partition directory. */
         std::unique_ptr directory = std::make_unique<PartitionDirectory>(this, mode);

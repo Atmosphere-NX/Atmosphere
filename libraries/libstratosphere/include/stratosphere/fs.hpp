@@ -40,7 +40,6 @@
 #include <stratosphere/fs/fs_speed_emulation.hpp>
 #include <stratosphere/fs/impl/fs_common_mount_name.hpp>
 #include <stratosphere/fs/fs_mount.hpp>
-#include <stratosphere/fs/fs_path_tool.hpp>
 #include <stratosphere/fs/fs_path_utils.hpp>
 #include <stratosphere/fs/fs_filesystem_utils.hpp>
 #include <stratosphere/fs/fs_romfs_filesystem.hpp>

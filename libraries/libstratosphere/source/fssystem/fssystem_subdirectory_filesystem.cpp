@@ -33,7 +33,7 @@ namespace ams::fssystem {
 
     SubDirectoryFileSystem::~SubDirectoryFileSystem() {
         if (this->base_path != nullptr) {
-            std::free(this->base_path);
+            fs::impl::Deallocate(this->base_path, this->base_path_len);
         }
     }
 
@@ -44,25 +44,25 @@ namespace ams::fssystem {
         /* Normalize the path. */
         char normalized_path[fs::EntryNameLengthMax + 2];
         size_t normalized_path_len;
-        R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, bp, sizeof(normalized_path), this->IsUncPreserved()));
+        R_TRY(fs::PathNormalizer::Normalize(normalized_path, std::addressof(normalized_path_len), bp, sizeof(normalized_path), this->IsUncPreserved()));
 
         /* Ensure terminating '/' */
-        if (!PathTool::IsSeparator(normalized_path[normalized_path_len - 1])) {
-            AMS_ABORT_UNLESS(normalized_path_len + 2 <= sizeof(normalized_path));
-            normalized_path[normalized_path_len]     = StringTraits::DirectorySeparator;
-            normalized_path[normalized_path_len + 1] = StringTraits::NullTerminator;
+        if (!fs::PathNormalizer::IsSeparator(normalized_path[normalized_path_len - 1])) {
+            AMS_ASSERT(normalized_path_len + 2 < sizeof(normalized_path));
+            normalized_path[normalized_path_len]     = fs::StringTraits::DirectorySeparator;
+            normalized_path[normalized_path_len + 1] = fs::StringTraits::NullTerminator;
 
-            normalized_path_len++;
+            ++normalized_path_len;
         }
 
         /* Allocate new path. */
         this->base_path_len = normalized_path_len + 1;
-        this->base_path = static_cast<char *>(std::malloc(this->base_path_len));
+        this->base_path = static_cast<char *>(fs::impl::Allocate(this->base_path_len));
         R_UNLESS(this->base_path != nullptr, fs::ResultAllocationFailureInSubDirectoryFileSystem());
 
         /* Copy path in. */
         std::memcpy(this->base_path, normalized_path, normalized_path_len);
-        this->base_path[normalized_path_len] = StringTraits::NullTerminator;
+        this->base_path[normalized_path_len] = fs::StringTraits::NullTerminator;
         return ResultSuccess();
     }
 
@@ -76,7 +76,7 @@ namespace ams::fssystem {
         /* Normalize it. */
         const size_t prefix_size = this->base_path_len - 2;
         size_t normalized_len;
-        return PathTool::Normalize(out + prefix_size, &normalized_len, relative_path, out_size - prefix_size, this->IsUncPreserved());
+        return fs::PathNormalizer::Normalize(out + prefix_size, std::addressof(normalized_len), relative_path, out_size - prefix_size, this->IsUncPreserved(), false);
     }
 
 }

@@ -13,14 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include "../fs/fs_common.hpp"
-#include "../fs/fs_path_tool.hpp"
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
-namespace ams::fssystem {
+namespace ams::util {
 
-    namespace StringTraits = ::ams::fs::StringTraits;
+    enum CharacterEncodingResult {
+        CharacterEncodingResult_Success            = 0,
+        CharacterEncodingResult_InsufficientLength = 1,
+        CharacterEncodingResult_InvalidFormat      = 2,
+    };
 
-    using PathTool = ::ams::fs::PathTool;
+    CharacterEncodingResult ConvertCharacterUtf8ToUtf32(u32 *dst, const char *src);
+
+    CharacterEncodingResult PickOutCharacterFromUtf8String(char *dst, const char **str);
 
 }

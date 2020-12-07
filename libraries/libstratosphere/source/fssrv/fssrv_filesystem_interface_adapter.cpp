@@ -216,7 +216,7 @@ namespace ams::fssrv::impl {
         R_UNLESS(old_normalizer.GetPath() != nullptr, old_normalizer.GetResult());
         R_UNLESS(new_normalizer.GetPath() != nullptr, new_normalizer.GetResult());
 
-        const bool is_subpath = fssystem::PathTool::IsSubPath(old_normalizer.GetPath(), new_normalizer.GetPath());
+        const bool is_subpath = fs::IsSubPath(old_normalizer.GetPath(), new_normalizer.GetPath());
         R_UNLESS(!is_subpath, fs::ResultDirectoryNotRenamable());
 
         return this->base_fs->RenameFile(old_normalizer.GetPath(), new_normalizer.GetPath());

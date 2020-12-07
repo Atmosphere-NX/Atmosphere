@@ -156,16 +156,16 @@ namespace ams::fssystem {
 
     Result DirectorySaveDataFileSystem::ResolveFullPath(char *out, size_t out_size, const char *relative_path) {
         R_UNLESS(strnlen(relative_path, fs::EntryNameLengthMax + 1) < fs::EntryNameLengthMax + 1, fs::ResultTooLongPath());
-        R_UNLESS(PathTool::IsSeparator(relative_path[0]), fs::ResultInvalidPath());
+        R_UNLESS(fs::PathNormalizer::IsSeparator(relative_path[0]), fs::ResultInvalidPath());
 
         /* Copy working directory path. */
         std::strncpy(out, WorkingDirectoryPath, out_size);
-        out[out_size - 1] = StringTraits::NullTerminator;
+        out[out_size - 1] = fs::StringTraits::NullTerminator;
 
         /* Normalize it. */
         constexpr size_t WorkingDirectoryPathLength = sizeof(WorkingDirectoryPath) - 1;
         size_t normalized_length;
-        return PathTool::Normalize(out + WorkingDirectoryPathLength - 1, &normalized_length, relative_path, out_size - (WorkingDirectoryPathLength - 1));
+        return fs::PathNormalizer::Normalize(out + WorkingDirectoryPathLength - 1, &normalized_length, relative_path, out_size - (WorkingDirectoryPathLength - 1));
     }
 
     void DirectorySaveDataFileSystem::OnWritableFileClose() {
@@ -186,7 +186,7 @@ namespace ams::fssystem {
         R_TRY(this->AllocateWorkBuffer(&work_buf, &work_buf_size, IdealWorkBufferSize));
 
         /* Copy the directory recursively. */
-        R_TRY(fssystem::CopyDirectoryRecursively(this->base_fs, save_fs, PathTool::RootPath, PathTool::RootPath, work_buf.get(), work_buf_size));
+        R_TRY(fssystem::CopyDirectoryRecursively(this->base_fs, save_fs, fs::PathNormalizer::RootPath, fs::PathNormalizer::RootPath, work_buf.get(), work_buf_size));
 
         return this->Commit();
     }

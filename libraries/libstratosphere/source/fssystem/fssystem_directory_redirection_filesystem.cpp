@@ -35,10 +35,10 @@ namespace ams::fssystem {
 
     DirectoryRedirectionFileSystem::~DirectoryRedirectionFileSystem() {
         if (this->before_dir != nullptr) {
-            std::free(this->before_dir);
+            fs::impl::Deallocate(this->before_dir, this->before_dir_len);
         }
         if (this->after_dir != nullptr) {
-            std::free(this->after_dir);
+            fs::impl::Deallocate(this->after_dir, this->after_dir_len);
         }
     }
 
@@ -53,26 +53,26 @@ namespace ams::fssystem {
         /* Normalize the path. */
         char normalized_path[fs::EntryNameLengthMax + 2];
         size_t normalized_path_len;
-        R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, dir, sizeof(normalized_path), this->IsUncPreserved()));
+        R_TRY(fs::PathNormalizer::Normalize(normalized_path, &normalized_path_len, dir, sizeof(normalized_path), this->IsUncPreserved(), false));
 
         /* Ensure terminating '/' */
-        if (!PathTool::IsSeparator(normalized_path[normalized_path_len - 1])) {
-            AMS_ABORT_UNLESS(normalized_path_len + 2 <= sizeof(normalized_path));
-            normalized_path[normalized_path_len]     = StringTraits::DirectorySeparator;
-            normalized_path[normalized_path_len + 1] = StringTraits::NullTerminator;
+        if (!fs::PathNormalizer::IsSeparator(normalized_path[normalized_path_len - 1])) {
+            AMS_ASSERT(normalized_path_len + 2 < sizeof(normalized_path));
+            normalized_path[normalized_path_len]     = fs::StringTraits::DirectorySeparator;
+            normalized_path[normalized_path_len + 1] = fs::StringTraits::NullTerminator;
 
-            normalized_path_len++;
+            ++normalized_path_len;
         }
 
         /* Allocate new path. */
         const size_t size = normalized_path_len + 1;
-        char *new_dir = static_cast<char *>(std::malloc(size));
+        char *new_dir = static_cast<char *>(fs::impl::Allocate(size));
         AMS_ABORT_UNLESS(new_dir != nullptr);
         /* TODO: custom ResultAllocationFailure? */
 
         /* Copy path in. */
         std::memcpy(new_dir, normalized_path, normalized_path_len);
-        new_dir[normalized_path_len] = StringTraits::NullTerminator;
+        new_dir[normalized_path_len] = fs::StringTraits::NullTerminator;
 
         /* Set output. */
         *out = new_dir;
@@ -82,20 +82,30 @@ namespace ams::fssystem {
 
     Result DirectoryRedirectionFileSystem::Initialize(const char *before, const char *after) {
         /* Normalize both directories. */
-        this->GetNormalizedDirectoryPath(&this->before_dir, &this->before_dir_len, before);
-        this->GetNormalizedDirectoryPath(&this->after_dir, &this->after_dir_len, after);
+        this->GetNormalizedDirectoryPath(std::addressof(this->before_dir), std::addressof(this->before_dir_len), before);
+        this->GetNormalizedDirectoryPath(std::addressof(this->after_dir),  std::addressof(this->after_dir_len), after);
 
         return ResultSuccess();
     }
 
     Result DirectoryRedirectionFileSystem::ResolveFullPath(char *out, size_t out_size, const char *relative_path) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(relative_path[0] == '/');
+        AMS_ASSERT(this->before_dir_len >= 2);
+        AMS_ASSERT(this->after_dir_len >= 2);
+        AMS_ASSERT(this->after_dir_len <= out_size);
+        AMS_ASSERT(fs::PathNormalizer::IsNullTerminator(this->before_dir[this->before_dir_len - 1]));
+        AMS_ASSERT(fs::PathNormalizer::IsSeparator(this->before_dir[this->before_dir_len - 2]));
+        AMS_ASSERT(fs::PathNormalizer::IsNullTerminator(this->after_dir[this->after_dir_len - 1]));
+        AMS_ASSERT(fs::PathNormalizer::IsSeparator(this->after_dir[this->after_dir_len - 2]));
+
         /* Normalize the relative path. */
         char normalized_rel_path[fs::EntryNameLengthMax + 1];
         size_t normalized_rel_path_len;
-        R_TRY(PathTool::Normalize(normalized_rel_path, &normalized_rel_path_len, relative_path, sizeof(normalized_rel_path), this->IsUncPreserved()));
+        R_TRY(fs::PathNormalizer::Normalize(normalized_rel_path, std::addressof(normalized_rel_path_len), relative_path, sizeof(normalized_rel_path), this->IsUncPreserved(), false));
 
         const bool is_prefixed = std::memcmp(normalized_rel_path, this->before_dir, this->before_dir_len - 2) == 0 &&
-                                 (PathTool::IsSeparator(normalized_rel_path[this->before_dir_len - 2]) || PathTool::IsNullTerminator(normalized_rel_path[this->before_dir_len - 2]));
+                                 (fs::PathNormalizer::IsSeparator(normalized_rel_path[this->before_dir_len - 2]) || fs::PathNormalizer::IsNullTerminator(normalized_rel_path[this->before_dir_len - 2]));
         if (is_prefixed) {
             const size_t before_prefix_len = this->before_dir_len - 2;
             const size_t after_prefix_len  = this->after_dir_len - 2;
@@ -105,12 +115,12 @@ namespace ams::fssystem {
             /* Copy normalized path. */
             std::memcpy(out, this->after_dir, after_prefix_len);
             std::memcpy(out + after_prefix_len, normalized_rel_path + before_prefix_len, normalized_rel_path_len - before_prefix_len);
-            out[final_str_len] = StringTraits::NullTerminator;
+            out[final_str_len] = fs::StringTraits::NullTerminator;
         } else {
             /* Path is not prefixed. */
             R_UNLESS(normalized_rel_path_len + 1 <= out_size, fs::ResultTooLongPath());
             std::memcpy(out, normalized_rel_path, normalized_rel_path_len);
-            out[normalized_rel_path_len] = StringTraits::NullTerminator;
+            out[normalized_rel_path_len] = fs::StringTraits::NullTerminator;
         }
 
         return ResultSuccess();
