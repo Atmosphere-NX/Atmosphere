@@ -20,12 +20,18 @@
 #include "di.h"
 #include "exocfg.h"
 #include "flow.h"
+#include "fuse.h"
 #include "mc.h"
 #include "nxboot.h"
 #include "se.h"
 #include "smmu.h"
 #include "timers.h"
 #include "sysreg.h"
+
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
 
 void nxboot_finish(uint32_t boot_memaddr) {
     /* Boot up Exosphère. */
@@ -34,21 +40,26 @@ void nxboot_finish(uint32_t boot_memaddr) {
 
     /* Terminate the display. */
     display_end();
-
-    /* Check if SMMU emulation has been used. */
-    uint32_t smmu_magic = *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xFC);
-    if (smmu_magic == 0xDEADC0DE) {
-        /* Clear the magic. */
-        *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xFC) = 0;
-
-        /* Pass the boot address to the already running payload. */
-        *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xF0) = boot_memaddr;
-
-        /* Wait a while. */
-        mdelay(500);
-    } else {
+    
+    if (is_soc_mariko()) {
         /* Boot CPU0. */
         cluster_boot_cpu0(boot_memaddr);
+    } else {
+        /* Check if SMMU emulation has been used. */
+        uint32_t smmu_magic = *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xFC);
+        if (smmu_magic == 0xDEADC0DE) {
+            /* Clear the magic. */
+            *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xFC) = 0;
+
+            /* Pass the boot address to the already running payload. */
+            *(uint32_t *)(SMMU_AARCH64_PAYLOAD_ADDR + 0xF0) = boot_memaddr;
+
+            /* Wait a while. */
+            mdelay(500);
+        } else {
+            /* Boot CPU0. */
+            cluster_boot_cpu0(boot_memaddr);
+        }
     }
 
     /* Wait for Exosphère to wake up. */
@@ -58,6 +69,11 @@ void nxboot_finish(uint32_t boot_memaddr) {
 
     /* Signal Exosphère. */
     MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED_4X;
+
+    /* Set the end time (Mariko only).*/
+    if (is_soc_mariko()) {
+        MAILBOX_NX_BOOTLOADER_END_TIME = get_time();
+    }
 
     /* Halt ourselves in waitevent state. */
     while (1) {

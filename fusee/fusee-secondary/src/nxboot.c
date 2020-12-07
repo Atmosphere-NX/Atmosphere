@@ -108,6 +108,11 @@ static const uint8_t dev_pkc_modulus[0x100] = {
     0xD5, 0x52, 0xDA, 0xEC, 0x41, 0xA4, 0xAD, 0x7B, 0x36, 0x86, 0x18, 0xB4, 0x5B, 0xD1, 0x30, 0xBB
 };
 
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
+
 static int emummc_ini_handler(void *user, const char *section, const char *name, const char *value) {
     emummc_config_t *emummc_cfg = (emummc_config_t *)user;
     if (strcmp(section, "emummc") == 0) {
@@ -602,15 +607,14 @@ static void nxboot_set_bootreason(void *bootreason_base) {
     /* Set PMIC value. */
     boot_reason.boot_reason_value = ((rtc_intr << 0x08) | power_key_intr);
 
-    /* TODO: Find out what these mean. */
     if (power_key_intr & 0x80)
-        boot_reason.boot_reason_state = 0x01;
+        boot_reason.boot_reason_state = 0x01;       /* BootReason_AcOk */
     else if (power_key_intr & 0x08)
-        boot_reason.boot_reason_state = 0x02;
+        boot_reason.boot_reason_state = 0x02;       /* BootReason_OnKey */
     else if (rtc_intr & 0x02)
-        boot_reason.boot_reason_state = 0x03;
+        boot_reason.boot_reason_state = 0x03;       /* BootReason_RtcAlarm1 */
     else if (rtc_intr & 0x04)
-        boot_reason.boot_reason_state = 0x04;
+        boot_reason.boot_reason_state = 0x04;       /* BootReason_RtcAlarm2 */
 
     /* Set in memory. */
     memcpy(bootreason_base, &boot_reason, sizeof(boot_reason));
@@ -643,6 +647,7 @@ static void nxboot_move_bootconfig() {
     fclose(bcfile);
 
     /* Select the actual BootConfig size and destination address. */
+    /* NOTE: Mariko relies on BPMP's inability to data abort and tries to copy 0x1000 bytes instead. */
     bootconfig_addr = 0x4003F800;
     bootconfig_size = 0x800;
 
@@ -685,7 +690,12 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     exo_emummc_config_t exo_emummc_cfg;
-
+    
+    /* Set the start time (Mariko only). */
+    if (is_soc_mariko()) {
+        MAILBOX_NX_BOOTLOADER_START_TIME = get_time();
+    }
+    
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
         emummc = NULL;
@@ -774,101 +784,104 @@ uint32_t nxboot_main(void) {
     else
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Detected target firmware %ld!\n", target_firmware);
 
-    /* Read the TSEC firmware from a file, otherwise from PK1L. */
-    if (loader_ctx->tsecfw_path[0] != '\0') {
-        tsec_fw_size = get_file_size(loader_ctx->tsecfw_path);
-        if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00 && tsec_fw_size != 0x2900 && tsec_fw_size != 0x3000 && tsec_fw_size != 0x3300)) {
-            fatal_error("[NXBOOT] TSEC firmware from %s has a wrong size!\n", loader_ctx->tsecfw_path);
-        } else if (tsec_fw_size == 0) {
-            fatal_error("[NXBOOT] Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
-        }
-
-        /* Allocate memory for the TSEC firmware. */
-        tsec_fw = memalign(0x100, tsec_fw_size);
-
-        if (tsec_fw == NULL) {
-            fatal_error("[NXBOOT] Out of memory!\n");
-        }
-        if (read_from_file(tsec_fw, tsec_fw_size, loader_ctx->tsecfw_path) != tsec_fw_size) {
-            fatal_error("[NXBOOT] Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
-        }
-
-        if (tsec_fw_size == 0x3000) {
-            if (fuse_get_hardware_state() != 0) {
-                sept_secondary_enc = sept_secondary_00_enc;
-                sept_secondary_enc_size = sept_secondary_00_enc_size;
-            } else {
-                sept_secondary_enc = sept_secondary_dev_00_enc;
-                sept_secondary_enc_size = sept_secondary_dev_00_enc_size;
+    /* Handle TSEC and Sept (Erista only). */
+    if (!is_soc_mariko()) {
+        /* Read the TSEC firmware from a file, otherwise from PK1L. */
+        if (loader_ctx->tsecfw_path[0] != '\0') {
+            tsec_fw_size = get_file_size(loader_ctx->tsecfw_path);
+            if ((tsec_fw_size != 0) && (tsec_fw_size != 0xF00 && tsec_fw_size != 0x2900 && tsec_fw_size != 0x3000 && tsec_fw_size != 0x3300)) {
+                fatal_error("[NXBOOT] TSEC firmware from %s has a wrong size!\n", loader_ctx->tsecfw_path);
+            } else if (tsec_fw_size == 0) {
+                fatal_error("[NXBOOT] Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
             }
-        } else if (tsec_fw_size == 0x3300) {
-            if (fuse_get_hardware_state() != 0) {
-                sept_secondary_enc = sept_secondary_01_enc;
-                sept_secondary_enc_size = sept_secondary_01_enc_size;
+
+            /* Allocate memory for the TSEC firmware. */
+            tsec_fw = memalign(0x100, tsec_fw_size);
+
+            if (tsec_fw == NULL) {
+                fatal_error("[NXBOOT] Out of memory!\n");
+            }
+            if (read_from_file(tsec_fw, tsec_fw_size, loader_ctx->tsecfw_path) != tsec_fw_size) {
+                fatal_error("[NXBOOT] Could not read the TSEC firmware from %s!\n", loader_ctx->tsecfw_path);
+            }
+
+            if (tsec_fw_size == 0x3000) {
+                if (fuse_get_hardware_state() != 0) {
+                    sept_secondary_enc = sept_secondary_00_enc;
+                    sept_secondary_enc_size = sept_secondary_00_enc_size;
+                } else {
+                    sept_secondary_enc = sept_secondary_dev_00_enc;
+                    sept_secondary_enc_size = sept_secondary_dev_00_enc_size;
+                }
+            } else if (tsec_fw_size == 0x3300) {
+                if (fuse_get_hardware_state() != 0) {
+                    sept_secondary_enc = sept_secondary_01_enc;
+                    sept_secondary_enc_size = sept_secondary_01_enc_size;
+                } else {
+                    sept_secondary_enc = sept_secondary_dev_01_enc;
+                    sept_secondary_enc_size = sept_secondary_dev_01_enc_size;
+                }
             } else {
-                sept_secondary_enc = sept_secondary_dev_01_enc;
-                sept_secondary_enc_size = sept_secondary_dev_01_enc_size;
+                fatal_error("[NXBOOT] Unable to identify sept revision to run.");
             }
         } else {
-            fatal_error("[NXBOOT] Unable to identify sept revision to run.");
-        }
-    } else {
-        if (!package1_get_tsec_fw(&tsec_fw, package1loader, package1loader_size)) {
-            fatal_error("[NXBOOT] Failed to read the TSEC firmware from Package1loader!\n");
-        }
-        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
-            if (fuse_get_hardware_state() != 0) {
-                sept_secondary_enc = sept_secondary_01_enc;
-                sept_secondary_enc_size = sept_secondary_01_enc_size;
-            } else {
-                sept_secondary_enc = sept_secondary_dev_01_enc;
-                sept_secondary_enc_size = sept_secondary_dev_01_enc_size;
+            if (!package1_get_tsec_fw(&tsec_fw, package1loader, package1loader_size)) {
+                fatal_error("[NXBOOT] Failed to read the TSEC firmware from Package1loader!\n");
             }
-            tsec_fw_size = 0x3300;
-        } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-            if (fuse_get_hardware_state() != 0) {
-                sept_secondary_enc = sept_secondary_00_enc;
-                sept_secondary_enc_size = sept_secondary_00_enc_size;
+            if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_8_1_0) {
+                if (fuse_get_hardware_state() != 0) {
+                    sept_secondary_enc = sept_secondary_01_enc;
+                    sept_secondary_enc_size = sept_secondary_01_enc_size;
+                } else {
+                    sept_secondary_enc = sept_secondary_dev_01_enc;
+                    sept_secondary_enc_size = sept_secondary_dev_01_enc_size;
+                }
+                tsec_fw_size = 0x3300;
+            } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
+                if (fuse_get_hardware_state() != 0) {
+                    sept_secondary_enc = sept_secondary_00_enc;
+                    sept_secondary_enc_size = sept_secondary_00_enc_size;
+                } else {
+                    sept_secondary_enc = sept_secondary_dev_00_enc;
+                    sept_secondary_enc_size = sept_secondary_dev_00_enc_size;
+                }
+                tsec_fw_size = 0x3000;
+            } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
+                tsec_fw_size = 0x2900;
             } else {
-                sept_secondary_enc = sept_secondary_dev_00_enc;
-                sept_secondary_enc_size = sept_secondary_dev_00_enc_size;
+                tsec_fw_size = 0xF00;
             }
-            tsec_fw_size = 0x3000;
+        }
+
+        print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Loaded firmware from eMMC...\n");
+
+        /* Get the TSEC keys. */
+        uint8_t tsec_key[0x10] = {0};
+        uint8_t tsec_root_keys[0x20][0x10] = {0};
+        if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
+            /* Detect whether we need to run sept-secondary in order to derive keys. */
+            if (!get_and_clear_has_run_sept()) {
+                reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary_enc, sept_secondary_enc_size);
+            } else {
+                if (mkey_detect_revision(fuse_get_hardware_state() != 0) != 0) {
+                    fatal_error("[NXBOOT] Sept derived incorrect keys!\n");
+                }
+            }
+            get_and_clear_has_run_sept();
         } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
-            tsec_fw_size = 0x2900;
-        } else {
-            tsec_fw_size = 0xF00;
-        }
-    }
+            uint8_t tsec_keys[0x20] = {0};
 
-    print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Loaded firmware from eMMC...\n");
+            /* Emulate the TSEC payload on 6.2.0+. */
+            smmu_emulate_tsec((void *)tsec_keys, package1loader, package1loader_size, package1loader);
 
-    /* Get the TSEC keys. */
-    uint8_t tsec_key[0x10] = {0};
-    uint8_t tsec_root_keys[0x20][0x10] = {0};
-    if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-        /* Detect whether we need to run sept-secondary in order to derive keys. */
-        if (!get_and_clear_has_run_sept()) {
-            reboot_to_sept(tsec_fw, tsec_fw_size, sept_secondary_enc, sept_secondary_enc_size);
+            /* Copy back the keys. */
+            memcpy((void *)tsec_key, (void *)tsec_keys, 0x10);
+            memcpy((void *)tsec_root_keys, (void *)tsec_keys + 0x10, 0x10);
         } else {
-            if (mkey_detect_revision(fuse_get_hardware_state() != 0) != 0) {
-                fatal_error("[NXBOOT] Sept derived incorrect keys!\n");
+            /* Run the TSEC payload and get the key. */
+            if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
+                fatal_error("[NXBOOT] Failed to get TSEC key!\n");
             }
-        }
-        get_and_clear_has_run_sept();
-    } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_6_2_0) {
-        uint8_t tsec_keys[0x20] = {0};
-
-        /* Emulate the TSEC payload on 6.2.0+. */
-        smmu_emulate_tsec((void *)tsec_keys, package1loader, package1loader_size, package1loader);
-
-        /* Copy back the keys. */
-        memcpy((void *)tsec_key, (void *)tsec_keys, 0x10);
-        memcpy((void *)tsec_root_keys, (void *)tsec_keys + 0x10, 0x10);
-    } else {
-        /* Run the TSEC payload and get the key. */
-        if (tsec_get_key(tsec_key, 1, tsec_fw, tsec_fw_size) != 0) {
-            fatal_error("[NXBOOT] Failed to get TSEC key!\n");
         }
     }
 
@@ -909,12 +922,14 @@ uint32_t nxboot_main(void) {
     /* Setup boot configuration for Exosphère. */
     nxboot_configure_exosphere(target_firmware, keygen_type, &exo_emummc_cfg);
 
-    /* Initialize Boot Reason on older firmware versions. */
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-        print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Initializing Boot Reason...\n");
-        nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE);
-    } else {
-        memset((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE, 0, 0x200);
+    /* Initialize BootReason on older firmware versions (Erista only). */
+    if (!is_soc_mariko()) {
+        if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
+            print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Initializing BootReason...\n");
+            nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE);
+        } else {
+            memset((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE, 0, 0x200);
+        }
     }
 
     /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation. */
@@ -933,8 +948,8 @@ uint32_t nxboot_main(void) {
         if (read_from_file(warmboot_fw, warmboot_fw_size, loader_ctx->warmboot_path) != warmboot_fw_size) {
             fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
         }
-    } else {
-        /* Use Atmosphere's warmboot firmware implementation. */
+    } else if (!is_soc_mariko()) {
+        /* Use Atmosphere's warmboot firmware implementation (Erista only). */
         warmboot_fw_size = warmboot_bin_size;
         warmboot_fw = malloc(warmboot_fw_size);
 
@@ -949,8 +964,8 @@ uint32_t nxboot_main(void) {
         }
     }
 
-    /* Patch warmboot firmware for atmosphere. */
-    if (warmboot_fw != NULL && warmboot_fw_size >= sizeof(warmboot_ams_header_t)) {
+    /* Patch warmboot firmware for atmosphere (Erista only). */
+    if (!is_soc_mariko() && (warmboot_fw != NULL) && (warmboot_fw_size >= sizeof(warmboot_ams_header_t))) {
         warmboot_ams_header_t *ams_header = (warmboot_ams_header_t *)warmboot_fw;
         if (ams_header->ams_metadata.magic == WARMBOOT_MAGIC) {
             /* Set target firmware */
@@ -970,8 +985,24 @@ uint32_t nxboot_main(void) {
     /* Copy the warmboot firmware and set the address in PMC if necessary. */
     if (warmboot_fw && (warmboot_fw_size > 0)) {
         memcpy(warmboot_memaddr, warmboot_fw, warmboot_fw_size);
-        if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0)
+        if (!is_soc_mariko() && (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0)) {
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
+        }
+    }
+    
+    /* Handle warmboot security check. */
+    if (is_soc_mariko()) {
+        /* TODO */
+    } else {
+        /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
+        if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
+            const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
+            if (!strcmp(package1loader_header->build_timestamp, "20170519101410")) {
+                pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/
+            } else if (!strcmp(package1loader_header->build_timestamp, "20170710161758")) {
+                pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
+            }
+        }
     }
 
     /* Configure mesosphere. */
@@ -991,15 +1022,11 @@ uint32_t nxboot_main(void) {
             mesosphere_size = sd_meso_size;
         } else if (is_experimental) {
             mesosphere_size = mesosphere_bin_size;
-
-            mesosphere      = malloc(mesosphere_size);
-
+            mesosphere = malloc(mesosphere_size);
             if (mesosphere == NULL) {
                 fatal_error("[NXBOOT] Out of memory!\n");
             }
-
             memcpy(mesosphere, mesosphere_bin, mesosphere_size);
-
             if (mesosphere_size == 0) {
                 fatal_error("[NXBOOT] Could not read embedded mesosphere!\n");
             }
@@ -1036,7 +1063,6 @@ uint32_t nxboot_main(void) {
             /* The maximum is actually a bit less than that. */
             fatal_error(u8"[NXBOOT] Exosphère from %s is too big!\n", loader_ctx->exosphere_path);
         }
-
         if (read_from_file(exosphere_memaddr, exosphere_size, loader_ctx->exosphere_path) != exosphere_size) {
             fatal_error(u8"[NXBOOT] Could not read Exosphère from %s!\n", loader_ctx->exosphere_path);
         }
@@ -1044,8 +1070,8 @@ uint32_t nxboot_main(void) {
         memcpy(exosphere_memaddr, exosphere_bin, exosphere_bin_size);
     }
 
-    /* Copy the exosphere mariko fatal program to a good location. */
-    {
+    /* Copy the Mariko's Exosphère fatal program to a good location. */
+    if (is_soc_mariko()) {
         void * const mariko_fatal_dst = (void *)0x80020000;
         memset(mariko_fatal_dst, 0, 0x20000);
 
@@ -1066,15 +1092,6 @@ uint32_t nxboot_main(void) {
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Moving BootConfig...\n");
     nxboot_move_bootconfig();
 
-    /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
-    if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
-        const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
-        if (!strcmp(package1loader_header->build_timestamp, "20170519101410"))
-            pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/
-        else if (!strcmp(package1loader_header->build_timestamp, "20170710161758"))
-            pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
-    }
-
     /* Clean up. */
     free(package1loader);
     if (loader_ctx->tsecfw_path[0] != '\0') {
@@ -1090,12 +1107,14 @@ uint32_t nxboot_main(void) {
     /* Wait for the splash screen to have been displayed for as long as it should be. */
     splash_screen_wait_delay();
 
-    /* Set reset for USBD, USB2, AHBDMA, and APBDMA. */
-    rst_enable(CARDEVICE_USBD);
-    rst_enable(CARDEVICE_USB2);
-    rst_enable(CARDEVICE_AHBDMA);
-    rst_enable(CARDEVICE_APBDMA);
-
+    /* Set reset for USBD, USB2, AHBDMA, and APBDMA on Erista. */
+    if (!is_soc_mariko()) {
+        rst_enable(CARDEVICE_USBD);
+        rst_enable(CARDEVICE_USB2);
+        rst_enable(CARDEVICE_AHBDMA);
+        rst_enable(CARDEVICE_APBDMA);
+    }
+    
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
 }

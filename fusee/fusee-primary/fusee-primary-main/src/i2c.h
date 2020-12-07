@@ -24,12 +24,14 @@
 #define I2C1234_BASE    0x7000C000
 #define I2C56_BASE      0x7000D000
 
-#define MAX77621_CPU_I2C_ADDR       0x1B
-#define MAX77621_GPU_I2C_ADDR       0x1C
-#define MAX17050_I2C_ADDR           0x36
-#define MAX77620_PWR_I2C_ADDR       0x3C
-#define MAX77620_RTC_I2C_ADDR       0x68
-#define BQ24193_I2C_ADDR            0x6B
+#define MAX77621_CPU_I2C_ADDR               0x1B
+#define MAX77621_GPU_I2C_ADDR               0x1C
+#define MAX77812_PHASE31_CPU_I2C_ADDR       0x31
+#define MAX77812_PHASE211_CPU_I2C_ADDR      0x33
+#define MAX17050_I2C_ADDR                   0x36
+#define MAX77620_PWR_I2C_ADDR               0x3C
+#define MAX77620_RTC_I2C_ADDR               0x68
+#define BQ24193_I2C_ADDR                    0x6B
 
 typedef enum {
     I2C_1 = 0,
