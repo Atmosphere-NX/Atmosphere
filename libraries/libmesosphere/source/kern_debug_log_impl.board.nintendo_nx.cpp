@@ -18,9 +18,11 @@
 
 namespace ams::kern {
 
-#if defined(MESOSPHERE_DEBUG_LOG_USE_UART_A) || defined(MESOSPHERE_DEBUG_LOG_USE_UART_B) || defined(MESOSPHERE_DEBUG_LOG_USE_UART_C) || defined(MESOSPHERE_DEBUG_LOG_USE_UART_D)
+#if defined(MESOSPHERE_DEBUG_LOG_USE_UART)
 
     namespace {
+
+        constexpr bool DoSaveAndRestore = false;
 
         enum UartRegister {
             UartRegister_THR = 0,
@@ -38,13 +40,13 @@ namespace ams::kern {
 
         KVirtualAddress g_uart_address = 0;
 
-        constinit u32 g_saved_registers[5];
+        [[maybe_unused]] constinit u32 g_saved_registers[5];
 
-        NOINLINE u32 ReadUartRegister(UartRegister which) {
+        ALWAYS_INLINE u32 ReadUartRegister(UartRegister which) {
             return GetPointer<volatile u32>(g_uart_address)[which];
         }
 
-        NOINLINE void WriteUartRegister(UartRegister which, u32 value) {
+        ALWAYS_INLINE void WriteUartRegister(UartRegister which, u32 value) {
             GetPointer<volatile u32>(g_uart_address)[which] = value;
         }
 
@@ -86,43 +88,47 @@ namespace ams::kern {
     }
 
     void KDebugLogImpl::Save() {
-        /* Save LCR, IER, FCR. */
-        g_saved_registers[0] = ReadUartRegister(UartRegister_LCR);
-        g_saved_registers[1] = ReadUartRegister(UartRegister_IER);
-        g_saved_registers[2] = ReadUartRegister(UartRegister_FCR);
+        if constexpr (DoSaveAndRestore) {
+            /* Save LCR, IER, FCR. */
+            g_saved_registers[0] = ReadUartRegister(UartRegister_LCR);
+            g_saved_registers[1] = ReadUartRegister(UartRegister_IER);
+            g_saved_registers[2] = ReadUartRegister(UartRegister_FCR);
 
-        /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
-        WriteUartRegister(UartRegister_LCR, 0x80);
-        ReadUartRegister(UartRegister_LCR);
+            /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
+            WriteUartRegister(UartRegister_LCR, 0x80);
+            ReadUartRegister(UartRegister_LCR);
 
-        /* Save DLL/DLH. */
-        g_saved_registers[3] = ReadUartRegister(UartRegister_DLL);
-        g_saved_registers[4] = ReadUartRegister(UartRegister_DLH);
+            /* Save DLL/DLH. */
+            g_saved_registers[3] = ReadUartRegister(UartRegister_DLL);
+            g_saved_registers[4] = ReadUartRegister(UartRegister_DLH);
 
-        /* Restore Divisor Latch Access bit. */
-        WriteUartRegister(UartRegister_LCR, g_saved_registers[0]);
-        ReadUartRegister(UartRegister_LCR);
+            /* Restore Divisor Latch Access bit. */
+            WriteUartRegister(UartRegister_LCR, g_saved_registers[0]);
+            ReadUartRegister(UartRegister_LCR);
+        }
     }
 
     void KDebugLogImpl::Restore() {
-        /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
-        WriteUartRegister(UartRegister_LCR, 0x80);
-        ReadUartRegister(UartRegister_LCR);
+        if constexpr (DoSaveAndRestore) {
+            /* Set Divisor Latch Access bit, to allow access to DLL/DLH */
+            WriteUartRegister(UartRegister_LCR, 0x80);
+            ReadUartRegister(UartRegister_LCR);
 
-        /* Restore DLL/DLH. */
-        WriteUartRegister(UartRegister_DLL, g_saved_registers[3]);
-        WriteUartRegister(UartRegister_DLH, g_saved_registers[4]);
-        ReadUartRegister(UartRegister_DLH);
+            /* Restore DLL/DLH. */
+            WriteUartRegister(UartRegister_DLL, g_saved_registers[3]);
+            WriteUartRegister(UartRegister_DLH, g_saved_registers[4]);
+            ReadUartRegister(UartRegister_DLH);
 
-        /* Restore Divisor Latch Access bit. */
-        WriteUartRegister(UartRegister_LCR, g_saved_registers[0]);
-        ReadUartRegister(UartRegister_LCR);
+            /* Restore Divisor Latch Access bit. */
+            WriteUartRegister(UartRegister_LCR, g_saved_registers[0]);
+            ReadUartRegister(UartRegister_LCR);
 
-        /* Restore IER and FCR. */
-        WriteUartRegister(UartRegister_IER, g_saved_registers[1]);
-        WriteUartRegister(UartRegister_FCR, g_saved_registers[2] | 2);
-        WriteUartRegister(UartRegister_IRDA_CSR, 0x02);
-        ReadUartRegister(UartRegister_FCR);
+            /* Restore IER and FCR. */
+            WriteUartRegister(UartRegister_IER, g_saved_registers[1]);
+            WriteUartRegister(UartRegister_FCR, g_saved_registers[2] | 2);
+            WriteUartRegister(UartRegister_IRDA_CSR, 0x02);
+            ReadUartRegister(UartRegister_FCR);
+        }
     }
 
 #elif defined(MESOSPHERE_DEBUG_LOG_USE_IRAM_RINGBUFFER)

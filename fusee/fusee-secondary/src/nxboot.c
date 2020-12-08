@@ -196,6 +196,20 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
             } else if (tmp == 0) {
                 parse_cfg->allow_writing_to_cal_sysmmc = 0;
             }
+        } else if (strcmp(name, EXOSPHERE_LOG_PORT_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (0 <= tmp && tmp < 4) {
+                parse_cfg->log_port = tmp;
+            } else {
+                parse_cfg->log_port = 0;
+            }
+        } else if (strcmp(name, EXOSPHERE_LOG_BAUD_RATE_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp > 0) {
+                parse_cfg->log_baud_rate = tmp;
+            } else {
+                parse_cfg->log_baud_rate = 115200;
+            }
         } else {
             return 0;
         }
@@ -478,6 +492,8 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
         .blank_prodinfo_sysmmc              = 0,
         .blank_prodinfo_emummc              = 0,
         .allow_writing_to_cal_sysmmc        = 0,
+        .log_port                           = 0,
+        .log_baud_rate                      = 115200,
     };
 
     /* If we have an ini to read, parse it. */
@@ -497,6 +513,9 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
     if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
     if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
+
+    exo_cfg.log_port      = parse_cfg.log_port;
+    exo_cfg.log_baud_rate = parse_cfg.log_baud_rate;
 
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");

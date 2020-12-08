@@ -35,6 +35,7 @@ namespace ams::log {
     #endif
 
     void Initialize();
+    void Initialize(uart::Port port, u32 baud_rate);
     void Finalize();
 
     void Printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));

@@ -960,7 +960,7 @@ namespace ams::secmon {
         }
 
         void SetupLogForBoot() {
-            log::Initialize();
+            log::Initialize(secmon::GetLogPort(), secmon::GetLogBaudRate());
             log::SendText("OHAYO\n", 6);
             log::Flush();
         }

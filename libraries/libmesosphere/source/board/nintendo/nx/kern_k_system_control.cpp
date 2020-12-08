@@ -409,6 +409,15 @@ namespace ams::kern::board::nintendo::nx {
         return MinimumSize;
     }
 
+    u8 KSystemControl::Init::GetDebugLogUartPort() {
+        /* Get the log configuration. */
+        u64 value = 0;
+        smc::init::GetConfig(std::addressof(value), 1, smc::ConfigItem::ExosphereLogConfiguration);
+
+        /* Extract the port. */
+        return static_cast<u8>((value >> 32) & 0xFF);
+    }
+
     void KSystemControl::Init::CpuOn(u64 core_id, uintptr_t entrypoint, uintptr_t arg) {
         smc::init::CpuOn(core_id, entrypoint, arg);
     }

@@ -16,6 +16,7 @@
 #pragma once
 #include <vapours.hpp>
 #include <exosphere/fuse.hpp>
+#include <exosphere/uart.hpp>
 #include <exosphere/secmon/secmon_emummc_context.hpp>
 
 namespace ams::secmon {
@@ -39,8 +40,10 @@ namespace ams::secmon {
         ams::TargetFirmware target_firmware;
         u32 flags[2];
         u16 lcd_vendor;
-        u16 reserved0;
-        u32 reserved1[3];
+        u8  reserved0;
+        u8  log_port;
+        u32 log_baud_rate;
+        u32 reserved1[2];
         EmummcConfiguration emummc_cfg;
 
         constexpr bool IsValid() const { return this->magic == Magic; }
@@ -54,17 +57,20 @@ namespace ams::secmon {
         u8  hardware_type;
         u8  soc_type;
         u8  hardware_state;
-        u8  pad_0B[1];
+        u8  log_port;
         u32 flags[2];
         u16 lcd_vendor;
         u16 reserved0;
-        u32 reserved1[(0x80 - 0x18) / sizeof(u32)];
+        u32 log_baud_rate;
+        u32 reserved1[(0x80 - 0x1C) / sizeof(u32)];
 
         constexpr void CopyFrom(const SecureMonitorStorageConfiguration &storage) {
             this->target_firmware = storage.target_firmware;
             this->flags[0]        = storage.flags[0];
             this->flags[1]        = storage.flags[1];
             this->lcd_vendor      = storage.lcd_vendor;
+            this->log_port        = storage.log_port;
+            this->log_baud_rate   = storage.log_baud_rate != 0 ? storage.log_baud_rate : 115200;
         }
 
         void SetFuseInfo() {
@@ -78,8 +84,11 @@ namespace ams::secmon {
         constexpr fuse::HardwareType  GetHardwareType()  const { return static_cast<fuse::HardwareType>(this->hardware_type); }
         constexpr fuse::SocType       GetSocType()       const { return static_cast<fuse::SocType>(this->soc_type); }
         constexpr fuse::HardwareState GetHardwareState() const { return static_cast<fuse::HardwareState>(this->hardware_state); }
+        constexpr uart::Port GetLogPort() const { return static_cast<uart::Port>(this->log_port); }
 
         constexpr u16 GetLcdVendor() const { return this->lcd_vendor; }
+
+        constexpr u32 GetLogBaudRate() const { return this->log_baud_rate; }
 
         constexpr bool IsProduction() const { return this->GetHardwareState() != fuse::HardwareState_Development; }
 
@@ -101,10 +110,11 @@ namespace ams::secmon {
         .hardware_type   = {},
         .soc_type        = {},
         .hardware_state  = {},
-        .pad_0B          = {},
+        .log_port        = uart::Port_ReservedDebug,
         .flags           = { SecureMonitorConfigurationFlag_Default, SecureMonitorConfigurationFlag_None },
         .lcd_vendor      = {},
         .reserved0       = {},
+        .log_baud_rate   = 115200,
         .reserved1       = {},
     };
 
