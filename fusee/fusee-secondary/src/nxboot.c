@@ -506,13 +506,13 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     free(exosphere_ini);
 
     /* Apply parse config. */
-    if (parse_cfg.debugmode)                           exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
-    if (parse_cfg.debugmode_user)                      exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
-    if (parse_cfg.disable_user_exception_handlers)     exo_cfg.flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
-    if (parse_cfg.enable_user_pmu_access)              exo_cfg.flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
-    if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
-    if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
-    if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
+    if (parse_cfg.debugmode)                           exo_cfg.flags[0] |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
+    if (parse_cfg.debugmode_user)                      exo_cfg.flags[0] |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
+    if (parse_cfg.disable_user_exception_handlers)     exo_cfg.flags[0] |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
+    if (parse_cfg.enable_user_pmu_access)              exo_cfg.flags[0] |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
+    if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags[0] |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags[0] |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags[0] |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
 
     exo_cfg.log_port      = parse_cfg.log_port;
     exo_cfg.log_baud_rate = parse_cfg.log_baud_rate;
