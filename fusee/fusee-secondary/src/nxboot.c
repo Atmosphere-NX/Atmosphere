@@ -478,9 +478,9 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     const bool is_emummc = exo_emummc_cfg->base_cfg.magic == MAGIC_EMUMMC_CONFIG && exo_emummc_cfg->base_cfg.type != EMUMMC_TYPE_NONE;
 
     if (keygen_type) {
-        exo_cfg.flags = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
+        exo_cfg.flags[0] = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
     } else {
-        exo_cfg.flags = 0;
+        exo_cfg.flags[0] = 0;
     }
 
     /* Setup exosphere parse configuration with defaults. */
