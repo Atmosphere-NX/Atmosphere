@@ -470,7 +470,7 @@ namespace ams::svc {
     };
 
     enum KernelDebugType : u32 {
-        /* TODO */
+        KernelDebugType_Thread = 0,
     };
 
     enum KernelTraceState : u32 {

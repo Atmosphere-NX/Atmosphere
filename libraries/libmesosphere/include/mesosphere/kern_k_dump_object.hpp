@@ -14,20 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_select_cpu.hpp>
 
-#if defined(AMS_BUILD_FOR_AUDITING)
-#define MESOSPHERE_BUILD_FOR_AUDITING
-#endif
+namespace ams::kern::KDumpObject {
 
-#if defined(MESOSPHERE_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
-#define MESOSPHERE_BUILD_FOR_DEBUGGING
-#endif
+    void DumpThread();
+    void DumpThread(u64 thread_id);
 
-#ifdef  MESOSPHERE_BUILD_FOR_DEBUGGING
-#define MESOSPHERE_ENABLE_ASSERTIONS
-#define MESOSPHERE_ENABLE_DEBUG_PRINT
-#define MESOSPHERE_ENABLE_KERNEL_STACK_USAGE
-#endif
-
-//#define MESOSPHERE_BUILD_FOR_TRACING
-#define MESOSPHERE_ENABLE_PANIC_REGISTER_DUMP
+}

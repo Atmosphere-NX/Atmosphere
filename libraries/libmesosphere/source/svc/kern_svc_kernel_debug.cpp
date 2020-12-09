@@ -22,19 +22,27 @@ namespace ams::kern::svc {
     namespace {
 
         void KernelDebug(ams::svc::KernelDebugType kern_debug_type, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
-            #ifdef ATMOSPHERE_BUILD_FOR_DEBUGGING
+            MESOSPHERE_UNUSED(kern_debug_type, arg0, arg1, arg2);
+
+            #ifdef MESOSPHERE_BUILD_FOR_DEBUGGING
             {
-                /* TODO: Implement Kernel Debugging. */
-            }
-            #else
-            {
-                MESOSPHERE_UNUSED(kern_debug_type, arg0, arg1, arg2);
+                switch (kern_debug_type) {
+                    case ams::svc::KernelDebugType_Thread:
+                        if (arg0 == static_cast<u64>(-1)) {
+                            KDumpObject::DumpThread();
+                        } else {
+                            KDumpObject::DumpThread(arg0);
+                        }
+                        break;
+                    default:
+                        break;
+                }
             }
             #endif
         }
 
         void ChangeKernelTraceState(ams::svc::KernelTraceState kern_trace_state) {
-            #ifdef ATMOSPHERE_BUILD_FOR_DEBUGGING
+            #ifdef MESOSPHERE_BUILD_FOR_DEBUGGING
             {
                 switch (kern_trace_state) {
                     case ams::svc::KernelTraceState_Enabled:

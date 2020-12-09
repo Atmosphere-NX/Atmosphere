@@ -533,6 +533,7 @@ namespace ams::kern {
                 return this->termination_requested || this->GetRawState() == ThreadState_Terminated;
             }
 
+            size_t GetKernelStackUsage() const;
         public:
             /* Overridden parent functions. */
             virtual u64 GetId() const override final { return this->GetThreadId(); }

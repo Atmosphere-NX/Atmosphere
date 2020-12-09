@@ -24,6 +24,15 @@ namespace ams::kern {
             return KernelVirtualAddressSpaceBase <= key_uptr && key_uptr <= KernelVirtualAddressSpaceLast;
         }
 
+        void InitializeKernelStack(uintptr_t stack_top) {
+            #if defined(MESOSPHERE_ENABLE_KERNEL_STACK_USAGE)
+                const uintptr_t stack_bottom = stack_top - PageSize;
+                std::memset(reinterpret_cast<void *>(stack_bottom), 0xCC, PageSize - sizeof(KThread::StackParameters));
+            #else
+                MESOSPHERE_UNUSED(stack_top);
+            #endif
+        }
+
         void CleanupKernelStack(uintptr_t stack_top) {
             const uintptr_t stack_bottom = stack_top - PageSize;
 
@@ -152,6 +161,11 @@ namespace ams::kern {
         /* We haven't released our resource limit hint, and we've spent no time on the cpu. */
         this->resource_limit_release_hint   = 0;
         this->cpu_time                      = 0;
+
+        /* Setup our kernel stack. */
+        if (type != ThreadType_Main) {
+            InitializeKernelStack(reinterpret_cast<uintptr_t>(kern_stack_top));
+        }
 
         /* Clear our stack parameters. */
         std::memset(static_cast<void *>(std::addressof(this->GetStackParameters())), 0, sizeof(StackParameters));
@@ -801,6 +815,26 @@ namespace ams::kern {
 
         /* Note the state change in scheduler. */
         KScheduler::OnThreadStateChanged(this, old_state);
+    }
+
+    size_t KThread::GetKernelStackUsage() const {
+        MESOSPHERE_ASSERT_THIS();
+        MESOSPHERE_ASSERT(this->kernel_stack_top != nullptr);
+
+        #if defined(MESOSPHERE_ENABLE_KERNEL_STACK_USAGE)
+            const u8 *stack = static_cast<const u8 *>(this->kernel_stack_top) - PageSize;
+
+            size_t i;
+            for (i = 0; i < PageSize; ++i) {
+                if (stack[i] != 0xCC) {
+                    break;
+                }
+            }
+
+            return PageSize - i;
+        #else
+            return 0;
+        #endif
     }
 
     Result KThread::SetActivity(ams::svc::ThreadActivity activity) {
