@@ -232,12 +232,16 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.UnmapPhysicalMemoryUnsafe(address, size);
             }
 
-            void DumpTable() const {
-                return this->page_table.DumpTable();
-            }
-
             void DumpMemoryBlocks() const {
                 return this->page_table.DumpMemoryBlocks();
+            }
+
+            void DumpPageTable() const {
+                return this->page_table.DumpPageTable();
+            }
+
+            size_t CountPageTables() const {
+                return this->page_table.CountPageTables();
             }
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {

@@ -147,6 +147,7 @@ namespace ams::kern {
             }
 
             size_t GetFreeSize() const { return this->GetNumFreePages() * PageSize; }
+            void DumpFreeList() const;
 
             void UpdateUsedSize() {
                 this->used_size = this->heap_size - (this->GetNumFreePages() * PageSize);

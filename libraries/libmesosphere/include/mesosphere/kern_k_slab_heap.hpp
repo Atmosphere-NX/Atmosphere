@@ -140,7 +140,21 @@ namespace ams::kern {
 
                 void *obj = this->GetImpl()->Allocate();
 
-                /* TODO: under some debug define, track the peak for statistics, as N does? */
+                /* Track the allocated peak. */
+                #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
+                if (AMS_LIKELY(obj != nullptr)) {
+                    static_assert(std::atomic_ref<uintptr_t>::is_always_lock_free);
+                    std::atomic_ref<uintptr_t> peak_ref(this->peak);
+
+                    const uintptr_t alloc_peak = reinterpret_cast<uintptr_t>(obj) + this->GetObjectSize();
+                    uintptr_t cur_peak = this->peak;
+                    do {
+                        if (alloc_peak <= cur_peak) {
+                            break;
+                        }
+                    } while (!peak_ref.compare_exchange_strong(cur_peak, alloc_peak));
+                }
+                #endif
 
                 return obj;
             }
@@ -164,6 +178,29 @@ namespace ams::kern {
 
             uintptr_t GetSlabHeapAddress() const {
                 return this->start;
+            }
+
+            size_t GetNumRemaining() const {
+                size_t remaining = 0;
+
+                /* Only calculate the number of remaining objects under debug configuration. */
+                #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
+                while (true) {
+                    auto *cur = this->GetImpl()->GetHead();
+                    remaining = 0;
+
+                    while (this->Contains(reinterpret_cast<uintptr_t>(cur))) {
+                        ++remaining;
+                        cur = cur->next;
+                    }
+
+                    if (cur == nullptr) {
+                        break;
+                    }
+                }
+                #endif
+
+                return remaining;
             }
     };
 

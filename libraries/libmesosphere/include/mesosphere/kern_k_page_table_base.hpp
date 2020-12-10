@@ -382,9 +382,9 @@ namespace ams::kern {
             Result MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
             Result UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
 
-            void DumpTable() const {
-                KScopedLightLock lk(this->general_lock);
-                this->GetImpl().Dump(GetInteger(this->address_space_start), this->address_space_end - this->address_space_start);
+            void DumpMemoryBlocksLocked() const {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+                this->memory_block_manager.DumpBlocks();
             }
 
             void DumpMemoryBlocks() const {
@@ -392,9 +392,14 @@ namespace ams::kern {
                 this->DumpMemoryBlocksLocked();
             }
 
-            void DumpMemoryBlocksLocked() const {
-                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-                this->memory_block_manager.DumpBlocks();
+            void DumpPageTable() const {
+                KScopedLightLock lk(this->general_lock);
+                this->GetImpl().Dump(GetInteger(this->address_space_start), this->address_space_end - this->address_space_start);
+            }
+
+            size_t CountPageTables() const {
+                KScopedLightLock lk(this->general_lock);
+                return this->GetImpl().CountPageTables();
             }
         public:
             KProcessAddress GetAddressSpaceStart()    const { return this->address_space_start; }

@@ -305,6 +305,11 @@ namespace ams::kern {
                 }
             }
 
+            const KDynamicPageManager &GetDynamicPageManager() const { return this->dynamic_page_manager; }
+            const KMemoryBlockSlabManager &GetMemoryBlockSlabManager() const { return this->memory_block_slab_manager; }
+            const KBlockInfoManager &GetBlockInfoManager() const { return this->block_info_manager; }
+            const KPageTableManager &GetPageTableManager() const { return this->page_table_manager; }
+
             constexpr KThread *GetRunningThread(s32 core) const { return this->running_threads[core]; }
             constexpr u64 GetRunningThreadIdleCount(s32 core) const { return this->running_thread_idle_counts[core]; }
 

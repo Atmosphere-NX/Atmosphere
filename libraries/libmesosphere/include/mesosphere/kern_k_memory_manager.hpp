@@ -90,6 +90,8 @@ namespace ams::kern {
 
                     size_t GetFreeSize() const { return this->heap.GetFreeSize(); }
 
+                    void DumpFreeList() const { return this->heap.DumpFreeList(); }
+
                     constexpr size_t GetPageOffset(KVirtualAddress address)      const { return this->heap.GetPageOffset(address); }
                     constexpr size_t GetPageOffsetToEnd(KVirtualAddress address) const { return this->heap.GetPageOffsetToEnd(address); }
 
@@ -247,18 +249,30 @@ namespace ams::kern {
             size_t GetFreeSize() {
                 size_t total = 0;
                 for (size_t i = 0; i < this->num_managers; i++) {
+                    KScopedLightLock lk(this->pool_locks[this->managers[i].GetPool()]);
                     total += this->managers[i].GetFreeSize();
                 }
                 return total;
             }
 
             size_t GetFreeSize(Pool pool) {
+                KScopedLightLock lk(this->pool_locks[pool]);
+
                 constexpr Direction GetSizeDirection = Direction_FromFront;
                 size_t total = 0;
                 for (auto *manager = this->GetFirstManager(pool, GetSizeDirection); manager != nullptr; manager = this->GetNextManager(manager, GetSizeDirection)) {
                     total += manager->GetFreeSize();
                 }
                 return total;
+            }
+
+            void DumpFreeList(Pool pool) {
+                KScopedLightLock lk(this->pool_locks[pool]);
+
+                constexpr Direction DumpDirection = Direction_FromFront;
+                for (auto *manager = this->GetFirstManager(pool, DumpDirection); manager != nullptr; manager = this->GetNextManager(manager, DumpDirection)) {
+                    manager->DumpFreeList();
+                }
             }
         public:
             static size_t CalculateManagementOverheadSize(size_t region_size) {

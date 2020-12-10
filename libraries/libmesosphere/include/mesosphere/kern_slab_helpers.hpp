@@ -48,6 +48,8 @@ namespace ams::kern {
             static size_t GetSlabHeapSize() { return s_slab_heap.GetSlabHeapSize(); }
             static size_t GetPeakIndex() { return s_slab_heap.GetPeakIndex(); }
             static uintptr_t GetSlabHeapAddress() { return s_slab_heap.GetSlabHeapAddress(); }
+
+            static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
     };
 
     template<typename Derived, typename Base>
@@ -116,6 +118,8 @@ namespace ams::kern {
             static size_t GetSlabHeapSize() { return s_slab_heap.GetSlabHeapSize(); }
             static size_t GetPeakIndex() { return s_slab_heap.GetPeakIndex(); }
             static uintptr_t GetSlabHeapAddress() { return s_slab_heap.GetSlabHeapAddress(); }
+
+            static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
     };
 
 }

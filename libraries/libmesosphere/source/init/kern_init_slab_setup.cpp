@@ -22,7 +22,7 @@ namespace ams::kern::init {
     #define FOREACH_SLAB_TYPE(HANDLER, ...)                                                                                     \
         HANDLER(KProcess,            (SLAB_COUNT(KProcess)),                                                    ## __VA_ARGS__) \
         HANDLER(KThread,             (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
-        HANDLER(KLinkedListNode,     (SLAB_COUNT(KThread) * 17),                                                ## __VA_ARGS__) \
+        HANDLER(KLinkedListNode,     (SLAB_COUNT(KThread)),                                                     ## __VA_ARGS__) \
         HANDLER(KEvent,              (SLAB_COUNT(KEvent)),                                                      ## __VA_ARGS__) \
         HANDLER(KInterruptEvent,     (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
         HANDLER(KInterruptEventTask, (SLAB_COUNT(KInterruptEvent)),                                             ## __VA_ARGS__) \
@@ -77,7 +77,7 @@ namespace ams::kern::init {
 
         namespace test {
 
-            constexpr size_t RequiredSizeForExtraThreadCount = SlabCountExtraKThread * (sizeof(KThread) + (sizeof(KLinkedListNode) * 17) + (sizeof(KThreadLocalPage) / 8) + sizeof(KEventInfo));
+            constexpr size_t RequiredSizeForExtraThreadCount = SlabCountExtraKThread * (sizeof(KThread) + sizeof(KLinkedListNode) + (sizeof(KThreadLocalPage) / 8) + sizeof(KEventInfo));
             static_assert(RequiredSizeForExtraThreadCount <= KernelSlabHeapAdditionalSize);
 
         }

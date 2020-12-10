@@ -181,7 +181,7 @@ namespace ams::kern::KDumpObject {
                                 }
                             }
                         }
-                        MESOSPHERE_RELEASE_LOG("%-9s: Handle %08x Obj=%p Cur=%3d Max=%3d Peak=%3d\n", name, handle, obj.GetPointerUnsafe(), client->GetNumSessions(), client->GetMaxSessions(), client->GetPeakSessions());
+                        MESOSPHERE_RELEASE_LOG("%-9s: Handle %08x Obj=%p Cur=%3d Peak=%3d Max=%3d\n", name, handle, obj.GetPointerUnsafe(), client->GetNumSessions(), client->GetPeakSessions(), client->GetMaxSessions());
 
                         /* Identify any sessions. */
                         {
@@ -263,6 +263,204 @@ namespace ams::kern::KDumpObject {
                 ON_SCOPE_EXIT { thread->Close(); };
                 DumpThreadCallStack(thread);
             }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpKernelObject() {
+        MESOSPHERE_LOG("Dump Kernel Object\n");
+
+        {
+            /* Static slab heaps. */
+            {
+                #define DUMP_KSLABOBJ(__OBJECT__)                                                                                                                                                         \
+                    MESOSPHERE_RELEASE_LOG(#__OBJECT__ "\n");                                                                                                                                             \
+                    MESOSPHERE_RELEASE_LOG("    Cur=%3zu Peak=%3zu Max=%3zu\n", __OBJECT__::GetSlabHeapSize() - __OBJECT__::GetNumRemaining(), __OBJECT__::GetPeakIndex(), __OBJECT__::GetSlabHeapSize())
+
+                DUMP_KSLABOBJ(KPageBuffer);
+                DUMP_KSLABOBJ(KEvent);
+                DUMP_KSLABOBJ(KInterruptEvent);
+                DUMP_KSLABOBJ(KProcess);
+                DUMP_KSLABOBJ(KThread);
+                DUMP_KSLABOBJ(KPort);
+                DUMP_KSLABOBJ(KSharedMemory);
+                DUMP_KSLABOBJ(KTransferMemory);
+                DUMP_KSLABOBJ(KDeviceAddressSpace);
+                DUMP_KSLABOBJ(KDebug);
+                DUMP_KSLABOBJ(KSession);
+                DUMP_KSLABOBJ(KLightSession);
+                DUMP_KSLABOBJ(KLinkedListNode);
+                DUMP_KSLABOBJ(KThreadLocalPage);
+                DUMP_KSLABOBJ(KObjectName);
+                DUMP_KSLABOBJ(KEventInfo);
+                DUMP_KSLABOBJ(KSessionRequest);
+                DUMP_KSLABOBJ(KResourceLimit);
+                DUMP_KSLABOBJ(KAlpha);
+                DUMP_KSLABOBJ(KBeta);
+
+                #undef DUMP_KSLABOBJ
+
+            }
+            MESOSPHERE_RELEASE_LOG("\n");
+
+            /* Dynamic slab heaps. */
+            {
+                /* Memory block slabs. */
+                {
+                    MESOSPHERE_RELEASE_LOG("App Memory Block\n");
+                    auto &app = Kernel::GetApplicationMemoryBlockManager();
+                    MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", app.GetUsed(), app.GetPeak(), app.GetCount());
+                    MESOSPHERE_RELEASE_LOG("Sys Memory Block\n");
+                    auto &sys = Kernel::GetSystemMemoryBlockManager();
+                    MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", sys.GetUsed(), sys.GetPeak(), sys.GetCount());
+                }
+
+                /* KBlockInfo slab. */
+                {
+                    MESOSPHERE_RELEASE_LOG("KBlockInfo\n");
+                    auto &manager = Kernel::GetBlockInfoManager();
+                    MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", manager.GetUsed(), manager.GetPeak(), manager.GetCount());
+                }
+
+                /* Page Table slab. */
+                {
+                    MESOSPHERE_RELEASE_LOG("Page Table\n");
+                    auto &manager = Kernel::GetPageTableManager();
+                    MESOSPHERE_RELEASE_LOG("    Cur=%6zu Peak=%6zu Max=%6zu\n", manager.GetUsed(), manager.GetPeak(), manager.GetCount());
+                }
+            }
+            MESOSPHERE_RELEASE_LOG("\n");
+
+            /* Process resources. */
+            {
+                KProcess::ListAccessor accessor;
+
+                size_t process_pts = 0;
+
+                const auto end = accessor.end();
+                for (auto it = accessor.begin(); it != end; ++it) {
+                    KProcess *process = static_cast<KProcess *>(std::addressof(*it));
+
+                    /* Count the number of threads. */
+                    int threads = 0;
+                    {
+                        KThread::ListAccessor thr_accessor;
+                        const auto thr_end = thr_accessor.end();
+                        for (auto thr_it = thr_accessor.begin(); thr_it != thr_end; ++thr_it) {
+                            KThread *thread = static_cast<KThread *>(std::addressof(*thr_it));
+                            if (thread->GetOwnerProcess() == process) {
+                                ++threads;
+                            }
+                        }
+                    }
+
+                    /* Count the number of events. */
+                    int events = 0;
+                    {
+                        KEvent::ListAccessor ev_accessor;
+                        const auto ev_end = ev_accessor.end();
+                        for (auto ev_it = ev_accessor.begin(); ev_it != ev_end; ++ev_it) {
+                            KEvent *event = static_cast<KEvent *>(std::addressof(*ev_it));
+                            if (event->GetOwner() == process) {
+                                ++events;
+                            }
+                        }
+                    }
+
+                    size_t pts = process->GetPageTable().CountPageTables();
+                    process_pts += pts;
+
+                    MESOSPHERE_RELEASE_LOG("%-12s: PID=%3lu Thread %4d / Event %4d / PageTable %5zu\n", process->GetName(), process->GetId(), threads, events, pts);
+                    if (process->GetTotalSystemResourceSize() != 0) {
+                        MESOSPHERE_RELEASE_LOG("    System Resource\n");
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetDynamicPageManager().GetUsed(), process->GetDynamicPageManager().GetPeak(), process->GetDynamicPageManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("    Memory Block\n");
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetMemoryBlockSlabManager().GetUsed(), process->GetMemoryBlockSlabManager().GetPeak(), process->GetMemoryBlockSlabManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("    Page Table\n");
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetPageTableManager().GetUsed(), process->GetPageTableManager().GetPeak(), process->GetPageTableManager().GetCount());
+                        MESOSPHERE_RELEASE_LOG("    Block Info\n");
+                        MESOSPHERE_RELEASE_LOG("        Cur=%6zu Peak=%6zu Max=%6zu\n", process->GetBlockInfoManager().GetUsed(), process->GetBlockInfoManager().GetPeak(), process->GetBlockInfoManager().GetCount());
+                    }
+                }
+
+                MESOSPHERE_RELEASE_LOG("Process Page Table %zu\n", process_pts);
+                MESOSPHERE_RELEASE_LOG("Kernel Page Table  %zu\n", Kernel::GetKernelPageTable().CountPageTables());
+            }
+            MESOSPHERE_RELEASE_LOG("\n");
+
+            /* Resource limits. */
+            {
+                auto &sys_rl = Kernel::GetSystemResourceLimit();
+
+                u64 cur = sys_rl.GetCurrentValue(ams::svc::LimitableResource_PhysicalMemoryMax);
+                u64 lim = sys_rl.GetLimitValue(ams::svc::LimitableResource_PhysicalMemoryMax);
+                MESOSPHERE_RELEASE_LOG("System ResourceLimit PhysicalMemory 0x%01x_%08x / 0x%01x_%08x\n", static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(lim >> 32), static_cast<u32>(lim));
+
+                cur = sys_rl.GetCurrentValue(ams::svc::LimitableResource_ThreadCountMax);
+                lim = sys_rl.GetLimitValue(ams::svc::LimitableResource_ThreadCountMax);
+                MESOSPHERE_RELEASE_LOG("System ResourceLimit Thread         %4lu / %4lu\n", cur, lim);
+
+                cur = sys_rl.GetCurrentValue(ams::svc::LimitableResource_EventCountMax);
+                lim = sys_rl.GetLimitValue(ams::svc::LimitableResource_EventCountMax);
+                MESOSPHERE_RELEASE_LOG("System ResourceLimit Event          %4lu / %4lu\n", cur, lim);
+
+                cur = sys_rl.GetCurrentValue(ams::svc::LimitableResource_TransferMemoryCountMax);
+                lim = sys_rl.GetLimitValue(ams::svc::LimitableResource_TransferMemoryCountMax);
+                MESOSPHERE_RELEASE_LOG("System ResourceLimit TransferMemory %4lu / %4lu\n", cur, lim);
+
+                cur = sys_rl.GetCurrentValue(ams::svc::LimitableResource_SessionCountMax);
+                lim = sys_rl.GetLimitValue(ams::svc::LimitableResource_SessionCountMax);
+                MESOSPHERE_RELEASE_LOG("System ResourceLimit Session        %4lu / %4lu\n", cur, lim);
+
+                {
+                    KResourceLimit::ListAccessor accessor;
+
+                    const auto end = accessor.end();
+                    for (auto it = accessor.begin(); it != end; ++it) {
+                        KResourceLimit *rl = static_cast<KResourceLimit *>(std::addressof(*it));
+                        cur = rl->GetCurrentValue(ams::svc::LimitableResource_PhysicalMemoryMax);
+                        lim = rl->GetLimitValue(ams::svc::LimitableResource_PhysicalMemoryMax);
+                        MESOSPHERE_RELEASE_LOG("ResourceLimit %zu PhysicalMemory 0x%01x_%08x / 0x%01x_%08x\n", rl->GetSlabIndex(), static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(lim >> 32), static_cast<u32>(lim));
+                    }
+                }
+            }
+            MESOSPHERE_RELEASE_LOG("\n");
+
+            /* Memory Manager. */
+            {
+                auto &mm = Kernel::GetMemoryManager();
+                u64 max = mm.GetSize();
+                u64 cur = max - mm.GetFreeSize();
+                MESOSPHERE_RELEASE_LOG("Kernel Heap Size 0x%01x_%08x / 0x%01x_%08x\n", static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(max >> 32), static_cast<u32>(max));
+                MESOSPHERE_RELEASE_LOG("\n");
+
+                max = mm.GetSize(KMemoryManager::Pool_Application);
+                cur = max - mm.GetFreeSize(KMemoryManager::Pool_Application);
+                MESOSPHERE_RELEASE_LOG("Application      0x%01x_%08x / 0x%01x_%08x\n", static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(max >> 32), static_cast<u32>(max));
+                mm.DumpFreeList(KMemoryManager::Pool_Application);
+                MESOSPHERE_RELEASE_LOG("\n");
+
+                max = mm.GetSize(KMemoryManager::Pool_Applet);
+                cur = max - mm.GetFreeSize(KMemoryManager::Pool_Applet);
+                MESOSPHERE_RELEASE_LOG("Applet           0x%01x_%08x / 0x%01x_%08x\n", static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(max >> 32), static_cast<u32>(max));
+                mm.DumpFreeList(KMemoryManager::Pool_Applet);
+                MESOSPHERE_RELEASE_LOG("\n");
+
+                max = mm.GetSize(KMemoryManager::Pool_System);
+                cur = max - mm.GetFreeSize(KMemoryManager::Pool_System);
+                MESOSPHERE_RELEASE_LOG("System           0x%01x_%08x / 0x%01x_%08x\n", static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(max >> 32), static_cast<u32>(max));
+                mm.DumpFreeList(KMemoryManager::Pool_System);
+                MESOSPHERE_RELEASE_LOG("\n");
+
+                max = mm.GetSize(KMemoryManager::Pool_SystemNonSecure);
+                cur = max - mm.GetFreeSize(KMemoryManager::Pool_SystemNonSecure);
+                MESOSPHERE_RELEASE_LOG("SystemNonSecure  0x%01x_%08x / 0x%01x_%08x\n", static_cast<u32>(cur >> 32), static_cast<u32>(cur), static_cast<u32>(max >> 32), static_cast<u32>(max));
+                mm.DumpFreeList(KMemoryManager::Pool_SystemNonSecure);
+                MESOSPHERE_RELEASE_LOG("\n");
+            }
+            MESOSPHERE_RELEASE_LOG("\n");
+
         }
 
         MESOSPHERE_RELEASE_LOG("\n");

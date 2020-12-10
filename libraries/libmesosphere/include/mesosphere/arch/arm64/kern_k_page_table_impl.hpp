@@ -112,6 +112,7 @@ namespace ams::kern::arch::arm64 {
             L1PageTableEntry *Finalize();
 
             void Dump(uintptr_t start, size_t size) const;
+            size_t CountPageTables() const;
 
             bool BeginTraversal(TraversalEntry *out_entry, TraversalContext *out_context, KProcessAddress address) const;
             bool ContinueTraversal(TraversalEntry *out_entry, TraversalContext *context) const;

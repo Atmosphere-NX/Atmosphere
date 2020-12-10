@@ -472,7 +472,7 @@ namespace ams::svc {
     enum KernelDebugType : u32 {
         KernelDebugType_Thread          =  0,
         KernelDebugType_ThreadCallStack =  1,
-
+        KernelDebugType_KernelObject    =  2,
         KernelDebugType_Handle          =  3,
 
         KernelDebugType_Process         =  7,

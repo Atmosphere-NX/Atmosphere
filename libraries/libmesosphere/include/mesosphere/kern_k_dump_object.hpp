@@ -25,6 +25,8 @@ namespace ams::kern::KDumpObject {
     void DumpThreadCallStack();
     void DumpThreadCallStack(u64 thread_id);
 
+    void DumpKernelObject();
+
     void DumpHandle();
     void DumpHandle(u64 process_id);
 
