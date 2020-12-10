@@ -181,21 +181,22 @@ namespace ams::kern::KDumpObject {
                                 }
                             }
                         }
-                        MESOSPHERE_RELEASE_LOG("%-9s: Handle %08x Obj=%p Cur=%3d Peak=%3d Max=%3d\n", name, handle, obj.GetPointerUnsafe(), client->GetNumSessions(), client->GetPeakSessions(), client->GetMaxSessions());
+                    }
 
-                        /* Identify any sessions. */
-                        {
-                            for (auto it = accessor.begin(); it != end && client_port_process.IsNull(); ++it) {
-                                KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
-                                for (size_t j = 0; j < cur->GetHandleTable().GetMaxCount(); ++j) {
-                                    ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
-                                    KScopedAutoObject cur_o = cur->GetHandleTable().GetObjectByIndex(std::addressof(cur_h), j);
-                                    if (cur_o.IsNull()) {
-                                        continue;
-                                    }
-                                    if (auto *session = cur_o->DynamicCast<KClientSession *>(); session != nullptr && session->GetParent()->GetParent() == client) {
-                                        MESOSPHERE_RELEASE_LOG("    Client %p Server %p %-12s: PID=%3lu\n", session, std::addressof(session->GetParent()->GetServerSession()), cur->GetName(), cur->GetId());
-                                    }
+                    MESOSPHERE_RELEASE_LOG("%-9s: Handle %08x Obj=%p Cur=%3d Peak=%3d Max=%3d\n", name, handle, obj.GetPointerUnsafe(), client->GetNumSessions(), client->GetPeakSessions(), client->GetMaxSessions());
+
+                    /* Identify any sessions. */
+                    {
+                        for (auto it = accessor.begin(); it != end; ++it) {
+                            KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
+                            for (size_t j = 0; j < cur->GetHandleTable().GetMaxCount(); ++j) {
+                                ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
+                                KScopedAutoObject cur_o = cur->GetHandleTable().GetObjectByIndex(std::addressof(cur_h), j);
+                                if (cur_o.IsNull()) {
+                                    continue;
+                                }
+                                if (auto *session = cur_o->DynamicCast<KClientSession *>(); session != nullptr && session->GetParent()->GetParent() == client) {
+                                    MESOSPHERE_RELEASE_LOG("    Client %p Server %p %-12s: PID=%3lu\n", session, std::addressof(session->GetParent()->GetServerSession()), cur->GetName(), cur->GetId());
                                 }
                             }
                         }
