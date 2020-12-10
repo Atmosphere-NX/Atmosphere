@@ -71,6 +71,8 @@ namespace ams::kern {
             KServerSession &GetServerSession() { return this->server; }
             const KClientSession &GetClientSession() const { return this->client; }
             const KServerSession &GetServerSession() const { return this->server; }
+
+            const KClientPort *GetParent() const { return this->port; }
     };
 
 }

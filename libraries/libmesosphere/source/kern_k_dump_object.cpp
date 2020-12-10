@@ -129,6 +129,81 @@ namespace ams::kern::KDumpObject {
             MESOSPHERE_RELEASE_LOG("Process ID=%3lu index=%3zu State=%d (%s)\n", process->GetId(), process->GetSlabIndex(), process->GetState(), process->GetName());
         }
 
+        void DumpPort(const KProcess::ListAccessor &accessor, KProcess *process) {
+            MESOSPHERE_RELEASE_LOG("Dump Port Process ID=%lu (%s)\n", process->GetId(), process->GetName());
+
+            const auto end = accessor.end();
+            const auto &handle_table = process->GetHandleTable();
+            const size_t max_handles = handle_table.GetMaxCount();
+            for (size_t i = 0; i < max_handles; ++i) {
+                /* Get the object + handle. */
+                ams::svc::Handle handle = ams::svc::InvalidHandle;
+                KScopedAutoObject obj = handle_table.GetObjectByIndex(std::addressof(handle), i);
+                if (obj.IsNull()) {
+                    continue;
+                }
+
+                /* Process the object as a port. */
+                if (auto *server = obj->DynamicCast<KServerPort *>(); server != nullptr) {
+                    const KClientPort *client = std::addressof(server->GetParent()->GetClientPort());
+                    const uintptr_t port_name = server->GetParent()->GetName();
+
+                    /* Get the port name. */
+                    char name[9] = {};
+                    {
+                        /* Find the client port process. */
+                        KScopedAutoObject<KProcess> client_port_process;
+                        {
+                            for (auto it = accessor.begin(); it != end && client_port_process.IsNull(); ++it) {
+                                KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
+                                for (size_t j = 0; j < cur->GetHandleTable().GetMaxCount(); ++j) {
+                                    ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
+                                    KScopedAutoObject cur_o = cur->GetHandleTable().GetObjectByIndex(std::addressof(cur_h), j);
+                                    if (cur_o.IsNotNull()) {
+                                        if (cur_o.GetPointerUnsafe() == client) {
+                                            client_port_process = cur;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        /* Read the port name. */
+                        if (client_port_process.IsNotNull()) {
+                            if (R_FAILED(client_port_process->GetPageTable().CopyMemoryFromLinearToKernel(KProcessAddress(name), 8, port_name, KMemoryState_None, KMemoryState_None, KMemoryPermission_UserRead, KMemoryAttribute_None, KMemoryAttribute_None))) {
+                                std::memset(name, 0, sizeof(name));
+                            }
+                            for (size_t i = 0; i < 8 && name[i] != 0; i++) {
+                                if (name[i] > 0x7F) {
+                                    std::memset(name, 0, sizeof(name));
+                                    break;
+                                }
+                            }
+                        }
+                        MESOSPHERE_RELEASE_LOG("%-9s: Handle %08x Obj=%p Cur=%3d Max=%3d Peak=%3d\n", name, handle, obj.GetPointerUnsafe(), client->GetNumSessions(), client->GetMaxSessions(), client->GetPeakSessions());
+
+                        /* Identify any sessions. */
+                        {
+                            for (auto it = accessor.begin(); it != end && client_port_process.IsNull(); ++it) {
+                                KProcess *cur = static_cast<KProcess *>(std::addressof(*it));
+                                for (size_t j = 0; j < cur->GetHandleTable().GetMaxCount(); ++j) {
+                                    ams::svc::Handle cur_h  = ams::svc::InvalidHandle;
+                                    KScopedAutoObject cur_o = cur->GetHandleTable().GetObjectByIndex(std::addressof(cur_h), j);
+                                    if (cur_o.IsNull()) {
+                                        continue;
+                                    }
+                                    if (auto *session = cur_o->DynamicCast<KClientSession *>(); session != nullptr && session->GetParent()->GetParent() == client) {
+                                        MESOSPHERE_RELEASE_LOG("    Client %p Server %p %-12s: PID=%3lu\n", session, std::addressof(session->GetParent()->GetServerSession()), cur->GetName(), cur->GetId());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     void DumpThread() {
@@ -252,6 +327,40 @@ namespace ams::kern::KDumpObject {
             if (KProcess *process = KProcess::GetProcessFromId(process_id); process != nullptr) {
                 ON_SCOPE_EXIT { process->Close(); };
                 DumpProcess(process);
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpPort() {
+        MESOSPHERE_RELEASE_LOG("Dump Port\n");
+
+        {
+            /* Lock the list. */
+            KProcess::ListAccessor accessor;
+            const auto end = accessor.end();
+
+            /* Dump each process. */
+            for (auto it = accessor.begin(); it != end; ++it) {
+                DumpPort(accessor, static_cast<KProcess *>(std::addressof(*it)));
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpPort(u64 process_id) {
+        MESOSPHERE_RELEASE_LOG("Dump Port\n");
+
+        {
+            /* Find and dump the target process. */
+            if (KProcess *process = KProcess::GetProcessFromId(process_id); process != nullptr) {
+                ON_SCOPE_EXIT { process->Close(); };
+
+                /* Lock the list. */
+                KProcess::ListAccessor accessor;
+                DumpPort(accessor, process);
             }
         }
 

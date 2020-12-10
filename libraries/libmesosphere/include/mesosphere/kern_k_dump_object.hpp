@@ -31,4 +31,7 @@ namespace ams::kern::KDumpObject {
     void DumpProcess();
     void DumpProcess(u64 process_id);
 
+    void DumpPort();
+    void DumpPort(u64 process_id);
+
 }

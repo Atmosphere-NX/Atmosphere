@@ -73,6 +73,13 @@ namespace ams::kern::svc {
                             }
                         }
                         break;
+                    case ams::svc::KernelDebugType_Port:
+                        if (arg0 == static_cast<u64>(-1)) {
+                            KDumpObject::DumpPort();
+                        } else {
+                            KDumpObject::DumpPort(arg0);
+                        }
+                        break;
                     default:
                         break;
                 }
