@@ -273,6 +273,10 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.GetHeapPhysicalAddress(address);
             }
 
+            KVirtualAddress GetHeapVirtualAddress(KPhysicalAddress address) const {
+                return this->page_table.GetHeapVirtualAddress(address);
+            }
+
             KBlockInfoManager *GetBlockInfoManager() {
                 return this->page_table.GetBlockInfoManager();
             }

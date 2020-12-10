@@ -44,6 +44,19 @@ namespace ams::kern::KDumpObject {
             }
         }
 
+        void DumpThreadCallStack(KThread *thread) {
+            if (KProcess *process = thread->GetOwnerProcess(); process != nullptr) {
+                MESOSPHERE_LOG("Thread ID=%5lu pid=%3lu %-11s Pri=%2d %-11s KernelStack=%4zu/%4zu\n",
+                               thread->GetId(), process->GetId(), process->GetName(), thread->GetPriority(), ThreadStates[thread->GetState()], thread->GetKernelStackUsage(), PageSize);
+
+                KDebug::PrintRegister(thread);
+                KDebug::PrintBacktrace(thread);
+            } else {
+                MESOSPHERE_LOG("Thread ID=%5lu pid=%3d %-11s Pri=%2d %-11s KernelStack=%4zu/%4zu\n",
+                               thread->GetId(), -1, "(kernel)", thread->GetPriority(), ThreadStates[thread->GetState()], thread->GetKernelStackUsage(), PageSize);
+            }
+        }
+
     }
 
     void DumpThread() {
@@ -71,6 +84,37 @@ namespace ams::kern::KDumpObject {
             if (KThread *thread = KThread::GetThreadFromId(thread_id); thread != nullptr) {
                 ON_SCOPE_EXIT { thread->Close(); };
                 DumpThread(thread);
+            }
+        }
+
+        MESOSPHERE_LOG("\n");
+    }
+
+    void DumpThreadCallStack() {
+        MESOSPHERE_LOG("Dump Thread\n");
+
+        {
+            /* Lock the list. */
+            KThread::ListAccessor accessor;
+            const auto end = accessor.end();
+
+            /* Dump each thread. */
+            for (auto it = accessor.begin(); it != end; ++it) {
+                DumpThreadCallStack(static_cast<KThread *>(std::addressof(*it)));
+            }
+        }
+
+        MESOSPHERE_LOG("\n");
+    }
+
+    void DumpThreadCallStack(u64 thread_id) {
+        MESOSPHERE_LOG("Dump Thread\n");
+
+        {
+            /* Find and dump the target thread. */
+            if (KThread *thread = KThread::GetThreadFromId(thread_id); thread != nullptr) {
+                ON_SCOPE_EXIT { thread->Close(); };
+                DumpThreadCallStack(thread);
             }
         }
 

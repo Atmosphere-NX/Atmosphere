@@ -13,16 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <mesosphere/kern_common.hpp>
-#include <mesosphere/kern_select_cpu.hpp>
+#include <mesosphere.hpp>
 
-namespace ams::kern::KDumpObject {
+namespace ams::kern {
 
-    void DumpThread();
-    void DumpThread(u64 thread_id);
+    /* This overrides the panic implementation from the kernel, to prevent linking debug print into kldr. */
 
-    void DumpThreadCallStack();
-    void DumpThreadCallStack(u64 thread_id);
+    NORETURN void PanicImpl(const char *file, int line, const char *format, ...) {
+        MESOSPHERE_UNUSED(file, line, format);
+        MESOSPHERE_INIT_ABORT();
+    }
+
+    NORETURN void PanicImpl() {
+        MESOSPHERE_INIT_ABORT();
+    }
 
 }

@@ -97,25 +97,20 @@ namespace ams::kern {
             /* Print the state. */
             MESOSPHERE_RELEASE_LOG("Core[%d] Current State:\n", core_id);
 
-            #ifdef ATMOSPHERE_ARCH_ARM64
-                /* Print registers. */
-                if (core_ctx != nullptr) {
-                    MESOSPHERE_RELEASE_LOG("    Registers:\n");
-                    for (size_t i = 0; i < util::size(core_ctx->x); ++i) {
-                        MESOSPHERE_RELEASE_LOG("        X[%02zx]: %p\n", i, reinterpret_cast<void *>(core_ctx->x[i]));
-                    }
-                    MESOSPHERE_RELEASE_LOG("        SP:   %p\n", reinterpret_cast<void *>(core_ctx->x[30]));
-                }
+            /* Print registers and user backtrace. */
+            KDebug::PrintRegister();
+            KDebug::PrintBacktrace();
 
-                /* Print backtrace. */
-                MESOSPHERE_RELEASE_LOG("    Backtrace:\n");
+            #ifdef ATMOSPHERE_ARCH_ARM64
+                /* Print kernel backtrace. */
+                MESOSPHERE_RELEASE_LOG("Backtrace:\n");
                 uintptr_t fp = core_ctx != nullptr ? core_ctx->x[29] : reinterpret_cast<uintptr_t>(__builtin_frame_address(0));
                 for (size_t i = 0; i < 32 && fp && util::IsAligned(fp, 0x10) && cpu::GetPhysicalAddressWritable(nullptr, fp, true); i++) {
                     struct {
                         uintptr_t fp;
                         uintptr_t lr;
                     } *stack_frame = reinterpret_cast<decltype(stack_frame)>(fp);
-                    MESOSPHERE_RELEASE_LOG("        [%02zx]: %p\n", i, reinterpret_cast<void *>(stack_frame->lr));
+                    MESOSPHERE_RELEASE_LOG("   [%02zx]: %p\n", i, reinterpret_cast<void *>(stack_frame->lr));
                     fp = stack_frame->fp;
                 }
             #endif
@@ -137,7 +132,7 @@ namespace ams::kern {
 
     }
 
-    NORETURN void PanicImpl(const char *file, int line, const char *format, ...) {
+    NORETURN WEAK_SYMBOL void PanicImpl(const char *file, int line, const char *format, ...) {
         #ifdef MESOSPHERE_BUILD_FOR_DEBUGGING
             /* Wait for it to be our turn to print. */
             WaitCoreTicket();
@@ -158,7 +153,7 @@ namespace ams::kern {
         StopSystem();
     }
 
-    NORETURN void PanicImpl() {
+    NORETURN WEAK_SYMBOL void PanicImpl() {
         StopSystem();
     }
 

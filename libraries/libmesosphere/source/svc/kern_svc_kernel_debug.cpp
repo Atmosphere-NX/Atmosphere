@@ -34,6 +34,13 @@ namespace ams::kern::svc {
                             KDumpObject::DumpThread(arg0);
                         }
                         break;
+                    case ams::svc::KernelDebugType_ThreadCallStack:
+                        if (arg0 == static_cast<u64>(-1)) {
+                            KDumpObject::DumpThreadCallStack();
+                        } else {
+                            KDumpObject::DumpThreadCallStack(arg0);
+                        }
+                        break;
                     default:
                         break;
                 }

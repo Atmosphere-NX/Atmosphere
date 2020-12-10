@@ -49,11 +49,11 @@ namespace ams::kern {
             };
 
             enum SuspendType : u32 {
-                SuspendType_Process = 0,
-                SuspendType_Thread  = 1,
-                SuspendType_Debug   = 2,
-                SuspendType_Unk3    = 3,
-                SuspendType_Init    = 4,
+                SuspendType_Process   = 0,
+                SuspendType_Thread    = 1,
+                SuspendType_Debug     = 2,
+                SuspendType_Backtrace = 3,
+                SuspendType_Init      = 4,
 
                 SuspendType_Count,
             };
@@ -67,13 +67,13 @@ namespace ams::kern {
                 ThreadState_SuspendShift = 4,
                 ThreadState_Mask         = (1 << ThreadState_SuspendShift) - 1,
 
-                ThreadState_ProcessSuspended = (1 << (SuspendType_Process + ThreadState_SuspendShift)),
-                ThreadState_ThreadSuspended  = (1 << (SuspendType_Thread  + ThreadState_SuspendShift)),
-                ThreadState_DebugSuspended   = (1 << (SuspendType_Debug   + ThreadState_SuspendShift)),
-                ThreadState_Unk3Suspended    = (1 << (SuspendType_Unk3    + ThreadState_SuspendShift)),
-                ThreadState_InitSuspended    = (1 << (SuspendType_Init    + ThreadState_SuspendShift)),
+                ThreadState_ProcessSuspended   = (1 << (SuspendType_Process   + ThreadState_SuspendShift)),
+                ThreadState_ThreadSuspended    = (1 << (SuspendType_Thread    + ThreadState_SuspendShift)),
+                ThreadState_DebugSuspended     = (1 << (SuspendType_Debug     + ThreadState_SuspendShift)),
+                ThreadState_BacktraceSuspended = (1 << (SuspendType_Backtrace + ThreadState_SuspendShift)),
+                ThreadState_InitSuspended      = (1 << (SuspendType_Init      + ThreadState_SuspendShift)),
 
-                ThreadState_SuspendFlagMask  = ((1 << SuspendType_Count) - 1) << ThreadState_SuspendShift,
+                ThreadState_SuspendFlagMask    = ((1 << SuspendType_Count) - 1) << ThreadState_SuspendShift,
             };
 
             enum DpcFlag : u32 {
