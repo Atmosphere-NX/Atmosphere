@@ -41,6 +41,38 @@ namespace ams::kern::svc {
                             KDumpObject::DumpThreadCallStack(arg0);
                         }
                         break;
+                    case ams::svc::KernelDebugType_Handle:
+                        if (arg0 == static_cast<u64>(-1)) {
+                            KDumpObject::DumpHandle();
+                        } else {
+                            KDumpObject::DumpHandle(arg0);
+                        }
+                        break;
+                    case ams::svc::KernelDebugType_Process:
+                        if (arg0 == static_cast<u64>(-1)) {
+                            KDumpObject::DumpProcess();
+                        } else {
+                            KDumpObject::DumpProcess(arg0);
+                        }
+                        break;
+                    case ams::svc::KernelDebugType_SuspendProcess:
+                        if (KProcess *process = KProcess::GetProcessFromId(arg0); process != nullptr) {
+                            ON_SCOPE_EXIT { process->Close(); };
+
+                            if (R_SUCCEEDED(process->SetActivity(ams::svc::ProcessActivity_Paused))) {
+                                MESOSPHERE_RELEASE_LOG("Suspend Process ID=%3lu\n", process->GetId());
+                            }
+                        }
+                        break;
+                    case ams::svc::KernelDebugType_ResumeProcess:
+                        if (KProcess *process = KProcess::GetProcessFromId(arg0); process != nullptr) {
+                            ON_SCOPE_EXIT { process->Close(); };
+
+                            if (R_SUCCEEDED(process->SetActivity(ams::svc::ProcessActivity_Runnable))) {
+                                MESOSPHERE_RELEASE_LOG("Resume Process ID=%3lu\n", process->GetId());
+                            }
+                        }
+                        break;
                     default:
                         break;
                 }

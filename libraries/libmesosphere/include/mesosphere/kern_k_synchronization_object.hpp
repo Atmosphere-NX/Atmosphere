@@ -46,7 +46,7 @@ namespace ams::kern {
         public:
             virtual void Finalize() override;
             virtual bool IsSignaled() const = 0;
-            virtual void DebugWaiters();
+            virtual void DumpWaiters();
     };
 
 }

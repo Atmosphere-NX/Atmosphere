@@ -148,7 +148,7 @@ namespace ams::kern {
         }
     }
 
-    void KSynchronizationObject::DebugWaiters() {
+    void KSynchronizationObject::DumpWaiters() {
         MESOSPHERE_ASSERT_THIS();
 
         /* If debugging, dump the list of waiters. */

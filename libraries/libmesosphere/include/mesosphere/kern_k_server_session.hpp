@@ -50,6 +50,8 @@ namespace ams::kern {
             Result SendReply(uintptr_t message, uintptr_t buffer_size, KPhysicalAddress message_paddr);
 
             void OnClientClosed();
+
+            void Dump();
         private:
             bool IsSignaledImpl() const;
             void CleanupRequests();

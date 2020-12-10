@@ -646,7 +646,7 @@ namespace ams::kern::arch::arm64 {
                 if (!ReadValue(std::addressof(temp_32), process, base_address + 0x5C)) {
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
-                if (temp_32 != 0x94000002) { /* MOD0 */
+                if (temp_32 != 0x94000002) {
                     return PrintAddressWithModuleName(address, has_module_name, module_name, base_address);
                 }
                 if (!ReadValue(std::addressof(temp_32), process, base_address + 0x60)) {
