@@ -201,6 +201,7 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     ldp     x30, x8,  [sp, #(8 * 30)]
     ldp     x9,  x10, [sp, #(8 * 32)]
     ldr     x11,      [sp, #(8 * 34)]
+    ldr     x18,      [sp, #(8 * 18)]
     msr     sp_el0, x8
     msr     elr_el1, x9
     msr     spsr_el1, x10
@@ -217,7 +218,6 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     mov     x15, xzr
     mov     x16, xzr
     mov     x17, xzr
-    mov     x18, xzr
 
     /* Return. */
     add     sp, sp, #0x120
