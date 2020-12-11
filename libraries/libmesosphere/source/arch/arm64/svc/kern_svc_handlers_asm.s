@@ -217,7 +217,6 @@ _ZN3ams4kern4arch5arm6412SvcHandler64Ev:
     mov     x15, xzr
     mov     x16, xzr
     mov     x17, xzr
-    mov     x18, xzr
 
     /* Return. */
     add     sp, sp, #0x120
