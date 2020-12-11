@@ -906,6 +906,35 @@ static const kernel_patch_t g_kernel_patches_1100[] = {
     }
 };
 
+static const kernel_patch_t g_kernel_patches_1101[] = {
+    {   /* Send Message Process ID Patch. */
+        .pattern_size = 0x1C,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(1100, proc_id_send),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(1100, proc_id_send))/sizeof(instruction_t),
+        .branch_back_offset = 0x10,
+        .payload = MAKE_KERNEL_PATCH_NAME(1100, proc_id_send)
+    },
+    {   /* Receive Message Process ID Patch. */
+        .pattern_size = 0x1C,
+        .pattern = MAKE_KERNEL_PATTERN_NAME(1100, proc_id_recv),
+        .pattern_hook_offset = 0x0,
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(1100, proc_id_recv))/sizeof(instruction_t),
+        .branch_back_offset = 0x10,
+        .payload = MAKE_KERNEL_PATCH_NAME(1100, proc_id_recv)
+    },
+    {   /* svcControlCodeMemory Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(1100, svc_control_codememory))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(1100, svc_control_codememory),
+        .patch_offset = 0x2FD04,
+    },
+    {   /* System Memory Increase Patch. */
+        .payload_num_instructions = sizeof(MAKE_KERNEL_PATCH_NAME(1100, system_memory_increase))/sizeof(instruction_t),
+        .payload = MAKE_KERNEL_PATCH_NAME(1100, system_memory_increase),
+        .patch_offset = 0x490C4,
+    }
+};
+
 #define KERNEL_PATCHES(vers) .num_patches = sizeof(g_kernel_patches_##vers)/sizeof(kernel_patch_t), .patches = g_kernel_patches_##vers,
 
 /* Kernel Infos. */
@@ -1000,6 +1029,15 @@ static const kernel_info_t g_kernel_infos[] = {
         .embedded_ini_ptr = 0x180,
         .free_code_space_offset = 0x49EE8,
         KERNEL_PATCHES(1100)
+    },
+    {   /* 11.0.1. */
+        .hash = {68B972B79755875E24958D990A77ABF1C5C1328067F0A2EC9CEFC322E342C04D, },
+        .hash_offset = 0x1C4,
+        .hash_size = 0x69000 - 0x1C4,
+        .embedded_ini_offset = 0x69000,
+        .embedded_ini_ptr = 0x180,
+        .free_code_space_offset = 0x49EE8,
+        KERNEL_PATCHES(1101)
     }
 };
 
