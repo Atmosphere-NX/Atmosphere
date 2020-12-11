@@ -40,8 +40,8 @@ namespace ams::secmon {
         ams::TargetFirmware target_firmware;
         u32 flags[2];
         u16 lcd_vendor;
-        u8  reserved0;
         u8  log_port;
+        u8  log_flags;
         u32 log_baud_rate;
         u32 reserved1[2];
         EmummcConfiguration emummc_cfg;
@@ -60,7 +60,8 @@ namespace ams::secmon {
         u8  log_port;
         u32 flags[2];
         u16 lcd_vendor;
-        u16 reserved0;
+        u8  log_flags;
+        u8  reserved0;
         u32 log_baud_rate;
         u32 reserved1[(0x80 - 0x1C) / sizeof(u32)];
 
@@ -70,6 +71,7 @@ namespace ams::secmon {
             this->flags[1]        = storage.flags[1];
             this->lcd_vendor      = storage.lcd_vendor;
             this->log_port        = storage.log_port;
+            this->log_flags       = storage.log_flags;
             this->log_baud_rate   = storage.log_baud_rate != 0 ? storage.log_baud_rate : 115200;
         }
 
@@ -85,6 +87,7 @@ namespace ams::secmon {
         constexpr fuse::SocType       GetSocType()       const { return static_cast<fuse::SocType>(this->soc_type); }
         constexpr fuse::HardwareState GetHardwareState() const { return static_cast<fuse::HardwareState>(this->hardware_state); }
         constexpr uart::Port GetLogPort() const { return static_cast<uart::Port>(this->log_port); }
+        constexpr u8 GetLogFlags() const { return this->log_flags; }
 
         constexpr u16 GetLcdVendor() const { return this->lcd_vendor; }
 
@@ -113,6 +116,7 @@ namespace ams::secmon {
         .log_port        = uart::Port_ReservedDebug,
         .flags           = { SecureMonitorConfigurationFlag_Default, SecureMonitorConfigurationFlag_None },
         .lcd_vendor      = {},
+        .log_flags       = {},
         .reserved0       = {},
         .log_baud_rate   = 115200,
         .reserved1       = {},

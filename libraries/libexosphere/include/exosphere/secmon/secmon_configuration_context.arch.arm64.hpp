@@ -120,6 +120,10 @@ namespace ams::secmon {
         return GetSecmonConfiguration().GetLogPort();
     }
 
+    ALWAYS_INLINE u8 GetLogFlags() {
+        return GetSecmonConfiguration().GetLogFlags();
+    }
+
     ALWAYS_INLINE u32 GetLogBaudRate() {
         return GetSecmonConfiguration().GetLogBaudRate();
     }

@@ -20,27 +20,10 @@ namespace ams::log {
     namespace {
 
         constexpr inline uart::Port DefaultLogPort = uart::Port_ReservedDebug;
+        constexpr inline u32 DefaultLogFlags = static_cast<u32>(uart::Flag_None);
         constexpr inline int DefaultBaudRate = 115200;
         constinit uart::Port g_log_port   = DefaultLogPort;
         constinit bool g_initialized_uart = false;
-
-        ALWAYS_INLINE u32 GetPortFlags(uart::Port port) {
-            switch (port) {
-                case uart::Port_ReservedDebug:
-                    /* Logging to the debug port. */
-                    /* Don't invert transactions. */
-                    return uart::Flag_None;
-                case uart::Port_LeftJoyCon:
-                    /* Logging to left joy-con (e.g. with Joyless). */
-                    /* Invert transactions. */
-                    return uart::Flag_Inverted;
-                case uart::Port_RightJoyCon:
-                    /* Logging to right joy-con (e.g. with Joyless). */
-                    /* Invert transactions. */
-                    return uart::Flag_Inverted;
-                AMS_UNREACHABLE_DEFAULT_CASE();
-            }
-        }
 
         ALWAYS_INLINE void SetupUartClock(uart::Port port) {
             /* The debug port must always be set up, for compatibility with official hos. */
@@ -64,15 +47,15 @@ namespace ams::log {
     }
 
     void Initialize() {
-        return Initialize(DefaultLogPort, DefaultBaudRate);
+        return Initialize(DefaultLogPort, DefaultBaudRate, DefaultLogFlags);
     }
 
-    void Initialize(uart::Port port, u32 baud_rate) {
+    void Initialize(uart::Port port, u32 baud_rate, u32 flags) {
         /* Initialize pinmux and clock for the target uart port. */
         SetupUartClock(port);
 
         /* Initialize the target uart port. */
-        uart::Initialize(port, baud_rate, GetPortFlags(port));
+        uart::Initialize(port, baud_rate, flags);
 
         /* Note that we've initialized. */
         g_log_port        = port;

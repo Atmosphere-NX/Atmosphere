@@ -210,6 +210,13 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
             } else {
                 parse_cfg->log_baud_rate = 115200;
             }
+        } else if (strcmp(name, EXOSPHERE_LOG_INVERTED_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp == 1) {
+                parse_cfg->log_inverted = 1;
+            } else if (tmp == 0) {
+                parse_cfg->log_inverted = 0;
+            }
         } else {
             return 0;
         }
@@ -495,6 +502,7 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
         .allow_writing_to_cal_sysmmc        = 0,
         .log_port                           = 0,
         .log_baud_rate                      = 115200,
+        .log_inverted                       = 0,
     };
 
     /* If we have an ini to read, parse it. */
@@ -517,6 +525,7 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
 
     exo_cfg.log_port      = parse_cfg.log_port;
     exo_cfg.log_baud_rate = parse_cfg.log_baud_rate;
+    if (parse_cfg.log_inverted) exo_cfg.log_flags |= EXOSPHERE_LOG_FLAG_INVERTED;
 
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");
