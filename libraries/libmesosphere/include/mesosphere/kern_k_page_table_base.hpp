@@ -301,6 +301,8 @@ namespace ams::kern {
             Result SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state);
             Result SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send);
             void CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission prot_perm);
+
+            size_t GetSize(KMemoryState state) const;
         public:
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const {
                 return this->GetImpl().GetPhysicalAddress(out, virt_addr);
@@ -422,6 +424,11 @@ namespace ams::kern {
 
                 return (this->current_heap_end - this->heap_region_start) + this->mapped_physical_memory_size;
             }
+
+            size_t GetCodeSize() const;
+            size_t GetCodeDataSize() const;
+            size_t GetAliasCodeSize() const;
+            size_t GetAliasCodeDataSize() const;
 
             u32 GetAllocateOption() const { return this->allocate_option; }
         public:

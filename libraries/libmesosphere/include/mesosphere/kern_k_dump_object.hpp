@@ -30,6 +30,10 @@ namespace ams::kern::KDumpObject {
     void DumpHandle();
     void DumpHandle(u64 process_id);
 
+    void DumpKernelMemory();
+    void DumpMemory();
+    void DumpMemory(u64 process_id);
+
     void DumpProcess();
     void DumpProcess(u64 process_id);
 

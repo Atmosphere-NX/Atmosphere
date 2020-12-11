@@ -81,7 +81,7 @@ namespace ams::kern {
             const char d = (info.attribute & KMemoryAttribute_DeviceShared) ? 'D' : '-';
             const char u = (info.attribute & KMemoryAttribute_Uncached)     ? 'U' : '-';
 
-            MESOSPHERE_LOG("%p - %p (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.ipc_lock_count, info.device_use_count);
+            MESOSPHERE_LOG("0x%10lx - 0x%10lx (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.ipc_lock_count, info.device_use_count);
         }
 
     }

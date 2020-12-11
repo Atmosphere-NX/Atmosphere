@@ -170,6 +170,8 @@ namespace ams::kern {
 
             constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
 
+            constexpr size_t GetMainStackSize() const { return this->main_thread_stack_size; }
+
             constexpr KMemoryManager::Pool GetMemoryPool() const { return this->memory_pool; }
 
             constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }

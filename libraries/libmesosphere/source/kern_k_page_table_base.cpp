@@ -1018,6 +1018,39 @@ namespace ams::kern {
         return address;
     }
 
+    size_t KPageTableBase::GetSize(KMemoryState state) const {
+        /* Lock the table. */
+        KScopedLightLock lk(this->general_lock);
+
+        /* Iterate, counting blocks with the desired state. */
+        size_t total_size = 0;
+        for (KMemoryBlockManager::const_iterator it = this->memory_block_manager.FindIterator(this->address_space_start); it != this->memory_block_manager.end(); ++it) {
+            /* Get the memory info. */
+            const KMemoryInfo info = it->GetMemoryInfo();
+            if (info.GetState() == state) {
+                total_size += info.GetSize();
+            }
+        }
+
+        return total_size;
+    }
+
+    size_t KPageTableBase::GetCodeSize() const {
+        return this->GetSize(KMemoryState_Code);
+    }
+
+    size_t KPageTableBase::GetCodeDataSize() const {
+        return this->GetSize(KMemoryState_CodeData);
+    }
+
+    size_t KPageTableBase::GetAliasCodeSize() const {
+        return this->GetSize(KMemoryState_AliasCode);
+    }
+
+    size_t KPageTableBase::GetAliasCodeDataSize() const {
+        return this->GetSize(KMemoryState_AliasCodeData);
+    }
+
     Result KPageTableBase::AllocateAndMapPagesImpl(PageLinkedList *page_list, KProcessAddress address, size_t num_pages, KMemoryPermission perm) {
         MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 

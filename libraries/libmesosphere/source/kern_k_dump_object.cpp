@@ -125,6 +125,47 @@ namespace ams::kern::KDumpObject {
             MESOSPHERE_RELEASE_LOG("\n\n");
         }
 
+        void DumpMemory(KProcess *process) {
+            const auto process_id = process->GetId();
+            MESOSPHERE_RELEASE_LOG("Process ID=%3lu (%s)\n", process_id, process->GetName());
+
+            /* Dump the memory blocks. */
+            process->GetPageTable().DumpMemoryBlocks();
+
+            /* Collect information about memory totals. */
+            const size_t code            = process->GetPageTable().GetCodeSize();
+            const size_t code_data       = process->GetPageTable().GetCodeDataSize();
+            const size_t alias_code      = process->GetPageTable().GetAliasCodeSize();
+            const size_t alias_code_data = process->GetPageTable().GetAliasCodeDataSize();
+            const size_t normal          = process->GetPageTable().GetNormalMemorySize();
+            const size_t main_stack      = process->GetMainStackSize();
+
+            size_t shared = 0;
+            {
+                KSharedMemory::ListAccessor accessor;
+                const auto end = accessor.end();
+                for (auto it = accessor.begin(); it != end; ++it) {
+                    KSharedMemory *shared_mem = static_cast<KSharedMemory *>(std::addressof(*it));
+                    if (shared_mem->GetOwnerProcessId() == process_id) {
+                        shared += shared_mem->GetSize();
+                    }
+                }
+            }
+
+            /* Dump the totals. */
+            MESOSPHERE_RELEASE_LOG("---\n");
+            MESOSPHERE_RELEASE_LOG("Code          %8zu KB\n", code / 1_KB);
+            MESOSPHERE_RELEASE_LOG("CodeData      %8zu KB\n", code_data / 1_KB);
+            MESOSPHERE_RELEASE_LOG("AliasCode     %8zu KB\n", alias_code / 1_KB);
+            MESOSPHERE_RELEASE_LOG("AliasCodeData %8zu KB\n", alias_code_data / 1_KB);
+            MESOSPHERE_RELEASE_LOG("Heap          %8zu KB\n", normal / 1_KB);
+            MESOSPHERE_RELEASE_LOG("SharedMemory  %8zu KB\n", shared / 1_KB);
+            MESOSPHERE_RELEASE_LOG("InitialStack  %8zu KB\n", main_stack / 1_KB);
+            MESOSPHERE_RELEASE_LOG("---\n");
+            MESOSPHERE_RELEASE_LOG("TOTAL         %8zu KB\n", (code + code_data + alias_code + alias_code_data + normal + main_stack + shared) / 1_KB);
+            MESOSPHERE_RELEASE_LOG("\n\n");
+        }
+
         void DumpProcess(KProcess *process) {
             MESOSPHERE_RELEASE_LOG("Process ID=%3lu index=%3zu State=%d (%s)\n", process->GetId(), process->GetSlabIndex(), process->GetState(), process->GetName());
         }
@@ -495,6 +536,47 @@ namespace ams::kern::KDumpObject {
                 /* Lock the list. */
                 KProcess::ListAccessor accessor;
                 DumpHandle(accessor, process);
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpKernelMemory() {
+        MESOSPHERE_RELEASE_LOG("Dump Kernel Memory Info\n");
+
+        {
+            Kernel::GetKernelPageTable().DumpMemoryBlocks();
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpMemory() {
+        MESOSPHERE_RELEASE_LOG("Dump Memory Info\n");
+
+        {
+            /* Lock the list. */
+            KProcess::ListAccessor accessor;
+            const auto end = accessor.end();
+
+            /* Dump each process. */
+            for (auto it = accessor.begin(); it != end; ++it) {
+                DumpMemory(static_cast<KProcess *>(std::addressof(*it)));
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpMemory(u64 process_id) {
+        MESOSPHERE_RELEASE_LOG("Dump Memory Info\n");
+
+        {
+            /* Find and dump the target process. */
+            if (KProcess *process = KProcess::GetProcessFromId(process_id); process != nullptr) {
+                ON_SCOPE_EXIT { process->Close(); };
+                DumpMemory(process);
             }
         }
 

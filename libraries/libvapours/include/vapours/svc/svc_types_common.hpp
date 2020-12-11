@@ -474,7 +474,9 @@ namespace ams::svc {
         KernelDebugType_ThreadCallStack =  1,
         KernelDebugType_KernelObject    =  2,
         KernelDebugType_Handle          =  3,
-
+        KernelDebugType_Memory          =  4,
+        KernelDebugType_PageTable       =  5,
+        KernelDebugType_CpuUtilization  =  6,
         KernelDebugType_Process         =  7,
         KernelDebugType_SuspendProcess  =  8,
         KernelDebugType_ResumeProcess   =  9,

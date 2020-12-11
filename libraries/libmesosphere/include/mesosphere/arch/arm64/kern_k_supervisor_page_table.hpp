@@ -63,6 +63,14 @@ namespace ams::kern::arch::arm64 {
 
             constexpr u64 GetIdentityMapTtbr0(s32 core_id) const { return this->ttbr0_identity[core_id]; }
 
+            void DumpMemoryBlocks() const {
+                return this->page_table.DumpMemoryBlocks();
+            }
+
+            void DumpPageTable() const {
+                return this->page_table.DumpPageTable();
+            }
+
             size_t CountPageTables() const {
                 return this->page_table.CountPageTables();
             }
