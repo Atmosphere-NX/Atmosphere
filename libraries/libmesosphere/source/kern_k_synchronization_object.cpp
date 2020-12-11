@@ -81,8 +81,15 @@ namespace ams::kern {
             /* Add the waiters. */
             for (auto i = 0; i < num_objects; ++i) {
                 thread_nodes[i].thread      = thread;
-                thread_nodes[i].next        = objects[i]->thread_list_root;
-                objects[i]->thread_list_root = std::addressof(thread_nodes[i]);
+                thread_nodes[i].next        = nullptr;
+
+                if (objects[i]->thread_list_tail == nullptr) {
+                    objects[i]->thread_list_head = std::addressof(thread_nodes[i]);
+                } else {
+                    objects[i]->thread_list_tail->next = std::addressof(thread_nodes[i]);
+                }
+
+                objects[i]->thread_list_tail = std::addressof(thread_nodes[i]);
             }
 
             /* Mark the thread as waiting. */
@@ -111,11 +118,22 @@ namespace ams::kern {
 
             for (auto i = 0; i < num_objects; ++i) {
                 /* Unlink the object from the list. */
-                ThreadListNode **link = std::addressof(objects[i]->thread_list_root);
-                while (*link != std::addressof(thread_nodes[i])) {
-                    link = std::addressof((*link)->next);
+                ThreadListNode *prev_ptr = reinterpret_cast<ThreadListNode *>(std::addressof(objects[i]->thread_list_head));
+                ThreadListNode *prev_val = nullptr;
+                ThreadListNode *prev, *tail_prev;
+
+                do {
+                    prev      = prev_ptr;
+                    prev_ptr  = prev_ptr->next;
+                    tail_prev = prev_val;
+                    prev_val  = prev_ptr;
+                } while (prev_ptr != std::addressof(thread_nodes[i]));
+
+                if (objects[i]->thread_list_tail == std::addressof(thread_nodes[i])) {
+                    objects[i]->thread_list_tail = tail_prev;
                 }
-                *link = thread_nodes[i].next;
+
+                prev->next = thread_nodes[i].next;
 
                 if (objects[i] == synced_obj) {
                     sync_index = i;
@@ -139,7 +157,7 @@ namespace ams::kern {
         }
 
         /* Iterate over each thread. */
-        for (auto *cur_node = this->thread_list_root; cur_node != nullptr; cur_node = cur_node->next) {
+        for (auto *cur_node = this->thread_list_head; cur_node != nullptr; cur_node = cur_node->next) {
             KThread *thread = cur_node->thread;
             if (thread->GetState() == KThread::ThreadState_Waiting) {
                 thread->SetSyncedObject(this, result);
@@ -158,8 +176,7 @@ namespace ams::kern {
 
             MESOSPHERE_RELEASE_LOG("Threads waiting on %p:\n", this);
 
-            bool has_waiters = false;
-            for (auto *cur_node = this->thread_list_root; cur_node != nullptr; cur_node = cur_node->next) {
+            for (auto *cur_node = this->thread_list_head; cur_node != nullptr; cur_node = cur_node->next) {
                 KThread *thread = cur_node->thread;
 
                 if (KProcess *process = thread->GetOwnerProcess(); process != nullptr) {
@@ -167,12 +184,10 @@ namespace ams::kern {
                 } else {
                     MESOSPHERE_RELEASE_LOG("    %p tid=%ld (Kernel)\n", thread, thread->GetId());
                 }
-
-                has_waiters = true;
             }
 
             /* If we didn't have any waiters, print so. */
-            if (!has_waiters) {
+            if (this->thread_list_head != nullptr) {
                 MESOSPHERE_RELEASE_LOG("    None\n");
             }
         }
