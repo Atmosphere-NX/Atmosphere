@@ -70,10 +70,10 @@ namespace ams::kern {
         }
 
         void DumpMemoryInfo(const KMemoryInfo &info) {
-            const char *state = GetMemoryStateName(info.state);
-            const char *perm  = GetMemoryPermissionString(info);
-            const void *start = reinterpret_cast<void *>(info.GetAddress());
-            const void *end   = reinterpret_cast<void *>(info.GetLastAddress());
+            const char *state     = GetMemoryStateName(info.state);
+            const char *perm      = GetMemoryPermissionString(info);
+            const uintptr_t start = info.GetAddress();
+            const uintptr_t end   = info.GetLastAddress();
             const size_t kb   = info.GetSize() / 1_KB;
 
             const char l = (info.attribute & KMemoryAttribute_Locked)       ? 'L' : '-';
