@@ -30,6 +30,7 @@ namespace ams::kern::board::nintendo::nx {
                     static size_t GetApplicationPoolSize();
                     static size_t GetAppletPoolSize();
                     static size_t GetMinimumNonSecureSystemPoolSize();
+                    static u8 GetDebugLogUartPort();
 
                     /* Randomness. */
                     static void GenerateRandomBytes(void *dst, size_t size);

@@ -55,15 +55,16 @@ namespace ams::kern::board::nintendo::nx::smc {
         Package2Hash                = 17,
 
         /* Extension config items for exosphere. */
-        ExosphereApiVersion     = 65000,
-        ExosphereNeedsReboot    = 65001,
-        ExosphereNeedsShutdown  = 65002,
-        ExosphereGitCommitHash  = 65003,
-        ExosphereHasRcmBugPatch = 65004,
-        ExosphereBlankProdInfo  = 65005,
-        ExosphereAllowCalWrites = 65006,
-        ExosphereEmummcType     = 65007,
-        ExospherePayloadAddress = 65008,
+        ExosphereApiVersion       = 65000,
+        ExosphereNeedsReboot      = 65001,
+        ExosphereNeedsShutdown    = 65002,
+        ExosphereGitCommitHash    = 65003,
+        ExosphereHasRcmBugPatch   = 65004,
+        ExosphereBlankProdInfo    = 65005,
+        ExosphereAllowCalWrites   = 65006,
+        ExosphereEmummcType       = 65007,
+        ExospherePayloadAddress   = 65008,
+        ExosphereLogConfiguration = 65009,
     };
 
     enum class SmcResult {

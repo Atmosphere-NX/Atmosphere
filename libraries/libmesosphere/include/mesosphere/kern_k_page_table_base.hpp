@@ -301,6 +301,8 @@ namespace ams::kern {
             Result SetupForIpcClient(PageLinkedList *page_list, size_t *out_blocks_needed, KProcessAddress address, size_t size, KMemoryPermission test_perm, KMemoryState dst_state);
             Result SetupForIpcServer(KProcessAddress *out_addr, size_t size, KProcessAddress src_addr, KMemoryPermission test_perm, KMemoryState dst_state, KPageTableBase &src_page_table, bool send);
             void CleanupForIpcClientOnServerSetupFailure(PageLinkedList *page_list, KProcessAddress address, size_t size, KMemoryPermission prot_perm);
+
+            size_t GetSize(KMemoryState state) const;
         public:
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress virt_addr) const {
                 return this->GetImpl().GetPhysicalAddress(out, virt_addr);
@@ -382,9 +384,9 @@ namespace ams::kern {
             Result MapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
             Result UnmapPhysicalMemoryUnsafe(KProcessAddress address, size_t size);
 
-            void DumpTable() const {
-                KScopedLightLock lk(this->general_lock);
-                this->GetImpl().Dump(GetInteger(this->address_space_start), this->address_space_end - this->address_space_start);
+            void DumpMemoryBlocksLocked() const {
+                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
+                this->memory_block_manager.DumpBlocks();
             }
 
             void DumpMemoryBlocks() const {
@@ -392,9 +394,14 @@ namespace ams::kern {
                 this->DumpMemoryBlocksLocked();
             }
 
-            void DumpMemoryBlocksLocked() const {
-                MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-                this->memory_block_manager.DumpBlocks();
+            void DumpPageTable() const {
+                KScopedLightLock lk(this->general_lock);
+                this->GetImpl().Dump(GetInteger(this->address_space_start), this->address_space_end - this->address_space_start);
+            }
+
+            size_t CountPageTables() const {
+                KScopedLightLock lk(this->general_lock);
+                return this->GetImpl().CountPageTables();
             }
         public:
             KProcessAddress GetAddressSpaceStart()    const { return this->address_space_start; }
@@ -417,6 +424,11 @@ namespace ams::kern {
 
                 return (this->current_heap_end - this->heap_region_start) + this->mapped_physical_memory_size;
             }
+
+            size_t GetCodeSize() const;
+            size_t GetCodeDataSize() const;
+            size_t GetAliasCodeSize() const;
+            size_t GetAliasCodeDataSize() const;
 
             u32 GetAllocateOption() const { return this->allocate_option; }
         public:

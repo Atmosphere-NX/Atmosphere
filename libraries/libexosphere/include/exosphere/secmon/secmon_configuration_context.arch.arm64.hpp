@@ -116,6 +116,18 @@ namespace ams::secmon {
         return GetSecmonConfiguration().GetLcdVendor();
     }
 
+    ALWAYS_INLINE uart::Port GetLogPort() {
+        return GetSecmonConfiguration().GetLogPort();
+    }
+
+    ALWAYS_INLINE u8 GetLogFlags() {
+        return GetSecmonConfiguration().GetLogFlags();
+    }
+
+    ALWAYS_INLINE u32 GetLogBaudRate() {
+        return GetSecmonConfiguration().GetLogBaudRate();
+    }
+
     ALWAYS_INLINE bool IsProduction() {
         return GetSecmonConfiguration().IsProduction();
     }

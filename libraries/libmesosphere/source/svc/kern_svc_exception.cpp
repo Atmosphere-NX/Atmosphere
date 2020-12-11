@@ -21,16 +21,18 @@ namespace ams::kern::svc {
 
     namespace {
 
-        [[maybe_unused]] void PrintBreak(ams::svc::BreakReason break_reason) {
+        #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
+        void PrintBreak(ams::svc::BreakReason break_reason) {
             /* Print that break was called. */
             MESOSPHERE_RELEASE_LOG("%s: svc::Break(%d) was called, pid=%ld, tid=%ld\n", GetCurrentProcess().GetName(), static_cast<s32>(break_reason), GetCurrentProcess().GetId(), GetCurrentThread().GetId());
 
             /* Print the current thread's registers. */
-            /* TODO: KDebug::PrintRegisters(); */
+            KDebug::PrintRegister();
 
             /* Print a backtrace. */
-            /* TODO: KDebug::PrintBacktrace(); */
+            KDebug::PrintBacktrace();
         }
+        #endif
 
         void Break(ams::svc::BreakReason break_reason, uintptr_t address, size_t size) {
             /* Determine whether the break is only a notification. */
@@ -38,7 +40,7 @@ namespace ams::kern::svc {
 
             /* If the break isn't a notification, print it. */
             if (!is_notification) {
-                #ifdef MESOSPHERE_BUILD_FOR_DEBUGGING
+                #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
                 PrintBreak(break_reason);
                 #endif
             }

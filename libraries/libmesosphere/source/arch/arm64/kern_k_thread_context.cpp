@@ -51,7 +51,7 @@ namespace ams::kern::arch::arm64 {
             cpu::InstructionMemoryBarrier();
         }
 
-        uintptr_t SetupStackForUserModeThreadStarter(KVirtualAddress pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_64_bit) {
+        uintptr_t SetupStackForUserModeThreadStarter(KVirtualAddress pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, const bool is_64_bit) {
             /* NOTE: Stack layout on entry looks like following:                         */
             /* SP                                                                        */
             /* |                                                                         */
@@ -74,6 +74,11 @@ namespace ams::kern::arch::arm64 {
                 constexpr u64 PsrThumbValue = 0x20;
                 ctx->psr = ((pc & 1) == 0 ? PsrArmValue : PsrThumbValue) | (0x10);
                 MESOSPHERE_LOG("Creating User 32-Thread, %016lx\n", GetInteger(pc));
+            }
+
+            /* Set CFI-value. */
+            if (is_64_bit) {
+                ctx->x[18] = KSystemControl::GenerateRandomU64() | 1;
             }
 
             /* Set stack pointer. */

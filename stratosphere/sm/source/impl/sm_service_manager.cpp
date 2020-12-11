@@ -628,8 +628,7 @@ namespace ams::sm::impl {
         /* Create mitm handles. */
         {
             os::ManagedHandle hnd, port_hnd, qry_hnd, mitm_qry_hnd;
-            u64 x = 0;
-            R_TRY(svcCreatePort(hnd.GetPointer(), port_hnd.GetPointer(), service_info->max_sessions, service_info->is_light, reinterpret_cast<char *>(&x)));
+            R_TRY(svcCreatePort(hnd.GetPointer(), port_hnd.GetPointer(), service_info->max_sessions, service_info->is_light, service_info->name.name));
             R_TRY(svcCreateSession(qry_hnd.GetPointer(), mitm_qry_hnd.GetPointer(), 0, 0));
 
             /* Copy to output. */

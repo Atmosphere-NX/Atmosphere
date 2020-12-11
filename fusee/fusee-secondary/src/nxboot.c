@@ -196,6 +196,27 @@ static int exosphere_ini_handler(void *user, const char *section, const char *na
             } else if (tmp == 0) {
                 parse_cfg->allow_writing_to_cal_sysmmc = 0;
             }
+        } else if (strcmp(name, EXOSPHERE_LOG_PORT_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (0 <= tmp && tmp < 4) {
+                parse_cfg->log_port = tmp;
+            } else {
+                parse_cfg->log_port = 0;
+            }
+        } else if (strcmp(name, EXOSPHERE_LOG_BAUD_RATE_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp > 0) {
+                parse_cfg->log_baud_rate = tmp;
+            } else {
+                parse_cfg->log_baud_rate = 115200;
+            }
+        } else if (strcmp(name, EXOSPHERE_LOG_INVERTED_KEY) == 0) {
+            sscanf(value, "%d", &tmp);
+            if (tmp == 1) {
+                parse_cfg->log_inverted = 1;
+            } else if (tmp == 0) {
+                parse_cfg->log_inverted = 0;
+            }
         } else {
             return 0;
         }
@@ -240,6 +261,7 @@ static uint32_t nxboot_get_specific_target_firmware(uint32_t target_firmware){
     #define CHECK_NCA(NCA_ID, VERSION) do { if (is_nca_present(NCA_ID)) { return ATMOSPHERE_TARGET_FIRMWARE_##VERSION; } } while(0)
 
     if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_11_0_0) {
+        CHECK_NCA("56211c7a5ed20a5332f5cdda67121e37", 11_0_1);
         CHECK_NCA("594c90bcdbcccad6b062eadba0cd0e7e", 11_0_0);
     } else if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
         CHECK_NCA("26325de4db3909e0ef2379787c7e671d", 10_2_0);
@@ -464,9 +486,9 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     const bool is_emummc = exo_emummc_cfg->base_cfg.magic == MAGIC_EMUMMC_CONFIG && exo_emummc_cfg->base_cfg.type != EMUMMC_TYPE_NONE;
 
     if (keygen_type) {
-        exo_cfg.flags = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
+        exo_cfg.flags[0] = EXOSPHERE_FLAG_PERFORM_620_KEYGEN;
     } else {
-        exo_cfg.flags = 0;
+        exo_cfg.flags[0] = 0;
     }
 
     /* Setup exosphere parse configuration with defaults. */
@@ -478,6 +500,9 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
         .blank_prodinfo_sysmmc              = 0,
         .blank_prodinfo_emummc              = 0,
         .allow_writing_to_cal_sysmmc        = 0,
+        .log_port                           = 0,
+        .log_baud_rate                      = 115200,
+        .log_inverted                       = 0,
     };
 
     /* If we have an ini to read, parse it. */
@@ -490,13 +515,17 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     free(exosphere_ini);
 
     /* Apply parse config. */
-    if (parse_cfg.debugmode)                           exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
-    if (parse_cfg.debugmode_user)                      exo_cfg.flags |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
-    if (parse_cfg.disable_user_exception_handlers)     exo_cfg.flags |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
-    if (parse_cfg.enable_user_pmu_access)              exo_cfg.flags |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
-    if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
-    if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags |= EXOSPHERE_FLAG_BLANK_PRODINFO;
-    if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
+    if (parse_cfg.debugmode)                           exo_cfg.flags[0] |= EXOSPHERE_FLAG_IS_DEBUGMODE_PRIV;
+    if (parse_cfg.debugmode_user)                      exo_cfg.flags[0] |= EXOSPHERE_FLAG_IS_DEBUGMODE_USER;
+    if (parse_cfg.disable_user_exception_handlers)     exo_cfg.flags[0] |= EXOSPHERE_FLAG_DISABLE_USERMODE_EXCEPTION_HANDLERS;
+    if (parse_cfg.enable_user_pmu_access)              exo_cfg.flags[0] |= EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS;
+    if (parse_cfg.blank_prodinfo_sysmmc && !is_emummc) exo_cfg.flags[0] |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.blank_prodinfo_emummc &&  is_emummc) exo_cfg.flags[0] |= EXOSPHERE_FLAG_BLANK_PRODINFO;
+    if (parse_cfg.allow_writing_to_cal_sysmmc)         exo_cfg.flags[0] |= EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC;
+
+    exo_cfg.log_port      = parse_cfg.log_port;
+    exo_cfg.log_baud_rate = parse_cfg.log_baud_rate;
+    if (parse_cfg.log_inverted) exo_cfg.log_flags |= EXOSPHERE_LOG_FLAG_INVERTED;
 
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");

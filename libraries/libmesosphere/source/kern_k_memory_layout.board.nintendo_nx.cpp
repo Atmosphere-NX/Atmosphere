@@ -26,14 +26,14 @@ namespace ams::kern {
         constexpr size_t CarveoutSizeMax        = 512_MB - CarveoutAlignment;
 
         ALWAYS_INLINE bool SetupUartPhysicalMemoryRegion() {
-            #if   defined(MESOSPHERE_DEBUG_LOG_USE_UART_A)
-                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
-            #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_B)
-                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
-            #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_C)
-                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
-            #elif defined(MESOSPHERE_DEBUG_LOG_USE_UART_D)
-                return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006300, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+            #if   defined(MESOSPHERE_DEBUG_LOG_USE_UART)
+                switch (KSystemControl::Init::GetDebugLogUartPort()) {
+                    case 0:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006000, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                    case 1:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006040, 0x40,  KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                    case 2:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006200, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                    case 3:  return KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(0x70006300, 0x100, KMemoryRegionType_Uart | KMemoryRegionAttr_ShouldKernelMap);
+                    default: return false;
+                }
             #elif defined(MESOSPHERE_DEBUG_LOG_USE_IRAM_RINGBUFFER)
                 return true;
             #else

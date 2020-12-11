@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_dbm_rom_types.hpp"
-#include "fs_dbm_rom_path_tool.hpp"
-#include "fs_dbm_rom_key_value_storage.hpp"
+#include <stratosphere/fs/common/fs_dbm_rom_types.hpp>
+#include <stratosphere/fs/common/fs_dbm_rom_path_tool.hpp>
+#include <stratosphere/fs/common/fs_dbm_rom_key_value_storage.hpp>
 
 namespace ams::fs {
 
@@ -33,19 +33,23 @@ namespace ams::fs {
             using DirectoryInfo = RomDirectoryInfo;
             using FileInfo      = RomFileInfo;
 
-            static constexpr RomFileId ConvertToFileId(Position pos) {
+            static constexpr RomFileId PositionToFileId(Position pos) {
                 return static_cast<RomFileId>(pos);
+            }
+
+            static constexpr Position FileIdToPosition(RomFileId id) {
+                return static_cast<Position>(id);
             }
         private:
             static constexpr inline Position InvalidPosition = ~Position();
             static constexpr inline Position RootPosition = 0;
             static constexpr inline size_t ReservedDirectoryCount = 1;
 
-            static constexpr RomDirectoryId ConvertToDirectoryId(Position pos) {
+            static constexpr RomDirectoryId PositionToDirectoryId(Position pos) {
                 return static_cast<RomDirectoryId>(pos);
             }
 
-            static constexpr Position ConvertToPosition(RomDirectoryId id) {
+            static constexpr Position DirectoryIdToPosition(RomDirectoryId id) {
                 return static_cast<Position>(id);
             }
 
@@ -67,20 +71,20 @@ namespace ams::fs {
             static constexpr inline u32 MaxKeyLength = RomPathTool::MaxPathLength;
 
             template<typename ImplKeyType, typename ClientKeyType, typename ValueType>
-            class EntryMapTable : public RomKeyValueStorage<ImplKeyType, ValueType, MaxKeyLength> {
+            class EntryMapTable : public KeyValueRomStorageTemplate<ImplKeyType, ValueType, MaxKeyLength> {
                 public:
                     using ImplKey   = ImplKeyType;
                     using ClientKey = ClientKeyType;
                     using Value     = ValueType;
                     using Position  = HierarchicalRomFileTable::Position;
-                    using Base      = RomKeyValueStorage<ImplKeyType, ValueType, MaxKeyLength>;
+                    using Base      = KeyValueRomStorageTemplate<ImplKeyType, ValueType, MaxKeyLength>;
                 public:
                     Result Add(Position *out, const ClientKeyType &key, const Value &value) {
-                        return Base::AddImpl(out, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar), value);
+                        return Base::AddInternal(out, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar), value);
                     }
 
                     Result Get(Position *out_pos, Value *out_val, const ClientKeyType &key) {
-                        return Base::GetImpl(out_pos, out_val, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar));
+                        return Base::GetInternal(out_pos, out_val, key.key, key.Hash(), key.name.path, key.name.length * sizeof(RomPathChar));
                     }
 
                     Result GetByPosition(ImplKey *out_key, Value *out_val, Position pos) {
@@ -117,8 +121,8 @@ namespace ams::fs {
 
                 constexpr u32 Hash() const {
                     u32 hash = this->key.parent ^ 123456789;
-                    const RomPathChar *name = this->name.path;
-                    const RomPathChar *end  = name + this->name.length;
+                    const RomPathChar *       name = this->name.path;
+                    const RomPathChar * const end  = name + this->name.length;
                     while (name < end) {
                         const u32 cur = static_cast<u32>(static_cast<std::make_unsigned<RomPathChar>::type>(*(name++)));
                         hash = ((hash >> 5) | (hash << 27)) ^ cur;
@@ -134,10 +138,10 @@ namespace ams::fs {
             DirectoryEntryMapTable dir_table;
             FileEntryMapTable file_table;
         public:
-            static s64 QueryDirectoryEntryStorageSize(u32 count);
             static s64 QueryDirectoryEntryBucketStorageSize(s64 count);
-            static s64 QueryFileEntryStorageSize(u32 count);
+            static size_t QueryDirectoryEntrySize(size_t aux_size);
             static s64 QueryFileEntryBucketStorageSize(s64 count);
+            static size_t QueryFileEntrySize(size_t aux_size);
 
             static Result Format(SubStorage dir_bucket, SubStorage file_bucket);
         public:

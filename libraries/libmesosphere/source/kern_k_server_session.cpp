@@ -1367,4 +1367,36 @@ namespace ams::kern {
 
     #pragma GCC pop_options
 
+    void KServerSession::Dump() {
+        MESOSPHERE_ASSERT_THIS();
+
+        KScopedLightLock lk(this->lock);
+        {
+            KScopedSchedulerLock sl;
+            MESOSPHERE_RELEASE_LOG("Dump Session %p\n", this);
+
+            /* Dump current request. */
+            bool has_request = false;
+            if (this->current_request != nullptr) {
+                KThread *thread = this->current_request->GetThread();
+                const s32 thread_id = thread != nullptr ? static_cast<s32>(thread->GetId()) : -1;
+                MESOSPHERE_RELEASE_LOG("    CurrentReq %p Thread=%p ID=%d\n", this->current_request, thread, thread_id);
+                has_request = true;
+            }
+
+            /* Dump all rqeuests in list. */
+            for (auto it = this->request_list.begin(); it != this->request_list.end(); ++it) {
+                KThread *thread = it->GetThread();
+                const s32 thread_id = thread != nullptr ? static_cast<s32>(thread->GetId()) : -1;
+                MESOSPHERE_RELEASE_LOG("    Req %p Thread=%p ID=%d\n", this->current_request, thread, thread_id);
+                has_request = true;
+            }
+
+            /* If we didn't have any requests, print so. */
+            if (!has_request) {
+                MESOSPHERE_RELEASE_LOG("    None\n");
+            }
+        }
+    }
+
 }

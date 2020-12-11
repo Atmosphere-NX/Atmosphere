@@ -170,6 +170,8 @@ namespace ams::kern {
 
             constexpr KProcessAddress GetEntryPoint() const { return this->code_address; }
 
+            constexpr size_t GetMainStackSize() const { return this->main_thread_stack_size; }
+
             constexpr KMemoryManager::Pool GetMemoryPool() const { return this->memory_pool; }
 
             constexpr u64 GetRandomEntropy(size_t i) const { return this->entropy[i]; }
@@ -304,6 +306,11 @@ namespace ams::kern {
                     }
                 }
             }
+
+            const KDynamicPageManager &GetDynamicPageManager() const { return this->dynamic_page_manager; }
+            const KMemoryBlockSlabManager &GetMemoryBlockSlabManager() const { return this->memory_block_slab_manager; }
+            const KBlockInfoManager &GetBlockInfoManager() const { return this->block_info_manager; }
+            const KPageTableManager &GetPageTableManager() const { return this->page_table_manager; }
 
             constexpr KThread *GetRunningThread(s32 core) const { return this->running_threads[core]; }
             constexpr u64 GetRunningThreadIdleCount(s32 core) const { return this->running_thread_idle_counts[core]; }

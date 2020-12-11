@@ -232,12 +232,16 @@ namespace ams::kern::arch::arm64 {
                 return this->page_table.UnmapPhysicalMemoryUnsafe(address, size);
             }
 
-            void DumpTable() const {
-                return this->page_table.DumpTable();
-            }
-
             void DumpMemoryBlocks() const {
                 return this->page_table.DumpMemoryBlocks();
+            }
+
+            void DumpPageTable() const {
+                return this->page_table.DumpPageTable();
+            }
+
+            size_t CountPageTables() const {
+                return this->page_table.CountPageTables();
             }
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
@@ -267,10 +271,20 @@ namespace ams::kern::arch::arm64 {
 
             size_t GetNormalMemorySize() const { return this->page_table.GetNormalMemorySize(); }
 
+            size_t GetCodeSize() const { return this->page_table.GetCodeSize(); }
+            size_t GetCodeDataSize() const { return this->page_table.GetCodeDataSize(); }
+
+            size_t GetAliasCodeSize() const { return this->page_table.GetAliasCodeSize(); }
+            size_t GetAliasCodeDataSize() const { return this->page_table.GetAliasCodeDataSize(); }
+
             u32 GetAllocateOption() const { return this->page_table.GetAllocateOption(); }
 
             KPhysicalAddress GetHeapPhysicalAddress(KVirtualAddress address) const {
                 return this->page_table.GetHeapPhysicalAddress(address);
+            }
+
+            KVirtualAddress GetHeapVirtualAddress(KPhysicalAddress address) const {
+                return this->page_table.GetHeapVirtualAddress(address);
             }
 
             KBlockInfoManager *GetBlockInfoManager() {

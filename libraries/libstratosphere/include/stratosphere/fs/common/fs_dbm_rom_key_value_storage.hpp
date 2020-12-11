@@ -14,13 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_dbm_rom_types.hpp"
-#include "fs_substorage.hpp"
+#include <stratosphere/fs/common/fs_dbm_rom_types.hpp>
+#include <stratosphere/fs/fs_substorage.hpp>
 
 namespace ams::fs {
 
     template<typename KeyType, typename ValueType, size_t MaxAuxiliarySize>
-    class RomKeyValueStorage {
+    class KeyValueRomStorageTemplate {
         public:
             using Key         = KeyType;
             using Value       = ValueType;
@@ -57,8 +57,8 @@ namespace ams::fs {
                 return size / sizeof(Position);
             }
 
-            static constexpr s64 QueryKeyValueStorageSize(u32 num) {
-                return num * sizeof(Element);
+            static constexpr size_t QueryEntrySize(size_t aux_size) {
+                return util::AlignUp(sizeof(Element) + aux_size, alignof(Element));
             }
 
             static Result Format(SubStorage bucket, s64 count) {
@@ -69,13 +69,13 @@ namespace ams::fs {
                 return ResultSuccess();
             }
         public:
-            RomKeyValueStorage() : bucket_count(), bucket_storage(), kv_storage(), total_entry_size(), entry_count() { /* ... */ }
+            KeyValueRomStorageTemplate() : bucket_count(), bucket_storage(), kv_storage(), total_entry_size(), entry_count() { /* ... */ }
 
             Result Initialize(const SubStorage &bucket, s64 count, const SubStorage &kv) {
                 AMS_ASSERT(count > 0);
                 this->bucket_storage = bucket;
-                this->kv_storage     = kv;
                 this->bucket_count   = count;
+                this->kv_storage     = kv;
                 return ResultSuccess();
             }
 
@@ -100,82 +100,17 @@ namespace ams::fs {
             constexpr u32 GetEntryCount() const {
                 return this->entry_count;
             }
-
-            Result Add(const Key &key, u32 hash_key, const void *aux, size_t aux_size, const Value &value) {
-                AMS_ASSERT(aux != nullptr);
-                AMS_ASSERT(aux_size <= MaxAuxiliarySize);
-                Position pos;
-                return this->AddImpl(std::addressof(pos), key, hash_key, aux, aux_size, value);
-            }
-
-            Result Get(Value *out, const Key &key, u32 hash_key, const void *aux, size_t aux_size) {
-                AMS_ASSERT(aux != nullptr);
-                AMS_ASSERT(aux_size <= MaxAuxiliarySize);
-                Position pos;
-                return this->GetImpl(std::addressof(pos), out, key, hash_key, aux, aux_size);
-            }
-
-            void FindOpen(FindIndex *out) const {
-                AMS_ASSERT(out != nullptr);
-
-                out->ind = static_cast<BucketIndex>(-1);
-                out->pos = InvalidPosition;
-            }
-
-            Result FindNext(Key *out_key, Value *out_val, FindIndex *find) {
-                AMS_ASSERT(out_key != nullptr);
-                AMS_ASSERT(out_val != nullptr);
-                AMS_ASSERT(find != nullptr);
-
-                BucketIndex ind = find->ind;
-                R_UNLESS((ind < this->bucket_count) || ind == static_cast<BucketIndex>(-1), fs::ResultDbmFindKeyFinished());
-
-                s64 kv_size;
-                R_TRY(this->kv_storage.GetSize(std::addressof(kv_size)));
-
-                while (true) {
-                    if (find->pos != InvalidPosition) {
-                        Element elem;
-                        R_TRY(this->ReadKeyValue(std::addressof(elem), find->pos));
-
-                        AMS_ASSERT(elem.next == InvalidPosition || elem.next < kv_size);
-                        find->pos = elem.next;
-                        *out_key = elem.key;
-                        *out_val = elem.val;
-                        return ResultSuccess();
-                    }
-
-                    while (true) {
-                        ind++;
-                        if (ind == this->bucket_count) {
-                            find->ind = ind;
-                            find->pos = InvalidPosition;
-                            return fs::ResultDbmFindKeyFinished();
-                        }
-
-                        Position pos;
-                        R_TRY(this->ReadBucket(std::addressof(pos), ind));
-                        AMS_ASSERT(pos == InvalidPosition || pos < kv_size);
-
-                        if (pos != InvalidPosition) {
-                            find->ind = ind;
-                            find->pos = pos;
-                            break;
-                        }
-                    }
-                }
-            }
         protected:
-            Result AddImpl(Position *out, const Key &key, u32 hash_key, const void *aux, size_t aux_size, const Value &value) {
+            Result AddInternal(Position *out, const Key &key, u32 hash_key, const void *aux, size_t aux_size, const Value &value) {
                 AMS_ASSERT(out != nullptr);
-                AMS_ASSERT(aux != nullptr);
+                AMS_ASSERT(aux != nullptr || aux_size == 0);
                 AMS_ASSERT(this->bucket_count > 0);
 
                 {
                     Position pos, prev_pos;
                     Element elem;
 
-                    const Result find_res = this->FindImpl(std::addressof(pos), std::addressof(prev_pos), std::addressof(elem), key, hash_key, aux, aux_size);
+                    const Result find_res = this->FindInternal(std::addressof(pos), std::addressof(prev_pos), std::addressof(elem), key, hash_key, aux, aux_size);
                     R_UNLESS(R_FAILED(find_res),                           fs::ResultDbmAlreadyExists());
                     R_UNLESS(fs::ResultDbmKeyNotFound::Includes(find_res), find_res);
                 }
@@ -195,14 +130,14 @@ namespace ams::fs {
                 return ResultSuccess();
             }
 
-            Result GetImpl(Position *out_pos, Value *out_val, const Key &key, u32 hash_key, const void *aux, size_t aux_size) {
+            Result GetInternal(Position *out_pos, Value *out_val, const Key &key, u32 hash_key, const void *aux, size_t aux_size) {
                 AMS_ASSERT(out_pos != nullptr);
                 AMS_ASSERT(out_val != nullptr);
                 AMS_ASSERT(aux     != nullptr);
 
                 Position pos, prev_pos;
                 Element elem;
-                R_TRY(this->FindImpl(std::addressof(pos), std::addressof(prev_pos), std::addressof(elem), key, hash_key, aux, aux_size));
+                R_TRY(this->FindInternal(std::addressof(pos), std::addressof(prev_pos), std::addressof(elem), key, hash_key, aux, aux_size));
 
                 *out_pos = pos;
                 *out_val = elem.value;
@@ -246,11 +181,11 @@ namespace ams::fs {
                 return hash_key % this->bucket_count;
             }
 
-            Result FindImpl(Position *out_pos, Position *out_prev, Element *out_elem, const Key &key, u32 hash_key, const void *aux, size_t aux_size) {
+            Result FindInternal(Position *out_pos, Position *out_prev, Element *out_elem, const Key &key, u32 hash_key, const void *aux, size_t aux_size) {
                 AMS_ASSERT(out_pos != nullptr);
                 AMS_ASSERT(out_prev != nullptr);
                 AMS_ASSERT(out_elem != nullptr);
-                AMS_ASSERT(aux != nullptr);
+                AMS_ASSERT(aux != nullptr || aux_size == 0);
                 AMS_ASSERT(this->bucket_count > 0);
 
                 *out_pos = 0;
@@ -296,7 +231,7 @@ namespace ams::fs {
 
                 *out = static_cast<Position>(this->total_entry_size);
 
-                this->total_entry_size = util::AlignUp(static_cast<s64>(end_pos), s64(4));
+                this->total_entry_size = util::AlignUp(static_cast<s64>(end_pos), alignof(Position));
                 return ResultSuccess();
             }
 

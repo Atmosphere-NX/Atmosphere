@@ -282,6 +282,10 @@ namespace ams::secmon::smc {
                         return SmcResult::NotInitialized;
                     }
                     break;
+                case ConfigItem::ExosphereLogConfiguration:
+                    /* Get the log configuration. */
+                    args.r[1] = (static_cast<u64>(static_cast<u8>(secmon::GetLogPort())) << 32) | static_cast<u64>(secmon::GetLogBaudRate());
+                    break;
                 default:
                     return SmcResult::InvalidArgument;
             }

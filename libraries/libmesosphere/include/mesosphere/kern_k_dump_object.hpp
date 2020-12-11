@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,21 +14,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/fs/common/fs_file_storage.hpp>
-#include <stratosphere/ncm/ncm_package_install_task.hpp>
+#include <mesosphere/kern_common.hpp>
+#include <mesosphere/kern_select_cpu.hpp>
 
-namespace ams::ncm {
+namespace ams::kern::KDumpObject {
 
-    class SubmissionPackageInstallTask : public PackageInstallTask {
-        private:
-            class Impl;
-        private:
-            std::unique_ptr<Impl> impl;
-        public:
-            SubmissionPackageInstallTask();
-            virtual ~SubmissionPackageInstallTask() override;
+    void DumpThread();
+    void DumpThread(u64 thread_id);
 
-            Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket = false);
-    };
+    void DumpThreadCallStack();
+    void DumpThreadCallStack(u64 thread_id);
+
+    void DumpKernelObject();
+
+    void DumpHandle();
+    void DumpHandle(u64 process_id);
+
+    void DumpKernelMemory();
+    void DumpMemory();
+    void DumpMemory(u64 process_id);
+
+    void DumpProcess();
+    void DumpProcess(u64 process_id);
+
+    void DumpPort();
+    void DumpPort(u64 process_id);
 
 }

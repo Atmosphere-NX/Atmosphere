@@ -132,4 +132,29 @@ namespace ams::kern {
         return util::AlignUp(overhead_size, PageSize);
     }
 
+    void KPageHeap::DumpFreeList() const {
+        MESOSPHERE_RELEASE_LOG("KPageHeap::DumpFreeList %p\n", this);
+
+        for (size_t i = 0; i < this->num_blocks; ++i) {
+            const size_t block_size = this->blocks[i].GetSize();
+            const char *suffix;
+            size_t size;
+            if (block_size >= 1_GB) {
+                suffix = "GiB";
+                size   = block_size / 1_GB;
+            } else if (block_size >= 1_MB) {
+                suffix = "MiB";
+                size   = block_size / 1_MB;
+            } else if (block_size >= 1_KB) {
+                suffix = "KiB";
+                size   = block_size / 1_KB;
+            } else {
+                suffix = "B";
+                size   = block_size;
+            }
+
+            MESOSPHERE_RELEASE_LOG("    %4zu %s block x %zu\n", size, suffix, this->blocks[i].GetNumFreeBlocks());
+        }
+    }
+
 }

@@ -13,14 +13,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include "../fs/fs_common.hpp"
-#include "../fs/fs_path_tool.hpp"
+#include <mesosphere.hpp>
 
-namespace ams::fssystem {
+namespace ams::kern {
 
-    namespace StringTraits = ::ams::fs::StringTraits;
+    /* This overrides the panic implementation from the kernel, to prevent linking debug print into kldr. */
 
-    using PathTool = ::ams::fs::PathTool;
+    NORETURN void PanicImpl(const char *file, int line, const char *format, ...) {
+        MESOSPHERE_UNUSED(file, line, format);
+        MESOSPHERE_INIT_ABORT();
+    }
+
+    NORETURN void PanicImpl() {
+        MESOSPHERE_INIT_ABORT();
+    }
 
 }

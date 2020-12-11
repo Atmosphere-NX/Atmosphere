@@ -70,10 +70,10 @@ namespace ams::kern {
         }
 
         void DumpMemoryInfo(const KMemoryInfo &info) {
-            const char *state = GetMemoryStateName(info.state);
-            const char *perm  = GetMemoryPermissionString(info);
-            const void *start = reinterpret_cast<void *>(info.GetAddress());
-            const void *end   = reinterpret_cast<void *>(info.GetLastAddress());
+            const char *state     = GetMemoryStateName(info.state);
+            const char *perm      = GetMemoryPermissionString(info);
+            const uintptr_t start = info.GetAddress();
+            const uintptr_t end   = info.GetLastAddress();
             const size_t kb   = info.GetSize() / 1_KB;
 
             const char l = (info.attribute & KMemoryAttribute_Locked)       ? 'L' : '-';
@@ -81,7 +81,7 @@ namespace ams::kern {
             const char d = (info.attribute & KMemoryAttribute_DeviceShared) ? 'D' : '-';
             const char u = (info.attribute & KMemoryAttribute_Uncached)     ? 'U' : '-';
 
-            MESOSPHERE_LOG("%p - %p (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.ipc_lock_count, info.device_use_count);
+            MESOSPHERE_LOG("0x%10lx - 0x%10lx (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.ipc_lock_count, info.device_use_count);
         }
 
     }

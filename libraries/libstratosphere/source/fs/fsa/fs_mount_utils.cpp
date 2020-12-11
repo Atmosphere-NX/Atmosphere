@@ -24,9 +24,9 @@ namespace ams::fs::impl {
 
         const char *FindMountNameDriveSeparator(const char *path) {
             for (const char *cur = path; cur < path + MountNameLengthMax + 1; cur++) {
-                if (PathTool::IsDriveSeparator(*cur)) {
+                if (*cur == StringTraits::DriveSeparator) {
                     return cur;
-                } else if (PathTool::IsNullTerminator(*cur)) {
+                } else if (PathNormalizer::IsNullTerminator(*cur)) {
                     break;
                 }
             }
@@ -35,7 +35,7 @@ namespace ams::fs::impl {
 
         Result GetMountNameAndSubPath(MountName *out_mount_name, const char **out_sub_path, const char *path) {
             /* Handle the Host-path case. */
-            if (PathTool::IsWindowsAbsolutePath(path) || PathTool::IsUnc(path)) {
+            if (fs::IsWindowsDrive(path) || fs::IsUnc(path)) {
                 std::strncpy(out_mount_name->str, HostRootFileSystemMountName, MountNameLengthMax);
                 out_mount_name->str[MountNameLengthMax] = '\x00';
                 return ResultSuccess();
@@ -51,8 +51,8 @@ namespace ams::fs::impl {
 
             /* Ensure the result sub-path is valid. */
             const char *sub_path = drive_separator + 1;
-            R_UNLESS(!PathTool::IsNullTerminator(sub_path[0]), fs::ResultInvalidMountName());
-            R_UNLESS(PathTool::IsAnySeparator(sub_path[0]),    fs::ResultInvalidPathFormat());
+            R_UNLESS(!PathNormalizer::IsNullTerminator(sub_path[0]), fs::ResultInvalidMountName());
+            R_UNLESS(PathNormalizer::IsAnySeparator(sub_path[0]),    fs::ResultInvalidPathFormat());
 
             /* Set output. */
             std::memcpy(out_mount_name->str, path, len);
@@ -64,17 +64,17 @@ namespace ams::fs::impl {
     }
 
     bool IsValidMountName(const char *name) {
-        if (PathTool::IsNullTerminator(*name)) {
+        if (PathNormalizer::IsNullTerminator(name[0])) {
             return false;
         }
 
-        if (PathTool::IsWindowsDriveCharacter(name[0]) && PathTool::IsNullTerminator(name[1])) {
+        if ((('a' <= name[0] && name[0] <= 'z') || ('A' <= name[0] && name[0] <= 'Z')) && PathNormalizer::IsNullTerminator(name[1])) {
             return false;
         }
 
         size_t len = 0;
-        for (const char *cur = name; !PathTool::IsNullTerminator(*cur); cur++) {
-            if (PathTool::IsDriveSeparator(*cur) || PathTool::IsSeparator(*cur)) {
+        for (const char *cur = name; !PathNormalizer::IsNullTerminator(*cur); cur++) {
+            if (*cur == StringTraits::DriveSeparator || PathNormalizer::IsSeparator(*cur)) {
                 return false;
             }
 
@@ -85,10 +85,6 @@ namespace ams::fs::impl {
 
         /* TODO: N validates that the mount name decodes via utf-8 here. */
         return true;
-    }
-
-    bool IsWindowsDrive(const char *name) {
-        return PathTool::IsWindowsAbsolutePath(name);
     }
 
     bool IsReservedMountName(const char *name) {

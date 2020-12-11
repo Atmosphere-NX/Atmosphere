@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -13,22 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 #pragma once
-#include <stratosphere/fs/common/fs_file_storage.hpp>
-#include <stratosphere/ncm/ncm_package_install_task.hpp>
+#include <vapours/common.hpp>
+#include <vapours/assert.hpp>
 
-namespace ams::ncm {
+namespace ams::util {
 
-    class SubmissionPackageInstallTask : public PackageInstallTask {
-        private:
-            class Impl;
-        private:
-            std::unique_ptr<Impl> impl;
-        public:
-            SubmissionPackageInstallTask();
-            virtual ~SubmissionPackageInstallTask() override;
-
-            Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket = false);
+    enum CharacterEncodingResult {
+        CharacterEncodingResult_Success            = 0,
+        CharacterEncodingResult_InsufficientLength = 1,
+        CharacterEncodingResult_InvalidFormat      = 2,
     };
+
+    CharacterEncodingResult ConvertCharacterUtf8ToUtf32(u32 *dst, const char *src);
+
+    CharacterEncodingResult PickOutCharacterFromUtf8String(char *dst, const char **str);
 
 }

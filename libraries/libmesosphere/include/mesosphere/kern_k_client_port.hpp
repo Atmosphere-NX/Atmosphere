@@ -42,6 +42,10 @@ namespace ams::kern {
 
             constexpr const KPort *GetParent() const { return this->parent; }
 
+            ALWAYS_INLINE s32 GetNumSessions()  const { return this->num_sessions; }
+            ALWAYS_INLINE s32 GetPeakSessions() const { return this->peak_sessions; }
+            ALWAYS_INLINE s32 GetMaxSessions()  const { return this->max_sessions; }
+
             bool IsLight() const;
 
             /* Overridden virtual functions. */

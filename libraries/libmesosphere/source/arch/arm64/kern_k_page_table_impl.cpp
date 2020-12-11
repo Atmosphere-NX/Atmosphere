@@ -431,5 +431,28 @@ namespace ams::kern::arch::arm64 {
         }
     }
 
+    size_t KPageTableImpl::CountPageTables() const {
+        size_t num_tables = 0;
+
+        #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
+        {
+            ++num_tables;
+            for (size_t l1_index = 0; l1_index < this->num_entries; ++l1_index) {
+                auto &l1_entry = this->table[l1_index];
+                if (l1_entry.IsTable()) {
+                    ++num_tables;
+                    for (size_t l2_index = 0; l2_index < MaxPageTableEntries; ++l2_index) {
+                        auto *l2_entry = GetPointer<L2PageTableEntry>(GetTableEntry(KMemoryLayout::GetLinearVirtualAddress(l1_entry.GetTable()), l2_index));
+                        if (l2_entry->IsTable()) {
+                            ++num_tables;
+                        }
+                    }
+                }
+            }
+        }
+        #endif
+
+        return num_tables;
+    }
 
 }

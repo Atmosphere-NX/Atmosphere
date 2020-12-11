@@ -14,11 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "../fs/fs_common.hpp"
-#include "../fs/fs_file.hpp"
-#include "../fs/fs_directory.hpp"
-#include "../fs/fs_filesystem.hpp"
-#include "fssystem_path_tool.hpp"
+#include <stratosphere/fs/fs_common.hpp>
+#include <stratosphere/fs/fs_file.hpp>
+#include <stratosphere/fs/fs_directory.hpp>
+#include <stratosphere/fs/fs_filesystem.hpp>
+#include <stratosphere/fs/fs_path_utils.hpp>
 
 namespace ams::fssystem {
 
@@ -70,7 +70,7 @@ namespace ams::fssystem {
                 }
 
                 /* Restore parent path. */
-                work_path[parent_len] = StringTraits::NullTerminator;
+                work_path[parent_len] = fs::StringTraits::NullTerminator;
             }
 
             return ResultSuccess();
@@ -91,13 +91,13 @@ namespace ams::fssystem {
 
         /* Copy root path in, add a / if necessary. */
         std::memcpy(work_path, root_path, root_path_len);
-        if (!PathTool::IsSeparator(work_path[root_path_len - 1])) {
-            work_path[root_path_len++] = StringTraits::DirectorySeparator;
+        if (!fs::PathNormalizer::IsSeparator(work_path[root_path_len - 1])) {
+            work_path[root_path_len++] = fs::StringTraits::DirectorySeparator;
         }
 
         /* Make sure the result path is still valid. */
         R_UNLESS(root_path_len <= fs::EntryNameLengthMax, fs::ResultTooLongPath());
-        work_path[root_path_len] = StringTraits::NullTerminator;
+        work_path[root_path_len] = fs::StringTraits::NullTerminator;
 
         return impl::IterateDirectoryRecursivelyImpl(fs, work_path, work_path_size, dir_ent_buf, on_enter_dir, on_exit_dir, on_file);
     }
@@ -111,7 +111,7 @@ namespace ams::fssystem {
 
     template<typename OnEnterDir, typename OnExitDir, typename OnFile>
     Result IterateDirectoryRecursively(fs::fsa::IFileSystem *fs, OnEnterDir on_enter_dir, OnExitDir on_exit_dir, OnFile on_file) {
-        return IterateDirectoryRecursively(fs, PathTool::RootPath, on_enter_dir, on_exit_dir, on_file);
+        return IterateDirectoryRecursively(fs, fs::PathNormalizer::RootPath, on_enter_dir, on_exit_dir, on_file);
     }
 
     /* TODO: Cleanup API */

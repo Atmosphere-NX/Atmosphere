@@ -48,6 +48,8 @@ namespace ams::kern {
             static size_t GetSlabHeapSize() { return s_slab_heap.GetSlabHeapSize(); }
             static size_t GetPeakIndex() { return s_slab_heap.GetPeakIndex(); }
             static uintptr_t GetSlabHeapAddress() { return s_slab_heap.GetSlabHeapAddress(); }
+
+            static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
     };
 
     template<typename Derived, typename Base>
@@ -92,7 +94,7 @@ namespace ams::kern {
             virtual uintptr_t GetPostDestroyArgument() const { return 0; }
 
             size_t GetSlabIndex() const {
-                return s_slab_heap.GetIndex(static_cast<const Derived *>(this));
+                return s_slab_heap.GetObjectIndex(static_cast<const Derived *>(this));
             }
         public:
             static void InitializeSlabHeap(void *memory, size_t memory_size) {
@@ -116,6 +118,8 @@ namespace ams::kern {
             static size_t GetSlabHeapSize() { return s_slab_heap.GetSlabHeapSize(); }
             static size_t GetPeakIndex() { return s_slab_heap.GetPeakIndex(); }
             static uintptr_t GetSlabHeapAddress() { return s_slab_heap.GetSlabHeapAddress(); }
+
+            static size_t GetNumRemaining() { return s_slab_heap.GetNumRemaining(); }
     };
 
 }

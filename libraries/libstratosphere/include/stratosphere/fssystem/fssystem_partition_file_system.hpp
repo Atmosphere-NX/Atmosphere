@@ -49,21 +49,21 @@ namespace ams::fssystem {
 
             Result GetFileBaseOffset(s64 *out_offset, const char *path);
 
-            virtual Result CreateFileImpl(const char *path, s64 size, int option) override;
-            virtual Result DeleteFileImpl(const char *path) override;
-            virtual Result CreateDirectoryImpl(const char *path) override;
-            virtual Result DeleteDirectoryImpl(const char *path) override;
-            virtual Result DeleteDirectoryRecursivelyImpl(const char *path) override;
-            virtual Result RenameFileImpl(const char *old_path, const char *new_path) override;
-            virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) override;
-            virtual Result GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) override;
-            virtual Result OpenFileImpl(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) override;
-            virtual Result OpenDirectoryImpl(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) override;
-            virtual Result CommitImpl() override;
-            virtual Result CleanDirectoryRecursivelyImpl(const char *path) override;
+            virtual Result DoCreateFile(const char *path, s64 size, int option) override;
+            virtual Result DoDeleteFile(const char *path) override;
+            virtual Result DoCreateDirectory(const char *path) override;
+            virtual Result DoDeleteDirectory(const char *path) override;
+            virtual Result DoDeleteDirectoryRecursively(const char *path) override;
+            virtual Result DoRenameFile(const char *old_path, const char *new_path) override;
+            virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override;
+            virtual Result DoGetEntryType(fs::DirectoryEntryType *out, const char *path) override;
+            virtual Result DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) override;
+            virtual Result DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) override;
+            virtual Result DoCommit() override;
+            virtual Result DoCleanDirectoryRecursively(const char *path) override;
 
             /* These aren't accessible as commands. */
-            virtual Result CommitProvisionallyImpl(s64 counter) override;
+            virtual Result DoCommitProvisionally(s64 counter) override;
     };
 
     using PartitionFileSystem       = PartitionFileSystemCore<PartitionFileSystemMeta>;

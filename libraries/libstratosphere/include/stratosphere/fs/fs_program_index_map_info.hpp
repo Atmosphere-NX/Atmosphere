@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,21 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/fs/common/fs_file_storage.hpp>
-#include <stratosphere/ncm/ncm_package_install_task.hpp>
+#include <stratosphere/fs/fs_common.hpp>
 
-namespace ams::ncm {
+namespace ams::fs {
 
-    class SubmissionPackageInstallTask : public PackageInstallTask {
-        private:
-            class Impl;
-        private:
-            std::unique_ptr<Impl> impl;
-        public:
-            SubmissionPackageInstallTask();
-            virtual ~SubmissionPackageInstallTask() override;
-
-            Result Initialize(fs::FileHandle handle, StorageId storage_id, void *buffer, size_t buffer_size, bool ignore_ticket = false);
+    struct ProgramIndexMapInfo {
+        ncm::ProgramId program_id;
+        ncm::ProgramId base_program_id;
+        u8 program_index;
+        u8 pad[0xF];
     };
+    static_assert(util::is_pod<ProgramIndexMapInfo>::value);
+    static_assert(sizeof(ProgramIndexMapInfo) == 0x20);
 
 }
