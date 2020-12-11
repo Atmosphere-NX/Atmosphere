@@ -1,4 +1,16 @@
 # Changelog
+## 0.16.1
++ Support was added for 11.0.1.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+    + A new svc::InfoType added in 11.0.0 was implemented (it wasn't discovered before 0.16.0 released).
+    + The new Control Flow Integrity (CFI) logic added in 11.0.0 kernel was implemented.
++ `fs` logic was refactored and cleaned up to reflect some newer sysmodule behavioral and structural changes.
++ `exosphère` was updated to allow dynamic control of what uart port is used for logging.
+  + This can be controlled by editing the `log_port`, `log_baud_rate`, and `log_inverted` fields in `exosphere.ini`.
++ `mesosphère` was updated to improve debugging capabilities ().
+  + This is still a work in progress, but developers may be interested.
++ A bug was fixed that caused `fatal` to fatal error if the fatal process was already being debugged.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.16.0
 + Support was added for 11.0.0.
   + `exosphère` was updated to reflect the latest official secure monitor behavior.
