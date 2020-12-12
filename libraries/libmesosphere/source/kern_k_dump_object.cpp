@@ -657,11 +657,11 @@ namespace ams::kern::KDumpObject {
     void DumpKernelCpuUtilization() {
         MESOSPHERE_RELEASE_LOG("Dump Kernel Cpu Utilization\n");
 
-        constexpr size_t MaxLogDepth = 64;
+        constexpr size_t MaxObjects = 64;
         {
             /* Create tracking arrays. */
-            KAutoObject *objects[MaxLogDepth];
-            u32 cpu_time[MaxLogDepth];
+            KAutoObject *objects[MaxObjects];
+            u32 cpu_time[MaxObjects];
 
             s64 start_tick;
             size_t i, n;
@@ -679,7 +679,7 @@ namespace ams::kern::KDumpObject {
                 for (auto it = accessor.begin(); it != end; ++it) {
                     KThread *thread = static_cast<KThread *>(std::addressof(*it));
                     if (KProcess *process = thread->GetOwnerProcess(); process == nullptr) {
-                        if (AMS_LIKELY(i < MaxLogDepth)) {
+                        if (AMS_LIKELY(i < MaxObjects)) {
                             if (AMS_LIKELY(thread->Open())) {
                                 cpu_time[i] = thread->GetCpuTime();
                                 objects[i]  = thread;
@@ -727,11 +727,13 @@ namespace ams::kern::KDumpObject {
     void DumpCpuUtilization() {
         MESOSPHERE_RELEASE_LOG("Dump Cpu Utilization\n");
 
-        constexpr size_t MaxLogDepth = 64;
+        /* NOTE: Nintendo uses 0x40 as maximum here, but the KProcess slabheap has 0x50 entries. */
+        /*       We have the stack space, so there's no reason not to allow logging all processes. */
+        constexpr size_t MaxObjects = 0x50;
         {
             /* Create tracking arrays. */
-            KAutoObject *objects[MaxLogDepth];
-            u32 cpu_time[MaxLogDepth];
+            KAutoObject *objects[MaxObjects];
+            u32 cpu_time[MaxObjects];
 
             s64 start_tick;
             size_t i, n;
@@ -748,7 +750,7 @@ namespace ams::kern::KDumpObject {
                 i = 0;
                 for (auto it = accessor.begin(); it != end; ++it) {
                     KProcess *process = static_cast<KProcess *>(std::addressof(*it));
-                    if (AMS_LIKELY(i < MaxLogDepth)) {
+                    if (AMS_LIKELY(i < MaxObjects)) {
                         if (AMS_LIKELY(process->Open())) {
                             cpu_time[i] = process->GetCpuTime();
                             objects[i]  = process;
@@ -793,13 +795,13 @@ namespace ams::kern::KDumpObject {
     }
 
     void DumpCpuUtilization(u64 process_id) {
-        MESOSPHERE_RELEASE_LOG("Dump Kernel Cpu Utilization\n");
+        MESOSPHERE_RELEASE_LOG("Dump Cpu Utilization\n");
 
-        constexpr size_t MaxLogDepth = 64;
+        constexpr size_t MaxObjects = 64;
         {
             /* Create tracking arrays. */
-            KAutoObject *objects[MaxLogDepth];
-            u32 cpu_time[MaxLogDepth];
+            KAutoObject *objects[MaxObjects];
+            u32 cpu_time[MaxObjects];
 
             s64 start_tick;
             size_t i, n;
@@ -817,7 +819,7 @@ namespace ams::kern::KDumpObject {
                 for (auto it = accessor.begin(); it != end; ++it) {
                     KThread *thread = static_cast<KThread *>(std::addressof(*it));
                     if (KProcess *process = thread->GetOwnerProcess(); process != nullptr && process->GetId() == process_id) {
-                        if (AMS_LIKELY(i < MaxLogDepth)) {
+                        if (AMS_LIKELY(i < MaxObjects)) {
                             if (AMS_LIKELY(thread->Open())) {
                                 cpu_time[i] = thread->GetCpuTime();
                                 objects[i]  = thread;
