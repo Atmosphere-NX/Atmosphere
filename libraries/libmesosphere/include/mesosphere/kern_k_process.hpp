@@ -279,6 +279,7 @@ namespace ams::kern {
             constexpr KProcessAddress GetProcessLocalRegionAddress() const { return this->plr_address; }
 
             void AddCpuTime(s64 diff) { this->cpu_time += diff; }
+            s64 GetCpuTime() { return this->cpu_time; }
 
             constexpr s64 GetScheduledCount() const { return this->schedule_count; }
             void IncrementScheduledCount() { ++this->schedule_count; }
