@@ -39,6 +39,7 @@ namespace ams::kern {
             }
 
             static NOINLINE void HandleDpc();
+            static void Sync();
     };
 
 }

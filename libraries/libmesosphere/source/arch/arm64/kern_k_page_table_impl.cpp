@@ -312,9 +312,6 @@ namespace ams::kern::arch::arm64 {
         const uintptr_t end  = start + size;
         const uintptr_t last = end - 1;
 
-        MESOSPHERE_LOG("==== PAGE TABLE DUMP START (%012lx - %012lx) ====\n", start, last);
-        ON_SCOPE_EXIT { MESOSPHERE_LOG("==== PAGE TABLE DUMP END ====\n"); };
-
         /* Define tracking variables. */
         bool unmapped = false;
         uintptr_t unmapped_start = 0;
@@ -344,11 +341,27 @@ namespace ams::kern::arch::arm64 {
                 cur = util::AlignDown(cur, L1BlockSize);
                 if (unmapped) {
                     unmapped = false;
-                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                    MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, cur - 1);
                 }
 
                 /* Print. */
-                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l1_entry));
+                MESOSPHERE_RELEASE_LOG("%016lx: %016lx PA=%p SZ=1G Mapped=%d UXN=%d PXN=%d Cont=%d nG=%d AF=%d SH=%x RO=%d UA=%d NS=%d AttrIndx=%d NoMerge=%d,%d,%d\n", cur,
+                                                                                                                                                                        *reinterpret_cast<const u64 *>(l1_entry),
+                                                                                                                                                                        reinterpret_cast<void *>(GetInteger(l1_entry->GetBlock())),
+                                                                                                                                                                        l1_entry->IsMapped(),
+                                                                                                                                                                        l1_entry->IsUserExecuteNever(),
+                                                                                                                                                                        l1_entry->IsPrivilegedExecuteNever(),
+                                                                                                                                                                        l1_entry->IsContiguous(),
+                                                                                                                                                                        !l1_entry->IsGlobal(),
+                                                                                                                                                                        static_cast<int>(l1_entry->GetAccessFlag()),
+                                                                                                                                                                        static_cast<unsigned int>(l1_entry->GetShareable()),
+                                                                                                                                                                        l1_entry->IsReadOnly(),
+                                                                                                                                                                        l1_entry->IsUserAccessible(),
+                                                                                                                                                                        l1_entry->IsNonSecure(),
+                                                                                                                                                                        static_cast<int>(l1_entry->GetPageAttribute()),
+                                                                                                                                                                        l1_entry->IsHeadMergeDisabled(),
+                                                                                                                                                                        l1_entry->IsHeadAndBodyMergeDisabled(),
+                                                                                                                                                                        l1_entry->IsTailMergeDisabled());
 
                 /* Advance. */
                 cur += L1BlockSize;
@@ -373,11 +386,27 @@ namespace ams::kern::arch::arm64 {
                 cur = util::AlignDown(cur, L2BlockSize);
                 if (unmapped) {
                     unmapped = false;
-                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                    MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, cur - 1);
                 }
 
                 /* Print. */
-                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l2_entry));
+                MESOSPHERE_RELEASE_LOG("%016lx: %016lx PA=%p SZ=2M Mapped=%d UXN=%d PXN=%d Cont=%d nG=%d AF=%d SH=%x RO=%d UA=%d NS=%d AttrIndx=%d NoMerge=%d,%d,%d\n", cur,
+                                                                                                                                                                        *reinterpret_cast<const u64 *>(l2_entry),
+                                                                                                                                                                        reinterpret_cast<void *>(GetInteger(l2_entry->GetBlock())),
+                                                                                                                                                                        l2_entry->IsMapped(),
+                                                                                                                                                                        l2_entry->IsUserExecuteNever(),
+                                                                                                                                                                        l2_entry->IsPrivilegedExecuteNever(),
+                                                                                                                                                                        l2_entry->IsContiguous(),
+                                                                                                                                                                        !l2_entry->IsGlobal(),
+                                                                                                                                                                        static_cast<int>(l2_entry->GetAccessFlag()),
+                                                                                                                                                                        static_cast<unsigned int>(l2_entry->GetShareable()),
+                                                                                                                                                                        l2_entry->IsReadOnly(),
+                                                                                                                                                                        l2_entry->IsUserAccessible(),
+                                                                                                                                                                        l2_entry->IsNonSecure(),
+                                                                                                                                                                        static_cast<int>(l2_entry->GetPageAttribute()),
+                                                                                                                                                                        l2_entry->IsHeadMergeDisabled(),
+                                                                                                                                                                        l2_entry->IsHeadAndBodyMergeDisabled(),
+                                                                                                                                                                        l2_entry->IsTailMergeDisabled());
 
                 /* Advance. */
                 cur += L2BlockSize;
@@ -402,11 +431,27 @@ namespace ams::kern::arch::arm64 {
                 cur = util::AlignDown(cur, L3BlockSize);
                 if (unmapped) {
                     unmapped = false;
-                    MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, cur - 1);
+                    MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, cur - 1);
                 }
 
                 /* Print. */
-                MESOSPHERE_LOG("%012lx: %016lx\n", cur, *reinterpret_cast<const u64 *>(l3_entry));
+                MESOSPHERE_RELEASE_LOG("%016lx: %016lx PA=%p SZ=4K Mapped=%d UXN=%d PXN=%d Cont=%d nG=%d AF=%d SH=%x RO=%d UA=%d NS=%d AttrIndx=%d NoMerge=%d,%d,%d\n", cur,
+                                                                                                                                                                        *reinterpret_cast<const u64 *>(l3_entry),
+                                                                                                                                                                        reinterpret_cast<void *>(GetInteger(l3_entry->GetBlock())),
+                                                                                                                                                                        l3_entry->IsMapped(),
+                                                                                                                                                                        l3_entry->IsUserExecuteNever(),
+                                                                                                                                                                        l3_entry->IsPrivilegedExecuteNever(),
+                                                                                                                                                                        l3_entry->IsContiguous(),
+                                                                                                                                                                        !l3_entry->IsGlobal(),
+                                                                                                                                                                        static_cast<int>(l3_entry->GetAccessFlag()),
+                                                                                                                                                                        static_cast<unsigned int>(l3_entry->GetShareable()),
+                                                                                                                                                                        l3_entry->IsReadOnly(),
+                                                                                                                                                                        l3_entry->IsUserAccessible(),
+                                                                                                                                                                        l3_entry->IsNonSecure(),
+                                                                                                                                                                        static_cast<int>(l3_entry->GetPageAttribute()),
+                                                                                                                                                                        l3_entry->IsHeadMergeDisabled(),
+                                                                                                                                                                        l3_entry->IsHeadAndBodyMergeDisabled(),
+                                                                                                                                                                        l3_entry->IsTailMergeDisabled());
 
                 /* Advance. */
                 cur += L3BlockSize;
@@ -427,7 +472,7 @@ namespace ams::kern::arch::arm64 {
 
         /* Print the last unmapped range if necessary. */
         if (unmapped) {
-            MESOSPHERE_LOG("%012lx - %012lx: ---\n", unmapped_start, last);
+            MESOSPHERE_RELEASE_LOG("%016lx - %016lx: not mapped\n", unmapped_start, last);
         }
     }
 

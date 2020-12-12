@@ -166,6 +166,12 @@ namespace ams::kern::KDumpObject {
             MESOSPHERE_RELEASE_LOG("\n\n");
         }
 
+        void DumpPageTable(KProcess *process) {
+            MESOSPHERE_RELEASE_LOG("Process ID=%3lu (%s)\n", process->GetId(), process->GetName());
+            process->GetPageTable().DumpPageTable();
+            MESOSPHERE_RELEASE_LOG("\n\n");
+        }
+
         void DumpProcess(KProcess *process) {
             MESOSPHERE_RELEASE_LOG("Process ID=%3lu index=%3zu State=%d (%s)\n", process->GetId(), process->GetSlabIndex(), process->GetState(), process->GetName());
         }
@@ -598,6 +604,60 @@ namespace ams::kern::KDumpObject {
         }
 
         MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpKernelPageTable() {
+        MESOSPHERE_RELEASE_LOG("Dump Kernel PageTable\n");
+
+        {
+            Kernel::GetKernelPageTable().DumpPageTable();
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpPageTable() {
+        MESOSPHERE_RELEASE_LOG("Dump Process\n");
+
+        {
+            /* Lock the list. */
+            KProcess::ListAccessor accessor;
+            const auto end = accessor.end();
+
+            /* Dump each process. */
+            for (auto it = accessor.begin(); it != end; ++it) {
+                DumpPageTable(static_cast<KProcess *>(std::addressof(*it)));
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpPageTable(u64 process_id) {
+        MESOSPHERE_RELEASE_LOG("Dump PageTable\n");
+
+        {
+            /* Find and dump the target process. */
+            if (KProcess *process = KProcess::GetProcessFromId(process_id); process != nullptr) {
+                ON_SCOPE_EXIT { process->Close(); };
+                DumpPageTable(process);
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpKernelCpuUtilization() {
+        /* TODO */
+    }
+
+    void DumpCpuUtilization() {
+        /* TODO */
+    }
+
+    void DumpCpuUtilization(u64 process_id) {
+        /* TODO */
+        MESOSPHERE_UNUSED(process_id);
     }
 
     void DumpProcess(u64 process_id) {

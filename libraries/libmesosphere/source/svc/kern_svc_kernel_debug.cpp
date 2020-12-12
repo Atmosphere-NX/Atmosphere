@@ -60,6 +60,31 @@ namespace ams::kern::svc {
                             KDumpObject::DumpMemory(arg0);
                         }
                         break;
+                    case ams::svc::KernelDebugType_PageTable:
+                        if (arg0 == static_cast<u64>(-2)) {
+                            KDumpObject::DumpKernelPageTable();
+                        } else if (arg0 == static_cast<u64>(-1)) {
+                            KDumpObject::DumpPageTable();
+                        } else {
+                            KDumpObject::DumpPageTable(arg0);
+                        }
+                        break;
+                    case ams::svc::KernelDebugType_CpuUtilization:
+                        {
+                            const auto old_prio = GetCurrentThread().GetBasePriority();
+                            GetCurrentThread().SetBasePriority(3);
+
+                            if (arg0 == static_cast<u64>(-2)) {
+                                KDumpObject::DumpKernelCpuUtilization();
+                            } else if (arg0 == static_cast<u64>(-1)) {
+                                KDumpObject::DumpCpuUtilization();
+                            } else {
+                                KDumpObject::DumpCpuUtilization(arg0);
+                            }
+
+                            GetCurrentThread().SetBasePriority(old_prio);
+                        }
+                        break;
                     case ams::svc::KernelDebugType_Process:
                         if (arg0 == static_cast<u64>(-1)) {
                             KDumpObject::DumpProcess();

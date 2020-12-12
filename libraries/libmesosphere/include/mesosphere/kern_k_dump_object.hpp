@@ -34,6 +34,14 @@ namespace ams::kern::KDumpObject {
     void DumpMemory();
     void DumpMemory(u64 process_id);
 
+    void DumpKernelPageTable();
+    void DumpPageTable();
+    void DumpPageTable(u64 process_id);
+
+    void DumpKernelCpuUtilization();
+    void DumpCpuUtilization();
+    void DumpCpuUtilization(u64 process_id);
+
     void DumpProcess();
     void DumpProcess(u64 process_id);
 
