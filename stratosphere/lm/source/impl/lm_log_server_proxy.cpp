@@ -10,7 +10,8 @@ namespace ams::lm::impl {
 
     void LogServerProxy::DisposeHtcsThread() {
         this->finalize_event.Signal();
-        /* nn::htcs::Close(this->htcs_client_fd); */
+        /* TODO: htcs support */
+        /* htcs::Close(this->htcs_client_fd); */
         os::WaitThread(std::addressof(this->htcs_thread));
         os::DestroyThread(std::addressof(this->htcs_thread));
     }
@@ -25,7 +26,7 @@ namespace ams::lm::impl {
         size_t offset = 0;
         auto send_data = reinterpret_cast<const u8*>(log_data);
         while (true) {
-            auto sent_size = htcs::Send(this->htcs_client_fd, send_data + offset, log_size - offset, 0);
+            const auto sent_size = htcs::Send(this->htcs_client_fd, send_data + offset, log_size - offset, 0);
             if (this->htcs_client_fd & 0x80000000) {
                 break;
             }

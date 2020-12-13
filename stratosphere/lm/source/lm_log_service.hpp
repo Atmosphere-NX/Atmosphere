@@ -18,8 +18,14 @@
 
 namespace ams::lm {
 
-    /* TODO: define a proper enum after identifying what each value means. */
-    using LogDestination = u32;
+    /* Log destination. */
+    enum LogDestination : u32 {
+        LogDestination_TargetManager = (1 << 0),
+        LogDestination_Uart          = (1 << 1),
+        LogDestination_UartIfSleep   = (1 << 2),
+
+        LogDestination_All           = 0xFFFF,
+    };
 
     namespace impl {
 

@@ -21,7 +21,7 @@ namespace ams::diag::detail {
 
         os::SdkMutex g_log_observer_lock;
 
-        const char *g_log_severity_color_table[LogSeverity_Count] = {
+        constexpr const char *g_log_severity_color_table[LogSeverity_Count] = {
             "\x1B[90m",        /* Dark gray for Trace. */
             "",                /* No special color for Info. */
             "\x1B[33m",        /* Yellow for Warn. */

@@ -25,13 +25,16 @@ namespace ams::lm {
 
     namespace {
 
-        bool g_initialized;
+        bool g_initialized = false;
 
     }
 
     void Initialize() {
         AMS_ASSERT(!g_initialized);
+
+        /* TODO: libnx bindings. */
         /* R_ABORT_UNLESS(lmInitialize()); */
+
         /* Log by default via LogManager. */
         diag::ReplaceDefaultLogObserver(detail::LogManagerLogObserver);
         g_initialized = true;
@@ -39,7 +42,10 @@ namespace ams::lm {
 
     void Finalize() {
         AMS_ASSERT(g_initialized);
+
+        /* TODO: libnx bindings. */
         /* lmExit(); */
+        
         diag::ResetDefaultLogObserver();
         g_initialized = false;
     }

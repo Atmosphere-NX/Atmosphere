@@ -26,4 +26,9 @@ namespace ams::util {
     int TSNPrintf(char *dst, size_t dst_size, const char *fmt, ...);
     int TVSNPrintf(char *dst, size_t dst_size, const char *fmt, std::va_list vl);
 
+    using PrintFunction = void (*)(void *user_data, const char *str, int unk);
+
+    void FormatString(PrintFunction print_fn, void *user_data, const char *fmt, ...);
+    void VFormatString(PrintFunction print_fn, void *user_data, const char *fmt, std::va_list vl);
+
 }

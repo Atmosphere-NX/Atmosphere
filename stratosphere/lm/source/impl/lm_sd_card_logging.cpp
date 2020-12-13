@@ -1,7 +1,7 @@
 #include "lm_sd_card_logging.hpp"
 
 namespace ams::lm::impl {
- 
+
     namespace {
 
         os::SystemEvent g_sd_card_detection_event;

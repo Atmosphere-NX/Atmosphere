@@ -22,8 +22,8 @@ namespace ams::lm::detail {
         os::SdkMutex g_log_observer_lock;
         u8 g_packet_transmitter_buffer[0x400];
 
-        bool LogPacketTransmitterFlushFunction(const void *data, size_t data_size) {
-            /* TODO: lm OpenLogger, Log, SetDestination libnx bindings... */
+        bool LogPacketTransmitterFlushFunction(const void *log_data, size_t log_data_size) {
+            /* TODO: libnx bindings. */
             return true;
         }
 
@@ -51,7 +51,7 @@ namespace ams::lm::detail {
             auto file_name_len = strlen(file_name);
             if (file_name /* && !util::VerifyUtf8String(file_name, file_name_len) */) {
                 file_name = DefaultInvalidString;
-                file_name_len = strlen(DefaultInvalidString);
+                file_name_len = __builtin_strlen(DefaultInvalidString);
             }
             packet_transmitter.PushFileName(file_name, file_name_len);
 
@@ -60,7 +60,7 @@ namespace ams::lm::detail {
             auto function_name_len = strlen(function_name);
             if (function_name /* && !util::VerifyUtf8String(function_name, function_name_len) */) {
                 function_name = DefaultInvalidString;
-                function_name_len = strlen(DefaultInvalidString);
+                function_name_len = __builtin_strlen(DefaultInvalidString);
             }
             packet_transmitter.PushFunctionName(function_name, function_name_len);
 
@@ -69,7 +69,7 @@ namespace ams::lm::detail {
             auto module_name_len = strlen(module_name);
             if (module_name /* && !util::VerifyUtf8String(module_name, module_name_len) */) {
                 module_name = DefaultInvalidString;
-                module_name_len = strlen(DefaultInvalidString);
+                module_name_len = __builtin_strlen(DefaultInvalidString);
             }
             packet_transmitter.PushModuleName(module_name, module_name_len);
 
@@ -78,7 +78,7 @@ namespace ams::lm::detail {
             auto thread_name_len = strlen(thread_name);
             if (thread_name /* && !util::VerifyUtf8String(thread_name, thread_name_len) */) {
                 thread_name = DefaultInvalidString;
-                thread_name_len = strlen(DefaultInvalidString);
+                thread_name_len = __builtin_strlen(DefaultInvalidString);
             }
             packet_transmitter.PushThreadName(thread_name, thread_name_len);
 

@@ -131,7 +131,7 @@ namespace {
             else {
                 /* Handle our module. */
                 g_pm_module.GetEventPointer()->Clear();
-                if(R_SUCCEEDED(g_pm_module.GetRequest(std::addressof(cur_state), std::addressof(pm_flags)))) {
+                if (R_SUCCEEDED(g_pm_module.GetRequest(std::addressof(cur_state), std::addressof(pm_flags)))) {
                     if (((prev_state == psc::PmState_ReadyAwakenCritical) && (cur_state == psc::PmState_ReadyAwaken)) || ((prev_state == psc::PmState_ReadyAwaken) && (cur_state == psc::PmState_ReadySleep)) || (cur_state == psc::PmState_ReadyShutdown)) {
                         /* State changed, so allow/disallow flushing. */
                         g_disabled_flush = !g_disabled_flush;

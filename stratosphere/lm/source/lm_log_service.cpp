@@ -11,7 +11,7 @@ namespace ams::lm {
 
     namespace {
 
-        LogDestination g_log_destination = 1;
+        LogDestination g_log_destination = LogDestination_TargetManager;
 
         u8 g_logger_heap_memory[0x4000];
         os::SdkMutex g_logger_heap_lock;
@@ -52,14 +52,15 @@ namespace ams::lm {
         /* Set process ID. */
         log_packet_header->SetProcessId(static_cast<u64>(this->process_id));
 
-        if (g_log_destination & 1) {
+        if (g_log_destination & LogDestination_TargetManager) {
+            /* Log through normal means, which also implies logging to SD card if enabled. */
             if (!impl::GetLogBuffer()->Log(log_buffer.GetPointer(), log_buffer.GetSize(), ShouldLogWithFlush())) {
                 /* If logging through LogBuffer failed, increment packet drop count. */
                 impl::GetEventLogTransmitter()->IncrementLogPacketDropCount();
             }
         }
 
-        if (!(g_log_destination & 2)) {
+        if (!(g_log_destination & LogDestination_Uart)) {
             /* TODO: what's done here? */
         }
 
