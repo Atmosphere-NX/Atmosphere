@@ -351,6 +351,11 @@ namespace ams::settings::fwdbg {
             /* Please note this setting may be removed in a future release of Atmosphere. */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_deprecated_hid_mitm", "u8!0x0"));
 
+            /* Controls whether am sees system settings "DebugModeFlag" as */
+            /* enabled or disabled. */
+            /* 0 = Disabled (not debug mode), 1 = Enabled (debug mode) */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_am_debug_mode", "u8!0x0"));
+
             /* Hbloader custom settings. */
 
             /* Controls the size of the homebrew heap when running as applet. */

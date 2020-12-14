@@ -122,4 +122,16 @@ namespace ams::mitm::settings {
         return ResultSuccess();
     }
 
+    Result SetSysMitmService::GetDebugModeFlag(sf::Out<bool> out) {
+        /* If we're not processing for am, just return the real flag value. */
+        R_UNLESS(this->client_info.program_id == ncm::SystemProgramId::Am, sm::mitm::ResultShouldForwardToSession());
+
+        /* Retrieve the user configuration. */
+        u8 en = 0;
+        settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "enable_am_debug_mode");
+
+        out.SetValue(en != 0);
+        return ResultSuccess();
+    }
+
 }
