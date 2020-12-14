@@ -187,7 +187,7 @@ namespace ams::kern {
             }
 
             /* If we didn't have any waiters, print so. */
-            if (this->thread_list_head != nullptr) {
+            if (this->thread_list_head == nullptr) {
                 MESOSPHERE_RELEASE_LOG("    None\n");
             }
         }
