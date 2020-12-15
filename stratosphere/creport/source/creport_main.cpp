@@ -100,33 +100,38 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* Parse crashed PID. */
-    os::ProcessId crashed_pid = creport::ParseProcessIdArgument(argv[0]);
+    /* Parse arguments. */
+    const os::ProcessId crashed_pid = creport::ParseProcessIdArgument(argv[0]);
+    const bool has_extra_info       = argv[1][0] == '1';
+    const bool enable_screenshot    = argc >= 3 && argv[2][0] == '1';
+    const bool enable_jit_debug     = argc >= 4 && argv[3][0] == '1';
 
     /* Initialize the crash report. */
     g_crash_report.Initialize();
 
     /* Try to debug the crashed process. */
-    g_crash_report.BuildReport(crashed_pid, argv[1][0] == '1');
+    g_crash_report.BuildReport(crashed_pid, has_extra_info);
     if (!g_crash_report.IsComplete()) {
         return EXIT_FAILURE;
     }
 
     /* Save report to file. */
-    g_crash_report.SaveReport();
+    g_crash_report.SaveReport(enable_screenshot);
 
-    /* Try to terminate the process. */
-    if (hos::GetVersion() >= hos::Version_10_0_0) {
-        /* On 10.0.0+, use pgl to terminate. */
-        sm::ScopedServiceHolder<pgl::Initialize, pgl::Finalize> pgl_holder;
-        if (pgl_holder) {
-            pgl::TerminateProcess(crashed_pid);
-        }
-    } else {
-        /* On < 10.0.0, use ns:dev to terminate. */
-        sm::ScopedServiceHolder<nsdevInitialize, nsdevExit> ns_holder;
-        if (ns_holder) {
-            nsdevTerminateProcess(static_cast<u64>(crashed_pid));
+    /* If we should, try to terminate the process. */
+    if (hos::GetVersion() < hos::Version_11_0_0 || !enable_jit_debug) {
+        if (hos::GetVersion() >= hos::Version_10_0_0) {
+            /* On 10.0.0+, use pgl to terminate. */
+            sm::ScopedServiceHolder<pgl::Initialize, pgl::Finalize> pgl_holder;
+            if (pgl_holder) {
+                pgl::TerminateProcess(crashed_pid);
+            }
+        } else {
+            /* On < 10.0.0, use ns:dev to terminate. */
+            sm::ScopedServiceHolder<nsdevInitialize, nsdevExit> ns_holder;
+            if (ns_holder) {
+                nsdevTerminateProcess(static_cast<u64>(crashed_pid));
+            }
         }
     }
 
@@ -135,7 +140,7 @@ int main(int argc, char **argv) {
         if (g_crash_report.IsApplication()) {
             return EXIT_SUCCESS;
         }
-    } else if (argv[1][0] == '1') {
+    } else if (has_extra_info) {
         return EXIT_SUCCESS;
     }
 
