@@ -35,6 +35,7 @@ namespace ams::pm::impl {
                 Flag_Application            = (1 << 6),
                 Flag_SignalOnStart          = (1 << 7),
                 Flag_StartedStateChanged    = (1 << 8),
+                Flag_UnhandledException     = (1 << 9),
             };
         private:
             util::IntrusiveListNode list_node;
@@ -124,13 +125,18 @@ namespace ams::pm::impl {
             /* This needs a manual setter, because it sets two flags. */
             void SetExceptionOccurred() {
                 this->SetFlag(Flag_ExceptionOccurred);
-                this->SetFlag(Flag_ExceptionWaitingAttach);
+                this->SetFlag(Flag_UnhandledException);
             }
 
             DEFINE_FLAG_GET(Has, ExceptionOccurred)
             DEFINE_FLAG_GET(Has, ExceptionWaitingAttach)
+            DEFINE_FLAG_GET(Has, UnhandledException)
+
+            DEFINE_FLAG_SET(ExceptionWaitingAttach)
+
             DEFINE_FLAG_CLEAR(ExceptionOccurred)
             DEFINE_FLAG_CLEAR(ExceptionWaitingAttach)
+            DEFINE_FLAG_CLEAR(UnhandledException)
 
             DEFINE_FLAG_SET(SignalOnDebugEvent)
             DEFINE_FLAG_GET(Should, SignalOnDebugEvent)
