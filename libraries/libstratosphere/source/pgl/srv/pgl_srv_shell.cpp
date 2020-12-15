@@ -38,19 +38,23 @@ namespace ams::pgl::srv {
             ProcessDataFlag_EnableCrashReportScreenShot = (1 << 4),
         };
 
-        bool g_is_production                  = true;
-        bool g_enable_crash_report_screenshot = true;
-        bool g_enable_jit_debug               = false;
+        constinit bool g_is_production                  = true;
+        constinit bool g_enable_crash_report_screenshot = true;
+        constinit bool g_enable_jit_debug               = false;
 
         constexpr inline size_t ProcessControlTaskStackSize = 8_KB;
-        os::ThreadType g_process_control_task_thread;
-        alignas(os::ThreadStackAlignment) u8 g_process_control_task_stack[ProcessControlTaskStackSize];
+        constinit os::ThreadType g_process_control_task_thread;
+        alignas(os::ThreadStackAlignment) constinit u8 g_process_control_task_stack[ProcessControlTaskStackSize];
 
-        os::SdkMutex g_observer_list_mutex;
-        util::IntrusiveListBaseTraits<ShellEventObserverHolder>::ListType g_observer_list;
+        constinit os::SdkMutex g_observer_list_mutex;
+        constinit util::IntrusiveListBaseTraits<ShellEventObserverHolder>::ListType g_observer_list;
 
-        os::SdkMutex g_process_data_mutex;
-        ProcessData g_process_data[ProcessDataCount];
+        constinit os::SdkMutex g_process_data_mutex;
+        constinit ProcessData g_process_data[ProcessDataCount];
+
+        constinit os::ProcessId g_crashed_process_id = os::InvalidProcessId;
+        constinit os::ProcessId g_creport_process_id = os::InvalidProcessId;
+        constinit os::ProcessId g_ssd_process_id     = os::InvalidProcessId;
 
         ProcessData *FindProcessData(os::ProcessId process_id) {
             for (auto &data : g_process_data) {
@@ -135,8 +139,13 @@ namespace ams::pgl::srv {
             R_TRY(ldr::SetProgramArgument(ncm::SystemDebugAppletId::SnapShotDumper, process_arguments, arg_len + 1));
 
             /* Launch the process. */
-            os::ProcessId dummy_process_id;
-            return pm::shell::LaunchProgram(std::addressof(dummy_process_id), ncm::ProgramLocation::Make(ncm::SystemDebugAppletId::SnapShotDumper, ncm::StorageId::BuiltInSystem), pm::LaunchFlags_None);
+            os::ProcessId ssd_process_id = os::InvalidProcessId;
+            R_TRY(pm::shell::LaunchProgram(std::addressof(ssd_process_id), ncm::ProgramLocation::Make(ncm::SystemDebugAppletId::SnapShotDumper, ncm::StorageId::BuiltInSystem), pm::LaunchFlags_None));
+
+            /* Set the globals. */
+            g_crashed_process_id = process_id;
+            g_ssd_process_id     = ssd_process_id;
+            return ResultSuccess();
         }
 
         bool ShouldSnapShotAutoDump() {
@@ -184,15 +193,12 @@ namespace ams::pgl::srv {
         }
 
         void TriggerCrashReport(os::ProcessId process_id) {
-            static os::ProcessId s_crashed_process_id = os::InvalidProcessId;
-            static os::ProcessId s_creport_process_id = os::InvalidProcessId;
-
             /* If the program that crashed is creport, we should just terminate both processes and return. */
-            if (process_id == s_creport_process_id) {
-                TerminateProcess(s_crashed_process_id);
-                TerminateProcess(s_creport_process_id);
-                s_crashed_process_id = os::InvalidProcessId;
-                s_creport_process_id = os::InvalidProcessId;
+            if (process_id == g_creport_process_id) {
+                TerminateProcess(g_crashed_process_id);
+                TerminateProcess(g_creport_process_id);
+                g_crashed_process_id = os::InvalidProcessId;
+                g_creport_process_id = os::InvalidProcessId;
                 return;
             }
 
@@ -209,7 +215,7 @@ namespace ams::pgl::srv {
 
             /* Generate arguments. */
             char arguments[0x40];
-            const size_t len = std::snprintf(arguments, sizeof(arguments), "%ld %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags));
+            const size_t len = std::snprintf(arguments, sizeof(arguments), "%ld %d %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags), g_enable_jit_debug);
             if (R_FAILED(ldr::SetProgramArgument(ncm::SystemProgramId::Creport, arguments, len + 1))) {
                 return;
             }
@@ -221,8 +227,8 @@ namespace ams::pgl::srv {
             }
 
             /* Set the globals. */
-            s_crashed_process_id = process_id;
-            s_creport_process_id = creport_process_id;
+            g_crashed_process_id = process_id;
+            g_creport_process_id = creport_process_id;
         }
 
         void HandleException(os::ProcessId process_id) {
