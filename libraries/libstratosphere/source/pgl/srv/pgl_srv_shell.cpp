@@ -311,6 +311,13 @@ namespace ams::pgl::srv {
                             continue_getting_event = false;
                             break;
                         case pm::ProcessEvent::Exited:
+                            {
+                                /* If SnapShotDumper terminated, trigger a crash report. */
+                                if (event_info.process_id == g_ssd_process_id && g_crashed_process_id != os::InvalidProcessId) {
+                                    TriggerCrashReport(g_crashed_process_id);
+                                }
+                            }
+                            [[fallthrough]];
                         case pm::ProcessEvent::Started:
                         case pm::ProcessEvent::Exception:
                         case pm::ProcessEvent::DebugRunning:
@@ -484,7 +491,8 @@ namespace ams::pgl::srv {
         os::ProcessId process_id;
         R_TRY(pm::shell::GetApplicationProcessIdForShell(std::addressof(process_id)));
 
-        /* Launch the snapshot dumper. */
+        /* Launch the snapshot dumper, clearing the global tracker process id. */
+        ON_SCOPE_EXIT { g_ssd_process_id = os::InvalidProcessId; };
         return TriggerSnapShotDumper(process_id, dump_type, arg);
     }
 
