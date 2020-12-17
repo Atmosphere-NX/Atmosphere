@@ -507,6 +507,11 @@
             return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(dummy), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_KernelVersion));
         }
 
+        ALWAYS_INLINE bool IsKTraceEnabled() {
+            uint64_t value = 0;
+            return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(value), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_IsKTraceEnabled)) && value != 0;
+        }
+
     }
 
 #endif
