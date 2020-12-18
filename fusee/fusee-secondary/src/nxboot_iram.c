@@ -34,6 +34,8 @@ static bool is_soc_mariko() {
 }
 
 void nxboot_finish(uint32_t boot_memaddr) {
+    bool is_mariko = is_soc_mariko();
+    
     /* Boot up Exosphère. */
     MAILBOX_NX_BOOTLOADER_IS_SECMON_AWAKE = 0;
     MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_DRAM_INITIALIZED_4X;
@@ -41,7 +43,7 @@ void nxboot_finish(uint32_t boot_memaddr) {
     /* Terminate the display. */
     display_end();
     
-    if (is_soc_mariko()) {
+    if (is_mariko) {
         /* Boot CPU0. */
         cluster_boot_cpu0(boot_memaddr);
     } else {
@@ -71,7 +73,7 @@ void nxboot_finish(uint32_t boot_memaddr) {
     MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED_4X;
 
     /* Set the end time (Mariko only).*/
-    if (is_soc_mariko()) {
+    if (is_mariko) {
         MAILBOX_NX_BOOTLOADER_END_TIME = get_time();
     }
 

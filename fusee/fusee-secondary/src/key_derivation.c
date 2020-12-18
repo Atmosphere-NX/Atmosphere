@@ -61,6 +61,15 @@ static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_800 - MAST
     {0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C}, /* MasterKek seed 07. */
 };
 
+static const uint8_t AL16 master_kek_seeds_mariko[MASTERKEY_REVISION_910_CURRENT - MASTERKEY_REVISION_500_510][0x10] = {
+	{ 0x77, 0x60, 0x5A, 0xD2, 0xEE, 0x6E, 0xF8, 0x3C, 0x3F, 0x72, 0xE2, 0x59, 0x9D, 0xAC, 0x5E, 0x56 }, /* Mariko MasterKek seed 05. */
+	{ 0x1E, 0x80, 0xB8, 0x17, 0x3E, 0xC0, 0x60, 0xAA, 0x11, 0xBE, 0x1A, 0x4A, 0xA6, 0x6F, 0xE4, 0xAE }, /* Mariko MasterKek seed 06. */
+	{ 0x94, 0x08, 0x67, 0xBD, 0x0A, 0x00, 0x38, 0x84, 0x11, 0xD3, 0x1A, 0xDB, 0xDD, 0x8D, 0xF1, 0x8A }, /* Mariko MasterKek seed 07. */
+	{ 0x5C, 0x24, 0xE3, 0xB8, 0xB4, 0xF7, 0x00, 0xC2, 0x3C, 0xFD, 0x0A, 0xCE, 0x13, 0xC3, 0xDC, 0x23 }, /* Mariko MasterKek seed 08. */
+	{ 0x86, 0x69, 0xF0, 0x09, 0x87, 0xC8, 0x05, 0xAE, 0xB5, 0x7B, 0x48, 0x74, 0xDE, 0x62, 0xA6, 0x13 }, /* Mariko MasterKek seed 09. */
+	{ 0x0E, 0x44, 0x0C, 0xED, 0xB4, 0x36, 0xC0, 0x3F, 0xAA, 0x1D, 0xAE, 0xBF, 0x62, 0xB1, 0x09, 0x82 }, /* Mariko MasterKek seed 0A. */
+};
+
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
 
 static int get_keyblob(nx_keyblob_t *dst, uint32_t revision, const nx_keyblob_t *keyblobs, uint32_t available_revision) {
@@ -121,7 +130,7 @@ int load_package1_key(uint32_t revision) {
 }
 
 /* Derive all Switch keys. */
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
+int derive_nx_keydata_erista(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
     uint8_t AL16 work_buffer[0x10];
     uint8_t AL16 zeroes[0x10] = {0};
 
@@ -210,6 +219,16 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     decrypt_data_into_keyslot(0xF, 0xF, devicekey_seed,    0x10);
     decrypt_data_into_keyslot(0xC, 0xD, masterkey_4x_seed, 0x10);
     decrypt_data_into_keyslot(0xD, 0xD, masterkey_seed,    0x10);
+
+    /* Setup master key revision, derive older master keys for use. */
+    return mkey_detect_revision(fuse_get_hardware_state() != 0);
+}
+
+int derive_nx_keydata_mariko(uint32_t target_firmware) {
+    /* Derive keys for Exosphere, lock critical keyslots. */
+    decrypt_data_into_keyslot(0xA, 0xE, devicekey_4x_seed, 0x10);
+    decrypt_data_into_keyslot(0x7, 0xC, &master_kek_seeds_mariko[target_firmware - MASTERKEY_REVISION_600_610], 0x10);
+    decrypt_data_into_keyslot(0x7, 0x7, masterkey_seed, 0x10);
 
     /* Setup master key revision, derive older master keys for use. */
     return mkey_detect_revision(fuse_get_hardware_state() != 0);

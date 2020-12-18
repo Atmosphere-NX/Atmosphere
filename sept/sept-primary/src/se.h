@@ -37,6 +37,9 @@
 /* This keyslot was added in 5.0.0. */
 #define KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY 0xA
 
+/* Mariko keyslots. */
+#define KEYSLOT_SWITCH_MASTERKEY_MARIKO 0x7
+
 #define KEYSLOT_AES_MAX 0x10
 #define KEYSLOT_RSA_MAX 0x2
 

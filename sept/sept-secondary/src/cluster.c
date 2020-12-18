@@ -107,95 +107,23 @@ static void cluster_pmc_enable_partition(uint32_t part, uint32_t toggle) {
     }
 }
 
-static void cluster_boot_cpu0_erista(uint32_t entry) {
+void cluster_boot_cpu0(uint32_t entry) {
     volatile tegra_car_t *car = car_get_regs();
+    bool is_mariko = is_soc_mariko();
     
     /* Set ACTIVE_CLUSER to FAST. */
     FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 &= 0xFFFFFFFE;
 
     /* Enable VddCpu. */
-    cluster_enable_power(0);
+    cluster_enable_power(is_mariko ? fuse_get_regulator() : 0);
     
     if (!(car->pllx_base & 0x40000000)) {
         car->pllx_misc3 &= 0xFFFFFFF7;
         udelay(2);
-        car->pllx_base = 0x80404E02;
-        car->pllx_base = 0x404E02;
-        car->pllx_misc = ((car->pllx_misc & 0xFFFBFFFF) | 0x40000);
-        car->pllx_base = 0x40404E02;
-    }
-    
-    while (!(car->pllx_base & 0x8000000)) {
-        /* Wait. */
-    }
-
-    /* Configure MSELECT source and enable clock. */
-    car->clk_source_mselect = ((car->clk_source_mselect & 0x1FFFFF00) | 6);
-    car->clk_out_enb_v = ((car->clk_out_enb_v & 0xFFFFFFF7) | 8);
-
-    /* Configure initial CPU clock frequency and enable clock. */
-    car->cclk_brst_pol = 0x20008888;
-    car->super_cclk_div = 0x80000000;
-    car->clk_enb_v_set = 1;
-    
-    clkrst_reboot(CARDEVICE_CORESIGHT);
-
-    /* CAR2PMC_CPU_ACK_WIDTH should be set to 0. */
-    car->cpu_softrst_ctrl2 &= 0xFFFFF000;
-
-    /* Enable CPU rail. */
-    cluster_pmc_enable_partition(1, 0);
-    
-    /* Enable cluster 0 non-CPU. */
-    cluster_pmc_enable_partition(0x8000, 15);
-    
-    /* Enable CE0. */
-    cluster_pmc_enable_partition(0x4000, 14);
-
-    /* Request and wait for RAM repair. */
-    FLOW_CTLR_RAM_REPAIR_0 = 1;
-    while (!(FLOW_CTLR_RAM_REPAIR_0 & 2)) {
-        /* Wait. */
-    }
-
-    MAKE_EXCP_VEC_REG(0x100) = 0;
-
-    /* Set reset vector. */
-    SB_AA64_RESET_LOW_0 = (entry | 1);
-    SB_AA64_RESET_HIGH_0 = 0;
-    
-    /* Non-secure reset vector write disable. */
-    SB_CSR_0 = 2;
-    (void)SB_CSR_0;
-
-    /* Set CPU_STRICT_TZ_APERTURE_CHECK. */
-    /* NOTE: [4.0.0+] This was added, but it breaks Exosphère. */
-    /* MAKE_MC_REG(MC_TZ_SECURITY_CTRL) = 1; */
-    
-    /* Clear MSELECT reset. */
-    car->rst_dev_v &= 0xFFFFFFF7;
-    
-    /* Clear NONCPU reset. */
-    car->rst_cpug_cmplx_clr = 0x20000000;
-    
-    /* Clear CPU{0,1,2,3} POR and CORE, CX0, L2, and DBG reset.*/
-    /* NOTE: [5.0.0+] This was changed so only CPU0 reset is cleared. */
-    /* car->rst_cpug_cmplx_clr = 0x411F000F; */
-    car->rst_cpug_cmplx_clr = 0x41010001;
-}
-
-static void cluster_boot_cpu0_mariko(uint32_t entry) {
-    volatile tegra_car_t *car = car_get_regs();
-    
-    /* Set ACTIVE_CLUSER to FAST. */
-    FLOW_CTLR_BPMP_CLUSTER_CONTROL_0 &= 0xFFFFFFFE;
-
-    /* Enable VddCpu. */
-    cluster_enable_power(fuse_get_regulator());
-    
-    if (!(car->pllx_base & 0x40000000)) {
-        car->pllx_misc3 &= 0xFFFFFFF7;
-        udelay(2);
+        if (!is_mariko) {
+            car->pllx_base = 0x80404E02;
+            car->pllx_base = 0x404E02;
+        }
         car->pllx_misc = ((car->pllx_misc & 0xFFFBFFFF) | 0x40000);
         car->pllx_base = 0x40404E02;
     }
@@ -250,14 +178,11 @@ static void cluster_boot_cpu0_mariko(uint32_t entry) {
     /* Clear MSELECT reset. */
     rst_disable(CARDEVICE_MSELECT);
     
-    /* Clear CPU{0,1,2,3} POR and CORE, CX0, L2, and DBG reset.*/
-    car->rst_cpug_cmplx_clr = 0x41010001;
-}
-
-void cluster_boot_cpu0(uint32_t entry) {
-    if (is_soc_mariko()) {
-        cluster_boot_cpu0_mariko(uint32_t entry);
-    } else {
-        cluster_boot_cpu0_erista(uint32_t entry);
+    if (!is_mariko) {
+        /* Clear NONCPU reset. */
+        car->rst_cpug_cmplx_clr = 0x20000000;
     }
+    
+    /* Clear CPU{0} POR and CORE, CX0, L2, and DBG reset.*/
+    car->rst_cpug_cmplx_clr = 0x41010001;
 }
