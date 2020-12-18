@@ -61,52 +61,39 @@ static void config_oscillators(void) {
     car->clk_sys_rate = 2;
 }
 
-static void config_gpios_erista(void) {
+static void config_gpios(void) {
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
+    bool is_mariko = is_soc_mariko();
     
-    pinmux->uart2_tx = 0;
-    pinmux->uart3_tx = 0;
-    pinmux->pe6 = PINMUX_INPUT;
-    pinmux->ph6 = PINMUX_INPUT;
-    
-    gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
-    gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
-    gpio_configure_mode(TEGRA_GPIO(E, 6), GPIO_MODE_GPIO);
-    gpio_configure_mode(TEGRA_GPIO(H, 6), GPIO_MODE_GPIO);
-    gpio_configure_direction(TEGRA_GPIO(G, 0), GPIO_DIRECTION_INPUT);
-    gpio_configure_direction(TEGRA_GPIO(D, 1), GPIO_DIRECTION_INPUT);
-    gpio_configure_direction(TEGRA_GPIO(E, 6), GPIO_DIRECTION_INPUT);
-    gpio_configure_direction(TEGRA_GPIO(H, 6), GPIO_DIRECTION_INPUT);
-
-    i2c_config(I2C_1);
-    i2c_config(I2C_5);
-    uart_config(UART_A);
-
-    /* Configure volume up/down buttons as inputs. */
-    gpio_configure_mode(GPIO_BUTTON_VOL_UP, GPIO_MODE_GPIO);
-    gpio_configure_mode(GPIO_BUTTON_VOL_DOWN, GPIO_MODE_GPIO);
-    gpio_configure_direction(GPIO_BUTTON_VOL_UP, GPIO_DIRECTION_INPUT);
-    gpio_configure_direction(GPIO_BUTTON_VOL_DOWN, GPIO_DIRECTION_INPUT);
-}
-
-static void config_gpios_mariko(void) {
-    volatile tegra_pinmux_t *pinmux = pinmux_get_regs();    
-    uint32_t hardware_type = fuse_get_hardware_type();
-
-    /* Only for HardwareType_Iowa and HardwareType_Five. */
-    if ((hardware_type == 3) || (hardware_type == 5)) {
+    if (is_mariko) {
+        uint32_t hardware_type = fuse_get_hardware_type();
+        
+        /* Only for HardwareType_Iowa and HardwareType_Five. */
+        if ((hardware_type == 3) || (hardware_type == 5)) {
+            pinmux->uart2_tx = 0;
+            pinmux->uart3_tx = 0;
+            gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
+            gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
+            gpio_configure_direction(TEGRA_GPIO(G, 0), GPIO_DIRECTION_INPUT);
+            gpio_configure_direction(TEGRA_GPIO(D, 1), GPIO_DIRECTION_INPUT);
+        }
+    } else {
         pinmux->uart2_tx = 0;
         pinmux->uart3_tx = 0;
-        gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
-        gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
-        gpio_configure_direction(TEGRA_GPIO(G, 0), GPIO_DIRECTION_INPUT);
-        gpio_configure_direction(TEGRA_GPIO(D, 1), GPIO_DIRECTION_INPUT);
     }
     
     pinmux->pe6 = PINMUX_INPUT;
     pinmux->ph6 = PINMUX_INPUT;
+    if (!is_mariko) {
+        gpio_configure_mode(TEGRA_GPIO(G, 0), GPIO_MODE_GPIO);
+        gpio_configure_mode(TEGRA_GPIO(D, 1), GPIO_MODE_GPIO);
+    }
     gpio_configure_mode(TEGRA_GPIO(E, 6), GPIO_MODE_GPIO);
     gpio_configure_mode(TEGRA_GPIO(H, 6), GPIO_MODE_GPIO);
+    if (!is_mariko) {
+        gpio_configure_direction(TEGRA_GPIO(G, 0), GPIO_DIRECTION_INPUT);
+        gpio_configure_direction(TEGRA_GPIO(D, 1), GPIO_DIRECTION_INPUT);
+    }
     gpio_configure_direction(TEGRA_GPIO(E, 6), GPIO_DIRECTION_INPUT);
     gpio_configure_direction(TEGRA_GPIO(H, 6), GPIO_DIRECTION_INPUT);
 
@@ -120,17 +107,11 @@ static void config_gpios_mariko(void) {
     gpio_configure_direction(GPIO_BUTTON_VOL_UP, GPIO_DIRECTION_INPUT);
     gpio_configure_direction(GPIO_BUTTON_VOL_DOWN, GPIO_DIRECTION_INPUT);
     
-    /* Configure home button as input. */
-    gpio_configure_mode(TEGRA_GPIO(Y, 1), GPIO_MODE_GPIO);
-    gpio_configure_direction(TEGRA_GPIO(Y, 1), GPIO_DIRECTION_INPUT);
-}
-
-static void config_pmc_scratch(void) {
-    volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
-    pmc->scratch20 &= 0xFFF3FFFF;
-    pmc->scratch190 &= 0xFFFFFFFE;
-    pmc->secure_scratch21 |= 0x10;
+    if (is_mariko) {
+        /* Configure home button as input. */
+        gpio_configure_mode(TEGRA_GPIO(Y, 1), GPIO_MODE_GPIO);
+        gpio_configure_direction(TEGRA_GPIO(Y, 1), GPIO_DIRECTION_INPUT);
+    }
 }
 
 static void mbist_workaround(void) {
@@ -214,27 +195,36 @@ static void config_se_brom(void) {
     pmc->rst_status = 0;
 }
 
-static void nx_hwinit_erista(bool enable_log) {
+void nx_hwinit(bool enable_log) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_car_t *car = car_get_regs();
+    bool is_mariko = is_soc_mariko();
     
-    /* Bootrom stuff we skipped by going through RCM. */
-    config_se_brom();
+    if (!is_mariko) {
+        /* Bootrom stuff we skipped by going through RCM. */
+        config_se_brom();
     
-    AHB_AHB_SPARE_REG_0 &= 0xFFFFFF9F;
-    pmc->scratch49 = (((pmc->scratch49 >> 1) << 1) & 0xFFFFFFFD);
+        AHB_AHB_SPARE_REG_0 &= 0xFFFFFF9F;
+        pmc->scratch49 = (((pmc->scratch49 >> 1) << 1) & 0xFFFFFFFD);
     
-    /* Apply the memory built-in self test workaround. */
-    mbist_workaround();
+        /* Apply the memory built-in self test workaround. */
+        mbist_workaround();
+    }
     
-    /* Reboot SE. */
+    /* Enable SE clock. */
     clkrst_reboot(CARDEVICE_SE);
+    if (is_mariko) {
+        /* Lock the SE clock. */
+        car->clk_source_se |= 0x100;
+    }
 
     /* Initialize the fuse driver. */
     fuse_init();
 
-    /* Initialize the memory controller. */
-    mc_enable();
+    if (!is_mariko) {
+        /* Initialize the memory controller. */
+        mc_enable();
+    }
 
     /* Configure oscillators. */
     config_oscillators();
@@ -243,9 +233,7 @@ static void nx_hwinit_erista(bool enable_log) {
     APB_MISC_PP_PINMUX_GLOBAL_0 = 0;
     
     /* Configure GPIOs. */
-    /* NOTE: [3.0.0+] Part of the GPIO configuration is skipped if the unit is SDEV. */
-    /* NOTE: [6.0.0+] The GPIO configuration's order was changed a bit. */
-    config_gpios_erista();
+    config_gpios();
 
     /* UART debugging. */
     if (enable_log) {
@@ -253,111 +241,7 @@ static void nx_hwinit_erista(bool enable_log) {
         uart_init(UART_A, 115200);
     }
     
-    /* Reboot CL-DVFS. */
-    clkrst_reboot(CARDEVICE_CL_DVFS);
-    
-    /* Reboot I2C1. */
-    clkrst_reboot(CARDEVICE_I2C1);
-    
-    /* Reboot I2C5. */
-    clkrst_reboot(CARDEVICE_I2C5);
-    
-    /* Reboot SE. */
-    /* NOTE: [4.0.0+] This was removed. */
-    /* clkrst_reboot(CARDEVICE_SE); */
-    
-    /* Reboot TZRAM. */
-    clkrst_reboot(CARDEVICE_TZRAM);
-
-    /* Initialize I2C1. */
-    /* NOTE: [6.0.0+] This was moved to after the PMIC is configured. */
-    i2c_init(I2C_1);
-    
-    /* Initialize I2C5. */
-    i2c_init(I2C_5);
-    
-    /* Configure the PMIC. */
-    uint8_t val = 0x40;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
-    val = 0x60;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
-    val = 0x38;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG0, &val, 1);
-    val = 0x3A;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG1, &val, 1);
-    val = 0x38;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG2, &val, 1);
-    val = 0xF;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_LDO4, &val, 1);
-    val = 0xC7;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_LDO8, &val, 1);
-    val = 0x4F;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD0, &val, 1);
-    val = 0x29;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD1, &val, 1);
-    val = 0x1B;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD3, &val, 1);
-    
-    /* NOTE: [3.0.0+] This was added. */
-    val = 0x22;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_GPIO3, &val, 1);
-    
-    /* TODO: In 3.x+, if the unit is SDEV, the MBLPD bit is set. */
-    /*
-    i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGGLBL1, &val, 1);
-    val |= 0x40;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGGLBL1, &val, 1);
-    */
-
-    /* Configure SD0 voltage. */
-    val = 42;       /* 42 = (1125000 - 600000) / 12500 -> 1.125V */
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD0, &val, 1);
-
-    /* Configure and lock PMC scratch registers. */
-    /* NOTE: [4.0.0+] This was removed. */
-    config_pmc_scratch();
-
-    /* Set super clock burst policy. */
-    car->sclk_brst_pol = ((car->sclk_brst_pol & 0xFFFF8888) | 0x3333);
-
-    /* Configure memory controller carveouts. */
-    /* NOTE: [4.0.0+] This is now done in the Secure Monitor. */
-    /* mc_config_carveout(); */
-    
-    /* Save SDRAM parameters to scratch. */
-    sdram_save_params(sdram_get_params(fuse_get_dram_id()));
-    
-    /* Initialize SDRAM. */
-    sdram_init();
-}
-
-static void nx_hwinit_mariko(bool enable_log) {
-    volatile tegra_pmc_t *pmc = pmc_get_regs();
-    volatile tegra_car_t *car = car_get_regs();
-    
-    /* Enable SE clock and lock it. */
-    clkrst_reboot(CARDEVICE_SE);
-    car->clk_source_se |= 0x100;
-
-    /* Make all fuse registers visible. */
-    clkrst_enable_fuse_regs(true);
-    
-    /* Configure oscillators. */
-    config_oscillators();
-    
-    /* Disable pinmux tristate input clamping. */
-    APB_MISC_PP_PINMUX_GLOBAL_0 = 0;
-    
-    /* Configure GPIOs. */
-    config_gpios_mariko();
-
-    /* UART debugging. */
-    if (enable_log) {
-        clkrst_reboot(CARDEVICE_UARTA);
-        uart_init(UART_A, 115200);
-    }
-    
-    /* Enable CL-DVFS clock. */
+   /* Enable CL-DVFS clock. */
     clkrst_reboot(CARDEVICE_CL_DVFS);
     
     /* Enable I2C1 clock. */
@@ -373,43 +257,71 @@ static void nx_hwinit_mariko(bool enable_log) {
     i2c_init(I2C_5);
     
     /* Configure the PMIC. */
-    uint8_t val = 0x40;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
-    val = 0x78;
-    i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
-    
+    if (is_mariko) {
+        uint8_t val = 0x40;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
+        val = 0x78;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
+    } else {
+        uint8_t val = 0x40;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGBBC, &val, 1);
+        val = 0x60;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_ONOFFCNFG1, &val, 1);
+        val = 0x38;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG0, &val, 1);
+        val = 0x3A;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG1, &val, 1);
+        val = 0x38;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_CFG2, &val, 1);
+        val = 0xF;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_LDO4, &val, 1);
+        val = 0xC7;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_LDO8, &val, 1);
+        val = 0x4F;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD0, &val, 1);
+        val = 0x29;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD1, &val, 1);
+        val = 0x1B;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_SD3, &val, 1);
+        
+        /* NOTE: [3.0.0+] This was added. */
+        val = 0x22;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_FPS_GPIO3, &val, 1);
+        
+        /* TODO: In 3.x+, if the unit is SDEV, the MBLPD bit is set. */
+        /*
+        i2c_query(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGGLBL1, &val, 1);
+        val |= 0x40;
+        i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_CNFGGLBL1, &val, 1);
+        */
+    }
+
     /* Configure SD0 voltage. */
-    val = 0x24;
+    uint8_t val = 0x24;
     i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_SD0, &val, 1);
     
     /* Enable LDO8 in HardwareType_Hoag only. */
-    if (fuse_get_hardware_type() == 2) {
+    if (is_mariko && (fuse_get_hardware_type() == 2)) {
         val = 0xE8;
         i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_LDO8_CFG, &val, 1);
     }
     
     /* Initialize I2C1. */
     i2c_init(I2C_1);
-    
+
     /* Set super clock burst policy. */
     car->sclk_brst_pol = ((car->sclk_brst_pol & 0xFFFF8888) | 0x3333);
     
-    /* Mariko only PMC configuration for TZRAM. */
-    pmc->tzram_pwr_cntrl &= 0xFFFFFFFE;
-    pmc->tzram_non_sec_disable = 0x3;
-    pmc->tzram_sec_disable = 0x3;
+    if (is_mariko) {
+        /* Mariko only PMC configuration for TZRAM. */
+        pmc->tzram_pwr_cntrl &= 0xFFFFFFFE;
+        pmc->tzram_non_sec_disable = 0x3;
+        pmc->tzram_sec_disable = 0x3;
+    }
     
     /* Save SDRAM parameters to scratch. */
     sdram_save_params(sdram_get_params(fuse_get_dram_id()));
     
     /* Initialize SDRAM. */
     sdram_init();
-}
-
-void nx_hwinit(bool enable_log) {
-    if (is_soc_mariko()) {
-        nx_hwinit_mariko(enable_log);
-    } else {
-        nx_hwinit_erista(enable_log);
-    }
 }

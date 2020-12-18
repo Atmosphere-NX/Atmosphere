@@ -671,6 +671,7 @@ uint32_t nxboot_main(void) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     loader_ctx_t *loader_ctx = get_loader_ctx();
     const bool is_experimental = fusee_is_experimental();
+    bool is_mariko = is_soc_mariko();
     package2_header_t *package2;
     size_t package2_size;
     void *tsec_fw;
@@ -692,7 +693,7 @@ uint32_t nxboot_main(void) {
     exo_emummc_config_t exo_emummc_cfg;
     
     /* Set the start time (Mariko only). */
-    if (is_soc_mariko()) {
+    if (is_mariko) {
         MAILBOX_NX_BOOTLOADER_START_TIME = get_time();
     }
     
@@ -785,7 +786,7 @@ uint32_t nxboot_main(void) {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Detected target firmware %ld!\n", target_firmware);
 
     /* Handle TSEC and Sept (Erista only). */
-    if (!is_soc_mariko()) {
+    if (!is_mariko) {
         /* Read the TSEC firmware from a file, otherwise from PK1L. */
         if (loader_ctx->tsecfw_path[0] != '\0') {
             tsec_fw_size = get_file_size(loader_ctx->tsecfw_path);
@@ -888,10 +889,14 @@ uint32_t nxboot_main(void) {
     /* Display splash screen. */
     display_splash_screen_bmp(loader_ctx->custom_splash_path, (void *)0xC0000000);
 
-    /* Derive keydata. If on 7.0.0+, sept has already derived keys for us. */
+    /* Derive keydata. */
     unsigned int keygen_type = 0;
-    if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-        if (derive_nx_keydata(target_firmware, g_keyblobs, available_revision, tsec_key, tsec_root_keys, &keygen_type) != 0) {
+    if (is_mariko) {
+        if (derive_nx_keydata_mariko(target_firmware) != 0) {
+            fatal_error("[NXBOOT] Key derivation failed!\n");
+        }
+    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {   /* If on 7.0.0+, sept has already derived keys for us (Erista only). */
+        if (derive_nx_keydata_erista(target_firmware, g_keyblobs, available_revision, tsec_key, tsec_root_keys, &keygen_type) != 0) {
             fatal_error("[NXBOOT] Key derivation failed!\n");
         }
     }
@@ -923,7 +928,7 @@ uint32_t nxboot_main(void) {
     nxboot_configure_exosphere(target_firmware, keygen_type, &exo_emummc_cfg);
 
     /* Initialize BootReason on older firmware versions (Erista only). */
-    if (!is_soc_mariko()) {
+    if (!is_mariko) {
         if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
             print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Initializing BootReason...\n");
             nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE);
@@ -948,7 +953,7 @@ uint32_t nxboot_main(void) {
         if (read_from_file(warmboot_fw, warmboot_fw_size, loader_ctx->warmboot_path) != warmboot_fw_size) {
             fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
         }
-    } else if (!is_soc_mariko()) {
+    } else if (!is_mariko) {
         /* Use Atmosphere's warmboot firmware implementation (Erista only). */
         warmboot_fw_size = warmboot_bin_size;
         warmboot_fw = malloc(warmboot_fw_size);
@@ -965,7 +970,7 @@ uint32_t nxboot_main(void) {
     }
 
     /* Patch warmboot firmware for atmosphere (Erista only). */
-    if (!is_soc_mariko() && (warmboot_fw != NULL) && (warmboot_fw_size >= sizeof(warmboot_ams_header_t))) {
+    if (!is_mariko && (warmboot_fw != NULL) && (warmboot_fw_size >= sizeof(warmboot_ams_header_t))) {
         warmboot_ams_header_t *ams_header = (warmboot_ams_header_t *)warmboot_fw;
         if (ams_header->ams_metadata.magic == WARMBOOT_MAGIC) {
             /* Set target firmware */
@@ -985,13 +990,13 @@ uint32_t nxboot_main(void) {
     /* Copy the warmboot firmware and set the address in PMC if necessary. */
     if (warmboot_fw && (warmboot_fw_size > 0)) {
         memcpy(warmboot_memaddr, warmboot_fw, warmboot_fw_size);
-        if (!is_soc_mariko() && (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0)) {
+        if (!is_mariko && (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0)) {
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
         }
     }
     
     /* Handle warmboot security check. */
-    if (is_soc_mariko()) {
+    if (is_mariko) {
         /* TODO */
     } else {
         /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
@@ -1071,7 +1076,7 @@ uint32_t nxboot_main(void) {
     }
 
     /* Copy the Mariko's Exosphère fatal program to a good location. */
-    if (is_soc_mariko()) {
+    if (is_mariko) {
         void * const mariko_fatal_dst = (void *)0x80020000;
         memset(mariko_fatal_dst, 0, 0x20000);
 
@@ -1107,8 +1112,8 @@ uint32_t nxboot_main(void) {
     /* Wait for the splash screen to have been displayed for as long as it should be. */
     splash_screen_wait_delay();
 
-    /* Set reset for USBD, USB2, AHBDMA, and APBDMA on Erista. */
-    if (!is_soc_mariko()) {
+    /* Set reset for USBD, USB2, AHBDMA, and APBDMA (Erista only). */
+    if (!is_mariko) {
         rst_enable(CARDEVICE_USBD);
         rst_enable(CARDEVICE_USB2);
         rst_enable(CARDEVICE_AHBDMA);

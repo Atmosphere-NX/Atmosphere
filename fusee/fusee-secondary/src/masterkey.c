@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "masterkey.h"
 #include "se.h"
+#include "fuse.h"
 
 static unsigned int g_mkey_revision = 0;
 static bool g_determined_mkey_revision = false;
@@ -94,6 +95,11 @@ static const uint8_t new_device_keygen_sources_dev[MASTERKEY_NUM_NEW_DEVICE_KEYS
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: 9.1.0 New Device Keygen Source to be added on next change-of-keys. */
 };
 
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
+
 static bool check_mkey_revision(unsigned int revision, bool is_retail) {
     uint8_t final_vector[0x10];
 
@@ -153,8 +159,10 @@ unsigned int mkey_get_keyslot(unsigned int revision) {
     if (revision > g_mkey_revision) {
         generic_panic();
     }
-
-    if (revision == g_mkey_revision) {
+    
+    if (is_soc_mariko()) {
+        return KEYSLOT_SWITCH_MASTERKEY_MARIKO;
+    } else if (revision == g_mkey_revision) {
         return KEYSLOT_SWITCH_MASTERKEY;
     } else {
         /* Load into a temp keyslot. */
