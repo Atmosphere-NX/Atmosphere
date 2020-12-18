@@ -20,7 +20,7 @@ void CApplication::run()
 {
     u64 tick_ref = armGetSystemTick();
     u64 tick_saved = tick_ref;
-    bool focused = appletGetFocusState() == AppletFocusState_Focused;
+    bool focused = appletGetFocusState() == AppletFocusState_InFocus;
 
     onOperationMode(appletGetOperationMode());
 
@@ -40,7 +40,7 @@ void CApplication::run()
                 {
                     bool old_focused = focused;
                     AppletFocusState state = appletGetFocusState();
-                    focused = state == AppletFocusState_Focused;
+                    focused = state == AppletFocusState_InFocus;
 
                     onFocusState(state);
                     if (focused == old_focused)
