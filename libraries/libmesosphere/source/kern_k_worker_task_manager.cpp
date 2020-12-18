@@ -19,23 +19,23 @@ namespace ams::kern {
 
     void KWorkerTaskManager::Initialize(WorkerType wt, s32 priority) {
         /* Set type, other members already initialized in constructor. */
-        this->type = wt;
+        m_type = wt;
 
         /* Reserve a thread from the system limit. */
         MESOSPHERE_ABORT_UNLESS(Kernel::GetSystemResourceLimit().Reserve(ams::svc::LimitableResource_ThreadCountMax, 1));
 
         /* Create a new thread. */
-        this->thread = KThread::Create();
-        MESOSPHERE_ABORT_UNLESS(this->thread != nullptr);
+        m_thread = KThread::Create();
+        MESOSPHERE_ABORT_UNLESS(m_thread != nullptr);
 
         /* Launch the new thread. */
-        MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(this->thread, ThreadFunction, reinterpret_cast<uintptr_t>(this), priority, cpu::NumCores - 1));
+        MESOSPHERE_R_ABORT_UNLESS(KThread::InitializeKernelThread(m_thread, ThreadFunction, reinterpret_cast<uintptr_t>(this), priority, cpu::NumCores - 1));
 
         /* Register the new thread. */
-        KThread::Register(this->thread);
+        KThread::Register(m_thread);
 
         /* Run the thread. */
-        this->thread->Run();
+        m_thread->Run();
     }
 
     void KWorkerTaskManager::AddTask(WorkerType type, KWorkerTask *task) {
@@ -58,12 +58,12 @@ namespace ams::kern {
 
                 if (task == nullptr) {
                     /* If there's nothing to do, set ourselves as waiting. */
-                    this->active = false;
-                    this->thread->SetState(KThread::ThreadState_Waiting);
+                    m_active = false;
+                    m_thread->SetState(KThread::ThreadState_Waiting);
                     continue;
                 }
 
-                this->active = true;
+                m_active = true;
             }
 
             /* Do the task. */
@@ -73,14 +73,14 @@ namespace ams::kern {
 
     KWorkerTask *KWorkerTaskManager::GetTask() {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
-        KWorkerTask *next = this->head_task;
+        KWorkerTask *next = m_head_task;
         if (next) {
             /* Advance the list. */
-            if (this->head_task == this->tail_task) {
-                this->head_task = nullptr;
-                this->tail_task = nullptr;
+            if (m_head_task == m_tail_task) {
+                m_head_task = nullptr;
+                m_tail_task = nullptr;
             } else {
-                this->head_task = this->head_task->GetNextTask();
+                m_head_task = m_head_task->GetNextTask();
             }
 
             /* Clear the next task's next. */
@@ -94,16 +94,16 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(task->GetNextTask() == nullptr);
 
         /* Insert the task. */
-        if (this->tail_task) {
-            this->tail_task->SetNextTask(task);
-            this->tail_task = task;
+        if (m_tail_task) {
+            m_tail_task->SetNextTask(task);
+            m_tail_task = task;
         } else {
-            this->head_task = task;
-            this->tail_task = task;
+            m_head_task = task;
+            m_tail_task = task;
 
             /* Make ourselves active if we need to. */
-            if (!this->active) {
-                this->thread->SetState(KThread::ThreadState_Runnable);
+            if (!m_active) {
+                m_thread->SetState(KThread::ThreadState_Runnable);
             }
         }
     }

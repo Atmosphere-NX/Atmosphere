@@ -27,10 +27,10 @@ namespace ams::kern {
     class KInterruptEvent final : public KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KInterruptEvent, KReadableEvent);
         private:
-            s32 interrupt_id;
-            bool is_initialized;
+            s32 m_interrupt_id;
+            bool m_is_initialized;
         public:
-            constexpr KInterruptEvent() : interrupt_id(-1), is_initialized(false) { /* ... */ }
+            constexpr KInterruptEvent() : m_interrupt_id(-1), m_is_initialized(false) { /* ... */ }
             virtual ~KInterruptEvent() { /* ... */ }
 
             Result Initialize(int32_t interrupt_name, ams::svc::InterruptType type);
@@ -38,22 +38,22 @@ namespace ams::kern {
 
             virtual Result Reset() override;
 
-            virtual bool IsInitialized() const override { return this->is_initialized; }
+            virtual bool IsInitialized() const override { return m_is_initialized; }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            constexpr s32 GetInterruptId() const { return this->interrupt_id; }
+            constexpr s32 GetInterruptId() const { return m_interrupt_id; }
     };
 
     class KInterruptEventTask : public KSlabAllocated<KInterruptEventTask>, public KInterruptTask {
         private:
-            KInterruptEvent *event;
-            KLightLock lock;
+            KInterruptEvent *m_event;
+            KLightLock m_lock;
         public:
-            constexpr KInterruptEventTask() : event(nullptr), lock() { /* ... */ }
+            constexpr KInterruptEventTask() : m_event(nullptr), m_lock() { /* ... */ }
             ~KInterruptEventTask() { /* ... */ }
 
-            KLightLock &GetLock() { return this->lock; }
+            KLightLock &GetLock() { return m_lock; }
 
             virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override;
             virtual void DoTask() override;

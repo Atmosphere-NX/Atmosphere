@@ -32,10 +32,10 @@ namespace ams::kern {
 
         class ReceiveList {
             private:
-                u32 data[ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountMax * ipc::MessageBuffer::ReceiveListEntry::GetDataSize() / sizeof(u32)];
-                s32 recv_list_count;
-                uintptr_t msg_buffer_end;
-                uintptr_t msg_buffer_space_end;
+                u32 m_data[ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountMax * ipc::MessageBuffer::ReceiveListEntry::GetDataSize() / sizeof(u32)];
+                s32 m_recv_list_count;
+                uintptr_t m_msg_buffer_end;
+                uintptr_t m_msg_buffer_space_end;
             public:
                 static constexpr int GetEntryCount(const ipc::MessageBuffer::MessageHeader &header) {
                     const auto count = header.GetReceiveListCount();
@@ -52,9 +52,9 @@ namespace ams::kern {
                 }
             public:
                 ReceiveList(const u32 *dst_msg, uintptr_t dst_address, const KProcessPageTable &dst_page_table, const ipc::MessageBuffer::MessageHeader &dst_header, const ipc::MessageBuffer::SpecialHeader &dst_special_header, size_t msg_size, size_t out_offset, s32 dst_recv_list_idx, bool is_tls) {
-                    this->recv_list_count      = dst_header.GetReceiveListCount();
-                    this->msg_buffer_end       = dst_address + sizeof(u32) * out_offset;
-                    this->msg_buffer_space_end = dst_address + msg_size;
+                    m_recv_list_count      = dst_header.GetReceiveListCount();
+                    m_msg_buffer_end       = dst_address + sizeof(u32) * out_offset;
+                    m_msg_buffer_space_end = dst_address + msg_size;
 
                     /* NOTE: Nintendo calculates the receive list index here using the special header. */
                     /* We pre-calculate it in the caller, and pass it as a parameter. */
@@ -64,7 +64,7 @@ namespace ams::kern {
                     const auto entry_count = GetEntryCount(dst_header);
 
                     if (is_tls) {
-                        __builtin_memcpy(this->data, recv_list, entry_count * ipc::MessageBuffer::ReceiveListEntry::GetDataSize());
+                        __builtin_memcpy(m_data, recv_list, entry_count * ipc::MessageBuffer::ReceiveListEntry::GetDataSize());
                     } else {
                         uintptr_t page_addr = util::AlignDown(dst_address, PageSize);
                         uintptr_t cur_addr  = dst_address + dst_recv_list_idx * sizeof(u32);
@@ -76,18 +76,18 @@ namespace ams::kern {
                                 recv_list = GetPointer<u32>(KPageTable::GetHeapVirtualAddress(phys_addr));
                                 page_addr = util::AlignDown(cur_addr, PageSize);
                             }
-                            this->data[i] = *(recv_list++);
+                            m_data[i] = *(recv_list++);
                             cur_addr += sizeof(u32);
                         }
                     }
                 }
 
                 constexpr bool IsIndex() const {
-                    return this->recv_list_count > ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset;
+                    return m_recv_list_count > ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset;
                 }
 
                 void GetBuffer(uintptr_t &out, size_t size, int &key) const {
-                    switch (this->recv_list_count) {
+                    switch (m_recv_list_count) {
                         case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_None:
                             {
                                 out = 0;
@@ -95,11 +95,11 @@ namespace ams::kern {
                             break;
                         case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToMessageBuffer:
                             {
-                                const uintptr_t buf = util::AlignUp(this->msg_buffer_end + key, PointerTransferBufferAlignment);
+                                const uintptr_t buf = util::AlignUp(m_msg_buffer_end + key, PointerTransferBufferAlignment);
 
-                                if ((buf < buf + size) && (buf + size <= this->msg_buffer_space_end)) {
+                                if ((buf < buf + size) && (buf + size <= m_msg_buffer_space_end)) {
                                     out = buf;
-                                    key = buf + size - this->msg_buffer_end;
+                                    key = buf + size - m_msg_buffer_end;
                                 } else {
                                     out = 0;
                                 }
@@ -107,7 +107,7 @@ namespace ams::kern {
                             break;
                         case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_ToSingleBuffer:
                             {
-                                const ipc::MessageBuffer::ReceiveListEntry entry(this->data[0], this->data[1]);
+                                const ipc::MessageBuffer::ReceiveListEntry entry(m_data[0], m_data[1]);
                                 const uintptr_t buf = util::AlignUp(entry.GetAddress() + key, PointerTransferBufferAlignment);
 
                                 const uintptr_t entry_addr = entry.GetAddress();
@@ -123,8 +123,8 @@ namespace ams::kern {
                             break;
                         default:
                             {
-                                if (key < this->recv_list_count - ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset) {
-                                    const ipc::MessageBuffer::ReceiveListEntry entry(this->data[2 * key + 0], this->data[2 * key + 1]);
+                                if (key < m_recv_list_count - ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset) {
+                                    const ipc::MessageBuffer::ReceiveListEntry entry(m_data[2 * key + 0], m_data[2 * key + 1]);
 
                                     const uintptr_t entry_addr = entry.GetAddress();
                                     const size_t entry_size    = entry.GetSize();
@@ -953,18 +953,18 @@ namespace ams::kern {
     void KServerSession::Destroy() {
         MESOSPHERE_ASSERT_THIS();
 
-        this->parent->OnServerClosed();
+        m_parent->OnServerClosed();
 
         this->CleanupRequests();
 
-        this->parent->Close();
+        m_parent->Close();
     }
 
     Result KServerSession::ReceiveRequest(uintptr_t server_message, uintptr_t server_buffer_size, KPhysicalAddress server_message_paddr) {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock the session. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Get the request and client thread. */
         KSessionRequest *request;
@@ -973,17 +973,17 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Ensure that we can service the request. */
-            R_UNLESS(!this->parent->IsClientClosed(), svc::ResultSessionClosed());
+            R_UNLESS(!m_parent->IsClientClosed(), svc::ResultSessionClosed());
 
             /* Ensure we aren't already servicing a request. */
-            R_UNLESS(this->current_request == nullptr, svc::ResultNotFound());
+            R_UNLESS(m_current_request == nullptr, svc::ResultNotFound());
 
             /* Ensure we have a request to service. */
-            R_UNLESS(!this->request_list.empty(), svc::ResultNotFound());
+            R_UNLESS(!m_request_list.empty(), svc::ResultNotFound());
 
             /* Pop the first request from the list. */
-            request = std::addressof(this->request_list.front());
-            this->request_list.pop_front();
+            request = std::addressof(m_request_list.front());
+            m_request_list.pop_front();
 
             /* Get the thread for the request. */
             client_thread = KScopedAutoObject<KThread>(request->GetThread());
@@ -991,7 +991,7 @@ namespace ams::kern {
         }
 
         /* Set the request as our current. */
-        this->current_request = request;
+        m_current_request = request;
 
         /* Get the client address. */
         uintptr_t client_message  = request->GetAddress();
@@ -1009,9 +1009,9 @@ namespace ams::kern {
             /* Clear the current request. */
             {
                 KScopedSchedulerLock sl;
-                MESOSPHERE_ASSERT(this->current_request == request);
-                this->current_request = nullptr;
-                if (!this->request_list.empty()) {
+                MESOSPHERE_ASSERT(m_current_request == request);
+                m_current_request = nullptr;
+                if (!m_request_list.empty()) {
                     this->NotifyAvailable();
                 }
             }
@@ -1063,7 +1063,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock the session. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Get the request. */
         KSessionRequest *request;
@@ -1071,12 +1071,12 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Get the current request. */
-            request = this->current_request;
+            request = m_current_request;
             R_UNLESS(request != nullptr, svc::ResultInvalidState());
 
             /* Clear the current request, since we're processing it. */
-            this->current_request = nullptr;
-            if (!this->request_list.empty()) {
+            m_current_request = nullptr;
+            if (!m_request_list.empty()) {
                 this->NotifyAvailable();
             }
         }
@@ -1091,7 +1091,7 @@ namespace ams::kern {
         KWritableEvent *event           = request->GetEvent();
 
         /* Check whether we're closed. */
-        const bool closed = (client_thread == nullptr || this->parent->IsClientClosed());
+        const bool closed = (client_thread == nullptr || m_parent->IsClientClosed());
 
         Result result;
         if (!closed) {
@@ -1160,7 +1160,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* Ensure that we can handle new requests. */
-        R_UNLESS(!this->parent->IsServerClosed(), svc::ResultSessionClosed());
+        R_UNLESS(!m_parent->IsServerClosed(), svc::ResultSessionClosed());
 
         /* If there's no event, this is synchronous, so we should check for thread termination. */
         if (request->GetEvent() == nullptr) {
@@ -1170,11 +1170,11 @@ namespace ams::kern {
         }
 
         /* Get whether we're empty. */
-        const bool was_empty = this->request_list.empty();
+        const bool was_empty = m_request_list.empty();
 
         /* Add the request to the list. */
         request->Open();
-        this->request_list.push_back(*request);
+        m_request_list.push_back(*request);
 
         /* If we were empty, signal. */
         if (was_empty) {
@@ -1189,12 +1189,12 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* If the client is closed, we're always signaled. */
-        if (this->parent->IsClientClosed()) {
+        if (m_parent->IsClientClosed()) {
             return true;
         }
 
         /* Otherwise, we're signaled if we have a request and aren't handling one. */
-        return !this->request_list.empty() && this->current_request == nullptr;
+        return !m_request_list.empty() && m_current_request == nullptr;
     }
 
     bool KServerSession::IsSignaled() const {
@@ -1207,7 +1207,7 @@ namespace ams::kern {
     void KServerSession::CleanupRequests() {
         MESOSPHERE_ASSERT_THIS();
 
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Clean up any pending requests. */
         while (true) {
@@ -1216,14 +1216,14 @@ namespace ams::kern {
             {
                 KScopedSchedulerLock sl;
 
-                if (this->current_request) {
+                if (m_current_request) {
                     /* Choose the current request if we have one. */
-                    request = this->current_request;
-                    this->current_request = nullptr;
-                } else if (!this->request_list.empty()) {
+                    request = m_current_request;
+                    m_current_request = nullptr;
+                } else if (!m_request_list.empty()) {
                     /* Pop the request from the front of the list. */
-                    request = std::addressof(this->request_list.front());
-                    this->request_list.pop_front();
+                    request = std::addressof(m_request_list.front());
+                    m_request_list.pop_front();
                 }
             }
 
@@ -1275,7 +1275,7 @@ namespace ams::kern {
     void KServerSession::OnClientClosed() {
         MESOSPHERE_ASSERT_THIS();
 
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Handle any pending requests. */
         KSessionRequest *prev_request = nullptr;
@@ -1291,9 +1291,9 @@ namespace ams::kern {
             {
                 KScopedSchedulerLock sl;
 
-                if (this->current_request != nullptr && this->current_request != prev_request) {
+                if (m_current_request != nullptr && m_current_request != prev_request) {
                     /* Set the request, open a reference as we process it. */
-                    request = this->current_request;
+                    request = m_current_request;
                     request->Open();
                     cur_request = true;
 
@@ -1308,10 +1308,10 @@ namespace ams::kern {
                         terminate = true;
                     }
                     prev_request = request;
-                } else if (!this->request_list.empty()) {
+                } else if (!m_request_list.empty()) {
                     /* Pop the request from the front of the list. */
-                    request = std::addressof(this->request_list.front());
-                    this->request_list.pop_front();
+                    request = std::addressof(m_request_list.front());
+                    m_request_list.pop_front();
 
                     /* Get thread and event for the request. */
                     thread = request->GetThread();
@@ -1370,25 +1370,25 @@ namespace ams::kern {
     void KServerSession::Dump() {
         MESOSPHERE_ASSERT_THIS();
 
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
         {
             KScopedSchedulerLock sl;
             MESOSPHERE_RELEASE_LOG("Dump Session %p\n", this);
 
             /* Dump current request. */
             bool has_request = false;
-            if (this->current_request != nullptr) {
-                KThread *thread = this->current_request->GetThread();
+            if (m_current_request != nullptr) {
+                KThread *thread = m_current_request->GetThread();
                 const s32 thread_id = thread != nullptr ? static_cast<s32>(thread->GetId()) : -1;
-                MESOSPHERE_RELEASE_LOG("    CurrentReq %p Thread=%p ID=%d\n", this->current_request, thread, thread_id);
+                MESOSPHERE_RELEASE_LOG("    CurrentReq %p Thread=%p ID=%d\n", m_current_request, thread, thread_id);
                 has_request = true;
             }
 
             /* Dump all rqeuests in list. */
-            for (auto it = this->request_list.begin(); it != this->request_list.end(); ++it) {
+            for (auto it = m_request_list.begin(); it != m_request_list.end(); ++it) {
                 KThread *thread = it->GetThread();
                 const s32 thread_id = thread != nullptr ? static_cast<s32>(thread->GetId()) : -1;
-                MESOSPHERE_RELEASE_LOG("    Req %p Thread=%p ID=%d\n", this->current_request, thread, thread_id);
+                MESOSPHERE_RELEASE_LOG("    Req %p Thread=%p ID=%d\n", m_current_request, thread, thread_id);
                 has_request = true;
             }
 

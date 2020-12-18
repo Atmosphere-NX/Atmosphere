@@ -21,14 +21,14 @@ namespace ams::kern {
 
     class KThreadQueue {
         private:
-            KThread::WaiterList wait_list;
+            KThread::WaiterList m_wait_list;
         public:
-            constexpr ALWAYS_INLINE KThreadQueue() : wait_list() { /* ... */ }
+            constexpr ALWAYS_INLINE KThreadQueue() : m_wait_list() { /* ... */ }
 
-            bool IsEmpty() const { return this->wait_list.empty(); }
+            bool IsEmpty() const { return m_wait_list.empty(); }
 
-            KThread::WaiterList::iterator begin() { return this->wait_list.begin(); }
-            KThread::WaiterList::iterator end() { return this->wait_list.end(); }
+            KThread::WaiterList::iterator begin() { return m_wait_list.begin(); }
+            KThread::WaiterList::iterator end() { return m_wait_list.end(); }
 
             bool SleepThread(KThread *t) {
                 KScopedSchedulerLock sl;
@@ -43,7 +43,7 @@ namespace ams::kern {
                 t->SetState(KThread::ThreadState_Waiting);
 
                 /* Add the thread to the queue. */
-                this->wait_list.push_back(*t);
+                m_wait_list.push_back(*t);
 
                 return true;
             }
@@ -52,7 +52,7 @@ namespace ams::kern {
                 KScopedSchedulerLock sl;
 
                 /* Remove the thread from the queue. */
-                this->wait_list.erase(this->wait_list.iterator_to(*t));
+                m_wait_list.erase(m_wait_list.iterator_to(*t));
 
                 /* Mark the thread as no longer sleeping. */
                 t->SetState(KThread::ThreadState_Runnable);
@@ -62,13 +62,13 @@ namespace ams::kern {
             KThread *WakeupFrontThread() {
                 KScopedSchedulerLock sl;
 
-                if (this->wait_list.empty()) {
+                if (m_wait_list.empty()) {
                     return nullptr;
                 } else {
                     /* Remove the thread from the queue. */
-                    auto it = this->wait_list.begin();
+                    auto it = m_wait_list.begin();
                     KThread *thread = std::addressof(*it);
-                    this->wait_list.erase(it);
+                    m_wait_list.erase(it);
 
                     MESOSPHERE_ASSERT(thread->GetState() == KThread::ThreadState_Waiting);
 

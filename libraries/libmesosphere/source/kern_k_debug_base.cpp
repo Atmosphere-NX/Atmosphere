@@ -27,28 +27,28 @@ namespace ams::kern {
 
     void KDebugBase::Initialize() {
         /* Clear the process and continue flags. */
-        this->process        = nullptr;
-        this->continue_flags = 0;
+        m_process        = nullptr;
+        m_continue_flags = 0;
     }
 
     bool KDebugBase::Is64Bit() const {
-        MESOSPHERE_ASSERT(this->lock.IsLockedByCurrentThread());
-        MESOSPHERE_ASSERT(this->process != nullptr);
-        return this->process->Is64Bit();
+        MESOSPHERE_ASSERT(m_lock.IsLockedByCurrentThread());
+        MESOSPHERE_ASSERT(m_process != nullptr);
+        return m_process->Is64Bit();
     }
 
 
     Result KDebugBase::QueryMemoryInfo(ams::svc::MemoryInfo *out_memory_info, ams::svc::PageInfo *out_page_info, KProcessAddress address) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Check that we have a valid process. */
-        R_UNLESS(this->process != nullptr,       svc::ResultProcessTerminated());
-        R_UNLESS(!this->process->IsTerminated(), svc::ResultProcessTerminated());
+        R_UNLESS(m_process != nullptr,       svc::ResultProcessTerminated());
+        R_UNLESS(!m_process->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Query the mapping's info. */
         KMemoryInfo info;
-        R_TRY(process->GetPageTable().QueryInfo(std::addressof(info), out_page_info, address));
+        R_TRY(m_process->GetPageTable().QueryInfo(std::addressof(info), out_page_info, address));
 
         /* Write output. */
         *out_memory_info = info.GetSvcMemoryInfo();
@@ -57,15 +57,15 @@ namespace ams::kern {
 
     Result KDebugBase::ReadMemory(KProcessAddress buffer, KProcessAddress address, size_t size) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Check that we have a valid process. */
-        R_UNLESS(this->process != nullptr,       svc::ResultProcessTerminated());
-        R_UNLESS(!this->process->IsTerminated(), svc::ResultProcessTerminated());
+        R_UNLESS(m_process != nullptr,       svc::ResultProcessTerminated());
+        R_UNLESS(!m_process->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Get the page tables. */
         KProcessPageTable &debugger_pt = GetCurrentProcess().GetPageTable();
-        KProcessPageTable &target_pt   = this->process->GetPageTable();
+        KProcessPageTable &target_pt   = m_process->GetPageTable();
 
         /* Verify that the regions are in range. */
         R_UNLESS(target_pt.Contains(address, size),  svc::ResultInvalidCurrentMemory());
@@ -150,15 +150,15 @@ namespace ams::kern {
 
     Result KDebugBase::WriteMemory(KProcessAddress buffer, KProcessAddress address, size_t size) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Check that we have a valid process. */
-        R_UNLESS(this->process != nullptr,       svc::ResultProcessTerminated());
-        R_UNLESS(!this->process->IsTerminated(), svc::ResultProcessTerminated());
+        R_UNLESS(m_process != nullptr,       svc::ResultProcessTerminated());
+        R_UNLESS(!m_process->IsTerminated(), svc::ResultProcessTerminated());
 
         /* Get the page tables. */
         KProcessPageTable &debugger_pt = GetCurrentProcess().GetPageTable();
-        KProcessPageTable &target_pt   = this->process->GetPageTable();
+        KProcessPageTable &target_pt   = m_process->GetPageTable();
 
         /* Verify that the regions are in range. */
         R_UNLESS(target_pt.Contains(address, size),  svc::ResultInvalidCurrentMemory());
@@ -280,7 +280,7 @@ namespace ams::kern {
             /* Lock both ourselves, the target process, and the scheduler. */
             KScopedLightLock state_lk(target->GetStateLock());
             KScopedLightLock list_lk(target->GetListLock());
-            KScopedLightLock this_lk(this->lock);
+            KScopedLightLock this_lk(m_lock);
             KScopedSchedulerLock sl;
 
             /* Check that the process isn't already being debugged. */
@@ -305,19 +305,19 @@ namespace ams::kern {
                 }
 
                 /* Set our process member, and open a reference to the target. */
-                this->process = target;
-                this->process->Open();
+                m_process = target;
+                m_process->Open();
 
                 /* Set ourselves as the process's attached object. */
-                this->old_process_state = this->process->SetDebugObject(this);
+                m_old_process_state = m_process->SetDebugObject(this);
 
                 /* Send an event for our attaching to the process. */
                 this->PushDebugEvent(ams::svc::DebugEvent_CreateProcess);
 
                 /* Send events for attaching to each thread in the process. */
                 {
-                    auto end = this->process->GetThreadList().end();
-                    for (auto it = this->process->GetThreadList().begin(); it != end; ++it) {
+                    auto end = m_process->GetThreadList().end();
+                    for (auto it = m_process->GetThreadList().begin(); it != end; ++it) {
                         /* Request that we suspend the thread. */
                         it->RequestSuspend(KThread::SuspendType_Debug);
 
@@ -333,7 +333,7 @@ namespace ams::kern {
                 }
 
                 /* Send the process's jit debug info, if relevant. */
-                if (KEventInfo *jit_info = this->process->GetJitDebugInfo(); jit_info != nullptr) {
+                if (KEventInfo *jit_info = m_process->GetJitDebugInfo(); jit_info != nullptr) {
                     this->EnqueueDebugEventInfo(jit_info);
                 }
 
@@ -356,12 +356,12 @@ namespace ams::kern {
         /* Lock both ourselves, the target process, and the scheduler. */
         KScopedLightLock state_lk(target->GetStateLock());
         KScopedLightLock list_lk(target->GetListLock());
-        KScopedLightLock this_lk(this->lock);
+        KScopedLightLock this_lk(m_lock);
         KScopedSchedulerLock sl;
 
         /* Check that we're still attached to the process, and that it's not terminated. */
         /* NOTE: Here Nintendo only checks that this->process is not nullptr. */
-        R_UNLESS(this->process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
+        R_UNLESS(m_process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
         R_UNLESS(!target->IsTerminated(),                    svc::ResultProcessTerminated());
 
         /* Get the currently active threads. */
@@ -418,12 +418,12 @@ namespace ams::kern {
             /* Lock both ourselves and the target process. */
             KScopedLightLock state_lk(target->GetStateLock());
             KScopedLightLock list_lk(target->GetListLock());
-            KScopedLightLock this_lk(this->lock);
+            KScopedLightLock this_lk(m_lock);
 
             /* Check that we still have our process. */
-            if (this->process != nullptr) {
+            if (m_process != nullptr) {
                 /* Check that our process is the one we got earlier. */
-                MESOSPHERE_ASSERT(this->process == target.GetPointerUnsafe());
+                MESOSPHERE_ASSERT(m_process == target.GetPointerUnsafe());
 
                 /* Lock the scheduler. */
                 KScopedSchedulerLock sl;
@@ -450,10 +450,10 @@ namespace ams::kern {
 
                 /* Detach from the process. */
                 target->ClearDebugObject(new_state);
-                this->process = nullptr;
+                m_process = nullptr;
 
                 /* Clear our continue flags. */
-                this->continue_flags = 0;
+                m_continue_flags = 0;
             }
         }
 
@@ -468,7 +468,7 @@ namespace ams::kern {
 
     Result KDebugBase::GetThreadContext(ams::svc::ThreadContext *out, u64 thread_id, u32 context_flags) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Get the thread from its id. */
         KThread *thread = KThread::GetThreadFromId(thread_id);
@@ -476,7 +476,7 @@ namespace ams::kern {
         ON_SCOPE_EXIT { thread->Close(); };
 
         /* Verify that the thread is owned by our process. */
-        R_UNLESS(this->process == thread->GetOwnerProcess(), svc::ResultInvalidId());
+        R_UNLESS(m_process == thread->GetOwnerProcess(), svc::ResultInvalidId());
 
         /* Verify that the thread isn't terminated. */
         R_UNLESS(thread->GetState() != KThread::ThreadState_Terminated, svc::ResultTerminationRequested());
@@ -515,7 +515,7 @@ namespace ams::kern {
 
     Result KDebugBase::SetThreadContext(const ams::svc::ThreadContext &ctx, u64 thread_id, u32 context_flags) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Get the thread from its id. */
         KThread *thread = KThread::GetThreadFromId(thread_id);
@@ -523,7 +523,7 @@ namespace ams::kern {
         ON_SCOPE_EXIT { thread->Close(); };
 
         /* Verify that the thread is owned by our process. */
-        R_UNLESS(this->process == thread->GetOwnerProcess(), svc::ResultInvalidId());
+        R_UNLESS(m_process == thread->GetOwnerProcess(), svc::ResultInvalidId());
 
         /* Verify that the thread isn't terminated. */
         R_UNLESS(thread->GetState() != KThread::ThreadState_Terminated, svc::ResultTerminationRequested());
@@ -575,29 +575,29 @@ namespace ams::kern {
         /* Lock both ourselves, the target process, and the scheduler. */
         KScopedLightLock state_lk(target->GetStateLock());
         KScopedLightLock list_lk(target->GetListLock());
-        KScopedLightLock this_lk(this->lock);
+        KScopedLightLock this_lk(m_lock);
         KScopedSchedulerLock sl;
 
         /* Check that we're still attached to the process, and that it's not terminated. */
-        R_UNLESS(this->process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
+        R_UNLESS(m_process == target.GetPointerUnsafe(), svc::ResultProcessTerminated());
         R_UNLESS(!target->IsTerminated(),                    svc::ResultProcessTerminated());
 
         /* Check that we have no pending events. */
-        R_UNLESS(this->event_info_list.empty(), svc::ResultBusy());
+        R_UNLESS(m_event_info_list.empty(), svc::ResultBusy());
 
         /* Clear the target's JIT debug info. */
         target->ClearJitDebugInfo();
 
         /* Set our continue flags. */
-        this->continue_flags = flags;
+        m_continue_flags = flags;
 
         /* Iterate over threads, continuing them as we should. */
         bool has_debug_break_thread = false;
         {
             /* Parse our flags. */
-            const bool exception_handled = (this->continue_flags & ams::svc::ContinueFlag_ExceptionHandled) != 0;
-            const bool continue_all      = (this->continue_flags & ams::svc::ContinueFlag_ContinueAll)      != 0;
-            const bool continue_others   = (this->continue_flags & ams::svc::ContinueFlag_ContinueOthers)   != 0;
+            const bool exception_handled = (m_continue_flags & ams::svc::ContinueFlag_ExceptionHandled) != 0;
+            const bool continue_all      = (m_continue_flags & ams::svc::ContinueFlag_ContinueAll)      != 0;
+            const bool continue_others   = (m_continue_flags & ams::svc::ContinueFlag_ContinueOthers)   != 0;
 
             /* Update each thread. */
             auto end = target->GetThreadList().end();
@@ -786,15 +786,15 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Push the event to the back of the list. */
-        this->event_info_list.push_back(*info);
+        m_event_info_list.push_back(*info);
     }
 
 
     KScopedAutoObject<KProcess> KDebugBase::GetProcess() {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
-        return this->process;
+        return m_process;
     }
 
     template<typename T> requires (std::same_as<T, ams::svc::lp64::DebugEventInfo> || std::same_as<T, ams::svc::ilp32::DebugEventInfo>)
@@ -809,11 +809,11 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Check that we have an event to dequeue. */
-            R_UNLESS(!this->event_info_list.empty(), svc::ResultNoEvent());
+            R_UNLESS(!m_event_info_list.empty(), svc::ResultNoEvent());
 
             /* Pop the event from the front of the queue. */
-            info = std::addressof(this->event_info_list.front());
-            this->event_info_list.pop_front();
+            info = std::addressof(m_event_info_list.front());
+            m_event_info_list.pop_front();
         }
         MESOSPHERE_ASSERT(info != nullptr);
 
@@ -932,16 +932,16 @@ namespace ams::kern {
                     /* Lock both ourselves and the target process. */
                     KScopedLightLock state_lk(process->GetStateLock());
                     KScopedLightLock list_lk(process->GetListLock());
-                    KScopedLightLock this_lk(this->lock);
+                    KScopedLightLock this_lk(m_lock);
 
                     /* Ensure we finalize exactly once. */
-                    if (this->process != nullptr) {
-                        MESOSPHERE_ASSERT(this->process == process.GetPointerUnsafe());
+                    if (m_process != nullptr) {
+                        MESOSPHERE_ASSERT(m_process == process.GetPointerUnsafe());
                         {
                             KScopedSchedulerLock sl;
 
                             /* Detach ourselves from the process. */
-                            process->ClearDebugObject(this->old_process_state);
+                            process->ClearDebugObject(m_old_process_state);
 
                             /* Release all threads. */
                             const bool resume = (process->GetState() != KProcess::State_Crashed);
@@ -959,7 +959,7 @@ namespace ams::kern {
                             }
 
                             /* Clear our process. */
-                            this->process = nullptr;
+                            m_process = nullptr;
                         }
                     }
                 }
@@ -970,9 +970,9 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            while (!this->event_info_list.empty()) {
-                KEventInfo *info = std::addressof(this->event_info_list.front());
-                this->event_info_list.pop_front();
+            while (!m_event_info_list.empty()) {
+                KEventInfo *info = std::addressof(m_event_info_list.front());
+                m_event_info_list.pop_front();
                 KEventInfo::Free(info);
             }
         }
@@ -981,7 +981,7 @@ namespace ams::kern {
     bool KDebugBase::IsSignaled() const {
         KScopedSchedulerLock sl;
 
-        return (!this->event_info_list.empty()) || this->process == nullptr || this->process->IsTerminated();
+        return (!m_event_info_list.empty()) || m_process == nullptr || m_process->IsTerminated();
     }
 
     Result KDebugBase::ProcessDebugEvent(ams::svc::DebugEvent event, uintptr_t param0, uintptr_t param1, uintptr_t param2, uintptr_t param3, uintptr_t param4) {
@@ -1007,7 +1007,7 @@ namespace ams::kern {
             R_SUCCEED_IF(debug == nullptr);
 
             /* If the event is an exception and we don't have exception events enabled, we can't handle the event. */
-            if (event == ams::svc::DebugEvent_Exception && (debug->continue_flags & ams::svc::ContinueFlag_EnableExceptionEvent) == 0) {
+            if (event == ams::svc::DebugEvent_Exception && (debug->m_continue_flags & ams::svc::ContinueFlag_EnableExceptionEvent) == 0) {
                 GetCurrentThread().SetDebugExceptionResult(ResultSuccess());
                 return svc::ResultNotHandled();
             }

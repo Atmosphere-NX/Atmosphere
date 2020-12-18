@@ -23,28 +23,28 @@ namespace ams::kern {
         private:
             class RandomBitGenerator {
                 private:
-                    util::TinyMT rng;
-                    u32 entropy;
-                    u32 bits_available;
+                    util::TinyMT m_rng;
+                    u32 m_entropy;
+                    u32 m_bits_available;
                 private:
                     void RefreshEntropy() {
-                        this->entropy        = rng.GenerateRandomU32();
-                        this->bits_available = BITSIZEOF(this->entropy);
+                        m_entropy        = m_rng.GenerateRandomU32();
+                        m_bits_available = BITSIZEOF(m_entropy);
                     }
 
                     bool GenerateRandomBit() {
-                        if (this->bits_available == 0) {
+                        if (m_bits_available == 0) {
                             this->RefreshEntropy();
                         }
 
-                        const bool rnd_bit = (this->entropy & 1) != 0;
-                        this->entropy >>= 1;
-                        --this->bits_available;
+                        const bool rnd_bit = (m_entropy & 1) != 0;
+                        m_entropy >>= 1;
+                        --m_bits_available;
                         return rnd_bit;
                     }
                 public:
-                    RandomBitGenerator() : rng(), entropy(), bits_available() {
-                        this->rng.Initialize(static_cast<u32>(KSystemControl::GenerateRandomU64()));
+                    RandomBitGenerator() : m_rng(), m_entropy(), m_bits_available() {
+                        m_rng.Initialize(static_cast<u32>(KSystemControl::GenerateRandomU64()));
                     }
 
                     size_t SelectRandomBit(u64 bitmap) {
@@ -89,27 +89,27 @@ namespace ams::kern {
         public:
             static constexpr size_t MaxDepth = 4;
         private:
-            u64 *bit_storages[MaxDepth];
-            RandomBitGenerator rng;
-            size_t num_bits;
-            size_t used_depths;
+            u64 *m_bit_storages[MaxDepth];
+            RandomBitGenerator m_rng;
+            size_t m_num_bits;
+            size_t m_used_depths;
         public:
-            KPageBitmap() : bit_storages(), rng(), num_bits(), used_depths() { /* ... */ }
+            KPageBitmap() : m_bit_storages(), m_rng(), m_num_bits(), m_used_depths() { /* ... */ }
 
-            constexpr size_t GetNumBits() const { return this->num_bits; }
-            constexpr s32 GetHighestDepthIndex() const { return static_cast<s32>(this->used_depths) - 1; }
+            constexpr size_t GetNumBits() const { return m_num_bits; }
+            constexpr s32 GetHighestDepthIndex() const { return static_cast<s32>(m_used_depths) - 1; }
 
             u64 *Initialize(u64 *storage, size_t size) {
                 /* Initially, everything is un-set. */
-                this->num_bits = 0;
+                m_num_bits = 0;
 
                 /* Calculate the needed bitmap depth. */
-                this->used_depths = static_cast<size_t>(GetRequiredDepth(size));
-                MESOSPHERE_ASSERT(this->used_depths <= MaxDepth);
+                m_used_depths = static_cast<size_t>(GetRequiredDepth(size));
+                MESOSPHERE_ASSERT(m_used_depths <= MaxDepth);
 
                 /* Set the bitmap pointers. */
                 for (s32 depth = this->GetHighestDepthIndex(); depth >= 0; depth--) {
-                    this->bit_storages[depth] = storage;
+                    m_bit_storages[depth] = storage;
                     size = util::AlignUp(size, BITSIZEOF(u64)) / BITSIZEOF(u64);
                     storage += size;
                 }
@@ -123,18 +123,18 @@ namespace ams::kern {
 
                 if (random) {
                     do {
-                        const u64 v = this->bit_storages[depth][offset];
+                        const u64 v = m_bit_storages[depth][offset];
                         if (v == 0) {
                             /* If depth is bigger than zero, then a previous level indicated a block was free. */
                             MESOSPHERE_ASSERT(depth == 0);
                             return -1;
                         }
-                        offset = offset * BITSIZEOF(u64) + this->rng.SelectRandomBit(v);
+                        offset = offset * BITSIZEOF(u64) + m_rng.SelectRandomBit(v);
                         ++depth;
-                    } while (depth < static_cast<s32>(this->used_depths));
+                    } while (depth < static_cast<s32>(m_used_depths));
                 } else {
                     do {
-                        const u64 v = this->bit_storages[depth][offset];
+                        const u64 v = m_bit_storages[depth][offset];
                         if (v == 0) {
                             /* If depth is bigger than zero, then a previous level indicated a block was free. */
                             MESOSPHERE_ASSERT(depth == 0);
@@ -142,7 +142,7 @@ namespace ams::kern {
                         }
                         offset = offset * BITSIZEOF(u64) + __builtin_ctzll(v);
                         ++depth;
-                    } while (depth < static_cast<s32>(this->used_depths));
+                    } while (depth < static_cast<s32>(m_used_depths));
                 }
 
                 return static_cast<ssize_t>(offset);
@@ -150,17 +150,17 @@ namespace ams::kern {
 
             void SetBit(size_t offset) {
                 this->SetBit(this->GetHighestDepthIndex(), offset);
-                this->num_bits++;
+                m_num_bits++;
             }
 
             void ClearBit(size_t offset) {
                 this->ClearBit(this->GetHighestDepthIndex(), offset);
-                this->num_bits--;
+                m_num_bits--;
             }
 
             bool ClearRange(size_t offset, size_t count) {
                 s32 depth = this->GetHighestDepthIndex();
-                u64 *bits = this->bit_storages[depth];
+                u64 *bits = m_bit_storages[depth];
                 size_t bit_ind = offset / BITSIZEOF(u64);
                 if (AMS_LIKELY(count < BITSIZEOF(u64))) {
                     const size_t shift = offset % BITSIZEOF(u64);
@@ -202,7 +202,7 @@ namespace ams::kern {
                     } while (remaining > 0);
                 }
 
-                this->num_bits -= count;
+                m_num_bits -= count;
                 return true;
             }
         private:
@@ -212,7 +212,7 @@ namespace ams::kern {
                     size_t which = offset % BITSIZEOF(u64);
                     const u64 mask = u64(1) << which;
 
-                    u64 *bit = std::addressof(this->bit_storages[depth][ind]);
+                    u64 *bit = std::addressof(m_bit_storages[depth][ind]);
                     u64 v = *bit;
                     MESOSPHERE_ASSERT((v & mask) == 0);
                     *bit = v | mask;
@@ -230,7 +230,7 @@ namespace ams::kern {
                     size_t which = offset % BITSIZEOF(u64);
                     const u64 mask = u64(1) << which;
 
-                    u64 *bit = std::addressof(this->bit_storages[depth][ind]);
+                    u64 *bit = std::addressof(m_bit_storages[depth][ind]);
                     u64 v = *bit;
                     MESOSPHERE_ASSERT((v & mask) != 0);
                     v &= ~mask;

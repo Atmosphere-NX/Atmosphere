@@ -28,19 +28,19 @@ namespace ams::kern {
         private:
             using RequestList = util::IntrusiveListBaseTraits<KSessionRequest>::ListType;
         private:
-            KSession *parent;
-            RequestList request_list;
-            KSessionRequest *current_request;
-            KLightLock lock;
+            KSession *m_parent;
+            RequestList m_request_list;
+            KSessionRequest *m_current_request;
+            KLightLock m_lock;
         public:
-            constexpr KServerSession() : parent(), request_list(), current_request(), lock() { /* ... */ }
+            constexpr KServerSession() : m_parent(), m_request_list(), m_current_request(), m_lock() { /* ... */ }
             virtual ~KServerSession() { /* ... */ }
 
             virtual void Destroy() override;
 
-            void Initialize(KSession *p) { this->parent = p; }
+            void Initialize(KSession *p) { m_parent = p; }
 
-            constexpr const KSession *GetParent() const { return this->parent; }
+            constexpr const KSession *GetParent() const { return m_parent; }
 
             virtual bool IsSignaled() const override;
 

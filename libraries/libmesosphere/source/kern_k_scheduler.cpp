@@ -53,9 +53,9 @@ namespace ams::kern {
 
     void KScheduler::Initialize(KThread *idle_thread) {
         /* Set core ID and idle thread. */
-        this->core_id = GetCurrentCoreId();
-        this->idle_thread = idle_thread;
-        this->state.idle_thread_stack = this->idle_thread->GetStackTop();
+        m_core_id = GetCurrentCoreId();
+        m_idle_thread = idle_thread;
+        m_state.idle_thread_stack = m_idle_thread->GetStackTop();
 
         /* Insert the main thread into the priority queue. */
         {
@@ -65,48 +65,48 @@ namespace ams::kern {
         }
 
         /* Bind interrupt handler. */
-        Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptTask(), KInterruptName_Scheduler, this->core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
+        Kernel::GetInterruptManager().BindHandler(GetSchedulerInterruptTask(), KInterruptName_Scheduler, m_core_id, KInterruptController::PriorityLevel_Scheduler, false, false);
 
         /* Set the current thread. */
-        this->current_thread = GetCurrentThreadPointer();
+        m_current_thread = GetCurrentThreadPointer();
     }
 
     void KScheduler::Activate() {
         MESOSPHERE_ASSERT(GetCurrentThread().GetDisableDispatchCount() == 1);
 
-        this->state.should_count_idle = KTargetSystem::IsDebugMode();
-        this->is_active = true;
+        m_state.should_count_idle = KTargetSystem::IsDebugMode();
+        m_is_active = true;
         RescheduleCurrentCore();
     }
 
     void KScheduler::RescheduleOtherCores(u64 cores_needing_scheduling) {
-        if (const u64 core_mask = cores_needing_scheduling & ~(1ul << this->core_id); core_mask != 0) {
+        if (const u64 core_mask = cores_needing_scheduling & ~(1ul << m_core_id); core_mask != 0) {
             cpu::DataSynchronizationBarrier();
             Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_Scheduler, core_mask);
         }
     }
 
     u64 KScheduler::UpdateHighestPriorityThread(KThread *highest_thread) {
-        if (KThread *prev_highest_thread = this->state.highest_priority_thread; AMS_LIKELY(prev_highest_thread != highest_thread)) {
+        if (KThread *prev_highest_thread = m_state.highest_priority_thread; AMS_LIKELY(prev_highest_thread != highest_thread)) {
             if (AMS_LIKELY(prev_highest_thread != nullptr)) {
                 IncrementScheduledCount(prev_highest_thread);
                 prev_highest_thread->SetLastScheduledTick(KHardwareTimer::GetTick());
             }
-            if (this->state.should_count_idle) {
+            if (m_state.should_count_idle) {
                 if (AMS_LIKELY(highest_thread != nullptr)) {
                     if (KProcess *process = highest_thread->GetOwnerProcess(); process != nullptr) {
-                        process->SetRunningThread(this->core_id, highest_thread, this->state.idle_count);
+                        process->SetRunningThread(m_core_id, highest_thread, m_state.idle_count);
                     }
                 } else {
-                    this->state.idle_count++;
+                    m_state.idle_count++;
                 }
             }
 
-            MESOSPHERE_KTRACE_SCHEDULE_UPDATE(this->core_id, (prev_highest_thread != nullptr ? prev_highest_thread : this->idle_thread), (highest_thread != nullptr ? highest_thread : this->idle_thread));
+            MESOSPHERE_KTRACE_SCHEDULE_UPDATE(m_core_id, (prev_highest_thread != nullptr ? prev_highest_thread : m_idle_thread), (highest_thread != nullptr ? highest_thread : m_idle_thread));
 
-            this->state.highest_priority_thread = highest_thread;
-            this->state.needs_scheduling = true;
-            return (1ul << this->core_id);
+            m_state.highest_priority_thread = highest_thread;
+            m_state.needs_scheduling = true;
+            return (1ul << m_core_id);
         } else {
             return 0;
         }
@@ -227,7 +227,7 @@ namespace ams::kern {
 
         /* We never want to schedule a null thread, so use the idle thread if we don't have a next. */
         if (next_thread == nullptr) {
-            next_thread = this->idle_thread;
+            next_thread = m_idle_thread;
         }
 
         /* If we're not actually switching thread, there's nothing to do. */
@@ -239,31 +239,31 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(next_thread->GetDisableDispatchCount() == 1);
 
         /* Update the CPU time tracking variables. */
-        const s64 prev_tick = this->last_context_switch_time;
+        const s64 prev_tick = m_last_context_switch_time;
         const s64 cur_tick  = KHardwareTimer::GetTick();
         const s64 tick_diff = cur_tick - prev_tick;
-        cur_thread->AddCpuTime(this->core_id, tick_diff);
+        cur_thread->AddCpuTime(m_core_id, tick_diff);
         if (cur_process != nullptr) {
             cur_process->AddCpuTime(tick_diff);
         }
-        this->last_context_switch_time = cur_tick;
+        m_last_context_switch_time = cur_tick;
 
         /* Update our previous thread. */
         if (cur_process != nullptr) {
             /* NOTE: Combining this into AMS_LIKELY(!... && ...) triggers an internal compiler error: Segmentation fault in GCC 9.2.0. */
-            if (AMS_LIKELY(!cur_thread->IsTerminationRequested()) && AMS_LIKELY(cur_thread->GetActiveCore() == this->core_id)) {
-                this->prev_thread = cur_thread;
+            if (AMS_LIKELY(!cur_thread->IsTerminationRequested()) && AMS_LIKELY(cur_thread->GetActiveCore() == m_core_id)) {
+                m_prev_thread = cur_thread;
             } else {
-                this->prev_thread = nullptr;
+                m_prev_thread = nullptr;
             }
-        } else if (cur_thread == this->idle_thread) {
-            this->prev_thread = nullptr;
+        } else if (cur_thread == m_idle_thread) {
+            m_prev_thread = nullptr;
         }
 
         MESOSPHERE_KTRACE_THREAD_SWITCH(next_thread);
 
-        if (next_thread->GetCurrentCore() != this->core_id) {
-            next_thread->SetCurrentCore(this->core_id);
+        if (next_thread->GetCurrentCore() != m_core_id) {
+            next_thread->SetCurrentCore(m_core_id);
         }
 
         /* Switch the current process, if we're switching processes. */
@@ -273,7 +273,7 @@ namespace ams::kern {
 
         /* Set the new thread. */
         SetCurrentThread(next_thread);
-        this->current_thread = next_thread;
+        m_current_thread = next_thread;
 
         /* Set the new Thread Local region. */
         cpu::SwitchThreadLocalRegion(GetInteger(next_thread->GetThreadLocalRegionAddress()));
@@ -283,7 +283,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(IsSchedulerLockedByCurrentThread());
         for (size_t i = 0; i < cpu::NumCores; ++i) {
             /* Get an atomic reference to the core scheduler's previous thread. */
-            std::atomic_ref<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).prev_thread);
+            std::atomic_ref<KThread *> prev_thread(Kernel::GetScheduler(static_cast<s32>(i)).m_prev_thread);
             static_assert(std::atomic_ref<KThread *>::is_always_lock_free);
 
             /* Atomically clear the previous thread if it's our target. */
@@ -496,7 +496,7 @@ namespace ams::kern {
                     /* Check if the suggested thread is the thread running on its core. */
                     const s32 suggested_core = suggested->GetActiveCore();
 
-                    if (KThread *running_on_suggested_core = (suggested_core >= 0) ? Kernel::GetScheduler(suggested_core).state.highest_priority_thread : nullptr; running_on_suggested_core != suggested) {
+                    if (KThread *running_on_suggested_core = (suggested_core >= 0) ? Kernel::GetScheduler(suggested_core).m_state.highest_priority_thread : nullptr; running_on_suggested_core != suggested) {
                         /* If the current thread's priority is higher than our suggestion's we prefer the next thread to the suggestion. */
                         /* We also prefer the next thread when the current thread's priority is equal to the suggestions, but the next thread has been waiting longer. */
                         if ((suggested->GetPriority() > cur_thread.GetPriority()) ||

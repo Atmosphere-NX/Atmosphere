@@ -41,7 +41,7 @@ namespace ams::kern {
         std::memset(GetVoidPointer(management_region), 0, management_region_size);
 
         /* Traverse the virtual memory layout tree, initializing each manager as appropriate. */
-        while (this->num_managers != MaxManagerCount) {
+        while (m_num_managers != MaxManagerCount) {
             /* Locate the region that should initialize the current manager. */
             uintptr_t region_address = 0;
             size_t region_size = 0;
@@ -53,7 +53,7 @@ namespace ams::kern {
                 }
 
                 /* We want to initialize the managers in order. */
-                if (it.GetAttributes() != this->num_managers) {
+                if (it.GetAttributes() != m_num_managers) {
                     continue;
                 }
 
@@ -82,21 +82,21 @@ namespace ams::kern {
             }
 
             /* Initialize a new manager for the region. */
-            Impl *manager = std::addressof(this->managers[this->num_managers++]);
-            MESOSPHERE_ABORT_UNLESS(this->num_managers <= util::size(this->managers));
+            Impl *manager = std::addressof(m_managers[m_num_managers++]);
+            MESOSPHERE_ABORT_UNLESS(m_num_managers <= util::size(m_managers));
 
             const size_t cur_size = manager->Initialize(region_address, region_size, management_region, management_region_end, region_pool);
             management_region += cur_size;
             MESOSPHERE_ABORT_UNLESS(management_region <= management_region_end);
 
             /* Insert the manager into the pool list. */
-            if (this->pool_managers_tail[region_pool] == nullptr) {
-                this->pool_managers_head[region_pool] = manager;
+            if (m_pool_managers_tail[region_pool] == nullptr) {
+                m_pool_managers_head[region_pool] = manager;
             } else {
-                this->pool_managers_tail[region_pool]->SetNext(manager);
-                manager->SetPrev(this->pool_managers_tail[region_pool]);
+                m_pool_managers_tail[region_pool]->SetNext(manager);
+                manager->SetPrev(m_pool_managers_tail[region_pool]);
             }
-            this->pool_managers_tail[region_pool] = manager;
+            m_pool_managers_tail[region_pool] = manager;
         }
 
         /* Free each region to its corresponding heap. */
@@ -106,26 +106,26 @@ namespace ams::kern {
                 MESOSPHERE_ABORT_UNLESS(it.GetEndAddress() != 0);
 
                 /* Free the memory to the heap. */
-                this->managers[it.GetAttributes()].Free(it.GetAddress(), it.GetSize() / PageSize);
+                m_managers[it.GetAttributes()].Free(it.GetAddress(), it.GetSize() / PageSize);
             }
         }
 
         /* Update the used size for all managers. */
-        for (size_t i = 0; i < this->num_managers; ++i) {
-            this->managers[i].UpdateUsedHeapSize();
+        for (size_t i = 0; i < m_num_managers; ++i) {
+            m_managers[i].UpdateUsedHeapSize();
         }
     }
 
     Result KMemoryManager::InitializeOptimizedMemory(u64 process_id, Pool pool) {
         /* Lock the pool. */
-        KScopedLightLock lk(this->pool_locks[pool]);
+        KScopedLightLock lk(m_pool_locks[pool]);
 
         /* Check that we don't already have an optimized process. */
-        R_UNLESS(!this->has_optimized_process[pool], svc::ResultBusy());
+        R_UNLESS(!m_has_optimized_process[pool], svc::ResultBusy());
 
         /* Set the optimized process id. */
-        this->optimized_process_ids[pool] = process_id;
-        this->has_optimized_process[pool] = true;
+        m_optimized_process_ids[pool] = process_id;
+        m_has_optimized_process[pool] = true;
 
         /* Clear the management area for the optimized process. */
         for (auto *manager = this->GetFirstManager(pool, Direction_FromFront); manager != nullptr; manager = this->GetNextManager(manager, Direction_FromFront)) {
@@ -137,11 +137,11 @@ namespace ams::kern {
 
     void KMemoryManager::FinalizeOptimizedMemory(u64 process_id, Pool pool) {
         /* Lock the pool. */
-        KScopedLightLock lk(this->pool_locks[pool]);
+        KScopedLightLock lk(m_pool_locks[pool]);
 
         /* If the process was optimized, clear it. */
-        if (this->has_optimized_process[pool] && this->optimized_process_ids[pool] == process_id) {
-            this->has_optimized_process[pool] = false;
+        if (m_has_optimized_process[pool] && m_optimized_process_ids[pool] == process_id) {
+            m_has_optimized_process[pool] = false;
         }
     }
 
@@ -154,7 +154,7 @@ namespace ams::kern {
 
         /* Lock the pool that we're allocating from. */
         const auto [pool, dir] = DecodeOption(option);
-        KScopedLightLock lk(this->pool_locks[pool]);
+        KScopedLightLock lk(m_pool_locks[pool]);
 
         /* Choose a heap based on our page size request. */
         const s32 heap_index = KPageHeap::GetAlignedBlockIndex(num_pages, align_pages);
@@ -181,7 +181,7 @@ namespace ams::kern {
         }
 
         /* Maintain the optimized memory bitmap, if we should. */
-        if (this->has_optimized_process[pool]) {
+        if (m_has_optimized_process[pool]) {
             chosen_manager->TrackUnoptimizedAllocation(allocated_block, num_pages);
         }
 
@@ -251,10 +251,10 @@ namespace ams::kern {
 
         /* Lock the pool that we're allocating from. */
         const auto [pool, dir] = DecodeOption(option);
-        KScopedLightLock lk(this->pool_locks[pool]);
+        KScopedLightLock lk(m_pool_locks[pool]);
 
         /* Allocate the page group. */
-        R_TRY(this->AllocatePageGroupImpl(out, num_pages, pool, dir, this->has_optimized_process[pool], true));
+        R_TRY(this->AllocatePageGroupImpl(out, num_pages, pool, dir, m_has_optimized_process[pool], true));
 
         /* Open the first reference to the pages. */
         for (const auto &block : *out) {
@@ -288,11 +288,11 @@ namespace ams::kern {
         bool optimized;
         {
             /* Lock the pool that we're allocating from. */
-            KScopedLightLock lk(this->pool_locks[pool]);
+            KScopedLightLock lk(m_pool_locks[pool]);
 
             /* Check if we have an optimized process. */
-            const bool has_optimized = this->has_optimized_process[pool];
-            const bool is_optimized  = this->optimized_process_ids[pool] == process_id;
+            const bool has_optimized = m_has_optimized_process[pool];
+            const bool is_optimized  = m_optimized_process_ids[pool] == process_id;
 
             /* Allocate the page group. */
             R_TRY(this->AllocatePageGroupImpl(out, num_pages, pool, dir, has_optimized && !is_optimized, false));
@@ -361,7 +361,7 @@ namespace ams::kern {
                         auto &manager = this->GetManager(cur_address);
 
                         /* Lock the pool for the manager. */
-                        KScopedLightLock lk(this->pool_locks[manager.GetPool()]);
+                        KScopedLightLock lk(m_pool_locks[manager.GetPool()]);
 
                         /* Track some or all of the current pages. */
                         const size_t cur_pages = std::min(remaining_pages, manager.GetPageOffsetToEnd(cur_address));
@@ -395,13 +395,13 @@ namespace ams::kern {
         MESOSPHERE_ABORT_UNLESS(util::IsAligned(total_management_size, PageSize));
 
         /* Setup region. */
-        this->pool = p;
-        this->management_region = management;
-        this->page_reference_counts = GetPointer<RefCount>(management + optimize_map_size);
-        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(this->management_region), PageSize));
+        m_pool = p;
+        m_management_region = management;
+        m_page_reference_counts = GetPointer<RefCount>(management + optimize_map_size);
+        MESOSPHERE_ABORT_UNLESS(util::IsAligned(GetInteger(m_management_region), PageSize));
 
         /* Initialize the manager's KPageHeap. */
-        this->heap.Initialize(address, size, management + manager_size, page_heap_size);
+        m_heap.Initialize(address, size, management + manager_size, page_heap_size);
 
         return total_management_size;
     }
@@ -412,7 +412,7 @@ namespace ams::kern {
         const size_t last = offset + num_pages - 1;
 
         /* Track. */
-        u64 *optimize_map = GetPointer<u64>(this->management_region);
+        u64 *optimize_map = GetPointer<u64>(m_management_region);
         while (offset <= last) {
             /* Mark the page as not being optimized-allocated. */
             optimize_map[offset / BITSIZEOF(u64)] &= ~(u64(1) << (offset % BITSIZEOF(u64)));
@@ -427,7 +427,7 @@ namespace ams::kern {
         const size_t last = offset + num_pages - 1;
 
         /* Track. */
-        u64 *optimize_map = GetPointer<u64>(this->management_region);
+        u64 *optimize_map = GetPointer<u64>(m_management_region);
         while (offset <= last) {
             /* Mark the page as being optimized-allocated. */
             optimize_map[offset / BITSIZEOF(u64)] |= (u64(1) << (offset % BITSIZEOF(u64)));
@@ -445,7 +445,7 @@ namespace ams::kern {
         const size_t last = offset + num_pages - 1;
 
         /* Process. */
-        u64 *optimize_map = GetPointer<u64>(this->management_region);
+        u64 *optimize_map = GetPointer<u64>(m_management_region);
         while (offset <= last) {
             /* Check if the page has been optimized-allocated before. */
             if ((optimize_map[offset / BITSIZEOF(u64)] & (u64(1) << (offset % BITSIZEOF(u64)))) == 0) {
@@ -453,7 +453,7 @@ namespace ams::kern {
                 any_new = true;
 
                 /* Fill the page. */
-                std::memset(GetVoidPointer(this->heap.GetAddress() + offset * PageSize), fill_pattern, PageSize);
+                std::memset(GetVoidPointer(m_heap.GetAddress() + offset * PageSize), fill_pattern, PageSize);
             }
 
             offset++;

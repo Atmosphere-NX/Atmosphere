@@ -20,7 +20,7 @@ namespace ams::kern {
     void KLightClientSession::Destroy() {
         MESOSPHERE_ASSERT_THIS();
 
-        this->parent->OnClientClosed();
+        m_parent->OnClientClosed();
     }
 
     void KLightClientSession::OnServerClosed() {
@@ -42,7 +42,7 @@ namespace ams::kern {
 
             cur_thread->SetSyncedObject(nullptr, ResultSuccess());
 
-            R_TRY(this->parent->OnRequest(cur_thread));
+            R_TRY(m_parent->OnRequest(cur_thread));
         }
 
         /* Get the result. */

@@ -68,11 +68,11 @@ namespace ams::kern {
         public:
             class KPerCoreQueue {
                 private:
-                    Entry root[NumCores];
+                    Entry m_root[NumCores];
                 public:
-                    constexpr ALWAYS_INLINE KPerCoreQueue() : root() {
+                    constexpr ALWAYS_INLINE KPerCoreQueue() : m_root() {
                         for (size_t i = 0; i < NumCores; i++) {
-                            this->root[i].Initialize();
+                            m_root[i].Initialize();
                         }
                     }
 
@@ -81,14 +81,14 @@ namespace ams::kern {
                         Entry &member_entry = member->GetPriorityQueueEntry(core);
 
                         /* Get the entry associated with the end of the queue. */
-                        Member *tail       = this->root[core].GetPrev();
-                        Entry  &tail_entry = (tail != nullptr) ? tail->GetPriorityQueueEntry(core) : this->root[core];
+                        Member *tail       = m_root[core].GetPrev();
+                        Entry  &tail_entry = (tail != nullptr) ? tail->GetPriorityQueueEntry(core) : m_root[core];
 
                         /* Link the entries. */
                         member_entry.SetPrev(tail);
                         member_entry.SetNext(nullptr);
                         tail_entry.SetNext(member);
-                        this->root[core].SetPrev(member);
+                        m_root[core].SetPrev(member);
 
                         return (tail == nullptr);
                     }
@@ -98,14 +98,14 @@ namespace ams::kern {
                         Entry &member_entry = member->GetPriorityQueueEntry(core);
 
                         /* Get the entry associated with the front of the queue. */
-                        Member *head       = this->root[core].GetNext();
-                        Entry  &head_entry = (head != nullptr) ? head->GetPriorityQueueEntry(core) : this->root[core];
+                        Member *head       = m_root[core].GetNext();
+                        Entry  &head_entry = (head != nullptr) ? head->GetPriorityQueueEntry(core) : m_root[core];
 
                         /* Link the entries. */
                         member_entry.SetPrev(nullptr);
                         member_entry.SetNext(head);
                         head_entry.SetPrev(member);
-                        this->root[core].SetNext(member);
+                        m_root[core].SetNext(member);
 
                         return (head == nullptr);
                     }
@@ -117,8 +117,8 @@ namespace ams::kern {
                         /* Get the entries associated with next and prev. */
                         Member *prev = member_entry.GetPrev();
                         Member *next = member_entry.GetNext();
-                        Entry  &prev_entry = (prev != nullptr) ? prev->GetPriorityQueueEntry(core) : this->root[core];
-                        Entry  &next_entry = (next != nullptr) ? next->GetPriorityQueueEntry(core) : this->root[core];
+                        Entry  &prev_entry = (prev != nullptr) ? prev->GetPriorityQueueEntry(core) : m_root[core];
+                        Entry  &next_entry = (next != nullptr) ? next->GetPriorityQueueEntry(core) : m_root[core];
 
                         /* Unlink. */
                         prev_entry.SetNext(next);
@@ -128,24 +128,24 @@ namespace ams::kern {
                     }
 
                     constexpr ALWAYS_INLINE Member *GetFront(s32 core) const {
-                        return this->root[core].GetNext();
+                        return m_root[core].GetNext();
                     }
             };
 
             class KPriorityQueueImpl {
                 private:
-                    KPerCoreQueue queues[NumPriority];
-                    util::BitSet64<NumPriority> available_priorities[NumCores];
+                    KPerCoreQueue m_queues[NumPriority];
+                    util::BitSet64<NumPriority> m_available_priorities[NumCores];
                 public:
-                    constexpr ALWAYS_INLINE KPriorityQueueImpl() : queues(), available_priorities() { /* ... */ }
+                    constexpr ALWAYS_INLINE KPriorityQueueImpl() : m_queues(), m_available_priorities() { /* ... */ }
 
                     constexpr ALWAYS_INLINE void PushBack(s32 priority, s32 core, Member *member) {
                         MESOSPHERE_ASSERT(IsValidCore(core));
                         MESOSPHERE_ASSERT(IsValidPriority(priority));
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            if (this->queues[priority].PushBack(core, member)) {
-                                this->available_priorities[core].SetBit(priority);
+                            if (m_queues[priority].PushBack(core, member)) {
+                                m_available_priorities[core].SetBit(priority);
                             }
                         }
                     }
@@ -155,8 +155,8 @@ namespace ams::kern {
                         MESOSPHERE_ASSERT(IsValidPriority(priority));
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            if (this->queues[priority].PushFront(core, member)) {
-                                this->available_priorities[core].SetBit(priority);
+                            if (m_queues[priority].PushFront(core, member)) {
+                                m_available_priorities[core].SetBit(priority);
                             }
                         }
                     }
@@ -166,8 +166,8 @@ namespace ams::kern {
                         MESOSPHERE_ASSERT(IsValidPriority(priority));
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            if (this->queues[priority].Remove(core, member)) {
-                                this->available_priorities[core].ClearBit(priority);
+                            if (m_queues[priority].Remove(core, member)) {
+                                m_available_priorities[core].ClearBit(priority);
                             }
                         }
                     }
@@ -175,9 +175,9 @@ namespace ams::kern {
                     constexpr ALWAYS_INLINE Member *GetFront(s32 core) const {
                         MESOSPHERE_ASSERT(IsValidCore(core));
 
-                        const s32 priority = this->available_priorities[core].CountLeadingZero();
+                        const s32 priority = m_available_priorities[core].CountLeadingZero();
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            return this->queues[priority].GetFront(core);
+                            return m_queues[priority].GetFront(core);
                         } else {
                             return nullptr;
                         }
@@ -188,7 +188,7 @@ namespace ams::kern {
                         MESOSPHERE_ASSERT(IsValidPriority(priority));
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            return this->queues[priority].GetFront(core);
+                            return m_queues[priority].GetFront(core);
                         } else {
                             return nullptr;
                         }
@@ -199,9 +199,9 @@ namespace ams::kern {
 
                         Member *next = member->GetPriorityQueueEntry(core).GetNext();
                         if (next == nullptr) {
-                            const s32 priority = this->available_priorities[core].GetNextSet(member->GetPriority());
+                            const s32 priority = m_available_priorities[core].GetNextSet(member->GetPriority());
                             if (AMS_LIKELY(priority <= LowestPriority)) {
-                                next = this->queues[priority].GetFront(core);
+                                next = m_queues[priority].GetFront(core);
                             }
                         }
                         return next;
@@ -212,8 +212,8 @@ namespace ams::kern {
                         MESOSPHERE_ASSERT(IsValidPriority(priority));
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            this->queues[priority].Remove(core, member);
-                            this->queues[priority].PushFront(core, member);
+                            m_queues[priority].Remove(core, member);
+                            m_queues[priority].PushFront(core, member);
                         }
                     }
 
@@ -222,17 +222,17 @@ namespace ams::kern {
                         MESOSPHERE_ASSERT(IsValidPriority(priority));
 
                         if (AMS_LIKELY(priority <= LowestPriority)) {
-                            this->queues[priority].Remove(core, member);
-                            this->queues[priority].PushBack(core, member);
-                            return this->queues[priority].GetFront(core);
+                            m_queues[priority].Remove(core, member);
+                            m_queues[priority].PushBack(core, member);
+                            return m_queues[priority].GetFront(core);
                         } else {
                             return nullptr;
                         }
                     }
             };
         private:
-            KPriorityQueueImpl scheduled_queue;
-            KPriorityQueueImpl suggested_queue;
+            KPriorityQueueImpl m_scheduled_queue;
+            KPriorityQueueImpl m_suggested_queue;
         private:
             constexpr ALWAYS_INLINE void ClearAffinityBit(u64 &affinity, s32 core) {
                 affinity &= ~(u64(1ul) << core);
@@ -250,13 +250,13 @@ namespace ams::kern {
                 /* Push onto the scheduled queue for its core, if we can. */
                 u64 affinity = member->GetAffinityMask().GetAffinityMask();
                 if (const s32 core = member->GetActiveCore(); core >= 0) {
-                    this->scheduled_queue.PushBack(priority, core, member);
+                    m_scheduled_queue.PushBack(priority, core, member);
                     ClearAffinityBit(affinity, core);
                 }
 
                 /* And suggest the thread for all other cores. */
                 while (affinity) {
-                    this->suggested_queue.PushBack(priority, GetNextCore(affinity), member);
+                    m_suggested_queue.PushBack(priority, GetNextCore(affinity), member);
                 }
             }
 
@@ -266,14 +266,14 @@ namespace ams::kern {
                 /* Push onto the scheduled queue for its core, if we can. */
                 u64 affinity = member->GetAffinityMask().GetAffinityMask();
                 if (const s32 core = member->GetActiveCore(); core >= 0) {
-                    this->scheduled_queue.PushFront(priority, core, member);
+                    m_scheduled_queue.PushFront(priority, core, member);
                     ClearAffinityBit(affinity, core);
                 }
 
                 /* And suggest the thread for all other cores. */
                 /* Note: Nintendo pushes onto the back of the suggested queue, not the front. */
                 while (affinity) {
-                    this->suggested_queue.PushBack(priority, GetNextCore(affinity), member);
+                    m_suggested_queue.PushBack(priority, GetNextCore(affinity), member);
                 }
             }
 
@@ -283,41 +283,41 @@ namespace ams::kern {
                 /* Remove from the scheduled queue for its core. */
                 u64 affinity = member->GetAffinityMask().GetAffinityMask();
                 if (const s32 core = member->GetActiveCore(); core >= 0) {
-                    this->scheduled_queue.Remove(priority, core, member);
+                    m_scheduled_queue.Remove(priority, core, member);
                     ClearAffinityBit(affinity, core);
                 }
 
                 /* Remove from the suggested queue for all other cores. */
                 while (affinity) {
-                    this->suggested_queue.Remove(priority, GetNextCore(affinity), member);
+                    m_suggested_queue.Remove(priority, GetNextCore(affinity), member);
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KPriorityQueue() : scheduled_queue(), suggested_queue() { /* ... */ }
+            constexpr ALWAYS_INLINE KPriorityQueue() : m_scheduled_queue(), m_suggested_queue() { /* ... */ }
 
             /* Getters. */
             constexpr ALWAYS_INLINE Member *GetScheduledFront(s32 core) const {
-                return this->scheduled_queue.GetFront(core);
+                return m_scheduled_queue.GetFront(core);
             }
 
             constexpr ALWAYS_INLINE Member *GetScheduledFront(s32 core, s32 priority) const {
-                return this->scheduled_queue.GetFront(priority, core);
+                return m_scheduled_queue.GetFront(priority, core);
             }
 
             constexpr ALWAYS_INLINE Member *GetSuggestedFront(s32 core) const {
-                return this->suggested_queue.GetFront(core);
+                return m_suggested_queue.GetFront(core);
             }
 
             constexpr ALWAYS_INLINE Member *GetSuggestedFront(s32 core, s32 priority) const {
-                return this->suggested_queue.GetFront(priority, core);
+                return m_suggested_queue.GetFront(priority, core);
             }
 
             constexpr ALWAYS_INLINE Member *GetScheduledNext(s32 core, const Member *member) const {
-                return this->scheduled_queue.GetNext(core, member);
+                return m_scheduled_queue.GetNext(core, member);
             }
 
             constexpr ALWAYS_INLINE Member *GetSuggestedNext(s32 core, const Member *member) const {
-                return this->suggested_queue.GetNext(core, member);
+                return m_suggested_queue.GetNext(core, member);
             }
 
             constexpr ALWAYS_INLINE Member *GetSamePriorityNext(s32 core, const Member *member) const {
@@ -334,11 +334,11 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE void MoveToScheduledFront(Member *member) {
-                this->scheduled_queue.MoveToFront(member->GetPriority(), member->GetActiveCore(), member);
+                m_scheduled_queue.MoveToFront(member->GetPriority(), member->GetActiveCore(), member);
             }
 
             constexpr ALWAYS_INLINE KThread *MoveToScheduledBack(Member *member) {
-                return this->scheduled_queue.MoveToBack(member->GetPriority(), member->GetActiveCore(), member);
+                return m_scheduled_queue.MoveToBack(member->GetPriority(), member->GetActiveCore(), member);
             }
 
             /* First class fancy operations. */
@@ -367,9 +367,9 @@ namespace ams::kern {
                 for (s32 core = 0; core < static_cast<s32>(NumCores); core++) {
                     if (prev_affinity.GetAffinity(core)) {
                         if (core == prev_core) {
-                            this->scheduled_queue.Remove(priority, core, member);
+                            m_scheduled_queue.Remove(priority, core, member);
                         } else {
-                            this->suggested_queue.Remove(priority, core, member);
+                            m_suggested_queue.Remove(priority, core, member);
                         }
                     }
                 }
@@ -378,9 +378,9 @@ namespace ams::kern {
                 for (s32 core = 0; core < static_cast<s32>(NumCores); core++) {
                     if (new_affinity.GetAffinity(core)) {
                         if (core == new_core) {
-                            this->scheduled_queue.PushBack(priority, core, member);
+                            m_scheduled_queue.PushBack(priority, core, member);
                         } else {
-                            this->suggested_queue.PushBack(priority, core, member);
+                            m_suggested_queue.PushBack(priority, core, member);
                         }
                     }
                 }
@@ -395,22 +395,22 @@ namespace ams::kern {
                 if (prev_core != new_core) {
                     /* Remove from the scheduled queue for the previous core. */
                     if (prev_core >= 0) {
-                        this->scheduled_queue.Remove(priority, prev_core, member);
+                        m_scheduled_queue.Remove(priority, prev_core, member);
                     }
 
                     /* Remove from the suggested queue and add to the scheduled queue for the new core. */
                     if (new_core >= 0) {
-                        this->suggested_queue.Remove(priority, new_core, member);
+                        m_suggested_queue.Remove(priority, new_core, member);
                         if (to_front) {
-                            this->scheduled_queue.PushFront(priority, new_core, member);
+                            m_scheduled_queue.PushFront(priority, new_core, member);
                         } else {
-                            this->scheduled_queue.PushBack(priority, new_core, member);
+                            m_scheduled_queue.PushBack(priority, new_core, member);
                         }
                     }
 
                     /* Add to the suggested queue for the previous core. */
                     if (prev_core >= 0) {
-                        this->suggested_queue.PushBack(priority, prev_core, member);
+                        m_suggested_queue.PushBack(priority, prev_core, member);
                     }
                 }
             }

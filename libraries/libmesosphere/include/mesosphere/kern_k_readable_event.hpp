@@ -24,19 +24,19 @@ namespace ams::kern {
     class KReadableEvent : public KSynchronizationObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KReadableEvent, KSynchronizationObject);
         private:
-            bool is_signaled;
-            KEvent *parent_event;
+            bool m_is_signaled;
+            KEvent *m_parent;
         public:
-            constexpr explicit KReadableEvent() : KSynchronizationObject(), is_signaled(), parent_event() { MESOSPHERE_ASSERT_THIS(); }
+            constexpr explicit KReadableEvent() : KSynchronizationObject(), m_is_signaled(), m_parent() { MESOSPHERE_ASSERT_THIS(); }
             virtual ~KReadableEvent() { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr void Initialize(KEvent *parent) {
                 MESOSPHERE_ASSERT_THIS();
-                this->is_signaled  = false;
-                this->parent_event = parent;
+                m_is_signaled  = false;
+                m_parent       = parent;
             }
 
-            constexpr KEvent *GetParent() const { return this->parent_event; }
+            constexpr KEvent *GetParent() const { return m_parent; }
 
             virtual bool IsSignaled() const override;
             virtual void Destroy() override;

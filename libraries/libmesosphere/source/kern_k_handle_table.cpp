@@ -25,10 +25,10 @@ namespace ams::kern {
         u16 saved_table_size = 0;
         {
             KScopedDisableDispatch dd;
-            KScopedSpinLock lk(this->lock);
+            KScopedSpinLock lk(m_lock);
 
-            std::swap(this->table, saved_table);
-            std::swap(this->table_size, saved_table_size);
+            std::swap(m_table, saved_table);
+            std::swap(m_table_size, saved_table_size);
         }
 
         /* Close and free all entries. */
@@ -61,7 +61,7 @@ namespace ams::kern {
         KAutoObject *obj = nullptr;
         {
             KScopedDisableDispatch dd;
-            KScopedSpinLock lk(this->lock);
+            KScopedSpinLock lk(m_lock);
 
             if (Entry *entry = this->FindEntry(handle); entry != nullptr) {
                 obj = entry->GetObject();
@@ -79,10 +79,10 @@ namespace ams::kern {
     Result KHandleTable::Add(ams::svc::Handle *out_handle, KAutoObject *obj, u16 type) {
         MESOSPHERE_ASSERT_THIS();
         KScopedDisableDispatch dd;
-        KScopedSpinLock lk(this->lock);
+        KScopedSpinLock lk(m_lock);
 
         /* Never exceed our capacity. */
-        R_UNLESS(this->count < this->table_size, svc::ResultOutOfHandles());
+        R_UNLESS(m_count < m_table_size, svc::ResultOutOfHandles());
 
         /* Allocate entry, set output handle. */
         {
@@ -99,10 +99,10 @@ namespace ams::kern {
     Result KHandleTable::Reserve(ams::svc::Handle *out_handle) {
         MESOSPHERE_ASSERT_THIS();
         KScopedDisableDispatch dd;
-        KScopedSpinLock lk(this->lock);
+        KScopedSpinLock lk(m_lock);
 
         /* Never exceed our capacity. */
-        R_UNLESS(this->count < this->table_size, svc::ResultOutOfHandles());
+        R_UNLESS(m_count < m_table_size, svc::ResultOutOfHandles());
 
         *out_handle = EncodeHandle(this->GetEntryIndex(this->AllocateEntry()), this->AllocateLinearId());
         return ResultSuccess();
@@ -111,7 +111,7 @@ namespace ams::kern {
     void KHandleTable::Unreserve(ams::svc::Handle handle) {
         MESOSPHERE_ASSERT_THIS();
         KScopedDisableDispatch dd;
-        KScopedSpinLock lk(this->lock);
+        KScopedSpinLock lk(m_lock);
 
         /* Unpack the handle. */
         const auto handle_pack = GetHandleBitPack(handle);
@@ -120,11 +120,11 @@ namespace ams::kern {
         const auto reserved    = handle_pack.Get<HandleReserved>();
         MESOSPHERE_ASSERT(reserved == 0);
         MESOSPHERE_ASSERT(linear_id != 0);
-        MESOSPHERE_ASSERT(index < this->table_size);
+        MESOSPHERE_ASSERT(index < m_table_size);
 
         /* Free the entry. */
         /* NOTE: This code does not check the linear id. */
-        Entry *entry = std::addressof(this->table[index]);
+        Entry *entry = std::addressof(m_table[index]);
         MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
 
         this->FreeEntry(entry);
@@ -133,7 +133,7 @@ namespace ams::kern {
     void KHandleTable::Register(ams::svc::Handle handle, KAutoObject *obj, u16 type) {
         MESOSPHERE_ASSERT_THIS();
         KScopedDisableDispatch dd;
-        KScopedSpinLock lk(this->lock);
+        KScopedSpinLock lk(m_lock);
 
         /* Unpack the handle. */
         const auto handle_pack = GetHandleBitPack(handle);
@@ -142,10 +142,10 @@ namespace ams::kern {
         const auto reserved    = handle_pack.Get<HandleReserved>();
         MESOSPHERE_ASSERT(reserved == 0);
         MESOSPHERE_ASSERT(linear_id != 0);
-        MESOSPHERE_ASSERT(index < this->table_size);
+        MESOSPHERE_ASSERT(index < m_table_size);
 
         /* Set the entry. */
-        Entry *entry = std::addressof(this->table[index]);
+        Entry *entry = std::addressof(m_table[index]);
         MESOSPHERE_ASSERT(entry->GetObject() == nullptr);
 
         entry->SetUsed(obj, linear_id, type);

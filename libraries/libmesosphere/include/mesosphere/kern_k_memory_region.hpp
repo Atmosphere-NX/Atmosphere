@@ -27,11 +27,11 @@ namespace ams::kern {
         private:
             friend class KMemoryRegionTree;
         private:
-            uintptr_t address;
-            uintptr_t pair_address;
-            uintptr_t last_address;
-            u32 attributes;
-            u32 type_id;
+            uintptr_t m_address;
+            uintptr_t m_pair_address;
+            uintptr_t m_last_address;
+            u32 m_attributes;
+            u32 m_type_id;
         public:
             static constexpr ALWAYS_INLINE int Compare(const KMemoryRegion &lhs, const KMemoryRegion &rhs) {
                 if (lhs.GetAddress() < rhs.GetAddress()) {
@@ -43,32 +43,32 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KMemoryRegion() : address(0), pair_address(0), last_address(0), attributes(0), type_id(0) { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegion() : m_address(0), m_pair_address(0), m_last_address(0), m_attributes(0), m_type_id(0) { /* ... */ }
             constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, uintptr_t p, u32 r, u32 t) :
-                address(a), pair_address(p), last_address(la), attributes(r), type_id(t)
+                m_address(a), m_pair_address(p), m_last_address(la), m_attributes(r), m_type_id(t)
             {
                 /* ... */
             }
             constexpr ALWAYS_INLINE KMemoryRegion(uintptr_t a, size_t la, u32 r, u32 t) : KMemoryRegion(a, la, std::numeric_limits<uintptr_t>::max(), r, t) { /* ... */ }
         private:
             constexpr ALWAYS_INLINE void Reset(uintptr_t a, uintptr_t la, uintptr_t p, u32 r, u32 t) {
-                this->address      = a;
-                this->pair_address = p;
-                this->last_address  = la;
-                this->attributes   = r;
-                this->type_id      = t;
+                m_address      = a;
+                m_pair_address = p;
+                m_last_address  = la;
+                m_attributes   = r;
+                m_type_id      = t;
             }
         public:
             constexpr ALWAYS_INLINE uintptr_t GetAddress() const {
-                return this->address;
+                return m_address;
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetPairAddress() const {
-                return this->pair_address;
+                return m_pair_address;
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetLastAddress() const {
-                return this->last_address;
+                return m_last_address;
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetEndAddress() const {
@@ -80,16 +80,16 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE u32 GetAttributes() const {
-                return this->attributes;
+                return m_attributes;
             }
 
             constexpr ALWAYS_INLINE u32 GetType() const {
-                return this->type_id;
+                return m_type_id;
             }
 
             constexpr ALWAYS_INLINE void SetType(u32 type) {
                 MESOSPHERE_INIT_ABORT_UNLESS(this->CanDerive(type));
-                this->type_id = type;
+                m_type_id = type;
             }
 
             constexpr ALWAYS_INLINE bool Contains(uintptr_t address) const {
@@ -110,11 +110,11 @@ namespace ams::kern {
             }
 
             constexpr ALWAYS_INLINE void SetPairAddress(uintptr_t a) {
-                this->pair_address = a;
+                m_pair_address = a;
             }
 
             constexpr ALWAYS_INLINE void SetTypeAttribute(KMemoryRegionAttr attr) {
-                this->type_id |= attr;
+                m_type_id |= attr;
             }
     };
     static_assert(std::is_trivially_destructible<KMemoryRegion>::value);
@@ -156,9 +156,9 @@ namespace ams::kern {
             using iterator          = TreeType::iterator;
             using const_iterator    = TreeType::const_iterator;
         private:
-            TreeType tree;
+            TreeType m_tree;
         public:
-            constexpr ALWAYS_INLINE KMemoryRegionTree() : tree() { /* ... */ }
+            constexpr ALWAYS_INLINE KMemoryRegionTree() : m_tree() { /* ... */ }
         public:
             KMemoryRegion *FindModifiable(uintptr_t address) {
                 if (auto it = this->find(KMemoryRegion(address, address, 0, 0)); it != this->end()) {
@@ -246,19 +246,19 @@ namespace ams::kern {
         public:
             /* Iterator accessors. */
             iterator begin() {
-                return this->tree.begin();
+                return m_tree.begin();
             }
 
             const_iterator begin() const {
-                return this->tree.begin();
+                return m_tree.begin();
             }
 
             iterator end() {
-                return this->tree.end();
+                return m_tree.end();
             }
 
             const_iterator end() const {
-                return this->tree.end();
+                return m_tree.end();
             }
 
             const_iterator cbegin() const {
@@ -270,49 +270,49 @@ namespace ams::kern {
             }
 
             iterator iterator_to(reference ref) {
-                return this->tree.iterator_to(ref);
+                return m_tree.iterator_to(ref);
             }
 
             const_iterator iterator_to(const_reference ref) const {
-                return this->tree.iterator_to(ref);
+                return m_tree.iterator_to(ref);
             }
 
             /* Content management. */
             bool empty() const {
-                return this->tree.empty();
+                return m_tree.empty();
             }
 
             reference back() {
-                return this->tree.back();
+                return m_tree.back();
             }
 
             const_reference back() const {
-                return this->tree.back();
+                return m_tree.back();
             }
 
             reference front() {
-                return this->tree.front();
+                return m_tree.front();
             }
 
             const_reference front() const {
-                return this->tree.front();
+                return m_tree.front();
             }
 
             /* GCC over-eagerly inlines this operation. */
             NOINLINE iterator insert(reference ref) {
-                return this->tree.insert(ref);
+                return m_tree.insert(ref);
             }
 
             NOINLINE iterator erase(iterator it) {
-                return this->tree.erase(it);
+                return m_tree.erase(it);
             }
 
             iterator find(const_reference ref) const {
-                return this->tree.find(ref);
+                return m_tree.find(ref);
             }
 
             iterator nfind(const_reference ref) const {
-                return this->tree.nfind(ref);
+                return m_tree.nfind(ref);
             }
     };
 

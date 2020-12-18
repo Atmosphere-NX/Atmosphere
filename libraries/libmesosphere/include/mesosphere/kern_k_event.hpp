@@ -25,13 +25,13 @@ namespace ams::kern {
     class KEvent final : public KAutoObjectWithSlabHeapAndContainer<KEvent, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KEvent, KAutoObject);
         private:
-            KReadableEvent readable_event;
-            KWritableEvent writable_event;
-            KProcess *owner;
-            bool initialized;
+            KReadableEvent m_readable_event;
+            KWritableEvent m_writable_event;
+            KProcess *m_owner;
+            bool m_initialized;
         public:
             constexpr KEvent()
-                : readable_event(), writable_event(), owner(), initialized()
+                : m_readable_event(), m_writable_event(), m_owner(), m_initialized()
             {
                 /* ... */
             }
@@ -41,15 +41,15 @@ namespace ams::kern {
             void Initialize();
             virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return this->initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->owner); }
+            virtual bool IsInitialized() const override { return m_initialized; }
+            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_owner); }
 
             static void PostDestroy(uintptr_t arg);
 
-            virtual KProcess *GetOwner() const override { return this->owner; }
+            virtual KProcess *GetOwner() const override { return m_owner; }
 
-            KReadableEvent &GetReadableEvent() { return this->readable_event; }
-            KWritableEvent &GetWritableEvent() { return this->writable_event; }
+            KReadableEvent &GetReadableEvent() { return m_readable_event; }
+            KWritableEvent &GetWritableEvent() { return m_writable_event; }
     };
 
 }

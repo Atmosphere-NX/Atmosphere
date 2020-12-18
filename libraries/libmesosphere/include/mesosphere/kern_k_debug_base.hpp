@@ -26,11 +26,11 @@ namespace ams::kern {
         protected:
             using DebugEventList = util::IntrusiveListBaseTraits<KEventInfo>::ListType;
         private:
-            DebugEventList event_info_list;
-            u32 continue_flags;
-            KProcess *process;
-            KLightLock lock;
-            KProcess::State old_process_state;
+            DebugEventList m_event_info_list;
+            u32 m_continue_flags;
+            KProcess *m_process;
+            KLightLock m_lock;
+            KProcess::State m_old_process_state;
         public:
             explicit KDebugBase() { /* ... */ }
             virtual ~KDebugBase() { /* ... */ }

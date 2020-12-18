@@ -53,10 +53,10 @@ namespace ams::kern {
         }
 
         constexpr const char *GetMemoryPermissionString(const KMemoryInfo &info) {
-            if (info.state == KMemoryState_Free) {
+            if (info.m_state == KMemoryState_Free) {
                 return "   ";
             } else {
-                switch (info.perm) {
+                switch (info.m_perm) {
                     case KMemoryPermission_UserReadExecute:
                         return "r-x";
                     case KMemoryPermission_UserRead:
@@ -70,18 +70,18 @@ namespace ams::kern {
         }
 
         void DumpMemoryInfo(const KMemoryInfo &info) {
-            const char *state     = GetMemoryStateName(info.state);
+            const char *state     = GetMemoryStateName(info.m_state);
             const char *perm      = GetMemoryPermissionString(info);
             const uintptr_t start = info.GetAddress();
             const uintptr_t end   = info.GetLastAddress();
             const size_t kb   = info.GetSize() / 1_KB;
 
-            const char l = (info.attribute & KMemoryAttribute_Locked)       ? 'L' : '-';
-            const char i = (info.attribute & KMemoryAttribute_IpcLocked)    ? 'I' : '-';
-            const char d = (info.attribute & KMemoryAttribute_DeviceShared) ? 'D' : '-';
-            const char u = (info.attribute & KMemoryAttribute_Uncached)     ? 'U' : '-';
+            const char l = (info.m_attribute & KMemoryAttribute_Locked)       ? 'L' : '-';
+            const char i = (info.m_attribute & KMemoryAttribute_IpcLocked)    ? 'I' : '-';
+            const char d = (info.m_attribute & KMemoryAttribute_DeviceShared) ? 'D' : '-';
+            const char u = (info.m_attribute & KMemoryAttribute_Uncached)     ? 'U' : '-';
 
-            MESOSPHERE_LOG("0x%10lx - 0x%10lx (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.ipc_lock_count, info.device_use_count);
+            MESOSPHERE_LOG("0x%10lx - 0x%10lx (%9zu KB) %s %s %c%c%c%c [%d, %d]\n", start, end, kb, perm, state, l, i, d, u, info.m_ipc_lock_count, info.m_device_use_count);
         }
 
     }
@@ -92,40 +92,40 @@ namespace ams::kern {
         R_UNLESS(start_block != nullptr, svc::ResultOutOfResource());
 
         /* Set our start and end. */
-        this->start_address = st;
-        this->end_address   = nd;
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(this->start_address), PageSize));
-        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(this->end_address), PageSize));
+        m_start_address = st;
+        m_end_address   = nd;
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(m_start_address), PageSize));
+        MESOSPHERE_ASSERT(util::IsAligned(GetInteger(m_end_address), PageSize));
 
         /* Initialize and insert the block. */
-        start_block->Initialize(this->start_address, (this->end_address - this->start_address) / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
-        this->memory_block_tree.insert(*start_block);
+        start_block->Initialize(m_start_address, (m_end_address - m_start_address) / PageSize, KMemoryState_Free, KMemoryPermission_None, KMemoryAttribute_None);
+        m_memory_block_tree.insert(*start_block);
 
         return ResultSuccess();
     }
 
     void KMemoryBlockManager::Finalize(KMemoryBlockSlabManager *slab_manager) {
         /* Erase every block until we have none left. */
-        auto it = this->memory_block_tree.begin();
-        while (it != this->memory_block_tree.end()) {
+        auto it = m_memory_block_tree.begin();
+        while (it != m_memory_block_tree.end()) {
             KMemoryBlock *block = std::addressof(*it);
-            it = this->memory_block_tree.erase(it);
+            it = m_memory_block_tree.erase(it);
             slab_manager->Free(block);
         }
 
-        MESOSPHERE_ASSERT(this->memory_block_tree.empty());
+        MESOSPHERE_ASSERT(m_memory_block_tree.empty());
     }
 
     KProcessAddress KMemoryBlockManager::FindFreeArea(KProcessAddress region_start, size_t region_num_pages, size_t num_pages, size_t alignment, size_t offset, size_t guard_pages) const {
         if (num_pages > 0) {
             const KProcessAddress region_end  = region_start + region_num_pages * PageSize;
             const KProcessAddress region_last = region_end - 1;
-            for (const_iterator it = this->FindIterator(region_start); it != this->memory_block_tree.cend(); it++) {
+            for (const_iterator it = this->FindIterator(region_start); it != m_memory_block_tree.cend(); it++) {
                 const KMemoryInfo info = it->GetMemoryInfo();
                 if (region_last < info.GetAddress()) {
                     break;
                 }
-                if (info.state != KMemoryState_Free) {
+                if (info.m_state != KMemoryState_Free) {
                     continue;
                 }
 
@@ -150,20 +150,20 @@ namespace ams::kern {
     void KMemoryBlockManager::CoalesceForUpdate(KMemoryBlockManagerUpdateAllocator *allocator, KProcessAddress address, size_t num_pages) {
         /* Find the iterator now that we've updated. */
         iterator it = this->FindIterator(address);
-        if (address != this->start_address) {
+        if (address != m_start_address) {
             it--;
         }
 
         /* Coalesce blocks that we can. */
         while (true) {
             iterator prev = it++;
-            if (it == this->memory_block_tree.end()) {
+            if (it == m_memory_block_tree.end()) {
                 break;
             }
 
             if (prev->CanMergeWith(*it)) {
                 KMemoryBlock *block = std::addressof(*it);
-                this->memory_block_tree.erase(it);
+                m_memory_block_tree.erase(it);
                 prev->Add(*block);
                 allocator->Free(block);
                 it = prev;
@@ -203,7 +203,7 @@ namespace ams::kern {
                     KMemoryBlock *new_block = allocator->Allocate();
 
                     it->Split(new_block, cur_address);
-                    it = this->memory_block_tree.insert(*new_block);
+                    it = m_memory_block_tree.insert(*new_block);
                     it++;
 
                     cur_info = it->GetMemoryInfo();
@@ -215,7 +215,7 @@ namespace ams::kern {
                     KMemoryBlock *new_block = allocator->Allocate();
 
                     it->Split(new_block, cur_address + remaining_size);
-                    it = this->memory_block_tree.insert(*new_block);
+                    it = m_memory_block_tree.insert(*new_block);
 
                     cur_info = it->GetMemoryInfo();
                 }
@@ -250,7 +250,7 @@ namespace ams::kern {
                     KMemoryBlock *new_block = allocator->Allocate();
 
                     it->Split(new_block, cur_address);
-                    it = this->memory_block_tree.insert(*new_block);
+                    it = m_memory_block_tree.insert(*new_block);
                     it++;
 
                     cur_info    = it->GetMemoryInfo();
@@ -262,7 +262,7 @@ namespace ams::kern {
                     KMemoryBlock *new_block = allocator->Allocate();
 
                     it->Split(new_block, cur_address + remaining_size);
-                    it = this->memory_block_tree.insert(*new_block);
+                    it = m_memory_block_tree.insert(*new_block);
 
                     cur_info = it->GetMemoryInfo();
                 }
@@ -303,11 +303,11 @@ namespace ams::kern {
             KMemoryInfo cur_info = it->GetMemoryInfo();
 
             /* If we need to, create a new block before and insert it. */
-            if (cur_info.address != GetInteger(cur_address)) {
+            if (cur_info.m_address != GetInteger(cur_address)) {
                 KMemoryBlock *new_block = allocator->Allocate();
 
                 it->Split(new_block, cur_address);
-                it = this->memory_block_tree.insert(*new_block);
+                it = m_memory_block_tree.insert(*new_block);
                 it++;
 
                 cur_info = it->GetMemoryInfo();
@@ -319,7 +319,7 @@ namespace ams::kern {
                 KMemoryBlock *new_block = allocator->Allocate();
 
                 it->Split(new_block, cur_address + remaining_size);
-                it = this->memory_block_tree.insert(*new_block);
+                it = m_memory_block_tree.insert(*new_block);
 
                 cur_info = it->GetMemoryInfo();
             }
@@ -340,9 +340,9 @@ namespace ams::kern {
         auto dump_guard = SCOPE_GUARD { this->DumpBlocks(); };
 
         /* Loop over every block, ensuring that we are sorted and coalesced. */
-        auto it   = this->memory_block_tree.cbegin();
+        auto it   = m_memory_block_tree.cbegin();
         auto prev = it++;
-        while (it != this->memory_block_tree.cend()) {
+        while (it != m_memory_block_tree.cend()) {
             const KMemoryInfo prev_info = prev->GetMemoryInfo();
             const KMemoryInfo cur_info  = it->GetMemoryInfo();
 
@@ -357,12 +357,12 @@ namespace ams::kern {
             }
 
             /* If the block is ipc locked, it must have a count. */
-            if ((cur_info.attribute & KMemoryAttribute_IpcLocked) != 0 && cur_info.ipc_lock_count == 0) {
+            if ((cur_info.m_attribute & KMemoryAttribute_IpcLocked) != 0 && cur_info.m_ipc_lock_count == 0) {
                 return false;
             }
 
             /* If the block is device shared, it must have a count. */
-            if ((cur_info.attribute & KMemoryAttribute_DeviceShared) != 0 && cur_info.device_use_count == 0) {
+            if ((cur_info.m_attribute & KMemoryAttribute_DeviceShared) != 0 && cur_info.m_device_use_count == 0) {
                 return false;
             }
 
@@ -371,15 +371,15 @@ namespace ams::kern {
         }
 
         /* Our loop will miss checking the last block, potentially, so check it. */
-        if (prev != this->memory_block_tree.cend()) {
+        if (prev != m_memory_block_tree.cend()) {
             const KMemoryInfo prev_info = prev->GetMemoryInfo();
             /* If the block is ipc locked, it must have a count. */
-            if ((prev_info.attribute & KMemoryAttribute_IpcLocked) != 0 && prev_info.ipc_lock_count == 0) {
+            if ((prev_info.m_attribute & KMemoryAttribute_IpcLocked) != 0 && prev_info.m_ipc_lock_count == 0) {
                 return false;
             }
 
             /* If the block is device shared, it must have a count. */
-            if ((prev_info.attribute & KMemoryAttribute_DeviceShared) != 0 && prev_info.device_use_count == 0) {
+            if ((prev_info.m_attribute & KMemoryAttribute_DeviceShared) != 0 && prev_info.m_device_use_count == 0) {
                 return false;
             }
         }
@@ -391,7 +391,7 @@ namespace ams::kern {
 
     void KMemoryBlockManager::DumpBlocks() const {
         /* Dump each block. */
-        for (const auto &block : this->memory_block_tree) {
+        for (const auto &block : m_memory_block_tree) {
             DumpMemoryInfo(block.GetMemoryInfo());
         }
     }

@@ -52,73 +52,73 @@ namespace ams::kern {
             private:
                 using ValueType = typename std::underlying_type<KMemoryRegionType>::type;
             private:
-                ValueType value;
-                size_t next_bit;
-                bool finalized;
-                bool sparse_only;
-                bool dense_only;
+                ValueType m_value;
+                size_t m_next_bit;
+                bool m_finalized;
+                bool m_sparse_only;
+                bool m_dense_only;
             private:
-                consteval KMemoryRegionTypeValue(ValueType v) : value(v), next_bit(0), finalized(false), sparse_only(false), dense_only(false) { /* ... */ }
+                consteval KMemoryRegionTypeValue(ValueType v) : m_value(v), m_next_bit(0), m_finalized(false), m_sparse_only(false), m_dense_only(false) { /* ... */ }
             public:
                 consteval KMemoryRegionTypeValue() : KMemoryRegionTypeValue(0) { /* ... */ }
 
-                consteval operator KMemoryRegionType() const { return static_cast<KMemoryRegionType>(this->value); }
-                consteval ValueType GetValue() const { return this->value; }
+                consteval operator KMemoryRegionType() const { return static_cast<KMemoryRegionType>(m_value); }
+                consteval ValueType GetValue() const { return m_value; }
 
-                consteval const KMemoryRegionTypeValue &Finalize()      { this->finalized = true;   return *this; }
-                consteval const KMemoryRegionTypeValue &SetSparseOnly() { this->sparse_only = true; return *this; }
-                consteval const KMemoryRegionTypeValue &SetDenseOnly() { this->dense_only = true; return *this; }
+                consteval const KMemoryRegionTypeValue &Finalize()      { m_finalized = true;   return *this; }
+                consteval const KMemoryRegionTypeValue &SetSparseOnly() { m_sparse_only = true; return *this; }
+                consteval const KMemoryRegionTypeValue &SetDenseOnly()  { m_dense_only = true; return *this; }
 
-                consteval KMemoryRegionTypeValue &SetAttribute(KMemoryRegionAttr attr) { AMS_ASSUME(!this->finalized); this->value |= attr; return *this; }
+                consteval KMemoryRegionTypeValue &SetAttribute(KMemoryRegionAttr attr) { AMS_ASSUME(!m_finalized); m_value |= attr; return *this; }
 
                 consteval KMemoryRegionTypeValue DeriveInitial(size_t i, size_t next = BITSIZEOF(ValueType)) const {
-                    AMS_ASSUME(!this->finalized);
-                    AMS_ASSUME(!this->value);
-                    AMS_ASSUME(!this->next_bit);
+                    AMS_ASSUME(!m_finalized);
+                    AMS_ASSUME(!m_value);
+                    AMS_ASSUME(!m_next_bit);
                     AMS_ASSUME(next > i);
 
                     KMemoryRegionTypeValue new_type = *this;
-                    new_type.value    = (ValueType{1} << i);
-                    new_type.next_bit = next;
+                    new_type.m_value    = (ValueType{1} << i);
+                    new_type.m_next_bit = next;
                     return new_type;
                 }
 
                 consteval KMemoryRegionTypeValue DeriveAttribute(KMemoryRegionAttr attr) const {
-                    AMS_ASSUME(!this->finalized);
+                    AMS_ASSUME(!m_finalized);
 
                     KMemoryRegionTypeValue new_type = *this;
-                    new_type.value |= attr;
+                    new_type.m_value |= attr;
                     return new_type;
                 }
 
                 consteval KMemoryRegionTypeValue DeriveTransition(size_t ofs = 0, size_t adv = 1) const {
-                    AMS_ASSUME(!this->finalized);
+                    AMS_ASSUME(!m_finalized);
                     AMS_ASSUME(ofs < adv);
-                    AMS_ASSUME(this->next_bit + adv <= BITSIZEOF(ValueType));
+                    AMS_ASSUME(m_next_bit + adv <= BITSIZEOF(ValueType));
 
                     KMemoryRegionTypeValue new_type = *this;
-                    new_type.value |= (ValueType{1} << (this->next_bit + ofs));
-                    new_type.next_bit += adv;
+                    new_type.m_value |= (ValueType{1} << (m_next_bit + ofs));
+                    new_type.m_next_bit += adv;
                     return new_type;
                 }
 
                 consteval KMemoryRegionTypeValue DeriveSparse(size_t ofs, size_t n, size_t i) const {
-                    AMS_ASSUME(!this->finalized);
-                    AMS_ASSUME(!this->dense_only);
-                    AMS_ASSUME(this->next_bit + ofs + n + 1 <= BITSIZEOF(ValueType));
+                    AMS_ASSUME(!m_finalized);
+                    AMS_ASSUME(!m_dense_only);
+                    AMS_ASSUME(m_next_bit + ofs + n + 1 <= BITSIZEOF(ValueType));
                     AMS_ASSUME(i < n);
 
                     KMemoryRegionTypeValue new_type = *this;
-                    new_type.value |= (ValueType{1} << (this->next_bit + ofs));
-                    new_type.value |= (ValueType{1} << (this->next_bit + ofs + 1 + i));
-                    new_type.next_bit += ofs + n + 1;
+                    new_type.m_value |= (ValueType{1} << (m_next_bit + ofs));
+                    new_type.m_value |= (ValueType{1} << (m_next_bit + ofs + 1 + i));
+                    new_type.m_next_bit += ofs + n + 1;
                     return new_type;
                 }
 
                 consteval KMemoryRegionTypeValue Derive(size_t n, size_t i) const {
-                    AMS_ASSUME(!this->finalized);
-                    AMS_ASSUME(!this->sparse_only);
-                    AMS_ASSUME(this->next_bit + BitsForDeriveDense(n) <= BITSIZEOF(ValueType));
+                    AMS_ASSUME(!m_finalized);
+                    AMS_ASSUME(!m_sparse_only);
+                    AMS_ASSUME(m_next_bit + BitsForDeriveDense(n) <= BITSIZEOF(ValueType));
                     AMS_ASSUME(i < n);
 
                     size_t low = 0, high = 1;
@@ -132,23 +132,23 @@ namespace ams::kern {
 
 
                     KMemoryRegionTypeValue new_type = *this;
-                    new_type.value |= (ValueType{1} << (this->next_bit + low));
-                    new_type.value |= (ValueType{1} << (this->next_bit + high));
-                    new_type.next_bit += BitsForDeriveDense(n);
+                    new_type.m_value |= (ValueType{1} << (m_next_bit + low));
+                    new_type.m_value |= (ValueType{1} << (m_next_bit + high));
+                    new_type.m_next_bit += BitsForDeriveDense(n);
                     return new_type;
                 }
 
                 consteval KMemoryRegionTypeValue Advance(size_t n) const {
-                    AMS_ASSUME(!this->finalized);
-                    AMS_ASSUME(this->next_bit + n <= BITSIZEOF(ValueType));
+                    AMS_ASSUME(!m_finalized);
+                    AMS_ASSUME(m_next_bit + n <= BITSIZEOF(ValueType));
 
                     KMemoryRegionTypeValue new_type = *this;
-                    new_type.next_bit += n;
+                    new_type.m_next_bit += n;
                     return new_type;
                 }
 
                 constexpr ALWAYS_INLINE bool IsAncestorOf(ValueType v) const {
-                    return (this->value | v) == v;
+                    return (m_value | v) == v;
                 }
         };
 

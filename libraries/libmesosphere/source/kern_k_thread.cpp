@@ -60,7 +60,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(0 <= phys_core && phys_core < static_cast<s32>(cpu::NumCores));
 
         /* First, clear the TLS address. */
-        this->tls_address = Null<KProcessAddress>;
+        m_tls_address = Null<KProcessAddress>;
 
         const uintptr_t kern_stack_top_address = reinterpret_cast<uintptr_t>(kern_stack_top);
 
@@ -94,73 +94,73 @@ namespace ams::kern {
         }
 
         /* Set the ideal core ID and affinity mask. */
-        this->virtual_ideal_core_id  = virt_core;
-        this->physical_ideal_core_id = phys_core;
-        this->virtual_affinity_mask = (static_cast<u64>(1) << virt_core);
-        this->physical_affinity_mask.SetAffinity(phys_core, true);
+        m_virtual_ideal_core_id  = virt_core;
+        m_physical_ideal_core_id = phys_core;
+        m_virtual_affinity_mask = (static_cast<u64>(1) << virt_core);
+        m_physical_affinity_mask.SetAffinity(phys_core, true);
 
         /* Set the thread state. */
-        this->thread_state                  = (type == ThreadType_Main) ? ThreadState_Runnable : ThreadState_Initialized;
+        m_thread_state                  = (type == ThreadType_Main) ? ThreadState_Runnable : ThreadState_Initialized;
 
         /* Set TLS address and TLS heap address. */
         /* NOTE: Nintendo wrote TLS address above already, but official code really does write tls address twice. */
-        this->tls_address                   = 0;
-        this->tls_heap_address              = 0;
+        m_tls_address                   = 0;
+        m_tls_heap_address              = 0;
 
         /* Set parent and condvar tree. */
-        this->parent                        = nullptr;
-        this->condvar_tree                  = nullptr;
+        m_parent                        = nullptr;
+        m_condvar_tree                  = nullptr;
 
         /* Set sync booleans. */
-        this->signaled                      = false;
-        this->termination_requested         = false;
-        this->wait_cancelled                = false;
-        this->cancellable                   = false;
+        m_signaled                      = false;
+        m_termination_requested         = false;
+        m_wait_cancelled                = false;
+        m_cancellable                   = false;
 
         /* Set core ID and wait result. */
-        this->core_id                       = phys_core;
-        this->wait_result                   = svc::ResultNoSynchronizationObject();
+        m_core_id                       = phys_core;
+        m_wait_result                   = svc::ResultNoSynchronizationObject();
 
         /* Set the stack top. */
-        this->kernel_stack_top              = kern_stack_top;
+        m_kernel_stack_top              = kern_stack_top;
 
         /* Set priorities. */
-        this->priority                      = prio;
-        this->base_priority                 = prio;
+        m_priority                      = prio;
+        m_base_priority                 = prio;
 
         /* Set sync object and waiting lock to null. */
-        this->synced_object                 = nullptr;
-        this->waiting_lock                  = nullptr;
+        m_synced_object                 = nullptr;
+        m_waiting_lock                  = nullptr;
 
         /* Initialize sleeping queue. */
-        this->sleeping_queue                = nullptr;
+        m_sleeping_queue                = nullptr;
 
         /* Set suspend flags. */
-        this->suspend_request_flags         = 0;
-        this->suspend_allowed_flags         = ThreadState_SuspendFlagMask;
+        m_suspend_request_flags         = 0;
+        m_suspend_allowed_flags         = ThreadState_SuspendFlagMask;
 
         /* We're neither debug attached, nor are we nesting our priority inheritance. */
-        this->debug_attached                = false;
-        this->priority_inheritance_count    = 0;
+        m_debug_attached                = false;
+        m_priority_inheritance_count    = 0;
 
         /* We haven't been scheduled, and we have done no light IPC. */
-        this->schedule_count                = -1;
-        this->last_scheduled_tick           = 0;
-        this->light_ipc_data                = nullptr;
+        m_schedule_count                = -1;
+        m_last_scheduled_tick           = 0;
+        m_light_ipc_data                = nullptr;
 
         /* We're not waiting for a lock, and we haven't disabled migration. */
-        this->lock_owner                    = nullptr;
-        this->num_core_migration_disables   = 0;
+        m_lock_owner                    = nullptr;
+        m_num_core_migration_disables   = 0;
 
         /* We have no waiters, but we do have an entrypoint. */
-        this->num_kernel_waiters            = 0;
+        m_num_kernel_waiters            = 0;
 
         /* Set our current core id. */
-        this->current_core_id               = phys_core;
+        m_current_core_id               = phys_core;
 
         /* We haven't released our resource limit hint, and we've spent no time on the cpu. */
-        this->resource_limit_release_hint   = 0;
-        this->cpu_time                      = 0;
+        m_resource_limit_release_hint   = 0;
+        m_cpu_time                      = 0;
 
         /* Setup our kernel stack. */
         if (type != ThreadType_Main) {
@@ -172,45 +172,45 @@ namespace ams::kern {
 
         /* Setup the TLS, if needed. */
         if (type == ThreadType_User) {
-            R_TRY(owner->CreateThreadLocalRegion(std::addressof(this->tls_address)));
-            this->tls_heap_address = owner->GetThreadLocalRegionPointer(this->tls_address);
-            std::memset(this->tls_heap_address, 0, ams::svc::ThreadLocalRegionSize);
+            R_TRY(owner->CreateThreadLocalRegion(std::addressof(m_tls_address)));
+            m_tls_heap_address = owner->GetThreadLocalRegionPointer(m_tls_address);
+            std::memset(m_tls_heap_address, 0, ams::svc::ThreadLocalRegionSize);
         }
 
         /* Set parent, if relevant. */
         if (owner != nullptr) {
-            this->parent = owner;
-            this->parent->Open();
-            this->parent->IncrementThreadCount();
+            m_parent = owner;
+            m_parent->Open();
+            m_parent->IncrementThreadCount();
         }
 
         /* Initialize thread context. */
         constexpr bool IsDefault64Bit = sizeof(uintptr_t) == sizeof(u64);
-        const bool is_64_bit = this->parent ? this->parent->Is64Bit() : IsDefault64Bit;
+        const bool is_64_bit = m_parent ? m_parent->Is64Bit() : IsDefault64Bit;
         const bool is_user = (type == ThreadType_User);
         const bool is_main = (type == ThreadType_Main);
-        this->thread_context.Initialize(reinterpret_cast<uintptr_t>(func), reinterpret_cast<uintptr_t>(this->GetStackTop()), GetInteger(user_stack_top), arg, is_user, is_64_bit, is_main);
+        m_thread_context.Initialize(reinterpret_cast<uintptr_t>(func), reinterpret_cast<uintptr_t>(this->GetStackTop()), GetInteger(user_stack_top), arg, is_user, is_64_bit, is_main);
 
         /* Setup the stack parameters. */
         StackParameters &sp = this->GetStackParameters();
-        if (this->parent != nullptr) {
-            this->parent->CopySvcPermissionsTo(sp);
+        if (m_parent != nullptr) {
+            m_parent->CopySvcPermissionsTo(sp);
         }
-        sp.context = std::addressof(this->thread_context);
+        sp.context = std::addressof(m_thread_context);
         sp.cur_thread = this;
         sp.disable_count = 1;
         this->SetInExceptionHandler();
 
         /* Set thread ID. */
-        this->thread_id = s_next_thread_id++;
+        m_thread_id = s_next_thread_id++;
 
         /* We initialized! */
-        this->initialized = true;
+        m_initialized = true;
 
         /* Register ourselves with our parent process. */
-        if (this->parent != nullptr) {
-            this->parent->RegisterThread(this);
-            if (this->parent->IsSuspended()) {
+        if (m_parent != nullptr) {
+            m_parent->RegisterThread(this);
+            if (m_parent->IsSuspended()) {
                 this->RequestSuspend(SuspendType_Process);
             }
         }
@@ -276,42 +276,42 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* If the thread has an owner process, unregister it. */
-        if (this->parent != nullptr) {
-            this->parent->UnregisterThread(this);
+        if (m_parent != nullptr) {
+            m_parent->UnregisterThread(this);
         }
 
         /* If the thread has a local region, delete it. */
-        if (this->tls_address != Null<KProcessAddress>) {
-            MESOSPHERE_R_ABORT_UNLESS(this->parent->DeleteThreadLocalRegion(this->tls_address));
+        if (m_tls_address != Null<KProcessAddress>) {
+            MESOSPHERE_R_ABORT_UNLESS(m_parent->DeleteThreadLocalRegion(m_tls_address));
         }
 
         /* Release any waiters. */
         {
-            MESOSPHERE_ASSERT(this->lock_owner == nullptr);
+            MESOSPHERE_ASSERT(m_lock_owner == nullptr);
             KScopedSchedulerLock sl;
 
-            auto it = this->waiter_list.begin();
-            while (it != this->waiter_list.end()) {
+            auto it = m_waiter_list.begin();
+            while (it != m_waiter_list.end()) {
                 /* The thread shouldn't be a kernel waiter. */
                 MESOSPHERE_ASSERT(!IsKernelAddressKey(it->GetAddressKey()));
                 it->SetLockOwner(nullptr);
                 it->SetSyncedObject(nullptr, svc::ResultInvalidState());
                 it->Wakeup();
-                it = this->waiter_list.erase(it);
+                it = m_waiter_list.erase(it);
             }
         }
 
         /* Finalize the thread context. */
-        this->thread_context.Finalize();
+        m_thread_context.Finalize();
 
         /* Cleanup the kernel stack. */
-        if (this->kernel_stack_top != nullptr) {
-            CleanupKernelStack(reinterpret_cast<uintptr_t>(this->kernel_stack_top));
+        if (m_kernel_stack_top != nullptr) {
+            CleanupKernelStack(reinterpret_cast<uintptr_t>(m_kernel_stack_top));
         }
 
         /* Decrement the parent process's thread count. */
-        if (this->parent != nullptr) {
-            this->parent->DecrementThreadCount();
+        if (m_parent != nullptr) {
+            m_parent->DecrementThreadCount();
         }
 
         /* Perform inherited finalization. */
@@ -319,7 +319,7 @@ namespace ams::kern {
     }
 
     bool KThread::IsSignaled() const {
-        return this->signaled;
+        return m_signaled;
     }
 
     void KThread::Wakeup() {
@@ -327,8 +327,8 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         if (this->GetState() == ThreadState_Waiting) {
-            if (this->sleeping_queue != nullptr) {
-                this->sleeping_queue->WakeupThread(this);
+            if (m_sleeping_queue != nullptr) {
+                m_sleeping_queue->WakeupThread(this);
             } else {
                 this->SetState(ThreadState_Runnable);
             }
@@ -347,10 +347,10 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* Release user exception and unpin, if relevant. */
-        if (this->parent != nullptr) {
-            this->parent->ReleaseUserException(this);
-            if (this->parent->GetPinnedThread(GetCurrentCoreId()) == this) {
-                this->parent->UnpinCurrentThread();
+        if (m_parent != nullptr) {
+            m_parent->ReleaseUserException(this);
+            if (m_parent->GetPinnedThread(GetCurrentCoreId()) == this) {
+                m_parent->UnpinCurrentThread();
             }
         }
 
@@ -358,12 +358,12 @@ namespace ams::kern {
         this->SetState(KThread::ThreadState_Terminated);
 
         /* Clear the thread's status as running in parent. */
-        if (this->parent != nullptr) {
-            this->parent->ClearRunningThread(this);
+        if (m_parent != nullptr) {
+            m_parent->ClearRunningThread(this);
         }
 
         /* Signal. */
-        this->signaled = true;
+        m_signaled = true;
         this->NotifyAvailable();
 
         /* Call the on thread termination handler. */
@@ -380,7 +380,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Ensure that the thread is not executing on any core. */
-        if (this->parent != nullptr) {
+        if (m_parent != nullptr) {
             for (size_t i = 0; i < cpu::NumCores; ++i) {
                 KThread *core_thread;
                 do {
@@ -406,43 +406,43 @@ namespace ams::kern {
         this->GetStackParameters().is_pinned = true;
 
         /* Disable core migration. */
-        MESOSPHERE_ASSERT(this->num_core_migration_disables == 0);
+        MESOSPHERE_ASSERT(m_num_core_migration_disables == 0);
         {
-            ++this->num_core_migration_disables;
+            ++m_num_core_migration_disables;
 
             /* Save our ideal state to restore when we're unpinned. */
-            this->original_physical_ideal_core_id = this->physical_ideal_core_id;
-            this->original_physical_affinity_mask = this->physical_affinity_mask;
+            m_original_physical_ideal_core_id = m_physical_ideal_core_id;
+            m_original_physical_affinity_mask = m_physical_affinity_mask;
 
             /* Bind ourselves to this core. */
             const s32 active_core  = this->GetActiveCore();
             const s32 current_core = GetCurrentCoreId();
 
             this->SetActiveCore(current_core);
-            this->physical_ideal_core_id = current_core;
-            this->physical_affinity_mask.SetAffinityMask(1ul << current_core);
+            m_physical_ideal_core_id = current_core;
+            m_physical_affinity_mask.SetAffinityMask(1ul << current_core);
 
-            if (active_core != current_core || this->physical_affinity_mask.GetAffinityMask() != this->original_physical_affinity_mask.GetAffinityMask()) {
-                KScheduler::OnThreadAffinityMaskChanged(this, this->original_physical_affinity_mask, active_core);
+            if (active_core != current_core || m_physical_affinity_mask.GetAffinityMask() != m_original_physical_affinity_mask.GetAffinityMask()) {
+                KScheduler::OnThreadAffinityMaskChanged(this, m_original_physical_affinity_mask, active_core);
             }
         }
 
         /* Disallow performing thread suspension. */
         {
             /* Update our allow flags. */
-            this->suspend_allowed_flags &= ~(1 << (SuspendType_Thread + ThreadState_SuspendShift));
+            m_suspend_allowed_flags &= ~(1 << (SuspendType_Thread + ThreadState_SuspendShift));
 
             /* Update our state. */
-            const ThreadState old_state = this->thread_state;
-            this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-            if (this->thread_state != old_state) {
+            const ThreadState old_state = m_thread_state;
+            m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+            if (m_thread_state != old_state) {
                 KScheduler::OnThreadStateChanged(this, old_state);
             }
         }
 
         /* Update our SVC access permissions. */
-        MESOSPHERE_ASSERT(this->parent != nullptr);
-        this->parent->CopyPinnedSvcPermissionsTo(this->GetStackParameters());
+        MESOSPHERE_ASSERT(m_parent != nullptr);
+        m_parent->CopyPinnedSvcPermissionsTo(this->GetStackParameters());
     }
 
     void KThread::Unpin() {
@@ -453,24 +453,24 @@ namespace ams::kern {
         this->GetStackParameters().is_pinned = false;
 
         /* Enable core migration. */
-        MESOSPHERE_ASSERT(this->num_core_migration_disables == 1);
+        MESOSPHERE_ASSERT(m_num_core_migration_disables == 1);
         {
-            --this->num_core_migration_disables;
+            --m_num_core_migration_disables;
 
             /* Restore our original state. */
-            const KAffinityMask old_mask = this->physical_affinity_mask;
+            const KAffinityMask old_mask = m_physical_affinity_mask;
 
-            this->physical_ideal_core_id = this->original_physical_ideal_core_id;
-            this->physical_affinity_mask = this->original_physical_affinity_mask;
+            m_physical_ideal_core_id = m_original_physical_ideal_core_id;
+            m_physical_affinity_mask = m_original_physical_affinity_mask;
 
-            if (this->physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+            if (m_physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                 const s32 active_core = this->GetActiveCore();
 
-                if (!this->physical_affinity_mask.GetAffinity(active_core)) {
-                    if (this->physical_ideal_core_id >= 0) {
-                        this->SetActiveCore(this->physical_ideal_core_id);
+                if (!m_physical_affinity_mask.GetAffinity(active_core)) {
+                    if (m_physical_ideal_core_id >= 0) {
+                        this->SetActiveCore(m_physical_ideal_core_id);
                     } else {
-                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->physical_affinity_mask.GetAffinityMask()));
+                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(m_physical_affinity_mask.GetAffinityMask()));
                     }
                 }
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
@@ -481,23 +481,23 @@ namespace ams::kern {
         {
             /* Update our allow flags. */
             if (!this->IsTerminationRequested()) {
-                this->suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
+                m_suspend_allowed_flags |= (1 << (SuspendType_Thread + ThreadState_SuspendShift));
             }
 
             /* Update our state. */
-            const ThreadState old_state = this->thread_state;
-            this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-            if (this->thread_state != old_state) {
+            const ThreadState old_state = m_thread_state;
+            m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+            if (m_thread_state != old_state) {
                 KScheduler::OnThreadStateChanged(this, old_state);
             }
         }
 
         /* Update our SVC access permissions. */
-        MESOSPHERE_ASSERT(this->parent != nullptr);
-        this->parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
+        MESOSPHERE_ASSERT(m_parent != nullptr);
+        m_parent->CopyUnpinnedSvcPermissionsTo(this->GetStackParameters());
 
         /* Resume any threads that began waiting on us while we were pinned. */
-        for (auto it = this->pinned_waiter_list.begin(); it != this->pinned_waiter_list.end(); ++it) {
+        for (auto it = m_pinned_waiter_list.begin(); it != m_pinned_waiter_list.end(); ++it) {
             if (it->GetState() == ThreadState_Waiting) {
                 it->SetState(ThreadState_Runnable);
             }
@@ -509,19 +509,19 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
 
         KScopedSchedulerLock sl;
-        MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
-        if ((this->num_core_migration_disables++) == 0) {
+        MESOSPHERE_ASSERT(m_num_core_migration_disables >= 0);
+        if ((m_num_core_migration_disables++) == 0) {
             /* Save our ideal state to restore when we can migrate again. */
-            this->original_physical_ideal_core_id = this->physical_ideal_core_id;
-            this->original_physical_affinity_mask = this->physical_affinity_mask;
+            m_original_physical_ideal_core_id = m_physical_ideal_core_id;
+            m_original_physical_affinity_mask = m_physical_affinity_mask;
 
             /* Bind ourselves to this core. */
             const s32 active_core = this->GetActiveCore();
-            this->physical_ideal_core_id = active_core;
-            this->physical_affinity_mask.SetAffinityMask(1ul << active_core);
+            m_physical_ideal_core_id = active_core;
+            m_physical_affinity_mask.SetAffinityMask(1ul << active_core);
 
-            if (this->physical_affinity_mask.GetAffinityMask() != this->original_physical_affinity_mask.GetAffinityMask()) {
-                KScheduler::OnThreadAffinityMaskChanged(this, this->original_physical_affinity_mask, active_core);
+            if (m_physical_affinity_mask.GetAffinityMask() != m_original_physical_affinity_mask.GetAffinityMask()) {
+                KScheduler::OnThreadAffinityMaskChanged(this, m_original_physical_affinity_mask, active_core);
             }
         }
     }
@@ -531,22 +531,22 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this == GetCurrentThreadPointer());
 
         KScopedSchedulerLock sl;
-        MESOSPHERE_ASSERT(this->num_core_migration_disables > 0);
-        if ((--this->num_core_migration_disables) == 0) {
-            const KAffinityMask old_mask = this->physical_affinity_mask;
+        MESOSPHERE_ASSERT(m_num_core_migration_disables > 0);
+        if ((--m_num_core_migration_disables) == 0) {
+            const KAffinityMask old_mask = m_physical_affinity_mask;
 
             /* Restore our ideals. */
-            this->physical_ideal_core_id = this->original_physical_ideal_core_id;
-            this->physical_affinity_mask = this->original_physical_affinity_mask;
+            m_physical_ideal_core_id = m_original_physical_ideal_core_id;
+            m_physical_affinity_mask = m_original_physical_affinity_mask;
 
-            if (this->physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+            if (m_physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                 const s32 active_core = this->GetActiveCore();
 
-                if (!this->physical_affinity_mask.GetAffinity(active_core)) {
-                    if (this->physical_ideal_core_id >= 0) {
-                        this->SetActiveCore(this->physical_ideal_core_id);
+                if (!m_physical_affinity_mask.GetAffinity(active_core)) {
+                    if (m_physical_ideal_core_id >= 0) {
+                        this->SetActiveCore(m_physical_ideal_core_id);
                     } else {
-                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->physical_affinity_mask.GetAffinityMask()));
+                        this->SetActiveCore(BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(m_physical_affinity_mask.GetAffinityMask()));
                     }
                 }
                 KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
@@ -560,8 +560,8 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Get the virtual mask. */
-            *out_ideal_core    = this->virtual_ideal_core_id;
-            *out_affinity_mask = this->virtual_affinity_mask;
+            *out_ideal_core    = m_virtual_ideal_core_id;
+            *out_affinity_mask = m_virtual_affinity_mask;
         }
 
         return ResultSuccess();
@@ -571,15 +571,15 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
         {
             KScopedSchedulerLock sl;
-            MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
+            MESOSPHERE_ASSERT(m_num_core_migration_disables >= 0);
 
             /* Select between core mask and original core mask. */
-            if (this->num_core_migration_disables == 0) {
-                *out_ideal_core    = this->physical_ideal_core_id;
-                *out_affinity_mask = this->physical_affinity_mask.GetAffinityMask();
+            if (m_num_core_migration_disables == 0) {
+                *out_ideal_core    = m_physical_ideal_core_id;
+                *out_affinity_mask = m_physical_affinity_mask.GetAffinityMask();
             } else {
-                *out_ideal_core    = this->original_physical_ideal_core_id;
-                *out_affinity_mask = this->original_physical_affinity_mask.GetAffinityMask();
+                *out_ideal_core    = m_original_physical_ideal_core_id;
+                *out_affinity_mask = m_original_physical_affinity_mask.GetAffinityMask();
             }
         }
 
@@ -588,25 +588,25 @@ namespace ams::kern {
 
     Result KThread::SetCoreMask(int32_t core_id, u64 v_affinity_mask) {
         MESOSPHERE_ASSERT_THIS();
-        MESOSPHERE_ASSERT(this->parent != nullptr);
+        MESOSPHERE_ASSERT(m_parent != nullptr);
         MESOSPHERE_ASSERT(v_affinity_mask != 0);
-        KScopedLightLock lk(this->activity_pause_lock);
+        KScopedLightLock lk(m_activity_pause_lock);
 
         /* Set the core mask. */
         u64 p_affinity_mask = 0;
         {
             KScopedSchedulerLock sl;
-            MESOSPHERE_ASSERT(this->num_core_migration_disables >= 0);
+            MESOSPHERE_ASSERT(m_num_core_migration_disables >= 0);
 
             /* If the core id is no-update magic, preserve the ideal core id. */
             if (core_id == ams::svc::IdealCoreNoUpdate) {
-                core_id = this->virtual_ideal_core_id;
+                core_id = m_virtual_ideal_core_id;
                 R_UNLESS(((1ul << core_id) & v_affinity_mask) != 0, svc::ResultInvalidCombination());
             }
 
             /* Set the virtual core/affinity mask. */
-            this->virtual_ideal_core_id = core_id;
-            this->virtual_affinity_mask = v_affinity_mask;
+            m_virtual_ideal_core_id = core_id;
+            m_virtual_affinity_mask = v_affinity_mask;
 
             /* Translate the virtual core to a physical core. */
             if (core_id >= 0) {
@@ -621,26 +621,26 @@ namespace ams::kern {
             }
 
             /* If we haven't disabled migration, perform an affinity change. */
-            if (this->num_core_migration_disables == 0) {
-                const KAffinityMask old_mask = this->physical_affinity_mask;
+            if (m_num_core_migration_disables == 0) {
+                const KAffinityMask old_mask = m_physical_affinity_mask;
 
                 /* Set our new ideals. */
-                this->physical_ideal_core_id = core_id;
-                this->physical_affinity_mask.SetAffinityMask(p_affinity_mask);
+                m_physical_ideal_core_id = core_id;
+                m_physical_affinity_mask.SetAffinityMask(p_affinity_mask);
 
-                if (this->physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
+                if (m_physical_affinity_mask.GetAffinityMask() != old_mask.GetAffinityMask()) {
                     const s32 active_core = this->GetActiveCore();
 
-                    if (active_core >= 0 && !this->physical_affinity_mask.GetAffinity(active_core)) {
-                        const s32 new_core = this->physical_ideal_core_id >= 0 ? this->physical_ideal_core_id : BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(this->physical_affinity_mask.GetAffinityMask());
+                    if (active_core >= 0 && !m_physical_affinity_mask.GetAffinity(active_core)) {
+                        const s32 new_core = m_physical_ideal_core_id >= 0 ? m_physical_ideal_core_id : BITSIZEOF(unsigned long long) - 1 - __builtin_clzll(m_physical_affinity_mask.GetAffinityMask());
                         this->SetActiveCore(new_core);
                     }
                     KScheduler::OnThreadAffinityMaskChanged(this, old_mask, active_core);
                 }
             } else {
                 /* Otherwise, we edit the original affinity for restoration later. */
-                this->original_physical_ideal_core_id = core_id;
-                this->original_physical_affinity_mask.SetAffinityMask(p_affinity_mask);
+                m_original_physical_ideal_core_id = core_id;
+                m_original_physical_affinity_mask.SetAffinityMask(p_affinity_mask);
             }
         }
 
@@ -679,7 +679,7 @@ namespace ams::kern {
                         thread_is_pinned = true;
 
                         /* Wait until the thread isn't pinned any more. */
-                        this->pinned_waiter_list.push_back(GetCurrentThread());
+                        m_pinned_waiter_list.push_back(GetCurrentThread());
                         GetCurrentThread().SetState(ThreadState_Waiting);
                     } else {
                         /* If the thread isn't pinned, release the scheduler lock and retry until it's not current. */
@@ -694,7 +694,7 @@ namespace ams::kern {
                 KScopedSchedulerLock sl;
 
                 /* Remove from the list. */
-                this->pinned_waiter_list.erase(this->pinned_waiter_list.iterator_to(GetCurrentThread()));
+                m_pinned_waiter_list.erase(m_pinned_waiter_list.iterator_to(GetCurrentThread()));
             }
         }
 
@@ -708,7 +708,7 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Change our base priority. */
-        this->base_priority = priority;
+        m_base_priority = priority;
 
         /* Perform a priority restoration. */
         RestorePriority(this);
@@ -720,9 +720,9 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Change both our priorities to the idle thread priority. */
-        const s32 old_priority = this->priority;
-        this->priority      = IdleThreadPriority;
-        this->base_priority = IdleThreadPriority;
+        const s32 old_priority = m_priority;
+        m_priority      = IdleThreadPriority;
+        m_base_priority = IdleThreadPriority;
         KScheduler::OnThreadPriorityChanged(this, old_priority);
 
         return ResultSuccess();
@@ -734,7 +734,7 @@ namespace ams::kern {
         KScopedSchedulerLock lk;
 
         /* Note the request in our flags. */
-        this->suspend_request_flags |= (1u << (ThreadState_SuspendShift + type));
+        m_suspend_request_flags |= (1u << (ThreadState_SuspendShift + type));
 
         /* Try to perform the suspend. */
         this->TrySuspend();
@@ -746,12 +746,12 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Clear the request in our flags. */
-        this->suspend_request_flags &= ~(1u << (ThreadState_SuspendShift + type));
+        m_suspend_request_flags &= ~(1u << (ThreadState_SuspendShift + type));
 
         /* Update our state. */
-        const ThreadState old_state = this->thread_state;
-        this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
-        if (this->thread_state != old_state) {
+        const ThreadState old_state = m_thread_state;
+        m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        if (m_thread_state != old_state) {
             KScheduler::OnThreadStateChanged(this, old_state);
         }
     }
@@ -762,18 +762,18 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Check if we're waiting and cancellable. */
-        if (this->GetState() == ThreadState_Waiting && this->cancellable) {
-            if (this->sleeping_queue != nullptr) {
-                this->sleeping_queue->WakeupThread(this);
-                this->wait_cancelled = true;
+        if (this->GetState() == ThreadState_Waiting && m_cancellable) {
+            if (m_sleeping_queue != nullptr) {
+                m_sleeping_queue->WakeupThread(this);
+                m_wait_cancelled = true;
             } else {
                 this->SetSyncedObject(nullptr, svc::ResultCancelled());
                 this->SetState(ThreadState_Runnable);
-                this->wait_cancelled = false;
+                m_wait_cancelled = false;
             }
         } else {
             /* Otherwise, note that we cancelled a wait. */
-            this->wait_cancelled = true;
+            m_wait_cancelled = true;
         }
     }
 
@@ -798,8 +798,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(this->IsSuspendRequested());
 
         /* Set our suspend flags in state. */
-        const auto old_state = this->thread_state;
-        this->thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
+        const auto old_state = m_thread_state;
+        m_thread_state = static_cast<ThreadState>(this->GetSuspendFlags() | (old_state & ThreadState_Mask));
 
         /* Note the state change in scheduler. */
         KScheduler::OnThreadStateChanged(this, old_state);
@@ -810,8 +810,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* Clear our suspend flags in state. */
-        const auto old_state = this->thread_state;
-        this->thread_state = static_cast<ThreadState>(old_state & ThreadState_Mask);
+        const auto old_state = m_thread_state;
+        m_thread_state = static_cast<ThreadState>(old_state & ThreadState_Mask);
 
         /* Note the state change in scheduler. */
         KScheduler::OnThreadStateChanged(this, old_state);
@@ -819,10 +819,10 @@ namespace ams::kern {
 
     size_t KThread::GetKernelStackUsage() const {
         MESOSPHERE_ASSERT_THIS();
-        MESOSPHERE_ASSERT(this->kernel_stack_top != nullptr);
+        MESOSPHERE_ASSERT(m_kernel_stack_top != nullptr);
 
         #if defined(MESOSPHERE_ENABLE_KERNEL_STACK_USAGE)
-            const u8 *stack = static_cast<const u8 *>(this->kernel_stack_top) - PageSize;
+            const u8 *stack = static_cast<const u8 *>(m_kernel_stack_top) - PageSize;
 
             size_t i;
             for (i = 0; i < PageSize; ++i) {
@@ -839,7 +839,7 @@ namespace ams::kern {
 
     Result KThread::SetActivity(ams::svc::ThreadActivity activity) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->activity_pause_lock);
+        KScopedLightLock lk(m_activity_pause_lock);
 
         /* Set the activity. */
         {
@@ -889,7 +889,7 @@ namespace ams::kern {
                     thread_is_current = false;
 
                     /* Wait until the thread isn't pinned any more. */
-                    this->pinned_waiter_list.push_back(GetCurrentThread());
+                    m_pinned_waiter_list.push_back(GetCurrentThread());
                     GetCurrentThread().SetState(ThreadState_Waiting);
                 } else {
                     /* Check if the thread is currently running. */
@@ -911,7 +911,7 @@ namespace ams::kern {
                 KScopedSchedulerLock sl;
 
                 /* Remove from the list. */
-                this->pinned_waiter_list.erase(this->pinned_waiter_list.iterator_to(GetCurrentThread()));
+                m_pinned_waiter_list.erase(m_pinned_waiter_list.iterator_to(GetCurrentThread()));
             }
         }
 
@@ -920,7 +920,7 @@ namespace ams::kern {
 
     Result KThread::GetThreadContext3(ams::svc::ThreadContext *out) {
         /* Lock ourselves. */
-        KScopedLightLock lk(this->activity_pause_lock);
+        KScopedLightLock lk(m_activity_pause_lock);
 
         /* Get the context. */
         {
@@ -944,8 +944,8 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* Find the right spot to insert the waiter. */
-        auto it = this->waiter_list.begin();
-        while (it != this->waiter_list.end()) {
+        auto it = m_waiter_list.begin();
+        while (it != m_waiter_list.end()) {
             if (it->GetPriority() > thread->GetPriority()) {
                 break;
             }
@@ -954,11 +954,11 @@ namespace ams::kern {
 
         /* Keep track of how many kernel waiters we have. */
         if (IsKernelAddressKey(thread->GetAddressKey())) {
-            MESOSPHERE_ABORT_UNLESS((this->num_kernel_waiters++) >= 0);
+            MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters++) >= 0);
         }
 
         /* Insert the waiter. */
-        this->waiter_list.insert(it, *thread);
+        m_waiter_list.insert(it, *thread);
         thread->SetLockOwner(this);
     }
 
@@ -968,11 +968,11 @@ namespace ams::kern {
 
         /* Keep track of how many kernel waiters we have. */
         if (IsKernelAddressKey(thread->GetAddressKey())) {
-            MESOSPHERE_ABORT_UNLESS((this->num_kernel_waiters--) > 0);
+            MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters--) > 0);
         }
 
         /* Remove the waiter. */
-        this->waiter_list.erase(this->waiter_list.iterator_to(*thread));
+        m_waiter_list.erase(m_waiter_list.iterator_to(*thread));
         thread->SetLockOwner(nullptr);
     }
 
@@ -983,7 +983,7 @@ namespace ams::kern {
             /* We want to inherit priority where possible. */
             s32 new_priority = thread->GetBasePriority();
             if (thread->HasWaiters()) {
-                new_priority = std::min(new_priority, thread->waiter_list.front().GetPriority());
+                new_priority = std::min(new_priority, thread->m_waiter_list.front().GetPriority());
             }
 
             /* If the priority we would inherit is not different from ours, don't do anything. */
@@ -1039,16 +1039,16 @@ namespace ams::kern {
 
         s32 num_waiters = 0;
         KThread *next_lock_owner = nullptr;
-        auto it = this->waiter_list.begin();
-        while (it != this->waiter_list.end()) {
+        auto it = m_waiter_list.begin();
+        while (it != m_waiter_list.end()) {
             if (it->GetAddressKey() == key) {
                 KThread *thread = std::addressof(*it);
 
                 /* Keep track of how many kernel waiters we have. */
                 if (IsKernelAddressKey(thread->GetAddressKey())) {
-                    MESOSPHERE_ABORT_UNLESS((this->num_kernel_waiters--) > 0);
+                    MESOSPHERE_ABORT_UNLESS((m_num_kernel_waiters--) > 0);
                 }
-                it = this->waiter_list.erase(it);
+                it = m_waiter_list.erase(it);
 
                 /* Update the next lock owner. */
                 if (next_lock_owner == nullptr) {
@@ -1117,9 +1117,9 @@ namespace ams::kern {
         KDebug::OnExitThread(this);
 
         /* Release the thread resource hint from parent. */
-        if (this->parent != nullptr) {
-            this->parent->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 0, 1);
-            this->resource_limit_release_hint = true;
+        if (m_parent != nullptr) {
+            m_parent->ReleaseResource(ams::svc::LimitableResource_ThreadCountMax, 0, 1);
+            m_resource_limit_release_hint = true;
         }
 
         /* Perform termination. */
@@ -1127,7 +1127,7 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             /* Disallow all suspension. */
-            this->suspend_allowed_flags = 0;
+            m_suspend_allowed_flags = 0;
 
             /* Start termination. */
             this->StartTermination();
@@ -1162,14 +1162,14 @@ namespace ams::kern {
         const bool first_request = [&] ALWAYS_INLINE_LAMBDA () -> bool {
             /* Perform an atomic compare-and-swap from false to true. */
             bool expected = false;
-            return this->termination_requested.compare_exchange_strong(expected, true);
+            return m_termination_requested.compare_exchange_strong(expected, true);
         }();
 
         /* If this is the first request, start termination procedure. */
         if (first_request) {
             /* If the thread is in initialized state, just change state to terminated. */
             if (this->GetState() == ThreadState_Initialized) {
-                this->thread_state = ThreadState_Terminated;
+                m_thread_state = ThreadState_Terminated;
                 return ThreadState_Terminated;
             }
 
@@ -1178,7 +1178,7 @@ namespace ams::kern {
 
             /* If the thread is suspended, continue it. */
             if (this->IsSuspended()) {
-                this->suspend_allowed_flags = 0;
+                m_suspend_allowed_flags = 0;
                 this->Continue();
             }
 
@@ -1189,7 +1189,7 @@ namespace ams::kern {
 
             /* If the thread is runnable, send a termination interrupt to other cores. */
             if (this->GetState() == ThreadState_Runnable) {
-                if (const u64 core_mask = this->physical_affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
+                if (const u64 core_mask = m_physical_affinity_mask.GetAffinityMask() & ~(1ul << GetCurrentCoreId()); core_mask != 0) {
                     cpu::DataSynchronizationBarrier();
                     Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_ThreadTerminate, core_mask);
                 }
@@ -1237,9 +1237,9 @@ namespace ams::kern {
 
         KScopedSchedulerLock sl;
 
-        const ThreadState old_state = this->thread_state;
-        this->thread_state = static_cast<ThreadState>((old_state & ~ThreadState_Mask) | (state & ThreadState_Mask));
-        if (this->thread_state != old_state) {
+        const ThreadState old_state = m_thread_state;
+        m_thread_state = static_cast<ThreadState>((old_state & ~ThreadState_Mask) | (state & ThreadState_Mask));
+        if (m_thread_state != old_state) {
             KScheduler::OnThreadStateChanged(this, old_state);
         }
     }
@@ -1256,10 +1256,10 @@ namespace ams::kern {
         /* Define helper object to find the thread. */
         class IdObjectHelper : public KAutoObjectWithListContainer::ListType::value_type {
             private:
-                u64 id;
+                u64 m_id;
             public:
-                constexpr explicit IdObjectHelper(u64 id) : id(id) { /* ... */ }
-                virtual u64 GetId() const override { return this->id; }
+                constexpr explicit IdObjectHelper(u64 id) : m_id(id) { /* ... */ }
+                virtual u64 GetId() const override { return m_id; }
         };
 
         /* Find the object with the right id. */

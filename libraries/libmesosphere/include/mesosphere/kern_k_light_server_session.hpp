@@ -26,24 +26,24 @@ namespace ams::kern {
     class KLightServerSession final : public KAutoObjectWithSlabHeapAndContainer<KLightServerSession, KAutoObjectWithList>, public util::IntrusiveListBaseNode<KLightServerSession> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KLightServerSession, KAutoObject);
         private:
-            KLightSession *parent;
-            KThreadQueue request_queue;
-            KThreadQueue server_queue;
-            KThread *current_request;
-            KThread *server_thread;
+            KLightSession *m_parent;
+            KThreadQueue m_request_queue;
+            KThreadQueue m_server_queue;
+            KThread *m_current_request;
+            KThread *m_server_thread;
         public:
-            constexpr KLightServerSession() : parent(), request_queue(), server_queue(), current_request(), server_thread() { /* ... */ }
+            constexpr KLightServerSession() : m_parent(), m_request_queue(), m_server_queue(), m_current_request(), m_server_thread() { /* ... */ }
             virtual ~KLightServerSession() { /* ... */ }
 
             void Initialize(KLightSession *parent) {
                 /* Set member variables. */
-                this->parent = parent;
+                m_parent = parent;
             }
 
             virtual void Destroy() override;
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            constexpr const KLightSession *GetParent() const { return this->parent; }
+            constexpr const KLightSession *GetParent() const { return m_parent; }
 
             Result OnRequest(KThread *request_thread);
             Result ReplyAndReceive(u32 *data);

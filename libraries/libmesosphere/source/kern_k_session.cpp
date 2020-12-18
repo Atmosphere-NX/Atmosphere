@@ -27,53 +27,53 @@ namespace ams::kern {
         this->Open();
 
         /* Create our sub sessions. */
-        KAutoObject::Create(std::addressof(this->server));
-        KAutoObject::Create(std::addressof(this->client));
+        KAutoObject::Create(std::addressof(m_server));
+        KAutoObject::Create(std::addressof(m_client));
 
         /* Initialize our sub sessions. */
-        this->server.Initialize(this);
-        this->client.Initialize(this);
+        m_server.Initialize(this);
+        m_client.Initialize(this);
 
         /* Set state and name. */
-        this->state = State::Normal;
-        this->name  = name;
+        m_state = State::Normal;
+        m_name  = name;
 
         /* Set our owner process. */
-        this->process = GetCurrentProcessPointer();
-        this->process->Open();
+        m_process = GetCurrentProcessPointer();
+        m_process->Open();
 
         /* Set our port. */
-        this->port = client_port;
-        if (this->port != nullptr) {
-            this->port->Open();
+        m_port = client_port;
+        if (m_port != nullptr) {
+            m_port->Open();
         }
 
         /* Mark initialized. */
-        this->initialized = true;
+        m_initialized = true;
     }
 
     void KSession::Finalize() {
-        if (this->port != nullptr) {
-            this->port->OnSessionFinalized();
-            this->port->Close();
+        if (m_port != nullptr) {
+            m_port->OnSessionFinalized();
+            m_port->Close();
         }
     }
 
     void KSession::OnServerClosed() {
         MESOSPHERE_ASSERT_THIS();
 
-        if (this->state == State::Normal) {
-            this->state = State::ServerClosed;
-            this->client.OnServerClosed();
+        if (m_state == State::Normal) {
+            m_state = State::ServerClosed;
+            m_client.OnServerClosed();
         }
     }
 
     void KSession::OnClientClosed() {
         MESOSPHERE_ASSERT_THIS();
 
-        if (this->state == State::Normal) {
-            this->state = State::ClientClosed;
-            this->server.OnClientClosed();
+        if (m_state == State::Normal) {
+            m_state = State::ClientClosed;
+            m_server.OnClientClosed();
         }
     }
 

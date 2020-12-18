@@ -28,12 +28,12 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Initialize the device page table. */
-        R_TRY(this->table.Initialize(address, size));
+        R_TRY(m_table.Initialize(address, size));
 
         /* Set member variables. */
-        this->space_address  = address;
-        this->space_size     = size;
-        this->is_initialized = true;
+        m_space_address  = address;
+        m_space_size     = size;
+        m_is_initialized = true;
 
         return ResultSuccess();
     }
@@ -42,7 +42,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Finalize the table. */
-        this->table.Finalize();
+        m_table.Finalize();
 
         /* Finalize base. */
         KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList>::Finalize();
@@ -50,26 +50,26 @@ namespace ams::kern {
 
     Result KDeviceAddressSpace::Attach(ams::svc::DeviceName device_name) {
         /* Lock the address space. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Attach. */
-        return this->table.Attach(device_name, this->space_address, this->space_size);
+        return m_table.Attach(device_name, m_space_address, m_space_size);
     }
 
     Result KDeviceAddressSpace::Detach(ams::svc::DeviceName device_name) {
         /* Lock the address space. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Detach. */
-        return this->table.Detach(device_name);
+        return m_table.Detach(device_name);
     }
 
     Result KDeviceAddressSpace::Map(size_t *out_mapped_size, KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address, ams::svc::MemoryPermission device_perm, bool is_aligned, bool refresh_mappings) {
         /* Check that the address falls within the space. */
-        R_UNLESS((this->space_address <= device_address && device_address + size - 1 <= this->space_address + this->space_size - 1), svc::ResultInvalidCurrentMemory());
+        R_UNLESS((m_space_address <= device_address && device_address + size - 1 <= m_space_address + m_space_size - 1), svc::ResultInvalidCurrentMemory());
 
         /* Lock the address space. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Lock the pages. */
         KPageGroup pg(page_table->GetBlockInfoManager());
@@ -87,11 +87,11 @@ namespace ams::kern {
             auto mapped_size_guard = SCOPE_GUARD { *out_mapped_size = 0; };
 
             /* Perform the mapping. */
-            R_TRY(this->table.Map(out_mapped_size, pg, device_address, device_perm, refresh_mappings));
+            R_TRY(m_table.Map(out_mapped_size, pg, device_address, device_perm, refresh_mappings));
 
             /* Ensure that we unmap the pages if we fail to update the protections. */
             /* NOTE: Nintendo does not check the result of this unmap call. */
-            auto map_guard = SCOPE_GUARD { this->table.Unmap(device_address, *out_mapped_size); };
+            auto map_guard = SCOPE_GUARD { m_table.Unmap(device_address, *out_mapped_size); };
 
             /* Update the protections in accordance with how much we mapped. */
             R_TRY(page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, *out_mapped_size));
@@ -108,10 +108,10 @@ namespace ams::kern {
 
     Result KDeviceAddressSpace::Unmap(KProcessPageTable *page_table, KProcessAddress process_address, size_t size, u64 device_address) {
         /* Check that the address falls within the space. */
-        R_UNLESS((this->space_address <= device_address && device_address + size - 1 <= this->space_address + this->space_size - 1), svc::ResultInvalidCurrentMemory());
+        R_UNLESS((m_space_address <= device_address && device_address + size - 1 <= m_space_address + m_space_size - 1), svc::ResultInvalidCurrentMemory());
 
         /* Lock the address space. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Make and open a page group for the unmapped region. */
         KPageGroup pg(page_table->GetBlockInfoManager());
@@ -125,7 +125,7 @@ namespace ams::kern {
             auto unlock_guard = SCOPE_GUARD { page_table->UnlockForDeviceAddressSpacePartialMap(process_address, size, size); };
 
             /* Unmap. */
-            R_TRY(this->table.Unmap(pg, device_address));
+            R_TRY(m_table.Unmap(pg, device_address));
 
             unlock_guard.Cancel();
         }

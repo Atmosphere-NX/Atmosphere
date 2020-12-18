@@ -20,7 +20,7 @@ namespace ams::kern {
 
     class KTimerTask : public util::IntrusiveRedBlackTreeBaseNode<KTimerTask> {
         private:
-            s64 time;
+            s64 m_time;
         public:
             static constexpr ALWAYS_INLINE int Compare(const KTimerTask &lhs, const KTimerTask &rhs) {
                 if (lhs.GetTime() < rhs.GetTime()) {
@@ -30,14 +30,14 @@ namespace ams::kern {
                 }
             }
         public:
-            constexpr ALWAYS_INLINE KTimerTask() : time(0) { /* ... */ }
+            constexpr ALWAYS_INLINE KTimerTask() : m_time(0) { /* ... */ }
 
             constexpr ALWAYS_INLINE void SetTime(s64 t) {
-                this->time = t;
+                m_time = t;
             }
 
             constexpr ALWAYS_INLINE s64 GetTime() const {
-                return this->time;
+                return m_time;
             }
 
             virtual void OnTimer() = 0;
