@@ -24,9 +24,9 @@ namespace ams::kern {
 
     class KLightConditionVariable {
         private:
-            KThreadQueue thread_queue;
+            KThreadQueue m_thread_queue;
         public:
-            constexpr ALWAYS_INLINE KLightConditionVariable() : thread_queue() { /* ... */ }
+            constexpr ALWAYS_INLINE KLightConditionVariable() : m_thread_queue() { /* ... */ }
         private:
             void WaitImpl(KLightLock *lock, s64 timeout) {
                 KThread *owner = GetCurrentThreadPointer();
@@ -37,7 +37,7 @@ namespace ams::kern {
                     KScopedSchedulerLockAndSleep lk(&timer, owner, timeout);
                     lock->Unlock();
 
-                    if (!this->thread_queue.SleepThread(owner)) {
+                    if (!m_thread_queue.SleepThread(owner)) {
                         lk.CancelSleep();
                         return;
                     }
@@ -56,7 +56,7 @@ namespace ams::kern {
 
             void Broadcast() {
                 KScopedSchedulerLock lk;
-                while (this->thread_queue.WakeupFrontThread() != nullptr) {
+                while (m_thread_queue.WakeupFrontThread() != nullptr) {
                     /* We want to signal all threads, and so should continue waking up until there's nothing to wake. */
                 }
             }

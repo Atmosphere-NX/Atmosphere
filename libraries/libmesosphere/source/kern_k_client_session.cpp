@@ -20,8 +20,8 @@ namespace ams::kern {
     void KClientSession::Destroy() {
         MESOSPHERE_ASSERT_THIS();
 
-        this->parent->OnClientClosed();
-        this->parent->Close();
+        m_parent->OnClientClosed();
+        m_parent->Close();
     }
 
     void KClientSession::OnServerClosed() {
@@ -45,7 +45,7 @@ namespace ams::kern {
 
             GetCurrentThread().SetSyncedObject(nullptr, ResultSuccess());
 
-            R_TRY(this->parent->OnRequest(request));
+            R_TRY(m_parent->OnRequest(request));
         }
 
         /* Get the result. */
@@ -68,7 +68,7 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            R_TRY(this->parent->OnRequest(request));
+            R_TRY(m_parent->OnRequest(request));
         }
 
         return ResultSuccess();

@@ -77,16 +77,16 @@ namespace ams::kern::arch::arm64 {
             ALWAYS_INLINE bool ExtractL2Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L2PageTableEntry *l2_entry, KProcessAddress virt_addr) const;
             ALWAYS_INLINE bool ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const;
         private:
-            L1PageTableEntry *table;
-            bool is_kernel;
-            u32  num_entries;
+            L1PageTableEntry *m_table;
+            bool m_is_kernel;
+            u32  m_num_entries;
         public:
             ALWAYS_INLINE KVirtualAddress GetTableEntry(KVirtualAddress table, size_t index) const {
                 return table + index * sizeof(PageTableEntry);
             }
 
             ALWAYS_INLINE L1PageTableEntry *GetL1Entry(KProcessAddress address) const {
-                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(this->table), GetL1Index(address) & (this->num_entries - 1)));
+                return GetPointer<L1PageTableEntry>(GetTableEntry(KVirtualAddress(m_table), GetL1Index(address) & (m_num_entries - 1)));
             }
 
             ALWAYS_INLINE L2PageTableEntry *GetL2EntryFromTable(KVirtualAddress table, KProcessAddress address) const {
@@ -105,7 +105,7 @@ namespace ams::kern::arch::arm64 {
                 return GetL3EntryFromTable(KMemoryLayout::GetLinearVirtualAddress(entry->GetTable()), address);
             }
         public:
-            constexpr KPageTableImpl() : table(), is_kernel(), num_entries() { /* ... */ }
+            constexpr KPageTableImpl() : m_table(), m_is_kernel(), m_num_entries() { /* ... */ }
 
             NOINLINE void InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end);
             NOINLINE void InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end);

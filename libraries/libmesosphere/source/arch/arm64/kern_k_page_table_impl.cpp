@@ -18,19 +18,19 @@
 namespace ams::kern::arch::arm64 {
 
     void KPageTableImpl::InitializeForKernel(void *tb, KVirtualAddress start, KVirtualAddress end) {
-        this->table       = static_cast<L1PageTableEntry *>(tb);
-        this->is_kernel   = true;
-        this->num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+        m_table       = static_cast<L1PageTableEntry *>(tb);
+        m_is_kernel   = true;
+        m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
     }
 
     void KPageTableImpl::InitializeForProcess(void *tb, KVirtualAddress start, KVirtualAddress end) {
-        this->table       = static_cast<L1PageTableEntry *>(tb);
-        this->is_kernel   = false;
-        this->num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
+        m_table       = static_cast<L1PageTableEntry *>(tb);
+        m_is_kernel   = false;
+        m_num_entries = util::AlignUp(end - start, L1BlockSize) / L1BlockSize;
     }
 
     L1PageTableEntry *KPageTableImpl::Finalize() {
-        return this->table;
+        return m_table;
     }
 
     bool KPageTableImpl::ExtractL3Entry(TraversalEntry *out_entry, TraversalContext *out_context, const L3PageTableEntry *l3_entry, KProcessAddress virt_addr) const {
@@ -119,21 +119,21 @@ namespace ams::kern::arch::arm64 {
         out_entry->phys_addr        = Null<KPhysicalAddress>;
         out_entry->block_size       = L1BlockSize;
         out_entry->sw_reserved_bits = 0;
-        out_context->l1_entry = this->table + this->num_entries;
+        out_context->l1_entry = m_table + m_num_entries;
         out_context->l2_entry = nullptr;
         out_context->l3_entry = nullptr;
 
         /* Validate that we can read the actual entry. */
         const size_t l0_index = GetL0Index(address);
         const size_t l1_index = GetL1Index(address);
-        if (this->is_kernel) {
+        if (m_is_kernel) {
             /* Kernel entries must be accessed via TTBR1. */
-            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - m_num_entries)) {
                 return false;
             }
         } else {
             /* User entries must be accessed with TTBR0. */
-            if ((l0_index != 0) || l1_index >= this->num_entries) {
+            if ((l0_index != 0) || l1_index >= m_num_entries) {
                 return false;
             }
         }
@@ -212,15 +212,15 @@ namespace ams::kern::arch::arm64 {
             }
         } else {
             /* We need to update the l1 entry. */
-            const size_t l1_index = context->l1_entry - this->table;
-            if (l1_index < this->num_entries) {
+            const size_t l1_index = context->l1_entry - m_table;
+            if (l1_index < m_num_entries) {
                 valid = this->ExtractL1Entry(out_entry, context, context->l1_entry, Null<KProcessAddress>);
             } else {
                 /* Invalid, end traversal. */
                 out_entry->phys_addr        = Null<KPhysicalAddress>;
                 out_entry->block_size       = L1BlockSize;
                 out_entry->sw_reserved_bits = 0;
-                context->l1_entry = this->table + this->num_entries;
+                context->l1_entry = m_table + m_num_entries;
                 context->l2_entry = nullptr;
                 context->l3_entry = nullptr;
                 return false;
@@ -262,14 +262,14 @@ namespace ams::kern::arch::arm64 {
         /* Validate that we can read the actual entry. */
         const size_t l0_index = GetL0Index(address);
         const size_t l1_index = GetL1Index(address);
-        if (this->is_kernel) {
+        if (m_is_kernel) {
             /* Kernel entries must be accessed via TTBR1. */
-            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+            if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - m_num_entries)) {
                 return false;
             }
         } else {
             /* User entries must be accessed with TTBR0. */
-            if ((l0_index != 0) || l1_index >= this->num_entries) {
+            if ((l0_index != 0) || l1_index >= m_num_entries) {
                 return false;
             }
         }
@@ -322,14 +322,14 @@ namespace ams::kern::arch::arm64 {
             /* Validate that we can read the actual entry. */
             const size_t l0_index = GetL0Index(cur);
             const size_t l1_index = GetL1Index(cur);
-            if (this->is_kernel) {
+            if (m_is_kernel) {
                 /* Kernel entries must be accessed via TTBR1. */
-                if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - this->num_entries)) {
+                if ((l0_index != MaxPageTableEntries - 1) || (l1_index < MaxPageTableEntries - m_num_entries)) {
                     return;
                 }
             } else {
                 /* User entries must be accessed with TTBR0. */
-                if ((l0_index != 0) || l1_index >= this->num_entries) {
+                if ((l0_index != 0) || l1_index >= m_num_entries) {
                     return;
                 }
             }
@@ -482,8 +482,8 @@ namespace ams::kern::arch::arm64 {
         #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
         {
             ++num_tables;
-            for (size_t l1_index = 0; l1_index < this->num_entries; ++l1_index) {
-                auto &l1_entry = this->table[l1_index];
+            for (size_t l1_index = 0; l1_index < m_num_entries; ++l1_index) {
+                auto &l1_entry = m_table[l1_index];
                 if (l1_entry.IsTable()) {
                     ++num_tables;
                     for (size_t l2_index = 0; l2_index < MaxPageTableEntries; ++l2_index) {

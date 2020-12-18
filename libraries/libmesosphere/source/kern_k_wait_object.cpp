@@ -21,7 +21,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(KScheduler::IsSchedulerLockedByCurrentThread());
 
         /* Wake up all the waiting threads. */
-        for (KThread &thread : this->wait_list) {
+        for (KThread &thread : m_wait_list) {
             thread.Wakeup();
         }
     }
@@ -38,19 +38,19 @@ namespace ams::kern {
 
             /* Verify that nothing else is already waiting on the object. */
             if (timeout > 0) {
-                R_UNLESS(!this->timer_used, svc::ResultBusy());
+                R_UNLESS(!m_timer_used, svc::ResultBusy());
             }
 
             /* Check that we're not already in use. */
             if (timeout >= 0) {
                 /* Verify the timer isn't already in use. */
-                R_UNLESS(!this->timer_used, svc::ResultBusy());
+                R_UNLESS(!m_timer_used, svc::ResultBusy());
             }
 
             /* If we need to, register our timeout. */
             if (timeout > 0) {
                 /* Mark that we're using the timer. */
-                this->timer_used = true;
+                m_timer_used = true;
 
                 /* Use the timer. */
                 timer = std::addressof(Kernel::GetHardwareTimer());
@@ -62,7 +62,7 @@ namespace ams::kern {
                 this->OnTimer();
             } else {
                 /* Otherwise, sleep until the timeout occurs. */
-                this->wait_list.push_back(GetCurrentThread());
+                m_wait_list.push_back(GetCurrentThread());
                 cur_thread->SetState(KThread::ThreadState_Waiting);
                 cur_thread->SetSyncedObject(nullptr, svc::ResultTimedOut());
             }
@@ -74,15 +74,15 @@ namespace ams::kern {
 
             /* Remove from the timer. */
             if (timeout > 0) {
-                MESOSPHERE_ASSERT(this->timer_used);
+                MESOSPHERE_ASSERT(m_timer_used);
                 MESOSPHERE_ASSERT(timer != nullptr);
                 timer->CancelTask(this);
-                this->timer_used = false;
+                m_timer_used = false;
             }
 
             /* Remove the thread from our queue. */
             if (timeout != 0) {
-                this->wait_list.erase(this->wait_list.iterator_to(GetCurrentThread()));
+                m_wait_list.erase(m_wait_list.iterator_to(GetCurrentThread()));
             }
         }
 

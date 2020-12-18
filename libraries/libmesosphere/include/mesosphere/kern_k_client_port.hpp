@@ -28,23 +28,23 @@ namespace ams::kern {
     class KClientPort final : public KSynchronizationObject {
         MESOSPHERE_AUTOOBJECT_TRAITS(KClientPort, KSynchronizationObject);
         private:
-            std::atomic<s32> num_sessions;
-            std::atomic<s32> peak_sessions;
-            s32 max_sessions;
-            KPort *parent;
+            std::atomic<s32> m_num_sessions;
+            std::atomic<s32> m_peak_sessions;
+            s32 m_max_sessions;
+            KPort *m_parent;
         public:
-            constexpr KClientPort() : num_sessions(), peak_sessions(), max_sessions(), parent() { /* ... */ }
+            constexpr KClientPort() : m_num_sessions(), m_peak_sessions(), m_max_sessions(), m_parent() { /* ... */ }
             virtual ~KClientPort() { /* ... */ }
 
             void Initialize(KPort *parent, s32 max_sessions);
             void OnSessionFinalized();
             void OnServerClosed();
 
-            constexpr const KPort *GetParent() const { return this->parent; }
+            constexpr const KPort *GetParent() const { return m_parent; }
 
-            ALWAYS_INLINE s32 GetNumSessions()  const { return this->num_sessions; }
-            ALWAYS_INLINE s32 GetPeakSessions() const { return this->peak_sessions; }
-            ALWAYS_INLINE s32 GetMaxSessions()  const { return this->max_sessions; }
+            ALWAYS_INLINE s32 GetNumSessions()  const { return m_num_sessions; }
+            ALWAYS_INLINE s32 GetPeakSessions() const { return m_peak_sessions; }
+            ALWAYS_INLINE s32 GetMaxSessions()  const { return m_max_sessions; }
 
             bool IsLight() const;
 

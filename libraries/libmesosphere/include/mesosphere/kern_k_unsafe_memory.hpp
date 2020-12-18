@@ -21,57 +21,57 @@ namespace ams::kern {
 
     class KUnsafeMemory {
         private:
-            mutable KLightLock lock;
-            size_t limit_size;
-            size_t current_size;
+            mutable KLightLock m_lock;
+            size_t m_limit_size;
+            size_t m_current_size;
         public:
-            constexpr KUnsafeMemory() : lock(), limit_size(), current_size() { /* ... */ }
+            constexpr KUnsafeMemory() : m_lock(), m_limit_size(), m_current_size() { /* ... */ }
 
             bool TryReserve(size_t size) {
                 MESOSPHERE_ASSERT_THIS();
-                KScopedLightLock lk(this->lock);
+                KScopedLightLock lk(m_lock);
 
                 /* Test for overflow. */
-                if (this->current_size > this->current_size + size) {
+                if (m_current_size > m_current_size + size) {
                     return false;
                 }
 
                 /* Test for limit allowance. */
-                if (this->current_size + size > this->limit_size) {
+                if (m_current_size + size > m_limit_size) {
                     return false;
                 }
 
                 /* Reserve the size. */
-                this->current_size += size;
+                m_current_size += size;
                 return true;
             }
 
             void Release(size_t size) {
                 MESOSPHERE_ASSERT_THIS();
-                KScopedLightLock lk(this->lock);
+                KScopedLightLock lk(m_lock);
 
-                MESOSPHERE_ABORT_UNLESS(this->current_size >= size);
-                this->current_size -= size;
+                MESOSPHERE_ABORT_UNLESS(m_current_size >= size);
+                m_current_size -= size;
             }
 
             size_t GetLimitSize() const {
                 MESOSPHERE_ASSERT_THIS();
-                KScopedLightLock lk(this->lock);
-                return this->limit_size;
+                KScopedLightLock lk(m_lock);
+                return m_limit_size;
             }
 
             size_t GetCurrentSize() const {
                 MESOSPHERE_ASSERT_THIS();
-                KScopedLightLock lk(this->lock);
-                return this->current_size;
+                KScopedLightLock lk(m_lock);
+                return m_current_size;
             }
 
             Result SetLimitSize(size_t size) {
                 MESOSPHERE_ASSERT_THIS();
-                KScopedLightLock lk(this->lock);
+                KScopedLightLock lk(m_lock);
 
-                R_UNLESS(size >= this->current_size, svc::ResultLimitReached());
-                this->limit_size = size;
+                R_UNLESS(size >= m_current_size, svc::ResultLimitReached());
+                m_limit_size = size;
                 return ResultSuccess();
             }
     };

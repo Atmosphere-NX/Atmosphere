@@ -21,9 +21,9 @@ namespace ams::kern::arch::arm64 {
 
     class KHardwareTimer : public KInterruptTask, public KHardwareTimerBase {
         private:
-            s64 maximum_time;
+            s64 m_maximum_time;
         public:
-            constexpr KHardwareTimer() : KInterruptTask(), KHardwareTimerBase(), maximum_time(std::numeric_limits<s64>::max()) { /* ... */ }
+            constexpr KHardwareTimer() : KInterruptTask(), KHardwareTimerBase(), m_maximum_time(std::numeric_limits<s64>::max()) { /* ... */ }
         public:
             /* Public API. */
             NOINLINE void Initialize();
@@ -38,7 +38,7 @@ namespace ams::kern::arch::arm64 {
                 KScopedSpinLock lk(this->GetLock());
 
                 if (this->RegisterAbsoluteTaskImpl(task, task_time)) {
-                    if (task_time <= this->maximum_time) {
+                    if (task_time <= m_maximum_time) {
                         SetCompareValue(task_time);
                         EnableInterrupt();
                     }

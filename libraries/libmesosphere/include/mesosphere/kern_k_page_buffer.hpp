@@ -21,10 +21,10 @@ namespace ams::kern {
 
     class KPageBuffer : public KSlabAllocated<KPageBuffer> {
         private:
-            alignas(PageSize) u8 buffer[PageSize];
+            alignas(PageSize) u8 m_buffer[PageSize];
         public:
             KPageBuffer() {
-                std::memset(buffer, 0, sizeof(buffer));
+                std::memset(m_buffer, 0, sizeof(m_buffer));
             }
 
             ALWAYS_INLINE KPhysicalAddress GetPhysicalAddress() const {

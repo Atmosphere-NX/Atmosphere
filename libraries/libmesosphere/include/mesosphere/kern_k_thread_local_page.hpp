@@ -29,19 +29,19 @@ namespace ams::kern {
             static constexpr size_t RegionsPerPage = PageSize / ams::svc::ThreadLocalRegionSize;
             static_assert(RegionsPerPage > 0);
         private:
-            KProcessAddress virt_addr;
-            KProcess *owner;
-            bool is_region_free[RegionsPerPage];
+            KProcessAddress m_virt_addr;
+            KProcess *m_owner;
+            bool m_is_region_free[RegionsPerPage];
         public:
-            constexpr explicit KThreadLocalPage(KProcessAddress addr) : virt_addr(addr), owner(nullptr), is_region_free() {
+            constexpr explicit KThreadLocalPage(KProcessAddress addr) : m_virt_addr(addr), m_owner(nullptr), m_is_region_free() {
                 for (size_t i = 0; i < RegionsPerPage; i++) {
-                    this->is_region_free[i] = true;
+                    m_is_region_free[i] = true;
                 }
             }
 
             constexpr explicit KThreadLocalPage() : KThreadLocalPage(Null<KProcessAddress>) { /* ... */ }
 
-            constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return this->virt_addr; }
+            constexpr ALWAYS_INLINE KProcessAddress GetAddress() const { return m_virt_addr; }
 
             static constexpr ALWAYS_INLINE int Compare(const KThreadLocalPage &lhs, const KThreadLocalPage &rhs) {
                 const KProcessAddress lval = lhs.GetAddress();
@@ -80,7 +80,7 @@ namespace ams::kern {
 
             bool IsAllUsed() const {
                 for (size_t i = 0; i < RegionsPerPage; i++) {
-                    if (this->is_region_free[i]) {
+                    if (m_is_region_free[i]) {
                         return false;
                     }
                 }
@@ -89,7 +89,7 @@ namespace ams::kern {
 
             bool IsAllFree() const {
                 for (size_t i = 0; i < RegionsPerPage; i++) {
-                    if (!this->is_region_free[i]) {
+                    if (!m_is_region_free[i]) {
                         return false;
                     }
                 }

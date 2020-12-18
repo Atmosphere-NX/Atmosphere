@@ -18,7 +18,7 @@
 namespace ams::kern {
 
     KAutoObject *KAutoObject::Create(KAutoObject *obj) {
-        obj->ref_count = 1;
+        obj->m_ref_count = 1;
         return obj;
     }
 

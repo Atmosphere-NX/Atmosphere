@@ -44,16 +44,16 @@ namespace ams::kern::arch::arm64::init {
 
             struct NoClear{};
         private:
-            KPhysicalAddress l1_table;
+            KPhysicalAddress m_l1_table;
         public:
-            constexpr ALWAYS_INLINE KInitialPageTable(KPhysicalAddress l1, NoClear) : l1_table(l1) { /* ... */ }
+            constexpr ALWAYS_INLINE KInitialPageTable(KPhysicalAddress l1, NoClear) : m_l1_table(l1) { /* ... */ }
 
             constexpr ALWAYS_INLINE KInitialPageTable(KPhysicalAddress l1) : KInitialPageTable(l1, NoClear{}) {
-                ClearNewPageTable(this->l1_table);
+                ClearNewPageTable(m_l1_table);
             }
 
             constexpr ALWAYS_INLINE uintptr_t GetL1TableAddress() const {
-                return GetInteger(this->l1_table);
+                return GetInteger(m_l1_table);
             }
         private:
             static constexpr ALWAYS_INLINE L1PageTableEntry *GetL1Entry(KPhysicalAddress _l1_table, KVirtualAddress address) {
@@ -83,7 +83,7 @@ namespace ams::kern::arch::arm64::init {
                 const KVirtualAddress end_virt_addr = virt_addr + size;
                 size_t count = 0;
                 while (virt_addr < end_virt_addr) {
-                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                    L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                     /* If an L1 block is mapped or we're empty, advance by L1BlockSize. */
                     if (l1_entry->IsBlock() || l1_entry->IsEmpty()) {
@@ -137,7 +137,7 @@ namespace ams::kern::arch::arm64::init {
                 const KVirtualAddress end_virt_addr = virt_addr + size;
                 size_t count = 0;
                 while (virt_addr < end_virt_addr) {
-                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                    L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                     /* If an L1 block is mapped or we're empty, advance by L1BlockSize. */
                     if (l1_entry->IsBlock() || l1_entry->IsEmpty()) {
@@ -194,7 +194,7 @@ namespace ams::kern::arch::arm64::init {
             }
 
             PageTableEntry *GetMappingEntry(KVirtualAddress virt_addr, size_t block_size) {
-                L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                 if (l1_entry->IsBlock()) {
                     MESOSPHERE_INIT_ABORT_UNLESS(block_size == L1BlockSize);
@@ -301,7 +301,7 @@ namespace ams::kern::arch::arm64::init {
 
                 /* Iteratively map pages until the requested region is mapped. */
                 while (size > 0) {
-                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                    L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                     /* Can we make an L1 block? */
                     if (util::IsAligned(GetInteger(virt_addr), L1BlockSize) && util::IsAligned(GetInteger(phys_addr), L1BlockSize) && size >= L1BlockSize) {
@@ -382,7 +382,7 @@ namespace ams::kern::arch::arm64::init {
 
             KPhysicalAddress GetPhysicalAddress(KVirtualAddress virt_addr) const {
                 /* Get the L1 entry. */
-                const L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                const L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                 if (l1_entry->IsBlock()) {
                     return l1_entry->GetBlock() + (GetInteger(virt_addr) & (L1BlockSize - 1));
@@ -444,7 +444,7 @@ namespace ams::kern::arch::arm64::init {
                 };
 
                 while (virt_addr < end_virt_addr) {
-                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                    L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                     /* If an L1 block is mapped, update. */
                     if (l1_entry->IsBlock()) {
@@ -485,7 +485,7 @@ namespace ams::kern::arch::arm64::init {
 
                 const KVirtualAddress end_virt_addr = virt_addr + size;
                 while (virt_addr < end_virt_addr) {
-                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                    L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                     /* If an L1 block is mapped, the address isn't free. */
                     if (l1_entry->IsBlock()) {
@@ -534,7 +534,7 @@ namespace ams::kern::arch::arm64::init {
 
                 /* Iteratively reprotect pages until the requested region is reprotected. */
                 while (size > 0) {
-                    L1PageTableEntry *l1_entry = GetL1Entry(this->l1_table, virt_addr);
+                    L1PageTableEntry *l1_entry = GetL1Entry(m_l1_table, virt_addr);
 
                     /* Check if an L1 block is present. */
                     if (l1_entry->IsBlock()) {
@@ -680,43 +680,43 @@ namespace ams::kern::arch::arm64::init {
                 uintptr_t free_bitmap;
             };
         private:
-            State state;
+            State m_state;
         public:
-            constexpr ALWAYS_INLINE KInitialPageAllocator() : state{} { /* ... */ }
+            constexpr ALWAYS_INLINE KInitialPageAllocator() : m_state{} { /* ... */ }
 
             ALWAYS_INLINE void Initialize(uintptr_t address) {
-                this->state.next_address = address + BITSIZEOF(this->state.free_bitmap) * PageSize;
-                this->state.free_bitmap  = ~uintptr_t();
+                m_state.next_address = address + BITSIZEOF(m_state.free_bitmap) * PageSize;
+                m_state.free_bitmap  = ~uintptr_t();
             }
 
             ALWAYS_INLINE void InitializeFromState(uintptr_t state_val) {
                 if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-                    this->state = *reinterpret_cast<State *>(state_val);
+                    m_state = *reinterpret_cast<State *>(state_val);
                 } else {
-                    this->state.next_address = state_val;
-                    this->state.free_bitmap  = 0;
+                    m_state.next_address = state_val;
+                    m_state.free_bitmap  = 0;
                 }
             }
 
             ALWAYS_INLINE void GetFinalState(State *out) {
-                *out = this->state;
-                this->state = {};
+                *out = m_state;
+                m_state = {};
             }
         public:
             virtual KPhysicalAddress Allocate() override {
-                MESOSPHERE_INIT_ABORT_UNLESS(this->state.next_address != Null<uintptr_t>);
-                uintptr_t allocated = this->state.next_address;
-                if (this->state.free_bitmap != 0) {
+                MESOSPHERE_INIT_ABORT_UNLESS(m_state.next_address != Null<uintptr_t>);
+                uintptr_t allocated = m_state.next_address;
+                if (m_state.free_bitmap != 0) {
                     u64 index;
                     uintptr_t mask;
                     do {
-                        index = KSystemControl::Init::GenerateRandomRange(0, BITSIZEOF(this->state.free_bitmap) - 1);
+                        index = KSystemControl::Init::GenerateRandomRange(0, BITSIZEOF(m_state.free_bitmap) - 1);
                         mask  = (static_cast<uintptr_t>(1) << index);
-                    } while ((this->state.free_bitmap & mask) == 0);
-                    this->state.free_bitmap &= ~mask;
-                    allocated = this->state.next_address - ((BITSIZEOF(this->state.free_bitmap) - index) * PageSize);
+                    } while ((m_state.free_bitmap & mask) == 0);
+                    m_state.free_bitmap &= ~mask;
+                    allocated = m_state.next_address - ((BITSIZEOF(m_state.free_bitmap) - index) * PageSize);
                 } else {
-                    this->state.next_address += PageSize;
+                    m_state.next_address += PageSize;
                 }
 
                 ClearPhysicalMemory(allocated, PageSize);

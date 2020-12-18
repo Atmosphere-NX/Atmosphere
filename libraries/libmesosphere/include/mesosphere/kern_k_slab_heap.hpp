@@ -44,28 +44,28 @@ namespace ams::kern {
                     Node *next;
                 };
             private:
-                Node * head;
-                size_t obj_size;
+                Node * m_head;
+                size_t m_obj_size;
             public:
-                constexpr KSlabHeapImpl() : head(nullptr), obj_size(0) { MESOSPHERE_ASSERT_THIS(); }
+                constexpr KSlabHeapImpl() : m_head(nullptr), m_obj_size(0) { MESOSPHERE_ASSERT_THIS(); }
 
                 void Initialize(size_t size) {
-                    MESOSPHERE_INIT_ABORT_UNLESS(this->head == nullptr);
-                    this->obj_size = size;
+                    MESOSPHERE_INIT_ABORT_UNLESS(m_head == nullptr);
+                    m_obj_size = size;
                 }
 
                 Node *GetHead() const {
-                    return this->head;
+                    return m_head;
                 }
 
                 size_t GetObjectSize() const {
-                    return this->obj_size;
+                    return m_obj_size;
                 }
 
                 void *Allocate() {
                     MESOSPHERE_ASSERT_THIS();
 
-                    return AllocateFromSlabAtomic(std::addressof(this->head));
+                    return AllocateFromSlabAtomic(std::addressof(m_head));
                 }
 
                 void Free(void *obj) {
@@ -73,7 +73,7 @@ namespace ams::kern {
 
                     Node *node = reinterpret_cast<Node *>(obj);
 
-                    return FreeToSlabAtomic(std::addressof(this->head), node);
+                    return FreeToSlabAtomic(std::addressof(m_head), node);
                 }
         };
 
@@ -85,22 +85,22 @@ namespace ams::kern {
         private:
             using Impl = impl::KSlabHeapImpl;
         private:
-            Impl impl;
-            uintptr_t peak;
-            uintptr_t start;
-            uintptr_t end;
+            Impl m_impl;
+            uintptr_t m_peak;
+            uintptr_t m_start;
+            uintptr_t m_end;
         private:
             ALWAYS_INLINE Impl *GetImpl() {
-                return std::addressof(this->impl);
+                return std::addressof(m_impl);
             }
             ALWAYS_INLINE const Impl *GetImpl() const {
-                return std::addressof(this->impl);
+                return std::addressof(m_impl);
             }
         public:
-            constexpr KSlabHeapBase() : impl(), peak(0), start(0), end(0) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr KSlabHeapBase() : m_impl(), m_peak(0), m_start(0), m_end(0) { MESOSPHERE_ASSERT_THIS(); }
 
             ALWAYS_INLINE bool Contains(uintptr_t address) const {
-                return this->start <= address && address < this->end;
+                return m_start <= address && address < m_end;
             }
 
             void InitializeImpl(size_t obj_size, void *memory, size_t memory_size) {
@@ -114,12 +114,12 @@ namespace ams::kern {
 
                 /* Set our tracking variables. */
                 const size_t num_obj = (memory_size / obj_size);
-                this->start = reinterpret_cast<uintptr_t>(memory);
-                this->end = this->start + num_obj * obj_size;
-                this->peak = this->start;
+                m_start = reinterpret_cast<uintptr_t>(memory);
+                m_end = m_start + num_obj * obj_size;
+                m_peak = m_start;
 
                 /* Free the objects. */
-                u8 *cur = reinterpret_cast<u8 *>(this->end);
+                u8 *cur = reinterpret_cast<u8 *>(m_end);
 
                 for (size_t i = 0; i < num_obj; i++) {
                     cur -= obj_size;
@@ -128,7 +128,7 @@ namespace ams::kern {
             }
 
             size_t GetSlabHeapSize() const {
-                return (this->end - this->start) / this->GetObjectSize();
+                return (m_end - m_start) / this->GetObjectSize();
             }
 
             size_t GetObjectSize() const {
@@ -144,10 +144,10 @@ namespace ams::kern {
                 #if defined(MESOSPHERE_BUILD_FOR_DEBUGGING)
                 if (AMS_LIKELY(obj != nullptr)) {
                     static_assert(std::atomic_ref<uintptr_t>::is_always_lock_free);
-                    std::atomic_ref<uintptr_t> peak_ref(this->peak);
+                    std::atomic_ref<uintptr_t> peak_ref(m_peak);
 
                     const uintptr_t alloc_peak = reinterpret_cast<uintptr_t>(obj) + this->GetObjectSize();
-                    uintptr_t cur_peak = this->peak;
+                    uintptr_t cur_peak = m_peak;
                     do {
                         if (alloc_peak <= cur_peak) {
                             break;
@@ -169,15 +169,15 @@ namespace ams::kern {
             }
 
             size_t GetObjectIndexImpl(const void *obj) const {
-                return (reinterpret_cast<uintptr_t>(obj) - this->start) / this->GetObjectSize();
+                return (reinterpret_cast<uintptr_t>(obj) - m_start) / this->GetObjectSize();
             }
 
             size_t GetPeakIndex() const {
-                return this->GetObjectIndexImpl(reinterpret_cast<const void *>(this->peak));
+                return this->GetObjectIndexImpl(reinterpret_cast<const void *>(m_peak));
             }
 
             uintptr_t GetSlabHeapAddress() const {
-                return this->start;
+                return m_start;
             }
 
             size_t GetNumRemaining() const {

@@ -22,16 +22,16 @@ namespace ams::kern::arch::arm64 {
 
     class KSupervisorPageTable {
         private:
-            KPageTable page_table;
-            u64 ttbr0_identity[cpu::NumCores];
+            KPageTable m_page_table;
+            u64 m_ttbr0_identity[cpu::NumCores];
         public:
-            constexpr KSupervisorPageTable() : page_table(), ttbr0_identity() { /* ... */ }
+            constexpr KSupervisorPageTable() : m_page_table(), m_ttbr0_identity() { /* ... */ }
 
             NOINLINE void Initialize(s32 core_id);
 
             void Activate() {
                 /* Activate, using process id = 0xFFFFFFFF */
-                this->page_table.Activate(0xFFFFFFFF);
+                m_page_table.Activate(0xFFFFFFFF);
             }
 
             void ActivateForInit() {
@@ -42,37 +42,37 @@ namespace ams::kern::arch::arm64 {
             }
 
             Result MapPages(KProcessAddress *out_addr, size_t num_pages, size_t alignment, KPhysicalAddress phys_addr, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
-                return this->page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm);
+                return m_page_table.MapPages(out_addr, num_pages, alignment, phys_addr, region_start, region_num_pages, state, perm);
             }
 
             Result UnmapPages(KProcessAddress address, size_t num_pages, KMemoryState state) {
-                return this->page_table.UnmapPages(address, num_pages, state);
+                return m_page_table.UnmapPages(address, num_pages, state);
             }
 
             Result MapPageGroup(KProcessAddress *out_addr, const KPageGroup &pg, KProcessAddress region_start, size_t region_num_pages, KMemoryState state, KMemoryPermission perm) {
-                return this->page_table.MapPageGroup(out_addr, pg, region_start, region_num_pages, state, perm);
+                return m_page_table.MapPageGroup(out_addr, pg, region_start, region_num_pages, state, perm);
             }
 
             Result UnmapPageGroup(KProcessAddress address, const KPageGroup &pg, KMemoryState state) {
-                return this->page_table.UnmapPageGroup(address, pg, state);
+                return m_page_table.UnmapPageGroup(address, pg, state);
             }
 
             bool GetPhysicalAddress(KPhysicalAddress *out, KProcessAddress address) const {
-                return this->page_table.GetPhysicalAddress(out, address);
+                return m_page_table.GetPhysicalAddress(out, address);
             }
 
-            constexpr u64 GetIdentityMapTtbr0(s32 core_id) const { return this->ttbr0_identity[core_id]; }
+            constexpr u64 GetIdentityMapTtbr0(s32 core_id) const { return m_ttbr0_identity[core_id]; }
 
             void DumpMemoryBlocks() const {
-                return this->page_table.DumpMemoryBlocks();
+                return m_page_table.DumpMemoryBlocks();
             }
 
             void DumpPageTable() const {
-                return this->page_table.DumpPageTable();
+                return m_page_table.DumpPageTable();
             }
 
             size_t CountPageTables() const {
-                return this->page_table.CountPageTables();
+                return m_page_table.CountPageTables();
             }
     };
 

@@ -28,23 +28,23 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Set interrupt id. */
-        this->interrupt_id = interrupt_name;
+        m_interrupt_id = interrupt_name;
 
         /* Initialize readable event base. */
         KReadableEvent::Initialize(nullptr);
 
         /* Try to register the task. */
-        R_TRY(KInterruptEventTask::Register(this->interrupt_id, type == ams::svc::InterruptType_Level, this));
+        R_TRY(KInterruptEventTask::Register(m_interrupt_id, type == ams::svc::InterruptType_Level, this));
 
         /* Mark initialized. */
-        this->is_initialized = true;
+        m_is_initialized = true;
         return ResultSuccess();
     }
 
     void KInterruptEvent::Finalize() {
         MESOSPHERE_ASSERT_THIS();
 
-        g_interrupt_event_task_table[this->interrupt_id]->Unregister(this->interrupt_id);
+        g_interrupt_event_task_table[m_interrupt_id]->Unregister(m_interrupt_id);
 
         /* Perform inherited finalization. */
         KAutoObjectWithSlabHeapAndContainer<KInterruptEvent, KReadableEvent>::Finalize();
@@ -54,13 +54,13 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock the task. */
-        KScopedLightLock lk(g_interrupt_event_task_table[this->interrupt_id]->GetLock());
+        KScopedLightLock lk(g_interrupt_event_task_table[m_interrupt_id]->GetLock());
 
         /* Clear the event. */
         R_TRY(KReadableEvent::Reset());
 
         /* Clear the interrupt. */
-        Kernel::GetInterruptManager().ClearInterrupt(this->interrupt_id);
+        Kernel::GetInterruptManager().ClearInterrupt(m_interrupt_id);
 
         return ResultSuccess();
     }
@@ -78,7 +78,7 @@ namespace ams::kern {
         KInterruptEventTask *task = g_interrupt_event_task_table[interrupt_id];
         if (task != nullptr) {
             /* Check that there's not already an event for this task. */
-            R_UNLESS(task->event == nullptr, svc::ResultBusy());
+            R_UNLESS(task->m_event == nullptr, svc::ResultBusy());
         } else {
             /* Allocate a new task. */
             task = KInterruptEventTask::Allocate();
@@ -93,13 +93,13 @@ namespace ams::kern {
         /* Register/bind the interrupt task. */
         {
             /* Acqquire exclusive access to the task. */
-            KScopedLightLock tlk(task->lock);
+            KScopedLightLock tlk(task->m_lock);
 
             /* Bind the interrupt handler. */
             R_TRY(Kernel::GetInterruptManager().BindHandler(task, interrupt_id, GetCurrentCoreId(), KInterruptController::PriorityLevel_High, true, level));
 
             /* Set the event. */
-            task->event = event;
+            task->m_event = event;
         }
 
         /* If we allocated, set the event in the table. */
@@ -119,14 +119,14 @@ namespace ams::kern {
         KScopedLightLock lk(g_interrupt_event_lock);
 
         /* Lock the task. */
-        KScopedLightLock tlk(this->lock);
+        KScopedLightLock tlk(m_lock);
 
         /* Ensure we can unregister. */
         MESOSPHERE_ABORT_UNLESS(g_interrupt_event_task_table[interrupt_id] == this);
-        MESOSPHERE_ABORT_UNLESS(this->event != nullptr);
+        MESOSPHERE_ABORT_UNLESS(m_event != nullptr);
 
         /* Unbind the interrupt. */
-        this->event = nullptr;
+        m_event = nullptr;
         Kernel::GetInterruptManager().UnbindHandler(interrupt_id, GetCurrentCoreId());
     }
 
@@ -140,10 +140,10 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Lock the task table. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
-        if (this->event != nullptr) {
-            this->event->Signal();
+        if (m_event != nullptr) {
+            m_event->Signal();
         }
     }
 }

@@ -178,8 +178,8 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = this->tree.nfind_light({ cv_key, -1 });
-            while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
+            auto it = m_tree.nfind_light({ cv_key, -1 });
+            while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetConditionVariableKey() == cv_key)) {
                 KThread *target_thread = std::addressof(*it);
 
                 if (KThread *thread = this->SignalImpl(target_thread); thread != nullptr) {
@@ -190,13 +190,13 @@ namespace ams::kern {
                     }
                 }
 
-                it = this->tree.erase(it);
+                it = m_tree.erase(it);
                 target_thread->ClearConditionVariable();
                 ++num_waiters;
             }
 
             /* If we have no waiters, clear the has waiter flag. */
-            if (it == this->tree.end() || it->GetConditionVariableKey() != cv_key) {
+            if (it == m_tree.end() || it->GetConditionVariableKey() != cv_key) {
                 const u32 has_waiter_flag = 0;
                 WriteToUser(cv_key, std::addressof(has_waiter_flag));
             }
@@ -266,8 +266,8 @@ namespace ams::kern {
 
             /* Update condition variable tracking. */
             {
-                cur_thread->SetConditionVariable(std::addressof(this->tree), addr, key, value);
-                this->tree.insert(*cur_thread);
+                cur_thread->SetConditionVariable(std::addressof(m_tree), addr, key, value);
+                m_tree.insert(*cur_thread);
             }
 
             /* If the timeout is non-zero, set the thread as waiting. */
@@ -290,7 +290,7 @@ namespace ams::kern {
             }
 
             if (cur_thread->IsWaitingForConditionVariable()) {
-                this->tree.erase(this->tree.iterator_to(*cur_thread));
+                m_tree.erase(m_tree.iterator_to(*cur_thread));
                 cur_thread->ClearConditionVariable();
             }
         }

@@ -39,20 +39,20 @@ namespace ams::kern {
         NON_COPYABLE(KScopedInterruptDisable);
         NON_MOVEABLE(KScopedInterruptDisable);
         private:
-            u32 prev_intr_state;
+            u32 m_prev_intr_state;
         public:
-            ALWAYS_INLINE KScopedInterruptDisable() : prev_intr_state(KInterruptManager::DisableInterrupts()) { /* ... */ }
-            ALWAYS_INLINE ~KScopedInterruptDisable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
+            ALWAYS_INLINE KScopedInterruptDisable() : m_prev_intr_state(KInterruptManager::DisableInterrupts()) { /* ... */ }
+            ALWAYS_INLINE ~KScopedInterruptDisable() { KInterruptManager::RestoreInterrupts(m_prev_intr_state); }
     };
 
     class KScopedInterruptEnable {
         NON_COPYABLE(KScopedInterruptEnable);
         NON_MOVEABLE(KScopedInterruptEnable);
         private:
-            u32 prev_intr_state;
+            u32 m_prev_intr_state;
         public:
-            ALWAYS_INLINE KScopedInterruptEnable() : prev_intr_state(KInterruptManager::EnableInterrupts()) { /* ... */ }
-            ALWAYS_INLINE ~KScopedInterruptEnable() { KInterruptManager::RestoreInterrupts(prev_intr_state); }
+            ALWAYS_INLINE KScopedInterruptEnable() : m_prev_intr_state(KInterruptManager::EnableInterrupts()) { /* ... */ }
+            ALWAYS_INLINE ~KScopedInterruptEnable() { KInterruptManager::RestoreInterrupts(m_prev_intr_state); }
     };
 
 }

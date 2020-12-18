@@ -27,19 +27,19 @@ namespace ams::kern {
         this->Open();
 
         /* Create our sub events. */
-        KAutoObject::Create(std::addressof(this->readable_event));
-        KAutoObject::Create(std::addressof(this->writable_event));
+        KAutoObject::Create(std::addressof(m_readable_event));
+        KAutoObject::Create(std::addressof(m_writable_event));
 
         /* Initialize our sub sessions. */
-        this->readable_event.Initialize(this);
-        this->writable_event.Initialize(this);
+        m_readable_event.Initialize(this);
+        m_writable_event.Initialize(this);
 
         /* Set our owner process. */
-        this->owner = GetCurrentProcessPointer();
-        this->owner->Open();
+        m_owner = GetCurrentProcessPointer();
+        m_owner->Open();
 
         /* Mark initialized. */
-        this->initialized = true;
+        m_initialized = true;
     }
 
     void KEvent::Finalize() {

@@ -46,38 +46,38 @@ namespace ams::kern::arch::arm64::cpu {
             private:
                 static inline KLightLock s_lock;
             private:
-                u64 counter;
-                s32 which;
-                bool done;
+                u64 m_counter;
+                s32 m_which;
+                bool m_done;
             public:
-                constexpr KPerformanceCounterInterruptHandler() : KInterruptHandler(), counter(), which(), done() { /* ... */ }
+                constexpr KPerformanceCounterInterruptHandler() : KInterruptHandler(), m_counter(), m_which(), m_done() { /* ... */ }
 
                 static KLightLock &GetLock() { return s_lock; }
 
                 void Setup(s32 w) {
-                    this->done = false;
-                    this->which = w;
+                    m_done = false;
+                    m_which = w;
                 }
 
                 void Wait() {
-                    while (!this->done) {
+                    while (!m_done) {
                         cpu::Yield();
                     }
                 }
 
-                u64 GetCounter() const { return this->counter; }
+                u64 GetCounter() const { return m_counter; }
 
                 /* Nintendo misuses this per their own API, but it's functional. */
                 virtual KInterruptTask *OnInterrupt(s32 interrupt_id) override {
                     MESOSPHERE_UNUSED(interrupt_id);
 
-                    if (this->which < 0) {
-                        this->counter = cpu::GetCycleCounter();
+                    if (m_which < 0) {
+                        m_counter = cpu::GetCycleCounter();
                     } else {
-                        this->counter = cpu::GetPerformanceCounter(this->which);
+                        m_counter = cpu::GetPerformanceCounter(m_which);
                     }
                     DataMemoryBarrier();
-                    this->done = true;
+                    m_done = true;
                     return nullptr;
                 }
         };
@@ -93,11 +93,11 @@ namespace ams::kern::arch::arm64::cpu {
                     FlushDataCache,
                 };
             private:
-                KLightLock lock;
-                KLightLock cv_lock;
-                KLightConditionVariable cv;
-                std::atomic<u64> target_cores;
-                volatile Operation operation;
+                KLightLock m_lock;
+                KLightLock m_cv_lock;
+                KLightConditionVariable m_cv;
+                std::atomic<u64> m_target_cores;
+                volatile Operation m_operation;
             private:
                 static void ThreadFunction(uintptr_t _this) {
                     reinterpret_cast<KCacheHelperInterruptHandler *>(_this)->ThreadFunctionImpl();
@@ -108,9 +108,9 @@ namespace ams::kern::arch::arm64::cpu {
                     while (true) {
                         /* Wait for a request to come in. */
                         {
-                            KScopedLightLock lk(this->cv_lock);
-                            while ((this->target_cores & (1ul << core_id)) == 0) {
-                                this->cv.Wait(std::addressof(this->cv_lock));
+                            KScopedLightLock lk(m_cv_lock);
+                            while ((m_target_cores & (1ul << core_id)) == 0) {
+                                m_cv.Wait(std::addressof(m_cv_lock));
                             }
                         }
 
@@ -119,9 +119,9 @@ namespace ams::kern::arch::arm64::cpu {
 
                         /* Broadcast, if there's nothing pending. */
                         {
-                            KScopedLightLock lk(this->cv_lock);
-                            if (this->target_cores == 0) {
-                                this->cv.Broadcast();
+                            KScopedLightLock lk(m_cv_lock);
+                            if (m_target_cores == 0) {
+                                m_cv.Broadcast();
                             }
                         }
                     }
@@ -129,7 +129,7 @@ namespace ams::kern::arch::arm64::cpu {
 
                 void ProcessOperation();
             public:
-                constexpr KCacheHelperInterruptHandler() : KInterruptHandler(), lock(), cv_lock(), cv(), target_cores(), operation(Operation::Idle) { /* ... */ }
+                constexpr KCacheHelperInterruptHandler() : KInterruptHandler(), m_lock(), m_cv_lock(), m_cv(), m_target_cores(), m_operation(Operation::Idle) { /* ... */ }
 
                 void Initialize(s32 core_id) {
                     /* Reserve a thread from the system limit. */
@@ -154,7 +154,7 @@ namespace ams::kern::arch::arm64::cpu {
                 }
 
                 void RequestOperation(Operation op) {
-                    KScopedLightLock lk(this->lock);
+                    KScopedLightLock lk(m_lock);
 
                     /* Create core masks for us to use. */
                     constexpr u64 AllCoresMask = (1ul << cpu::NumCores) - 1ul;
@@ -162,48 +162,48 @@ namespace ams::kern::arch::arm64::cpu {
 
                     if ((op == Operation::InstructionMemoryBarrier) || (Kernel::GetState() == Kernel::State::Initializing)) {
                         /* Check that there's no on-going operation. */
-                        MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
-                        MESOSPHERE_ABORT_UNLESS(this->target_cores == 0);
+                        MESOSPHERE_ABORT_UNLESS(m_operation == Operation::Idle);
+                        MESOSPHERE_ABORT_UNLESS(m_target_cores == 0);
 
                         /* Set operation. */
-                        this->operation = op;
+                        m_operation = op;
 
                         /* For certain operations, we want to send an interrupt. */
-                        this->target_cores = other_cores_mask;
+                        m_target_cores = other_cores_mask;
 
-                        const u64 target_mask = this->target_cores;
+                        const u64 target_mask = m_target_cores;
                         DataSynchronizationBarrier();
                         Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CacheOperation, target_mask);
 
                         this->ProcessOperation();
-                        while (this->target_cores != 0) {
+                        while (m_target_cores != 0) {
                             cpu::Yield();
                         }
 
                         /* Go idle again. */
-                        this->operation = Operation::Idle;
+                        m_operation = Operation::Idle;
                     } else {
                         /* Lock condvar so that we can send and wait for acknowledgement of request. */
-                        KScopedLightLock cv_lk(this->cv_lock);
+                        KScopedLightLock cv_lk(m_cv_lock);
 
                         /* Check that there's no on-going operation. */
-                        MESOSPHERE_ABORT_UNLESS(this->operation == Operation::Idle);
-                        MESOSPHERE_ABORT_UNLESS(this->target_cores == 0);
+                        MESOSPHERE_ABORT_UNLESS(m_operation == Operation::Idle);
+                        MESOSPHERE_ABORT_UNLESS(m_target_cores == 0);
 
                         /* Set operation. */
-                        this->operation = op;
+                        m_operation = op;
 
                         /* Request all cores. */
-                        this->target_cores = AllCoresMask;
+                        m_target_cores = AllCoresMask;
 
                         /* Use the condvar. */
-                        this->cv.Broadcast();
-                        while (this->target_cores != 0) {
-                            this->cv.Wait(std::addressof(this->cv_lock));
+                        m_cv.Broadcast();
+                        while (m_target_cores != 0) {
+                            m_cv.Wait(std::addressof(m_cv_lock));
                         }
 
                         /* Go idle again. */
-                        this->operation = Operation::Idle;
+                        m_operation = Operation::Idle;
                     }
                 }
         };
@@ -283,7 +283,7 @@ namespace ams::kern::arch::arm64::cpu {
         }
 
         void KCacheHelperInterruptHandler::ProcessOperation() {
-            switch (this->operation) {
+            switch (m_operation) {
                 case Operation::Idle:
                     break;
                 case Operation::InstructionMemoryBarrier:
@@ -299,7 +299,7 @@ namespace ams::kern::arch::arm64::cpu {
                     break;
             }
 
-            this->target_cores &= ~(1ul << GetCurrentCoreId());
+            m_target_cores &= ~(1ul << GetCurrentCoreId());
         }
 
         ALWAYS_INLINE void SetEventLocally() {

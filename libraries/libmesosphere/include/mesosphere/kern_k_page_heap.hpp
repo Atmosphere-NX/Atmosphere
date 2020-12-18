@@ -53,48 +53,48 @@ namespace ams::kern {
         private:
             class Block {
                 private:
-                    KPageBitmap bitmap;
-                    KVirtualAddress heap_address;
-                    uintptr_t end_offset;
-                    size_t block_shift;
-                    size_t next_block_shift;
+                    KPageBitmap m_bitmap;
+                    KVirtualAddress m_heap_address;
+                    uintptr_t m_end_offset;
+                    size_t m_block_shift;
+                    size_t m_next_block_shift;
                 public:
-                    Block() : bitmap(), heap_address(), end_offset(), block_shift(), next_block_shift() { /* ... */ }
+                    Block() : m_bitmap(), m_heap_address(), m_end_offset(), m_block_shift(), m_next_block_shift() { /* ... */ }
 
-                    constexpr size_t GetShift() const { return this->block_shift; }
-                    constexpr size_t GetNextShift() const { return this->next_block_shift; }
+                    constexpr size_t GetShift() const { return m_block_shift; }
+                    constexpr size_t GetNextShift() const { return m_next_block_shift; }
                     constexpr size_t GetSize() const { return u64(1) << this->GetShift(); }
                     constexpr size_t GetNumPages() const { return this->GetSize() / PageSize; }
-                    constexpr size_t GetNumFreeBlocks() const { return this->bitmap.GetNumBits(); }
+                    constexpr size_t GetNumFreeBlocks() const { return m_bitmap.GetNumBits(); }
                     constexpr size_t GetNumFreePages() const { return this->GetNumFreeBlocks() * this->GetNumPages(); }
 
                     u64 *Initialize(KVirtualAddress addr, size_t size, size_t bs, size_t nbs, u64 *bit_storage) {
                         /* Set shifts. */
-                        this->block_shift = bs;
-                        this->next_block_shift = nbs;
+                        m_block_shift = bs;
+                        m_next_block_shift = nbs;
 
                         /* Align up the address. */
                         KVirtualAddress end = addr + size;
-                        const size_t align = (this->next_block_shift != 0) ? (u64(1) << this->next_block_shift) : (u64(1) << this->block_shift);
+                        const size_t align = (m_next_block_shift != 0) ? (u64(1) << m_next_block_shift) : (u64(1) << m_block_shift);
                         addr = util::AlignDown(GetInteger(addr), align);
                         end  = util::AlignUp(GetInteger(end), align);
 
-                        this->heap_address = addr;
-                        this->end_offset   = (end - addr) / (u64(1) << this->block_shift);
-                        return this->bitmap.Initialize(bit_storage, this->end_offset);
+                        m_heap_address = addr;
+                        m_end_offset   = (end - addr) / (u64(1) << m_block_shift);
+                        return m_bitmap.Initialize(bit_storage, m_end_offset);
                     }
 
                     KVirtualAddress PushBlock(KVirtualAddress address) {
                         /* Set the bit for the free block. */
-                        size_t offset = (address - this->heap_address) >> this->GetShift();
-                        this->bitmap.SetBit(offset);
+                        size_t offset = (address - m_heap_address) >> this->GetShift();
+                        m_bitmap.SetBit(offset);
 
                         /* If we have a next shift, try to clear the blocks below this one and return the new address. */
                         if (this->GetNextShift()) {
                             const size_t diff = u64(1) << (this->GetNextShift() - this->GetShift());
                             offset = util::AlignDown(offset, diff);
-                            if (this->bitmap.ClearRange(offset, diff)) {
-                                return this->heap_address + (offset << this->GetShift());
+                            if (m_bitmap.ClearRange(offset, diff)) {
+                                return m_heap_address + (offset << this->GetShift());
                             }
                         }
 
@@ -104,15 +104,15 @@ namespace ams::kern {
 
                     KVirtualAddress PopBlock(bool random) {
                         /* Find a free block. */
-                        ssize_t soffset = this->bitmap.FindFreeBlock(random);
+                        ssize_t soffset = m_bitmap.FindFreeBlock(random);
                         if (soffset < 0) {
                             return Null<KVirtualAddress>;
                         }
                         const size_t offset = static_cast<size_t>(soffset);
 
                         /* Update our tracking and return it. */
-                        this->bitmap.ClearBit(offset);
-                        return this->heap_address + (offset << this->GetShift());
+                        m_bitmap.ClearBit(offset);
+                        return m_heap_address + (offset << this->GetShift());
                     }
                 public:
                     static constexpr size_t CalculateManagementOverheadSize(size_t region_size, size_t cur_block_shift, size_t next_block_shift) {
@@ -123,21 +123,21 @@ namespace ams::kern {
                     }
             };
         private:
-            KVirtualAddress heap_address;
-            size_t heap_size;
-            size_t used_size;
-            size_t num_blocks;
-            Block blocks[NumMemoryBlockPageShifts];
+            KVirtualAddress m_heap_address;
+            size_t m_heap_size;
+            size_t m_used_size;
+            size_t m_num_blocks;
+            Block m_blocks[NumMemoryBlockPageShifts];
         private:
             void Initialize(KVirtualAddress heap_address, size_t heap_size, KVirtualAddress management_address, size_t management_size, const size_t *block_shifts, size_t num_block_shifts);
             size_t GetNumFreePages() const;
 
             void FreeBlock(KVirtualAddress block, s32 index);
         public:
-            KPageHeap() : heap_address(), heap_size(), used_size(), num_blocks(), blocks() { /* ... */ }
+            KPageHeap() : m_heap_address(), m_heap_size(), m_used_size(), m_num_blocks(), m_blocks() { /* ... */ }
 
-            constexpr KVirtualAddress GetAddress() const { return this->heap_address; }
-            constexpr size_t GetSize() const { return this->heap_size; }
+            constexpr KVirtualAddress GetAddress() const { return m_heap_address; }
+            constexpr size_t GetSize() const { return m_heap_size; }
             constexpr KVirtualAddress GetEndAddress() const { return this->GetAddress() + this->GetSize(); }
             constexpr size_t GetPageOffset(KVirtualAddress block) const { return (block - this->GetAddress()) / PageSize; }
             constexpr size_t GetPageOffsetToEnd(KVirtualAddress block) const { return (this->GetEndAddress() - block) / PageSize; }
@@ -150,7 +150,7 @@ namespace ams::kern {
             void DumpFreeList() const;
 
             void UpdateUsedSize() {
-                this->used_size = this->heap_size - (this->GetNumFreePages() * PageSize);
+                m_used_size = m_heap_size - (this->GetNumFreePages() * PageSize);
             }
 
             KVirtualAddress AllocateBlock(s32 index, bool random);
