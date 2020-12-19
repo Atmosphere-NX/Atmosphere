@@ -26,16 +26,16 @@ namespace ams::kern {
 
     class KInterruptTask : public KInterruptHandler {
         private:
-            KInterruptTask *next_task;
+            KInterruptTask *m_next_task;
         public:
-            constexpr ALWAYS_INLINE KInterruptTask() : next_task(nullptr) { /* ... */ }
+            constexpr ALWAYS_INLINE KInterruptTask() : m_next_task(nullptr) { /* ... */ }
 
             constexpr ALWAYS_INLINE KInterruptTask *GetNextTask() const {
-                return this->next_task;
+                return m_next_task;
             }
 
             constexpr ALWAYS_INLINE void SetNextTask(KInterruptTask *t) {
-                this->next_task = t;
+                m_next_task = t;
             }
 
             virtual void DoTask() = 0;

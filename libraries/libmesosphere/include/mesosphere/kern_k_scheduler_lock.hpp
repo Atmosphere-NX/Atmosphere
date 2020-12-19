@@ -33,16 +33,16 @@ namespace ams::kern {
     template<typename SchedulerType> requires KSchedulerLockable<SchedulerType>
     class KAbstractSchedulerLock {
         private:
-            KAlignedSpinLock spin_lock;
-            s32 lock_count;
-            KThread *owner_thread;
+            KAlignedSpinLock m_spin_lock;
+            s32 m_lock_count;
+            KThread *m_owner_thread;
         public:
-            constexpr ALWAYS_INLINE KAbstractSchedulerLock() : spin_lock(), lock_count(0), owner_thread(nullptr) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr ALWAYS_INLINE KAbstractSchedulerLock() : m_spin_lock(), m_lock_count(0), m_owner_thread(nullptr) { MESOSPHERE_ASSERT_THIS(); }
 
             ALWAYS_INLINE bool IsLockedByCurrentThread() const {
                 MESOSPHERE_ASSERT_THIS();
 
-                return this->owner_thread == GetCurrentThreadPointer();
+                return m_owner_thread == GetCurrentThreadPointer();
             }
 
             void Lock() {
@@ -50,36 +50,36 @@ namespace ams::kern {
 
                 if (this->IsLockedByCurrentThread()) {
                     /* If we already own the lock, we can just increment the count. */
-                    MESOSPHERE_ASSERT(this->lock_count > 0);
-                    this->lock_count++;
+                    MESOSPHERE_ASSERT(m_lock_count > 0);
+                    m_lock_count++;
                 } else {
                     /* Otherwise, we want to disable scheduling and acquire the spinlock. */
                     SchedulerType::DisableScheduling();
-                    this->spin_lock.Lock();
+                    m_spin_lock.Lock();
 
                     /* For debug, ensure that our state is valid. */
-                    MESOSPHERE_ASSERT(this->lock_count == 0);
-                    MESOSPHERE_ASSERT(this->owner_thread == nullptr);
+                    MESOSPHERE_ASSERT(m_lock_count == 0);
+                    MESOSPHERE_ASSERT(m_owner_thread == nullptr);
 
                     /* Increment count, take ownership. */
-                    this->lock_count = 1;
-                    this->owner_thread = GetCurrentThreadPointer();
+                    m_lock_count = 1;
+                    m_owner_thread = GetCurrentThreadPointer();
                 }
             }
 
             void Unlock() {
                 MESOSPHERE_ASSERT_THIS();
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
-                MESOSPHERE_ASSERT(this->lock_count > 0);
+                MESOSPHERE_ASSERT(m_lock_count > 0);
 
                 /* Release an instance of the lock. */
-                if ((--this->lock_count) == 0) {
+                if ((--m_lock_count) == 0) {
                     /* We're no longer going to hold the lock. Take note of what cores need scheduling. */
                     const u64 cores_needing_scheduling = SchedulerType::UpdateHighestPriorityThreads();
 
                    /* Note that we no longer hold the lock, and unlock the spinlock. */
-                    this->owner_thread = nullptr;
-                    this->spin_lock.Unlock();
+                    m_owner_thread = nullptr;
+                    m_spin_lock.Unlock();
 
                     /* Enable scheduling, and perform a rescheduling operation. */
                     SchedulerType::EnableScheduling(cores_needing_scheduling);

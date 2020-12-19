@@ -24,7 +24,7 @@ namespace ams::kern {
 
         class PageTablePage {
             private:
-                u8 buffer[PageSize];
+                u8 m_buffer[PageSize];
         };
         static_assert(sizeof(PageTablePage) == PageSize);
 
@@ -38,23 +38,23 @@ namespace ams::kern {
         private:
             using BaseHeap = KDynamicSlabHeap<impl::PageTablePage>;
         private:
-            RefCount *ref_counts;
+            RefCount *m_ref_counts;
         public:
             static constexpr size_t CalculateReferenceCountSize(size_t size) {
                 return (size / PageSize) * sizeof(RefCount);
             }
         public:
-            constexpr KPageTableManager() : BaseHeap(), ref_counts() { /* ... */ }
+            constexpr KPageTableManager() : BaseHeap(), m_ref_counts() { /* ... */ }
         private:
             void Initialize(RefCount *rc) {
-                this->ref_counts = rc;
+                m_ref_counts = rc;
                 for (size_t i = 0; i < this->GetSize() / PageSize; i++) {
-                    this->ref_counts[i] = 0;
+                    m_ref_counts[i] = 0;
                 }
             }
 
             constexpr RefCount *GetRefCountPointer(KVirtualAddress addr) const {
-                return std::addressof(this->ref_counts[(addr - this->GetAddress()) / PageSize]);
+                return std::addressof(m_ref_counts[(addr - this->GetAddress()) / PageSize]);
             }
         public:
             void Initialize(KDynamicPageManager *page_allocator, RefCount *rc) {

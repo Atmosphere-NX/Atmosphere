@@ -27,13 +27,13 @@ namespace ams::kern::board::nintendo::nx {
         private:
             static constexpr size_t TableCount = 4;
         private:
-            KVirtualAddress tables[TableCount];
-            u8 table_asids[TableCount];
-            u64 attached_device;
-            u32 attached_value;
-            u32 detached_value;
-            u32 hs_attached_value;
-            u32 hs_detached_value;
+            KVirtualAddress m_tables[TableCount];
+            u8 m_table_asids[TableCount];
+            u64 m_attached_device;
+            u32 m_attached_value;
+            u32 m_detached_value;
+            u32 m_hs_attached_value;
+            u32 m_hs_detached_value;
         private:
             static ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress addr) {
                 const KMemoryRegion *hint = nullptr;
@@ -61,7 +61,7 @@ namespace ams::kern::board::nintendo::nx {
                 return KPageTable::GetPageTablePhysicalAddress(addr);
             }
         public:
-            constexpr KDevicePageTable() : tables(), table_asids(), attached_device(), attached_value(), detached_value(), hs_attached_value(), hs_detached_value() { /* ... */ }
+            constexpr KDevicePageTable() : m_tables(), m_table_asids(), m_attached_device(), m_attached_value(), m_detached_value(), m_hs_attached_value(), m_hs_detached_value() { /* ... */ }
 
             Result Initialize(u64 space_address, u64 space_size);
             void Finalize();

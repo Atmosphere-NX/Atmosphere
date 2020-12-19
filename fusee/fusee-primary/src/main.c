@@ -37,24 +37,25 @@ static char g_bct0_buffer[BCTO_MAX_SIZE];
 
 #define CONFIG_LOG_LEVEL_KEY "log_level"
 
-#define DEFAULT_BCT0 \
-"BCT0\n"\
-"[stage1]\n"\
-"stage2_path = atmosphere/fusee-secondary.bin\n"\
-"stage2_mtc_path = atmosphere/fusee-mtc.bin\n"\
-"stage2_addr = 0xF0000000\n"\
-"stage2_entrypoint = 0xF0000000\n"\
-"[exosphere]\n"\
-"debugmode = 1\n"\
-"debugmode_user = 0\n"\
-"disable_user_exception_handlers = 0\n"\
-"[stratosphere]\n"
+static const char *get_default_bct0(void) {
+    return "BCT0\n"
+           "[stage1]\n"
+           "stage2_path = atmosphere/fusee-secondary.bin\n"
+           "stage2_mtc_path = atmosphere/fusee-mtc.bin\n"
+           "stage2_addr = 0xF0000000\n"
+           "stage2_entrypoint = 0xF0000000\n"
+           "\n"
+           "[stratosphere]\n"
+           "\n";
+}
 
 static const char *load_config(void) {
     if (!read_from_file(g_bct0_buffer, BCTO_MAX_SIZE, "atmosphere/config/BCT.ini")) {
         print(SCREEN_LOG_LEVEL_DEBUG, "Failed to read BCT0 from SD!\n");
         print(SCREEN_LOG_LEVEL_DEBUG, "Using default BCT0!\n");
-        memcpy(g_bct0_buffer, DEFAULT_BCT0, sizeof(DEFAULT_BCT0));
+
+        const char * const default_bct0 = get_default_bct0();
+        memcpy(g_bct0_buffer, default_bct0, strlen(default_bct0));
     }
 
     if (memcmp(g_bct0_buffer, "BCT0", 4) != 0) {

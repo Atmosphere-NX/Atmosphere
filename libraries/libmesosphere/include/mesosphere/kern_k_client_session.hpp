@@ -24,20 +24,20 @@ namespace ams::kern {
     class KClientSession final : public KAutoObjectWithSlabHeapAndContainer<KClientSession, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KClientSession, KAutoObject);
         private:
-            KSession *parent;
+            KSession *m_parent;
         public:
-            constexpr KClientSession() : parent() { /* ... */ }
+            constexpr KClientSession() : m_parent() { /* ... */ }
             virtual ~KClientSession() { /* ... */ }
 
             void Initialize(KSession *parent) {
                 /* Set member variables. */
-                this->parent = parent;
+                m_parent = parent;
             }
 
             virtual void Destroy() override;
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            constexpr KSession *GetParent() const { return this->parent; }
+            constexpr KSession *GetParent() const { return m_parent; }
 
             Result SendSyncRequest(uintptr_t address, size_t size);
             Result SendAsyncRequest(KWritableEvent *event, uintptr_t address, size_t size);

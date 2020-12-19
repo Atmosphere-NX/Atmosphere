@@ -55,11 +55,12 @@ dist: all
 	rm -rf atmosphere-$(AMSVER)
 	rm -rf out
 
-	mkdir -p atmosphere-$(AMSVER)
-	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere
+	mkdir  -p atmosphere-$(AMSVER)
+	mkdir  -p atmosphere-$(AMSVER)/atmo/atmosphere
+	mkdir  -p atmosphere-$(AMSVER)/atmo/sept
+	mkdir  -p atmosphere-$(AMSVER)/atmo/switch
 	mkdir -p atmosphere-$(AMSVER)/base/bootloader/payloads
-	mkdir -p atmosphere-$(AMSVER)/atmo/sept
-	mkdir -p atmosphere-$(AMSVER)/atmo/switch/daybreak
+
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000008
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/010000000000000D
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/010000000000002B
@@ -69,14 +70,13 @@ dist: all
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000037
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/010000000000003C
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000042
+
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/fatal_errors
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/config_templates
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/config
 
+	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/base/bootloader/payloads/fusee-primary.bin
 	cp fusee/fusee-mtc/fusee-mtc.bin atmosphere-$(AMSVER)/atmo/atmosphere/fusee-mtc.bin
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmo/atmosphere/fusee-secondary.bin
-	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmo/sept/payload.bin
-
 
 	cp sept/sept-primary/sept-primary.bin atmosphere-$(AMSVER)/atmo/sept/sept-primary.bin
 	cp sept/sept-secondary/sept-secondary.bin atmosphere-$(AMSVER)/atmo/sept/sept-secondary.bin
@@ -85,12 +85,13 @@ dist: all
 	cp sept/sept-secondary/sept-secondary_dev_00.enc atmosphere-$(AMSVER)/atmo/sept/sept-secondary_dev_00.enc
 	cp sept/sept-secondary/sept-secondary_dev_01.enc atmosphere-$(AMSVER)/atmo/sept/sept-secondary_dev_01.enc
 
+	cp config_templates/BCT.ini atmosphere-$(AMSVER)/atmo/atmosphere/config_templates/BCT.ini
 	cp config_templates/override_config.ini atmosphere-$(AMSVER)/atmo/atmosphere/config_templates/override_config.ini
 	cp config_templates/system_settings.ini atmosphere-$(AMSVER)/atmo/atmosphere/config_templates/system_settings.ini
 	cp config_templates/exosphere.ini atmosphere-$(AMSVER)/atmo/atmosphere/config_templates/exosphere.ini
-
 	cp -r config_templates/kip_patches atmosphere-$(AMSVER)/atmo/atmosphere/kip_patches
 	cp -r config_templates/hbl_html atmosphere-$(AMSVER)/atmo/atmosphere/hbl_html
+
 	cp stratosphere/boot2/boot2.nsp atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000008/exefs.nsp
 	cp stratosphere/dmnt/dmnt.nsp atmosphere-$(AMSVER)/atmo/atmosphere/contents/010000000000000D/exefs.nsp
 	cp stratosphere/erpt/erpt.nsp atmosphere-$(AMSVER)/atmo/atmosphere/contents/010000000000002B/exefs.nsp
@@ -100,14 +101,16 @@ dist: all
 	cp stratosphere/ro/ro.nsp atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000037/exefs.nsp
 	cp stratosphere/jpegdec/jpegdec.nsp atmosphere-$(AMSVER)/atmo/atmosphere/contents/010000000000003C/exefs.nsp
 	cp stratosphere/pgl/pgl.nsp atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000042/exefs.nsp
-
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000032/flags
 	touch atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000032/flags/boot2.flag
 	mkdir -p atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000037/flags
 	touch atmosphere-$(AMSVER)/atmo/atmosphere/contents/0100000000000037/flags/boot2.flag
-	cp fusee/fusee-primary/fusee-primary.bin atmosphere-$(AMSVER)/base/bootloader/payloads/fusee-primary.bin
-	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/atmo/switch/daybreak/daybreak.nro
+
+	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmo/atmosphere/fusee-secondary.bin
+	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmo/sept/payload.bin
+	
 	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
+
 	rm -r atmosphere-$(AMSVER)
 	mkdir out
 	mv atmosphere-$(AMSVER).zip ../atmosphere-$(AMSVER).zip

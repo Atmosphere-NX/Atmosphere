@@ -22,15 +22,15 @@ namespace ams::kern {
         /* Most fields have already been cleared by our constructor. */
 
         /* Initial processes may run on all cores. */
-        this->core_mask = (1ul << cpu::NumCores) - 1;
+        m_core_mask = (1ul << cpu::NumCores) - 1;
 
         /* Initial processes may use any user priority they like. */
-        this->priority_mask = ~0xFul;
+        m_priority_mask = ~0xFul;
 
         /* Here, Nintendo sets the kernel version to the current kernel version. */
         /* We will follow suit and set the version to the highest supported kernel version. */
-        this->intended_kernel_version.Set<KernelVersion::MajorVersion>(ams::svc::SupportedKernelMajorVersion);
-        this->intended_kernel_version.Set<KernelVersion::MinorVersion>(ams::svc::SupportedKernelMinorVersion);
+        m_intended_kernel_version.Set<KernelVersion::MajorVersion>(ams::svc::SupportedKernelMajorVersion);
+        m_intended_kernel_version.Set<KernelVersion::MinorVersion>(ams::svc::SupportedKernelMinorVersion);
 
         /* Parse the capabilities array. */
         return this->SetCapabilities(caps, num_caps, page_table);
@@ -46,8 +46,8 @@ namespace ams::kern {
 
     Result KCapabilities::SetCorePriorityCapability(const util::BitPack32 cap) {
         /* We can't set core/priority if we've already set them. */
-        R_UNLESS(this->core_mask    == 0,  svc::ResultInvalidArgument());
-        R_UNLESS(this->priority_mask == 0, svc::ResultInvalidArgument());
+        R_UNLESS(m_core_mask    == 0,  svc::ResultInvalidArgument());
+        R_UNLESS(m_priority_mask == 0, svc::ResultInvalidArgument());
 
         /* Validate the core/priority. */
         const auto min_core = cap.Get<CorePriority::MinimumCoreId>();
@@ -64,18 +64,18 @@ namespace ams::kern {
 
         /* Set core mask. */
         for (auto core_id = min_core; core_id <= max_core; core_id++) {
-            this->core_mask |= (1ul << core_id);
+            m_core_mask |= (1ul << core_id);
         }
-        MESOSPHERE_ASSERT((this->core_mask & ((1ul << cpu::NumCores) - 1)) == this->core_mask);
+        MESOSPHERE_ASSERT((m_core_mask & ((1ul << cpu::NumCores) - 1)) == m_core_mask);
 
         /* Set priority mask. */
         for (auto prio = min_prio; prio <= max_prio; prio++) {
-            this->priority_mask |= (1ul << prio);
+            m_priority_mask |= (1ul << prio);
         }
 
         /* We must have some core/priority we can use. */
-        R_UNLESS(this->core_mask     != 0, svc::ResultInvalidArgument());
-        R_UNLESS(this->priority_mask != 0, svc::ResultInvalidArgument());
+        R_UNLESS(m_core_mask     != 0, svc::ResultInvalidArgument());
+        R_UNLESS(m_priority_mask != 0, svc::ResultInvalidArgument());
 
         return ResultSuccess();
     }
@@ -186,17 +186,17 @@ namespace ams::kern {
         /* Validate. */
         R_UNLESS(cap.Get<ProgramType::Reserved>() == 0, svc::ResultReservedUsed());
 
-        this->program_type = cap.Get<ProgramType::Type>();
+        m_program_type = cap.Get<ProgramType::Type>();
         return ResultSuccess();
     }
 
     Result KCapabilities::SetKernelVersionCapability(const util::BitPack32 cap) {
         /* Ensure we haven't set our version before. */
-        R_UNLESS(this->intended_kernel_version.Get<KernelVersion::MajorVersion>() == 0, svc::ResultInvalidArgument());
+        R_UNLESS(m_intended_kernel_version.Get<KernelVersion::MajorVersion>() == 0, svc::ResultInvalidArgument());
 
         /* Set, ensure that we set a valid version. */
-        this->intended_kernel_version = cap;
-        R_UNLESS(this->intended_kernel_version.Get<KernelVersion::MajorVersion>() != 0, svc::ResultInvalidArgument());
+        m_intended_kernel_version = cap;
+        R_UNLESS(m_intended_kernel_version.Get<KernelVersion::MajorVersion>() != 0, svc::ResultInvalidArgument());
 
         return ResultSuccess();
     }
@@ -205,7 +205,7 @@ namespace ams::kern {
         /* Validate. */
         R_UNLESS(cap.Get<HandleTable::Reserved>() == 0, svc::ResultReservedUsed());
 
-        this->handle_table_size = cap.Get<HandleTable::Size>();
+        m_handle_table_size = cap.Get<HandleTable::Size>();
         return ResultSuccess();
     }
 
@@ -213,8 +213,8 @@ namespace ams::kern {
         /* Validate. */
         R_UNLESS(cap.Get<DebugFlags::Reserved>() == 0, svc::ResultReservedUsed());
 
-        this->debug_capabilities.Set<DebugFlags::AllowDebug>(cap.Get<DebugFlags::AllowDebug>());
-        this->debug_capabilities.Set<DebugFlags::ForceDebug>(cap.Get<DebugFlags::ForceDebug>());
+        m_debug_capabilities.Set<DebugFlags::AllowDebug>(cap.Get<DebugFlags::AllowDebug>());
+        m_debug_capabilities.Set<DebugFlags::ForceDebug>(cap.Get<DebugFlags::ForceDebug>());
         return ResultSuccess();
     }
 

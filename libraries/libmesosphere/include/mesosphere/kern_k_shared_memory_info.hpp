@@ -23,30 +23,30 @@ namespace ams::kern {
 
     class KSharedMemoryInfo : public KSlabAllocated<KSharedMemoryInfo>, public util::IntrusiveListBaseNode<KSharedMemoryInfo> {
         private:
-            KSharedMemory *shared_memory;
-            size_t reference_count;
+            KSharedMemory *m_shared_memory;
+            size_t m_reference_count;
         public:
-            constexpr KSharedMemoryInfo() : shared_memory(), reference_count() { /* ... */ }
+            constexpr KSharedMemoryInfo() : m_shared_memory(), m_reference_count() { /* ... */ }
             ~KSharedMemoryInfo() { /* ... */ }
 
             constexpr void Initialize(KSharedMemory *m) {
                 MESOSPHERE_ASSERT_THIS();
-                this->shared_memory   = m;
-                this->reference_count = 0;
+                m_shared_memory   = m;
+                m_reference_count = 0;
             }
 
             constexpr void Open() {
-                const size_t ref_count = ++this->reference_count;
+                const size_t ref_count = ++m_reference_count;
                 MESOSPHERE_ASSERT(ref_count > 0);
             }
 
             constexpr bool Close() {
-                MESOSPHERE_ASSERT(this->reference_count > 0);
-                return (--this->reference_count) == 0;
+                MESOSPHERE_ASSERT(m_reference_count > 0);
+                return (--m_reference_count) == 0;
             }
 
-            constexpr KSharedMemory *GetSharedMemory() const { return this->shared_memory; }
-            constexpr size_t GetReferenceCount() const { return this->reference_count; }
+            constexpr KSharedMemory *GetSharedMemory() const { return m_shared_memory; }
+            constexpr size_t GetReferenceCount() const { return m_reference_count; }
     };
 
 }

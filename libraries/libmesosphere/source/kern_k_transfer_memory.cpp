@@ -21,24 +21,24 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Set members. */
-        this->owner = GetCurrentProcessPointer();
+        m_owner = GetCurrentProcessPointer();
 
         /* Initialize the page group. */
-        auto &page_table = this->owner->GetPageTable();
-        new (GetPointer(this->page_group)) KPageGroup(page_table.GetBlockInfoManager());
+        auto &page_table = m_owner->GetPageTable();
+        new (GetPointer(m_page_group)) KPageGroup(page_table.GetBlockInfoManager());
 
         /* Ensure that our page group's state is valid on exit. */
-        auto pg_guard = SCOPE_GUARD { GetReference(this->page_group).~KPageGroup(); };
+        auto pg_guard = SCOPE_GUARD { GetReference(m_page_group).~KPageGroup(); };
 
         /* Lock the memory. */
-        R_TRY(page_table.LockForTransferMemory(GetPointer(this->page_group), addr, size, ConvertToKMemoryPermission(own_perm)));
+        R_TRY(page_table.LockForTransferMemory(GetPointer(m_page_group), addr, size, ConvertToKMemoryPermission(own_perm)));
 
         /* Set remaining tracking members. */
-        this->owner->Open();
-        this->owner_perm     = own_perm;
-        this->address        = addr;
-        this->is_initialized = true;
-        this->is_mapped      = false;
+        m_owner->Open();
+        m_owner_perm     = own_perm;
+        m_address        = addr;
+        m_is_initialized = true;
+        m_is_mapped      = false;
 
         /* We succeeded. */
         pg_guard.Cancel();
@@ -49,14 +49,14 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Unlock. */
-        if (!this->is_mapped) {
-            const size_t size = GetReference(this->page_group).GetNumPages() * PageSize;
-            MESOSPHERE_R_ABORT_UNLESS(this->owner->GetPageTable().UnlockForTransferMemory(this->address, size, GetReference(this->page_group)));
+        if (!m_is_mapped) {
+            const size_t size = GetReference(m_page_group).GetNumPages() * PageSize;
+            MESOSPHERE_R_ABORT_UNLESS(m_owner->GetPageTable().UnlockForTransferMemory(m_address, size, GetReference(m_page_group)));
         }
 
         /* Close the page group. */
-        GetReference(this->page_group).Close();
-        GetReference(this->page_group).Finalize();
+        GetReference(m_page_group).Close();
+        GetReference(m_page_group).Finalize();
 
         /* Perform inherited finalization. */
         KAutoObjectWithSlabHeapAndContainer<KTransferMemory, KAutoObjectWithList>::Finalize();
@@ -72,23 +72,23 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Validate the size. */
-        R_UNLESS(GetReference(this->page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
+        R_UNLESS(GetReference(m_page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Validate the permission. */
-        R_UNLESS(this->owner_perm == map_perm, svc::ResultInvalidState());
+        R_UNLESS(m_owner_perm == map_perm, svc::ResultInvalidState());
 
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Ensure we're not already mapped. */
-        R_UNLESS(!this->is_mapped, svc::ResultInvalidState());
+        R_UNLESS(!m_is_mapped, svc::ResultInvalidState());
 
         /* Map the memory. */
-        const KMemoryState state = (this->owner_perm == ams::svc::MemoryPermission_None) ? KMemoryState_Transfered : KMemoryState_SharedTransfered;
-        R_TRY(GetCurrentProcess().GetPageTable().MapPageGroup(address, GetReference(this->page_group), state, KMemoryPermission_UserReadWrite));
+        const KMemoryState state = (m_owner_perm == ams::svc::MemoryPermission_None) ? KMemoryState_Transfered : KMemoryState_SharedTransfered;
+        R_TRY(GetCurrentProcess().GetPageTable().MapPageGroup(address, GetReference(m_page_group), state, KMemoryPermission_UserReadWrite));
 
         /* Mark ourselves as mapped. */
-        this->is_mapped = true;
+        m_is_mapped = true;
 
         return ResultSuccess();
     }
@@ -97,18 +97,18 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Validate the size. */
-        R_UNLESS(GetReference(this->page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
+        R_UNLESS(GetReference(m_page_group).GetNumPages() == util::DivideUp(size, PageSize), svc::ResultInvalidSize());
 
         /* Lock ourselves. */
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         /* Unmap the memory. */
-        const KMemoryState state = (this->owner_perm == ams::svc::MemoryPermission_None) ? KMemoryState_Transfered : KMemoryState_SharedTransfered;
-        R_TRY(GetCurrentProcess().GetPageTable().UnmapPageGroup(address, GetReference(this->page_group), state));
+        const KMemoryState state = (m_owner_perm == ams::svc::MemoryPermission_None) ? KMemoryState_Transfered : KMemoryState_SharedTransfered;
+        R_TRY(GetCurrentProcess().GetPageTable().UnmapPageGroup(address, GetReference(m_page_group), state));
 
         /* Mark ourselves as unmapped. */
-        MESOSPHERE_ASSERT(this->is_mapped);
-        this->is_mapped = false;
+        MESOSPHERE_ASSERT(m_is_mapped);
+        m_is_mapped = false;
 
         return ResultSuccess();
     }

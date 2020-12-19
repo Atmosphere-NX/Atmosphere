@@ -27,16 +27,16 @@ namespace ams::kern {
     class KSharedMemory final : public KAutoObjectWithSlabHeapAndContainer<KSharedMemory, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KSharedMemory, KAutoObject);
         private:
-            KPageGroup page_group;
-            KResourceLimit *resource_limit;
-            u64 owner_process_id;
-            ams::svc::MemoryPermission owner_perm;
-            ams::svc::MemoryPermission remote_perm;
-            bool is_initialized;
+            KPageGroup m_page_group;
+            KResourceLimit *m_resource_limit;
+            u64 m_owner_process_id;
+            ams::svc::MemoryPermission m_owner_perm;
+            ams::svc::MemoryPermission m_remote_perm;
+            bool m_is_initialized;
         public:
             explicit KSharedMemory()
-                : page_group(std::addressof(Kernel::GetBlockInfoManager())), resource_limit(nullptr), owner_process_id(std::numeric_limits<u64>::max()),
-                  owner_perm(ams::svc::MemoryPermission_None), remote_perm(ams::svc::MemoryPermission_None), is_initialized(false)
+                : m_page_group(std::addressof(Kernel::GetBlockInfoManager())), m_resource_limit(nullptr), m_owner_process_id(std::numeric_limits<u64>::max()),
+                  m_owner_perm(ams::svc::MemoryPermission_None), m_remote_perm(ams::svc::MemoryPermission_None), m_is_initialized(false)
             {
                 /* ... */
             }
@@ -46,14 +46,14 @@ namespace ams::kern {
             Result Initialize(KProcess *owner, size_t size, ams::svc::MemoryPermission own_perm, ams::svc::MemoryPermission rem_perm);
             virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return this->is_initialized; }
+            virtual bool IsInitialized() const override { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Map(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process, ams::svc::MemoryPermission map_perm);
             Result Unmap(KProcessPageTable *table, KProcessAddress address, size_t size, KProcess *process);
 
-            u64 GetOwnerProcessId() const { return this->owner_process_id; }
-            size_t GetSize() const { return this->page_group.GetNumPages() * PageSize; }
+            u64 GetOwnerProcessId() const { return m_owner_process_id; }
+            size_t GetSize() const { return m_page_group.GetNumPages() * PageSize; }
     };
 
 }

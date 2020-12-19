@@ -21,27 +21,27 @@ namespace ams::kern {
     void KAutoObjectWithListContainer::Register(KAutoObjectWithList *obj) {
         MESOSPHERE_ASSERT_THIS();
 
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
-        this->object_list.insert(*obj);
+        m_object_list.insert(*obj);
     }
 
     void KAutoObjectWithListContainer::Unregister(KAutoObjectWithList *obj) {
         MESOSPHERE_ASSERT_THIS();
 
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
-        this->object_list.erase(this->object_list.iterator_to(*obj));
+        m_object_list.erase(m_object_list.iterator_to(*obj));
     }
 
     size_t KAutoObjectWithListContainer::GetOwnedCount(KProcess *owner) {
         MESOSPHERE_ASSERT_THIS();
 
-        KScopedLightLock lk(this->lock);
+        KScopedLightLock lk(m_lock);
 
         size_t count = 0;
 
-        for (auto &obj : this->object_list) {
+        for (auto &obj : m_object_list) {
             if (obj.GetOwner() == owner) {
                 count++;
             }

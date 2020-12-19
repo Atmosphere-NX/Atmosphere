@@ -20,12 +20,12 @@ namespace ams::kern {
 
     class KWorkerTask {
         private:
-            KWorkerTask *next_task;
+            KWorkerTask *m_next_task;
         public:
-            constexpr ALWAYS_INLINE KWorkerTask() : next_task(nullptr) { /* ... */ }
+            constexpr ALWAYS_INLINE KWorkerTask() : m_next_task(nullptr) { /* ... */ }
 
-            constexpr ALWAYS_INLINE KWorkerTask *GetNextTask() const { return this->next_task; }
-            constexpr ALWAYS_INLINE void SetNextTask(KWorkerTask *task) { this->next_task = task; }
+            constexpr ALWAYS_INLINE KWorkerTask *GetNextTask() const { return m_next_task; }
+            constexpr ALWAYS_INLINE void SetNextTask(KWorkerTask *task) { m_next_task = task; }
 
             virtual void DoWorkerTask() = 0;
     };

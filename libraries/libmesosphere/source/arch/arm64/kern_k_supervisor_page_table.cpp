@@ -19,7 +19,7 @@ namespace ams::kern::arch::arm64 {
 
     void KSupervisorPageTable::Initialize(s32 core_id) {
         /* Get the identity mapping ttbr0. */
-        this->ttbr0_identity[core_id] = cpu::GetTtbr0El1();
+        m_ttbr0_identity[core_id] = cpu::GetTtbr0El1();
 
         /* Set sctlr_el1 */
         cpu::SystemControlRegisterAccessor().SetWxn(true).Store();
@@ -35,7 +35,7 @@ namespace ams::kern::arch::arm64 {
             const u64 kernel_vaddr_start = 0xFFFFFF8000000000ul;
             const u64 kernel_vaddr_end   = 0xFFFFFFFFFFE00000ul;
             void *table = GetVoidPointer(KPageTableBase::GetLinearMappedVirtualAddress(ttbr1));
-            this->page_table.InitializeForKernel(table, kernel_vaddr_start, kernel_vaddr_end);
+            m_page_table.InitializeForKernel(table, kernel_vaddr_start, kernel_vaddr_end);
         }
     }
 

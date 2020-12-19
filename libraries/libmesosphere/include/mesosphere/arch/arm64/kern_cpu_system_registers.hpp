@@ -135,36 +135,36 @@ namespace ams::kern::arch::arm64::cpu {
         NON_COPYABLE(GenericRegisterAccessorBase);
         NON_MOVEABLE(GenericRegisterAccessorBase);
         private:
-            u64 value;
+            u64 m_value;
         public:
-            constexpr ALWAYS_INLINE GenericRegisterAccessorBase(u64 v) : value(v) { /* ... */ }
+            constexpr ALWAYS_INLINE GenericRegisterAccessorBase(u64 v) : m_value(v) { /* ... */ }
         protected:
             constexpr ALWAYS_INLINE u64 GetValue() const {
-                return this->value;
+                return m_value;
             }
 
             constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
-                return (this->value >> offset) & ((1ul << count) - 1);
+                return (m_value >> offset) & ((1ul << count) - 1);
             }
 
             constexpr ALWAYS_INLINE void SetBits(size_t offset, size_t count, u64 value) {
                 const u64 mask = ((1ul << count) - 1) << offset;
-                this->value &= ~mask;
-                this->value |= (value & (mask >> offset)) << offset;
+                m_value &= ~mask;
+                m_value |= (value & (mask >> offset)) << offset;
             }
 
             constexpr ALWAYS_INLINE void SetBitsDirect(size_t offset, size_t count, u64 value) {
                 const u64 mask = ((1ul << count) - 1) << offset;
-                this->value &= ~mask;
-                this->value |= (value & mask);
+                m_value &= ~mask;
+                m_value |= (value & mask);
             }
 
             constexpr ALWAYS_INLINE void SetBit(size_t offset, bool enabled) {
                 const u64 mask = 1ul << offset;
                 if (enabled) {
-                    this->value |= mask;
+                    m_value |= mask;
                 } else {
-                    this->value &= ~mask;
+                    m_value &= ~mask;
                 }
             }
     };

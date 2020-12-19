@@ -30,11 +30,11 @@ namespace ams::kern {
             using SessionList      = util::IntrusiveListBaseTraits<KServerSession>::ListType;
             using LightSessionList = util::IntrusiveListBaseTraits<KLightServerSession>::ListType;
         private:
-            SessionList session_list;
-            LightSessionList light_session_list;
-            KPort *parent;
+            SessionList m_session_list;
+            LightSessionList m_light_session_list;
+            KPort *m_parent;
         public:
-            constexpr KServerPort() : session_list(), light_session_list(), parent() { /* ... */ }
+            constexpr KServerPort() : m_session_list(), m_light_session_list(), m_parent() { /* ... */ }
             virtual ~KServerPort() { /* ... */ }
 
             void Initialize(KPort *parent);
@@ -44,7 +44,7 @@ namespace ams::kern {
             KServerSession *AcceptSession();
             KLightServerSession *AcceptLightSession();
 
-            constexpr const KPort *GetParent() const { return this->parent; }
+            constexpr const KPort *GetParent() const { return m_parent; }
 
             bool IsLight() const;
 

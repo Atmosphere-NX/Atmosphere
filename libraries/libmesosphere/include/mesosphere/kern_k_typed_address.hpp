@@ -23,13 +23,13 @@ namespace ams::kern {
     template<bool Virtual, typename T>
     class KTypedAddress {
         private:
-            uintptr_t address;
+            uintptr_t m_address;
         public:
             /* Constructors. */
-            constexpr ALWAYS_INLINE KTypedAddress() : address(0) { /* ... */ }
-            constexpr ALWAYS_INLINE KTypedAddress(uintptr_t a) : address(a) { /* ... */ }
+            constexpr ALWAYS_INLINE KTypedAddress() : m_address(0) { /* ... */ }
+            constexpr ALWAYS_INLINE KTypedAddress(uintptr_t a) : m_address(a) { /* ... */ }
             template<typename U>
-            constexpr ALWAYS_INLINE explicit KTypedAddress(U *ptr) : address(reinterpret_cast<uintptr_t>(ptr)) { /* ... */ }
+            constexpr ALWAYS_INLINE explicit KTypedAddress(U *ptr) : m_address(reinterpret_cast<uintptr_t>(ptr)) { /* ... */ }
 
             /* Copy constructor. */
             constexpr ALWAYS_INLINE KTypedAddress(const KTypedAddress &rhs) = default;
@@ -41,92 +41,92 @@ namespace ams::kern {
             template<typename I>
             constexpr ALWAYS_INLINE KTypedAddress operator+(I rhs) const {
                 static_assert(std::is_integral<I>::value);
-                return this->address + rhs;
+                return m_address + rhs;
             }
 
             template<typename I>
             constexpr ALWAYS_INLINE KTypedAddress operator-(I rhs) const {
                 static_assert(std::is_integral<I>::value);
-                return this->address - rhs;
+                return m_address - rhs;
             }
 
             constexpr ALWAYS_INLINE ptrdiff_t operator-(KTypedAddress rhs) const {
-                return this->address - rhs.address;
+                return m_address - rhs.m_address;
             }
 
             template<typename I>
             constexpr ALWAYS_INLINE KTypedAddress operator+=(I rhs) {
                 static_assert(std::is_integral<I>::value);
-                this->address += rhs;
+                m_address += rhs;
                 return *this;
             }
 
             template<typename I>
             constexpr ALWAYS_INLINE KTypedAddress operator-=(I rhs) {
                 static_assert(std::is_integral<I>::value);
-                this->address -= rhs;
+                m_address -= rhs;
                 return *this;
             }
 
             /* Logical operators. */
             constexpr ALWAYS_INLINE uintptr_t operator&(uintptr_t mask) const {
-                return this->address & mask;
+                return m_address & mask;
             }
 
             constexpr ALWAYS_INLINE uintptr_t operator|(uintptr_t mask) const {
-                return this->address | mask;
+                return m_address | mask;
             }
 
             constexpr ALWAYS_INLINE uintptr_t operator<<(int shift) const {
-                return this->address << shift;
+                return m_address << shift;
             }
 
             constexpr ALWAYS_INLINE uintptr_t operator>>(int shift) const {
-                return this->address >> shift;
+                return m_address >> shift;
             }
 
             template<typename U>
-            constexpr ALWAYS_INLINE size_t operator/(U size) const { return this->address / size; }
+            constexpr ALWAYS_INLINE size_t operator/(U size) const { return m_address / size; }
 
-            /* constexpr ALWAYS_INLINE uintptr_t operator%(U align) const { return this->address % align; } */
+            /* constexpr ALWAYS_INLINE uintptr_t operator%(U align) const { return m_address % align; } */
 
             /* Comparison operators. */
             constexpr ALWAYS_INLINE bool operator==(KTypedAddress rhs) const {
-                return this->address == rhs.address;
+                return m_address == rhs.m_address;
             }
 
             constexpr ALWAYS_INLINE bool operator!=(KTypedAddress rhs) const {
-                return this->address != rhs.address;
+                return m_address != rhs.m_address;
             }
 
             constexpr ALWAYS_INLINE bool operator<(KTypedAddress rhs) const {
-                return this->address < rhs.address;
+                return m_address < rhs.m_address;
             }
 
             constexpr ALWAYS_INLINE bool operator<=(KTypedAddress rhs) const {
-                return this->address <= rhs.address;
+                return m_address <= rhs.m_address;
             }
 
             constexpr ALWAYS_INLINE bool operator>(KTypedAddress rhs) const {
-                return this->address > rhs.address;
+                return m_address > rhs.m_address;
             }
 
             constexpr ALWAYS_INLINE bool operator>=(KTypedAddress rhs) const {
-                return this->address >= rhs.address;
+                return m_address >= rhs.m_address;
             }
 
             /* For convenience, also define comparison operators versus uintptr_t. */
             constexpr ALWAYS_INLINE bool operator==(uintptr_t rhs) const {
-                return this->address == rhs;
+                return m_address == rhs;
             }
 
             constexpr ALWAYS_INLINE bool operator!=(uintptr_t rhs) const {
-                return this->address != rhs;
+                return m_address != rhs;
             }
 
             /* Allow getting the address explicitly, for use in accessors. */
             constexpr ALWAYS_INLINE uintptr_t GetValue() const {
-                return this->address;
+                return m_address;
             }
 
     };

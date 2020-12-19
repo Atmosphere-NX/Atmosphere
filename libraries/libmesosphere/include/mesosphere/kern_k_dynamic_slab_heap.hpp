@@ -30,28 +30,28 @@ namespace ams::kern {
             using Impl       = impl::KSlabHeapImpl;
             using PageBuffer = KDynamicPageManager::PageBuffer;
         private:
-            Impl impl;
-            KDynamicPageManager *page_allocator;
-            std::atomic<size_t> used;
-            std::atomic<size_t> peak;
-            std::atomic<size_t> count;
-            KVirtualAddress address;
-            size_t size;
+            Impl m_impl;
+            KDynamicPageManager *m_page_allocator;
+            std::atomic<size_t> m_used;
+            std::atomic<size_t> m_peak;
+            std::atomic<size_t> m_count;
+            KVirtualAddress m_address;
+            size_t m_size;
         private:
             ALWAYS_INLINE Impl *GetImpl() {
-                return std::addressof(this->impl);
+                return std::addressof(m_impl);
             }
             ALWAYS_INLINE const Impl *GetImpl() const {
-                return std::addressof(this->impl);
+                return std::addressof(m_impl);
             }
         public:
-            constexpr KDynamicSlabHeap() : impl(), page_allocator(), used(), peak(), count(), address(), size() { /* ... */ }
+            constexpr KDynamicSlabHeap() : m_impl(), m_page_allocator(), m_used(), m_peak(), m_count(), m_address(), m_size() { /* ... */ }
 
-            constexpr KVirtualAddress GetAddress() const { return this->address; }
-            constexpr size_t GetSize() const { return this->size; }
-            constexpr size_t GetUsed() const { return this->used; }
-            constexpr size_t GetPeak() const { return this->peak; }
-            constexpr size_t GetCount() const { return this->count; }
+            constexpr KVirtualAddress GetAddress() const { return m_address; }
+            constexpr size_t GetSize() const { return m_size; }
+            constexpr size_t GetUsed() const { return m_used; }
+            constexpr size_t GetPeak() const { return m_peak; }
+            constexpr size_t GetCount() const { return m_count; }
 
             constexpr bool IsInRange(KVirtualAddress addr) const {
                 return this->GetAddress() <= addr && addr <= this->GetAddress() + this->GetSize() - 1;
@@ -59,22 +59,22 @@ namespace ams::kern {
 
             void Initialize(KVirtualAddress memory, size_t sz) {
                 /* Set tracking fields. */
-                this->address = memory;
-                this->count   = sz / sizeof(T);
-                this->size    = this->count * sizeof(T);
+                m_address = memory;
+                m_count   = sz / sizeof(T);
+                m_size    = m_count * sizeof(T);
 
                 /* Free blocks to memory. */
-                u8 *cur = GetPointer<u8>(this->address + this->size);
-                for (size_t i = 0; i < this->count; i++) {
+                u8 *cur = GetPointer<u8>(m_address + m_size);
+                for (size_t i = 0; i < m_count; i++) {
                     cur -= sizeof(T);
                     this->GetImpl()->Free(cur);
                 }
             }
 
             void Initialize(KDynamicPageManager *page_allocator) {
-                this->page_allocator = page_allocator;
-                this->address        = this->page_allocator->GetAddress();
-                this->size           = this->page_allocator->GetSize();
+                m_page_allocator = page_allocator;
+                m_address        = m_page_allocator->GetAddress();
+                m_size           = m_page_allocator->GetSize();
             }
 
             void Initialize(KDynamicPageManager *page_allocator, size_t num_objects) {
@@ -84,13 +84,13 @@ namespace ams::kern {
                 this->Initialize(page_allocator);
 
                 /* Allocate until we have the correct number of objects. */
-                while (this->count < num_objects) {
-                    auto *allocated = reinterpret_cast<T *>(this->page_allocator->Allocate());
+                while (m_count < num_objects) {
+                    auto *allocated = reinterpret_cast<T *>(m_page_allocator->Allocate());
                     MESOSPHERE_ABORT_UNLESS(allocated != nullptr);
                     for (size_t i = 0; i < sizeof(PageBuffer) / sizeof(T); i++) {
                         this->GetImpl()->Free(allocated + i);
                     }
-                    this->count += sizeof(PageBuffer) / sizeof(T);
+                    m_count += sizeof(PageBuffer) / sizeof(T);
                 }
             }
 
@@ -99,14 +99,14 @@ namespace ams::kern {
 
                 /* If we fail to allocate, try to get a new page from our next allocator. */
                 if (AMS_UNLIKELY(allocated == nullptr)) {
-                    if (this->page_allocator != nullptr) {
-                        allocated = reinterpret_cast<T *>(this->page_allocator->Allocate());
+                    if (m_page_allocator != nullptr) {
+                        allocated = reinterpret_cast<T *>(m_page_allocator->Allocate());
                         if (allocated != nullptr) {
                             /* If we succeeded in getting a page, free the rest to our slab. */
                             for (size_t i = 1; i < sizeof(PageBuffer) / sizeof(T); i++) {
                                 this->GetImpl()->Free(allocated + i);
                             }
-                            this->count += sizeof(PageBuffer) / sizeof(T);
+                            m_count += sizeof(PageBuffer) / sizeof(T);
                         }
                     }
                 }
@@ -116,10 +116,10 @@ namespace ams::kern {
                     new (allocated) T();
 
                     /* Update our tracking. */
-                    size_t used = ++this->used;
-                    size_t peak = this->peak;
+                    size_t used = ++m_used;
+                    size_t peak = m_peak;
                     while (peak < used) {
-                        if (this->peak.compare_exchange_weak(peak, used, std::memory_order_relaxed)) {
+                        if (m_peak.compare_exchange_weak(peak, used, std::memory_order_relaxed)) {
                             break;
                         }
                     }
@@ -130,7 +130,7 @@ namespace ams::kern {
 
             void Free(T *t) {
                 this->GetImpl()->Free(t);
-                --this->used;
+                --m_used;
             }
     };
 

@@ -166,6 +166,12 @@ namespace ams::kern::KDumpObject {
             MESOSPHERE_RELEASE_LOG("\n\n");
         }
 
+        void DumpPageTable(KProcess *process) {
+            MESOSPHERE_RELEASE_LOG("Process ID=%3lu (%s)\n", process->GetId(), process->GetName());
+            process->GetPageTable().DumpPageTable();
+            MESOSPHERE_RELEASE_LOG("\n\n");
+        }
+
         void DumpProcess(KProcess *process) {
             MESOSPHERE_RELEASE_LOG("Process ID=%3lu index=%3zu State=%d (%s)\n", process->GetId(), process->GetSlabIndex(), process->GetState(), process->GetName());
         }
@@ -244,6 +250,13 @@ namespace ams::kern::KDumpObject {
                     }
                 }
             }
+        }
+
+        ALWAYS_INLINE s64 GetTickOrdered() {
+            __asm__ __volatile__("" ::: "memory");
+            const s64 tick = KHardwareTimer::GetTick();
+            __asm__ __volatile__("" ::: "memory");
+            return tick;
         }
 
     }
@@ -594,6 +607,258 @@ namespace ams::kern::KDumpObject {
             /* Dump each process. */
             for (auto it = accessor.begin(); it != end; ++it) {
                 DumpProcess(static_cast<KProcess *>(std::addressof(*it)));
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpKernelPageTable() {
+        MESOSPHERE_RELEASE_LOG("Dump Kernel PageTable\n");
+
+        {
+            Kernel::GetKernelPageTable().DumpPageTable();
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpPageTable() {
+        MESOSPHERE_RELEASE_LOG("Dump Process\n");
+
+        {
+            /* Lock the list. */
+            KProcess::ListAccessor accessor;
+            const auto end = accessor.end();
+
+            /* Dump each process. */
+            for (auto it = accessor.begin(); it != end; ++it) {
+                DumpPageTable(static_cast<KProcess *>(std::addressof(*it)));
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpPageTable(u64 process_id) {
+        MESOSPHERE_RELEASE_LOG("Dump PageTable\n");
+
+        {
+            /* Find and dump the target process. */
+            if (KProcess *process = KProcess::GetProcessFromId(process_id); process != nullptr) {
+                ON_SCOPE_EXIT { process->Close(); };
+                DumpPageTable(process);
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpKernelCpuUtilization() {
+        MESOSPHERE_RELEASE_LOG("Dump Kernel Cpu Utilization\n");
+
+        constexpr size_t MaxObjects = 64;
+        {
+            /* Create tracking arrays. */
+            KAutoObject *objects[MaxObjects];
+            u32 cpu_time[MaxObjects];
+
+            s64 start_tick;
+            size_t i, n;
+            KDpcManager::Sync();
+            {
+                /* Lock the thread list. */
+                KThread::ListAccessor accessor;
+
+                /* Begin tracking. */
+                start_tick = GetTickOrdered();
+
+                /* Iterate, finding kernel threads. */
+                const auto end = accessor.end();
+                i = 0;
+                for (auto it = accessor.begin(); it != end; ++it) {
+                    KThread *thread = static_cast<KThread *>(std::addressof(*it));
+                    if (KProcess *process = thread->GetOwnerProcess(); process == nullptr) {
+                        if (AMS_LIKELY(i < MaxObjects)) {
+                            if (AMS_LIKELY(thread->Open())) {
+                                cpu_time[i] = thread->GetCpuTime();
+                                objects[i]  = thread;
+                                ++i;
+                            }
+                        }
+                    }
+                }
+
+                /* Keep track of how many kernel threads we found. */
+                n = i;
+            }
+
+            /* Wait one second. */
+            const s64 timeout = KHardwareTimer::GetTick() + ams::svc::Tick(TimeSpan::FromSeconds(1));
+            GetCurrentThread().Sleep(timeout);
+            KDpcManager::Sync();
+
+            /* Update our metrics. */
+            for (i = 0; i < n; ++i) {
+                KThread *thread = static_cast<KThread *>(objects[i]);
+                cpu_time[i] = thread->GetCpuTime() - cpu_time[i];
+            }
+
+            /* End tracking. */
+            const s64 end_tick = GetTickOrdered();
+
+            /* Log thread utilization. */
+            for (i = 0; i < n; ++i) {
+                KThread *thread = static_cast<KThread *>(objects[i]);
+                const s64 t = static_cast<u64>(cpu_time[i]) * 1000 / (end_tick - start_tick);
+
+                MESOSPHERE_RELEASE_LOG("tid=%3lu (kernel) %3lu.%lu%% pri=%2d af=%lx\n", thread->GetId(), t / 10, t % 10, thread->GetPriority(), thread->GetAffinityMask().GetAffinityMask());
+            }
+
+            /* Close all objects. */
+            for (i = 0; i < n; ++i) {
+                objects[i]->Close();
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpCpuUtilization() {
+        MESOSPHERE_RELEASE_LOG("Dump Cpu Utilization\n");
+
+        /* NOTE: Nintendo uses 0x40 as maximum here, but the KProcess slabheap has 0x50 entries. */
+        /*       We have the stack space, so there's no reason not to allow logging all processes. */
+        constexpr size_t MaxObjects = 0x50;
+        {
+            /* Create tracking arrays. */
+            KAutoObject *objects[MaxObjects];
+            u32 cpu_time[MaxObjects];
+
+            s64 start_tick;
+            size_t i, n;
+            KDpcManager::Sync();
+            {
+                /* Lock the process list. */
+                KProcess::ListAccessor accessor;
+
+                /* Begin tracking. */
+                start_tick = GetTickOrdered();
+
+                /* Iterate, finding processes. */
+                const auto end = accessor.end();
+                i = 0;
+                for (auto it = accessor.begin(); it != end; ++it) {
+                    KProcess *process = static_cast<KProcess *>(std::addressof(*it));
+                    if (AMS_LIKELY(i < MaxObjects)) {
+                        if (AMS_LIKELY(process->Open())) {
+                            cpu_time[i] = process->GetCpuTime();
+                            objects[i]  = process;
+                            ++i;
+                        }
+                    }
+                }
+
+                /* Keep track of how many processes we found. */
+                n = i;
+            }
+
+            /* Wait one second. */
+            const s64 timeout = KHardwareTimer::GetTick() + ams::svc::Tick(TimeSpan::FromSeconds(1));
+            GetCurrentThread().Sleep(timeout);
+            KDpcManager::Sync();
+
+            /* Update our metrics. */
+            for (i = 0; i < n; ++i) {
+                KProcess *process = static_cast<KProcess *>(objects[i]);
+                cpu_time[i] = process->GetCpuTime() - cpu_time[i];
+            }
+
+            /* End tracking. */
+            const s64 end_tick = GetTickOrdered();
+
+            /* Log process utilization. */
+            for (i = 0; i < n; ++i) {
+                KProcess *process = static_cast<KProcess *>(objects[i]);
+                const s64 t = static_cast<u64>(cpu_time[i]) * 1000 / (end_tick - start_tick);
+
+                MESOSPHERE_RELEASE_LOG("pid=%3lu %-11s %3lu.%lu%%\n", process->GetId(), process->GetName(), t / 10, t % 10);
+            }
+
+            /* Close all objects. */
+            for (i = 0; i < n; ++i) {
+                objects[i]->Close();
+            }
+        }
+
+        MESOSPHERE_RELEASE_LOG("\n");
+    }
+
+    void DumpCpuUtilization(u64 process_id) {
+        MESOSPHERE_RELEASE_LOG("Dump Cpu Utilization\n");
+
+        constexpr size_t MaxObjects = 64;
+        {
+            /* Create tracking arrays. */
+            KAutoObject *objects[MaxObjects];
+            u32 cpu_time[MaxObjects];
+
+            s64 start_tick;
+            size_t i, n;
+            KDpcManager::Sync();
+            {
+                /* Lock the thread list. */
+                KThread::ListAccessor accessor;
+
+                /* Begin tracking. */
+                start_tick = GetTickOrdered();
+
+                /* Iterate, finding process threads. */
+                const auto end = accessor.end();
+                i = 0;
+                for (auto it = accessor.begin(); it != end; ++it) {
+                    KThread *thread = static_cast<KThread *>(std::addressof(*it));
+                    if (KProcess *process = thread->GetOwnerProcess(); process != nullptr && process->GetId() == process_id) {
+                        if (AMS_LIKELY(i < MaxObjects)) {
+                            if (AMS_LIKELY(thread->Open())) {
+                                cpu_time[i] = thread->GetCpuTime();
+                                objects[i]  = thread;
+                                ++i;
+                            }
+                        }
+                    }
+                }
+
+                /* Keep track of how many process threads we found. */
+                n = i;
+            }
+
+            /* Wait one second. */
+            const s64 timeout = KHardwareTimer::GetTick() + ams::svc::Tick(TimeSpan::FromSeconds(1));
+            GetCurrentThread().Sleep(timeout);
+            KDpcManager::Sync();
+
+            /* Update our metrics. */
+            for (i = 0; i < n; ++i) {
+                KThread *thread = static_cast<KThread *>(objects[i]);
+                cpu_time[i] = thread->GetCpuTime() - cpu_time[i];
+            }
+
+            /* End tracking. */
+            const s64 end_tick = GetTickOrdered();
+
+            /* Log thread utilization. */
+            for (i = 0; i < n; ++i) {
+                KThread *thread   = static_cast<KThread *>(objects[i]);
+                KProcess *process = thread->GetOwnerProcess();
+                const s64 t = static_cast<u64>(cpu_time[i]) * 1000 / (end_tick - start_tick);
+
+                MESOSPHERE_RELEASE_LOG("tid=%3lu pid=%3lu %-11s %3lu.%lu%% pri=%2d af=%lx\n", thread->GetId(), process->GetId(), process->GetName(), t / 10, t % 10, thread->GetPriority(), thread->GetAffinityMask().GetAffinityMask());
+            }
+
+            /* Close all objects. */
+            for (i = 0; i < n; ++i) {
+                objects[i]->Close();
             }
         }
 

@@ -108,28 +108,28 @@ namespace ams::kern::svc {
                 using CT = typename std::remove_pointer<_T>::type;
                 using T  = typename std::remove_const<CT>::type;
             private:
-                CT *ptr;
+                CT *m_ptr;
             private:
                 Result CopyToImpl(void *p, size_t size) const {
-                    return Traits::CopyFromUserspace(p, this->ptr, size);
+                    return Traits::CopyFromUserspace(p, m_ptr, size);
                 }
 
                 Result CopyFromImpl(const void *p, size_t size) const {
-                    return Traits::CopyToUserspace(this->ptr, p, size);
+                    return Traits::CopyToUserspace(m_ptr, p, size);
                 }
             protected:
                 Result CopyTo(T *p)         const { return this->CopyToImpl(p, sizeof(*p)); }
                 Result CopyFrom(const T *p) const { return this->CopyFromImpl(p, sizeof(*p)); }
 
-                Result CopyArrayElementTo(T *p, size_t index)         const { return Traits::CopyFromUserspace(p, this->ptr + index, sizeof(*p)); }
-                Result CopyArrayElementFrom(const T *p, size_t index) const { return Traits::CopyToUserspace(this->ptr + index, p, sizeof(*p)); }
+                Result CopyArrayElementTo(T *p, size_t index)         const { return Traits::CopyFromUserspace(p, m_ptr + index, sizeof(*p)); }
+                Result CopyArrayElementFrom(const T *p, size_t index) const { return Traits::CopyToUserspace(m_ptr + index, p, sizeof(*p)); }
 
                 Result CopyArrayTo(T *arr, size_t count)         const { return this->CopyToImpl(arr, sizeof(*arr) * count); }
                 Result CopyArrayFrom(const T *arr, size_t count) const { return this->CopyFromImpl(arr, sizeof(*arr) * count); }
 
-                constexpr bool IsNull() const { return this->ptr == nullptr; }
+                constexpr bool IsNull() const { return m_ptr == nullptr; }
 
-                constexpr CT *GetUnsafePointer() const { return this->ptr; }
+                constexpr CT *GetUnsafePointer() const { return m_ptr; }
         };
 
         template<>

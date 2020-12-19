@@ -38,16 +38,16 @@ namespace ams::kern {
             static constexpr size_t DataSize = sizeof(u32) * 7;
             static constexpr u32 ReplyFlag   = (1u << (BITSIZEOF(u32) - 1));
         private:
-            KLightServerSession server;
-            KLightClientSession client;
-            State state;
-            KClientPort *port;
-            uintptr_t name;
-            KProcess *process;
-            bool initialized;
+            KLightServerSession m_server;
+            KLightClientSession m_client;
+            State m_state;
+            KClientPort *m_port;
+            uintptr_t m_name;
+            KProcess *m_process;
+            bool m_initialized;
         public:
             constexpr KLightSession()
-                : server(), client(), state(State::Invalid), port(), name(), process(), initialized()
+                : m_server(), m_client(), m_state(State::Invalid), m_port(), m_name(), m_process(), m_initialized()
             {
                 /* ... */
             }
@@ -57,23 +57,23 @@ namespace ams::kern {
             void Initialize(KClientPort *client_port, uintptr_t name);
             virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return this->initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->process); }
+            virtual bool IsInitialized() const override { return m_initialized; }
+            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_process); }
 
             static void PostDestroy(uintptr_t arg);
 
             void OnServerClosed();
             void OnClientClosed();
 
-            bool IsServerClosed() const { return this->state != State::Normal; }
-            bool IsClientClosed() const { return this->state != State::Normal; }
+            bool IsServerClosed() const { return m_state != State::Normal; }
+            bool IsClientClosed() const { return m_state != State::Normal; }
 
-            Result OnRequest(KThread *request_thread) { return this->server.OnRequest(request_thread); }
+            Result OnRequest(KThread *request_thread) { return m_server.OnRequest(request_thread); }
 
-            KLightClientSession &GetClientSession() { return this->client; }
-            KLightServerSession &GetServerSession() { return this->server; }
-            const KLightClientSession &GetClientSession() const { return this->client; }
-            const KLightServerSession &GetServerSession() const { return this->server; }
+            KLightClientSession &GetClientSession() { return m_client; }
+            KLightServerSession &GetServerSession() { return m_server; }
+            const KLightClientSession &GetClientSession() const { return m_client; }
+            const KLightServerSession &GetServerSession() const { return m_server; }
     };
 
 }

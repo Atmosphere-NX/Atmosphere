@@ -24,41 +24,41 @@ namespace ams::kern {
         private:
             using TimerTaskTree = util::IntrusiveRedBlackTreeBaseTraits<KTimerTask>::TreeType<KTimerTask>;
         private:
-            KSpinLock lock;
-            TimerTaskTree task_tree;
-            KTimerTask *next_task;
+            KSpinLock m_lock;
+            TimerTaskTree m_task_tree;
+            KTimerTask *m_next_task;
         public:
-            constexpr ALWAYS_INLINE KHardwareTimerBase() : lock(), task_tree(), next_task(nullptr) { /* ... */ }
+            constexpr ALWAYS_INLINE KHardwareTimerBase() : m_lock(), m_task_tree(), m_next_task(nullptr) { /* ... */ }
         private:
             ALWAYS_INLINE void RemoveTaskFromTree(KTimerTask *task) {
                 /* Erase from the tree. */
-                auto it = this->task_tree.erase(this->task_tree.iterator_to(*task));
+                auto it = m_task_tree.erase(m_task_tree.iterator_to(*task));
 
                 /* Clear the task's scheduled time. */
                 task->SetTime(0);
 
                 /* Update our next task if relevant. */
-                if (this->next_task == task) {
-                    this->next_task = (it != this->task_tree.end()) ? std::addressof(*it) : nullptr;
+                if (m_next_task == task) {
+                    m_next_task = (it != m_task_tree.end()) ? std::addressof(*it) : nullptr;
                 }
             }
         public:
             NOINLINE void CancelTask(KTimerTask *task) {
                 KScopedDisableDispatch dd;
-                KScopedSpinLock lk(this->lock);
+                KScopedSpinLock lk(m_lock);
 
                 if (const s64 task_time = task->GetTime(); task_time > 0) {
                     this->RemoveTaskFromTree(task);
                 }
             }
         protected:
-            ALWAYS_INLINE KSpinLock &GetLock() { return this->lock; }
+            ALWAYS_INLINE KSpinLock &GetLock() { return m_lock; }
 
             ALWAYS_INLINE s64 DoInterruptTaskImpl(s64 cur_time) {
                 /* We want to handle all tasks, returning the next time that a task is scheduled. */
                 while (true) {
                     /* Get the next task. If there isn't one, return 0. */
-                    KTimerTask *task = this->next_task;
+                    KTimerTask *task = m_next_task;
                     if (task == nullptr) {
                         return 0;
                     }
@@ -81,13 +81,13 @@ namespace ams::kern {
 
                 /* Set the task's time, and insert it into our tree. */
                 task->SetTime(task_time);
-                this->task_tree.insert(*task);
+                m_task_tree.insert(*task);
 
                 /* Update our next task if relevant. */
-                if (this->next_task != nullptr && this->next_task->GetTime() <= task_time) {
+                if (m_next_task != nullptr && m_next_task->GetTime() <= task_time) {
                     return false;
                 }
-                this->next_task = task;
+                m_next_task = task;
                 return true;
             }
     };

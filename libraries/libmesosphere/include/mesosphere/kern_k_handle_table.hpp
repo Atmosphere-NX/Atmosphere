@@ -61,38 +61,38 @@ namespace ams::kern {
                             u16 type;
                         } info;
                         Entry *next_free_entry;
-                    } meta;
-                    KAutoObject *object;
+                    } m_meta;
+                    KAutoObject *m_object;
                 public:
-                    constexpr Entry() : meta(), object(nullptr) { /* ... */ }
+                    constexpr Entry() : m_meta(), m_object(nullptr) { /* ... */ }
 
                     constexpr ALWAYS_INLINE void SetFree(Entry *next) {
-                        this->object = nullptr;
-                        this->meta.next_free_entry = next;
+                        m_object = nullptr;
+                        m_meta.next_free_entry = next;
                     }
 
                     constexpr ALWAYS_INLINE void SetUsed(KAutoObject *obj, u16 linear_id, u16 type) {
-                        this->object = obj;
-                        this->meta.info = { linear_id, type };
+                        m_object = obj;
+                        m_meta.info = { linear_id, type };
                     }
 
-                    constexpr ALWAYS_INLINE KAutoObject *GetObject() const { return this->object; }
-                    constexpr ALWAYS_INLINE Entry *GetNextFreeEntry() const { return this->meta.next_free_entry; }
-                    constexpr ALWAYS_INLINE u16 GetLinearId() const { return this->meta.info.linear_id; }
-                    constexpr ALWAYS_INLINE u16 GetType() const { return this->meta.info.type; }
+                    constexpr ALWAYS_INLINE KAutoObject *GetObject() const { return m_object; }
+                    constexpr ALWAYS_INLINE Entry *GetNextFreeEntry() const { return m_meta.next_free_entry; }
+                    constexpr ALWAYS_INLINE u16 GetLinearId() const { return m_meta.info.linear_id; }
+                    constexpr ALWAYS_INLINE u16 GetType() const { return m_meta.info.type; }
             };
         private:
-            mutable KSpinLock lock;
-            Entry *table;
-            Entry *free_head;
-            Entry entries[MaxTableSize];
-            u16 table_size;
-            u16 max_count;
-            u16 next_linear_id;
-            u16 count;
+            mutable KSpinLock m_lock;
+            Entry *m_table;
+            Entry *m_free_head;
+            Entry m_entries[MaxTableSize];
+            u16 m_table_size;
+            u16 m_max_count;
+            u16 m_next_linear_id;
+            u16 m_count;
         public:
             constexpr KHandleTable() :
-                lock(), table(nullptr), free_head(nullptr), entries(), table_size(0), max_count(0), next_linear_id(MinLinearId), count(0)
+                m_lock(), m_table(nullptr), m_free_head(nullptr), m_entries(), m_table_size(0), m_max_count(0), m_next_linear_id(MinLinearId), m_count(0)
             { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr NOINLINE Result Initialize(s32 size) {
@@ -101,26 +101,26 @@ namespace ams::kern {
                 R_UNLESS(size <= static_cast<s32>(MaxTableSize), svc::ResultOutOfMemory());
 
                 /* Initialize all fields. */
-                this->table = this->entries;
-                this->table_size = (size <= 0) ? MaxTableSize : size;
-                this->next_linear_id = MinLinearId;
-                this->count = 0;
-                this->max_count = 0;
+                m_table = m_entries;
+                m_table_size = (size <= 0) ? MaxTableSize : size;
+                m_next_linear_id = MinLinearId;
+                m_count = 0;
+                m_max_count = 0;
 
                 /* Free all entries. */
-                for (size_t i = 0; i < static_cast<size_t>(this->table_size - 1); i++) {
-                    this->entries[i].SetFree(std::addressof(this->entries[i + 1]));
+                for (size_t i = 0; i < static_cast<size_t>(m_table_size - 1); i++) {
+                    m_entries[i].SetFree(std::addressof(m_entries[i + 1]));
                 }
-                this->entries[this->table_size - 1].SetFree(nullptr);
+                m_entries[m_table_size - 1].SetFree(nullptr);
 
-                this->free_head = std::addressof(this->entries[0]);
+                m_free_head = std::addressof(m_entries[0]);
 
                 return ResultSuccess();
             }
 
-            constexpr ALWAYS_INLINE size_t GetTableSize() const { return this->table_size; }
-            constexpr ALWAYS_INLINE size_t GetCount() const { return this->count; }
-            constexpr ALWAYS_INLINE size_t GetMaxCount() const { return this->max_count; }
+            constexpr ALWAYS_INLINE size_t GetTableSize() const { return m_table_size; }
+            constexpr ALWAYS_INLINE size_t GetCount() const { return m_count; }
+            constexpr ALWAYS_INLINE size_t GetMaxCount() const { return m_max_count; }
 
             NOINLINE Result Finalize();
             NOINLINE bool Remove(ams::svc::Handle handle);
@@ -129,7 +129,7 @@ namespace ams::kern {
             ALWAYS_INLINE KScopedAutoObject<T> GetObjectWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
-                KScopedSpinLock lk(this->lock);
+                KScopedSpinLock lk(m_lock);
 
                 if constexpr (std::is_same<T, KAutoObject>::value) {
                     return this->GetObjectImpl(handle);
@@ -163,7 +163,7 @@ namespace ams::kern {
             KScopedAutoObject<KAutoObject> GetObjectForIpcWithoutPseudoHandle(ams::svc::Handle handle) const {
                 /* Lock and look up in table. */
                 KScopedDisableDispatch dd;
-                KScopedSpinLock lk(this->lock);
+                KScopedSpinLock lk(m_lock);
 
                 KAutoObject *obj = this->GetObjectImpl(handle);
                 if (AMS_LIKELY(obj != nullptr)) {
@@ -190,7 +190,7 @@ namespace ams::kern {
             ALWAYS_INLINE KScopedAutoObject<KAutoObject> GetObjectByIndex(ams::svc::Handle *out_handle, size_t index) const {
                 MESOSPHERE_ASSERT_THIS();
                 KScopedDisableDispatch dd;
-                KScopedSpinLock lk(this->lock);
+                KScopedSpinLock lk(m_lock);
 
                 return this->GetObjectByIndexImpl(out_handle, index);
             }
@@ -217,7 +217,7 @@ namespace ams::kern {
                 {
                     /* Lock the table. */
                     KScopedDisableDispatch dd;
-                    KScopedSpinLock lk(this->lock);
+                    KScopedSpinLock lk(m_lock);
                     for (num_opened = 0; num_opened < num_handles; num_opened++) {
                         /* Get the current handle. */
                         const auto cur_handle = handles[num_opened];
@@ -258,38 +258,38 @@ namespace ams::kern {
 
             constexpr ALWAYS_INLINE Entry *AllocateEntry() {
                 MESOSPHERE_ASSERT_THIS();
-                MESOSPHERE_ASSERT(this->count < this->table_size);
+                MESOSPHERE_ASSERT(m_count < m_table_size);
 
-                Entry *entry = this->free_head;
-                this->free_head = entry->GetNextFreeEntry();
+                Entry *entry = m_free_head;
+                m_free_head = entry->GetNextFreeEntry();
 
-                this->count++;
-                this->max_count = std::max(this->max_count, this->count);
+                m_count++;
+                m_max_count = std::max(m_max_count, m_count);
 
                 return entry;
             }
 
             constexpr ALWAYS_INLINE void FreeEntry(Entry *entry) {
                 MESOSPHERE_ASSERT_THIS();
-                MESOSPHERE_ASSERT(this->count > 0);
+                MESOSPHERE_ASSERT(m_count > 0);
 
-                entry->SetFree(this->free_head);
-                this->free_head = entry;
+                entry->SetFree(m_free_head);
+                m_free_head = entry;
 
-                this->count--;
+                m_count--;
             }
 
             constexpr ALWAYS_INLINE u16 AllocateLinearId() {
-                const u16 id = this->next_linear_id++;
-                if (this->next_linear_id > MaxLinearId) {
-                    this->next_linear_id = MinLinearId;
+                const u16 id = m_next_linear_id++;
+                if (m_next_linear_id > MaxLinearId) {
+                    m_next_linear_id = MinLinearId;
                 }
                 return id;
             }
 
             constexpr ALWAYS_INLINE size_t GetEntryIndex(Entry *entry) {
-                const size_t index = entry - this->table;
-                MESOSPHERE_ASSERT(index < this->table_size);
+                const size_t index = entry - m_table;
+                MESOSPHERE_ASSERT(index < m_table_size);
                 return index;
             }
 
@@ -311,12 +311,12 @@ namespace ams::kern {
                 if (linear_id == 0) {
                     return nullptr;
                 }
-                if (index >= this->table_size) {
+                if (index >= m_table_size) {
                     return nullptr;
                 }
 
                 /* Get the entry, and ensure our serial id is correct. */
-                Entry *entry = std::addressof(this->table[index]);
+                Entry *entry = std::addressof(m_table[index]);
                 if (entry->GetObject() == nullptr) {
                     return nullptr;
                 }
@@ -346,12 +346,12 @@ namespace ams::kern {
                 MESOSPHERE_ASSERT_THIS();
 
                 /* Index must be in bounds. */
-                if (index >= this->table_size || this->table == nullptr) {
+                if (index >= m_table_size || m_table == nullptr) {
                     return nullptr;
                 }
 
                 /* Ensure entry has an object. */
-                Entry *entry = std::addressof(this->table[index]);
+                Entry *entry = std::addressof(m_table[index]);
                 if (entry->GetObject() == nullptr) {
                     return nullptr;
                 }

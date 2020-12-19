@@ -22,24 +22,24 @@ namespace ams::kern {
 
     class KScopedResourceReservation {
         private:
-            KResourceLimit *limit;
-            s64 value;
-            ams::svc::LimitableResource resource;
-            bool succeeded;
+            KResourceLimit *m_limit;
+            s64 m_value;
+            ams::svc::LimitableResource m_resource;
+            bool m_succeeded;
         public:
-            ALWAYS_INLINE KScopedResourceReservation(KResourceLimit *l, ams::svc::LimitableResource r, s64 v, s64 timeout) : limit(l), value(v), resource(r) {
-                if (this->limit && this->value) {
-                    this->succeeded = this->limit->Reserve(this->resource, this->value, timeout);
+            ALWAYS_INLINE KScopedResourceReservation(KResourceLimit *l, ams::svc::LimitableResource r, s64 v, s64 timeout) : m_limit(l), m_value(v), m_resource(r) {
+                if (m_limit && m_value) {
+                    m_succeeded = m_limit->Reserve(m_resource, m_value, timeout);
                 } else {
-                    this->succeeded = true;
+                    m_succeeded = true;
                 }
             }
 
-            ALWAYS_INLINE KScopedResourceReservation(KResourceLimit *l, ams::svc::LimitableResource r, s64 v = 1) : limit(l), value(v), resource(r) {
-                if (this->limit && this->value) {
-                    this->succeeded = this->limit->Reserve(this->resource, this->value);
+            ALWAYS_INLINE KScopedResourceReservation(KResourceLimit *l, ams::svc::LimitableResource r, s64 v = 1) : m_limit(l), m_value(v), m_resource(r) {
+                if (m_limit && m_value) {
+                    m_succeeded = m_limit->Reserve(m_resource, m_value);
                 } else {
-                    this->succeeded = true;
+                    m_succeeded = true;
                 }
             }
 
@@ -47,17 +47,17 @@ namespace ams::kern {
             ALWAYS_INLINE KScopedResourceReservation(const KProcess *p, ams::svc::LimitableResource r, s64 v = 1) : KScopedResourceReservation(p->GetResourceLimit(), r, v) { /* ... */ }
 
             ALWAYS_INLINE ~KScopedResourceReservation() {
-                if (this->limit && this->value && this->succeeded) {
-                    this->limit->Release(this->resource, this->value);
+                if (m_limit && m_value && m_succeeded) {
+                    m_limit->Release(m_resource, m_value);
                 }
             }
 
             ALWAYS_INLINE void Commit() {
-                this->limit = nullptr;
+                m_limit = nullptr;
             }
 
             ALWAYS_INLINE bool Succeeded() const {
-                return this->succeeded;
+                return m_succeeded;
             }
     };
 

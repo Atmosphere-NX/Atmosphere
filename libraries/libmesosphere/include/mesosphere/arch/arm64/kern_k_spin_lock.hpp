@@ -21,19 +21,19 @@ namespace ams::kern::arch::arm64 {
 
     class KNotAlignedSpinLock {
         private:
-            u32 packed_tickets;
+            u32 m_packed_tickets;
         public:
-            constexpr KNotAlignedSpinLock() : packed_tickets(0) { /* ... */ }
+            constexpr KNotAlignedSpinLock() : m_packed_tickets(0) { /* ... */ }
 
             ALWAYS_INLINE void Lock() {
                 u32 tmp0, tmp1, tmp2;
 
                 __asm__ __volatile__(
-                    "    prfm   pstl1keep, %[packed_tickets]\n"
+                    "    prfm   pstl1keep, %[m_packed_tickets]\n"
                     "1:\n"
-                    "    ldaxr  %w[tmp0], %[packed_tickets]\n"
+                    "    ldaxr  %w[tmp0], %[m_packed_tickets]\n"
                     "    add    %w[tmp2], %w[tmp0], #0x10000\n"
-                    "    stxr   %w[tmp1], %w[tmp2], %[packed_tickets]\n"
+                    "    stxr   %w[tmp1], %w[tmp2], %[m_packed_tickets]\n"
                     "    cbnz   %w[tmp1], 1b\n"
                     "    \n"
                     "    and    %w[tmp1], %w[tmp0], #0xFFFF\n"
@@ -42,21 +42,21 @@ namespace ams::kern::arch::arm64 {
                     "    sevl\n"
                     "2:\n"
                     "    wfe\n"
-                    "    ldaxrh %w[tmp1], %[packed_tickets]\n"
+                    "    ldaxrh %w[tmp1], %[m_packed_tickets]\n"
                     "    cmp    %w[tmp1], %w[tmp0], lsr #16\n"
                     "    b.ne   2b\n"
                     "3:\n"
-                    : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [tmp2]"=&r"(tmp2), [packed_tickets]"+Q"(this->packed_tickets)
+                    : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [tmp2]"=&r"(tmp2), [m_packed_tickets]"+Q"(m_packed_tickets)
                     :
                     : "cc", "memory"
                 );
             }
 
             ALWAYS_INLINE void Unlock() {
-                const u32 value = this->packed_tickets + 1;
+                const u32 value = m_packed_tickets + 1;
                 __asm__ __volatile__(
-                    "    stlrh %w[value], %[packed_tickets]\n"
-                    : [packed_tickets]"+Q"(this->packed_tickets)
+                    "    stlrh %w[value], %[m_packed_tickets]\n"
+                    : [m_packed_tickets]"+Q"(m_packed_tickets)
                     : [value]"r"(value)
                     : "memory"
                 );
@@ -66,39 +66,39 @@ namespace ams::kern::arch::arm64 {
 
     class KAlignedSpinLock {
         private:
-            alignas(cpu::DataCacheLineSize) u16 current_ticket;
-            alignas(cpu::DataCacheLineSize) u16 next_ticket;
+            alignas(cpu::DataCacheLineSize) u16 m_current_ticket;
+            alignas(cpu::DataCacheLineSize) u16 m_next_ticket;
         public:
-            constexpr KAlignedSpinLock() : current_ticket(0), next_ticket(0) { /* ... */ }
+            constexpr KAlignedSpinLock() : m_current_ticket(0), m_next_ticket(0) { /* ... */ }
 
             ALWAYS_INLINE void Lock() {
                 u32 tmp0, tmp1, got_lock;
 
                 __asm__ __volatile__(
-                    "    prfm   pstl1keep, %[next_ticket]\n"
+                    "    prfm   pstl1keep, %[m_next_ticket]\n"
                     "1:\n"
-                    "    ldaxrh %w[tmp0], %[next_ticket]\n"
+                    "    ldaxrh %w[tmp0], %[m_next_ticket]\n"
                     "    add    %w[tmp1], %w[tmp0], #0x1\n"
-                    "    stxrh  %w[got_lock], %w[tmp1], %[next_ticket]\n"
+                    "    stxrh  %w[got_lock], %w[tmp1], %[m_next_ticket]\n"
                     "    cbnz   %w[got_lock], 1b\n"
                     "    \n"
                     "    sevl\n"
                     "2:\n"
                     "    wfe\n"
-                    "    ldaxrh %w[tmp1], %[current_ticket]\n"
+                    "    ldaxrh %w[tmp1], %[m_current_ticket]\n"
                     "    cmp    %w[tmp1], %w[tmp0]\n"
                     "    b.ne   2b\n"
-                    : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [got_lock]"=&r"(got_lock), [next_ticket]"+Q"(this->next_ticket)
-                    : [current_ticket]"Q"(this->current_ticket)
+                    : [tmp0]"=&r"(tmp0), [tmp1]"=&r"(tmp1), [got_lock]"=&r"(got_lock), [m_next_ticket]"+Q"(m_next_ticket)
+                    : [m_current_ticket]"Q"(m_current_ticket)
                     : "cc", "memory"
                 );
             }
 
             ALWAYS_INLINE void Unlock() {
-                const u32 value = this->current_ticket + 1;
+                const u32 value = m_current_ticket + 1;
                 __asm__ __volatile__(
-                    "    stlrh %w[value], %[current_ticket]\n"
-                    : [current_ticket]"+Q"(this->current_ticket)
+                    "    stlrh %w[value], %[m_current_ticket]\n"
+                    : [m_current_ticket]"+Q"(m_current_ticket)
                     : [value]"r"(value)
                     : "memory"
                 );

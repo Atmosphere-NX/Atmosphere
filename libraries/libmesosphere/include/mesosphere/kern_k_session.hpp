@@ -35,16 +35,16 @@ namespace ams::kern {
                 ServerClosed = 3,
             };
         private:
-            KServerSession server;
-            KClientSession client;
-            State state;
-            KClientPort *port;
-            uintptr_t name;
-            KProcess *process;
-            bool initialized;
+            KServerSession m_server;
+            KClientSession m_client;
+            State m_state;
+            KClientPort *m_port;
+            uintptr_t m_name;
+            KProcess *m_process;
+            bool m_initialized;
         public:
             constexpr KSession()
-                : server(), client(), state(State::Invalid), port(), name(), process(), initialized()
+                : m_server(), m_client(), m_state(State::Invalid), m_port(), m_name(), m_process(), m_initialized()
             {
                 /* ... */
             }
@@ -54,25 +54,25 @@ namespace ams::kern {
             void Initialize(KClientPort *client_port, uintptr_t name);
             virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return this->initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->process); }
+            virtual bool IsInitialized() const override { return m_initialized; }
+            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_process); }
 
             static void PostDestroy(uintptr_t arg);
 
             void OnServerClosed();
             void OnClientClosed();
 
-            bool IsServerClosed() const { return this->state != State::Normal; }
-            bool IsClientClosed() const { return this->state != State::Normal; }
+            bool IsServerClosed() const { return m_state != State::Normal; }
+            bool IsClientClosed() const { return m_state != State::Normal; }
 
-            Result OnRequest(KSessionRequest *request) { return this->server.OnRequest(request); }
+            Result OnRequest(KSessionRequest *request) { return m_server.OnRequest(request); }
 
-            KClientSession &GetClientSession() { return this->client; }
-            KServerSession &GetServerSession() { return this->server; }
-            const KClientSession &GetClientSession() const { return this->client; }
-            const KServerSession &GetServerSession() const { return this->server; }
+            KClientSession &GetClientSession() { return m_client; }
+            KServerSession &GetServerSession() { return m_server; }
+            const KClientSession &GetClientSession() const { return m_client; }
+            const KServerSession &GetServerSession() const { return m_server; }
 
-            const KClientPort *GetParent() const { return this->port; }
+            const KClientPort *GetParent() const { return m_port; }
     };
 
 }

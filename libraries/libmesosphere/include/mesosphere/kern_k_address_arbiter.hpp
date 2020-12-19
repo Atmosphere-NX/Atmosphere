@@ -23,9 +23,9 @@ namespace ams::kern {
         public:
             using ThreadTree = KConditionVariable::ThreadTree;
         private:
-            ThreadTree tree;
+            ThreadTree m_tree;
         public:
-            constexpr KAddressArbiter() : tree() { /* ... */ }
+            constexpr KAddressArbiter() : m_tree() { /* ... */ }
 
             Result SignalToAddress(uintptr_t addr, ams::svc::SignalType type, s32 value, s32 count) {
                 switch (type) {

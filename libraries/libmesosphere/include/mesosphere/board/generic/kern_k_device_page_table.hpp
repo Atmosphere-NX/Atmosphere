@@ -27,14 +27,36 @@ namespace ams::kern::board::generic {
         public:
             constexpr KDevicePageTable() { /* ... */ }
 
-            Result ALWAYS_INLINE Initialize(u64 space_address, u64 space_size) { return ams::kern::svc::ResultNotImplemented(); }
+            Result ALWAYS_INLINE Initialize(u64 space_address, u64 space_size) {
+                MESOSPHERE_UNUSED(space_address, space_size);
+                return ams::kern::svc::ResultNotImplemented();
+            }
+
             void ALWAYS_INLINE Finalize() { /* ... */ }
 
-            Result ALWAYS_INLINE Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) { return ams::kern::svc::ResultNotImplemented(); }
-            Result ALWAYS_INLINE Detach(ams::svc::DeviceName device_name) { return ams::kern::svc::ResultNotImplemented(); }
+            Result ALWAYS_INLINE Attach(ams::svc::DeviceName device_name, u64 space_address, u64 space_size) {
+                MESOSPHERE_UNUSED(device_name, space_address, space_size);
+                return ams::kern::svc::ResultNotImplemented();
+            }
 
-            Result ALWAYS_INLINE Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) { return ams::kern::svc::ResultNotImplemented(); }
-            Result ALWAYS_INLINE Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address) { return ams::kern::svc::ResultNotImplemented(); }
+            Result ALWAYS_INLINE Detach(ams::svc::DeviceName device_name) {
+                MESOSPHERE_UNUSED(device_name);
+                return ams::kern::svc::ResultNotImplemented();
+            }
+
+            Result ALWAYS_INLINE Map(size_t *out_mapped_size, const KPageGroup &pg, KDeviceVirtualAddress device_address, ams::svc::MemoryPermission device_perm, bool refresh_mappings) {
+                MESOSPHERE_UNUSED(out_mapped_size, pg, device_address, device_perm, refresh_mappings);
+                return ams::kern::svc::ResultNotImplemented();
+            }
+
+            Result ALWAYS_INLINE Unmap(const KPageGroup &pg, KDeviceVirtualAddress device_address) {
+                MESOSPHERE_UNUSED(pg, device_address);
+                return ams::kern::svc::ResultNotImplemented();
+            }
+
+            void ALWAYS_INLINE Unmap(KDeviceVirtualAddress device_address, size_t size) {
+                MESOSPHERE_UNUSED(device_address, size);
+            }
         public:
             static ALWAYS_INLINE void Initialize() { /* ... */ }
 

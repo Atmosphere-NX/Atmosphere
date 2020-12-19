@@ -92,15 +92,15 @@ namespace ams::kern::arch::arm64 {
                 return KPageTable::GetBlockSize(static_cast<KPageTable::BlockType>(KPageTable::GetBlockType(alignment) + 1));
             }
         private:
-            KPageTableManager *manager;
-            u64 ttbr;
-            u8 asid;
+            KPageTableManager *m_manager;
+            u64 m_ttbr;
+            u8 m_asid;
         protected:
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, KPhysicalAddress phys_addr, bool is_pa_valid, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) override;
             virtual void   FinalizeUpdate(PageLinkedList *page_list) override;
 
-            KPageTableManager &GetPageTableManager() const { return *this->manager; }
+            KPageTableManager &GetPageTableManager() const { return *m_manager; }
         private:
             constexpr PageTableEntry GetEntryTemplate(const KPageProperties properties) const {
                 /* Set basic attributes. */
@@ -166,13 +166,13 @@ namespace ams::kern::arch::arm64 {
                 return entry;
             }
         public:
-            constexpr KPageTable() : KPageTableBase(), manager(), ttbr(), asid() { /* ... */ }
+            constexpr KPageTable() : KPageTableBase(), m_manager(), m_ttbr(), m_asid() { /* ... */ }
 
             static NOINLINE void Initialize(s32 core_id);
 
             ALWAYS_INLINE void Activate(u32 proc_id) {
                 cpu::DataSynchronizationBarrier();
-                cpu::SwitchProcess(this->ttbr, proc_id);
+                cpu::SwitchProcess(m_ttbr, proc_id);
             }
 
             NOINLINE Result InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end);
@@ -225,7 +225,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             void OnTableUpdated() const {
-                cpu::InvalidateTlbByAsid(this->asid);
+                cpu::InvalidateTlbByAsid(m_asid);
             }
 
             void OnKernelTableUpdated() const {

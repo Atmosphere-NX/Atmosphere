@@ -19,22 +19,22 @@ namespace ams::kern {
 
     void KWritableEvent::Initialize(KEvent *p) {
         /* Set parent, open a reference to the readable event. */
-        this->parent = p;
-        this->parent->GetReadableEvent().Open();
+        m_parent = p;
+        m_parent->GetReadableEvent().Open();
     }
 
     Result KWritableEvent::Signal() {
-        return this->parent->GetReadableEvent().Signal();
+        return m_parent->GetReadableEvent().Signal();
     }
 
     Result KWritableEvent::Clear() {
-        return this->parent->GetReadableEvent().Clear();
+        return m_parent->GetReadableEvent().Clear();
     }
 
     void KWritableEvent::Destroy() {
         /* Close our references. */
-        this->parent->GetReadableEvent().Close();
-        this->parent->Close();
+        m_parent->GetReadableEvent().Close();
+        m_parent->Close();
     }
 
 }
