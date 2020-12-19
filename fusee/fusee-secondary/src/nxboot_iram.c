@@ -72,11 +72,6 @@ void nxboot_finish(uint32_t boot_memaddr) {
     /* Signal Exosphère. */
     MAILBOX_NX_BOOTLOADER_SETUP_STATE = NX_BOOTLOADER_STATE_FINISHED_4X;
 
-    /* Set the end time (Mariko only).*/
-    if (is_mariko) {
-        MAILBOX_NX_BOOTLOADER_END_TIME = get_time();
-    }
-
     /* Halt ourselves in waitevent state. */
     while (1) {
         FLOW_CTLR_HALT_COP_EVENTS_0 = 0x50000000;

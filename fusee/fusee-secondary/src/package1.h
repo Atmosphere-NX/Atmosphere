@@ -44,7 +44,8 @@ typedef struct {
     uint8_t data[];
 } package1_header_t;
 
-int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0);
+int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0);
+int package1_read_and_parse_boot0_mariko(void **package1loader, size_t *package1loader_size, FILE *boot0);
 
 bool package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size);
 size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size);

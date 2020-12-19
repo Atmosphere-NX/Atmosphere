@@ -46,6 +46,4 @@ void derive_new_device_keys(bool is_retail, unsigned int keygen_keyslot, unsigne
 void set_old_devkey(unsigned int revision, const uint8_t *key);
 unsigned int devkey_get_keyslot(unsigned int revision);
 
-
-
 #endif
