@@ -22,7 +22,7 @@
 #include "bct.h"
 #include "se.h"
 
-int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0) {
+int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0) {
     nvboot_config_table *bct; /* Normal firmware BCT, primary. TODO: check? */
     nv_bootloader_info *pk1l_info; /* TODO: check? */
     size_t fpos, pk1l_offset;
@@ -87,6 +87,11 @@ int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_
         keyblobs[i] = d.keyblob;
     }
 
+    return 0;
+}
+
+int package1_read_and_parse_boot0_mariko(void **package1loader, size_t *package1loader_size, FILE *boot0) {
+    /* TODO */
     return 0;
 }
 

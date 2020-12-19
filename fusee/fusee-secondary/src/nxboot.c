@@ -647,9 +647,9 @@ static void nxboot_move_bootconfig() {
     fclose(bcfile);
 
     /* Select the actual BootConfig size and destination address. */
-    /* NOTE: Mariko relies on BPMP's inability to data abort and tries to copy 0x1000 bytes instead. */
+    /* NOTE: Nintendo relies on BPMP's inability to data abort and tries to copy 0x1000 bytes. */
     bootconfig_addr = 0x4003F800;
-    bootconfig_size = 0x800;
+    bootconfig_size = 0x1000;
 
     /* Copy the BootConfig into IRAM. */
     memset((void *)bootconfig_addr, 0, bootconfig_size);
@@ -691,11 +691,6 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     exo_emummc_config_t exo_emummc_cfg;
-    
-    /* Set the start time (Mariko only). */
-    if (is_mariko) {
-        MAILBOX_NX_BOOTLOADER_START_TIME = get_time();
-    }
     
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
@@ -772,8 +767,15 @@ uint32_t nxboot_main(void) {
     /* Read and parse boot0. */
     print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Reading boot0...\n");
     boot0 = fopen("boot0:/", "rb");
-    if ((boot0 == NULL) || (package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1)) {
-        fatal_error("[NXBOOT] Couldn't parse boot0: %s!\n", strerror(errno));
+    if (boot0 == NULL) {
+        fatal_error("[NXBOOT] Failed to open boot0: %s!\n", strerror(errno));
+    }
+    if (is_mariko) {
+        /* TODO*/
+    } else {
+        if (package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1) {
+            fatal_error("[NXBOOT] Couldn't parse boot0: %s!\n", strerror(errno));
+        }
     }
     fclose(boot0);
 
@@ -893,16 +895,16 @@ uint32_t nxboot_main(void) {
     unsigned int keygen_type = 0;
     if (is_mariko) {
         if (derive_nx_keydata_mariko(target_firmware) != 0) {
-            fatal_error("[NXBOOT] Key derivation failed!\n");
+            fatal_error("[NXBOOT] Mariko key derivation failed!\n");
         }
     } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {   /* If on 7.0.0+, sept has already derived keys for us (Erista only). */
         if (derive_nx_keydata_erista(target_firmware, g_keyblobs, available_revision, tsec_key, tsec_root_keys, &keygen_type) != 0) {
-            fatal_error("[NXBOOT] Key derivation failed!\n");
+            fatal_error("[NXBOOT] Erista key derivation failed!\n");
         }
     }
 
     /* Derive new device keys. */
-    {
+    if (!is_mariko) {
         derive_new_device_keys(fuse_get_hardware_state() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
     }
 
@@ -937,7 +939,7 @@ uint32_t nxboot_main(void) {
         }
     }
 
-    /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation. */
+    /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation (Erista only) or from cache (Mariko only). */
     if (loader_ctx->warmboot_path[0] != '\0') {
         warmboot_fw_size = get_file_size(loader_ctx->warmboot_path);
         if (warmboot_fw_size == 0) {
@@ -953,19 +955,23 @@ uint32_t nxboot_main(void) {
         if (read_from_file(warmboot_fw, warmboot_fw_size, loader_ctx->warmboot_path) != warmboot_fw_size) {
             fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
         }
-    } else if (!is_mariko) {
-        /* Use Atmosphere's warmboot firmware implementation (Erista only). */
-        warmboot_fw_size = warmboot_bin_size;
-        warmboot_fw = malloc(warmboot_fw_size);
+    } else {
+        if (is_mariko) {
+            /* TODO */
+        } else {
+            /* Use Atmosphere's warmboot firmware implementation. */
+            warmboot_fw_size = warmboot_bin_size;
+            warmboot_fw = malloc(warmboot_fw_size);
 
-        if (warmboot_fw == NULL) {
-            fatal_error("[NXBOOT] Out of memory!\n");
-        }
+            if (warmboot_fw == NULL) {
+                fatal_error("[NXBOOT] Out of memory!\n");
+            }
 
-        memcpy(warmboot_fw, warmboot_bin, warmboot_fw_size);
+            memcpy(warmboot_fw, warmboot_bin, warmboot_fw_size);
 
-        if (warmboot_fw_size == 0) {
-            fatal_error("[NXBOOT] Could not read the warmboot firmware from Package1!\n");
+            if (warmboot_fw_size == 0) {
+                fatal_error("[NXBOOT] Could not read the warmboot firmware from Package1!\n");
+            }
         }
     }
 
