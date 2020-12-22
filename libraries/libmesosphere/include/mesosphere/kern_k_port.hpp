@@ -35,13 +35,13 @@ namespace ams::kern {
                 ServerClosed = 3,
             };
         private:
-            KServerPort server;
-            KClientPort client;
-            uintptr_t name;
-            State state;
-            bool is_light;
+            KServerPort m_server;
+            KClientPort m_client;
+            uintptr_t m_name;
+            State m_state;
+            bool m_is_light;
         public:
-            constexpr KPort() : server(), client(), name(), state(State::Invalid), is_light() { /* ... */ }
+            constexpr KPort() : m_server(), m_client(), m_name(), m_state(State::Invalid), m_is_light() { /* ... */ }
             virtual ~KPort() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
@@ -50,16 +50,16 @@ namespace ams::kern {
             void OnClientClosed();
             void OnServerClosed();
 
-            uintptr_t GetName() const { return this->name; }
-            bool IsLight() const { return this->is_light; }
+            uintptr_t GetName() const { return m_name; }
+            bool IsLight() const { return m_is_light; }
 
             Result EnqueueSession(KServerSession *session);
             Result EnqueueSession(KLightServerSession *session);
 
-            KClientPort &GetClientPort() { return this->client; }
-            KServerPort &GetServerPort() { return this->server; }
-            const KClientPort &GetClientPort() const { return this->client; }
-            const KServerPort &GetServerPort() const { return this->server; }
+            KClientPort &GetClientPort() { return m_client; }
+            KServerPort &GetServerPort() { return m_server; }
+            const KClientPort &GetClientPort() const { return m_client; }
+            const KServerPort &GetServerPort() const { return m_server; }
     };
 
 }

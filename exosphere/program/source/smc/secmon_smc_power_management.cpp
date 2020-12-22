@@ -409,6 +409,7 @@ namespace ams::secmon::smc {
             /* NOTE: Nintendo only does this on dev, but we will always do it. */
             if (true /* !pkg1::IsProduction() */) {
                 log::SendText("OYASUMI\n", 8);
+                log::Flush();
             }
 
             /* If we're on erista, configure the bootrom to allow our custom warmboot firmware. */

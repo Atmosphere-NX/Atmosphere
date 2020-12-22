@@ -26,16 +26,16 @@ namespace ams::kern {
 
     void KObjectName::Initialize(KAutoObject *obj, const char *name) {
         /* Set member variables. */
-        this->object = obj;
-        std::strncpy(this->name, name, sizeof(this->name));
-        this->name[sizeof(this->name) - 1] = '\x00';
+        m_object = obj;
+        std::strncpy(m_name, name, sizeof(m_name));
+        m_name[sizeof(m_name) - 1] = '\x00';
 
         /* Open a reference to the object we hold. */
-        this->object->Open();
+        m_object->Open();
     }
 
     bool KObjectName::MatchesName(const char *name) const {
-        return std::strncmp(this->name, name, sizeof(this->name)) == 0;
+        return std::strncmp(m_name, name, sizeof(m_name)) == 0;
     }
 
     Result KObjectName::NewFromName(KAutoObject *obj, const char *name) {

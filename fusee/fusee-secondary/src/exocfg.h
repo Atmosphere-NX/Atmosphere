@@ -34,11 +34,17 @@
 #define EXOSPHERE_FLAG_BLANK_PRODINFO                       (1 << 5u)
 #define EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC          (1 << 6u)
 
+#define EXOSPHERE_LOG_FLAG_INVERTED (1 << 0u)
+
 typedef struct {
     uint32_t magic;
     uint32_t target_firmware;
-    uint32_t flags;
-    uint32_t reserved[5];
+    uint32_t flags[2];
+    uint16_t lcd_vendor;
+    uint8_t  log_port;
+    uint8_t  log_flags;
+    uint32_t log_baud_rate;
+    uint32_t reserved1[2];
     exo_emummc_config_t emummc_cfg;
 } exosphere_config_t;
 
@@ -54,6 +60,9 @@ _Static_assert(sizeof(exosphere_config_t) == 0x20 + sizeof(exo_emummc_config_t),
 #define EXOSPHERE_BLANK_PRODINFO_SYSMMC_KEY "blank_prodinfo_sysmmc"
 #define EXOSPHERE_BLANK_PRODINFO_EMUMMC_KEY "blank_prodinfo_emummc"
 #define EXOSPHERE_ALLOW_WRITING_TO_CAL_SYSMMC_KEY "allow_writing_to_cal_sysmmc"
+#define EXOSPHERE_LOG_PORT_KEY "log_port"
+#define EXOSPHERE_LOG_BAUD_RATE_KEY "log_baud_rate"
+#define EXOSPHERE_LOG_INVERTED_KEY "log_inverted"
 
 typedef struct {
     int debugmode;
@@ -63,6 +72,9 @@ typedef struct {
     int blank_prodinfo_sysmmc;
     int blank_prodinfo_emummc;
     int allow_writing_to_cal_sysmmc;
+    int log_port;
+    int log_baud_rate;
+    int log_inverted;
 } exosphere_parse_cfg_t;
 
 #endif

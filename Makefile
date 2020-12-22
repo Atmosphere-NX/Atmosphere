@@ -79,7 +79,7 @@ dist-no-debug: all
 	cp sept/sept-secondary/sept-secondary_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_01.enc
 	cp sept/sept-secondary/sept-secondary_dev_00.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_00.enc
 	cp sept/sept-secondary/sept-secondary_dev_01.enc atmosphere-$(AMSVER)/sept/sept-secondary_dev_01.enc
-	cp config_templates/BCT.ini atmosphere-$(AMSVER)/atmosphere/config/BCT.ini
+	cp config_templates/BCT.ini atmosphere-$(AMSVER)/atmosphere/config_templates/BCT.ini
 	cp config_templates/override_config.ini atmosphere-$(AMSVER)/atmosphere/config_templates/override_config.ini
 	cp config_templates/system_settings.ini atmosphere-$(AMSVER)/atmosphere/config_templates/system_settings.ini
 	cp config_templates/exosphere.ini atmosphere-$(AMSVER)/atmosphere/config_templates/exosphere.ini

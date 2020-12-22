@@ -22,15 +22,15 @@ namespace ams::kern {
         this->Open();
 
         /* Create and initialize our server/client pair. */
-        KAutoObject::Create(std::addressof(this->server));
-        KAutoObject::Create(std::addressof(this->client));
-        this->server.Initialize(this);
-        this->client.Initialize(this, max_sessions);
+        KAutoObject::Create(std::addressof(m_server));
+        KAutoObject::Create(std::addressof(m_client));
+        m_server.Initialize(this);
+        m_client.Initialize(this, max_sessions);
 
         /* Set our member variables. */
-        this->is_light = is_light;
-        this->name     = name;
-        this->state    = State::Normal;
+        m_is_light = is_light;
+        m_name     = name;
+        m_state    = State::Normal;
     }
 
     void KPort::OnClientClosed() {
@@ -38,8 +38,8 @@ namespace ams::kern {
 
         KScopedSchedulerLock sl;
 
-        if (this->state == State::Normal) {
-            this->state = State::ClientClosed;
+        if (m_state == State::Normal) {
+            m_state = State::ClientClosed;
         }
     }
 
@@ -48,26 +48,26 @@ namespace ams::kern {
 
         KScopedSchedulerLock sl;
 
-        if (this->state == State::Normal) {
-            this->state = State::ServerClosed;
+        if (m_state == State::Normal) {
+            m_state = State::ServerClosed;
         }
     }
 
     Result KPort::EnqueueSession(KServerSession *session) {
         KScopedSchedulerLock sl;
 
-        R_UNLESS(this->state == State::Normal, svc::ResultPortClosed());
+        R_UNLESS(m_state == State::Normal, svc::ResultPortClosed());
 
-        this->server.EnqueueSession(session);
+        m_server.EnqueueSession(session);
         return ResultSuccess();
     }
 
     Result KPort::EnqueueSession(KLightServerSession *session) {
         KScopedSchedulerLock sl;
 
-        R_UNLESS(this->state == State::Normal, svc::ResultPortClosed());
+        R_UNLESS(m_state == State::Normal, svc::ResultPortClosed());
 
-        this->server.EnqueueSession(session);
+        m_server.EnqueueSession(session);
         return ResultSuccess();
     }
 

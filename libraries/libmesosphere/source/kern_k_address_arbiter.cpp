@@ -51,15 +51,15 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = this->tree.nfind_light({ addr, -1 });
-            while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
+            auto it = m_tree.nfind_light({ addr, -1 });
+            while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
 
                 AMS_ASSERT(target_thread->IsWaitingForAddressArbiter());
                 target_thread->Wakeup();
 
-                it = this->tree.erase(it);
+                it = m_tree.erase(it);
                 target_thread->ClearAddressArbiter();
                 ++num_waiters;
             }
@@ -78,15 +78,15 @@ namespace ams::kern {
             R_UNLESS(UpdateIfEqual(std::addressof(user_value), addr, value, value + 1), svc::ResultInvalidCurrentMemory());
             R_UNLESS(user_value == value,                                               svc::ResultInvalidState());
 
-            auto it = this->tree.nfind_light({ addr, -1 });
-            while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
+            auto it = m_tree.nfind_light({ addr, -1 });
+            while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
 
                 AMS_ASSERT(target_thread->IsWaitingForAddressArbiter());
                 target_thread->Wakeup();
 
-                it = this->tree.erase(it);
+                it = m_tree.erase(it);
                 target_thread->ClearAddressArbiter();
                 ++num_waiters;
             }
@@ -100,21 +100,21 @@ namespace ams::kern {
         {
             KScopedSchedulerLock sl;
 
-            auto it = this->tree.nfind_light({ addr, -1 });
+            auto it = m_tree.nfind_light({ addr, -1 });
             /* Determine the updated value. */
             s32 new_value;
             if (GetTargetFirmware() >= TargetFirmware_7_0_0) {
                 if (count <= 0) {
-                    if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                    if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
                         new_value = value - 2;
                     } else {
                         new_value = value + 1;
                     }
                 } else {
-                    if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                    if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
                         auto tmp_it = it;
                         s32 tmp_num_waiters = 0;
-                        while ((++tmp_it != this->tree.end()) && (tmp_it->GetAddressArbiterKey() == addr)) {
+                        while ((++tmp_it != m_tree.end()) && (tmp_it->GetAddressArbiterKey() == addr)) {
                             if ((tmp_num_waiters++) >= count) {
                                 break;
                             }
@@ -131,7 +131,7 @@ namespace ams::kern {
                 }
             } else {
                 if (count <= 0) {
-                    if ((it != this->tree.end()) && (it->GetAddressArbiterKey() == addr)) {
+                    if ((it != m_tree.end()) && (it->GetAddressArbiterKey() == addr)) {
                         new_value = value - 1;
                     } else {
                         new_value = value + 1;
@@ -139,7 +139,7 @@ namespace ams::kern {
                 } else {
                     auto tmp_it = it;
                     s32 tmp_num_waiters = 0;
-                    while ((tmp_it != this->tree.end()) && (tmp_it->GetAddressArbiterKey() == addr) && (tmp_num_waiters < count + 1)) {
+                    while ((tmp_it != m_tree.end()) && (tmp_it->GetAddressArbiterKey() == addr) && (tmp_num_waiters < count + 1)) {
                         ++tmp_num_waiters;
                         ++tmp_it;
                     }
@@ -166,14 +166,14 @@ namespace ams::kern {
             R_UNLESS(succeeded,           svc::ResultInvalidCurrentMemory());
             R_UNLESS(user_value == value, svc::ResultInvalidState());
 
-            while ((it != this->tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
+            while ((it != m_tree.end()) && (count <= 0 || num_waiters < count) && (it->GetAddressArbiterKey() == addr)) {
                 KThread *target_thread = std::addressof(*it);
                 target_thread->SetSyncedObject(nullptr, ResultSuccess());
 
                 AMS_ASSERT(target_thread->IsWaitingForAddressArbiter());
                 target_thread->Wakeup();
 
-                it = this->tree.erase(it);
+                it = m_tree.erase(it);
                 target_thread->ClearAddressArbiter();
                 ++num_waiters;
             }
@@ -225,8 +225,8 @@ namespace ams::kern {
             }
 
             /* Set the arbiter. */
-            cur_thread->SetAddressArbiter(std::addressof(this->tree), addr);
-            this->tree.insert(*cur_thread);
+            cur_thread->SetAddressArbiter(std::addressof(m_tree), addr);
+            m_tree.insert(*cur_thread);
             cur_thread->SetState(KThread::ThreadState_Waiting);
         }
 
@@ -240,7 +240,7 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             if (cur_thread->IsWaitingForAddressArbiter()) {
-                this->tree.erase(this->tree.iterator_to(*cur_thread));
+                m_tree.erase(m_tree.iterator_to(*cur_thread));
                 cur_thread->ClearAddressArbiter();
             }
         }
@@ -287,8 +287,8 @@ namespace ams::kern {
             }
 
             /* Set the arbiter. */
-            cur_thread->SetAddressArbiter(std::addressof(this->tree), addr);
-            this->tree.insert(*cur_thread);
+            cur_thread->SetAddressArbiter(std::addressof(m_tree), addr);
+            m_tree.insert(*cur_thread);
             cur_thread->SetState(KThread::ThreadState_Waiting);
         }
 
@@ -302,7 +302,7 @@ namespace ams::kern {
             KScopedSchedulerLock sl;
 
             if (cur_thread->IsWaitingForAddressArbiter()) {
-                this->tree.erase(this->tree.iterator_to(*cur_thread));
+                m_tree.erase(m_tree.iterator_to(*cur_thread));
                 cur_thread->ClearAddressArbiter();
             }
         }

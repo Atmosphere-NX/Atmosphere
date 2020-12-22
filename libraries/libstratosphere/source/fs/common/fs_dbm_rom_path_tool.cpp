@@ -15,7 +15,7 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::fssystem::RomPathTool {
+namespace ams::fs::RomPathTool {
 
     Result PathParser::Initialize(const RomPathChar *path) {
         AMS_ASSERT(path != nullptr);
@@ -28,24 +28,27 @@ namespace ams::fssystem::RomPathTool {
 
         this->prev_path_start = path;
         this->prev_path_end   = path;
-        this->next_path       = path + 1;
-        while (IsSeparator(this->next_path[0])) {
-            this->next_path++;
+        for (this->next_path = path + 1; IsSeparator(this->next_path[0]); ++this->next_path) {
+            /* ... */
         }
 
         return ResultSuccess();
     }
 
     void PathParser::Finalize() {
-        /* ... */
+        this->prev_path_start = nullptr;
+        this->prev_path_end   = nullptr;
+        this->next_path       = nullptr;
+        this->finished        = false;
     }
 
-    bool PathParser::IsFinished() const {
+    bool PathParser::IsParseFinished() const {
         return this->finished;
     }
 
     bool PathParser::IsDirectoryPath() const {
         AMS_ASSERT(this->next_path != nullptr);
+
         if (IsNullTerminator(this->next_path[0]) && IsSeparator(this->next_path[-1])) {
             return true;
         }
@@ -54,11 +57,47 @@ namespace ams::fssystem::RomPathTool {
             return true;
         }
 
-        if (IsParentDirectory(this->next_path)) {
-            return true;
+        return IsParentDirectory(this->next_path);
+    }
+
+    Result PathParser::GetNextDirectoryName(RomEntryName *out) {
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(this->prev_path_start != nullptr);
+        AMS_ASSERT(this->prev_path_end   != nullptr);
+        AMS_ASSERT(this->next_path       != nullptr);
+
+        /* Set the current path to output. */
+        out->length = this->prev_path_end - this->prev_path_start;
+        out->path   = this->prev_path_start;
+
+        /* Parse the next path. */
+        this->prev_path_start = this->next_path;
+        const RomPathChar *cur = this->next_path;
+        for (size_t name_len = 0; true; name_len++) {
+            if (IsSeparator(cur[name_len])) {
+                R_UNLESS(name_len < MaxPathLength, fs::ResultDbmDirectoryNameTooLong());
+
+                this->prev_path_end = cur + name_len;
+                this->next_path     = this->prev_path_end + 1;
+
+                while (IsSeparator(this->next_path[0])) {
+                    ++this->next_path;
+                }
+                if (IsNullTerminator(this->next_path[0])) {
+                    this->finished = true;
+                }
+                break;
+            }
+
+            if (IsNullTerminator(cur[name_len])) {
+                this->finished      = true;
+                this->next_path     = cur + name_len;
+                this->prev_path_end = cur + name_len;
+                break;
+            }
         }
 
-        return false;
+        return ResultSuccess();
     }
 
     Result PathParser::GetAsDirectoryName(RomEntryName *out) const {
@@ -89,52 +128,16 @@ namespace ams::fssystem::RomPathTool {
         return ResultSuccess();
     }
 
-    Result PathParser::GetNextDirectoryName(RomEntryName *out) {
-        AMS_ASSERT(out != nullptr);
-        AMS_ASSERT(this->prev_path_start != nullptr);
-        AMS_ASSERT(this->prev_path_end   != nullptr);
-        AMS_ASSERT(this->next_path       != nullptr);
-
-        /* Set the current path to output. */
-        out->length = this->prev_path_end - this->prev_path_start;
-        out->path   = this->prev_path_start;
-
-        /* Parse the next path. */
-        this->prev_path_start = this->next_path;
-        const RomPathChar *cur = this->next_path;
-        for (size_t name_len = 0; true; name_len++) {
-            if (IsSeparator(cur[name_len])) {
-                R_UNLESS(name_len < MaxPathLength, fs::ResultDbmDirectoryNameTooLong());
-
-                this->prev_path_end = cur + name_len;
-                this->next_path = this->prev_path_end + 1;
-
-                while (IsSeparator(this->next_path[0])) {
-                    this->next_path++;
-                }
-                if (IsNullTerminator(this->next_path[0])) {
-                    this->finished = true;
-                }
-                break;
-            }
-
-            if (IsNullTerminator(cur[name_len])) {
-                this->finished = true;
-                this->prev_path_end = this->next_path = cur + name_len;
-                break;
-            }
-        }
-
-        return ResultSuccess();
-    }
-
     Result GetParentDirectoryName(RomEntryName *out, const RomEntryName &cur, const RomPathChar *p) {
+        AMS_ASSERT(out != nullptr);
+        AMS_ASSERT(p != nullptr);
+
         const RomPathChar *start = cur.path;
         const RomPathChar *end   = cur.path + cur.length - 1;
 
         s32 depth = 1;
         if (IsParentDirectory(cur)) {
-            depth++;
+            ++depth;
         }
 
         if (cur.path > p) {
@@ -143,7 +146,7 @@ namespace ams::fssystem::RomPathTool {
             while (head >= p) {
                 if (IsSeparator(*head)) {
                     if (IsCurrentDirectory(head + 1, len)) {
-                        depth++;
+                        ++depth;
                     }
 
                     if (IsParentDirectory(head + 1, len)) {
@@ -156,19 +159,19 @@ namespace ams::fssystem::RomPathTool {
                     }
 
                     while (IsSeparator(*head)) {
-                        head--;
+                        --head;
                     }
 
                     end = head;
                     len = 0;
-                    depth--;
+                    --depth;
                 }
 
-                len++;
-                head--;
+                ++len;
+                --head;
             }
 
-            R_UNLESS(depth == 0, fs::ResultDbmInvalidPathFormat());
+            R_UNLESS(depth == 0, fs::ResultDirectoryUnobtainable());
 
             if (head == p) {
                 start = p + 1;
@@ -176,10 +179,10 @@ namespace ams::fssystem::RomPathTool {
         }
 
         if (end <= p) {
-            out->path = p;
+            out->path   = p;
             out->length = 0;
         } else {
-            out->path = start;
+            out->path   = start;
             out->length = end - start + 1;
         }
 

@@ -343,10 +343,14 @@ namespace ams::pm::impl {
                         process_info->ClearSignalOnStart();
                         os::SignalSystemEvent(std::addressof(g_process_event));
                     }
+                    process_info->ClearUnhandledException();
                     break;
                 case svc::ProcessState_Crashed:
-                    process_info->SetExceptionOccurred();
-                    os::SignalSystemEvent(std::addressof(g_process_event));
+                    if (!process_info->HasUnhandledException()) {
+                        process_info->SetExceptionOccurred();
+                        os::SignalSystemEvent(std::addressof(g_process_event));
+                    }
+                    process_info->SetExceptionWaitingAttach();
                     break;
                 case svc::ProcessState_RunningAttached:
                     if (process_info->ShouldSignalOnDebugEvent()) {
@@ -354,6 +358,7 @@ namespace ams::pm::impl {
                         process_info->SetSuspendedStateChanged();
                         os::SignalSystemEvent(std::addressof(g_process_event));
                     }
+                    process_info->ClearUnhandledException();
                     break;
                 case svc::ProcessState_Terminated:
                     /* Free process resources, unlink from waitable manager. */

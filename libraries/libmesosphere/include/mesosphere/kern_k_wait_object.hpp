@@ -22,10 +22,10 @@ namespace ams::kern {
 
     class KWaitObject : public KTimerTask {
         private:
-            KThread::WaiterList wait_list;
-            bool  timer_used;
+            KThread::WaiterList m_wait_list;
+            bool  m_timer_used;
         public:
-            constexpr KWaitObject() : wait_list(), timer_used() { /* ... */ }
+            constexpr KWaitObject() : m_wait_list(), m_timer_used() { /* ... */ }
 
             virtual void OnTimer() override;
             Result Synchronize(s64 timeout);

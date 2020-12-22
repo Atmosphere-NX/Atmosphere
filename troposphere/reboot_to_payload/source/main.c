@@ -4,7 +4,7 @@
 
 #include <switch.h>
 
-#define IRAM_PAYLOAD_MAX_SIZE 0x20000
+#define IRAM_PAYLOAD_MAX_SIZE 0x24000
 #define IRAM_PAYLOAD_BASE 0x40010000
 
 static alignas(0x1000) u8 g_reboot_payload[IRAM_PAYLOAD_MAX_SIZE];

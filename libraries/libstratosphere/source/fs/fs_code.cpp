@@ -96,59 +96,59 @@ namespace ams::fs {
 
         class OpenFileOnlyFileSystem : public fsa::IFileSystem, public impl::Newable {
             private:
-                virtual Result CommitImpl() override final {
+                virtual Result DoCommit() override final {
                     return ResultSuccess();
                 }
 
-                virtual Result OpenDirectoryImpl(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
+                virtual Result DoOpenDirectory(std::unique_ptr<fsa::IDirectory> *out_dir, const char *path, OpenDirectoryMode mode) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result GetEntryTypeImpl(DirectoryEntryType *out, const char *path) override final {
+                virtual Result DoGetEntryType(DirectoryEntryType *out, const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result CreateFileImpl(const char *path, s64 size, int flags) override final {
+                virtual Result DoCreateFile(const char *path, s64 size, int flags) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result DeleteFileImpl(const char *path) override final {
+                virtual Result DoDeleteFile(const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result CreateDirectoryImpl(const char *path) override final {
+                virtual Result DoCreateDirectory(const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result DeleteDirectoryImpl(const char *path) override final {
+                virtual Result DoDeleteDirectory(const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result DeleteDirectoryRecursivelyImpl(const char *path) override final {
+                virtual Result DoDeleteDirectoryRecursively(const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result RenameFileImpl(const char *old_path, const char *new_path) override final {
+                virtual Result DoRenameFile(const char *old_path, const char *new_path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result RenameDirectoryImpl(const char *old_path, const char *new_path) override final {
+                virtual Result DoRenameDirectory(const char *old_path, const char *new_path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result CleanDirectoryRecursivelyImpl(const char *path) override final {
+                virtual Result DoCleanDirectoryRecursively(const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result GetFreeSpaceSizeImpl(s64 *out, const char *path) override final {
+                virtual Result DoGetFreeSpaceSize(s64 *out, const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result GetTotalSpaceSizeImpl(s64 *out, const char *path) override final {
+                virtual Result DoGetTotalSpaceSize(s64 *out, const char *path) override final {
                     return fs::ResultUnsupportedOperation();
                 }
 
-                virtual Result CommitProvisionallyImpl(s64 counter) override final {
+                virtual Result DoCommitProvisionally(s64 counter) override final {
                     return fs::ResultUnsupportedOperation();
                 }
         };
@@ -201,7 +201,7 @@ namespace ams::fs {
                     return has_file;
                 }
 
-                virtual Result OpenFileImpl(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
+                virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
                     /* Only allow opening files with mode = read. */
                     R_UNLESS((mode & fs::OpenMode_All) == fs::OpenMode_Read, fs::ResultInvalidOpenMode());
 
@@ -248,7 +248,7 @@ namespace ams::fs {
                     return ResultSuccess();
                 }
             private:
-                virtual Result OpenFileImpl(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
+                virtual Result DoOpenFile(std::unique_ptr<fsa::IFile> *out_file, const char *path, OpenMode mode) override final {
                     /* Ensure that we're initialized. */
                     R_UNLESS(this->initialized, fs::ResultNotInitialized());
 

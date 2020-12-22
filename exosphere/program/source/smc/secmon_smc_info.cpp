@@ -47,7 +47,7 @@ namespace ams::secmon::smc {
             [fuse::DramId_IcosaSamsung4GB]    = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaHynix4GB]      = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaMicron4GB]     = pkg1::MemorySize_4GB,
-            [fuse::DramId_CopperSamsung4GB]   = pkg1::MemorySize_4GB,
+            [fuse::DramId_FiveHynix1y4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaSamsung6GB]    = pkg1::MemorySize_6GB,
             [fuse::DramId_CopperHynix4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_CopperMicron4GB]    = pkg1::MemorySize_4GB,
@@ -66,9 +66,13 @@ namespace ams::secmon::smc {
             [fuse::DramId_HoagSamsung1y4GBX]  = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSamsung1y4GBY]  = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSamsung1y8GBY]  = pkg1::MemorySize_8GB,
-            [fuse::DramId_IowaSamsung1y4GBA]  = pkg1::MemorySize_4GB,
-            [fuse::DramId_FiveSamsung1y8GBX]  = pkg1::MemorySize_8GB,
+            [fuse::DramId_FiveSamsung1y4GB]   = pkg1::MemorySize_4GB,
+            [fuse::DramId_HoagSamsung1y8GBX]  = pkg1::MemorySize_8GB,
             [fuse::DramId_FiveSamsung1y4GBX]  = pkg1::MemorySize_4GB,
+            [fuse::DramId_IowaMicron1y4GB]    = pkg1::MemorySize_4GB,
+            [fuse::DramId_HoagMicron1y4GB]    = pkg1::MemorySize_4GB,
+            [fuse::DramId_FiveMicron1y4GB]    = pkg1::MemorySize_4GB,
+            [fuse::DramId_FiveSamsung1y8GBX]  = pkg1::MemorySize_8GB,
         };
 
         constexpr const pkg1::MemoryMode MemoryModes[] = {
@@ -277,6 +281,10 @@ namespace ams::secmon::smc {
                     } else {
                         return SmcResult::NotInitialized;
                     }
+                    break;
+                case ConfigItem::ExosphereLogConfiguration:
+                    /* Get the log configuration. */
+                    args.r[1] = (static_cast<u64>(static_cast<u8>(secmon::GetLogPort())) << 32) | static_cast<u64>(secmon::GetLogBaudRate());
                     break;
                 default:
                     return SmcResult::InvalidArgument;

@@ -29,10 +29,10 @@ namespace ams::kern {
         private:
             /* NOTE: Official KBeta has size 0x88, corresponding to 0x58 bytes of fields. */
             /* TODO: Add these fields, if KBeta is ever instantiable in the NX kernel. */
-            util::IntrusiveListNode process_list_node;
+            util::IntrusiveListNode m_process_list_node;
         public:
             explicit KBeta()
-                : process_list_node()
+                : m_process_list_node()
             {
                 /* ... */
             }

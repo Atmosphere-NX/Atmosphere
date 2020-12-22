@@ -32,7 +32,7 @@ namespace ams::erpt::srv {
         private:
             JournalRecord<AttachmentInfo> *record;
         private:
-            AttachmentFileName FileName();
+            AttachmentFileName FileName() const;
         public:
             static AttachmentFileName FileName(AttachmentId attachment_id);
         public:
@@ -44,9 +44,9 @@ namespace ams::erpt::srv {
             Result Delete();
             void Close();
 
-            Result GetFlags(AttachmentFlagSet *out);
+            Result GetFlags(AttachmentFlagSet *out) const;
             Result SetFlags(AttachmentFlagSet flags);
-            Result GetSize(s64 *out);
+            Result GetSize(s64 *out) const;
 
             template<typename T>
             Result Write(T val) {

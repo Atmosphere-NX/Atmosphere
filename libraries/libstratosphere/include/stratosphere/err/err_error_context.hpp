@@ -42,4 +42,52 @@ namespace ams::err {
     static_assert(sizeof(ErrorContext) == 0x200);
     static_assert(util::is_pod<ErrorContext>::value);
 
+    struct ContextDescriptor {
+        int value;
+
+        constexpr ALWAYS_INLINE bool operator==(const ContextDescriptor &rhs) const { return this->value == rhs.value; }
+        constexpr ALWAYS_INLINE bool operator!=(const ContextDescriptor &rhs) const { return this->value != rhs.value; }
+        constexpr ALWAYS_INLINE bool operator< (const ContextDescriptor &rhs) const { return this->value <  rhs.value; }
+        constexpr ALWAYS_INLINE bool operator<=(const ContextDescriptor &rhs) const { return this->value <= rhs.value; }
+        constexpr ALWAYS_INLINE bool operator> (const ContextDescriptor &rhs) const { return this->value >  rhs.value; }
+        constexpr ALWAYS_INLINE bool operator>=(const ContextDescriptor &rhs) const { return this->value >= rhs.value; }
+    };
+
+    constexpr inline const ContextDescriptor InvalidContextDescriptor{ -1 };
+
+    namespace impl {
+
+        constexpr inline const ContextDescriptor ContextDescriptorMin{ 0x001 };
+        constexpr inline const ContextDescriptor ContextDescriptorMax{ 0x1FF };
+
+    }
+
+    constexpr Result MakeResultWithContextDescriptor(Result result, ContextDescriptor descriptor) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(R_FAILED(result));
+        AMS_ASSERT(descriptor != InvalidContextDescriptor);
+        AMS_ASSERT(impl::ContextDescriptorMin <= descriptor && descriptor <= impl::ContextDescriptorMax);
+
+        return result::impl::ResultInternalAccessor::MergeReserved(result, descriptor.value | 0x200);
+    }
+
+    constexpr ContextDescriptor GetContextDescriptorFromResult(Result result) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(R_FAILED(result));
+
+        /* Get reserved bits. */
+        const auto reserved = result::impl::ResultInternalAccessor::GetReserved(result);
+        if ((reserved & 0x200) != 0x200) {
+            return InvalidContextDescriptor;
+        }
+
+        /* Check the descriptor value. */
+        const ContextDescriptor descriptor{static_cast<decltype(ContextDescriptor{}.value)>(reserved & ~0x200)};
+        if (!(impl::ContextDescriptorMin <= descriptor && descriptor <= impl::ContextDescriptorMax)) {
+            return InvalidContextDescriptor;
+        }
+
+        return descriptor;
+    }
+
 }

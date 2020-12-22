@@ -23,38 +23,38 @@ namespace ams::kern {
         private:
             static constexpr u64 AllowedAffinityMask = (1ul << cpu::NumCores) - 1;
         private:
-            u64 mask;
+            u64 m_mask;
         private:
             static constexpr ALWAYS_INLINE u64 GetCoreBit(s32 core) {
                 MESOSPHERE_ASSERT(0 <= core && core < static_cast<s32>(cpu::NumCores));
                 return (1ul << core);
             }
         public:
-            constexpr ALWAYS_INLINE KAffinityMask() : mask(0) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr ALWAYS_INLINE KAffinityMask() : m_mask(0) { MESOSPHERE_ASSERT_THIS(); }
 
-            constexpr ALWAYS_INLINE u64 GetAffinityMask() const { return this->mask; }
+            constexpr ALWAYS_INLINE u64 GetAffinityMask() const { return m_mask; }
 
             constexpr ALWAYS_INLINE void SetAffinityMask(u64 new_mask) {
                 MESOSPHERE_ASSERT((new_mask & ~AllowedAffinityMask) == 0);
-                this->mask = new_mask;
+                m_mask = new_mask;
             }
 
             constexpr ALWAYS_INLINE bool GetAffinity(s32 core) const {
-                return this->mask & GetCoreBit(core);
+                return m_mask & GetCoreBit(core);
             }
 
             constexpr ALWAYS_INLINE void SetAffinity(s32 core, bool set) {
                 MESOSPHERE_ASSERT(0 <= core && core < static_cast<s32>(cpu::NumCores));
 
                 if (set) {
-                    this->mask |= GetCoreBit(core);
+                    m_mask |= GetCoreBit(core);
                 } else {
-                    this->mask &= ~GetCoreBit(core);
+                    m_mask &= ~GetCoreBit(core);
                 }
             }
 
             constexpr ALWAYS_INLINE void SetAll() {
-                this->mask = AllowedAffinityMask;
+                m_mask = AllowedAffinityMask;
             }
     };
 

@@ -25,15 +25,15 @@ namespace ams::kern {
     class KResourceLimit final : public KAutoObjectWithSlabHeapAndContainer<KResourceLimit, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KResourceLimit, KAutoObject);
         private:
-            s64 limit_values[ams::svc::LimitableResource_Count];
-            s64 current_values[ams::svc::LimitableResource_Count];
-            s64 current_hints[ams::svc::LimitableResource_Count];
-            s64 peak_values[ams::svc::LimitableResource_Count];
-            mutable KLightLock lock;
-            s32 waiter_count;
-            KLightConditionVariable cond_var;
+            s64 m_limit_values[ams::svc::LimitableResource_Count];
+            s64 m_current_values[ams::svc::LimitableResource_Count];
+            s64 m_current_hints[ams::svc::LimitableResource_Count];
+            s64 m_peak_values[ams::svc::LimitableResource_Count];
+            mutable KLightLock m_lock;
+            s32 m_waiter_count;
+            KLightConditionVariable m_cond_var;
         public:
-            constexpr ALWAYS_INLINE KResourceLimit() : limit_values(), current_values(), current_hints(), peak_values(), lock(), waiter_count(), cond_var() { /* ... */ }
+            constexpr ALWAYS_INLINE KResourceLimit() : m_limit_values(), m_current_values(), m_current_hints(), m_peak_values(), m_lock(), m_waiter_count(), m_cond_var() { /* ... */ }
             virtual ~KResourceLimit() { /* ... */ }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }

@@ -42,6 +42,7 @@ namespace ams::erpt::srv {
             os::Tick occurrence_tick;
             s64 steady_clock_internal_offset_seconds;
             ReportId report_id;
+            Result ctx_result;
             time::SteadyClockTimePoint steady_clock_current_timepoint;
         public:
             static void ClearApplicationLaunchTime() { s_application_launch_time = std::nullopt; }
@@ -75,7 +76,7 @@ namespace ams::erpt::srv {
             void   SaveSyslogReportIfRequired();
             void   SaveSyslogReport();
         public:
-            Reporter(ReportType type, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments);
+            Reporter(ReportType type, const ContextEntry *ctx, const u8 *data, u32 data_size, const ReportMetaData *meta, const AttachmentId *attachments, u32 num_attachments, Result ctx_result);
 
             Result CreateReport();
     };

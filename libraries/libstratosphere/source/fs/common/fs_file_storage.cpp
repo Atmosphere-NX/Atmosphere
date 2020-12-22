@@ -19,7 +19,7 @@ namespace ams::fs {
 
     Result FileStorage::UpdateSize() {
         R_SUCCEED_IF(this->size != InvalidSize);
-        return this->base_file->GetSize(&this->size);
+        return this->base_file->GetSize(std::addressof(this->size));
     }
 
     Result FileStorage::Read(s64 offset, void *buffer, size_t size) {
@@ -33,10 +33,10 @@ namespace ams::fs {
         R_TRY(this->UpdateSize());
 
         /* Ensure our access is valid. */
-        R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+        R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
 
         size_t read_size;
-        return this->base_file->Read(&read_size, offset, buffer, size);
+        return this->base_file->Read(std::addressof(read_size), offset, buffer, size);
     }
 
     Result FileStorage::Write(s64 offset, const void *buffer, size_t size) {
@@ -50,7 +50,7 @@ namespace ams::fs {
         R_TRY(this->UpdateSize());
 
         /* Ensure our access is valid. */
-        R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+        R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
 
         return this->base_file->Write(offset, buffer, size, fs::WriteOption());
     }
@@ -83,7 +83,7 @@ namespace ams::fs {
                     return ResultSuccess();
                 }
                 R_TRY(this->UpdateSize());
-                R_UNLESS(IStorage::IsOffsetAndSizeValid(offset, size), fs::ResultOutOfRange());
+                R_UNLESS(IStorage::CheckOffsetAndSize(offset, size), fs::ResultOutOfRange());
                 return this->base_file->OperateRange(dst, dst_size, op_id, offset, size, src, src_size);
             default:
                 return fs::ResultUnsupportedOperationInFileStorageA();
@@ -121,7 +121,7 @@ namespace ams::fs {
         R_TRY(this->UpdateSize());
 
         /* Ensure our access is valid. */
-        R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+        R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
 
         return ReadFile(this->handle, offset, buffer, size, fs::ReadOption());
     }
@@ -140,7 +140,7 @@ namespace ams::fs {
         R_TRY(this->UpdateSize());
 
         /* Ensure our access is valid. */
-        R_UNLESS(IStorage::IsRangeValid(offset, size, this->size), fs::ResultOutOfRange());
+        R_UNLESS(IStorage::CheckAccessRange(offset, size, this->size), fs::ResultOutOfRange());
 
         return WriteFile(this->handle, offset, buffer, size, fs::WriteOption());
     }

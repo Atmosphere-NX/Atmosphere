@@ -17,21 +17,20 @@
 
 namespace ams::fs {
 
-    s64 HierarchicalRomFileTable::QueryDirectoryEntryStorageSize(u32 count) {
-        const size_t real_count = count + ReservedDirectoryCount;
-        return DirectoryEntryMapTable::QueryKeyValueStorageSize(real_count) + real_count * (RomPathTool::MaxPathLength + 1) * sizeof(RomPathChar);
-    }
-
     s64 HierarchicalRomFileTable::QueryDirectoryEntryBucketStorageSize(s64 count) {
         return DirectoryEntryMapTable::QueryBucketStorageSize(count);
     }
 
-    s64 HierarchicalRomFileTable::QueryFileEntryStorageSize(u32 count) {
-        return FileEntryMapTable::QueryKeyValueStorageSize(count) + count * (RomPathTool::MaxPathLength + 1) * sizeof(RomPathChar);
+    size_t HierarchicalRomFileTable::QueryDirectoryEntrySize(size_t aux_size) {
+        return DirectoryEntryMapTable::QueryEntrySize(aux_size);
     }
 
     s64 HierarchicalRomFileTable::QueryFileEntryBucketStorageSize(s64 count) {
         return FileEntryMapTable::QueryBucketStorageSize(count);
+    }
+
+    size_t HierarchicalRomFileTable::QueryFileEntrySize(size_t aux_size) {
+        return FileEntryMapTable::QueryEntrySize(aux_size);
     }
 
     Result HierarchicalRomFileTable::Format(SubStorage dir_bucket, SubStorage file_bucket) {
@@ -69,7 +68,7 @@ namespace ams::fs {
         Position root_pos = RootPosition;
         EntryKey root_key = {};
         root_key.key.parent = root_pos;
-        RomPathTool::InitializeRomEntryName(std::addressof(root_key.name));
+        RomPathTool::InitEntryName(std::addressof(root_key.name));
         RomDirectoryEntry root_entry = {
             .next = InvalidPosition,
             .dir  = InvalidPosition,
@@ -99,7 +98,7 @@ namespace ams::fs {
             R_CONVERT(fs::ResultDbmKeyFull, fs::ResultDbmDirectoryEntryFull())
         } R_END_TRY_CATCH;
 
-        *out = ConvertToDirectoryId(new_pos);
+        *out = PositionToDirectoryId(new_pos);
 
         if (parent_entry.dir == InvalidPosition) {
             parent_entry.dir = new_pos;
@@ -146,7 +145,7 @@ namespace ams::fs {
             R_CONVERT(fs::ResultDbmKeyFull, fs::ResultDbmFileEntryFull())
         } R_END_TRY_CATCH;
 
-        *out = ConvertToFileId(new_pos);
+        *out = PositionToFileId(new_pos);
 
         if (parent_entry.file == InvalidPosition) {
             parent_entry.file = new_pos;
@@ -185,7 +184,7 @@ namespace ams::fs {
         RomDirectoryEntry entry = {};
         R_TRY(this->GetDirectoryEntry(std::addressof(pos), std::addressof(entry), key));
 
-        *out = ConvertToDirectoryId(pos);
+        *out = PositionToDirectoryId(pos);
         return ResultSuccess();
     }
 
@@ -201,7 +200,7 @@ namespace ams::fs {
         RomFileEntry entry = {};
         R_TRY(this->GetFileEntry(std::addressof(pos), std::addressof(entry), key));
 
-        *out = ConvertToFileId(pos);
+        *out = PositionToFileId(pos);
         return ResultSuccess();
     }
 
@@ -353,7 +352,7 @@ namespace ams::fs {
         R_TRY(this->GetDirectoryEntry(std::addressof(dir_pos), std::addressof(dir_entry), dir_key));
 
         Position parent_pos = dir_pos;
-        while (!parser->IsFinished()) {
+        while (!parser->IsParseFinished()) {
             EntryKey old_key = dir_key;
 
             R_TRY(parser->GetNextDirectoryName(std::addressof(dir_key.name)));
@@ -492,7 +491,7 @@ namespace ams::fs {
 
     Result HierarchicalRomFileTable::GetDirectoryEntry(RomDirectoryEntry *out_entry, RomDirectoryId id) {
         AMS_ASSERT(out_entry != nullptr);
-        Position pos = ConvertToPosition(id);
+        Position pos = DirectoryIdToPosition(id);
 
         RomEntryKey key = {};
         const Result dir_res = this->dir_table.GetByPosition(std::addressof(key), out_entry, pos);
@@ -524,7 +523,7 @@ namespace ams::fs {
 
     Result HierarchicalRomFileTable::GetFileEntry(RomFileEntry *out_entry, RomFileId id) {
         AMS_ASSERT(out_entry != nullptr);
-        Position pos = ConvertToPosition(id);
+        Position pos = FileIdToPosition(id);
 
         RomEntryKey key = {};
         const Result file_res = this->file_table.GetByPosition(std::addressof(key), out_entry, pos);

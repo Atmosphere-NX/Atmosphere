@@ -40,7 +40,7 @@ namespace ams::erpt::srv {
         }
     }
 
-    AttachmentFileName Attachment::FileName() {
+    AttachmentFileName Attachment::FileName() const {
         return FileName(this->record->info.attachment_id);
     }
 
@@ -64,7 +64,7 @@ namespace ams::erpt::srv {
         return this->CloseStream();
     }
 
-    Result Attachment::GetFlags(AttachmentFlagSet *out) {
+    Result Attachment::GetFlags(AttachmentFlagSet *out) const {
         *out = this->record->info.flags;
         return ResultSuccess();
     }
@@ -77,7 +77,7 @@ namespace ams::erpt::srv {
         return ResultSuccess();
     }
 
-    Result Attachment::GetSize(s64 *out) {
+    Result Attachment::GetSize(s64 *out) const {
         return this->GetStreamSize(out);
     }
 

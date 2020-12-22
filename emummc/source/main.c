@@ -92,7 +92,7 @@ volatile __attribute__((aligned(0x1000))) emuMMC_ctx_t emuMMC_ctx = {
     .fs_ver = FS_VER_MAX,
 
     // SD Default Metadata
-    .SD_Type = emuMMC_SD,
+    .SD_Type = emuMMC_SD_Raw,
     .SD_StoragePartitionOffset = 0,
 
     // EMMC Default Metadata
@@ -285,6 +285,9 @@ void setup_hooks(void)
     INJECT_HOOK(fs_offsets->sdmmc_wrapper_read, sdmmc_wrapper_read);
     // sdmmc_wrapper_write hook
     INJECT_HOOK(fs_offsets->sdmmc_wrapper_write, sdmmc_wrapper_write);
+	// sdmmc_wrapper_controller_open hook
+    if (fs_offsets->sdmmc_accessor_controller_open)
+        INJECT_HOOK(fs_offsets->sdmmc_accessor_controller_open, sdmmc_wrapper_controller_open);
     // sdmmc_wrapper_controller_close hook
     INJECT_HOOK(fs_offsets->sdmmc_accessor_controller_close, sdmmc_wrapper_controller_close);
 
@@ -346,7 +349,7 @@ static void load_emummc_ctx(void)
         emuMMC_ctx.id = config.base_cfg.id;
         emuMMC_ctx.EMMC_Type = (enum emuMMC_Type)config.base_cfg.type;
         emuMMC_ctx.fs_ver = (enum FS_VER)config.base_cfg.fs_version;
-        if (emuMMC_ctx.EMMC_Type == emuMMC_SD)
+        if (emuMMC_ctx.EMMC_Type == emuMMC_SD_Raw)
         {
             emuMMC_ctx.EMMC_StoragePartitionOffset = config.partition_cfg.start_sector;
         }

@@ -238,6 +238,10 @@
                     return ::svcSynchronizePreemptionState();
                 }
 
+                ALWAYS_INLINE Result GetResourceLimitPeakValue(int64_t *out_peak_value, ::ams::svc::Handle resource_limit_handle, ::ams::svc::LimitableResource which) {
+                    return ::svcGetResourceLimitPeakValue(out_peak_value, resource_limit_handle, static_cast<::LimitableResource>(which));
+                }
+
                 ALWAYS_INLINE void KernelDebug(::ams::svc::KernelDebugType kern_debug_type, uint64_t arg0, uint64_t arg1, uint64_t arg2) {
                     return ::svcKernelDebug(kern_debug_type, arg0, arg1, arg2);
                 }
@@ -501,6 +505,11 @@
         ALWAYS_INLINE bool IsKernelMesosphere() {
             uint64_t dummy;
             return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(dummy), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_KernelVersion));
+        }
+
+        ALWAYS_INLINE bool IsKTraceEnabled() {
+            uint64_t value = 0;
+            return R_SUCCEEDED(::ams::svc::GetInfo(std::addressof(value), ::ams::svc::InfoType_MesosphereMeta, ::ams::svc::InvalidHandle, ::ams::svc::MesosphereMetaInfo_IsKTraceEnabled)) && value != 0;
         }
 
     }

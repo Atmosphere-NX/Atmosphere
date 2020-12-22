@@ -199,7 +199,7 @@ namespace ams::fs {
                     return this->parent->GetBaseStorage();
                 }
             public:
-                virtual Result ReadImpl(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override {
+                virtual Result DoRead(size_t *out, s64 offset, void *buffer, size_t size, const fs::ReadOption &option) override {
                     size_t read_size = 0;
                     R_TRY(this->VerifyArguments(std::addressof(read_size), offset, buffer, size, option));
 
@@ -209,24 +209,24 @@ namespace ams::fs {
                     return ResultSuccess();
                 }
 
-                virtual Result GetSizeImpl(s64 *out) override {
+                virtual Result DoGetSize(s64 *out) override {
                     *out = this->GetSize();
                     return ResultSuccess();
                 }
 
-                virtual Result FlushImpl() override {
+                virtual Result DoFlush() override {
                     return ResultSuccess();
                 }
 
-                virtual Result WriteImpl(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
+                virtual Result DoWrite(s64 offset, const void *buffer, size_t size, const fs::WriteOption &option) override {
                     return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
-                virtual Result SetSizeImpl(s64 size) override {
+                virtual Result DoSetSize(s64 size) override {
                     return fs::ResultUnsupportedOperationInRomFsFileA();
                 }
 
-                virtual Result OperateRangeImpl(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
+                virtual Result DoOperateRange(void *dst, size_t dst_size, fs::OperationId op_id, s64 offset, s64 size, const void *src, size_t src_size) override {
                     switch (op_id) {
                         case OperationId::InvalidateCache:
                         case OperationId::QueryRange:
@@ -263,16 +263,16 @@ namespace ams::fs {
                 RomFsDirectory(RomFsFileSystem *p, const FindPosition &f, fs::OpenDirectoryMode m) : parent(p), current_find(f), first_find(f), mode(m) { /* ... */ }
                 virtual ~RomFsDirectory() override { /* ... */ }
             public:
-                virtual Result ReadImpl(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) {
-                    return this->ReadImpl(out_count, std::addressof(this->current_find), out_entries, max_entries);
+                virtual Result DoRead(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) {
+                    return this->ReadInternal(out_count, std::addressof(this->current_find), out_entries, max_entries);
                 }
 
-                virtual Result GetEntryCountImpl(s64 *out) {
+                virtual Result DoGetEntryCount(s64 *out) {
                     FindPosition find = this->first_find;
-                    return this->ReadImpl(out, std::addressof(find), nullptr, 0);
+                    return this->ReadInternal(out, std::addressof(find), nullptr, 0);
                 }
             private:
-                Result ReadImpl(s64 *out_count, FindPosition *find, DirectoryEntry *out_entries, s64 max_entries) {
+                Result ReadInternal(s64 *out_count, FindPosition *find, DirectoryEntry *out_entries, s64 max_entries) {
                     AMS_ASSERT(out_count != nullptr);
                     AMS_ASSERT(find != nullptr);
 
@@ -316,7 +316,7 @@ namespace ams::fs {
                                 out_entries[i].type = fs::DirectoryEntryType_File;
 
                                 RomFsFileSystem::RomFileTable::FileInfo file_info;
-                                R_TRY(this->parent->GetRomFileTable()->OpenFile(std::addressof(file_info), this->parent->GetRomFileTable()->ConvertToFileId(file_pos)));
+                                R_TRY(this->parent->GetRomFileTable()->OpenFile(std::addressof(file_info), this->parent->GetRomFileTable()->PositionToFileId(file_pos)));
                                 out_entries[i].file_size = file_info.size.Get();
                             }
 
@@ -440,35 +440,35 @@ namespace ams::fs {
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem::CreateFileImpl(const char *path, s64 size, int flags) {
+    Result RomFsFileSystem::DoCreateFile(const char *path, s64 size, int flags) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::DeleteFileImpl(const char *path) {
+    Result RomFsFileSystem::DoDeleteFile(const char *path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::CreateDirectoryImpl(const char *path) {
+    Result RomFsFileSystem::DoCreateDirectory(const char *path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::DeleteDirectoryImpl(const char *path) {
+    Result RomFsFileSystem::DoDeleteDirectory(const char *path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::DeleteDirectoryRecursivelyImpl(const char *path) {
+    Result RomFsFileSystem::DoDeleteDirectoryRecursively(const char *path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::RenameFileImpl(const char *old_path, const char *new_path) {
+    Result RomFsFileSystem::DoRenameFile(const char *old_path, const char *new_path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::RenameDirectoryImpl(const char *old_path, const char *new_path) {
+    Result RomFsFileSystem::DoRenameDirectory(const char *old_path, const char *new_path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::GetEntryTypeImpl(fs::DirectoryEntryType *out, const char *path) {
+    Result RomFsFileSystem::DoGetEntryType(fs::DirectoryEntryType *out, const char *path) {
         RomDirectoryInfo dir_info;
         R_TRY_CATCH(this->rom_file_table.GetDirectoryInformation(std::addressof(dir_info), path)) {
             R_CONVERT(fs::ResultDbmNotFound, fs::ResultPathNotFound())
@@ -484,7 +484,7 @@ namespace ams::fs {
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem::OpenFileImpl(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
+    Result RomFsFileSystem::DoOpenFile(std::unique_ptr<fs::fsa::IFile> *out_file, const char *path, fs::OpenMode mode) {
         AMS_ASSERT(out_file != nullptr);
         AMS_ASSERT(path != nullptr);
 
@@ -500,7 +500,7 @@ namespace ams::fs {
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem::OpenDirectoryImpl(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) {
+    Result RomFsFileSystem::DoOpenDirectory(std::unique_ptr<fs::fsa::IDirectory> *out_dir, const char *path, fs::OpenDirectoryMode mode) {
         AMS_ASSERT(out_dir != nullptr);
         AMS_ASSERT(path != nullptr);
 
@@ -517,28 +517,28 @@ namespace ams::fs {
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem::CommitImpl() {
+    Result RomFsFileSystem::DoCommit() {
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem::GetFreeSpaceSizeImpl(s64 *out, const char *path) {
+    Result RomFsFileSystem::DoGetFreeSpaceSize(s64 *out, const char *path) {
         *out = 0;
         return ResultSuccess();
     }
 
-    Result RomFsFileSystem::GetTotalSpaceSizeImpl(s64 *out, const char *path) {
+    Result RomFsFileSystem::DoGetTotalSpaceSize(s64 *out, const char *path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemC();
     }
 
-    Result RomFsFileSystem::CleanDirectoryRecursivelyImpl(const char *path) {
+    Result RomFsFileSystem::DoCleanDirectoryRecursively(const char *path) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemA();
     }
 
-    Result RomFsFileSystem::CommitProvisionallyImpl(s64 counter) {
+    Result RomFsFileSystem::DoCommitProvisionally(s64 counter) {
         return fs::ResultUnsupportedOperationInRomFsFileSystemB();
     }
 
-    Result RomFsFileSystem::RollbackImpl() {
+    Result RomFsFileSystem::DoRollback() {
         return ResultSuccess();
     }
 }

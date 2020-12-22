@@ -135,10 +135,10 @@ namespace ams::kern::arch::arm {
         private:
             static inline u32 s_mask[cpu::NumCores];
         private:
-            volatile GicDistributor  *gicd;
-            volatile GicCpuInterface *gicc;
+            volatile GicDistributor  *m_gicd;
+            volatile GicCpuInterface *m_gicc;
         public:
-            constexpr KInterruptController() : gicd(nullptr), gicc(nullptr) { /* ... */ }
+            constexpr KInterruptController() : m_gicd(nullptr), m_gicc(nullptr) { /* ... */ }
 
             void Initialize(s32 core_id);
             void Finalize(s32 core_id);
@@ -149,7 +149,7 @@ namespace ams::kern::arch::arm {
             void RestoreGlobal(const GlobalState *state) const;
         public:
             u32 GetIrq() const {
-                return this->gicc->iar;
+                return m_gicc->iar;
             }
 
             static constexpr s32 ConvertRawIrq(u32 irq) {
@@ -157,69 +157,69 @@ namespace ams::kern::arch::arm {
             }
 
             void Enable(s32 irq) const {
-                this->gicd->isenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
+                m_gicd->isenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
             }
 
             void Disable(s32 irq) const {
-                this->gicd->icenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
+                m_gicd->icenabler[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
             }
 
             void Clear(s32 irq) const {
-                this->gicd->icpendr[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
+                m_gicd->icpendr[irq / BITSIZEOF(u32)] = (1u << (irq % BITSIZEOF(u32)));
             }
 
             void SetTarget(s32 irq, s32 core_id) const {
-                this->gicd->itargetsr.bytes[irq] = this->gicd->itargetsr.bytes[irq] | GetGicMask(core_id);
+                m_gicd->itargetsr.bytes[irq] = m_gicd->itargetsr.bytes[irq] | GetGicMask(core_id);
             }
 
             void ClearTarget(s32 irq, s32 core_id) const {
-                this->gicd->itargetsr.bytes[irq] = this->gicd->itargetsr.bytes[irq] & ~GetGicMask(core_id);
+                m_gicd->itargetsr.bytes[irq] = m_gicd->itargetsr.bytes[irq] & ~GetGicMask(core_id);
             }
 
             void SetPriorityLevel(s32 irq, s32 level) const {
                 MESOSPHERE_ASSERT(PriorityLevel_High <= level && level <= PriorityLevel_Low);
-                this->gicd->ipriorityr.bytes[irq] = ToGicPriorityValue(level);
+                m_gicd->ipriorityr.bytes[irq] = ToGicPriorityValue(level);
             }
 
             s32 GetPriorityLevel(s32 irq) const {
-                return FromGicPriorityValue(this->gicd->ipriorityr.bytes[irq]);
+                return FromGicPriorityValue(m_gicd->ipriorityr.bytes[irq]);
             }
 
             void SetPriorityLevel(s32 level) const {
                 MESOSPHERE_ASSERT(PriorityLevel_High <= level && level <= PriorityLevel_Low);
-                this->gicc->pmr = ToGicPriorityValue(level);
+                m_gicc->pmr = ToGicPriorityValue(level);
             }
 
             void SetEdge(s32 irq) const {
-                u32 cfg = this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)];
+                u32 cfg = m_gicd->icfgr[irq / (BITSIZEOF(u32) / 2)];
                 cfg &= ~(0x3 << (2 * (irq % (BITSIZEOF(u32) / 2))));
                 cfg |=  (0x2 << (2 * (irq % (BITSIZEOF(u32) / 2))));
-                this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)] = cfg;
+                m_gicd->icfgr[irq / (BITSIZEOF(u32) / 2)] = cfg;
             }
 
             void SetLevel(s32 irq) const {
-                u32 cfg = this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)];
+                u32 cfg = m_gicd->icfgr[irq / (BITSIZEOF(u32) / 2)];
                 cfg &= ~(0x3 << (2 * (irq % (BITSIZEOF(u32) / 2))));
                 cfg |=  (0x0 << (2 * (irq % (BITSIZEOF(u32) / 2))));
-                this->gicd->icfgr[irq / (BITSIZEOF(u32) / 2)] = cfg;
+                m_gicd->icfgr[irq / (BITSIZEOF(u32) / 2)] = cfg;
             }
 
             void SendInterProcessorInterrupt(s32 irq, u64 core_mask) {
                 MESOSPHERE_ASSERT(IsSoftware(irq));
-                this->gicd->sgir = GetCpuTargetListMask(irq, core_mask);
+                m_gicd->sgir = GetCpuTargetListMask(irq, core_mask);
             }
 
             void SendInterProcessorInterrupt(s32 irq) {
                 MESOSPHERE_ASSERT(IsSoftware(irq));
-                this->gicd->sgir = GicDistributor::SgirTargetListFilter_Others | irq;
+                m_gicd->sgir = GicDistributor::SgirTargetListFilter_Others | irq;
             }
 
             void EndOfInterrupt(u32 irq) const {
-                this->gicc->eoir = irq;
+                m_gicc->eoir = irq;
             }
 
             bool IsInterruptDefined(s32 irq) const {
-                const s32 num_interrupts = std::min(32 + 32 * (this->gicd->typer & 0x1F), static_cast<u32>(NumInterrupts));
+                const s32 num_interrupts = std::min(32 + 32 * (m_gicd->typer & 0x1F), static_cast<u32>(NumInterrupts));
                 return (0 <= irq && irq < num_interrupts);
             }
         public:
@@ -270,7 +270,7 @@ namespace ams::kern::arch::arm {
             }
 
             ALWAYS_INLINE void SetGicMask(s32 core_id) const {
-                s_mask[core_id] = this->gicd->itargetsr.bytes[0];
+                s_mask[core_id] = m_gicd->itargetsr.bytes[0];
             }
 
             NOINLINE void SetupInterruptLines(s32 core_id) const;

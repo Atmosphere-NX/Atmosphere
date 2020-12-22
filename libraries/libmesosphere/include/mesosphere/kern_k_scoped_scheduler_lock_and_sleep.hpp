@@ -23,24 +23,24 @@ namespace ams::kern {
 
     class KScopedSchedulerLockAndSleep {
         private:
-            s64 timeout_tick;
-            KThread *thread;
-            KHardwareTimer *timer;
+            s64 m_timeout_tick;
+            KThread *m_thread;
+            KHardwareTimer *m_timer;
         public:
-            explicit ALWAYS_INLINE KScopedSchedulerLockAndSleep(KHardwareTimer **out_timer, KThread *t, s64 timeout) : timeout_tick(timeout), thread(t) {
+            explicit ALWAYS_INLINE KScopedSchedulerLockAndSleep(KHardwareTimer **out_timer, KThread *t, s64 timeout) : m_timeout_tick(timeout), m_thread(t) {
                 /* Lock the scheduler. */
                 KScheduler::s_scheduler_lock.Lock();
 
                 /* Set our timer only if the absolute time is positive. */
-                this->timer = (this->timeout_tick > 0) ? std::addressof(Kernel::GetHardwareTimer()) : nullptr;
+                m_timer = (m_timeout_tick > 0) ? std::addressof(Kernel::GetHardwareTimer()) : nullptr;
 
-                *out_timer = this->timer;
+                *out_timer = m_timer;
             }
 
             ~KScopedSchedulerLockAndSleep() {
                 /* Register the sleep. */
-                if (this->timeout_tick > 0) {
-                    this->timer->RegisterAbsoluteTask(this->thread, this->timeout_tick);
+                if (m_timeout_tick > 0) {
+                    m_timer->RegisterAbsoluteTask(m_thread, m_timeout_tick);
                 }
 
                 /* Unlock the scheduler. */
@@ -48,7 +48,7 @@ namespace ams::kern {
             }
 
             ALWAYS_INLINE void CancelSleep() {
-                this->timeout_tick = 0;
+                m_timeout_tick = 0;
             }
     };
 

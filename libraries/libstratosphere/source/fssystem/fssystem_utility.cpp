@@ -31,15 +31,15 @@ namespace ams::fssystem {
             /* Normalize the path. */
             char normalized_path[fs::EntryNameLengthMax + 1];
             size_t normalized_path_len;
-            R_TRY(PathTool::Normalize(normalized_path, &normalized_path_len, path, sizeof(normalized_path)));
+            R_TRY(fs::PathNormalizer::Normalize(normalized_path, std::addressof(normalized_path_len), path, sizeof(normalized_path)));
 
             /* Repeatedly call CreateDirectory on each directory leading to the target. */
             for (size_t i = 1; i < normalized_path_len; i++) {
                 /* If we detect a separator, create the directory. */
-                if (PathTool::IsSeparator(normalized_path[i])) {
-                    normalized_path[i] = StringTraits::NullTerminator;
+                if (fs::PathNormalizer::IsSeparator(normalized_path[i])) {
+                    normalized_path[i] = fs::StringTraits::NullTerminator;
                     R_TRY(EnsureDirectory(fs, normalized_path));
-                    normalized_path[i] = StringTraits::DirectorySeparator;
+                    normalized_path[i] = fs::StringTraits::DirectorySeparator;
                 }
             }
 
@@ -120,10 +120,10 @@ namespace ams::fssystem {
 
                 /* Find previous separator, add null terminator */
                 char *cur = &dst_path_buf[len - 2];
-                while (!PathTool::IsSeparator(*cur) && cur > dst_path_buf) {
+                while (!fs::PathNormalizer::IsSeparator(*cur) && cur > dst_path_buf) {
                     cur--;
                 }
-                cur[1] = StringTraits::NullTerminator;
+                cur[1] = fs::StringTraits::NullTerminator;
 
                 return ResultSuccess();
             },

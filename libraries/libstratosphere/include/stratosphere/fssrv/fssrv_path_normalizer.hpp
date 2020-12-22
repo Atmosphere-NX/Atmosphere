@@ -31,7 +31,7 @@ namespace ams::fssrv {
                 Option_AcceptEmpty           = BIT(4),
             };
         private:
-            using Buffer = std::unique_ptr<char[]>;
+            using Buffer = std::unique_ptr<char[], fs::impl::Deleter>;
         private:
             Buffer buffer;
             const char *path;
@@ -39,8 +39,9 @@ namespace ams::fssrv {
         private:
             static Result Normalize(const char **out_path, Buffer *out_buf, const char *path, bool preserve_unc, bool preserve_tail_sep, bool has_mount_name);
         public:
+            /* TODO: Remove non-option constructor. */
             explicit PathNormalizer(const char *p) : buffer(), path(nullptr), result(ResultSuccess()) {
-                this->result = Normalize(&this->path, &this->buffer, p, false, false, false);
+                this->result = Normalize(std::addressof(this->path), std::addressof(this->buffer), p, false, false, false);
             }
 
             PathNormalizer(const char *p, u32 option) : buffer(), path(nullptr), result(ResultSuccess()) {
@@ -50,15 +51,15 @@ namespace ams::fssrv {
                     const bool preserve_unc      = (option & Option_PreserveUnc);
                     const bool preserve_tail_sep = (option & Option_PreserveTailSeparator);
                     const bool has_mount_name    = (option & Option_HasMountName);
-                    this->result = Normalize(&this->path, &this->buffer, p, preserve_unc, preserve_tail_sep, has_mount_name);
+                    this->result = Normalize(std::addressof(this->path), std::addressof(this->buffer), p, preserve_unc, preserve_tail_sep, has_mount_name);
                 }
             }
 
-            inline Result GetResult() const {
+            Result GetResult() const {
                 return this->result;
             }
 
-            inline const char * GetPath() const {
+            const char *GetPath() const {
                 return this->path;
             }
     };

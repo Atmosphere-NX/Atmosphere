@@ -28,30 +28,30 @@ namespace ams::kern {
         public:
             class ListAccessor : public KScopedLightLock {
                 private:
-                    ListType &list;
+                    ListType &m_list;
                 public:
-                    explicit ListAccessor(KAutoObjectWithListContainer *container) : KScopedLightLock(container->lock), list(container->object_list) { /* ... */ }
-                    explicit ListAccessor(KAutoObjectWithListContainer &container) : KScopedLightLock(container.lock), list(container.object_list) { /* ... */ }
+                    explicit ListAccessor(KAutoObjectWithListContainer *container) : KScopedLightLock(container->m_lock), m_list(container->m_object_list) { /* ... */ }
+                    explicit ListAccessor(KAutoObjectWithListContainer &container) : KScopedLightLock(container.m_lock), m_list(container.m_object_list) { /* ... */ }
 
                     typename ListType::iterator begin() const {
-                        return this->list.begin();
+                        return m_list.begin();
                     }
 
                     typename ListType::iterator end() const {
-                        return this->list.end();
+                        return m_list.end();
                     }
 
                     typename ListType::iterator find(typename ListType::const_reference ref) const {
-                        return this->list.find(ref);
+                        return m_list.find(ref);
                     }
             };
 
             friend class ListAccessor;
         private:
-            KLightLock lock;
-            ListType object_list;
+            KLightLock m_lock;
+            ListType m_object_list;
         public:
-            constexpr KAutoObjectWithListContainer() : lock(), object_list() { MESOSPHERE_ASSERT_THIS(); }
+            constexpr KAutoObjectWithListContainer() : m_lock(), m_object_list() { MESOSPHERE_ASSERT_THIS(); }
 
             void Initialize() { MESOSPHERE_ASSERT_THIS(); }
             void Finalize() { MESOSPHERE_ASSERT_THIS(); }

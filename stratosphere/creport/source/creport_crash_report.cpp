@@ -288,7 +288,7 @@ namespace ams::creport {
         svcReadDebugProcessMemory(this->dying_message, this->debug_handle, this->dying_message_address, this->dying_message_size);
     }
 
-    void CrashReport::SaveReport() {
+    void CrashReport::SaveReport(bool enable_screenshot) {
         /* Try to ensure path exists. */
         TryCreateReportDirectories();
 
@@ -333,6 +333,9 @@ namespace ams::creport {
             this->dying_message = nullptr;
 
             /* Try to take a screenshot. */
+            /* NOTE: Nintendo validates that enable_screenshot is true here, and validates that the application id is not in a blacklist. */
+            /* Since we save reports only locally and do not send them via telemetry, we will skip this. */
+            AMS_UNUSED(enable_screenshot);
             if (hos::GetVersion() >= hos::Version_9_0_0 && this->IsApplication()) {
                 sm::ScopedServiceHolder<capsrv::InitializeScreenShotControl, capsrv::FinalizeScreenShotControl> capssc_holder;
                 if (capssc_holder) {

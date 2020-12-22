@@ -1,4 +1,29 @@
 # Changelog
+## 0.16.2
++ Atmosphère release zips no longer bundle BCT.ini, instead relying on defaults in code.
+  + This means atmosphere updates should no longer overwrite any user configuration at all.
+  + If you wish to modify BCT.ini config, copy the template from /config_templates/ as with other configuration.
++ `pgl` and `creport` were further updated to reflect differences in official behavior in 11.0.0.
++ An issue was fixed that caused creport to be launched multiple times on process crash.
+  + This fixes the "duplicate reports" issue that sometimes plagued people.
++ A new system setting (`atmosphere!enable_am_debug_mode`) configuring am to use debug mode.
+  + If you are not a developer or don't see a clear use for this, leave it configured to the default (off).
++ Reboot to payload NRO was updated to fix support with certain payloads.
++ Support was fixed for atmosphere's extension to support homebrew use of new (8.0.0+) kernel mappings.
+  + In particular, when running tracing debug builds of `mesosphère`, hbloader now has access to the kernel trace buffer.
++ Several issues were fixed, and usability and stability were improved.
+## 0.16.1
++ Support was added for 11.0.1.
+  + `mesosphère` was updated to reflect the latest official kernel behavior.
+    + A new svc::InfoType added in 11.0.0 was implemented (it wasn't discovered before 0.16.0 released).
+    + The new Control Flow Integrity (CFI) logic added in 11.0.0 kernel was implemented.
++ `fs` logic was refactored and cleaned up to reflect some newer sysmodule behavioral and structural changes.
++ `exosphère` was updated to allow dynamic control of what uart port is used for logging.
+  + This can be controlled by editing the `log_port`, `log_baud_rate`, and `log_inverted` fields in `exosphere.ini`.
++ `mesosphère` was updated to improve debugging capabilities.
+  + This is still a work in progress, but developers may be interested.
++ A bug was fixed that caused `fatal` to fatal error if the fatal process was already being debugged.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.16.0
 + Support was added for 11.0.0.
   + `exosphère` was updated to reflect the latest official secure monitor behavior.

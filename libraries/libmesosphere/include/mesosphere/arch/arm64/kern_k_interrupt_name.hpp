@@ -32,7 +32,7 @@ namespace ams::kern::arch::arm64 {
             KInterruptName_VirtualMaintenance     = 25,
             KInterruptName_HypervisorTimer        = 26,
             KInterruptName_VirtualTimer           = 27,
-            KInterruptName_LegacyNFiq             = 38,
+            KInterruptName_LegacyNFiq             = 28,
             KInterruptName_SecurePhysicalTimer    = 29,
             KInterruptName_NonSecurePhysicalTimer = 30,
             KInterruptName_LegacyNIrq             = 31,

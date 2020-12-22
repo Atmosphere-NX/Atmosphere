@@ -22,7 +22,7 @@ namespace ams::kern::arch::arm64 {
         InitializeGlobalTimer();
 
         /* Set maximum time. */
-        this->maximum_time = static_cast<s64>(std::min<u64>(std::numeric_limits<s64>::max(), cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor().GetCompareValue()));
+        m_maximum_time = static_cast<s64>(std::min<u64>(std::numeric_limits<s64>::max(), cpu::CounterTimerPhysicalTimerCompareValueRegisterAccessor().GetCompareValue()));
 
         /* Bind the interrupt task for this core. */
         Kernel::GetInterruptManager().BindHandler(this, KInterruptName_NonSecurePhysicalTimer, GetCurrentCoreId(), KInterruptController::PriorityLevel_Timer, true, true);
@@ -41,7 +41,7 @@ namespace ams::kern::arch::arm64 {
 
             /* Disable the timer interrupt while we handle this. */
             DisableInterrupt();
-            if (const s64 next_time = this->DoInterruptTaskImpl(GetTick()); 0 < next_time && next_time <= this->maximum_time) {
+            if (const s64 next_time = this->DoInterruptTaskImpl(GetTick()); 0 < next_time && next_time <= m_maximum_time) {
                 /* We have a next time, so we should set the time to interrupt and turn the interrupt on. */
                 SetCompareValue(next_time);
                 EnableInterrupt();

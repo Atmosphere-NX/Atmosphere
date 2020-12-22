@@ -271,7 +271,7 @@ int sdmmc_nand_get_active_partition_index()
 
 static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned int num_sectors, bool is_write)
 {
-    if ((emuMMC_ctx.EMMC_Type == emuMMC_SD))
+    if ((emuMMC_ctx.EMMC_Type == emuMMC_SD_Raw))
     {
         // raw partition sector offset: emuMMC_ctx.EMMC_StoragePartitionOffset.
         sector += emuMMC_ctx.EMMC_StoragePartitionOffset;
@@ -316,6 +316,31 @@ static uint64_t emummc_read_write_inner(void *buf, unsigned int sector, unsigned
         res = !f_write_fast(fp, buf, num_sectors << 9);
 
     return res;
+}
+
+// Controller open wrapper
+uint64_t sdmmc_wrapper_controller_open(int mmc_id)
+{
+    uint64_t result;
+    sdmmc_accessor_t *_this;
+    _this = sdmmc_accessor_get(mmc_id);
+
+    if (_this != NULL)
+    {
+        // Lock eMMC xfer while SD card is being initialized by FS.
+        if (_this == sdmmc_accessor_get(FS_SDMMC_SD))
+            mutex_lock_handler(FS_SDMMC_EMMC); // Recursive Mutex, handler will lock SD as well if custom_driver
+
+        result = _this->vtab->sdmmc_accessor_controller_open(_this);
+
+        // Unlock eMMC.
+        if (_this == sdmmc_accessor_get(FS_SDMMC_SD))
+            mutex_unlock_handler(FS_SDMMC_EMMC);
+
+        return result;
+    }
+
+    fatal_abort(Fatal_OpenAccessor);
 }
 
 // Controller close wrapper
@@ -389,7 +414,7 @@ uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned in
             if (first_sd_read)
             {
                 first_sd_read = false;
-                if (emuMMC_ctx.EMMC_Type == emuMMC_SD)
+                if (emuMMC_ctx.EMMC_Type == emuMMC_SD_Raw)
                 {
                     // Because some SD cards have issues with emuMMC's driver
                     // we currently swap to FS's driver after first SD read
@@ -400,7 +425,7 @@ uint64_t sdmmc_wrapper_read(void *buf, uint64_t bufSize, int mmc_id, unsigned in
                 }
             }
 
-            // Call hekates driver.
+            // Call hekate's driver.
             if (sdmmc_storage_read(&sd_storage, sector, num_sectors, buf))
             {
                 mutex_unlock_handler(mmc_id);

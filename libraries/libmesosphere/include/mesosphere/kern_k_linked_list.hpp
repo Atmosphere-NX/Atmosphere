@@ -22,17 +22,17 @@ namespace ams::kern {
 
     class KLinkedListNode : public util::IntrusiveListBaseNode<KLinkedListNode>, public KSlabAllocated<KLinkedListNode> {
         private:
-            void *item;
+            void *m_item;
         public:
-            constexpr KLinkedListNode() : util::IntrusiveListBaseNode<KLinkedListNode>(), item(nullptr) { MESOSPHERE_ASSERT_THIS(); }
+            constexpr KLinkedListNode() : util::IntrusiveListBaseNode<KLinkedListNode>(), m_item(nullptr) { MESOSPHERE_ASSERT_THIS(); }
 
             constexpr void Initialize(void *it) {
                 MESOSPHERE_ASSERT_THIS();
-                this->item = it;
+                m_item = it;
             }
 
             constexpr void *GetItem() const {
-                return this->item;
+                return m_item;
             }
     };
     static_assert(sizeof(KLinkedListNode) == sizeof(util::IntrusiveListNode) + sizeof(void *));
@@ -69,16 +69,16 @@ namespace ams::kern {
                     using pointer           = typename std::conditional<Const, KLinkedList::const_pointer, KLinkedList::pointer>::type;
                     using reference         = typename std::conditional<Const, KLinkedList::const_reference, KLinkedList::reference>::type;
                 private:
-                    BaseIterator base_it;
+                    BaseIterator m_base_it;
                 public:
-                    explicit Iterator(BaseIterator it) : base_it(it) { /* ... */ }
+                    explicit Iterator(BaseIterator it) : m_base_it(it) { /* ... */ }
 
                     pointer GetItem() const {
-                        return static_cast<pointer>(this->base_it->GetItem());
+                        return static_cast<pointer>(m_base_it->GetItem());
                     }
 
                     bool operator==(const Iterator &rhs) const {
-                        return this->base_it == rhs.base_it;
+                        return m_base_it == rhs.m_base_it;
                     }
 
                     bool operator!=(const Iterator &rhs) const {
@@ -94,12 +94,12 @@ namespace ams::kern {
                     }
 
                     Iterator &operator++() {
-                        ++this->base_it;
+                        ++m_base_it;
                         return *this;
                     }
 
                     Iterator &operator--() {
-                        --this->base_it;
+                        --m_base_it;
                         return *this;
                     }
 
@@ -116,7 +116,7 @@ namespace ams::kern {
                     }
 
                     operator Iterator<true>() const {
-                        return Iterator<true>(this->base_it);
+                        return Iterator<true>(m_base_it);
                     }
             };
         public:
@@ -205,7 +205,7 @@ namespace ams::kern {
                 KLinkedListNode *node = KLinkedListNode::Allocate();
                 MESOSPHERE_ABORT_UNLESS(node != nullptr);
                 node->Initialize(std::addressof(ref));
-                return iterator(BaseList::insert(pos.base_it, *node));
+                return iterator(BaseList::insert(pos.m_base_it, *node));
             }
 
             void push_back(reference ref) {
@@ -225,8 +225,8 @@ namespace ams::kern {
             }
 
             iterator erase(const iterator pos) {
-                KLinkedListNode *freed_node = std::addressof(*pos.base_it);
-                iterator ret = iterator(BaseList::erase(pos.base_it));
+                KLinkedListNode *freed_node = std::addressof(*pos.m_base_it);
+                iterator ret = iterator(BaseList::erase(pos.m_base_it));
                 KLinkedListNode::Free(freed_node);
 
                 return ret;

@@ -45,19 +45,19 @@ namespace ams::kern::arch::arm64 {
                     u64 x28;
                     u64 x29;
                 };
-            } callee_saved;
-            u64 lr;
-            u64 sp;
-            u64 cpacr;
-            u64 fpcr;
-            u64 fpsr;
-            alignas(0x10) u128 fpu_registers[NumFpuRegisters];
-            bool locked;
+            } m_callee_saved;
+            u64 m_lr;
+            u64 m_sp;
+            u64 m_cpacr;
+            u64 m_fpcr;
+            u64 m_fpsr;
+            alignas(0x10) u128 m_fpu_registers[NumFpuRegisters];
+            bool m_locked;
         private:
             static void RestoreFpuRegisters64(const KThreadContext &);
             static void RestoreFpuRegisters32(const KThreadContext &);
         public:
-            constexpr explicit KThreadContext() : callee_saved(), lr(), sp(), cpacr(), fpcr(), fpsr(), fpu_registers(), locked() { /* ... */ }
+            constexpr explicit KThreadContext() : m_callee_saved(), m_lr(), m_sp(), m_cpacr(), m_fpcr(), m_fpsr(), m_fpu_registers(), m_locked() { /* ... */ }
 
             Result Initialize(KVirtualAddress u_pc, KVirtualAddress k_sp, KVirtualAddress u_sp, uintptr_t arg, bool is_user, bool is_64_bit, bool is_main);
             Result Finalize();
@@ -66,17 +66,17 @@ namespace ams::kern::arch::arm64 {
 
             static void FpuContextSwitchHandler(KThread *thread);
 
-            u32 GetFpcr() const { return this->fpcr; }
-            u32 GetFpsr() const { return this->fpsr; }
+            u32 GetFpcr() const { return m_fpcr; }
+            u32 GetFpsr() const { return m_fpsr; }
 
-            void SetFpcr(u32 v) { this->fpcr = v; }
-            void SetFpsr(u32 v) { this->fpsr = v; }
+            void SetFpcr(u32 v) { m_fpcr = v; }
+            void SetFpsr(u32 v) { m_fpsr = v; }
 
             void CloneFpuStatus();
 
             void SetFpuRegisters(const u128 *v, bool is_64_bit);
 
-            const u128 *GetFpuRegisters() const { return this->fpu_registers; }
+            const u128 *GetFpuRegisters() const { return m_fpu_registers; }
         public:
             static void OnThreadTerminating(const KThread *thread);
     };

@@ -73,6 +73,9 @@ void __appInit(void) {
         R_ABORT_UNLESS(setsysInitialize());
         R_ABORT_UNLESS(pscmInitialize());
         R_ABORT_UNLESS(time::Initialize());
+        if (hos::GetVersion() >= hos::Version_11_0_0) {
+            R_ABORT_UNLESS(ectxrInitialize());
+        }
         R_ABORT_UNLESS(fsInitialize());
     });
 

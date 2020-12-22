@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/fs/fs_file_storage.hpp>
+#include <stratosphere/fs/common/fs_file_storage.hpp>
 #include <stratosphere/ncm/ncm_package_install_task.hpp>
 
 namespace ams::ncm {

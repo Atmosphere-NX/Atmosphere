@@ -40,25 +40,25 @@ namespace ams::fs {
                 return this->OperateRange(nullptr, 0, op_id, offset, size, nullptr, 0);
             }
         public:
-            static inline bool IsRangeValid(s64 offset, s64 size, s64 total_size) {
+            static inline bool CheckAccessRange(s64 offset, s64 size, s64 total_size) {
                 return offset >= 0 &&
                        size >= 0 &&
                        size <= total_size &&
                        offset <= (total_size - size);
             }
 
-            static inline bool IsRangeValid(s64 offset, size_t size, s64 total_size) {
-                return IsRangeValid(offset, static_cast<s64>(size), total_size);
+            static inline bool CheckAccessRange(s64 offset, size_t size, s64 total_size) {
+                return CheckAccessRange(offset, static_cast<s64>(size), total_size);
             }
 
-            static inline bool IsOffsetAndSizeValid(s64 offset, s64 size) {
+            static inline bool CheckOffsetAndSize(s64 offset, s64 size) {
                 return offset >= 0 &&
                        size >= 0 &&
                        offset <= (offset + size);
             }
 
-            static inline bool IsOffsetAndSizeValid(s64 offset, size_t size) {
-                return IsOffsetAndSizeValid(offset, static_cast<s64>(size));
+            static inline bool CheckOffsetAndSize(s64 offset, size_t size) {
+                return CheckOffsetAndSize(offset, static_cast<s64>(size));
             }
     };
 

@@ -37,14 +37,14 @@ namespace ams::erpt::srv {
         this->ctx = {};
     }
 
-    ContextRecord::ContextRecord(CategoryId category) {
+    ContextRecord::ContextRecord(CategoryId category, u32 array_buf_size) {
         this->ctx = {
             .category     = category,
-            .array_buffer = static_cast<u8 *>(Allocate(ArrayBufferSizeDefault)),
+            .array_buffer = static_cast<u8 *>(Allocate(array_buf_size)),
         };
         if (this->ctx.array_buffer != nullptr) {
-            this->ctx.array_buffer_size = ArrayBufferSizeDefault;
-            this->ctx.array_free_count  = ArrayBufferSizeDefault;
+            this->ctx.array_buffer_size = array_buf_size;
+            this->ctx.array_free_count  = array_buf_size;
         }
     }
 
@@ -176,26 +176,34 @@ namespace ams::erpt::srv {
         return ResultSuccess();
     }
 
-    Result ContextRecord::Add(FieldId field_id, const char *str, u32 str_size) {
+    Result ContextRecord::Add(FieldId field_id, const void *arr, u32 size, FieldType type) {
         R_UNLESS(this->ctx.field_count < FieldsPerContext, erpt::ResultOutOfFieldSpace());
-        R_UNLESS(str_size <= this->ctx.array_free_count,   erpt::ResultOutOfArraySpace());
+        R_UNLESS(size <= this->ctx.array_free_count,   erpt::ResultOutOfArraySpace());
 
         const u32 start_idx = this->ctx.array_buffer_size - this->ctx.array_free_count;
-        this->ctx.array_free_count -= str_size;
+        this->ctx.array_free_count -= size;
 
         s_record_count++;
         auto &field = this->ctx.fields[this->ctx.field_count++];
 
         field.id   = field_id;
-        field.type = FieldType_String;
+        field.type = type;
 
         field.value_array = {
             .start_idx = start_idx,
-            .size      = str_size,
+            .size      = size,
         };
 
-        std::memcpy(this->ctx.array_buffer + start_idx, str, str_size);
+        std::memcpy(this->ctx.array_buffer + start_idx, arr, size);
         return ResultSuccess();
+    }
+
+    Result ContextRecord::Add(FieldId field_id, const char *str, u32 str_size) {
+        return this->Add(field_id, str, str_size, FieldType_String);
+    }
+
+    Result ContextRecord::Add(FieldId field_id, const u8 *data, u32 size) {
+        return this->Add(field_id, data, size, FieldType_U8Array);
     }
 
 }

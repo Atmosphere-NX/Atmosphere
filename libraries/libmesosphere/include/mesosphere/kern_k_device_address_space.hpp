@@ -24,19 +24,19 @@ namespace ams::kern {
     class KDeviceAddressSpace final : public KAutoObjectWithSlabHeapAndContainer<KDeviceAddressSpace, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KDeviceAddressSpace, KAutoObject);
         private:
-            KLightLock lock;
-            KDevicePageTable table;
-            u64 space_address;
-            u64 space_size;
-            bool is_initialized;
+            KLightLock m_lock;
+            KDevicePageTable m_table;
+            u64 m_space_address;
+            u64 m_space_size;
+            bool m_is_initialized;
         public:
-            constexpr KDeviceAddressSpace() : lock(), table(), space_address(), space_size(), is_initialized() { /* ... */ }
+            constexpr KDeviceAddressSpace() : m_lock(), m_table(), m_space_address(), m_space_size(), m_is_initialized() { /* ... */ }
             virtual ~KDeviceAddressSpace() { /* ... */ }
 
             Result Initialize(u64 address, u64 size);
             virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return this->is_initialized; }
+            virtual bool IsInitialized() const override { return m_is_initialized; }
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
             Result Attach(ams::svc::DeviceName device_name);

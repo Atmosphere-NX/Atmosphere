@@ -105,50 +105,50 @@ namespace ams::kern::arch::arm64 {
                 ContigType_Contiguous    = (0x1ul << 52),
             };
         protected:
-            u64 attributes;
+            u64 m_attributes;
         public:
             /* Take in a raw attribute. */
-            constexpr explicit ALWAYS_INLINE PageTableEntry() : attributes() { /* ... */ }
-            constexpr explicit ALWAYS_INLINE PageTableEntry(u64 attr) : attributes(attr) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry() : m_attributes() { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry(u64 attr) : m_attributes(attr) { /* ... */ }
 
-            constexpr explicit ALWAYS_INLINE PageTableEntry(InvalidTag) : attributes(0) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry(InvalidTag) : m_attributes(0) { /* ... */ }
 
             /* Extend a previous attribute. */
-            constexpr explicit ALWAYS_INLINE PageTableEntry(const PageTableEntry &rhs, u64 new_attr) : attributes(rhs.attributes | new_attr) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE PageTableEntry(const PageTableEntry &rhs, u64 new_attr) : m_attributes(rhs.m_attributes | new_attr) { /* ... */ }
 
             /* Construct a new attribute. */
             constexpr explicit ALWAYS_INLINE PageTableEntry(Permission perm, PageAttribute p_a, Shareable share, MappingFlag m)
-                : attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share) | static_cast<u64>(ExtensionFlag_Valid) | static_cast<u64>(m))
+                : m_attributes(static_cast<u64>(perm) | static_cast<u64>(AccessFlag_Accessed) | static_cast<u64>(p_a) | static_cast<u64>(share) | static_cast<u64>(ExtensionFlag_Valid) | static_cast<u64>(m))
             {
                 /* ... */
             }
         protected:
             constexpr ALWAYS_INLINE u64 GetBits(size_t offset, size_t count) const {
-                return (this->attributes >> offset) & ((1ul << count) - 1);
+                return (m_attributes >> offset) & ((1ul << count) - 1);
             }
 
             constexpr ALWAYS_INLINE u64 SelectBits(size_t offset, size_t count) const {
-                return this->attributes & (((1ul << count) - 1) << offset);
+                return m_attributes & (((1ul << count) - 1) << offset);
             }
 
             constexpr ALWAYS_INLINE void SetBits(size_t offset, size_t count, u64 value) {
                 const u64 mask = ((1ul << count) - 1) << offset;
-                this->attributes &= ~mask;
-                this->attributes |= (value & (mask >> offset)) << offset;
+                m_attributes &= ~mask;
+                m_attributes |= (value & (mask >> offset)) << offset;
             }
 
             constexpr ALWAYS_INLINE void SetBitsDirect(size_t offset, size_t count, u64 value) {
                 const u64 mask = ((1ul << count) - 1) << offset;
-                this->attributes &= ~mask;
-                this->attributes |= (value & mask);
+                m_attributes &= ~mask;
+                m_attributes |= (value & mask);
             }
 
             constexpr ALWAYS_INLINE void SetBit(size_t offset, bool enabled) {
                 const u64 mask = 1ul << offset;
                 if (enabled) {
-                    this->attributes |= mask;
+                    m_attributes |= mask;
                 } else {
-                    this->attributes &= ~mask;
+                    m_attributes &= ~mask;
                 }
             }
         public:
@@ -167,9 +167,9 @@ namespace ams::kern::arch::arm64 {
             constexpr ALWAYS_INLINE bool IsReadOnly()                       const { return this->GetBits(7, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsUserAccessible()                 const { return this->GetBits(6, 1) != 0; }
             constexpr ALWAYS_INLINE bool IsNonSecure()                      const { return this->GetBits(5, 1) != 0; }
-            constexpr ALWAYS_INLINE bool IsBlock()                          const { return (this->attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_Valid; }
-            constexpr ALWAYS_INLINE bool IsTable()                          const { return (this->attributes & ExtensionFlag_TestTableMask) == 2; }
-            constexpr ALWAYS_INLINE bool IsEmpty()                          const { return (this->attributes & ExtensionFlag_TestTableMask) == 0; }
+            constexpr ALWAYS_INLINE bool IsBlock()                          const { return (m_attributes & ExtensionFlag_TestTableMask) == ExtensionFlag_Valid; }
+            constexpr ALWAYS_INLINE bool IsTable()                          const { return (m_attributes & ExtensionFlag_TestTableMask) == 2; }
+            constexpr ALWAYS_INLINE bool IsEmpty()                          const { return (m_attributes & ExtensionFlag_TestTableMask) == 0; }
             constexpr ALWAYS_INLINE bool IsMapped()                         const { return this->GetBits(0, 1) != 0; }
 
             constexpr ALWAYS_INLINE decltype(auto) SetUserExecuteNever(bool en)       { this->SetBit(54, en); return *this; }
@@ -185,21 +185,21 @@ namespace ams::kern::arch::arm64 {
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForMerge() const {
                 constexpr u64 BaseMask = (0xFFF0000000000FFFul & ~static_cast<u64>((0x1ul << 52) | ExtensionFlag_TestTableMask | ExtensionFlag_DisableMergeHead | ExtensionFlag_DisableMergeHeadAndBody | ExtensionFlag_DisableMergeTail));
-                return this->attributes & BaseMask;
+                return m_attributes & BaseMask;
             }
 
             constexpr ALWAYS_INLINE bool IsForMerge(u64 attr) const {
                 constexpr u64 BaseMaskForMerge = ~static_cast<u64>(ExtensionFlag_DisableMergeHead | ExtensionFlag_DisableMergeHeadAndBody | ExtensionFlag_DisableMergeTail);
-                return (this->attributes & BaseMaskForMerge) == attr;
+                return (m_attributes & BaseMaskForMerge) == attr;
             }
 
             constexpr ALWAYS_INLINE u64 GetRawAttributesUnsafeForSwap() const {
-                return this->attributes;
+                return m_attributes;
             }
 
         protected:
             constexpr ALWAYS_INLINE u64 GetRawAttributes() const {
-                return this->attributes;
+                return m_attributes;
             }
     };
 
@@ -262,7 +262,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForL2Block(size_t idx) const {
-                return this->attributes & GetEntryTemplateForL2BlockMask(idx);
+                return m_attributes & GetEntryTemplateForL2BlockMask(idx);
             }
 
             constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, u8 sw_reserved_bits, bool contig) const {
@@ -322,7 +322,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForL2Block(size_t idx) const {
-                return this->attributes & GetEntryTemplateForL2BlockMask(idx);
+                return m_attributes & GetEntryTemplateForL2BlockMask(idx);
             }
 
             static constexpr ALWAYS_INLINE u64 GetEntryTemplateForL3BlockMask(size_t idx) {
@@ -339,7 +339,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForL3Block(size_t idx) const {
-                return this->attributes & GetEntryTemplateForL3BlockMask(idx);
+                return m_attributes & GetEntryTemplateForL3BlockMask(idx);
             }
 
             constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, u8 sw_reserved_bits, bool contig) const {
@@ -376,7 +376,7 @@ namespace ams::kern::arch::arm64 {
             }
 
             constexpr ALWAYS_INLINE u64 GetEntryTemplateForL3Block(size_t idx) const {
-                return this->attributes & GetEntryTemplateForL3BlockMask(idx);
+                return m_attributes & GetEntryTemplateForL3BlockMask(idx);
             }
 
             constexpr ALWAYS_INLINE bool IsCompatibleWithAttribute(const PageTableEntry &rhs, u8 sw_reserved_bits, bool contig) const {

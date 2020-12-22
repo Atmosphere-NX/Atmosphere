@@ -23,15 +23,15 @@ namespace ams::kern {
     class KTransferMemory final : public KAutoObjectWithSlabHeapAndContainer<KTransferMemory, KAutoObjectWithList> {
         MESOSPHERE_AUTOOBJECT_TRAITS(KTransferMemory, KAutoObject);
         private:
-            TYPED_STORAGE(KPageGroup) page_group;
-            KProcess *owner;
-            KProcessAddress address;
-            KLightLock lock;
-            ams::svc::MemoryPermission owner_perm;
-            bool is_initialized;
-            bool is_mapped;
+            TYPED_STORAGE(KPageGroup) m_page_group;
+            KProcess *m_owner;
+            KProcessAddress m_address;
+            KLightLock m_lock;
+            ams::svc::MemoryPermission m_owner_perm;
+            bool m_is_initialized;
+            bool m_is_mapped;
         public:
-            explicit KTransferMemory() : owner(nullptr), address(Null<KProcessAddress>), owner_perm(ams::svc::MemoryPermission_None), is_initialized(false), is_mapped(false) {
+            explicit KTransferMemory() : m_owner(nullptr), m_address(Null<KProcessAddress>), m_owner_perm(ams::svc::MemoryPermission_None), m_is_initialized(false), m_is_mapped(false) {
                 /* ... */
             }
 
@@ -40,16 +40,16 @@ namespace ams::kern {
             Result Initialize(KProcessAddress addr, size_t size, ams::svc::MemoryPermission own_perm);
             virtual void Finalize() override;
 
-            virtual bool IsInitialized() const override { return this->is_initialized; }
-            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(this->owner); }
+            virtual bool IsInitialized() const override { return m_is_initialized; }
+            virtual uintptr_t GetPostDestroyArgument() const override { return reinterpret_cast<uintptr_t>(m_owner); }
             static void PostDestroy(uintptr_t arg);
 
             Result Map(KProcessAddress address, size_t size, ams::svc::MemoryPermission map_perm);
             Result Unmap(KProcessAddress address, size_t size);
 
-            KProcess *GetOwner() const { return this->owner; }
-            KProcessAddress GetSourceAddress() { return this->address; }
-            size_t GetSize() const { return this->is_initialized ? GetReference(this->page_group).GetNumPages() * PageSize : 0; }
+            KProcess *GetOwner() const { return m_owner; }
+            KProcessAddress GetSourceAddress() { return m_address; }
+            size_t GetSize() const { return m_is_initialized ? GetReference(m_page_group).GetNumPages() * PageSize : 0; }
     };
 
 }

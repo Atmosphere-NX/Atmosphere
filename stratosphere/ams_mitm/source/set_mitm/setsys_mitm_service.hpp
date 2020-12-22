@@ -24,7 +24,8 @@ namespace ams::mitm::settings {
             AMS_SF_METHOD_INFO(C, H,  3, Result, GetFirmwareVersion,       (sf::Out<ams::settings::FirmwareVersion> out))                                                                                                       \
             AMS_SF_METHOD_INFO(C, H,  4, Result, GetFirmwareVersion2,      (sf::Out<ams::settings::FirmwareVersion> out))                                                                                                       \
             AMS_SF_METHOD_INFO(C, H, 37, Result, GetSettingsItemValueSize, (sf::Out<u64> out_size, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key))                           \
-            AMS_SF_METHOD_INFO(C, H, 38, Result, GetSettingsItemValue,     (sf::Out<u64> out_size, const sf::OutBuffer &out, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key))
+            AMS_SF_METHOD_INFO(C, H, 38, Result, GetSettingsItemValue,     (sf::Out<u64> out_size, const sf::OutBuffer &out, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key)) \
+            AMS_SF_METHOD_INFO(C, H, 62, Result, GetDebugModeFlag,         (sf::Out<bool> out))
 
         AMS_SF_DEFINE_MITM_INTERFACE(ISetSysMitmInterface, AMS_SETTINGS_SYSTEM_MITM_INTERFACE_INFO)
 
@@ -45,6 +46,7 @@ namespace ams::mitm::settings {
             Result GetFirmwareVersion2(sf::Out<ams::settings::FirmwareVersion> out);
             Result GetSettingsItemValueSize(sf::Out<u64> out_size, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key);
             Result GetSettingsItemValue(sf::Out<u64> out_size, const sf::OutBuffer &out, const ams::settings::fwdbg::SettingsName &name, const ams::settings::fwdbg::SettingsItemKey &key);
+            Result GetDebugModeFlag(sf::Out<bool> out);
     };
     static_assert(IsISetSysMitmInterface<SetSysMitmService>);
 

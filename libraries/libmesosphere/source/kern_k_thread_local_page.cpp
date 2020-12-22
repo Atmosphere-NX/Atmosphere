@@ -21,7 +21,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT_THIS();
 
         /* Set that this process owns us. */
-        this->owner = process;
+        m_owner = process;
 
         /* Allocate a new page. */
         KPageBuffer *page_buf = KPageBuffer::Allocate();
@@ -29,7 +29,7 @@ namespace ams::kern {
         auto page_buf_guard = SCOPE_GUARD { KPageBuffer::Free(page_buf); };
 
         /* Map the address in. */
-        R_TRY(this->owner->GetPageTable().MapPages(std::addressof(this->virt_addr), 1, PageSize, page_buf->GetPhysicalAddress(), KMemoryState_ThreadLocal, KMemoryPermission_UserReadWrite));
+        R_TRY(m_owner->GetPageTable().MapPages(std::addressof(m_virt_addr), 1, PageSize, page_buf->GetPhysicalAddress(), KMemoryState_ThreadLocal, KMemoryPermission_UserReadWrite));
 
         /* We succeeded. */
         page_buf_guard.Cancel();
@@ -41,10 +41,10 @@ namespace ams::kern {
 
         /* Get the physical address of the page. */
         KPhysicalAddress phys_addr = Null<KPhysicalAddress>;
-        MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress()));
+        MESOSPHERE_ABORT_UNLESS(m_owner->GetPageTable().GetPhysicalAddress(&phys_addr, this->GetAddress()));
 
         /* Unmap the page. */
-        R_TRY(this->owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));
+        R_TRY(m_owner->GetPageTable().UnmapPages(this->GetAddress(), 1, KMemoryState_ThreadLocal));
 
         /* Free the page. */
         KPageBuffer::Free(KPageBuffer::FromPhysicalAddress(phys_addr));
@@ -54,9 +54,9 @@ namespace ams::kern {
     KProcessAddress KThreadLocalPage::Reserve() {
         MESOSPHERE_ASSERT_THIS();
 
-        for (size_t i = 0; i < util::size(this->is_region_free); i++) {
-            if (this->is_region_free[i]) {
-                this->is_region_free[i] = false;
+        for (size_t i = 0; i < util::size(m_is_region_free); i++) {
+            if (m_is_region_free[i]) {
+                m_is_region_free[i] = false;
                 return this->GetRegionAddress(i);
             }
         }
@@ -67,14 +67,14 @@ namespace ams::kern {
     void KThreadLocalPage::Release(KProcessAddress addr) {
         MESOSPHERE_ASSERT_THIS();
 
-        this->is_region_free[this->GetRegionIndex(addr)] = true;
+        m_is_region_free[this->GetRegionIndex(addr)] = true;
     }
 
     void *KThreadLocalPage::GetPointer() const {
         MESOSPHERE_ASSERT_THIS();
 
         KPhysicalAddress phys_addr;
-        MESOSPHERE_ABORT_UNLESS(this->owner->GetPageTable().GetPhysicalAddress(std::addressof(phys_addr), this->GetAddress()));
+        MESOSPHERE_ABORT_UNLESS(m_owner->GetPageTable().GetPhysicalAddress(std::addressof(phys_addr), this->GetAddress()));
         return static_cast<void *>(KPageBuffer::FromPhysicalAddress(phys_addr));
     }
 

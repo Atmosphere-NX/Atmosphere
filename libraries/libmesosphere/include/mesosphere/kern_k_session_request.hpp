@@ -33,38 +33,38 @@ namespace ams::kern {
 
                     class Mapping {
                         private:
-                            KProcessAddress client_address;
-                            KProcessAddress server_address;
-                            size_t size;
-                            KMemoryState state;
+                            KProcessAddress m_client_address;
+                            KProcessAddress m_server_address;
+                            size_t m_size;
+                            KMemoryState m_state;
                         public:
                             constexpr void Set(KProcessAddress c, KProcessAddress s, size_t sz, KMemoryState st) {
-                                this->client_address = c;
-                                this->server_address = s;
-                                this->size           = sz;
-                                this->state          = st;
+                                m_client_address = c;
+                                m_server_address = s;
+                                m_size           = sz;
+                                m_state          = st;
                             }
 
-                            constexpr ALWAYS_INLINE KProcessAddress GetClientAddress() const { return this->client_address; }
-                            constexpr ALWAYS_INLINE KProcessAddress GetServerAddress() const { return this->server_address; }
-                            constexpr ALWAYS_INLINE size_t GetSize() const { return this->size; }
-                            constexpr ALWAYS_INLINE KMemoryState GetMemoryState() const { return this->state; }
+                            constexpr ALWAYS_INLINE KProcessAddress GetClientAddress() const { return m_client_address; }
+                            constexpr ALWAYS_INLINE KProcessAddress GetServerAddress() const { return m_server_address; }
+                            constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
+                            constexpr ALWAYS_INLINE KMemoryState GetMemoryState() const { return m_state; }
                     };
                 private:
-                    Mapping static_mappings[NumStaticMappings];
-                    Mapping *mappings;
-                    u8 num_send;
-                    u8 num_recv;
-                    u8 num_exch;
+                    Mapping m_static_mappings[NumStaticMappings];
+                    Mapping *m_mappings;
+                    u8 m_num_send;
+                    u8 m_num_recv;
+                    u8 m_num_exch;
                 public:
-                    constexpr explicit SessionMappings() : static_mappings(), mappings(), num_send(), num_recv(), num_exch() { /* ... */ }
+                    constexpr explicit SessionMappings() : m_static_mappings(), m_mappings(), m_num_send(), m_num_recv(), m_num_exch() { /* ... */ }
 
                     void Initialize() { /* ... */ }
                     void Finalize();
 
-                    constexpr ALWAYS_INLINE size_t GetSendCount() const { return this->num_send; }
-                    constexpr ALWAYS_INLINE size_t GetReceiveCount() const { return this->num_recv; }
-                    constexpr ALWAYS_INLINE size_t GetExchangeCount() const { return this->num_exch; }
+                    constexpr ALWAYS_INLINE size_t GetSendCount() const { return m_num_send; }
+                    constexpr ALWAYS_INLINE size_t GetReceiveCount() const { return m_num_recv; }
+                    constexpr ALWAYS_INLINE size_t GetExchangeCount() const { return m_num_exch; }
 
                     Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
                     Result PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state);
@@ -88,49 +88,49 @@ namespace ams::kern {
                     Result PushMap(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state, size_t index);
 
                     constexpr ALWAYS_INLINE const Mapping &GetSendMapping(size_t i) const {
-                        MESOSPHERE_ASSERT(i < this->num_send);
+                        MESOSPHERE_ASSERT(i < m_num_send);
 
                         const size_t index = i;
                         if (index < NumStaticMappings) {
-                            return this->static_mappings[index];
+                            return m_static_mappings[index];
                         } else {
-                            return this->mappings[index - NumStaticMappings];
+                            return m_mappings[index - NumStaticMappings];
                         }
                     }
 
                     constexpr ALWAYS_INLINE const Mapping &GetReceiveMapping(size_t i) const {
-                        MESOSPHERE_ASSERT(i < this->num_recv);
+                        MESOSPHERE_ASSERT(i < m_num_recv);
 
-                        const size_t index = this->num_send + i;
+                        const size_t index = m_num_send + i;
                         if (index < NumStaticMappings) {
-                            return this->static_mappings[index];
+                            return m_static_mappings[index];
                         } else {
-                            return this->mappings[index - NumStaticMappings];
+                            return m_mappings[index - NumStaticMappings];
                         }
                     }
 
                     constexpr ALWAYS_INLINE const Mapping &GetExchangeMapping(size_t i) const {
-                        MESOSPHERE_ASSERT(i < this->num_exch);
+                        MESOSPHERE_ASSERT(i < m_num_exch);
 
-                        const size_t index = this->num_send + this->num_recv + i;
+                        const size_t index = m_num_send + m_num_recv + i;
                         if (index < NumStaticMappings) {
-                            return this->static_mappings[index];
+                            return m_static_mappings[index];
                         } else {
-                            return this->mappings[index - NumStaticMappings];
+                            return m_mappings[index - NumStaticMappings];
                         }
                     }
 
 
             };
         private:
-            SessionMappings mappings;
-            KThread *thread;
-            KProcess *server;
-            KWritableEvent *event;
-            uintptr_t address;
-            size_t size;
+            SessionMappings m_mappings;
+            KThread *m_thread;
+            KProcess *m_server;
+            KWritableEvent *m_event;
+            uintptr_t m_address;
+            size_t m_size;
         public:
-            constexpr KSessionRequest() : mappings(), thread(), server(), event(), address(), size() { /* ... */ }
+            constexpr KSessionRequest() : m_mappings(), m_thread(), m_server(), m_event(), m_address(), m_size() { /* ... */ }
             virtual ~KSessionRequest() { /* ... */ }
 
             static KSessionRequest *Create() {
@@ -147,79 +147,79 @@ namespace ams::kern {
             }
 
             void Initialize(KWritableEvent *event, uintptr_t address, size_t size) {
-                this->mappings.Initialize();
+                m_mappings.Initialize();
 
-                this->thread  = std::addressof(GetCurrentThread());
-                this->event   = event;
-                this->address = address;
-                this->size    = size;
+                m_thread  = std::addressof(GetCurrentThread());
+                m_event   = event;
+                m_address = address;
+                m_size    = size;
 
-                this->thread->Open();
-                if (this->event != nullptr) {
-                    this->event->Open();
+                m_thread->Open();
+                if (m_event != nullptr) {
+                    m_event->Open();
                 }
             }
 
             virtual void Finalize() override {
-                this->mappings.Finalize();
+                m_mappings.Finalize();
 
-                if (this->thread) {
-                    this->thread->Close();
+                if (m_thread) {
+                    m_thread->Close();
                 }
-                if (this->event) {
-                    this->event->Close();
+                if (m_event) {
+                    m_event->Close();
                 }
-                if (this->server) {
-                    this->server->Close();
+                if (m_server) {
+                    m_server->Close();
                 }
             }
 
             static void PostDestroy(uintptr_t arg) { MESOSPHERE_UNUSED(arg); /* ... */ }
 
-            constexpr ALWAYS_INLINE KThread *GetThread() const { return this->thread; }
-            constexpr ALWAYS_INLINE KWritableEvent *GetEvent() const { return this->event; }
-            constexpr ALWAYS_INLINE uintptr_t GetAddress() const { return this->address; }
-            constexpr ALWAYS_INLINE size_t GetSize() const { return this->size; }
-            constexpr ALWAYS_INLINE KProcess *GetServerProcess() const { return this->server; }
+            constexpr ALWAYS_INLINE KThread *GetThread() const { return m_thread; }
+            constexpr ALWAYS_INLINE KWritableEvent *GetEvent() const { return m_event; }
+            constexpr ALWAYS_INLINE uintptr_t GetAddress() const { return m_address; }
+            constexpr ALWAYS_INLINE size_t GetSize() const { return m_size; }
+            constexpr ALWAYS_INLINE KProcess *GetServerProcess() const { return m_server; }
 
             void ALWAYS_INLINE SetServerProcess(KProcess *process) {
-                this->server = process;
-                this->server->Open();
+                m_server = process;
+                m_server->Open();
             }
 
-            constexpr ALWAYS_INLINE void ClearThread() { this->thread = nullptr; }
-            constexpr ALWAYS_INLINE void ClearEvent()  { this->event  = nullptr; }
+            constexpr ALWAYS_INLINE void ClearThread() { m_thread = nullptr; }
+            constexpr ALWAYS_INLINE void ClearEvent()  { m_event  = nullptr; }
 
-            constexpr ALWAYS_INLINE size_t GetSendCount() const { return this->mappings.GetSendCount(); }
-            constexpr ALWAYS_INLINE size_t GetReceiveCount() const { return this->mappings.GetReceiveCount(); }
-            constexpr ALWAYS_INLINE size_t GetExchangeCount() const { return this->mappings.GetExchangeCount(); }
+            constexpr ALWAYS_INLINE size_t GetSendCount() const { return m_mappings.GetSendCount(); }
+            constexpr ALWAYS_INLINE size_t GetReceiveCount() const { return m_mappings.GetReceiveCount(); }
+            constexpr ALWAYS_INLINE size_t GetExchangeCount() const { return m_mappings.GetExchangeCount(); }
 
             ALWAYS_INLINE Result PushSend(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-                return this->mappings.PushSend(client, server, size, state);
+                return m_mappings.PushSend(client, server, size, state);
             }
 
             ALWAYS_INLINE Result PushReceive(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-                return this->mappings.PushReceive(client, server, size, state);
+                return m_mappings.PushReceive(client, server, size, state);
             }
 
             ALWAYS_INLINE Result PushExchange(KProcessAddress client, KProcessAddress server, size_t size, KMemoryState state) {
-                return this->mappings.PushExchange(client, server, size, state);
+                return m_mappings.PushExchange(client, server, size, state);
             }
 
-            constexpr ALWAYS_INLINE KProcessAddress GetSendClientAddress(size_t i) const { return this->mappings.GetSendClientAddress(i); }
-            constexpr ALWAYS_INLINE KProcessAddress GetSendServerAddress(size_t i) const { return this->mappings.GetSendServerAddress(i); }
-            constexpr ALWAYS_INLINE size_t          GetSendSize(size_t i)          const { return this->mappings.GetSendSize(i);          }
-            constexpr ALWAYS_INLINE KMemoryState    GetSendMemoryState(size_t i)   const { return this->mappings.GetSendMemoryState(i);   }
+            constexpr ALWAYS_INLINE KProcessAddress GetSendClientAddress(size_t i) const { return m_mappings.GetSendClientAddress(i); }
+            constexpr ALWAYS_INLINE KProcessAddress GetSendServerAddress(size_t i) const { return m_mappings.GetSendServerAddress(i); }
+            constexpr ALWAYS_INLINE size_t          GetSendSize(size_t i)          const { return m_mappings.GetSendSize(i);          }
+            constexpr ALWAYS_INLINE KMemoryState    GetSendMemoryState(size_t i)   const { return m_mappings.GetSendMemoryState(i);   }
 
-            constexpr ALWAYS_INLINE KProcessAddress GetReceiveClientAddress(size_t i) const { return this->mappings.GetReceiveClientAddress(i); }
-            constexpr ALWAYS_INLINE KProcessAddress GetReceiveServerAddress(size_t i) const { return this->mappings.GetReceiveServerAddress(i); }
-            constexpr ALWAYS_INLINE size_t          GetReceiveSize(size_t i)          const { return this->mappings.GetReceiveSize(i);          }
-            constexpr ALWAYS_INLINE KMemoryState    GetReceiveMemoryState(size_t i)   const { return this->mappings.GetReceiveMemoryState(i);   }
+            constexpr ALWAYS_INLINE KProcessAddress GetReceiveClientAddress(size_t i) const { return m_mappings.GetReceiveClientAddress(i); }
+            constexpr ALWAYS_INLINE KProcessAddress GetReceiveServerAddress(size_t i) const { return m_mappings.GetReceiveServerAddress(i); }
+            constexpr ALWAYS_INLINE size_t          GetReceiveSize(size_t i)          const { return m_mappings.GetReceiveSize(i);          }
+            constexpr ALWAYS_INLINE KMemoryState    GetReceiveMemoryState(size_t i)   const { return m_mappings.GetReceiveMemoryState(i);   }
 
-            constexpr ALWAYS_INLINE KProcessAddress GetExchangeClientAddress(size_t i) const { return this->mappings.GetExchangeClientAddress(i);  }
-            constexpr ALWAYS_INLINE KProcessAddress GetExchangeServerAddress(size_t i) const { return this->mappings.GetExchangeServerAddress(i);  }
-            constexpr ALWAYS_INLINE size_t          GetExchangeSize(size_t i)          const { return this->mappings.GetExchangeSize(i);           }
-            constexpr ALWAYS_INLINE KMemoryState    GetExchangeMemoryState(size_t i)   const { return this->mappings.GetExchangeMemoryState(i);    }
+            constexpr ALWAYS_INLINE KProcessAddress GetExchangeClientAddress(size_t i) const { return m_mappings.GetExchangeClientAddress(i);  }
+            constexpr ALWAYS_INLINE KProcessAddress GetExchangeServerAddress(size_t i) const { return m_mappings.GetExchangeServerAddress(i);  }
+            constexpr ALWAYS_INLINE size_t          GetExchangeSize(size_t i)          const { return m_mappings.GetExchangeSize(i);           }
+            constexpr ALWAYS_INLINE KMemoryState    GetExchangeMemoryState(size_t i)   const { return m_mappings.GetExchangeMemoryState(i);    }
     };
 
 }

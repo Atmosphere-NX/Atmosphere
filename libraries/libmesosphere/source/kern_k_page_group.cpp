@@ -18,11 +18,11 @@
 namespace ams::kern {
 
     void KPageGroup::Finalize() {
-        auto it = this->block_list.begin();
-        while (it != this->block_list.end()) {
+        auto it = m_block_list.begin();
+        while (it != m_block_list.end()) {
             KBlockInfo *info = std::addressof(*it);
-            it = this->block_list.erase(it);
-            this->manager->Free(info);
+            it = m_block_list.erase(it);
+            m_manager->Free(info);
         }
     }
 
@@ -44,18 +44,18 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(addr < addr + num_pages * PageSize);
 
         /* Try to just append to the last block. */
-        if (!this->block_list.empty()) {
-            auto it = --(this->block_list.end());
+        if (!m_block_list.empty()) {
+            auto it = --(m_block_list.end());
             R_SUCCEED_IF(it->TryConcatenate(addr, num_pages));
         }
 
         /* Allocate a new block. */
-        KBlockInfo *new_block = this->manager->Allocate();
+        KBlockInfo *new_block = m_manager->Allocate();
         R_UNLESS(new_block != nullptr, svc::ResultOutOfResource());
 
         /* Initialize the block. */
         new_block->Initialize(addr, num_pages);
-        this->block_list.push_back(*new_block);
+        m_block_list.push_back(*new_block);
 
         return ResultSuccess();
     }
@@ -77,10 +77,10 @@ namespace ams::kern {
     }
 
     bool KPageGroup::IsEquivalentTo(const KPageGroup &rhs) const {
-        auto lit  = this->block_list.cbegin();
-        auto rit  = rhs.block_list.cbegin();
-        auto lend = this->block_list.cend();
-        auto rend = rhs.block_list.cend();
+        auto lit  = m_block_list.cbegin();
+        auto rit  = rhs.m_block_list.cbegin();
+        auto lend = m_block_list.cend();
+        auto rend = rhs.m_block_list.cend();
 
         while (lit != lend && rit != rend) {
             if (*lit != *rit) {

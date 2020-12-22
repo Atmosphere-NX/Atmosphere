@@ -21,13 +21,13 @@ namespace ams::kern::arch::arm64 {
 
         class AlignedMemoryBlock {
             private:
-                uintptr_t before_start;
-                uintptr_t before_end;
-                uintptr_t after_start;
-                uintptr_t after_end;
-                size_t current_alignment;
+                uintptr_t m_before_start;
+                uintptr_t m_before_end;
+                uintptr_t m_after_start;
+                uintptr_t m_after_end;
+                size_t m_current_alignment;
             public:
-                constexpr AlignedMemoryBlock(uintptr_t start, size_t num_pages, size_t alignment) : before_start(0), before_end(0), after_start(0), after_end(0), current_alignment(0) {
+                constexpr AlignedMemoryBlock(uintptr_t start, size_t num_pages, size_t alignment) : m_before_start(0), m_before_end(0), m_after_start(0), m_after_end(0), m_current_alignment(0) {
                     MESOSPHERE_ASSERT(util::IsAligned(start, PageSize));
                     MESOSPHERE_ASSERT(num_pages > 0);
 
@@ -38,41 +38,41 @@ namespace ams::kern::arch::arm64 {
                         alignment = KPageTable::GetSmallerAlignment(alignment * PageSize) / PageSize;
                     }
 
-                    this->before_start      = start_page;
-                    this->before_end        = util::AlignUp(start_page, alignment);
-                    this->after_start       = this->before_end;
-                    this->after_end         = start_page + num_pages;
-                    this->current_alignment = alignment;
-                    MESOSPHERE_ASSERT(this->current_alignment > 0);
+                    m_before_start      = start_page;
+                    m_before_end        = util::AlignUp(start_page, alignment);
+                    m_after_start       = m_before_end;
+                    m_after_end         = start_page + num_pages;
+                    m_current_alignment = alignment;
+                    MESOSPHERE_ASSERT(m_current_alignment > 0);
                 }
 
                 constexpr void SetAlignment(size_t alignment) {
                     /* We can only ever decrease the granularity. */
-                    MESOSPHERE_ASSERT(this->current_alignment >= alignment / PageSize);
-                    this->current_alignment = alignment / PageSize;
+                    MESOSPHERE_ASSERT(m_current_alignment >= alignment / PageSize);
+                    m_current_alignment = alignment / PageSize;
                 }
 
                 constexpr size_t GetAlignment() const {
-                    return this->current_alignment * PageSize;
+                    return m_current_alignment * PageSize;
                 }
 
                 constexpr void FindBlock(uintptr_t &out, size_t &num_pages) {
-                    if ((this->after_end - this->after_start) >= this->current_alignment) {
+                    if ((m_after_end - m_after_start) >= m_current_alignment) {
                         /* Select aligned memory from after block. */
-                        const size_t available_pages = util::AlignDown(this->after_end, this->current_alignment) - this->after_start;
+                        const size_t available_pages = util::AlignDown(m_after_end, m_current_alignment) - m_after_start;
                         if (num_pages == 0 || available_pages < num_pages) {
                             num_pages = available_pages;
                         }
-                        out = this->after_start * PageSize;
-                        this->after_start += num_pages;
-                    } else if ((this->before_end - this->before_start) >= this->current_alignment) {
+                        out = m_after_start * PageSize;
+                        m_after_start += num_pages;
+                    } else if ((m_before_end - m_before_start) >= m_current_alignment) {
                         /* Select aligned memory from before block. */
-                        const size_t available_pages = this->before_end - util::AlignUp(this->before_start, this->current_alignment);
+                        const size_t available_pages = m_before_end - util::AlignUp(m_before_start, m_current_alignment);
                         if (num_pages == 0 || available_pages < num_pages) {
                             num_pages = available_pages;
                         }
-                        this->before_end -= num_pages;
-                        out = this->before_end * PageSize;
+                        m_before_end -= num_pages;
+                        out = m_before_end * PageSize;
                     } else {
                         /* Neither after or before can get an aligned bit of memory. */
                         out = 0;
@@ -95,32 +95,32 @@ namespace ams::kern::arch::arm64 {
                 static constexpr size_t NumWords = AsidCount / BitsPerWord;
                 static constexpr WordType FullWord = ~WordType(0u);
             private:
-                WordType state[NumWords];
-                KLightLock lock;
-                u8 hint;
+                WordType m_state[NumWords];
+                KLightLock m_lock;
+                u8 m_hint;
             private:
                 constexpr bool TestImpl(u8 asid) const {
-                    return this->state[asid / BitsPerWord] & (1u << (asid % BitsPerWord));
+                    return m_state[asid / BitsPerWord] & (1u << (asid % BitsPerWord));
                 }
                 constexpr void ReserveImpl(u8 asid) {
                     MESOSPHERE_ASSERT(!this->TestImpl(asid));
-                    this->state[asid / BitsPerWord] |= (1u << (asid % BitsPerWord));
+                    m_state[asid / BitsPerWord] |= (1u << (asid % BitsPerWord));
                 }
 
                 constexpr void ReleaseImpl(u8 asid) {
                     MESOSPHERE_ASSERT(this->TestImpl(asid));
-                    this->state[asid / BitsPerWord] &= ~(1u << (asid % BitsPerWord));
+                    m_state[asid / BitsPerWord] &= ~(1u << (asid % BitsPerWord));
                 }
 
                 constexpr u8 FindAvailable() const {
-                    for (size_t i = 0; i < util::size(this->state); i++) {
-                        if (this->state[i] == FullWord) {
+                    for (size_t i = 0; i < util::size(m_state); i++) {
+                        if (m_state[i] == FullWord) {
                             continue;
                         }
-                        const WordType clear_bit = (this->state[i] + 1) ^ (this->state[i]);
+                        const WordType clear_bit = (m_state[i] + 1) ^ (m_state[i]);
                         return BitsPerWord * i + BitsPerWord - 1 - ClearLeadingZero(clear_bit);
                     }
-                    if (this->state[util::size(this->state)-1] == FullWord) {
+                    if (m_state[util::size(m_state)-1] == FullWord) {
                         MESOSPHERE_PANIC("Unable to reserve ASID");
                     }
                     __builtin_unreachable();
@@ -130,26 +130,26 @@ namespace ams::kern::arch::arm64 {
                     return __builtin_clzll(value) - (BITSIZEOF(unsigned long long) - BITSIZEOF(WordType));
                 }
             public:
-                constexpr KPageTableAsidManager() : state(), lock(), hint() {
+                constexpr KPageTableAsidManager() : m_state(), m_lock(), m_hint() {
                     for (size_t i = 0; i < NumReservedAsids; i++) {
                         this->ReserveImpl(ReservedAsids[i]);
                     }
                 }
 
                 u8 Reserve() {
-                    KScopedLightLock lk(this->lock);
+                    KScopedLightLock lk(m_lock);
 
-                    if (this->TestImpl(this->hint)) {
-                        this->hint = this->FindAvailable();
+                    if (this->TestImpl(m_hint)) {
+                        m_hint = this->FindAvailable();
                     }
 
-                    this->ReserveImpl(this->hint);
+                    this->ReserveImpl(m_hint);
 
-                    return this->hint++;
+                    return m_hint++;
                 }
 
                 void Release(u8 asid) {
-                    KScopedLightLock lk(this->lock);
+                    KScopedLightLock lk(m_lock);
                     this->ReleaseImpl(asid);
                 }
         };
@@ -165,15 +165,15 @@ namespace ams::kern::arch::arm64 {
 
     Result KPageTable::InitializeForKernel(void *table, KVirtualAddress start, KVirtualAddress end) {
         /* Initialize basic fields. */
-        this->asid = 0;
-        this->manager = std::addressof(Kernel::GetPageTableManager());
+        m_asid = 0;
+        m_manager = std::addressof(Kernel::GetPageTableManager());
 
         /* Allocate a page for ttbr. */
-        const u64 asid_tag = (static_cast<u64>(this->asid) << 48ul);
-        const KVirtualAddress page = this->manager->Allocate();
+        const u64 asid_tag = (static_cast<u64>(m_asid) << 48ul);
+        const KVirtualAddress page = m_manager->Allocate();
         MESOSPHERE_ASSERT(page != Null<KVirtualAddress>);
         cpu::ClearPageToZero(GetVoidPointer(page));
-        this->ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
+        m_ttbr = GetInteger(KPageTableBase::GetLinearMappedPhysicalAddress(page)) | asid_tag;
 
         /* Initialize the base page table. */
         MESOSPHERE_R_ABORT_UNLESS(KPageTableBase::InitializeForKernel(true, table, start, end));
@@ -186,17 +186,17 @@ namespace ams::kern::arch::arm64 {
         MESOSPHERE_UNUSED(id);
 
         /* Get an ASID */
-        this->asid = g_asid_manager.Reserve();
-        auto asid_guard = SCOPE_GUARD { g_asid_manager.Release(this->asid); };
+        m_asid = g_asid_manager.Reserve();
+        auto asid_guard = SCOPE_GUARD { g_asid_manager.Release(m_asid); };
 
         /* Set our manager. */
-        this->manager = pt_manager;
+        m_manager = pt_manager;
 
         /* Allocate a new table, and set our ttbr value. */
-        const KVirtualAddress new_table = this->manager->Allocate();
+        const KVirtualAddress new_table = m_manager->Allocate();
         R_UNLESS(new_table != Null<KVirtualAddress>, svc::ResultOutOfResource());
-        this->ttbr = EncodeTtbr(GetPageTablePhysicalAddress(new_table), asid);
-        auto table_guard = SCOPE_GUARD { this->manager->Free(new_table); };
+        m_ttbr = EncodeTtbr(GetPageTablePhysicalAddress(new_table), m_asid);
+        auto table_guard = SCOPE_GUARD { m_manager->Free(new_table); };
 
         /* Initialize our base table. */
         const size_t as_width = GetAddressSpaceWidth(as_type);
@@ -308,7 +308,7 @@ namespace ams::kern::arch::arm64 {
         }
 
         /* Release our asid. */
-        g_asid_manager.Release(this->asid);
+        g_asid_manager.Release(m_asid);
 
         return ResultSuccess();
     }

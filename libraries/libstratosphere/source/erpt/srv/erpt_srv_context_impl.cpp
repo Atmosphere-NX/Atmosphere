@@ -35,7 +35,7 @@ namespace ams::erpt::srv {
         return Context::SubmitContext(ctx, data, data_size);
     }
 
-    Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, u32 context) {
+    Result ContextImpl::CreateReport(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer, Result result) {
         const   ContextEntry *ctx  = reinterpret_cast<const   ContextEntry *>( ctx_buffer.GetPointer());
         const             u8 *data = reinterpret_cast<const             u8 *>(data_buffer.GetPointer());
         const ReportMetaData *meta = reinterpret_cast<const ReportMetaData *>(meta_buffer.GetPointer());
@@ -47,9 +47,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),                      erpt::ResultInvalidArgument());
         R_UNLESS(meta_size == 0 || meta_size == sizeof(ReportMetaData), erpt::ResultInvalidArgument());
 
-        /* TODO: use context */
-
-        Reporter reporter(report_type, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0);
+        Reporter reporter(report_type, ctx, data, data_size, meta_size != 0 ? meta : nullptr, nullptr, 0, result);
         R_TRY(reporter.CreateReport());
 
         ManagerImpl::NotifyAll();
@@ -58,7 +56,7 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer) {
-        return this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, {});
+        return this->CreateReport(report_type, ctx_buffer, data_buffer, meta_buffer, ResultSuccess());
     }
 
     Result ContextImpl::SetInitialLaunchSettingsCompletionTime(const time::SteadyClockTimePoint &time_point) {
@@ -138,7 +136,7 @@ namespace ams::erpt::srv {
         return JournalForAttachments::SubmitAttachment(out.GetPointer(), name_safe, data, data_size);
     }
 
-    Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, u32 context) {
+    Result ContextImpl::CreateReportWithAttachments(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer, Result result) {
         const ContextEntry *ctx  = reinterpret_cast<const ContextEntry *>( ctx_buffer.GetPointer());
         const           u8 *data = reinterpret_cast<const           u8 *>(data_buffer.GetPointer());
         const u32 ctx_size  = static_cast<u32>(ctx_buffer.GetSize());
@@ -150,9 +148,7 @@ namespace ams::erpt::srv {
         R_UNLESS(ctx_size == sizeof(ContextEntry),           erpt::ResultInvalidArgument());
         R_UNLESS(num_attachments <= AttachmentsPerReportMax, erpt::ResultInvalidArgument());
 
-        /* TODO: use context */
-
-        Reporter reporter(report_type, ctx, data, data_size, nullptr, attachments, num_attachments);
+        Reporter reporter(report_type, ctx, data, data_size, nullptr, attachments, num_attachments, result);
         R_TRY(reporter.CreateReport());
 
         ManagerImpl::NotifyAll();
@@ -161,7 +157,7 @@ namespace ams::erpt::srv {
     }
 
     Result ContextImpl::CreateReportWithAttachmentsDeprecated(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &attachment_ids_buffer) {
-        return this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, {});
+        return this->CreateReportWithAttachments(report_type, ctx_buffer, data_buffer, attachment_ids_buffer, ResultSuccess());
     }
 
 }

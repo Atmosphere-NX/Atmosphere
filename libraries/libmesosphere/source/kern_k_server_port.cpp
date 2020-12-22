@@ -19,7 +19,7 @@ namespace ams::kern {
 
     void KServerPort::Initialize(KPort *parent) {
         /* Set member variables. */
-        this->parent = parent;
+        m_parent = parent;
     }
 
     bool KServerPort::IsLight() const {
@@ -29,9 +29,9 @@ namespace ams::kern {
     void KServerPort::CleanupSessions() {
         /* Ensure our preconditions are met. */
         if (this->IsLight()) {
-            MESOSPHERE_ASSERT(this->session_list.empty());
+            MESOSPHERE_ASSERT(m_session_list.empty());
         } else {
-            MESOSPHERE_ASSERT(this->light_session_list.empty());
+            MESOSPHERE_ASSERT(m_light_session_list.empty());
         }
 
         /* Cleanup the session list. */
@@ -40,9 +40,9 @@ namespace ams::kern {
             KServerSession *session = nullptr;
             {
                 KScopedSchedulerLock sl;
-                while (!this->session_list.empty()) {
-                    session = std::addressof(this->session_list.front());
-                    this->session_list.pop_front();
+                while (!m_session_list.empty()) {
+                    session = std::addressof(m_session_list.front());
+                    m_session_list.pop_front();
                 }
             }
 
@@ -60,9 +60,9 @@ namespace ams::kern {
             KLightServerSession *session = nullptr;
             {
                 KScopedSchedulerLock sl;
-                while (!this->light_session_list.empty()) {
-                    session = std::addressof(this->light_session_list.front());
-                    this->light_session_list.pop_front();
+                while (!m_light_session_list.empty()) {
+                    session = std::addressof(m_light_session_list.front());
+                    m_light_session_list.pop_front();
                 }
             }
 
@@ -77,21 +77,21 @@ namespace ams::kern {
 
     void KServerPort::Destroy() {
         /* Note with our parent that we're closed. */
-        this->parent->OnClientClosed();
+        m_parent->OnClientClosed();
 
         /* Perform necessary cleanup of our session lists. */
         this->CleanupSessions();
 
         /* Close our reference to our parent. */
-        this->parent->Close();
+        m_parent->Close();
     }
 
     bool KServerPort::IsSignaled() const {
         MESOSPHERE_ASSERT_THIS();
         if (this->IsLight()) {
-            return !this->light_session_list.empty();
+            return !m_light_session_list.empty();
         } else {
-            return !this->session_list.empty();
+            return !m_session_list.empty();
         }
     }
 
@@ -102,8 +102,8 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Add the session to our queue. */
-        this->session_list.push_back(*session);
-        if (this->session_list.size() == 1) {
+        m_session_list.push_back(*session);
+        if (m_session_list.size() == 1) {
             this->NotifyAvailable();
         }
     }
@@ -115,8 +115,8 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Add the session to our queue. */
-        this->light_session_list.push_back(*session);
-        if (this->light_session_list.size() == 1) {
+        m_light_session_list.push_back(*session);
+        if (m_light_session_list.size() == 1) {
             this->NotifyAvailable();
         }
     }
@@ -128,12 +128,12 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Return the first session in the list. */
-        if (this->session_list.empty()) {
+        if (m_session_list.empty()) {
             return nullptr;
         }
 
-        KServerSession *session = std::addressof(this->session_list.front());
-        this->session_list.pop_front();
+        KServerSession *session = std::addressof(m_session_list.front());
+        m_session_list.pop_front();
         return session;
     }
 
@@ -144,12 +144,12 @@ namespace ams::kern {
         KScopedSchedulerLock sl;
 
         /* Return the first session in the list. */
-        if (this->light_session_list.empty()) {
+        if (m_light_session_list.empty()) {
             return nullptr;
         }
 
-        KLightServerSession *session = std::addressof(this->light_session_list.front());
-        this->light_session_list.pop_front();
+        KLightServerSession *session = std::addressof(m_light_session_list.front());
+        m_light_session_list.pop_front();
         return session;
     }
 

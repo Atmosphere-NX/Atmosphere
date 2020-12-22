@@ -32,12 +32,12 @@ namespace ams::fs::fsa {
                 }
                 R_UNLESS(out_entries != nullptr, fs::ResultNullptrArgument());
                 R_UNLESS(max_entries > 0, fs::ResultInvalidArgument());
-                return this->ReadImpl(out_count, out_entries, max_entries);
+                return this->DoRead(out_count, out_entries, max_entries);
             }
 
             Result GetEntryCount(s64 *out) {
                 R_UNLESS(out != nullptr, fs::ResultNullptrArgument());
-                return this->GetEntryCountImpl(out);
+                return this->DoGetEntryCount(out);
             }
         public:
             /* TODO: This is a hack to allow the mitm API to work. Find a better way? */
@@ -45,8 +45,8 @@ namespace ams::fs::fsa {
         protected:
             /* ...? */
         private:
-            virtual Result ReadImpl(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) = 0;
-            virtual Result GetEntryCountImpl(s64 *out) = 0;
+            virtual Result DoRead(s64 *out_count, DirectoryEntry *out_entries, s64 max_entries) = 0;
+            virtual Result DoGetEntryCount(s64 *out) = 0;
     };
 
 }

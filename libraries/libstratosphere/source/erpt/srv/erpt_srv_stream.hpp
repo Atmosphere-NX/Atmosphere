@@ -46,7 +46,7 @@ namespace ams::erpt::srv {
             Result WriteStream(const u8 *src, u32 src_size);
             void CloseStream();
 
-            Result GetStreamSize(s64 *out);
+            Result GetStreamSize(s64 *out) const;
         private:
             Result Flush();
         public:
