@@ -362,6 +362,12 @@ namespace ams::settings::fwdbg {
             /* 0 = Disabled, 1 = Enabled */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm_debug_log", "u8!0x0"));
 
+            /* Controls whether to enable uart mitm */
+            /* for logging bluetooth HCI to btsnoop captures. */
+            /* This is only implemented for [7.0.0+]. */
+            /* 0 = Do not enable, 1 = Enable. */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_uart_mitm", "u8!0x0"));
+
             /* Hbloader custom settings. */
 
             /* Controls the size of the homebrew heap when running as applet. */
