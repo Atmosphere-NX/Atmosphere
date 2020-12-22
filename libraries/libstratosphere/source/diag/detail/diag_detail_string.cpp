@@ -17,25 +17,6 @@
 
 namespace ams::diag::detail {
 
-    namespace {
-
-        inline ssize_t A(size_t len, size_t tmp_len) {
-            if (tmp_len < len) {
-                return len - tmp_len;
-            }
-            AMS_ABORT_UNLESS(tmp_len == len);
-            return -1;
-        }
-
-        inline ssize_t B(size_t len, size_t val, size_t tmp_len) {
-            if (tmp_len == val) {
-                return len;
-            }
-            return 1;
-        }
-
-    }
-
     void PrintDebugString(const char *str, size_t len) {
         AMS_ASSERT(str && len);
         svc::OutputDebugString(str, len);
@@ -64,14 +45,20 @@ namespace ams::diag::detail {
             if (tmp_len < 1) {
                 return len;
             }
-            return B(len, 1, tmp_len);
+            if (tmp_len == 1) {
+                return len;
+            }
+            return 1;
         }
 
 
         if ((some_c & 0xE0) == 0xC0) {
             tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
             if (tmp_len >= 2) {
-                return B(len, 2, tmp_len);
+                if (tmp_len == 2) {
+                    return len;
+                }
+                return 1;
             }
         }
         else {
@@ -81,17 +68,31 @@ namespace ams::diag::detail {
                 }
                 tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
                 if (tmp_len < 4) {
-                    return A(len, tmp_len);
+                    if (tmp_len < len) {
+                        return len - tmp_len;
+                    }
+                    AMS_ABORT_UNLESS(tmp_len == len);
+                    return -1;
                 }
-                return B(len, 4, tmp_len);
+                if (tmp_len == 4) {
+                    return len;
+                }
+                return 1;
             }
             tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
             if (tmp_len >= 3) {
-                return B(len, 3, tmp_len);
+                if (tmp_len == 3) {
+                    return len;
+                }
+                return 1;
             }
         }
 
-        return A(len, tmp_len);
+        if (tmp_len < len) {
+            return len - tmp_len;
+        }
+        AMS_ABORT_UNLESS(tmp_len == len);
+        return -1;
     }
 
 }
