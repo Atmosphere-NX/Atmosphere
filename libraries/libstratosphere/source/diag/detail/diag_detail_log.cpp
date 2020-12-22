@@ -23,7 +23,6 @@ namespace ams::diag::detail {
             char *print_str_start;
             char *print_str_end;
             char *print_str_cur;
-            /* void *d; */
             const LogMetaData &log_metadata;
             bool is_head;
             char buffer[40];

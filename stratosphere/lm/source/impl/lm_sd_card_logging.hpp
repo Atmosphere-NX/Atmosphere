@@ -34,12 +34,10 @@ namespace ams::lm::impl {
             bool sd_card_mounted;
             bool sd_card_ok;
             char log_file_path[0x80];
-            /* bool some_flag_4; */
             size_t log_file_offset;
             UpdateEnabledFunction update_enabled_fn;
-            /* size_t unk; */
         public:
-            SdCardLogging() : update_enabled_fn_lock(), enabled(false), sd_card_mounted(false), sd_card_ok(false), log_file_path{}, /*some_flag_4(false),*/ log_file_offset(0), update_enabled_fn(nullptr) /*, unk(0)*/ {}
+            SdCardLogging() : update_enabled_fn_lock(), enabled(false), sd_card_mounted(false), sd_card_ok(false), log_file_path{}, log_file_offset(0), update_enabled_fn(nullptr) {}
             
             bool Initialize();
             void Dispose();

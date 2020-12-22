@@ -31,10 +31,6 @@ namespace ams::lm::impl {
             std::atomic_int htcs_server_fd;
             std::atomic_int htcs_client_fd;
             UpdateEnabledFunction update_enabled_fn;
-            /*
-            u64 data_4;
-            char data_5[3566];
-            */
         public:
             LogServerProxy() : htcs_thread_stack{}, htcs_thread(), some_cond_var(), finalize_event(os::EventClearMode_ManualClear), some_cond_var_lock(), update_enabled_fn_lock(), htcs_server_fd(INT_MAX), htcs_client_fd(INT_MAX), update_enabled_fn(nullptr) /*, data_4(0), data_5{}*/ {}
 

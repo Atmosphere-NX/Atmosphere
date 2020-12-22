@@ -4,27 +4,27 @@ namespace ams::lm::impl {
 
     namespace {
 
-        u8 g_log_getter_log_buffer[0x8000];
-        void *g_log_getter_log_data = nullptr;
-        size_t g_log_getter_log_size = 0;
-        u64 g_log_getter_log_packet_drop_count = 0;
+        u8 g_sink_buffer_log_buffer[0x8000];
+        void *g_sink_buffer_log_data = nullptr;
+        size_t g_sink_buffer_log_size = 0;
+        u64 g_sink_buffer_log_packet_drop_count = 0;
 
-        u64 g_log_getter_current_process_id = 0;
-        u64 g_log_getter_current_thread_id = 0;
-        size_t g_log_getter_remaining_size = 0;
+        u64 g_sink_buffer_current_process_id = 0;
+        u64 g_sink_buffer_current_thread_id = 0;
+        size_t g_sink_buffer_remaining_size = 0;
 
         bool CustomSinkBuffer_PrepareLogData(u8 *log_data, size_t log_data_size) {
             /* Simply update the global values with the buffer and size. */
-            g_log_getter_log_data = log_data;
-            g_log_getter_log_size = log_data_size;
+            g_sink_buffer_log_data = log_data;
+            g_sink_buffer_log_size = log_data_size;
             return true;
         }
 
-        bool WriteToLogGetterImpl(const void *log_data, size_t size, u64 unk_param) {
+        bool WriteToSinkBufferImpl(const void *log_data, size_t size, u64 unk_param) {
             const auto ok = GetCustomSinkBuffer()->Log(log_data, size);
             if (!ok) {
                 /* Logging failed, thus increase packet drop count. */
-                g_log_getter_log_packet_drop_count++;
+                g_sink_buffer_log_packet_drop_count++;
             }
 
             return ok;
@@ -62,19 +62,19 @@ namespace ams::lm::impl {
     }
 
     CustomSinkBuffer *GetCustomSinkBuffer() {
-        static CustomSinkBuffer custom_sink_buffer(g_log_getter_log_buffer, sizeof(g_log_getter_log_buffer), CustomSinkBuffer_PrepareLogData);
+        static CustomSinkBuffer custom_sink_buffer(g_sink_buffer_log_buffer, sizeof(g_sink_buffer_log_buffer), CustomSinkBuffer_PrepareLogData);
         return std::addressof(custom_sink_buffer);
     }
 
     void WriteLogToCustomSink(const detail::LogPacketHeader *log_packet_header, size_t log_packet_size, u64 unk_param) {
         /* Process ID value is set earlier, so it's guaranteed to be valid. */
-        if (log_packet_header->GetProcessId() != g_log_getter_current_process_id) {
+        if (log_packet_header->GetProcessId() != g_sink_buffer_current_process_id) {
             /* We're starting to log from a different process, so we need first a head packet. */
             if (!log_packet_header->IsHead()) {
                 return;
             }
         }
-        const auto logging_in_same_thread = log_packet_header->GetThreadId() == g_log_getter_current_thread_id;
+        const auto logging_in_same_thread = log_packet_header->GetThreadId() == g_sink_buffer_current_thread_id;
         if (!logging_in_same_thread) {
             /* We're starting to log from a different thread, so we need first a head packet. */
             if (!log_packet_header->IsHead()) {
@@ -87,17 +87,17 @@ namespace ams::lm::impl {
 
         /* No need to check packet header's payload size, since it has already been validated. */
         auto log_payload_size = log_packet_size - sizeof(detail::LogPacketHeader);
-        if (logging_in_same_thread && (g_log_getter_remaining_size > 0)) {
+        if (logging_in_same_thread && (g_sink_buffer_remaining_size > 0)) {
             auto log_remaining_size = log_payload_size;
-            if (log_payload_size >= g_log_getter_remaining_size) {
-                log_remaining_size = g_log_getter_remaining_size;
+            if (log_payload_size >= g_sink_buffer_remaining_size) {
+                log_remaining_size = g_sink_buffer_remaining_size;
             }
             if (GetCustomSinkBuffer()->ExpectsMorePackets()) {
-                WriteToLogGetterImpl(log_payload_cur, log_remaining_size, unk_param);
+                WriteToSinkBufferImpl(log_payload_cur, log_remaining_size, unk_param);
             }
             log_payload_cur += log_remaining_size;
             log_payload_size -= log_remaining_size;
-            g_log_getter_remaining_size -= log_remaining_size;
+            g_sink_buffer_remaining_size -= log_remaining_size;
         }
 
         size_t remaining_chunk_size = 0;
@@ -119,7 +119,7 @@ namespace ams::lm::impl {
                     if (chunk_size < actual_size) {
                         actual_size = chunk_size;
                     }
-                    WriteToLogGetterImpl(log_payload_cur, actual_size, unk_param);
+                    WriteToSinkBufferImpl(log_payload_cur, actual_size, unk_param);
                 }
                 log_payload_cur += chunk_size;
                 if (log_payload_cur >= log_payload_end) {
@@ -130,28 +130,28 @@ namespace ams::lm::impl {
 
         if (!log_packet_header->IsTail()) {
             /* If more packets will come after this one, set current values. */
-            g_log_getter_current_process_id = log_packet_header->GetProcessId();
-            g_log_getter_current_thread_id = log_packet_header->GetThreadId();
-            g_log_getter_remaining_size = remaining_chunk_size;
+            g_sink_buffer_current_process_id = log_packet_header->GetProcessId();
+            g_sink_buffer_current_thread_id = log_packet_header->GetThreadId();
+            g_sink_buffer_remaining_size = remaining_chunk_size;
             GetCustomSinkBuffer()->SetExpectsMorePackets(contains_log_data);
         }
     }
 
     size_t ReadLogFromCustomSink(void *out_log_data, size_t size, u64 *out_packet_drop_count) {
         /* Copy log data from the global pointer and size values. */
-        auto read_size = g_log_getter_log_size;
-        if (g_log_getter_log_size > size) {
+        auto read_size = g_sink_buffer_log_size;
+        if (g_sink_buffer_log_size > size) {
             /* Buffer can't hold all the log data, thus increase the drop count. */
             read_size = size;
-            g_log_getter_log_packet_drop_count++;
+            g_sink_buffer_log_packet_drop_count++;
         }
 
         /* Copy data. */
-        std::memcpy(out_log_data, g_log_getter_log_data, read_size);
+        std::memcpy(out_log_data, g_sink_buffer_log_data, read_size);
 
         /* Get the packet drop count value, and reset it. */
-        *out_packet_drop_count = g_log_getter_log_packet_drop_count;
-        g_log_getter_log_packet_drop_count = 0;
+        *out_packet_drop_count = g_sink_buffer_log_packet_drop_count;
+        g_sink_buffer_log_packet_drop_count = 0;
         return read_size;
     }
 

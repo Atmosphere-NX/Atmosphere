@@ -28,10 +28,6 @@ namespace ams::lm::impl {
             size_t current_data_size;
             uint64_t some_count;
             LogBuffer *second_log_buffer;
-            /*
-            uint64_t unk_3;
-            uint64_t unk_4;
-            */
             LogBuffer *main_target_buffer;
             LogBuffer *sub_target_buffer;
             size_t data_buffer_size;
