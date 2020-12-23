@@ -64,7 +64,6 @@ namespace ams::mitm::uart {
             size_t receive_cache_pos;
 
             bool TryGetCurrentTimestamp(u64 *out);
-            void SaveFile(const char *path, const void* buffer, size_t size);
             void WriteCmdLog(const char *str);
             void WriteLog(const void* buffer, size_t size);
             void WriteLogPacket(bool dir, const void* buffer, size_t size);
