@@ -106,12 +106,12 @@ namespace ams::spl {
     }
 
     enum class HardwareType {
-        Icosa   = 0,
-        Copper  = 1,
-        Hoag    = 2,
-        Iowa    = 3,
-        Calcio  = 4,
-        _Five_  = 5,
+        Icosa  = 0,
+        Copper = 1,
+        Hoag   = 2,
+        Iowa   = 3,
+        Calcio = 4,
+        Aula   = 5,
     };
 
     enum SocType {

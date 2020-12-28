@@ -63,8 +63,8 @@ namespace ams::powctl::driver::impl {
         } else if (battery_version == 1) {
             return ChargeParametersForBatteryVersion1;
         } else {
-            if (spl::GetHardwareType() == spl::HardwareType::_Five_) {
-                return ChargeParametersForBatteryVersion0ForFive;
+            if (spl::GetHardwareType() == spl::HardwareType::Aula) {
+                return ChargeParametersForBatteryVersion0ForAula;
             } else {
                 return ChargeParametersForBatteryVersion0;
             }

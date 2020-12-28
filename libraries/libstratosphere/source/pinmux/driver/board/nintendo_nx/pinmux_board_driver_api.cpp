@@ -28,7 +28,7 @@ namespace ams::pinmux::driver::board::nintendo_nx {
         #include "pinmux_initial_pad_config_hoag.inc"
         #include "pinmux_initial_pad_config_iowa.inc"
         #include "pinmux_initial_pad_config_calcio.inc"
-        #include "pinmux_initial_pad_config_five.inc"
+        #include "pinmux_initial_pad_config_aula.inc"
 
         #include "pinmux_initial_drive_pad_config.inc"
         #include "pinmux_initial_drive_pad_config_hoag.inc"
@@ -73,9 +73,9 @@ namespace ams::pinmux::driver::board::nintendo_nx {
                 num_configs = NumPinmuxPadConfigsCalcio;
                 is_mariko = true;
                 break;
-            case spl::HardwareType::_Five_:
-                configs     = PinmuxPadConfigsFive;
-                num_configs = NumPinmuxPadConfigsFive;
+            case spl::HardwareType::Aula:
+                configs     = PinmuxPadConfigsAula;
+                num_configs = NumPinmuxPadConfigsAula;
                 is_mariko = true;
                 break;
             AMS_UNREACHABLE_DEFAULT_CASE();
@@ -121,7 +121,7 @@ namespace ams::pinmux::driver::board::nintendo_nx {
                 configs     = PinmuxDrivePadConfigs;
                 num_configs = NumPinmuxDrivePadConfigs;
                 break;
-            case spl::HardwareType::_Five_:
+            case spl::HardwareType::Aula:
                 configs     = PinmuxDrivePadConfigs;
                 num_configs = NumPinmuxDrivePadConfigs;
                 break;

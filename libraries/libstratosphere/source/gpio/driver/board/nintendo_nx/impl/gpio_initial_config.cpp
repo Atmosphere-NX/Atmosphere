@@ -36,14 +36,14 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
         #include "gpio_initial_wake_pin_config_hoag.inc"
         #include "gpio_initial_wake_pin_config_iowa.inc"
         #include "gpio_initial_wake_pin_config_calcio.inc"
-        #include "gpio_initial_wake_pin_config_five.inc"
+        #include "gpio_initial_wake_pin_config_aula.inc"
 
         #include "gpio_initial_config_icosa.inc"
      /* #include "gpio_initial_config_copper.inc" */
         #include "gpio_initial_config_hoag.inc"
         #include "gpio_initial_config_iowa.inc"
         #include "gpio_initial_config_calcio.inc"
-        #include "gpio_initial_config_five.inc"
+        #include "gpio_initial_config_aula.inc"
 
     }
 
@@ -70,9 +70,9 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
                 configs     =    InitialGpioConfigsCalcio;
                 num_configs = NumInitialGpioConfigsCalcio;
                 break;
-            case spl::HardwareType::_Five_:
-                configs     =    InitialGpioConfigsFive;
-                num_configs = NumInitialGpioConfigsFive;
+            case spl::HardwareType::Aula:
+                configs     =    InitialGpioConfigsAula;
+                num_configs = NumInitialGpioConfigsAula;
                 break;
             case spl::HardwareType::Copper:
             AMS_UNREACHABLE_DEFAULT_CASE();
@@ -151,9 +151,9 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
                 configs     =    InitialWakePinConfigsCalcio;
                 num_configs = NumInitialWakePinConfigsCalcio;
                 break;
-            case spl::HardwareType::_Five_:
-                configs     =    InitialWakePinConfigsFive;
-                num_configs = NumInitialWakePinConfigsFive;
+            case spl::HardwareType::Aula:
+                configs     =    InitialWakePinConfigsAula;
+                num_configs = NumInitialWakePinConfigsAula;
                 break;
             case spl::HardwareType::Copper:
             AMS_UNREACHABLE_DEFAULT_CASE();
