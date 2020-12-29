@@ -217,7 +217,7 @@ sept_primary.bin.o	sept_primary_bin.h:	sept-primary.bin
 	@echo $(notdir $<)
 	@$(_bin2o)
 
-sept_secondary_00.enc.o	sept_secondary_00.h:	sept-secondary_00.enc
+sept_secondary_00.enc.o	sept_secondary_00_enc.h:	sept-secondary_00.enc
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(_bin2o)
