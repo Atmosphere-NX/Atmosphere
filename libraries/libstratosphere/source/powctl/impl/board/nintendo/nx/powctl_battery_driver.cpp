@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "../../powctl_device_management.hpp"
+#include "../../../powctl_device_management.hpp"
 #include "powctl_retry_helper.hpp"
 #include "powctl_battery_driver.hpp"
 #include "powctl_max17050_driver.hpp"

@@ -15,7 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "../../powctl_i_power_control_driver.hpp"
+#include "../../../powctl_i_power_control_driver.hpp"
 #include "powctl_interrupt_event_handler.hpp"
 
 namespace ams::powctl::impl::board::nintendo_nx {

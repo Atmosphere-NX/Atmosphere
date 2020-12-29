@@ -22,7 +22,7 @@
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include <stratosphere/gpio/driver/board/nintendo_nx/gpio_driver_api.hpp>
+    #include <stratosphere/gpio/driver/board/nintendo/nx/gpio_driver_api.hpp>
 
     namespace ams::gpio::driver::board {
 
