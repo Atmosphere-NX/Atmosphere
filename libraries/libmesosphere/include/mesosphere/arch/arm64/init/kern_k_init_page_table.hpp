@@ -690,12 +690,7 @@ namespace ams::kern::arch::arm64::init {
             }
 
             ALWAYS_INLINE void InitializeFromState(uintptr_t state_val) {
-                if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-                    m_state = *reinterpret_cast<State *>(state_val);
-                } else {
-                    m_state.next_address = state_val;
-                    m_state.free_bitmap  = 0;
-                }
+                m_state = *reinterpret_cast<State *>(state_val);
             }
 
             ALWAYS_INLINE void GetFinalState(State *out) {
