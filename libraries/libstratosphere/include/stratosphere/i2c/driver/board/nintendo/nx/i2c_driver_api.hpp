@@ -17,7 +17,7 @@
 #include <vapours.hpp>
 #include <stratosphere/i2c/i2c_types.hpp>
 
-namespace ams::i2c::driver::board::nintendo_nx {
+namespace ams::i2c::driver::board::nintendo::nx {
 
     void Initialize();
 

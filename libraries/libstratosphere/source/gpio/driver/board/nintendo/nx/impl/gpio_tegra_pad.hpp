@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     enum GpioPadPort {
         GpioPadPort_A     =  0,
@@ -347,7 +347,7 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
     };
 
     class TegraPad : public ::ams::gpio::driver::Pad {
-        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::board::nintendo_nx::impl::TegraPad, ::ams::gpio::driver::Pad);
+        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::board::nintendo::nx::impl::TegraPad, ::ams::gpio::driver::Pad);
         private:
             using Base = ::ams::gpio::driver::Pad;
         private:

@@ -17,7 +17,7 @@
 #include <vapours.hpp>
 #include <stratosphere/pwm/pwm_types.hpp>
 
-namespace ams::pwm::driver::board::nintendo_nx {
+namespace ams::pwm::driver::board::nintendo::nx {
 
     void Initialize();
 

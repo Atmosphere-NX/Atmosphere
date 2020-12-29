@@ -17,12 +17,12 @@
 #include <stratosphere.hpp>
 #include "i2c_i2c_registers.hpp"
 
-namespace ams::i2c::driver::board::nintendo_nx::impl {
+namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     class I2cBusAccessor : public ::ams::i2c::driver::II2cDriver {
         NON_COPYABLE(I2cBusAccessor);
         NON_MOVEABLE(I2cBusAccessor);
-        AMS_DDSF_CASTABLE_TRAITS(ams::i2c::driver::board::nintendo_nx::impl::I2cBusAccessor, ::ams::i2c::driver::II2cDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::i2c::driver::board::nintendo::nx::impl::I2cBusAccessor, ::ams::i2c::driver::II2cDriver);
         private:
             enum class State {
                 NotInitialized    = 0,

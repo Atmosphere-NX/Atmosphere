@@ -18,7 +18,7 @@
 #include "i2c_bus_accessor.hpp"
 #include "i2c_i_allocator.hpp"
 
-namespace ams::i2c::driver::board::nintendo_nx::impl {
+namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     class I2cBusAccessorManager : public IAllocator<I2cBusAccessor::BusAccessorList> {
         /* ... */

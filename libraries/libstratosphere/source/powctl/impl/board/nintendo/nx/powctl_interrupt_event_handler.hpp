@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 #include "../../../powctl_i_power_control_driver.hpp"
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     template<typename Derived>
     class InterruptEventHandler : public ddsf::IEventHandler {

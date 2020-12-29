@@ -25,7 +25,7 @@
 
     namespace ams::i2c::driver::board {
 
-        using namespace ams::i2c::driver::board::nintendo_nx;
+        using namespace ams::i2c::driver::board::nintendo::nx;
 
     }
 

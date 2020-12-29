@@ -20,7 +20,7 @@
 #include <arm_neon.h>
 #endif
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace max17050 {
 

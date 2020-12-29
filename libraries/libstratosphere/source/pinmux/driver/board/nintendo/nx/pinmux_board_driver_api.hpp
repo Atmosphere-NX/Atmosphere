@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pinmux::driver::board::nintendo_nx {
+namespace ams::pinmux::driver::board::nintendo::nx {
 
     bool IsInitialized();
 

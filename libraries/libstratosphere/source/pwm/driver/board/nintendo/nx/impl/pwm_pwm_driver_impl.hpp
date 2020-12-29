@@ -17,12 +17,12 @@
 #include <stratosphere.hpp>
 #include "pwm_impl_pwm_driver_api.hpp"
 
-namespace ams::pwm::driver::board::nintendo_nx::impl {
+namespace ams::pwm::driver::board::nintendo::nx::impl {
 
     class PwmDeviceImpl : public ::ams::pwm::driver::IPwmDevice {
         NON_COPYABLE(PwmDeviceImpl);
         NON_MOVEABLE(PwmDeviceImpl);
-        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::board::nintendo_nx::impl::PwmDeviceImpl, ::ams::pwm::driver::IPwmDevice);
+        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::board::nintendo::nx::impl::PwmDeviceImpl, ::ams::pwm::driver::IPwmDevice);
         private:
             os::SdkMutex suspend_mutex;
             u32 suspend_value;
@@ -39,7 +39,7 @@ namespace ams::pwm::driver::board::nintendo_nx::impl {
     class PwmDriverImpl : public ::ams::pwm::driver::IPwmDriver {
         NON_COPYABLE(PwmDriverImpl);
         NON_MOVEABLE(PwmDriverImpl);
-        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::board::nintendo_nx::impl::PwmDriverImpl, ::ams::pwm::driver::IPwmDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::pwm::driver::board::nintendo::nx::impl::PwmDriverImpl, ::ams::pwm::driver::IPwmDriver);
         private:
             dd::PhysicalAddress registers_phys_addr;
             size_t registers_size;

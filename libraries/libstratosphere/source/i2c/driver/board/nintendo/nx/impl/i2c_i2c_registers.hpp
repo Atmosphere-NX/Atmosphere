@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::i2c::driver::board::nintendo_nx::impl {
+namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     struct I2cRegisters {
         volatile u32 cnfg;

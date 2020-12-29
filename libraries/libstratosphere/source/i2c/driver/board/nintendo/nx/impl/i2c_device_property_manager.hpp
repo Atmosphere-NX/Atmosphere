@@ -17,7 +17,7 @@
 #include <stratosphere.hpp>
 #include "i2c_i_allocator.hpp"
 
-namespace ams::i2c::driver::board::nintendo_nx::impl {
+namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     class I2cDevicePropertyManager : public IAllocator<I2cDeviceProperty::DevicePropertyList> {
         /* ... */

@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "impl/pwm_impl_pwm_driver_api.hpp"
 
-namespace ams::pwm::driver::board::nintendo_nx {
+namespace ams::pwm::driver::board::nintendo::nx {
 
     void Initialize() {
         R_ABORT_UNLESS(impl::InitializePwmDriver());

@@ -20,7 +20,7 @@
 
     #include "board/nintendo/nx/pinmux_board_driver_api.hpp"
     namespace ams::pinmux::driver::board {
-        using namespace ams::pinmux::driver::board::nintendo_nx;
+        using namespace ams::pinmux::driver::board::nintendo::nx;
     }
 
 #else

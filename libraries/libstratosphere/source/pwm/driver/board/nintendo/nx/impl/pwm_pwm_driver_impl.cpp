@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "pwm_pwm_driver_impl.hpp"
 
-namespace ams::pwm::driver::board::nintendo_nx::impl {
+namespace ams::pwm::driver::board::nintendo::nx::impl {
 
     namespace {
 

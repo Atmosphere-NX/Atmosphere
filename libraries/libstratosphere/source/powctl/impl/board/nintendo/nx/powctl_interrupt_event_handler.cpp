@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "powctl_interrupt_event_handler.hpp"
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     void ChargerInterruptEventHandler::SignalEvent(IDevice *device) {
         /* TODO */

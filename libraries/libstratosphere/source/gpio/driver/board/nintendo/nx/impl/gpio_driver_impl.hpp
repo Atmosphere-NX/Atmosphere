@@ -20,7 +20,7 @@
 #include "gpio_register_accessor.hpp"
 #include "gpio_suspend_handler.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     class DriverImpl;
 
@@ -43,7 +43,7 @@ namespace ams::gpio::driver::board::nintendo_nx::impl {
     class DriverImpl : public ::ams::gpio::driver::IGpioDriver {
         NON_COPYABLE(DriverImpl);
         NON_MOVEABLE(DriverImpl);
-        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::board::nintendo_nx::impl::DriverImpl, ::ams::gpio::driver::IGpioDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::gpio::driver::board::nintendo::nx::impl::DriverImpl, ::ams::gpio::driver::IGpioDriver);
         friend class InterruptEventHandler;
         private:
             dd::PhysicalAddress gpio_physical_address;

@@ -18,7 +18,7 @@
 
 #include "gpio_tegra_pad.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     constexpr inline dd::PhysicalAddress GpioRegistersPhysicalAddress = 0x6000D000;
     constexpr inline size_t GpioRegistersSize                         = 4_KB;

@@ -17,7 +17,7 @@
 #include "impl/i2c_bus_manager.hpp"
 #include "impl/i2c_device_property_manager.hpp"
 
-namespace ams::i2c::driver::board::nintendo_nx {
+namespace ams::i2c::driver::board::nintendo::nx {
 
     namespace {
 

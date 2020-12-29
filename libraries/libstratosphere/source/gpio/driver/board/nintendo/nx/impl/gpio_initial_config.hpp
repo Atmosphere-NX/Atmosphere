@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     struct GpioInitialConfig {
         DeviceCode      device_code;

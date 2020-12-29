@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pwm::driver::board::nintendo_nx::impl {
+namespace ams::pwm::driver::board::nintendo::nx::impl {
 
     struct ChannelDefinition {
         DeviceCode device_code;

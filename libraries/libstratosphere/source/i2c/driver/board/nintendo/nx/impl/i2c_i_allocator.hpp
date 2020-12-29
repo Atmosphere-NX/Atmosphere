@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::i2c::driver::board::nintendo_nx::impl {
+namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     template<typename ListType>
     class IAllocator {

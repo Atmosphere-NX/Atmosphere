@@ -18,11 +18,11 @@
 #include "impl/gpio_initial_config.hpp"
 #include "impl/gpio_tegra_pad.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx {
+namespace ams::gpio::driver::board::nintendo::nx {
 
     namespace {
 
-        ams::gpio::driver::board::nintendo_nx::impl::DriverImpl *g_driver_impl = nullptr;
+        ams::gpio::driver::board::nintendo::nx::impl::DriverImpl *g_driver_impl = nullptr;
 
     }
 
@@ -38,7 +38,7 @@ namespace ams::gpio::driver::board::nintendo_nx {
         AMS_ABORT_UNLESS(driver_storage != nullptr);
 
         /* Construct the new driver. */
-        g_driver_impl = new (driver_storage) ams::gpio::driver::board::nintendo_nx::impl::DriverImpl(impl::GpioRegistersPhysicalAddress, impl::GpioRegistersSize);
+        g_driver_impl = new (driver_storage) ams::gpio::driver::board::nintendo::nx::impl::DriverImpl(impl::GpioRegistersPhysicalAddress, impl::GpioRegistersSize);
 
         /* Register the driver. */
         gpio::driver::RegisterDriver(g_driver_impl);

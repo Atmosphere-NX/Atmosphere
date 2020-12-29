@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "i2c_bus_accessor.hpp"
 
-namespace ams::i2c::driver::board::nintendo_nx::impl {
+namespace ams::i2c::driver::board::nintendo::nx::impl {
 
     namespace {
 

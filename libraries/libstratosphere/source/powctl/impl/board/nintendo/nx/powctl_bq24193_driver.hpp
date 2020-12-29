@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace bq24193 {
 

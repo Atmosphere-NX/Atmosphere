@@ -18,12 +18,12 @@
 #include "../../../powctl_i_power_control_driver.hpp"
 #include "powctl_interrupt_event_handler.hpp"
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     class BatteryDevice : public powctl::impl::IDevice {
         NON_COPYABLE(BatteryDevice);
         NON_MOVEABLE(BatteryDevice);
-        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo_nx::BatteryDevice, ::ams::powctl::impl::IDevice);
+        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::BatteryDevice, ::ams::powctl::impl::IDevice);
         private:
             bool use_event_handler;
             std::optional<BatteryInterruptEventHandler> event_handler;
@@ -43,7 +43,7 @@ namespace ams::powctl::impl::board::nintendo_nx {
     class BatteryDriver : public IPowerControlDriver {
         NON_COPYABLE(BatteryDriver);
         NON_MOVEABLE(BatteryDriver);
-        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo_nx::BatteryDriver, ::ams::powctl::impl::IPowerControlDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::BatteryDriver, ::ams::powctl::impl::IPowerControlDriver);
         public:
             BatteryDriver(bool ev) : IPowerControlDriver(ev) { /* ... */ }
 

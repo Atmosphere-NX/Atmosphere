@@ -18,7 +18,7 @@
 
 #include "gpio_tegra_pad.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     class SuspendHandler {
         NON_COPYABLE(SuspendHandler);

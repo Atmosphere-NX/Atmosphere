@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "powctl_bq24193_driver.hpp"
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     namespace bq24193 {
 

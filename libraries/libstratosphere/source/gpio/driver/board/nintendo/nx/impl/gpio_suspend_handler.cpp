@@ -16,7 +16,7 @@
 #include <stratosphere.hpp>
 #include "gpio_suspend_handler.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     void SuspendHandler::Initialize(uintptr_t gpio_vaddr) {
         /* Set our gpio virtual address. */

@@ -26,7 +26,7 @@
 
     namespace ams::gpio::driver::board {
 
-        using namespace ams::gpio::driver::board::nintendo_nx;
+        using namespace ams::gpio::driver::board::nintendo::nx;
 
     }
 

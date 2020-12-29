@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
-namespace ams::pinmux::driver::board::nintendo_nx {
+namespace ams::pinmux::driver::board::nintendo::nx {
 
     struct PinmuxPadConfig {
         u32 index;

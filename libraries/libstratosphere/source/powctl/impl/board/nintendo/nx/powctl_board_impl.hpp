@@ -18,7 +18,7 @@
 
 #include "powctl_interrupt_event_handler.hpp"
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     void Initialize(bool use_event_handlers);
     void Finalize();

@@ -18,7 +18,7 @@
 #include <stratosphere/gpio/gpio_types.hpp>
 #include <stratosphere/gpio/driver/gpio_i_gpio_driver.hpp>
 
-namespace ams::gpio::driver::board::nintendo_nx {
+namespace ams::gpio::driver::board::nintendo::nx {
 
     void Initialize(bool enable_interrupt_handlers);
 

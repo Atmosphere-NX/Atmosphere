@@ -24,7 +24,7 @@
 
     namespace ams::pwm::driver::board {
 
-        using namespace ams::pwm::driver::board::nintendo_nx;
+        using namespace ams::pwm::driver::board::nintendo::nx;
 
     }
 

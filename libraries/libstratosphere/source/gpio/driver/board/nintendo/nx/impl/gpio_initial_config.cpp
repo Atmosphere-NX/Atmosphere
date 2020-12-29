@@ -18,7 +18,7 @@
 #include "gpio_initial_config.hpp"
 #include "gpio_wake_pin_config.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     namespace {
 

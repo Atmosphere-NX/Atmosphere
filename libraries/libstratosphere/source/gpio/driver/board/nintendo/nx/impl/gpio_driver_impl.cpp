@@ -17,7 +17,7 @@
 #include "gpio_driver_impl.hpp"
 #include "gpio_register_accessor.hpp"
 
-namespace ams::gpio::driver::board::nintendo_nx::impl {
+namespace ams::gpio::driver::board::nintendo::nx::impl {
 
     void InterruptEventHandler::Initialize(DriverImpl *drv, os::InterruptName intr, int ctlr) {
         /* Set fields. */

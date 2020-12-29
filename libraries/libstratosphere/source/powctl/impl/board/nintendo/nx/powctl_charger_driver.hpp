@@ -18,12 +18,12 @@
 #include "../../../powctl_i_power_control_driver.hpp"
 #include "powctl_interrupt_event_handler.hpp"
 
-namespace ams::powctl::impl::board::nintendo_nx {
+namespace ams::powctl::impl::board::nintendo::nx {
 
     class ChargerDevice : public powctl::impl::IDevice {
         NON_COPYABLE(ChargerDevice);
         NON_MOVEABLE(ChargerDevice);
-        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo_nx::ChargerDevice, ::ams::powctl::impl::IDevice);
+        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::ChargerDevice, ::ams::powctl::impl::IDevice);
         private:
             gpio::GpioPadSession gpio_pad_session;
             bool watchdog_timer_enabled;
@@ -54,7 +54,7 @@ namespace ams::powctl::impl::board::nintendo_nx {
     class ChargerDriver : public IPowerControlDriver {
         NON_COPYABLE(ChargerDriver);
         NON_MOVEABLE(ChargerDriver);
-        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo_nx::ChargerDriver, ::ams::powctl::impl::IPowerControlDriver);
+        AMS_DDSF_CASTABLE_TRAITS(ams::powctl::impl::board::nintendo::nx::ChargerDriver, ::ams::powctl::impl::IPowerControlDriver);
         public:
             ChargerDriver(bool ev) : IPowerControlDriver(ev) { /* ... */ }
 

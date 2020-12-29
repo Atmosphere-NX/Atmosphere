@@ -18,7 +18,7 @@
 #include "pinmux_board_driver_api.hpp"
 #include "pinmux_platform_pads.hpp"
 
-namespace ams::pinmux::driver::board::nintendo_nx {
+namespace ams::pinmux::driver::board::nintendo::nx {
 
     namespace {
 
