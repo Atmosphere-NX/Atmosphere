@@ -5,8 +5,8 @@ Building Atmosphère is a very straightforward process that relies almost exclus
 + [devkitA64](https://devkitpro.org)
 + [devkitARM](https://devkitpro.org)
 + [Python 2](https://www.python.org) (Python 3 may work as well, but this is not guaranteed)
-+ [LZ4 (Python library)](https://pypi.org/project/lz4)
-+ [PyCryptodome (Python library)](https://pypi.org/project/pycryptodome) (optional)
++ [LZ4](https://pypi.org/project/lz4)
++ [PyCryptodome](https://pypi.org/project/pycryptodome) (optional)
 
 ## Instructions
 1. Follow the guide located [here](https://devkitpro.org/wiki/Getting_Started) to install and configure all the tools necessary for the build process. 
