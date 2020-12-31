@@ -84,9 +84,14 @@ namespace ams::sm::impl {
             return;
         }
 
+        /* Get and clear the triggered service. */
+        const auto resumed_service = g_triggered_service;
+        g_triggered_service = InvalidServiceName;
+
         /* Process all entries. */
-        for (auto &entry : g_entries) {
-            if (entry.service == g_triggered_service) {
+        for (size_t i = 0; i < util::size(g_entries); /* ... */) {
+            auto &entry = g_entries[i];
+            if (entry.service == resumed_service) {
                 /* Get the entry's session. */
                 auto * const session = entry.session;
 
@@ -100,7 +105,19 @@ namespace ams::sm::impl {
                         ProcessRegisterRetry(session);
                     }
                 } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+
+                /* Handle nested resumes. */
+                if (g_triggered_service != InvalidServiceName) {
+                    AMS_ABORT_UNLESS(g_triggered_service == resumed_service);
+
+                    g_triggered_service = InvalidServiceName;
+                    i = 0;
+                    continue;
+                }
             }
+
+            /* Advance. */
+            ++i;
         }
     }
 

@@ -111,6 +111,7 @@ int main(int argc, char **argv)
         Handle smm_h;
         R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smm_h, sm::ServiceName::Encode("sm:m"), 1));
         g_server_manager.RegisterServer<sm::impl::IManagerInterface, sm::ManagerService>(smm_h);
+        sm::impl::TestAndResume(ResumeImpl);
     }
 
     /*===== ATMOSPHERE EXTENSION =====*/
@@ -119,6 +120,7 @@ int main(int argc, char **argv)
         Handle smdmnt_h;
         R_ABORT_UNLESS(sm::impl::RegisterServiceForSelf(&smdmnt_h, sm::ServiceName::Encode("sm:dmnt"), 1));
         g_server_manager.RegisterServer<sm::impl::IDebugMonitorInterface, sm::DebugMonitorService>(smdmnt_h);
+        sm::impl::TestAndResume(ResumeImpl);
     }
 
     /*================================*/
