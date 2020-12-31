@@ -15,16 +15,19 @@
  */
 #include <stratosphere.hpp>
 #include "sm_service_manager.hpp"
+#include "sm_wait_list.hpp"
 
 namespace ams::sm::impl {
 
-    /* Anonymous namespace for implementation details. */
     namespace {
+
         /* Constexpr definitions. */
         static constexpr size_t ProcessCountMax      = 0x40;
         static constexpr size_t ServiceCountMax      = 0x100;
         static constexpr size_t FutureMitmCountMax   = 0x20;
         static constexpr size_t AccessControlSizeMax = 0x200;
+
+        constexpr auto InitiallyDeferredServiceName = ServiceName::Encode("fsp-srv");
 
         /* Types. */
         struct ProcessInfo {
@@ -274,6 +277,9 @@ namespace ams::sm::impl {
                     g_future_mitm_list[i] = InvalidServiceName;
                 }
             }
+
+            /* This might undefer some requests. */
+            TriggerResume(service);
         }
 
         void GetServiceInfoRecord(ServiceRecord *out_record, const ServiceInfo *service_info) {
@@ -347,7 +353,7 @@ namespace ams::sm::impl {
 
             /* This is a mechanism by which certain services will always be deferred until sm:m receives a special command. */
             /* This can be extended with more services as needed at a later date. */
-            return service == ServiceName::Encode("fsp-srv");
+            return service == InitiallyDeferredServiceName;
         }
 
         bool ShouldCloseOnClientDisconnect(ServiceName service) {
@@ -423,6 +429,9 @@ namespace ams::sm::impl {
             free_service->max_sessions = max_sessions;
             free_service->is_light = is_light;
 
+            /* This might undefer some requests. */
+            TriggerResume(service);
+
             return ResultSuccess();
         }
 
@@ -494,8 +503,9 @@ namespace ams::sm::impl {
         R_TRY(impl::HasService(&has_service, service));
 
         /* Wait until we have the service. */
-        R_UNLESS(has_service, sf::ResultRequestDeferredByUser());
-        return ResultSuccess();
+        R_SUCCEED_IF(has_service);
+
+        return StartRegisterRetry(service);
     }
 
     Result GetServiceHandle(Handle *out, os::ProcessId process_id, ServiceName service) {
@@ -519,10 +529,9 @@ namespace ams::sm::impl {
 
         /* Get service info. Check to see if we need to defer this until later. */
         ServiceInfo *service_info = GetServiceInfo(service);
-        R_UNLESS(service_info != nullptr,            sf::ResultRequestDeferredByUser());
-        R_UNLESS(!ShouldDeferForInit(service),       sf::ResultRequestDeferredByUser());
-        R_UNLESS(!HasFutureMitmDeclaration(service), sf::ResultRequestDeferredByUser());
-        R_UNLESS(!service_info->mitm_waiting_ack,    sf::ResultRequestDeferredByUser());
+        if (service_info == nullptr || ShouldDeferForInit(service) || HasFutureMitmDeclaration(service) || service_info->mitm_waiting_ack) {
+            return StartRegisterRetry(service);
+        }
 
         /* Get a handle from the service info. */
         R_TRY_CATCH(GetServiceHandleImpl(out, service_info, process_id)) {
@@ -588,8 +597,9 @@ namespace ams::sm::impl {
         R_TRY(impl::HasMitm(&has_mitm, service));
 
         /* Wait until we have the mitm. */
-        R_UNLESS(has_mitm, sf::ResultRequestDeferredByUser());
-        return ResultSuccess();
+        R_SUCCEED_IF(has_mitm);
+
+        return StartRegisterRetry(service);
     }
 
     Result InstallMitm(Handle *out, Handle *out_query, os::ProcessId process_id, ServiceName service) {
@@ -607,7 +617,9 @@ namespace ams::sm::impl {
         ServiceInfo *service_info = GetServiceInfo(service);
 
         /* If it doesn't exist, defer until it does. */
-        R_UNLESS(service_info != nullptr, sf::ResultRequestDeferredByUser());
+        if (service_info == nullptr) {
+            return StartRegisterRetry(service);
+        }
 
         /* Validate that the service isn't already being mitm'd. */
         R_UNLESS(!IsValidProcessId(service_info->mitm_process_id), sm::ResultAlreadyRegistered());
@@ -637,6 +649,9 @@ namespace ams::sm::impl {
             service_info->mitm_query_h = std::move(mitm_qry_hnd);
             *out = hnd.Move();
             *out_query = qry_hnd.Move();
+
+            /* This might undefer some requests. */
+            TriggerResume(service);
         }
 
         future_guard.Cancel();
@@ -733,6 +748,10 @@ namespace ams::sm::impl {
 
         /* Acknowledge. */
         service_info->AcknowledgeMitmSession(out_info, out_hnd);
+
+        /* Undefer requests to the session. */
+        TriggerResume(service);
+
         return ResultSuccess();
     }
 
@@ -771,6 +790,10 @@ namespace ams::sm::impl {
     /* Deferral extension (works around FS bug). */
     Result EndInitialDefers() {
         g_ended_initial_defers = true;
+
+        /* This might undefer some requests. */
+        TriggerResume(InitiallyDeferredServiceName);
+
         return ResultSuccess();
     }
 
