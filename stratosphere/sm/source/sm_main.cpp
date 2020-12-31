@@ -18,6 +18,7 @@
 #include "sm_manager_service.hpp"
 #include "sm_debug_monitor_service.hpp"
 #include "impl/sm_service_manager.hpp"
+#include "impl/sm_wait_list.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -86,6 +87,10 @@ namespace {
     constexpr size_t NumServers  = 3;
     sf::hipc::ServerManager<NumServers> g_server_manager;
 
+    ams::Result ResumeImpl(os::WaitableHolderType *session_holder) {
+        return g_server_manager.Process(session_holder);
+    }
+
 }
 
 int main(int argc, char **argv)
@@ -94,13 +99,10 @@ int main(int argc, char **argv)
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(sm, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(sm, Main));
 
-    /* NOTE: These handles are manually managed, but we don't save references to them to close on exit. */
-    /* This is fine, because if SM crashes we have much bigger issues. */
-
     /* Create sm:, (and thus allow things to register to it). */
     {
         Handle sm_h;
-        R_ABORT_UNLESS(svcManageNamedPort(&sm_h, "sm:", 0x40));
+        R_ABORT_UNLESS(svc::ManageNamedPort(&sm_h, "sm:", 0x40));
         g_server_manager.RegisterServer<sm::impl::IUserInterface, sm::UserService>(sm_h);
     }
 
@@ -122,8 +124,23 @@ int main(int argc, char **argv)
     /*================================*/
 
     /* Loop forever, servicing our services. */
-    g_server_manager.LoopProcess();
+    while (true) {
+        /* Get the next signaled holder. */
+        auto *holder = g_server_manager.WaitSignaled();
+        AMS_ABORT_UNLESS(holder != nullptr);
 
-    /* Cleanup. */
-    return 0;
+        /* Process the holder. */
+        R_TRY_CATCH(g_server_manager.Process(holder)) {
+            R_CATCH(sf::ResultRequestDeferred) {
+                sm::impl::ProcessRegisterRetry(holder);
+                continue;
+            }
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+
+        /* Test to see if anything can be undeferred. */
+        sm::impl::TestAndResume(ResumeImpl);
+    }
+
+    /* This can never be reached. */
+    AMS_ASSUME(false);
 }
