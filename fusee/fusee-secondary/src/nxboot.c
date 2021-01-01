@@ -907,9 +907,7 @@ uint32_t nxboot_main(void) {
     }
 
     /* Derive new device keys. */
-    if (!is_mariko) {
-        derive_new_device_keys(fuse_get_hardware_state() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
-    }
+    derive_new_device_keys(fuse_get_hardware_state() != 0, KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY, target_firmware);
 
     /* Set the system partition's keys. */
     if (fsdev_register_keys("system", target_firmware, BisPartition_UserSystem) != 0) {
@@ -1001,7 +999,7 @@ uint32_t nxboot_main(void) {
     /* Copy the warmboot firmware and set the address in PMC if necessary. */
     if (warmboot_fw && (warmboot_fw_size > 0)) {
         memcpy(warmboot_memaddr, warmboot_fw, warmboot_fw_size);
-        if (!is_mariko && (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0)) {
+        if (!is_mariko && (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0)) {
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
         }
     }
@@ -1011,7 +1009,7 @@ uint32_t nxboot_main(void) {
         /* TODO */
     } else {
         /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
-        if (MAILBOX_EXOSPHERE_CONFIGURATION->target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
+        if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
             const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
             if (!strcmp(package1loader_header->build_timestamp, "20170519101410")) {
                 pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/

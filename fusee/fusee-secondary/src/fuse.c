@@ -305,21 +305,6 @@ void fuse_get_hardware_info(void *dst) {
 
     memcpy(dst, hw_info, 0x10);
 }
-
-/* Check if have a new ODM fuse format. */
-bool fuse_is_new_format(void) {
-    return ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2));
-}
-
-/* Get the DeviceUniqueKeyGeneration. */
-uint32_t fuse_get_device_unique_key_generation(void) {
-    if (fuse_is_new_format()) {
-        return (fuse_get_reserved_odm(2) & 0x1F);
-    } else {
-        return 0;
-    }
-}
-
 /* Get the SocType from the HardwareType. */
 uint32_t fuse_get_soc_type(void) {
     switch (fuse_get_hardware_type()) {
@@ -335,6 +320,21 @@ uint32_t fuse_get_soc_type(void) {
             return 0xF;         /* SocType_Undefined */
     }
 }
+
+/* Check if have a new ODM fuse format. */
+bool fuse_is_new_format(void) {
+    return ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2));
+}
+
+/* Get the DeviceUniqueKeyGeneration. */
+uint32_t fuse_get_device_unique_key_generation(void) {
+    if (fuse_get_soc_type() != 0 || fuse_is_new_format()) {
+        return (fuse_get_reserved_odm(2) & 0x1F);
+    } else {
+        return 0;
+    }
+}
+
 
 /* Get the Regulator type. */
 uint32_t fuse_get_regulator(void) {
