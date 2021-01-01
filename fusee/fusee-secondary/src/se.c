@@ -591,6 +591,20 @@ void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, co
     trigger_se_blocking_op(OP_START, dst, dst_size, src, src_size);
 }
 
+void se_aes_128_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv) {
+    volatile tegra_se_t *se = se_get_regs();
+
+    if (keyslot >= KEYSLOT_AES_MAX || src_size < 0x10) {
+        generic_panic();
+    }
+
+    se->SE_CONFIG = (ALG_AES_DEC | DST_MEMORY) | (0x000 << 16);
+    se->SE_CRYPTO_CONFIG = (keyslot << 24) | 0x66;
+    set_aes_keyslot_iv(keyslot, iv, 0x10);
+    se->SE_CRYPTO_LAST_BLOCK = (src_size >> 4) - 1;
+    trigger_se_blocking_op(OP_START, dst, dst_size, src, src_size);
+}
+
 /* SHA256 Implementation. */
 void se_calculate_sha256(void *dst, const void *src, size_t src_size) {
     volatile tegra_se_t *se = se_get_regs();
