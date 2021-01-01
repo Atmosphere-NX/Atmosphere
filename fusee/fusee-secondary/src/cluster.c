@@ -86,7 +86,7 @@ static void cluster_pmc_enable_partition(uint32_t part, uint32_t toggle) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
 
     /* Check if the partition has already been turned on. */
-    if (pmc->pwrgate_status & part) {
+    if (pmc->pwrgate_status & (toggle << part)) {
         return;
     }
 
@@ -100,12 +100,12 @@ static void cluster_pmc_enable_partition(uint32_t part, uint32_t toggle) {
     }
 
     /* Turn the partition on. */
-    pmc->pwrgate_toggle = (toggle | 0x100);
+    pmc->pwrgate_toggle = (part | 0x100);
 
     i = 5001;
     while (i > 0) {
         /* Check if the partition has already been turned on. */
-        if (pmc->pwrgate_status & part) {
+        if (pmc->pwrgate_status & (toggle << part)) {
             break;
         }
         udelay(1);
@@ -126,10 +126,8 @@ void cluster_boot_cpu0(uint32_t entry) {
     if (!(car->pllx_base & 0x40000000)) {
         car->pllx_misc3 &= 0xFFFFFFF7;
         udelay(2);
-        if (!is_mariko) {
-            car->pllx_base = 0x80404E02;
-            car->pllx_base = 0x404E02;
-        }
+        car->pllx_base = 0x80404E02;
+        car->pllx_base = 0x404E02;
         car->pllx_misc = ((car->pllx_misc & 0xFFFBFFFF) | 0x40000);
         car->pllx_base = 0x40404E02;
     }
@@ -153,13 +151,13 @@ void cluster_boot_cpu0(uint32_t entry) {
     car->cpu_softrst_ctrl2 &= 0xFFFFF000;
 
     /* Enable CPU rail. */
-    cluster_pmc_enable_partition(1, 0);
+    cluster_pmc_enable_partition(0, 1);
 
     /* Enable cluster 0 non-CPU. */
-    cluster_pmc_enable_partition(0x8000, 15);
+    cluster_pmc_enable_partition(15, 1);
 
     /* Enable CE0. */
-    cluster_pmc_enable_partition(0x4000, 14);
+    cluster_pmc_enable_partition(14, 1);
 
     /* Request and wait for RAM repair. */
     FLOW_CTLR_RAM_REPAIR_0 = 1;
@@ -184,10 +182,8 @@ void cluster_boot_cpu0(uint32_t entry) {
     /* Clear MSELECT reset. */
     rst_disable(CARDEVICE_MSELECT);
 
-    if (!is_mariko) {
-        /* Clear NONCPU reset. */
-        car->rst_cpug_cmplx_clr = 0x20000000;
-    }
+    /* Clear NONCPU reset. */
+    car->rst_cpug_cmplx_clr = 0x20000000;
 
     /* Clear CPU{0} POR and CORE, CX0, L2, and DBG reset.*/
     car->rst_cpug_cmplx_clr = 0x41010001;
