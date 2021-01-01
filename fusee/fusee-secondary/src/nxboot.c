@@ -691,7 +691,7 @@ uint32_t nxboot_main(void) {
     FILE *boot0, *pk2file;
     void *exosphere_memaddr;
     exo_emummc_config_t exo_emummc_cfg;
-    
+
     /* Configure emummc or mount the real NAND. */
     if (!nxboot_configure_emummc(&exo_emummc_cfg)) {
         emummc = NULL;
@@ -771,9 +771,11 @@ uint32_t nxboot_main(void) {
         fatal_error("[NXBOOT] Failed to open boot0: %s!\n", strerror(errno));
     }
     if (is_mariko) {
-        /* TODO*/
+        if (package1_read_and_parse_boot0_mariko(&package1loader, &package1loader_size, boot0) == -1) {
+            fatal_error("[NXBOOT] Couldn't parse boot0: %s!\n", strerror(errno));
+        }
     } else {
-        if (package1_read_and_parse_boot0(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1) {
+        if (package1_read_and_parse_boot0_erista(&package1loader, &package1loader_size, g_keyblobs, &available_revision, boot0) == -1) {
             fatal_error("[NXBOOT] Couldn't parse boot0: %s!\n", strerror(errno));
         }
     }
@@ -782,12 +784,15 @@ uint32_t nxboot_main(void) {
     /* Find the system's target firmware. */
     uint32_t target_firmware = nxboot_get_target_firmware(package1loader);
 
-    if (!target_firmware)
+    if (!target_firmware) {
         fatal_error("[NXBOOT] Failed to detect target firmware!\n");
-    else
+    } else {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Detected target firmware %ld!\n", target_firmware);
+    }
 
     /* Handle TSEC and Sept (Erista only). */
+    uint8_t tsec_key[0x10] = {0};
+    uint8_t tsec_root_keys[0x20][0x10] = {0};
     if (!is_mariko) {
         /* Read the TSEC firmware from a file, otherwise from PK1L. */
         if (loader_ctx->tsecfw_path[0] != '\0') {
@@ -859,8 +864,6 @@ uint32_t nxboot_main(void) {
         print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Loaded firmware from eMMC...\n");
 
         /* Get the TSEC keys. */
-        uint8_t tsec_key[0x10] = {0};
-        uint8_t tsec_root_keys[0x20][0x10] = {0};
         if (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
             /* Detect whether we need to run sept-secondary in order to derive keys. */
             if (!get_and_clear_has_run_sept()) {
@@ -958,6 +961,8 @@ uint32_t nxboot_main(void) {
     } else {
         if (is_mariko) {
             /* TODO */
+            warmboot_fw = NULL;
+            warmboot_fw_size = 0;
         } else {
             /* Use Atmosphere's warmboot firmware implementation. */
             warmboot_fw_size = warmboot_bin_size;
@@ -1000,7 +1005,7 @@ uint32_t nxboot_main(void) {
             pmc->scratch1 = (uint32_t)warmboot_memaddr;
         }
     }
-    
+
     /* Handle warmboot security check. */
     if (is_mariko) {
         /* TODO */
@@ -1125,7 +1130,7 @@ uint32_t nxboot_main(void) {
         rst_enable(CARDEVICE_AHBDMA);
         rst_enable(CARDEVICE_APBDMA);
     }
-    
+
     /* Return the memory address for booting CPU0. */
     return (uint32_t)exosphere_memaddr;
 }

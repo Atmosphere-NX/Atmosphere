@@ -470,7 +470,7 @@ uint64_t fuse_get_device_id(void);
 uint32_t fuse_get_dram_id(void);
 uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware);
 uint32_t fuse_get_hardware_type(void);
-uint32_t fuse_get_retail_type(void);
+uint32_t fuse_get_hardware_state(void);
 void fuse_get_hardware_info(void *dst);
 bool fuse_is_new_format(void);
 uint32_t fuse_get_device_unique_key_generation(void);

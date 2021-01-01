@@ -15,7 +15,7 @@
  */
 
 #include <stdio.h>
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 #include "key_derivation.h"
 #include "masterkey.h"
 #include "se.h"
@@ -229,7 +229,7 @@ int derive_nx_keydata_mariko(uint32_t target_firmware) {
     decrypt_data_into_keyslot(0xA, 0xE, devicekey_4x_seed, 0x10);
     decrypt_data_into_keyslot(0x7, 0xC, &master_kek_seeds_mariko[target_firmware - MASTERKEY_REVISION_600_610], 0x10);
     decrypt_data_into_keyslot(0x7, 0x7, masterkey_seed, 0x10);
-    
+
     /* Setup master key revision, derive older master keys for use. */
     return mkey_detect_revision(fuse_get_hardware_state() != 0);
 }
