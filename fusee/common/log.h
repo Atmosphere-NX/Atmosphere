@@ -28,6 +28,7 @@ typedef enum {
     SCREEN_LOG_LEVEL_MANDATORY  = 3,    /* No log prefix. */
     SCREEN_LOG_LEVEL_INFO       = 4,
     SCREEN_LOG_LEVEL_DEBUG      = 5,
+    SCREEN_LOG_LEVEL_SD_DEBUG   = 6,
 
     SCREEN_LOG_LEVEL_NO_PREFIX  = 0x100 /* OR this to your LOG_LEVEL to prevent prefix creation. */
 } ScreenLogLevel;
