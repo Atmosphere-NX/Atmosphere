@@ -86,7 +86,7 @@ void sdmmc_info(sdmmc_t *sdmmc, char *fmt, ...) {
 void sdmmc_debug(sdmmc_t *sdmmc, char *fmt, ...) {
     va_list list;
     va_start(list, fmt);
-    sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_DEBUG, fmt, list);
+    sdmmc_print(sdmmc, SCREEN_LOG_LEVEL_SD_DEBUG, fmt, list);
     va_end(list);
 }
 
@@ -430,14 +430,14 @@ static int sdmmc_clk_adjust_source(SdmmcControllerNum controller, uint32_t clk_s
         if (was_sdmmc_clk_enb) {
             sdmmc_clk_clear_enb(controller);
         }
-        
+
         out_val = sdmmc_clk_set_source(controller, clk_source_val);
 
         /* Clock was already enabled. Enable it back. */
         if (was_sdmmc_clk_enb) {
             sdmmc_clk_set_enb(controller);
         }
-        
+
         /* Dummy read for value refreshing. */
         is_sdmmc_clk_rst(controller);
     }
@@ -479,7 +479,7 @@ static void sdmmc_clk_start(SdmmcControllerNum controller, uint32_t clk_source_v
     if (is_sdmmc_clk_enb(controller)) {
         sdmmc_clk_clear_enb(controller);
     }
-    
+
     /* Put the device clock in reset. */
     sdmmc_clk_set_rst(controller);
 
@@ -517,7 +517,7 @@ static void sdmmc_clk_stop(SdmmcControllerNum controller) {
 /* Configure clock trimming. */
 static void sdmmc_vendor_clock_cntrl_config(sdmmc_t *sdmmc) {
     bool is_mariko = is_soc_mariko();
-    
+
     /* Clear the I/O conditioning constants. */
     sdmmc->regs->vendor_clock_cntrl &= ~(SDMMC_CLOCK_TRIM_MASK | SDMMC_CLOCK_TAP_MASK);
 
@@ -547,7 +547,7 @@ static void sdmmc_vendor_clock_cntrl_config(sdmmc_t *sdmmc) {
 /* Configure automatic calibration. */
 static int sdmmc_autocal_config(sdmmc_t *sdmmc, SdmmcBusVoltage voltage) {
     bool is_mariko = is_soc_mariko();
-    
+
     switch (sdmmc->controller) {
         case SDMMC_1:
         case SDMMC_3:
@@ -776,7 +776,7 @@ void sdmmc_select_voltage(sdmmc_t *sdmmc, SdmmcBusVoltage voltage) {
 
 static void sdmmc_tap_config(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed) {
     bool is_mariko = is_soc_mariko();
-    
+
     if (bus_speed == SDMMC_SPEED_MMC_HS400) {
         /* Clear and set DQS_TRIM_VAL (used in HS400) */
         sdmmc->regs->vendor_cap_overrides &= ~(0x3F00);
@@ -865,7 +865,7 @@ static int sdmmc_dllcal_run(sdmmc_t *sdmmc) {
     if (shutdown_sd_clock) {
         sdmmc_disable_sd_clock(sdmmc);
     }
-    
+
     return 1;
 }
 
@@ -950,7 +950,7 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed) {
     if (div_val_lo > 0xFF) {
         div_val_hi = (div_val_lo >> 8);
     }
-    
+
     /* Set the clock control divider values. */
     sdmmc->regs->clock_control &= ~((SDHCI_DIV_HI_MASK | SDHCI_DIV_MASK) << 6);
     sdmmc->regs->clock_control |= ((div_val_hi << SDHCI_DIVIDER_HI_SHIFT) | (div_val_lo << SDHCI_DIVIDER_SHIFT));
@@ -959,7 +959,7 @@ int sdmmc_select_speed(sdmmc_t *sdmmc, SdmmcBusSpeed bus_speed) {
     if (restart_sd_clock) {
         sdmmc_enable_sd_clock(sdmmc);
     }
-    
+
     /* Run DLLCAL for HS400 only */
     if (bus_speed == SDMMC_SPEED_MMC_HS400) {
         return sdmmc_dllcal_run(sdmmc);
@@ -1120,7 +1120,7 @@ static int sdmmc_init_controller(sdmmc_t *sdmmc, SdmmcControllerNum controller) 
 
 int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bus_voltage, SdmmcBusWidth bus_width, SdmmcBusSpeed bus_speed) {
     bool is_mariko = is_soc_mariko();
-    
+
     /* Initialize our controller structure. */
     if (!sdmmc_init_controller(sdmmc, controller)) {
         sdmmc_error(sdmmc, "Failed to initialize SDMMC%d", controller + 1);
@@ -1180,7 +1180,7 @@ int sdmmc_init(sdmmc_t *sdmmc, SdmmcControllerNum controller, SdmmcBusVoltage bu
     } else {
         sdmmc->regs->sdmemcomppadctrl |= 0x07;
     }
-    
+
     /* Configure autocal offsets. */
     if (!sdmmc_autocal_config(sdmmc, bus_voltage)) {
         sdmmc_error(sdmmc, "Failed to configure automatic calibration!");
@@ -1358,7 +1358,7 @@ static int sdmmc_intr_check(sdmmc_t *sdmmc, uint16_t *status_out, uint16_t statu
     if (status_out) {
         *status_out = (int_status & 0xFFFF);
     }
-    
+
     if (int_status & TEGRA_MMC_NORINTSTS_ERR_INTERRUPT) {
         /* Acknowledge error by refreshing status. */
         sdmmc->regs->int_status = int_status;
@@ -1421,12 +1421,12 @@ static int sdmmc_dma_init(sdmmc_t *sdmmc, sdmmc_request_t *req) {
     if (req->is_multi_block) {
         transfer_mode |= (TEGRA_MMC_TRNMOD_MULTI_BLOCK_SELECT | TEGRA_MMC_TRNMOD_BLOCK_COUNT_ENABLE);
     }
-    
+
     /* Select read mode. */
     if (req->is_read) {
         transfer_mode |= TEGRA_MMC_TRNMOD_DATA_XFER_DIR_SEL_READ;
     }
-    
+
     /* Select AUTO_CMD12. */
     if (req->is_auto_cmd12) {
         transfer_mode &= ~(TEGRA_MMC_TRNMOD_AUTO_CMD12 & TEGRA_MMC_TRNMOD_AUTO_CMD23);
@@ -1505,22 +1505,22 @@ static void sdmmc_set_cmd_flags(sdmmc_t *sdmmc, sdmmc_command_t *cmd, bool is_dm
     } else {
         cmd_reg_flags = TEGRA_MMC_CMDREG_RESP_TYPE_SELECT_LENGTH_48;
     }
-    
+
     /* Select CRC flag based on response type. */
     if (cmd->flags & SDMMC_RSP_CRC) {
         cmd_reg_flags |= TEGRA_MMC_TRNMOD_CMD_CRC_CHECK;
     }
-    
+
     /* Select opcode flag based on response type. */
     if (cmd->flags & SDMMC_RSP_OPCODE) {
         cmd_reg_flags |= TEGRA_MMC_TRNMOD_CMD_INDEX_CHECK;
     }
-    
+
     /* Select data present flag. */
     if (is_dma) {
         cmd_reg_flags |= TEGRA_MMC_TRNMOD_DATA_PRESENT_SELECT_DATA_TRANSFER;
     }
-    
+
     /* Set the CMD's argument, opcode and flags. */
     sdmmc->regs->argument = cmd->arg;
     sdmmc->regs->command = ((cmd->opcode << 8) | cmd_reg_flags);
@@ -1724,7 +1724,7 @@ int sdmmc_send_cmd(sdmmc_t *sdmmc, sdmmc_command_t *cmd, sdmmc_request_t *req, u
     if (shutdown_sd_clock) {
         sdmmc_disable_sd_clock(sdmmc);
     }
-    
+
     return cmd_result;
 }
 
@@ -1994,6 +1994,6 @@ int sdmmc_abort(sdmmc_t *sdmmc, uint32_t opcode) {
     if (shutdown_sd_clock) {
         sdmmc_disable_sd_clock(sdmmc);
     }
-    
+
     return result;
 }
