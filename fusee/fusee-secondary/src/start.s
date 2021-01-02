@@ -301,17 +301,6 @@ _content_headers:
 .asciz "exosphere_fatal"
 .align 5
 
-
-/* splash_screen content header */
-.word __splash_screen_bmp_start__
-.word __splash_screen_bmp_size__
-.byte CONTENT_TYPE_BMP
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.byte CONTENT_FLAG_NONE
-.word 0xCCCCCCCC
-.asciz "splash_screen"
-.align 5
 _content_headers_end:
 
 /* No need to include this in normal programs: */
