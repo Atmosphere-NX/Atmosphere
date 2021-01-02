@@ -82,19 +82,26 @@ static void cluster_enable_power(uint32_t regulator) {
     }
 }
 
+static bool cluster_is_partition_powered(volatile tegra_pmc_t *pmc, uint32_t status) {
+    return (pmc->pwrgate_status & status) == status;
+}
+
 static void cluster_pmc_enable_partition(uint32_t part, uint32_t toggle) {
     volatile tegra_pmc_t *pmc = pmc_get_regs();
+    const uint32_t status = (toggle << part);
 
     /* Check if the partition has already been turned on. */
-    if (pmc->pwrgate_status & (toggle << part)) {
+    if (cluster_is_partition_powered(pmc, status)) {
         return;
     }
 
-    uint32_t i = 5001;
-    while (pmc->pwrgate_toggle & 0x100) {
+    int timeout = 5000;
+    while (true) {
+        if ((pmc->pwrgate_toggle & 0x100) == 0) {
+            break;
+        }
         udelay(1);
-        i--;
-        if (i < 1) {
+        if ((--timeout) < 0) {
             return;
         }
     }
@@ -102,14 +109,15 @@ static void cluster_pmc_enable_partition(uint32_t part, uint32_t toggle) {
     /* Turn the partition on. */
     pmc->pwrgate_toggle = (part | 0x100);
 
-    i = 5001;
-    while (i > 0) {
-        /* Check if the partition has already been turned on. */
-        if (pmc->pwrgate_status & (toggle << part)) {
+    timeout = 5000;
+    while (true) {
+        if (cluster_is_partition_powered(pmc, status)) {
             break;
         }
         udelay(1);
-        i--;
+        if ((--timeout) < 0) {
+            return;
+        }
     }
 }
 
