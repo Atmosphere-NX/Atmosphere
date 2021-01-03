@@ -44,9 +44,9 @@ static void cluster_enable_power(uint32_t regulator) {
                 i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_AME_GPIO, &val, 1);
                 val = 0x09;
                 i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_GPIO5, &val, 1);
-                val = 0x20;
+                val = 0xB0;
                 i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x02, &val, 1);
-                val = 0x8D;
+                val = 0xC1;
                 i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x03, &val, 1);
                 val = 0xB7;
                 i2c_send(I2C_5, MAX77621_CPU_I2C_ADDR, 0x00, &val, 1);
@@ -58,10 +58,8 @@ static void cluster_enable_power(uint32_t regulator) {
             {
                 uint8_t val = 0;
                 i2c_query(I2C_5, MAX77812_PHASE31_CPU_I2C_ADDR, MAX77812_REG_EN_CTRL, &val, 1);
-                if (val) {
-                    val |= 0x40;
-                    i2c_send(I2C_5, MAX77812_PHASE31_CPU_I2C_ADDR, MAX77812_REG_EN_CTRL, &val, 1);
-                }
+                val |= 0x40;
+                i2c_send(I2C_5, MAX77812_PHASE31_CPU_I2C_ADDR, MAX77812_REG_EN_CTRL, &val, 1);
                 val = 0x6E;
                 i2c_send(I2C_5, MAX77812_PHASE31_CPU_I2C_ADDR, MAX77812_REG_M4_VOUT, &val, 1);
             }
@@ -70,10 +68,8 @@ static void cluster_enable_power(uint32_t regulator) {
             {
                 uint8_t val = 0;
                 i2c_query(I2C_5, MAX77812_PHASE211_CPU_I2C_ADDR, MAX77812_REG_EN_CTRL, &val, 1);
-                if (val) {
-                    val |= 0x40;
-                    i2c_send(I2C_5, MAX77812_PHASE211_CPU_I2C_ADDR, MAX77812_REG_EN_CTRL, &val, 1);
-                }
+                val |= 0x40;
+                i2c_send(I2C_5, MAX77812_PHASE211_CPU_I2C_ADDR, MAX77812_REG_EN_CTRL, &val, 1);
                 val = 0x6E;
                 i2c_send(I2C_5, MAX77812_PHASE211_CPU_I2C_ADDR, MAX77812_REG_M4_VOUT, &val, 1);
             }
