@@ -46,9 +46,17 @@ static bool is_custom_public_key_erista(const void *bct) {
     return memcmp((const uint8_t *)bct + 0x210, custom_public_key, sizeof(custom_public_key)) == 0;
 }
 
-//static bool is_custom_public_key_mariko(const void *bct) {
-//    return memcmp((const uint8_t *)bct + 0x10, custom_public_key, sizeof(custom_public_key)) == 0;
-//}
+static bool is_custom_public_key_mariko(const void *bct) {
+    return memcmp((const uint8_t *)bct + 0x10, custom_public_key, sizeof(custom_public_key)) == 0;
+}
+
+bool package1_is_custom_public_key(const void *bct, bool mariko) {
+    if (mariko) {
+        return is_custom_public_key_mariko(bct);
+    } else {
+        return is_custom_public_key_erista(bct);
+    }
+}
 
 int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0) {
     nvboot_config_table *bct; /* Normal firmware BCT, primary. TODO: check? */
