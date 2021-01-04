@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include "i2c.h"
 #include "mc.h"
 #include "emc.h"
@@ -43,7 +43,7 @@ static bool is_soc_mariko() {
 static void sdram_config_erista(const sdram_params_erista_t *params) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
+
     pmc->io_dpd3_req = (((4 * params->EmcPmcScratch1 >> 2) + 0x80000000) ^ 0xFFFF) & 0xC000FFFF;
     udelay(params->PmcIoDpd3ReqWait);
     uint32_t req = (4 * params->EmcPmcScratch2 >> 2) + 0x80000000;
@@ -60,41 +60,41 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
 
     bool timeout = false;
     uint32_t wait_end = get_time_us() + 300;
-    
+
     while (!(car->pllm_base & 0x8000000) && !timeout) {
         if (get_time_us() >= wait_end)
             timeout = true;
     }
-    
+
     if (!timeout) {
         udelay(10);
     }
 
     car->clk_source_emc = (((params->McEmemArbMisc0 >> 11) & 0x10000) | (params->EmcClockSource & 0xFFFEFFFF));
-    
+
     if (params->EmcClockSourceDll) {
         car->clk_source_emc_dll = params->EmcClockSourceDll;
     }
     if (params->ClearClk2Mc1) {
         car->clk_enb_w_clr = 0x40000000;
     }
-    
+
     car->clk_enb_h_set = 0x2000001;
     car->clk_enb_x_set = 0x4000;
     car->rst_dev_h_clr = 0x2000001;
-    
+
     MAKE_EMC_REG(EMC_PMACRO_VTTGEN_CTRL_0) = params->EmcPmacroVttgenCtrl0;
     MAKE_EMC_REG(EMC_PMACRO_VTTGEN_CTRL_1) = params->EmcPmacroVttgenCtrl1;
     MAKE_EMC_REG(EMC_PMACRO_VTTGEN_CTRL_2) = params->EmcPmacroVttgenCtrl2;
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
     udelay(1);
-    
+
     MAKE_EMC_REG(EMC_DBG) = (params->EmcDbgWriteMux << 1) | params->EmcDbg;
-    
+
     if (params->EmcBctSpare2) {
         *(volatile uint32_t *)params->EmcBctSpare2 = params->EmcBctSpare3;
     }
-    
+
     MAKE_EMC_REG(EMC_FBIO_CFG7) = params->EmcFbioCfg7;
     MAKE_EMC_REG(EMC_CMD_MAPPING_CMD0_0) = params->EmcCmdMappingCmd0_0;
     MAKE_EMC_REG(EMC_CMD_MAPPING_CMD0_1) = params->EmcCmdMappingCmd0_1;
@@ -123,11 +123,11 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
     MAKE_EMC_REG(EMC_SWIZZLE_RANK1_BYTE1) = params->EmcSwizzleRank1Byte1;
     MAKE_EMC_REG(EMC_SWIZZLE_RANK1_BYTE2) = params->EmcSwizzleRank1Byte2;
     MAKE_EMC_REG(EMC_SWIZZLE_RANK1_BYTE3) = params->EmcSwizzleRank1Byte3;
-    
+
     if (params->EmcBctSpare6) {
         *(volatile uint32_t *)params->EmcBctSpare6 = params->EmcBctSpare7;
     }
-    
+
     MAKE_EMC_REG(EMC_XM2COMPPADCTRL) = params->EmcXm2CompPadCtrl;
     MAKE_EMC_REG(EMC_XM2COMPPADCTRL2) = params->EmcXm2CompPadCtrl2;
     MAKE_EMC_REG(EMC_XM2COMPPADCTRL3) = params->EmcXm2CompPadCtrl3;
@@ -251,13 +251,13 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
     MAKE_EMC_REG(EMC_PMACRO_DDLL_SHORT_CMD_1) = params->EmcPmacroDdllShortCmd_1;
     MAKE_EMC_REG(EMC_PMACRO_DDLL_SHORT_CMD_2) = params->EmcPmacroDdllShortCmd_2;
     MAKE_EMC_REG(EMC_PMACRO_COMMON_PAD_TX_CTRL) = ((params->EmcPmacroCommonPadTxCtrl & 1) | 0xE);
-    
+
     if (params->EmcBctSpare4) {
         *(volatile uint32_t *)params->EmcBctSpare4 = params->EmcBctSpare5;
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
-    
+
     MAKE_MC_REG(MC_VIDEO_PROTECT_BOM) = params->McVideoProtectBom;
     MAKE_MC_REG(MC_VIDEO_PROTECT_BOM_ADR_HI) = params->McVideoProtectBomAdrHi;
     MAKE_MC_REG(MC_VIDEO_PROTECT_SIZE_MB) = params->McVideoProtectSizeMb;
@@ -310,7 +310,7 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
     MAKE_MC_REG(MC_TIMING_CONTROL) = 1;
     MAKE_MC_REG(MC_CLKEN_OVERRIDE) = params->McClkenOverride;
     MAKE_MC_REG(MC_STAT_CONTROL) = params->McStatControl;
-    
+
     MAKE_EMC_REG(EMC_ADR_CFG) = params->EmcAdrCfg;
     MAKE_EMC_REG(EMC_CLKEN_OVERRIDE) = params->EmcClkenOverride;
     MAKE_EMC_REG(EMC_PMACRO_AUTOCAL_CFG_0) = params->EmcPmacroAutocalCfg0;
@@ -321,11 +321,11 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
     MAKE_EMC_REG(EMC_AUTO_CAL_INTERVAL) = params->EmcAutoCalInterval;
     MAKE_EMC_REG(EMC_AUTO_CAL_CONFIG) = params->EmcAutoCalConfig;
     udelay(params->EmcAutoCalWait);
-    
+
     if (params->EmcBctSpare8) {
         *(volatile uint32_t *)params->EmcBctSpare8 = params->EmcBctSpare9;
     }
-    
+
     MAKE_EMC_REG(EMC_CFG_2) = params->EmcCfg2;
     MAKE_EMC_REG(EMC_CFG_PIPE) = params->EmcCfgPipe;
     MAKE_EMC_REG(EMC_CFG_PIPE_1) = params->EmcCfgPipe1;
@@ -413,21 +413,21 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
     MAKE_EMC_REG(EMC_ACPD_CONTROL) = params->EmcAcpdControl;
     MAKE_EMC_REG(EMC_TXDSRVTTGEN) = params->EmcTxdsrvttgen;
     MAKE_EMC_REG(EMC_CFG) = (params->EmcCfg & 0xE) | 0x3C00000;
-    
+
     if (params->BootRomPatchControl & 0x80000000) {
         *(volatile uint32_t *)(4 * (params->BootRomPatchControl + 0x1C000000)) = params->BootRomPatchData;
         MAKE_MC_REG(MC_TIMING_CONTROL) = 1;
     }
-    
+
     pmc->io_dpd3_req = (((4 * params->EmcPmcScratch1 >> 2) + 0x40000000) & 0xCFFF0000);
     udelay(params->PmcIoDpd3ReqWait);
-    
+
     if (!params->EmcAutoCalInterval) {
         MAKE_EMC_REG(EMC_AUTO_CAL_CONFIG) = (params->EmcAutoCalConfig | 0x200);
     }
-    
+
     MAKE_EMC_REG(EMC_PMACRO_BRICK_CTRL_RFU2) = params->EmcPmacroBrickCtrlRfu2;
-    
+
     if (params->EmcZcalWarmColdBootEnables & 1) {
         if (params->MemoryType == NvBootMemoryType_Ddr3) {
             MAKE_EMC_REG(EMC_ZCAL_WAIT_CNT) = (8 * params->EmcZcalWaitCnt);
@@ -436,26 +436,26 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
             MAKE_EMC_REG(EMC_ZCAL_MRW_CMD) = params->EmcZcalMrwCmd;
         }
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
     udelay(params->EmcTimingControlWait);
-    
+
     pmc->ddr_cntrl &= 0xFFF8007F;
     udelay(params->PmcDdrCntrlWait);
-    
+
     MAKE_EMC_REG(EMC_PIN) = (params->EmcPinGpioEn << 16) | (params->EmcPinGpio << 12);
     udelay(params->EmcPinExtraWait + 200);
     MAKE_EMC_REG(EMC_PIN) = ((params->EmcPinGpioEn << 16) | (params->EmcPinGpio << 12)) + 256;
-    
-    if (params->MemoryType == NvBootMemoryType_Ddr3) {        
+
+    if (params->MemoryType == NvBootMemoryType_Ddr3) {
         udelay(params->EmcPinExtraWait + 500);
     } else if (params->MemoryType == NvBootMemoryType_LpDdr4) {
         udelay(params->EmcPinExtraWait + 2000);
     }
-    
+
     MAKE_EMC_REG(EMC_PIN) = (((params->EmcPinGpioEn << 16) | (params->EmcPinGpio << 12)) + 0x101);
     udelay(params->EmcPinProgramWait);
-    
+
     if (params->MemoryType != NvBootMemoryType_LpDdr4) {
         MAKE_EMC_REG(EMC_NOP) = (params->EmcDevSelect << 30) + 1;
         if (params->MemoryType == NvBootMemoryType_LpDdr2) {
@@ -465,7 +465,7 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
         if (params->EmcBctSpare10) {
             *(volatile uint32_t *)params->EmcBctSpare10 = params->EmcBctSpare11;
         }
-        
+
         MAKE_EMC_REG(EMC_MRW2) = params->EmcMrw2;
         MAKE_EMC_REG(EMC_MRW) = params->EmcMrw1;
         MAKE_EMC_REG(EMC_MRW3) = params->EmcMrw3;
@@ -476,12 +476,12 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
         MAKE_EMC_REG(EMC_MRW12) = params->EmcMrw12;
         MAKE_EMC_REG(EMC_MRW9) = params->EmcMrw9;
         MAKE_EMC_REG(EMC_MRW13) = params->EmcMrw13;
-        
+
         if (params->EmcZcalWarmColdBootEnables & 1) {
             MAKE_EMC_REG(EMC_ZQ_CAL) = params->EmcZcalInitDev0;
             udelay(params->EmcZcalInitWait);
             MAKE_EMC_REG(EMC_ZQ_CAL) = (params->EmcZcalInitDev0 ^ 3);
-            
+
             if (!(params->EmcDevSelect & 2)) {
                 MAKE_EMC_REG(EMC_ZQ_CAL) = params->EmcZcalInitDev1;
                 udelay(params->EmcZcalInitWait);
@@ -489,26 +489,26 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
             }
         }
     }
-    
+
     pmc->ddr_cfg = params->PmcDdrCfg;
-    if ((params->MemoryType == NvBootMemoryType_LpDdr2) 
-        || (params->MemoryType == NvBootMemoryType_Ddr3) 
+    if ((params->MemoryType == NvBootMemoryType_LpDdr2)
+        || (params->MemoryType == NvBootMemoryType_Ddr3)
         || (params->MemoryType == NvBootMemoryType_LpDdr4)) {
         MAKE_EMC_REG(EMC_ZCAL_INTERVAL) = params->EmcZcalInterval;
         MAKE_EMC_REG(EMC_ZCAL_WAIT_CNT) = params->EmcZcalWaitCnt;
         MAKE_EMC_REG(EMC_ZCAL_MRW_CMD) = params->EmcZcalMrwCmd;
     }
-    
+
     if (params->EmcBctSpare12) {
         *(volatile uint32_t *)params->EmcBctSpare12 = params->EmcBctSpare13;
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
-    
+
     if (params->EmcExtraRefreshNum) {
         MAKE_EMC_REG(EMC_REF) = (((1 << params->EmcExtraRefreshNum << 8) - 0xFD) | (params->EmcPinGpio << 30));
     }
-    
+
     MAKE_EMC_REG(EMC_REFCTRL) = (params->EmcDevSelect | 0x80000000);
     MAKE_EMC_REG(EMC_DYN_SELF_REF_CONTROL) = params->EmcDynSelfRefControl;
     MAKE_EMC_REG(EMC_CFG_UPDATE) = params->EmcCfgUpdate;
@@ -520,9 +520,9 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
     MAKE_EMC_REG(EMC_CFG_PIPE_CLK) = params->EmcCfgPipeClk;
     MAKE_EMC_REG(EMC_FDPD_CTRL_CMD_NO_RAMP) = params->EmcFdpdCtrlCmdNoRamp;
-    
+
     AHB_ARBITRATION_XBAR_CTRL_0 = ((AHB_ARBITRATION_XBAR_CTRL_0 & 0xFFFEFFFF) | ((params->AhbArbitrationXbarCtrlMemInitDone & 0xFFFF) << 16));
-    
+
     MAKE_MC_REG(MC_VIDEO_PROTECT_REG_CTRL) = params->McVideoProtectWriteAccess;
     MAKE_MC_REG(MC_SEC_CARVEOUT_REG_CTRL) = params->McSecCarveoutProtectWriteAccess;
     MAKE_MC_REG(MC_MTS_CARVEOUT_REG_CTRL) = params->McMtsCarveoutRegCtrl;
@@ -532,23 +532,23 @@ static void sdram_config_erista(const sdram_params_erista_t *params) {
 static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
+
     if (params->EmcBctSpare0) {
         *(volatile uint32_t *)params->EmcBctSpare0 = params->EmcBctSpare1;
     }
-    
+
     if (params->ClkRstControllerPllmMisc2OverrideEnable) {
         car->pllm_misc2 = params->ClkRstControllerPllmMisc2Override;
     }
-    
+
     pmc->weak_bias = ((~params->EmcPmcScratch1 & 0x1000) << 19) | ((~params->EmcPmcScratch1 & 0xFFF) << 18) | ((~params->EmcPmcScratch1 & 0x8000) << 15);
     pmc->io_dpd3_req = (~params->EmcPmcScratch1 & 0x9FFF) + 0x80000000;
     udelay(params->PmcIoDpd3ReqWait);
-    pmc->io_dpd4_req = (~params->EmcPmcScratch2 & 0x3FFF0000) + 0x80000000;
+    pmc->io_dpd4_req = (~params->EmcPmcScratch2 & 0x3FFF0000) | 0x80000000;
     udelay(params->PmcIoDpd4ReqWait);
-    pmc->io_dpd4_req = (~params->EmcPmcScratch2 & 0x1FFF) + 0x80000000;
+    pmc->io_dpd4_req = (~params->EmcPmcScratch2 & 0x1FFF) | 0x80000000;
     udelay(1);
-    
+
     MAKE_EMC_REG(EMC_FBIO_CFG7) = params->EmcFbioCfg7;
     MAKE_EMC_REG(EMC_CMD_MAPPING_CMD0_0) = params->EmcCmdMappingCmd0_0;
     MAKE_EMC_REG(EMC_CMD_MAPPING_CMD0_1) = params->EmcCmdMappingCmd0_1;
@@ -570,7 +570,7 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_EMC_REG(EMC_PMACRO_VTTGEN_CTRL_1) = params->EmcPmacroVttgenCtrl1;
     MAKE_EMC_REG(EMC_PMACRO_VTTGEN_CTRL_2) = params->EmcPmacroVttgenCtrl2;
     MAKE_EMC_REG(EMC_PMACRO_BG_BIAS_CTRL_0) = params->EmcPmacroBgBiasCtrl0;
-    
+
     if (params->EmcBctSpareSecure0) {
         *(volatile uint32_t *)params->EmcBctSpareSecure0 = params->EmcBctSpareSecure1;
     }
@@ -580,17 +580,17 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     if (params->EmcBctSpareSecure4) {
         *(volatile uint32_t *)params->EmcBctSpareSecure4 = params->EmcBctSpareSecure5;
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
     udelay(params->PmcVddpSelWait + 2);
     car->clk_source_emc = params->EmcClockSource;
     car->clk_source_emc_dll = params->EmcClockSourceDll;
-    MAKE_EMC_REG(EMC_DBG) = params->EmcDbg | 2 * params->EmcDbgWriteMux;
-    
+    MAKE_EMC_REG(EMC_DBG) = params->EmcDbg | (2 * params->EmcDbgWriteMux);
+
     if (params->EmcBctSpare2) {
         *(volatile uint32_t *)params->EmcBctSpare2 = params->EmcBctSpare3;
     }
-    
+
     MAKE_EMC_REG(EMC_CONFIG_SAMPLE_DELAY) = params->EmcConfigSampleDelay;
     MAKE_EMC_REG(EMC_FBIO_CFG8) = params->EmcFbioCfg8;
     MAKE_EMC_REG(EMC_SWIZZLE_RANK0_BYTE0) = params->EmcSwizzleRank0Byte0;
@@ -601,11 +601,11 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_EMC_REG(EMC_SWIZZLE_RANK1_BYTE1) = params->EmcSwizzleRank1Byte1;
     MAKE_EMC_REG(EMC_SWIZZLE_RANK1_BYTE2) = params->EmcSwizzleRank1Byte2;
     MAKE_EMC_REG(EMC_SWIZZLE_RANK1_BYTE3) = params->EmcSwizzleRank1Byte3;
-    
+
     if (params->EmcBctSpare6) {
         *(volatile uint32_t *)params->EmcBctSpare6 = params->EmcBctSpare7;
     }
-    
+
     MAKE_EMC_REG(EMC_XM2COMPPADCTRL) = params->EmcXm2CompPadCtrl;
     MAKE_EMC_REG(EMC_XM2COMPPADCTRL2) = params->EmcXm2CompPadCtrl2;
     MAKE_EMC_REG(EMC_XM2COMPPADCTRL3) = params->EmcXm2CompPadCtrl3;
@@ -747,7 +747,7 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_EMC_REG(EMC_PMACRO_DDLL_SHORT_CMD_1) = params->EmcPmacroDdllShortCmd_1;
     MAKE_EMC_REG(EMC_PMACRO_DDLL_SHORT_CMD_2) = params->EmcPmacroDdllShortCmd_2;
     MAKE_EMC_REG(EMC_PMACRO_DDLL_PERIODIC_OFFSET) = params->EmcPmacroDdllPeriodicOffset;
-    
+
     if (params->EmcBctSpare4) {
         *(volatile uint32_t *)params->EmcBctSpare4 = params->EmcBctSpare5;
     }
@@ -760,9 +760,9 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     if (params->EmcBctSpareSecure10) {
         *(volatile uint32_t *)params->EmcBctSpareSecure10 = params->EmcBctSpareSecure11;
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
-    
+
     MAKE_MC_REG(MC_VIDEO_PROTECT_BOM) = params->McVideoProtectBom;
     MAKE_MC_REG(MC_VIDEO_PROTECT_BOM_ADR_HI) = params->McVideoProtectBomAdrHi;
     MAKE_MC_REG(MC_VIDEO_PROTECT_SIZE_MB) = params->McVideoProtectSizeMb;
@@ -815,7 +815,7 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_MC_REG(MC_TIMING_CONTROL) = 1;
     MAKE_MC_REG(MC_CLKEN_OVERRIDE) = params->McClkenOverride;
     MAKE_MC_REG(MC_STAT_CONTROL) = params->McStatControl;
-    
+
     MAKE_EMC_REG(EMC_ADR_CFG) = params->EmcAdrCfg;
     MAKE_EMC_REG(EMC_CLKEN_OVERRIDE) = params->EmcClkenOverride;
     MAKE_EMC_REG(EMC_PMACRO_AUTOCAL_CFG_0) = params->EmcPmacroAutocalCfg0;
@@ -826,11 +826,11 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_EMC_REG(EMC_AUTO_CAL_INTERVAL) = params->EmcAutoCalInterval;
     MAKE_EMC_REG(EMC_AUTO_CAL_CONFIG) = params->EmcAutoCalConfig;
     udelay(params->EmcAutoCalWait);
-    
+
     if (params->EmcBctSpare8) {
         *(volatile uint32_t *)params->EmcBctSpare8 = params->EmcBctSpare9;
     }
-    
+
     MAKE_EMC_REG(EMC_AUTO_CAL_CONFIG9) = params->EmcAutoCalConfig9;
     MAKE_EMC_REG(EMC_CFG_2) = params->EmcCfg2;
     MAKE_EMC_REG(EMC_CFG_PIPE) = params->EmcCfgPipe;
@@ -924,12 +924,12 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_EMC_REG(EMC_TXDSRVTTGEN) = params->EmcTxdsrvttgen;
     MAKE_EMC_REG(EMC_PMACRO_DSR_VTTGEN_CTRL_0) = params->EmcPmacroDsrVttgenCtrl0;
     MAKE_EMC_REG(EMC_CFG) = ((((((params->EmcCfg & 4) | 0x3C00000) & 0xFFFFFFF7) | (params->EmcCfg & 8)) & 0xFFFFFFFD) | (params->EmcCfg & 2));
-    
+
     if (params->BootRomPatchControl) {
         *(volatile uint32_t *)params->BootRomPatchControl = params->BootRomPatchData;
         MAKE_MC_REG(MC_TIMING_CONTROL) = 1;
     }
-    
+
     if (params->EmcBctSpareSecure12) {
         *(volatile uint32_t *)params->EmcBctSpareSecure12 = params->EmcBctSpareSecure13;
     }
@@ -937,13 +937,13 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
         *(volatile uint32_t *)params->EmcBctSpareSecure14 = params->EmcBctSpareSecure15;
     }
     if (params->EmcBctSpareSecure16) {
-        *(volatile uint32_t *)params->EmcBctSpareSecure16 = params->EmcBctSpareSecure17;   
+        *(volatile uint32_t *)params->EmcBctSpareSecure16 = params->EmcBctSpareSecure17;
     }
-    
+
     pmc->io_dpd3_req = ((4 * params->EmcPmcScratch1 >> 2) + 0x40000000) & 0xCFFF0000;
     udelay(params->PmcIoDpd3ReqWait);
     MAKE_EMC_REG(EMC_PMACRO_CMD_PAD_TX_CTRL) = params->EmcPmacroCmdPadTxCtrl;
-    
+
     if (params->EmcZcalWarmColdBootEnables & 1) {
         if (params->MemoryType == NvBootMemoryType_Ddr3) {
             MAKE_EMC_REG(EMC_ZCAL_WAIT_CNT) = 8 * params->EmcZcalWaitCnt;
@@ -952,26 +952,26 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
             MAKE_EMC_REG(EMC_ZCAL_MRW_CMD) = params->EmcZcalMrwCmd;
         }
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
     udelay(params->EmcTimingControlWait);
-    
+
     pmc->ddr_cntrl &= 0xFF78007F;
     udelay(params->PmcDdrCntrlWait);
-    
+
     MAKE_EMC_REG(EMC_PIN) = (params->EmcPinGpioEn << 16) | (params->EmcPinGpio << 12);
     udelay(params->EmcPinExtraWait + 200);
     MAKE_EMC_REG(EMC_PIN) = ((params->EmcPinGpioEn << 16) | (params->EmcPinGpio << 12)) + 256;
-    
-    if (params->MemoryType == NvBootMemoryType_Ddr3) {        
+
+    if (params->MemoryType == NvBootMemoryType_Ddr3) {
         udelay(params->EmcPinExtraWait + 500);
     } else if (params->MemoryType == NvBootMemoryType_LpDdr4) {
         udelay(params->EmcPinExtraWait + 2000);
     }
-    
+
     MAKE_EMC_REG(EMC_PIN) = ((params->EmcPinGpioEn << 16) | (params->EmcPinGpio << 12)) + 257;
     udelay(params->EmcPinProgramWait);
-    
+
     if (params->MemoryType != NvBootMemoryType_LpDdr4) {
         MAKE_EMC_REG(EMC_NOP) = (params->EmcDevSelect << 30) + 1;
         if (params->MemoryType == NvBootMemoryType_LpDdr2) {
@@ -979,9 +979,9 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
         }
     } else {
         if (params->EmcBctSpare10) {
-            *(volatile uint32_t *)params->EmcBctSpare10 = params->EmcBctSpare11;   
+            *(volatile uint32_t *)params->EmcBctSpare10 = params->EmcBctSpare11;
         }
-        
+
         MAKE_EMC_REG(EMC_MRW2) = params->EmcMrw2;
         MAKE_EMC_REG(EMC_MRW) = params->EmcMrw1;
         MAKE_EMC_REG(EMC_MRW3) = params->EmcMrw3;
@@ -992,12 +992,12 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
         MAKE_EMC_REG(EMC_MRW12) = params->EmcMrw12;
         MAKE_EMC_REG(EMC_MRW9) = params->EmcMrw9;
         MAKE_EMC_REG(EMC_MRW13) = params->EmcMrw13;
-        
+
         if (params->EmcZcalWarmColdBootEnables & 1) {
             MAKE_EMC_REG(EMC_ZQ_CAL) = params->EmcZcalInitDev0;
             udelay(params->EmcZcalInitWait);
             MAKE_EMC_REG(EMC_ZQ_CAL) = params->EmcZcalInitDev0 ^ 3;
-            
+
             if (!(params->EmcDevSelect & 2)) {
                 MAKE_EMC_REG(EMC_ZQ_CAL) = params->EmcZcalInitDev1;
                 udelay(params->EmcZcalInitWait);
@@ -1005,36 +1005,36 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
             }
         }
     }
-    
+
     if (params->EmcBctSpareSecure18) {
-        *(volatile uint32_t *)params->EmcBctSpareSecure18 = params->EmcBctSpareSecure19;   
+        *(volatile uint32_t *)params->EmcBctSpareSecure18 = params->EmcBctSpareSecure19;
     }
     if (params->EmcBctSpareSecure20) {
-        *(volatile uint32_t *)params->EmcBctSpareSecure20 = params->EmcBctSpareSecure21;   
+        *(volatile uint32_t *)params->EmcBctSpareSecure20 = params->EmcBctSpareSecure21;
     }
     if (params->EmcBctSpareSecure22) {
-        *(volatile uint32_t *)params->EmcBctSpareSecure22 = params->EmcBctSpareSecure23;   
+        *(volatile uint32_t *)params->EmcBctSpareSecure22 = params->EmcBctSpareSecure23;
     }
-    
+
     pmc->ddr_cfg = params->PmcDdrCfg;
-    if ((params->MemoryType == NvBootMemoryType_LpDdr2) 
-        || (params->MemoryType == NvBootMemoryType_Ddr3) 
+    if ((params->MemoryType == NvBootMemoryType_LpDdr2)
+        || (params->MemoryType == NvBootMemoryType_Ddr3)
         || (params->MemoryType == NvBootMemoryType_LpDdr4)) {
         MAKE_EMC_REG(EMC_ZCAL_INTERVAL) = params->EmcZcalInterval;
         MAKE_EMC_REG(EMC_ZCAL_WAIT_CNT) = params->EmcZcalWaitCnt;
         MAKE_EMC_REG(EMC_ZCAL_MRW_CMD) = params->EmcZcalMrwCmd;
     }
-    
+
     if (params->EmcBctSpare12) {
-        *(volatile uint32_t *)params->EmcBctSpare12 = params->EmcBctSpare13;   
+        *(volatile uint32_t *)params->EmcBctSpare12 = params->EmcBctSpare13;
     }
-    
+
     MAKE_EMC_REG(EMC_TIMING_CONTROL) = 1;
-    
+
     if (params->EmcExtraRefreshNum) {
         MAKE_EMC_REG(EMC_REF) = ((1 << params->EmcExtraRefreshNum << 8) - 253) | (params->EmcDevSelect << 30);
     }
-    
+
     MAKE_EMC_REG(EMC_REFCTRL) = params->EmcDevSelect | 0x80000000;
     MAKE_EMC_REG(EMC_DYN_SELF_REF_CONTROL) = params->EmcDynSelfRefControl;
     MAKE_EMC_REG(EMC_CFG) = params->EmcCfg;
@@ -1051,7 +1051,7 @@ static void sdram_config_mariko(const sdram_params_mariko_t *params) {
     MAKE_MC_REG(MC_SEC_CARVEOUT_REG_CTRL) = params->McSecCarveoutProtectWriteAccess;
     MAKE_MC_REG(MC_MTS_CARVEOUT_REG_CTRL) = params->McMtsCarveoutRegCtrl;
     MAKE_MC_REG(MC_EMEM_CFG_ACCESS_CTRL) = 1;
-    
+
     AHB_ARBITRATION_XBAR_CTRL_0 = ((AHB_ARBITRATION_XBAR_CTRL_0 & 0xFFFEFFFF) | ((params->AhbArbitrationXbarCtrlMemInitDone & 0xFFFF) << 16));
 }
 
@@ -1097,7 +1097,7 @@ static void sdram_init_erista(void) {
     if (params->EmcBctSpare0) {
         *(volatile uint32_t *)params->EmcBctSpare0 = params->EmcBctSpare1;
     }
-    
+
     sdram_config_erista(params);
 }
 
@@ -1118,14 +1118,14 @@ static void sdram_init_mariko(void) {
     if (params->EmcBctSpare0) {
         *(volatile uint32_t *)params->EmcBctSpare0 = params->EmcBctSpare1;
     }
-    
+
     sdram_config_mariko(params);
 }
 
 static void sdram_save_params_erista(const void *save_params) {
     const sdram_params_erista_t *params = (const sdram_params_erista_t *)save_params;
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
+
 #define pack(src, src_bits, dst, dst_bits) { \
     uint32_t mask = 0xffffffff >> (31 - ((1 ? src_bits) - (0 ? src_bits))); \
     dst &= ~(mask << (0 ? dst_bits)); \
@@ -1219,11 +1219,11 @@ static void sdram_save_params_erista(const void *save_params) {
     */
 
     /* [4.0.0+] Patch carveout parameters. */
-    *(volatile uint32_t *)params->McGeneralizedCarveout1Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout2Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout3Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout4Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout5Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout1Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout2Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout3Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout4Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout5Cfg0 = 0;
 
     /* Patch SDRAM parameters. */
     uint32_t t0 = params->EmcSwizzleRank0Byte0 << 5 >> 29 > params->EmcSwizzleRank0Byte0 << 1 >> 29;
@@ -1234,9 +1234,9 @@ static void sdram_save_params_erista(const void *save_params) {
     uint32_t t5 = (t4 & 0xFFFFFFBF) | ((params->EmcSwizzleRank1Byte2 << 5 >> 29 > params->EmcSwizzleRank1Byte2 << 1 >> 29) << 6);
     uint32_t t6 = (t5 & 0xFFFFFFF7) | ((params->EmcSwizzleRank0Byte3 << 5 >> 29 > params->EmcSwizzleRank0Byte3 << 1 >> 29) << 3);
     uint32_t t7 = (t6 & 0xFFFFFF7F) | ((params->EmcSwizzleRank1Byte3 << 5 >> 29 > params->EmcSwizzleRank1Byte3 << 1 >> 29) << 7);
-    *(volatile uint32_t *)params->SwizzleRankByteEncode = t7;
-    *(volatile uint32_t *)params->EmcBctSpare2 = 0x40000DD8;
-    *(volatile uint32_t *)params->EmcBctSpare3 = t7;
+    *(volatile uint32_t *)&params->SwizzleRankByteEncode = t7;
+    *(volatile uint32_t *)&params->EmcBctSpare2 = 0x40000DD8;
+    *(volatile uint32_t *)&params->EmcBctSpare3 = t7;
 
     s(EmcClockSource, 7:0, scratch6, 15:8);
     s(EmcClockSourceDll, 7:0, scratch6, 23:16);
@@ -2006,7 +2006,7 @@ static void sdram_save_params_erista(const void *save_params) {
             s(EmcWarmBootMrsExtra, 26:26, scratch10, 9:9);
             s(EmcZqCalDdr3WarmBoot, 0:0, scratch10, 10:10);
             s(EmcZqCalDdr3WarmBoot, 4:4, scratch10, 11:11);
-            break;      
+            break;
         default: break;
     }
 
@@ -2226,7 +2226,7 @@ static void sdram_save_params_erista(const void *save_params) {
 static void sdram_save_params_mariko(const void *save_params) {
     const sdram_params_mariko_t *params = (const sdram_params_mariko_t *)save_params;
     volatile tegra_pmc_t *pmc = pmc_get_regs();
-    
+
 #define pack(src, src_bits, dst, dst_bits) { \
     uint32_t mask = 0xffffffff >> (31 - ((1 ? src_bits) - (0 ? src_bits))); \
     dst &= ~(mask << (0 ? dst_bits)); \
@@ -2246,14 +2246,14 @@ static void sdram_save_params_mariko(const void *save_params) {
 #define c32(value, pmcreg) pmc->pmcreg = value
 
     /* Patch carveout parameters. */
-    *(volatile uint32_t *)params->McGeneralizedCarveout1Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout2Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout3Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout4Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout5Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout1Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout2Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout3Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout4Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout5Cfg0 = 0;
 
     /* Patch SDRAM parameters. */
-    *(volatile uint32_t *)params->SwizzleRankByteEncode = 0;
+    *(volatile uint32_t *)&params->SwizzleRankByteEncode = 0;
     uint32_t t0 = params->EmcSwizzleRank0Byte0 << 5 >> 29 > params->EmcSwizzleRank0Byte0 << 1 >> 29;
     uint32_t t1 = (t0 & 0xFFFFFFEF) | ((params->EmcSwizzleRank1Byte0 << 5 >> 29 > params->EmcSwizzleRank1Byte0 << 1 >> 29) << 4);
     uint32_t t2 = (t1 & 0xFFFFFFFD) | ((params->EmcSwizzleRank0Byte1 << 5 >> 29 > params->EmcSwizzleRank0Byte1 << 1 >> 29) << 1);
@@ -2262,10 +2262,10 @@ static void sdram_save_params_mariko(const void *save_params) {
     uint32_t t5 = (t4 & 0xFFFFFFBF) | ((params->EmcSwizzleRank1Byte2 << 5 >> 29 > params->EmcSwizzleRank1Byte2 << 1 >> 29) << 6);
     uint32_t t6 = (t5 & 0xFFFFFFF7) | ((params->EmcSwizzleRank0Byte3 << 5 >> 29 > params->EmcSwizzleRank0Byte3 << 1 >> 29) << 3);
     uint32_t t7 = (t6 & 0xFFFFFF7F) | ((params->EmcSwizzleRank1Byte3 << 5 >> 29 > params->EmcSwizzleRank1Byte3 << 1 >> 29) << 7);
-    *(volatile uint32_t *)params->SwizzleRankByteEncode = t7;
-    *(volatile uint32_t *)params->EmcBctSpare2 = 0x40000DD8;
-    *(volatile uint32_t *)params->EmcBctSpare3 = t7;
-    
+    *(volatile uint32_t *)&params->SwizzleRankByteEncode = t7;
+    *(volatile uint32_t *)&params->EmcBctSpare2 = 0x40000DD8;
+    *(volatile uint32_t *)&params->EmcBctSpare3 = t7;
+
     s(EmcClockSource, 7:0, scratch6, 15:8);
     s(EmcClockSourceDll, 7:0, scratch6, 23:16);
     s(EmcClockSource, 31:29, scratch6, 26:24);
@@ -2401,7 +2401,7 @@ static void sdram_save_params_mariko(const void *save_params) {
     s(EmcAutoCalChannel, 11:8, scratch83, 9:6);
     s(EmcAutoCalChannel, 27:16, scratch83, 21:10);
     s(EmcAutoCalChannel, 31:29, scratch83, 24:22);
-    s(EmcAutoCalChannel, 6:0, scratch83, 31:25);
+    s(EmcConfigSampleDelay, 6:0, scratch83, 31:25);
     s(EmcPmacroRxTerm, 5:0, scratch84, 5:0);
     s(EmcPmacroRxTerm, 13:8, scratch84, 11:6);
     s(EmcPmacroRxTerm, 21:16, scratch84, 17:12);
@@ -3006,7 +3006,7 @@ static void sdram_save_params_mariko(const void *save_params) {
     s(EmcPmacroDataPadTxCtrl, 10:10, scratch216, 18:18);
     s(EmcPmacroDataPadTxCtrl, 16:15, scratch216, 20:19);
     s(EmcPmacroDataPadTxCtrl, 30:21, scratch216, 30:21);
-    
+
     s(EmcPinGpio, 1:0, scratch9, 31:30);
     s(EmcPinGpioEn, 1:0, scratch10, 31:30);
     s(EmcDevSelect, 1:0, scratch11, 31:30);
@@ -3044,7 +3044,7 @@ static void sdram_save_params_mariko(const void *save_params) {
     s(EmcPinProgramWait, 7:0, scratch93, 31:24);
     s(EmcAutoCalWait, 9:0, scratch114, 31:22);
     s(SwizzleRankByteEncode, 15:0, scratch215, 31:16);
-    
+
     switch (params->MemoryType) {
         case NvBootMemoryType_LpDdr2:
         case NvBootMemoryType_LpDdr4:
@@ -3116,10 +3116,10 @@ static void sdram_save_params_mariko(const void *save_params) {
             s(EmcWarmBootMrsExtra, 26:26, scratch10, 9:9);
             s(EmcZqCalDdr3WarmBoot, 0:0, scratch10, 10:10);
             s(EmcZqCalDdr3WarmBoot, 4:4, scratch10, 11:11);
-            break;      
+            break;
         default: break;
     }
-    
+
     s32(EmcCmdMappingByte, secure_scratch8);
     s32(EmcPmacroBrickMapping0, secure_scratch9);
     s32(EmcPmacroBrickMapping1, secure_scratch10);
@@ -3265,8 +3265,8 @@ static void sdram_save_params_mariko(const void *save_params) {
     s(McGeneralizedCarveout1Cfg0, 26:22, secure_scratch57, 29:25);
     s(McGeneralizedCarveout3Cfg0, 1:0, secure_scratch57, 31:30);
     s(McGeneralizedCarveout3Cfg0, 2:2, secure_scratch58, 0:0);
-    s(McGeneralizedCarveout3Cfg0, 26:22, secure_scratch57, 5:1);
-    
+    s(McGeneralizedCarveout3Cfg0, 26:22, secure_scratch58, 5:1);
+
     s32(McGeneralizedCarveout1Access0, secure_scratch59);
     s32(McGeneralizedCarveout1Access1, secure_scratch60);
     s32(McGeneralizedCarveout1Access2, secure_scratch61);
@@ -3337,7 +3337,8 @@ static void sdram_save_params_mariko(const void *save_params) {
     s(PllMSetupControl, 23:0, scratch36, 23:0);
 
     c32(0, scratch4);
-    s(PllMStableTime, 19:0, scratch4, 19:0);
+    s(PllMStableTime, 9:0, scratch4, 9:0);
+    s(PllMStableTime, 31:0, scratch4, 31:10);
 }
 
 void sdram_init(void) {

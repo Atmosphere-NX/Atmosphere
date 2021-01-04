@@ -100,7 +100,7 @@ static void setup_display(void) {
 
     /* Initialize the display. */
     display_init();
-    
+
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
 
