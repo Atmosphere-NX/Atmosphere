@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -343,4 +344,44 @@ uint32_t fuse_get_regulator(void) {
     } else {
         return 0;               /* Regulator_Erista_Max77621 */
     }
+}
+
+
+static const uint32_t fuse_version_increment_firmwares[] = {
+    ATMOSPHERE_TARGET_FIRMWARE_11_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_10_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_9_1_0,
+    ATMOSPHERE_TARGET_FIRMWARE_9_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_8_1_0,
+    ATMOSPHERE_TARGET_FIRMWARE_7_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_6_2_0,
+    ATMOSPHERE_TARGET_FIRMWARE_6_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_5_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_4_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_3_0_2,
+    ATMOSPHERE_TARGET_FIRMWARE_3_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_2_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_1_0_0,
+};
+
+static const uint32_t num_fuse_increments = sizeof(fuse_version_increment_firmwares) / sizeof(fuse_version_increment_firmwares[0]);
+
+uint32_t fuse_get_expected_fuse_count(uint32_t target_firmware) {
+    for (uint32_t i = 0; i < num_fuse_increments; ++i) {
+        if (target_firmware >= fuse_version_increment_firmwares[i]) {
+            return num_fuse_increments - i;
+        }
+    }
+    return 0;
+}
+
+uint32_t fuse_get_burnt_fuse_count(void) {
+    const uint32_t val = fuse_get_reserved_odm(7);
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < sizeof(uint32_t) * CHAR_BIT; ++i) {
+        if (((val >> i) & 1) != 0) {
+            ++count;
+        }
+    }
+    return count;
 }

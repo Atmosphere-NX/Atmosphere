@@ -477,6 +477,9 @@ uint32_t fuse_get_device_unique_key_generation(void);
 uint32_t fuse_get_soc_type(void);
 uint32_t fuse_get_regulator(void);
 
+uint32_t fuse_get_expected_fuse_count(uint32_t target_firmware);
+uint32_t fuse_get_burnt_fuse_count(void);
+
 uint32_t fuse_hw_read(uint32_t addr);
 void fuse_hw_write(uint32_t value, uint32_t addr);
 void fuse_hw_sense(void);

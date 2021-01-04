@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <malloc.h>
+#include <inttypes.h>
+
 #include "utils.h"
 #include "fs_utils.h"
 #include "nxboot.h"
@@ -675,6 +677,10 @@ static bool get_and_clear_has_run_sept(void) {
     return has_run_sept;
 }
 
+static void get_mariko_warmboot_path(char *dst, size_t dst_size, uint32_t version) {
+    snprintf(dst, dst_size, "warmboot_mariko/wb_%02" PRIx32 ".bin", version);
+}
+
 /* This is the main function responsible for booting Horizon. */
 static nx_keyblob_t __attribute__((aligned(16))) g_keyblobs[32];
 uint32_t nxboot_main(void) {
@@ -948,26 +954,73 @@ uint32_t nxboot_main(void) {
     }
 
     /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation (Erista only) or from cache (Mariko only). */
-    if (loader_ctx->warmboot_path[0] != '\0') {
-        warmboot_fw_size = get_file_size(loader_ctx->warmboot_path);
-        if (warmboot_fw_size == 0) {
-            fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
+    uint32_t warmboot_fuses = 0;
+    if (is_mariko) {
+        /* Get warmboot firmware from package1. */
+        const package1_header_t *pk11_header = (const package1_header_t *)((uintptr_t)package1loader + (target_firmware >= ATMOSPHERE_TARGET_FIRMWARE_6_2_0 ? 0x7000 : 0x4000));
+
+        warmboot_fw = package1_get_warmboot_fw(pk11_header);
+        warmboot_fw_size = *(const uint32_t *)warmboot_fw;
+
+        if (!(0x800 <= warmboot_fw_size && warmboot_fw_size < 0x1000)) {
+            fatal_error("[NXBOOT] Warmboot firmware seems invalid!\n");
         }
 
-        /* Allocate memory for the warmboot firmware. */
-        warmboot_fw = malloc(warmboot_fw_size);
+        const uint32_t expected_fuses = fuse_get_expected_fuse_count(target_firmware);
+        const uint32_t burnt_fuses    = fuse_get_burnt_fuse_count();
 
-        if (warmboot_fw == NULL) {
-            fatal_error("[NXBOOT] Out of memory!\n");
+        warmboot_fuses = expected_fuses;
+
+        char warmboot_fn[0x80];
+        get_mariko_warmboot_path(warmboot_fn, sizeof(warmboot_fn), expected_fuses);
+
+        if (!is_valid_file(warmboot_fn)) {
+            dump_to_file(warmboot_fw, warmboot_fw_size, warmboot_fn);
         }
-        if (read_from_file(warmboot_fw, warmboot_fw_size, loader_ctx->warmboot_path) != warmboot_fw_size) {
-            fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
-        }
-    } else {
-        if (is_mariko) {
-            /* TODO */
+
+        if (burnt_fuses > expected_fuses) {
             warmboot_fw = NULL;
             warmboot_fw_size = 0;
+            for (uint32_t attempt = burnt_fuses; attempt <= 32; ++attempt) {
+                get_mariko_warmboot_path(warmboot_fn, sizeof(warmboot_fn), attempt);
+                if (is_valid_file(warmboot_fn)) {
+                    warmboot_fw_size = get_file_size(warmboot_fn);
+
+                    /* Allocate memory for the warmboot firmware. */
+                    warmboot_fw = malloc(warmboot_fw_size);
+
+                    if (warmboot_fw == NULL) {
+                        fatal_error("[NXBOOT] Out of memory!\n");
+                    }
+                    if (read_from_file(warmboot_fw, warmboot_fw_size, warmboot_fn) != warmboot_fw_size) {
+                        fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", warmboot_fn);
+                    }
+
+                    warmboot_fuses = attempt;
+                    break;
+                }
+            }
+        }
+
+        if (warmboot_fw == NULL) {
+            fatal_error("[NXBOOT] Failed to determine mariko warmboot firmware\n");
+        }
+    } else {
+        if (loader_ctx->warmboot_path[0] != '\0') {
+            warmboot_fw_size = get_file_size(loader_ctx->warmboot_path);
+            if (warmboot_fw_size == 0) {
+                fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
+            }
+
+            /* Allocate memory for the warmboot firmware. */
+            warmboot_fw = malloc(warmboot_fw_size);
+
+            if (warmboot_fw == NULL) {
+                fatal_error("[NXBOOT] Out of memory!\n");
+            }
+            if (read_from_file(warmboot_fw, warmboot_fw_size, loader_ctx->warmboot_path) != warmboot_fw_size) {
+                fatal_error("[NXBOOT] Could not read the warmboot firmware from %s!\n", loader_ctx->warmboot_path);
+            }
         } else {
             /* Use Atmosphere's warmboot firmware implementation. */
             warmboot_fw_size = warmboot_bin_size;
@@ -1013,16 +1066,25 @@ uint32_t nxboot_main(void) {
 
     /* Handle warmboot security check. */
     if (is_mariko) {
-        /* TODO */
+        switch (warmboot_fuses) {
+            case 7:
+                pmc->secure_scratch32 = 0x87;
+                break;
+            case 8:
+                pmc->secure_scratch32 = 0xA8;
+                break;
+            default:
+                pmc->secure_scratch32 = (0x108 + 0x21 * (warmboot_fuses - 8));
+                break;
+        }
+
+        pmc->sec_disable3 |= BIT(16);
     } else {
         /* Set 3.0.0/3.0.1/3.0.2 warmboot security check. */
         if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_0) {
-            const package1loader_header_t *package1loader_header = (const package1loader_header_t *)package1loader;
-            if (!strcmp(package1loader_header->build_timestamp, "20170519101410")) {
-                pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/
-            } else if (!strcmp(package1loader_header->build_timestamp, "20170710161758")) {
-                pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
-            }
+            pmc->secure_scratch32 = 0xE3;       /* Warmboot 3.0.0 security check.*/
+        } else if (target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_1 || target_firmware == ATMOSPHERE_TARGET_FIRMWARE_3_0_2) {
+            pmc->secure_scratch32 = 0x104;      /* Warmboot 3.0.1/3.0.2 security check. */
         }
     }
 
