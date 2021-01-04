@@ -57,6 +57,8 @@ typedef struct {
     uint8_t data[];
 } pk11_mariko_oem_header_t;
 
+bool package1_is_custom_public_key(const void *bct, bool mariko);
+
 int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0);
 int package1_read_and_parse_boot0_mariko(void **package1loader, size_t *package1loader_size, FILE *boot0);
 

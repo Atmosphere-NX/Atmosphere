@@ -589,6 +589,16 @@ static void nxboot_set_bootreason(void *bootreason_base) {
         fatal_error("[NXBOOT] Failed to read the BCT!\n");
     }
 
+    /* Check if we need to use BCT 2 instead. */
+    if (package1_is_custom_public_key(bct, is_soc_mariko())) {
+        if (fseek(boot0, 0x4000 * 2, SEEK_SET) != 0) {
+            fatal_error("[NXBOOT] Failed to seek to BCT!\n");
+        }
+        if (fread(bct, sizeof(nvboot_config_table), 1, boot0) == 0) {
+            fatal_error("[NXBOOT] Failed to read the BCT!\n");
+        }
+    }
+
     /* Close boot0. */
     fclose(boot0);
 
@@ -617,7 +627,7 @@ static void nxboot_set_bootreason(void *bootreason_base) {
         boot_reason.boot_reason_state = 0x04;       /* BootReason_RtcAlarm2 */
 
     /* Set in memory. */
-    memcpy(bootreason_base, &boot_reason, sizeof(boot_reason));
+    memcpy((void *)((uintptr_t)bootreason_base + 0x10), &boot_reason, sizeof(boot_reason));
 
     /* Clean up. */
     free(bct);
@@ -931,13 +941,10 @@ uint32_t nxboot_main(void) {
     nxboot_configure_exosphere(target_firmware, keygen_type, &exo_emummc_cfg);
 
     /* Initialize BootReason on older firmware versions (Erista only). */
-    if (!is_mariko) {
-        if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-            print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Initializing BootReason...\n");
-            nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE);
-        } else {
-            memset((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE, 0, 0x200);
-        }
+    memset((void *)MAILBOX_NX_BOOTLOADER_BASE, 0, 0x200);
+    if (!is_mariko && target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
+        print(SCREEN_LOG_LEVEL_INFO, "[NXBOOT] Initializing BootReason...\n");
+        nxboot_set_bootreason((void *)MAILBOX_NX_BOOTLOADER_BOOT_REASON_BASE);
     }
 
     /* Read the warmboot firmware from a file, otherwise from Atmosphere's implementation (Erista only) or from cache (Mariko only). */
