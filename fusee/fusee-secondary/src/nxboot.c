@@ -629,7 +629,7 @@ static void nxboot_set_bootreason(void *bootreason_base) {
         boot_reason.boot_reason_state = 0x04;       /* BootReason_RtcAlarm2 */
 
     /* Set in memory. */
-    memcpy((void *)((uintptr_t)bootreason_base + 0x10), &boot_reason, sizeof(boot_reason));
+    memcpy(bootreason_base, &boot_reason, sizeof(boot_reason));
 
     /* Clean up. */
     free(bct);
