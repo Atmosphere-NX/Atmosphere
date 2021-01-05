@@ -656,11 +656,11 @@ static void sdram_save_params_erista(const void *save_params) {
     */
 
     /* [4.0.0+] Patch carveout parameters. */
-    *(volatile uint32_t *)params->McGeneralizedCarveout1Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout2Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout3Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout4Cfg0 = 0;
-    *(volatile uint32_t *)params->McGeneralizedCarveout5Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout1Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout2Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout3Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout4Cfg0 = 0;
+    *(volatile uint32_t *)&params->McGeneralizedCarveout5Cfg0 = 0;
 
     /* Patch SDRAM parameters. */
     uint32_t t0 = params->EmcSwizzleRank0Byte0 << 5 >> 29 > params->EmcSwizzleRank0Byte0 << 1 >> 29;
@@ -671,9 +671,9 @@ static void sdram_save_params_erista(const void *save_params) {
     uint32_t t5 = (t4 & 0xFFFFFFBF) | ((params->EmcSwizzleRank1Byte2 << 5 >> 29 > params->EmcSwizzleRank1Byte2 << 1 >> 29) << 6);
     uint32_t t6 = (t5 & 0xFFFFFFF7) | ((params->EmcSwizzleRank0Byte3 << 5 >> 29 > params->EmcSwizzleRank0Byte3 << 1 >> 29) << 3);
     uint32_t t7 = (t6 & 0xFFFFFF7F) | ((params->EmcSwizzleRank1Byte3 << 5 >> 29 > params->EmcSwizzleRank1Byte3 << 1 >> 29) << 7);
-    *(volatile uint32_t *)params->SwizzleRankByteEncode = t7;
-    *(volatile uint32_t *)params->EmcBctSpare2 = 0x40000DD8;
-    *(volatile uint32_t *)params->EmcBctSpare3 = t7;
+    *(volatile uint32_t *)&params->SwizzleRankByteEncode = t7;
+    *(volatile uint32_t *)&params->EmcBctSpare2 = 0x40000DD8;
+    *(volatile uint32_t *)&params->EmcBctSpare3 = t7;
 
     s(EmcClockSource, 7:0, scratch6, 15:8);
     s(EmcClockSourceDll, 7:0, scratch6, 23:16);
