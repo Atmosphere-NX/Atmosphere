@@ -21,6 +21,7 @@
 #include "se.h"
 #include "fuse.h"
 #include "utils.h"
+#include "uart.h"
 
 static uint32_t g_panic_code = 0;
 

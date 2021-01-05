@@ -32,6 +32,7 @@ _start:
     .word 0x00000000 /* Reserved. */
 
     begin_relocation_loop:
+
     /* Relocate ourselves if necessary */
     ldr r2, =__start__
     adr r3, _start
@@ -43,7 +44,6 @@ _start:
     mov r1, #0x0
     str r1, [r0]
 
-    ldr r4, =_relocation_loop_end
     mov r4, #0x1000
     mov r1, #0x0
     _relocation_loop:
