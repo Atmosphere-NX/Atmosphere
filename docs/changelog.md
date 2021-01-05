@@ -12,6 +12,9 @@
   + `sm` was updated to more accurately reflect how official code manages request deferral.
   + `mesosphère` was updated to more accurately reflect official kernel management of the trace buffer.
   + `mesosphère` was updated to improve kernel loader's logic by taking advantage of the assumption that we only boot our kernel, not Nintendo's.
++ As it has been a few months with zero reported issues, `mesosphère` is now opt-out.
+    + Users who wish to begin using or continue using mesosphere should use the standard/cool kids zip ("atmosphere-").
+    + Users who wish to opt-out of mesosphere should download and extract the opt-out zip ("atmosphere-WITHOUT_MESOSPHERE-").
 + Several issues were fixed, and usability and stability were improved.
 ## 0.16.2
 + Atmosphère release zips no longer bundle BCT.ini, instead relying on defaults in code.
