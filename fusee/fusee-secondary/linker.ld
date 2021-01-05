@@ -15,14 +15,14 @@ MEMORY
 {
     main        : ORIGIN = 0xF0000000, LENGTH = 0x10000000
     high_iram   : ORIGIN = 0x40010000, LENGTH = 0x8000
-    low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
+    low_iram    : ORIGIN = 0x40002000, LENGTH = 0x6000
 }
 
 SECTIONS
 {
     PROVIDE(__start__           = 0xF0000000);
-    PROVIDE(__stack_top__       = 0x40020000);
-    PROVIDE(__stack_bottom__    = 0x40018000);
+    PROVIDE(__stack_top__       = 0x40010000);
+    PROVIDE(__stack_bottom__    = 0x40008000);
     PROVIDE(__heap_start__      = 0x90020000);
     PROVIDE(__heap_end__        = 0xA0020000);
 
