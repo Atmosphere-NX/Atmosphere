@@ -388,6 +388,8 @@
 void display_init(void);
 void display_end(void);
 
+uint16_t display_get_lcd_vendor(void);
+
 /* Switches screen backlight ON/OFF. */
 void display_backlight(bool enable);
 

@@ -534,6 +534,9 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
     exo_cfg.log_baud_rate = parse_cfg.log_baud_rate;
     if (parse_cfg.log_inverted) exo_cfg.log_flags |= EXOSPHERE_LOG_FLAG_INVERTED;
 
+    /* Apply lcd vendor. */
+    exo_cfg.lcd_vendor = display_get_lcd_vendor();
+
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");
     }

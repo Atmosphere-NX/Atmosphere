@@ -62,13 +62,17 @@ static void dsi_wait(uint32_t timeout, uint32_t offset, uint32_t mask, uint32_t 
     udelay(delay);
 }
 
+uint16_t display_get_lcd_vendor(void) {
+    return g_lcd_vendor;
+}
+
 void display_init(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pmc_t *pmc = pmc_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
     bool is_mariko = is_soc_mariko();
     uint32_t hardware_type = fuse_get_hardware_type();
-    
+
     /* Power on. */
     if (is_mariko) {
         uint8_t val = 0x3A;
@@ -80,8 +84,8 @@ void display_init(void) {
     } else {
         uint8_t val = 0xD0;
         i2c_send(I2C_5, MAX77620_PWR_I2C_ADDR, MAX77620_REG_LDO0_CFG, &val, 1);
-    } 
-    
+    }
+
     /* Enable MIPI CAL, DSI, DISP1, HOST1X, UART_FST_MIPI_CAL, DSIA LP clocks. */
     car->rst_dev_h_clr = 0x1010000;
     car->clk_enb_h_set = 0x1010000;
@@ -102,7 +106,7 @@ void display_init(void) {
     pinmux->lcd_bl_pwm &= ~PINMUX_TRISTATE;
     pinmux->lcd_bl_en &= ~PINMUX_TRISTATE;
     pinmux->lcd_rst &= ~PINMUX_TRISTATE;
-    
+
     if (is_mariko && (hardware_type == 5)) {
         /* HardwareType_Five only configures GPIO_LCD_BL_RST. */
         gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);
@@ -113,25 +117,25 @@ void display_init(void) {
         gpio_configure_mode(GPIO_LCD_BL_N5V, GPIO_MODE_GPIO);
         gpio_configure_direction(GPIO_LCD_BL_P5V, GPIO_DIRECTION_OUTPUT);
         gpio_configure_direction(GPIO_LCD_BL_N5V, GPIO_DIRECTION_OUTPUT);
-            
+
         /* Enable Backlight +5V. */
-        gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_HIGH); 
+        gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_HIGH);
 
         udelay(10000);
 
         /* Enable Backlight -5V. */
-        gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_HIGH); 
+        gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_HIGH);
 
         udelay(10000);
 
         /* Configure Backlight PWM, EN and RST GPIOs. */
         gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_GPIO);
         gpio_configure_mode(GPIO_LCD_BL_EN, GPIO_MODE_GPIO);
-        gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);    
+        gpio_configure_mode(GPIO_LCD_BL_RST, GPIO_MODE_GPIO);
         gpio_configure_direction(GPIO_LCD_BL_PWM, GPIO_DIRECTION_OUTPUT);
         gpio_configure_direction(GPIO_LCD_BL_EN, GPIO_DIRECTION_OUTPUT);
         gpio_configure_direction(GPIO_LCD_BL_RST, GPIO_DIRECTION_OUTPUT);
-        
+
         /* Enable Backlight EN. */
         gpio_write(GPIO_LCD_BL_EN, GPIO_LEVEL_HIGH);
     }
@@ -142,7 +146,7 @@ void display_init(void) {
         MAKE_MIPI_CAL_REG(MIPI_CAL_MIPI_BIAS_PAD_CFG0) = 0;
         APB_MISC_GP_DSI_PAD_CONTROL_0 = 0;
     }
-    
+
     if (is_mariko) {
         do_register_writes(CAR_BASE, display_config_plld_01_mariko, 4);
     } else {
@@ -176,7 +180,7 @@ void display_init(void) {
     do_register_writes(DSI_BASE, display_config_dsi_01_init_07, 14);
 
     udelay(10000);
-    
+
     /* Enable Backlight RST. */
     gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_HIGH);
 
@@ -215,7 +219,7 @@ void display_init(void) {
         g_lcd_vendor = (host_response[2] >> 8) & 0xFF00;
     }
     g_lcd_vendor = (g_lcd_vendor & 0xFFFFFF00) | (host_response[2] & 0xFF);
-    
+
     /* LCD vendor specific configuration. */
     switch (g_lcd_vendor) {
         case 0x10: /* Japan Display Inc screens. */
@@ -237,9 +241,9 @@ void display_init(void) {
             do_dsi_sleep_or_register_writes(display_config_innolux_auo_40_nx_abcc_specific_init_01, 5);
             break;
     }
-    
+
     udelay(20000);
-    
+
     if (is_mariko) {
         do_register_writes(CAR_BASE, display_config_plld_02_mariko, 3);
     } else {
@@ -256,7 +260,7 @@ void display_init(void) {
     do_register_writes(DSI_BASE, display_config_dsi_01_init_10, 10);
 
     udelay(10000);
-    
+
     if (is_mariko) {
         do_register_writes(MIPI_CAL_BASE, display_config_mipi_cal_01, 4);
         do_register_writes(MIPI_CAL_BASE, display_config_mipi_cal_02_mariko, 2);
@@ -274,7 +278,7 @@ void display_init(void) {
         do_register_writes(MIPI_CAL_BASE, display_config_mipi_cal_03_erista, 6);
         do_register_writes(MIPI_CAL_BASE, display_config_mipi_cal_04, 10);
     }
-    
+
     udelay(10000);
 
     do_register_writes(DI_BASE, display_config_dc_02, 113);
@@ -284,13 +288,13 @@ void display_end(void) {
     volatile tegra_car_t *car = car_get_regs();
     volatile tegra_pinmux_t *pinmux = pinmux_get_regs();
     bool is_mariko = is_soc_mariko();
-    
+
     /* Disable Backlight. */
     display_backlight(false);
-    
+
     MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 1;
     MAKE_DSI_REG(DSI_WR_DATA) = 0x2805;
-    
+
     /* Wait 5 frames. */
     uint32_t start_val = MAKE_HOST1X_REG(0x30A4);
     while (MAKE_HOST1X_REG(0x30A4) < start_val + 5) {
@@ -299,10 +303,10 @@ void display_end(void) {
 
     MAKE_DI_REG(DC_CMD_STATE_ACCESS) = (READ_MUX | WRITE_MUX);
     MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 0;
-    
+
     do_register_writes(DI_BASE, display_config_dc_01_fini_01, 13);
     udelay(40000);
-    
+
     if (is_mariko) {
         do_register_writes(CAR_BASE, display_config_plld_01_mariko, 4);
     } else {
@@ -319,7 +323,7 @@ void display_end(void) {
     if (g_lcd_vendor != 0x2050) {
         udelay(10000);
     }
-    
+
     /* LCD vendor specific shutdown. */
     switch (g_lcd_vendor) {
         case 0x10: /* Japan Display Inc screens. */
@@ -340,26 +344,26 @@ void display_end(void) {
         default:
             break;
     }
-    
+
     MAKE_DSI_REG(DSI_WR_DATA) = 0x1005;
     MAKE_DSI_REG(DSI_TRIGGER) = DSI_TRIGGER_HOST;
     udelay((g_lcd_vendor == 0x2050) ? 120000 : 50000);
-    
+
     /* Disable Backlight RST. */
-    gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_LOW); 
+    gpio_write(GPIO_LCD_BL_RST, GPIO_LEVEL_LOW);
 
     if (g_lcd_vendor == 0x2050) {
         udelay(30000);
     } else {
         udelay(10000);
-    
+
         /* Disable Backlight -5V. */
-        gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_LOW); 
+        gpio_write(GPIO_LCD_BL_N5V, GPIO_LEVEL_LOW);
 
         udelay(10000);
 
         /* Disable Backlight +5V. */
-        gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_LOW); 
+        gpio_write(GPIO_LCD_BL_P5V, GPIO_LEVEL_LOW);
 
         udelay(10000);
     }
@@ -372,11 +376,11 @@ void display_end(void) {
 
     MAKE_DSI_REG(DSI_PAD_CONTROL_0) = (DSI_PAD_CONTROL_VS1_PULLDN_CLK | DSI_PAD_CONTROL_VS1_PULLDN(0xF) | DSI_PAD_CONTROL_VS1_PDIO_CLK | DSI_PAD_CONTROL_VS1_PDIO(0xF));
     MAKE_DSI_REG(DSI_POWER_CONTROL) = 0;
-    
+
     if (!is_mariko) {
         /* Backlight PWM. */
         gpio_configure_mode(GPIO_LCD_BL_PWM, GPIO_MODE_SFIO);
-        
+
         pinmux->lcd_bl_pwm = ((pinmux->lcd_bl_pwm & ~PINMUX_TRISTATE) | PINMUX_TRISTATE);
         pinmux->lcd_bl_pwm = (((pinmux->lcd_bl_pwm >> 2) << 2) | 1);
     }
@@ -385,10 +389,10 @@ void display_end(void) {
 void display_backlight(bool enable) {
     if (g_lcd_vendor == 0x2050) {
         int brightness = enable ? 100 : 0;
-        
+
         /* Enable FRAME_END_INT */
         MAKE_DI_REG(DC_CMD_INT_ENABLE) = 2;
-        
+
         /* Configure DSI_LINE_TYPE as FOUR */
         MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 1;
         MAKE_DSI_REG(DSI_VIDEO_MODE_CONTROL) = 9;
@@ -398,7 +402,7 @@ void display_backlight(bool enable) {
         while ((MAKE_DI_REG(DC_CMD_INT_STATUS) & 2) != 0) {
             /* Wait */
         }
-        
+
         /* Configure display brightness. */
         const uint32_t brightness_val = ((0x7FF * brightness) / 100);
         MAKE_DSI_REG(DSI_WR_DATA) = 0x339;
@@ -455,7 +459,7 @@ uint32_t *display_init_framebuffer(void *address) {
 
     uint32_t *lfb_addr = (uint32_t *)address;
     conf[19].value = (uint32_t)address;
-    
+
     /* This configures the framebuffer @ address with a resolution of 1280x720 (line stride 768). */
     do_register_writes(DI_BASE, conf, 32);
 
