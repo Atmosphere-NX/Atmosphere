@@ -1,4 +1,18 @@
 # Changelog
+## 0.17.0
++ fusee was heavily rewritten in order to add support for Mariko hardware.
+  + **Please Note**: Mariko hardware currently has no (and may not ever have any) software exploits; fusee works when loaded from bootloader context with the right keys in the security engine. No means of getting the system into this state is provided.
++ An issue was fixed in the way shutdown was performed on Erista hardware.
+  + This fixes an issue that caused OFW to black screen on boot after power off from atmosphere without first doing a reboot.
+  + This also substantially improves power drain when the system is shut off; consoles powered off from Atmosphere should now drain battery at the same reduced rate as original firmware.
++ A number of minor changes were made, including:
+  + A number of inconsistencies in the build system were fixed.
+    + Fow those building atmosphère at home, the `boot` sysmodule will no longer rebuild every time make is invoked.
+    + This substantially improves build times during development iteration.
+  + `sm` was updated to more accurately reflect how official code manages request deferral.
+  + `mesosphère` was updated to more accurately reflect official kernel management of the trace buffer.
+  + `mesosphère` was updated to improve kernel loader's logic by taking advantage of the assumption that we only boot our kernel, not Nintendo's.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.16.2
 + Atmosphère release zips no longer bundle BCT.ini, instead relying on defaults in code.
   + This means atmosphere updates should no longer overwrite any user configuration at all.
