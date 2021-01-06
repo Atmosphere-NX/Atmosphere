@@ -147,62 +147,14 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
-    void ServerManagerBase::ProcessDeferredSessions() {
-        /* Iterate over the list of deferred sessions, and see if we can't do anything. */
-        std::scoped_lock lk(this->deferred_session_mutex);
-
-        /* Undeferring a request may undefer another request. We'll continue looping until everything is stable. */
-        bool needs_undefer_all = true;
-        while (needs_undefer_all) {
-            needs_undefer_all = false;
-
-            auto it = this->deferred_session_list.begin();
-            while (it != this->deferred_session_list.end()) {
-                ServerSession *session = static_cast<ServerSession *>(&*it);
-                R_TRY_CATCH(this->ProcessForSession(session)) {
-                    R_CATCH(sf::ResultRequestDeferred) {
-                        /* Session is still deferred, so let's continue. */
-                        it++;
-                        continue;
-                    }
-                    R_CATCH(sf::impl::ResultRequestInvalidated) {
-                        /* Session is no longer deferred! */
-                        it = this->deferred_session_list.erase(it);
-                        needs_undefer_all = true;
-                        continue;
-                    }
-                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-                /* We succeeded! Remove from deferred list. */
-                it = this->deferred_session_list.erase(it);
-                needs_undefer_all = true;
-            }
-        }
-    }
-
     Result ServerManagerBase::Process(os::WaitableHolderType *holder) {
         switch (static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder))) {
             case UserDataTag::Server:
                 return this->ProcessForServer(holder);
-                break;
             case UserDataTag::MitmServer:
                 return this->ProcessForMitmServer(holder);
-                break;
             case UserDataTag::Session:
-                /* Try to process for session. */
-                R_TRY_CATCH(this->ProcessForSession(holder)) {
-                    R_CATCH(sf::ResultRequestDeferred) {
-                        /* The session was deferred, so push it onto the deferred session list. */
-                        std::scoped_lock lk(this->deferred_session_mutex);
-                        this->deferred_session_list.push_back(*static_cast<ServerSession *>(holder));
-                        return ResultSuccess();
-                    }
-                } R_END_TRY_CATCH;
-
-                /* We successfully invoked a command...so let's see if anything can be undeferred. */
-                this->ProcessDeferredSessions();
-                return ResultSuccess();
-                break;
+                return this->ProcessForSession(holder);
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }

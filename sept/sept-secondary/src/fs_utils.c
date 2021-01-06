@@ -16,8 +16,8 @@
 
 #include "fs_utils.h"
 #include "mc.h"
-#include "lib/fatfs/ff.h"
-#include "lib/log.h"
+#include "../../../fusee/common/fatfs/ff.h"
+#include "../../../fusee/common/log.h"
 
 FATFS sd_fs;
 static bool g_sd_mounted = false;
@@ -40,7 +40,7 @@ bool mount_sd(void)
 
     if (!g_sd_initialized) {
         /* Initialize SD. */
-        if (sdmmc_device_sd_init(&g_sd_device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_UHS_SDR104))
+        if (sdmmc_device_sd_init(&g_sd_device, &g_sd_sdmmc, SDMMC_BUS_WIDTH_4BIT, SDMMC_SPEED_SD_SDR104))
         {
             g_sd_initialized = true;
 

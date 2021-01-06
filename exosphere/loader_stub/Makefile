@@ -120,7 +120,7 @@ $(OFILES)	:	$(ATMOSPHERE_LIBRARIES_DIR)/libexosphere/$(ATMOSPHERE_LIBRARY_DIR)/l
 
 program.lz4.o: program_lz4.h
 
-program.lz4.o	program_lz4.h:	$(TOPDIR)/../program/program$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).lz4
+program_lz4.h:	$(TOPDIR)/../program/program$(ATMOSPHERE_BUILD_TARGET_BINARY_SUFFIX).lz4
 	@echo $(notdir $<)
 	@rm -rf tmp_program_$(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)
 	@mkdir -p tmp_program_$(ATMOSPHERE_BUILD_TARGET_IDENTIFIER)

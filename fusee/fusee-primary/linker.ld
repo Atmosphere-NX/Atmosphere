@@ -5,8 +5,8 @@ ENTRY(_start)
 PHDRS
 {
     crt0        PT_LOAD;
-    chainloader PT_LOAD;
     main        PT_LOAD;
+    loader_stub PT_LOAD;
 }
 
 /* Mostly copied from https://github.com/devkitPro/buildscripts/blob/master/dkarm-eabi/crtls/3dsx.ld */
@@ -14,14 +14,14 @@ MEMORY
 {
     NULL        : ORIGIN = 0x00000000, LENGTH = 0x1000
     main        : ORIGIN = 0x40010000, LENGTH = 0x20000
-    low_iram    : ORIGIN = 0x40003000, LENGTH = 0x8000
+    loader_stub : ORIGIN = 0x40030000, LENGTH = 0x4000
 }
 
 SECTIONS
 {
-    PROVIDE(__start__           = 0x40010000);
-    PROVIDE(__stack_top__       = 0x40010000);
-    PROVIDE(__stack_bottom__    = 0x4000C000);
+    PROVIDE(__start__           = 0x40008000);
+    PROVIDE(__stack_top__       = 0x40038000);
+    PROVIDE(__stack_bottom__    = 0x40034000);
     PROVIDE(__heap_start__      = 0);
     PROVIDE(__heap_end__        = 0);
 
@@ -34,44 +34,6 @@ SECTIONS
         . = ALIGN(32);
     } >main :crt0
 
-    .chainloader_loadable :
-    {
-        . = ALIGN(32);
-        PROVIDE (__chainloader_start__  = ABSOLUTE(.));
-        PROVIDE (__chainloader_lma__    = LOADADDR(.chainloader_loadable));
-        KEEP(*(.chainloader.text.start))
-        chainloader.o(.text*)
-        chainloader.o(.rodata*)
-        chainloader.o(.data*)
-        . = ALIGN(32);
-    } >low_iram AT>main :chainloader
-
-    .chainloader_bss (NOLOAD) :
-    {
-        . = ALIGN(32);
-        PROVIDE (__chainloader_bss_start__ = ABSOLUTE(.));
-        chainloader.o(.bss* COMMON)
-        . = ALIGN(32);
-        PROVIDE (__chainloader_end__ = ABSOLUTE(.));
-    } >low_iram :NONE
-
-    .text :
-    {
-        . = ALIGN(32);
-        /* .text */
-        *(.text)
-        *(.text.*)
-        *(.glue_7)
-        *(.glue_7t)
-        *(.stub)
-        *(.gnu.warning)
-        *(.gnu.linkonce.t*)
-
-        /* .fini */
-        KEEP( *(.fini) )
-        . = ALIGN(8);
-    } >main :main
-
     .rodata :
     {
         *(.rodata)
@@ -81,21 +43,6 @@ SECTIONS
         *(.gnu.linkonce.r*)
         SORT(CONSTRUCTORS)
         . = ALIGN(8);
-    } >main
-
-    .preinit_array :
-    {
-        PROVIDE (__preinit_array_start = .);
-        KEEP (*(.preinit_array))
-        PROVIDE (__preinit_array_end = .);
-    } >main
-
-    .init_array ALIGN(4) :
-    {
-        PROVIDE (__init_array_start = .);
-        KEEP (*(SORT(.init_array.*)))
-        KEEP (*(.init_array))
-        PROVIDE (__init_array_end = .);
     } >main
 
     .fini_array ALIGN(4) :
@@ -148,6 +95,25 @@ SECTIONS
         . = ALIGN(32);
         PROVIDE (__bss_end__ = ABSOLUTE(.));
     } >main :NONE
+
+    .loader_stub :
+    {
+        . = ALIGN(32);
+        PROVIDE (__loader_stub_start__  = ABSOLUTE(.));
+        PROVIDE (__loader_stub_lma__    = LOADADDR(.loader_stub));
+        loader_stub.o(.text*)
+        lz4.o(.text*)
+        utils.o(.text*)
+        loader_stub.o(.rodata*)
+        lz4.o(.rodata*)
+        utils.o(.rodata*)
+        loader_stub.o(.data*)
+        lz4.o(.data*)
+        utils.o(data)
+        . = ALIGN(32);
+        PROVIDE (__loader_stub_end__ = ABSOLUTE(.));
+    } >loader_stub AT>main : loader_stub
+
     __end__ = ABSOLUTE(.) ;
 
     /* ==================

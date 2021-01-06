@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -49,7 +49,7 @@ static void __program_init_newlib_hooks(void) {
 }
 
 static void __program_move_additional_sections(void) {
-#if defined(FUSEE_STAGE1_SRC) || defined(FUSEE_STAGE2_SRC)
+#if defined(SEPT_STAGE1_SRC) || defined(SEPT_STAGE2_SRC)
     extern uint8_t __chainloader_lma__[], __chainloader_start__[], __chainloader_bss_start__[], __chainloader_end__[];
     memcpy(__chainloader_start__, __chainloader_lma__, __chainloader_bss_start__ - __chainloader_start__);
     memset(__chainloader_bss_start__, 0, __chainloader_end__ - __chainloader_bss_start__);
@@ -81,66 +81,11 @@ void __program_exit(int rc) {
     for (;;);
 }
 
-#ifdef FUSEE_STAGE1_SRC
+
 static void __program_parse_argc_argv(int argc, char *argdata) {
     __program_argc = 0;
     __program_argv = NULL;
 }
-#elif defined(FUSEE_STAGE2_SRC)
-#include "stage2.h"
-static void __program_parse_argc_argv(int argc, char *argdata) {
-    size_t pos = 0, len;
-
-    __program_argc = argc;
-
-    __program_argv = malloc(argc * sizeof(void **));
-    if (__program_argv == NULL) {
-        generic_panic();
-    }
-
-    len = strlen(argdata);
-    __program_argv[0] = malloc(len + 1);
-    if (__program_argv[0] == NULL) {
-        generic_panic();
-    }
-    strcpy((char *)__program_argv[0], argdata);
-    pos += len + 1;
-
-    __program_argv[1] = malloc(sizeof(stage2_args_t));
-    if (__program_argv[1] == NULL) {
-        generic_panic();
-    }
-    memcpy(__program_argv[1], argdata + pos, sizeof(stage2_args_t));
-}
-#else
-static void __program_parse_argc_argv(int argc, char *argdata) {
-    size_t pos = 0, len;
-
-    __program_argc = argc;
-
-    __program_argv = malloc(argc * sizeof(void **));
-    if (__program_argv == NULL) {
-        generic_panic();
-    }
-
-    for (int i = 0; i < argc; i++) {
-        len = strlen(argdata + pos);
-        __program_argv[i] = malloc(len + 1);
-        if (__program_argv[i] == NULL) {
-            generic_panic();
-        }
-        strcpy((char *)__program_argv[i], argdata + pos);
-        pos += len + 1;
-    }
-}
-#endif
-
 static void __program_cleanup_argv(void) {
-#ifndef FUSEE_STAGE1_SRC
-    for (int i = 0; i < __program_argc; i++) {
-        free(__program_argv[i]);
-        __program_argv[i] = NULL;
-    }
-    free(__program_argv);
-#endif
+    /* ... */
 }

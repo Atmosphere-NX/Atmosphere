@@ -26,7 +26,7 @@ namespace ams::fuse {
         HardwareType_Hoag   = 2,
         HardwareType_Iowa   = 3,
         HardwareType_Calcio = 4,
-        HardwareType_Five   = 5,
+        HardwareType_Aula   = 5,
 
         HardwareType_Undefined = 0xF,
     };
@@ -51,7 +51,7 @@ namespace ams::fuse {
         DramId_IcosaSamsung4GB    =  0,
         DramId_IcosaHynix4GB      =  1,
         DramId_IcosaMicron4GB     =  2,
-        DramId_FiveHynix1y4GB     =  3,
+        DramId_AulaHynix1y4GB     =  3,
         DramId_IcosaSamsung6GB    =  4,
         DramId_CopperHynix4GB     =  5,
         DramId_CopperMicron4GB    =  6,
@@ -70,13 +70,13 @@ namespace ams::fuse {
         DramId_HoagSamsung1y4GBX  = 19,
         DramId_IowaSamsung1y4GBY  = 20,
         DramId_IowaSamsung1y8GBY  = 21,
-        DramId_FiveSamsung1y4GB   = 22,
+        DramId_AulaSamsung1y4GB   = 22,
         DramId_HoagSamsung1y8GBX  = 23,
-        DramId_FiveSamsung1y4GBX  = 24,
+        DramId_AulaSamsung1y4GBX  = 24,
         DramId_IowaMicron1y4GB    = 25,
         DramId_HoagMicron1y4GB    = 26,
-        DramId_FiveMicron1y4GB    = 27,
-        DramId_FiveSamsung1y8GBX  = 28,
+        DramId_AulaMicron1y4GB    = 27,
+        DramId_AulaSamsung1y8GBX  = 28,
 
         DramId_Count,
     };

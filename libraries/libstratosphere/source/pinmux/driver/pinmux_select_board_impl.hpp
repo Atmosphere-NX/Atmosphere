@@ -18,9 +18,9 @@
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include "board/nintendo_nx/pinmux_board_driver_api.hpp"
+    #include "board/nintendo/nx/pinmux_board_driver_api.hpp"
     namespace ams::pinmux::driver::board {
-        using namespace ams::pinmux::driver::board::nintendo_nx;
+        using namespace ams::pinmux::driver::board::nintendo::nx;
     }
 
 #else

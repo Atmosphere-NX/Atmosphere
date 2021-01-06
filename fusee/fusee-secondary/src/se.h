@@ -37,6 +37,13 @@
 /* This keyslot was added in 5.0.0. */
 #define KEYSLOT_SWITCH_5XNEWDEVICEKEYGENKEY 0xA
 
+/* Mariko keyslots. */
+#define KEYSLOT_SWITCH_DEVICEKEY_MARIKO 0x6
+#define KEYSLOT_SWITCH_MASTERKEY_MARIKO 0x7
+
+#define KEYSLOT_SWITCH_KEK_MARIKO 0xC
+#define KEYSLOT_SWITCH_BEK_MARIKO 0xD
+
 #define KEYSLOT_AES_MAX 0x10
 #define KEYSLOT_RSA_MAX 0x2
 
@@ -191,6 +198,7 @@ void se_aes_256_ecb_encrypt_block(unsigned int keyslot, void *dst, size_t dst_si
 void se_aes_ctr_crypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *ctr, size_t ctr_size);
 void se_aes_ecb_decrypt_block(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size);
 void se_aes_256_cbc_encrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv);
+void se_aes_128_cbc_decrypt(unsigned int keyslot, void *dst, size_t dst_size, const void *src, size_t src_size, const void *iv);
 
 /* Hash API */
 void se_calculate_sha256(void *dst, const void *src, size_t src_size);

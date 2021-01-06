@@ -96,4 +96,5 @@ _start:
     ldr x0, =__start__
     mov sp, x0
     mov fp, #0x0
+
     bl derive_keys

@@ -31,9 +31,9 @@
 #include "fs_utils.h"
 #include "nxfs.h"
 #include "gpt.h"
-#include "display/video_fb.h"
-#include "sdmmc/sdmmc.h"
-#include "lib/log.h"
+#include "../../../fusee/common/display/video_fb.h"
+#include "../../../fusee/common/sdmmc/sdmmc.h"
+#include "../../../fusee/common/log.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -70,6 +70,18 @@ static void exit_callback(int rc) {
     }
 }
 
+static const char *get_default_bct0(void) {
+    return "BCT0\n"
+           "[stage1]\n"
+           "stage2_path = atmosphere/fusee-secondary.bin\n"
+           "stage2_mtc_path = atmosphere/fusee-mtc.bin\n"
+           "stage2_addr = 0xF0000000\n"
+           "stage2_entrypoint = 0xF0000000\n"
+           "\n"
+           "[stratosphere]\n"
+           "\n";
+}
+
 /* Allow for main(int argc, void **argv) signature. */
 #pragma GCC diagnostic ignored "-Wmain"
 
@@ -102,7 +114,8 @@ int main(int argc, void **argv) {
     if (strcmp(g_stage2_args->bct0, "") == 0) {
         uint32_t bct_tmp_buf[sizeof(g_stage2_args->bct0) / sizeof(uint32_t)] = {0};
         if (!read_from_file(bct_tmp_buf, sizeof(bct_tmp_buf) - 1, "atmosphere/config/BCT.ini")) {
-            fatal_error("Failed to read BCT0 from SD!\n");
+            const char * const default_bct0 = get_default_bct0();
+            memcpy(bct_tmp_buf, default_bct0, strlen(default_bct0));
         }
         memcpy(g_stage2_args->bct0, bct_tmp_buf, sizeof(bct_tmp_buf));
     }

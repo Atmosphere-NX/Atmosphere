@@ -316,7 +316,7 @@ namespace ams::fuse {
             case 0x02: return (true /* TODO: GetSocType() == SocType_Mariko */) ? HardwareType_Calcio : HardwareType_Copper;
             case 0x04: return HardwareType_Iowa;
             case 0x08: return HardwareType_Hoag;
-            case 0x10: return HardwareType_Five;
+            case 0x10: return HardwareType_Aula;
             default:   return HardwareType_Undefined;
         }
     }
@@ -371,7 +371,7 @@ namespace ams::fuse {
             case HardwareType_Iowa:
             case HardwareType_Hoag:
             case HardwareType_Calcio:
-            case HardwareType_Five:
+            case HardwareType_Aula:
                 return SocType_Mariko;
             default:
                 return SocType_Undefined;

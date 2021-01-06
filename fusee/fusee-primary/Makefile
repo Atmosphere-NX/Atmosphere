@@ -8,7 +8,7 @@ endif
 
 TOPDIR ?= $(CURDIR)
 
-AMS		:= $(TOPDIR)/../../
+AMS		:= $(TOPDIR)/../../../
 include $(DEVKITARM)/base_rules
 
 AMSBRANCH := $(shell git symbolic-ref --short HEAD)
@@ -17,6 +17,13 @@ AMSREV := $(AMSBRANCH)-$(shell git rev-parse --short HEAD)
 ifneq (, $(strip $(shell git status --porcelain 2>/dev/null)))
     AMSREV := $(AMSREV)-dirty
 endif
+
+define _bin2o
+	bin2s $< | $(AS) -o $(@)
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`"_end[];" > `(echo $(<F) | tr . _ | tr - _)`.h
+	echo "extern const u8" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`"[];" >> `(echo $(<F) | tr . _ | tr - _)`.h
+	echo "extern const u32" `(echo $(<F) | sed -e 's/^\([0-9]\)/_\1/' | tr . _ | tr - _)`_size";" >> `(echo $(<F) | tr . _ | tr - _)`.h
+endef
 
 #---------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -27,9 +34,9 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
+SOURCES		:=	src
 DATA		:=	data
-INCLUDES	:=	include  ../../libraries/libvapours/include
+INCLUDES	:=	include  ../../../libraries/libvapours/include
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -77,14 +84,14 @@ export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
-			$(AMS)/exosphere/program/rebootstub
+			$(CURDIR)/fusee-primary-main
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
-BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) rebootstub.bin
+BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*))) fusee-primary-main.lz4
 
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
@@ -100,10 +107,10 @@ else
 endif
 #---------------------------------------------------------------------------------
 
-export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
+export OFILES_BIN	:=	$(addsuffix .o,$(subst -,_,$(BINFILES)))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
-export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(subst -,_,$(BINFILES))))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
@@ -111,22 +118,24 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
-.PHONY: $(BUILD) clean all check_rebootstub
+.PHONY: $(BUILD) clean all check_main
 
 #---------------------------------------------------------------------------------
-all: check_rebootstub $(BUILD)
+all: $(BUILD)
 
-check_rebootstub:
-	@$(MAKE) -C $(AMS)/exosphere/program/rebootstub all
+fusee-primary-main/fusee-primary-main.lz4: check_main
 
-$(BUILD): check_rebootstub
+check_main:
+	@$(MAKE) -C fusee-primary-main all
+
+$(BUILD): fusee-primary-main/fusee-primary-main.lz4
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@$(MAKE) -C $(AMS)/exosphere/program/rebootstub clean
+	@$(MAKE) -C fusee-primary-main clean
 	@rm -fr $(BUILD) $(TARGET).bin $(TARGET).elf
 
 
@@ -152,6 +161,8 @@ $(OUTPUT).elf	:	$(OFILES)
 	@$(LD) $(LDFLAGS) $(OFILES) $(LIBPATHS) $(LIBS) -o $@
 	@$(NM) -CSn $@ > $(notdir $*.lst)
 
+utils.o: CFLAGS += -fno-builtin
+
 $(OFILES_SRC)	: $(HFILES_BIN)
 
 #---------------------------------------------------------------------------------
@@ -161,6 +172,14 @@ $(OFILES_SRC)	: $(HFILES_BIN)
 #---------------------------------------------------------------------------------
 	@echo $(notdir $<)
 	@$(bin2o)
+
+#---------------------------------------------------------------------------------
+# you need a rule like this for each extension you use as binary data
+#---------------------------------------------------------------------------------
+fusee_primary_main.lz4.o	fusee_primary_main_lz4.h:	fusee-primary-main.lz4
+#---------------------------------------------------------------------------------
+	@echo $(notdir $<)
+	@$(_bin2o)
 
 -include $(DEPENDS)
 

@@ -21,7 +21,7 @@
 #include "car.h"
 #include "fuse.h"
 #include "timers.h"
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 
 /*
  * Macros.
@@ -590,9 +590,12 @@ static const uint32_t g_ram_pattern_dmi[0x500] = {
     0xA, 0x5, 0xC, 0x3, 0xA, 0x5, 0xC, 0x3
 };
 
-/*
- * Register read/write helpers.
- */
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
+
+/* Register read/write helpers. */
 static inline void emc_write(uint32_t val, uint32_t offset) {
     MAKE_EMC_REG(offset) = val;
 }
@@ -664,10 +667,10 @@ static void ccfifo_write(uint32_t ccfifo_addr, uint32_t ccfifo_data, uint32_t cc
 static void start_periodic_compensation() {
     uint32_t mpc_req = 0x4B;
     
-    // Write to EMC_MPC_0
+    /* Write to EMC_MPC_0. */
     emc_write(mpc_req, EMC_MPC);
     
-    // Dummy read
+    /* Dummy read. */
     mpc_req = emc_read(EMC_MPC);
 }
 
@@ -704,7 +707,7 @@ static uint32_t wait_for_update(uint32_t status_reg, uint32_t bit_mask, bool upd
         udelay(1);
     }
 
-    // Timeout
+    /* Timeout. */
     return 4;
 }
 
@@ -1114,9 +1117,7 @@ static uint32_t update_clock_tree_delay(tegra_emc_timing_t* current_timing, tegr
     bool training_update = (type == TRAINING_UPDATE);
     bool periodic_training_update = (type == PERIODIC_TRAINING_UPDATE);
 
-    /*
-     * Dev0 MSB.
-     */
+    /* Dev0 MSB. */
     if (dvfs_pt1 || training_pt1 || periodic_training_update) {
         mrr_req = ((2 << EMC_MRR_DEV_SEL_SHIFT) | (19 << EMC_MRR_MA_SHIFT));
         emc_write(mrr_req, EMC_MRR);
@@ -1136,9 +1137,7 @@ static uint32_t update_clock_tree_delay(tegra_emc_timing_t* current_timing, tegr
             temp1_1 = (mrr_data & 0xff00);
         }
 
-        /*
-         * Dev0 LSB.
-         */
+        /* Dev0 LSB. */
         mrr_req = ((mrr_req & ~EMC_MRR_MA_MASK) | (18 << EMC_MRR_MA_SHIFT));
         emc_write(mrr_req, EMC_MRR);
 
@@ -1249,9 +1248,7 @@ static uint32_t update_clock_tree_delay(tegra_emc_timing_t* current_timing, tegr
     if (dram_dev_num != TWO_RANK)
         return adel;
 
-    /*
-     * Dev1 MSB.
-     */
+    /* Dev1 MSB. */
     if (dvfs_pt1 || training_pt1 || periodic_training_update) {
         mrr_req = ((1 << EMC_MRR_DEV_SEL_SHIFT) | (19 << EMC_MRR_MA_SHIFT));
         emc_write(mrr_req, EMC_MRR);
@@ -1271,9 +1268,7 @@ static uint32_t update_clock_tree_delay(tegra_emc_timing_t* current_timing, tegr
             temp1_1 = (mrr_data & 0xff00);
         }
 
-        /*
-         * Dev1 LSB.
-         */
+        /* Dev1 LSB. */
         mrr_req = ((mrr_req & ~EMC_MRR_MA_MASK) | (18 << EMC_MRR_MA_SHIFT));
         emc_write(mrr_req, EMC_MRR);
 
@@ -1454,9 +1449,7 @@ static uint32_t periodic_compensation_handler(tegra_emc_timing_t *current_timing
                 start_periodic_compensation();
                 udelay(delay);
 
-                /*
-                 * Generate next sample of data.
-                 */
+                /* Generate next sample of data. */
                 adel = update_clock_tree_delay(current_timing, next_timing, dram_dev_num, channel_mode, DVFS_PT1);
             }
         }
@@ -1477,9 +1470,7 @@ static uint32_t periodic_compensation_handler(tegra_emc_timing_t *current_timing
             start_periodic_compensation();
             udelay(delay);
             
-            /*
-             * Generate next sample of data.
-             */
+            /* Generate next sample of data. */
             update_clock_tree_delay(current_timing, next_timing, dram_dev_num, channel_mode, TRAINING_PT1);
         }
         
@@ -3706,7 +3697,7 @@ static int train_one(int z_val, uint32_t next_rate, uint32_t current_rate, tegra
     return 0;
 }
 
-void train_dram(void) {
+static void train_dram_erista(void) {
     volatile tegra_car_t *car = car_get_regs();
     
     tegra_emc_timing_t *timing_tables;
@@ -3747,4 +3738,12 @@ void train_dram(void) {
     do_periodic_emc_compensation((tegra_emc_timing_t*)&timing_tables[g_active_timing_table_idx]);
     
     print(SCREEN_LOG_LEVEL_DEBUG, "[MTC]: Done!\n");
+}
+
+void train_dram(void) {
+    if (is_soc_mariko()) {
+        /* TODO */
+    } else {
+        train_dram_erista();
+    }
 }

@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 .macro CLEAR_GPR_REG_ITER
     mov r\@, #0
 .endm
@@ -27,46 +27,35 @@ _start:
     /* Switch to system mode, mask all interrupts, clear all flags */
     msr cpsr_cxsf, #0xDF
 
-    /* Relocate ourselves if necessary */
-    ldr r2, =__start__
-    adr r3, _start
-    cmp r2, r3
-    bne _relocation_loop_end
+    /* Relocate loader stub. */
+    ldr r0, =_start
+    adr r1, _start
+    ldr r2, =__loader_stub_lma__
+    sub r2, r2, r0
+    add r2, r2, r1
 
-    ldr r4, =__bss_start__
-    sub r4, r4, r2          /* size >= 32, obviously, and we've declared 32-byte-alignment */
+    ldr r3, =__loader_stub_start__
+    ldr r4, =__loader_stub_end__
+    sub r4, r4, r3
     _relocation_loop:
-        ldmia r3!, {r5-r12}
-        stmia r2!, {r5-r12}
+        ldmia r2!, {r5-r12}
+        stmia r3!, {r5-r12}
         subs  r4, #0x20
         bne _relocation_loop
 
-    ldr r12, =_relocation_loop_end
-    bx  r12
-
-    _relocation_loop_end:
     /* Set the stack pointer */
     ldr  sp, =__stack_top__
     mov  fp, #0
-    bl  __program_init
 
-    /* Set r0 to r12 to 0 (for debugging) & call main */
-    .rept 13
-    CLEAR_GPR_REG_ITER
-    .endr
-    ldr r0, =__program_argc
-    ldr r1, =__program_argv
-    ldr lr, =__program_exit
-    ldr r0, [r0]
-    ldr r1, [r1]
-    b   main
+    /* Generate arguments. */
+    ldr r3, =fusee_primary_main_lz4
+    ldr r4, =fusee_primary_main_lz4_end
+    sub r4, r4, r3
+    sub r3, r3, r0
+    add r3, r3, r1
+    mov r0, r3
+    mov r1, r4
 
-/* No need to include this in normal programs: */
-.section .chainloader.text.start, "ax", %progbits
-.arm
-.align 5
-.global relocate_and_chainload
-.type   relocate_and_chainload, %function
-relocate_and_chainload:
-    ldr sp, =__stack_top__
-    b   relocate_and_chainload_main
+    /* Jump to the loader stub. */
+    ldr r3, =load_fusee_primary_main
+    bx  r3

@@ -27,7 +27,7 @@ endif
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	src src/sdmmc src/lib src/lib/fatfs src/display
+SOURCES		:=	src
 DATA		:=	data
 INCLUDES	:=	include  ../../libraries/libvapours/include
 
@@ -35,7 +35,7 @@ INCLUDES	:=	include  ../../libraries/libvapours/include
 # options for code generation
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv4t -mtune=arm7tdmi -mthumb -mthumb-interwork
-DEFINES :=	-D__BPMP__ -DFUSEE_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
+DEFINES :=	-D__BPMP__ -DSEPT_STAGE1_SRC -DATMOSPHERE_GIT_BRANCH=\"$(AMSBRANCH)\" -DATMOSPHERE_GIT_REV=\"$(AMSREV)\"
 
 CFLAGS	:= \
 	-g \

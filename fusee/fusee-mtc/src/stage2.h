@@ -17,7 +17,7 @@
 #ifndef FUSEE_STAGE2_H
 #define FUSEE_STAGE2_H
 
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 
 #define MTC_ARGV_ARGUMENT_STRUCT 0
 #define MTC_ARGC 1

@@ -47,7 +47,7 @@ namespace ams::secmon::smc {
             [fuse::DramId_IcosaSamsung4GB]    = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaHynix4GB]      = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaMicron4GB]     = pkg1::MemorySize_4GB,
-            [fuse::DramId_FiveHynix1y4GB]     = pkg1::MemorySize_4GB,
+            [fuse::DramId_AulaHynix1y4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_IcosaSamsung6GB]    = pkg1::MemorySize_6GB,
             [fuse::DramId_CopperHynix4GB]     = pkg1::MemorySize_4GB,
             [fuse::DramId_CopperMicron4GB]    = pkg1::MemorySize_4GB,
@@ -66,13 +66,13 @@ namespace ams::secmon::smc {
             [fuse::DramId_HoagSamsung1y4GBX]  = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSamsung1y4GBY]  = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaSamsung1y8GBY]  = pkg1::MemorySize_8GB,
-            [fuse::DramId_FiveSamsung1y4GB]   = pkg1::MemorySize_4GB,
+            [fuse::DramId_AulaSamsung1y4GB]   = pkg1::MemorySize_4GB,
             [fuse::DramId_HoagSamsung1y8GBX]  = pkg1::MemorySize_8GB,
-            [fuse::DramId_FiveSamsung1y4GBX]  = pkg1::MemorySize_4GB,
+            [fuse::DramId_AulaSamsung1y4GBX]  = pkg1::MemorySize_4GB,
             [fuse::DramId_IowaMicron1y4GB]    = pkg1::MemorySize_4GB,
             [fuse::DramId_HoagMicron1y4GB]    = pkg1::MemorySize_4GB,
-            [fuse::DramId_FiveMicron1y4GB]    = pkg1::MemorySize_4GB,
-            [fuse::DramId_FiveSamsung1y8GBX]  = pkg1::MemorySize_8GB,
+            [fuse::DramId_AulaMicron1y4GB]    = pkg1::MemorySize_4GB,
+            [fuse::DramId_AulaSamsung1y8GBX]  = pkg1::MemorySize_8GB,
         };
 
         constexpr const pkg1::MemoryMode MemoryModes[] = {

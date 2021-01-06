@@ -20,6 +20,7 @@
 #include "cluster.h"
 #include "timers.h"
 #include "fuse.h"
+#include "uart.h"
 #include "utils.h"
 
 #define u8 uint8_t

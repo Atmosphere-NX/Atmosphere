@@ -128,10 +128,6 @@ namespace ams::sf::hipc {
 
             os::Mutex waitlist_mutex;
             os::WaitableManagerType waitlist;
-
-            os::Mutex deferred_session_mutex;
-            using DeferredSessionList = typename util::IntrusiveListMemberTraits<&ServerSession::deferred_list_node>::ListType;
-            DeferredSessionList deferred_session_list;
         private:
             virtual void RegisterSessionToWaitList(ServerSession *session) override final;
             void RegisterToWaitList(os::WaitableHolderType *holder);
@@ -142,8 +138,6 @@ namespace ams::sf::hipc {
             Result ProcessForServer(os::WaitableHolderType *holder);
             Result ProcessForMitmServer(os::WaitableHolderType *holder);
             Result ProcessForSession(os::WaitableHolderType *holder);
-
-            void   ProcessDeferredSessions();
 
             template<typename Interface, auto MakeShared>
             void RegisterServerImpl(Handle port_handle, sm::ServiceName service_name, bool managed, cmif::ServiceObjectHolder &&static_holder) {
@@ -176,7 +170,7 @@ namespace ams::sf::hipc {
             ServerManagerBase(DomainEntryStorage *entry_storage, size_t entry_count) :
                 ServerDomainSessionManager(entry_storage, entry_count),
                 request_stop_event(os::EventClearMode_ManualClear), notify_event(os::EventClearMode_ManualClear),
-                waitable_selection_mutex(false), waitlist_mutex(false), deferred_session_mutex(false)
+                waitable_selection_mutex(false), waitlist_mutex(false)
             {
                 /* Link waitables. */
                 os::InitializeWaitableManager(std::addressof(this->waitable_manager));

@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <mesosphere.hpp>
-#include "kern_init_loader_asm.hpp"
+#include "kern_init_loader_board_setup.hpp"
 
 /* Necessary for calculating kernelldr size/base for initial identity mapping */
 extern "C" {
@@ -71,22 +71,6 @@ namespace ams::kern::init::loader {
             cpu::InvalidateEntireTlb();
         }
 
-        #ifdef ATMOSPHERE_BOARD_NINTENDO_NX
-
-        ALWAYS_INLINE bool ShouldPerformCpuSpecificSetup() {
-            /* Perform cpu-specific setup only on < 10.0.0. */
-            return kern::GetTargetFirmware() < ams::TargetFirmware_10_0_0;
-        }
-
-        #else
-
-        consteval ALWAYS_INLINE bool ShouldPerformCpuSpecificSetup() {
-            /* Always perform cpu-specific setup. */
-            return true;
-        }
-
-        #endif
-
         void SetupInitialIdentityMapping(KInitialPageTable &ttbr1_table, uintptr_t base_address, uintptr_t kernel_size, uintptr_t page_table_region, size_t page_table_region_size, KInitialPageTable::IPageAllocator &allocator) {
             /* Make a new page table for TTBR0_EL1. */
             KInitialPageTable ttbr0_table(allocator.Allocate());
@@ -116,72 +100,8 @@ namespace ams::kern::init::loader {
             cpu::MemoryAccessIndirectionRegisterAccessor(MairValue).Store();
             cpu::TranslationControlRegisterAccessor(TcrValue).Store();
 
-            /* Perform cpu-specific setup if needed. */
-            if (ShouldPerformCpuSpecificSetup()) {
-                SavedRegisterState saved_registers;
-                SaveRegistersToTpidrEl1(&saved_registers);
-                ON_SCOPE_EXIT { VerifyAndClearTpidrEl1(&saved_registers); };
-
-                /* Main ID specific setup. */
-                cpu::MainIdRegisterAccessor midr_el1;
-                if (midr_el1.GetImplementer() == cpu::MainIdRegisterAccessor::Implementer::ArmLimited) {
-                    /* ARM limited specific setup. */
-                    const auto cpu_primary_part = midr_el1.GetPrimaryPartNumber();
-                    const auto cpu_variant      = midr_el1.GetVariant();
-                    const auto cpu_revision     = midr_el1.GetRevision();
-                    if (cpu_primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA57) {
-                        /* Cortex-A57 specific setup. */
-
-                        /* Non-cacheable load forwarding enabled. */
-                        u64 cpuactlr_value  = 0x1000000;
-
-                        /* Enable the processor to receive instruction cache and TLB maintenance */
-                        /* operations broadcast from other processors in the cluster; */
-                        /* set the L2 load/store data prefetch distance to 8 requests; */
-                        /* set the L2 instruction fetch prefetch distance to 3 requests. */
-                        u64 cpuectlr_value = 0x1B00000040;
-
-                        /* Disable load-pass DMB on certain hardware variants. */
-                        if (cpu_variant == 0 || (cpu_variant == 1 && cpu_revision <= 1)) {
-                            cpuactlr_value |= 0x800000000000000;
-                        }
-
-                        /* Set actlr and ectlr. */
-                        if (cpu::GetCpuActlrEl1() != cpuactlr_value) {
-                            cpu::SetCpuActlrEl1(cpuactlr_value);
-                        }
-                        if (cpu::GetCpuEctlrEl1() != cpuectlr_value) {
-                            cpu::SetCpuEctlrEl1(cpuectlr_value);
-                        }
-                    } else if (cpu_primary_part == cpu::MainIdRegisterAccessor::PrimaryPartNumber::CortexA53) {
-                        /* Cortex-A53 specific setup. */
-
-                        /* Set L1 data prefetch control to allow 5 outstanding prefetches; */
-                        /* enable device split throttle; */
-                        /* set the number of independent data prefetch streams to 2; */
-                        /* disable transient and no-read-allocate hints for loads; */
-                        /* set write streaming no-allocate threshold so the 128th consecutive streaming */
-                        /* cache line does not allocate in the L1 or L2 cache. */
-                        u64 cpuactlr_value = 0x90CA000;
-
-                        /* Enable hardware management of data coherency with other cores in the cluster. */
-                        u64 cpuectlr_value = 0x40;
-
-                        /* If supported, enable data cache clean as data cache clean/invalidate. */
-                        if (cpu_variant != 0 || (cpu_variant == 0 && cpu_revision > 2)) {
-                            cpuactlr_value |= 0x100000000000;
-                        }
-
-                        /* Set actlr and ectlr. */
-                        if (cpu::GetCpuActlrEl1() != cpuactlr_value) {
-                            cpu::SetCpuActlrEl1(cpuactlr_value);
-                        }
-                        if (cpu::GetCpuEctlrEl1() != cpuectlr_value) {
-                            cpu::SetCpuEctlrEl1(cpuectlr_value);
-                        }
-                    }
-                }
-            }
+            /* Perform board-specific setup. */
+            PerformBoardSpecificSetup();
 
             /* Ensure that the entire cache is flushed. */
             EnsureEntireDataCacheFlushed();
@@ -300,10 +220,9 @@ namespace ams::kern::init::loader {
         ttbr1_table.Map(virtual_base_address + ro_offset, ro_end_offset - ro_offset, base_address + ro_offset, KernelRwDataAttribute, g_initial_page_allocator);
         ttbr1_table.Map(virtual_base_address + rw_offset, bss_end_offset - rw_offset, base_address + rw_offset, KernelRwDataAttribute, g_initial_page_allocator);
 
-        /* On 10.0.0+, Physically randomize the kernel region. */
-        if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-            ttbr1_table.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
-        }
+        /* Physically randomize the kernel region. */
+        /* NOTE: Nintendo does this only on 10.0.0+ */
+        ttbr1_table.PhysicallyRandomize(virtual_base_address + rx_offset, bss_end_offset - rx_offset, true);
 
         /* Clear kernel .bss. */
         std::memset(GetVoidPointer(virtual_base_address + bss_offset), 0, bss_end_offset - bss_offset);
@@ -330,11 +249,7 @@ namespace ams::kern::init::loader {
 
     uintptr_t GetFinalPageAllocatorState() {
         g_initial_page_allocator.GetFinalState(std::addressof(g_final_page_allocator_state));
-        if (kern::GetTargetFirmware() >= ams::TargetFirmware_10_0_0) {
-            return reinterpret_cast<uintptr_t>(std::addressof(g_final_page_allocator_state));
-        } else {
-            return g_final_page_allocator_state.next_address;
-        }
+        return reinterpret_cast<uintptr_t>(std::addressof(g_final_page_allocator_state));
     }
 
 }

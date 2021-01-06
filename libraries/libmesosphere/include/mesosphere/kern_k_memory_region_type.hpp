@@ -184,14 +184,13 @@ namespace ams::kern {
     constexpr inline const auto KMemoryRegionType_DramReservedEarly = KMemoryRegionType_DramReservedBase.DeriveAttribute(KMemoryRegionAttr_NoUserMap);
     static_assert(KMemoryRegionType_DramReservedEarly.GetValue() == (0x16 | KMemoryRegionAttr_NoUserMap));
 
-                                                                                              /* UNUSED: DeriveSparse(0, 3, 0); */
+    constexpr inline const auto KMemoryRegionType_KernelTraceBuffer = KMemoryRegionType_DramReservedBase.DeriveSparse(0, 3, 0).SetAttribute(KMemoryRegionAttr_LinearMapped).SetAttribute(KMemoryRegionAttr_UserReadOnly);
     constexpr inline const auto KMemoryRegionType_OnMemoryBootImage = KMemoryRegionType_DramReservedBase.DeriveSparse(0, 3, 1);
     constexpr inline const auto KMemoryRegionType_DTB               = KMemoryRegionType_DramReservedBase.DeriveSparse(0, 3, 2);
+    static_assert(KMemoryRegionType_KernelTraceBuffer.GetValue() == (0xD6 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_UserReadOnly));
     static_assert(KMemoryRegionType_OnMemoryBootImage.GetValue() == 0x156);
     static_assert(KMemoryRegionType_DTB.GetValue() == 0x256);
 
-    constexpr inline const auto KMemoryRegionType_KernelTraceBuffer = KMemoryRegionType_DramHeapBase.DeriveTransition(1, 3).SetAttribute(KMemoryRegionAttr_UserReadOnly);
-    static_assert(KMemoryRegionType_KernelTraceBuffer.GetValue() == (0xA6 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_UserReadOnly));
 
     constexpr inline const auto KMemoryRegionType_DramPoolPartition = KMemoryRegionType_DramHeapBase.DeriveAttribute(KMemoryRegionAttr_NoUserMap);
     static_assert(KMemoryRegionType_DramPoolPartition.GetValue() == (0x26 | KMemoryRegionAttr_LinearMapped | KMemoryRegionAttr_NoUserMap));

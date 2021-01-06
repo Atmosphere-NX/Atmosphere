@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -23,11 +24,6 @@
 #include "fuse.h"
 #include "pmc.h"
 #include "timers.h"
-
-/* Prototypes for internal commands. */
-void fuse_enable_power(void);
-void fuse_disable_power(void);
-void fuse_wait_idle(void);
 
 /* Initialize the fuse driver */
 void fuse_init(void) {
@@ -43,7 +39,7 @@ void fuse_disable_private_key(void) {
     fuse->FUSE_PRIVATEKEYDISABLE = 0x10;
 }
 
-/* Disables all fuse programming. */
+/* Disable all fuse programming. */
 void fuse_disable_programming(void) {
     volatile tegra_fuse_t *fuse = fuse_get_regs();
     fuse->FUSE_DISABLEREGPROGRAM = 1;
@@ -68,13 +64,14 @@ void fuse_disable_power(void) {
 }
 
 /* Wait for the fuse driver to go idle. */
-void fuse_wait_idle(void) {
+static void fuse_wait_idle(void) {
     volatile tegra_fuse_t *fuse = fuse_get_regs();
     uint32_t ctrl_val = 0;
 
     /* Wait for STATE_IDLE */
-    while ((ctrl_val & (0xF0000)) != 0x40000)
+    while ((ctrl_val & (0xF0000)) != 0x40000) {
         ctrl_val = fuse->FUSE_FUSECTRL;
+    }
 }
 
 /* Read a fuse from the hardware array. */
@@ -120,7 +117,7 @@ void fuse_hw_write(uint32_t value, uint32_t addr) {
     fuse_wait_idle();
 }
 
-/* Sense the fuse hardware array into the shadow cache. */
+/* Sense the fuse hardware array into the fuse cache. */
 void fuse_hw_sense(void) {
     volatile tegra_fuse_t *fuse = fuse_get_regs();
 
@@ -137,46 +134,68 @@ void fuse_hw_sense(void) {
     fuse_wait_idle();
 }
 
-/* Read the SKU info register from the shadow cache. */
+/* Read the SKU info register. */
 uint32_t fuse_get_sku_info(void) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     return fuse_chip->FUSE_SKU_INFO;
 }
 
-/* Read the bootrom patch version from a register in the shadow cache. */
+/* Read the bootrom patch version. */
 uint32_t fuse_get_bootrom_patch_version(void) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     return fuse_chip->FUSE_SOC_SPEEDO_1_CALIB;
 }
 
-/* Read a spare bit register from the shadow cache */
-uint32_t fuse_get_spare_bit(uint32_t idx) {
-    if (idx < 32) {
-        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
-        return fuse_chip->FUSE_SPARE_BIT[idx];
-    } else {
-        return 0;
+/* Read a spare bit register. */
+uint32_t fuse_get_spare_bit(uint32_t index) {
+    uint32_t soc_type = fuse_get_soc_type();
+    if (soc_type == 0) {
+        if (index < 32) {
+            volatile tegra_fuse_chip_erista_t *fuse_chip = fuse_chip_erista_get_regs();
+            return fuse_chip->FUSE_SPARE_BIT[index];
+        }
+    } else if (soc_type == 1) {
+        if (index < 30) {
+            volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
+            return fuse_chip->FUSE_SPARE_BIT[index];
+        }
     }
+    return 0;
 }
 
-/* Read a reserved ODM register from the shadow cache. */
-uint32_t fuse_get_reserved_odm(uint32_t idx) {
-    if (idx < 8) {
-        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
-        return fuse_chip->FUSE_RESERVED_ODM[idx];
+/* Read a reserved ODM register. */
+uint32_t fuse_get_reserved_odm(uint32_t index) {
+    if (index < 8) {
+        volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
+        return fuse_chip->FUSE_RESERVED_ODM0[index];
     } else {
-        return 0;
+        uint32_t soc_type = fuse_get_soc_type();
+        if (soc_type == 1) {
+            volatile tegra_fuse_chip_mariko_t *fuse_chip = fuse_chip_mariko_get_regs();
+            if (index < 22) {
+                return fuse_chip->FUSE_RESERVED_ODM8[index - 8];
+            } else if (index < 25) {
+                return fuse_chip->FUSE_RESERVED_ODM22[index - 22];
+            } else if (index < 26) {
+                return fuse_chip->FUSE_RESERVED_ODM25;
+            } else if (index < 29) {
+                return fuse_chip->FUSE_RESERVED_ODM26[index - 26];
+            } else if (index < 30) {
+                return fuse_chip->FUSE_RESERVED_ODM29;
+            }
+        }
     }
+    return 0;
 }
 
-/* Get the DRAM ID using values in the shadow cache. */
+/* Get the DramId. */
 uint32_t fuse_get_dram_id(void) {
-    return ((fuse_get_reserved_odm(4) >> 3) & 0x7);
+    return ((fuse_get_reserved_odm(4) >> 3) & 0x1F);
 }
 
-/* Derive the Device ID using values in the shadow cache. */
+/* Derive the DeviceId. */
 uint64_t fuse_get_device_id(void) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
 
     uint64_t device_id = 0;
     uint64_t y_coord = fuse_chip->FUSE_OPT_Y_COORDINATE & 0x1FF;
@@ -200,48 +219,74 @@ uint64_t fuse_get_device_id(void) {
     return device_id;
 }
 
-/* Derive the Hardware Type using values in the shadow cache. */
-uint32_t fuse_get_hardware_type(uint32_t target_firmware) {
+/* Derive the HardwareType with firmware specific checks. */
+uint32_t fuse_get_hardware_type_with_firmware_check(uint32_t target_firmware) {
     uint32_t fuse_reserved_odm4 = fuse_get_reserved_odm(4);
     uint32_t hardware_type = (((fuse_reserved_odm4 >> 7) & 2) | ((fuse_reserved_odm4 >> 2) & 1));
 
-    /* Firmware from versions 1.0.0 to 3.0.2. */
     if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_4_0_0) {
-        volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
-        if (hardware_type >= 1) {
-            return (hardware_type > 2) ? 3 : hardware_type - 1;
-        } else if ((fuse_chip->FUSE_SPARE_BIT[9] & 1) == 0) {
-            return 0;
-        } else {
-            return 3;
+        volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
+        uint32_t fuse_spare_bit9 = (fuse_chip->FUSE_SPARE_BIT[9] & 1);
+
+        switch (hardware_type) {
+            case 0x00: return (fuse_spare_bit9 == 0) ? 0 : 3;
+            case 0x01: return 0;        /* HardwareType_Icosa */
+            case 0x02: return 1;        /* HardwareType_Copper */
+            default:   return 3;        /* HardwareType_Undefined */
         }
-    } else if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {      /* Firmware versions from 4.0.0 to 6.2.0. */
-        static const uint32_t types[] = {0,1,4,3};
+    } else {
         hardware_type |= ((fuse_reserved_odm4 >> 14) & 0x3C);
-        hardware_type--;
-        return (hardware_type > 3) ? 4 : types[hardware_type];
-    } else {    /* Firmware versions from 7.0.0 onwards. */
-        /* Always return 0 in retail. */
-        return 0;
+
+        if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
+            switch (hardware_type) {
+                case 0x01: return 0;        /* HardwareType_Icosa */
+                case 0x02: return 1;        /* HardwareType_Copper */
+                case 0x04: return 3;        /* HardwareType_Iowa */
+                default:   return 4;        /* HardwareType_Undefined */
+            }
+        } else {
+            if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_10_0_0) {
+                switch (hardware_type) {
+                    case 0x01: return 0;        /* HardwareType_Icosa */
+                    case 0x02: return 4;        /* HardwareType_Calcio */
+                    case 0x04: return 3;        /* HardwareType_Iowa */
+                    case 0x08: return 2;        /* HardwareType_Hoag */
+                    default:   return 0xF;      /* HardwareType_Undefined */
+                }
+            } else {
+                switch (hardware_type) {
+                    case 0x01: return 0;        /* HardwareType_Icosa */
+                    case 0x02: return 4;        /* HardwareType_Calcio */
+                    case 0x04: return 3;        /* HardwareType_Iowa */
+                    case 0x08: return 2;        /* HardwareType_Hoag */
+                    case 0x10: return 5;        /* HardwareType_Five */
+                    default:   return 0xF;      /* HardwareType_Undefined */
+                }
+            }
+        }
     }
 }
 
-/* Derive the Retail Type using values in the shadow cache. */
-uint32_t fuse_get_retail_type(void) {
-    /* Retail Type = IS_RETAIL | UNIT_TYPE. */
+/* Derive the HardwareType. */
+uint32_t fuse_get_hardware_type(void) {
+    return fuse_get_hardware_type_with_firmware_check(ATMOSPHERE_TARGET_FIRMWARE_CURRENT);
+}
+
+/* Derive the HardwareState. */
+uint32_t fuse_get_hardware_state(void) {
     uint32_t fuse_reserved_odm4 = fuse_get_reserved_odm(4);
-    uint32_t retail_type = (((fuse_reserved_odm4 >> 7) & 4) | (fuse_reserved_odm4 & 3));
-    if (retail_type == 4) { /* Standard retail unit, IS_RETAIL | 0. */
-        return 1;
-    } else if (retail_type == 3) { /* Standard dev unit, 0 | DEV_UNIT. */
-        return 0;
+    uint32_t hardware_state = (((fuse_reserved_odm4 >> 7) & 4) | (fuse_reserved_odm4 & 3));
+
+    switch (hardware_state) {
+        case 0x03: return 0;        /* HardwareState_Development */
+        case 0x04: return 1;        /* HardwareState_Production */
+        default:   return 2;        /* HardwareState_Undefined */
     }
-    return 2; /* IS_RETAIL | DEV_UNIT */
 }
 
-/* Derive the 16-byte Hardware Info using values in the shadow cache, and copy to output buffer. */
+/* Derive the 16-byte HardwareInfo and copy to output buffer. */
 void fuse_get_hardware_info(void *dst) {
-    volatile tegra_fuse_chip_t *fuse_chip = fuse_chip_get_regs();
+    volatile tegra_fuse_chip_common_t *fuse_chip = fuse_chip_common_get_regs();
     uint32_t hw_info[0x4];
 
     uint32_t ops_reserved = fuse_chip->FUSE_OPT_OPS_RESERVED & 0x3F;
@@ -261,12 +306,82 @@ void fuse_get_hardware_info(void *dst) {
 
     memcpy(dst, hw_info, 0x10);
 }
+/* Get the SocType from the HardwareType. */
+uint32_t fuse_get_soc_type(void) {
+    switch (fuse_get_hardware_type()) {
+        case 0:
+        case 1:
+            return 0;           /* SocType_Erista */
+        case 3:
+        case 2:
+        case 4:
+        case 5:
+            return 1;           /* SocType_Mariko */
+        default:
+            return 0xF;         /* SocType_Undefined */
+    }
+}
 
-/* Get the Key Generation value. */
-uint32_t fuse_get_5x_key_generation(void) {
-    if ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2)) {
+/* Check if have a new ODM fuse format. */
+bool fuse_is_new_format(void) {
+    return ((fuse_get_reserved_odm(4) & 0x800) && (fuse_get_reserved_odm(0) == 0x8E61ECAE) && (fuse_get_reserved_odm(1) == 0xF2BA3BB2));
+}
+
+/* Get the DeviceUniqueKeyGeneration. */
+uint32_t fuse_get_device_unique_key_generation(void) {
+    if (fuse_get_soc_type() != 0 || fuse_is_new_format()) {
         return (fuse_get_reserved_odm(2) & 0x1F);
     } else {
         return 0;
     }
+}
+
+
+/* Get the Regulator type. */
+uint32_t fuse_get_regulator(void) {
+    if (fuse_get_soc_type() == 1) {
+        return ((fuse_get_reserved_odm(28) & 1) + 1);   /* Regulator_Mariko_Max77812_A or Regulator_Mariko_Max77812_B */
+    } else {
+        return 0;               /* Regulator_Erista_Max77621 */
+    }
+}
+
+
+static const uint32_t fuse_version_increment_firmwares[] = {
+    ATMOSPHERE_TARGET_FIRMWARE_11_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_10_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_9_1_0,
+    ATMOSPHERE_TARGET_FIRMWARE_9_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_8_1_0,
+    ATMOSPHERE_TARGET_FIRMWARE_7_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_6_2_0,
+    ATMOSPHERE_TARGET_FIRMWARE_6_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_5_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_4_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_3_0_2,
+    ATMOSPHERE_TARGET_FIRMWARE_3_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_2_0_0,
+    ATMOSPHERE_TARGET_FIRMWARE_1_0_0,
+};
+
+static const uint32_t num_fuse_increments = sizeof(fuse_version_increment_firmwares) / sizeof(fuse_version_increment_firmwares[0]);
+
+uint32_t fuse_get_expected_fuse_count(uint32_t target_firmware) {
+    for (uint32_t i = 0; i < num_fuse_increments; ++i) {
+        if (target_firmware >= fuse_version_increment_firmwares[i]) {
+            return num_fuse_increments - i;
+        }
+    }
+    return 0;
+}
+
+uint32_t fuse_get_burnt_fuse_count(void) {
+    const uint32_t val = fuse_get_reserved_odm(7);
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < sizeof(uint32_t) * CHAR_BIT; ++i) {
+        if (((val >> i) & 1) != 0) {
+            ++count;
+        }
+    }
+    return count;
 }

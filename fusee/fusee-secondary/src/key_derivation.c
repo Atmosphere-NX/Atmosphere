@@ -15,7 +15,7 @@
  */
 
 #include <stdio.h>
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 #include "key_derivation.h"
 #include "masterkey.h"
 #include "se.h"
@@ -59,6 +59,10 @@ static const uint8_t AL16 masterkey_4x_seed[0x10] = {
 static const uint8_t AL16 new_master_kek_seeds[MASTERKEY_REVISION_700_800 - MASTERKEY_REVISION_600_610][0x10] = {
     {0x37, 0x4B, 0x77, 0x29, 0x59, 0xB4, 0x04, 0x30, 0x81, 0xF6, 0xE5, 0x8C, 0x6D, 0x36, 0x17, 0x9A}, /* MasterKek seed 06. */
     {0x9A, 0x3E, 0xA9, 0xAB, 0xFD, 0x56, 0x46, 0x1C, 0x9B, 0xF6, 0x48, 0x7F, 0x5C, 0xFA, 0x09, 0x5C}, /* MasterKek seed 07. */
+};
+
+static const uint8_t AL16 master_kek_seed_mariko[0x10] = { /* TODO: Update on next change of keys. */
+    0x0E, 0x44, 0x0C, 0xED, 0xB4, 0x36, 0xC0, 0x3F, 0xAA, 0x1D, 0xAE, 0xBF, 0x62, 0xB1, 0x09, 0x82, /* Mariko MasterKek seed 0A. */
 };
 
 static nx_dec_keyblob_t AL16 g_dec_keyblobs[32];
@@ -121,7 +125,7 @@ int load_package1_key(uint32_t revision) {
 }
 
 /* Derive all Switch keys. */
-int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
+int derive_nx_keydata_erista(uint32_t target_firmware, const nx_keyblob_t *keyblobs, uint32_t available_revision, const void *tsec_key, void *tsec_root_keys, unsigned int *out_keygen_type) {
     uint8_t AL16 work_buffer[0x10];
     uint8_t AL16 zeroes[0x10] = {0};
 
@@ -169,7 +173,7 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
 
         if (memcmp(g_dec_keyblobs[desired_keyblob].master_kek, zeroes, 0x10) == 0) {
             /* Try reading the keys from a file. */
-            const char *keyfile = fuse_get_retail_type() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
+            const char *keyfile = fuse_get_hardware_state() != 0 ? "atmosphere/prod.keys" : "atmosphere/dev.keys";
             FILE *extkey_file = fopen(keyfile, "r");
             AL16 fusee_extkeys_t extkeys = {0};
             if (extkey_file == NULL) {
@@ -187,7 +191,6 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
                 }
             }
         }
-
 
         if (memcmp(g_dec_keyblobs[available_revision].master_kek, zeroes, 0x10) == 0) {
             fatal_error("Error: failed to derive master_kek_%02x!", available_revision);
@@ -212,13 +215,24 @@ int derive_nx_keydata(uint32_t target_firmware, const nx_keyblob_t *keyblobs, ui
     decrypt_data_into_keyslot(0xD, 0xD, masterkey_seed,    0x10);
 
     /* Setup master key revision, derive older master keys for use. */
-    return mkey_detect_revision(fuse_get_retail_type() != 0);
+    return mkey_detect_revision(fuse_get_hardware_state() != 0);
+}
+
+int derive_nx_keydata_mariko(uint32_t target_firmware) {
+    /* Derive the device and master keys. */
+    /* NOTE: Keyslots 7 and 10 are chosen here so we don't overwrite critical key material (KEK, BEK, SBK and SSK). */
+    decrypt_data_into_keyslot(0xA, 0xE, devicekey_4x_seed, 0x10);
+    decrypt_data_into_keyslot(0x7, 0xC, master_kek_seed_mariko, 0x10);
+    decrypt_data_into_keyslot(0x7, 0x7, masterkey_seed, 0x10);
+
+    /* Setup master key revision, derive older master keys for use. */
+    return mkey_detect_revision(fuse_get_hardware_state() != 0);
 }
 
 static void generate_specific_aes_key(void *dst, const void *wrapped_key, bool should_mask, uint32_t target_firmware, uint32_t generation) {
     unsigned int keyslot = devkey_get_keyslot(generation);
 
-    if (fuse_get_bootrom_patch_version() < 0x7F) {
+    if (fuse_get_soc_type() == 0 && fuse_get_bootrom_patch_version() < 0x7F) {
         /* On dev units, use a fixed "all-zeroes" seed. */
         /* Yes, this data really is all-zero in actual TrustZone .rodata. */
         static const uint8_t AL16 dev_specific_aes_key_source[0x10] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
@@ -273,7 +287,7 @@ void derive_bis_key(void *dst, BisPartition partition_id, uint32_t target_firmwa
         }
     };
 
-    uint32_t bis_key_generation = fuse_get_5x_key_generation();
+    uint32_t bis_key_generation = fuse_get_device_unique_key_generation();
     if (bis_key_generation > 0) {
         bis_key_generation -= 1;
     }

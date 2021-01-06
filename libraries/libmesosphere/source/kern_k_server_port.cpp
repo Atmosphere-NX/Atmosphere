@@ -77,7 +77,7 @@ namespace ams::kern {
 
     void KServerPort::Destroy() {
         /* Note with our parent that we're closed. */
-        m_parent->OnClientClosed();
+        m_parent->OnServerClosed();
 
         /* Perform necessary cleanup of our session lists. */
         this->CleanupSessions();

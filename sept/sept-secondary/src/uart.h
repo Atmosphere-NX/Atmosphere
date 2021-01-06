@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_UART_H
 #define FUSEE_UART_H
 
@@ -79,7 +79,7 @@ typedef enum {
     0 = Transmit 1 stop bit
     1 = Transmit 2 stop bits (receiver always checks for 1 stop bit)
     */
-    UART_LCR_STOP        = 1 << 2, 
+    UART_LCR_STOP        = 1 << 2,
     UART_LCR_PAR         = 1 << 3, /* Parity enabled */
     UART_LCR_EVEN        = 1 << 4, /* Even parity format. There will always be an even number of 1s in the binary representation (PAR = 1) */
     UART_LCR_SET_P       = 1 << 5, /* Set (force) parity to value in LCR[4] */
@@ -115,7 +115,7 @@ typedef enum {
     0 = FIFO_COUNT_GREATER_1
     1 = FIFO_COUNT_GREATER_4
     2 = FIFO_COUNT_GREATER_8
-    3 = FIFO_COUNT_GREATER_16 
+    3 = FIFO_COUNT_GREATER_16
     */
     UART_FCR_RX_TRIG                       = 3 << 6,
     UART_FCR_RX_TRIG_FIFO_COUNT_GREATER_1  = 0 << 6,
@@ -162,6 +162,11 @@ void uart_init(UartDevice dev, uint32_t baud);
 void uart_wait_idle(UartDevice dev, UartVendorStatus status);
 void uart_send(UartDevice dev, const void *buf, size_t len);
 void uart_recv(UartDevice dev, void *buf, size_t len);
+
+static inline void uart_send_text(UartDevice dev, const char *str) {
+    uart_send(dev, str, strlen(str));
+    uart_wait_idle(dev, UART_VENDOR_STATE_TX_IDLE);
+}
 
 static inline volatile tegra_uart_t *uart_get_regs(UartDevice dev) {
     static const size_t offsets[] = {0, 0x40, 0x200, 0x300, 0x400};

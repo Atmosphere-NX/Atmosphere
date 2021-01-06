@@ -100,6 +100,13 @@ namespace ams::kern {
             /* Insert blocks into the tree. */
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), intended_memory_size,  KMemoryRegionType_Dram));
             MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(physical_memory_base_address), ReservedEarlyDramSize, KMemoryRegionType_DramReservedEarly));
+
+            /* Insert the KTrace block at the end of Dram, if KTrace is enabled. */
+            static_assert(!IsKTraceEnabled || KTraceBufferSize > 0);
+            if constexpr (IsKTraceEnabled) {
+                const KPhysicalAddress ktrace_buffer_phys_addr = physical_memory_base_address + intended_memory_size - KTraceBufferSize;
+                MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
+            }
         }
 
         void SetupPoolPartitionMemoryRegions() {

@@ -45,7 +45,6 @@ namespace ams::sf::hipc {
         NON_COPYABLE(ServerSession);
         NON_MOVEABLE(ServerSession);
         private:
-            util::IntrusiveListNode deferred_list_node;
             cmif::ServiceObjectHolder srv_obj_holder;
             cmif::PointerAndSize pointer_buffer;
             cmif::PointerAndSize saved_message;

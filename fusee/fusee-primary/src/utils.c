@@ -13,128 +13,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+#include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
-#include <stdarg.h>
 #include "utils.h"
-#include "di.h"
-#include "se.h"
-#include "fuse.h"
-#include "pmc.h"
-#include "timers.h"
-#include "panic.h"
-#include "car.h"
-#include "btn.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "display/video_fb.h"
 
-#include <inttypes.h>
-
-#define u8 uint8_t
-#define u32 uint32_t
-#include "rebootstub_bin.h"
-#undef u8
-#undef u32
-
-void wait(uint32_t microseconds) {
-    uint32_t old_time = TIMERUS_CNTR_1US_0;
-    while (TIMERUS_CNTR_1US_0 - old_time <= microseconds) {
-        /* Spin-lock. */
+static void copy_forwards(uint8_t *dst, const uint8_t *src, size_t size) {
+    for (int i = 0; i < size; ++i) {
+        dst[i] = src[i];
     }
 }
 
-__attribute__((noreturn)) void watchdog_reboot(void) {
-    volatile watchdog_timers_t *wdt = GET_WDT(4);
-    wdt->PATTERN = WDT_REBOOT_PATTERN;
-    wdt->COMMAND = 2; /* Disable Counter. */
-    GET_WDT_REBOOT_CFG_REG(4) = 0xC0000000;
-    wdt->CONFIG = 0x8019; /* Full System Reset after Fourth Counter expires, using TIMER(9). */
-    wdt->COMMAND = 1; /* Enable Counter. */
-    while (true) {
-        /* Wait for reboot. */
+static void copy_backwards(uint8_t *dst, const uint8_t *src, size_t size) {
+    for (int i = size - 1; i >= 0; --i) {
+        dst[i] = src[i];
     }
 }
 
-__attribute__((noreturn)) void pmc_reboot(uint32_t scratch0) {
-    APBDEV_PMC_SCRATCH0_0 = scratch0;
+void loader_memcpy(void *dst, const void *src, size_t size) {
+    copy_forwards(dst, src, size);
+}
 
-    /* Reset the processor. */
-    APBDEV_PMC_CONTROL = BIT(4);
+void loader_memmove(void *dst, const void *src, size_t size) {
+    const uintptr_t dst_u = (uintptr_t)dst;
+    const uintptr_t src_u = (uintptr_t)src;
 
-    while (true) {
-        /* Wait for reboot. */
+    if (dst_u < src_u) {
+        copy_forwards(dst, src, size);
+    } else if (dst_u > src_u) {
+        copy_backwards(dst, src, size);
+    } else {
+        /* Nothing to do */
     }
-}
-
-__attribute__((noreturn)) void reboot_to_self(void) {
-    /* Patch SDRAM init to perform an SVC immediately after second write */
-    APBDEV_PMC_SCRATCH45_0 = 0x2E38DFFF;
-    APBDEV_PMC_SCRATCH46_0 = 0x6001DC28;
-    /* Set SVC handler to jump to reboot stub in IRAM. */
-    APBDEV_PMC_SCRATCH33_0 = 0x4003F000;
-    APBDEV_PMC_SCRATCH40_0 = 0x6000F208;
-    
-    /* Copy reboot stub into IRAM high. */
-    for (size_t i = 0; i < rebootstub_bin_size; i += sizeof(uint32_t)) {
-        write32le((void *)0x4003F000, i, read32le(rebootstub_bin, i));
-    }
-    
-    /* Trigger warm reboot. */
-    pmc_reboot(1 << 0);
-}
-
-__attribute__((noreturn)) void wait_for_button_and_reboot(void) {
-    uint32_t button;
-    while (true) {
-        button = btn_read();
-        if (button & BTN_POWER) {
-            reboot_to_self();
-        }
-    }
-}
-
-__attribute__ ((noreturn)) void generic_panic(void) {
-    panic(0xFF000006);
-}
-
-__attribute__((noreturn)) void fatal_error(const char *fmt, ...) {
-    /* Forcefully initialize the screen if logging is disabled. */
-    if (log_get_log_level() == SCREEN_LOG_LEVEL_NONE) {
-        /* Zero-fill the framebuffer and register it as printk provider. */
-        video_init((void *)0xC0000000);
-
-        /* Initialize the display. */
-        display_init();
-
-        /* Set the framebuffer. */
-        display_init_framebuffer((void *)0xC0000000);
-
-        /* Turn on the backlight after initializing the lfb */
-        /* to avoid flickering. */
-        display_backlight(true);
-    }
-    
-    /* Override the global logging level. */
-    log_set_log_level(SCREEN_LOG_LEVEL_ERROR);
-    
-    /* Display fatal error. */
-    va_list args;
-    print(SCREEN_LOG_LEVEL_ERROR, "Fatal error: ");
-    va_start(args, fmt);
-    vprint(SCREEN_LOG_LEVEL_ERROR, fmt, args);
-    va_end(args);
-    print(SCREEN_LOG_LEVEL_ERROR | SCREEN_LOG_LEVEL_NO_PREFIX,"\nPress POWER to reboot\n");
-    
-    /* Wait for button and reboot. */
-    wait_for_button_and_reboot();
-}
-
-__attribute__((noinline)) bool overlaps(uint64_t as, uint64_t ae, uint64_t bs, uint64_t be)
-{
-    if(as <= bs && bs <= ae)
-        return true;
-    if(bs <= as && as <= be)
-        return true;
-    return false;
 }

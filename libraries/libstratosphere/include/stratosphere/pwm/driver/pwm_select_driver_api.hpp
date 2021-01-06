@@ -20,11 +20,11 @@
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include <stratosphere/pwm/driver/board/nintendo_nx/pwm_driver_api.hpp>
+    #include <stratosphere/pwm/driver/board/nintendo/nx/pwm_driver_api.hpp>
 
     namespace ams::pwm::driver::board {
 
-        using namespace ams::pwm::driver::board::nintendo_nx;
+        using namespace ams::pwm::driver::board::nintendo::nx;
 
     }
 

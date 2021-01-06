@@ -13,7 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_PACKAGE1_H
 #define FUSEE_PACKAGE1_H
 
@@ -44,7 +44,23 @@ typedef struct {
     uint8_t data[];
 } package1_header_t;
 
-int package1_read_and_parse_boot0(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0);
+typedef struct {
+    uint8_t aes_mac[0x10];
+    uint8_t rsa_sig[0x100];
+    uint8_t salt[0x20];
+    uint8_t hash[0x20];
+    uint32_t bl_version;
+    uint32_t bl_size;
+    uint32_t bl_load_addr;
+    uint32_t bl_entrypoint;
+    uint8_t _0x160[0x10];
+    uint8_t data[];
+} pk11_mariko_oem_header_t;
+
+bool package1_is_custom_public_key(const void *bct, bool mariko);
+
+int package1_read_and_parse_boot0_erista(void **package1loader, size_t *package1loader_size, nx_keyblob_t *keyblobs, uint32_t *revision, FILE *boot0);
+int package1_read_and_parse_boot0_mariko(void **package1loader, size_t *package1loader_size, FILE *boot0);
 
 bool package1_get_tsec_fw(void **tsec_fw, const void *package1loader, size_t package1loader_size);
 size_t package1_get_encrypted_package1(package1_header_t **package1, uint8_t *ctr, const void *package1loader, size_t package1loader_size);
