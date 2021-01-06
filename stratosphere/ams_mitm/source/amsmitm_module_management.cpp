@@ -24,7 +24,6 @@
 #include "ns_mitm/nsmitm_module.hpp"
 #include "hid_mitm/hidmitm_module.hpp"
 #include "sysupdater/sysupdater_module.hpp"
-// #include "fsp_usb/fspusb_module.hpp" 
 
 namespace ams::mitm {
 
@@ -38,7 +37,6 @@ namespace ams::mitm {
             ModuleId_NsMitm,
             ModuleId_HidMitm,
             ModuleId_Sysupdater,
-            // ModuleId_FspUsb,
             ModuleId_Count,
         };
 
@@ -71,7 +69,6 @@ namespace ams::mitm {
             GetModuleDefinition<ns::MitmModule>(),
             GetModuleDefinition<hid::MitmModule>(),
             GetModuleDefinition<sysupdater::MitmModule>(),
-            // GetModuleDefinition<fspusb::MitmModule>(),
         };
 
     }
