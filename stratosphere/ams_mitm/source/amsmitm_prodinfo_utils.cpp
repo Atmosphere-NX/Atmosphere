@@ -222,8 +222,6 @@ namespace ams::mitm {
             Blank(info.GetBlock<EcqvEcdsaAmiiboRootCertificateBlock>());
             Blank(info.GetBlock<EcqvBlsAmiiboRootCertificateBlock>());
             Blank(info.GetBlock<ExtendedSslKeyBlock>());
-            if (IsValid(info.GetBlock<Rsa2048DeviceKeyBlock>()) && !IsBlank(info.GetBlock<Rsa2048DeviceKeyBlock>())) Blank(info.GetBlock<Rsa2048DeviceKeyBlock>());
-            if (IsValid(info.GetBlock<Rsa2048DeviceCertificateBlock>()) && !IsBlank(info.GetBlock<Rsa2048DeviceCertificateBlock>())) Blank(info.GetBlock<Rsa2048DeviceCertificateBlock>());
 
             /* Set header hash. */
             crypto::GenerateSha256Hash(std::addressof(info.header.body_hash), sizeof(info.header.body_hash), std::addressof(info.body), sizeof(info.body));
