@@ -24,7 +24,7 @@ namespace ams::kern::svc {
         Result SetHeapSize(uintptr_t *out_address, size_t size) {
             /* Validate size. */
             R_UNLESS(util::IsAligned(size, ams::svc::HeapSizeAlignment), svc::ResultInvalidSize());
-            R_UNLESS(size < ams::kern::MainMemorySize,                   svc::ResultInvalidSize());
+            R_UNLESS(size < ams::kern::MainMemorySizeMax,                svc::ResultInvalidSize());
 
             /* Set the heap size. */
             KProcessAddress address;
