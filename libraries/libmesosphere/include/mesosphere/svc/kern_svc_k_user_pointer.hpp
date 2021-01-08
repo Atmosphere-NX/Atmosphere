@@ -54,12 +54,12 @@ namespace ams::kern::svc {
             public:
                 using T = typename std::remove_const<typename std::remove_pointer<_T>::type>::type;
             public:
-                static Result CopyFromUserspace(void *dst, const void *src, size_t size) {
+                static ALWAYS_INLINE Result CopyFromUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUser(dst, src, size), svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
 
-                static Result CopyToUserspace(void *dst, const void *src, size_t size) {
+                static ALWAYS_INLINE Result CopyToUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUser(dst, src, size),   svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
@@ -70,12 +70,12 @@ namespace ams::kern::svc {
             public:
                 using T = typename std::remove_const<typename std::remove_pointer<_T>::type>::type;
             public:
-                static Result CopyFromUserspace(void *dst, const void *src, size_t size) {
+                static ALWAYS_INLINE Result CopyFromUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned32Bit(dst, src, size), svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
 
-                static Result CopyToUserspace(void *dst, const void *src, size_t size) {
+                static ALWAYS_INLINE Result CopyToUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned32Bit(dst, src, size),   svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
@@ -86,12 +86,12 @@ namespace ams::kern::svc {
             public:
                 using T = typename std::remove_const<typename std::remove_pointer<_T>::type>::type;
             public:
-                static Result CopyFromUserspace(void *dst, const void *src, size_t size) {
+                static ALWAYS_INLINE Result CopyFromUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryFromUserAligned64Bit(dst, src, size), svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
 
-                static Result CopyToUserspace(void *dst, const void *src, size_t size) {
+                static ALWAYS_INLINE Result CopyToUserspace(void *dst, const void *src, size_t size) {
                     R_UNLESS(UserspaceAccess::CopyMemoryToUserAligned64Bit(dst, src, size),   svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
@@ -110,26 +110,26 @@ namespace ams::kern::svc {
             private:
                 CT *m_ptr;
             private:
-                Result CopyToImpl(void *p, size_t size) const {
+                ALWAYS_INLINE Result CopyToImpl(void *p, size_t size) const {
                     return Traits::CopyFromUserspace(p, m_ptr, size);
                 }
 
-                Result CopyFromImpl(const void *p, size_t size) const {
+                ALWAYS_INLINE Result CopyFromImpl(const void *p, size_t size) const {
                     return Traits::CopyToUserspace(m_ptr, p, size);
                 }
             protected:
-                Result CopyTo(T *p)         const { return this->CopyToImpl(p, sizeof(*p)); }
-                Result CopyFrom(const T *p) const { return this->CopyFromImpl(p, sizeof(*p)); }
+                ALWAYS_INLINE Result CopyTo(T *p)         const { return this->CopyToImpl(p, sizeof(*p)); }
+                ALWAYS_INLINE Result CopyFrom(const T *p) const { return this->CopyFromImpl(p, sizeof(*p)); }
 
-                Result CopyArrayElementTo(T *p, size_t index)         const { return Traits::CopyFromUserspace(p, m_ptr + index, sizeof(*p)); }
-                Result CopyArrayElementFrom(const T *p, size_t index) const { return Traits::CopyToUserspace(m_ptr + index, p, sizeof(*p)); }
+                ALWAYS_INLINE Result CopyArrayElementTo(T *p, size_t index)         const { return Traits::CopyFromUserspace(p, m_ptr + index, sizeof(*p)); }
+                ALWAYS_INLINE Result CopyArrayElementFrom(const T *p, size_t index) const { return Traits::CopyToUserspace(m_ptr + index, p, sizeof(*p)); }
 
-                Result CopyArrayTo(T *arr, size_t count)         const { return this->CopyToImpl(arr, sizeof(*arr) * count); }
-                Result CopyArrayFrom(const T *arr, size_t count) const { return this->CopyFromImpl(arr, sizeof(*arr) * count); }
+                ALWAYS_INLINE Result CopyArrayTo(T *arr, size_t count)         const { return this->CopyToImpl(arr, sizeof(*arr) * count); }
+                ALWAYS_INLINE Result CopyArrayFrom(const T *arr, size_t count) const { return this->CopyFromImpl(arr, sizeof(*arr) * count); }
 
-                constexpr bool IsNull() const { return m_ptr == nullptr; }
+                constexpr ALWAYS_INLINE bool IsNull() const { return m_ptr == nullptr; }
 
-                constexpr CT *GetUnsafePointer() const { return m_ptr; }
+                constexpr ALWAYS_INLINE CT *GetUnsafePointer() const { return m_ptr; }
         };
 
         template<>
@@ -142,19 +142,19 @@ namespace ams::kern::svc {
             private:
                 const char *ptr;
             protected:
-                Result CopyStringTo(char *dst, size_t size) const {
+                ALWAYS_INLINE Result CopyStringTo(char *dst, size_t size) const {
                     static_assert(sizeof(char) == 1);
                     R_UNLESS(UserspaceAccess::CopyStringFromUser(dst, this->ptr, size) > 0, svc::ResultInvalidPointer());
                     return ResultSuccess();
                 }
 
-                Result CopyArrayElementTo(char *dst, size_t index) const {
+                ALWAYS_INLINE Result CopyArrayElementTo(char *dst, size_t index) const {
                     return Traits::CopyFromUserspace(dst, this->ptr + index, sizeof(*dst));
                 }
 
-                constexpr bool IsNull() const { return this->ptr == nullptr; }
+                constexpr ALWAYS_INLINE bool IsNull() const { return this->ptr == nullptr; }
 
-                constexpr const char *GetUnsafePointer() const { return this->ptr; }
+                constexpr ALWAYS_INLINE const char *GetUnsafePointer() const { return this->ptr; }
         };
 
     }

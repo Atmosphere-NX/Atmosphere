@@ -375,8 +375,8 @@ namespace ams::svc::ipc {
             u32 *buffer;
             size_t size;
         public:
-            constexpr MessageBuffer(u32 *b, size_t sz) : buffer(b), size(sz) { /* ... */ }
-            constexpr explicit MessageBuffer(u32 *b) : buffer(b), size(sizeof(::ams::svc::ThreadLocalRegion::message_buffer)) { /* ... */ }
+            constexpr ALWAYS_INLINE MessageBuffer(u32 *b, size_t sz) : buffer(b), size(sz) { /* ... */ }
+            constexpr explicit ALWAYS_INLINE MessageBuffer(u32 *b) : buffer(b), size(sizeof(::ams::svc::ThreadLocalRegion::message_buffer)) { /* ... */ }
 
             constexpr ALWAYS_INLINE size_t GetBufferSize() const {
                 return this->size;

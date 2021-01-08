@@ -37,7 +37,7 @@ namespace ams::kern {
                 uintptr_t m_msg_buffer_end;
                 uintptr_t m_msg_buffer_space_end;
             public:
-                static constexpr int GetEntryCount(const ipc::MessageBuffer::MessageHeader &header) {
+                static constexpr ALWAYS_INLINE int GetEntryCount(const ipc::MessageBuffer::MessageHeader &header) {
                     const auto count = header.GetReceiveListCount();
                     switch (count) {
                         case ipc::MessageBuffer::MessageHeader::ReceiveListCountType_None:
@@ -82,7 +82,7 @@ namespace ams::kern {
                     }
                 }
 
-                constexpr bool IsIndex() const {
+                constexpr ALWAYS_INLINE bool IsIndex() const {
                     return m_recv_list_count > ipc::MessageBuffer::MessageHeader::ReceiveListCountType_CountOffset;
                 }
 

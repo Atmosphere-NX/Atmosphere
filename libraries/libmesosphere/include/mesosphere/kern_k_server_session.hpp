@@ -53,7 +53,7 @@ namespace ams::kern {
 
             void Dump();
         private:
-            bool IsSignaledImpl() const;
+            ALWAYS_INLINE bool IsSignaledImpl() const;
             void CleanupRequests();
     };
 
