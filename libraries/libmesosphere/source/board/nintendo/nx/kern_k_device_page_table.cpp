@@ -1163,6 +1163,7 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     void KDevicePageTable::UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force) {
+        MESOSPHERE_UNUSED(force);
         MESOSPHERE_ASSERT((address & ~DeviceVirtualAddressMask) == 0);
         MESOSPHERE_ASSERT(((address + size - 1) & ~DeviceVirtualAddressMask) == 0);
 

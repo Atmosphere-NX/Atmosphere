@@ -63,6 +63,7 @@ namespace ams::kern {
         m_tls_address = Null<KProcessAddress>;
 
         const uintptr_t kern_stack_top_address = reinterpret_cast<uintptr_t>(kern_stack_top);
+        MESOSPHERE_UNUSED(kern_stack_top_address);
 
         /* Next, assert things based on the type. */
         switch (type) {
@@ -1161,7 +1162,7 @@ namespace ams::kern {
         /* Determine if this is the first termination request. */
         const bool first_request = [&] ALWAYS_INLINE_LAMBDA () -> bool {
             /* Perform an atomic compare-and-swap from false to true. */
-            bool expected = false;
+            u8 expected = false;
             return m_termination_requested.compare_exchange_strong(expected, true);
         }();
 

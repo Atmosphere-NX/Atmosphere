@@ -85,7 +85,7 @@ namespace ams::kern {
             virtual KProcess *GetOwner() const { return nullptr; }
 
             u32 GetReferenceCount() const {
-                return m_ref_count;
+                return m_ref_count.load();
             }
 
             ALWAYS_INLINE bool IsDerivedFrom(const TypeObj &rhs) const {

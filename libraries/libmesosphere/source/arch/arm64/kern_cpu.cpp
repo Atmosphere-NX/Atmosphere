@@ -109,7 +109,7 @@ namespace ams::kern::arch::arm64::cpu {
                         /* Wait for a request to come in. */
                         {
                             KScopedLightLock lk(m_cv_lock);
-                            while ((m_target_cores & (1ul << core_id)) == 0) {
+                            while ((m_target_cores.load() & (1ul << core_id)) == 0) {
                                 m_cv.Wait(std::addressof(m_cv_lock));
                             }
                         }
@@ -120,7 +120,7 @@ namespace ams::kern::arch::arm64::cpu {
                         /* Broadcast, if there's nothing pending. */
                         {
                             KScopedLightLock lk(m_cv_lock);
-                            if (m_target_cores == 0) {
+                            if (m_target_cores.load() == 0) {
                                 m_cv.Broadcast();
                             }
                         }
@@ -163,7 +163,7 @@ namespace ams::kern::arch::arm64::cpu {
                     if ((op == Operation::InstructionMemoryBarrier) || (Kernel::GetState() == Kernel::State::Initializing)) {
                         /* Check that there's no on-going operation. */
                         MESOSPHERE_ABORT_UNLESS(m_operation == Operation::Idle);
-                        MESOSPHERE_ABORT_UNLESS(m_target_cores == 0);
+                        MESOSPHERE_ABORT_UNLESS(m_target_cores.load() == 0);
 
                         /* Set operation. */
                         m_operation = op;
@@ -171,12 +171,13 @@ namespace ams::kern::arch::arm64::cpu {
                         /* For certain operations, we want to send an interrupt. */
                         m_target_cores = other_cores_mask;
 
-                        const u64 target_mask = m_target_cores;
+                        const u64 target_mask = m_target_cores.load();
+
                         DataSynchronizationBarrier();
                         Kernel::GetInterruptManager().SendInterProcessorInterrupt(KInterruptName_CacheOperation, target_mask);
 
                         this->ProcessOperation();
-                        while (m_target_cores != 0) {
+                        while (m_target_cores.load() != 0) {
                             cpu::Yield();
                         }
 
@@ -188,7 +189,7 @@ namespace ams::kern::arch::arm64::cpu {
 
                         /* Check that there's no on-going operation. */
                         MESOSPHERE_ABORT_UNLESS(m_operation == Operation::Idle);
-                        MESOSPHERE_ABORT_UNLESS(m_target_cores == 0);
+                        MESOSPHERE_ABORT_UNLESS(m_target_cores.load() == 0);
 
                         /* Set operation. */
                         m_operation = op;
@@ -198,7 +199,7 @@ namespace ams::kern::arch::arm64::cpu {
 
                         /* Use the condvar. */
                         m_cv.Broadcast();
-                        while (m_target_cores != 0) {
+                        while (m_target_cores.load() != 0) {
                             m_cv.Wait(std::addressof(m_cv_lock));
                         }
 

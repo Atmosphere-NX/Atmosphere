@@ -208,6 +208,8 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KInterruptManager::BindHandler(KInterruptHandler *handler, s32 irq, s32 core_id, s32 priority, bool manual_clear, bool level) {
+        MESOSPHERE_UNUSED(core_id);
+
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 
         KScopedInterruptDisable di;
@@ -222,6 +224,8 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KInterruptManager::UnbindHandler(s32 irq, s32 core_id) {
+        MESOSPHERE_UNUSED(core_id);
+
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 
         KScopedInterruptDisable di;
@@ -244,6 +248,8 @@ namespace ams::kern::arch::arm64 {
     }
 
     Result KInterruptManager::ClearInterrupt(s32 irq, s32 core_id) {
+        MESOSPHERE_UNUSED(core_id);
+
         R_UNLESS(KInterruptController::IsGlobal(irq) || KInterruptController::IsLocal(irq), svc::ResultOutOfRange());
 
         KScopedInterruptDisable di;

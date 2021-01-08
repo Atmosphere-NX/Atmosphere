@@ -203,54 +203,54 @@ namespace ams::kern {
             virtual Result Operate(PageLinkedList *page_list, KProcessAddress virt_addr, size_t num_pages, const KPageGroup &page_group, const KPageProperties properties, OperationType operation, bool reuse_ll) = 0;
             virtual void   FinalizeUpdate(PageLinkedList *page_list) = 0;
 
-            KPageTableImpl &GetImpl() { return m_impl; }
-            const KPageTableImpl &GetImpl() const { return m_impl; }
+            ALWAYS_INLINE KPageTableImpl &GetImpl() { return m_impl; }
+            ALWAYS_INLINE const KPageTableImpl &GetImpl() const { return m_impl; }
 
-            bool IsLockedByCurrentThread() const { return m_general_lock.IsLockedByCurrentThread(); }
+            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return m_general_lock.IsLockedByCurrentThread(); }
 
-            bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr) {
+            ALWAYS_INLINE bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsLinearMappedPhysicalAddress(m_cached_physical_linear_region, phys_addr);
             }
 
-            bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
+            ALWAYS_INLINE bool IsLinearMappedPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsLinearMappedPhysicalAddress(m_cached_physical_linear_region, phys_addr, size);
             }
 
-            bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
+            ALWAYS_INLINE bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsHeapPhysicalAddress(m_cached_physical_heap_region, phys_addr);
             }
 
-            bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
+            ALWAYS_INLINE bool IsHeapPhysicalAddress(KPhysicalAddress phys_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsHeapPhysicalAddress(m_cached_physical_heap_region, phys_addr, size);
             }
 
-            bool IsHeapPhysicalAddressForFinalize(KPhysicalAddress phys_addr) {
+            ALWAYS_INLINE bool IsHeapPhysicalAddressForFinalize(KPhysicalAddress phys_addr) {
                 MESOSPHERE_ASSERT(!this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsHeapPhysicalAddress(m_cached_physical_heap_region, phys_addr);
             }
 
-            bool IsHeapVirtualAddress(KVirtualAddress virt_addr) {
+            ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress virt_addr) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsHeapVirtualAddress(m_cached_virtual_heap_region, virt_addr);
             }
 
-            bool IsHeapVirtualAddress(KVirtualAddress virt_addr, size_t size) {
+            ALWAYS_INLINE bool IsHeapVirtualAddress(KVirtualAddress virt_addr, size_t size) {
                 MESOSPHERE_ASSERT(this->IsLockedByCurrentThread());
 
                 return KMemoryLayout::IsHeapVirtualAddress(m_cached_virtual_heap_region, virt_addr, size);
             }
 
-            bool ContainsPages(KProcessAddress addr, size_t num_pages) const {
+            ALWAYS_INLINE bool ContainsPages(KProcessAddress addr, size_t num_pages) const {
                 return (m_address_space_start <= addr) && (num_pages <= (m_address_space_end - m_address_space_start) / PageSize) && (addr + num_pages * PageSize - 1 <= m_address_space_end - 1);
             }
         private:

@@ -49,9 +49,9 @@ namespace ams::kern {
 
             constexpr KVirtualAddress GetAddress() const { return m_address; }
             constexpr size_t GetSize() const { return m_size; }
-            constexpr size_t GetUsed() const { return m_used; }
-            constexpr size_t GetPeak() const { return m_peak; }
-            constexpr size_t GetCount() const { return m_count; }
+            constexpr size_t GetUsed() const { return m_used.load(); }
+            constexpr size_t GetPeak() const { return m_peak.load(); }
+            constexpr size_t GetCount() const { return m_count.load(); }
 
             constexpr bool IsInRange(KVirtualAddress addr) const {
                 return this->GetAddress() <= addr && addr <= this->GetAddress() + this->GetSize() - 1;
@@ -65,7 +65,7 @@ namespace ams::kern {
 
                 /* Free blocks to memory. */
                 u8 *cur = GetPointer<u8>(m_address + m_size);
-                for (size_t i = 0; i < m_count; i++) {
+                for (size_t i = 0; i < sz / sizeof(T); i++) {
                     cur -= sizeof(T);
                     this->GetImpl()->Free(cur);
                 }
@@ -84,13 +84,13 @@ namespace ams::kern {
                 this->Initialize(page_allocator);
 
                 /* Allocate until we have the correct number of objects. */
-                while (m_count < num_objects) {
+                while (m_count.load() < num_objects) {
                     auto *allocated = reinterpret_cast<T *>(m_page_allocator->Allocate());
                     MESOSPHERE_ABORT_UNLESS(allocated != nullptr);
                     for (size_t i = 0; i < sizeof(PageBuffer) / sizeof(T); i++) {
                         this->GetImpl()->Free(allocated + i);
                     }
-                    m_count += sizeof(PageBuffer) / sizeof(T);
+                    m_count.fetch_add(sizeof(PageBuffer) / sizeof(T));
                 }
             }
 
@@ -106,7 +106,7 @@ namespace ams::kern {
                             for (size_t i = 1; i < sizeof(PageBuffer) / sizeof(T); i++) {
                                 this->GetImpl()->Free(allocated + i);
                             }
-                            m_count += sizeof(PageBuffer) / sizeof(T);
+                            m_count.fetch_add(sizeof(PageBuffer) / sizeof(T));
                         }
                     }
                 }
@@ -116,8 +116,8 @@ namespace ams::kern {
                     new (allocated) T();
 
                     /* Update our tracking. */
-                    size_t used = ++m_used;
-                    size_t peak = m_peak;
+                    size_t used = m_used.fetch_add(1) + 1;
+                    size_t peak = m_peak.load();
                     while (peak < used) {
                         if (m_peak.compare_exchange_weak(peak, used, std::memory_order_relaxed)) {
                             break;
@@ -130,7 +130,7 @@ namespace ams::kern {
 
             void Free(T *t) {
                 this->GetImpl()->Free(t);
-                --m_used;
+                m_used.fetch_sub(1);
             }
     };
 

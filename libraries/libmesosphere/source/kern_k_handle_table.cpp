@@ -121,6 +121,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(reserved == 0);
         MESOSPHERE_ASSERT(linear_id != 0);
         MESOSPHERE_ASSERT(index < m_table_size);
+        MESOSPHERE_UNUSED(linear_id, reserved);
 
         /* Free the entry. */
         /* NOTE: This code does not check the linear id. */
@@ -143,6 +144,7 @@ namespace ams::kern {
         MESOSPHERE_ASSERT(reserved == 0);
         MESOSPHERE_ASSERT(linear_id != 0);
         MESOSPHERE_ASSERT(index < m_table_size);
+        MESOSPHERE_UNUSED(reserved);
 
         /* Set the entry. */
         Entry *entry = std::addressof(m_table[index]);

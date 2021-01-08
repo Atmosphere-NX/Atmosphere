@@ -38,7 +38,7 @@ namespace ams::kern {
             static_assert(ams::svc::HighestThreadPriority <= HighestCoreMigrationAllowedPriority);
 
             struct SchedulingState {
-                std::atomic<bool> needs_scheduling;
+                std::atomic<u8> needs_scheduling;
                 bool interrupt_task_thread_runnable;
                 bool should_count_idle;
                 u64  idle_count;
@@ -181,7 +181,7 @@ namespace ams::kern {
                     KScopedInterruptDisable intr_disable;
                     ON_SCOPE_EXIT { GetCurrentThread().EnableDispatch(); };
 
-                    if (m_state.needs_scheduling) {
+                    if (m_state.needs_scheduling.load()) {
                         Schedule();
                     }
                 }

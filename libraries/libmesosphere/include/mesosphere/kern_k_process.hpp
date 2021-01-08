@@ -135,6 +135,7 @@ namespace ams::kern {
             }
 
             void UnpinThread(s32 core_id, KThread *thread) {
+                MESOSPHERE_UNUSED(thread);
                 MESOSPHERE_ASSERT(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
                 MESOSPHERE_ASSERT(thread != nullptr);
                 MESOSPHERE_ASSERT(m_pinned_threads[core_id] == thread);

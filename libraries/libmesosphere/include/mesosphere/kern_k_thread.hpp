@@ -207,7 +207,7 @@ namespace ams::kern {
             s32                             m_original_physical_ideal_core_id{};
             s32                             m_num_core_migration_disables{};
             ThreadState                     m_thread_state{};
-            std::atomic<bool>               m_termination_requested{};
+            std::atomic<u8>                 m_termination_requested{};
             bool                            m_wait_cancelled{};
             bool                            m_cancellable{};
             bool                            m_signaled{};
@@ -486,7 +486,7 @@ namespace ams::kern {
                 MESOSPHERE_UNUSED(core_id);
             }
 
-            s64 GetCpuTime() const { return m_cpu_time; }
+            s64 GetCpuTime() const { return m_cpu_time.load(); }
 
             s64 GetCpuTime(s32 core_id) const {
                 MESOSPHERE_ABORT_UNLESS(0 <= core_id && core_id < static_cast<s32>(cpu::NumCores));
@@ -530,7 +530,7 @@ namespace ams::kern {
             ALWAYS_INLINE void *GetKernelStackTop() const { return m_kernel_stack_top; }
 
             ALWAYS_INLINE bool IsTerminationRequested() const {
-                return m_termination_requested || this->GetRawState() == ThreadState_Terminated;
+                return m_termination_requested.load() || this->GetRawState() == ThreadState_Terminated;
             }
 
             size_t GetKernelStackUsage() const;

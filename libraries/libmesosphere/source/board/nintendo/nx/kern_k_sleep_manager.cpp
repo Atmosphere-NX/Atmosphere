@@ -84,6 +84,7 @@ namespace ams::kern::board::nintendo::nx {
             do {
                 bool res = smc::ReadWriteRegister(std::addressof(value), PmcPhysicalAddress + APBDEV_PMC_PWRGATE_STATUS, 0, 0);
                 MESOSPHERE_ASSERT(res);
+                MESOSPHERE_UNUSED(res);
             } while ((value & PWRGATE_STATUS_CE123_MASK) != 0);
         }
 
