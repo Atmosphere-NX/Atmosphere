@@ -220,7 +220,7 @@ namespace ams::os::impl {
             constexpr size_t ThreadNamePrefixSize = sizeof(ThreadNamePrefix) - 1;
             const u64 func = reinterpret_cast<u64>(thread->function);
             static_assert(ThreadNamePrefixSize + sizeof(func) * 2 + 1 <= sizeof(thread->name_buffer));
-            std::snprintf(thread->name_buffer, sizeof(thread->name_buffer), "%s%016lX", ThreadNamePrefix, func);
+            util::SNPrintf(thread->name_buffer, sizeof(thread->name_buffer), "%s%016lX", ThreadNamePrefix, func);
         }
 
         thread->name_pointer = thread->name_buffer;
