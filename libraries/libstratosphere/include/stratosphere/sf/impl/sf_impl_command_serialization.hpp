@@ -368,17 +368,10 @@ namespace ams::sf::impl {
         size_t out_object_index;
     };
 
-    template<auto MemberFunction, typename Return, typename Class, typename... Arguments>
+    template<typename... Arguments>
     struct CommandMetaInfo {
         public:
-            using ReturnType        = Return;
-            using ClassType         = Class;
-            using ClassTypePointer  = ClassType *;
             using ArgsType          = std::tuple<typename std::decay<Arguments>::type...>;
-
-            static constexpr bool ReturnsResult = std::is_same<ReturnType, Result>::value;
-            static constexpr bool ReturnsVoid   = std::is_same<ReturnType, void>::value;
-            static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
 
             using InDatas    = TupleFilter<InDataFilter>::FilteredType<ArgsType>;
             using OutDatas   = TupleFilter<OutDataFilter>::FilteredType<ArgsType>;
@@ -1036,15 +1029,13 @@ namespace ams::sf::impl {
         return ResultSuccess();
     }
 
-    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
-    constexpr Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
-        using CommandMeta = CommandMetaInfo<ServiceCommandImpl, Return, ClassType, Arguments...>;
+    template<typename CommandMeta, typename... Arguments>
+    constexpr Result InvokeServiceCommandImplCommon(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, Result (*invoke_impl)(sf::IServiceObject *, Arguments &&...)) {
         using ImplProcessorType = HipcCommandProcessor<CommandMeta>;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using InOutObjectHolderType = InOutObjectHolder<CommandMeta::NumInObjects, CommandMeta::NumOutObjects>;
-        static_assert(std::is_base_of<sf::IServiceObject, typename CommandMeta::ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
 
         /* Create a processor for us to work with. */
         ImplProcessorType impl_processor;
@@ -1076,7 +1067,6 @@ namespace ams::sf::impl {
 
         /* Decoding/Invocation. */
         {
-            typename CommandMeta::ClassTypePointer this_ptr = static_cast<typename CommandMeta::ClassTypePointer>(ctx.srv_obj);
             typename CommandMeta::ArgsType args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder);
 
             /* Handle in process ID holder if relevant. */
@@ -1103,16 +1093,18 @@ namespace ams::sf::impl {
                 #undef _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID
             }
 
-            if constexpr (CommandMeta::ReturnsResult) {
-                const auto command_result = std::apply([=](auto&&... args) { return (this_ptr->*ServiceCommandImpl)(std::forward<Arguments>(args)...); }, args_tuple);
-                if (R_FAILED(command_result)) {
-                    cmif::PointerAndSize out_raw_data;
-                    ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
-                    R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
-                    return command_result;
-                }
-            } else {
-                std::apply([=](auto&&... args) { (this_ptr->*ServiceCommandImpl)(std::forward<Arguments>(args)...); }, args_tuple);
+            using TrueArgumentsTuple = std::tuple<Arguments...>;
+
+            sf::IServiceObject * const this_ptr = ctx.srv_obj;
+            const auto command_result = [this_ptr, invoke_impl, &args_tuple]<size_t ...Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
+                return invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
+            }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsType>::value>());
+
+            if (R_FAILED(command_result)) {
+                cmif::PointerAndSize out_raw_data;
+                ctx.processor->PrepareForErrorReply(ctx, out_raw_data, runtime_metadata);
+                R_TRY(GetCmifOutHeaderPointer(out_header_ptr, out_raw_data));
+                return command_result;
             }
         }
 
@@ -1135,6 +1127,26 @@ namespace ams::sf::impl {
         in_out_objects_holder.SetOutObjects(ctx, response);
 
         return ResultSuccess();
+    }
+
+    template<auto ServiceCommandImpl, typename Return, typename ClassType, typename... Arguments>
+    constexpr Result InvokeServiceCommandImpl(CmifOutHeader **out_header_ptr, cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data) {
+        using CommandMeta = CommandMetaInfo<Arguments...>;
+        static_assert(std::is_base_of<sf::IServiceObject, ClassType>::value, "InvokeServiceCommandImpl: Service Commands must be ServiceObject member functions");
+
+        constexpr bool ReturnsResult = std::is_same<Return, Result>::value;
+        constexpr bool ReturnsVoid   = std::is_same<Return, void>::value;
+        static_assert(ReturnsResult || ReturnsVoid, "Service Commands must return Result or void.");
+
+
+        return InvokeServiceCommandImplCommon<CommandMeta, Arguments...>(out_header_ptr, ctx, in_raw_data, +[](sf::IServiceObject *srv_obj, Arguments &&... args) -> Result {
+            if constexpr (ReturnsResult) {
+                return (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);
+            } else {
+                (static_cast<ClassType *>(srv_obj)->*ServiceCommandImpl)(std::forward<Arguments>(args)...);
+                return ResultSuccess();
+            }
+        });
     }
 
 }
