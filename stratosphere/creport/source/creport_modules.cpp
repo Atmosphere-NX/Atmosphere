@@ -107,7 +107,7 @@ namespace ams::creport {
                 GetModuleBuildId(module.build_id, module.end_address);
                 /* Some homebrew won't have a name. Add a fake one for readability. */
                 if (std::strcmp(module.name, "") == 0) {
-                    std::snprintf(module.name, sizeof(module.name), "[%02x%02x%02x%02x]", module.build_id[0], module.build_id[1], module.build_id[2], module.build_id[3]);
+                    util::SNPrintf(module.name, sizeof(module.name), "[%02x%02x%02x%02x]", module.build_id[0], module.build_id[1], module.build_id[2], module.build_id[3]);
                 }
             }
 
@@ -249,13 +249,13 @@ namespace ams::creport {
 
     const char *ModuleList::GetFormattedAddressString(uintptr_t address) {
         /* Print default formatted string. */
-        std::snprintf(this->address_str_buf, sizeof(this->address_str_buf), "%016lx", address);
+        util::SNPrintf(this->address_str_buf, sizeof(this->address_str_buf), "%016lx", address);
 
         /* See if the address is inside a module, for pretty-printing. */
         for (size_t i = 0; i < this->num_modules; i++) {
             const auto& module = this->modules[i];
             if (module.start_address <= address && address < module.end_address) {
-                std::snprintf(this->address_str_buf, sizeof(this->address_str_buf), "%016lx (%s + 0x%lx)", address, module.name, address - module.start_address);
+                util::SNPrintf(this->address_str_buf, sizeof(this->address_str_buf), "%016lx (%s + 0x%lx)", address, module.name, address - module.start_address);
                 break;
             }
         }

@@ -88,14 +88,14 @@ namespace ams::emummc {
 
                 /* Format paths. */
                 if (storage == Storage_SdFile) {
-                    std::snprintf(g_exo_config.file_cfg.path, sizeof(g_exo_config.file_cfg.path), "/%s", paths->file_path);
+                    util::SNPrintf(g_exo_config.file_cfg.path, sizeof(g_exo_config.file_cfg.path), "/%s", paths->file_path);
                 }
 
-                std::snprintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/%s", paths->nintendo_path);
+                util::SNPrintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/%s", paths->nintendo_path);
 
                 /* If we're emummc, implement default nintendo redirection path. */
                 if (g_is_emummc && std::strcmp(g_exo_config.emu_dir_path, "/") == 0) {
-                    std::snprintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/emummc/Nintendo_%04x", g_exo_config.base_cfg.id);
+                    util::SNPrintf(g_exo_config.emu_dir_path, sizeof(g_exo_config.emu_dir_path), "/emummc/Nintendo_%04x", g_exo_config.base_cfg.id);
                 }
             }
 

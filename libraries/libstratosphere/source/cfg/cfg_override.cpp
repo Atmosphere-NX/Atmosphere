@@ -252,7 +252,7 @@ namespace ams::cfg {
                     while (*value == '/' || *value == '\\') {
                         value++;
                     }
-                    std::snprintf(g_hbl_sd_path, sizeof(g_hbl_sd_path) - 1, "/%s", value);
+                    util::SNPrintf(g_hbl_sd_path, sizeof(g_hbl_sd_path) - 1, "/%s", value);
                     g_hbl_sd_path[sizeof(g_hbl_sd_path) - 1] = '\0';
 
                     for (size_t i = 0; i < sizeof(g_hbl_sd_path); i++) {
@@ -332,7 +332,7 @@ namespace ams::cfg {
         std::atomic<u32> g_ini_mount_count;
 
         void GetIniMountName(char *dst) {
-            std::snprintf(dst, fs::MountNameLengthMax + 1, "#ini%08x", g_ini_mount_count.fetch_add(1));
+            util::SNPrintf(dst, fs::MountNameLengthMax + 1, "#ini%08x", g_ini_mount_count.fetch_add(1));
         }
 
         void ParseIniFile(util::ini::Handler handler, const char *path, void *user_ctx) {
@@ -348,7 +348,7 @@ namespace ams::cfg {
             fs::FileHandle file;
             {
                 char full_path[fs::EntryNameLengthMax + 1];
-                std::snprintf(full_path, sizeof(full_path), "%s:/%s", mount_name, path[0] == '/' ? path + 1 : path);
+                util::SNPrintf(full_path, sizeof(full_path), "%s:/%s", mount_name, path[0] == '/' ? path + 1 : path);
                 if (R_FAILED(fs::OpenFile(std::addressof(file), full_path, fs::OpenMode_Read))) {
                     return;
                 }
@@ -365,7 +365,7 @@ namespace ams::cfg {
 
         ContentSpecificOverrideConfig GetContentOverrideConfig(ncm::ProgramId program_id) {
             char path[fs::EntryNameLengthMax + 1];
-            std::snprintf(path, sizeof(path), "/atmosphere/contents/%016lx/config.ini", static_cast<u64>(program_id));
+            util::SNPrintf(path, sizeof(path), "/atmosphere/contents/%016lx/config.ini", static_cast<u64>(program_id));
 
             ContentSpecificOverrideConfig config = {
                 .override_key = g_default_override_key,

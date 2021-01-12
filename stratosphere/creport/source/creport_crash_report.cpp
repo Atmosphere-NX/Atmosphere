@@ -303,7 +303,7 @@ namespace ams::creport {
             char file_path[fs::EntryNameLengthMax + 1];
 
             /* Save crash report. */
-            std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, this->process_info.program_id);
+            util::SNPrintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.log", timestamp, this->process_info.program_id);
             {
                 ScopedFile file(file_path);
                 if (file.IsOpen()) {
@@ -312,7 +312,7 @@ namespace ams::creport {
             }
 
             /* Dump threads. */
-            std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, this->process_info.program_id);
+            util::SNPrintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/dumps/%011lu_%016lx_thread_info.bin", timestamp, this->process_info.program_id);
             {
                 ScopedFile file(file_path);
                 if (file.IsOpen()) {
@@ -341,7 +341,7 @@ namespace ams::creport {
                 if (capssc_holder) {
                     u64 jpeg_size;
                     if (R_SUCCEEDED(capsrv::CaptureJpegScreenshot(std::addressof(jpeg_size), this->heap_storage, sizeof(this->heap_storage), vi::LayerStack_ApplicationForDebug, TimeSpan::FromSeconds(10)))) {
-                        std::snprintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.jpg", timestamp, this->process_info.program_id);
+                        util::SNPrintf(file_path, sizeof(file_path), "sdmc:/atmosphere/crash_reports/%011lu_%016lx.jpg", timestamp, this->process_info.program_id);
                         ScopedFile file(file_path);
                         if (file.IsOpen()) {
                             file.Write(this->heap_storage, jpeg_size);

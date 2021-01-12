@@ -103,7 +103,7 @@ namespace ams::erpt {
         switch (model) {
             case settings::system::ProductModel_Invalid: return util::Strlcpy(dst, "Invalid", static_cast<int>(dst_size));
             case settings::system::ProductModel_Nx:      return util::Strlcpy(dst, "NX", static_cast<int>(dst_size));
-            default:                                     return std::snprintf(dst, dst_size, "%d", static_cast<int>(model));
+            default:                                     return util::SNPrintf(dst, dst_size, "%d", static_cast<int>(model));
         }
     }
 
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
         settings::system::GetSerialNumber(std::addressof(serial_number));
 
         char os_private[0x60];
-        const auto os_priv_len = std::snprintf(os_private, sizeof(os_private), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
+        const auto os_priv_len = util::SNPrintf(os_private, sizeof(os_private), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
         AMS_ASSERT(static_cast<size_t>(os_priv_len) < sizeof(os_private));
 
         R_ABORT_UNLESS(erpt::srv::SetSerialNumberAndOsVersion(serial_number.str,

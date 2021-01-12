@@ -57,7 +57,7 @@ namespace ams::mitm::sysupdater {
         Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *package_root_path, const char *entry_path) {
             char package_path[ams::fs::EntryNameLengthMax];
 
-            const size_t path_len = std::snprintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
+            const size_t path_len = util::SNPrintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
             AMS_ABORT_UNLESS(path_len < ams::fs::EntryNameLengthMax);
 
             return ams::fs::ConvertToFsCommonPath(dst, dst_size, package_path);
@@ -209,7 +209,7 @@ namespace ams::mitm::sysupdater {
                     fs::FileHandle file;
                     {
                         char path[fs::EntryNameLengthMax];
-                        std::snprintf(path, sizeof(path), "%s%s%s", package_root, content_id_str.data, content_info->GetType() == ncm::ContentType::Meta ? ".cnmt.nca" : ".nca");
+                        util::SNPrintf(path, sizeof(path), "%s%s%s", package_root, content_id_str.data, content_info->GetType() == ncm::ContentType::Meta ? ".cnmt.nca" : ".nca");
                         if (R_FAILED(ValidateResult(fs::OpenFile(std::addressof(file), path, ams::fs::OpenMode_Read)))) {
                             *done = true;
                             return ResultSuccess();
@@ -292,7 +292,7 @@ namespace ams::mitm::sysupdater {
             R_UNLESS(user_path.str[0] == '/', fs::ResultInvalidPath());
 
             /* Print as @Sdcard:<user_path>/ */
-            std::snprintf(out->str, sizeof(out->str), "%s:%s/", ams::fs::impl::SdCardFileSystemMountName, user_path.str);
+            util::SNPrintf(out->str, sizeof(out->str), "%s:%s/", ams::fs::impl::SdCardFileSystemMountName, user_path.str);
 
             /* Normalize, if the user provided an ending / */
             const size_t len = std::strlen(out->str);

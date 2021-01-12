@@ -23,7 +23,7 @@ namespace ams::cfg {
 
         /* Helper. */
         void GetFlagMountName(char *dst) {
-            std::snprintf(dst, fs::MountNameLengthMax + 1, "#flag%08x", g_flag_mount_count.fetch_add(1));
+            util::SNPrintf(dst, fs::MountNameLengthMax + 1, "#flag%08x", g_flag_mount_count.fetch_add(1));
         }
 
         bool HasFlagFile(const char *flag_path) {
@@ -42,7 +42,7 @@ namespace ams::cfg {
 
             /* Check if the entry exists. */
             char full_path[fs::EntryNameLengthMax + 1];
-            std::snprintf(full_path, sizeof(full_path), "%s:/%s", mount_name, flag_path[0] == '/' ? flag_path + 1 : flag_path);
+            util::SNPrintf(full_path, sizeof(full_path), "%s:/%s", mount_name, flag_path[0] == '/' ? flag_path + 1 : flag_path);
 
             bool has_file;
             if (R_FAILED(fs::HasFile(std::addressof(has_file), full_path))) {
@@ -61,19 +61,19 @@ namespace ams::cfg {
 
     bool HasContentSpecificFlag(ncm::ProgramId program_id, const char *flag) {
         char content_flag[fs::EntryNameLengthMax + 1];
-        std::snprintf(content_flag, sizeof(content_flag) - 1, "/atmosphere/contents/%016lx/flags/%s.flag", static_cast<u64>(program_id), flag);
+        util::SNPrintf(content_flag, sizeof(content_flag) - 1, "/atmosphere/contents/%016lx/flags/%s.flag", static_cast<u64>(program_id), flag);
         return HasFlagFile(content_flag);
     }
 
     bool HasGlobalFlag(const char *flag) {
         char global_flag[fs::EntryNameLengthMax + 1];
-        std::snprintf(global_flag, sizeof(global_flag) - 1, "/atmosphere/flags/%s.flag", flag);
+        util::SNPrintf(global_flag, sizeof(global_flag) - 1, "/atmosphere/flags/%s.flag", flag);
         return HasFlagFile(global_flag);
     }
 
     bool HasHblFlag(const char *flag) {
         char hbl_flag[0x100];
-        std::snprintf(hbl_flag, sizeof(hbl_flag) - 1, "hbl_%s", flag);
+        util::SNPrintf(hbl_flag, sizeof(hbl_flag) - 1, "hbl_%s", flag);
         return HasGlobalFlag(hbl_flag);
     }
 

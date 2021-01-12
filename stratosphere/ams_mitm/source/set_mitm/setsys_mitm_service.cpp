@@ -66,7 +66,7 @@ namespace ams::mitm::settings {
                 /* No truncation occurs assuming two-digits for all version number components. */
                 char display_version[sizeof(g_ams_firmware_version.display_version)];
 
-                std::snprintf(display_version, sizeof(display_version), "%s|AMS %c.%u.%u|%c", g_ams_firmware_version.display_version, mesosphere_char, api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
+                util::SNPrintf(display_version, sizeof(display_version), "%s|AMS %c.%u.%u|%c", g_ams_firmware_version.display_version, mesosphere_char, api_info.GetMinorVersion(), api_info.GetMicroVersion(), emummc_char);
 
                 std::memcpy(g_ams_firmware_version.display_version, display_version, sizeof(display_version));
             }

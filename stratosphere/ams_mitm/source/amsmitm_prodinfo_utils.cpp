@@ -404,7 +404,7 @@ namespace ams::mitm {
 
             if (IsValidForSecureBackup(info)) {
                 GetSerialNumber(sn, info);
-                std::snprintf(dst, dst_size, "automatic_backups/%s_PRODINFO.bin", sn);
+                util::SNPrintf(dst, dst_size, "automatic_backups/%s_PRODINFO.bin", sn);
             } else {
                 Sha256Hash hash;
                 crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(info), sizeof(info));
@@ -412,13 +412,13 @@ namespace ams::mitm {
 
                 if (IsValid(info)) {
                     if (IsBlank(info)) {
-                        std::snprintf(dst, dst_size, "automatic_backups/BLANK_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                        util::SNPrintf(dst, dst_size, "automatic_backups/BLANK_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
                     } else {
                         GetSerialNumber(sn, info);
-                        std::snprintf(dst, dst_size, "automatic_backups/%s_PRODINFO_%02X%02X%02X%02X.bin", sn, hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                        util::SNPrintf(dst, dst_size, "automatic_backups/%s_PRODINFO_%02X%02X%02X%02X.bin", sn, hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
                     }
                 } else {
-                    std::snprintf(dst, dst_size, "automatic_backups/INVALID_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                    util::SNPrintf(dst, dst_size, "automatic_backups/INVALID_PRODINFO_%02X%02X%02X%02X.bin", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
                 }
             }
         }
@@ -581,7 +581,7 @@ namespace ams::mitm {
                 ON_SCOPE_EXIT { crypto::ClearMemory(std::addressof(hash), sizeof(hash)); };
                 crypto::GenerateSha256Hash(std::addressof(hash), sizeof(hash), std::addressof(g_calibration_info), sizeof(g_calibration_info));
 
-                std::snprintf(out_name, out_name_size, "%02X%02X%02X%02X", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
+                util::SNPrintf(out_name, out_name_size, "%02X%02X%02X%02X", hash.data[0], hash.data[1], hash.data[2], hash.data[3]);
             }
             SaveProdInfoBackup(std::addressof(g_prodinfo_backup_file), g_calibration_info);
         }

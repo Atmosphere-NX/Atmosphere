@@ -50,7 +50,7 @@ namespace ams::diag {
         void DebugLogImpl(const char *format, ::std::va_list vl) {
             std::scoped_lock lk(g_debug_log_lock);
 
-            std::vsnprintf(g_debug_buffer, sizeof(g_debug_buffer), format, vl);
+            util::VSNPrintf(g_debug_buffer, sizeof(g_debug_buffer), format, vl);
 
             svc::OutputDebugString(g_debug_buffer, strlen(g_debug_buffer));
         }

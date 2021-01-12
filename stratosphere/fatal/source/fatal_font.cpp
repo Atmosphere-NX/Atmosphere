@@ -135,7 +135,7 @@ namespace ams::fatal::srv::font {
 
         std::va_list va_arg;
         va_start(va_arg, format);
-        std::vsnprintf(char_buf, sizeof(char_buf), format, va_arg);
+        util::VSNPrintf(char_buf, sizeof(char_buf), format, va_arg);
         va_end(va_arg);
 
         PrintLine(char_buf);
@@ -150,7 +150,7 @@ namespace ams::fatal::srv::font {
 
         std::va_list va_arg;
         va_start(va_arg, format);
-        std::vsnprintf(char_buf, sizeof(char_buf), format, va_arg);
+        util::VSNPrintf(char_buf, sizeof(char_buf), format, va_arg);
         va_end(va_arg);
 
         Print(char_buf);
@@ -158,14 +158,14 @@ namespace ams::fatal::srv::font {
 
     void PrintMonospaceU64(u64 x) {
         char char_buf[0x400];
-        std::snprintf(char_buf, sizeof(char_buf), "%016lX", x);
+        util::SNPrintf(char_buf, sizeof(char_buf), "%016lX", x);
 
         DrawString(char_buf, false, true);
     }
 
     void PrintMonospaceU32(u32 x) {
         char char_buf[0x400];
-        std::snprintf(char_buf, sizeof(char_buf), "%08X", x);
+        util::SNPrintf(char_buf, sizeof(char_buf), "%08X", x);
 
         DrawString(char_buf, false, true);
     }

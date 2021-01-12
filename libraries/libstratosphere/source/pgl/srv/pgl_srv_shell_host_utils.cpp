@@ -174,7 +174,7 @@ namespace ams::pgl::srv {
 
                     /* Get the file name. */
                     char file_name[ncm::ContentIdStringLength + 5];
-                    const size_t len = std::snprintf(file_name, sizeof(file_name), "%s.nca", id_str.data);
+                    const size_t len = util::SNPrintf(file_name, sizeof(file_name), "%s.nca", id_str.data);
                     R_UNLESS(len + 1 == sizeof(file_name), pgl::ResultBufferNotEnough());
 
                     /* Ensure we have the content. */
@@ -199,7 +199,7 @@ namespace ams::pgl::srv {
                     /* Get the file name. */
                     /* NSPD does not support indexed content, so we always use 0 as the index. */
                     char file_name[0x20];
-                    const size_t len = std::snprintf(file_name, sizeof(file_name), "%s%d.ncd", content_name, 0);
+                    const size_t len = util::SNPrintf(file_name, sizeof(file_name), "%s%d.ncd", content_name, 0);
                     R_UNLESS(len + 1 <= sizeof(file_name), pgl::ResultBufferNotEnough());
 
                     /* Ensure we have the content. */
@@ -267,7 +267,7 @@ namespace ams::pgl::srv {
                 Result SearchContent(bool *out, lr::Path *out_path, const char *extension, fs::OpenDirectoryMode mode) const {
                     /* Generate the root directory path. */
                     char root_dir[sizeof(this->mount_name) + 2];
-                    std::snprintf(root_dir, sizeof(root_dir), "%s:/", this->mount_name);
+                    util::SNPrintf(root_dir, sizeof(root_dir), "%s:/", this->mount_name);
 
                     /* Open the root directory. */
                     fs::DirectoryHandle dir;
@@ -287,7 +287,7 @@ namespace ams::pgl::srv {
                         if (HasSuffix(entry.name, extension)) {
                             *out = true;
                             if (out_path) {
-                                const size_t len = std::snprintf(out_path->str, sizeof(out_path->str), "%s/%s", this->content_path, entry.name);
+                                const size_t len = util::SNPrintf(out_path->str, sizeof(out_path->str), "%s/%s", this->content_path, entry.name);
                                 R_UNLESS(len + 1 < sizeof(out_path->str), pgl::ResultBufferNotEnough());
                                 if (entry.type == fs::DirectoryEntryType_Directory) {
                                     out_path->str[len]     = '/';

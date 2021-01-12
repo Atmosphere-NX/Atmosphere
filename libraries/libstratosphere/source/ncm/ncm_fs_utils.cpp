@@ -39,13 +39,13 @@ namespace ams::ncm::impl {
 
     MountName CreateUniqueMountName() {
         MountName name = {};
-        std::snprintf(name.str, sizeof(name.str), "@ncm%08x", g_mount_name_count.fetch_add(1));
+        util::SNPrintf(name.str, sizeof(name.str), "@ncm%08x", g_mount_name_count.fetch_add(1));
         return name;
     }
 
     RootDirectoryPath GetRootDirectoryPath(const MountName &mount_name) {
         RootDirectoryPath path = {};
-        std::snprintf(path.str, sizeof(path.str), "%s:/", mount_name.str);
+        util::SNPrintf(path.str, sizeof(path.str), "%s:/", mount_name.str);
 
         return path;
     }

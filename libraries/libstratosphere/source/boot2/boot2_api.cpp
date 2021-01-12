@@ -238,7 +238,7 @@ namespace ams::boot2 {
                 /* Read the mitm list off the SD card. */
                 {
                     char path[fs::EntryNameLengthMax];
-                    std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
+                    util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/mitm.lst", static_cast<u64>(program_id));
 
                     fs::FileHandle f;
                     if (R_FAILED(fs::OpenFile(&f, path, fs::OpenMode_Read))) {

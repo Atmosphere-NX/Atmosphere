@@ -29,7 +29,7 @@ namespace ams::ncm {
 
             /* Create a hex string from bytes. */
             for (size_t i = 0; i < sizeof(bytes); i++) {
-                std::snprintf(tmp, util::size(tmp), "%02x", bytes[i]);
+                util::SNPrintf(tmp, util::size(tmp), "%02x", bytes[i]);
                 out->Append(tmp);
             }
 

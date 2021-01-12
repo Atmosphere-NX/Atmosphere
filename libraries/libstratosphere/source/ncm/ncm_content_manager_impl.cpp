@@ -122,7 +122,7 @@ namespace ams::ncm {
                 /* This also works on < 4.0.0 (though the system partition will never be on-sd there), */
                 /* and so this will always return false. */
                 char path[fs::MountNameLengthMax + 2 /* :/ */ + 1];
-                std::snprintf(path, sizeof(path), "%s:/", bis_mount_name);
+                util::SNPrintf(path, sizeof(path), "%s:/", bis_mount_name);
                 return fs::IsSignedSystemPartitionOnSdCardValid(path);
             } else {
                 /* On 4.0.0-7.0.1, use the remote command to validate the system partition. */
@@ -203,7 +203,7 @@ namespace ams::ncm {
 
         /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
-        std::snprintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
+        util::SNPrintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
 
         return ResultSuccess();
     }
@@ -214,7 +214,7 @@ namespace ams::ncm {
 
         /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
-        std::snprintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
+        util::SNPrintf(out->path, sizeof(out->path), "%s:/", out->mount_name);
 
         return ResultSuccess();
     }
@@ -230,7 +230,7 @@ namespace ams::ncm {
         /* Create a new mount name and copy it to out. */
         std::strcpy(out->mount_name, impl::CreateUniqueMountName().str);
         out->mount_name[0] = '#';
-        std::snprintf(out->path, sizeof(out->path), "%s:/meta", out->mount_name);
+        util::SNPrintf(out->path, sizeof(out->path), "%s:/meta", out->mount_name);
 
         return ResultSuccess();
     }

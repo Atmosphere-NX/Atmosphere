@@ -970,7 +970,7 @@ namespace ams::dmnt::cheat::impl {
             fs::FileHandle file;
             {
                 char path[fs::EntryNameLengthMax + 1];
-                std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", program_id.value,
+                util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/%02x%02x%02x%02x%02x%02x%02x%02x.txt", program_id.value,
                         build_id[0], build_id[1], build_id[2], build_id[3], build_id[4], build_id[5], build_id[6], build_id[7]);
                 if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
                     return false;
@@ -1009,7 +1009,7 @@ namespace ams::dmnt::cheat::impl {
             fs::FileHandle file;
             {
                 char path[fs::EntryNameLengthMax + 1];
-                std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
+                util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
                 if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Read))) {
                     /* No file presence is allowed. */
                     return true;
@@ -1046,7 +1046,7 @@ namespace ams::dmnt::cheat::impl {
             fs::FileHandle file;
             {
                 char path[fs::EntryNameLengthMax + 1];
-                std::snprintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
+                util::SNPrintf(path, sizeof(path), "sdmc:/atmosphere/contents/%016lx/cheats/toggles.txt", program_id.value);
                 fs::DeleteFile(path);
                 fs::CreateFile(path, 0);
                 if (R_FAILED(fs::OpenFile(std::addressof(file), path, fs::OpenMode_Write | fs::OpenMode_AllowAppend))) {
@@ -1061,7 +1061,7 @@ namespace ams::dmnt::cheat::impl {
             /* Save all non-master cheats. */
             for (size_t i = 1; i < MaxCheatCount; i++) {
                 if (this->cheat_entries[i].definition.num_opcodes != 0) {
-                    std::snprintf(buf, sizeof(buf), "[%s]\n", this->cheat_entries[i].definition.readable_name);
+                    util::SNPrintf(buf, sizeof(buf), "[%s]\n", this->cheat_entries[i].definition.readable_name);
                     const size_t name_len = std::strlen(buf);
                     if (R_SUCCEEDED(fs::WriteFile(file, offset, buf, name_len, fs::WriteOption::Flush))) {
                         offset += name_len;
