@@ -55,14 +55,14 @@ namespace ams::os::impl {
         manager.NotifyThreadNameChanged(thread);
 
         {
-            std::unique_lock lk(GetReference(thread->cs_thread));
+            GetReference(thread->cs_thread).Lock();
             while (thread->state == ThreadType::State_Initialized) {
                 GetReference(thread->cv_thread).Wait(GetPointer(thread->cs_thread));
             }
+            const auto new_state = thread->state;
+            GetReference(thread->cs_thread).Unlock();
 
-            if (thread->state == ThreadType::State_Started) {
-                lk.unlock();
-
+            if (new_state == ThreadType::State_Started) {
                 thread->function(thread->argument);
             }
         }
