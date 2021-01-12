@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
+#include <vapours/util/util_format_string.hpp>
 
 namespace ams::util {
 
