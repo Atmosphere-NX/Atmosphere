@@ -25,24 +25,33 @@ namespace ams::os::impl {
         private:
             Handle handle;
         private:
-            s32 WaitSynchronizationN(s32 num, Handle arr[], s32 array_size, s64 ns);
+            Result WaitSynchronizationN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns);
+            Result ReplyAndReceiveN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns, Handle reply_target);
         public:
             void CancelWait();
 
-            s32 WaitAny(Handle arr[], s32 array_size, s32 num) {
-                return this->WaitSynchronizationN(num, arr, array_size, svc::WaitInfinite);
+            Result WaitAny(s32 *out_index, Handle arr[], s32 array_size, s32 num) {
+                return this->WaitSynchronizationN(out_index, num, arr, array_size, svc::WaitInfinite);
             }
 
-            s32 TryWaitAny(Handle arr[], s32 array_size, s32 num) {
-                return this->WaitSynchronizationN(num, arr, array_size, 0);
+            Result TryWaitAny(s32 *out_index, Handle arr[], s32 array_size, s32 num) {
+                return this->WaitSynchronizationN(out_index, num, arr, array_size, 0);
             }
 
-            s32 TimedWaitAny(Handle arr[], s32 array_size, s32 num, TimeSpan ts) {
+            Result TimedWaitAny(s32 *out_index, Handle arr[], s32 array_size, s32 num, TimeSpan ts) {
                 s64 timeout = ts.GetNanoSeconds();
                 if (timeout < 0) {
                     timeout = 0;
                 }
-                return this->WaitSynchronizationN(num, arr, array_size, timeout);
+                return this->WaitSynchronizationN(out_index, num, arr, array_size, timeout);
+            }
+
+            Result ReplyAndReceive(s32 *out_index, Handle arr[], s32 array_size, s32 num, Handle reply_target) {
+                return this->ReplyAndReceiveN(out_index, num, arr, array_size, std::numeric_limits<s64>::max(), reply_target);
+            }
+
+            Result TimedReplyAndReceive(s32 *out_index, Handle arr[], s32 array_size, s32 num, Handle reply_target, TimeSpan ts) {
+                return this->ReplyAndReceiveN(out_index, num, arr, array_size, ts.GetNanoSeconds(), reply_target);
             }
 
             void SetCurrentThreadHandleForCancelWait() {

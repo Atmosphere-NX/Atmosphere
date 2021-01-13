@@ -38,14 +38,21 @@ namespace ams::os::impl {
             InternalCriticalSection cs_wait;
             WaitableManagerTargetImpl target_impl;
         private:
-            WaitableHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout);
-            WaitableHolderBase *WaitAnyHandleImpl(bool infinite, TimeSpan timeout);
+            Result WaitAnyImpl(WaitableHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target);
+            Result WaitAnyHandleImpl(WaitableHolderBase **out, bool infinite, TimeSpan timeout, bool reply, Handle reply_target);
             s32                BuildHandleArray(Handle out_handles[], WaitableHolderBase *out_objects[], s32 num);
 
             WaitableHolderBase *LinkHoldersToObjectList();
             void                UnlinkHoldersFromObjectList();
 
             WaitableHolderBase *RecalculateNextTimeout(TimeSpan *out_min_timeout, TimeSpan end_time);
+
+            WaitableHolderBase *WaitAnyImpl(bool infinite, TimeSpan timeout) {
+                WaitableHolderBase *holder = nullptr;
+                const Result wait_result = this->WaitAnyImpl(std::addressof(holder), infinite, timeout, false, svc::InvalidHandle);
+                AMS_ASSERT(R_SUCCEEDED(wait_result));
+                return holder;
+            }
         public:
             /* Wait. */
             WaitableHolderBase *WaitAny() {
@@ -58,6 +65,10 @@ namespace ams::os::impl {
 
             WaitableHolderBase *TimedWaitAny(TimeSpan ts) {
                 return this->WaitAnyImpl(false, ts);
+            }
+
+            Result ReplyAndReceive(WaitableHolderBase **out, Handle reply_target) {
+                return this->WaitAnyImpl(out, true, TimeSpan::FromNanoSeconds(std::numeric_limits<s64>::max()), true, reply_target);
             }
 
             /* List management. */

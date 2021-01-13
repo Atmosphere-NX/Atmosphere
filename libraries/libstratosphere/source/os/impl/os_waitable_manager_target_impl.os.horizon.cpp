@@ -19,13 +19,13 @@
 
 namespace ams::os::impl {
 
-    s32 WaitableManagerHorizonImpl::WaitSynchronizationN(s32 num, Handle arr[], s32 array_size, s64 ns) {
+    Result WaitableManagerHorizonImpl::WaitSynchronizationN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns) {
         AMS_ASSERT(!(num == 0 && ns == 0));
         s32 index = WaitableManagerImpl::WaitInvalid;
 
         R_TRY_CATCH(svc::WaitSynchronization(std::addressof(index), static_cast<const svc::Handle *>(arr), num, ns)) {
-            R_CATCH(svc::ResultTimedOut)  { return WaitableManagerImpl::WaitTimedOut; }
-            R_CATCH(svc::ResultCancelled) { return WaitableManagerImpl::WaitCancelled; }
+            R_CATCH(svc::ResultTimedOut)  { index = WaitableManagerImpl::WaitTimedOut; }
+            R_CATCH(svc::ResultCancelled) { index = WaitableManagerImpl::WaitCancelled; }
             /* All other results are critical errors. */
             /* svc::ResultThreadTerminating */
             /* svc::ResultInvalidHandle. */
@@ -33,7 +33,34 @@ namespace ams::os::impl {
             /* svc::ResultOutOfRange */
         } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
 
-        return index;
+        *out_index = index;
+        return ResultSuccess();
+    }
+
+    Result ReplyAndReceiveN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns, Handle reply_target) {
+        /* NOTE: Nintendo does not initialize this value, which seems like it can cause incorrect behavior. */
+        s32 index = WaitableManagerImpl::WaitInvalid;
+        static_assert(WaitableManagerImpl::WaitInvalid != -1);
+
+        R_TRY_CATCH(svc::ReplyAndReceive(std::addressof(index), arr, num, ns, reply_target)) {
+            R_CATCH(svc::ResultTimedOut)  { *out_index = WaitableManagerImpl::WaitTimedOut;  return R_CURRENT_RESULT; }
+            R_CATCH(svc::ResultCancelled) { *out_index = WaitableManagerImpl::WaitCancelled; return R_CURRENT_RESULT; }
+            R_CATCH(svc::ResultSessionClosed)   {
+                if (index == -1) {
+                    *out_index = WaitableManagerImpl::WaitInvalid;
+                    return os::ResultSessionClosedForReply();
+                } else {
+                    *out_index = index;
+                    return os::ResultSessionClosedForReceive();
+                }
+            }
+            R_CATCH(svc::ResultReceiveListBroken) {
+                *out_index = index;
+                return os::ResultReceiveListBroken();
+            }
+        } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
+
+        return ResultSuccess();
     }
 
     void WaitableManagerHorizonImpl::CancelWait() {
