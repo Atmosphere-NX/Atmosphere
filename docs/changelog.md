@@ -1,4 +1,12 @@
 # Changelog
+## 0.17.1
++ A number of atmosphère's modules were using more memory than their Nintendo equivalent's in 0.17.0; a number of code generatio tweaks have been applied to fix this across the board.
+  + A detailed comparison of atmosphère module memory usage versus Nintendo's was made and can be found [here](https://github.com/Atmosphere-NX/Atmosphere/wiki/Memory-Comparisons).
++ Several minor bugs were fixed, including:
+  + A bug was fixed in mesosphère that caused games which attempt to map more memory than the Switch has to fail.
+    + This affected "Piczle Lines DX 500 More Puzzles!", and possibly other games.
+  + Enabling configuration to "blank" PRODINFO no longer causes a hang on Mariko devices (or any devices with newer format).
++ Several issues were fixed, and usability and stability were improved.
 ## 0.17.0
 + fusee was heavily rewritten in order to add support for Mariko hardware.
   + **Please Note**: Mariko hardware currently has no (and may not ever have any) software exploits; fusee works when loaded from bootloader context with the right keys in the security engine. No means of getting the system into this state is provided.
