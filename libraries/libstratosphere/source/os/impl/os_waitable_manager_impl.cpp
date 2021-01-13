@@ -76,9 +76,9 @@ namespace ams::os::impl {
             Result wait_result = ResultSuccess();
             if (reply) {
                 if (infinite && min_timeout_object == nullptr) {
-
+                    wait_result = this->target_impl.ReplyAndReceive(std::addressof(index), object_handles, MaximumHandleCount, count, reply_target);
                 } else {
-
+                    wait_result = this->target_impl.TimedReplyAndReceive(std::addressof(index), object_handles, MaximumHandleCount, count, reply_target, min_timeout);
                 }
             } else if (infinite && min_timeout_object == nullptr) {
                 wait_result = this->target_impl.WaitAny(std::addressof(index), object_handles, MaximumHandleCount, count);
