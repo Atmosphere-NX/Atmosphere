@@ -122,9 +122,9 @@ namespace ams::sf::impl {
         template<typename T>                                                                 \
         concept Is##CLASSNAME = CMD_MACRO(CLASSNAME, AMS_SF_IMPL_CHECK_CONCEPT_HELPER) true;
 
-    #define AMS_SF_DEFINE_INTERFACE_IMPL(BASECLASS, CLASSNAME, CMD_MACRO)             \
-        AMS_SF_IMPL_DEFINE_INTERFACE(::ams::sf::IServiceObject, CLASSNAME, CMD_MACRO) \
-        AMS_SF_IMPL_DEFINE_CONCEPT(CLASSNAME, CMD_MACRO)                              \
+    #define AMS_SF_DEFINE_INTERFACE_IMPL(BASECLASS, CLASSNAME, CMD_MACRO) \
+        AMS_SF_IMPL_DEFINE_INTERFACE(BASECLASS, CLASSNAME, CMD_MACRO)     \
+        AMS_SF_IMPL_DEFINE_CONCEPT(CLASSNAME, CMD_MACRO)                  \
         static_assert(Is##CLASSNAME<CLASSNAME>);
 
     #define AMS_SF_METHOD_INFO_7(CLASSNAME, HANDLER, CMD_ID, RETURN, NAME, ARGS, ARGNAMES) \

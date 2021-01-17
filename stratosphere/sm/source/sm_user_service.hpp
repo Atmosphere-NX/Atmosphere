@@ -20,7 +20,7 @@
 namespace ams::sm {
 
     /* Service definition. */
-    class UserService final {
+    class UserService {
         private:
             os::ProcessId process_id = os::InvalidProcessId;
             bool has_initialized = false;
