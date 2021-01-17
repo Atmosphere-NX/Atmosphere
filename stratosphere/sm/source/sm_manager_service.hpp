@@ -19,7 +19,7 @@
 namespace ams::sm {
 
     /* Service definition. */
-    class ManagerService final {
+    class ManagerService {
         public:
             Result RegisterProcess(os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac);
             Result UnregisterProcess(os::ProcessId process_id);
