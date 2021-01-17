@@ -19,15 +19,11 @@
 #include <stratosphere/ldr/ldr_types.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::ldr::impl {
+#define AMS_LDR_I_SHELL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                              \
+    AMS_SF_METHOD_INFO(C, H,     0, Result, SetProgramArgumentsDeprecated,    (ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size), (program_id, args, args_size), hos::Version_Min,    hos::Version_10_2_0) \
+    AMS_SF_METHOD_INFO(C, H,     0, Result, SetProgramArguments,              (ncm::ProgramId program_id, const sf::InPointerBuffer &args),                (program_id, args),            hos::Version_11_0_0                     ) \
+    AMS_SF_METHOD_INFO(C, H,     1, Result, FlushArguments,                   (),                                                                          ())                                                                      \
+    AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereRegisterExternalCode,   (sf::OutMoveHandle out, ncm::ProgramId program_id),                          (out, program_id))                                                       \
+    AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereUnregisterExternalCode, (ncm::ProgramId program_id),                                                 (program_id))
 
-    #define AMS_LDR_I_SHELL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                               \
-        AMS_SF_METHOD_INFO(C, H,     0, Result, SetProgramArgumentsDeprecated,    (ncm::ProgramId program_id, const sf::InPointerBuffer &args, u32 args_size), hos::Version_Min,    hos::Version_10_2_0) \
-        AMS_SF_METHOD_INFO(C, H,     0, Result, SetProgramArguments,              (ncm::ProgramId program_id, const sf::InPointerBuffer &args),                hos::Version_11_0_0                     ) \
-        AMS_SF_METHOD_INFO(C, H,     1, Result, FlushArguments,                   ())                                                                                                                    \
-        AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereRegisterExternalCode,   (sf::OutMoveHandle out, ncm::ProgramId program_id))                                                                    \
-        AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereUnregisterExternalCode, (ncm::ProgramId program_id))
-
-    AMS_SF_DEFINE_INTERFACE(IShellInterface, AMS_LDR_I_SHELL_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::ldr::impl, IShellInterface, AMS_LDR_I_SHELL_INTERFACE_INTERFACE_INFO)

@@ -20,7 +20,7 @@
 
 namespace ams::pwm {
 
-    void InitializeWith(std::shared_ptr<pwm::sf::IManager> &&sp);
+    void InitializeWith(ams::sf::SharedPointer<pwm::sf::IManager> sp);
     void Finalize();
 
 }

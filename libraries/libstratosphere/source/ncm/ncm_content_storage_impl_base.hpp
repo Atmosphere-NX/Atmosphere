@@ -49,7 +49,7 @@ namespace ams::ncm {
             virtual Result CreatePlaceHolder(PlaceHolderId placeholder_id, ContentId content_id, s64 size) = 0;
             virtual Result DeletePlaceHolder(PlaceHolderId placeholder_id) = 0;
             virtual Result HasPlaceHolder(sf::Out<bool> out, PlaceHolderId placeholder_id) = 0;
-            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) = 0;
+            virtual Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) = 0;
             virtual Result Register(PlaceHolderId placeholder_id, ContentId content_id) = 0;
             virtual Result Delete(ContentId content_id) = 0;
             virtual Result Has(sf::Out<bool> out, ContentId content_id) = 0;
@@ -63,12 +63,12 @@ namespace ams::ncm {
             virtual Result DisableForcibly() = 0;
             virtual Result RevertToPlaceHolder(PlaceHolderId placeholder_id, ContentId old_content_id, ContentId new_content_id) = 0;
             virtual Result SetPlaceHolderSize(PlaceHolderId placeholder_id, s64 size) = 0;
-            virtual Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) = 0;
+            virtual Result ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) = 0;
             virtual Result GetRightsIdFromPlaceHolderIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
             virtual Result GetRightsIdFromPlaceHolderId(sf::Out<ncm::RightsId> out_rights_id, PlaceHolderId placeholder_id) = 0;
             virtual Result GetRightsIdFromContentIdDeprecated(sf::Out<ams::fs::RightsId> out_rights_id, ContentId content_id) = 0;
             virtual Result GetRightsIdFromContentId(sf::Out<ncm::RightsId> out_rights_id, ContentId content_id) = 0;
-            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) = 0;
+            virtual Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) = 0;
             virtual Result GetFreeSpaceSize(sf::Out<s64> out_size) = 0;
             virtual Result GetTotalSpaceSize(sf::Out<s64> out_size) = 0;
             virtual Result FlushPlaceHolder() = 0;

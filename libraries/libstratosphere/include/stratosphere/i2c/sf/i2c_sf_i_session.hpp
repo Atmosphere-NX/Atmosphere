@@ -18,17 +18,13 @@
 #include <vapours.hpp>
 #include <stratosphere/i2c/i2c_types.hpp>
 
-namespace ams::i2c::sf {
+#define AMS_I2C_I_SESSION_INTERFACE_INFO(C, H)                                                                                                                                                                                                             \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, SendOld,               (const ams::sf::InBuffer &in_data, i2c::TransactionOption option),                                           (in_data, option),                    hos::Version_Min,   hos::Version_5_1_0) \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, ReceiveOld,            (const ams::sf::OutBuffer &out_data, i2c::TransactionOption option),                                         (out_data, option),                   hos::Version_Min,   hos::Version_5_1_0) \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, ExecuteCommandListOld, (const ams::sf::OutBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list),           (rcv_buf, command_list),              hos::Version_Min,   hos::Version_5_1_0) \
+    AMS_SF_METHOD_INFO(C, H, 10, Result, Send,                  (const ams::sf::InAutoSelectBuffer &in_data, i2c::TransactionOption option),                                 (in_data, option)                                                           ) \
+    AMS_SF_METHOD_INFO(C, H, 11, Result, Receive,               (const ams::sf::OutAutoSelectBuffer &out_data, i2c::TransactionOption option),                               (out_data, option)                                                          ) \
+    AMS_SF_METHOD_INFO(C, H, 12, Result, ExecuteCommandList,    (const ams::sf::OutAutoSelectBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list), (rcv_buf, command_list)                                                     ) \
+    AMS_SF_METHOD_INFO(C, H, 13, Result, SetRetryPolicy,        (s32 max_retry_count, s32 retry_interval_us),                                                                (max_retry_count, retry_interval_us), hos::Version_6_0_0                    )
 
-    #define AMS_I2C_I_SESSION_INTERFACE_INFO(C, H)                                                                                                                                                                       \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, SendOld,               (const ams::sf::InBuffer &in_data, i2c::TransactionOption option),                                           hos::Version_Min,   hos::Version_5_1_0) \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, ReceiveOld,            (const ams::sf::OutBuffer &out_data, i2c::TransactionOption option),                                         hos::Version_Min,   hos::Version_5_1_0) \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, ExecuteCommandListOld, (const ams::sf::OutBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list),           hos::Version_Min,   hos::Version_5_1_0) \
-        AMS_SF_METHOD_INFO(C, H, 10, Result, Send,                  (const ams::sf::InAutoSelectBuffer &in_data, i2c::TransactionOption option)                                                                        ) \
-        AMS_SF_METHOD_INFO(C, H, 11, Result, Receive,               (const ams::sf::OutAutoSelectBuffer &out_data, i2c::TransactionOption option)                                                                      ) \
-        AMS_SF_METHOD_INFO(C, H, 12, Result, ExecuteCommandList,    (const ams::sf::OutAutoSelectBuffer &rcv_buf, const ams::sf::InPointerArray<i2c::I2cCommand> &command_list)                                        ) \
-        AMS_SF_METHOD_INFO(C, H, 13, Result, SetRetryPolicy,        (s32 max_retry_count, s32 retry_interval_us),                                                                hos::Version_6_0_0                    )
-
-    AMS_SF_DEFINE_INTERFACE(ISession, AMS_I2C_I_SESSION_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::i2c::sf, ISession, AMS_I2C_I_SESSION_INTERFACE_INFO)

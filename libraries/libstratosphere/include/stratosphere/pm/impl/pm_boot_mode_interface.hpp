@@ -19,12 +19,8 @@
 #include <stratosphere/pm/pm_types.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::pm::impl {
+#define AMS_PM_I_BOOT_MODE_INTERFACE_INTERFACE_INFO(C, H)                            \
+    AMS_SF_METHOD_INFO(C, H, 0, void, GetBootMode,        (sf::Out<u32> out), (out)) \
+    AMS_SF_METHOD_INFO(C, H, 1, void, SetMaintenanceBoot, (),                 ())
 
-    #define AMS_PM_I_BOOT_MODE_INTERFACE_INTERFACE_INFO(C, H)                     \
-        AMS_SF_METHOD_INFO(C, H, 0, void, GetBootMode,        (sf::Out<u32> out)) \
-        AMS_SF_METHOD_INFO(C, H, 1, void, SetMaintenanceBoot, ())
-
-    AMS_SF_DEFINE_INTERFACE(IBootModeInterface, AMS_PM_I_BOOT_MODE_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::pm::impl, IBootModeInterface, AMS_PM_I_BOOT_MODE_INTERFACE_INTERFACE_INFO)

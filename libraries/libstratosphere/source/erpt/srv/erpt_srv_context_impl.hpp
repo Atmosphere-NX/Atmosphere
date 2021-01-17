@@ -18,7 +18,7 @@
 
 namespace ams::erpt::srv {
 
-    class ContextImpl final {
+    class ContextImpl {
         public:
             Result SubmitContext(const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer);
             Result CreateReportV0(ReportType report_type, const ams::sf::InBuffer &ctx_buffer, const ams::sf::InBuffer &data_buffer, const ams::sf::InBuffer &meta_buffer);

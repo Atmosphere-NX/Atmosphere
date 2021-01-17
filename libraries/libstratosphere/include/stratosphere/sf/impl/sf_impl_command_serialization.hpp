@@ -68,33 +68,77 @@ namespace ams::sf {
 
         struct OutObjectTag{};
 
+        template<size_t, size_t>
+        class InOutObjectHolder;
+
     }
 
-    template<typename T>
-    class IsOutForceEnabled<std::shared_ptr<T>> : public std::true_type{};
-
-    template<typename ServiceImpl>
-    class Out<std::shared_ptr<ServiceImpl>> : public impl::OutObjectTag {
-        static_assert(std::is_base_of<sf::IServiceObject, ServiceImpl>::value, "Out<std::shared_ptr<ServiceImpl>> requires ServiceObject base.");
-
+    template<typename ServiceImpl> requires std::derived_from<ServiceImpl, IServiceObject>
+    class Out<SharedPointer<ServiceImpl>> : public impl::OutObjectTag {
         template<typename>
         friend class Out;
-
         public:
-            using ServiceImplType = ServiceImpl;
+            using Interface = ServiceImpl;
         private:
-            cmif::ServiceObjectHolder *srv;
-            cmif::DomainObjectId *object_id;
+            impl::SharedPointerBase *m_out;
+            cmif::DomainObjectId *m_object_id;
+        private:
+            Out(impl::SharedPointerBase *p, cmif::DomainObjectId *o = nullptr) : m_out(p), m_object_id(o) { /* ... */ }
         public:
-            Out(cmif::ServiceObjectHolder *s) : srv(s), object_id(nullptr) { /* ... */ }
-            Out(cmif::ServiceObjectHolder *s, cmif::DomainObjectId *o) : srv(s), object_id(o) { /* ... */ }
+            Out(const Out &rhs) : m_out(rhs.m_out), m_object_id(rhs.m_object_id) { /* ... */ }
 
-            void SetValue(std::shared_ptr<ServiceImpl> &&s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
-                *this->srv = cmif::ServiceObjectHolder(std::move(s));
+            Out(SharedPointer<ServiceImpl> *out, cmif::DomainObjectId *o = nullptr) : m_out(std::addressof(out->m_base)), m_object_id(o) { /* .... */ }
+
+            template<typename U> requires std::derived_from<U, ServiceImpl>
+            Out(Out<SharedPointer<U>> out) : m_out(out.m_out), m_object_id(out.m_object_id) { /* ... */ }
+
+            template<typename U> requires std::derived_from<U, ServiceImpl>
+            Out(SharedPointer<U> *out, cmif::DomainObjectId *o = nullptr) : m_out(std::addressof(out->m_base)), m_object_id(o)  { /* .... */ }
+
+            void SetValue(SharedPointer<ServiceImpl> s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
+                *m_out = std::move(s.m_base);
                 if (new_object_id != cmif::InvalidDomainObjectId) {
-                    AMS_ABORT_UNLESS(object_id != nullptr);
-                    *this->object_id = new_object_id;
+                    AMS_ABORT_UNLESS(m_object_id != nullptr);
+                    *m_object_id = new_object_id;
                 }
+            }
+
+            template<typename U> requires std::derived_from<U, ServiceImpl>
+            void SetValue(SharedPointer<U> s, cmif::DomainObjectId new_object_id = cmif::InvalidDomainObjectId) {
+                *m_out = std::move(s.m_base);
+                if (new_object_id != cmif::InvalidDomainObjectId) {
+                    AMS_ABORT_UNLESS(m_object_id != nullptr);
+                    *m_object_id = new_object_id;
+                }
+            }
+
+            class DerefProxy {
+                template<typename>
+                friend class Out;
+                private:
+                    Out &m_target;
+                private:
+                    explicit DerefProxy(Out &t) : m_target(t) { /* ... */ }
+                public:
+                    DerefProxy &operator=(SharedPointer<ServiceImpl> p) {
+                        m_target.SetValue(std::move(p));
+                        return *this;
+                    }
+
+                    template<typename U> requires std::derived_from<U, ServiceImpl>
+                    DerefProxy &operator=(SharedPointer<U> p) {
+                        m_target.SetValue(std::move(p));
+                        return *this;
+                    }
+            };
+
+            DerefProxy operator *() {
+                return DerefProxy(*this);
+            }
+
+            template<typename U>
+            Out<SharedPointer<U>> DownCast() {
+                return Out<SharedPointer<U>>(m_out, m_object_id);
             }
     };
 
@@ -149,8 +193,8 @@ namespace ams::sf::impl {
     struct IsInObject : public std::false_type{};
 
     template<typename T>
-    struct IsInObject<std::shared_ptr<T>> : public std::true_type {
-        static_assert(std::is_base_of<sf::IServiceObject, T>::value, "Invalid IsInObject<std::shared_ptr<T>>");
+    struct IsInObject<sf::SharedPointer<T>> : public std::true_type {
+        static_assert(std::is_base_of<sf::IServiceObject, T>::value, "Invalid IsInObject<sf::SharedPointer<T>>");
     };
 
     template<typename T>
@@ -628,6 +672,7 @@ namespace ams::sf::impl {
         private:
             std::array<cmif::ServiceObjectHolder, NumInObjects> in_object_holders;
             std::array<cmif::ServiceObjectHolder, NumOutObjects> out_object_holders;
+            std::array<TYPED_STORAGE(SharedPointer<sf::IServiceObject>), NumOutObjects> out_shared_pointers;
             std::array<cmif::DomainObjectId, NumOutObjects> out_object_ids;
         public:
             constexpr InOutObjectHolder() : in_object_holders(), out_object_holders() {
@@ -655,8 +700,8 @@ namespace ams::sf::impl {
                 static_assert(std::tuple_size<ServiceImplTuple>::value == NumInObjects);
                 #define _SF_IN_OUT_HOLDER_VALIDATE_IN_OBJECT(n) do { \
                     if constexpr (NumInObjects > n) { \
-                        using SharedPtrToServiceImplType = typename std::tuple_element<n, ServiceImplTuple>::type; \
-                        using ServiceImplType = typename SharedPtrToServiceImplType::element_type; \
+                        using SharedPointerType = typename std::tuple_element<n, ServiceImplTuple>::type; \
+                        using ServiceImplType   = typename SharedPointerType::Interface; \
                         R_UNLESS((this->in_object_holders[n].template IsServiceObjectValid<ServiceImplType>()), sf::cmif::ResultInvalidInObject()); \
                     } \
                 } while (0)
@@ -672,15 +717,21 @@ namespace ams::sf::impl {
                 return ResultSuccess();
             }
 
-            template<size_t Index, typename ServiceImpl>
-            std::shared_ptr<ServiceImpl> GetInObject() const {
-                /* We know from ValidateInObjects() that this will succeed always. */
-                return this->in_object_holders[Index].template GetServiceObject<ServiceImpl>();
+            template<size_t Index, typename Interface>
+            SharedPointer<Interface> *GetOutObjectSharedPointer() {
+                static_assert(sizeof(SharedPointer<Interface>) == sizeof(SharedPointer<sf::IServiceObject>));
+                return static_cast<SharedPointer<Interface> *>(static_cast<void *>(&out_shared_pointers[Index]));
             }
 
-            template<size_t Index, typename ServiceImpl>
-            Out<std::shared_ptr<ServiceImpl>> GetOutObject() {
-                return Out<std::shared_ptr<ServiceImpl>>(&this->out_object_holders[Index], &this->out_object_ids[Index]);
+            template<size_t Index, typename Interface>
+            Out<SharedPointer<Interface>> GetOutObject() {
+                auto sp = new (GetOutObjectSharedPointer<Index, Interface>()) SharedPointer<Interface>;
+                return Out<SharedPointer<Interface>>(sp, &this->out_object_ids[Index]);
+            }
+
+            template<size_t Index, typename Interface>
+            void SetOutObject() {
+                this->out_object_holders[Index] = cmif::ServiceObjectHolder(std::move(*GetOutObjectSharedPointer<Index, Interface>()));
             }
 
             constexpr void SetOutObjects(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response) {
@@ -985,10 +1036,10 @@ namespace ams::sf::impl {
                     }
                 } else if constexpr (Info.arg_type == ArgumentType::InObject) {
                     /* New InObject. */
-                    return in_out_objects_holder.template GetInObject<Info.in_object_index, typename T::element_type>();
+                    return in_out_objects_holder.template GetInObject<Info.in_object_index, typename T::Interface>();
                 } else if constexpr (Info.arg_type == ArgumentType::OutObject) {
                     /* New OutObject. */
-                    return in_out_objects_holder.template GetOutObject<Info.out_object_index, typename T::ServiceImplType>();
+                    return in_out_objects_holder.template GetOutObject<Info.out_object_index, typename T::Interface>();
                 } else if constexpr (Info.arg_type == ArgumentType::Buffer) {
                     /* Buffers were already processed earlier. */
                     if constexpr (sf::IsLargeData<T>) {
@@ -1124,6 +1175,21 @@ namespace ams::sf::impl {
         out_handles_holder.CopyTo(response, runtime_metadata.GetOutObjectCount());
 
         /* Set output objects. */
+        #define _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(n) do {                                                                                    \
+            if constexpr (n < CommandMeta::NumOutObjects) {                                                                                      \
+                in_out_objects_holder.template SetOutObject<n, typename std::tuple_element_t<n, typename CommandMeta::OutObjects>::Interface>(); \
+            }                                                                                                                                    \
+        } while (0)
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(0);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(1);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(2);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(3);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(4);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(5);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(6);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(7);
+        _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(8);
+        #undef _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT
         in_out_objects_holder.SetOutObjects(ctx, response);
 
         return ResultSuccess();

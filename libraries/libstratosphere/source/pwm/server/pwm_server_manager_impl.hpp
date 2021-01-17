@@ -21,9 +21,11 @@ namespace ams::pwm::server {
 
     class ManagerImpl {
         private:
+            using Allocator = ams::sf::ExpHeapAllocator;
+            using Factory   = ams::sf::ObjectFactory<Allocator::Policy>;
+        private:
             lmem::HeapHandle heap_handle;
-            ams::sf::ExpHeapMemoryResource session_memory_resource;
-            typename ams::sf::ServiceObjectAllocator<pwm::sf::IChannelSession, ChannelSessionImpl> allocator;
+            Allocator allocator;
             u8 heap_buffer[4_KB];
         public:
             ManagerImpl();
@@ -31,9 +33,9 @@ namespace ams::pwm::server {
             ~ManagerImpl();
         public:
             /* Actual commands. */
-            Result OpenSessionForDev(ams::sf::Out<std::shared_ptr<pwm::sf::IChannelSession>> out, int channel);
-            Result OpenSession(ams::sf::Out<std::shared_ptr<pwm::sf::IChannelSession>> out, pwm::ChannelName channel_name);
-            Result OpenSession2(ams::sf::Out<std::shared_ptr<pwm::sf::IChannelSession>> out, DeviceCode device_code);
+            Result OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, int channel);
+            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, pwm::ChannelName channel_name);
+            Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, DeviceCode device_code);
     };
     static_assert(pwm::sf::IsIManager<ManagerImpl>);
 

@@ -21,9 +21,11 @@ namespace ams::i2c::server {
 
     class ManagerImpl {
         private:
+            using Allocator = ams::sf::ExpHeapAllocator;
+            using Factory   = ams::sf::ObjectFactory<Allocator::Policy>;
+        private:
             lmem::HeapHandle heap_handle;
-            ams::sf::ExpHeapMemoryResource session_memory_resource;
-            typename ams::sf::ServiceObjectAllocator<i2c::sf::ISession, SessionImpl> allocator;
+            Allocator allocator;
             u8 heap_buffer[4_KB];
         public:
             ManagerImpl();
@@ -31,11 +33,11 @@ namespace ams::i2c::server {
             ~ManagerImpl();
         public:
             /* Actual commands. */
-            Result OpenSessionForDev(ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode);
-            Result OpenSession(ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, i2c::I2cDevice device);
+            Result OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode);
+            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, i2c::I2cDevice device);
             Result HasDevice(ams::sf::Out<bool> out, i2c::I2cDevice device);
             Result HasDeviceForDev(ams::sf::Out<bool> out, i2c::I2cDevice device);
-            Result OpenSession2(ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, DeviceCode device_code);
+            Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, DeviceCode device_code);
     };
     static_assert(i2c::sf::IsIManager<ManagerImpl>);
 

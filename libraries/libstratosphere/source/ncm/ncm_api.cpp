@@ -20,23 +20,25 @@ namespace ams::ncm {
 
     namespace {
 
-        std::shared_ptr<IContentManager> g_content_manager;
+        sf::SharedPointer<IContentManager> g_content_manager;
+
+        sf::UnmanagedServiceObject<IContentManager, RemoteContentManagerImpl> g_remote_manager_impl;
 
     }
 
     void Initialize() {
         AMS_ASSERT(g_content_manager == nullptr);
         R_ABORT_UNLESS(ncmInitialize());
-        g_content_manager = sf::MakeShared<IContentManager, RemoteContentManagerImpl>();
+        g_content_manager = g_remote_manager_impl.GetShared();
     }
 
     void Finalize() {
         AMS_ASSERT(g_content_manager != nullptr);
-        g_content_manager.reset();
+        g_content_manager.Reset();
         ncmExit();
     }
 
-    void InitializeWithObject(std::shared_ptr<IContentManager> manager_object) {
+    void InitializeWithObject(sf::SharedPointer<IContentManager> manager_object) {
         AMS_ASSERT(g_content_manager == nullptr);
         g_content_manager = manager_object;
         AMS_ASSERT(g_content_manager != nullptr);
@@ -60,18 +62,18 @@ namespace ams::ncm {
     }
 
     Result OpenContentStorage(ContentStorage *out, StorageId storage_id) {
-        sf::cmif::ServiceObjectHolder object_holder;
-        R_TRY(g_content_manager->OpenContentStorage(std::addressof(object_holder), storage_id));
+        sf::SharedPointer<IContentStorage> content_storage;
+        R_TRY(g_content_manager->OpenContentStorage(std::addressof(content_storage), storage_id));
 
-        *out = ContentStorage(object_holder.GetServiceObject<IContentStorage>());
+        *out = ContentStorage(std::move(content_storage));
         return ResultSuccess();
     }
 
     Result OpenContentMetaDatabase(ContentMetaDatabase *out, StorageId storage_id) {
-        sf::cmif::ServiceObjectHolder object_holder;
-        R_TRY(g_content_manager->OpenContentMetaDatabase(std::addressof(object_holder), storage_id));
+        sf::SharedPointer<IContentMetaDatabase> content_db;
+        R_TRY(g_content_manager->OpenContentMetaDatabase(std::addressof(content_db), storage_id));
 
-        *out = ContentMetaDatabase(object_holder.GetServiceObject<IContentMetaDatabase>());
+        *out = ContentMetaDatabase(std::move(content_db));
         return ResultSuccess();
     }
 

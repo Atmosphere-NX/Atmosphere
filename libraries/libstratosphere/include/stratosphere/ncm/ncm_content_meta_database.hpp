@@ -26,21 +26,21 @@ namespace ams::ncm {
                 s32 total;
             };
         private:
-            std::shared_ptr<IContentMetaDatabase> interface;
+            sf::SharedPointer<IContentMetaDatabase> interface;
         public:
             ContentMetaDatabase() { /* ... */ }
-            explicit ContentMetaDatabase(std::shared_ptr<IContentMetaDatabase> intf) : interface(std::move(intf)) { /* ... */ }
+            explicit ContentMetaDatabase(sf::SharedPointer<IContentMetaDatabase> intf) : interface(intf) { /* ... */ }
 
             ContentMetaDatabase(ContentMetaDatabase &&rhs) {
                 this->interface = std::move(rhs.interface);
             }
 
             ContentMetaDatabase &operator=(ContentMetaDatabase &&rhs) {
-                ContentMetaDatabase(std::move(rhs)).Swap(*this);
+                ContentMetaDatabase(std::move(rhs)).swap(*this);
                 return *this;
             }
 
-            void Swap(ContentMetaDatabase &rhs) {
+            void swap(ContentMetaDatabase &rhs) {
                 std::swap(this->interface, rhs.interface);
             }
         public:

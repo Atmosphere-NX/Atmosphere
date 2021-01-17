@@ -20,27 +20,17 @@ namespace ams::i2c::server {
 
     namespace {
 
-        ManagerImpl g_manager_impl;
-        ManagerImpl g_pcv_manager_impl;
-
-        std::shared_ptr<i2c::sf::IManager> GetManagerServiceObject() {
-            static std::shared_ptr<i2c::sf::IManager> s_sp = ams::sf::GetSharedPointerTo<i2c::sf::IManager>(g_manager_impl);
-            return s_sp;
-        }
-
-        std::shared_ptr<i2c::sf::IManager> GetManagerServiceObjectPowerBus() {
-            static std::shared_ptr<i2c::sf::IManager> s_sp = ams::sf::GetSharedPointerTo<i2c::sf::IManager>(g_pcv_manager_impl);
-            return s_sp;
-        }
+        ams::sf::UnmanagedServiceObject<i2c::sf::IManager, i2c::server::ManagerImpl> g_manager_impl;
+        ams::sf::UnmanagedServiceObject<i2c::sf::IManager, i2c::server::ManagerImpl> g_pcv_manager_impl;
 
     }
 
-    std::shared_ptr<i2c::sf::IManager> GetServiceObject() {
-        return GetManagerServiceObject();
+    ams::sf::SharedPointer<i2c::sf::IManager> GetServiceObject() {
+        return g_manager_impl.GetShared();
     }
 
-    std::shared_ptr<i2c::sf::IManager> GetServiceObjectPowerBus() {
-        return GetManagerServiceObjectPowerBus();
+    ams::sf::SharedPointer<i2c::sf::IManager> GetServiceObjectPowerBus() {
+        return g_pcv_manager_impl.GetShared();
     }
 
 }

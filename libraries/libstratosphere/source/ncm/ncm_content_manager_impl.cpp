@@ -465,7 +465,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentManagerImpl::OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id) {
+    Result ContentManagerImpl::OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
         /* Obtain the content storage root. */
@@ -482,11 +482,11 @@ namespace ams::ncm {
             }
         }
 
-        out.SetValue(std::shared_ptr<IContentStorage>(root->content_storage));
+        *out = root->content_storage;
         return ResultSuccess();
     }
 
-    Result ContentManagerImpl::OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id) {
+    Result ContentManagerImpl::OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id) {
         std::scoped_lock lk(this->mutex);
 
         /* Obtain the content meta database root. */
@@ -503,7 +503,7 @@ namespace ams::ncm {
             }
         }
 
-        out.SetValue(std::shared_ptr<IContentMetaDatabase>(root->content_meta_database));
+        *out = root->content_meta_database;
         return ResultSuccess();
     }
 
@@ -553,23 +553,23 @@ namespace ams::ncm {
 
         if (storage_id == StorageId::GameCard) {
             /* Game card content storage is read only. */
-            auto content_storage = sf::MakeShared<IContentStorage, ReadOnlyContentStorageImpl>();
-            R_TRY(content_storage->GetImpl().Initialize(root->path, MakeFlatContentFilePath));
+            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ReadOnlyContentStorageImpl>();
+            R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath));
             root->content_storage = std::move(content_storage);
         } else {
             /* Create a content storage. */
-            auto content_storage = sf::MakeShared<IContentStorage, ContentStorageImpl>();
+            auto content_storage = sf::CreateSharedObjectEmplaced<IContentStorage, ContentStorageImpl>();
 
             /* Initialize content storage with an appropriate path function. */
             switch (storage_id) {
                 case StorageId::BuiltInSystem:
-                    R_TRY(content_storage->GetImpl().Initialize(root->path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(this->rights_id_cache)));
+                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeFlatContentFilePath, MakeFlatPlaceHolderFilePath, false, std::addressof(this->rights_id_cache)));
                     break;
                 case StorageId::SdCard:
-                    R_TRY(content_storage->GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, true, std::addressof(this->rights_id_cache)));
+                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, true, std::addressof(this->rights_id_cache)));
                     break;
                 default:
-                    R_TRY(content_storage->GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, false, std::addressof(this->rights_id_cache)));
+                    R_TRY(content_storage.GetImpl().Initialize(root->path, MakeSha256HierarchicalContentFilePath_ForFat16KCluster, MakeSha256HierarchicalPlaceHolderFilePath_ForFat16KCluster, false, std::addressof(this->rights_id_cache)));
                     break;
             }
 
@@ -589,7 +589,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentStorageRoot(std::addressof(root), storage_id));
 
         /* Disable and unmount the content storage, if present. */
-        if (root->content_storage) {
+        if (root->content_storage != nullptr) {
             /* N doesn't bother checking the result of this */
             root->content_storage->DisableForcibly();
             root->content_storage = nullptr;
@@ -617,7 +617,7 @@ namespace ams::ncm {
             R_TRY(root->kvs->Initialize(root->max_content_metas, root->memory_resource));
 
             /* Create an on memory content meta database for game cards. */
-            root->content_meta_database = sf::MakeShared<IContentMetaDatabase, OnMemoryContentMetaDatabaseImpl>(std::addressof(*root->kvs));
+            root->content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, OnMemoryContentMetaDatabaseImpl>(std::addressof(*root->kvs));
         } else {
             /* Mount save data for this root. */
             R_TRY(fs::MountSystemSaveData(root->mount_name, root->info.space_id, root->info.id));
@@ -630,7 +630,7 @@ namespace ams::ncm {
             R_TRY(root->kvs->Load());
 
             /* Create the content meta database. */
-            root->content_meta_database = sf::MakeShared<IContentMetaDatabase, ContentMetaDatabaseImpl>(std::addressof(*root->kvs), root->mount_name);
+            root->content_meta_database = sf::CreateSharedObjectEmplaced<IContentMetaDatabase, ContentMetaDatabaseImpl>(std::addressof(*root->kvs), root->mount_name);
             mount_guard.Cancel();
         }
 
@@ -645,7 +645,7 @@ namespace ams::ncm {
         R_TRY(this->GetContentMetaDatabaseRoot(&root, storage_id));
 
         /* Disable the content meta database, if present. */
-        if (root->content_meta_database) {
+        if (root->content_meta_database != nullptr) {
             /* N doesn't bother checking the result of this */
             root->content_meta_database->DisableForcibly();
             root->content_meta_database = nullptr;

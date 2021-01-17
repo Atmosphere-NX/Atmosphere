@@ -19,11 +19,13 @@
 
 namespace ams::gpio::server {
 
-    class ManagerImpl {
+    class ManagerImpl : public ams::sf::ISharedObject {
+        private:
+            using Allocator = ams::sf::ExpHeapAllocator;
+            using Factory   = ams::sf::ObjectFactory<Allocator::Policy>;
         private:
             lmem::HeapHandle heap_handle;
-            ams::sf::ExpHeapMemoryResource pad_session_memory_resource;
-            typename ams::sf::ServiceObjectAllocator<gpio::sf::IPadSession, PadSessionImpl> pad_allocator;
+            Allocator pad_allocator;
             u8 heap_buffer[12_KB];
         public:
             ManagerImpl();
@@ -31,14 +33,14 @@ namespace ams::gpio::server {
             ~ManagerImpl();
         public:
             /* Actual commands. */
-            Result OpenSessionForDev(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, s32 pad_descriptor);
-            Result OpenSession(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
-            Result OpenSessionForTest(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
+            Result OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor);
+            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
+            Result OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
             Result IsWakeEventActive(ams::sf::Out<bool> out, gpio::GpioPadName pad_name);
             Result GetWakeEventActiveFlagSet(ams::sf::Out<gpio::WakeBitFlag> out);
             Result SetWakeEventActiveFlagSetForDebug(gpio::GpioPadName pad_name, bool is_enabled);
             Result SetWakePinDebugMode(s32 mode);
-            Result OpenSession2(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
+            Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
             Result IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code);
             Result SetWakeEventActiveFlagSetForDebug2(DeviceCode device_code, bool is_enabled);
             Result SetRetryValues(u32 arg0, u32 arg1);

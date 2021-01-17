@@ -16,12 +16,12 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#define AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const capsrv::ScreenShotDecodeOption &option), (out, in, width, height, option))
+
+AMS_SF_DEFINE_INTERFACE(ams::capsrv::server, IDecoderControlService, AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO)
+
 namespace ams::capsrv::server {
-
-    #define AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO(C, H)                                                                                                                  \
-        AMS_SF_METHOD_INFO(C, H, 3001, Result, DecodeJpeg, (const sf::OutNonSecureBuffer &out, const sf::InBuffer &in, u32 width, u32 height, const ScreenShotDecodeOption &option))
-
-    AMS_SF_DEFINE_INTERFACE(IDecoderControlService, AMS_CAPSRV_DECODER_CONTROL_SERVICE_INTERFACE_INFO)
 
     class DecoderControlService final {
         public:

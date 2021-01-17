@@ -34,7 +34,8 @@ namespace ams::psc {
         ::PscPmModule module;
         R_TRY(::pscmGetPmModule(std::addressof(module), static_cast<::PscPmModuleId>(mid), reinterpret_cast<const u16 *>(dependencies), dependency_count, clear_mode == os::EventClearMode_AutoClear));
 
-        this->intf = ams::sf::MakeShared<psc::sf::IPmModule, RemotePmModule>(module);
+        /* TODO: Proper allocator */
+        this->intf = ams::sf::CreateSharedObjectEmplaced<psc::sf::IPmModule, RemotePmModule>(module);
         this->system_event.AttachReadableHandle(module.event.revent, false, clear_mode);
         this->initialized = true;
         return ResultSuccess();

@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    class RemoteContentMetaDatabaseImpl final {
+    class RemoteContentMetaDatabaseImpl {
         private:
             ::NcmContentMetaDatabase srv;
         public:
@@ -71,11 +71,11 @@ namespace ams::ncm {
                 return reinterpret_cast<const ::NcmContentId *>(std::addressof(c));
             }
         public:
-            Result Set(const ContentMetaKey &key, sf::InBuffer value) {
+            Result Set(const ContentMetaKey &key, const sf::InBuffer &value) {
                 return ncmContentMetaDatabaseSet(std::addressof(this->srv), Convert(key), value.GetPointer(), value.GetSize());
             }
 
-            Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) {
+            Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, const sf::OutBuffer &out_value) {
                 return ncmContentMetaDatabaseGet(std::addressof(this->srv), Convert(key), out_size.GetPointer(), out_value.GetPointer(), out_value.GetSize());
             }
 

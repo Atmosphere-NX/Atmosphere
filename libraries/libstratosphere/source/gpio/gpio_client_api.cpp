@@ -23,13 +23,13 @@ namespace ams::gpio {
         constinit os::SdkMutex g_init_mutex;
         constinit int g_initialize_count = 0;
         constinit bool g_remote = false;
-        std::shared_ptr<sf::IManager> g_manager;
+        ams::sf::SharedPointer<gpio::sf::IManager> g_manager;
 
-        using InternalSession = std::shared_ptr<gpio::sf::IPadSession>;
+        ams::sf::UnmanagedServiceObject<gpio::sf::IManager, RemoteManagerImpl> g_remote_manager_impl;
 
-        InternalSession &GetInterface(GpioPadSession *session) {
+        gpio::sf::IPadSession *GetInterface(GpioPadSession *session) {
             AMS_ASSERT(session->_session != nullptr);
-            return *static_cast<InternalSession *>(session->_session);
+            return static_cast<gpio::sf::IPadSession *>(session->_session);
         }
 
     }
@@ -39,17 +39,17 @@ namespace ams::gpio {
 
         if ((g_initialize_count++) == 0) {
             R_ABORT_UNLESS(::gpioInitialize());
-            g_manager = ams::sf::MakeShared<sf::IManager, RemoteManagerImpl>();
+            g_manager = g_remote_manager_impl.GetShared();
             g_remote  = true;
         }
     }
 
-    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp) {
+    void InitializeWith(ams::sf::SharedPointer<gpio::sf::IManager> manager) {
         std::scoped_lock lk(g_init_mutex);
 
         AMS_ABORT_UNLESS(g_initialize_count == 0);
 
-        g_manager = std::move(sp);
+        g_manager = manager;
         g_initialize_count = 1;
     }
 
@@ -59,7 +59,7 @@ namespace ams::gpio {
         AMS_ASSERT(g_initialize_count > 0);
 
         if ((--g_initialize_count) == 0) {
-            g_manager.reset();
+            g_manager = nullptr;
             if (g_remote) {
                 ::gpioExit();
             }
@@ -67,28 +67,21 @@ namespace ams::gpio {
     }
 
     Result OpenSession(GpioPadSession *out_session, ams::DeviceCode device_code) {
-        /* Allocate the session. */
-        InternalSession *internal_session = new (std::nothrow) InternalSession;
-        AMS_ABORT_UNLESS(internal_session != nullptr);
-        auto session_guard = SCOPE_GUARD { delete internal_session; };
-
         /* Get the session. */
+        ams::sf::SharedPointer<gpio::sf::IPadSession> session;
         {
-            ams::sf::cmif::ServiceObjectHolder object_holder;
             if (hos::GetVersion() >= hos::Version_7_0_0) {
-                R_TRY(g_manager->OpenSession2(std::addressof(object_holder), device_code, ddsf::AccessMode_ReadWrite));
+                R_TRY(g_manager->OpenSession2(std::addressof(session), device_code, ddsf::AccessMode_ReadWrite));
             } else {
-                R_TRY(g_manager->OpenSession(std::addressof(object_holder), ConvertToGpioPadName(device_code)));
+                R_TRY(g_manager->OpenSession(std::addressof(session), ConvertToGpioPadName(device_code)));
             }
-            *internal_session = object_holder.GetServiceObject<sf::IPadSession>();
         }
 
         /* Set output. */
-        out_session->_session = internal_session;
+        out_session->_session = session.Detach();
         out_session->_event   = nullptr;
 
         /* We succeeded. */
-        session_guard.Cancel();
         return ResultSuccess();
     }
 
@@ -101,7 +94,7 @@ namespace ams::gpio {
         }
 
         /* Close the session. */
-        delete std::addressof(GetInterface(session));
+        ams::sf::ReleaseSharedObject(GetInterface(session));
         session->_session = nullptr;
     }
 

@@ -20,17 +20,12 @@ namespace ams::gpio::server {
 
     namespace {
 
-        ManagerImpl g_manager_impl;
-
-        std::shared_ptr<gpio::sf::IManager> GetManagerServiceObject() {
-            static std::shared_ptr<gpio::sf::IManager> s_sp = ams::sf::GetSharedPointerTo<gpio::sf::IManager>(g_manager_impl);
-            return s_sp;
-        }
+        ams::sf::UnmanagedServiceObject<gpio::sf::IManager, gpio::server::ManagerImpl> g_manager_impl;
 
     }
 
-    std::shared_ptr<gpio::sf::IManager> GetServiceObject() {
-        return GetManagerServiceObject();
+    ams::sf::SharedPointer<gpio::sf::IManager> GetServiceObject() {
+        return g_manager_impl.GetShared();
     }
 
 }

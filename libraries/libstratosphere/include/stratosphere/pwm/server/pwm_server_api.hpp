@@ -20,6 +20,6 @@
 
 namespace ams::pwm::server {
 
-    std::shared_ptr<pwm::sf::IManager> GetServiceObject();
+    ams::sf::SharedPointer<pwm::sf::IManager> GetServiceObject();
 
 }

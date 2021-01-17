@@ -20,15 +20,11 @@
 #include <stratosphere/i2c/i2c_select_device_name.hpp>
 #include <stratosphere/i2c/sf/i2c_sf_i_session.hpp>
 
-namespace ams::i2c::sf {
+#define AMS_I2C_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                                                                           \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, OpenSessionForDev,                  (ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode), (out, bus_idx, slave_address, addressing_mode, speed_mode)                                        ) \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, OpenSession,                        (ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, i2c::I2cDevice device),                                                                          (out, device)                                                                                     ) \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, HasDevice,                          (ams::sf::Out<bool> out, i2c::I2cDevice device),                                                                                                               (out, device),                                              hos::Version_Min,   hos::Version_5_1_0) \
+    AMS_SF_METHOD_INFO(C, H,  3, Result, HasDeviceForDev,                    (ams::sf::Out<bool> out, i2c::I2cDevice device),                                                                                                               (out, device),                                              hos::Version_Min,   hos::Version_5_1_0) \
+    AMS_SF_METHOD_INFO(C, H,  4, Result, OpenSession2,                       (ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, DeviceCode device_code),                                                                         (out, device_code),                                         hos::Version_6_0_0                    )
 
-    #define AMS_I2C_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                                                                                                              \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, OpenSessionForDev,                  (ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode)                                        ) \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, OpenSession,                        (ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, i2c::I2cDevice device)                                                                                                                 ) \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, HasDevice,                          (ams::sf::Out<bool> out, i2c::I2cDevice device),                                                                                                        hos::Version_Min,   hos::Version_5_1_0) \
-        AMS_SF_METHOD_INFO(C, H,  3, Result, HasDeviceForDev,                    (ams::sf::Out<bool> out, i2c::I2cDevice device),                                                                                                        hos::Version_Min,   hos::Version_5_1_0) \
-        AMS_SF_METHOD_INFO(C, H,  4, Result, OpenSession2,                       (ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, DeviceCode device_code),                                                                         hos::Version_6_0_0                    )
-
-    AMS_SF_DEFINE_INTERFACE(IManager, AMS_I2C_I_MANAGER_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::i2c::sf, IManager, AMS_I2C_I_MANAGER_INTERFACE_INFO)

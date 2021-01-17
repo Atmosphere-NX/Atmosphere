@@ -25,10 +25,10 @@ namespace ams::pgl {
     class EventObserver {
         NON_COPYABLE(EventObserver);
         private:
-            std::shared_ptr<pgl::sf::IEventObserver> interface;
+            ams::sf::SharedPointer<pgl::sf::IEventObserver> interface;
         public:
             EventObserver() { /* ... */ }
-            explicit EventObserver(std::shared_ptr<pgl::sf::IEventObserver> intf) : interface(std::move(intf)) { /* ... */ }
+            explicit EventObserver(ams::sf::SharedPointer<pgl::sf::IEventObserver> intf) : interface(intf) { /* ... */ }
 
             EventObserver(EventObserver &&rhs) {
                 this->interface = std::move(rhs.interface);

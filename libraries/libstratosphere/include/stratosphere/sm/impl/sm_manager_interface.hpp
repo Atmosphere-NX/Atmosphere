@@ -19,15 +19,11 @@
 #include <stratosphere/sm/sm_types.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::sm::impl {
+#define AMS_SM_I_MANAGER_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                     \
+    AMS_SF_METHOD_INFO(C, H,     0, Result, RegisterProcess,           (os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac),                                                                 (process_id, acid_sac, aci_sac))                              \
+    AMS_SF_METHOD_INFO(C, H,     1, Result, UnregisterProcess,         (os::ProcessId process_id),                                                                                                                            (process_id))                                                 \
+    AMS_SF_METHOD_INFO(C, H, 65000, void,   AtmosphereEndInitDefers,   (),                                                                                                                                                    ())                                                           \
+    AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereHasMitm,         (sf::Out<bool> out, sm::ServiceName service),                                                                                                          (out, service))                                               \
+    AMS_SF_METHOD_INFO(C, H, 65002, Result, AtmosphereRegisterProcess, (os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac), (process_id, program_id, override_status, acid_sac, aci_sac))
 
-    #define AMS_SM_I_MANAGER_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                       \
-        AMS_SF_METHOD_INFO(C, H,     0, Result, RegisterProcess,           (os::ProcessId process_id, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac))                                                                 \
-        AMS_SF_METHOD_INFO(C, H,     1, Result, UnregisterProcess,         (os::ProcessId process_id))                                                                                                                            \
-        AMS_SF_METHOD_INFO(C, H, 65000, void,   AtmosphereEndInitDefers,   ())                                                                                                                                                    \
-        AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereHasMitm,         (sf::Out<bool> out, ServiceName service))                                                                                                              \
-        AMS_SF_METHOD_INFO(C, H, 65002, Result, AtmosphereRegisterProcess, (os::ProcessId process_id, ncm::ProgramId program_id, cfg::OverrideStatus override_status, const sf::InBuffer &acid_sac, const sf::InBuffer &aci_sac))
-
-    AMS_SF_DEFINE_INTERFACE(IManagerInterface, AMS_SM_I_MANAGER_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::sm::impl, IManagerInterface, AMS_SM_I_MANAGER_INTERFACE_INTERFACE_INFO)

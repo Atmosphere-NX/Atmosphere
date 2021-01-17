@@ -23,21 +23,21 @@ namespace ams::lr {
     class LocationResolver {
         NON_COPYABLE(LocationResolver);
         private:
-            std::shared_ptr<ILocationResolver> interface;
+            sf::SharedPointer<ILocationResolver> interface;
         public:
             LocationResolver() { /* ... */ }
-            explicit LocationResolver(std::shared_ptr<ILocationResolver> intf) : interface(std::move(intf)) { /* ... */ }
+            explicit LocationResolver(sf::SharedPointer<ILocationResolver> intf) : interface(intf) { /* ... */ }
 
             LocationResolver(LocationResolver &&rhs) {
                 this->interface = std::move(rhs.interface);
             }
 
             LocationResolver &operator=(LocationResolver &&rhs) {
-                LocationResolver(std::move(rhs)).Swap(*this);
+                LocationResolver(std::move(rhs)).swap(*this);
                 return *this;
             }
 
-            void Swap(LocationResolver &rhs) {
+            void swap(LocationResolver &rhs) {
                 std::swap(this->interface, rhs.interface);
             }
         public:

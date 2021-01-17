@@ -31,7 +31,7 @@ namespace ams::sf::cmif {
         }
     }
 
-    void ServerDomainManager::Domain::DestroySelf() {
+    void ServerDomainManager::Domain::DisposeImpl() {
         ServerDomainManager *manager = this->manager;
         this->~Domain();
         manager->FreeDomain(this);

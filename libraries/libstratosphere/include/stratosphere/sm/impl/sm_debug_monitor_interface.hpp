@@ -19,13 +19,9 @@
 #include <stratosphere/sm/sm_types.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::sm::impl {
+#define AMS_SM_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                            \
+    AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereGetRecord,     (sf::Out<sm::ServiceRecord> record, sm::ServiceName service),                         (record, service))            \
+    AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereListRecords,   (const sf::OutArray<sm::ServiceRecord> &records, sf::Out<u64> out_count, u64 offset), (records, out_count, offset)) \
+    AMS_SF_METHOD_INFO(C, H, 65002, void,   AtmosphereGetRecordSize, (sf::Out<u64> record_size),                                                           (record_size))
 
-    #define AMS_SM_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO(C, H)                                                                                          \
-        AMS_SF_METHOD_INFO(C, H, 65000, Result, AtmosphereGetRecord,     (sf::Out<ServiceRecord> record, ServiceName service))                             \
-        AMS_SF_METHOD_INFO(C, H, 65001, void,   AtmosphereListRecords,   (const sf::OutArray<ServiceRecord> &records, sf::Out<u64> out_count, u64 offset)) \
-        AMS_SF_METHOD_INFO(C, H, 65002, void,   AtmosphereGetRecordSize, (sf::Out<u64> record_size))
-
-    AMS_SF_DEFINE_INTERFACE(IDebugMonitorInterface, AMS_SM_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::sm::impl, IDebugMonitorInterface, AMS_SM_I_DEBUG_MONITOR_INTERFACE_INTERFACE_INFO)

@@ -18,7 +18,7 @@
 
 namespace ams::ncm {
 
-    class RemoteContentStorageImpl final {
+    class RemoteContentStorageImpl {
         private:
             ::NcmContentStorage srv;
         public:
@@ -63,7 +63,7 @@ namespace ams::ncm {
                 return ncmContentStorageHasPlaceHolder(std::addressof(this->srv), out.GetPointer(), Convert(placeholder_id));
             }
 
-            Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) {
+            Result WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) {
                 return ncmContentStorageWritePlaceHolder(std::addressof(this->srv), Convert(placeholder_id), offset, data.GetPointer(), data.GetSize());
             }
 
@@ -120,7 +120,7 @@ namespace ams::ncm {
                 return ncmContentStorageSetPlaceHolderSize(std::addressof(this->srv), Convert(placeholder_id), size);
             }
 
-            Result ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) {
+            Result ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) {
                 return ncmContentStorageReadContentIdFile(std::addressof(this->srv), buf.GetPointer(), buf.GetSize(), Convert(content_id), offset);
             }
 
@@ -160,7 +160,7 @@ namespace ams::ncm {
                 return ResultSuccess();
             }
 
-            Result WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) {
+            Result WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) {
                 return ncmContentStorageWriteContentForDebug(std::addressof(this->srv), Convert(content_id), offset, data.GetPointer(), data.GetSize());
             }
 

@@ -292,7 +292,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, sf::InBuffer data) {
+    Result ContentStorageImpl::WritePlaceHolder(PlaceHolderId placeholder_id, s64 offset, const sf::InBuffer &data) {
         /* Ensure offset is valid. */
         R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
@@ -551,7 +551,7 @@ namespace ams::ncm {
         return this->placeholder_accessor.SetPlaceHolderFileSize(placeholder_id, size);
     }
 
-    Result ContentStorageImpl::ReadContentIdFile(sf::OutBuffer buf, ContentId content_id, s64 offset) {
+    Result ContentStorageImpl::ReadContentIdFile(const sf::OutBuffer &buf, ContentId content_id, s64 offset) {
         /* Ensure offset is valid. */
         R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());
@@ -621,7 +621,7 @@ namespace ams::ncm {
         return ResultSuccess();
     }
 
-    Result ContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, sf::InBuffer data) {
+    Result ContentStorageImpl::WriteContentForDebug(ContentId content_id, s64 offset, const sf::InBuffer &data) {
         /* Ensure offset is valid. */
         R_UNLESS(offset >= 0, ncm::ResultInvalidOffset());
         R_TRY(this->EnsureEnabled());

@@ -19,13 +19,9 @@
 #include <stratosphere/err/err_error_context.hpp>
 #include <stratosphere/sf.hpp>
 
-namespace ams::ns::impl {
+#define AMS_NS_I_ASYNC_RESULT_INTERFACE_INFO(C, H)                                                               \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, Get,             (),                                             ())    \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, Cancel,          (),                                             ())    \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, GetErrorContext, (::ams::sf::Out<::ams::err::ErrorContext> out), (out))
 
-    #define AMS_NS_I_ASYNC_RESULT_INTERFACE_INFO(C, H)                                                        \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, Get,             ())                                             \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, Cancel,          ())                                             \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, GetErrorContext, (::ams::sf::Out<::ams::err::ErrorContext> out))
-
-    AMS_SF_DEFINE_INTERFACE(IAsyncResult, AMS_NS_I_ASYNC_RESULT_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::ns::impl, IAsyncResult, AMS_NS_I_ASYNC_RESULT_INTERFACE_INFO)
