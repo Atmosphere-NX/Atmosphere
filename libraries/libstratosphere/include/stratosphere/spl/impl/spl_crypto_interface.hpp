@@ -20,20 +20,15 @@
 #include <stratosphere/spl/spl_types.hpp>
 #include <stratosphere/spl/impl/spl_general_interface.hpp>
 
-namespace ams::spl::impl {
+#define AMS_SPL_I_CRYPTO_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                               \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, GenerateAesKek,              (sf::Out<spl::AccessKey> out_access_key, spl::KeySource key_source, u32 generation, u32 option),              (out_access_key, key_source, generation, option)) \
+    AMS_SF_METHOD_INFO(C, H,  3, Result, LoadAesKey,                  (s32 keyslot, spl::AccessKey access_key, spl::KeySource key_source),                                          (keyslot, access_key, key_source))                \
+    AMS_SF_METHOD_INFO(C, H,  4, Result, GenerateAesKey,              (sf::Out<spl::AesKey> out_key, spl::AccessKey access_key, spl::KeySource key_source),                         (out_key, access_key, key_source))                \
+    AMS_SF_METHOD_INFO(C, H, 14, Result, DecryptAesKey,               (sf::Out<spl::AesKey> out_key, spl::KeySource key_source, u32 generation, u32 option),                        (out_key, key_source, generation, option))        \
+    AMS_SF_METHOD_INFO(C, H, 15, Result, ComputeCtr,                  (const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, spl::IvCtr iv_ctr), (out_buf, keyslot, in_buf, iv_ctr))               \
+    AMS_SF_METHOD_INFO(C, H, 16, Result, ComputeCmac,                 (sf::Out<spl::Cmac> out_cmac, s32 keyslot, const sf::InPointerBuffer &in_buf),                                (out_cmac, keyslot, in_buf))                      \
+    AMS_SF_METHOD_INFO(C, H, 21, Result, AllocateAesKeySlot,          (sf::Out<s32> out_keyslot),                                                                                   (out_keyslot))                                    \
+    AMS_SF_METHOD_INFO(C, H, 22, Result, DeallocateAesKeySlot,        (s32 keyslot),                                                                                                (keyslot))                                        \
+    AMS_SF_METHOD_INFO(C, H, 23, Result, GetAesKeySlotAvailableEvent, (sf::OutCopyHandle out_hnd),                                                                                  (out_hnd))
 
-    #define AMS_SPL_I_CRYPTO_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                        \
-        AMS_SPL_I_GENERAL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                           \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, GenerateAesKek,              (sf::Out<AccessKey> out_access_key, KeySource key_source, u32 generation, u32 option))                   \
-        AMS_SF_METHOD_INFO(C, H,  3, Result, LoadAesKey,                  (s32 keyslot, AccessKey access_key, KeySource key_source))                                               \
-        AMS_SF_METHOD_INFO(C, H,  4, Result, GenerateAesKey,              (sf::Out<AesKey> out_key, AccessKey access_key, KeySource key_source))                                   \
-        AMS_SF_METHOD_INFO(C, H, 14, Result, DecryptAesKey,               (sf::Out<AesKey> out_key, KeySource key_source, u32 generation, u32 option))                             \
-        AMS_SF_METHOD_INFO(C, H, 15, Result, ComputeCtr,                  (const sf::OutNonSecureBuffer &out_buf, s32 keyslot, const sf::InNonSecureBuffer &in_buf, IvCtr iv_ctr)) \
-        AMS_SF_METHOD_INFO(C, H, 16, Result, ComputeCmac,                 (sf::Out<Cmac> out_cmac, s32 keyslot, const sf::InPointerBuffer &in_buf))                                \
-        AMS_SF_METHOD_INFO(C, H, 21, Result, AllocateAesKeySlot,          (sf::Out<s32> out_keyslot))                                                                              \
-        AMS_SF_METHOD_INFO(C, H, 22, Result, DeallocateAesKeySlot,        (s32 keyslot))                                                                                           \
-        AMS_SF_METHOD_INFO(C, H, 23, Result, GetAesKeySlotAvailableEvent, (sf::OutCopyHandle out_hnd))
-
-    AMS_SF_DEFINE_INTERFACE(ICryptoInterface, AMS_SPL_I_CRYPTO_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, ICryptoInterface, ::ams::spl::impl::IGeneralInterface, AMS_SPL_I_CRYPTO_INTERFACE_INTERFACE_INFO)

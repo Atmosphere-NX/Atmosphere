@@ -18,21 +18,21 @@
 
 namespace ams::i2c::server {
 
-    ManagerImpl::ManagerImpl() : session_memory_resource(), allocator(std::addressof(session_memory_resource)) {
+    ManagerImpl::ManagerImpl() {
         this->heap_handle = lmem::CreateExpHeap(this->heap_buffer, sizeof(this->heap_buffer), lmem::CreateOption_None);
-        this->session_memory_resource.Attach(this->heap_handle);
+        this->allocator.Attach(this->heap_handle);
     }
 
     ManagerImpl::~ManagerImpl() {
         lmem::DestroyExpHeap(this->heap_handle);
     }
 
-    Result ManagerImpl::OpenSessionForDev(ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode) {
+    Result ManagerImpl::OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, s32 bus_idx, u16 slave_address, i2c::AddressingMode addressing_mode, i2c::SpeedMode speed_mode) {
         /* TODO */
         AMS_ABORT();
     }
 
-    Result ManagerImpl::OpenSession(ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, i2c::I2cDevice device) {
+    Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, i2c::I2cDevice device) {
         return this->OpenSession2(out, ConvertToDeviceCode(device));
     }
 
@@ -46,15 +46,15 @@ namespace ams::i2c::server {
         AMS_ABORT();
     }
 
-    Result ManagerImpl::OpenSession2(ams::sf::Out<std::shared_ptr<i2c::sf::ISession>> out, DeviceCode device_code) {
+    Result ManagerImpl::OpenSession2(ams::sf::Out<ams::sf::SharedPointer<i2c::sf::ISession>> out, DeviceCode device_code) {
         /* Allocate a session. */
-        auto session = ams::sf::AllocateShared<i2c::sf::ISession, SessionImpl>(this->allocator, this);
+        auto session = Factory::CreateSharedEmplaced<i2c::sf::ISession, SessionImpl>(std::addressof(this->allocator), this);
 
         /* Open the session. */
-        R_TRY(session->GetImpl().OpenSession(device_code));
+        R_TRY(session.GetImpl().OpenSession(device_code));
 
         /* We succeeded. */
-        out.SetValue(std::move(session));
+        *out = std::move(session);
         return ResultSuccess();
     }
 

@@ -17,8 +17,13 @@
 #pragma once
 
 #include <stratosphere/sf/sf_common.hpp>
+#include <stratosphere/sf/sf_allocation_policies.hpp>
 #include <stratosphere/sf/sf_lmem_utility.hpp>
 #include <stratosphere/sf/sf_mem_utility.hpp>
+#include <stratosphere/sf/sf_exp_heap_allocator.hpp>
+#include <stratosphere/sf/sf_standard_allocation_policy.hpp>
+#include <stratosphere/sf/sf_std_allocation_policy.hpp>
+#include <stratosphere/sf/sf_shared_object.hpp>
 #include <stratosphere/sf/sf_service_object.hpp>
 #include <stratosphere/sf/hipc/sf_hipc_server_session_manager.hpp>
 
@@ -28,7 +33,10 @@
 #include <stratosphere/sf/sf_out.hpp>
 #include <stratosphere/sf/sf_buffers.hpp>
 #include <stratosphere/sf/impl/sf_impl_command_serialization.hpp>
-#include <stratosphere/sf/impl/sf_impl_service_object_macros.hpp>
+#include <stratosphere/sf/impl/sf_impl_autogen_interface_macros.hpp>
+#include <stratosphere/sf/impl/sf_impl_autogen_impl_macros.hpp>
+#include <stratosphere/sf/impl/sf_impl_template_base.hpp>
+#include <stratosphere/sf/sf_object_factory.hpp>
 
 #include <stratosphere/sf/hipc/sf_hipc_server_manager.hpp>
 

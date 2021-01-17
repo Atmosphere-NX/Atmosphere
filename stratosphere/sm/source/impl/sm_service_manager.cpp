@@ -56,21 +56,15 @@ namespace ams::sm::impl {
         struct ServiceInfo {
             ServiceName name;
             os::ProcessId owner_process_id;
-            os::ManagedHandle port_h;
-
-            /* Debug. */
-            u64 max_sessions;
-            bool is_light;
-
-            /* Mitm Extension. */
             os::ProcessId mitm_process_id;
+            os::ProcessId mitm_waiting_ack_process_id;
             os::ManagedHandle mitm_port_h;
             os::ManagedHandle mitm_query_h;
-
-            /* Acknowledgement members. */
-            bool mitm_waiting_ack;
-            os::ProcessId mitm_waiting_ack_process_id;
+            os::ManagedHandle port_h;
             os::ManagedHandle mitm_fwd_sess_h;
+            s32 max_sessions;
+            bool is_light;
+            bool mitm_waiting_ack;
 
             ServiceInfo() {
                 this->Free();

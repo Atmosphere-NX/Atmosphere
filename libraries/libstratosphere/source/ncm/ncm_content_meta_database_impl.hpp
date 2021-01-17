@@ -28,8 +28,8 @@ namespace ams::ncm {
             Result GetContentIdImpl(ContentId *out, const ContentMetaKey &key, ContentType type, std::optional<u8> id_offset) const;
         public:
             /* Actual commands. */
-            virtual Result Set(const ContentMetaKey &key, sf::InBuffer value) override;
-            virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, sf::OutBuffer out_value) override;
+            virtual Result Set(const ContentMetaKey &key, const sf::InBuffer &value) override;
+            virtual Result Get(sf::Out<u64> out_size, const ContentMetaKey &key, const sf::OutBuffer &out_value) override;
             virtual Result Remove(const ContentMetaKey &key) override;
             virtual Result GetContentIdByType(sf::Out<ContentId> out_content_id, const ContentMetaKey &key, ContentType type) override;
             virtual Result ListContentInfo(sf::Out<s32> out_entries_written, const sf::OutArray<ContentInfo> &out_info, const ContentMetaKey &key, s32 offset) override;

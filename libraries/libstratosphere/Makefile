@@ -18,6 +18,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # options for code generation
 #---------------------------------------------------------------------------------
 PRECOMPILED_HEADERS := $(CURRENT_DIRECTORY)/include/stratosphere.hpp
+#PRECOMPILED_HEADERS :=
 
 DEFINES	    := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2

@@ -18,12 +18,8 @@
 #include <stratosphere/sf.hpp>
 #include <stratosphere/fs/fs_directory.hpp>
 
-namespace ams::fssrv::sf {
+#define AMS_FSSRV_I_DIRECTORY_INTERFACE_INFO(C, H)                                                                                         \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, Read,          (ams::sf::Out<s64> out, const ams::sf::OutBuffer &out_entries), (out, out_entries)) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, GetEntryCount, (ams::sf::Out<s64> out),                                        (out))
 
-    #define AMS_FSSRV_I_DIRECTORY_INTERFACE_INFO(C, H)                                                                     \
-        AMS_SF_METHOD_INFO(C, H, 0, Result, Read,          (ams::sf::Out<s64> out, const ams::sf::OutBuffer &out_entries)) \
-        AMS_SF_METHOD_INFO(C, H, 1, Result, GetEntryCount, (ams::sf::Out<s64> out))
-
-    AMS_SF_DEFINE_INTERFACE(IDirectory, AMS_FSSRV_I_DIRECTORY_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IDirectory, AMS_FSSRV_I_DIRECTORY_INTERFACE_INFO)

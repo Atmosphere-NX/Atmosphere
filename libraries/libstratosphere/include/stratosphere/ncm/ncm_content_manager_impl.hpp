@@ -67,7 +67,7 @@ namespace ams::ncm {
     };
     static_assert(util::is_pod<SystemSaveDataInfo>::value);
 
-    class ContentManagerImpl final {
+    class ContentManagerImpl {
         private:
             constexpr static size_t MaxContentStorageRoots         = 8;
             constexpr static size_t MaxContentMetaDatabaseRoots    = 8;
@@ -80,7 +80,7 @@ namespace ams::ncm {
                 char path[128];
                 StorageId storage_id;
                 fs::ContentStorageId content_storage_id;
-                std::shared_ptr<IContentStorage> content_storage;
+                sf::SharedPointer<IContentStorage> content_storage;
 
                 ContentStorageRoot() { /* ... */ }
             };
@@ -93,7 +93,7 @@ namespace ams::ncm {
                 char path[128];
                 StorageId storage_id;
                 SystemSaveDataInfo info;
-                std::shared_ptr<IContentMetaDatabase> content_meta_database;
+                sf::SharedPointer<IContentMetaDatabase> content_meta_database;
                 std::optional<kvdb::MemoryKeyValueStore<ContentMetaKey>> kvs;
                 ContentMetaMemoryResource *memory_resource;
                 u32 max_content_metas;
@@ -135,8 +135,8 @@ namespace ams::ncm {
             Result CreateContentMetaDatabase(StorageId storage_id);
             Result VerifyContentStorage(StorageId storage_id);
             Result VerifyContentMetaDatabase(StorageId storage_id);
-            Result OpenContentStorage(sf::Out<std::shared_ptr<IContentStorage>> out, StorageId storage_id);
-            Result OpenContentMetaDatabase(sf::Out<std::shared_ptr<IContentMetaDatabase>> out, StorageId storage_id);
+            Result OpenContentStorage(sf::Out<sf::SharedPointer<IContentStorage>> out, StorageId storage_id);
+            Result OpenContentMetaDatabase(sf::Out<sf::SharedPointer<IContentMetaDatabase>> out, StorageId storage_id);
             Result CloseContentStorageForcibly(StorageId storage_id);
             Result CloseContentMetaDatabaseForcibly(StorageId storage_id);
             Result CleanupContentMetaDatabase(StorageId storage_id);

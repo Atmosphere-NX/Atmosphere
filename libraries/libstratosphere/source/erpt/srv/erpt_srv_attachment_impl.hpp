@@ -20,7 +20,7 @@ namespace ams::erpt::srv {
 
     class Attachment;
 
-    class AttachmentImpl final {
+    class AttachmentImpl {
         private:
             Attachment *attachment;
         public:

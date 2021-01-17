@@ -15,20 +15,20 @@
  */
 #include <stratosphere.hpp>
 
+#define AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO(C, H)                                                                                                   \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, ConvertCurrentObjectToDomain, (ams::sf::Out<ams::sf::cmif::DomainObjectId> out),                     (out))            \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, CopyFromCurrentDomain,        (ams::sf::OutMoveHandle out, ams::sf::cmif::DomainObjectId object_id), (out, object_id)) \
+    AMS_SF_METHOD_INFO(C, H, 2, Result, CloneCurrentObject,           (ams::sf::OutMoveHandle out),                                          (out))            \
+    AMS_SF_METHOD_INFO(C, H, 3, void,   QueryPointerBufferSize,       (ams::sf::Out<u16> out),                                               (out))            \
+    AMS_SF_METHOD_INFO(C, H, 4, Result, CloneCurrentObjectEx,         (ams::sf::OutMoveHandle out, u32 tag),                                 (out, tag))
+
+AMS_SF_DEFINE_INTERFACE(ams::sf::hipc::impl, IHipcManager, AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO)
+
 namespace ams::sf::hipc {
 
     namespace impl {
 
-        #define AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO(C, H)                                                                                 \
-            AMS_SF_METHOD_INFO(C, H, 0, Result, ConvertCurrentObjectToDomain, (ams::sf::Out<ams::sf::cmif::DomainObjectId> out))                     \
-            AMS_SF_METHOD_INFO(C, H, 1, Result, CopyFromCurrentDomain,        (ams::sf::OutMoveHandle out, ams::sf::cmif::DomainObjectId object_id)) \
-            AMS_SF_METHOD_INFO(C, H, 2, Result, CloneCurrentObject,           (ams::sf::OutMoveHandle out))                                          \
-            AMS_SF_METHOD_INFO(C, H, 3, void,   QueryPointerBufferSize,       (ams::sf::Out<u16> out))                                               \
-            AMS_SF_METHOD_INFO(C, H, 4, Result, CloneCurrentObjectEx,         (ams::sf::OutMoveHandle out, u32 tag))
-
-        AMS_SF_DEFINE_INTERFACE(IHipcManager, AMS_SF_HIPC_IMPL_I_HIPC_MANAGER_INTERFACE_INFO)
-
-        class HipcManager final {
+        class HipcManagerImpl {
             private:
                 ServerDomainSessionManager *manager;
                 ServerSession *session;
@@ -56,7 +56,7 @@ namespace ams::sf::hipc {
                     return ResultSuccess();
                 }
             public:
-                explicit HipcManager(ServerDomainSessionManager *m, ServerSession *s) : manager(m), session(s), is_mitm_session(s->forward_service != nullptr) {
+                explicit HipcManagerImpl(ServerDomainSessionManager *m, ServerSession *s) : manager(m), session(s), is_mitm_session(s->forward_service != nullptr) {
                     /* ... */
                 }
 
@@ -64,14 +64,14 @@ namespace ams::sf::hipc {
                     /* Allocate a domain. */
                     auto domain = this->manager->AllocateDomainServiceObject();
                     R_UNLESS(domain, sf::hipc::ResultOutOfDomains());
-                    auto domain_guard = SCOPE_GUARD { cmif::ServerDomainManager::DestroyDomainServiceObject(static_cast<cmif::DomainServiceObject *>(domain)); };
 
+                    /* Set up the new domain object. */
                     cmif::DomainObjectId object_id = cmif::InvalidDomainObjectId;
-
-                    cmif::ServiceObjectHolder new_holder;
-
                     if (this->is_mitm_session) {
-                        /* If we're a mitm session, we need to convert the remote session to domain. */
+                        /* Make a new shared pointer to manage the allocated domain. */
+                        SharedPointer<cmif::MitmDomainServiceObject> cmif_domain(static_cast<cmif::MitmDomainServiceObject *>(domain), false);
+
+                        /* Convert the remote session to domain. */
                         AMS_ABORT_UNLESS(session->forward_service->own_handle);
                         R_TRY(serviceConvertToDomain(session->forward_service.get()));
 
@@ -79,27 +79,28 @@ namespace ams::sf::hipc {
                         object_id = cmif::DomainObjectId{session->forward_service->object_id};
                         domain->ReserveSpecificIds(&object_id, 1);
 
-                        /* Create new object. */
-                        cmif::MitmDomainServiceObject *domain_ptr = static_cast<cmif::MitmDomainServiceObject *>(domain);
-                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::MitmDomainServiceObject>(domain_ptr, cmif::ServerDomainManager::DestroyDomainServiceObject)));
+                        /* Register the object. */
+                        domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
+
+                        /* Set the new object holder. */
+                        session->srv_obj_holder = cmif::ServiceObjectHolder(std::move(cmif_domain));
                     } else {
-                        /* We're not a mitm session. Reserve a new object in the domain. */
+                        /* Make a new shared pointer to manage the allocated domain. */
+                        SharedPointer<cmif::DomainServiceObject> cmif_domain(domain, false);
+
+                        /* Reserve a new object in the domain. */
                         R_TRY(domain->ReserveIds(&object_id, 1));
 
-                        /* Create new object. */
-                        cmif::DomainServiceObject *domain_ptr = static_cast<cmif::DomainServiceObject *>(domain);
-                        new_holder = cmif::ServiceObjectHolder(std::move(std::shared_ptr<cmif::DomainServiceObject>(domain_ptr, cmif::ServerDomainManager::DestroyDomainServiceObject)));
+                        /* Register the object. */
+                        domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
+
+                        /* Set the new object holder. */
+                        session->srv_obj_holder = cmif::ServiceObjectHolder(std::move(cmif_domain));
                     }
 
+                    /* Return the allocated id. */
                     AMS_ABORT_UNLESS(object_id != cmif::InvalidDomainObjectId);
-                    AMS_ABORT_UNLESS(static_cast<bool>(new_holder));
-
-                    /* We succeeded! */
-                    domain_guard.Cancel();
-                    domain->RegisterObject(object_id, std::move(session->srv_obj_holder));
-                    session->srv_obj_holder = std::move(new_holder);
-                    out.SetValue(object_id);
-
+                    *out = object_id;
                     return ResultSuccess();
                 }
 
@@ -152,7 +153,7 @@ namespace ams::sf::hipc {
                     return this->CloneCurrentObjectImpl(out.GetHandlePointer(), this->manager->GetSessionManagerByTag(tag));
                 }
         };
-        static_assert(IsIHipcManager<HipcManager>);
+        static_assert(IsIHipcManager<HipcManagerImpl>);
 
     }
 
@@ -160,8 +161,8 @@ namespace ams::sf::hipc {
         /* Make a stack object, and pass a shared pointer to it to DispatchRequest. */
         /* Note: This is safe, as no additional references to the hipc manager can ever be stored. */
         /* The shared pointer to stack object is definitely gross, though. */
-        impl::HipcManager hipc_manager(this, session);
-        return this->DispatchRequest(cmif::ServiceObjectHolder(sf::GetSharedPointerTo<impl::IHipcManager>(hipc_manager)), session, in_message, out_message);
+        UnmanagedServiceObject<impl::IHipcManager, impl::HipcManagerImpl> hipc_manager(this, session);
+        return this->DispatchRequest(cmif::ServiceObjectHolder(hipc_manager.GetShared()), session, in_message, out_message);
     }
 
 }

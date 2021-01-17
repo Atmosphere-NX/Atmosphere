@@ -18,8 +18,6 @@
 
 namespace ams::sf::hipc {
 
-    ServerManagerBase::ServerBase::~ServerBase() { /* Pure virtual destructor, to prevent linker errors. */ }
-
     Result ServerManagerBase::InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
         /* Install the Mitm. */
         Handle query_handle;
@@ -89,37 +87,25 @@ namespace ams::sf::hipc {
     Result ServerManagerBase::ProcessForServer(os::WaitableHolderType *holder) {
         AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::Server);
 
-        ServerBase *server = static_cast<ServerBase *>(holder);
+        Server *server = static_cast<Server *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
 
-        /* Create resources for new session. */
-        cmif::ServiceObjectHolder obj;
-        std::shared_ptr<::Service> fsrv;
-        server->CreateSessionObjectHolder(&obj, &fsrv);
-
-        /* Not a mitm server, so we must have no forward service. */
-        AMS_ABORT_UNLESS(fsrv == nullptr);
-
-        /* Try to accept. */
-        return this->AcceptSession(server->port_handle, std::move(obj));
+        /* Create new session. */
+        if (server->static_object) {
+            return this->AcceptSession(server->port_handle, server->static_object.Clone());
+        } else {
+            return this->OnNeedsToAccept(server->index, server);
+        }
     }
 
     Result ServerManagerBase::ProcessForMitmServer(os::WaitableHolderType *holder) {
         AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::MitmServer);
 
-        ServerBase *server = static_cast<ServerBase *>(holder);
+        Server *server = static_cast<Server *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
 
         /* Create resources for new session. */
-        cmif::ServiceObjectHolder obj;
-        std::shared_ptr<::Service> fsrv;
-        server->CreateSessionObjectHolder(&obj, &fsrv);
-
-        /* Mitm server, so we must have forward service. */
-        AMS_ABORT_UNLESS(fsrv != nullptr);
-
-        /* Try to accept. */
-        return this->AcceptMitmSession(server->port_handle, std::move(obj), std::move(fsrv));
+        return this->OnNeedsToAccept(server->index, server);
     }
 
     Result ServerManagerBase::ProcessForSession(os::WaitableHolderType *holder) {

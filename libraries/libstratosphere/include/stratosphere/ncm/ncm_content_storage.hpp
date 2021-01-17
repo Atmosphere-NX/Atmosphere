@@ -21,21 +21,21 @@ namespace ams::ncm {
     class ContentStorage {
         NON_COPYABLE(ContentStorage);
         private:
-            std::shared_ptr<IContentStorage> interface;
+            sf::SharedPointer<IContentStorage> interface;
         public:
             ContentStorage() { /* ... */ }
-            explicit ContentStorage(std::shared_ptr<IContentStorage> intf) : interface(std::move(intf)) { /* ... */ }
+            explicit ContentStorage(sf::SharedPointer<IContentStorage> intf) : interface(intf) { /* ... */ }
 
             ContentStorage(ContentStorage &&rhs) {
                 this->interface = std::move(rhs.interface);
             }
 
             ContentStorage &operator=(ContentStorage &&rhs) {
-                ContentStorage(std::move(rhs)).Swap(*this);
+                ContentStorage(std::move(rhs)).swap(*this);
                 return *this;
             }
 
-            void Swap(ContentStorage &rhs) {
+            void swap(ContentStorage &rhs) {
                 std::swap(this->interface, rhs.interface);
             }
         public:

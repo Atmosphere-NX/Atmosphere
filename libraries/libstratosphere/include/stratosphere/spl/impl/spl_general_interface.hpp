@@ -19,17 +19,13 @@
 #include <stratosphere/sf.hpp>
 #include <stratosphere/spl/spl_types.hpp>
 
-namespace ams::spl::impl {
+#define AMS_SPL_I_GENERAL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                     \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, GetConfig,           (sf::Out<u64> out, u32 which),                                                                                                      (out, which))                              \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, ModularExponentiate, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod), (out, base, exp, mod))                     \
+    AMS_SF_METHOD_INFO(C, H,  5, Result, SetConfig,           (u32 which, u64 value),                                                                                                             (which, value))                            \
+    AMS_SF_METHOD_INFO(C, H,  7, Result, GenerateRandomBytes, (const sf::OutPointerBuffer &out),                                                                                                  (out))                                     \
+    AMS_SF_METHOD_INFO(C, H, 11, Result, IsDevelopment,       (sf::Out<bool> is_dev),                                                                                                             (is_dev))                                  \
+    AMS_SF_METHOD_INFO(C, H, 24, Result, SetBootReason,       (spl::BootReasonValue boot_reason),                                                                                                 (boot_reason),         hos::Version_3_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 25, Result, GetBootReason,       (sf::Out<spl::BootReasonValue> out),                                                                                                (out),                 hos::Version_3_0_0)
 
-    #define AMS_SPL_I_GENERAL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                              \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, GetConfig,           (sf::Out<u64> out, u32 which))                                                                                                                          \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, ModularExponentiate, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &exp, const sf::InPointerBuffer &mod))                     \
-        AMS_SF_METHOD_INFO(C, H,  5, Result, SetConfig,           (u32 which, u64 value))                                                                                                                                 \
-        AMS_SF_METHOD_INFO(C, H,  7, Result, GenerateRandomBytes, (const sf::OutPointerBuffer &out))                                                                                                                      \
-        AMS_SF_METHOD_INFO(C, H, 11, Result, IsDevelopment,       (sf::Out<bool> is_dev))                                                                                                                                 \
-        AMS_SF_METHOD_INFO(C, H, 24, Result, SetBootReason,       (spl::BootReasonValue boot_reason),                                                                                                 hos::Version_3_0_0) \
-        AMS_SF_METHOD_INFO(C, H, 25, Result, GetBootReason,       (sf::Out<spl::BootReasonValue> out),                                                                                                hos::Version_3_0_0)
-
-    AMS_SF_DEFINE_INTERFACE(IGeneralInterface, AMS_SPL_I_GENERAL_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::spl::impl, IGeneralInterface, AMS_SPL_I_GENERAL_INTERFACE_INTERFACE_INFO)

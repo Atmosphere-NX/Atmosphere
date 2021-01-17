@@ -20,6 +20,12 @@
 
 namespace ams::pgl::srv {
 
+    namespace {
+
+        using ShellEventObjectFactory = ams::sf::ObjectFactory<ams::sf::MemoryResourceAllocationPolicy>;
+
+    }
+
     Result ShellInterface::LaunchProgram(ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {
         return pgl::srv::LaunchProgram(out.GetPointer(), loc, pm_flags, pgl_flags);
     }
@@ -68,24 +74,12 @@ namespace ams::pgl::srv {
         return pgl::srv::TriggerApplicationSnapShotDumper(dump_type, reinterpret_cast<const char *>(arg.GetPointer()));
     }
 
-    Result ShellInterface::GetShellEventObserver(ams::sf::Out<std::shared_ptr<pgl::sf::IEventObserver>> out) {
-        using Interface = typename pgl::sf::IEventObserver::ImplHolder<ShellEventObserver>;
-
+    Result ShellInterface::GetShellEventObserver(ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out) {
         /* Allocate a new interface. */
-        auto *observer_memory = this->memory_resource->Allocate(sizeof(Interface), alignof(Interface));
-        AMS_ABORT_UNLESS(observer_memory != nullptr);
+        auto session = ShellEventObjectFactory::CreateSharedEmplaced<pgl::sf::IEventObserver, ShellEventObserver>(this->memory_resource);
+        R_UNLESS(session != nullptr, pgl::ResultOutOfMemory());
 
-        /* Create the interface object. */
-        new (observer_memory) Interface;
-
-        /* Set the output. */
-        out.SetValue(std::shared_ptr<pgl::sf::IEventObserver>(reinterpret_cast<Interface *>(observer_memory), [&](Interface *obj) {
-            /* Destroy the object. */
-            obj->~Interface();
-
-            /* Custom deleter: use the memory resource to free. */
-            this->memory_resource->Deallocate(obj, sizeof(Interface), alignof(Interface));
-        }));
+        *out = std::move(session);
         return ResultSuccess();
     }
 

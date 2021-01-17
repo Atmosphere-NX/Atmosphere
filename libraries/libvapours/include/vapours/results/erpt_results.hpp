@@ -26,6 +26,7 @@ namespace ams::erpt {
     R_DEFINE_ERROR_RESULT(OutOfArraySpace,           3);
     R_DEFINE_ERROR_RESULT(OutOfFieldSpace,           4);
     R_DEFINE_ERROR_RESULT(OutOfMemory,               5);
+    R_DEFINE_ERROR_RESULT(NotSupported,              6);
     R_DEFINE_ERROR_RESULT(InvalidArgument,           7);
     R_DEFINE_ERROR_RESULT(NotFound,                  8);
     R_DEFINE_ERROR_RESULT(FieldCategoryMismatch,     9);

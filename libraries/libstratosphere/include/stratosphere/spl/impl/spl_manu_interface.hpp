@@ -20,12 +20,7 @@
 #include <stratosphere/spl/spl_types.hpp>
 #include <stratosphere/spl/impl/spl_device_unique_data_interface.hpp>
 
-namespace ams::spl::impl {
+#define AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 30, Result, ReencryptDeviceUniqueData, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, spl::AccessKey access_key_dec, spl::KeySource source_dec, spl::AccessKey access_key_enc, spl::KeySource source_enc, u32 option), (out, src, access_key_dec, source_dec, access_key_enc, source_enc, option))
 
-    #define AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                              \
-        AMS_SPL_I_DEVICE_UNIQUE_DATA_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                    \
-        AMS_SF_METHOD_INFO(C, H, 30, Result, ReencryptDeviceUniqueData, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &src, AccessKey access_key_dec, KeySource source_dec, AccessKey access_key_enc, KeySource source_enc, u32 option)) \
-
-    AMS_SF_DEFINE_INTERFACE(IManuInterface, AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, IManuInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_MANU_INTERFACE_INTERFACE_INFO)

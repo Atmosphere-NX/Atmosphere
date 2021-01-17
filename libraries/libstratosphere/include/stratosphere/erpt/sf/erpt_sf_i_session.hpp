@@ -20,13 +20,9 @@
 #include <stratosphere/erpt/sf/erpt_sf_i_manager.hpp>
 #include <stratosphere/erpt/sf/erpt_sf_i_attachment.hpp>
 
-namespace ams::erpt::sf {
+#define AMS_ERPT_I_SESSION_INTERFACE_INFO(C, H)                                                                                                        \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, OpenReport,     (ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IReport>>     out), (out))                     \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, OpenManager,    (ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IManager>>    out), (out))                     \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, OpenAttachment, (ams::sf::Out<ams::sf::SharedPointer<erpt::sf::IAttachment>> out), (out), hos::Version_8_0_0)
 
-    #define AMS_ERPT_I_SESSION_INTERFACE_INFO(C, H)                                                                                           \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, OpenReport,     (ams::sf::Out<std::shared_ptr<erpt::sf::IReport>>     out))                     \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, OpenManager,    (ams::sf::Out<std::shared_ptr<erpt::sf::IManager>>    out))                     \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, OpenAttachment, (ams::sf::Out<std::shared_ptr<erpt::sf::IAttachment>> out), hos::Version_8_0_0)
-
-    AMS_SF_DEFINE_INTERFACE(ISession, AMS_ERPT_I_SESSION_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, ISession, AMS_ERPT_I_SESSION_INTERFACE_INFO)

@@ -17,17 +17,13 @@
 #include <vapours.hpp>
 #include <stratosphere/erpt/erpt_types.hpp>
 
-namespace ams::erpt::sf {
-
-    #define AMS_ERPT_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                          \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, GetReportList,             (const ams::sf::OutBuffer &out_list, ReportType type_filter))                       \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, GetEvent,                  (ams::sf::OutCopyHandle out))                                                       \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, CleanupReports,            (),                                                             hos::Version_4_0_0) \
-        AMS_SF_METHOD_INFO(C, H,  3, Result, DeleteReport,              (const ReportId &report_id),                                    hos::Version_5_0_0) \
-        AMS_SF_METHOD_INFO(C, H,  4, Result, GetStorageUsageStatistics, (ams::sf::Out<StorageUsageStatistics> out),                     hos::Version_5_0_0) \
-        AMS_SF_METHOD_INFO(C, H,  5, Result, GetAttachmentList,         (const ams::sf::OutBuffer &out_buf, const ReportId &report_id), hos::Version_8_0_0)
+#define AMS_ERPT_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                        \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, GetReportList,             (const ams::sf::OutBuffer &out_list, erpt::ReportType type_filter),   (out_list, type_filter))                     \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, GetEvent,                  (ams::sf::OutCopyHandle out),                                         (out))                                       \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, CleanupReports,            (),                                                                   (),                      hos::Version_4_0_0) \
+    AMS_SF_METHOD_INFO(C, H,  3, Result, DeleteReport,              (const erpt::ReportId &report_id),                                    (report_id),             hos::Version_5_0_0) \
+    AMS_SF_METHOD_INFO(C, H,  4, Result, GetStorageUsageStatistics, (ams::sf::Out<erpt::StorageUsageStatistics> out),                     (out),                   hos::Version_5_0_0) \
+    AMS_SF_METHOD_INFO(C, H,  5, Result, GetAttachmentList,         (const ams::sf::OutBuffer &out_buf, const erpt::ReportId &report_id), (out_buf, report_id),    hos::Version_8_0_0)
 
 
-    AMS_SF_DEFINE_INTERFACE(IManager, AMS_ERPT_I_MANAGER_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IManager, AMS_ERPT_I_MANAGER_INTERFACE_INFO)

@@ -34,7 +34,7 @@ namespace ams::pgl::srv {
             }
     };
 
-    class ShellEventObserver final : public IShellEventObserver {
+    class ShellEventObserver : public IShellEventObserver {
         private:
             static constexpr size_t QueueCapacity = 0x20;
         private:

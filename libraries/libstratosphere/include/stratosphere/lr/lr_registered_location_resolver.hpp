@@ -23,10 +23,10 @@ namespace ams::lr {
     class RegisteredLocationResolver {
         NON_COPYABLE(RegisteredLocationResolver);
         private:
-            std::shared_ptr<IRegisteredLocationResolver> interface;
+            sf::SharedPointer<IRegisteredLocationResolver> interface;
         public:
             RegisteredLocationResolver() { /* ... */ }
-            explicit RegisteredLocationResolver(std::shared_ptr<IRegisteredLocationResolver> intf) : interface(std::move(intf)) { /* ... */ }
+            explicit RegisteredLocationResolver(sf::SharedPointer<IRegisteredLocationResolver> intf) : interface(intf) { /* ... */ }
 
             RegisteredLocationResolver(RegisteredLocationResolver &&rhs) {
                 this->interface = std::move(rhs.interface);

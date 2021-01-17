@@ -20,17 +20,12 @@ namespace ams::pwm::server {
 
     namespace {
 
-        ManagerImpl g_manager_impl;
-
-        std::shared_ptr<pwm::sf::IManager> GetManagerServiceObject() {
-            static std::shared_ptr<pwm::sf::IManager> s_sp = ams::sf::GetSharedPointerTo<pwm::sf::IManager>(g_manager_impl);
-            return s_sp;
-        }
+        ams::sf::UnmanagedServiceObject<pwm::sf::IManager, pwm::server::ManagerImpl> g_manager_impl;
 
     }
 
-    std::shared_ptr<pwm::sf::IManager> GetServiceObject() {
-        return GetManagerServiceObject();
+    ams::sf::SharedPointer<pwm::sf::IManager> GetServiceObject() {
+        return g_manager_impl.GetShared();
     }
 
 }

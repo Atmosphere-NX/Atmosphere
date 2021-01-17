@@ -26,12 +26,12 @@ namespace ams::capsrv::server {
             static constexpr inline size_t MaxSessions          = 2;
             static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("caps:dc");
 
-            using Interface     = IDecoderControlService;
-            using Service       = DecoderControlService;
+            using ServiceHolderType = sf::UnmanagedServiceObject<IDecoderControlService, DecoderControlService>;
+
             using ServerOptions = sf::hipc::DefaultServerManagerOptions;
             using ServerManager = sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions>;
         private:
-            std::optional<Service> service_holder;
+            std::optional<ServiceHolderType> service_holder;
             std::optional<ServerManager> server_manager_holder;
             os::EventType idle_event;
         public:

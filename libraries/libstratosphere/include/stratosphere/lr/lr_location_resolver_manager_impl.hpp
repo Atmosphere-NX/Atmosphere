@@ -21,20 +21,20 @@
 
 namespace ams::lr {
 
-    class LocationResolverManagerImpl final {
+    class LocationResolverManagerImpl {
         private:
             /* Resolver storage. */
-            ncm::BoundedMap<ncm::StorageId, std::shared_ptr<ILocationResolver>, 5> location_resolvers;
-            std::shared_ptr<IRegisteredLocationResolver> registered_location_resolver = nullptr;
-            std::shared_ptr<IAddOnContentLocationResolver> add_on_content_location_resolver = nullptr;
+            ncm::BoundedMap<ncm::StorageId, sf::SharedPointer<ILocationResolver>, 5> location_resolvers;
+            sf::SharedPointer<IRegisteredLocationResolver> registered_location_resolver = nullptr;
+            sf::SharedPointer<IAddOnContentLocationResolver> add_on_content_location_resolver = nullptr;
 
             os::Mutex mutex{false};
         public:
             /* Actual commands. */
-            Result OpenLocationResolver(sf::Out<std::shared_ptr<ILocationResolver>> out, ncm::StorageId storage_id);
-            Result OpenRegisteredLocationResolver(sf::Out<std::shared_ptr<IRegisteredLocationResolver>> out);
+            Result OpenLocationResolver(sf::Out<sf::SharedPointer<ILocationResolver>> out, ncm::StorageId storage_id);
+            Result OpenRegisteredLocationResolver(sf::Out<sf::SharedPointer<IRegisteredLocationResolver>> out);
             Result RefreshLocationResolver(ncm::StorageId storage_id);
-            Result OpenAddOnContentLocationResolver(sf::Out<std::shared_ptr<IAddOnContentLocationResolver>> out);
+            Result OpenAddOnContentLocationResolver(sf::Out<sf::SharedPointer<IAddOnContentLocationResolver>> out);
     };
     static_assert(IsILocationResolverManager<LocationResolverManagerImpl>);
 

@@ -37,14 +37,14 @@ namespace ams::fssrv::impl {
 
     class FileSystemInterfaceAdapter;
 
-    class FileInterfaceAdapter final {
+    class FileInterfaceAdapter {
         NON_COPYABLE(FileInterfaceAdapter);
         private:
-            std::shared_ptr<FileSystemInterfaceAdapter> parent_filesystem;
+            ams::sf::SharedPointer<FileSystemInterfaceAdapter> parent_filesystem;
             std::unique_ptr<fs::fsa::IFile> base_file;
             std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         public:
-            FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, std::shared_ptr<FileSystemInterfaceAdapter> &&parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
+            FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~FileInterfaceAdapter();
         private:
             void InvalidateCache();
@@ -59,14 +59,14 @@ namespace ams::fssrv::impl {
     };
     static_assert(fssrv::sf::IsIFile<FileInterfaceAdapter>);
 
-    class DirectoryInterfaceAdapter final {
+    class DirectoryInterfaceAdapter {
         NON_COPYABLE(DirectoryInterfaceAdapter);
         private:
-            std::shared_ptr<FileSystemInterfaceAdapter> parent_filesystem;
+            ams::sf::SharedPointer<FileSystemInterfaceAdapter> parent_filesystem;
             std::unique_ptr<fs::fsa::IDirectory> base_dir;
             std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         public:
-            DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, std::shared_ptr<FileSystemInterfaceAdapter> &&parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
+            DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~DirectoryInterfaceAdapter();
         public:
             /* Command API */
@@ -75,7 +75,7 @@ namespace ams::fssrv::impl {
     };
     static_assert(fssrv::sf::IsIDirectory<DirectoryInterfaceAdapter>);
 
-    class FileSystemInterfaceAdapter final : public std::enable_shared_from_this<FileSystemInterfaceAdapter> {
+    class FileSystemInterfaceAdapter : public ams::sf::ISharedObject {
         NON_COPYABLE(FileSystemInterfaceAdapter);
         private:
             std::shared_ptr<fs::fsa::IFileSystem> base_fs;
@@ -103,8 +103,8 @@ namespace ams::fssrv::impl {
             Result RenameFile(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path);
             Result RenameDirectory(const fssrv::sf::Path &old_path, const fssrv::sf::Path &new_path);
             Result GetEntryType(ams::sf::Out<u32> out, const fssrv::sf::Path &path);
-            Result OpenFile(ams::sf::Out<std::shared_ptr<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode);
-            Result OpenDirectory(ams::sf::Out<std::shared_ptr<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode);
+            Result OpenFile(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode);
+            Result OpenDirectory(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode);
             Result Commit();
             Result GetFreeSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path);
             Result GetTotalSpaceSize(ams::sf::Out<s64> out, const fssrv::sf::Path &path);
