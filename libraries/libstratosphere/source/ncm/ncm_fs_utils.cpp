@@ -24,17 +24,17 @@ namespace ams::ncm::impl {
 
     }
 
-    bool PathView::HasPrefix(std::string_view prefix) const {
+    bool PathView::HasPrefix(util::string_view prefix) const {
         return this->path.compare(0, prefix.length(), prefix) == 0;
     }
 
-    bool PathView::HasSuffix(std::string_view suffix) const {
+    bool PathView::HasSuffix(util::string_view suffix) const {
         return this->path.compare(this->path.length() - suffix.length(), suffix.length(), suffix) == 0;
     }
 
-    std::string_view PathView::GetFileName() const {
+    util::string_view PathView::GetFileName() const {
         auto pos = this->path.find_last_of("/");
-        return pos != std::string_view::npos ? this->path.substr(pos + 1) : this->path;
+        return pos != util::string_view::npos ? this->path.substr(pos + 1) : this->path;
     }
 
     MountName CreateUniqueMountName() {

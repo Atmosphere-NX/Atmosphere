@@ -20,12 +20,6 @@
 
 namespace ams::pgl::srv {
 
-    namespace {
-
-        using ShellEventObjectFactory = ams::sf::ObjectFactory<ams::sf::MemoryResourceAllocationPolicy>;
-
-    }
-
     Result ShellInterface::LaunchProgram(ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags) {
         return pgl::srv::LaunchProgram(out.GetPointer(), loc, pm_flags, pgl_flags);
     }
@@ -76,7 +70,7 @@ namespace ams::pgl::srv {
 
     Result ShellInterface::GetShellEventObserver(ams::sf::Out<ams::sf::SharedPointer<pgl::sf::IEventObserver>> out) {
         /* Allocate a new interface. */
-        auto session = ShellEventObjectFactory::CreateSharedEmplaced<pgl::sf::IEventObserver, ShellEventObserver>(this->memory_resource);
+        auto session = ObjectFactory::CreateSharedEmplaced<pgl::sf::IEventObserver, ShellEventObserver>(m_allocator);
         R_UNLESS(session != nullptr, pgl::ResultOutOfMemory());
 
         *out = std::move(session);

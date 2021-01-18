@@ -156,7 +156,7 @@ namespace ams::sf {
             constexpr virtual void AddReference() override { /* ... */ }
             constexpr virtual void Release() override { /* ... */ }
 
-            constexpr Impl &GetImpl() { return impl::UnmanagedEmplacedImplHolder<Impl>::GetImplPointer(this); }
+            constexpr Impl &GetImpl() { return *impl::UnmanagedEmplacedImplHolder<Impl>::GetImplPointer(this); }
 
             constexpr SharedPointer<Interface> GetShared() { return SharedPointer<Interface>(this, false); }
     };
