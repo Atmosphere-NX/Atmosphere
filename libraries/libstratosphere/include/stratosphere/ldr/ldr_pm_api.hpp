@@ -25,7 +25,7 @@ namespace ams::ldr::pm {
     Result PinProgram(PinId *out, const ncm::ProgramLocation &loc);
     Result UnpinProgram(PinId pin_id);
     Result SetEnabledProgramVerification(bool enabled);
-    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id);
+    Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id);
 
     /* Atmosphere extension API. */
     Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc);

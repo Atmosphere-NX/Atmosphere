@@ -388,7 +388,7 @@ namespace ams::cfg {
         }
 
         /* For system modules and anything launched before the home menu, always override. */
-        if (program_id < ncm::SystemAppletId::Start || !pm::info::HasLaunchedProgram(ncm::SystemAppletId::Qlaunch)) {
+        if (program_id < ncm::SystemAppletId::Start || !pm::info::HasLaunchedBootProgram(ncm::SystemAppletId::Qlaunch)) {
             status.SetProgramSpecific();
             return status;
         }

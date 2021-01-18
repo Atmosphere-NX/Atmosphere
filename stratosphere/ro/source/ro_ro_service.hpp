@@ -42,14 +42,4 @@ namespace ams::ro {
     };
     static_assert(ro::impl::IsIRoInterface<RoService>);
 
-    class RoUserService final : public RoService {
-        public:
-            RoUserService() : RoService(NrrKind_User) { /* ... */ }
-    };
-
-    class RoJitPluginService final : public RoService {
-        public:
-            RoJitPluginService() : RoService(NrrKind_JitPlugin) { /* ... */ }
-    };
-
 }

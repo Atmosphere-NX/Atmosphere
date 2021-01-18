@@ -21,7 +21,7 @@ Result pminfoAtmosphereGetProcessId(u64 *out_pid, u64 program_id) {
     return serviceDispatchInOut(pminfoGetServiceSession(), 65000, program_id, *out_pid);
 }
 
-Result pminfoAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
+Result pminfoAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id) {
     u8 tmp;
     Result rc = serviceDispatchInOut(pminfoGetServiceSession(), 65001, program_id, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;

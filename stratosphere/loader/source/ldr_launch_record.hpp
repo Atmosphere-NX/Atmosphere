@@ -19,7 +19,7 @@
 namespace ams::ldr {
 
     /* Launch Record API. */
-    bool HasLaunchedProgram(ncm::ProgramId program_id);
-    void SetLaunchedProgram(ncm::ProgramId program_id);
+    bool HasLaunchedBootProgram(ncm::ProgramId program_id);
+    void SetLaunchedBootProgram(ncm::ProgramId program_id);
 
 }

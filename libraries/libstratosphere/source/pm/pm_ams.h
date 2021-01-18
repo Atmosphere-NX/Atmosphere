@@ -17,7 +17,7 @@ typedef struct {
 } CfgOverrideStatus;
 
 Result pminfoAtmosphereGetProcessId(u64 *out_pid, u64 program_id);
-Result pminfoAtmosphereHasLaunchedProgram(bool *out, u64 program_id);
+Result pminfoAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id);
 Result pminfoAtmosphereGetProcessInfo(NcmProgramLocation *loc_out, CfgOverrideStatus *status_out, u64 pid);
 
 Result pmdmntAtmosphereGetProcessInfo(Handle *out, NcmProgramLocation *loc_out, CfgOverrideStatus *status_out, u64 pid);
