@@ -17,19 +17,19 @@
 #include <switch.h>
 #include "ldr_ams.h"
 
-static Result _ldrAtmosphereHasLaunchedProgram(Service *srv, bool *out, u64 program_id) {
+static Result _ldrAtmosphereHasLaunchedBootProgram(Service *srv, bool *out, u64 program_id) {
     u8 tmp;
     Result rc = serviceDispatchInOut(srv, 65000, program_id, tmp);
     if (R_SUCCEEDED(rc) && out) *out = tmp & 1;
     return rc;
 }
 
-Result ldrDmntAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
-    return _ldrAtmosphereHasLaunchedProgram(ldrDmntGetServiceSession(), out, program_id);
+Result ldrDmntAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id) {
+    return _ldrAtmosphereHasLaunchedBootProgram(ldrDmntGetServiceSession(), out, program_id);
 }
 
-Result ldrPmAtmosphereHasLaunchedProgram(bool *out, u64 program_id) {
-    return _ldrAtmosphereHasLaunchedProgram(ldrPmGetServiceSession(), out, program_id);
+Result ldrPmAtmosphereHasLaunchedBootProgram(bool *out, u64 program_id) {
+    return _ldrAtmosphereHasLaunchedBootProgram(ldrPmGetServiceSession(), out, program_id);
 }
 
 Result ldrPmAtmosphereGetProgramInfo(LoaderProgramInfo *out_program_info, CfgOverrideStatus *out_status, const NcmProgramLocation *loc) {

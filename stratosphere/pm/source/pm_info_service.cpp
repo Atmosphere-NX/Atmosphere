@@ -22,8 +22,8 @@ namespace ams::pm {
     /* Overrides for libstratosphere pm::info commands. */
     namespace info {
 
-        Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
-            return ldr::pm::HasLaunchedProgram(out, program_id);
+        Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
+            return ldr::pm::HasLaunchedBootProgram(out, program_id);
         }
 
     }
@@ -38,8 +38,8 @@ namespace ams::pm {
         return impl::GetProcessId(out.GetPointer(), program_id);
     }
 
-    Result InformationService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
-        return pm::info::HasLaunchedProgram(out.GetPointer(), program_id);
+    Result InformationService::AtmosphereHasLaunchedBootProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
+        return pm::info::HasLaunchedBootProgram(out.GetPointer(), program_id);
     }
 
     Result InformationService::AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id) {

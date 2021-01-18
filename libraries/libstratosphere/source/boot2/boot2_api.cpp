@@ -294,7 +294,7 @@ namespace ams::boot2 {
         void LaunchFlaggedProgramsOnSdCard() {
             IterateOverFlaggedProgramsOnSdCard([](ncm::ProgramId program_id) {
                 /* Check if we've already launched the program. */
-                if (pm::info::HasLaunchedProgram(program_id)) {
+                if (pm::info::HasLaunchedBootProgram(program_id)) {
                     return;
                 }
 
