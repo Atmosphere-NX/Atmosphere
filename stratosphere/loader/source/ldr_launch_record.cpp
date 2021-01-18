@@ -44,6 +44,7 @@ namespace ams::ldr {
             for (size_t i = 0; i < MaxBootPrograms; ++i) {
                 if (g_launched_boot_programs[i] == ncm::InvalidProgramId) {
                     g_launched_boot_programs[i] = program_id;
+                    return;
                 }
             }
             AMS_ABORT("Too many boot programs");
