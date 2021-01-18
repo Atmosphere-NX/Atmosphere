@@ -32,7 +32,7 @@ namespace ams::fssrv::impl {
         private:
             /* TODO: Nintendo uses fssystem::AsynchronousAccessStorage here. */
             std::shared_ptr<fs::IStorage> base_storage;
-            std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
             os::ReadWriteLock invalidation_lock;
             /* TODO: DataStorageContext. */
             bool deep_retry_enabled = false;

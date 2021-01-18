@@ -42,9 +42,9 @@ namespace ams::fssrv::impl {
         private:
             ams::sf::SharedPointer<FileSystemInterfaceAdapter> parent_filesystem;
             std::unique_ptr<fs::fsa::IFile> base_file;
-            std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         public:
-            FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
+            FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~FileInterfaceAdapter();
         private:
             void InvalidateCache();
@@ -64,9 +64,9 @@ namespace ams::fssrv::impl {
         private:
             ams::sf::SharedPointer<FileSystemInterfaceAdapter> parent_filesystem;
             std::unique_ptr<fs::fsa::IDirectory> base_dir;
-            std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+            util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         public:
-            DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema);
+            DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema);
             ~DirectoryInterfaceAdapter();
         public:
             /* Command API */
@@ -79,7 +79,7 @@ namespace ams::fssrv::impl {
         NON_COPYABLE(FileSystemInterfaceAdapter);
         private:
             std::shared_ptr<fs::fsa::IFileSystem> base_fs;
-            std::unique_lock<fssystem::SemaphoreAdapter> mount_count_semaphore;
+            util::unique_lock<fssystem::SemaphoreAdapter> mount_count_semaphore;
             os::ReadWriteLock invalidation_lock;
             bool open_count_limited;
             bool deep_retry_enabled = false;
