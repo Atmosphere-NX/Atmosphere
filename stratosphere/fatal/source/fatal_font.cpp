@@ -17,11 +17,40 @@
 #include "fatal_config.hpp"
 #include "fatal_font.hpp"
 
+namespace ams::fatal::srv::font {
+
+    constinit lmem::HeapHandle g_font_heap_handle;
+
+    void SetHeapMemory(void *memory, size_t memory_size) {
+        g_font_heap_handle = lmem::CreateExpHeap(memory, memory_size, lmem::CreateOption_None);
+    }
+
+    void *AllocateForFont(size_t size) {
+        return lmem::AllocateFromExpHeap(g_font_heap_handle, size);
+    }
+
+    void DeallocateForFont(void *p) {
+        if (p != nullptr) {
+            return lmem::FreeToExpHeap(g_font_heap_handle, p);
+        }
+    }
+
+
+}
+
+#define STBTT_assert(x)    AMS_ASSERT(x)
+#define STBTT_malloc(x,u)  ((void)(u),ams::fatal::srv::font::AllocateForFont(x))
+#define STBTT_free(x,u)    ((void)(u),ams::fatal::srv::font::DeallocateForFont(x))
+
 #define STBTT_STATIC
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 #undef  STBTT_STATIC
 #undef  STB_TRUETYPE_IMPLEMENTATION
+
+#undef  STBTT_malloc
+#undef  STBTT_free
+#undef  STBTT_assert
 
 /* Define color conversion macros. */
 #define RGB888_TO_RGB565(r, g, b) ((((r >> 3) << 11) & 0xF800) | (((g >> 2) << 5) & 0x7E0) | ((b >> 3) & 0x1F))
@@ -66,7 +95,7 @@ namespace ams::fatal::srv::font {
         void DrawCodePoint(u32 codepoint, u32 x, u32 y) {
             int width = 0, height = 0;
             u8* imageptr = stbtt_GetCodepointBitmap(&g_stb_font, g_font_size, g_font_size, codepoint, &width, &height, 0, 0);
-            ON_SCOPE_EXIT { std::free(imageptr); };
+            ON_SCOPE_EXIT { DeallocateForFont(imageptr); };
 
             for (int tmpy = 0; tmpy < height; tmpy++) {
                 for (int tmpx = 0; tmpx < width; tmpx++) {
