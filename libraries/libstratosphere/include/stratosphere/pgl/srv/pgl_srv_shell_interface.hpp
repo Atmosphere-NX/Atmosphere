@@ -20,18 +20,16 @@
 
 namespace ams::pgl::srv {
 
-    class ShellInterface final {
+    class ShellInterface {
         NON_COPYABLE(ShellInterface);
         NON_MOVEABLE(ShellInterface);
         private:
-            MemoryResource *memory_resource;
+            using Allocator     = ams::sf::ExpHeapAllocator;
+            using ObjectFactory = ams::sf::ObjectFactory<ams::sf::ExpHeapAllocator::Policy>;
+        private:
+            Allocator *m_allocator;
         public:
-            constexpr ShellInterface() : memory_resource(nullptr) { /* ... */ }
-
-            void Initialize(MemoryResource *mr) {
-                AMS_ASSERT(this->memory_resource == nullptr);
-                this->memory_resource = mr;
-            }
+            constexpr ShellInterface(Allocator *a) : m_allocator(a) { /* ... */ }
         public:
             /* Interface commands. */
             Result LaunchProgram(ams::sf::Out<os::ProcessId> out, const ncm::ProgramLocation &loc, u32 pm_flags, u8 pgl_flags);

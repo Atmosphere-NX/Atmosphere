@@ -25,16 +25,16 @@ namespace ams::pgl::srv {
         static_assert(sizeof(HostPackageMountName) - 1 <= fs::MountNameLengthMax);
 
         struct CaseInsensitiveCharTraits : public std::char_traits<char> {
-            static char to_upper(char c) {
+            static constexpr char to_upper(char c) {
                 return std::toupper(static_cast<unsigned char>(c));
             }
-            static bool eq(char c1, char c2) {
+            static constexpr bool eq(char c1, char c2) {
                  return to_upper(c1) == to_upper(c2);
              }
-            static bool lt(char c1, char c2) {
+            static constexpr bool lt(char c1, char c2) {
                  return to_upper(c1) <  to_upper(c2);
             }
-            static int compare(const char *s1, const char *s2, size_t n) {
+            static constexpr int compare(const char *s1, const char *s2, size_t n) {
                 while ( n-- != 0 ) {
                     if ( to_upper(*s1) < to_upper(*s2) ) return -1;
                     if ( to_upper(*s1) > to_upper(*s2) ) return 1;
@@ -42,7 +42,7 @@ namespace ams::pgl::srv {
                 }
                 return 0;
             }
-            static const char *find(const char *s, int n, char a) {
+            static constexpr const char *find(const char *s, int n, char a) {
                 auto const ua (to_upper(a));
                 while ( n-- != 0 )
                 {
@@ -54,7 +54,7 @@ namespace ams::pgl::srv {
             }
         };
 
-        using PathView = std::basic_string_view<char, CaseInsensitiveCharTraits>;
+        using PathView = util::basic_string_view<char, CaseInsensitiveCharTraits>;
 
         enum class ExtensionType {
             None = 0,
