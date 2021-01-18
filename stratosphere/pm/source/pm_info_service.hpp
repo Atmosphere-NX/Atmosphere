@@ -18,7 +18,7 @@
 
 namespace ams::pm {
 
-    class InformationService final {
+    class InformationService {
         public:
             /* Actual command implementations. */
             Result GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id);
