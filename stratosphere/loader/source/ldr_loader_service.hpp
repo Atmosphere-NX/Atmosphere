@@ -18,7 +18,7 @@
 
 namespace ams::ldr {
 
-    class LoaderService final {
+    class LoaderService {
         public:
             /* Official commands. */
             Result CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h);

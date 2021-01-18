@@ -19,7 +19,7 @@
 
 namespace ams::fssrv::impl {
 
-    FileInterfaceAdapter::FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema)
+    FileInterfaceAdapter::FileInterfaceAdapter(std::unique_ptr<fs::fsa::IFile> &&file, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema)
         : parent_filesystem(parent, true), base_file(std::move(file)), open_count_semaphore(std::move(sema))
     {
         /* ... */
@@ -89,7 +89,7 @@ namespace ams::fssrv::impl {
         return ResultSuccess();
     }
 
-    DirectoryInterfaceAdapter::DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, std::unique_lock<fssystem::SemaphoreAdapter> &&sema)
+    DirectoryInterfaceAdapter::DirectoryInterfaceAdapter(std::unique_ptr<fs::fsa::IDirectory> &&dir, FileSystemInterfaceAdapter *parent, util::unique_lock<fssystem::SemaphoreAdapter> &&sema)
         : parent_filesystem(parent, true), base_dir(std::move(dir)), open_count_semaphore(std::move(sema))
     {
         /* ... */
@@ -236,7 +236,7 @@ namespace ams::fssrv::impl {
     Result FileSystemInterfaceAdapter::OpenFile(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IFile>> out, const fssrv::sf::Path &path, u32 mode) {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
 
-        std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+        util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         if (this->open_count_limited) {
             /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
             AMS_ABORT_UNLESS(false);
@@ -264,7 +264,7 @@ namespace ams::fssrv::impl {
     Result FileSystemInterfaceAdapter::OpenDirectory(ams::sf::Out<ams::sf::SharedPointer<fssrv::sf::IDirectory>> out, const fssrv::sf::Path &path, u32 mode) {
         auto read_lock = this->AcquireCacheInvalidationReadLock();
 
-        std::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
+        util::unique_lock<fssystem::SemaphoreAdapter> open_count_semaphore;
         if (this->open_count_limited) {
             /* TODO: This calls into fssrv::FileSystemProxyImpl, which we don't have yet. */
             AMS_ABORT_UNLESS(false);
