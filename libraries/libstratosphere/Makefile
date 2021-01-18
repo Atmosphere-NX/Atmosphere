@@ -123,6 +123,7 @@ $(OFILES)	:	$(GCH_FILES)
 $(OFILES_SRC)	: $(HFILES_BIN)
 
 ams_environment_weak.o: CXXFLAGS += -fno-lto
+pm_info_api_weak.o: CXXFLAGS += -fno-lto
 
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin

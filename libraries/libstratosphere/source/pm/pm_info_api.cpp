@@ -34,13 +34,6 @@ namespace ams::pm::info {
         return pminfoAtmosphereGetProcessInfo(reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
     }
 
-    Result WEAK_SYMBOL HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
-        bool has_launched = false;
-        R_TRY(pminfoAtmosphereHasLaunchedBootProgram(&has_launched, static_cast<u64>(program_id)));
-        *out = has_launched;
-        return ResultSuccess();
-    }
-
     bool HasLaunchedBootProgram(ncm::ProgramId program_id) {
         bool has_launched = false;
         R_ABORT_UNLESS(HasLaunchedBootProgram(&has_launched, program_id));
