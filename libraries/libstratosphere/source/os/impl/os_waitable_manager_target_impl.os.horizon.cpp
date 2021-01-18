@@ -37,7 +37,7 @@ namespace ams::os::impl {
         return ResultSuccess();
     }
 
-    Result ReplyAndReceiveN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns, Handle reply_target) {
+    Result WaitableManagerHorizonImpl::ReplyAndReceiveN(s32 *out_index, s32 num, Handle arr[], s32 array_size, s64 ns, Handle reply_target) {
         /* NOTE: Nintendo does not initialize this value, which seems like it can cause incorrect behavior. */
         s32 index = WaitableManagerImpl::WaitInvalid;
         static_assert(WaitableManagerImpl::WaitInvalid != -1);
