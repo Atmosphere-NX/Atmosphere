@@ -18,7 +18,7 @@
 
 namespace ams::pm {
 
-    class BootModeService final {
+    class BootModeService {
         public:
             void GetBootMode(sf::Out<u32> out);
             void SetMaintenanceBoot();

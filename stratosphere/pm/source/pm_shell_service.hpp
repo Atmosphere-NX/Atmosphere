@@ -18,7 +18,7 @@
 
 namespace ams::pm {
 
-    class ShellService final {
+    class ShellService {
         public:
             /* Actual command implementations. */
             Result LaunchProgram(sf::Out<os::ProcessId> out_process_id, const ncm::ProgramLocation &loc, u32 flags);

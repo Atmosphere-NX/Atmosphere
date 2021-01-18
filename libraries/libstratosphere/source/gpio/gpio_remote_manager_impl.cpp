@@ -21,7 +21,7 @@ namespace ams::gpio {
     namespace {
 
         struct GpioRemoteManagerTag;
-        using RemoteAllocator     = ams::sf::ExpHeapStaticAllocator<16_KB, GpioRemoteManagerTag>;
+        using RemoteAllocator     = ams::sf::ExpHeapStaticAllocator<3_KB, GpioRemoteManagerTag>;
         using RemoteObjectFactory = ams::sf::ObjectFactory<typename RemoteAllocator::Policy>;
 
         class StaticAllocatorInitializer {
