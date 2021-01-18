@@ -145,7 +145,7 @@ namespace ams::fatal::srv {
         return g_context.ThrowFatalWithCpuContext(result, client_pid.GetValue(), policy, cpu_ctx);
     }
 
-    Result PrivateService::GetFatalEvent(sf::OutCopyHandle out_h) {
+    Result Service::GetFatalEvent(sf::OutCopyHandle out_h) {
         const os::SystemEventType *event;
         R_TRY(g_context.GetEvent(std::addressof(event)));
         out_h.SetValue(os::GetReadableHandleOfSystemEvent(event));

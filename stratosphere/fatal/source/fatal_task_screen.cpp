@@ -21,7 +21,6 @@
 namespace ams::fatal::srv {
 
     /* Include Atmosphere logo into its own anonymous namespace. */
-
     namespace {
 
         #include "fatal_ams_logo.inc"
@@ -38,6 +37,44 @@ namespace ams::fatal::srv {
 
         constexpr u32 FatalScreenWidthAlignedBytes = (FatalScreenWidth * FatalScreenBpp + 63) & ~63;
         constexpr u32 FatalScreenWidthAligned = FatalScreenWidthAlignedBytes / FatalScreenBpp;
+
+        /* There should only be a single transfer memory (for nv). */
+        alignas(os::MemoryPageSize) constinit u8 g_nv_transfer_memory[0x40000];
+
+        /* There should only be a single (1280*768) framebuffer. */
+        alignas(os::MemoryPageSize) constinit u8 g_framebuffer_memory[FatalScreenWidthAlignedBytes * util::AlignUp(FatalScreenHeight, 128)];
+
+    }
+
+}
+
+extern "C" void *__libnx_tmem_alloc(size_t size) {
+    return ams::fatal::srv::g_nv_transfer_memory;
+}
+
+extern "C" void __libnx_tmem_free(void *mem) {
+    /* ... */
+}
+
+extern "C" void *__libnx_framebuffer_alloc(size_t size) {
+    return ams::fatal::srv::g_framebuffer_memory;
+}
+
+extern "C" void __libnx_framebuffer_free(void *mem) {
+    /* ... */
+}
+
+extern "C" void *__libnx_framebuffer_linear_alloc(size_t size) {
+    AMS_ABORT("__libnx_framebuffer_linear_alloc was called");
+}
+
+extern "C" void __libnx_framebuffer_linear_free(void *mem) {
+    AMS_ABORT("__libnx_framebuffer_linear_free was called");
+}
+
+namespace ams::fatal::srv {
+
+    namespace {
 
         /* Pixel calculation helper. */
         constexpr u32 GetPixelOffset(u32 x, u32 y) {
@@ -60,6 +97,7 @@ namespace ams::fatal::srv {
                 Result SetupDisplayInternal();
                 Result SetupDisplayExternal();
                 Result PrepareScreenForDrawing();
+                void   PreRenderFrameBuffer();
                 Result ShowFatal();
             public:
                 virtual Result Run() override;
@@ -178,24 +216,22 @@ namespace ams::fatal::srv {
             return ResultSuccess();
         }
 
-        Result ShowFatalTask::ShowFatal() {
+        void ShowFatalTask::PreRenderFrameBuffer() {
             const FatalConfig &config = GetFatalConfig();
 
-            /* Prepare screen for drawing. */
-            sm::DoWithSession([&]() {
-                R_ABORT_UNLESS(PrepareScreenForDrawing());
-            });
+            /* Pre-render the image into the static framebuffer. */
+            u16 *tiled_buf = reinterpret_cast<u16 *>(g_framebuffer_memory);
 
-            /* Dequeue a buffer. */
-            u16 *tiled_buf = reinterpret_cast<u16 *>(framebufferBegin(&this->fb, NULL));
-            R_UNLESS(tiled_buf != nullptr, ResultNullGraphicsBuffer());
+            /* Temporarily use the NV transfer memory as font backing heap. */
+            font::SetHeapMemory(g_nv_transfer_memory, sizeof(g_nv_transfer_memory));
+            ON_SCOPE_EXIT { std::memset(g_nv_transfer_memory, 0, sizeof(g_nv_transfer_memory)); };
 
             /* Let the font manager know about our framebuffer. */
             font::ConfigureFontFramebuffer(tiled_buf, GetPixelOffset);
             font::SetFontColor(0xFFFF);
 
             /* Draw a background. */
-            for (size_t i = 0; i < this->fb.fb_size / sizeof(*tiled_buf); i++) {
+            for (size_t i = 0; i < sizeof(g_framebuffer_memory) / sizeof(*tiled_buf); i++) {
                 tiled_buf[i] = 0x39C9;
             }
 
@@ -412,6 +448,22 @@ namespace ams::fatal::srv {
                     }
                 }
             }
+        }
+
+        Result ShowFatalTask::ShowFatal() {
+            /* Pre-render the framebuffer. */
+            PreRenderFrameBuffer();
+
+            /* Prepare screen for drawing. */
+            sm::DoWithSession([&]() {
+                R_ABORT_UNLESS(PrepareScreenForDrawing());
+            });
+
+            /* Dequeue a buffer. */
+            R_UNLESS(framebufferBegin(&this->fb, NULL) != nullptr, ResultNullGraphicsBuffer());
+
+            /* We've already pre-rendered the frame into the static buffer. */
+            /* ... */
 
             /* Enqueue the buffer. */
             framebufferEnd(&fb);

@@ -20,6 +20,7 @@ namespace ams::fatal::srv::font {
 
     Result InitializeSharedFont();
     void ConfigureFontFramebuffer(u16 *fb, u32 (*unswizzle_func)(u32, u32));
+    void SetHeapMemory(void *memory, size_t memory_size);
 
     void SetFontColor(u16 color);
     void SetPosition(u32 x, u32 y);
