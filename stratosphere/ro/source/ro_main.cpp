@@ -170,8 +170,15 @@ void __appExit(void) {
     setsysExit();
 }
 
-namespace {
+namespace ams {
 
+    void *Malloc(size_t size) {
+        AMS_ABORT("ams::Malloc was called");
+    }
+
+    void Free(void *ptr) {
+        AMS_ABORT("ams::Free was called");
+    }
 
 }
 

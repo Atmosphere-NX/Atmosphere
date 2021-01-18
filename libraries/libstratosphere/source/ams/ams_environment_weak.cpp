@@ -13,20 +13,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#pragma once
-#include "ams_types.hpp"
+#include <stratosphere.hpp>
 
 namespace ams {
 
-    /* Will be called by libstratosphere on crash. */
-    void CrashHandler(ThreadExceptionDump *ctx);
+    WEAK_SYMBOL void *Malloc(size_t size) {
+        return std::malloc(size);
+    }
 
-    /* API for boot sysmodule. */
-    void InitializeForBoot();
-    void SetInitialRebootPayload(const void *src, size_t src_size);
-
-    void *Malloc(size_t size);
-    void Free(void *ptr);
+    WEAK_SYMBOL void Free(void *ptr) {
+        return std::free(ptr);
+    }
 
 }
