@@ -36,7 +36,7 @@ extern "C" {
     u32 __nx_fs_num_sessions = 1;
 
     /* TODO: Evaluate to what extent this can be reduced further. */
-    #define INNER_HEAP_SIZE 0x1000
+    #define INNER_HEAP_SIZE 0x0
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -143,6 +143,18 @@ void __appExit(void) {
     pmshellExit();
     spl::Finalize();
     fsExit();
+}
+
+namespace ams {
+
+    void *Malloc(size_t size) {
+        AMS_ABORT("ams::Malloc was called");
+    }
+
+    void Free(void *ptr) {
+        AMS_ABORT("ams::Free was called");
+    }
+
 }
 
 void *operator new(size_t size) {

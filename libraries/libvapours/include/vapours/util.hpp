@@ -41,8 +41,11 @@
 #include <vapours/util/util_overlap.hpp>
 #include <vapours/util/util_string_util.hpp>
 #include <vapours/util/util_string_view.hpp>
-#include <vapours/util/util_mutex_utils.hpp>
 #include <vapours/util/util_variadic.hpp>
 #include <vapours/util/util_character_encoding.hpp>
 #include <vapours/util/util_format_string.hpp>
 #include <vapours/util/util_range.hpp>
+
+#ifdef ATMOSPHERE_IS_STRATOSPHERE
+#include <vapours/util/util_mutex_utils.hpp>
+#endif
