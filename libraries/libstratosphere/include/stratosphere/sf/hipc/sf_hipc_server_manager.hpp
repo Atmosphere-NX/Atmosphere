@@ -53,13 +53,24 @@ namespace ams::sf::hipc {
                 friend class ServerManager;
                 NON_COPYABLE(Server);
                 NON_MOVEABLE(Server);
-                protected:
+                private:
                     cmif::ServiceObjectHolder static_object;
                     ::Handle port_handle;
                     sm::ServiceName service_name;
                     int index;
                     bool service_managed;
                     bool is_mitm_server;
+                public:
+                    void AcknowledgeMitmSession(std::shared_ptr<::Service> *out_fsrv, sm::MitmProcessInfo *out_client_info) {
+                        /* Check mitm server. */
+                        AMS_ABORT_UNLESS(this->is_mitm_server);
+
+                        /* Create forward service. */
+                        *out_fsrv = ServerSession::CreateForwardService();
+
+                        /* Get client info. */
+                        R_ABORT_UNLESS(sm::mitm::AcknowledgeSession(out_fsrv->get(), out_client_info, this->service_name));
+                    }
             };
         private:
             /* Management of waitables. */
@@ -171,6 +182,11 @@ namespace ams::sf::hipc {
             template<typename Interface>
             Result AcceptImpl(Server *server, SharedPointer<Interface> p) {
                 return ServerSessionManager::AcceptSession(server->port_handle, std::move(p));
+            }
+
+            template<typename Interface>
+            Result AcceptMitmImpl(Server *server, SharedPointer<Interface> p, std::shared_ptr<::Service> forward_service) {
+                return ServerSessionManager::AcceptMitmSession(server->port_handle, std::move(p), std::move(forward_service));
             }
         public:
             ServerManagerBase(DomainEntryStorage *entry_storage, size_t entry_count) :

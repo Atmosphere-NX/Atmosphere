@@ -253,6 +253,9 @@ int main(int argc, char **argv)
     /* Finalize the i2c server library. */
     boot::FinalizeI2cDriverLibrary();
 
+    /* Finalize the gpio server library. */
+    boot::FinalizeGpioDriverLibrary();
+
     /* Tell PM to start boot2. */
     R_ABORT_UNLESS(pmshellNotifyBootFinished());
 

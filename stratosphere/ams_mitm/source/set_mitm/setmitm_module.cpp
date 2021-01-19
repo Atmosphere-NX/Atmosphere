@@ -23,6 +23,12 @@ namespace ams::mitm::settings {
 
     namespace {
 
+        enum PortIndex {
+            PortIndex_SetMitm,
+            PortIndex_SetSysMitm,
+            PortIndex_Count,
+        };
+
         constexpr sm::ServiceName SetMitmServiceName = sm::ServiceName::Encode("set");
         constexpr sm::ServiceName SetSysMitmServiceName = sm::ServiceName::Encode("set:sys");
 
@@ -32,9 +38,29 @@ namespace ams::mitm::settings {
             static constexpr size_t MaxDomainObjects = 0;
         };
 
-        constexpr size_t MaxServers = 2;
         constexpr size_t MaxSessions = 60;
-        sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
+
+        class ServerManager final : public sf::hipc::ServerManager<PortIndex_Count, ServerOptions, MaxSessions> {
+            private:
+                virtual Result OnNeedsToAccept(int port_index, Server *server) override;
+        };
+
+        ServerManager g_server_manager;
+
+        Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
+            /* Acknowledge the mitm session. */
+            std::shared_ptr<::Service> fsrv;
+            sm::MitmProcessInfo client_info;
+            server->AcknowledgeMitmSession(std::addressof(fsrv), std::addressof(client_info));
+
+            switch (port_index) {
+                case PortIndex_SetMitm:
+                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<ISetMitmInterface, SetMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                case PortIndex_SetSysMitm:
+                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<ISetSysMitmInterface, SetSysMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
 
     }
 
@@ -43,8 +69,8 @@ namespace ams::mitm::settings {
         mitm::WaitInitialized();
 
         /* Create mitm servers. */
-        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<ISetMitmInterface, SetMitmService>(SetMitmServiceName)));
-        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<ISetSysMitmInterface, SetSysMitmService>(SetSysMitmServiceName)));
+        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<SetMitmService>(PortIndex_SetMitm, SetMitmServiceName)));
+        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<SetSysMitmService>(PortIndex_SetSysMitm, SetSysMitmServiceName)));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

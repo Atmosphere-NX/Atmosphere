@@ -418,22 +418,22 @@ namespace ams::mitm::sysupdater {
         return this->SetupUpdateImpl(transfer_memory.GetValue(), transfer_memory_size, path, exfat, firmware_variation_id);
     }
 
-    Result SystemUpdateService::RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<std::shared_ptr<ns::impl::IAsyncResult>> out_async) {
+    Result SystemUpdateService::RequestPrepareUpdate(sf::OutCopyHandle out_event_handle, sf::Out<sf::SharedPointer<ns::impl::IAsyncResult>> out_async) {
         /* Ensure the update is setup but not prepared. */
         R_UNLESS(this->setup_update,      ns::ResultCardUpdateNotSetup());
         R_UNLESS(!this->requested_update, ns::ResultPrepareCardUpdateAlreadyRequested());
 
         /* Create the async result. */
-        auto async_result = sf::MakeShared<ns::impl::IAsyncResult, AsyncPrepareSdCardUpdateImpl>(std::addressof(*this->update_task));
+        auto async_result = sf::CreateSharedObjectEmplaced<ns::impl::IAsyncResult, AsyncPrepareSdCardUpdateImpl>(std::addressof(*this->update_task));
         R_UNLESS(async_result != nullptr, ns::ResultOutOfMaxRunningTask());
 
         /* Run the task. */
-        R_TRY(async_result->GetImpl().Run());
+        R_TRY(async_result.GetImpl().Run());
 
         /* We prepared the task! */
         this->requested_update = true;
-        out_event_handle.SetValue(async_result->GetImpl().GetEvent().GetReadableHandle());
-        out_async.SetValue(std::move(async_result));
+        out_event_handle.SetValue(async_result.GetImpl().GetEvent().GetReadableHandle());
+        *out_async = std::move(async_result);
 
         return ResultSuccess();
     }

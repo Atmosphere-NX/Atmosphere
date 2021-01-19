@@ -26,7 +26,7 @@ namespace ams::fssrv::impl {
         /* ... */
     }
 
-    StorageInterfaceAdapter::StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> &&storage) : base_storage(std::move(storage)) {
+    StorageInterfaceAdapter::StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> storage) : base_storage(std::move(storage)) {
         /* ... */
     }
 

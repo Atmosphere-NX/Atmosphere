@@ -18,23 +18,19 @@
 
 #include "ns_shim.h"
 
+#define AMS_NS_DOCUMENT_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                       \
+    AMS_SF_METHOD_INFO(C, H, 21, Result, GetApplicationContentPath,      (const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type), (out_path, application_id, content_type))                     \
+    AMS_SF_METHOD_INFO(C, H, 23, Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type),                                (application_id, content_type))                               \
+    AMS_SF_METHOD_INFO(C, H, 92, Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                    (out, application_id),                    hos::Version_6_0_0)
+
+AMS_SF_DEFINE_INTERFACE(ams::mitm::ns::impl, IDocumentInterface, AMS_NS_DOCUMENT_MITM_INTERFACE_INFO)
+
+#define AMS_NS_WEB_MITM_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 7999, Result, GetDocumentInterface, (sf::Out<sf::SharedPointer<mitm::ns::impl::IDocumentInterface>> out), (out))
+
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::ns::impl, IWebMitmInterface, AMS_NS_WEB_MITM_INTERFACE_INFO)
+
 namespace ams::mitm::ns {
-
-    namespace impl {
-
-        #define AMS_NS_DOCUMENT_MITM_INTERFACE_INFO(C, H)                                                                                                                             \
-            AMS_SF_METHOD_INFO(C, H, 21, Result, GetApplicationContentPath,      (const sf::OutBuffer &out_path, ncm::ProgramId application_id, u8 content_type))                     \
-            AMS_SF_METHOD_INFO(C, H, 23, Result, ResolveApplicationContentPath,  (ncm::ProgramId application_id, u8 content_type))                                                    \
-            AMS_SF_METHOD_INFO(C, H, 92, Result, GetRunningApplicationProgramId, (sf::Out<ncm::ProgramId> out, ncm::ProgramId application_id),                    hos::Version_6_0_0)
-
-        AMS_SF_DEFINE_INTERFACE(IDocumentInterface, AMS_NS_DOCUMENT_MITM_INTERFACE_INFO)
-
-        #define AMS_NS_WEB_MITM_INTERFACE_INFO(C, H)                                                                         \
-            AMS_SF_METHOD_INFO(C, H, 7999, Result, GetDocumentInterface, (sf::Out<std::shared_ptr<IDocumentInterface>> out))
-
-        AMS_SF_DEFINE_MITM_INTERFACE(IWebMitmInterface, AMS_NS_WEB_MITM_INTERFACE_INFO)
-
-    }
 
     class NsDocumentService {
         private:
@@ -65,7 +61,7 @@ namespace ams::mitm::ns {
                 return ncm::IsWebAppletId(client_info.program_id);
             }
         public:
-            Result GetDocumentInterface(sf::Out<std::shared_ptr<impl::IDocumentInterface>> out);
+            Result GetDocumentInterface(sf::Out<sf::SharedPointer<impl::IDocumentInterface>> out);
     };
     static_assert(impl::IsIWebMitmInterface<NsWebMitmService>);
 
