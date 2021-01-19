@@ -22,14 +22,37 @@ namespace ams::mitm::bpc {
 
     namespace {
 
+        enum PortIndex {
+            PortIndex_Mitm,
+            PortIndex_Count,
+        };
+
         constexpr sm::ServiceName MitmServiceName = sm::ServiceName::Encode("bpc");
         constexpr sm::ServiceName DeprecatedMitmServiceName = sm::ServiceName::Encode("bpc:c");
         constexpr size_t          MitmServiceMaxSessions = 13;
 
-        constexpr size_t MaxServers = 1;
         constexpr size_t MaxSessions = MitmServiceMaxSessions;
         using ServerOptions = sf::hipc::DefaultServerManagerOptions;
-        sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
+
+        class ServerManager final : public sf::hipc::ServerManager<PortIndex_Count, ServerOptions, MaxSessions> {
+            private:
+                virtual Result OnNeedsToAccept(int port_index, Server *server) override;
+        };
+
+        ServerManager g_server_manager;
+
+        Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
+            /* Acknowledge the mitm session. */
+            std::shared_ptr<::Service> fsrv;
+            sm::MitmProcessInfo client_info;
+            server->AcknowledgeMitmSession(std::addressof(fsrv), std::addressof(client_info));
+
+            switch (port_index) {
+                case PortIndex_Mitm:
+                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IBpcMitmInterface, BpcMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
 
     }
 
@@ -44,7 +67,8 @@ namespace ams::mitm::bpc {
 
         /* Create bpc mitm. */
         const sm::ServiceName service_name = (hos::GetVersion() >= hos::Version_2_0_0) ? MitmServiceName : DeprecatedMitmServiceName;
-        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<impl::IBpcMitmInterface, BpcMitmService>(service_name)));
+
+        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<BpcMitmService>(PortIndex_Mitm, service_name)));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

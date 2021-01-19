@@ -16,19 +16,15 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#define AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO(C, H)                                                \
+    AMS_SF_METHOD_INFO(C, H, 65000, void, RebootToFatalError, (const ams::FatalErrorContext &ctx), (ctx))     \
+    AMS_SF_METHOD_INFO(C, H, 65001, void, SetRebootPayload,   (const ams::sf::InBuffer &payload),  (payload))
+
+AMS_SF_DEFINE_INTERFACE(ams::mitm::bpc::impl, IAtmosphereInterface, AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO)
+
 namespace ams::mitm::bpc {
 
-    namespace impl {
-
-        #define AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO(C, H)                                     \
-            AMS_SF_METHOD_INFO(C, H, 65000, void, RebootToFatalError, (const ams::FatalErrorContext &ctx)) \
-            AMS_SF_METHOD_INFO(C, H, 65001, void, SetRebootPayload,   (const ams::sf::InBuffer &payload))
-
-        AMS_SF_DEFINE_INTERFACE(IAtmosphereInterface, AMS_BPC_MITM_ATMOSPHERE_INTERFACE_INTERFACE_INFO)
-
-    }
-
-    class AtmosphereService final {
+    class AtmosphereService {
         public:
             void RebootToFatalError(const ams::FatalErrorContext &ctx);
             void SetRebootPayload(const ams::sf::InBuffer &payload);

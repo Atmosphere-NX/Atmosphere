@@ -23,10 +23,14 @@ namespace ams::mitm::sysupdater {
 
     namespace {
 
+        enum PortIndex {
+            PortIndex_Sysupdater,
+            PortIndex_Count,
+        };
+
         constexpr sm::ServiceName SystemUpdateServiceName = sm::ServiceName::Encode("ams:su");
         constexpr size_t          SystemUpdateMaxSessions = 1;
 
-        constexpr size_t MaxServers = 1;
         constexpr size_t MaxSessions = SystemUpdateMaxSessions + 3;
 
         struct ServerOptions {
@@ -35,9 +39,9 @@ namespace ams::mitm::sysupdater {
             static constexpr size_t MaxDomainObjects = 0;
         };
 
-        sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
+        sf::hipc::ServerManager<PortIndex_Count, ServerOptions, MaxSessions> g_server_manager;
 
-        constinit sysupdater::SystemUpdateService g_system_update_service_object;
+        constinit sf::UnmanagedServiceObject<sysupdater::impl::ISystemUpdateInterface, sysupdater::SystemUpdateService> g_system_update_service_object;
 
     }
 
@@ -50,7 +54,7 @@ namespace ams::mitm::sysupdater {
         ON_SCOPE_EXIT { nim::FinalizeForNetworkInstallManager(); };
 
         /* Register ams:su. */
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<sysupdater::impl::ISystemUpdateInterface, sysupdater::SystemUpdateService>(SystemUpdateServiceName, SystemUpdateMaxSessions, sf::GetSharedPointerTo<sysupdater::impl::ISystemUpdateInterface>(g_system_update_service_object))));
+        R_ABORT_UNLESS(g_server_manager.RegisterObjectForServer(g_system_update_service_object.GetShared(), SystemUpdateServiceName, SystemUpdateMaxSessions));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

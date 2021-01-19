@@ -27,7 +27,7 @@ namespace ams::fs {
 
 namespace ams::fssrv::impl {
 
-    class StorageInterfaceAdapter final {
+    class StorageInterfaceAdapter {
         NON_COPYABLE(StorageInterfaceAdapter);
         private:
             /* TODO: Nintendo uses fssystem::AsynchronousAccessStorage here. */
@@ -39,7 +39,7 @@ namespace ams::fssrv::impl {
         public:
             StorageInterfaceAdapter(fs::IStorage *storage);
             StorageInterfaceAdapter(std::unique_ptr<fs::IStorage> storage);
-            explicit StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> &&storage);
+            explicit StorageInterfaceAdapter(std::shared_ptr<fs::IStorage> storage);
             /* TODO: Other constructors. */
 
             ~StorageInterfaceAdapter();

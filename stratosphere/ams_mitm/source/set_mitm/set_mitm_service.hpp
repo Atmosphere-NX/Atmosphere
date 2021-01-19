@@ -16,21 +16,17 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#define AMS_SETTINGS_MITM_INTERFACE_INFO(C, H)                                                              \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GetLanguageCode, (sf::Out<ams::settings::LanguageCode> out), (out)) \
+    AMS_SF_METHOD_INFO(C, H, 4, Result, GetRegionCode,   (sf::Out<ams::settings::RegionCode> out),   (out))
+
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::settings, ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO)
+
 namespace ams::mitm::settings {
-
-    namespace {
-
-        #define AMS_SETTINGS_MITM_INTERFACE_INFO(C, H)                                                       \
-            AMS_SF_METHOD_INFO(C, H, 0, Result, GetLanguageCode, (sf::Out<ams::settings::LanguageCode> out)) \
-            AMS_SF_METHOD_INFO(C, H, 4, Result, GetRegionCode,   (sf::Out<ams::settings::RegionCode> out))
-
-        AMS_SF_DEFINE_MITM_INTERFACE(ISetMitmInterface, AMS_SETTINGS_MITM_INTERFACE_INFO)
-
-    }
 
     class SetMitmService : public sf::MitmServiceImplBase {
         private:
-            os::Mutex lock{false};
+            os::SdkMutex lock{};
             cfg::OverrideLocale locale;
             bool got_locale = false;
             bool is_valid_language = false;

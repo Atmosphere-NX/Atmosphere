@@ -196,16 +196,8 @@ extern "C" {
 
 }
 
-namespace {
-
-    constinit ams::os::Mutex g_abort_lock(true);
-
-}
-
 /* Custom abort handler, so that std::abort will trigger these. */
 void abort() {
-    std::scoped_lock lk(g_abort_lock);
-
     ams::AbortImpl();
     __builtin_unreachable();
 }

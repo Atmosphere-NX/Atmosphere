@@ -25,10 +25,10 @@ namespace ams::sf::impl {
             return ImplGetter::GetImplPointer(static_cast<ImplHolder *>(this))->NAME ARGNAMES;                             \
         }
 
-    #define AMS_SF_DEFINE_INTERFACE(NAMESPACE, INTERFACE, CMD_MACRO)                                                               \
+    #define AMS_SF_DEFINE_INTERFACE_WITH_DEFAULT_BASE(NAMESPACE, INTERFACE, BASE, CMD_MACRO)                                       \
         namespace NAMESPACE {                                                                                                      \
                                                                                                                                    \
-            AMS_SF_DEFINE_INTERFACE_IMPL(::ams::sf::IServiceObject, INTERFACE, CMD_MACRO)                                          \
+            AMS_SF_DEFINE_INTERFACE_IMPL(BASE, INTERFACE, CMD_MACRO)                                                               \
                                                                                                                                    \
         }                                                                                                                          \
                                                                                                                                    \
@@ -44,6 +44,12 @@ namespace ams::sf::impl {
             };                                                                                                                     \
                                                                                                                                    \
         }
+
+    #define AMS_SF_DEFINE_INTERFACE(NAMESPACE, INTERFACE, CMD_MACRO) \
+        AMS_SF_DEFINE_INTERFACE_WITH_DEFAULT_BASE(NAMESPACE, INTERFACE, ::ams::sf::IServiceObject, CMD_MACRO)
+
+    #define AMS_SF_DEFINE_MITM_INTERFACE(NAMESPACE, INTERFACE, CMD_MACRO) \
+        AMS_SF_DEFINE_INTERFACE_WITH_DEFAULT_BASE(NAMESPACE, INTERFACE, ::ams::sf::IMitmServiceObject, CMD_MACRO)
 
     #define AMS_SF_DEFINE_INTERFACE_WITH_BASE(NAMESPACE, INTERFACE, BASE, CMD_MACRO)                                                                                   \
         namespace NAMESPACE {                                                                                                                                          \
