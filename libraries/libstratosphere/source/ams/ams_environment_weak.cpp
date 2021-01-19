@@ -26,3 +26,12 @@ namespace ams {
     }
 
 }
+
+extern "C" {
+
+    /* Redefine C++ exception handlers. Requires wrap linker flag. */
+    #define WRAP_ABORT_FUNC(func) void NORETURN __wrap_##func(void) { abort(); __builtin_unreachable(); }
+    WRAP_ABORT_FUNC(__cxa_pure_virtual)
+    #undef WRAP_ABORT_FUNC
+
+}
