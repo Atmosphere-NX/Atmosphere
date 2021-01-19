@@ -30,28 +30,38 @@ namespace ams::fatal::srv {
 
         constexpr inline size_t MaxThreads = 0x60;
 
-        constinit std::pair<u64, u64> g_thread_id_to_tls_map[MaxThreads];
-        constinit size_t g_tls_map_index = 0;
+        template<size_t MaxThreadCount>
+        class ThreadTlsMapImpl {
+            private:
+                std::pair<u64, u64> m_map[MaxThreadCount];
+                size_t m_index;
+            public:
+                constexpr ThreadTlsMapImpl() : m_map(), m_index(0) { /* ... */ }
 
-        void ResetThreadTlsMap() {
-            g_tls_map_index = 0;
-        }
-
-        void SetThreadTls(u64 thread_id, u64 tls) {
-            if (g_tls_map_index < MaxThreads) {
-                g_thread_id_to_tls_map[g_tls_map_index++] = std::make_pair(thread_id, tls);
-            }
-        }
-
-        bool GetThreadTls(u64 *out, u64 thread_id) {
-            for (size_t i = 0; i < g_tls_map_index; ++i) {
-                if (g_thread_id_to_tls_map[i].first == thread_id) {
-                    *out = g_thread_id_to_tls_map[i].second;
-                    return true;
+                constexpr void ResetThreadTlsMap() {
+                    m_index = 0;
                 }
-            }
-            return false;
-        }
+
+                constexpr void SetThreadTls(u64 thread_id, u64 tls) {
+                    if (m_index < util::size(m_map)) {
+                        m_map[m_index++] = std::make_pair(thread_id, tls);
+                    }
+                }
+
+                constexpr bool GetThreadTls(u64 *out, u64 thread_id) const {
+                    for (size_t i = 0; i < m_index; ++i) {
+                        if (m_map[i].first == thread_id) {
+                            *out = m_map[i].second;
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+        };
+
+        using ThreadTlsMap = ThreadTlsMapImpl<MaxThreads>;
+
+        constinit ThreadTlsMap g_thread_id_to_tls_map;
 
         bool IsThreadFatalCaller(Result result, u32 debug_handle, u64 thread_id, u64 thread_tls_addr, ThreadContext *thread_ctx) {
             /* Verify that the thread is running or waiting. */
@@ -202,7 +212,7 @@ namespace ams::fatal::srv {
         ON_SCOPE_EXIT { R_ABORT_UNLESS(svc::CloseHandle(debug_handle)); };
 
         /* First things first, check if process is 64 bits, and get list of thread infos. */
-        ResetThreadTlsMap();
+        g_thread_id_to_tls_map.ResetThreadTlsMap();
         {
             bool got_create_process = false;
             svc::DebugEventInfo d;
@@ -214,7 +224,7 @@ namespace ams::fatal::srv {
                         got_create_process = true;
                         break;
                     case svc::DebugEvent_CreateThread:
-                        SetThreadTls(d.info.create_thread.thread_id, d.info.create_thread.tls_address);
+                        g_thread_id_to_tls_map.SetThreadTls(d.info.create_thread.thread_id, d.info.create_thread.tls_address);
                         break;
                     case svc::DebugEvent_Exception:
                     case svc::DebugEvent_ExitProcess:
@@ -250,7 +260,7 @@ namespace ams::fatal::srv {
             for (s32 i = 0; i < thread_count; i++) {
                 const u64 cur_thread_id = thread_ids[i];
                 u64 cur_thread_tls;
-                if (!GetThreadTls(std::addressof(cur_thread_tls), cur_thread_id)) {
+                if (!g_thread_id_to_tls_map.GetThreadTls(std::addressof(cur_thread_tls), cur_thread_id)) {
                     continue;
                 }
 

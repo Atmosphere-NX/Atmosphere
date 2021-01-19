@@ -24,7 +24,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
 
-    #define INNER_HEAP_SIZE 0x4000
+    #define INNER_HEAP_SIZE 0x0
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -68,8 +68,31 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
+namespace {
+
+
+    constinit u8 g_fs_heap_memory[4_KB];
+    lmem::HeapHandle g_fs_heap_handle;
+
+    void *AllocateForFs(size_t size) {
+        return lmem::AllocateFromExpHeap(g_fs_heap_handle, size);
+    }
+
+    void DeallocateForFs(void *p, size_t size) {
+        return lmem::FreeToExpHeap(g_fs_heap_handle, p);
+    }
+
+    void InitializeFsHeap() {
+        g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_memory, sizeof(g_fs_heap_memory), lmem::CreateOption_None);
+    }
+
+}
+
 void __appInit(void) {
     hos::InitializeForStratosphere();
+
+    InitializeFsHeap();
+    fs::SetAllocator(AllocateForFs, DeallocateForFs);
 
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(fsInitialize());
@@ -83,7 +106,31 @@ void __appExit(void) {
     fsExit();
 }
 
-static creport::CrashReport g_crash_report;
+namespace ams {
+
+    void *Malloc(size_t size) {
+        AMS_ABORT("ams::Malloc was called");
+    }
+
+    void Free(void *ptr) {
+        AMS_ABORT("ams::Free was called");
+    }
+
+}
+
+void *operator new(size_t size) {
+    AMS_ABORT("operator new(size_t) was called");
+}
+
+void operator delete(void *p) {
+    AMS_ABORT("operator delete(void *) was called");
+}
+
+namespace {
+
+    constinit creport::CrashReport g_crash_report;
+
+}
 
 int main(int argc, char **argv) {
     /* Set thread name. */

@@ -30,7 +30,7 @@ namespace ams::creport {
             Result result = ResultIncompleteReport();
 
             /* Meta, used for building module/thread list. */
-            std::map<u64, u64> thread_tls_map;
+            ThreadTlsMap thread_tls_map = {};
 
             /* Attach process info. */
             svc::DebugInfoCreateProcess process_info = {};
@@ -49,9 +49,11 @@ namespace ams::creport {
             ThreadList *thread_list = nullptr;
 
             /* Memory heap. */
-            lmem::HeapHandle heap_handle;
-            u8 heap_storage[MemoryHeapSize];
+            lmem::HeapHandle heap_handle = nullptr;
+            u8 heap_storage[MemoryHeapSize] = {};
         public:
+            constexpr CrashReport() = default;
+
             Result GetResult() const {
                 return this->result;
             }

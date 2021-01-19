@@ -113,7 +113,7 @@ namespace ams::creport {
         }
     }
 
-    bool ThreadInfo::ReadFromProcess(Handle debug_handle, std::map<u64, u64> &tls_map, u64 thread_id, bool is_64_bit) {
+    bool ThreadInfo::ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit) {
         /* Set thread id. */
         this->thread_id = thread_id;
 
@@ -145,8 +145,8 @@ namespace ams::creport {
 
         /* Read TLS, if present. */
         /* TODO: struct definitions for nnSdk's ThreadType/TLS Layout? */
-        if (tls_map.find(thread_id) != tls_map.end()) {
-            this->tls_address = tls_map[thread_id];
+        this->tls_address = 0;
+        if (tls_map.GetThreadTls(std::addressof(this->tls_address), thread_id)) {
             u8 thread_tls[0x200];
             if (R_SUCCEEDED(svcReadDebugProcessMemory(thread_tls, debug_handle, this->tls_address, sizeof(thread_tls)))) {
                 std::memcpy(this->tls, thread_tls, sizeof(this->tls));
@@ -243,7 +243,7 @@ namespace ams::creport {
         }
     }
 
-    void ThreadList::ReadFromProcess(Handle debug_handle, std::map<u64, u64> &tls_map, bool is_64_bit) {
+    void ThreadList::ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit) {
         this->thread_count = 0;
 
         /* Get thread list. */

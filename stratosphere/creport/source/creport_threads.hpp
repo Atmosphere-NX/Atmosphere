@@ -22,6 +22,39 @@ namespace ams::creport {
     /* Forward declare ModuleList class. */
     class ModuleList;
 
+    static constexpr size_t ThreadCountMax = 0x60;
+
+    template<size_t MaxThreadCount>
+    class ThreadTlsMapImpl {
+        private:
+            std::pair<u64, u64> m_map[MaxThreadCount];
+            size_t m_index;
+        public:
+            constexpr ThreadTlsMapImpl() : m_map(), m_index(0) { /* ... */ }
+
+            constexpr void ResetThreadTlsMap() {
+                m_index = 0;
+            }
+
+            constexpr void SetThreadTls(u64 thread_id, u64 tls) {
+                if (m_index < util::size(m_map)) {
+                    m_map[m_index++] = std::make_pair(thread_id, tls);
+                }
+            }
+
+            constexpr bool GetThreadTls(u64 *out, u64 thread_id) const {
+                for (size_t i = 0; i < m_index; ++i) {
+                    if (m_map[i].first == thread_id) {
+                        *out = m_map[i].second;
+                        return true;
+                    }
+                }
+                return false;
+            }
+    };
+
+    using ThreadTlsMap = ThreadTlsMapImpl<ThreadCountMax>;
+
     class ThreadInfo {
         private:
             static constexpr size_t StackTraceSizeMax = 0x20;
@@ -76,7 +109,7 @@ namespace ams::creport {
                 this->module_list = ml;
             }
 
-            bool ReadFromProcess(Handle debug_handle, std::map<u64, u64> &tls_map, u64 thread_id, bool is_64_bit);
+            bool ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, u64 thread_id, bool is_64_bit);
             void SaveToFile(ScopedFile &file);
             void DumpBinary(ScopedFile &file);
         private:
@@ -84,8 +117,6 @@ namespace ams::creport {
     };
 
     class ThreadList {
-        private:
-            static constexpr size_t ThreadCountMax = 0x60;
         private:
             size_t thread_count = 0;
             ThreadInfo threads[ThreadCountMax];
@@ -104,7 +135,7 @@ namespace ams::creport {
                 }
             }
 
-            void ReadFromProcess(Handle debug_handle, std::map<u64, u64> &tls_map, bool is_64_bit);
+            void ReadFromProcess(Handle debug_handle, ThreadTlsMap &tls_map, bool is_64_bit);
             void SaveToFile(ScopedFile &file);
             void DumpBinary(ScopedFile &file, u64 crashed_thread_id);
     };
