@@ -219,7 +219,7 @@ namespace ams::creport {
 
     void CrashReport::HandleDebugEventInfoCreateThread(const svc::DebugEventInfo &d) {
         /* Save info on the thread's TLS address for later. */
-        this->thread_tls_map[d.info.create_thread.thread_id] = d.info.create_thread.tls_address;
+        this->thread_tls_map.SetThreadTls(d.info.create_thread.thread_id, d.info.create_thread.tls_address);
     }
 
     void CrashReport::HandleDebugEventInfoException(const svc::DebugEventInfo &d) {
