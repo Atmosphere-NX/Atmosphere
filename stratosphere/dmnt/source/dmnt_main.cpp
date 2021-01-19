@@ -24,14 +24,16 @@ extern "C" {
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
 
-    /* TODO: Evaluate how much this can be reduced by. */
-    #define INNER_HEAP_SIZE 0x20000
+    #define INNER_HEAP_SIZE 0x0
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
     void __libnx_initheap(void);
     void __appInit(void);
     void __appExit(void);
+
+    void *__libnx_thread_alloc(size_t size);
+    void __libnx_thread_free(void *mem);
 }
 
 namespace ams {
@@ -60,8 +62,31 @@ void __libnx_initheap(void) {
 	fake_heap_end   = (char*)addr + size;
 }
 
+namespace {
+
+
+    constinit u8 g_fs_heap_memory[4_KB];
+    lmem::HeapHandle g_fs_heap_handle;
+
+    void *AllocateForFs(size_t size) {
+        return lmem::AllocateFromExpHeap(g_fs_heap_handle, size);
+    }
+
+    void DeallocateForFs(void *p, size_t size) {
+        return lmem::FreeToExpHeap(g_fs_heap_handle, p);
+    }
+
+    void InitializeFsHeap() {
+        g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_memory, sizeof(g_fs_heap_memory), lmem::CreateOption_None);
+    }
+
+}
+
 void __appInit(void) {
     hos::InitializeForStratosphere();
+
+    InitializeFsHeap();
+    fs::SetAllocator(AllocateForFs, DeallocateForFs);
 
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(pmdmntInitialize());
@@ -114,6 +139,8 @@ namespace {
 
     sf::hipc::ServerManager<NumServers, ServerOptions, NumSessions> g_server_manager;
 
+    constinit sf::UnmanagedServiceObject<dmnt::cheat::impl::ICheatInterface, dmnt::cheat::CheatService> g_cheat_service;
+
     void LoopServerThread(void *arg) {
         g_server_manager.LoopProcess();
     }
@@ -128,6 +155,34 @@ namespace {
 
 }
 
+namespace ams {
+
+    void *Malloc(size_t size) {
+        AMS_ABORT("ams::Malloc was called");
+    }
+
+    void Free(void *ptr) {
+        AMS_ABORT("ams::Free was called");
+    }
+
+}
+
+void *operator new(size_t size) {
+    AMS_ABORT("operator new(size_t) was called");
+}
+
+void operator delete(void *p) {
+    AMS_ABORT("operator delete(void *) was called");
+}
+
+void *__libnx_thread_alloc(size_t size) {
+    AMS_ABORT("__libnx_thread_alloc was called");
+}
+
+void __libnx_thread_free(void *mem) {
+    AMS_ABORT("__libnx_thread_free was called");
+}
+
 int main(int argc, char **argv)
 {
     /* Set thread name. */
@@ -139,8 +194,8 @@ int main(int argc, char **argv)
 
     /* Create services. */
     /* TODO: Implement rest of dmnt:- in ams.tma development branch. */
-    /* R_ABORT_UNLESS((g_server_manager.RegisterServer<dmnt::cheat::CheatService>(DebugMonitorServiceName, DebugMonitorMaxSessions))); */
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<dmnt::cheat::impl::ICheatInterface, dmnt::cheat::CheatService>(CheatServiceName, CheatMaxSessions)));
+    /* TODO: register debug service */
+    R_ABORT_UNLESS(g_server_manager.RegisterObjectForServer(g_cheat_service.GetShared(), CheatServiceName, CheatMaxSessions));
 
     /* Loop forever, servicing our services. */
     /* Nintendo loops four threads processing on the manager -- we'll loop an extra fifth for our cheat service. */
