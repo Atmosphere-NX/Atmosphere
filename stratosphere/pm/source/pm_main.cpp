@@ -39,8 +39,9 @@ extern "C" {
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
 
-    void *__libnx_thread_alloc(size_t size);
-    void __libnx_thread_free(void *mem);
+    void *__libnx_alloc(size_t size);
+    void *__libnx_aligned_alloc(size_t alignment, size_t size);
+    void __libnx_free(void *mem);
 }
 
 namespace ams {
@@ -239,12 +240,16 @@ void operator delete(void *p) {
     AMS_ABORT("operator delete(void *) was called");
 }
 
-void *__libnx_thread_alloc(size_t size) {
-    AMS_ABORT("__libnx_thread_alloc was called");
+void *__libnx_alloc(size_t size) {
+    AMS_ABORT("__libnx_alloc was called");
 }
 
-void __libnx_thread_free(void *mem) {
-    AMS_ABORT("__libnx_thread_free was called");
+void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+    AMS_ABORT("__libnx_aligned_alloc was called");
+}
+
+void __libnx_free(void *mem) {
+    AMS_ABORT("__libnx_free was called");
 }
 
 int main(int argc, char **argv)
