@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
+#include <vapours/util/util_type_traits.hpp>
 #include <chrono>
 
 namespace ams {
@@ -54,6 +55,7 @@ namespace ams {
             constexpr ALWAYS_INLINE friend TimeSpanType operator+(const TimeSpanType &lhs, const TimeSpanType &rhs) { TimeSpanType r(lhs); return r += rhs; }
             constexpr ALWAYS_INLINE friend TimeSpanType operator-(const TimeSpanType &lhs, const TimeSpanType &rhs) { TimeSpanType r(lhs); return r -= rhs; }
     };
+    static_assert(util::is_pod<TimeSpanType>::value);
 
     class TimeSpan {
         private:
