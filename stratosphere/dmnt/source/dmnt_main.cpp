@@ -93,10 +93,7 @@ void __appInit(void) {
         R_ABORT_UNLESS(pmdmntInitialize());
         R_ABORT_UNLESS(pminfoInitialize());
         R_ABORT_UNLESS(ldrDmntInitialize());
-        /* TODO: We provide this on every sysver via ro. Do we need a shim? */
-        if (hos::GetVersion() >= hos::Version_3_0_0) {
-            R_ABORT_UNLESS(roDmntInitialize());
-        }
+        R_ABORT_UNLESS(roDmntInitialize());
         R_ABORT_UNLESS(nsdevInitialize());
         lr::Initialize();
         R_ABORT_UNLESS(setInitialize());
