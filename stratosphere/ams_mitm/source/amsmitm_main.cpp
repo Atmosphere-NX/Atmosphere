@@ -124,6 +124,15 @@ void __libnx_free(void *mem) {
 }
 
 int main(int argc, char **argv) {
+    /* Register "ams" port, use up its session. */
+    {
+        svc::Handle ams_port;
+        R_ABORT_UNLESS(svc::ManageNamedPort(std::addressof(ams_port), "ams", 1));
+
+        svc::Handle ams_session;
+        R_ABORT_UNLESS(svc::ConnectToNamedPort(std::addressof(ams_session), "ams"));
+    }
+
     /* Launch all mitm modules in sequence. */
     mitm::LaunchAllModules();
 
