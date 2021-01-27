@@ -350,12 +350,6 @@ namespace ams::sm::impl {
             return service == InitiallyDeferredServiceName;
         }
 
-        bool ShouldCloseOnClientDisconnect(ServiceName service) {
-            /* jit sysmodule is closed and relaunched by am for each application which uses it. */
-            constexpr auto JitU = ServiceName::Encode("jit:u");
-            return service == JitU;
-        }
-
         Result GetMitmServiceHandleImpl(Handle *out, ServiceInfo *service_info, const MitmProcessInfo &client_info) {
             /* Send command to query if we should mitm. */
             bool should_mitm;
@@ -438,16 +432,10 @@ namespace ams::sm::impl {
             return;
         }
 
-        /* NOTE: Nintendo unregisters all services a process hosted on client close. */
-        /* We do not do this as an atmosphere extension, in order to reduce the number */
-        /* of sessions open at any given time. */
-        /* However, certain system behavior (jit) relies on this occurring. */
-        /* As such, we will special case the system components which rely on the behavior. */
+        /* Unregister all services a client hosts, on attached-client-close. */
         for (size_t i = 0; i < ServiceCountMax; i++) {
             if (g_service_list[i].name != InvalidServiceName && g_service_list[i].owner_process_id == process_id) {
-                if (ShouldCloseOnClientDisconnect(g_service_list[i].name)) {
-                    g_service_list[i].Free();
-                }
+                g_service_list[i].Free();
             }
         }
     }

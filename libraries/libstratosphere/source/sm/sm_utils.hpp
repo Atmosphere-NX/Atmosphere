@@ -30,7 +30,10 @@ namespace ams::sm::impl {
         std::scoped_lock lk(GetUserSessionMutex());
         {
             R_ABORT_UNLESS(smInitialize());
-            ON_SCOPE_EXIT { smExit(); };
+            ON_SCOPE_EXIT {
+                R_ABORT_UNLESS(smDetachClient());
+                smExit();
+            };
 
             return f();
         }
