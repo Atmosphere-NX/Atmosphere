@@ -2,10 +2,10 @@
 
 namespace ams::lm::detail {
 
-    LogPacketTransmitterBase::LogPacketTransmitterBase(u8 *log_buffer, size_t log_buffer_size, LogPacketTransmitterBase::FlushFunction flush_fn, diag::LogSeverity severity, bool verbosity, u64 process_id, bool head, bool tail) {
+    LogPacketTransmitterBase::LogPacketTransmitterBase(void *log_buffer, size_t log_buffer_size, LogPacketTransmitterBase::FlushFunction flush_func, u8 severity, u8 verbosity, u64 process_id, bool head, bool tail) {
         AMS_ABORT_UNLESS(log_buffer != nullptr);
         AMS_ABORT_UNLESS(log_buffer_size > sizeof(LogPacketHeader));
-        AMS_ABORT_UNLESS(flush_fn != nullptr);
+        AMS_ABORT_UNLESS(flush_func != nullptr);
         
         this->header = reinterpret_cast<LogPacketHeader*>(log_buffer);
         this->log_buffer_start = log_buffer;
@@ -13,7 +13,7 @@ namespace ams::lm::detail {
         this->log_buffer_payload_start = log_buffer + sizeof(LogPacketHeader);
         this->log_buffer_payload_current = log_buffer + sizeof(LogPacketHeader);
         this->is_tail = tail;
-        this->flush_function = flush_fn;
+        this->flush_function = flush_func;
         this->header->SetProcessId(process_id);
 
         auto current_thread = os::GetCurrentThread();

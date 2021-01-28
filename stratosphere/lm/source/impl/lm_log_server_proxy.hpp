@@ -27,20 +27,20 @@ namespace ams::lm::impl {
             os::SdkConditionVariable some_cond_var;
             os::Event finalize_event;
             os::SdkMutex some_cond_var_lock;
-            os::SdkMutex update_enabled_fn_lock;
+            os::SdkMutex update_enabled_func_lock;
             std::atomic_int htcs_server_fd;
             std::atomic_int htcs_client_fd;
-            UpdateEnabledFunction update_enabled_fn;
+            UpdateEnabledFunction update_enabled_func;
         public:
-            LogServerProxy() : htcs_thread_stack{}, htcs_thread(), some_cond_var(), finalize_event(os::EventClearMode_ManualClear), some_cond_var_lock(), update_enabled_fn_lock(), htcs_server_fd(INT_MAX), htcs_client_fd(INT_MAX), update_enabled_fn(nullptr) /*, data_4(0), data_5{}*/ {}
+            LogServerProxy() : htcs_thread_stack{}, htcs_thread(), some_cond_var(), finalize_event(os::EventClearMode_ManualClear), some_cond_var_lock(), update_enabled_func_lock(), htcs_server_fd(INT_MAX), htcs_client_fd(INT_MAX), update_enabled_func(nullptr) /*, data_4(0), data_5{}*/ {}
 
             void StartHtcsThread(ThreadFunc htcs_entry);
             void DisposeHtcsThread();
             bool LogOverHtcs(const void *log_data, size_t log_size);
 
-            void SetUpdateEnabledFunction(UpdateEnabledFunction update_enabled_fn) {
-                std::scoped_lock lk(this->update_enabled_fn_lock);
-                this->update_enabled_fn = update_enabled_fn;
+            void SetUpdateEnabledFunction(UpdateEnabledFunction update_enabled_func) {
+                std::scoped_lock lk(this->update_enabled_func_lock);
+                this->update_enabled_func = update_enabled_func;
             }
 
             inline void SetHtcsClientFd(int fd) {
@@ -61,9 +61,9 @@ namespace ams::lm::impl {
             }
 
             void SetEnabled(bool enabled) {
-                std::scoped_lock lk(this->update_enabled_fn_lock);
-                if (this->update_enabled_fn) {
-                    this->update_enabled_fn(enabled);
+                std::scoped_lock lk(this->update_enabled_func_lock);
+                if (this->update_enabled_func) {
+                    this->update_enabled_func(enabled);
                 }
             }
     };

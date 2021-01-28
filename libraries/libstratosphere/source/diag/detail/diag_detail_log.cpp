@@ -53,10 +53,10 @@ namespace ams::diag::detail {
                         *print_str_cur_end = '\0';
 
                         const LogBody log_body = {
-                            .log_text = print_data->print_str_start,
-                            .log_text_length = actual_print_str_len,
-                            .log_is_head = print_data->is_head,
-                            .log_is_tail = false,
+                            .text = print_data->print_str_start,
+                            .text_length = actual_print_str_len,
+                            .is_head = print_data->is_head,
+                            .is_tail = false,
                         };
                         CallAllLogObserver(print_data->log_metadata, log_body);
                         auto move_len = cur_print_str_len - actual_print_str_len;
@@ -69,10 +69,10 @@ namespace ams::diag::detail {
                 *print_data->print_str_cur = '\0';
 
                 const LogBody log_body = {
-                    .log_text = print_data->print_str_start,
-                    .log_text_length = static_cast<size_t>(print_data->print_str_cur - print_data->print_str_start),
-                    .log_is_head = print_data->is_head,
-                    .log_is_tail = false,
+                    .text = print_data->print_str_start,
+                    .text_length = static_cast<size_t>(print_data->print_str_cur - print_data->print_str_start),
+                    .is_head = print_data->is_head,
+                    .is_tail = false,
                 };
                 CallAllLogObserver(print_data->log_metadata, log_body);
                 print_data->print_str_cur = print_data->print_str_start;
@@ -107,10 +107,10 @@ namespace ams::diag::detail {
         util::VFormatString(PutCharacters, std::addressof(print_data), fmt, vl);
 
         const LogBody log_body = {
-            .log_text = print_data.print_str_start,
-            .log_text_length = static_cast<size_t>(print_data.print_str_cur - print_data.print_str_start),
-            .log_is_head = print_data.is_head,
-            .log_is_tail = true,
+            .text = print_data.print_str_start,
+            .text_length = static_cast<size_t>(print_data.print_str_cur - print_data.print_str_start),
+            .is_head = print_data.is_head,
+            .is_tail = true,
         };
         CallAllLogObserver(print_data.log_metadata, log_body);
     }

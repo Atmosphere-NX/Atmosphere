@@ -431,14 +431,14 @@ namespace ams::util {
         return len;
     }
 
-    void FormatString(PrintFunction print_fn, void *user_data, const char *fmt, ...) {
+    void FormatString(PrintFunction print_func, void *user_data, const char *fmt, ...) {
         std::va_list vl;
         va_start(vl, fmt);
-        VFormatString(print_fn, user_data, fmt, vl);
+        VFormatString(print_func, user_data, fmt, vl);
         va_end(vl);
     }
 
-    void VFormatString(PrintFunction print_fn, void *user_data, const char *fmt, std::va_list vl) {
+    void VFormatString(PrintFunction print_func, void *user_data, const char *fmt, std::va_list vl) {
         /* TODO */
     }
 

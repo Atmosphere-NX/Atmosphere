@@ -18,21 +18,21 @@
 
 namespace ams::diag {
 
-    struct LogObserverHolder {
-        using LogFunction = void (*)(const LogMetaData &log_metadata, const LogBody &log_body, void *user_data);
+    using LogFunction = void (*)(const LogMetaData &log_metadata, const LogBody &log_body, void *user_data);
 
+    struct LogObserverHolder {
         LogFunction log_function;
         LogObserverHolder *next;
         bool is_registered;
         void *user_data;
     };
 
-    void InitializeLogObserverHolder(LogObserverHolder *observer_holder, LogObserverHolder::LogFunction log_function, void *user_data);
+    void InitializeLogObserverHolder(LogObserverHolder *observer_holder, LogFunction log_function, void *user_data);
 
     void RegisterLogObserver(LogObserverHolder *observer_holder);
     void UnregisterLogObserver(LogObserverHolder *observer_holder);
 
     void ResetDefaultLogObserver();
-    void ReplaceDefaultLogObserver(LogObserverHolder::LogFunction log_function);
+    void ReplaceDefaultLogObserver(LogFunction log_function);
 
 }

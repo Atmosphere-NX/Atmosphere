@@ -26,7 +26,7 @@ namespace ams::diag {
 
     }
     
-    void InitializeLogObserverHolder(LogObserverHolder *observer_holder, LogObserverHolder::LogFunction log_function, void *user_data) {
+    void InitializeLogObserverHolder(LogObserverHolder *observer_holder, LogFunction log_function, void *user_data) {
         observer_holder->log_function = log_function;
         observer_holder->next = nullptr;
         observer_holder->is_registered = false;
@@ -80,7 +80,7 @@ namespace ams::diag {
         ReplaceDefaultLogObserver(detail::DefaultLogObserver);
     }
 
-    void ReplaceDefaultLogObserver(LogObserverHolder::LogFunction log_function) {
+    void ReplaceDefaultLogObserver(LogFunction log_function) {
         UnregisterLogObserver(std::addressof(detail::g_default_log_observer));
         InitializeLogObserverHolder(std::addressof(detail::g_default_log_observer), log_function, nullptr);
         RegisterLogObserver(std::addressof(detail::g_default_log_observer));

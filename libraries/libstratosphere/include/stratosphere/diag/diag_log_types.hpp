@@ -19,13 +19,13 @@
 namespace ams::diag {
 
     enum LogSeverity : u8 {
-        LogSeverity_Trace,
-        LogSeverity_Info,
-        LogSeverity_Warn,
-        LogSeverity_Error,
-        LogSeverity_Fatal,
+        LogSeverity_Trace = 0,
+        LogSeverity_Info  = 1,
+        LogSeverity_Warn  = 2,
+        LogSeverity_Error = 3,
+        LogSeverity_Fatal = 4,
         
-        LogSeverity_Count
+        LogSeverity_Count = 5,
     };
 
     struct SourceInfo {
@@ -45,10 +45,10 @@ namespace ams::diag {
     };
 
     struct LogBody {
-        const char *log_text;
-        size_t log_text_length;
-        bool log_is_head;
-        bool log_is_tail;
+        const char *text;
+        size_t text_length;
+        bool is_head;
+        bool is_tail;
     };
 
 }

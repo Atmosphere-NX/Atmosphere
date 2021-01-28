@@ -27,10 +27,10 @@ namespace ams::lm::impl {
             u8 *log_data_buffer;
             size_t size;
             size_t cur_offset;
-            FlushFunction flush_fn;
+            FlushFunction flush_func;
             bool expects_more_packets;
         public:
-            CustomSinkBuffer(u8 *log_data_buf, size_t size, FlushFunction flush_fn) : log_data_buffer(log_data_buf), size(size), cur_offset(0), flush_fn(flush_fn), expects_more_packets(false) {}
+            CustomSinkBuffer(u8 *log_data_buf, size_t size, FlushFunction flush_func) : log_data_buffer(log_data_buf), size(size), cur_offset(0), flush_func(flush_func), expects_more_packets(false) {}
 
             bool HasLogData();
             bool Log(const void *log_data, size_t size);

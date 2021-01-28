@@ -39,7 +39,7 @@ namespace ams::lm::impl {
         }
 
         /* Update log data with our values. */
-        const auto ok = this->flush_fn(this->log_data_buffer, this->cur_offset);
+        const auto ok = this->flush_func(this->log_data_buffer, this->cur_offset);
         if (!ok) {
             return false;
         }

@@ -29,15 +29,15 @@ namespace ams::lm::impl {
         NON_COPYABLE(SdCardLogging);
         NON_MOVEABLE(SdCardLogging);
         private:
-            os::SdkMutex update_enabled_fn_lock;
+            os::SdkMutex update_enabled_func_lock;
             bool enabled;
             bool sd_card_mounted;
             bool sd_card_ok;
             char log_file_path[0x80];
             size_t log_file_offset;
-            UpdateEnabledFunction update_enabled_fn;
+            UpdateEnabledFunction update_enabled_func;
         public:
-            SdCardLogging() : update_enabled_fn_lock(), enabled(false), sd_card_mounted(false), sd_card_ok(false), log_file_path{}, log_file_offset(0), update_enabled_fn(nullptr) {}
+            SdCardLogging() : update_enabled_func_lock(), enabled(false), sd_card_mounted(false), sd_card_ok(false), log_file_path{}, log_file_offset(0), update_enabled_func(nullptr) {}
             
             bool Initialize();
             void Dispose();
@@ -45,18 +45,18 @@ namespace ams::lm::impl {
             bool SaveLog(const void *log_data, size_t log_data_size);
 
             void SetEnabled(bool enabled) {
-                std::scoped_lock lk(this->update_enabled_fn_lock);
+                std::scoped_lock lk(this->update_enabled_func_lock);
                 if (this->enabled != enabled) {
                     this->enabled = enabled;
-                    if (this->update_enabled_fn) {
-                        this->update_enabled_fn(enabled);
+                    if (this->update_enabled_func) {
+                        this->update_enabled_func(enabled);
                     }
                 }
             }
 
-            void SetUpdateEnabledFunction(UpdateEnabledFunction update_enabled_fn) {
-                std::scoped_lock lk(this->update_enabled_fn_lock);
-                this->update_enabled_fn = update_enabled_fn;
+            void SetUpdateEnabledFunction(UpdateEnabledFunction update_enabled_func) {
+                std::scoped_lock lk(this->update_enabled_func_lock);
+                this->update_enabled_func = update_enabled_func;
             }
     };
 

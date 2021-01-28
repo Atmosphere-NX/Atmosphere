@@ -25,7 +25,7 @@ namespace ams::lm::detail {
     };
 
     struct BinaryLogHeader {
-        static constexpr u32 Magic = util::FourCC<'h','p','h','p'>::Code;
+        static constexpr u32 Magic = util::FourCC<'p','h','p','h'>::Code;
 
         u32 magic;
         u8 version;
@@ -37,8 +37,8 @@ namespace ams::lm::detail {
         u64 thread_id;
         u8 flags;
         u8 pad;
-        diag::LogSeverity severity;
-        char verbosity;
+        u8 severity;
+        u8 verbosity;
         u32 payload_size;
 
         constexpr inline u64 GetProcessId() const {
@@ -60,17 +60,16 @@ namespace ams::lm::detail {
         constexpr inline void SetLittleEndian(bool le) {
             if (le) {
                 this->flags |= LogPacketFlags_LittleEndian;
-            }
-            else {
+            } else {
                 this->flags &= ~LogPacketFlags_LittleEndian;
             }
         }
 
-        constexpr inline void SetSeverity(diag::LogSeverity severity) {
+        constexpr inline void SetSeverity(u8 severity) {
             this->severity = severity;
         }
 
-        constexpr inline void SetVerbosity(char verbosity) {
+        constexpr inline void SetVerbosity(u8 verbosity) {
             this->verbosity = verbosity;
         }
 
@@ -81,8 +80,7 @@ namespace ams::lm::detail {
         constexpr inline void SetHead(bool head) {
             if (head) {
                 this->flags |= LogPacketFlags_Head;
-            }
-            else {
+            } else {
                 this->flags &= ~LogPacketFlags_Head;
             }
         }
@@ -109,20 +107,20 @@ namespace ams::lm::detail {
         }
 
     };
-    static_assert(sizeof(LogPacketHeader) == 0x18);
+    static_assert(util::is_pod<LogPacketHeader>::value && sizeof(LogPacketHeader) == 0x18);
 
     enum LogDataChunkKey : u8 {
-        LogDataChunkKey_LogSessionBegin    = 0,  ///< Log session begin.
-        LogDataChunkKey_LogSessionEnd      = 1,  ///< Log session end.
-        LogDataChunkKey_TextLog            = 2,  ///< Text to be logged.
-        LogDataChunkKey_LineNumber         = 3,  ///< Source line number.
-        LogDataChunkKey_FileName           = 4,  ///< Source file name.
-        LogDataChunkKey_FunctionName       = 5,  ///< Source function name.
-        LogDataChunkKey_ModuleName         = 6,  ///< Process module name.
-        LogDataChunkKey_ThreadName         = 7,  ///< Process thread name.
-        LogDataChunkKey_LogPacketDropCount = 8,  ///< Log packet drop count.
-        LogDataChunkKey_UserSystemClock    = 9,  ///< User system clock.
-        LogDataChunkKey_ProcessName        = 10, ///< Process name.
+        LogDataChunkKey_LogSessionBegin    = 0,
+        LogDataChunkKey_LogSessionEnd      = 1,
+        LogDataChunkKey_TextLog            = 2,
+        LogDataChunkKey_LineNumber         = 3,
+        LogDataChunkKey_FileName           = 4,
+        LogDataChunkKey_FunctionName       = 5,
+        LogDataChunkKey_ModuleName         = 6,
+        LogDataChunkKey_ThreadName         = 7,
+        LogDataChunkKey_LogPacketDropCount = 8,
+        LogDataChunkKey_UserSystemClock    = 9,
+        LogDataChunkKey_ProcessName        = 10,
     };
 
 }

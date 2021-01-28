@@ -31,7 +31,7 @@ namespace ams::lm::impl {
             LogBuffer *main_target_buffer;
             LogBuffer *sub_target_buffer;
             size_t data_buffer_size;
-            FlushFunction flush_fn;
+            FlushFunction flush_func;
             os::SdkMutex main_target_buffer_lock;
             os::SdkMutex sub_target_buffer_lock;
             os::SdkConditionVariable flush_done_cv;
@@ -39,13 +39,13 @@ namespace ams::lm::impl {
             bool some_flag;
             uint64_t some_count_2;
         public:
-            LogBuffer(void *data_buffer, size_t data_buffer_size, FlushFunction flush_fn, LogBuffer *second_log_buffer) : data_buffer(data_buffer), second_log_buffer(second_log_buffer), main_target_buffer(this), sub_target_buffer(second_log_buffer), data_buffer_size(data_buffer_size), flush_fn(flush_fn) {}
+            LogBuffer(void *data_buffer, size_t data_buffer_size, FlushFunction flush_func, LogBuffer *second_log_buffer) : data_buffer(data_buffer), second_log_buffer(second_log_buffer), main_target_buffer(this), sub_target_buffer(second_log_buffer), data_buffer_size(data_buffer_size), flush_func(flush_func) {}
             
             bool Log(const void *log_data, size_t log_data_size, bool flush);
             bool Flush();
 
             inline bool DoFlush(LogBuffer *log_buffer) {
-                auto ok = this->flush_fn(log_buffer->data_buffer, log_buffer->current_data_size);
+                auto ok = this->flush_func(log_buffer->data_buffer, log_buffer->current_data_size);
                 if (ok) {
                     this->sub_target_buffer->current_data_size = 0;
                 }

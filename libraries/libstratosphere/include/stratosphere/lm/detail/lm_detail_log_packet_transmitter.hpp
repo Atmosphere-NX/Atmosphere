@@ -22,7 +22,7 @@ namespace ams::lm::detail {
         NON_COPYABLE(LogPacketTransmitterBase);
         NON_MOVEABLE(LogPacketTransmitterBase);
         public:
-            using FlushFunction = bool (*)(const void*, size_t);
+            using FlushFunction = bool (*)(const u8*, size_t);
         private:
             LogPacketHeader *header;
             u8 *log_buffer_start;
@@ -32,7 +32,7 @@ namespace ams::lm::detail {
             bool is_tail;
             FlushFunction flush_function;
         public:
-            LogPacketTransmitterBase(u8 *log_buffer, size_t log_buffer_size, FlushFunction flush_fn, diag::LogSeverity severity, bool verbosity, u64 process_id, bool head, bool tail);
+            LogPacketTransmitterBase(void *log_buffer, size_t log_buffer_size, FlushFunction flush_func, u8 severity, u8 verbosity, u64 process_id, bool head, bool tail);
 
             ~LogPacketTransmitterBase() {
                 this->Flush(this->is_tail);
@@ -73,13 +73,13 @@ namespace ams::lm::detail {
             using LogPacketTransmitterBase::LogPacketTransmitterBase;
 
             void PushLogSessionBegin() {
-                u8 dummy_value = 1;
-                this->PushDataChunk(LogDataChunkKey_LogSessionBegin, std::addressof(dummy_value), sizeof(dummy_value));
+                bool value = true;
+                this->PushDataChunk(LogDataChunkKey_LogSessionBegin, std::addressof(value), sizeof(value));
             }
 
             void PushLogSessionEnd() {
-                u8 dummy_value = 1;
-                this->PushDataChunk(LogDataChunkKey_LogSessionEnd, std::addressof(dummy_value), sizeof(dummy_value));
+                bool value = true;
+                this->PushDataChunk(LogDataChunkKey_LogSessionEnd, std::addressof(value), sizeof(value));
             }
 
             void PushTextLog(const char *log, size_t log_len) {

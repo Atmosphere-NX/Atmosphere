@@ -18,8 +18,8 @@
 
 namespace ams::diag::detail {
 
-    void LogImpl(const LogMetaData &log_metadata, const char *fmt, ...);
-    void VLogImpl(const LogMetaData &log_metadata, const char *fmt, std::va_list va_args);
+    void LogImpl(const LogMetaData &log_metadata, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+    void VLogImpl(const LogMetaData &log_metadata, const char *fmt, std::va_list vl);
     void CallAllLogObserver(const LogMetaData &log_metadata, const LogBody &log_body);
 
     #define AMS_LOG(fmt, ...) ({ \
@@ -27,9 +27,9 @@ namespace ams::diag::detail {
             .source_info = { \
                 .line_number = __LINE__, \
                 .file_name = __FILE__, \
-                .function_name = __func__ \
+                .function_name = AMS_CURRENT_FUNCTION_NAME \
             }, \
-            .log_severity = LogSeverity_Info \
+            .log_severity = ::ams::diag::LogSeverity_Info \
         }; \
         ::ams::diag::detail::LogImpl(log_metadata, fmt, __VA_ARGS__); \
     })

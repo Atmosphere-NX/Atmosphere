@@ -121,6 +121,7 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, ProcessControlTask);
 
     /* lm. */
+    AMS_DEFINE_SYSTEM_THREAD(10, lm, MainThread);
     AMS_DEFINE_SYSTEM_THREAD(10, lm, IpcServer);
     AMS_DEFINE_SYSTEM_THREAD(10, lm, Flush);
     AMS_DEFINE_SYSTEM_THREAD(10, lm, HtcsConnection);

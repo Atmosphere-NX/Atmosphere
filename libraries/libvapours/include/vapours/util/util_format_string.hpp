@@ -28,7 +28,7 @@ namespace ams::util {
 
     using PrintFunction = void (*)(void *user_data, const char *str, int unk);
 
-    void FormatString(PrintFunction print_fn, void *user_data, const char *fmt, ...);
-    void VFormatString(PrintFunction print_fn, void *user_data, const char *fmt, std::va_list vl);
+    void FormatString(PrintFunction print_func, void *user_data, const char *fmt, ...);
+    void VFormatString(PrintFunction print_func, void *user_data, const char *fmt, std::va_list vl);
 
 }
