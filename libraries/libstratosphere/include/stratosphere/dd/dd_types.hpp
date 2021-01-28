@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/dd/dd_types.hpp>
 
 namespace ams::dd {
 
     using ProcessHandle = ::Handle;
+
+    /* TODO gcc-11: using MemoryPermission = os::MemoryPermission; using enum os::MemoryPermission; */
 
     enum MemoryPermission {
         MemoryPermission_None      = 0,
