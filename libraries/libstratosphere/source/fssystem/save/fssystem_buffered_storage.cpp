@@ -899,7 +899,7 @@ namespace ams::fssystem::save {
             const s64 cur_offset_end = offset + *size;
             size_t cur_size = 0;
 
-            if (!util::IsAligned(offset, this->block_size)) {
+            if (!util::IsAligned(cur_offset_end, this->block_size)) {
                 const s64 aligned_size = cur_offset_end - util::AlignDown(cur_offset_end, this->block_size);
                 cur_size = std::min(aligned_size, static_cast<s64>(*size));
             } else if (*size < this->block_size) {
