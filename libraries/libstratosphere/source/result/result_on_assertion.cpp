@@ -15,25 +15,12 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::result {
-
-    extern bool CallFatalOnResultAssertion;
-
-}
-
 namespace ams::result::impl {
 
         NORETURN WEAK_SYMBOL void OnResultAbort(const char *file, int line, const char *func, const char *expr, Result result) {
-            /* Assert that we should call fatal on result assertion. */
-            /* If we shouldn't fatal, this will abort(); */
-            /* If we should, we'll continue onwards. */
-            if (!ams::result::CallFatalOnResultAssertion) {
-                ::ams::diag::AbortImpl(file, line, func, expr, result.GetValue(), "Result Abort: %203d-%04d", result.GetModule(), result.GetDescription());
-            }
-
-            /* TODO: ams::fatal:: */
-            fatalThrow(result.GetValue());
+            ::ams::diag::AbortImpl(file, line, func, expr, result.GetValue(), "Result Abort: %203d-%04d", result.GetModule(), result.GetDescription());
             AMS_INFINITE_LOOP();
+            __builtin_unreachable();
         }
 
         NORETURN WEAK_SYMBOL void OnResultAbort(Result result) {
@@ -41,16 +28,9 @@ namespace ams::result::impl {
         }
 
         NORETURN WEAK_SYMBOL void OnResultAssertion(const char *file, int line, const char *func, const char *expr, Result result) {
-            /* Assert that we should call fatal on result assertion. */
-            /* If we shouldn't fatal, this will assert(); */
-            /* If we should, we'll continue onwards. */
-            if (!ams::result::CallFatalOnResultAssertion) {
-                ::ams::diag::AssertionFailureImpl(file, line, func, expr, result.GetValue(), "Result Assertion: %203d-%04d", result.GetModule(), result.GetDescription());
-            }
-
-            /* TODO: ams::fatal:: */
-            fatalThrow(result.GetValue());
+            ::ams::diag::AssertionFailureImpl(file, line, func, expr, result.GetValue(), "Result Assertion: %203d-%04d", result.GetModule(), result.GetDescription());
             AMS_INFINITE_LOOP();
+            __builtin_unreachable();
         }
 
         NORETURN WEAK_SYMBOL void OnResultAssertion(Result result) {

@@ -38,12 +38,6 @@ namespace ams {
 
     ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::Eclct;
 
-    namespace result {
-
-        bool CallFatalOnResultAssertion = false;
-
-    }
-
 }
 
 using namespace ams;

@@ -39,12 +39,6 @@ extern "C" {
 namespace ams {
     ncm::ProgramId CurrentProgramId = ncm::SystemProgramId::JpegDec;
 
-    namespace result {
-
-        bool CallFatalOnResultAssertion = true;
-
-    }
-
 }
 
 using namespace ams;
