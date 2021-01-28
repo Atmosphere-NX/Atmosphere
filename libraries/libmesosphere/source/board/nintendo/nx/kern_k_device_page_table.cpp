@@ -583,15 +583,15 @@ namespace ams::kern::board::nintendo::nx {
         constinit KMemoryControllerInterruptTask g_mc_interrupt_task;
 
         /* Memory controller utilities. */
-        void SmmuSynchronizationBarrier() {
+        ALWAYS_INLINE void SmmuSynchronizationBarrier() {
             ReadMcRegister(MC_SMMU_CONFIG);
         }
 
-        void InvalidatePtc() {
+        ALWAYS_INLINE void InvalidatePtc() {
             WriteMcRegister(MC_SMMU_PTC_FLUSH_0, 0);
         }
 
-        void InvalidatePtc(KPhysicalAddress address) {
+        ALWAYS_INLINE void InvalidatePtc(KPhysicalAddress address) {
             WriteMcRegister(MC_SMMU_PTC_FLUSH_1, (static_cast<u64>(GetInteger(address)) >> 32));
             WriteMcRegister(MC_SMMU_PTC_FLUSH_0, (GetInteger(address) & 0xFFFFFFF0u) | 1u);
         }
@@ -606,15 +606,15 @@ namespace ams::kern::board::nintendo::nx {
             return ((match_asid ? 1u : 0u) << 31) | ((asid & 0x7F) << 24) | (((address & 0xFFC00000u) >> DevicePageBits)) | (match);
         }
 
-        void InvalidateTlb() {
+        ALWAYS_INLINE void InvalidateTlb() {
             return WriteMcRegister(MC_SMMU_TLB_FLUSH, EncodeTlbFlushValue(false, 0, 0, TlbFlushVaMatch_All));
         }
 
-        void InvalidateTlb(u8 asid) {
+        ALWAYS_INLINE void InvalidateTlb(u8 asid) {
             return WriteMcRegister(MC_SMMU_TLB_FLUSH, EncodeTlbFlushValue(true, asid, 0, TlbFlushVaMatch_All));
         }
 
-        void InvalidateTlbSection(u8 asid, KDeviceVirtualAddress address) {
+        ALWAYS_INLINE void InvalidateTlbSection(u8 asid, KDeviceVirtualAddress address) {
             return WriteMcRegister(MC_SMMU_TLB_FLUSH, EncodeTlbFlushValue(true, asid, address, TlbFlushVaMatch_Section));
         }
 
@@ -1163,6 +1163,7 @@ namespace ams::kern::board::nintendo::nx {
     }
 
     void KDevicePageTable::UnmapImpl(KDeviceVirtualAddress address, u64 size, bool force) {
+        MESOSPHERE_UNUSED(force);
         MESOSPHERE_ASSERT((address & ~DeviceVirtualAddressMask) == 0);
         MESOSPHERE_ASSERT(((address + size - 1) & ~DeviceVirtualAddressMask) == 0);
 

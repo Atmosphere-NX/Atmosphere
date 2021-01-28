@@ -20,7 +20,7 @@ namespace ams::erpt::srv {
 
     class Report;
 
-    class ReportImpl final {
+    class ReportImpl {
         private:
             Report *report;
         public:

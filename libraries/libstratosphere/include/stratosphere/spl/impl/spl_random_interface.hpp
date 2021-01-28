@@ -19,11 +19,7 @@
 #include <stratosphere/sf.hpp>
 #include <stratosphere/spl/spl_types.hpp>
 
-namespace ams::spl::impl {
+#define AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GenerateRandomBytes, (const sf::OutBuffer &out), (out))
 
-    #define AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO(C, H)                                  \
-        AMS_SF_METHOD_INFO(C, H, 0, Result, GenerateRandomBytes, (const sf::OutBuffer &out))
-
-    AMS_SF_DEFINE_INTERFACE(IRandomInterface, AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::spl::impl, IRandomInterface, AMS_SPL_I_RANDOM_INTERFACE_INTERFACE_INFO)

@@ -26,7 +26,7 @@ namespace ams::os {
             return GetReference(manager->impl_storage);
         }
 
-        ALWAYS_INLINE WaitableHolderType *ReinterpretAsWaitableHolder(impl::WaitableHolderBase *base) {
+        ALWAYS_INLINE WaitableHolderType *CastToWaitableHolder(impl::WaitableHolderBase *base) {
             return reinterpret_cast<WaitableHolderType *>(base);
         }
 
@@ -59,7 +59,7 @@ namespace ams::os {
         AMS_ASSERT(manager->state == WaitableManagerType::State_Initialized);
         AMS_ASSERT(!impl.IsEmpty());
 
-        auto *holder = ReinterpretAsWaitableHolder(impl.WaitAny());
+        auto *holder = CastToWaitableHolder(impl.WaitAny());
         AMS_ASSERT(holder != nullptr);
         return holder;
     }
@@ -70,7 +70,7 @@ namespace ams::os {
         AMS_ASSERT(manager->state == WaitableManagerType::State_Initialized);
         AMS_ASSERT(!impl.IsEmpty());
 
-        auto *holder = ReinterpretAsWaitableHolder(impl.TryWaitAny());
+        auto *holder = CastToWaitableHolder(impl.TryWaitAny());
         return holder;
     }
 
@@ -81,7 +81,7 @@ namespace ams::os {
         AMS_ASSERT(!impl.IsEmpty());
         AMS_ASSERT(timeout.GetNanoSeconds() >= 0);
 
-        auto *holder = ReinterpretAsWaitableHolder(impl.TimedWaitAny(timeout));
+        auto *holder = CastToWaitableHolder(impl.TimedWaitAny(timeout));
         return holder;
     }
 

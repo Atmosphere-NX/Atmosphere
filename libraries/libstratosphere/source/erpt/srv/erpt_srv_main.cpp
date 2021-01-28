@@ -24,6 +24,7 @@
 namespace ams::erpt::srv {
 
     lmem::HeapHandle g_heap_handle;
+    ams::sf::ExpHeapAllocator g_sf_allocator;
 
     namespace {
 
@@ -78,6 +79,8 @@ namespace ams::erpt::srv {
         R_ABORT_UNLESS(fs::MountSdCardErrorReportDirectoryForAtmosphere(ReportOnSdStoragePath));
 
         R_ABORT_UNLESS(MountSystemSaveData());
+
+        g_sf_allocator.Attach(g_heap_handle);
 
         for (auto i = 0; i < CategoryId_Count; i++) {
             Context *ctx = new Context(static_cast<CategoryId>(i), 1);

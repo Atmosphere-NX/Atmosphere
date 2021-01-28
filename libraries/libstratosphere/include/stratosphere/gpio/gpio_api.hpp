@@ -23,6 +23,6 @@ namespace ams::gpio {
     void Initialize();
     void Finalize();
 
-    void InitializeWith(std::shared_ptr<gpio::sf::IManager> &&sp);
+    void InitializeWith(ams::sf::SharedPointer<gpio::sf::IManager> sp);
 
 }

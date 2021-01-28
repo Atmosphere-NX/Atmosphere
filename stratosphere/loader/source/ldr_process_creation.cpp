@@ -654,7 +654,7 @@ namespace ams::ldr {
             fssystem::DestroyExternalCode(loc.program_id);
 
             /* Note that we've created the program. */
-            SetLaunchedProgram(loc.program_id);
+            SetLaunchedBootProgram(loc.program_id);
 
             /* Move the process handle to output. */
             *out = info.process_handle.Move();

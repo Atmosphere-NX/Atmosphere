@@ -26,7 +26,7 @@ extern "C" {
 
     u32 __nx_applet_type = AppletType_None;
 
-    #define INNER_HEAP_SIZE 0x2000
+    #define INNER_HEAP_SIZE 0x0
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -38,6 +38,10 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
+
+    void *__libnx_alloc(size_t size);
+    void *__libnx_aligned_alloc(size_t alignment, size_t size);
+    void __libnx_free(void *mem);
 }
 
 namespace ams {
@@ -159,6 +163,15 @@ void __appExit(void) {
 
 namespace {
 
+    /* pm:shell, pm:dmnt, pm:bm, pm:info. */
+    enum PortIndex {
+        PortIndex_Shell,
+        PortIndex_DebugMonitor,
+        PortIndex_BootMode,
+        PortIndex_Information,
+        PortIndex_Count,
+    };
+
     using ServerOptions = sf::hipc::DefaultServerManagerOptions;
 
     constexpr sm::ServiceName ShellServiceName = sm::ServiceName::Encode("pm:shell");
@@ -175,12 +188,68 @@ namespace {
 
     static_assert(InformationMaxSessions >= 16, "InformationMaxSessions");
 
-    /* pm:shell, pm:dmnt, pm:bm, pm:info. */
-    constexpr size_t NumServers  = 4;
     constexpr size_t MaxSessions = ShellMaxSessions + DebugMonitorMaxSessions + BootModeMaxSessions + InformationMaxSessions;
     static_assert(MaxSessions == 48, "MaxSessions");
-    sf::hipc::ServerManager<NumServers, ServerOptions, MaxSessions> g_server_manager;
 
+    class ServerManager final : public sf::hipc::ServerManager<PortIndex_Count, ServerOptions, MaxSessions> {
+        private:
+            virtual ams::Result OnNeedsToAccept(int port_index, Server *server) override;
+    };
+
+    ServerManager g_server_manager;
+
+    /* NOTE: Nintendo only uses an unmanaged object for boot mode service, but no pm service has any class members/state, so we'll do it for all. */
+    sf::UnmanagedServiceObject<pm::impl::IShellInterface,           pm::ShellService> g_shell_service;
+    sf::UnmanagedServiceObject<pm::impl::IDeprecatedShellInterface, pm::ShellService> g_deprecated_shell_service;
+
+    sf::UnmanagedServiceObject<pm::impl::IDebugMonitorInterface,           pm::DebugMonitorService> g_dmnt_service;
+    sf::UnmanagedServiceObject<pm::impl::IDeprecatedDebugMonitorInterface, pm::DebugMonitorService> g_deprecated_dmnt_service;
+
+    sf::UnmanagedServiceObject<pm::impl::IBootModeInterface, pm::BootModeService>       g_boot_mode_service;
+    sf::UnmanagedServiceObject<pm::impl::IInformationInterface, pm::InformationService> g_information_service;
+
+    ams::Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
+        switch (port_index) {
+            case PortIndex_Shell:
+                if (hos::GetVersion() >= hos::Version_5_0_0) {
+                    return this->AcceptImpl(server, g_shell_service.GetShared());
+                } else {
+                    return this->AcceptImpl(server, g_deprecated_shell_service.GetShared());
+                }
+            case PortIndex_DebugMonitor:
+                if (hos::GetVersion() >= hos::Version_5_0_0) {
+                    return this->AcceptImpl(server, g_dmnt_service.GetShared());
+                } else {
+                    return this->AcceptImpl(server, g_deprecated_dmnt_service.GetShared());
+                }
+            case PortIndex_BootMode:
+                return this->AcceptImpl(server, g_boot_mode_service.GetShared());
+            case PortIndex_Information:
+                return this->AcceptImpl(server, g_information_service.GetShared());
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+    }
+
+}
+
+void *operator new(size_t size) {
+    AMS_ABORT("operator new(size_t) was called");
+}
+
+void operator delete(void *p) {
+    AMS_ABORT("operator delete(void *) was called");
+}
+
+void *__libnx_alloc(size_t size) {
+    AMS_ABORT("__libnx_alloc was called");
+}
+
+void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+    AMS_ABORT("__libnx_aligned_alloc was called");
+}
+
+void __libnx_free(void *mem) {
+    AMS_ABORT("__libnx_free was called");
 }
 
 int main(int argc, char **argv)
@@ -194,16 +263,10 @@ int main(int argc, char **argv)
 
     /* Create Services. */
     /* NOTE: Extra sessions have been added to pm:bm and pm:info to facilitate access by the rest of stratosphere. */
-    /* Also Note: PM was rewritten in 5.0.0, so the shell and dmnt services are different before/after. */
-    if (hos::GetVersion() >= hos::Version_5_0_0) {
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IShellInterface, pm::ShellService>(ShellServiceName, ShellMaxSessions)));
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IDebugMonitorInterface, pm::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
-    } else {
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IDeprecatedShellInterface, pm::ShellService>(ShellServiceName, ShellMaxSessions)));
-        R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IDeprecatedDebugMonitorInterface, pm::DebugMonitorService>(DebugMonitorServiceName, DebugMonitorMaxSessions)));
-    }
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IBootModeInterface, pm::BootModeService>(BootModeServiceName, BootModeMaxSessions)));
-    R_ABORT_UNLESS((g_server_manager.RegisterServer<pm::impl::IInformationInterface, pm::InformationService>(InformationServiceName, InformationMaxSessions)));
+    R_ABORT_UNLESS(g_server_manager.RegisterServer(PortIndex_Shell, ShellServiceName, ShellMaxSessions));
+    R_ABORT_UNLESS(g_server_manager.RegisterServer(PortIndex_DebugMonitor, DebugMonitorServiceName, DebugMonitorMaxSessions));
+    R_ABORT_UNLESS(g_server_manager.RegisterServer(PortIndex_BootMode, BootModeServiceName, BootModeMaxSessions));
+    R_ABORT_UNLESS(g_server_manager.RegisterServer(PortIndex_Information, InformationServiceName, InformationMaxSessions));
 
     /* Loop forever, servicing our services. */
     g_server_manager.LoopProcess();

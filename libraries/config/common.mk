@@ -108,15 +108,17 @@ BUILD        := build
 DATA         := data
 INCLUDES     := include
 
-GENERAL_SOURCE_DIRS=$1 $(foreach d,$(filter-out $1/arch $1/board $1/os $1/cpu $1,$(wildcard $1/*)),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
+GENERAL_SOURCE_DIRS=$1 $(foreach d,$(filter-out $1/arch $1/board $1/os $1/cpu $1,$(wildcard $1/*)),$(if $(wildcard $d/.),$(filter-out $d,$(call GENERAL_SOURCE_DIRS,$d)) $d,))
 SPECIFIC_SOURCE_DIRS=$(if $(wildcard $1/$2/$3/.*),$1/$2/$3 $(call DIR_WILDCARD,$1/$2/$3),$(if $(wildcard $1/$2/generic/.*), $1/$2/generic $(call DIR_WILDCARD,$1/$2/generic),))
 UNFILTERED_SOURCE_DIRS=$1 $(foreach d,$(wildcard $1/*),$(if $(wildcard $d/.),$(call DIR_WILDCARD,$d) $d,))
 
-ALL_SOURCE_DIRS=$(call GENERAL_SOURCE_DIRS,$1) \
-                $(call SPECIFIC_SOURCE_DIRS,$1,arch,$(ATMOSPHERE_ARCH_DIR)) \
-                $(call SPECIFIC_SOURCE_DIRS,$1,board,$(ATMOSPHERE_BOARD_DIR)) \
-                $(call SPECIFIC_SOURCE_DIRS,$1,os,$(ATMOSPHERE_OS_DIR)) \
-                $(call SPECIFIC_SOURCE_DIRS,$1,cpu,$(ATMOSPHERE_ARCH_DIR)/$(ATMOSPHERE_CPU_DIR))
+ALL_SOURCE_DIRS=$(foreach d,$(call GENERAL_SOURCE_DIRS,$1), \
+                    $d \
+                    $(call SPECIFIC_SOURCE_DIRS,$d,arch,$(ATMOSPHERE_ARCH_DIR)) \
+                    $(call SPECIFIC_SOURCE_DIRS,$d,board,$(ATMOSPHERE_BOARD_DIR)) \
+                    $(call SPECIFIC_SOURCE_DIRS,$d,os,$(ATMOSPHERE_OS_DIR)) \
+                    $(call SPECIFIC_SOURCE_DIRS,$d,cpu,$(ATMOSPHERE_ARCH_DIR)/$(ATMOSPHERE_CPU_DIR)) \
+                )
 
 SOURCES      ?= $(call ALL_SOURCE_DIRS,source)
 

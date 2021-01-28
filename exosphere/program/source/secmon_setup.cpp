@@ -409,8 +409,8 @@ namespace ams::secmon {
                     reg0 |= reg::Encode(SLAVE_SECURITY_REG_BITS_ENUM(0, CEC, ENABLE));
                 }
 
-                /* Icosa, Iowa, and Five all set I2C4 to be secure. */
-                if (hw_type == fuse::HardwareType_Icosa && hw_type == fuse::HardwareType_Iowa && hw_type == fuse::HardwareType_Five) {
+                /* Icosa, Iowa, and Aula all set I2C4 to be secure. */
+                if (hw_type == fuse::HardwareType_Icosa && hw_type == fuse::HardwareType_Iowa && hw_type == fuse::HardwareType_Aula) {
                     reg1 |= reg::Encode(SLAVE_SECURITY_REG_BITS_ENUM(1, I2C4, ENABLE));
 
                 }

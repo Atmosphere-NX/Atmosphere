@@ -78,7 +78,7 @@ namespace ams::fssystem {
         std::unique_ptr<fs::fsa::IFile> dst_file;
         {
             char dst_path[fs::EntryNameLengthMax + 1];
-            const size_t original_size = static_cast<size_t>(std::snprintf(dst_path, sizeof(dst_path), "%s%s", dst_parent_path, entry->name));
+            const size_t original_size = static_cast<size_t>(util::SNPrintf(dst_path, sizeof(dst_path), "%s%s", dst_parent_path, entry->name));
             /* TODO: Error code? N aborts here. */
             AMS_ABORT_UNLESS(original_size < sizeof(dst_path));
 
@@ -103,7 +103,7 @@ namespace ams::fssystem {
 
     Result CopyDirectoryRecursively(fs::fsa::IFileSystem *dst_fs, fs::fsa::IFileSystem *src_fs, const char *dst_path, const char *src_path, void *work_buf, size_t work_buf_size) {
         char dst_path_buf[fs::EntryNameLengthMax + 1];
-        const size_t original_size = static_cast<size_t>(std::snprintf(dst_path_buf, sizeof(dst_path_buf), "%s", dst_path));
+        const size_t original_size = static_cast<size_t>(util::SNPrintf(dst_path_buf, sizeof(dst_path_buf), "%s", dst_path));
         AMS_ABORT_UNLESS(original_size < sizeof(dst_path_buf));
 
         return IterateDirectoryRecursively(src_fs, src_path,

@@ -49,7 +49,7 @@ namespace ams::kvdb {
 
                 std::va_list args;
                 va_start(args, format);
-                CheckLength(std::vsnprintf(string.buffer, N, format, args));
+                CheckLength(util::VSNPrintf(string.buffer, N, format, args));
                 string.buffer[N - 1] = 0;
                 va_end(args);
 
@@ -81,7 +81,7 @@ namespace ams::kvdb {
                 /* Format into the buffer, abort if too large. */
                 std::va_list args;
                 va_start(args, format);
-                CheckLength(std::vsnprintf(this->buffer, N, format, args));
+                CheckLength(util::VSNPrintf(this->buffer, N, format, args));
                 va_end(args);
             }
 
@@ -103,7 +103,7 @@ namespace ams::kvdb {
                 const size_t length = GetLength();
                 std::va_list args;
                 va_start(args, format);
-                CheckLength(std::vsnprintf(this->buffer + length, N - length, format, args) + length);
+                CheckLength(util::VSNPrintf(this->buffer + length, N - length, format, args) + length);
                 va_end(args);
             }
 

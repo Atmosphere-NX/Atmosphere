@@ -16,7 +16,7 @@ CFLAGS      := $(ATMOSPHERE_CFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 CXXFLAGS    := $(CFLAGS) $(ATMOSPHERE_CXXFLAGS) -fno-use-cxa-atexit -flto
 ASFLAGS     := $(ATMOSPHERE_ASFLAGS) $(SETTINGS) $(DEFINES) $(INCLUDE)
 
-SOURCES     += $(call ALL_SOURCE_DIRS,../libvapours/source)
+SOURCES     += $(foreach v,$(call ALL_SOURCE_DIRS,../libvapours/source),$(if $(findstring ../libvapours/source/sdmmc,$v),,$v))
 
 LIBS        :=
 

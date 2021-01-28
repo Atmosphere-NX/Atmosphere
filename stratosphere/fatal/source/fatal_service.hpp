@@ -18,19 +18,15 @@
 
 namespace ams::fatal::srv {
 
-    class Service final {
+    class Service {
         public:
             Result ThrowFatal(Result error, const sf::ClientProcessId &client_pid);
             Result ThrowFatalWithPolicy(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy);
             Result ThrowFatalWithCpuContext(Result error, const sf::ClientProcessId &client_pid, FatalPolicy policy, const CpuContext &cpu_ctx);
-    };
-    static_assert(fatal::impl::IsIService<Service>);
-
-    class PrivateService final {
-        public:
             Result GetFatalEvent(sf::OutCopyHandle out_h);
     };
-    static_assert(fatal::impl::IsIPrivateService<PrivateService>);
+    static_assert(fatal::impl::IsIService<Service>);
+    static_assert(fatal::impl::IsIPrivateService<Service>);
 
 }
 

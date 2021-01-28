@@ -36,7 +36,7 @@ export CXXWRAPS := -Wl,--wrap,__cxa_pure_virtual \
 			-Wl,--wrap,_ZSt20__throw_length_errorPKc \
 			-Wl,--wrap,_ZNSt11logic_errorC2EPKc
 
-export LDFLAGS     = -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
+export LDFLAGS     = -specs=$(ATMOSPHERE_LIBRARIES_DIR)/libstratosphere/stratosphere.specs -specs=$(DEVKITPRO)/libnx/switch.specs $(SETTINGS) $(CXXWRAPS) -Wl,-Map,$(notdir $*.map)
 
 export LIBS	= -lstratosphere -lnx
 

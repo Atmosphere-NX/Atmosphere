@@ -17,17 +17,12 @@
 #include <vapours.hpp>
 #include <stratosphere/erpt/erpt_types.hpp>
 
-namespace ams::erpt::sf {
+#define AMS_ERPT_I_REPORT_INTERFACE_INFO(C, H)                                                                                                   \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, Open,     (const erpt::ReportId &report_id),                                   (report_id))             \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, Read,     (ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer), (out_count, out_buffer)) \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, SetFlags, (erpt::ReportFlagSet flags),                                         (flags))                 \
+    AMS_SF_METHOD_INFO(C, H,  3, Result, GetFlags, (ams::sf::Out<erpt::ReportFlagSet> out),                             (out))                   \
+    AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    (),                                                                  ())                      \
+    AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out),                                             (out))
 
-    #define AMS_ERPT_I_REPORT_INTERFACE_INFO(C, H)                                                                           \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, Open,     (const ReportId &report_id))                                         \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, Read,     (ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)) \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, SetFlags, (ReportFlagSet flags))                                               \
-        AMS_SF_METHOD_INFO(C, H,  3, Result, GetFlags, (ams::sf::Out<ReportFlagSet> out))                                   \
-        AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    ())                                                                  \
-        AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out))
-
-
-    AMS_SF_DEFINE_INTERFACE(IReport, AMS_ERPT_I_REPORT_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IReport, AMS_ERPT_I_REPORT_INTERFACE_INFO)

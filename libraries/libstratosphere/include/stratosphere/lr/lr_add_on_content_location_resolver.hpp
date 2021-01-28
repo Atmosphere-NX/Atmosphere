@@ -23,10 +23,10 @@ namespace ams::lr {
     class AddOnContentLocationResolver {
         NON_COPYABLE(AddOnContentLocationResolver);
         private:
-            std::shared_ptr<IAddOnContentLocationResolver> interface;
+            sf::SharedPointer<IAddOnContentLocationResolver> interface;
         public:
             AddOnContentLocationResolver() { /* ... */ }
-            explicit AddOnContentLocationResolver(std::shared_ptr<IAddOnContentLocationResolver> intf) : interface(std::move(intf)) { /* ... */ }
+            explicit AddOnContentLocationResolver(sf::SharedPointer<IAddOnContentLocationResolver> intf) : interface(intf) { /* ... */ }
 
             AddOnContentLocationResolver(AddOnContentLocationResolver &&rhs) {
                 this->interface = std::move(rhs.interface);

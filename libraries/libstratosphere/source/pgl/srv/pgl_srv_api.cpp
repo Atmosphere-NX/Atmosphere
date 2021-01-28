@@ -18,10 +18,7 @@
 
 namespace ams::pgl::srv {
 
-    void Initialize(ShellInterface *interface, MemoryResource *mr) {
-        /* Set the memory resource for the interface. */
-        interface->Initialize(mr);
-
+    void Initialize() {
         /* Enable extra application threads, if we should. */
         u8 enable_application_extra_thread;
         const size_t sz = settings::fwdbg::GetSettingsItemValue(std::addressof(enable_application_extra_thread), sizeof(enable_application_extra_thread), "application_extra_thread", "enable_application_extra_thread");

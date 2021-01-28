@@ -124,9 +124,9 @@ namespace ams::pgl::srv {
             const s32 dump_arg = ConvertDumpTypeToArgument(dump_type);
             const s32 log_arg  = GetSnapShotDumpOutputAllLog(process_id) ? 1 : 0;
             if (str_arg != nullptr) {
-                return std::snprintf(dst, dst_size, "D %010llu \"%s\" -log %d -dump %d", static_cast<unsigned long long>(static_cast<u64>(process_id)), str_arg, log_arg, dump_arg);
+                return util::SNPrintf(dst, dst_size, "D %010llu \"%s\" -log %d -dump %d", static_cast<unsigned long long>(static_cast<u64>(process_id)), str_arg, log_arg, dump_arg);
             } else {
-                return std::snprintf(dst, dst_size, "D %010llu -log %d -dump %d", static_cast<unsigned long long>(static_cast<u64>(process_id)), log_arg, dump_arg);
+                return util::SNPrintf(dst, dst_size, "D %010llu -log %d -dump %d", static_cast<unsigned long long>(static_cast<u64>(process_id)), log_arg, dump_arg);
             }
         }
 
@@ -215,7 +215,7 @@ namespace ams::pgl::srv {
 
             /* Generate arguments. */
             char arguments[0x40];
-            const size_t len = std::snprintf(arguments, sizeof(arguments), "%ld %d %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags), g_enable_jit_debug);
+            const size_t len = util::SNPrintf(arguments, sizeof(arguments), "%ld %d %d %d", static_cast<s64>(static_cast<u64>(process_id)), GetCrashReportDetailedArgument(data_flags), GetCrashReportScreenShotArgument(data_flags), g_enable_jit_debug);
             if (R_FAILED(ldr::SetProgramArgument(ncm::SystemProgramId::Creport, arguments, len + 1))) {
                 return;
             }

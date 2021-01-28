@@ -19,6 +19,7 @@ namespace ams::boot {
 
     void InitializeGpioDriverLibrary();
     void InitializeI2cDriverLibrary();
+    void FinalizeGpioDriverLibrary();
     void FinalizeI2cDriverLibrary();
 
 

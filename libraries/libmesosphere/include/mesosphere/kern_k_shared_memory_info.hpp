@@ -36,8 +36,8 @@ namespace ams::kern {
             }
 
             constexpr void Open() {
-                const size_t ref_count = ++m_reference_count;
-                MESOSPHERE_ASSERT(ref_count > 0);
+                ++m_reference_count;
+                MESOSPHERE_ASSERT(m_reference_count > 0);
             }
 
             constexpr bool Close() {

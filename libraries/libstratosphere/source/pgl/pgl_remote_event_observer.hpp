@@ -18,7 +18,7 @@
 
 namespace ams::pgl {
 
-    class RemoteEventObserver final {
+    class RemoteEventObserver {
         NON_COPYABLE(RemoteEventObserver);
         NON_MOVEABLE(RemoteEventObserver);
         private:

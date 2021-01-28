@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "masterkey.h"
 #include "se.h"
+#include "fuse.h"
 
 static unsigned int g_mkey_revision = 0;
 static bool g_determined_mkey_revision = false;
@@ -31,8 +32,7 @@ static uint8_t g_old_devicekeys[MASTERKEY_NUM_NEW_DEVICE_KEYS - 1][0x10];
 
 /* TODO: Extend with new vectors, as needed. */
 /* Dev unit keys. */
-static const uint8_t mkey_vectors_dev[MASTERKEY_REVISION_MAX][0x10] =
-{
+static const uint8_t mkey_vectors_dev[MASTERKEY_REVISION_MAX][0x10] = {
     {0x46, 0x22, 0xB4, 0x51, 0x9A, 0x7E, 0xA7, 0x7F, 0x62, 0xA1, 0x1F, 0x8F, 0xC5, 0x3A, 0xDB, 0xFE}, /* Zeroes encrypted with Master Key 00. */
     {0x39, 0x33, 0xF9, 0x31, 0xBA, 0xE4, 0xA7, 0x21, 0x2C, 0xDD, 0xB7, 0xD8, 0xB4, 0x4E, 0x37, 0x23}, /* Master key 00 encrypted with Master key 01. */
     {0x97, 0x29, 0xB0, 0x32, 0x43, 0x14, 0x8C, 0xA6, 0x85, 0xE9, 0x5A, 0x94, 0x99, 0x39, 0xAC, 0x5D}, /* Master key 01 encrypted with Master key 02. */
@@ -43,11 +43,11 @@ static const uint8_t mkey_vectors_dev[MASTERKEY_REVISION_MAX][0x10] =
     {0x37, 0xAF, 0xAB, 0x35, 0x79, 0x09, 0xD9, 0x48, 0x29, 0xD2, 0xDB, 0xA5, 0xA5, 0xF5, 0x30, 0x19}, /* Master key 06 encrypted with Master key 07. */
     {0xEC, 0xE1, 0x46, 0x89, 0x37, 0xFD, 0xD2, 0x15, 0x8C, 0x3F, 0x24, 0x82, 0xEF, 0x49, 0x68, 0x04}, /* Master key 07 encrypted with Master key 08. */
     {0x43, 0x3D, 0xC5, 0x3B, 0xEF, 0x91, 0x02, 0x21, 0x61, 0x54, 0x63, 0x8A, 0x35, 0xE7, 0xCA, 0xEE}, /* Master key 08 encrypted with Master key 09. */
-    {0x6C, 0x2E, 0xCD, 0xB3, 0x34, 0x61, 0x77, 0xF5, 0xF9, 0xB1, 0xDD, 0x61, 0x98, 0x19, 0x3E, 0xD4}, /* Master key 09 encrypted with Master key 0A. */ };
+    {0x6C, 0x2E, 0xCD, 0xB3, 0x34, 0x61, 0x77, 0xF5, 0xF9, 0xB1, 0xDD, 0x61, 0x98, 0x19, 0x3E, 0xD4}, /* Master key 09 encrypted with Master key 0A. */
+};
 
 /* Retail unit keys. */
-static const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] =
-{
+static const uint8_t mkey_vectors[MASTERKEY_REVISION_MAX][0x10] = {
     {0x0C, 0xF0, 0x59, 0xAC, 0x85, 0xF6, 0x26, 0x65, 0xE1, 0xE9, 0x19, 0x55, 0xE6, 0xF2, 0x67, 0x3D}, /* Zeroes encrypted with Master Key 00. */
     {0x29, 0x4C, 0x04, 0xC8, 0xEB, 0x10, 0xED, 0x9D, 0x51, 0x64, 0x97, 0xFB, 0xF3, 0x4D, 0x50, 0xDD}, /* Master key 00 encrypted with Master key 01. */
     {0xDE, 0xCF, 0xEB, 0xEB, 0x10, 0xAE, 0x74, 0xD8, 0xAD, 0x7C, 0xF4, 0x9E, 0x62, 0xE0, 0xE8, 0x72}, /* Master key 01 encrypted with Master key 02. */
@@ -80,7 +80,7 @@ static const uint8_t new_device_keygen_sources[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x
     {0x86, 0x61, 0xB0, 0x16, 0xFA, 0x7A, 0x9A, 0xEA, 0xF6, 0xF5, 0xBE, 0x1A, 0x13, 0x5B, 0x6D, 0x9E}, /* 7.0.0 New Device Keygen Source. */
     {0xA6, 0x81, 0x71, 0xE7, 0xB5, 0x23, 0x74, 0xB0, 0x39, 0x8C, 0xB7, 0xFF, 0xA0, 0x62, 0x9F, 0x8D}, /* 8.1.0 New Device Keygen Source. */
     {0x03, 0xE7, 0xEB, 0x43, 0x1B, 0xCF, 0x5F, 0xB5, 0xED, 0xDC, 0x97, 0xAE, 0x21, 0x8D, 0x19, 0xED}, /* 9.0.0 New Device Keygen Source. */
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: 9.1.0 New Device Keygen Source to be added on next change-of-keys. */
+    {0xCE, 0xFE, 0x41, 0x0F, 0x46, 0x9A, 0x30, 0xD6, 0xF2, 0xE9, 0x0C, 0x6B, 0xB7, 0x15, 0x91, 0x36}, /* 9.1.0 New Device Keygen Source to be added on next change-of-keys. */
 };
 
 static const uint8_t new_device_keygen_sources_dev[MASTERKEY_NUM_NEW_DEVICE_KEYS][0x10] = {
@@ -91,13 +91,18 @@ static const uint8_t new_device_keygen_sources_dev[MASTERKEY_NUM_NEW_DEVICE_KEYS
     {0x60, 0xAE, 0x56, 0x68, 0x11, 0xE2, 0x0C, 0x99, 0xDE, 0x05, 0xAE, 0x68, 0x78, 0x85, 0x04, 0xAE}, /* 7.0.0 New Device Keygen Source. */
     {0x94, 0xD6, 0xA8, 0xC0, 0x95, 0xAF, 0xD0, 0xA6, 0x27, 0x53, 0x5E, 0xE5, 0x8E, 0x70, 0x1F, 0x87}, /* 8.1.0 New Device Keygen Source. */
     {0x61, 0x6A, 0x88, 0x21, 0xA3, 0x52, 0xB0, 0x19, 0x16, 0x25, 0xA4, 0xE3, 0x4C, 0x54, 0x02, 0x0F}, /* 9.0.0 New Device Keygen Source. */
-    {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, /* TODO: 9.1.0 New Device Keygen Source to be added on next change-of-keys. */
+    {0x9D, 0xB1, 0xAE, 0xCB, 0xF6, 0xF6, 0xE3, 0xFE, 0xAB, 0x6F, 0xCB, 0xAF, 0x38, 0x03, 0xFC, 0x7B}, /* 9.1.0 New Device Keygen Source to be added on next change-of-keys. */
 };
+
+/* Determine the current SoC for Mariko specific code. */
+static bool is_soc_mariko() {
+    return (fuse_get_soc_type() == 1);
+}
 
 static bool check_mkey_revision(unsigned int revision, bool is_retail) {
     uint8_t final_vector[0x10];
 
-    unsigned int check_keyslot = KEYSLOT_SWITCH_MASTERKEY;
+    unsigned int check_keyslot = is_soc_mariko() ? KEYSLOT_SWITCH_MASTERKEY_MARIKO : KEYSLOT_SWITCH_MASTERKEY;
     if (revision > 0) {
         /* Generate old master key array. */
         for (unsigned int i = revision; i > 0; i--) {
@@ -155,7 +160,7 @@ unsigned int mkey_get_keyslot(unsigned int revision) {
     }
 
     if (revision == g_mkey_revision) {
-        return KEYSLOT_SWITCH_MASTERKEY;
+        return (is_soc_mariko() ? KEYSLOT_SWITCH_MASTERKEY_MARIKO : KEYSLOT_SWITCH_MASTERKEY);
     } else {
         /* Load into a temp keyslot. */
         set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_masterkeys[revision], 0x10);
@@ -164,6 +169,8 @@ unsigned int mkey_get_keyslot(unsigned int revision) {
 }
 
 void derive_new_device_keys(bool is_retail, unsigned int keygen_keyslot, unsigned int target_firmware) {
+    const bool is_mariko = is_soc_mariko();
+
     uint8_t work_buffer[0x10];
     for (unsigned int revision = 0; revision < MASTERKEY_NUM_NEW_DEVICE_KEYS; revision++) {
         const unsigned int relative_revision = revision + MASTERKEY_REVISION_400_410;
@@ -173,13 +180,17 @@ void derive_new_device_keys(bool is_retail, unsigned int keygen_keyslot, unsigne
         if (relative_revision > mkey_get_revision()) {
             break;
         } else if (relative_revision == mkey_get_revision()) {
-            /* On 7.0.0, sept will have derived this key for us already. */
-            if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0) {
-                decrypt_data_into_keyslot(KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10);
+            /* On 7.0.0 erista, sept will have derived this key for us already. */
+            if (target_firmware < ATMOSPHERE_TARGET_FIRMWARE_7_0_0 || is_mariko) {
+                decrypt_data_into_keyslot(is_mariko ? KEYSLOT_SWITCH_DEVICEKEY_MARIKO : KEYSLOT_SWITCH_DEVICEKEY, KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10);
             }
         } else {
             se_aes_ecb_decrypt_block(KEYSLOT_SWITCH_TEMPKEY, work_buffer, 0x10, work_buffer, 0x10);
             set_old_devkey(relative_revision, work_buffer);
+
+            if (revision == 0 && is_mariko) {
+                set_aes_keyslot(KEYSLOT_SWITCH_4XOLDDEVICEKEY, work_buffer, 0x10);
+            }
         }
     }
 }
@@ -204,6 +215,6 @@ unsigned int devkey_get_keyslot(unsigned int revision) {
         set_aes_keyslot(KEYSLOT_SWITCH_TEMPKEY, g_old_devicekeys[revision - MASTERKEY_REVISION_400_410], 0x10);
         return KEYSLOT_SWITCH_TEMPKEY;
     } else {
-        return KEYSLOT_SWITCH_DEVICEKEY;
+        return is_soc_mariko() ? KEYSLOT_SWITCH_DEVICEKEY_MARIKO : KEYSLOT_SWITCH_DEVICEKEY;
     }
 }

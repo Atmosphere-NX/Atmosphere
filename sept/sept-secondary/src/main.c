@@ -18,6 +18,7 @@
 #include "exception_handlers.h"
 #include "panic.h"
 #include "hwinit.h"
+#include "car.h"
 #include "di.h"
 #include "se.h"
 #include "pmc.h"
@@ -29,12 +30,12 @@
 #include "stage2.h"
 #include "splash.h"
 #include "chainloader.h"
-#include "sdmmc/sdmmc.h"
-#include "lib/fatfs/ff.h"
-#include "lib/log.h"
-#include "lib/vsprintf.h"
-#include "lib/ini.h"
-#include "display/video_fb.h"
+#include "../../../fusee/common/sdmmc/sdmmc.h"
+#include "../../../fusee/common/fatfs/ff.h"
+#include "../../../fusee/common/log.h"
+#include "../../../fusee/common/vsprintf.h"
+#include "../../../fusee/common/ini.h"
+#include "../../../fusee/common/display/video_fb.h"
 
 extern void (*__program_exit_callback)(int rc);
 
@@ -93,13 +94,13 @@ static void exfiltrate_keys_and_reboot_if_needed(uint32_t version) {
 static void display_splash_screen(void) {
     /* Draw splash. */
     draw_splash((volatile uint32_t *)g_framebuffer);
-    
+
     /* Turn on the backlight. */
     display_backlight(true);
-    
+
     /* Ensure the splash screen is displayed for at least one second. */
     mdelay(1000);
-    
+
     /* Turn off the backlight. */
     display_backlight(false);
 }
@@ -108,7 +109,7 @@ static void setup_env(void) {
     g_framebuffer = (void *)0xC0000000;
 
     /* Initialize hardware. */
-    nx_hwinit();
+    nx_hwinit(false);
 
     /* Zero-fill the framebuffer and register it as printk provider. */
     video_init(g_framebuffer);
@@ -118,7 +119,7 @@ static void setup_env(void) {
 
     /* Set the framebuffer. */
     display_init_framebuffer(g_framebuffer);
-    
+
     /* Set up the exception handlers. */
     setup_exception_handlers();
 
@@ -129,7 +130,7 @@ static void setup_env(void) {
 static void cleanup_env(void) {
     /* Unmount the SD card. */
     unmount_sd();
-    
+
     /* Terminate the display. */
     display_end();
 }
@@ -164,7 +165,7 @@ int sept_main(uint32_t version) {
 
     /* Load the loader payload into DRAM. */
     load_stage2();
-    
+
     /* Display the splash screen. */
     display_splash_screen();
 

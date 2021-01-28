@@ -41,7 +41,7 @@ namespace ams::util {
             template<class, class, class>
             friend class IntrusiveRedBlackTree;
         public:
-            constexpr IntrusiveRedBlackTreeNode() : entry() { /* ... */}
+            constexpr ALWAYS_INLINE IntrusiveRedBlackTreeNode() : entry() { /* ... */}
     };
     static_assert(std::is_literal_type<IntrusiveRedBlackTreeNode>::value);
 
@@ -355,11 +355,11 @@ namespace ams::util {
             /* Generate static implementations for comparison operations for IntrusiveRedBlackTreeRoot. */
             RB_GENERATE_WITH_COMPARE_STATIC(IntrusiveRedBlackTreeRootWithCompare, IntrusiveRedBlackTreeNode, entry, CompareImpl, LightCompareImpl);
         private:
-            static int CompareImpl(const IntrusiveRedBlackTreeNode *lhs, const IntrusiveRedBlackTreeNode *rhs) {
+            static ALWAYS_INLINE int CompareImpl(const IntrusiveRedBlackTreeNode *lhs, const IntrusiveRedBlackTreeNode *rhs) {
                 return Comparator::Compare(*Traits::GetParent(lhs), *Traits::GetParent(rhs));
             }
 
-            static int LightCompareImpl(const void *elm, const IntrusiveRedBlackTreeNode *rhs) {
+            static ALWAYS_INLINE int LightCompareImpl(const void *elm, const IntrusiveRedBlackTreeNode *rhs) {
                 return Comparator::Compare(*static_cast<const_light_pointer>(elm), *Traits::GetParent(rhs));
             }
 

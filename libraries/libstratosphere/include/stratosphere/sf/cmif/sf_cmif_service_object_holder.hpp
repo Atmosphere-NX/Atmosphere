@@ -22,7 +22,7 @@ namespace ams::sf::cmif {
 
     class ServiceObjectHolder {
         private:
-            std::shared_ptr<sf::IServiceObject> srv;
+            SharedPointer<IServiceObject> srv;
             const ServiceDispatchMeta *dispatch_meta;
         private:
             /* Copy constructor. */
@@ -30,7 +30,7 @@ namespace ams::sf::cmif {
             ServiceObjectHolder &operator=(const ServiceObjectHolder &o) = delete;
         public:
             /* Default constructor, null all members. */
-            ServiceObjectHolder() : srv(nullptr), dispatch_meta(nullptr) { /* ... */ }
+            ServiceObjectHolder() : srv(nullptr, false), dispatch_meta(nullptr) { /* ... */ }
 
             ~ServiceObjectHolder() {
                 this->dispatch_meta = nullptr;
@@ -38,9 +38,8 @@ namespace ams::sf::cmif {
 
             /* Ensure correct type id at runtime through template constructor. */
             template<typename ServiceImpl>
-            constexpr explicit ServiceObjectHolder(std::shared_ptr<ServiceImpl> &&s) {
-                this->srv = std::move(s);
-                this->dispatch_meta = GetServiceDispatchMeta<ServiceImpl>();
+            constexpr explicit ServiceObjectHolder(SharedPointer<ServiceImpl> &&s) : srv(std::move(s)), dispatch_meta(GetServiceDispatchMeta<ServiceImpl>()) {
+                /* ... */
             }
 
             /* Move constructor, assignment operator. */
@@ -50,13 +49,13 @@ namespace ams::sf::cmif {
 
             ServiceObjectHolder &operator=(ServiceObjectHolder &&o) {
                 ServiceObjectHolder tmp(std::move(o));
-                tmp.Swap(*this);
+                tmp.swap(*this);
                 return *this;
             }
 
             /* State management. */
-            void Swap(ServiceObjectHolder &o) {
-                std::swap(this->srv, o.srv);
+            void swap(ServiceObjectHolder &o) {
+                this->srv.swap(o.srv);
                 std::swap(this->dispatch_meta, o.dispatch_meta);
             }
 
@@ -86,21 +85,21 @@ namespace ams::sf::cmif {
                 return 0;
             }
 
-            template<typename ServiceImpl>
+            template<typename Interface>
             constexpr inline bool IsServiceObjectValid() const {
-                return this->GetServiceId() == GetServiceDispatchMeta<ServiceImpl>()->GetServiceId();
+                return this->GetServiceId() == GetServiceDispatchMeta<Interface>()->GetServiceId();
             }
 
-            template<typename ServiceImpl>
-            inline std::shared_ptr<ServiceImpl> GetServiceObject() const {
-                if (this->GetServiceId() == GetServiceDispatchMeta<ServiceImpl>()->GetServiceId()) {
-                    return std::static_pointer_cast<ServiceImpl>(this->srv);
+            template<typename Interface>
+            inline Interface *GetServiceObject() const {
+                if (this->GetServiceId() == GetServiceDispatchMeta<Interface>()->GetServiceId()) {
+                    return static_cast<Interface *>(this->srv.Get());
                 }
                 return nullptr;
             }
 
             inline sf::IServiceObject *GetServiceObjectUnsafe() const {
-                return this->srv.get();
+                return static_cast<sf::IServiceObject *>(this->srv.Get());
             }
 
             /* Processing. */

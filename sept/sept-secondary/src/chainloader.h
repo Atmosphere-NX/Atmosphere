@@ -13,14 +13,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_CHAINLOADER_H
 #define FUSEE_CHAINLOADER_H
 
 #include <stddef.h>
 #include <stdint.h>
 
-#define CHAINLOADER_ARG_DATA_MAX_SIZE 0x6200
+#define CHAINLOADER_ARG_DATA_MAX_SIZE 0x5400
 #define CHAINLOADER_MAX_ENTRIES       128
 
 typedef struct chainloader_entry_t {

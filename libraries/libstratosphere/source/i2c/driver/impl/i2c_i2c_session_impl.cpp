@@ -127,7 +127,7 @@ namespace ams::i2c::driver::impl {
         auto &device = GetDevice().SafeCastTo<I2cDeviceProperty>();
 
         /* Repeatedly try to execute the transaction. */
-        int retry_count;
+        int retry_count = 0;
         while (true) {
             /* Execute the transaction. */
             Result result;

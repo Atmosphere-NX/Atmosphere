@@ -18,7 +18,7 @@
 
 namespace ams::ro {
 
-    class DebugMonitorService final {
+    class DebugMonitorService {
         public:
             Result GetProcessModuleInfo(sf::Out<u32> out_count, const sf::OutArray<LoaderModuleInfo> &out_infos, os::ProcessId process_id);
     };

@@ -25,7 +25,7 @@
 #include "stratosphere.h"
 #include "fs_utils.h"
 #include "ips.h"
-#include "lib/log.h"
+#include "../../../fusee/common/log.h"
 
 #define u8 uint8_t
 #define u32 uint32_t

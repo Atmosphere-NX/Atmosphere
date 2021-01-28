@@ -20,7 +20,7 @@
 
 namespace ams::i2c {
 
-    void InitializeWith(std::shared_ptr<i2c::sf::IManager> &&sp, std::shared_ptr<i2c::sf::IManager> &&sp_pcv);
+    void InitializeWith(ams::sf::SharedPointer<i2c::sf::IManager> sp, ams::sf::SharedPointer<i2c::sf::IManager> sp_pcv);
     void InitializeEmpty();
 
     void Finalize();

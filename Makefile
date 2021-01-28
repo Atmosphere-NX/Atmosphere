@@ -101,14 +101,14 @@ dist-no-debug: all
 	touch atmosphere-$(AMSVER)/atmosphere/contents/0100000000000037/flags/boot2.flag
 	cp troposphere/reboot_to_payload/reboot_to_payload.nro atmosphere-$(AMSVER)/switch/reboot_to_payload.nro
 	cp troposphere/daybreak/daybreak.nro atmosphere-$(AMSVER)/switch/daybreak.nro
-	cd atmosphere-$(AMSVER); zip -r ../atmosphere-EXPERIMENTAL-$(AMSVER).zip ./*; cd ../;
+	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/atmosphere/fusee-secondary.bin
 	cp fusee/fusee-secondary/fusee-secondary.bin atmosphere-$(AMSVER)/sept/payload.bin
-	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER).zip ./*; cd ../;
+	cd atmosphere-$(AMSVER); zip -r ../atmosphere-$(AMSVER)-WITHOUT_MESOSPHERE.zip ./*; cd ../;
 	rm -r atmosphere-$(AMSVER)
 	mkdir out
-	mv atmosphere-EXPERIMENTAL-$(AMSVER).zip out/atmosphere-EXPERIMENTAL-$(AMSVER).zip
 	mv atmosphere-$(AMSVER).zip out/atmosphere-$(AMSVER).zip
+	mv atmosphere-$(AMSVER)-WITHOUT_MESOSPHERE.zip out/atmosphere-$(AMSVER)-WITHOUT_MESOSPHERE.zip
 	cp fusee/fusee-primary/fusee-primary.bin out/fusee-primary.bin
 
 dist: dist-no-debug

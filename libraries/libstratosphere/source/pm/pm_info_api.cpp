@@ -18,58 +18,25 @@
 
 namespace ams::pm::info {
 
-    namespace {
-
-        /* Global lock. */
-        os::Mutex g_info_lock(false);
-        /* TODO: Less memory-intensive storage? */
-        std::set<u64> g_cached_launched_programs;
-
-    }
-
     /* Information API. */
     Result GetProgramId(ncm::ProgramId *out_program_id, os::ProcessId process_id) {
-        std::scoped_lock lk(g_info_lock);
-
         return pminfoGetProgramId(reinterpret_cast<u64 *>(out_program_id), static_cast<u64>(process_id));
     }
 
     Result GetProcessId(os::ProcessId *out_process_id, ncm::ProgramId program_id) {
-        std::scoped_lock lk(g_info_lock);
-
         return pminfoAtmosphereGetProcessId(reinterpret_cast<u64 *>(out_process_id), static_cast<u64>(program_id));
     }
 
     Result GetProcessInfo(ncm::ProgramLocation *out_loc, cfg::OverrideStatus *out_status, os::ProcessId process_id) {
-        std::scoped_lock lk(g_info_lock);
-
         *out_loc = {};
         *out_status = {};
         static_assert(sizeof(*out_status) == sizeof(CfgOverrideStatus));
         return pminfoAtmosphereGetProcessInfo(reinterpret_cast<NcmProgramLocation *>(out_loc), reinterpret_cast<CfgOverrideStatus *>(out_status), static_cast<u64>(process_id));
     }
 
-    Result WEAK_SYMBOL HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
-        std::scoped_lock lk(g_info_lock);
-
-        if (g_cached_launched_programs.find(static_cast<u64>(program_id)) != g_cached_launched_programs.end()) {
-            *out = true;
-            return ResultSuccess();
-        }
-
+    bool HasLaunchedBootProgram(ncm::ProgramId program_id) {
         bool has_launched = false;
-        R_TRY(pminfoAtmosphereHasLaunchedProgram(&has_launched, static_cast<u64>(program_id)));
-        if (has_launched) {
-            g_cached_launched_programs.insert(static_cast<u64>(program_id));
-        }
-
-        *out = has_launched;
-        return ResultSuccess();
-    }
-
-    bool HasLaunchedProgram(ncm::ProgramId program_id) {
-        bool has_launched = false;
-        R_ABORT_UNLESS(HasLaunchedProgram(&has_launched, program_id));
+        R_ABORT_UNLESS(HasLaunchedBootProgram(&has_launched, program_id));
         return has_launched;
     }
 

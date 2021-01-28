@@ -21,7 +21,7 @@ namespace ams::erpt::srv {
 
     ReportFileName Report::FileName(ReportId report_id, bool redirect_to_sd) {
         ReportFileName report_name;
-        std::snprintf(report_name.name, sizeof(report_name.name),
+        util::SNPrintf(report_name.name, sizeof(report_name.name),
                       "%s:/%08x-%04x-%04x-%02x%02x-%04x%08x",
                       (redirect_to_sd ? ReportOnSdStoragePath : ReportStoragePath),
                       report_id.uuid_data.time_low,

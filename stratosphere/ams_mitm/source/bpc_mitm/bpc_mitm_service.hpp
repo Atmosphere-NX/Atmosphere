@@ -16,17 +16,13 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#define AMS_BPC_MITM_INTERFACE_INFO(C, H)                       \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, ShutdownSystem, (), ()) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, RebootSystem,   (), ())
+
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::bpc::impl, IBpcMitmInterface, AMS_BPC_MITM_INTERFACE_INFO)
+
 namespace ams::mitm::bpc {
-
-    namespace impl {
-
-        #define AMS_BPC_MITM_INTERFACE_INFO(C, H)                   \
-            AMS_SF_METHOD_INFO(C, H, 0, Result, ShutdownSystem, ()) \
-            AMS_SF_METHOD_INFO(C, H, 1, Result, RebootSystem,   ())
-
-        AMS_SF_DEFINE_MITM_INTERFACE(IBpcMitmInterface, AMS_BPC_MITM_INTERFACE_INFO)
-
-    }
 
     class BpcMitmService : public sf::MitmServiceImplBase {
         public:

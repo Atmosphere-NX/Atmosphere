@@ -303,6 +303,7 @@ namespace ams::kern {
                 const auto linear_id   = handle_pack.Get<HandleLinearId>();
                 const auto reserved    = handle_pack.Get<HandleReserved>();
                 MESOSPHERE_ASSERT(reserved == 0);
+                MESOSPHERE_UNUSED(reserved);
 
                 /* Validate our indexing information. */
                 if (raw_value == 0) {

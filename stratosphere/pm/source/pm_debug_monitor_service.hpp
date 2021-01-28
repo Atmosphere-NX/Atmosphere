@@ -18,7 +18,7 @@
 
 namespace ams::pm {
 
-    class DebugMonitorService final {
+    class DebugMonitorService {
         public:
             /* Actual command implementations. */
             Result GetModuleIdList(sf::Out<u32> out_count, const sf::OutBuffer &out_buf, u64 unused);

@@ -24,28 +24,28 @@ namespace ams::ncm::impl {
 
     }
 
-    bool PathView::HasPrefix(std::string_view prefix) const {
+    bool PathView::HasPrefix(util::string_view prefix) const {
         return this->path.compare(0, prefix.length(), prefix) == 0;
     }
 
-    bool PathView::HasSuffix(std::string_view suffix) const {
+    bool PathView::HasSuffix(util::string_view suffix) const {
         return this->path.compare(this->path.length() - suffix.length(), suffix.length(), suffix) == 0;
     }
 
-    std::string_view PathView::GetFileName() const {
+    util::string_view PathView::GetFileName() const {
         auto pos = this->path.find_last_of("/");
-        return pos != std::string_view::npos ? this->path.substr(pos + 1) : this->path;
+        return pos != util::string_view::npos ? this->path.substr(pos + 1) : this->path;
     }
 
     MountName CreateUniqueMountName() {
         MountName name = {};
-        std::snprintf(name.str, sizeof(name.str), "@ncm%08x", g_mount_name_count.fetch_add(1));
+        util::SNPrintf(name.str, sizeof(name.str), "@ncm%08x", g_mount_name_count.fetch_add(1));
         return name;
     }
 
     RootDirectoryPath GetRootDirectoryPath(const MountName &mount_name) {
         RootDirectoryPath path = {};
-        std::snprintf(path.str, sizeof(path.str), "%s:/", mount_name.str);
+        util::SNPrintf(path.str, sizeof(path.str), "%s:/", mount_name.str);
 
         return path;
     }

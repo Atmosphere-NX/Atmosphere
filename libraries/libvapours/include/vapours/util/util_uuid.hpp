@@ -17,6 +17,7 @@
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
+#include <vapours/util/util_format_string.hpp>
 
 namespace ams::util {
 
@@ -35,7 +36,7 @@ namespace ams::util {
         }
 
         const char *ToString(char *dst, size_t dst_size) const {
-            std::snprintf(dst, dst_size, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+            util::SNPrintf(dst, dst_size, "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
                          this->data[ 0], this->data[ 1], this->data[ 2], this->data[ 3], this->data[ 4], this->data[ 5], this->data[ 6], this->data[ 7],
                          this->data[ 8], this->data[ 9], this->data[10], this->data[11], this->data[12], this->data[13], this->data[14], this->data[15]);
 

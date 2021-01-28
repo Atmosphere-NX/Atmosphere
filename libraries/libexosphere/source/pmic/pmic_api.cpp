@@ -125,6 +125,29 @@ namespace ams::pmic {
             return i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffStat);
         }
 
+        void ShutdownSystemImpl(bool reboot) {
+            /* Get value, set or clear software reset mask. */
+            u8 on_off_2_val = i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG2);
+            if (reboot) {
+                on_off_2_val |= MAX77620_ONOFFCNFG2_SFT_RST_WK;
+            } else {
+                on_off_2_val &= ~(MAX77620_ONOFFCNFG2_SFT_RST_WK);
+            }
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG2, on_off_2_val);
+
+            /* Get value, set software reset mask. */
+            u8 on_off_1_val = i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG1);
+            on_off_1_val |= MAX77620_ONOFFCNFG1_SFT_RST;
+
+            /* NOTE: Here, userland finalizes the battery on non-Calcio. */
+            if (fuse::GetHardwareType() != fuse::HardwareType_Calcio) {
+                /* ... */
+            }
+
+            /* Actually write the value to trigger shutdown/reset. */
+            i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG1, on_off_1_val);
+        }
+
     }
 
     void SetEnBit(Regulator regulator) {
@@ -171,37 +194,17 @@ namespace ams::pmic {
         i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1, cnfg);
     }
 
-    void PowerOff() {
-        /* Write power-off to onoff cfg. */
-        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, Max77620RegisterOnOffCnfg1, MAX77620_ONOFFCNFG1_PWR_OFF);
-    }
-
     void ShutdownSystem(bool reboot) {
-        /* Get value, set or clear software reset mask. */
-        u8 on_off_2_val = i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG2);
-        if (reboot) {
-            on_off_2_val |= MAX77620_ONOFFCNFG2_SFT_RST_WK;
-        } else {
-            on_off_2_val &= ~(MAX77620_ONOFFCNFG2_SFT_RST_WK);
-        }
-        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG2, on_off_2_val);
-
-        /* Get value, set software reset mask. */
-        u8 on_off_1_val = i2c::QueryByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG1);
-        on_off_1_val |= MAX77620_ONOFFCNFG1_SFT_RST;
-
-        /* NOTE: Here, userland finalizes the battery on non-Calcio. */
-        if (fuse::GetHardwareType() != fuse::HardwareType_Calcio) {
-            /* ... */
-        }
-
-        /* Actually write the value to trigger shutdown/reset. */
-        i2c::SendByte(i2c::Port_5, I2cAddressMax77620Pmic, MAX77620_REG_ONOFFCNFG1, on_off_1_val);
+        ShutdownSystemImpl(reboot);
 
         /* Allow up to 5 seconds for shutdown/reboot to take place. */
         util::WaitMicroSeconds(5'000'000ul);
 
         AMS_ABORT("Shutdown failed");
+    }
+
+    void PowerOff() {
+        ShutdownSystemImpl(false);
     }
 
     bool IsAcOk() {

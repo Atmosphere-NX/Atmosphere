@@ -39,7 +39,7 @@ namespace ams::util {
             IntrusiveListNode *prev;
             IntrusiveListNode *next;
         public:
-            constexpr IntrusiveListNode() : prev(this), next(this) { /* ... */ }
+            constexpr ALWAYS_INLINE IntrusiveListNode() : prev(this), next(this) { /* ... */ }
 
             constexpr ALWAYS_INLINE bool IsLinked() const {
                 return this->next != this;

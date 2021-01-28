@@ -254,7 +254,7 @@ namespace ams::spl {
                 return SocType_Erista;
             case HardwareType::Hoag:
             case HardwareType::Iowa:
-            case HardwareType::_Five_:
+            case HardwareType::Aula:
                 return SocType_Mariko;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }

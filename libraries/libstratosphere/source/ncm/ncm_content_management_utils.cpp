@@ -25,7 +25,7 @@ namespace ams::ncm {
         Result ConvertToFsCommonPath(char *dst, size_t dst_size, const char *package_root_path, const char *entry_path) {
             char package_path[MaxPackagePathLength];
 
-            const size_t path_len = std::snprintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
+            const size_t path_len = util::SNPrintf(package_path, sizeof(package_path), "%s%s", package_root_path, entry_path);
             AMS_ABORT_UNLESS(path_len < MaxPackagePathLength);
 
             return fs::ConvertToFsCommonPath(dst, dst_size, package_path);

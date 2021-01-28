@@ -49,6 +49,11 @@ namespace ams::boot {
         pwm::driver::Initialize();
     }
 
+    void FinalizeGpioDriverLibrary() {
+        /* Finalize the gpio client library. */
+        gpio::Finalize();
+    }
+
     void FinalizeI2cDriverLibrary() {
         /* Finalize the i2c driver library. */
         i2c::driver::Finalize();

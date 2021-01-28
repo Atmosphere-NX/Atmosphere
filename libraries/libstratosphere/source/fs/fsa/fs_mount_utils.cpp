@@ -151,7 +151,7 @@ namespace ams::fs {
         AMS_FS_R_TRY(accessor->GetCommonMountName(dst, dst_size));
 
         const auto mount_name_len = strnlen(dst, dst_size);
-        const auto common_path_len = std::snprintf(dst + mount_name_len, dst_size - mount_name_len, "%s", sub_path);
+        const auto common_path_len = util::SNPrintf(dst + mount_name_len, dst_size - mount_name_len, "%s", sub_path);
 
         AMS_FS_R_UNLESS(static_cast<size_t>(common_path_len) < dst_size - mount_name_len, fs::ResultTooLongPath());
         return ResultSuccess();

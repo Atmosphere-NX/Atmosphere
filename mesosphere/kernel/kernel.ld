@@ -174,7 +174,7 @@ SECTIONS
 	   ================== */
 
 	/* Discard sections that difficult post-processing */
-	/DISCARD/ : { *(.group .comment .note .interp .fini_array .fini_array.*) }
+	/DISCARD/ : { *(.group .comment .note .interp .fini_array .fini_array.* .text._ZSt23__cmpexch_failure_orderSt12memory_order) }
 
 	/* Stabs debugging sections. */
 	.stab          0 : { *(.stab) }

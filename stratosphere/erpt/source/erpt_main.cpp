@@ -21,7 +21,7 @@ extern "C" {
     u32 __nx_applet_type = AppletType_None;
     u32 __nx_fs_num_sessions = 1;
 
-    #define INNER_HEAP_SIZE 0x4000
+    #define INNER_HEAP_SIZE 0x0
     size_t nx_inner_heap_size = INNER_HEAP_SIZE;
     char   nx_inner_heap[INNER_HEAP_SIZE];
 
@@ -33,6 +33,10 @@ extern "C" {
     alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
     u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
     void __libnx_exception_handler(ThreadExceptionDump *ctx);
+
+    void *__libnx_alloc(size_t size);
+    void *__libnx_aligned_alloc(size_t alignment, size_t size);
+    void __libnx_free(void *mem);
 }
 
 namespace ams {
@@ -103,7 +107,7 @@ namespace ams::erpt {
         switch (model) {
             case settings::system::ProductModel_Invalid: return util::Strlcpy(dst, "Invalid", static_cast<int>(dst_size));
             case settings::system::ProductModel_Nx:      return util::Strlcpy(dst, "NX", static_cast<int>(dst_size));
-            default:                                     return std::snprintf(dst, dst_size, "%d", static_cast<int>(model));
+            default:                                     return util::SNPrintf(dst, dst_size, "%d", static_cast<int>(model));
         }
     }
 
@@ -119,6 +123,38 @@ namespace ams::erpt {
         }
     }
 
+}
+
+namespace ams {
+
+    void *Malloc(size_t size) {
+        AMS_ABORT("ams::Malloc was called");
+    }
+
+    void Free(void *ptr) {
+        AMS_ABORT("ams::Free was called");
+    }
+
+}
+
+void *operator new(size_t size) {
+    AMS_ABORT("operator new(size_t) was called");
+}
+
+void operator delete(void *p) {
+    AMS_ABORT("operator delete(void *) was called");
+}
+
+void *__libnx_alloc(size_t size) {
+    AMS_ABORT("__libnx_alloc was called");
+}
+
+void *__libnx_aligned_alloc(size_t alignment, size_t size) {
+    AMS_ABORT("__libnx_aligned_alloc was called");
+}
+
+void __libnx_free(void *mem) {
+    AMS_ABORT("__libnx_free was called");
 }
 
 int main(int argc, char **argv)
@@ -141,7 +177,7 @@ int main(int argc, char **argv)
         settings::system::GetSerialNumber(std::addressof(serial_number));
 
         char os_private[0x60];
-        const auto os_priv_len = std::snprintf(os_private, sizeof(os_private), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
+        const auto os_priv_len = util::SNPrintf(os_private, sizeof(os_private), "%s (%.8s)", firmware_version.display_name, firmware_version.revision);
         AMS_ASSERT(static_cast<size_t>(os_priv_len) < sizeof(os_private));
 
         R_ABORT_UNLESS(erpt::srv::SetSerialNumberAndOsVersion(serial_number.str,

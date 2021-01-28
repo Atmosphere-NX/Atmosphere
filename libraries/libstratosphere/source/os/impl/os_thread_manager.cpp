@@ -55,14 +55,14 @@ namespace ams::os::impl {
         manager.NotifyThreadNameChanged(thread);
 
         {
-            std::unique_lock lk(GetReference(thread->cs_thread));
+            GetReference(thread->cs_thread).Lock();
             while (thread->state == ThreadType::State_Initialized) {
                 GetReference(thread->cv_thread).Wait(GetPointer(thread->cs_thread));
             }
+            const auto new_state = thread->state;
+            GetReference(thread->cs_thread).Unlock();
 
-            if (thread->state == ThreadType::State_Started) {
-                lk.unlock();
-
+            if (new_state == ThreadType::State_Started) {
                 thread->function(thread->argument);
             }
         }
@@ -220,7 +220,7 @@ namespace ams::os::impl {
             constexpr size_t ThreadNamePrefixSize = sizeof(ThreadNamePrefix) - 1;
             const u64 func = reinterpret_cast<u64>(thread->function);
             static_assert(ThreadNamePrefixSize + sizeof(func) * 2 + 1 <= sizeof(thread->name_buffer));
-            std::snprintf(thread->name_buffer, sizeof(thread->name_buffer), "%s%016lX", ThreadNamePrefix, func);
+            util::SNPrintf(thread->name_buffer, sizeof(thread->name_buffer), "%s%016lX", ThreadNamePrefix, func);
         }
 
         thread->name_pointer = thread->name_buffer;

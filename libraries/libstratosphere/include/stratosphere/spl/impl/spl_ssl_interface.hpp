@@ -20,13 +20,8 @@
 #include <stratosphere/spl/spl_types.hpp>
 #include <stratosphere/spl/impl/spl_device_unique_data_interface.hpp>
 
-namespace ams::spl::impl {
+#define AMS_SPL_I_SSL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                     \
+    AMS_SF_METHOD_INFO(C, H, 26, Result, DecryptAndStoreSslClientCertKey,         (const sf::InPointerBuffer &src, spl::AccessKey access_key, spl::KeySource key_source),             (src, access_key, key_source), hos::Version_5_0_0) \
+    AMS_SF_METHOD_INFO(C, H, 27, Result, ModularExponentiateWithSslClientCertKey, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod), (out, base, mod),              hos::Version_5_0_0)
 
-    #define AMS_SPL_I_SSL_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                      \
-        AMS_SPL_I_DEVICE_UNIQUE_DATA_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                           \
-        AMS_SF_METHOD_INFO(C, H, 26, Result, DecryptAndStoreSslClientCertKey,         (const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source),                       hos::Version_5_0_0) \
-        AMS_SF_METHOD_INFO(C, H, 27, Result, ModularExponentiateWithSslClientCertKey, (const sf::OutPointerBuffer &out, const sf::InPointerBuffer &base, const sf::InPointerBuffer &mod), hos::Version_5_0_0)
-
-    AMS_SF_DEFINE_INTERFACE(ISslInterface, AMS_SPL_I_SSL_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, ISslInterface, ::ams::spl::impl::IDeviceUniqueDataInterface, AMS_SPL_I_SSL_INTERFACE_INTERFACE_INFO)

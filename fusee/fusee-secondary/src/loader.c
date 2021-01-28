@@ -23,8 +23,8 @@
 #include "loader.h"
 #include "fs_utils.h"
 #include "stage2.h"
-#include "lib/ini.h"
-#include "lib/log.h"
+#include "../../../fusee/common/ini.h"
+#include "../../../fusee/common/log.h"
 
 static loader_ctx_t g_loader_ctx = {0};
 

@@ -19,10 +19,10 @@
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include "board/nintendo_nx/powctl_board_impl.hpp"
+    #include "board/nintendo/nx/powctl_board_impl.hpp"
 
     namespace ams::powctl::impl::board {
-        using namespace ams::powctl::impl::board::nintendo_nx;
+        using namespace ams::powctl::impl::board::nintendo::nx;
     }
 
 #else

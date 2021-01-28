@@ -21,11 +21,11 @@
 
 #if defined(ATMOSPHERE_BOARD_NINTENDO_NX)
 
-    #include <stratosphere/i2c/driver/board/nintendo_nx/i2c_driver_api.hpp>
+    #include <stratosphere/i2c/driver/board/nintendo/nx/i2c_driver_api.hpp>
 
     namespace ams::i2c::driver::board {
 
-        using namespace ams::i2c::driver::board::nintendo_nx;
+        using namespace ams::i2c::driver::board::nintendo::nx;
 
     }
 

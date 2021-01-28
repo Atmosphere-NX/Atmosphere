@@ -18,7 +18,7 @@
 
 namespace ams::ldr {
 
-    class LoaderService final {
+    class LoaderService {
         public:
             /* Official commands. */
             Result CreateProcess(sf::OutMoveHandle proc_h, PinId id, u32 flags, sf::CopyHandle reslimit_h);
@@ -34,7 +34,7 @@ namespace ams::ldr {
             /* Atmosphere commands. */
             Result AtmosphereRegisterExternalCode(sf::OutMoveHandle out, ncm::ProgramId program_id);
             void   AtmosphereUnregisterExternalCode(ncm::ProgramId program_id);
-            void   AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
+            void   AtmosphereHasLaunchedBootProgram(sf::Out<bool> out, ncm::ProgramId program_id);
             Result AtmosphereGetProgramInfo(sf::Out<ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc);
             Result AtmospherePinProgram(sf::Out<PinId> out_id, const ncm::ProgramLocation &loc, const cfg::OverrideStatus &override_status);
     };

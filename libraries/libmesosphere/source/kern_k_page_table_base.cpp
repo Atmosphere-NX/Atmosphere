@@ -16,9 +16,6 @@
 #include <mesosphere.hpp>
 #include <mesosphere/kern_select_page_table.hpp>
 
-#undef ALWAYS_INLINE_LAMBDA
-#define ALWAYS_INLINE_LAMBDA
-
 namespace ams::kern {
 
     Result KPageTableBase::InitializeForKernel(bool is_64_bit, void *table, KVirtualAddress start, KVirtualAddress end) {
@@ -3288,6 +3285,7 @@ namespace ams::kern {
         TraversalEntry   next_entry;
         bool traverse_valid = src_impl.BeginTraversal(std::addressof(next_entry), std::addressof(context), aligned_src_start);
         MESOSPHERE_ASSERT(traverse_valid);
+        MESOSPHERE_UNUSED(traverse_valid);
 
         /* Prepare tracking variables. */
         KPhysicalAddress cur_block_addr = next_entry.phys_addr;

@@ -42,7 +42,7 @@ namespace ams::fs {
                     AMS_ABORT_UNLESS(dst_size >= needed_size);
 
                     /* Generate the name. */
-                    auto size = std::snprintf(dst, dst_size, "%s%s%08x:", impl::GameCardFileSystemMountName, GetGameCardMountNameSuffix(this->partition), this->handle);
+                    auto size = util::SNPrintf(dst, dst_size, "%s%s%08x:", impl::GameCardFileSystemMountName, GetGameCardMountNameSuffix(this->partition), this->handle);
                     AMS_ASSERT(static_cast<size_t>(size) == needed_size - 1);
 
                     return ResultSuccess();

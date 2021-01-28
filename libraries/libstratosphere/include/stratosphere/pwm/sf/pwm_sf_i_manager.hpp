@@ -20,13 +20,9 @@
 #include <stratosphere/pwm/pwm_select_channel_name.hpp>
 #include <stratosphere/pwm/sf/pwm_sf_i_channel_session.hpp>
 
-namespace ams::pwm::sf {
+#define AMS_PWM_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                                                             \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, OpenSessionForDev,                  (ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, int channel),                   (out, channel)                         ) \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, OpenSession,                        (ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, pwm::ChannelName channel_name), (out, channel_name)                    ) \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, OpenSession2,                       (ams::sf::Out<ams::sf::SharedPointer<pwm::sf::IChannelSession>> out, DeviceCode device_code),        (out, device_code),  hos::Version_6_0_0)
 
-    #define AMS_PWM_I_MANAGER_INTERFACE_INFO(C, H)                                                                                                                                                \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, OpenSessionForDev,                  (ams::sf::Out<std::shared_ptr<pwm::sf::IChannelSession>> out, int channel)                                     ) \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, OpenSession,                        (ams::sf::Out<std::shared_ptr<pwm::sf::IChannelSession>> out, pwm::ChannelName channel_name)                   ) \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, OpenSession2,                       (ams::sf::Out<std::shared_ptr<pwm::sf::IChannelSession>> out, DeviceCode device_code),       hos::Version_6_0_0)
-
-    AMS_SF_DEFINE_INTERFACE(IManager, AMS_PWM_I_MANAGER_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::pwm::sf, IManager, AMS_PWM_I_MANAGER_INTERFACE_INFO)

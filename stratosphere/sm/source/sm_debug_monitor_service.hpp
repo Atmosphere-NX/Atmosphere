@@ -20,7 +20,7 @@
 namespace ams::sm {
 
     /* Service definition. */
-    class DebugMonitorService final {
+    class DebugMonitorService {
         public:
             Result AtmosphereGetRecord(sf::Out<ServiceRecord> record, ServiceName service);
             void AtmosphereListRecords(const sf::OutArray<ServiceRecord> &records, sf::Out<u64> out_count, u64 offset);

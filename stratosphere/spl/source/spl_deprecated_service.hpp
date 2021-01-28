@@ -18,7 +18,7 @@
 
 namespace ams::spl {
 
-    class DeprecatedService final {
+    class DeprecatedService {
         public:
             virtual ~DeprecatedService();
         public:

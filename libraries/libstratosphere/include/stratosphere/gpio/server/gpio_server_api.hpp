@@ -20,6 +20,6 @@
 
 namespace ams::gpio::server {
 
-    std::shared_ptr<gpio::sf::IManager> GetServiceObject();
+    ams::sf::SharedPointer<gpio::sf::IManager> GetServiceObject();
 
 }

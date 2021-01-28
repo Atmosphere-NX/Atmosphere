@@ -99,8 +99,8 @@ namespace ams::kern::svc {
 
         Result CreateSharedMemory(ams::svc::Handle *out, size_t size, ams::svc::MemoryPermission owner_perm, ams::svc::MemoryPermission remote_perm) {
             /* Validate the size. */
-            R_UNLESS(0 < size && size < kern::MainMemorySize, svc::ResultInvalidSize());
-            R_UNLESS(util::IsAligned(size, PageSize),         svc::ResultInvalidSize());
+            R_UNLESS(0 < size && size < kern::MainMemorySizeMax, svc::ResultInvalidSize());
+            R_UNLESS(util::IsAligned(size, PageSize),            svc::ResultInvalidSize());
 
             /* Validate the permissions. */
             R_UNLESS(IsValidSharedMemoryPermission(owner_perm),        svc::ResultInvalidNewMemoryPermission());

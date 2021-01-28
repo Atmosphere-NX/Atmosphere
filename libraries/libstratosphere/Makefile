@@ -18,6 +18,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 # options for code generation
 #---------------------------------------------------------------------------------
 PRECOMPILED_HEADERS := $(CURRENT_DIRECTORY)/include/stratosphere.hpp
+#PRECOMPILED_HEADERS :=
 
 DEFINES	    := $(ATMOSPHERE_DEFINES) -DATMOSPHERE_IS_STRATOSPHERE -D_GNU_SOURCE
 SETTINGS    := $(ATMOSPHERE_SETTINGS) -O2
@@ -120,6 +121,9 @@ $(OUTPUT)	:	$(OFILES)
 $(OFILES)	:	$(GCH_FILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
+
+ams_environment_weak.o: CXXFLAGS += -fno-lto
+pm_info_api_weak.o: CXXFLAGS += -fno-lto
 
 #---------------------------------------------------------------------------------
 %_bin.h %.bin.o	:	%.bin

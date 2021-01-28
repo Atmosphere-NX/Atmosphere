@@ -300,14 +300,6 @@ namespace ams::kern::init {
         /* Insert a physical region for the kernel page table heap region */
         MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(slab_end_phys_addr), page_table_heap_size, KMemoryRegionType_DramKernelPtHeap));
 
-        /* Insert a physical region for the kernel trace buffer. */
-        static_assert(!IsKTraceEnabled || KTraceBufferSize > 0);
-        if constexpr (IsKTraceEnabled) {
-            const auto dram_extents = KMemoryLayout::GetMainMemoryPhysicalExtents();
-            const KPhysicalAddress ktrace_buffer_phys_addr = dram_extents.GetEndAddress() - KTraceBufferSize;
-            MESOSPHERE_INIT_ABORT_UNLESS(KMemoryLayout::GetPhysicalMemoryRegionTree().Insert(GetInteger(ktrace_buffer_phys_addr), KTraceBufferSize, KMemoryRegionType_KernelTraceBuffer));
-        }
-
         /* All DRAM regions that we haven't tagged by this point will be mapped under the linear mapping. Tag them. */
         for (auto &region : KMemoryLayout::GetPhysicalMemoryRegionTree()) {
             if (region.GetType() == KMemoryRegionType_Dram) {

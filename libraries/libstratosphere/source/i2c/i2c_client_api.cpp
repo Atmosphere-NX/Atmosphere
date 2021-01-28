@@ -23,21 +23,19 @@ namespace ams::i2c {
         constinit int g_initialize_count = 0;
 
         constinit os::SdkMutex g_i2c_mutex;
-        std::shared_ptr<sf::IManager> g_i2c_manager;
+        ams::sf::SharedPointer<sf::IManager> g_i2c_manager;
         constinit int g_i2c_count = 0;
 
         constinit os::SdkMutex g_i2c_pcv_mutex;
-        std::shared_ptr<sf::IManager> g_i2c_pcv_manager;
+        ams::sf::SharedPointer<sf::IManager> g_i2c_pcv_manager;
         constinit int g_i2c_pcv_count = 0;
 
-        using InternalSession = std::shared_ptr<i2c::sf::ISession>;
-
-        InternalSession &GetInterface(const I2cSession &session) {
+        i2c::sf::ISession *GetInterface(const I2cSession &session) {
             AMS_ASSERT(session._session != nullptr);
-            return *static_cast<InternalSession *>(session._session);
+            return static_cast<i2c::sf::ISession *>(session._session);
         }
 
-        std::shared_ptr<sf::IManager> GetManager(DeviceCode device_code) {
+        ams::sf::SharedPointer<sf::IManager> GetManager(DeviceCode device_code) {
             if (IsPowerBusDeviceCode(device_code)) {
                 return g_i2c_pcv_manager;
             } else {
@@ -47,7 +45,7 @@ namespace ams::i2c {
 
     }
 
-    void InitializeWith(std::shared_ptr<i2c::sf::IManager> &&sp, std::shared_ptr<i2c::sf::IManager> &&sp_pcv) {
+    void InitializeWith(ams::sf::SharedPointer<i2c::sf::IManager> sp, ams::sf::SharedPointer<i2c::sf::IManager> sp_pcv) {
         std::scoped_lock lk(g_init_mutex);
 
         AMS_ABORT_UNLESS(g_initialize_count == 0);
@@ -86,7 +84,7 @@ namespace ams::i2c {
                 AMS_ASSERT(g_i2c_count > 0);
                 if (g_i2c_count > 0) {
                     if ((--g_i2c_count) == 0) {
-                        g_i2c_manager.reset();
+                        g_i2c_manager = nullptr;
                     }
                 }
             }
@@ -95,7 +93,7 @@ namespace ams::i2c {
                 AMS_ASSERT(g_i2c_pcv_count > 0);
                 if (g_i2c_pcv_count > 0) {
                     if ((--g_i2c_pcv_count) == 0) {
-                        g_i2c_pcv_manager.reset();
+                        g_i2c_manager = nullptr;
                     }
                 }
             }
@@ -103,36 +101,29 @@ namespace ams::i2c {
     }
 
     Result OpenSession(I2cSession *out, DeviceCode device_code) {
-        /* Allocate the session. */
-        InternalSession *internal_session = new (std::nothrow) InternalSession;
-        AMS_ABORT_UNLESS(internal_session != nullptr);
-        auto session_guard = SCOPE_GUARD { delete internal_session; };
-
         /* Get manager for the device. */
         auto manager = GetManager(device_code);
 
         /* Get the session. */
+        ams::sf::SharedPointer<i2c::sf::ISession> session;
         {
-            ams::sf::cmif::ServiceObjectHolder object_holder;
             if (hos::GetVersion() >= hos::Version_6_0_0) {
-                R_TRY(manager->OpenSession2(std::addressof(object_holder), device_code));
+                R_TRY(manager->OpenSession2(std::addressof(session), device_code));
             } else {
-                R_TRY(manager->OpenSession(std::addressof(object_holder), ConvertToI2cDevice(device_code)));
+                R_TRY(manager->OpenSession(std::addressof(session), ConvertToI2cDevice(device_code)));
             }
-            *internal_session = object_holder.GetServiceObject<sf::ISession>();
         }
 
         /* Set output. */
-        out->_session = internal_session;
+        out->_session = session.Detach();
 
         /* We succeeded. */
-        session_guard.Cancel();
         return ResultSuccess();
     }
 
     void CloseSession(I2cSession &session) {
         /* Close the session. */
-        delete std::addressof(GetInterface(session));
+        ams::sf::ReleaseSharedObject(GetInterface(session));
         session._session = nullptr;
     }
 

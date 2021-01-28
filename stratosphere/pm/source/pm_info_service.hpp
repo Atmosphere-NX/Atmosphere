@@ -18,14 +18,14 @@
 
 namespace ams::pm {
 
-    class InformationService final {
+    class InformationService {
         public:
             /* Actual command implementations. */
             Result GetProgramId(sf::Out<ncm::ProgramId> out, os::ProcessId process_id);
 
             /* Atmosphere extension commands. */
             Result AtmosphereGetProcessId(sf::Out<os::ProcessId> out, ncm::ProgramId program_id);
-            Result AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id);
+            Result AtmosphereHasLaunchedBootProgram(sf::Out<bool> out, ncm::ProgramId program_id);
             Result AtmosphereGetProcessInfo(sf::Out<ncm::ProgramLocation> out_loc, sf::Out<cfg::OverrideStatus> out_status, os::ProcessId process_id);
     };
     static_assert(pm::impl::IsIInformationInterface<InformationService>);

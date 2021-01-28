@@ -75,7 +75,7 @@ namespace ams::fs {
         /* Format the path. */
         std::va_list va_list;
         va_start(va_list, format);
-        const size_t len = std::vsnprintf(dst->str, sizeof(dst->str), format, va_list);
+        const size_t len = util::VSNPrintf(dst->str, sizeof(dst->str), format, va_list);
         va_end(va_list);
 
         /* Validate length. */

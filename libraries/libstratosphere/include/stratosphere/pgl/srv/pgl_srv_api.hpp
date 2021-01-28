@@ -20,6 +20,6 @@
 
 namespace ams::pgl::srv {
 
-    void Initialize(ShellInterface *interface, MemoryResource *mr);
+    void Initialize();
 
 }

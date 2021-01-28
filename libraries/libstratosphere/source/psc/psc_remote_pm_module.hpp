@@ -18,7 +18,7 @@
 
 namespace ams::psc {
 
-    class RemotePmModule final {
+    class RemotePmModule {
         NON_COPYABLE(RemotePmModule);
         NON_MOVEABLE(RemotePmModule);
         private:

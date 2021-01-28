@@ -17,16 +17,12 @@
 #include <vapours.hpp>
 #include <stratosphere/erpt/erpt_types.hpp>
 
-namespace ams::erpt::sf {
+#define AMS_ERPT_I_ATTACHMENT_INTERFACE_INFO(C, H)                                                                                                     \
+    AMS_SF_METHOD_INFO(C, H,  0, Result, Open,     (const erpt::AttachmentId &attachment_id),                                 (attachment_id))         \
+    AMS_SF_METHOD_INFO(C, H,  1, Result, Read,     (ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer),       (out_count, out_buffer)) \
+    AMS_SF_METHOD_INFO(C, H,  2, Result, SetFlags, (erpt::AttachmentFlagSet flags),                                           (flags))                 \
+    AMS_SF_METHOD_INFO(C, H,  3, Result, GetFlags, (ams::sf::Out<erpt::AttachmentFlagSet> out),                               (out))                   \
+    AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    (),                                                                        ())                      \
+    AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out),                                                   (out))
 
-    #define AMS_ERPT_I_ATTACHMENT_INTERFACE_INFO(C, H)                                                                       \
-        AMS_SF_METHOD_INFO(C, H,  0, Result, Open,     (const AttachmentId &attachment_id))                                 \
-        AMS_SF_METHOD_INFO(C, H,  1, Result, Read,     (ams::sf::Out<u32> out_count, const ams::sf::OutBuffer &out_buffer)) \
-        AMS_SF_METHOD_INFO(C, H,  2, Result, SetFlags, (AttachmentFlagSet flags))                                           \
-        AMS_SF_METHOD_INFO(C, H,  3, Result, GetFlags, (ams::sf::Out<AttachmentFlagSet> out))                               \
-        AMS_SF_METHOD_INFO(C, H,  4, Result, Close,    ())                                                                  \
-        AMS_SF_METHOD_INFO(C, H,  5, Result, GetSize,  (ams::sf::Out<s64> out))
-
-    AMS_SF_DEFINE_INTERFACE(IAttachment, AMS_ERPT_I_ATTACHMENT_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::erpt::sf, IAttachment, AMS_ERPT_I_ATTACHMENT_INTERFACE_INFO)

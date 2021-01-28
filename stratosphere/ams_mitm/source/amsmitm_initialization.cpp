@@ -81,9 +81,9 @@ namespace ams::mitm {
 
         void GetBackupFileName(char *dst, size_t dst_size, const char *serial_number, const char *fn) {
             if (strlen(serial_number) > 0) {
-                std::snprintf(dst, dst_size, "automatic_backups/%s_%s", serial_number, fn);
+                util::SNPrintf(dst, dst_size, "automatic_backups/%s_%s", serial_number, fn);
             } else {
-                std::snprintf(dst, dst_size, "automatic_backups/%s", fn);
+                util::SNPrintf(dst, dst_size, "automatic_backups/%s", fn);
             }
         }
 
@@ -166,7 +166,7 @@ namespace ams::mitm {
             if (emummc::IsActive()) {
                 if (const char *emummc_file_path = emummc::GetFilePath(); emummc_file_path != nullptr) {
                     char emummc_path[ams::fs::EntryNameLengthMax + 1];
-                    std::snprintf(emummc_path, sizeof(emummc_path), "%s/eMMC", emummc_file_path);
+                    util::SNPrintf(emummc_path, sizeof(emummc_path), "%s/eMMC", emummc_file_path);
                     mitm::fs::OpenSdFile(&g_emummc_file, emummc_path, ams::fs::OpenMode_Read);
                 }
             }

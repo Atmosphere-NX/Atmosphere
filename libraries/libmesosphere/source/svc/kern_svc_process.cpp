@@ -175,9 +175,9 @@ namespace ams::kern::svc {
             R_UNLESS(params.code_address + code_size - 1 <= map_end - 1,    svc::ResultInvalidMemoryRegion());
 
             /* Check that the number of pages is valid for the kernel address space. */
-            R_UNLESS(code_num_pages            < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
-            R_UNLESS(system_resource_num_pages < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
-            R_UNLESS(total_pages               < (kern::MainMemorySize / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(code_num_pages            < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(system_resource_num_pages < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
+            R_UNLESS(total_pages               < (kern::MainMemorySizeMax / PageSize), svc::ResultOutOfMemory());
 
             /* Check that optimized memory allocation is used only for applications. */
             const bool optimize_allocs = (params.flags & ams::svc::CreateProcessFlag_OptimizeMemoryAllocation) != 0;

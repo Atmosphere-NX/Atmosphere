@@ -23,16 +23,16 @@ namespace ams::fs {
 
         void *DefaultAllocate(size_t size) {
             g_used_default_allocator = true;
-            return std::malloc(size);
+            return ams::Malloc(size);
         }
 
         void DefaultDeallocate(void *ptr, size_t size) {
-            std::free(ptr);
+            ams::Free(ptr);
         }
 
-        os::Mutex g_lock(false);
-        AllocateFunction g_allocate_func     = DefaultAllocate;
-        DeallocateFunction g_deallocate_func = DefaultDeallocate;
+        constinit os::SdkMutex g_lock;
+        constinit AllocateFunction g_allocate_func     = DefaultAllocate;
+        constinit DeallocateFunction g_deallocate_func = DefaultDeallocate;
 
         constexpr size_t RequiredAlignment = alignof(u64);
 

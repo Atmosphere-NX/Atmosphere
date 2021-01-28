@@ -20,13 +20,8 @@
 #include <stratosphere/spl/spl_types.hpp>
 #include <stratosphere/spl/impl/spl_crypto_interface.hpp>
 
-namespace ams::spl::impl {
+#define AMS_SPL_I_DEVICE_UNIQUE_DATA_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                  \
+    AMS_SF_METHOD_INFO(C, H, 13, Result, DecryptDeviceUniqueDataDeprecated, (const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, spl::AccessKey access_key, spl::KeySource key_source, u32 option), (dst, src, access_key, key_source, option), hos::Version_Min,   hos::Version_4_1_0) \
+    AMS_SF_METHOD_INFO(C, H, 13, Result, DecryptDeviceUniqueData,           (const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, spl::AccessKey access_key, spl::KeySource key_source),             (dst, src, access_key, key_source),         hos::Version_5_0_0)
 
-    #define AMS_SPL_I_DEVICE_UNIQUE_DATA_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                            \
-        AMS_SPL_I_CRYPTO_INTERFACE_INTERFACE_INFO(C, H)                                                                                                                                                                                            \
-        AMS_SF_METHOD_INFO(C, H, 13, Result, DecryptDeviceUniqueDataDeprecated, (const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source, u32 option), hos::Version_Min,   hos::Version_4_1_0) \
-        AMS_SF_METHOD_INFO(C, H, 13, Result, DecryptDeviceUniqueData,           (const sf::OutPointerBuffer &dst, const sf::InPointerBuffer &src, AccessKey access_key, KeySource key_source),             hos::Version_5_0_0)
-
-    AMS_SF_DEFINE_INTERFACE(IDeviceUniqueDataInterface, AMS_SPL_I_DEVICE_UNIQUE_DATA_INTERFACE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE_WITH_BASE(ams::spl::impl, IDeviceUniqueDataInterface, ::ams::spl::impl::ICryptoInterface, AMS_SPL_I_DEVICE_UNIQUE_DATA_INTERFACE_INTERFACE_INFO)

@@ -50,7 +50,7 @@ namespace ams::kern {
                 }
             }
 
-            void Unlock() {
+            ALWAYS_INLINE void Unlock() {
                 MESOSPHERE_ASSERT_THIS();
 
                 const uintptr_t cur_thread = reinterpret_cast<uintptr_t>(GetCurrentThreadPointer());
@@ -65,8 +65,8 @@ namespace ams::kern {
             void LockSlowPath(uintptr_t owner, uintptr_t cur_thread);
             void UnlockSlowPath(uintptr_t cur_thread);
 
-            bool IsLocked() const { return m_tag != 0; }
-            bool IsLockedByCurrentThread() const { return (m_tag | 0x1ul) == (reinterpret_cast<uintptr_t>(GetCurrentThreadPointer()) | 0x1ul); }
+            ALWAYS_INLINE bool IsLocked() const { return m_tag.load() != 0; }
+            ALWAYS_INLINE bool IsLockedByCurrentThread() const { return (m_tag.load() | 0x1ul) == (reinterpret_cast<uintptr_t>(GetCurrentThreadPointer()) | 0x1ul); }
     };
 
     using KScopedLightLock = KScopedLock<KLightLock>;

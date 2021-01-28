@@ -26,7 +26,7 @@ namespace ams::psc {
         NON_COPYABLE(PmModule);
         NON_MOVEABLE(PmModule);
         private:
-            std::shared_ptr<psc::sf::IPmModule> intf;
+            ams::sf::SharedPointer<psc::sf::IPmModule> intf;
             os::SystemEvent system_event;
             bool initialized;
             PmModuleId module_id;

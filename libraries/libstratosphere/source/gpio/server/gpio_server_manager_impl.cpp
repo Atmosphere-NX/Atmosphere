@@ -18,25 +18,25 @@
 
 namespace ams::gpio::server {
 
-    ManagerImpl::ManagerImpl() : pad_session_memory_resource(), pad_allocator(std::addressof(pad_session_memory_resource)) {
+    ManagerImpl::ManagerImpl() {
         this->heap_handle = lmem::CreateExpHeap(this->heap_buffer, sizeof(this->heap_buffer), lmem::CreateOption_None);
-        this->pad_session_memory_resource.Attach(this->heap_handle);
+        this->pad_allocator.Attach(this->heap_handle);
     }
 
     ManagerImpl::~ManagerImpl() {
         lmem::DestroyExpHeap(this->heap_handle);
     }
 
-    Result ManagerImpl::OpenSessionForDev(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
+    Result ManagerImpl::OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
         /* TODO */
         AMS_ABORT();
     }
 
-    Result ManagerImpl::OpenSession(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
+    Result ManagerImpl::OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
         return this->OpenSession2(out, ConvertToDeviceCode(pad_name), ddsf::AccessMode_ReadWrite);
     }
 
-    Result ManagerImpl::OpenSessionForTest(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
+    Result ManagerImpl::OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
         /* TODO */
         AMS_ABORT();
     }
@@ -61,15 +61,15 @@ namespace ams::gpio::server {
         AMS_ABORT();
     }
 
-    Result ManagerImpl::OpenSession2(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
+    Result ManagerImpl::OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
         /* Allocate a session. */
-        auto session = ams::sf::AllocateShared<gpio::sf::IPadSession, PadSessionImpl>(this->pad_allocator, this);
+        auto session = Factory::CreateSharedEmplaced<gpio::sf::IPadSession, PadSessionImpl>(std::addressof(this->pad_allocator), this);
 
         /* Open the session. */
-        R_TRY(session->GetImpl().OpenSession(device_code, access_mode));
+        R_TRY(session.GetImpl().OpenSession(device_code, access_mode));
 
         /* We succeeded. */
-        out.SetValue(std::move(session));
+        *out = std::move(session);
         return ResultSuccess();
     }
 

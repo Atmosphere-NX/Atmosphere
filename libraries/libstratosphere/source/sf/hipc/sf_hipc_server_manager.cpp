@@ -18,8 +18,6 @@
 
 namespace ams::sf::hipc {
 
-    ServerManagerBase::ServerBase::~ServerBase() { /* Pure virtual destructor, to prevent linker errors. */ }
-
     Result ServerManagerBase::InstallMitmServerImpl(Handle *out_port_handle, sm::ServiceName service_name, ServerManagerBase::MitmQueryFunction query_func) {
         /* Install the Mitm. */
         Handle query_handle;
@@ -89,37 +87,25 @@ namespace ams::sf::hipc {
     Result ServerManagerBase::ProcessForServer(os::WaitableHolderType *holder) {
         AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::Server);
 
-        ServerBase *server = static_cast<ServerBase *>(holder);
+        Server *server = static_cast<Server *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
 
-        /* Create resources for new session. */
-        cmif::ServiceObjectHolder obj;
-        std::shared_ptr<::Service> fsrv;
-        server->CreateSessionObjectHolder(&obj, &fsrv);
-
-        /* Not a mitm server, so we must have no forward service. */
-        AMS_ABORT_UNLESS(fsrv == nullptr);
-
-        /* Try to accept. */
-        return this->AcceptSession(server->port_handle, std::move(obj));
+        /* Create new session. */
+        if (server->static_object) {
+            return this->AcceptSession(server->port_handle, server->static_object.Clone());
+        } else {
+            return this->OnNeedsToAccept(server->index, server);
+        }
     }
 
     Result ServerManagerBase::ProcessForMitmServer(os::WaitableHolderType *holder) {
         AMS_ABORT_UNLESS(static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder)) == UserDataTag::MitmServer);
 
-        ServerBase *server = static_cast<ServerBase *>(holder);
+        Server *server = static_cast<Server *>(holder);
         ON_SCOPE_EXIT { this->RegisterToWaitList(server); };
 
         /* Create resources for new session. */
-        cmif::ServiceObjectHolder obj;
-        std::shared_ptr<::Service> fsrv;
-        server->CreateSessionObjectHolder(&obj, &fsrv);
-
-        /* Mitm server, so we must have forward service. */
-        AMS_ABORT_UNLESS(fsrv != nullptr);
-
-        /* Try to accept. */
-        return this->AcceptMitmSession(server->port_handle, std::move(obj), std::move(fsrv));
+        return this->OnNeedsToAccept(server->index, server);
     }
 
     Result ServerManagerBase::ProcessForSession(os::WaitableHolderType *holder) {
@@ -147,62 +133,14 @@ namespace ams::sf::hipc {
         return ResultSuccess();
     }
 
-    void ServerManagerBase::ProcessDeferredSessions() {
-        /* Iterate over the list of deferred sessions, and see if we can't do anything. */
-        std::scoped_lock lk(this->deferred_session_mutex);
-
-        /* Undeferring a request may undefer another request. We'll continue looping until everything is stable. */
-        bool needs_undefer_all = true;
-        while (needs_undefer_all) {
-            needs_undefer_all = false;
-
-            auto it = this->deferred_session_list.begin();
-            while (it != this->deferred_session_list.end()) {
-                ServerSession *session = static_cast<ServerSession *>(&*it);
-                R_TRY_CATCH(this->ProcessForSession(session)) {
-                    R_CATCH(sf::ResultRequestDeferred) {
-                        /* Session is still deferred, so let's continue. */
-                        it++;
-                        continue;
-                    }
-                    R_CATCH(sf::impl::ResultRequestInvalidated) {
-                        /* Session is no longer deferred! */
-                        it = this->deferred_session_list.erase(it);
-                        needs_undefer_all = true;
-                        continue;
-                    }
-                } R_END_TRY_CATCH_WITH_ABORT_UNLESS;
-
-                /* We succeeded! Remove from deferred list. */
-                it = this->deferred_session_list.erase(it);
-                needs_undefer_all = true;
-            }
-        }
-    }
-
     Result ServerManagerBase::Process(os::WaitableHolderType *holder) {
         switch (static_cast<UserDataTag>(os::GetWaitableHolderUserData(holder))) {
             case UserDataTag::Server:
                 return this->ProcessForServer(holder);
-                break;
             case UserDataTag::MitmServer:
                 return this->ProcessForMitmServer(holder);
-                break;
             case UserDataTag::Session:
-                /* Try to process for session. */
-                R_TRY_CATCH(this->ProcessForSession(holder)) {
-                    R_CATCH(sf::ResultRequestDeferred) {
-                        /* The session was deferred, so push it onto the deferred session list. */
-                        std::scoped_lock lk(this->deferred_session_mutex);
-                        this->deferred_session_list.push_back(*static_cast<ServerSession *>(holder));
-                        return ResultSuccess();
-                    }
-                } R_END_TRY_CATCH;
-
-                /* We successfully invoked a command...so let's see if anything can be undeferred. */
-                this->ProcessDeferredSessions();
-                return ResultSuccess();
-                break;
+                return this->ProcessForSession(holder);
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }

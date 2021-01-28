@@ -17,24 +17,20 @@
 #pragma once
 #include <stratosphere/lr/lr_types.hpp>
 
-namespace ams::lr {
+#define AMS_LR_I_REGISTERED_LOCATION_RESOLVER_INTERFACE_INFO(C, H)                                                                                                                                            \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, ResolveProgramPath,                 (sf::Out<lr::Path> out, ncm::ProgramId id),                         (out, id))                                                    \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterProgramPathDeprecated,      (const lr::Path &path, ncm::ProgramId id),                          (path, id),           hos::Version_1_0_0, hos::Version_8_1_1) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterProgramPath,                (const lr::Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), (path, id, owner_id), hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 2, Result, UnregisterProgramPath,              (ncm::ProgramId id),                                                (id))                                                         \
+    AMS_SF_METHOD_INFO(C, H, 3, Result, RedirectProgramPathDeprecated,      (const lr::Path &path, ncm::ProgramId id),                          (path, id),           hos::Version_1_0_0, hos::Version_8_1_1) \
+    AMS_SF_METHOD_INFO(C, H, 3, Result, RedirectProgramPath,                (const lr::Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), (path, id, owner_id), hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 4, Result, ResolveHtmlDocumentPath,            (sf::Out<lr::Path> out, ncm::ProgramId id),                         (out, id),            hos::Version_2_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 5, Result, RegisterHtmlDocumentPathDeprecated, (const lr::Path &path, ncm::ProgramId id),                          (path, id),           hos::Version_2_0_0, hos::Version_8_1_1) \
+    AMS_SF_METHOD_INFO(C, H, 5, Result, RegisterHtmlDocumentPath,           (const lr::Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), (path, id, owner_id), hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 6, Result, UnregisterHtmlDocumentPath,         (ncm::ProgramId id),                                                (id),                 hos::Version_2_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 7, Result, RedirectHtmlDocumentPathDeprecated, (const lr::Path &path, ncm::ProgramId id),                          (path, id),           hos::Version_2_0_0, hos::Version_8_1_1) \
+    AMS_SF_METHOD_INFO(C, H, 7, Result, RedirectHtmlDocumentPath,           (const lr::Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), (path, id, owner_id), hos::Version_9_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 8, Result, Refresh,                            (),                                                                 (),                   hos::Version_7_0_0)                     \
+    AMS_SF_METHOD_INFO(C, H, 9, Result, RefreshExcluding,                   (const sf::InArray<ncm::ProgramId> &ids),                           (ids),                hos::Version_9_0_0)
 
-    #define AMS_LR_I_REGISTERED_LOCATION_RESOLVER_INTERFACE_INFO(C, H)                                                                                                                  \
-        AMS_SF_METHOD_INFO(C, H, 0, Result, ResolveProgramPath,                 (sf::Out<Path> out, ncm::ProgramId id))                                                                 \
-        AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterProgramPathDeprecated,      (const Path &path, ncm::ProgramId id),                          hos::Version_1_0_0, hos::Version_8_1_1) \
-        AMS_SF_METHOD_INFO(C, H, 1, Result, RegisterProgramPath,                (const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), hos::Version_9_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 2, Result, UnregisterProgramPath,              (ncm::ProgramId id))                                                                                    \
-        AMS_SF_METHOD_INFO(C, H, 3, Result, RedirectProgramPathDeprecated,      (const Path &path, ncm::ProgramId id),                          hos::Version_1_0_0, hos::Version_8_1_1) \
-        AMS_SF_METHOD_INFO(C, H, 3, Result, RedirectProgramPath,                (const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), hos::Version_9_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 4, Result, ResolveHtmlDocumentPath,            (sf::Out<Path> out, ncm::ProgramId id),                         hos::Version_2_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 5, Result, RegisterHtmlDocumentPathDeprecated, (const Path &path, ncm::ProgramId id),                          hos::Version_2_0_0, hos::Version_8_1_1) \
-        AMS_SF_METHOD_INFO(C, H, 5, Result, RegisterHtmlDocumentPath,           (const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), hos::Version_9_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 6, Result, UnregisterHtmlDocumentPath,         (ncm::ProgramId id),                                            hos::Version_2_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 7, Result, RedirectHtmlDocumentPathDeprecated, (const Path &path, ncm::ProgramId id),                          hos::Version_2_0_0, hos::Version_8_1_1) \
-        AMS_SF_METHOD_INFO(C, H, 7, Result, RedirectHtmlDocumentPath,           (const Path &path, ncm::ProgramId id, ncm::ProgramId owner_id), hos::Version_9_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 8, Result, Refresh,                            (),                                                             hos::Version_7_0_0)                     \
-        AMS_SF_METHOD_INFO(C, H, 9, Result, RefreshExcluding,                   (const sf::InArray<ncm::ProgramId> &ids),                       hos::Version_9_0_0)
-
-    AMS_SF_DEFINE_INTERFACE(IRegisteredLocationResolver, AMS_LR_I_REGISTERED_LOCATION_RESOLVER_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::lr, IRegisteredLocationResolver, AMS_LR_I_REGISTERED_LOCATION_RESOLVER_INTERFACE_INFO)

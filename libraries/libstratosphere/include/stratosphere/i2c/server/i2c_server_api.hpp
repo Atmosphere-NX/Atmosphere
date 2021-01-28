@@ -20,7 +20,7 @@
 
 namespace ams::i2c::server {
 
-    std::shared_ptr<i2c::sf::IManager> GetServiceObject();
-    std::shared_ptr<i2c::sf::IManager> GetServiceObjectPowerBus();
+    ams::sf::SharedPointer<i2c::sf::IManager> GetServiceObject();
+    ams::sf::SharedPointer<i2c::sf::IManager> GetServiceObjectPowerBus();
 
 }

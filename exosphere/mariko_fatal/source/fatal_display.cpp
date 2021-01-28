@@ -111,7 +111,7 @@ namespace ams::secmon::fatal {
             }
         }
 
-        void EnableBacklightForVendor2050ForHardwareTypeFive(int brightness) {
+        void EnableBacklightForVendor2050ForAula(int brightness) {
             /* Enable FRAME_END_INT */
             reg::Write(g_disp1_regs + sizeof(u32) * DC_CMD_INT_ENABLE, 2);
 
@@ -270,7 +270,7 @@ namespace ams::secmon::fatal {
             reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_EN,  reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
             reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_RST,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
 
-            if (fuse::GetHardwareType() == fuse::HardwareType_Five) {
+            if (fuse::GetHardwareType() == fuse::HardwareType_Aula) {
                 /* Configure LCD backlight. */
                 reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x4);
                 reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x4);
@@ -384,7 +384,7 @@ namespace ams::secmon::fatal {
         reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_BL_EN,  reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
         reg::ClearBits(g_apb_misc_regs + PINMUX_AUX_LCD_RST,    reg::EncodeMask(PINMUX_REG_BITS_MASK(AUX_TRISTATE)));
 
-        if (hw_type == fuse::HardwareType_Five) {
+        if (hw_type == fuse::HardwareType_Aula) {
             /* Configure LCD backlight. */
             reg::SetBits(g_gpio_regs + GPIO_PORT6_CNF_1, 0x4);
             reg::SetBits(g_gpio_regs + GPIO_PORT6_OE_1,  0x4);
@@ -429,7 +429,7 @@ namespace ams::secmon::fatal {
         reg::SetBits(g_gpio_regs + GPIO_PORT6_OUT_1, 0x4);
         util::WaitMicroSeconds(60'000ul);
 
-        if (hw_type == fuse::HardwareType_Five) {
+        if (hw_type == fuse::HardwareType_Aula) {
             reg::Write(g_dsi_regs + sizeof(u32) * DSI_BTA_TIMING, 0x40103);
         } else {
             reg::Write(g_dsi_regs + sizeof(u32) * DSI_BTA_TIMING, 0x50204);
@@ -593,7 +593,7 @@ namespace ams::secmon::fatal {
         /* Enable backlight. */
         constexpr auto DisplayBrightness = 100;
         if (GetLcdVendor() == 0x2050) {
-            EnableBacklightForVendor2050ForHardwareTypeFive(DisplayBrightness);
+            EnableBacklightForVendor2050ForAula(DisplayBrightness);
         } else {
             EnableBacklightForGeneric(DisplayBrightness);
         }

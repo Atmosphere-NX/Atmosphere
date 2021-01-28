@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef FUSEE_DI_H_
 #define FUSEE_DI_H_
 
@@ -32,6 +32,12 @@
 #define MAKE_DSI_REG(n) MAKE_REG32(DSI_BASE + n * 4)
 #define MAKE_MIPI_CAL_REG(n) MAKE_REG32(MIPI_CAL_BASE + n)
 #define MAKE_VIC_REG(n) MAKE_REG32(VIC_BASE + n)
+
+/* Clock and reset registers. */
+#define CLK_RST_CONTROLLER_CLK_SOURCE_DISP1     0x138
+#define CLK_RST_CONTROLLER_PLLD_BASE            0xD0
+#define CLK_RST_CONTROLLER_PLLD_MISC1           0xD8
+#define CLK_RST_CONTROLLER_PLLD_MISC            0xDC
 
 /* Display registers. */
 #define DC_CMD_GENERAL_INCR_SYNCPT 0x00
@@ -60,6 +66,7 @@
 #define  PM0_ENABLE (1 << 16)
 #define  PM1_ENABLE (1 << 18)
 
+#define DC_CMD_INT_STATUS 0x37
 #define DC_CMD_INT_MASK 0x38
 #define DC_CMD_INT_ENABLE 0x39
 
@@ -238,6 +245,7 @@
 
 #define DC_WIN_LINE_STRIDE 0x70A
 #define DC_WIN_DV_CONTROL 0x70E
+#define DC_WINBUF_BLEND_LAYER_CONTROL 0x716
 
 /* The following registers are A/B/C shadows of the 0xBC0/0xDC0/0xFC0 registers (see DISPLAY_WINDOW_HEADER). */
 #define DC_WINBUF_START_ADDR 0x800
@@ -246,6 +254,8 @@
 #define DC_WINBUF_SURFACE_KIND 0x80B
 
 /* Display serial interface registers. */
+#define DSI_INCR_SYNCPT_CNTRL 0x1
+
 #define DSI_RD_DATA 0x9
 #define DSI_WR_DATA 0xA
 
@@ -333,7 +343,7 @@
 #define  DSI_PAD_CONTROL_VS1_PDIO_CLK   (1 <<  8)
 #define  DSI_PAD_CONTROL_VS1_PDIO(x)    (((x) & 0xf) <<  0)
 
-#define DSI_PAD_CONTROL_CD 0x4c
+#define DSI_PAD_CONTROL_CD 0x4C
 #define DSI_VIDEO_MODE_CONTROL 0x4E
 
 #define DSI_PAD_CONTROL_1 0x4F
@@ -346,21 +356,45 @@
 #define  DSI_PAD_PREEMP_PU(x)     (((x) & 0x3) << 0)
 
 #define DSI_PAD_CONTROL_4 0x52
+#define DSI_PAD_CONTROL_5_MARIKO 0x53
+#define DSI_PAD_CONTROL_6_MARIKO 0x54
+#define DSI_PAD_CONTROL_7_MARIKO 0x55
+#define DSI_INIT_SEQ_DATA_15 0x5F
+#define DSI_INIT_SEQ_DATA_15_MARIKO 0x62
 
-typedef struct _cfg_op_t
-{
-    uint32_t off;
-    uint32_t val;
-} cfg_op_t;
+/* MIPI calibration registers. */
+#define MIPI_CAL_MIPI_CAL_CTRL 0x0
+#define MIPI_CAL_MIPI_CAL_AUTOCAL_CTRL0 0x4
+#define MIPI_CAL_CIL_MIPI_CAL_STATUS 0x8
+#define MIPI_CAL_CIL_MIPI_CAL_STATUS_2 0xC
+#define MIPI_CAL_CILA_MIPI_CAL_CONFIG 0x14
+#define MIPI_CAL_CILB_MIPI_CAL_CONFIG 0x18
+#define MIPI_CAL_CILC_MIPI_CAL_CONFIG 0x1C
+#define MIPI_CAL_CILD_MIPI_CAL_CONFIG 0x20
+#define MIPI_CAL_CILE_MIPI_CAL_CONFIG 0x24
+#define MIPI_CAL_CILF_MIPI_CAL_CONFIG 0x28
+#define MIPI_CAL_DSIA_MIPI_CAL_CONFIG 0x38
+#define MIPI_CAL_DSIB_MIPI_CAL_CONFIG 0x3C
+#define MIPI_CAL_DSIC_MIPI_CAL_CONFIG 0x40
+#define MIPI_CAL_DSID_MIPI_CAL_CONFIG 0x44
+#define MIPI_CAL_MIPI_BIAS_PAD_CFG0 0x58
+#define MIPI_CAL_MIPI_BIAS_PAD_CFG1 0x5C
+#define MIPI_CAL_MIPI_BIAS_PAD_CFG2 0x60
+#define MIPI_CAL_DSIA_MIPI_CAL_CONFIG_2 0x64
+#define MIPI_CAL_DSIB_MIPI_CAL_CONFIG_2 0x68
+#define MIPI_CAL_DSIC_MIPI_CAL_CONFIG_2 0x70
+#define MIPI_CAL_DSID_MIPI_CAL_CONFIG_2 0x74
 
-void display_init();
-void display_end();
+void display_init(void);
+void display_end(void);
 
-/* Show one single color on the display. */
-void display_color_screen(uint32_t color);
+uint16_t display_get_lcd_vendor(void);
 
 /* Switches screen backlight ON/OFF. */
 void display_backlight(bool enable);
+
+/* Show one single color on the display. */
+void display_color_screen(uint32_t color);
 
 /* Init display in full 1280x720 resolution (B8G8R8A8, line stride 768, framebuffer size = 1280*768*4 bytes). */
 uint32_t *display_init_framebuffer(void *address);

@@ -115,8 +115,8 @@ namespace ams::ldr {
         fssystem::DestroyExternalCode(program_id);
     }
 
-    void LoaderService::AtmosphereHasLaunchedProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
-        out.SetValue(ldr::HasLaunchedProgram(program_id));
+    void LoaderService::AtmosphereHasLaunchedBootProgram(sf::Out<bool> out, ncm::ProgramId program_id) {
+        out.SetValue(ldr::HasLaunchedBootProgram(program_id));
     }
 
     Result LoaderService::AtmosphereGetProgramInfo(sf::Out<ProgramInfo> out_program_info, sf::Out<cfg::OverrideStatus> out_status, const ncm::ProgramLocation &loc) {

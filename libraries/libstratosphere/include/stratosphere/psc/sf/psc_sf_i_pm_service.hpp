@@ -18,11 +18,7 @@
 #include <vapours.hpp>
 #include <stratosphere/psc/sf/psc_sf_i_pm_module.hpp>
 
-namespace ams::psc::sf {
+#define AMS_PSC_I_PM_SERVICE_INTERFACE_INFO(C, H)                                                                  \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, Initialize, (ams::sf::Out<ams::sf::SharedPointer<psc::sf::IPmModule>> out), (out))
 
-    #define AMS_PSC_I_PM_SERVICE_INTERFACE_INFO(C, H)                                                            \
-        AMS_SF_METHOD_INFO(C, H, 0, Result, Initialize, (ams::sf::Out<std::shared_ptr<psc::sf::IPmModule>> out))
-
-    AMS_SF_DEFINE_INTERFACE(IPmService, AMS_PSC_I_PM_SERVICE_INTERFACE_INFO)
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::psc::sf, IPmService, AMS_PSC_I_PM_SERVICE_INTERFACE_INFO)

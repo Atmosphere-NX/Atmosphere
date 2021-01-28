@@ -20,18 +20,50 @@ namespace ams::ldr {
 
     namespace {
 
-        /* Global cache. */
-        std::set<u64> g_launched_programs;
+        static constexpr size_t MaxBootPrograms = 0x50;
+        constinit std::array<ncm::ProgramId, MaxBootPrograms> g_launched_boot_programs = [] {
+            std::array<ncm::ProgramId, MaxBootPrograms> arr = {};
+            for (size_t i = 0; i < MaxBootPrograms; ++i) {
+                arr[i] = ncm::InvalidProgramId;
+            }
+            return arr;
+        }();
+
+        constinit bool g_boot_programs_done = false;
+
+        bool HasLaunchedBootProgramImpl(ncm::ProgramId program_id) {
+            for (const auto &launched : g_launched_boot_programs) {
+                if (launched == program_id) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void SetLaunchedBootProgramImpl(ncm::ProgramId program_id) {
+            for (size_t i = 0; i < MaxBootPrograms; ++i) {
+                if (g_launched_boot_programs[i] == ncm::InvalidProgramId) {
+                    g_launched_boot_programs[i] = program_id;
+                    return;
+                }
+            }
+            AMS_ABORT("Too many boot programs");
+        }
 
     }
 
     /* Launch Record API. */
-    bool HasLaunchedProgram(ncm::ProgramId program_id) {
-        return g_launched_programs.find(program_id.value) != g_launched_programs.end();
+    bool HasLaunchedBootProgram(ncm::ProgramId program_id) {
+        return HasLaunchedBootProgramImpl(program_id);
     }
 
-    void SetLaunchedProgram(ncm::ProgramId program_id) {
-        g_launched_programs.insert(program_id.value);
+    void SetLaunchedBootProgram(ncm::ProgramId program_id) {
+        if (!g_boot_programs_done) {
+            SetLaunchedBootProgramImpl(program_id);
+            if (program_id == ncm::SystemAppletId::Qlaunch) {
+                g_boot_programs_done = true;
+            }
+        }
     }
 
 }
@@ -40,8 +72,8 @@ namespace ams::ldr {
 /* This is necessary to prevent circular dependencies. */
 namespace ams::pm::info {
 
-    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
-        *out = ldr::HasLaunchedProgram(program_id);
+    Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
+        *out = ldr::HasLaunchedBootProgram(program_id);
         return ResultSuccess();
     }
 

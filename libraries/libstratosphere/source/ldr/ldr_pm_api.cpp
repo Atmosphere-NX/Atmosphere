@@ -36,8 +36,8 @@ namespace ams::ldr::pm {
         return ldrPmUnpinProgram(pin_id.value);
     }
 
-    Result HasLaunchedProgram(bool *out, ncm::ProgramId program_id) {
-        return ldrPmAtmosphereHasLaunchedProgram(out, static_cast<u64>(program_id));
+    Result HasLaunchedBootProgram(bool *out, ncm::ProgramId program_id) {
+        return ldrPmAtmosphereHasLaunchedBootProgram(out, static_cast<u64>(program_id));
     }
 
     Result AtmosphereGetProgramInfo(ProgramInfo *out, cfg::OverrideStatus *out_status, const ncm::ProgramLocation &loc) {

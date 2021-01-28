@@ -172,7 +172,7 @@ namespace ams::fs {
 
                     /* Create a redirection filesystem to the relevant content folder. */
                     char path[fs::EntryNameLengthMax + 1];
-                    std::snprintf(path, sizeof(path), "/atmosphere/contents/%016lx/exefs", program_id.value);
+                    util::SNPrintf(path, sizeof(path), "/atmosphere/contents/%016lx/exefs", program_id.value);
 
                     auto subdir_fs = std::make_unique<fssystem::SubDirectoryFileSystem>(std::move(sd_fs), path);
                     if (subdir_fs == nullptr) {
@@ -190,7 +190,7 @@ namespace ams::fs {
 
                     /* Create a path representing the stub. */
                     char stub_path[fs::EntryNameLengthMax + 1];
-                    std::snprintf(stub_path, sizeof(stub_path), "%s.stub", path);
+                    util::SNPrintf(stub_path, sizeof(stub_path), "%s.stub", path);
 
                     /* Query whether we have the file. */
                     bool has_file;

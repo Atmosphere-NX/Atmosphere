@@ -27,7 +27,7 @@ namespace ams::svc {
         private:
             s64 tick;
         private:
-            static constexpr s64 NanoSecondsPerSecond = INT64_C(1'000'000'000);
+            static constexpr s64 NanoSecondsPerSecond = TimeSpan::FromSeconds(1).GetNanoSeconds();
 
             static constexpr void DivNs(s64 &out, const s64 value) {
                 out = value / NanoSecondsPerSecond;

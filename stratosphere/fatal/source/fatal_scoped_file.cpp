@@ -40,7 +40,7 @@ namespace ams::fatal::srv {
         {
             std::va_list vl;
             va_start(vl, fmt);
-            std::vsnprintf(g_format_buffer, sizeof(g_format_buffer), fmt, vl);
+            util::VSNPrintf(g_format_buffer, sizeof(g_format_buffer), fmt, vl);
             va_end(vl);
         }
 
@@ -70,7 +70,7 @@ namespace ams::fatal::srv {
             {
                 char hex[MaximumLineLength * 2 + 2] = {};
                 for (size_t i = 0; i < cur_size; i++) {
-                    std::snprintf(hex + i * 2, 3, "%02X", data_u8[data_ofs++]);
+                    util::SNPrintf(hex + i * 2, 3, "%02X", data_u8[data_ofs++]);
                 }
                 hex[cur_size * 2 + 0] = '\n';
                 hex[cur_size * 2 + 1] = '\x00';

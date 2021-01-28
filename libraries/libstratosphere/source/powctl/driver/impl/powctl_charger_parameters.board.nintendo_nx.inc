@@ -51,7 +51,7 @@ constexpr inline const ChargeParametersRule ChargeParametersRulesForBatteryVersi
     { BatteryTemperatureLevel::TooHigh, 4080,  Max,  Min,  Max,  Min,  Max, AcceptablePowerStates,                  util::size(AcceptablePowerStates),                  false, false, 4320, 1664,    0,    0 },
 };
 
-constexpr inline const ChargeParametersRule ChargeParametersRulesForBatteryVersion0ForFive[] = {
+constexpr inline const ChargeParametersRule ChargeParametersRulesForBatteryVersion0ForAula[] = {
     { BatteryTemperatureLevel::TooLow,   Min,  Max,  Min,  Max,  Min,  Max, AcceptablePowerStates,                  util::size(AcceptablePowerStates),                  false, false, 4208,  768,    0,    0 },
     { BatteryTemperatureLevel::Low,      Min,  Max,  Min,  Max,  Min,  Max, AcceptablePowerStates,                  util::size(AcceptablePowerStates),                  false, true,  4208,  768,    0,    0 },
     { BatteryTemperatureLevel::Medium,   Min,  Max,  Min, 4001, 2049,  Max, AcceptablePowerStatesForNotAwakeCharge, util::size(AcceptablePowerStatesForNotAwakeCharge), true,  true,  4000, 3072,   40,  112 },
@@ -74,6 +74,6 @@ constexpr inline const ChargeParameters ChargeParametersForBatteryVersion2 = {
      1, 19, 48, 59, 1664, 4320, UnknownXTableForBatteryVersion2, util::size(UnknownXTableForBatteryVersion2),  95.0, 100.4,    ChargeParametersRulesForBatteryVersion2, util::size(ChargeParametersRulesForBatteryVersion2)
 };
 
-constexpr inline const ChargeParameters ChargeParametersForBatteryVersion0ForFive = {
-     4, 17, 51, 60,  512, 4208,                         nullptr,                                           0,  95.0,  99.0, ChargeParametersRulesForBatteryVersion0ForFive, util::size(ChargeParametersRulesForBatteryVersion0ForFive)
+constexpr inline const ChargeParameters ChargeParametersForBatteryVersion0ForAula = {
+     4, 17, 51, 60,  512, 4208,                         nullptr,                                           0,  95.0,  99.0, ChargeParametersRulesForBatteryVersion0ForAula, util::size(ChargeParametersRulesForBatteryVersion0ForAula)
 };

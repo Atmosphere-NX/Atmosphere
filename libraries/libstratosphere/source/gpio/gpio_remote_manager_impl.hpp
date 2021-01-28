@@ -26,20 +26,14 @@ namespace ams::gpio {
             ~RemoteManagerImpl() { /* ... */ }
         public:
             /* Actual commands. */
-            Result OpenSessionForDev(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
+            Result OpenSessionForDev(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, s32 pad_descriptor) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
 
-            Result OpenSession(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
-                ::GpioPadSession p;
-                R_TRY(::gpioOpenSession(std::addressof(p), static_cast<::GpioPadName>(static_cast<u32>(pad_name))));
+            Result OpenSession(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name);
 
-                out.SetValue(ams::sf::MakeShared<gpio::sf::IPadSession, RemotePadSessionImpl>(p));
-                return ResultSuccess();
-            }
-
-            Result OpenSessionForTest(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
+            Result OpenSessionForTest(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, gpio::GpioPadName pad_name) {
                 /* TODO: libnx bindings */
                 AMS_ABORT();
             }
@@ -63,13 +57,7 @@ namespace ams::gpio {
                 AMS_ABORT();
             }
 
-            Result OpenSession2(ams::sf::Out<std::shared_ptr<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode) {
-                ::GpioPadSession p;
-                R_TRY(::gpioOpenSession2(std::addressof(p), device_code.GetInternalValue(), access_mode));
-
-                out.SetValue(ams::sf::MakeShared<gpio::sf::IPadSession, RemotePadSessionImpl>(p));
-                return ResultSuccess();
-            }
+            Result OpenSession2(ams::sf::Out<ams::sf::SharedPointer<gpio::sf::IPadSession>> out, DeviceCode device_code, ddsf::AccessMode access_mode);
 
             Result IsWakeEventActive2(ams::sf::Out<bool> out, DeviceCode device_code) {
                 return ::gpioIsWakeEventActive2(out.GetPointer(), device_code.GetInternalValue());

@@ -176,7 +176,6 @@ extern "C" {
 
     /* Redefine C++ exception handlers. Requires wrap linker flag. */
     #define WRAP_ABORT_FUNC(func) void NORETURN __wrap_##func(void) { abort(); __builtin_unreachable(); }
-    WRAP_ABORT_FUNC(__cxa_pure_virtual)
     WRAP_ABORT_FUNC(__cxa_throw)
     WRAP_ABORT_FUNC(__cxa_rethrow)
     WRAP_ABORT_FUNC(__cxa_allocate_exception)
@@ -199,9 +198,6 @@ extern "C" {
 
 /* Custom abort handler, so that std::abort will trigger these. */
 void abort() {
-    static ams::os::Mutex abort_lock(true);
-    std::scoped_lock lk(abort_lock);
-
     ams::AbortImpl();
     __builtin_unreachable();
 }
