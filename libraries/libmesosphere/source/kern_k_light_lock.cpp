@@ -43,7 +43,6 @@ namespace ams::kern {
 
             if (owner_thread->IsSuspended()) {
                 owner_thread->ContinueIfHasKernelWaiters();
-                KScheduler::SetSchedulerUpdateNeeded();
             }
         }
 
@@ -53,6 +52,7 @@ namespace ams::kern {
             KThread *owner_thread = cur_thread->GetLockOwner();
             if (AMS_UNLIKELY(owner_thread)) {
                 owner_thread->RemoveWaiter(cur_thread);
+                KScheduler::SetSchedulerUpdateNeeded();
             }
         }
     }

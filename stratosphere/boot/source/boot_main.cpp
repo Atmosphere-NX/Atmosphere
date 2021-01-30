@@ -63,12 +63,6 @@ namespace ams {
         boot::RebootForFatalError(ctx);
     }
 
-    namespace result {
-
-        bool CallFatalOnResultAssertion = false;
-
-    }
-
 }
 
 using namespace ams;
