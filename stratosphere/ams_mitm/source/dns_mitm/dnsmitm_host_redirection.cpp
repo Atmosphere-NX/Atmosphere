@@ -23,10 +23,53 @@ namespace ams::mitm::socket::resolver {
 
     namespace {
 
+        /* https://github.com/clibs/wildcardcmp */
+        constexpr int wildcardcmp(const char *pattern, const char *string) {
+            const char *w = nullptr; /* last `*` */
+            const char *s = nullptr; /* last checked char */
+
+            /* malformed */
+            if (!pattern || !string) return 0;
+
+            /* loop 1 char at a time */
+            while (1) {
+                if (!*string) {
+                    if (!*pattern) return 1;
+                    if ('*' == *pattern) return 1;
+                    if (!*s) return 0;
+                    string = s++;
+                    pattern = w;
+                    continue;
+                } else {
+                    if (*pattern != *string) {
+                        if ('*' == *pattern) {
+                            w = ++pattern;
+                            s = string;
+                            /* "*" -> "foobar" */
+                            if (*pattern) continue;
+                            return 1;
+                        } else if (w) {
+                            string++;
+                            /* "*ooba*" -> "foobar" */
+                            continue;
+                        }
+                        return 0;
+                    }
+                }
+
+                string++;
+                pattern++;
+            }
+
+            return 1;
+        }
+
         constexpr const char DefaultHostsFile[] =
             "# Nintendo telemetry servers\n"
-            "127.0.0.1 receive-lp1.dg.srv.nintendo.net\n"
-            "127.0.0.1 receive-lp1.er.srv.nintendo.net\n";
+            "127.0.0.1 receive-*.*.srv.nintendo.net\n";
+
+        static_assert(wildcardcmp("receive-*.*.srv.nintendo.net", "receive-lp1.dg.srv.nintendo.net") == 1);
+        static_assert(wildcardcmp("receive-*.*.srv.nintendo.net", "receive-lp1.er.srv.nintendo.net") == 1);
 
         constinit os::SdkMutex g_redirection_lock;
         std::unordered_map<std::string, ams::socket::InAddrT> g_redirection_map;
@@ -305,7 +348,7 @@ namespace ams::mitm::socket::resolver {
         std::scoped_lock lk(g_redirection_lock);
 
         for (const auto &[host, address] : g_redirection_map) {
-            if (std::strcmp(host.c_str(), hostname) == 0) {
+            if (wildcardcmp(host.c_str(), hostname) == 0) {
                 *out = address;
                 return true;
             }
