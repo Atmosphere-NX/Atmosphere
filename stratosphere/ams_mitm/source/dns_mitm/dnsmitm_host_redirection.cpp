@@ -199,7 +199,7 @@ namespace ams::mitm::socket::resolver {
             Log(log_file, "Selecting hosts file...\n");
             const bool is_emummc = emummc::IsActive();
             const u32 emummc_id  = emummc::GetActiveId();
-            util::SNPrintf(g_specific_emummc_hosts_path, sizeof(g_specific_emummc_hosts_path), "/hosts/emummc_%04x", emummc_id);
+            util::SNPrintf(g_specific_emummc_hosts_path, sizeof(g_specific_emummc_hosts_path), "/hosts/emummc_%04x.txt", emummc_id);
 
             if (is_emummc) {
                 if (mitm::fs::HasAtmosphereSdFile(g_specific_emummc_hosts_path)) {
@@ -207,18 +207,18 @@ namespace ams::mitm::socket::resolver {
                 }
                 Log(log_file, "Skipping %s because it does not exist...\n", g_specific_emummc_hosts_path);
 
-                if (mitm::fs::HasAtmosphereSdFile("/hosts/emummc")) {
-                    return "/hosts/emummc";
+                if (mitm::fs::HasAtmosphereSdFile("/hosts/emummc.txt")) {
+                    return "/hosts/emummc.txt";
                 }
-                Log(log_file, "Skipping %s because it does not exist...\n", "/hosts/emummc");
+                Log(log_file, "Skipping %s because it does not exist...\n", "/hosts/emummc.txt");
             } else {
-                if (mitm::fs::HasAtmosphereSdFile("/hosts/sysmmc")) {
-                    return "/hosts/sysmmc";
+                if (mitm::fs::HasAtmosphereSdFile("/hosts/sysmmc.txt")) {
+                    return "/hosts/sysmmc.txt";
                 }
-                Log(log_file, "Skipping %s because it does not exist...\n", "/hosts/sysmmc");
+                Log(log_file, "Skipping %s because it does not exist...\n", "/hosts/sysmmc.txt");
             }
 
-            return "/hosts/default";
+            return "/hosts/default.txt";
         }
 
     }
@@ -240,14 +240,14 @@ namespace ams::mitm::socket::resolver {
         Log(log_file, "DNS Mitm:\n");
 
         /* If a default hosts file doesn't exist on the sd card, create one. */
-        if (!mitm::fs::HasAtmosphereSdFile("/hosts/default")) {
-            Log(log_file, "Creating /hosts/default because it does not exist.\n");
+        if (!mitm::fs::HasAtmosphereSdFile("/hosts/default.txt")) {
+            Log(log_file, "Creating /hosts/default.txt because it does not exist.\n");
 
             mitm::fs::CreateAtmosphereSdDirectory("/hosts");
-            R_ABORT_UNLESS(mitm::fs::CreateAtmosphereSdFile("/hosts/default", sizeof(DefaultHostsFile) - 1, ams::fs::CreateOption_None));
+            R_ABORT_UNLESS(mitm::fs::CreateAtmosphereSdFile("/hosts/default.txt", sizeof(DefaultHostsFile) - 1, ams::fs::CreateOption_None));
 
             ::FsFile default_file;
-            R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(default_file), "/hosts/default", ams::fs::OpenMode_ReadWrite));
+            R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(default_file), "/hosts/default.txt", ams::fs::OpenMode_ReadWrite));
             R_ABORT_UNLESS(::fsFileWrite(std::addressof(default_file), 0, DefaultHostsFile, sizeof(DefaultHostsFile) - 1, ::FsWriteOption_Flush));
             ::fsFileClose(std::addressof(default_file));
         }
