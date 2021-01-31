@@ -13,9 +13,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stratosphere/socket/socket_types.hpp>
-#include <stratosphere/socket/socket_api.hpp>
+#include <stratosphere.hpp>
+#include "impl/socket_api.hpp"
+
+namespace ams::socket {
+
+    u32 InetHtonl(u32 host) {
+        return impl::InetHtonl(host);
+    }
+
+    u16 InetHtons(u16 host) {
+        return impl::InetHtons(host);
+    }
+
+    u32 InetNtohl(u32 net) {
+        return impl::InetNtohl(net);
+    }
+
+    u16 InetNtohs(u16 net) {
+        return impl::InetNtohs(net);
+    }
+
+}

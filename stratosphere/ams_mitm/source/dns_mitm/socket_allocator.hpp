@@ -14,8 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stratosphere/socket/socket_types.hpp>
-#include <stratosphere/socket/socket_api.hpp>
+#include <stratosphere.hpp>
+
+namespace ams::socket::impl {
+
+    void *Alloc(size_t size);
+    void *Calloc(size_t num, size_t size);
+    void Free(void *ptr);
+
+}

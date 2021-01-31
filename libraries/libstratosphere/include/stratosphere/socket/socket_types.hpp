@@ -27,7 +27,7 @@ namespace ams::socket {
     constexpr inline unsigned int FdSetSize = 0x400;
 
     template<u32 A, u32 B, u32 C, u32 D>
-    constexpr inline InAddrT EncodeInAddr = (A << 24) | (B << 16) | (C << 8) | (D << 0);
+    constexpr inline InAddrT EncodeInAddr = util::ConvertToBigEndian(InAddrT{(A << 24) | (B << 16) | (C << 8) | (D << 0)});
 
     constexpr inline InAddrT InAddr_Any       = EncodeInAddr<  0,   0,   0,   0>;
     constexpr inline InAddrT InAddr_Broadcast = EncodeInAddr<255, 255, 255, 255>;
@@ -60,6 +60,10 @@ namespace ams::socket {
         Family h_addrtype;
         int h_length;
         char **h_addr_list;
+    };
+
+    struct InAddr {
+        InAddrT s_addr;
     };
 
 }
