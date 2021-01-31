@@ -47,7 +47,7 @@ namespace ams::impl {
         u64 pc;
         u64 module_base;
         u32 pstate;
-        u64 afsr0;
+        u32 afsr0;
         u64 afsr1;
         u32 esr;
         u64 far;
