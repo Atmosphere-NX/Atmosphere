@@ -157,6 +157,7 @@ namespace ams::mitm::socket::resolver {
                             current_hostname[work] = '\x00';
 
                             g_redirection_map[static_cast<const char *>(current_hostname)] = current_address;
+                            work = 0;
 
                             if (c == '\n') {
                                 state = State::BeginLine;
