@@ -348,7 +348,7 @@ namespace ams::mitm::socket::resolver {
         std::scoped_lock lk(g_redirection_lock);
 
         for (const auto &[host, address] : g_redirection_map) {
-            if (wildcardcmp(host.c_str(), hostname) == 0) {
+            if (wildcardcmp(host.c_str(), hostname)) {
                 *out = address;
                 return true;
             }
