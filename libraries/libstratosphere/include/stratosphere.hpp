@@ -74,6 +74,7 @@
 #include <stratosphere/settings.hpp>
 #include <stratosphere/sf.hpp>
 #include <stratosphere/sm.hpp>
+#include <stratosphere/socket.hpp>
 #include <stratosphere/spl.hpp>
 #include <stratosphere/time.hpp>
 #include <stratosphere/updater.hpp>

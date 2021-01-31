@@ -14,8 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stratosphere/socket/socket_types.hpp>
-#include <stratosphere/socket/socket_api.hpp>
+#include <stratosphere.hpp>
+
+namespace ams::mitm::socket::resolver {
+
+    bool GetRedirectedHostByName(ams::socket::InAddrT *out, const char *hostname);
+
+}
