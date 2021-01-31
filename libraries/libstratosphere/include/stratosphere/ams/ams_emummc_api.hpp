@@ -22,6 +22,9 @@ namespace ams::emummc {
     /* Get whether emummc is active. */
     bool IsActive();
 
+    /* Get the active emummc id. */
+    u32 GetActiveId();
+
     /* Get Nintendo redirection path. */
     const char *GetNintendoDirPath();
 

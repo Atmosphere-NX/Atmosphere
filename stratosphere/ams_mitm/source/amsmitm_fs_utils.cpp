@@ -47,6 +47,36 @@ namespace ams::mitm::fs {
         return fsFsCreateFile(&g_sd_filesystem, path, size, option);
     }
 
+    Result DeleteSdFile(const char *path) {
+        R_TRY(EnsureSdInitialized());
+        return fsFsDeleteFile(&g_sd_filesystem, path);
+    }
+
+    bool HasSdFile(const char *path) {
+        if (R_FAILED(EnsureSdInitialized())) {
+            return false;
+        }
+
+        FsDirEntryType type;
+        if (R_FAILED(fsFsGetEntryType(&g_sd_filesystem, path, &type))) {
+            return false;
+        }
+
+        return type == FsDirEntryType_File;
+    }
+
+    bool HasAtmosphereSdFile(const char *path) {
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
+        FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);
+        return HasSdFile(fixed_path);
+    }
+
+    Result DeleteAtmosphereSdFile(const char *path) {
+        char fixed_path[ams::fs::EntryNameLengthMax + 1];
+        FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);
+        return DeleteSdFile(fixed_path);
+    }
+
     Result CreateAtmosphereSdFile(const char *path, s64 size, s32 option) {
         char fixed_path[ams::fs::EntryNameLengthMax + 1];
         FormatAtmosphereSdPath(fixed_path, sizeof(fixed_path), path);

@@ -16,8 +16,9 @@
 #include <stratosphere.hpp>
 #include "../amsmitm_initialization.hpp"
 #include "dnsmitm_module.hpp"
-#include "dnsmitm_resolver_impl.hpp"
 #include "dnsmitm_debug.hpp"
+#include "dnsmitm_resolver_impl.hpp"
+#include "dnsmitm_host_redirection.hpp"
 
 namespace ams::mitm::socket::resolver {
 
@@ -93,14 +94,38 @@ namespace ams::mitm::socket::resolver {
             }
         }
 
+        bool ShouldMitmDns() {
+            u8 en = 0;
+            if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "enable_dns_mitm") == sizeof(en)) {
+                return (en != 0);
+            }
+            return false;
+        }
+
+        bool ShouldAddDefaultResolverRedirections() {
+            u8 en = 0;
+            if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "add_defaults_to_dns_hosts") == sizeof(en)) {
+                return (en != 0);
+            }
+            return false;
+        }
+
     }
 
     void MitmModule::ThreadFunction(void *arg) {
         /* Wait until initialization is complete. */
         mitm::WaitInitialized();
 
+        /* If we shouldn't mitm dns, don't do anything at all. */
+        if (!ShouldMitmDns()) {
+            return;
+        }
+
         /* Initialize debug. */
         resolver::InitializeDebug();
+
+        /* Initialize redirection map. */
+        resolver::InitializeResolverRedirections(ShouldAddDefaultResolverRedirections());
 
         /* Create mitm servers. */
         R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<ResolverImpl>(PortIndex_Mitm, DnsMitmServiceName)));

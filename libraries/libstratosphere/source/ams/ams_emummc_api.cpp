@@ -57,10 +57,10 @@ namespace ams::emummc {
         };
 
         /* Globals. */
-        os::Mutex g_lock(false);
-        ExosphereConfig g_exo_config;
-        bool g_is_emummc;
-        bool g_has_cached;
+        constinit os::SdkMutex g_lock;
+        constinit ExosphereConfig g_exo_config;
+        constinit bool g_is_emummc;
+        constinit bool g_has_cached;
 
         /* Helpers. */
         void CacheValues() {
@@ -108,6 +108,12 @@ namespace ams::emummc {
     bool IsActive() {
         CacheValues();
         return g_is_emummc;
+    }
+
+    /* Get the active emummc id. */
+    u32 GetActiveId() {
+        CacheValues();
+        return g_exo_config.base_cfg.id;
     }
 
     /* Get Nintendo redirection path. */
