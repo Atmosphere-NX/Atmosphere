@@ -356,7 +356,7 @@ namespace ams::settings::fwdbg {
             /* Controls whether dns.mitm uses the default redirections in addition to */
             /* whatever is specified in the user's hosts file. */
             /* 0 = Disabled (use hosts file contents), 1 = Enabled (use defaults and hosts file contents) */
-            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "add_defaults_to_dns_hosts", "u8!0x0"));
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "add_defaults_to_dns_hosts", "u8!0x1"));
 
             /* Hbloader custom settings. */
 
