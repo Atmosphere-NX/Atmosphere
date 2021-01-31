@@ -22,6 +22,7 @@ namespace ams::mitm::fs {
     void OpenGlobalSdCardFileSystem();
 
     /* Utilities. */
+    Result DeleteAtmosphereSdFile(const char *path);
     Result CreateSdFile(const char *path, s64 size, s32 option);
     Result CreateAtmosphereSdFile(const char *path, s64 size, s32 option);
     Result OpenSdFile(FsFile *out, const char *path, u32 mode);
@@ -29,6 +30,9 @@ namespace ams::mitm::fs {
     Result OpenAtmosphereSdFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode);
     Result OpenAtmosphereSdRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode);
     Result OpenAtmosphereRomfsFile(FsFile *out, ncm::ProgramId program_id, const char *path, u32 mode, FsFileSystem *fs);
+
+    bool HasSdFile(const char *path);
+    bool HasAtmosphereSdFile(const char *path);
 
     Result CreateSdDirectory(const char *path);
     Result CreateAtmosphereSdDirectory(const char *path);

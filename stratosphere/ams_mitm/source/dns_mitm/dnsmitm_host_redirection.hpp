@@ -18,6 +18,8 @@
 
 namespace ams::mitm::socket::resolver {
 
+    void InitializeResolverRedirections(bool add_defaults);
+
     bool GetRedirectedHostByName(ams::socket::InAddrT *out, const char *hostname);
 
 }
