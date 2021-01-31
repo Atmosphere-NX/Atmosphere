@@ -314,12 +314,12 @@ namespace ams::kern::board::nintendo::nx {
             g_secure_applet_memory_used = false;
         }
 
-        u64 GetVersionIdentifier() {
-            u64 value = kern::GetTargetFirmware();
-            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO) << 32;
-            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR) << 40;
-            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR) << 48;
-            value |= static_cast<u64>('M') << 56;
+        u32 GetVersionIdentifier() {
+            u32 value = 0;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MICRO) <<  0;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MINOR) <<  8;
+            value |= static_cast<u64>(ATMOSPHERE_RELEASE_VERSION_MAJOR) << 16;
+            value |= static_cast<u64>('M') << 24;
             return value;
         }
 
@@ -584,8 +584,8 @@ namespace ams::kern::board::nintendo::nx {
             f_ctx->module_base = KMemoryLayout::GetKernelCodeRegionExtents().GetAddress();
 
             /* Set afsr1. */
-            f_ctx->afsr0 = 0;
-            f_ctx->afsr1 = GetVersionIdentifier();
+            f_ctx->afsr0 = GetVersionIdentifier();
+            f_ctx->afsr1 = static_cast<u32>(kern::GetTargetFirmware());
 
             /* Set efsr/far. */
             f_ctx->far = cpu::GetFarEl1();
