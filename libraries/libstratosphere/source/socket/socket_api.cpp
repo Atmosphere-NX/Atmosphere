@@ -18,6 +18,14 @@
 
 namespace ams::socket {
 
+    Errno GetLastError() {
+        return impl::GetLastError();
+    }
+
+    void SetLastError(Errno err) {
+        return impl::SetLastError(err);
+    }
+
     u32 InetHtonl(u32 host) {
         return impl::InetHtonl(host);
     }

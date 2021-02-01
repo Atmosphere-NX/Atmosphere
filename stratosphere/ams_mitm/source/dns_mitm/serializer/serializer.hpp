@@ -20,12 +20,6 @@ namespace ams::mitm::socket::resolver::serializer {
 
     class DNSSerializer {
         public:
-            template<typename T>
-            static ssize_t ToBufferInternal(u8 * const dst, size_t dst_size, const T &in);
-
-            template<typename T>
-            static ssize_t FromBufferInternal(T &out, const u8 *src, size_t src_size);
-
             static ssize_t CheckToBufferArguments(const u8 *dst, size_t dst_size, size_t required, int error_id);
 
             static u32 InternalHton(const u32 &v);
@@ -72,5 +66,8 @@ namespace ams::mitm::socket::resolver::serializer {
 
     void FreeHostent(ams::socket::HostEnt &ent);
     void FreeHostent(struct hostent &ent);
+
+    void FreeAddrInfo(ams::socket::AddrInfo &addr_info);
+    void FreeAddrInfo(struct addrinfo &addr_info);
 
 }

@@ -18,7 +18,7 @@
 
 namespace ams::mitm::socket::resolver {
 
-    void InitializeDebug();
+    void InitializeDebug(bool enable_log);
 
     void LogDebug(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 
