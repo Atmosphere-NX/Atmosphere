@@ -57,7 +57,7 @@ namespace ams::mitm::socket::resolver {
         switch (ai.ai_family) {
             case AF_UNSPEC: ai.ai_family = AF_INET; break;
             case AF_INET:   ai.ai_family = AF_INET; break;
-            case AF_INET6:  AMS_ABORT_UNLESS("Redirected INET6 not supported"); break;
+            case AF_INET6:  AMS_ABORT("Redirected INET6 not supported"); break;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
 
