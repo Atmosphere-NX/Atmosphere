@@ -171,7 +171,7 @@ namespace ams::mitm::socket::resolver {
         LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
 
         const bool use_hint = serialized_hint.GetPointer() != nullptr;
-        struct addrinfo hint;
+        struct addrinfo hint = {};
         if (use_hint) {
             AMS_ABORT_UNLESS(serializer::DNSSerializer::FromBuffer(hint, serialized_hint.GetPointer(), serialized_hint.GetSize()) >= 0);
         }
