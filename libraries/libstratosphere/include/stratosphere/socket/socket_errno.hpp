@@ -15,17 +15,34 @@
  */
 #pragma once
 #include <vapours.hpp>
-#include <stratosphere/socket/socket_types.hpp>
-#include <stratosphere/socket/socket_errno.hpp>
 
 namespace ams::socket {
 
-    Errno GetLastError();
-    void SetLastError(Errno err);
+    enum class Errno : u32 {
+        ESuccess =   0,
+        /* ... */
+        ENoSpc   =  28,
+        /* ... */
+    };
 
-    u32 InetHtonl(u32 host);
-    u16 InetHtons(u16 host);
-    u32 InetNtohl(u32 net);
-    u16 InetNtohs(u16 net);
+    enum class HErrno : s32 {
+        Netdb_Internal = -1,
+        Netdb_Success  = 0,
+        Host_Not_Found = 1,
+        Try_Again      = 2,
+        No_Recovery    = 3,
+        No_Data        = 4,
+
+        No_Address     = No_Data,
+    };
+
+    enum class AiErrno : u32 {
+        EAi_Success = 0,
+        /* ... */
+    };
+
+    constexpr inline bool operator!(Errno e)   { return e == Errno::ESuccess; }
+    constexpr inline bool operator!(HErrno e)  { return e == HErrno::Netdb_Success; }
+    constexpr inline bool operator!(AiErrno e) { return e == AiErrno::EAi_Success; }
 
 }

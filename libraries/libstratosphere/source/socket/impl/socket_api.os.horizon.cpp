@@ -38,6 +38,16 @@ namespace ams::socket::impl {
         return ams::Free(ptr);
     }
 
+    Errno GetLastError() {
+        /* TODO: check that client library is initialized. */
+        return static_cast<Errno>(errno);
+    }
+
+    void SetLastError(Errno err) {
+        /* TODO: check that client library is initialized. */
+        errno = static_cast<int>(err);
+    }
+
     u32 InetHtonl(u32 host) {
         if constexpr (util::IsBigEndian()) {
             return host;

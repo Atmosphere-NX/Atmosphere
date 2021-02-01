@@ -34,6 +34,31 @@ namespace ams::socket {
     constexpr inline InAddrT InAddr_None      = EncodeInAddr<255, 255, 255, 255>;
     constexpr inline InAddrT InAddr_Loopback  = EncodeInAddr<127,   0,   0,   1>;
 
+    enum class Protocol : s32 {
+        IpProto_Ip      = 0,
+        IpProto_Icmp    = 1,
+
+        IpProto_Tcp     = 6,
+
+        IpProto_Udp     = 17,
+
+        IpProto_UdpLite = 136,
+
+        IpProto_Raw     = 255,
+
+        IpProto_Max     = 256,
+    };
+
+    enum class Type : u32 {
+        Sock_Default   = 0,
+        Sock_Stream    = 1,
+        Sock_Dgram     = 2,
+        Sock_Raw       = 3,
+        Sock_SeqPacket = 5,
+
+        Sock_NonBlock  = 0x20000000,
+    };
+
     enum class Family : u8 {
         Af_Unspec = 0,
         Pf_Unspec = Af_Unspec,
@@ -65,5 +90,55 @@ namespace ams::socket {
     struct InAddr {
         InAddrT s_addr;
     };
+
+    enum class AddrInfoFlag : u32 {
+        Ai_None        = (0 <<  0),
+        Ai_Passive     = (1 <<  0),
+        Ai_CanonName   = (1 <<  1),
+        Ai_NumericHost = (1 <<  2),
+        Ai_NumericServ = (1 <<  3),
+
+        Ai_AddrConfig = (1 << 10),
+    };
+
+    struct SockAddr {
+        u8 sa_len;
+        Family sa_family;
+        char sa_data[14];
+    };
+
+    struct SockAddrIn {
+        u8 sin_len;
+        Family sin_family;
+        InPortT sin_port;
+        InAddr sin_addr;
+        u8 sin_zero[8];
+    };
+    static_assert(sizeof(SockAddr) == sizeof(SockAddrIn));
+
+    struct AddrInfo {
+        AddrInfoFlag ai_flags;
+        Family ai_family;
+        Type ai_socktype;
+        Protocol ai_protocol;
+        SockLenT ai_addrlen;
+        SockAddr *ai_addr;
+        char *ai_canonname;
+        AddrInfo *ai_next;
+    };
+
+    #define AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(__ENUM__) \
+        constexpr inline __ENUM__ operator | (__ENUM__  lhs, __ENUM__ rhs) { return static_cast<__ENUM__>(static_cast<std::underlying_type_t<__ENUM__>>(lhs) | static_cast<std::underlying_type_t<__ENUM__>>(rhs)); } \
+        constexpr inline __ENUM__ operator |=(__ENUM__ &lhs, __ENUM__ rhs) { return lhs = lhs | rhs; }                                                                                                                \
+        constexpr inline __ENUM__ operator & (__ENUM__  lhs, __ENUM__ rhs) { return static_cast<__ENUM__>(static_cast<std::underlying_type_t<__ENUM__>>(lhs) & static_cast<std::underlying_type_t<__ENUM__>>(rhs)); } \
+        constexpr inline __ENUM__ operator &=(__ENUM__ &lhs, __ENUM__ rhs) { return lhs = lhs & rhs; }                                                                                                                \
+        constexpr inline __ENUM__ operator ^ (__ENUM__  lhs, __ENUM__ rhs) { return static_cast<__ENUM__>(static_cast<std::underlying_type_t<__ENUM__>>(lhs) ^ static_cast<std::underlying_type_t<__ENUM__>>(rhs)); } \
+        constexpr inline __ENUM__ operator ^=(__ENUM__ &lhs, __ENUM__ rhs) { return lhs = lhs ^ rhs; }                                                                                                                \
+        constexpr inline __ENUM__ operator ~ (__ENUM__ e)                  { return static_cast<__ENUM__>(~static_cast<std::underlying_type_t<__ENUM__>>(e)); }
+
+    AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(Type)
+    AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS(AddrInfoFlag)
+
+    #undef AMS_SOCKET_IMPL_DEFINE_ENUM_OPERATORS
 
 }

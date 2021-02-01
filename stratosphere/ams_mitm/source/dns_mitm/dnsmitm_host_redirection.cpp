@@ -264,9 +264,20 @@ namespace ams::mitm::socket::resolver {
             return "/hosts/default.txt";
         }
 
+        bool ShouldAddDefaultResolverRedirections() {
+            u8 en = 0;
+            if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "add_defaults_to_dns_hosts") == sizeof(en)) {
+                return (en != 0);
+            }
+            return false;
+        }
+
     }
 
-    void InitializeResolverRedirections(bool add_defaults) {
+    void InitializeResolverRedirections() {
+        /* Get whether we should add defaults. */
+        const bool add_defaults = ShouldAddDefaultResolverRedirections();
+
         /* Acquire exclusive access to the map. */
         std::scoped_lock lk(g_redirection_lock);
 

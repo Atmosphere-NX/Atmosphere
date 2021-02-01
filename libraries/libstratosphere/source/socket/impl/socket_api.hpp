@@ -17,6 +17,9 @@
 
 namespace ams::socket::impl {
 
+    Errno GetLastError();
+    void SetLastError(Errno err);
+
     u32 InetHtonl(u32 host);
     u16 InetHtons(u16 host);
     u32 InetNtohl(u32 net);

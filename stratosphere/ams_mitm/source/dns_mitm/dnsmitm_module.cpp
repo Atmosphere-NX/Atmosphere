@@ -102,9 +102,9 @@ namespace ams::mitm::socket::resolver {
             return false;
         }
 
-        bool ShouldAddDefaultResolverRedirections() {
+        bool ShouldEnableDebugLog() {
             u8 en = 0;
-            if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "add_defaults_to_dns_hosts") == sizeof(en)) {
+            if (settings::fwdbg::GetSettingsItemValue(std::addressof(en), sizeof(en), "atmosphere", "enable_dns_mitm_debug_log") == sizeof(en)) {
                 return (en != 0);
             }
             return false;
@@ -122,10 +122,10 @@ namespace ams::mitm::socket::resolver {
         }
 
         /* Initialize debug. */
-        resolver::InitializeDebug();
+        resolver::InitializeDebug(ShouldEnableDebugLog());
 
         /* Initialize redirection map. */
-        resolver::InitializeResolverRedirections(ShouldAddDefaultResolverRedirections());
+        resolver::InitializeResolverRedirections();
 
         /* Create mitm servers. */
         R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<ResolverImpl>(PortIndex_Mitm, DnsMitmServiceName)));

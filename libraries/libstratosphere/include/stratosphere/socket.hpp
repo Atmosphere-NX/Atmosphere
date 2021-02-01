@@ -18,4 +18,5 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stratosphere/socket/socket_types.hpp>
+#include <stratosphere/socket/socket_errno.hpp>
 #include <stratosphere/socket/socket_api.hpp>
