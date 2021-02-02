@@ -25,6 +25,12 @@ set_mitm enables intercepting requests to the system settings service. It curren
 + `ns` system module and games (to allow for overriding game locales)
 + All firmware debug settings requests (to allow modification of system settings not directly exposed to the user)
 
+## dns_mitm
+
+dns_mitm enables intercepting requests to dns resolution services, to enable redirecting requests for specified hostnames.
+
+For documentation, see [here](../../features/dns_mitm.md).
+
 ### Firmware Version
 set_mitm intercepts the `GetFirmwareVersion` command, if the requester is `qlaunch` or `maintenance`.
 It modifies the `display_version` field of the returned system version, causing the version to display

@@ -39,11 +39,14 @@ namespace ams::mitm::socket::resolver {
             g_log_enabled = enable_log;
 
             if (g_log_enabled) {
+                /* Create the logs directory. */
+                mitm::fs::CreateAtmosphereSdDirectory("/logs");
+
                 /* Create the log file. */
-                mitm::fs::CreateAtmosphereSdFile("dns_log.txt", 0, ams::fs::CreateOption_None);
+                mitm::fs::CreateAtmosphereSdFile("/logs/dns_mitm_debug.log", 0, ams::fs::CreateOption_None);
 
                 /* Open the log file. */
-                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(g_log_file), "dns_log.txt", ams::fs::OpenMode_ReadWrite | ams::fs::OpenMode_AllowAppend));
+                R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(g_log_file), "/logs/dns_mitm_debug.log", ams::fs::OpenMode_ReadWrite | ams::fs::OpenMode_AllowAppend));
 
                 /* Get the current log offset. */
                 R_ABORT_UNLESS(::fsFileGetSize(std::addressof(g_log_file), std::addressof(g_log_ofs)));
