@@ -31,7 +31,7 @@ namespace ams::util {
     }
 
     template<typename T>
-    int Strncmp(const T *lhs, const T *rhs, int count) {
+    constexpr int Strncmp(const T *lhs, const T *rhs, int count) {
         AMS_ASSERT(lhs != nullptr);
         AMS_ASSERT(rhs != nullptr);
         AMS_ABORT_UNLESS(count >= 0);
@@ -50,7 +50,7 @@ namespace ams::util {
     }
 
     template<typename T>
-    int Strnicmp(const T *lhs, const T *rhs, int count) {
+    constexpr int Strnicmp(const T *lhs, const T *rhs, int count) {
         AMS_ASSERT(lhs != nullptr);
         AMS_ASSERT(rhs != nullptr);
         AMS_ABORT_UNLESS(count >= 0);
