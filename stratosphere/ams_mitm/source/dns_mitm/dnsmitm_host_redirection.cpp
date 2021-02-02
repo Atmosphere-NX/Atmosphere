@@ -297,9 +297,10 @@ namespace ams::mitm::socket::resolver {
 
         /* Open log file. */
         ::FsFile log_file;
-        mitm::fs::DeleteAtmosphereSdFile("/dns_mitm_startup.log");
-        R_ABORT_UNLESS(mitm::fs::CreateAtmosphereSdFile("/dns_mitm_startup.log", 0, ams::fs::CreateOption_None));
-        R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(log_file), "/dns_mitm_startup.log", ams::fs::OpenMode_ReadWrite | ams::fs::OpenMode_AllowAppend));
+        mitm::fs::DeleteAtmosphereSdFile("/logs/dns_mitm_startup.log");
+        mitm::fs::CreateAtmosphereSdDirectory("/logs");
+        R_ABORT_UNLESS(mitm::fs::CreateAtmosphereSdFile("/logs/dns_mitm_startup.log", 0, ams::fs::CreateOption_None));
+        R_ABORT_UNLESS(mitm::fs::OpenAtmosphereSdFile(std::addressof(log_file), "/logs/dns_mitm_startup.log", ams::fs::OpenMode_ReadWrite | ams::fs::OpenMode_AllowAppend));
         ON_SCOPE_EXIT { ::fsFileClose(std::addressof(log_file)); };
 
         Log(log_file, "DNS Mitm:\n");
