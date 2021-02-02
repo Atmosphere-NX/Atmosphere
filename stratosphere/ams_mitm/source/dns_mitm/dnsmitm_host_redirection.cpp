@@ -69,7 +69,21 @@ namespace ams::mitm::socket::resolver {
             "127.0.0.1 receive-%.dg.srv.nintendo.net receive-%.er.srv.nintendo.net\n";
 
         constinit os::SdkMutex g_redirection_lock;
-        std::unordered_map<std::string, ams::socket::InAddrT> g_redirection_map;
+        std::vector<std::pair<std::string, ams::socket::InAddrT>> g_redirection_list;
+
+        void RemoveRedirection(const char *hostname) {
+            for (auto it = g_redirection_list.begin(); it != g_redirection_list.end(); ++it) {
+                if (std::strcmp(it->first.c_str(), hostname) == 0) {
+                    g_redirection_list.erase(it);
+                    break;
+                }
+            }
+        }
+
+        void AddRedirection(const char *hostname, ams::socket::InAddrT addr) {
+            RemoveRedirection(hostname);
+            g_redirection_list.emplace(g_redirection_list.begin(), std::string(hostname), addr);
+        }
 
         constinit char g_specific_emummc_hosts_path[0x40] = {};
 
@@ -206,7 +220,7 @@ namespace ams::mitm::socket::resolver {
                             AMS_ABORT_UNLESS(work < sizeof(current_hostname));
                             current_hostname[work] = '\x00';
 
-                            g_redirection_map[static_cast<const char *>(current_hostname)] = current_address;
+                            AddRedirection(current_hostname, current_address);
                             work = 0;
 
                             if (c == '\n') {
@@ -229,7 +243,7 @@ namespace ams::mitm::socket::resolver {
                 AMS_ABORT_UNLESS(work < sizeof(current_hostname));
                 current_hostname[work] = '\x00';
 
-                g_redirection_map[static_cast<const char *>(current_hostname)] = current_address;
+                AddRedirection(current_hostname, current_address);
             }
         }
 
@@ -293,7 +307,7 @@ namespace ams::mitm::socket::resolver {
         std::scoped_lock lk(g_redirection_lock);
 
         /* Clear the redirections map. */
-        g_redirection_map.clear();
+        g_redirection_list.clear();
 
         /* Open log file. */
         ::FsFile log_file;
@@ -362,7 +376,7 @@ namespace ams::mitm::socket::resolver {
 
         /* Print the redirections. */
         Log(log_file, "Redirections:\n");
-        for (const auto &[host, address] : g_redirection_map) {
+        for (const auto &[host, address] : g_redirection_list) {
             Log(log_file, "    `%s` -> %u.%u.%u.%u\n", host.c_str(), (address >> 0) & 0xFF, (address >> 8) & 0xFF, (address >> 16) & 0xFF, (address >> 24) & 0xFF);
         }
     }
@@ -370,7 +384,7 @@ namespace ams::mitm::socket::resolver {
     bool GetRedirectedHostByName(ams::socket::InAddrT *out, const char *hostname) {
         std::scoped_lock lk(g_redirection_lock);
 
-        for (const auto &[host, address] : g_redirection_map) {
+        for (const auto &[host, address] : g_redirection_list) {
             if (wildcardcmp(host.c_str(), hostname)) {
                 *out = address;
                 return true;

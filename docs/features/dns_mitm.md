@@ -11,6 +11,8 @@ In particular, hosts files parsed by DNS.mitm have the following extensions to t
 + `*` is treated as a wildcard character, matching any collection of 0 or more characters wherever it occurs in a hostname.
 + `%` is treated as a stand-in for the value of `nsd!environment_identifier`. This is always `lp1`, on production devices.
 
+If multiple entries in a host file match a domain, the last-defined match is used.
+
 Please note that homebrew may trigger a hosts file re-parse by sending the extension IPC command 65000 ("AtmosphereReloadHostsFile") to a connected `sfdnsres` session.
 
 ### Hosts file selection
