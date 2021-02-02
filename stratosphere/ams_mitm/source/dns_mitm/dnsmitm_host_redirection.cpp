@@ -66,10 +66,7 @@ namespace ams::mitm::socket::resolver {
 
         constexpr const char DefaultHostsFile[] =
             "# Nintendo telemetry servers\n"
-            "127.0.0.1 receive-*.*.srv.nintendo.net\n";
-
-        static_assert(wildcardcmp("receive-*.*.srv.nintendo.net", "receive-lp1.dg.srv.nintendo.net") == 1);
-        static_assert(wildcardcmp("receive-*.*.srv.nintendo.net", "receive-lp1.er.srv.nintendo.net") == 1);
+            "127.0.0.1 receive-%.dg.srv.nintendo.net receive-%.er.srv.nintendo.net\n";
 
         constinit os::SdkMutex g_redirection_lock;
         std::unordered_map<std::string, ams::socket::InAddrT> g_redirection_map;
@@ -77,6 +74,11 @@ namespace ams::mitm::socket::resolver {
         constinit char g_specific_emummc_hosts_path[0x40] = {};
 
         void ParseHostsFile(const char *file_data) {
+            /* Get the environment identifier from settings. */
+            const auto env     = ams::nsd::impl::device::GetEnvironmentIdentifierFromSettings();
+            const auto env_len = std::strlen(env.value);
+
+            /* Parse the file. */
             enum class State {
                 IgnoredLine,
                 BeginLine,
@@ -189,8 +191,13 @@ namespace ams::mitm::socket::resolver {
                         if (c == '\n') {
                             state = State::BeginLine;
                         } else if (c != ' ' && c != '\r' && c != '\t') {
-                            current_hostname[0] = c;
-                            work = 1;
+                            if (c == '%') {
+                                std::memcpy(current_hostname, env.value, env_len);
+                                work = env_len;
+                            } else {
+                                current_hostname[0] = c;
+                                work = 1;
+                            }
                             state = State::HostName;
                         }
                         break;
@@ -207,6 +214,10 @@ namespace ams::mitm::socket::resolver {
                             } else {
                                 state = State::WhiteSpace;
                             }
+                        } else if (c == '%') {
+                            AMS_ABORT_UNLESS(work < sizeof(current_hostname) - env_len);
+                            std::memcpy(current_hostname + work, env.value, env_len);
+                            work += env_len;
                         } else {
                             AMS_ABORT_UNLESS(work < sizeof(current_hostname) - 1);
                             current_hostname[work++] = c;
