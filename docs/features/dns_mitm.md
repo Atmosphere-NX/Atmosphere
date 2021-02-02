@@ -8,7 +8,7 @@ By default, atmosphère redirects resolution requests for official telemetry ser
 DNS.mitm can be configured through the usage of a slightly-extended `hosts` file format, which is parsed only once on system startup.
 
 In particular, hosts files parsed by DNS.mitm have the following extensions to the usual format:
-+ `*` is treated as a wildcard character.
++ `*` is treated as a wildcard character, matching any collection of 0 or more characters wherever it occurs in a hostname.
 + `%` is treated as a stand-in for the value of `nsd!environment_identifier`. This is always `lp1`, on production devices.
 
 Please note that homebrew may trigger a hosts file re-parse by sending the extension IPC command 65000 ("AtmosphereReloadHostsFile") to a connected `sfdnsres` session.
