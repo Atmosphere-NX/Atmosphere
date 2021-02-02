@@ -15,7 +15,6 @@
  */
 #include <stratosphere.hpp>
 #include "uart_mitm_service.hpp"
-#include "../amsmitm_debug.hpp"
 #include "../amsmitm_fs_utils.hpp"
 
 /* TODO: This should really use async fs-writing, there's a slowdown with bluetooth communications with current fs-writing. */
@@ -358,13 +357,13 @@ namespace ams::mitm::uart {
         return rc;
     }
 
-    Result UartMitmService::CreatePortSession(sf::Out<std::shared_ptr<impl::IPortSession>> out) {
+    Result UartMitmService::CreatePortSession(sf::Out<sf::SharedPointer<impl::IPortSession>> out) {
         /* Open a port interface. */
         UartPortSession port;
         R_TRY(uartCreatePortSessionFwd(this->forward_service.get(), &port));
         const sf::cmif::DomainObjectId target_object_id{serviceGetObjectId(&port.s)};
 
-        out.SetValue(sf::MakeShared<impl::IPortSession, UartPortService>(this->client_info, std::make_unique<UartPortSession>(port)), target_object_id);
+        out.SetValue(sf::CreateSharedObjectEmplaced<impl::IPortSession, UartPortService>(this->client_info, std::make_unique<UartPortSession>(port)), target_object_id);
         return ResultSuccess();
     }
 

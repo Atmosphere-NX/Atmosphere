@@ -22,6 +22,11 @@ namespace ams::mitm::uart {
 
     namespace {
 
+        enum PortIndex {
+            PortIndex_Mitm,
+            PortIndex_Count,
+        };
+
         constexpr sm::ServiceName UartMitmServiceName = sm::ServiceName::Encode("uart");
 
         struct ServerOptions {
@@ -33,7 +38,25 @@ namespace ams::mitm::uart {
         constexpr size_t MaxServers = 1;
         constexpr size_t MaxSessions = 10;
 
-        sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> g_server_manager;
+        class ServerManager final : public sf::hipc::ServerManager<MaxServers, ServerOptions, MaxSessions> {
+            private:
+                virtual Result OnNeedsToAccept(int port_index, Server *server) override;
+        };
+
+        ServerManager g_server_manager;
+
+        Result ServerManager::OnNeedsToAccept(int port_index, Server *server) {
+            /* Acknowledge the mitm session. */
+            std::shared_ptr<::Service> fsrv;
+            sm::MitmProcessInfo client_info;
+            server->AcknowledgeMitmSession(std::addressof(fsrv), std::addressof(client_info));
+
+            switch (port_index) {
+                case PortIndex_Mitm:
+                    return this->AcceptMitmImpl(server, sf::CreateSharedObjectEmplaced<impl::IUartMitmInterface, UartMitmService>(decltype(fsrv)(fsrv), client_info), fsrv);
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+        }
 
         bool ShouldMitmUart() {
             u8 en = 0;
@@ -59,7 +82,7 @@ namespace ams::mitm::uart {
         }
 
         /* Create mitm servers. */
-        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<impl::IUartMitmInterface, UartMitmService>(UartMitmServiceName)));
+        R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<UartMitmService>(PortIndex_Mitm, UartMitmServiceName)));
 
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();

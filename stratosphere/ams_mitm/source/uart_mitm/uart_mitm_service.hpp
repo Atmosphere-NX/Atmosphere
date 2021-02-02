@@ -18,28 +18,24 @@
 
 #include "uart_shim.h"
 
+#define AMS_UART_IPORTSESSION_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, OpenPort,                 (sf::Out<bool> out, u32 port, u32 baud_rate, UartFlowControlMode flow_control_mode, u32 device_variation, bool is_invert_tx, bool is_invert_rx, bool is_invert_rts, bool is_invert_cts, sf::CopyHandle send_handle, sf::CopyHandle receive_handle, u64 send_buffer_length, u64 receive_buffer_length), (out, port, baud_rate, flow_control_mode, device_variation, is_invert_tx, is_invert_rx, is_invert_rts, is_invert_cts, send_handle, receive_handle, send_buffer_length, receive_buffer_length)) \
+    AMS_SF_METHOD_INFO(C, H, 1, Result, OpenPortForDev,           (sf::Out<bool> out, u32 port, u32 baud_rate, UartFlowControlMode flow_control_mode, u32 device_variation, bool is_invert_tx, bool is_invert_rx, bool is_invert_rts, bool is_invert_cts, sf::CopyHandle send_handle, sf::CopyHandle receive_handle, u64 send_buffer_length, u64 receive_buffer_length), (out, port, baud_rate, flow_control_mode, device_variation, is_invert_tx, is_invert_rx, is_invert_rts, is_invert_cts, send_handle, receive_handle, send_buffer_length, receive_buffer_length)) \
+    AMS_SF_METHOD_INFO(C, H, 2, Result, GetWritableLength,        (sf::Out<u64> out),                                                                                                                                                                                                                                                                                    (out))                                                                                                                                                                                         \
+    AMS_SF_METHOD_INFO(C, H, 3, Result, Send,                     (sf::Out<u64> out_size, const sf::InAutoSelectBuffer &data),                                                                                                                                                                                                                                           (out_size, data))                                                                                                                                                                              \
+    AMS_SF_METHOD_INFO(C, H, 4, Result, GetReadableLength,        (sf::Out<u64> out),                                                                                                                                                                                                                                                                                    (out))                                                                                                                                                                                         \
+    AMS_SF_METHOD_INFO(C, H, 5, Result, Receive,                  (sf::Out<u64> out_size, const sf::OutAutoSelectBuffer &data),                                                                                                                                                                                                                                          (out_size, data))                                                                                                                                                                              \
+    AMS_SF_METHOD_INFO(C, H, 6, Result, BindPortEvent,            (sf::Out<bool> out, sf::OutCopyHandle out_event_handle, UartPortEventType port_event_type, s64 threshold),                                                                                                                                                                                             (out, out_event_handle, port_event_type, threshold))                                                                                                                                           \
+    AMS_SF_METHOD_INFO(C, H, 7, Result, UnbindPortEvent,          (sf::Out<bool> out, UartPortEventType port_event_type),                                                                                                                                                                                                                                                (out, port_event_type))
+
+AMS_SF_DEFINE_INTERFACE(ams::mitm::uart::impl, IPortSession, AMS_UART_IPORTSESSION_MITM_INTERFACE_INFO)
+
+#define AMS_UART_MITM_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 6, Result, CreatePortSession, (sf::Out<sf::SharedPointer<::ams::mitm::uart::impl::IPortSession>> out), (out))
+
+AMS_SF_DEFINE_MITM_INTERFACE(ams::mitm::uart::impl, IUartMitmInterface, AMS_UART_MITM_INTERFACE_INFO)
+
 namespace ams::mitm::uart {
-
-    namespace impl {
-
-        #define AMS_UART_IPORTSESSION_MITM_INTERFACE_INFO(C, H)                                                                                                                             \
-            AMS_SF_METHOD_INFO(C, H, 0, Result, OpenPort,                 (sf::Out<bool> out, u32 port, u32 baud_rate, UartFlowControlMode flow_control_mode, u32 device_variation, bool is_invert_tx, bool is_invert_rx, bool is_invert_rts, bool is_invert_cts, sf::CopyHandle send_handle, sf::CopyHandle receive_handle, u64 send_buffer_length, u64 receive_buffer_length))                     \
-            AMS_SF_METHOD_INFO(C, H, 1, Result, OpenPortForDev,           (sf::Out<bool> out, u32 port, u32 baud_rate, UartFlowControlMode flow_control_mode, u32 device_variation, bool is_invert_tx, bool is_invert_rx, bool is_invert_rts, bool is_invert_cts, sf::CopyHandle send_handle, sf::CopyHandle receive_handle, u64 send_buffer_length, u64 receive_buffer_length))                     \
-            AMS_SF_METHOD_INFO(C, H, 2, Result, GetWritableLength,        (sf::Out<u64> out))                     \
-            AMS_SF_METHOD_INFO(C, H, 3, Result, Send,      (sf::Out<u64> out_size, const sf::InAutoSelectBuffer &data))                     \
-            AMS_SF_METHOD_INFO(C, H, 4, Result, GetReadableLength,        (sf::Out<u64> out))                     \
-            AMS_SF_METHOD_INFO(C, H, 5, Result, Receive,  (sf::Out<u64> out_size, const sf::OutAutoSelectBuffer &data))        \
-            AMS_SF_METHOD_INFO(C, H, 6, Result, BindPortEvent,            (sf::Out<bool> out, sf::OutCopyHandle out_event_handle, UartPortEventType port_event_type, s64 threshold))                     \
-            AMS_SF_METHOD_INFO(C, H, 7, Result, UnbindPortEvent,          (sf::Out<bool> out, UartPortEventType port_event_type))                     \
-
-        AMS_SF_DEFINE_INTERFACE(IPortSession, AMS_UART_IPORTSESSION_MITM_INTERFACE_INFO)
-
-        #define AMS_UART_MITM_INTERFACE_INFO(C, H)                                                                         \
-            AMS_SF_METHOD_INFO(C, H, 6, Result, CreatePortSession, (sf::Out<std::shared_ptr<IPortSession>> out))
-
-        AMS_SF_DEFINE_MITM_INTERFACE(IUartMitmInterface, AMS_UART_MITM_INTERFACE_INFO)
-
-    }
 
     class UartPortService {
         private:
@@ -101,7 +97,7 @@ namespace ams::mitm::uart {
                 return client_info.program_id == ncm::SystemProgramId::Bluetooth;
             }
         public:
-            Result CreatePortSession(sf::Out<std::shared_ptr<impl::IPortSession>> out);
+            Result CreatePortSession(sf::Out<sf::SharedPointer<impl::IPortSession>> out);
     };
     static_assert(impl::IsIUartMitmInterface<UartMitmService>);
 
