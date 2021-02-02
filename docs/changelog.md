@@ -9,13 +9,11 @@
   + **Please Note**: If you are a developer using the libstratosphere service APIs, some updating may be required. Contact SciresM#0524 on discord for assistance if required.
 + A number of deprecations were removed, following a general codebase cleanup:
   + The `sm` extension to not unregister services on connection close was superseded by official opt-in logic in 11.0.0, and has been removed in favor of official logic.
-  + The deprecated `hid.mitm`
-+ As mentioned in the 0.16.0 release notes, 11.0.0 added an official version of a previous `sm` extension to not close services on connection close.
-  + The deprecated `sm` extension has been removed in favor of the official logic which supersedes it.
     + This should have zero impact on users.
   + The temporary `hid-mitm` added in 0.9.0 has finally been removed, following over a year of deprecation.
     + There shouldn't be any homebrew in use still affected by this, but the situation will be monitored.
     + If this is somehow still a real issue, an unaffiliated hid mitm sysmodule providing the same functionality can be created and released, separate from atmosphère itself.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.17.1
 + A number of atmosphère's modules were using more memory than their Nintendo equivalent's in 0.17.0; a number of code generatio tweaks have been applied to fix this across the board.
   + A detailed comparison of atmosphère module memory usage versus Nintendo's was made and can be found [here](https://github.com/Atmosphere-NX/Atmosphere/wiki/Memory-Comparisons).
