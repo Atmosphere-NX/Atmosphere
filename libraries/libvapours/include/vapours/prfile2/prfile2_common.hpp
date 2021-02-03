@@ -17,6 +17,7 @@
 #include <vapours/prfile2/prfile2_build_config.hpp>
 #include <vapours/prfile2/pf/prfile2_pf_config.hpp>
 #include <vapours/prfile2/pf/prfile2_pf_api_common.hpp>
+#include <vapours/prfile2/prfile2_wide_string.hpp>
 
 namespace ams::prfile2 {
 

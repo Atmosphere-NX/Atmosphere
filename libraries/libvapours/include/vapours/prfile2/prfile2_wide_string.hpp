@@ -13,19 +13,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
-#include <vapours/results.hpp>
-#include <vapours/util.hpp>
-#include <vapours/svc.hpp>
-
 #include <vapours/prfile2/prfile2_common.hpp>
-#include <vapours/prfile2/prfile2_str.hpp>
-#include <vapours/prfile2/prfile2_system.hpp>
-#include <vapours/prfile2/pdm/prfile2_pdm_api.hpp>
-#include <vapours/prfile2/pdm/prfile2_pdm_disk_management.hpp>
-#include <vapours/prfile2/pdm/prfile2_pdm_upper_layer_api.hpp>
-#include <vapours/prfile2/prfile2_fatfs.hpp>
-#include <vapours/prfile2/prfile2_volume.hpp>
+
+namespace ams::prfile2 {
+
+    using WideChar = u16;
+
+    size_t w_strlen(const WideChar *s);
+    size_t w_strnlen(const WideChar *s, size_t length);
+
+    WideChar *w_strcpy(WideChar *dst, const WideChar *src);
+    WideChar *w_strncpy(WideChar *dst, const WideChar *src, size_t length);
+
+    int w_strcmp(const WideChar *lhs, const WideChar *rhs);
+    int w_strncmp(const WideChar *lhs, const WideChar *rhs, size_t length);
+
+}
