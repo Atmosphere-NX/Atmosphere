@@ -23,6 +23,14 @@ namespace ams::prfile2::pdm {
     namespace part {
 
         pdm::Error CheckDataEraseRequest(HandleType part_handle, bool *out);
+        pdm::Error CheckMediaInsert(HandleType part_handle, bool *out);
+
+    }
+
+    namespace disk {
+
+        pdm::Error CheckDataEraseRequest(HandleType disk_handle, bool *out);
+        pdm::Error CheckMediaInsert(HandleType disk_handle, bool *out);
 
     }
 

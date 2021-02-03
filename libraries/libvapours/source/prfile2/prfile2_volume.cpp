@@ -272,6 +272,8 @@ namespace ams::prfile2::vol {
             vol->tail_entry.tracker_size = util::size(vol->tail_entry.tracker_buf);
             vol->tail_entry.tracker_bits = vol->tail_entry.tracker_buf;
 
+            /* NOTE: Cluster link is cleared here, but we already memset vol to zero, so it's unnecessary. */
+
             /* Initialize driver for volume. */
             if (auto err = drv::Initialize(vol); err != pf::Error_Ok) {
                 return SetLastErrorAndReturn(err);
@@ -310,7 +312,7 @@ namespace ams::prfile2::vol {
 
         /* Perform mount as appropriate. */
         const auto check_mount_err = /* TODO vol::CheckMediaInsertForAttachMount(vol) */ pf::Error_Ok;
-        const bool inserted        = /* TODO: drv::IsInserted(vol) */ false;
+        const bool inserted        = drv::IsInserted(vol);
         if (check_mount_err != pf::Error_Ok) {
             if (inserted) {
                 drive_table->SetDiskInserted(true);

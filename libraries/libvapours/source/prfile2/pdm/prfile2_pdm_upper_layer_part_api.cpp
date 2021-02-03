@@ -33,15 +33,19 @@ namespace ams::prfile2::pdm::part {
             return pdm::Error_InvalidParameter;
         }
 
-        /* Get the disk. */
-        Disk *disk = GetDisk(part->disk_handle);
-        if (disk == nullptr) {
+        /* Check the disk. */
+        return pdm::disk::CheckDataEraseRequest(part->disk_handle, out);
+    }
+
+    pdm::Error CheckMediaInsert(HandleType part_handle, bool *out) {
+        /* Check parameters. */
+        Partition *part = GetPartition(part_handle);
+        if (out == nullptr || part == nullptr) {
             return pdm::Error_InvalidParameter;
         }
 
-        /* Check for data erase function. */
-        *out = disk->erase_callback != nullptr;
-        return pdm::Error_Ok;
+        /* Check if the disk is inserted. */
+        return pdm::disk::CheckMediaInsert(part->disk_handle, out);
     }
 
 }

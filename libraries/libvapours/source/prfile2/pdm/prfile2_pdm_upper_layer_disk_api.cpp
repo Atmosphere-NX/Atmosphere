@@ -22,32 +22,32 @@
 #else
 #include <vapours.hpp>
 #endif
+#include "prfile2_pdm_disk_set.hpp"
 
-namespace ams::prfile2::drv {
+namespace ams::prfile2::pdm::disk {
 
-    pf::Error Initialize(Volume *volume) {
-        /* Check the volume. */
-        if (volume == nullptr) {
-            return pf::Error_InvalidParameter;
+    pdm::Error CheckDataEraseRequest(HandleType disk_handle, bool *out) {
+        /* Check parameters. */
+        Disk *disk = GetDisk(disk_handle);
+        if (out == nullptr || disk == nullptr) {
+            return pdm::Error_InvalidParameter;
         }
 
-        /* Check the data erase request. */
-        bool data_erase;
-        if (auto pdm_err = pdm::part::CheckDataEraseRequest(volume->partition_handle, std::addressof(data_erase)); pdm_err != pdm::Error_Ok) {
-            return pf::Error_Generic;
-        }
-
-        /* Set the data erase request flag. */
-        volume->SetDataEraseRequested(data_erase);
-        return pf::Error_Ok;
+        /* Check for data erase function. */
+        *out = disk->erase_callback != nullptr;
+        return pdm::Error_Ok;
     }
 
-    bool IsInserted(Volume *volume) {
-        /* Check inserted. */
-        /* NOTE: Error is not checked here. */
-        bool inserted = false;
-        pdm::part::CheckMediaInsert(volume->partition_handle, std::addressof(inserted));
-        return inserted;
+    pdm::Error CheckMediaInsert(HandleType disk_handle, bool *out) {
+        /* Check parameters. */
+        Disk *disk = GetDisk(disk_handle);
+        if (out == nullptr || disk == nullptr) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Get whether the disk is inserted. */
+        *out = disk->is_inserted;
+        return pdm::Error_Ok;
     }
 
 }
