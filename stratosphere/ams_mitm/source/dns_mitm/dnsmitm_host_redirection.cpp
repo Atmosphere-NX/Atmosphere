@@ -125,6 +125,8 @@ namespace ams::mitm::socket::resolver {
                             current_address = 0;
                             work            = static_cast<u32>(c - '0');
                             state           = State::Ip1;
+                        } else if (c == '\n') {
+                            state = State::BeginLine;
                         } else {
                             state = State::IgnoredLine;
                         }
