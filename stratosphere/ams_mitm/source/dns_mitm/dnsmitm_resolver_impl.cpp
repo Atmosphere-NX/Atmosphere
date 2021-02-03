@@ -111,10 +111,12 @@ namespace ams::mitm::socket::resolver {
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
 
         u16 port = 0;
-        for (const char *cur = reinterpret_cast<const char *>(srv.GetPointer()); *cur != 0; ++cur) {
-            AMS_ABORT_UNLESS(std::isdigit(static_cast<unsigned char>(*cur)));
-            port *= 10;
-            port += *cur - '0';
+        if (srv.GetPointer() != nullptr) {
+            for (const char *cur = reinterpret_cast<const char *>(srv.GetPointer()); *cur != 0; ++cur) {
+                AMS_ABORT_UNLESS(std::isdigit(static_cast<unsigned char>(*cur)));
+                port *= 10;
+                port += *cur - '0';
+            }
         }
 
         LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
@@ -162,10 +164,12 @@ namespace ams::mitm::socket::resolver {
         R_UNLESS(GetRedirectedHostByName(std::addressof(redirect_addr), hostname), sm::mitm::ResultShouldForwardToSession());
 
         u16 port = 0;
-        for (const char *cur = reinterpret_cast<const char *>(srv.GetPointer()); *cur != 0; ++cur) {
-            AMS_ABORT_UNLESS(std::isdigit(static_cast<unsigned char>(*cur)));
-            port *= 10;
-            port += *cur - '0';
+        if (srv.GetPointer() != nullptr) {
+            for (const char *cur = reinterpret_cast<const char *>(srv.GetPointer()); *cur != 0; ++cur) {
+                AMS_ABORT_UNLESS(std::isdigit(static_cast<unsigned char>(*cur)));
+                port *= 10;
+                port += *cur - '0';
+            }
         }
 
         LogDebug("[%016lx]: Redirecting %s:%u to %u.%u.%u.%u\n", this->client_info.program_id.value, hostname, port, (redirect_addr >> 0) & 0xFF, (redirect_addr >> 8) & 0xFF, (redirect_addr >> 16) & 0xFF, (redirect_addr >> 24) & 0xFF);
