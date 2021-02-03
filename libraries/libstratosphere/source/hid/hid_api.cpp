@@ -40,14 +40,12 @@ namespace ams::hid {
 
         /* Helper. */
         void InitializeHid() {
-            R_ABORT_UNLESS(smInitialize());
-            ON_SCOPE_EXIT { smExit(); };
-            {
+            sm::DoWithSession([&]() {
                 R_ABORT_UNLESS(hidInitialize());
                 hidInitializeNpad();
                 R_ABORT_UNLESS(hidSetSupportedNpadIdType(NpadIdTypes, NumNpadIdTypes));
                 R_ABORT_UNLESS(hidSetSupportedNpadStyleSet(HidNpadStyleSet_NpadStandard | HidNpadStyleTag_NpadSystemExt));
-            }
+            });
         }
 
         Result EnsureHidInitialized() {
