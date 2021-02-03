@@ -26,6 +26,7 @@ namespace ams::prfile2::drv {
 
     pf::Error Initialize(Volume *volume);
 
+    bool IsDetected(Volume *volume);
     bool IsInserted(Volume *volume);
 
 }

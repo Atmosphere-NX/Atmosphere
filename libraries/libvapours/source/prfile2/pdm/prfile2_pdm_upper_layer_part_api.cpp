@@ -37,6 +37,33 @@ namespace ams::prfile2::pdm::part {
         return pdm::disk::CheckDataEraseRequest(part->disk_handle, out);
     }
 
+    pdm::Error CheckMediaDetect(HandleType part_handle, bool *out) {
+        /* Check parameters. */
+        Partition *part = GetPartition(part_handle);
+        if (out == nullptr || part == nullptr) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Get the disk (unsafe/not checked). */
+        Disk *disk = GetDiskUnsafe(part->disk_handle);
+
+        /* Default to no status change detected. */
+        *out = false;
+
+        /* Detect status change via partition nbc detect. */
+        volatile NonBlockingProtocolType nbc;
+        do {
+            do {
+                nbc = disk->nbc;
+            } while ((nbc & 1) != 0);
+            if (nbc != part->nbc_detect) {
+                *out = true;
+            }
+        } while (nbc != disk->nbc);
+
+        return pdm::Error_Ok;
+    }
+
     pdm::Error CheckMediaInsert(HandleType part_handle, bool *out) {
         /* Check parameters. */
         Partition *part = GetPartition(part_handle);

@@ -42,6 +42,14 @@ namespace ams::prfile2::drv {
         return pf::Error_Ok;
     }
 
+    bool IsDetected(Volume *volume) {
+        /* Check detect status changed. */
+        /* NOTE: Error is not checked here. */
+        bool detected = false;
+        pdm::part::CheckMediaDetect(volume->partition_handle, std::addressof(detected));
+        return detected;
+    }
+
     bool IsInserted(Volume *volume) {
         /* Check inserted. */
         /* NOTE: Error is not checked here. */

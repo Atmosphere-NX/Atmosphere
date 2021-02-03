@@ -38,6 +38,31 @@ namespace ams::prfile2::pdm::disk {
         return pdm::Error_Ok;
     }
 
+    pdm::Error CheckMediaDetect(HandleType disk_handle, bool *out) {
+        /* Check parameters. */
+        Disk *disk = GetDisk(disk_handle);
+        if (out == nullptr || disk == nullptr) {
+            return pdm::Error_InvalidParameter;
+        }
+
+        /* Default to no status change detected. */
+        *out = false;
+
+        /* Detect status change via disk nbc detect. */
+        volatile NonBlockingProtocolType nbc;
+        do {
+            do {
+                nbc = disk->nbc;
+            } while ((nbc & 1) != 0);
+            if (nbc != disk->nbc_detect) {
+                *out = true;
+            }
+        } while (nbc != disk->nbc);
+
+        return pdm::Error_Ok;
+    }
+
+
     pdm::Error CheckMediaInsert(HandleType disk_handle, bool *out) {
         /* Check parameters. */
         Disk *disk = GetDisk(disk_handle);
