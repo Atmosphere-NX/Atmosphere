@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
- /* Scope guard logic lovingly taken from Andrei Alexandrescu's "Systemic Error Handling in C++" */
+/* Scope guard logic lovingly taken from Andrei Alexandrescu's "Systemic Error Handling in C++" */
 #pragma once
 #include <vapours/common.hpp>
 #include <vapours/assert.hpp>
