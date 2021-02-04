@@ -46,6 +46,8 @@
 #include <vapours/util/util_format_string.hpp>
 #include <vapours/util/util_range.hpp>
 
+#include <vapours/util/impl/util_available_index_finder.hpp>
+
 #ifdef ATMOSPHERE_IS_STRATOSPHERE
 #include <vapours/util/util_mutex_utils.hpp>
 #endif
