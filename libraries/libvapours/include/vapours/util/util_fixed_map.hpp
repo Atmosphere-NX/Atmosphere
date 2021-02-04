@@ -33,8 +33,12 @@ namespace ams::util {
 
             using TreeType = ::ams::util::FixedTree<KeyValuePair, LessTypeForMap, KeyValuePair, BufferAlignment>;
 
-            using iterator       = typename TreeType::Iterator;
-            using const_iterator = typename TreeType::ConstIterator;
+            using iterator       = typename TreeType::iterator;
+            using const_iterator = typename TreeType::const_iterator;
+        public:
+            static constexpr size_t GetRequiredMemorySize(size_t num_elements) {
+                return TreeType::GetRequiredMemorySize(num_elements);
+            }
         private:
             TreeType m_tree;
         public:
@@ -56,6 +60,8 @@ namespace ams::util {
             ALWAYS_INLINE const_iterator find(const Key &key) const { const KeyValuePair pair(key, Value{}); return m_tree.find(pair); }
 
             ALWAYS_INLINE std::pair<iterator, bool> insert(const KeyValuePair &pair) { return m_tree.insert(pair); }
+
+            ALWAYS_INLINE size_t size() const { return m_tree.size(); }
     };
 
 }

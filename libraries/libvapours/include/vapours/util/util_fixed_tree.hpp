@@ -64,7 +64,7 @@ namespace ams::util {
                 u32 _48;
                 u32 _4C;
 
-                void InitializeHeader(u32 _08, s32 max_e, s32 cur_e, u32 ind_sig, u32 node_sz, u32 e_sz, u32 _30, u32 _34, u32 _38, u32 _3C, u32 _40, u32 _44) {
+                void InitializeHeader(u32 _08, s32 max_e, s32 cur_e, u32 ind_sig, u32 buf_sz, u32 node_sz, u32 e_sz, u32 _30, u32 _34, u32 _38, u32 _3C, u32 _40, u32 _44) {
                     this->header_size      = sizeof(Header);
                     this->header_signature = Signature;
                     this->_08              = _08;
@@ -74,6 +74,7 @@ namespace ams::util {
                     this->left_most_index  = Index_Nil;
                     this->right_most_index = Index_Nil;
                     this->index_signature  = ind_sig;
+                    this->buffer_size      = buf_sz;
                     this->node_size        = node_sz;
                     this->element_size     = e_sz;
                     this->_30              = _30;
@@ -111,12 +112,17 @@ namespace ams::util {
                 }
             };
 
+            class Iterator;
+            class ConstIterator;
+
             class IteratorBase {
-                protected:
+                private:
+                    friend class ConstIterator;
+                private:
                     const FixedTree *m_this;
                     int m_index;
                 protected:
-                    constexpr IteratorBase(const FixedTree *tree, int index) : m_this(tree), m_index(index) { /* ... */ }
+                    constexpr ALWAYS_INLINE IteratorBase(const FixedTree *tree, int index) : m_this(tree), m_index(index) { /* ... */ }
 
                     constexpr bool IsEqualImpl(const IteratorBase &rhs) const {
                         /* Validate pre-conditions. */
@@ -144,11 +150,11 @@ namespace ams::util {
                             return m_this->m_nodes[m_index].m_data;
                         } else {
                             AMS_ASSERT(false);
-                            return m_this->GetNode(std::numeric_limits<int>::max()).m_data;
+                            return m_this->GetNode(std::numeric_limits<int>::max())->m_data;
                         }
                     }
 
-                    constexpr IteratorBase &IncrementImpl() {
+                    constexpr ALWAYS_INLINE IteratorBase &IncrementImpl() {
                         /* Validate pre-conditions. */
                         AMS_ASSERT(m_this);
 
@@ -156,7 +162,7 @@ namespace ams::util {
                         return *this;
                     }
 
-                    constexpr IteratorBase &DecrementImpl() {
+                    constexpr ALWAYS_INLINE IteratorBase &DecrementImpl() {
                         /* Validate pre-conditions. */
                         AMS_ASSERT(m_this);
 
@@ -191,60 +197,71 @@ namespace ams::util {
 
             class Iterator : public IteratorBase {
                 public:
-                    constexpr Iterator(const FixedTree &tree) : IteratorBase(std::addressof(tree), tree.size() ? tree.GetLMost() : Index_Leaf) { /* ... */ }
-                    constexpr Iterator(const FixedTree &tree, int index) : IteratorBase(std::addressof(tree), index) { /* ... */ }
+                    constexpr ALWAYS_INLINE Iterator(const FixedTree &tree) : IteratorBase(std::addressof(tree), tree.size() ? tree.GetLMost() : Index_Leaf) { /* ... */ }
+                    constexpr ALWAYS_INLINE Iterator(const FixedTree &tree, int index) : IteratorBase(std::addressof(tree), index) { /* ... */ }
 
-                    constexpr Iterator(const Iterator &rhs) = default;
+                    constexpr ALWAYS_INLINE Iterator(const Iterator &rhs) = default;
 
-                    constexpr bool operator==(const Iterator &rhs) const {
+                    constexpr ALWAYS_INLINE bool operator==(const Iterator &rhs) const {
                         return this->IsEqualImpl(rhs);
                     }
 
-                    constexpr bool operator!=(const Iterator &rhs) const {
+                    constexpr ALWAYS_INLINE bool operator!=(const Iterator &rhs) const {
                         return !(*this == rhs);
                     }
 
-                    constexpr IteratorMember &operator*() const {
+                    constexpr ALWAYS_INLINE IteratorMember &operator*() const {
                         return static_cast<IteratorMember &>(this->DereferenceImpl());
                     }
 
-                    constexpr Iterator &operator++() {
+                    constexpr ALWAYS_INLINE IteratorMember *operator->() const {
+                        return std::addressof(this->operator *());
+                    }
+
+                    constexpr ALWAYS_INLINE Iterator &operator++() {
                         return static_cast<Iterator &>(this->IncrementImpl());
                     }
 
-                    constexpr Iterator &operator--() {
+                    constexpr ALWAYS_INLINE Iterator &operator--() {
                         return static_cast<Iterator &>(this->DecrementImpl());
                     }
             };
 
             class ConstIterator : public IteratorBase {
                 public:
-                    constexpr ConstIterator(const FixedTree &tree) : IteratorBase(std::addressof(tree), tree.size() ? tree.GetLMost() : Index_Leaf) { /* ... */ }
-                    constexpr ConstIterator(const FixedTree &tree, int index) : IteratorBase(std::addressof(tree), index) { /* ... */ }
+                    constexpr ALWAYS_INLINE ConstIterator(const FixedTree &tree) : IteratorBase(std::addressof(tree), tree.size() ? tree.GetLMost() : Index_Leaf) { /* ... */ }
+                    constexpr ALWAYS_INLINE ConstIterator(const FixedTree &tree, int index) : IteratorBase(std::addressof(tree), index) { /* ... */ }
 
-                    constexpr ConstIterator(const ConstIterator &rhs) = default;
-                    constexpr ConstIterator(const Iterator &rhs) : IteratorBase(rhs.m_this, rhs.m_index) { /* ... */ }
+                    constexpr ALWAYS_INLINE ConstIterator(const ConstIterator &rhs) = default;
+                    constexpr ALWAYS_INLINE ConstIterator(const Iterator &rhs) : IteratorBase(rhs.m_this, rhs.m_index) { /* ... */ }
 
-                    constexpr bool operator==(const ConstIterator &rhs) const {
+                    constexpr ALWAYS_INLINE bool operator==(const ConstIterator &rhs) const {
                         return this->IsEqualImpl(rhs);
                     }
 
-                    constexpr bool operator!=(const ConstIterator &rhs) const {
+                    constexpr ALWAYS_INLINE bool operator!=(const ConstIterator &rhs) const {
                         return !(*this == rhs);
                     }
 
-                    constexpr const IteratorMember &operator*() const {
+                    constexpr ALWAYS_INLINE const IteratorMember &operator*() const {
                         return static_cast<const IteratorMember &>(this->DereferenceImpl());
                     }
 
-                    constexpr ConstIterator &operator++() {
+                    constexpr ALWAYS_INLINE const IteratorMember *operator->() const {
+                        return std::addressof(this->operator *());
+                    }
+
+                    constexpr ALWAYS_INLINE ConstIterator &operator++() {
                         return static_cast<ConstIterator &>(this->IncrementImpl());
                     }
 
-                    constexpr ConstIterator &operator--() {
+                    constexpr ALWAYS_INLINE ConstIterator &operator--() {
                         return static_cast<ConstIterator &>(this->DecrementImpl());
                     }
             };
+        public:
+            using iterator       = Iterator;
+            using const_iterator = ConstIterator;
         private:
             impl::AvailableIndexFinder m_index_finder;
             Node m_dummy_leaf;
@@ -252,7 +269,7 @@ namespace ams::util {
             u8 *m_buffer;
             Header *m_header;
             Node *m_nodes;
-            Iterator m_end_iterator;
+            iterator m_end_iterator;
         public:
             FixedTree() : m_end_iterator(*this, Index_Nil) {
                 this->SetDummyMemory();
@@ -304,7 +321,7 @@ namespace ams::util {
                 m_header->InitializeHeader(1, num_elements, 0, signature, buffer_size, sizeof(Node), sizeof(Member), 4, 4, 4, 4, 4, BufferAlignment);
 
                 /* Setup index finder. */
-                m_index_finder.Initialize(std::addressof(m_header->max_elements), std::addressof(m_header->cur_elements), m_buffer + sizeof(*m_header) + SizeOfNodes(num_elements));
+                m_index_finder.Initialize(std::addressof(m_header->cur_elements), std::addressof(m_header->max_elements), m_buffer + sizeof(*m_header) + SizeOfNodes(num_elements));
 
                 /* Set nodes array. */
                 m_nodes = reinterpret_cast<Node *>(m_buffer + sizeof(*m_header));
@@ -349,7 +366,7 @@ namespace ams::util {
             void ReleaseIndex(int index) { return m_index_finder.ReleaseIndex(index); }
 
             int EraseByIndex(int target_index) {
-                /* Seutp tracking variables. */
+                /* Setup tracking variables. */
                 const auto next_index = this->UncheckedPP(target_index);
                 auto *target_node     = this->GetNode(target_index);
 
@@ -559,13 +576,13 @@ namespace ams::util {
                 return target_index;
             }
 
-            int FindIndex(const Member &elem) {
+            int FindIndex(const Member &elem) const {
                 return this->FindIndexSub(this->GetRoot(), elem);
             }
 
-            int FindIndexSub(int index, const Member &elem) {
+            int FindIndexSub(int index, const Member &elem) const {
                 if (index != Index_Nil) {
-                    auto *node = this->GetNode(elem);
+                    auto *node = this->GetNode(index);
                     if (Compare{}(elem, node->m_data)) {
                         if (!this->IsLeaf(node->m_left)) {
                             return this->FindIndexSub(node->m_left, elem);
@@ -610,7 +627,7 @@ namespace ams::util {
                 node->m_parent = parent;
                 node->m_right  = Index_Leaf;
                 node->m_left   = Index_Leaf;
-                std::memcpy(std::addressof(node->m_data), std::addressof(elem), sizeof(elem));
+                std::memcpy(reinterpret_cast<u8 *>(std::addressof(node->m_data)), reinterpret_cast<const u8 *>(std::addressof(elem)), sizeof(node->m_data));
 
                 /* Fix up the parent node. */
                 auto *parent_node = this->GetNode(parent);
@@ -641,7 +658,7 @@ namespace ams::util {
                             p_node->m_color  = Color::Black;
                             gr_node->m_color = Color::Black;
                             g_node->m_color  = Color::Red;
-                            AMS_ASSERT(m_p_dummy_leaf->color != Color::Red);
+                            AMS_ASSERT(m_p_dummy_leaf->m_color != Color::Red);
 
                             cur_index = p_node->m_parent;
                             continue;
@@ -659,7 +676,7 @@ namespace ams::util {
                         g_node = this->GetNode(p_node->m_parent);
                         g_node->m_color = Color::Red;
 
-                        AMS_ASSERT(m_p_dummy_leaf->color != Color::Red);
+                        AMS_ASSERT(m_p_dummy_leaf->m_color != Color::Red);
 
                         this->RotateRight(p_node->m_parent);
                     } else {
@@ -667,7 +684,7 @@ namespace ams::util {
                             p_node->m_color  = Color::Black;
                             gl_node->m_color = Color::Black;
                             g_node->m_color  = Color::Red;
-                            AMS_ASSERT(m_p_dummy_leaf->color != Color::Red);
+                            AMS_ASSERT(m_p_dummy_leaf->m_color != Color::Red);
 
                             cur_index = p_node->m_parent;
                             continue;
@@ -685,7 +702,7 @@ namespace ams::util {
                         g_node = this->GetNode(p_node->m_parent);
                         g_node->m_color = Color::Red;
 
-                        AMS_ASSERT(m_p_dummy_leaf->color != Color::Red);
+                        AMS_ASSERT(m_p_dummy_leaf->m_color != Color::Red);
 
                         this->RotateLeft(p_node->m_parent);
                     }
@@ -703,6 +720,7 @@ namespace ams::util {
                 bool less = true;
                 while (cur_index != Index_Nil && cur_index != Index_Leaf) {
                     auto *node = this->GetNode(cur_index);
+                    prev_index = cur_index;
 
                     if (before) {
                         less = Compare{}(node->m_data, elem);
@@ -725,7 +743,7 @@ namespace ams::util {
                     node->m_parent = Index_Nil;
                     node->m_right  = Index_Leaf;
                     node->m_left   = Index_Leaf;
-                    std::memcpy(std::addressof(node->m_data), std::addressof(elem), sizeof(elem));
+                    std::memcpy(reinterpret_cast<u8 *>(std::addressof(node->m_data)), reinterpret_cast<const u8 *>(std::addressof(elem)), sizeof(node->m_data));
 
                     this->SetRoot(index);
                     this->SetLMost(index);
@@ -813,7 +831,7 @@ namespace ams::util {
                 node->SetRight(r_index, r_node, index);
             }
 
-            int UncheckedMM(int index) {
+            int UncheckedMM(int index) const {
                 auto *node = this->GetNode(index);
                 if (this->IsNil(index)) {
                     index = this->GetRMost();
@@ -844,7 +862,7 @@ namespace ams::util {
                 }
             }
 
-            int UncheckedPP(int index) {
+            int UncheckedPP(int index) const {
                 auto *node = this->GetNode(index);
 
                 if (!this->IsNil(index)) {
@@ -879,11 +897,11 @@ namespace ams::util {
                 return this->InitializeImpl(static_cast<int>(num_elements), buffer, buffer_size);
             }
 
-            Iterator begin() { return Iterator(*this); }
-            ConstIterator begin() const { return ConstIterator(*this); }
+            iterator begin() { return iterator(*this); }
+            const_iterator begin() const { return const_iterator(*this); }
 
-            Iterator end() { return m_end_iterator; }
-            ConstIterator end() const { return m_end_iterator; }
+            iterator end() { return m_end_iterator; }
+            const_iterator end() const { return m_end_iterator; }
 
             size_t size() const { return m_header->cur_elements; }
 
@@ -905,25 +923,25 @@ namespace ams::util {
                 }
             }
 
-            Iterator find(const Member &elem) {
+            iterator find(const Member &elem) {
                 if (const auto index = this->FindIndex(elem); index >= 0) {
-                    return Iterator(*this, index);
+                    return iterator(*this, index);
                 } else {
                     return this->end();
                 }
             }
 
-            ConstIterator find(const Member &elem) const {
+            const_iterator find(const Member &elem) const {
                 if (const auto index = this->FindIndex(elem); index >= 0) {
-                    return Iterator(*this, index);
+                    return const_iterator(*this, index);
                 } else {
                     return this->end();
                 }
             }
 
-            std::pair<Iterator, bool> insert(const Member &elem) {
+            std::pair<iterator, bool> insert(const Member &elem) {
                 const auto index = this->InsertNoHint(false, elem);
-                const auto it    = Iterator(*this, index);
+                const auto it    = iterator(*this, index);
                 return std::make_pair(it, !this->IsNil(index));
             }
 
@@ -970,6 +988,7 @@ namespace ams::util {
                     cur_node = this->GetNode(cur_index);
                 }
 
+                AMS_UNUSED(min_node);
                 return IndexPair{min_index, max_index};
             }
     };
