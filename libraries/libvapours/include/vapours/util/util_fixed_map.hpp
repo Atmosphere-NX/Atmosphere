@@ -62,6 +62,8 @@ namespace ams::util {
             ALWAYS_INLINE std::pair<iterator, bool> insert(const KeyValuePair &pair) { return m_tree.insert(pair); }
 
             ALWAYS_INLINE size_t size() const { return m_tree.size(); }
+
+            ALWAYS_INLINE void clear() { return m_tree.clear(); }
     };
 
 }
