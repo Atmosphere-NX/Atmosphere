@@ -45,7 +45,21 @@
 
 namespace ams::kern {
 
-    static_assert(cpu::NumCores <= static_cast<s32>(BITSIZEOF(u64)));
-    static_assert(util::size(cpu::VirtualToPhysicalCoreMap) == BITSIZEOF(u64));
+    namespace cpu {
+
+        static constexpr inline size_t NumVirtualCores = BITSIZEOF(u64);
+
+        static constexpr inline u64 VirtualCoreMask    = [] {
+            u64 mask = 0;
+            for (size_t i = 0; i < NumVirtualCores; ++i) {
+                mask |= (UINT64_C(1) << i);
+            }
+            return mask;
+        }();
+
+    }
+
+    static_assert(cpu::NumCores <= cpu::NumVirtualCores);
+    static_assert(util::size(cpu::VirtualToPhysicalCoreMap) == cpu::NumVirtualCores);
 
 }
