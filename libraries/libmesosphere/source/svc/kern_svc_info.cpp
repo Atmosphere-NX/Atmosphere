@@ -216,7 +216,7 @@ namespace ams::kern::svc {
                 case ams::svc::InfoType_ThreadTickCount:
                     {
                         /* Verify the requested core is valid. */
-                        const bool core_valid = (info_subtype == static_cast<u64>(-1ul)) || (info_subtype < util::size(cpu::VirtualToPhysicalCoreMap));
+                        const bool core_valid = (info_subtype == static_cast<u64>(-1ul)) || (info_subtype < cpu::NumVirtualCores);
                         R_UNLESS(core_valid, svc::ResultInvalidCombination());
 
                         /* Get the thread from its handle. */

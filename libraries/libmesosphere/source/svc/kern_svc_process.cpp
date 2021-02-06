@@ -21,8 +21,8 @@ namespace ams::kern::svc {
 
     namespace {
 
-        constexpr bool IsValidCoreId(int32_t core_id) {
-            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumCores));
+        constexpr bool IsValidVirtualCoreId(int32_t core_id) {
+            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumVirtualCores));
         }
 
         void ExitProcess() {
@@ -275,7 +275,7 @@ namespace ams::kern::svc {
             R_UNLESS(process.IsNotNull(), svc::ResultInvalidHandle());
 
             /* Validate the core id. */
-            R_UNLESS(IsValidCoreId(core_id),                           svc::ResultInvalidCoreId());
+            R_UNLESS(IsValidVirtualCoreId(core_id),                    svc::ResultInvalidCoreId());
             R_UNLESS(((1ul << core_id) & process->GetCoreMask()) != 0, svc::ResultInvalidCoreId());
 
             /* Validate the priority. */

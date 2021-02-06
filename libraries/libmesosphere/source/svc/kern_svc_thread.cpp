@@ -21,8 +21,8 @@ namespace ams::kern::svc {
 
     namespace {
 
-        constexpr bool IsValidCoreId(int32_t core_id) {
-            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumCores));
+        constexpr bool IsValidVirtualCoreId(int32_t core_id) {
+            return (0 <= core_id && core_id < static_cast<int32_t>(cpu::NumVirtualCores));
         }
 
         Result CreateThread(ams::svc::Handle *out, ams::svc::ThreadFunc f, uintptr_t arg, uintptr_t stack_bottom, int32_t priority, int32_t core_id) {
@@ -33,7 +33,7 @@ namespace ams::kern::svc {
             }
 
             /* Validate arguments. */
-            R_UNLESS(IsValidCoreId(core_id),                          svc::ResultInvalidCoreId());
+            R_UNLESS(IsValidVirtualCoreId(core_id),                   svc::ResultInvalidCoreId());
             R_UNLESS(((1ul << core_id) & process.GetCoreMask()) != 0, svc::ResultInvalidCoreId());
 
             R_UNLESS(ams::svc::HighestThreadPriority <= priority && priority <= ams::svc::LowestThreadPriority, svc::ResultInvalidPriority());
@@ -168,7 +168,7 @@ namespace ams::kern::svc {
                 R_UNLESS(affinity_mask != 0,                                       svc::ResultInvalidCombination());
 
                 /* Validate the core id. */
-                if (IsValidCoreId(core_id)) {
+                if (IsValidVirtualCoreId(core_id)) {
                     R_UNLESS(((1ul << core_id) & affinity_mask) != 0, svc::ResultInvalidCombination());
                 } else {
                     R_UNLESS(core_id == ams::svc::IdealCoreNoUpdate || core_id == ams::svc::IdealCoreDontCare, svc::ResultInvalidCoreId());

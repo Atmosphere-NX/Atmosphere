@@ -26,7 +26,7 @@ namespace ams::ncm {
             MakeContentPathFunction make_content_path_func;
             bool disabled;
         protected:
-            ContentStorageImplBase() { /* ... */ }
+            ContentStorageImplBase() : make_content_path_func(), disabled(false) { /* ... */ }
         protected:
             /* Helpers. */
             Result EnsureEnabled() const {

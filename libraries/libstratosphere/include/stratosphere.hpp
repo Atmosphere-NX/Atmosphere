@@ -63,6 +63,7 @@
 #include <stratosphere/ncm.hpp>
 #include <stratosphere/nim.hpp>
 #include <stratosphere/ns.hpp>
+#include <stratosphere/nsd.hpp>
 #include <stratosphere/patcher.hpp>
 #include <stratosphere/pcv.hpp>
 #include <stratosphere/pgl.hpp>
@@ -76,6 +77,7 @@
 #include <stratosphere/settings.hpp>
 #include <stratosphere/sf.hpp>
 #include <stratosphere/sm.hpp>
+#include <stratosphere/socket.hpp>
 #include <stratosphere/spl.hpp>
 #include <stratosphere/time.hpp>
 #include <stratosphere/updater.hpp>

@@ -349,6 +349,19 @@ namespace ams::settings::fwdbg {
             /* 0 = Disabled (not debug mode), 1 = Enabled (debug mode) */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_am_debug_mode", "u8!0x0"));
 
+            /* Controls whether dns.mitm is enabled. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm", "u8!0x1"));
+
+            /* Controls whether dns.mitm uses the default redirections in addition to */
+            /* whatever is specified in the user's hosts file. */
+            /* 0 = Disabled (use hosts file contents), 1 = Enabled (use defaults and hosts file contents) */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "add_defaults_to_dns_hosts", "u8!0x1"));
+
+            /* Controls whether dns.mitm logs to the sd card for debugging. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm_debug_log", "u8!0x0"));
+
             /* Hbloader custom settings. */
 
             /* Controls the size of the homebrew heap when running as applet. */

@@ -22,7 +22,7 @@ namespace ams::kern {
         /* Most fields have already been cleared by our constructor. */
 
         /* Initial processes may run on all cores. */
-        m_core_mask = (1ul << cpu::NumCores) - 1;
+        m_core_mask = cpu::VirtualCoreMask;
 
         /* Initial processes may use any user priority they like. */
         m_priority_mask = ~0xFul;
@@ -55,18 +55,17 @@ namespace ams::kern {
         const auto max_prio  = cap.Get<CorePriority::LowestThreadPriority>();
         const auto min_prio  = cap.Get<CorePriority::HighestThreadPriority>();
 
-        R_UNLESS(min_core <= max_core,       svc::ResultInvalidCombination());
-        R_UNLESS(min_prio <= max_prio,       svc::ResultInvalidCombination());
-        R_UNLESS(max_core <  cpu::NumCores,  svc::ResultInvalidCoreId());
+        R_UNLESS(min_core <= max_core,             svc::ResultInvalidCombination());
+        R_UNLESS(min_prio <= max_prio,             svc::ResultInvalidCombination());
+        R_UNLESS(max_core <  cpu::NumVirtualCores, svc::ResultInvalidCoreId());
 
-        MESOSPHERE_ASSERT(max_core < BITSIZEOF(u64));
         MESOSPHERE_ASSERT(max_prio < BITSIZEOF(u64));
 
         /* Set core mask. */
         for (auto core_id = min_core; core_id <= max_core; core_id++) {
             m_core_mask |= (1ul << core_id);
         }
-        MESOSPHERE_ASSERT((m_core_mask & ((1ul << cpu::NumCores) - 1)) == m_core_mask);
+        MESOSPHERE_ASSERT((m_core_mask & cpu::VirtualCoreMask) == m_core_mask);
 
         /* Set priority mask. */
         for (auto prio = min_prio; prio <= max_prio; prio++) {

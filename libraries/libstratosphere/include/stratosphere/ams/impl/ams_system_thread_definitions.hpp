@@ -113,6 +113,9 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, IpcServer);
 
+    /* socket. */
+    AMS_DEFINE_SYSTEM_THREAD(29, socket, ResolverIpcServer);
+
     /* jpegdec. */
     AMS_DEFINE_SYSTEM_THREAD(21, jpegdec, Main);
 

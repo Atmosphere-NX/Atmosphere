@@ -95,3 +95,5 @@ sept/sept-secondary/KEYS.py
 **/build_nintendo_nx_arm
 **/build_nintendo_nx_x64
 **/build_nintendo_nx_x86
+
+stratosphere/test/
