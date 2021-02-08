@@ -53,6 +53,10 @@
 #include <stratosphere/gpio.hpp>
 #include <stratosphere/hid.hpp>
 #include <stratosphere/hos.hpp>
+#include <stratosphere/htc.hpp>
+#include <stratosphere/htcfs.hpp>
+#include <stratosphere/htclow.hpp>
+#include <stratosphere/htcs.hpp>
 #include <stratosphere/i2c.hpp>
 #include <stratosphere/kvdb.hpp>
 #include <stratosphere/ldr.hpp>
