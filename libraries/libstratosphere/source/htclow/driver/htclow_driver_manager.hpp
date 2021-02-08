@@ -16,19 +16,25 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "htclow_i_driver.hpp"
+#include "htclow_usb_driver.hpp"
 
 namespace ams::htclow::driver {
 
     class DriverManager {
         private:
             std::optional<htclow::impl::DriverType> m_driver_type{};
+            IDriver *m_debug_driver;
             /* TODO: SocketDriver m_socket_driver; */
-            /* TODO: UsbDriver m_usb_driver; */
+            UsbDriver m_usb_driver{};
             /* TODO: PlainChannelDriver m_plain_channel_driver; */
             os::SdkMutex m_mutex{};
             IDriver *m_open_driver{};
         public:
             DriverManager() = default;
+
+            Result OpenDriver(impl::DriverType driver_type);
+
+            IDriver *GetCurrentDriver();
     };
 
 }

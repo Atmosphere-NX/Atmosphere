@@ -22,7 +22,8 @@ namespace ams::htclow {
         : m_packet_factory(allocator), m_driver_manager(), m_mux(std::addressof(m_packet_factory), std::addressof(m_ctrl_state_machine)),
           m_ctrl_packet_factory(allocator), m_ctrl_state_machine(), m_ctrl_service(std::addressof(m_ctrl_packet_factory), std::addressof(m_ctrl_state_machine), std::addressof(m_mux)),
           m_worker(allocator, std::addressof(m_mux), std::addressof(m_ctrl_service)),
-          m_listener(allocator, std::addressof(m_mux), std::addressof(m_ctrl_service), std::addressof(m_worker))
+          m_listener(allocator, std::addressof(m_mux), std::addressof(m_ctrl_service), std::addressof(m_worker)),
+          m_is_driver_open(false)
     {
         /* ... */
     }
@@ -32,7 +33,23 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::OpenDriver(impl::DriverType driver_type) {
-        AMS_ABORT("TODO");
+        /* Set the driver type. */
+        m_ctrl_service.SetDriverType(driver_type);
+
+        /* Ensure that we don't end up in an invalid state. */
+        auto drv_guard = SCOPE_GUARD { m_ctrl_service.SetDriverType(impl::DriverType::Unknown); };
+
+        /* Try to open the driver. */
+        R_TRY(m_driver_manager.OpenDriver(driver_type));
+
+        /* Start the listener. */
+        m_listener.Start(m_driver_manager.GetCurrentDriver());
+
+        /* Note the driver as open. */
+        m_is_driver_open = true;
+
+        drv_guard.Cancel();
+        return ResultSuccess();
     }
 
     //void HtclowManagerImpl::CloseDriver();

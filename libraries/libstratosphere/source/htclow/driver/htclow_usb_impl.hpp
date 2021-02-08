@@ -15,27 +15,27 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htclow_mux_task_manager.hpp"
-#include "htclow_mux_channel_impl_map.hpp"
-#include "htclow_mux_global_send_buffer.hpp"
 
-namespace ams::htclow::mux {
+namespace ams::htclow::driver {
 
-    class Mux {
-        private:
-            PacketFactory *m_packet_factory;
-            ctrl::HtcctrlStateMachine *m_state_machine;
-            TaskManager m_task_manager;
-            os::Event m_wake_event;
-            ChannelImplMap m_channel_impl_map;
-            GlobalSendBuffer m_global_send_buffer;
-            os::SdkMutex m_mutex;
-            bool m_is_sleeping;
-            s16 m_version;
-        public:
-            Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm);
-
-            void SetVersion(u16 version);
+    enum UsbAvailability {
+        UsbAvailability_Unavailable = 1,
+        UsbAvailability_Available   = 2,
+        UsbAvailability_Unknown     = 3,
     };
+
+    using UsbAvailabilityChangeCallback = void (*)(UsbAvailability availability, void *param);
+
+    void SetUsbAvailabilityChangeCallback(UsbAvailabilityChangeCallback callback, void *param);
+    void ClearUsbAvailabilityChangeCallback();
+
+    Result InitializeUsbInterface();
+    void FinalizeUsbInterface();
+
+    Result SendUsb(int *out_transferred, const void *src, int src_size);
+    Result ReceiveUsb(int *out_transferred, void *dst, int dst_size);
+
+    void CancelUsbSendReceive();
+
 
 }
