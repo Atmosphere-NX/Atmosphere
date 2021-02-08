@@ -88,4 +88,17 @@ namespace ams::util {
         return static_cast<int>(cur - src);
     }
 
+    template<typename T>
+    constexpr int Strnlen(const T *str, int count) {
+        AMS_ASSERT(str != nullptr);
+        AMS_ASSERT(count >= 0);
+
+        int length = 0;
+        while (count-- && *str++) {
+            ++length;
+        }
+
+        return length;
+    }
+
 }
