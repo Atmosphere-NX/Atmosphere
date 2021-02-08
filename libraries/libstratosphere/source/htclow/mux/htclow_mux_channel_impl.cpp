@@ -59,7 +59,7 @@ namespace ams::htclow::mux {
         m_send_buffer.Clear();
 
         /* Set our state to shutdown. */
-        this->SetState(ChannelState_Shutdown);
+        this->SetState(ChannelState_Disconnected);
     }
 
     void ChannelImpl::SetState(ChannelState state) {
@@ -78,7 +78,7 @@ namespace ams::htclow::mux {
         }
 
         /* If relevant, notify disconnect. */
-        if (m_state == ChannelState_Shutdown) {
+        if (m_state == ChannelState_Disconnected) {
             m_task_manager->NotifyDisconnect(m_channel);
         }
     }

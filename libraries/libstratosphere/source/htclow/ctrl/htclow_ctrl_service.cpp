@@ -87,10 +87,10 @@ namespace ams::htclow::ctrl {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        if (m_state_machine->GetHtcctrlState() == HtcctrlState_7) {
-            R_TRY(this->SetState(HtcctrlState_8));
+        if (m_state_machine->GetHtcctrlState() == HtcctrlState_Sleep) {
+            R_TRY(this->SetState(HtcctrlState_ExitSleep));
         } else {
-            R_TRY(this->SetState(HtcctrlState_0));
+            R_TRY(this->SetState(HtcctrlState_DriverConnected));
         }
 
         return ResultSuccess();
@@ -100,10 +100,10 @@ namespace ams::htclow::ctrl {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        if (m_state_machine->GetHtcctrlState() == HtcctrlState_6) {
-            R_TRY(this->SetState(HtcctrlState_7));
+        if (m_state_machine->GetHtcctrlState() == HtcctrlState_EnterSleep) {
+            R_TRY(this->SetState(HtcctrlState_Sleep));
         } else {
-            R_TRY(this->SetState(HtcctrlState_11));
+            R_TRY(this->SetState(HtcctrlState_DriverDisconnected));
         }
 
         return ResultSuccess();

@@ -19,57 +19,89 @@
 namespace ams::htclow::ctrl {
 
     enum HtcctrlState : u32 {
-        HtcctrlState_0  =  0,
-        HtcctrlState_1  =  1,
-        HtcctrlState_2  =  2,
-        HtcctrlState_3  =  3,
-        HtcctrlState_4  =  4,
-        HtcctrlState_5  =  5,
-        HtcctrlState_6  =  6,
-        HtcctrlState_7  =  7,
-        HtcctrlState_8  =  8,
-        HtcctrlState_9  =  9,
-        HtcctrlState_10 = 10,
-        HtcctrlState_11 = 11,
-        HtcctrlState_12 = 12,
+        HtcctrlState_DriverConnected       =  0,
+        HtcctrlState_SentConnectFromHost   =  1,
+        HtcctrlState_Connected             =  2,
+        HtcctrlState_SentReadyFromHost     =  3,
+        HtcctrlState_Ready                 =  4,
+        HtcctrlState_SentSuspendFromTarget =  5,
+        HtcctrlState_EnterSleep            =  6,
+        HtcctrlState_Sleep                 =  7,
+        HtcctrlState_ExitSleep             =  8,
+        HtcctrlState_SentResumeFromTarget  =  9,
+        HtcctrlState_Disconnected          = 10,
+        HtcctrlState_DriverDisconnected    = 11,
+        HtcctrlState_Error                 = 12,
     };
 
     constexpr bool IsStateTransitionAllowed(HtcctrlState from, HtcctrlState to) {
         switch (from) {
-            case HtcctrlState_0:
-                return to == HtcctrlState_1 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_1:
-                return to == HtcctrlState_2 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_2:
-                return to == HtcctrlState_3 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_3:
-                return to == HtcctrlState_4 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_4:
-                return to == HtcctrlState_5 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_5:
-                return to == HtcctrlState_6 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_6:
-                return to == HtcctrlState_7 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_7:
-                return to == HtcctrlState_8;
-            case HtcctrlState_8:
-                return to == HtcctrlState_9 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_9:
-                return to == HtcctrlState_4 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_10:
-                return to == HtcctrlState_1 || to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
-            case HtcctrlState_11:
-                return to == HtcctrlState_0;
-            case HtcctrlState_12:
-                return to == HtcctrlState_10 || to == HtcctrlState_11 || to == HtcctrlState_12;
+            case HtcctrlState_DriverConnected:
+                return to == HtcctrlState_SentConnectFromHost ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_SentConnectFromHost:
+                return to == HtcctrlState_Connected ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_Connected:
+                return to == HtcctrlState_SentReadyFromHost ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_SentReadyFromHost:
+                return to == HtcctrlState_Ready ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_Ready:
+                return to == HtcctrlState_SentSuspendFromTarget ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_SentSuspendFromTarget:
+                return to == HtcctrlState_EnterSleep ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_EnterSleep:
+                return to == HtcctrlState_Sleep ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_Sleep:
+                return to == HtcctrlState_ExitSleep;
+            case HtcctrlState_ExitSleep:
+                return to == HtcctrlState_SentResumeFromTarget ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_SentResumeFromTarget:
+                return to == HtcctrlState_Ready ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_Disconnected:
+                return to == HtcctrlState_SentConnectFromHost ||
+                       to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
+            case HtcctrlState_DriverDisconnected:
+                return to == HtcctrlState_DriverConnected;
+            case HtcctrlState_Error:
+                return to == HtcctrlState_Disconnected ||
+                       to == HtcctrlState_DriverDisconnected ||
+                       to == HtcctrlState_Error;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
 
     constexpr bool IsDisconnected(HtcctrlState state) {
         switch (state) {
-            case HtcctrlState_10:
-            case HtcctrlState_11:
+            case HtcctrlState_Disconnected:
+            case HtcctrlState_DriverDisconnected:
                 return true;
             default:
                 return false;
@@ -78,9 +110,9 @@ namespace ams::htclow::ctrl {
 
     constexpr bool IsConnecting(HtcctrlState state) {
         switch (state) {
-            case HtcctrlState_0:
-            case HtcctrlState_1:
-            case HtcctrlState_10:
+            case HtcctrlState_DriverConnected:
+            case HtcctrlState_SentConnectFromHost:
+            case HtcctrlState_Disconnected:
                 return true;
             default:
                 return false;
@@ -89,14 +121,14 @@ namespace ams::htclow::ctrl {
 
     constexpr bool IsConnected(HtcctrlState state) {
         switch (state) {
-            case HtcctrlState_2:
-            case HtcctrlState_3:
-            case HtcctrlState_4:
-            case HtcctrlState_5:
-            case HtcctrlState_6:
-            case HtcctrlState_7:
-            case HtcctrlState_8:
-            case HtcctrlState_9:
+            case HtcctrlState_Connected:
+            case HtcctrlState_SentReadyFromHost:
+            case HtcctrlState_Ready:
+            case HtcctrlState_SentSuspendFromTarget:
+            case HtcctrlState_EnterSleep:
+            case HtcctrlState_Sleep:
+            case HtcctrlState_ExitSleep:
+            case HtcctrlState_SentResumeFromTarget:
                 return true;
             default:
                 return false;
@@ -105,12 +137,12 @@ namespace ams::htclow::ctrl {
 
     constexpr bool IsReadied(HtcctrlState state) {
         switch (state) {
-            case HtcctrlState_4:
-            case HtcctrlState_5:
-            case HtcctrlState_6:
-            case HtcctrlState_7:
-            case HtcctrlState_8:
-            case HtcctrlState_9:
+            case HtcctrlState_Ready:
+            case HtcctrlState_SentSuspendFromTarget:
+            case HtcctrlState_EnterSleep:
+            case HtcctrlState_Sleep:
+            case HtcctrlState_ExitSleep:
+            case HtcctrlState_SentResumeFromTarget:
                 return true;
             default:
                 return false;
@@ -119,11 +151,11 @@ namespace ams::htclow::ctrl {
 
     constexpr bool IsSleeping(HtcctrlState state) {
         switch (state) {
-            case HtcctrlState_5:
-            case HtcctrlState_6:
-            case HtcctrlState_7:
-            case HtcctrlState_8:
-            case HtcctrlState_9:
+            case HtcctrlState_SentSuspendFromTarget:
+            case HtcctrlState_EnterSleep:
+            case HtcctrlState_Sleep:
+            case HtcctrlState_ExitSleep:
+            case HtcctrlState_SentResumeFromTarget:
                 return true;
             default:
                 return false;

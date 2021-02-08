@@ -31,19 +31,22 @@ namespace ams::htclow {
         ChannelState_Connectable   = 0,
         ChannelState_Unconnectable = 1,
         ChannelState_Connected     = 2,
-        ChannelState_Shutdown      = 3,
+        ChannelState_Disconnected  = 3,
     };
 
     constexpr bool IsStateTransitionAllowed(ChannelState from, ChannelState to) {
         switch (from) {
             case ChannelState_Connectable:
-                return to == ChannelState_Unconnectable || to == ChannelState_Connected || to == ChannelState_Shutdown;
+                return to == ChannelState_Unconnectable ||
+                       to == ChannelState_Connected ||
+                       to == ChannelState_Disconnected;
             case ChannelState_Unconnectable:
-                return to == ChannelState_Connectable || to == ChannelState_Shutdown;
+                return to == ChannelState_Connectable ||
+                       to == ChannelState_Disconnected;
             case ChannelState_Connected:
-                return to == ChannelState_Shutdown;
-            case ChannelState_Shutdown:
-                return to == ChannelState_Shutdown;
+                return to == ChannelState_Disconnected;
+            case ChannelState_Disconnected:
+                return to == ChannelState_Disconnected;
             AMS_UNREACHABLE_DEFAULT_CASE();
         }
     }
