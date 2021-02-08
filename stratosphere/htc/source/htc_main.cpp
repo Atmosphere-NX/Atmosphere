@@ -132,11 +132,53 @@ void __libnx_free(void *mem) {
     AMS_ABORT("__libnx_free was called");
 }
 
+namespace ams::htc {
+
+    namespace {
+
+        constexpr htclow::impl::DriverType DefaultHtclowDriverType = htclow::impl::DriverType::Usb;
+
+        htclow::impl::DriverType GetHtclowDriverType() {
+            /* Get the transport type. */
+            char transport[0x10];
+            if (settings::fwdbg::GetSettingsItemValue(transport, sizeof(transport), "bsp0", "tm_transport") == 0) {
+                return DefaultHtclowDriverType;
+            }
+
+            /* Make the transport type case insensitive. */
+            transport[util::size(transport) - 1] = '\x00';
+            for (size_t i = 0; i < util::size(transport); ++i) {
+                transport[i] = std::tolower(static_cast<unsigned char>(transport[i]));
+            }
+
+            /* Select the transport. */
+            if (std::strstr(transport, "usb")) {
+                return htclow::impl::DriverType::Usb;
+            } else if (std::strstr(transport, "hb")) {
+                return htclow::impl::DriverType::HostBridge;
+            } else if (std::strstr(transport, "plainchannel")) {
+                return htclow::impl::DriverType::PlainChannel;
+            } else {
+                return DefaultHtclowDriverType;
+            }
+        }
+
+    }
+
+}
+
 int main(int argc, char **argv)
 {
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(htc, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(htc, Main));
+
+    /* Get and set the default driver type. */
+    const auto driver_type = htc::GetHtclowDriverType();
+    htclow::HtclowManagerHolder::SetDefaultDriver(driver_type);
+
+    /* Initialize the htclow manager. */
+    htclow::HtclowManagerHolder::AddReference();
 
     /* TODO */
 
