@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -19,7 +19,7 @@
 namespace ams::htclow::ctrl {
 
     enum HtcctrlState : u32 {
-        /* ... */
+        HtcctrlState_Eleven = 11,
     };
 
 }

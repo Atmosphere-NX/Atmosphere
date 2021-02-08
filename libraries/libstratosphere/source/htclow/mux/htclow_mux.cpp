@@ -13,13 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
+#include "htclow_mux.hpp"
 
-namespace ams::htclow {
+namespace ams::htclow::mux {
 
-    class Packet : public util::IntrusiveListBaseNode<Packet> {
-        /* TODO */
-    };
+    Mux::Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm)
+        : m_packet_factory(pf), m_state_machine(sm), m_task_manager(), m_wake_event(os::EventClearMode_ManualClear),
+          m_channel_impl_map(pf, sm, std::addressof(m_task_manager), std::addressof(m_wake_event)), m_global_send_buffer(pf),
+          m_mutex(), m_is_sleeping(false), m_version(5)
+    {
+        /* ... */
+    }
 
 }

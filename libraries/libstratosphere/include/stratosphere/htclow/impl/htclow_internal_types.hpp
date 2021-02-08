@@ -26,7 +26,7 @@ namespace ams::htclow::impl {
     };
     static_assert(sizeof(ChannelInternalType) == 4);
 
-    ALWAYS_INLINE ChannelInternalType ConvertChannelType(ChannelType channel) {
+    constexpr ALWAYS_INLINE ChannelInternalType ConvertChannelType(ChannelType channel) {
         return {
             .channel_id = channel._channel_id,
             .reserved   = 0,
@@ -34,27 +34,27 @@ namespace ams::htclow::impl {
         };
     }
 
-    ALWAYS_INLINE bool operator==(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
+    constexpr ALWAYS_INLINE bool operator==(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
         return lhs.module_id == rhs.module_id && lhs.reserved == rhs.reserved && lhs.channel_id == rhs.channel_id;
     }
 
-    ALWAYS_INLINE bool operator!=(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
+    constexpr ALWAYS_INLINE bool operator!=(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
         return !(lhs == rhs);
     }
 
-    ALWAYS_INLINE bool operator<(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
+    constexpr ALWAYS_INLINE bool operator<(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
         return lhs.module_id < rhs.module_id || lhs.reserved < rhs.reserved || lhs.channel_id < rhs.channel_id;
     }
 
-    ALWAYS_INLINE bool operator>(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
+    constexpr ALWAYS_INLINE bool operator>(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
         return rhs < lhs;
     }
 
-    ALWAYS_INLINE bool operator<=(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
+    constexpr ALWAYS_INLINE bool operator<=(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
         return !(lhs > rhs);
     }
 
-    ALWAYS_INLINE bool operator>=(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
+    constexpr ALWAYS_INLINE bool operator>=(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
         return !(lhs < rhs);
     }
 

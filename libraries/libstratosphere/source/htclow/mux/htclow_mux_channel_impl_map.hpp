@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -44,13 +44,13 @@ namespace ams::htclow::mux {
             PacketFactory *m_packet_factory;
             ctrl::HtcctrlStateMachine *m_state_machine;
             TaskManager *m_task_manager;
-            os::EventType *m_event;
+            os::Event *m_event;
             u8 m_map_buffer[MapRequiredMemorySize];
             MapType m_map;
             u8 m_storage[0x5200]; /* TODO */
             bool m_storage_valid[MaxChannelCount];
         public:
-            ChannelImplMap(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::EventType *ev);
+            ChannelImplMap(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);
     };
 
 }

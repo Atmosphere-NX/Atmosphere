@@ -13,13 +13,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
+#include "htclow_mux_channel_impl_map.hpp"
 
-namespace ams::htclow {
+namespace ams::htclow::mux {
 
-    class Packet : public util::IntrusiveListBaseNode<Packet> {
-        /* TODO */
-    };
+    ChannelImplMap::ChannelImplMap(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev)
+        : m_packet_factory(pf), m_state_machine(sm), m_task_manager(tm), m_event(ev), m_map()
+    {
+        /* Initialize the map. */
+        m_map.Initialize(MaxChannelCount, m_map_buffer, sizeof(m_map_buffer));
+
+        /* Set all storages as invalid. */
+        for (auto i = 0; i < MaxChannelCount; ++i) {
+            m_storage_valid[i] = false;
+        }
+    }
 
 }
