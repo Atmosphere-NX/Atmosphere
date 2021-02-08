@@ -102,7 +102,7 @@ namespace ams::htclow::driver {
         /* Send until we've sent everything. */
         for (auto transferred = 0; transferred < dst_size; /* ... */) {
             int cur;
-            R_TRY(SendUsb(std::addressof(cur), reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(dst) + transferred), dst_size - transferred));
+            R_TRY(ReceiveUsb(std::addressof(cur), reinterpret_cast<void *>(reinterpret_cast<uintptr_t>(dst) + transferred), dst_size - transferred));
 
             transferred += cur;
         }
