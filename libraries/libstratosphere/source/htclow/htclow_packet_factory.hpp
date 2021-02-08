@@ -25,7 +25,13 @@ namespace ams::htclow {
         public:
             PacketFactory(mem::StandardAllocator *allocator) : m_allocator(allocator) { /* ... */ }
 
+            std::unique_ptr<Packet, PacketDeleter> MakeDataPacket(impl::ChannelInternalType channel, s16 version, const void *body, int body_size, u64 share, u32 offset);
+            std::unique_ptr<Packet, PacketDeleter> MakeMaxDataPacket(impl::ChannelInternalType channel, s16 version, u64 share);
+            std::unique_ptr<Packet, PacketDeleter> MakeErrorPacket(impl::ChannelInternalType channel);
+
             void Delete(Packet *packet);
+         private:
+            std::unique_ptr<Packet, PacketDeleter> MakeSendPacketCommon(impl::ChannelInternalType channel, s16 version, int body_size);
     };
 
 }

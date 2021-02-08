@@ -34,6 +34,10 @@ namespace ams::htclow {
         ChannelState_Disconnected  = 3,
     };
 
+    struct ChannelConfig {
+        bool flow_control_enabled;
+    };
+
     constexpr bool IsStateTransitionAllowed(ChannelState from, ChannelState to) {
         switch (from) {
             case ChannelState_Connectable:

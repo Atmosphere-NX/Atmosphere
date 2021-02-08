@@ -26,6 +26,14 @@ namespace ams::htclow::mux {
         }
     }
 
+    void TaskManager::NotifyReceiveData(impl::ChannelInternalType channel, size_t size) {
+        for (auto i = 0; i < MaxTaskCount; ++i) {
+            if (m_valid[i] && m_tasks[i].channel == channel && m_tasks[i].size <= size) {
+                this->CompleteTask(i, EventTrigger_ReceiveData);
+            }
+        }
+    }
+
     void TaskManager::NotifyConnectReady() {
         for (auto i = 0; i < MaxTaskCount; ++i) {
             if (m_valid[i] && m_tasks[i].type == TaskType_Connect) {

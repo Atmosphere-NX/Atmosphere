@@ -83,6 +83,37 @@ namespace ams::htclow::ctrl {
         this->UpdateBeaconResponse(this->GetConnectionType(driver_type));
     }
 
+    Result HtcctrlService::CheckReceivedHeader(const HtcctrlPacketHeader &header) const {
+        /* Check the packet signature. */
+        AMS_ASSERT(header.signature == HtcctrlSignature);
+
+        /* Validate version. */
+        R_UNLESS(header.version == 1, htclow::ResultProtocolError());
+
+        /* Switch on the packet type. */
+        switch (header.packet_type) {
+            case HtcctrlPacketType_ConnectFromHost:
+            case HtcctrlPacketType_SuspendFromHost:
+            case HtcctrlPacketType_ResumeFromHost:
+            case HtcctrlPacketType_DisconnectFromHost:
+            case HtcctrlPacketType_BeaconQuery:
+                R_UNLESS(header.body_size == 0, htclow::ResultProtocolError());
+                break;
+            case HtcctrlPacketType_ReadyFromHost:
+                R_UNLESS(0 <= header.body_size && header.body_size <= sizeof(HtcctrlPacketBody), htclow::ResultProtocolError());
+                break;
+            default:
+                return htclow::ResultProtocolError();
+        }
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceivePacket(const HtcctrlPacketHeader &header, const void *body, size_t body_size) {
+        /* TODO */
+        AMS_ABORT("HtcctrlService::ProcessReceivePacket");
+    }
+
     Result HtcctrlService::NotifyDriverConnected() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);

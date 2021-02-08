@@ -29,6 +29,10 @@ namespace ams::htclow::mux {
             bool m_has_copied;
         public:
             RingBuffer() : m_buffer(), m_read_only_buffer(), m_is_read_only(true), m_buffer_size(), m_data_size(), m_offset(), m_has_copied(false) { /* ... */ }
+
+            size_t GetDataSize() { return m_data_size; }
+
+            Result Write(const void *data, size_t size);
     };
 
 }

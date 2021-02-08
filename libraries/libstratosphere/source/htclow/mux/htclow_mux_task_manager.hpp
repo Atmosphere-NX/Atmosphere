@@ -22,6 +22,7 @@ namespace ams::htclow::mux {
 
     enum EventTrigger : u8 {
         EventTrigger_Disconnect   =  1,
+        EventTrigger_ReceiveData  =  2,
         EventTrigger_ConnectReady = 11,
     };
 
@@ -40,7 +41,7 @@ namespace ams::htclow::mux {
                 bool has_event_trigger;
                 EventTrigger event_trigger;
                 TaskType type;
-                u64 _38;
+                size_t size;
             };
         private:
             bool m_valid[MaxTaskCount];
@@ -49,6 +50,7 @@ namespace ams::htclow::mux {
             TaskManager() : m_valid() { /* ... */ }
 
             void NotifyDisconnect(impl::ChannelInternalType channel);
+            void NotifyReceiveData(impl::ChannelInternalType channel, size_t size);
             void NotifyConnectReady();
         private:
             void CompleteTask(int index, EventTrigger trigger);

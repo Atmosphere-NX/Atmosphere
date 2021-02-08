@@ -64,6 +64,9 @@ namespace ams::htclow::ctrl {
 
             void SetDriverType(impl::DriverType driver_type);
 
+            Result CheckReceivedHeader(const HtcctrlPacketHeader &header) const;
+            Result ProcessReceivePacket(const HtcctrlPacketHeader &header, const void *body, size_t body_size);
+
             Result NotifyDriverConnected();
             Result NotifyDriverDisconnected();
     };
