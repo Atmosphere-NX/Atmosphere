@@ -17,6 +17,7 @@
 #include <stratosphere.hpp>
 #include "htclow_ctrl_settings_holder.hpp"
 #include "htclow_ctrl_send_buffer.hpp"
+#include "htclow_ctrl_state.hpp"
 
 namespace ams::htclow {
 
@@ -55,10 +56,16 @@ namespace ams::htclow::ctrl {
             const char *GetConnectionType(impl::DriverType driver_type) const;
 
             void UpdateBeaconResponse(const char *connection);
+
+            Result SetState(HtcctrlState state);
+            void ReflectState();
         public:
             HtcctrlService(HtcctrlPacketFactory *pf, HtcctrlStateMachine *sm, mux::Mux *mux);
 
             void SetDriverType(impl::DriverType driver_type);
+
+            Result NotifyDriverConnected();
+            Result NotifyDriverDisconnected();
     };
 
 }

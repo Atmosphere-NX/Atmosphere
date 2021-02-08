@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htclow_mux.hpp"
+#include "../ctrl/htclow_ctrl_state_machine.hpp"
 
 namespace ams::htclow::mux {
 
@@ -34,6 +35,30 @@ namespace ams::htclow::mux {
         /* NOTE: Nintendo does this highly inefficiently... */
         for (auto &pair : m_channel_impl_map.GetMap()) {
             m_channel_impl_map[pair.first].SetVersion(m_version);
+        }
+    }
+
+    void Mux::UpdateChannelState() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Update the state of all channels in our map. */
+        /* NOTE: Nintendo does this highly inefficiently... */
+        for (auto pair : m_channel_impl_map.GetMap()) {
+            m_channel_impl_map[pair.first].UpdateState();
+        }
+    }
+
+    void Mux::UpdateMuxState() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Update whether we're sleeping. */
+        if (m_state_machine->IsSleeping()) {
+            m_is_sleeping = true;
+        } else {
+            m_is_sleeping = false;
+            m_wake_event.Signal();
         }
     }
 

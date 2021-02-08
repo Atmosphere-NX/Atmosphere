@@ -36,6 +36,9 @@ namespace ams::htclow::mux {
             Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm);
 
             void SetVersion(u16 version);
+
+            void UpdateChannelState();
+            void UpdateMuxState();
     };
 
 }

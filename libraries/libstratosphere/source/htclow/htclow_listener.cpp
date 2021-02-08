@@ -56,8 +56,35 @@ namespace ams::htclow {
     }
 
     void Listener::ListenThread() {
-        /* TODO */
-        AMS_ABORT("Listener::ListenThread");
+        /* Check pre-conditions. */
+        AMS_ASSERT(m_driver != nullptr);
+        AMS_ASSERT(m_worker != nullptr);
+
+        /* Set the worker's driver. */
+        m_worker->SetDriver(m_driver);
+
+        /* Loop forever, while we're not cancelled. */
+        while (!m_cancelled) {
+            /* Connect. */
+            if (R_FAILED(m_driver->Connect(m_event.GetBase()))) {
+                return;
+            }
+
+            /* Notify that we're connected. */
+            R_ABORT_UNLESS(m_service->NotifyDriverConnected());
+
+            /* Start the worker. */
+            m_worker->Start();
+
+            /* Wait for the worker to end. */
+            m_worker->Wait();
+
+            /* Shutdown the driver. */
+            m_driver->Shutdown();
+
+            /* Notify that we're disconnected. */
+            R_ABORT_UNLESS(m_service->NotifyDriverDisconnected());
+        }
     }
 
 }

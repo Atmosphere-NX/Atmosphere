@@ -20,14 +20,26 @@ namespace ams::htclow::mux {
 
     constexpr inline int MaxTaskCount = 0x80;
 
+    enum EventTrigger : u8 {
+        EventTrigger_Disconnect   =  1,
+        EventTrigger_ConnectReady = 11,
+    };
+
     class TaskManager {
         private:
+            enum TaskType : u8 {
+                TaskType_Receive = 0,
+                TaskType_Send    = 1,
+                TaskType_Flush   = 6,
+                TaskType_Connect = 7,
+            };
+
             struct Task {
                 impl::ChannelInternalType channel;
                 os::EventType event;
-                u8 _30;
-                u8 _31;
-                u8 _32;
+                bool has_event_trigger;
+                EventTrigger event_trigger;
+                TaskType type;
                 u64 _38;
             };
         private:
@@ -35,6 +47,11 @@ namespace ams::htclow::mux {
             Task m_tasks[MaxTaskCount];
         public:
             TaskManager() : m_valid() { /* ... */ }
+
+            void NotifyDisconnect(impl::ChannelInternalType channel);
+            void NotifyConnectReady();
+        private:
+            void CompleteTask(int index, EventTrigger trigger);
     };
 
 }

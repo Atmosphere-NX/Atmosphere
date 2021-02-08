@@ -34,9 +34,30 @@ namespace ams::htclow {
             os::Event m_event;
             void *m_receive_thread_stack;
             void *m_send_thread_stack;
-            u8 m_7C400;
+            bool m_cancelled;
+        private:
+            static void ReceiveThreadEntry(void *arg) {
+                static_cast<Worker *>(arg)->ReceiveThread();
+            }
+
+            static void SendThreadEntry(void *arg) {
+                static_cast<Worker *>(arg)->SendThread();
+            }
+
+            void ReceiveThread();
+            void SendThread();
         public:
             Worker(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv);
+
+            void SetDriver(driver::IDriver *driver);
+
+            void Start();
+            void Wait();
+        private:
+            void Cancel();
+
+            Result ProcessReceive();
+            Result ProcessSend();
     };
 
 }

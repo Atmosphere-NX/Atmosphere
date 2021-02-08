@@ -45,12 +45,18 @@ namespace ams::htclow::mux {
             /* TODO: Channel config */
             /* TODO: tracking variables. */
             std::optional<u64> m_108;
-            os::Event m_send_packet_event;
-            /* TODO: Channel state. */
+            os::Event m_state_change_event;
+            ChannelState m_state;
         public:
             ChannelImpl(impl::ChannelInternalType channel, PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);
 
             void SetVersion(s16 version);
+
+            void UpdateState();
+        private:
+            void ShutdownForce();
+            void SetState(ChannelState state);
+            void SetStateWithoutCheck(ChannelState state);
     };
 
 }

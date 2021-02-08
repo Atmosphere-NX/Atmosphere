@@ -15,6 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
+#include "htclow_packet.hpp"
 
 namespace ams::htclow {
 
@@ -23,6 +24,8 @@ namespace ams::htclow {
             mem::StandardAllocator *m_allocator;
         public:
             PacketFactory(mem::StandardAllocator *allocator) : m_allocator(allocator) { /* ... */ }
+
+            void Delete(Packet *packet);
     };
 
 }
