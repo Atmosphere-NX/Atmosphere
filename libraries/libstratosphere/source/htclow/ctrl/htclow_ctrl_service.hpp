@@ -57,6 +57,8 @@ namespace ams::htclow::ctrl {
             void UpdateBeaconResponse(const char *connection);
         public:
             HtcctrlService(HtcctrlPacketFactory *pf, HtcctrlStateMachine *sm, mux::Mux *mux);
+
+            void SetDriverType(impl::DriverType driver_type);
     };
 
 }

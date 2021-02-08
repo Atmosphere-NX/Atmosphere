@@ -73,5 +73,12 @@ namespace ams::htclow::ctrl {
         );
     }
 
+    void HtcctrlService::SetDriverType(impl::DriverType driver_type) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Update our beacon response. */
+        this->UpdateBeaconResponse(this->GetConnectionType(driver_type));
+    }
 
 }

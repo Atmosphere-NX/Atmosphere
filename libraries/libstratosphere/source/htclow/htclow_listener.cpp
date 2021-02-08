@@ -18,11 +18,46 @@
 
 namespace ams::htclow {
 
+    namespace {
+
+        constexpr inline size_t ThreadStackSize = 4_KB;
+
+    }
+
     Listener::Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker)
-        : m_thread_stack_size(4_KB), m_allocator(allocator), m_mux(mux), m_service(ctrl_srv), m_worker(worker), m_event(os::EventClearMode_ManualClear), m_driver(nullptr), m_thread_running(false), m_cancelled(false)
+        : m_thread_stack_size(ThreadStackSize), m_allocator(allocator), m_mux(mux), m_service(ctrl_srv), m_worker(worker), m_event(os::EventClearMode_ManualClear), m_driver(nullptr), m_thread_running(false), m_cancelled(false)
     {
         /* Allocate stack. */
         m_listen_thread_stack = m_allocator->Allocate(m_thread_stack_size, os::ThreadStackAlignment);
+    }
+
+    void Listener::Start(driver::IDriver *driver) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(!m_thread_running);
+
+        /* Create the thread. */
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(m_listen_thread), ListenThreadEntry, this, m_listen_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtclowListen)));
+
+        /* Set the thread name. */
+        os::SetThreadNamePointer(std::addressof(m_listen_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtclowListen));
+
+        /* Set our driver. */
+        m_driver = driver;
+
+        /* Set state. */
+        m_thread_running = true;
+        m_cancelled      = false;
+
+        /* Clear our event. */
+        m_event.Clear();
+
+        /* Start the thread. */
+        os::StartThread(std::addressof(m_listen_thread));
+    }
+
+    void Listener::ListenThread() {
+        /* TODO */
+        AMS_ABORT("Listener::ListenThread");
     }
 
 }

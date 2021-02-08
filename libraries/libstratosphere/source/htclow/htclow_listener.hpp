@@ -32,8 +32,16 @@ namespace ams::htclow {
             driver::IDriver *m_driver;
             bool m_thread_running;
             bool m_cancelled;
+        private:
+            static void ListenThreadEntry(void *arg) {
+                static_cast<Listener *>(arg)->ListenThread();
+            }
+
+            void ListenThread();
         public:
             Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker);
+
+            void Start(driver::IDriver *driver);
     };
 
 }
