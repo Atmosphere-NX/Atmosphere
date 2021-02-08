@@ -16,26 +16,41 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "htclow_mux_task_manager.hpp"
-#include "htclow_mux_channel_impl_map.hpp"
-#include "htclow_mux_global_send_buffer.hpp"
+#include "htclow_mux_send_buffer.hpp"
+
+namespace ams::htclow {
+
+    class PacketFactory;
+
+    namespace ctrl {
+
+        class HtcctrlStateMachine;
+
+    }
+
+}
 
 namespace ams::htclow::mux {
 
-    class Mux {
+    class ChannelImpl {
         private:
+            impl::ChannelInternalType m_channel;
             PacketFactory *m_packet_factory;
             ctrl::HtcctrlStateMachine *m_state_machine;
-            TaskManager m_task_manager;
-            os::Event m_wake_event;
-            ChannelImplMap m_channel_impl_map;
-            GlobalSendBuffer m_global_send_buffer;
-            os::SdkMutex m_mutex;
-            bool m_is_sleeping;
-            u16 m_version;
+            TaskManager *m_task_manager;
+            os::Event *m_event;
+            SendBuffer m_send_buffer;
+            RingBuffer m_receive_buffer;
+            s16 m_version;
+            /* TODO: Channel config */
+            /* TODO: tracking variables. */
+            std::optional<u64> m_108;
+            os::Event m_send_packet_event;
+            /* TODO: Channel state. */
         public:
-            Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm);
+            ChannelImpl(impl::ChannelInternalType channel, PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);
 
-            void SetVersion(u16 version);
+            void SetVersion(s16 version);
     };
 
 }

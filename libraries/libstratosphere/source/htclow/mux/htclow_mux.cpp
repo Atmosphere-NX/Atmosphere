@@ -21,9 +21,20 @@ namespace ams::htclow::mux {
     Mux::Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm)
         : m_packet_factory(pf), m_state_machine(sm), m_task_manager(), m_wake_event(os::EventClearMode_ManualClear),
           m_channel_impl_map(pf, sm, std::addressof(m_task_manager), std::addressof(m_wake_event)), m_global_send_buffer(pf),
-          m_mutex(), m_is_sleeping(false), m_version(5)
+          m_mutex(), m_is_sleeping(false), m_version(ProtocolVersion)
     {
         /* ... */
+    }
+
+    void Mux::SetVersion(u16 version) {
+        /* Set our version. */
+        m_version = version;
+
+        /* Set all entries in our map. */
+        /* NOTE: Nintendo does this highly inefficiently... */
+        for (auto &pair : m_channel_impl_map.GetMap()) {
+            m_channel_impl_map[pair.first].SetVersion(m_version);
+        }
     }
 
 }

@@ -40,17 +40,21 @@ namespace ams::htclow::ctrl {
     class HtcctrlService {
         private:
             SettingsHolder m_settings_holder;
-            u8 m_beacon_response[0x1000];
+            char m_beacon_response[0x1000];
             u8 m_1100[0x1000];
             HtcctrlPacketFactory *m_packet_factory;
             HtcctrlStateMachine *m_state_machine;
             mux::Mux *m_mux;
-            os::EventType m_event;
+            os::Event m_event;
             HtcctrlSendBuffer m_send_buffer;
             os::SdkMutex m_mutex;
             os::SdkConditionVariable m_condvar;
             u8 m_2170[0x1000];
-            u16 m_version;
+            s16 m_version;
+        private:
+            const char *GetConnectionType(impl::DriverType driver_type) const;
+
+            void UpdateBeaconResponse(const char *connection);
         public:
             HtcctrlService(HtcctrlPacketFactory *pf, HtcctrlStateMachine *sm, mux::Mux *mux);
     };

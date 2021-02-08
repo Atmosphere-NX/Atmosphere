@@ -21,6 +21,8 @@ namespace ams::htclow {
     namespace impl {
 
         enum class DriverType {
+            Unknown      = 0,
+            Debug        = 1,
             Socket       = 2,
             Usb          = 3,
             HostBridge   = 4,
@@ -29,5 +31,6 @@ namespace ams::htclow {
 
     }
 
+    constexpr inline s16 ProtocolVersion = 5;
 
 }

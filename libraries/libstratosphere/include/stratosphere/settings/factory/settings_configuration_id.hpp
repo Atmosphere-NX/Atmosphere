@@ -14,26 +14,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
-#include "htclow_worker.hpp"
+#include <vapours.hpp>
 
-namespace ams::htclow {
+namespace ams::settings::factory {
 
-    class Listener {
-        private:
-            u32 m_thread_stack_size;
-            mem::StandardAllocator *m_allocator;
-            mux::Mux *m_mux;
-            ctrl::HtcctrlService *m_service;
-            Worker *m_worker;
-            os::Event m_event;
-            os::ThreadType m_listen_thread;
-            void *m_listen_thread_stack;
-            driver::IDriver *m_driver;
-            bool m_thread_running;
-            bool m_cancelled;
-        public:
-            Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker);
+    struct ConfigurationId1 {
+        char str[30];
     };
+    static_assert(sizeof(ConfigurationId1) == 30);
+    static_assert(util::is_pod<ConfigurationId1>::value);
+
+    void GetConfigurationId1(ConfigurationId1 *out);
 
 }

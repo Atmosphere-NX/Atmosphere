@@ -18,6 +18,7 @@
 
 namespace ams::settings::impl {
 
+    Result GetSerialNumber(settings::factory::SerialNumber *out);
     Result GetSerialNumber(settings::system::SerialNumber *out);
 
 }

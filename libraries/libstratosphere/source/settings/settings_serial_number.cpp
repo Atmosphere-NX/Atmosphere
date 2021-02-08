@@ -16,6 +16,20 @@
 #include <stratosphere.hpp>
 #include "impl/settings_serial_number_impl.hpp"
 
+namespace ams::settings::factory {
+
+    Result GetSerialNumber(SerialNumber *out) {
+        const Result result = settings::impl::GetSerialNumber(out);
+
+        if (!settings::ResultCalibrationDataFileSystemCorrupted::Includes(result) && !settings::ResultCalibrationDataCrcError::Includes(result)) {
+            R_ABORT_UNLESS(result);
+        }
+
+        return result;
+    }
+
+}
+
 namespace ams::settings::system {
 
     void GetSerialNumber(SerialNumber *out) {

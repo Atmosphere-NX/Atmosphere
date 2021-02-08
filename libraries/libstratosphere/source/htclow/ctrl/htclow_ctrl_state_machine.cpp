@@ -20,6 +20,7 @@ namespace ams::htclow::ctrl {
 
     namespace {
 
+        /* TODO: Real module id names */
         constexpr const impl::ChannelInternalType ServiceChannels[] = {
             {
                 .channel_id = 0,
