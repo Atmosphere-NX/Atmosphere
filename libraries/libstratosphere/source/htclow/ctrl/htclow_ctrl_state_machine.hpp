@@ -21,9 +21,21 @@ namespace ams::htclow::ctrl {
 
     class HtcctrlStateMachine {
         private:
+            enum ServiceChannelSupport {
+                ServiceChannelSupport_Unknown     = 0,
+                ServiceChannelSupport_Suppported  = 1,
+                ServiceChannelSupport_Unsupported = 2,
+            };
+
+            enum ServiceChannelConnect {
+                ServiceChannelConnect_NotConnecting     = 0,
+                ServiceChannelConnect_Connecting        = 1,
+                ServiceChannelConnect_ConnectingChecked = 2,
+            };
+
             struct ServiceChannelState {
-                u32 _00;
-                u32 _04;
+                ServiceChannelSupport support;
+                ServiceChannelConnect connect;
             };
 
             static constexpr int MaxChannelCount = 10;

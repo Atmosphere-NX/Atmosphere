@@ -42,7 +42,7 @@ namespace ams::htclow::ctrl {
 
     }
 
-    HtcctrlStateMachine::HtcctrlStateMachine() : m_map(), m_state(HtcctrlState_11), m_prev_state(HtcctrlState_11), m_mutex() {
+    HtcctrlStateMachine::HtcctrlStateMachine() : m_map(), m_state(HtcctrlState_DriverDisconnected), m_prev_state(HtcctrlState_DriverDisconnected), m_mutex() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
@@ -153,28 +153,25 @@ namespace ams::htclow::ctrl {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        /* TODO: What do these values mean? */
         auto it = m_map.find(channel);
-        return it != m_map.end() && it->second._04 == 2 && it->second._00 == 2;
+        return it != m_map.end() && it->second.connect == ServiceChannelConnect_ConnectingChecked && it->second.support == ServiceChannelSupport_Unsupported;
     }
 
     bool HtcctrlStateMachine::IsConnectable(const impl::ChannelInternalType &channel) {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        /* TODO: What do these values mean? */
         auto it = m_map.find(channel);
-        return ctrl::IsConnected(m_state) && (!(it != m_map.end()) || it->second._04 != 2);
+        return ctrl::IsConnected(m_state) && (it == m_map.end() || it->second.connect != ServiceChannelConnect_ConnectingChecked);
     }
 
     void HtcctrlStateMachine::SetNotConnecting(const impl::ChannelInternalType &channel) {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        /* TODO: What do these values mean? */
         auto it = m_map.find(channel);
-        if (it != m_map.end() && it->second._04 != 2) {
-            it->second._04 = 0;
+        if (it != m_map.end() && it->second.connect != ServiceChannelConnect_ConnectingChecked) {
+            it->second.connect = ServiceChannelConnect_NotConnecting;
         }
     }
 
