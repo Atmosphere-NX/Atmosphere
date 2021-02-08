@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
+ * Copyright (c) 2018-2020 Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,7 +26,7 @@ namespace ams::htclow::mux {
             PacketFactory *m_packet_factory;
             ctrl::HtcctrlStateMachine *m_state_machine;
             TaskManager m_task_manager;
-            os::EventType m_wake_event;
+            os::Event m_wake_event;
             ChannelImplMap m_channel_impl_map;
             GlobalSendBuffer m_global_send_buffer;
             os::SdkMutex m_mutex;
