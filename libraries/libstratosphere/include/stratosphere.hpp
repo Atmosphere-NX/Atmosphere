@@ -90,3 +90,6 @@
 #include <stratosphere/fs.hpp>
 #include <stratosphere/fssrv.hpp>
 #include <stratosphere/fssystem.hpp>
+
+/* External modules that we're including. */
+#include <stratosphere/rapidjson.hpp>
