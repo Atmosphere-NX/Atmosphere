@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,6 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/htclow/htclow_types.hpp>
-#include <stratosphere/htclow/impl/htclow_internal_types.hpp>
-#include <stratosphere/htclow/htclow_manager_holder.hpp>
+#include <stratosphere.hpp>
+
+namespace ams::htclow::ctrl {
+
+    class SettingsHolder {
+        private:
+            char m_hardware_type[0x40];
+            char m_target_name[0x40];
+            char m_serial_number[0x40];
+            char m_firmware_version[0x40];
+        public:
+            SettingsHolder() { /* ... */ }
+    };
+
+}

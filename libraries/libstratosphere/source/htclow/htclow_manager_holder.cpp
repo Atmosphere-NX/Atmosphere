@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "htclow_manager.hpp"
 
 namespace ams::htclow::HtclowManagerHolder {
 
@@ -39,14 +40,14 @@ namespace ams::htclow::HtclowManagerHolder {
             /* Initialize the allocator for the manager. */
             g_allocator.Initialize(g_heap_buffer, sizeof(g_heap_buffer));
 
-            /* TODO: Allocate the manager. */
-            /* g_manager = g_allocator.Allocate(sizeof(HtclowManager), alignof(HtclowManager)); */
+            /* Allocate the manager. */
+            g_manager = static_cast<HtclowManager *>(g_allocator.Allocate(sizeof(HtclowManager), alignof(HtclowManager)));
 
-            /* TODO: Construct the manager. */
-            /* std::construct_at(g_manager, std::addressof(g_allocator)); */
+            /* Construct the manager. */
+            std::construct_at(g_manager, std::addressof(g_allocator));
 
-            /* TODO: Open the driver. */
-            /* R_ABORT_UNLESS(g_manager->OpenDriver(g_default_driver_type)); */
+            /* Open the driver. */
+            R_ABORT_UNLESS(g_manager->OpenDriver(g_default_driver_type));
         }
 
         AMS_ASSERT(g_holder_reference_count > 0);
@@ -58,16 +59,16 @@ namespace ams::htclow::HtclowManagerHolder {
         AMS_ASSERT(g_holder_reference_count > 0);
 
         if ((--g_holder_reference_count) == 0) {
-            /* TODO: Disconnect. */
-            /* g_manager->Disconnect(); */
+            /* Disconnect. */
+            g_manager->Disconnect();
 
-            /* TODO: Close the driver. */
-            /* g_manager->CloseDriver(); */
+            /* Close the driver. */
+            g_manager->CloseDriver();
 
-            /* TODO: Destroy the manager. */
-            /* std::destroy_at(g_manager); */
-            /* g_allocator.Free(g_manager); */
-            /* g_manager = nullptr; */
+            /* Destroy the manager. */
+            std::destroy_at(g_manager);
+            g_allocator.Free(g_manager);
+            g_manager = nullptr;
 
             /* Finalize the allocator. */
             g_allocator.Finalize();
@@ -75,6 +76,8 @@ namespace ams::htclow::HtclowManagerHolder {
     }
 
     HtclowManager *GetHtclowManager() {
+        std::scoped_lock lk(g_holder_mutex);
+
         return g_manager;
     }
 

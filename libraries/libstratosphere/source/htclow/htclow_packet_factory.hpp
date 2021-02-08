@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,6 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/htclow/htclow_types.hpp>
-#include <stratosphere/htclow/impl/htclow_internal_types.hpp>
-#include <stratosphere/htclow/htclow_manager_holder.hpp>
+#include <stratosphere.hpp>
+
+namespace ams::htclow {
+
+    class PacketFactory {
+        private:
+            mem::StandardAllocator *m_allocator;
+        public:
+            PacketFactory(mem::StandardAllocator *allocator) : m_allocator(allocator) { /* ... */ }
+    };
+
+}
