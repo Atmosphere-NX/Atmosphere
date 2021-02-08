@@ -79,6 +79,7 @@
 #include <stratosphere/spl.hpp>
 #include <stratosphere/time.hpp>
 #include <stratosphere/updater.hpp>
+#include <stratosphere/usb.hpp>
 #include <stratosphere/wec.hpp>
 
 /* Include FS last. */

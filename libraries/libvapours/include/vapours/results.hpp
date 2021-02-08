@@ -59,6 +59,7 @@
 #include <vapours/results/svc_results.hpp>
 #include <vapours/results/time_results.hpp>
 #include <vapours/results/updater_results.hpp>
+#include <vapours/results/usb_results.hpp>
 #include <vapours/results/vi_results.hpp>
 
 /* Unofficial. */
