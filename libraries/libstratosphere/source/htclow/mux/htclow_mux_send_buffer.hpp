@@ -15,25 +15,32 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htclow_worker.hpp"
+#include "../htclow_packet.hpp"
+#include "htclow_mux_ring_buffer.hpp"
 
 namespace ams::htclow {
 
-    class Listener {
+    class PacketFactory;
+
+}
+
+namespace ams::htclow::mux {
+
+    class SendBuffer {
         private:
-            u32 m_thread_stack_size;
-            mem::StandardAllocator *m_allocator;
-            mux::Mux *m_mux;
-            ctrl::HtcctrlService *m_service;
-            Worker *m_worker;
-            os::Event m_event;
-            os::ThreadType m_listen_thread;
-            void *m_listen_thread_stack;
-            driver::IDriver *m_driver;
-            bool m_thread_running;
-            bool m_cancelled;
+            using PacketList = util::IntrusiveListBaseTraits<Packet>::ListType;
+        private:
+            impl::ChannelInternalType m_channel;
+            PacketFactory *m_packet_factory;
+            RingBuffer m_ring_buffer;
+            PacketList m_packet_list;
+            s16 m_version;
+            bool m_flow_control_enabled;
+            size_t m_max_packet_size;
         public:
-            Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker);
+            SendBuffer(impl::ChannelInternalType channel, PacketFactory *pf);
+
+            void SetVersion(s16 version);
     };
 
 }

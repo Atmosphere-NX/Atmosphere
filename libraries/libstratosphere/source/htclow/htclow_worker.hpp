@@ -31,7 +31,7 @@ namespace ams::htclow {
             driver::IDriver *m_driver;
             os::ThreadType m_receive_thread;
             os::ThreadType m_send_thread;
-            os::EventType m_event;
+            os::Event m_event;
             void *m_receive_thread_stack;
             void *m_send_thread_stack;
             u8 m_7C400;

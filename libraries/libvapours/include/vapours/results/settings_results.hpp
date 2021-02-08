@@ -44,4 +44,9 @@ namespace ams::settings {
         R_DEFINE_ERROR_RESULT(SettingsItemKeyInvalidFormat,     262);
         R_DEFINE_ERROR_RESULT(SettingsItemValueInvalidFormat,   263);
 
+    R_DEFINE_ERROR_RANGE(CalibrationDataError, 580, 599);
+        R_DEFINE_ERROR_RESULT(CalibrationDataFileSystemCorrupted, 581);
+        R_DEFINE_ERROR_RESULT(CalibrationDataCrcError,            582);
+        R_DEFINE_ERROR_RESULT(CalibrationDataShaError,            583);
+
 }

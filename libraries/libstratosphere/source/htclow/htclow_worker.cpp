@@ -13,27 +13,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#pragma once
 #include <stratosphere.hpp>
 #include "htclow_worker.hpp"
 
 namespace ams::htclow {
 
-    class Listener {
-        private:
-            u32 m_thread_stack_size;
-            mem::StandardAllocator *m_allocator;
-            mux::Mux *m_mux;
-            ctrl::HtcctrlService *m_service;
-            Worker *m_worker;
-            os::Event m_event;
-            os::ThreadType m_listen_thread;
-            void *m_listen_thread_stack;
-            driver::IDriver *m_driver;
-            bool m_thread_running;
-            bool m_cancelled;
-        public:
-            Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker);
-    };
+    Worker::Worker(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv)
+        : m_thread_stack_size(4_KB), m_allocator(allocator), m_mux(mux), m_service(ctrl_srv), m_driver(nullptr), m_event(os::EventClearMode_ManualClear), m_7C400()
+    {
+        /* Allocate stacks. */
+        m_receive_thread_stack = m_allocator->Allocate(m_thread_stack_size, os::ThreadStackAlignment);
+        m_send_thread_stack    = m_allocator->Allocate(m_thread_stack_size, os::ThreadStackAlignment);
+    }
 
 }

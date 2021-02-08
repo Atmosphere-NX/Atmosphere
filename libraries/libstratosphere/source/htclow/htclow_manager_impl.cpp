@@ -31,8 +31,10 @@ namespace ams::htclow {
         /* ... */
     }
 
-    //Result HtclowManagerImpl::OpenDriver(impl::DriverType driver_type);
-    //
+    Result HtclowManagerImpl::OpenDriver(impl::DriverType driver_type) {
+        AMS_ABORT("TODO");
+    }
+
     //void HtclowManagerImpl::CloseDriver();
     //
     //void HtclowManagerImpl::Disconnect();

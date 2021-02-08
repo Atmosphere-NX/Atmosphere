@@ -26,6 +26,14 @@ namespace ams::htclow::ctrl {
             char m_firmware_version[0x40];
         public:
             SettingsHolder() { /* ... */ }
+
+            void LoadSettings();
+
+            const char *GetSpec() { return "NX"; }
+            const char *GetHardwareType() { return m_hardware_type; }
+            const char *GetTargetName() { return m_target_name; }
+            const char *GetSerialNumber() { return m_serial_number; }
+            const char *GetFirmwareVersion() { return m_firmware_version; }
     };
 
 }

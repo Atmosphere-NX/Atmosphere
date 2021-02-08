@@ -15,25 +15,9 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htclow_worker.hpp"
 
-namespace ams::htclow {
+namespace ams::settings::impl {
 
-    class Listener {
-        private:
-            u32 m_thread_stack_size;
-            mem::StandardAllocator *m_allocator;
-            mux::Mux *m_mux;
-            ctrl::HtcctrlService *m_service;
-            Worker *m_worker;
-            os::Event m_event;
-            os::ThreadType m_listen_thread;
-            void *m_listen_thread_stack;
-            driver::IDriver *m_driver;
-            bool m_thread_running;
-            bool m_cancelled;
-        public:
-            Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker);
-    };
+    Result GetConfigurationId1(settings::factory::ConfigurationId1 *out);
 
 }

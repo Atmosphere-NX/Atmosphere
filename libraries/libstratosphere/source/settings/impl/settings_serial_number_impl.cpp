@@ -18,6 +18,11 @@
 
 namespace ams::settings::impl {
 
+    Result GetSerialNumber(settings::factory::SerialNumber *out) {
+        static_assert(sizeof(*out) == sizeof(::SetCalSerialNumber));
+        return ::setcalGetSerialNumber(reinterpret_cast<::SetCalSerialNumber *>(out));
+    }
+
     Result GetSerialNumber(settings::system::SerialNumber *out) {
         static_assert(sizeof(*out) == sizeof(::SetSysSerialNumber));
         return ::setsysGetSerialNumber(reinterpret_cast<::SetSysSerialNumber *>(out));

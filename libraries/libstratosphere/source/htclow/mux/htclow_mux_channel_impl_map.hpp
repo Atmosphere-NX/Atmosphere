@@ -15,19 +15,7 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htclow_mux_task_manager.hpp"
-
-namespace ams::htclow {
-
-    class PacketFactory;
-
-    namespace ctrl {
-
-        class HtcctrlStateMachine;
-
-    }
-
-}
+#include "htclow_mux_channel_impl.hpp"
 
 namespace ams::htclow::mux {
 
@@ -47,10 +35,22 @@ namespace ams::htclow::mux {
             os::Event *m_event;
             u8 m_map_buffer[MapRequiredMemorySize];
             MapType m_map;
-            u8 m_storage[0x5200]; /* TODO */
+            TYPED_STORAGE(ChannelImpl) m_channel_storage[MaxChannelCount];
             bool m_storage_valid[MaxChannelCount];
         public:
             ChannelImplMap(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);
+
+            ChannelImpl &GetChannelImpl(impl::ChannelInternalType channel);
+        private:
+            ChannelImpl &GetChannelImpl(int index);
+        public:
+            MapType &GetMap() {
+                return m_map;
+            }
+
+            ChannelImpl &operator[](impl::ChannelInternalType channel) {
+                return this->GetChannelImpl(channel);
+            }
     };
 
 }

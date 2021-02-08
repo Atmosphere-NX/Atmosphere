@@ -30,4 +30,17 @@ namespace ams::htclow::mux {
         }
     }
 
+    ChannelImpl &ChannelImplMap::GetChannelImpl(int index) {
+        return GetReference(m_channel_storage[index]);
+    }
+
+    ChannelImpl &ChannelImplMap::GetChannelImpl(impl::ChannelInternalType channel) {
+        /* Find the channel. */
+        auto it = m_map.find(channel);
+        AMS_ASSERT(it != m_map.end());
+
+        /* Return the implementation object. */
+        return this->GetChannelImpl(it->second);
+    }
+
 }
