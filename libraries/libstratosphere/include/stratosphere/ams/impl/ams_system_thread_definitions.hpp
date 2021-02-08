@@ -123,6 +123,27 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, pgl, ProcessControlTask);
 
+    /* htc. */
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, Main);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcIpc);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcsIpc);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcsMonitor);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcfsIpc);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcfsMonitor);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowDiscovery);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowTcpServer);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowUsbIndication);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowListen);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowObserver);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowSend);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtclowReceive);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, Htcmisc);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcmiscReceive);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcmiscSend);
+
+    AMS_DEFINE_SYSTEM_THREAD(10, tma, BridgePcieDriver);
+
+
     #undef AMS_DEFINE_SYSTEM_THREAD
 
 }
