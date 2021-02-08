@@ -41,6 +41,8 @@ namespace ams::htclow::mux {
             SendBuffer(impl::ChannelInternalType channel, PacketFactory *pf);
 
             void SetVersion(s16 version);
+
+            void Clear();
     };
 
 }

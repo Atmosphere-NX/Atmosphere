@@ -14,22 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
-#include "htclow_mux_channel_impl.hpp"
-#include "../htclow_packet_factory.hpp"
+#include "htclow_packet_factory.hpp"
 
-namespace ams::htclow::mux {
+namespace ams::htclow {
 
-    void SendBuffer::SetVersion(s16 version) {
-        /* Set version. */
-        m_version = version;
-    }
-
-    void SendBuffer::Clear() {
-        while (!m_packet_list.empty()) {
-            auto *packet = std::addressof(m_packet_list.front());
-            m_packet_list.pop_front();
-            m_packet_factory->Delete(packet);
-        }
+    void PacketFactory::Delete(Packet *packet) {
+        PacketDeleter{m_allocator}(packet);
     }
 
 }

@@ -36,4 +36,6 @@ namespace ams::htclow {
                 R_DEFINE_ERROR_RESULT(UsbDriverReceiveError, 1403);
                 R_DEFINE_ERROR_RESULT(UsbDriverSendError,    1404);
 
+        R_DEFINE_ERROR_RESULT(StateTransitionNotAllowed, 2001);
+
 }

@@ -20,6 +20,17 @@ namespace ams::htclow {
 
     class Packet : public util::IntrusiveListBaseNode<Packet> {
         /* TODO */
+        public:
+            virtual ~Packet();
+    };
+
+    struct PacketDeleter {
+        mem::StandardAllocator *m_allocator;
+
+        void operator()(Packet *packet) {
+            std::destroy_at(packet);
+            m_allocator->Free(packet);
+        }
     };
 
 }

@@ -42,7 +42,7 @@ namespace ams::htclow::ctrl {
 
     }
 
-    HtcctrlStateMachine::HtcctrlStateMachine() : m_map(), m_state(HtcctrlState_Eleven), m_prev_state(HtcctrlState_Eleven), m_mutex() {
+    HtcctrlStateMachine::HtcctrlStateMachine() : m_map(), m_state(HtcctrlState_11), m_prev_state(HtcctrlState_11), m_mutex() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
@@ -52,6 +52,129 @@ namespace ams::htclow::ctrl {
         /* Insert each service channel the map. */
         for (const auto &channel : ServiceChannels) {
             m_map.insert(std::make_pair<impl::ChannelInternalType, ServiceChannelState>(impl::ChannelInternalType{channel}, ServiceChannelState{}));
+        }
+    }
+
+    HtcctrlState HtcctrlStateMachine::GetHtcctrlState() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return m_state;
+    }
+
+    Result HtcctrlStateMachine::SetHtcctrlState(bool *out_transitioned, HtcctrlState state) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Check that the transition is allowed. */
+        R_UNLESS(ctrl::IsStateTransitionAllowed(m_state, state), htclow::ResultStateTransitionNotAllowed());
+
+        /* Get the state pre-transition. */
+        const auto old_state = m_state;
+
+        /* Set the state. */
+        this->SetStateWithoutCheckInternal(state);
+
+        /* Note whether we transitioned. */
+        *out_transitioned = state != old_state;
+        return ResultSuccess();
+    }
+
+    bool HtcctrlStateMachine::IsConnected() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return ctrl::IsConnected(m_state);
+    }
+
+    bool HtcctrlStateMachine::IsReadied() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return ctrl::IsReadied(m_state);
+    }
+
+    bool HtcctrlStateMachine::IsUnconnectable() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return !ctrl::IsConnected(m_state);
+    }
+
+    bool HtcctrlStateMachine::IsDisconnected() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return ctrl::IsDisconnected(m_state);
+    }
+
+    bool HtcctrlStateMachine::IsSleeping() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return ctrl::IsSleeping(m_state);
+    }
+
+    bool HtcctrlStateMachine::IsConnectedStatusChanged() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return ctrl::IsConnected(m_prev_state) ^ ctrl::IsConnected(m_state);
+    }
+
+    bool HtcctrlStateMachine::IsSleepingStatusChanged() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return ctrl::IsSleeping(m_prev_state) ^ ctrl::IsSleeping(m_state);
+    }
+
+    void HtcctrlStateMachine::SetStateWithoutCheckInternal(HtcctrlState state) {
+        if (m_state != state) {
+            /* Clear service channel states, if we should. */
+            if (ctrl::IsDisconnected(state)) {
+                this->ClearServiceChannelStates();
+            }
+
+            /* Transition our state. */
+            m_prev_state = m_state;
+            m_state      = state;
+        }
+    }
+
+    void HtcctrlStateMachine::ClearServiceChannelStates() {
+        /* Clear all values in our map. */
+        for (auto &pair : m_map) {
+            pair.second = {};
+        }
+    }
+
+    bool HtcctrlStateMachine::IsUnsupportedServiceChannelToShutdown(const impl::ChannelInternalType &channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* TODO: What do these values mean? */
+        auto it = m_map.find(channel);
+        return it != m_map.end() && it->second._04 == 2 && it->second._00 == 2;
+    }
+
+    bool HtcctrlStateMachine::IsConnectable(const impl::ChannelInternalType &channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* TODO: What do these values mean? */
+        auto it = m_map.find(channel);
+        return ctrl::IsConnected(m_state) && (!(it != m_map.end()) || it->second._04 != 2);
+    }
+
+    void HtcctrlStateMachine::SetNotConnecting(const impl::ChannelInternalType &channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* TODO: What do these values mean? */
+        auto it = m_map.find(channel);
+        if (it != m_map.end() && it->second._04 != 2) {
+            it->second._04 = 0;
         }
     }
 

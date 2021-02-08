@@ -39,6 +39,27 @@ namespace ams::htclow::ctrl {
             os::SdkMutex m_mutex;
         public:
             HtcctrlStateMachine();
+
+            HtcctrlState GetHtcctrlState();
+            Result SetHtcctrlState(bool *out_transitioned, HtcctrlState state);
+
+            bool IsConnectedStatusChanged();
+            bool IsSleepingStatusChanged();
+
+            bool IsConnected();
+            bool IsReadied();
+            bool IsUnconnectable();
+            bool IsDisconnected();
+            bool IsSleeping();
+
+            bool IsUnsupportedServiceChannelToShutdown(const impl::ChannelInternalType &channel);
+            bool IsConnectable(const impl::ChannelInternalType &channel);
+
+            void SetNotConnecting(const impl::ChannelInternalType &channel);
+        private:
+            void SetStateWithoutCheckInternal(HtcctrlState state);
+
+            void ClearServiceChannelStates();
     };
 
 }

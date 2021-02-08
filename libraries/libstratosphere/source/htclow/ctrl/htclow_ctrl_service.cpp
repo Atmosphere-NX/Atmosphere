@@ -15,6 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "htclow_ctrl_service.hpp"
+#include "htclow_ctrl_state.hpp"
+#include "htclow_ctrl_state_machine.hpp"
 #include "../mux/htclow_mux.hpp"
 
 namespace ams::htclow::ctrl {
@@ -79,6 +81,60 @@ namespace ams::htclow::ctrl {
 
         /* Update our beacon response. */
         this->UpdateBeaconResponse(this->GetConnectionType(driver_type));
+    }
+
+    Result HtcctrlService::NotifyDriverConnected() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        if (m_state_machine->GetHtcctrlState() == HtcctrlState_7) {
+            R_TRY(this->SetState(HtcctrlState_8));
+        } else {
+            R_TRY(this->SetState(HtcctrlState_0));
+        }
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::NotifyDriverDisconnected() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        if (m_state_machine->GetHtcctrlState() == HtcctrlState_6) {
+            R_TRY(this->SetState(HtcctrlState_7));
+        } else {
+            R_TRY(this->SetState(HtcctrlState_11));
+        }
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::SetState(HtcctrlState state) {
+        /* Set the state. */
+        bool did_transition;
+        R_TRY(m_state_machine->SetHtcctrlState(std::addressof(did_transition), state));
+
+        /* Reflect the state transition, if one occurred. */
+        if (did_transition) {
+            this->ReflectState();
+        }
+
+        return ResultSuccess();
+    }
+
+    void HtcctrlService::ReflectState() {
+        /* If our connected status changed, update. */
+        if (m_state_machine->IsConnectedStatusChanged()) {
+            m_mux->UpdateChannelState();
+        }
+
+        /* If our sleeping status changed, update. */
+        if (m_state_machine->IsSleepingStatusChanged()) {
+            m_mux->UpdateMuxState();
+        }
+
+        /* Broadcast our state transition. */
+        m_condvar.Broadcast();
     }
 
 }
