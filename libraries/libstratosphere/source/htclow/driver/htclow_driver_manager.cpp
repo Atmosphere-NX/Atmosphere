@@ -37,10 +37,9 @@ namespace ams::htclow::driver {
                 //break;
                 return htclow::ResultUnknownDriverType();
             case impl::DriverType::Usb:
-                //m_usb_driver.Open();
-                //m_open_driver = std::addressof(m_usb_driver);
-                //break;
-                return htclow::ResultUnknownDriverType();
+                m_usb_driver.Open();
+                m_open_driver = std::addressof(m_usb_driver);
+                break;
             case impl::DriverType::PlainChannel:
                 //m_plain_channel_driver.Open();
                 //m_open_driver = std::addressof(m_plain_channel_driver);
