@@ -37,8 +37,15 @@ namespace ams::htclow::mux {
 
             void SetVersion(u16 version);
 
+            Result CheckReceivedHeader(const PacketHeader &header) const;
+            Result ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size);
+
             void UpdateChannelState();
             void UpdateMuxState();
+        private:
+            Result CheckChannelExist(impl::ChannelInternalType channel);
+
+            Result SendErrorPacket(impl::ChannelInternalType channel);
     };
 
 }

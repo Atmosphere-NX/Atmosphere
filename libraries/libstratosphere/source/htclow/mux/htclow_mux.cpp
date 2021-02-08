@@ -38,6 +38,46 @@ namespace ams::htclow::mux {
         }
     }
 
+    Result Mux::CheckReceivedHeader(const PacketHeader &header) const {
+        /* Check the packet signature. */
+        AMS_ASSERT(header.signature == HtcGen2Signature);
+
+        /* Switch on the packet type. */
+        switch (header.packet_type) {
+            case PacketType_Data:
+                R_UNLESS(header.version == m_version,            htclow::ResultProtocolError());
+                R_UNLESS(header.body_size <= sizeof(PacketBody), htclow::ResultProtocolError());
+                break;
+            case PacketType_MaxData:
+                R_UNLESS(header.version == m_version,            htclow::ResultProtocolError());
+                R_UNLESS(header.body_size == 0,                  htclow::ResultProtocolError());
+                break;
+            case PacketType_Error:
+                R_UNLESS(header.body_size == 0,                  htclow::ResultProtocolError());
+                break;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
+
+        return ResultSuccess();
+    }
+
+    Result Mux::ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Process for the channel. */
+        if (m_channel_impl_map.Exists(header.channel)) {
+            R_TRY(this->CheckChannelExist(header.channel));
+
+            return m_channel_impl_map[header.channel].ProcessReceivePacket(header, body, body_size);
+        } else {
+            if (header.packet_type == PacketType_Data || header.packet_type == PacketType_MaxData) {
+                this->SendErrorPacket(header.channel);
+            }
+            return htclow::ResultChannelNotExist();
+        }
+    }
+
     void Mux::UpdateChannelState() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
@@ -60,6 +100,16 @@ namespace ams::htclow::mux {
             m_is_sleeping = false;
             m_wake_event.Signal();
         }
+    }
+
+    Result Mux::CheckChannelExist(impl::ChannelInternalType channel) {
+        R_UNLESS(m_channel_impl_map.Exists(channel), htclow::ResultChannelNotExist());
+        return ResultSuccess();
+    }
+
+    Result Mux::SendErrorPacket(impl::ChannelInternalType channel) {
+        /* TODO */
+        AMS_ABORT("Mux::SendErrorPacket");
     }
 
 }

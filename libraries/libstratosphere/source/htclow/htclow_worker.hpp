@@ -23,8 +23,13 @@ namespace ams::htclow {
 
     class Worker {
         private:
+            static_assert(sizeof(ctrl::HtcctrlPacketHeader) <= sizeof(PacketHeader));
+            static_assert(sizeof(ctrl::HtcctrlPacketBody) <= sizeof(PacketBody));
+        private:
             u32 m_thread_stack_size;
-            u8 m_04[0x7C024]; /* TODO... not knowing what an almost 128 KB field is is embarassing. */
+            u8 m_packet_header[sizeof(PacketHeader)];
+            u8 m_send_packet_body[sizeof(PacketBody)];
+            u8 m_receive_packet_body[sizeof(PacketBody)];
             mem::StandardAllocator *m_allocator;
             mux::Mux *m_mux;
             ctrl::HtcctrlService *m_service;
@@ -58,6 +63,9 @@ namespace ams::htclow {
 
             Result ProcessReceive();
             Result ProcessSend();
+
+            Result ProcessReceive(const ctrl::HtcctrlPacketHeader &header);
+            Result ProcessReceive(const PacketHeader &header);
     };
 
 }

@@ -42,9 +42,10 @@ namespace ams::htclow::mux {
             SendBuffer m_send_buffer;
             RingBuffer m_receive_buffer;
             s16 m_version;
-            /* TODO: Channel config */
+            ChannelConfig m_config;
             /* TODO: tracking variables. */
-            std::optional<u64> m_108;
+            u64 m_offset;
+            std::optional<u64> m_share;
             os::Event m_state_change_event;
             ChannelState m_state;
         public:
@@ -52,11 +53,22 @@ namespace ams::htclow::mux {
 
             void SetVersion(s16 version);
 
+            Result ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size);
+
             void UpdateState();
         private:
             void ShutdownForce();
             void SetState(ChannelState state);
             void SetStateWithoutCheck(ChannelState state);
+
+            void SignalSendPacketEvent();
+
+            Result CheckState(std::initializer_list<ChannelState> states) const;
+            Result CheckPacketVersion(s16 version) const;
+
+            Result ProcessReceiveDataPacket(s16 version, u64 share, u32 offset, const void *body, size_t body_size);
+            Result ProcessReceiveMaxDataPacket(s16 version, u64 share);
+            Result ProcessReceiveErrorPacket();
     };
 
 }

@@ -28,6 +28,110 @@ namespace ams::htclow::mux {
         m_send_buffer.SetVersion(version);
     }
 
+    Result ChannelImpl::CheckState(std::initializer_list<ChannelState> states) const {
+        /* Determine if we have a matching state. */
+        bool match = false;
+        for (const auto &state : states) {
+            match |= m_state == state;
+        }
+
+        /* If we do, we're good. */
+        R_SUCCEED_IF(match);
+
+        /* Otherwise, return appropriate failure error. */
+        if (m_state == ChannelState_Disconnected) {
+            return htclow::ResultInvalidChannelStateDisconnected();
+        } else {
+            return htclow::ResultInvalidChannelState();
+        }
+    }
+
+    Result ChannelImpl::CheckPacketVersion(s16 version) const {
+        R_UNLESS(version == m_version, htclow::ResultChannelVersionNotMatched());
+        return ResultSuccess();
+    }
+
+
+    Result ChannelImpl::ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size) {
+        switch (header.packet_type) {
+            case PacketType_Data:
+                return this->ProcessReceiveDataPacket(header.version, header.share, header.offset, body, body_size);
+            case PacketType_MaxData:
+                return this->ProcessReceiveMaxDataPacket(header.version, header.share);
+            case PacketType_Error:
+                return this->ProcessReceiveErrorPacket();
+            default:
+                return htclow::ResultProtocolError();
+        }
+    }
+
+    Result ChannelImpl::ProcessReceiveDataPacket(s16 version, u64 share, u32 offset, const void *body, size_t body_size) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connectable, ChannelState_Connected}));
+
+        /* Check the packet version. */
+        R_TRY(this->CheckPacketVersion(version));
+
+        /* Check that offset matches. */
+        R_UNLESS(offset == static_cast<u32>(m_offset), htclow::ResultProtocolError());
+
+        /* Check for flow control, if we should. */
+        if (m_config.flow_control_enabled) {
+            /* Check that the share increases monotonically. */
+            if (m_share.has_value()) {
+                R_UNLESS(m_share.value() <= share, htclow::ResultProtocolError());
+            }
+
+            /* Update our share. */
+            m_share = share;
+
+            /* Signal our event. */
+            this->SignalSendPacketEvent();
+        }
+
+        /* Update our offset. */
+        m_offset += body_size;
+
+        /* Write the packet body. */
+        R_ABORT_UNLESS(m_receive_buffer.Write(body, body_size));
+
+        /* Notify the data was received. */
+        m_task_manager->NotifyReceiveData(m_channel, m_receive_buffer.GetDataSize());
+
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::ProcessReceiveMaxDataPacket(s16 version, u64 share) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connectable, ChannelState_Connected}));
+
+        /* Check the packet version. */
+        R_TRY(this->CheckPacketVersion(version));
+
+        /* Check for flow control, if we should. */
+        if (m_config.flow_control_enabled) {
+            /* Check that the share increases monotonically. */
+            if (m_share.has_value()) {
+                R_UNLESS(m_share.value() <= share, htclow::ResultProtocolError());
+            }
+
+            /* Update our share. */
+            m_share = share;
+
+            /* Signal our event. */
+            this->SignalSendPacketEvent();
+        }
+
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::ProcessReceiveErrorPacket() {
+        if (m_state == ChannelState_Connected || m_state == ChannelState_Disconnected) {
+            this->ShutdownForce();
+        }
+        return ResultSuccess();
+    }
+
     void ChannelImpl::UpdateState() {
         /* Check if shutdown must be forced. */
         if (m_state_machine->IsUnsupportedServiceChannelToShutdown(m_channel)) {
@@ -80,6 +184,12 @@ namespace ams::htclow::mux {
         /* If relevant, notify disconnect. */
         if (m_state == ChannelState_Disconnected) {
             m_task_manager->NotifyDisconnect(m_channel);
+        }
+    }
+
+    void ChannelImpl::SignalSendPacketEvent() {
+        if (m_event != nullptr) {
+            m_event->Signal();
         }
     }
 
