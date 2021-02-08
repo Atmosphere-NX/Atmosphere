@@ -14,6 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/htclow/htclow_types.hpp>
-#include <stratosphere/htclow/impl/htclow_internal_types.hpp>
-#include <stratosphere/htclow/htclow_manager_holder.hpp>
+#include <vapours.hpp>
+#include <stratosphere/htclow/htclow_module_types.hpp>
+
+namespace ams::htclow {
+
+    using ChannelId = u16;
+
+    struct ChannelType {
+        bool _is_initialized;
+        ModuleId _module_id;
+        ChannelId _channel_id;
+    };
+
+}

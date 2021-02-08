@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,6 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/htclow/htclow_types.hpp>
-#include <stratosphere/htclow/impl/htclow_internal_types.hpp>
-#include <stratosphere/htclow/htclow_manager_holder.hpp>
+#include <stratosphere.hpp>
+#include "../htclow_packet.hpp"
+
+namespace ams::htclow {
+
+    class PacketFactory;
+
+}
+
+namespace ams::htclow::mux {
+
+    class GlobalSendBuffer {
+        private:
+            using PacketList = util::IntrusiveListBaseTraits<Packet>::ListType;
+        private:
+            PacketFactory *m_packet_factory;
+            PacketList m_packet_list;
+        public:
+            GlobalSendBuffer(PacketFactory *pf) : m_packet_factory(pf), m_packet_list() { /* ... */ }
+    };
+
+}

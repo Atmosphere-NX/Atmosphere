@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) 2019-2020 Adubbz, Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -14,6 +14,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/htclow/htclow_types.hpp>
-#include <stratosphere/htclow/impl/htclow_internal_types.hpp>
-#include <stratosphere/htclow/htclow_manager_holder.hpp>
+#include <stratosphere.hpp>
+
+namespace ams::htclow {
+
+    class HtclowManagerImpl;
+
+    class HtclowManager {
+        private:
+            mem::StandardAllocator *m_allocator;
+            HtclowManagerImpl *m_impl;
+        public:
+            HtclowManager(mem::StandardAllocator *allocator);
+            ~HtclowManager();
+        public:
+            Result OpenDriver(impl::DriverType driver_type);
+            void CloseDriver();
+
+            void Disconnect();
+    };
+
+}
