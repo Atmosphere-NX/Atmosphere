@@ -103,7 +103,7 @@ namespace ams::usb {
     Result RemoteDsInterface::AppendConfigurationData(u8 bInterfaceNumber, usb::UsbDeviceSpeed device_speed, const sf::InBuffer &data) {
         if (hos::GetVersion() >= hos::Version_11_0_0) {
             serviceAssumeDomain(std::addressof(m_srv));
-            return serviceDispatchIn(std::addressof(m_srv), 12, device_speed,
+            return serviceDispatchIn(std::addressof(m_srv), 10, device_speed,
                 .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_In },
                 .buffers = { { data.GetPointer(), data.GetSize() } },
             );
@@ -114,7 +114,7 @@ namespace ams::usb {
             } in = { bInterfaceNumber, device_speed };
 
             serviceAssumeDomain(std::addressof(m_srv));
-            return serviceDispatchIn(std::addressof(m_srv), 10, in,
+            return serviceDispatchIn(std::addressof(m_srv), 12, in,
                 .buffer_attrs = { SfBufferAttr_HipcMapAlias | SfBufferAttr_In },
                 .buffers = { { data.GetPointer(), data.GetSize() } },
             );

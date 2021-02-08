@@ -165,6 +165,15 @@ namespace ams::usb {
         UsbEndpointAddressMask_DirDevicetoHost = (0x1 << 7),
     };
 
+    enum UsbEndpointAttributeMask {
+        UsbEndpointAttributeMask_XferType        = (0x3 << 0),
+
+        UsbEndpointAttributeMask_XferTypeControl = (0x0 << 0),
+        UsbEndpointAttributeMask_XferTypeIsoc    = (0x1 << 0),
+        UsbEndpointAttributeMask_XferTypeBulk    = (0x2 << 0),
+        UsbEndpointAttributeMask_XferTypeInt     = (0x3 << 0),
+    };
+
     enum UsbEndpointDirection {
         UsbEndpointDirection_Invalid  = 0,
         UsbEndpointDirection_ToDevice = 1,
