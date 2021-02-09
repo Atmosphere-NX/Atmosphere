@@ -14,6 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
+#include "../driver/htc_i_driver.hpp"
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::server::rpc {
+
+    class HtcmiscRpcServer {
+        private:
+            u64 m_00;
+            driver::IDriver *m_driver;
+            htclow::ChannelId m_channel_id;
+            void *m_receive_thread_stack;
+            os::ThreadType m_receive_thread;
+            bool m_cancelled;
+            bool m_thread_running;
+        public:
+            HtcmiscRpcServer(driver::IDriver *driver, htclow::ChannelId channel);
+    };
+
+}

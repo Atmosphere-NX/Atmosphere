@@ -14,6 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/htclow/htclow_channel_types.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::server {
+
+    constexpr inline htclow::ChannelId HtcmiscClientChannelId = 1;
+    constexpr inline htclow::ChannelId HtcmiscServerChannelId = 2;
+
+}

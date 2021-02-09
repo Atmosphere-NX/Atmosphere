@@ -33,4 +33,8 @@ namespace ams::htclow {
 
     constexpr inline s16 ProtocolVersion = 5;
 
+    enum ReceiveOption {
+        /* ... */
+    };
+
 }
