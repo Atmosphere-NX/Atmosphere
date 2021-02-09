@@ -14,5 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
+namespace ams::htclow {
+
+    class HtclowManager;
+
+}
+
+namespace ams::htc::server {
+
+    void InitializeHtcmiscServer(htclow::HtclowManager *htclow_manager);
+    void FinalizeHtcmiscServer();
+    void LoopHtcmiscServer();
+    void RequestStopHtcmiscServer();
+
+    class HtcmiscImpl;
+    HtcmiscImpl *GetHtcmiscImpl();
+
+}

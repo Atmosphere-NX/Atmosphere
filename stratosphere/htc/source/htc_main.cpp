@@ -185,7 +185,7 @@ namespace ams::htc {
         }
 
         void HtcIpcThreadFunction(void *arg) {
-            //htc::server::LoopHtcmiscServer();
+            htc::server::LoopHtcmiscServer();
         }
 
         void HtcfsIpcThreadFunction(void *arg) {
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
     auto *htclow_manager = htclow::HtclowManagerHolder::GetHtclowManager();
 
     /* Initialize the htc misc server. */
-    //htc::server::InitializeHtcmiscServer(htclow_manager);
+    htc::server::InitializeHtcmiscServer(htclow_manager);
 
     /* Create the htc misc ipc thread. */
     os::ThreadType htc_ipc_thread;

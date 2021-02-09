@@ -15,4 +15,4 @@
  */
 #pragma once
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
+#include <stratosphere/tma/tma_i_htc_manager.hpp>

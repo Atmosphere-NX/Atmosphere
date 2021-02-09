@@ -52,8 +52,12 @@ namespace ams::htclow {
         return ResultSuccess();
     }
 
-    //void HtclowManagerImpl::CloseDriver();
-    //
-    //void HtclowManagerImpl::Disconnect();
+    void HtclowManagerImpl::CloseDriver() {
+        AMS_ABORT("HtclowManagerImpl::CloseDriver");
+    }
+
+    void HtclowManagerImpl::Disconnect() {
+        AMS_ABORT("HtclowManagerImpl::Disconnect");
+    }
 
 }

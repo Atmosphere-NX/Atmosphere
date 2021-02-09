@@ -14,5 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
+#include "htc_htc_service_object.hpp"
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
+namespace ams::htc::server {
+
+    sf::SharedPointer<tma::IHtcManager> CreateHtcmiscManager(HtcServiceObject **out, htclow::HtclowManager *htclow_manager);
+
+}
