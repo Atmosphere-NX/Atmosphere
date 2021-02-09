@@ -31,6 +31,9 @@ namespace ams::htc::server::driver {
             htclow::ModuleId m_module_id;
         public:
             HtclowDriver(htclow::HtclowManager *manager, htclow::ModuleId module_id) : m_manager(manager), m_disconnection_emulation_enabled(false), m_module_id(module_id) { /* ... */ }
+        private:
+            void WaitTask(u32 task_id);
+            Result ReceiveInternal(size_t *out, void *dst, size_t dst_size, htclow::ChannelId channel, htclow::ReceiveOption option);
         public:
             virtual void SetDisconnectionEmulationEnabled(bool en) override;
             virtual Result Open(htclow::ChannelId channel) override;
