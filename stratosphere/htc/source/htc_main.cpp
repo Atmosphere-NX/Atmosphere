@@ -153,6 +153,12 @@ namespace ams::htc {
 
         constexpr htclow::impl::DriverType DefaultHtclowDriverType = htclow::impl::DriverType::Usb;
 
+        constexpr inline size_t NumHtcsIpcThreads = 8;
+
+        alignas(os::ThreadStackAlignment) u8 g_htc_ipc_thread_stack[4_KB];
+        alignas(os::ThreadStackAlignment) u8 g_htcfs_ipc_thread_stack[4_KB];
+        alignas(os::ThreadStackAlignment) u8 g_htcs_ipc_thread_stack[NumHtcsIpcThreads][4_KB];
+
         htclow::impl::DriverType GetHtclowDriverType() {
             /* Get the transport type. */
             char transport[0x10];
@@ -178,6 +184,18 @@ namespace ams::htc {
             }
         }
 
+        void HtcIpcThreadFunction(void *arg) {
+            //htc::server::LoopHtcmiscServer();
+        }
+
+        void HtcfsIpcThreadFunction(void *arg) {
+            //htcfs::LoopHipcServer();
+        }
+
+        void HtcsIpcThreadFunction(void *arg) {
+            //htcs::server::LoopHipcServer();
+        }
+
     }
 
 }
@@ -194,10 +212,65 @@ int main(int argc, char **argv)
 
     /* Initialize the htclow manager. */
     htclow::HtclowManagerHolder::AddReference();
+    ON_SCOPE_EXIT { htclow::HtclowManagerHolder::Release(); };
 
-    /* TODO */
+    /* Get the htclow manager. */
+    auto *htclow_manager = htclow::HtclowManagerHolder::GetHtclowManager();
 
-    /* Cleanup */
+    /* Initialize the htc misc server. */
+    //htc::server::InitializeHtcmiscServer(htclow_manager);
+
+    /* Create the htc misc ipc thread. */
+    os::ThreadType htc_ipc_thread;
+    os::CreateThread(std::addressof(htc_ipc_thread), htc::HtcIpcThreadFunction, nullptr, htc::g_htc_ipc_thread_stack, sizeof(htc::g_htc_ipc_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcIpc));
+    os::SetThreadNamePointer(std::addressof(htc_ipc_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcIpc));
+
+    /* Initialize the htcfs server. */
+    //htcfs::Initialize();
+    //htcfs::RegisterHipcServer();
+
+    /* Create the htcfs ipc thread. */
+    os::ThreadType htcfs_ipc_thread;
+    os::CreateThread(std::addressof(htcfs_ipc_thread), htc::HtcfsIpcThreadFunction, nullptr, htc::g_htcfs_ipc_thread_stack, sizeof(htc::g_htcfs_ipc_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcfsIpc));
+    os::SetThreadNamePointer(std::addressof(htcfs_ipc_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcfsIpc));
+
+    /* Initialize the htcs server. */
+    //htcs::server::Initialize();
+    //htcs::server::RegisterHipcServer();
+
+    /* Create the htcs ipc threads. */
+    os::ThreadType htcs_ipc_threads[htc::NumHtcsIpcThreads];
+    for (size_t i = 0; i < htc::NumHtcsIpcThreads; ++i) {
+        os::CreateThread(std::addressof(htcs_ipc_threads[i]), htc::HtcsIpcThreadFunction, nullptr, htc::g_htcs_ipc_thread_stack[i], sizeof(htc::g_htcs_ipc_thread_stack[i]), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcsIpc));
+        os::SetThreadNamePointer(std::addressof(htcs_ipc_threads[i]), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcsIpc));
+    }
+
+    /* Initialize psc. */
+    //htc::server::InitializePowerStateMonitor(driver_type, htclow_manager);
+
+    /* Start all threads. */
+    os::StartThread(std::addressof(htc_ipc_thread));
+    os::StartThread(std::addressof(htcfs_ipc_thread));
+    for (size_t i = 0; i < htc::NumHtcsIpcThreads; ++i) {
+        os::StartThread(std::addressof(htcs_ipc_threads[i]));
+    }
+
+    /* Loop psc monitor. */
+    //htc::server::LoopMonitorPowerState();
+
+    /* Destroy all threads. */
+    for (size_t i = 0; i < htc::NumHtcsIpcThreads; ++i) {
+        os::WaitThread(std::addressof(htcs_ipc_threads[i]));
+        os::DestroyThread(std::addressof(htcs_ipc_threads[i]));
+    }
+    os::WaitThread(std::addressof(htcfs_ipc_thread));
+    os::DestroyThread(std::addressof(htcfs_ipc_thread));
+    os::WaitThread(std::addressof(htc_ipc_thread));
+    os::DestroyThread(std::addressof(htc_ipc_thread));
+
+    /* Finalize psc monitor. */
+    //htc::server::FinalizePowerStateMonitor();
+
     return 0;
 }
 

@@ -20,20 +20,20 @@ namespace ams::htclow::ctrl {
 
     constexpr inline const impl::ChannelInternalType ServiceChannels[] = {
         {
-            .channel_id = 0,
-            .module_id  = static_cast<ModuleId>(1),
+            .channel_id = 0, /* TODO: htcfs::ChannelId? */
+            .module_id  = ModuleId::Htcfs,
         },
         {
-            .channel_id = 1,
-            .module_id  = static_cast<ModuleId>(3),
+            .channel_id = 1, /* TODO: htcmisc::ServerChannelId? */
+            .module_id  = ModuleId::Htcmisc,
         },
         {
-            .channel_id = 2,
-            .module_id  = static_cast<ModuleId>(3),
+            .channel_id = 2, /* TODO: htcmisc::ClientChannelId? */
+            .module_id  = ModuleId::Htcmisc,
         },
         {
-            .channel_id = 0,
-            .module_id  = static_cast<ModuleId>(4),
+            .channel_id = 0, /* TODO: htcs::ChannelId? */
+            .module_id  = ModuleId::Htcs,
         },
     };
 

@@ -20,7 +20,9 @@
 namespace ams::htclow {
 
     enum class ModuleId : u8 {
-        /* ... */
+        Htcfs   = 1,
+        Htcmisc = 3,
+        Htcs    = 4,
     };
 
     struct ModuleType {
