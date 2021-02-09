@@ -21,6 +21,7 @@
 #include <vapours/util/util_type_traits.hpp>
 #include <vapours/util/util_alignment.hpp>
 #include <vapours/util/util_size.hpp>
+#include <vapours/util/util_int_util.hpp>
 #include <vapours/util/util_aligned_buffer.hpp>
 #include <vapours/util/util_endian.hpp>
 #include <vapours/util/util_exchange.hpp>
@@ -39,7 +40,6 @@
 #include <vapours/util/util_uuid.hpp>
 #include <vapours/util/util_bounded_map.hpp>
 #include <vapours/util/util_overlap.hpp>
-#include <vapours/util/util_int_util.hpp>
 #include <vapours/util/util_string_util.hpp>
 #include <vapours/util/util_string_view.hpp>
 #include <vapours/util/util_variadic.hpp>

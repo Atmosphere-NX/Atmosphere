@@ -35,6 +35,8 @@ namespace ams::htclow::driver {
             Result OpenDriver(impl::DriverType driver_type);
 
             IDriver *GetCurrentDriver();
+
+            void SetDebugDriver(IDriver *driver);
     };
 
 }

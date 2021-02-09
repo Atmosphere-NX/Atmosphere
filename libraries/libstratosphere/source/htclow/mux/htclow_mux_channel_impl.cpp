@@ -16,8 +16,19 @@
 #include <stratosphere.hpp>
 #include "htclow_mux_channel_impl.hpp"
 #include "../ctrl/htclow_ctrl_state_machine.hpp"
+#include "../htclow_default_channel_config.hpp"
 
 namespace ams::htclow::mux {
+
+    ChannelImpl::ChannelImpl(impl::ChannelInternalType channel, PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev)
+        : m_channel(channel), m_packet_factory(pf), m_state_machine(sm), m_task_manager(tm), m_event(ev),
+          m_send_buffer(m_channel, pf), m_receive_buffer(), m_version(ProtocolVersion), m_config(DefaultChannelConfig),
+          m_offset(0), m_total_send_size(0), m_next_max_data(0), m_cur_max_data(0), m_share(),
+          m_state_change_event(os::EventClearMode_ManualClear), m_state(ChannelState_Unconnectable)
+
+    {
+        this->UpdateState();
+    }
 
     void ChannelImpl::SetVersion(s16 version) {
         /* Sanity check the version. */

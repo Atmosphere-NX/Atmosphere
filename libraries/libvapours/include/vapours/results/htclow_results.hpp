@@ -20,10 +20,13 @@ namespace ams::htclow {
 
     R_DEFINE_NAMESPACE_RESULT_MODULE(29);
 
-    R_DEFINE_ERROR_RESULT(ConnectionFailure,         1);
-    R_DEFINE_ERROR_RESULT(UnknownDriverType,         3);
-    R_DEFINE_ERROR_RESULT(NonBlockingReceiveFailed,  5);
-    R_DEFINE_ERROR_RESULT(ChannelNotExist,          10);
+    R_DEFINE_ERROR_RESULT(ConnectionFailure,          1);
+    R_DEFINE_ERROR_RESULT(UnknownDriverType,          3);
+    R_DEFINE_ERROR_RESULT(NonBlockingReceiveFailed,   5);
+    R_DEFINE_ERROR_RESULT(ChannelAlreadyExist,        9);
+    R_DEFINE_ERROR_RESULT(ChannelNotExist,           10);
+
+    R_DEFINE_ERROR_RESULT(OutOfResource,            151);
 
     R_DEFINE_ERROR_RESULT(InvalidChannelState,             200);
     R_DEFINE_ERROR_RESULT(InvalidChannelStateDisconnected, 201);
