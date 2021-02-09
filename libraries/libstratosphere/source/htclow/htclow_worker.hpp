@@ -27,8 +27,7 @@ namespace ams::htclow {
             static_assert(sizeof(ctrl::HtcctrlPacketBody) <= sizeof(PacketBody));
         private:
             u32 m_thread_stack_size;
-            u8 m_packet_header[sizeof(PacketHeader)];
-            u8 m_send_packet_body[sizeof(PacketBody)];
+            u8 m_send_buffer[sizeof(PacketHeader) + sizeof(PacketBody)];
             u8 m_receive_packet_body[sizeof(PacketBody)];
             mem::StandardAllocator *m_allocator;
             mux::Mux *m_mux;

@@ -61,14 +61,14 @@ namespace ams::htclow::ctrl {
     std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> HtcctrlPacketFactory::MakeResumePacket() {
         auto packet = this->MakeSendPacketCommon(0);
         if (packet && packet->IsAllocationSucceeded()) {
-            packet->GetHeader()->packet_type = HtcctrlPacketType_SuspendFromTarget;
+            packet->GetHeader()->packet_type = HtcctrlPacketType_ResumeFromTarget;
         }
 
         return packet;
     }
 
     std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> HtcctrlPacketFactory::MakeReadyPacket(const void *body, int body_size) {
-        auto packet = this->MakeSendPacketCommon(0);
+        auto packet = this->MakeSendPacketCommon(body_size);
         if (packet && packet->IsAllocationSucceeded()) {
             packet->GetHeader()->packet_type = HtcctrlPacketType_ReadyFromTarget;
 
@@ -79,7 +79,7 @@ namespace ams::htclow::ctrl {
     }
 
     std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> HtcctrlPacketFactory::MakeInformationPacket(const void *body, int body_size) {
-        auto packet = this->MakeSendPacketCommon(0);
+        auto packet = this->MakeSendPacketCommon(body_size);
         if (packet && packet->IsAllocationSucceeded()) {
             packet->GetHeader()->packet_type = HtcctrlPacketType_InformationFromTarget;
 
@@ -99,7 +99,7 @@ namespace ams::htclow::ctrl {
     }
 
     std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> HtcctrlPacketFactory::MakeConnectPacket(const void *body, int body_size) {
-        auto packet = this->MakeSendPacketCommon(0);
+        auto packet = this->MakeSendPacketCommon(body_size);
         if (packet && packet->IsAllocationSucceeded()) {
             packet->GetHeader()->packet_type = HtcctrlPacketType_ConnectFromTarget;
 
@@ -110,7 +110,7 @@ namespace ams::htclow::ctrl {
     }
 
     std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> HtcctrlPacketFactory::MakeBeaconResponsePacket(const void *body, int body_size) {
-        auto packet = this->MakeSendPacketCommon(0);
+        auto packet = this->MakeSendPacketCommon(body_size);
         if (packet && packet->IsAllocationSucceeded()) {
             packet->GetHeader()->packet_type = HtcctrlPacketType_BeaconResponse;
 

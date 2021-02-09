@@ -31,10 +31,15 @@ namespace ams::htclow::ctrl {
         private:
             bool IsPriorPacket(HtcctrlPacketType packet_type) const;
             bool IsPosteriorPacket(HtcctrlPacketType packet_type) const;
+
+            void CopyPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size, const HtcctrlPacket &packet);
         public:
             HtcctrlSendBuffer(HtcctrlPacketFactory *pf) : m_packet_factory(pf), m_prior_packet_list(), m_posterior_packet_list() { /* ... */ }
 
             void AddPacket(std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> ptr);
+            void RemovePacket(const HtcctrlPacketHeader &header);
+
+            bool QueryNextPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size);
     };
 
 }

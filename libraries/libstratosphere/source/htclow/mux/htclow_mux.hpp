@@ -26,7 +26,7 @@ namespace ams::htclow::mux {
             PacketFactory *m_packet_factory;
             ctrl::HtcctrlStateMachine *m_state_machine;
             TaskManager m_task_manager;
-            os::Event m_wake_event;
+            os::Event m_event;
             ChannelImplMap m_channel_impl_map;
             GlobalSendBuffer m_global_send_buffer;
             os::SdkMutex m_mutex;
@@ -37,8 +37,13 @@ namespace ams::htclow::mux {
 
             void SetVersion(u16 version);
 
+            os::EventType *GetSendPacketEvent() { return m_event.GetBase(); }
+
             Result CheckReceivedHeader(const PacketHeader &header) const;
             Result ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size);
+
+            bool QuerySendPacket(PacketHeader *header, PacketBody *body, int *out_body_size);
+            void RemovePacket(const PacketHeader &header);
 
             void UpdateChannelState();
             void UpdateMuxState();

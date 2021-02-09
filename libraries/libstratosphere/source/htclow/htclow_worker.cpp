@@ -83,7 +83,8 @@ namespace ams::htclow {
 
     Result Worker::ProcessReceive() {
         /* Forever receive packets. */
-        u8 packet_header_storage[sizeof(m_packet_header)];
+        constexpr size_t MaxPacketHeaderSize = std::max(sizeof(PacketHeader), sizeof(ctrl::HtcctrlPacketHeader));
+        u8 packet_header_storage[MaxPacketHeaderSize];
         while (true) {
             /* Receive the packet header. */
             R_TRY(m_driver->Receive(packet_header_storage, sizeof(packet_header_storage)));
@@ -134,8 +135,47 @@ namespace ams::htclow {
     }
 
     Result Worker::ProcessSend() {
-        /* TODO */
-        AMS_ABORT("Worker::ProcessSend");
+        /* Forever process packets. */
+        while (true) {
+            const auto index = os::WaitAny(m_service->GetSendPacketEvent(), m_mux->GetSendPacketEvent(), m_event.GetBase());
+            if (index == 0) {
+                /* HtcctrlService packet. */
+
+                /* Clear the packet event. */
+                os::ClearEvent(m_service->GetSendPacketEvent());
+
+                /* While we have packets, send them. */
+                auto *packet_header = reinterpret_cast<ctrl::HtcctrlPacketHeader *>(m_send_buffer);
+                auto *packet_body   = reinterpret_cast<ctrl::HtcctrlPacketBody *>(m_send_buffer + sizeof(*packet_header));
+                int body_size;
+                while (m_service->QuerySendPacket(packet_header, packet_body, std::addressof(body_size))) {
+                    m_service->RemovePacket(*packet_header);
+                    R_TRY(m_driver->Send(packet_header, body_size + sizeof(*packet_header)));
+                }
+            } else if (index == 1) {
+                /* Mux packet. */
+
+                /* Clear the packet event. */
+                os::ClearEvent(m_mux->GetSendPacketEvent());
+
+                /* While we have packets, send them. */
+                auto *packet_header = reinterpret_cast<PacketHeader *>(m_send_buffer);
+                auto *packet_body   = reinterpret_cast<PacketBody *>(m_send_buffer + sizeof(*packet_header));
+                int body_size;
+                while (m_mux->QuerySendPacket(packet_header, packet_body, std::addressof(body_size))) {
+                    R_TRY(m_driver->Send(packet_header, body_size + sizeof(*packet_header)));
+                    m_mux->RemovePacket(*packet_header);
+                }
+            } else {
+                /* Our event. */
+
+                /* Check if we're cancelled. */
+                if (m_cancelled) {
+                    return htclow::ResultCancelled();
+                }
+            }
+        }
+
     }
 
 }
