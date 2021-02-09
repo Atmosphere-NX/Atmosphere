@@ -34,7 +34,9 @@ namespace ams::htclow {
     constexpr inline s16 ProtocolVersion = 5;
 
     enum ReceiveOption {
-        /* ... */
+        ReceiveOption_NonBlocking    = 0,
+        ReceiveOption_ReceiveAnyData = 1,
+        ReceiveOption_ReceiveAllData = 2,
     };
 
 }
