@@ -16,12 +16,21 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "../../htclow/htclow_manager.hpp"
+#include "htc_htcmisc_impl.hpp"
+#include "htc_observer.hpp"
 
 namespace ams::htc::server {
 
     class HtcServiceObject {
         private:
-            /* TODO */
+            static constexpr inline auto MaxSetElements = 0x48;
+            using Set = util::FixedSet<u32>;
+        private:
+            u8 m_set_memory[Set::GetRequiredMemorySize(MaxSetElements)];
+            Set m_set;
+            HtcmiscImpl m_misc_impl;
+            Observer m_observer;
+            os::SdkMutex m_mutex;
         public:
             HtcServiceObject(htclow::HtclowManager *htclow_manager);
         public:

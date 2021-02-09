@@ -18,13 +18,14 @@
 
 namespace ams::htc::server {
 
-    HtcServiceObject::HtcServiceObject(htclow::HtclowManager *htclow_manager) {
-        AMS_ABORT("HtcServiceObject::HtcServiceObject");
+    HtcServiceObject::HtcServiceObject(htclow::HtclowManager *htclow_manager) : m_set(), m_misc_impl(htclow_manager), m_observer(m_misc_impl), m_mutex(){
+        /* Initialize our set. */
+        m_set.Initialize(MaxSetElements, m_set_memory, sizeof(m_set_memory));
     }
 
 
     HtcmiscImpl *HtcServiceObject::GetHtcmiscImpl() {
-        AMS_ABORT("HtcServiceObject::GetHtcmiscImpl");
+        return std::addressof(m_misc_impl);
     }
 
     Result HtcServiceObject::GetEnvironmentVariable(sf::Out<s32> out_size, const sf::OutBuffer &out, const sf::InBuffer &name) {

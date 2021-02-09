@@ -24,11 +24,11 @@ namespace ams::htclow::ctrl {
             .module_id  = ModuleId::Htcfs,
         },
         {
-            .channel_id = 1, /* TODO: htcmisc::ServerChannelId? */
+            .channel_id = 1, /* TODO: htcmisc::ClientChannelId? */
             .module_id  = ModuleId::Htcmisc,
         },
         {
-            .channel_id = 2, /* TODO: htcmisc::ClientChannelId? */
+            .channel_id = 2, /* TODO: htcmisc::ServerChannelId? */
             .module_id  = ModuleId::Htcmisc,
         },
         {

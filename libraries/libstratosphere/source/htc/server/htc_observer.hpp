@@ -14,6 +14,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
+#include "htc_htcmisc_impl.hpp"
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::server {
+
+    class Observer {
+        private:
+            os::SystemEvent m_connect_event;
+            os::SystemEvent m_disconnect_event;
+            os::Event m_event_60;
+            os::ThreadType m_observer_thread;
+            const HtcmiscImpl &m_misc_impl;
+            bool m_thread_running;
+            bool m_stopped;
+            bool m_connected;
+            bool m_is_service_available;
+        public:
+            Observer(const HtcmiscImpl &misc_impl);
+    };
+
+}
