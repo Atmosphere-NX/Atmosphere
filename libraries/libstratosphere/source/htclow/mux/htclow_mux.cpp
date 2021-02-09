@@ -81,24 +81,20 @@ namespace ams::htclow::mux {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
-        /* Get our map. */
-        auto &map = m_channel_impl_map.GetMap();
+        /* Check for an error packet. */
+        /* NOTE: Nintendo checks this once per iteration of the below loop. */
+        /* The extra checks are unnecessary, because we hold our mutex. */
+        if (auto *error_packet = m_global_send_buffer.GetNextPacket(); error_packet != nullptr) {
+            std::memcpy(header, error_packet->GetHeader(), sizeof(*header));
+            *out_body_size = 0;
+            return true;
+        }
 
-        /* Iterate the map, checking for valid packet each time. */
-        for (auto &pair : map) {
+        /* Iterate the map, checking each channel for a valid valid packet. */
+        for (auto &pair : m_channel_impl_map.GetMap()) {
             /* Get the current channel impl. */
-            auto &channel_impl = m_channel_impl_map[pair.second];
-
-            /* Check for an error packet. */
-            /* NOTE: it's unclear why Nintendo does this every iteration of the loop... */
-            if (auto *error_packet = m_global_send_buffer.GetNextPacket(); error_packet != nullptr) {
-                std::memcpy(header, error_packet->GetHeader(), sizeof(*header));
-                *out_body_size = 0;
-                return true;
-            }
-
             /* See if the channel has something for us to send. */
-            if (channel_impl.QuerySendPacket(header, body, out_body_size)) {
+            if (m_channel_impl_map[pair.second].QuerySendPacket(header, body, out_body_size)) {
                 return this->IsSendable(header->packet_type);
             }
         }
