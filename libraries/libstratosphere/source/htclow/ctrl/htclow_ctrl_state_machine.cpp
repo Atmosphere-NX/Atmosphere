@@ -15,32 +15,9 @@
  */
 #include <stratosphere.hpp>
 #include "htclow_ctrl_state_machine.hpp"
+#include "htclow_ctrl_service_channels.hpp"
 
 namespace ams::htclow::ctrl {
-
-    namespace {
-
-        /* TODO: Real module id names */
-        constexpr const impl::ChannelInternalType ServiceChannels[] = {
-            {
-                .channel_id = 0,
-                .module_id  = static_cast<ModuleId>(1),
-            },
-            {
-                .channel_id = 1,
-                .module_id  = static_cast<ModuleId>(3),
-            },
-            {
-                .channel_id = 2,
-                .module_id  = static_cast<ModuleId>(3),
-            },
-            {
-                .channel_id = 0,
-                .module_id  = static_cast<ModuleId>(4),
-            },
-        };
-
-    }
 
     HtcctrlStateMachine::HtcctrlStateMachine() : m_map(), m_state(HtcctrlState_DriverDisconnected), m_prev_state(HtcctrlState_DriverDisconnected), m_mutex() {
         /* Lock ourselves. */
@@ -67,7 +44,7 @@ namespace ams::htclow::ctrl {
         std::scoped_lock lk(m_mutex);
 
         /* Check that the transition is allowed. */
-        R_UNLESS(ctrl::IsStateTransitionAllowed(m_state, state), htclow::ResultStateTransitionNotAllowed());
+        R_UNLESS(ctrl::IsStateTransitionAllowed(m_state, state), htclow::ResultHtcctrlStateTransitionNotAllowed());
 
         /* Get the state pre-transition. */
         const auto old_state = m_state;
@@ -149,6 +126,13 @@ namespace ams::htclow::ctrl {
         }
     }
 
+    bool HtcctrlStateMachine::IsPossibleToSendReady() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return m_state == HtcctrlState_SentReadyFromHost && this->AreServiceChannelsConnecting();
+    }
+
     bool HtcctrlStateMachine::IsUnsupportedServiceChannelToShutdown(const impl::ChannelInternalType &channel) {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
@@ -173,6 +157,48 @@ namespace ams::htclow::ctrl {
         if (it != m_map.end() && it->second.connect != ServiceChannelConnect_ConnectingChecked) {
             it->second.connect = ServiceChannelConnect_NotConnecting;
         }
+    }
+
+    void HtcctrlStateMachine::SetConnectingChecked() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        for (auto &pair : m_map) {
+            pair.second.connect = ServiceChannelConnect_ConnectingChecked;
+        }
+    }
+
+    void HtcctrlStateMachine::NotifySupportedServiceChannels(const impl::ChannelInternalType *channels, int num_channels) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        auto IsSupportedServiceChannel = [] ALWAYS_INLINE_LAMBDA (const impl::ChannelInternalType &channel, const impl::ChannelInternalType *supported, int num_supported) -> bool {
+            for (auto i = 0; i < num_supported; ++i) {
+                if (channel.module_id == supported[i].module_id && channel.channel_id == supported[i].channel_id) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        for (auto &pair : m_map) {
+            if (IsSupportedServiceChannel(pair.first, channels, num_channels)) {
+                pair.second.support = ServiceChannelSupport_Suppported;
+            } else {
+                pair.second.support = ServiceChannelSupport_Unsupported;
+            }
+        }
+    }
+
+    bool HtcctrlStateMachine::AreServiceChannelsConnecting() {
+        for (auto &pair : m_map) {
+            if (pair.second.connect != ServiceChannelConnect_Connecting) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 }

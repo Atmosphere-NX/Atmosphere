@@ -39,7 +39,7 @@ namespace ams::htclow::ctrl {
 
     struct HtcctrlPacketHeader {
         u32 signature;
-        u32 offset;
+        u32 sequence_id;
         u32 reserved;
         u32 body_size;
         s16 version;
