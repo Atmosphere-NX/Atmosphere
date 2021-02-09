@@ -16,9 +16,9 @@
 #pragma once
 #include <vapours.hpp>
 
-namespace ams::diag::detail {
+namespace ams::diag::impl {
 
     void PrintDebugString(const char *str, size_t len);
-    ssize_t GetValidSizeAsUtf8String(const char *str, size_t len);
+    int GetValidSizeAsUtf8String(const char *str, int len);
 
 }

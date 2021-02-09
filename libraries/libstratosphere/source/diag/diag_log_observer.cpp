@@ -14,10 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/diag/diag_log_observer.hpp>
 
 namespace ams::diag {
 
-    namespace detail {
+    namespace impl {
 
         extern LogObserverHolder g_default_log_observer;
         extern LogObserverHolder *g_log_observer_list_head;
@@ -36,9 +37,9 @@ namespace ams::diag {
     void RegisterLogObserver(LogObserverHolder *observer_holder) {
         AMS_ASSERT(!observer_holder->is_registered);
 
-        if (detail::g_log_observer_list_head) {
+        if (impl::g_log_observer_list_head) {
             /* Find the last registered observer and append this one. */
-            auto observer = detail::g_log_observer_list_head;
+            auto observer = impl::g_log_observer_list_head;
             LogObserverHolder *observer_parent = nullptr;
             do {
                 observer_parent = observer;
@@ -48,7 +49,7 @@ namespace ams::diag {
         }
         else {
             /* There are no observers yet, this will be the first one. */
-            detail::g_log_observer_list_head = observer_holder;
+            impl::g_log_observer_list_head = observer_holder;
         }
         observer_holder->is_registered = true;
         observer_holder->next = nullptr;
@@ -57,13 +58,13 @@ namespace ams::diag {
     void UnregisterLogObserver(LogObserverHolder *observer_holder) {
         AMS_ASSERT(observer_holder->is_registered);
 
-        if (observer_holder == detail::g_log_observer_list_head) {
+        if (observer_holder == impl::g_log_observer_list_head) {
             /* Move the next item to be the list head. */
-            detail::g_log_observer_list_head = observer_holder->next;
+            impl::g_log_observer_list_head = observer_holder->next;
         }
         else {
             /* Find this observer's parent observer and move the following observer, removing the observer. */
-            auto observer = detail::g_log_observer_list_head;
+            auto observer = impl::g_log_observer_list_head;
             while (observer) {
                 auto observer_parent = observer;
                 observer = observer->next;
@@ -77,13 +78,13 @@ namespace ams::diag {
     }
 
     void ResetDefaultLogObserver() {
-        ReplaceDefaultLogObserver(detail::DefaultLogObserver);
+        ReplaceDefaultLogObserver(impl::DefaultLogObserver);
     }
 
     void ReplaceDefaultLogObserver(LogFunction log_function) {
-        UnregisterLogObserver(std::addressof(detail::g_default_log_observer));
-        InitializeLogObserverHolder(std::addressof(detail::g_default_log_observer), log_function, nullptr);
-        RegisterLogObserver(std::addressof(detail::g_default_log_observer));
+        UnregisterLogObserver(std::addressof(impl::g_default_log_observer));
+        InitializeLogObserverHolder(std::addressof(impl::g_default_log_observer), log_function, nullptr);
+        RegisterLogObserver(std::addressof(impl::g_default_log_observer));
     }
 
 }

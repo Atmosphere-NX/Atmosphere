@@ -15,7 +15,4 @@
  */
 #pragma once
 
-#include <stratosphere/diag/diag_log_observer.hpp>
 #include <stratosphere/diag/diag_log_types.hpp>
-#include <stratosphere/diag/detail/diag_detail_log.hpp>
-#include <stratosphere/diag/detail/diag_detail_string.hpp>

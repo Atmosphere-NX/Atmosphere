@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere/diag/diag_log_types.hpp>
 
-namespace ams::diag::detail {
+namespace ams::diag::impl {
 
     void LogImpl(const LogMetaData &log_metadata, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
     void VLogImpl(const LogMetaData &log_metadata, const char *fmt, std::va_list vl);
@@ -31,7 +31,7 @@ namespace ams::diag::detail {
             }, \
             .log_severity = ::ams::diag::LogSeverity_Info \
         }; \
-        ::ams::diag::detail::LogImpl(log_metadata, fmt, __VA_ARGS__); \
+        ::ams::diag::impl::LogImpl(log_metadata, fmt, __VA_ARGS__); \
     })
 
 }

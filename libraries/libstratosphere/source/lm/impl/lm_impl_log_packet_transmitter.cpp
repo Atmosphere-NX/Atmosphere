@@ -1,6 +1,7 @@
 #include <stratosphere.hpp>
+#include <stratosphere/diag/impl/diag_impl_string.hpp>
 
-namespace ams::lm::detail {
+namespace ams::lm::impl {
 
     LogPacketTransmitterBase::LogPacketTransmitterBase(void *log_buffer, size_t log_buffer_size, LogPacketTransmitterBase::FlushFunction flush_func, u8 severity, u8 verbosity, u64 process_id, bool head, bool tail) {
         AMS_ABORT_UNLESS(log_buffer != nullptr);
@@ -8,10 +9,10 @@ namespace ams::lm::detail {
         AMS_ABORT_UNLESS(flush_func != nullptr);
         
         this->header = reinterpret_cast<LogPacketHeader*>(log_buffer);
-        this->log_buffer_start = log_buffer;
-        this->log_buffer_end = log_buffer + log_buffer_size;
-        this->log_buffer_payload_start = log_buffer + sizeof(LogPacketHeader);
-        this->log_buffer_payload_current = log_buffer + sizeof(LogPacketHeader);
+        this->log_buffer_start = reinterpret_cast<u8*>(log_buffer);
+        this->log_buffer_end = this->log_buffer_start + log_buffer_size;
+        this->log_buffer_payload_start = this->log_buffer_start + sizeof(LogPacketHeader);
+        this->log_buffer_payload_current = this->log_buffer_start + sizeof(LogPacketHeader);
         this->is_tail = tail;
         this->flush_function = flush_func;
         this->header->SetProcessId(process_id);
@@ -83,7 +84,7 @@ namespace ams::lm::detail {
             size_t data_chunk_size = 0;
             if (is_string) {
                 auto tmp_chunk_size = cur_pushable_size;
-                auto utf8_size = diag::detail::GetValidSizeAsUtf8String(reinterpret_cast<const char*>(data_cur), tmp_chunk_size);
+                auto utf8_size = diag::impl::GetValidSizeAsUtf8String(reinterpret_cast<const char*>(data_cur), tmp_chunk_size);
                 if (utf8_size >= 0) {
                     tmp_chunk_size = static_cast<size_t>(utf8_size);
                 }

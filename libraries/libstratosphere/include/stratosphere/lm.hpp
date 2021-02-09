@@ -17,5 +17,5 @@
 #pragma once
 #include <vapours.hpp>
 #include <stratosphere/lm/lm_api.hpp>
-#include <stratosphere/lm/detail/lm_detail_log_types.hpp>
-#include <stratosphere/lm/detail/lm_detail_log_packet_transmitter.hpp>
+#include <stratosphere/lm/impl/lm_impl_log_types.hpp>
+#include <stratosphere/lm/impl/lm_impl_log_packet_transmitter.hpp>

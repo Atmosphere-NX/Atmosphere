@@ -42,10 +42,10 @@ namespace ams::lm {
     }
 
     void Logger::Log(const sf::InAutoSelectBuffer &log_buffer) {
-        auto log_packet_header = (detail::LogPacketHeader*)log_buffer.GetPointer();
+        auto log_packet_header = (impl::LogPacketHeader*)log_buffer.GetPointer();
 
         /* Don't log anything if payload size isn't correct. */
-        if ((log_packet_header->GetPayloadSize() + sizeof(detail::LogPacketHeader)) != log_buffer.GetSize()) {
+        if ((log_packet_header->GetPayloadSize() + sizeof(impl::LogPacketHeader)) != log_buffer.GetSize()) {
             return;
         }
         
@@ -66,7 +66,7 @@ namespace ams::lm {
 
         if (g_is_logging_to_custom_sink) {
             /* Log to custom sink if enabled. */
-            impl::WriteLogToCustomSink(const_cast<const detail::LogPacketHeader*>(log_packet_header), log_buffer.GetSize(), 0);
+            impl::WriteLogToCustomSink(const_cast<const impl::LogPacketHeader*>(log_packet_header), log_buffer.GetSize(), 0);
         }
     }
 

@@ -15,21 +15,21 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::diag::detail {
+namespace ams::diag::impl {
 
     void PrintDebugString(const char *str, size_t len) {
         AMS_ASSERT(str && len);
         svc::OutputDebugString(str, len);
     }
 
-    ssize_t GetValidSizeAsUtf8String(const char *str, size_t len) {
+    int GetValidSizeAsUtf8String(const char *str, int len) {
         AMS_ABORT_UNLESS(str != nullptr);
         if (len == 0) {
             return 0;
         }
 
-        auto str_nul_end = str + len;
-        auto str_end = str + len - 1;
+        const char *str_nul_end = str + len;
+        const char *str_end = str + len - 1;
 
         char some_c = '\0';
         do {
@@ -39,9 +39,9 @@ namespace ams::diag::detail {
             some_c = *str_end--;
         } while ((some_c & 0xC0) == 0x80);
 
-        size_t tmp_len = 0;
+        int tmp_len = 0;
         if (!(some_c & 0x80)) {
-            tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
+            tmp_len = static_cast<int>(str_nul_end - (str_end + 1));
             if (tmp_len < 1) {
                 return len;
             }
@@ -53,7 +53,7 @@ namespace ams::diag::detail {
 
 
         if ((some_c & 0xE0) == 0xC0) {
-            tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
+            tmp_len = static_cast<int>(str_nul_end - (str_end + 1));
             if (tmp_len >= 2) {
                 if (tmp_len == 2) {
                     return len;
@@ -66,7 +66,7 @@ namespace ams::diag::detail {
                 if ((some_c & 0xF8) != 0xF0) {
                     return -1;
                 }
-                tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
+                tmp_len = static_cast<int>(str_nul_end - (str_end + 1));
                 if (tmp_len < 4) {
                     if (tmp_len < len) {
                         return len - tmp_len;
@@ -79,7 +79,7 @@ namespace ams::diag::detail {
                 }
                 return 1;
             }
-            tmp_len = static_cast<size_t>(str_nul_end - (str_end + 1));
+            tmp_len = static_cast<int>(str_nul_end - (str_end + 1));
             if (tmp_len >= 3) {
                 if (tmp_len == 3) {
                     return len;

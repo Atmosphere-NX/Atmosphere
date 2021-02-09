@@ -14,10 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/diag/diag_log_observer.hpp>
 
 namespace ams::lm {
 
-    namespace detail {
+    namespace impl {
 
         void LogManagerLogObserver(const diag::LogMetaData &log_metadata, const diag::LogBody &log_body, void *user_data);
 
@@ -36,7 +37,7 @@ namespace ams::lm {
         /* R_ABORT_UNLESS(lmInitialize()); */
 
         /* Log by default via LogManager. */
-        diag::ReplaceDefaultLogObserver(detail::LogManagerLogObserver);
+        diag::ReplaceDefaultLogObserver(impl::LogManagerLogObserver);
         g_initialized = true;
     }
 

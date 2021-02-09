@@ -14,9 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere/lm/detail/lm_detail_log_types.hpp>
+#include <stratosphere/lm/impl/lm_impl_log_types.hpp>
 
-namespace ams::lm::detail {
+namespace ams::lm::impl {
 
     class LogPacketTransmitterBase {
         NON_COPYABLE(LogPacketTransmitterBase);

@@ -66,7 +66,7 @@ namespace ams::lm::impl {
         return std::addressof(custom_sink_buffer);
     }
 
-    void WriteLogToCustomSink(const detail::LogPacketHeader *log_packet_header, size_t log_packet_size, u64 unk_param) {
+    void WriteLogToCustomSink(const impl::LogPacketHeader *log_packet_header, size_t log_packet_size, u64 unk_param) {
         /* Process ID value is set earlier, so it's guaranteed to be valid. */
         if (log_packet_header->GetProcessId() != g_sink_buffer_current_process_id) {
             /* We're starting to log from a different process, so we need first a head packet. */
@@ -82,11 +82,11 @@ namespace ams::lm::impl {
             }
         }
 
-        auto log_payload_start = reinterpret_cast<const u8*>(log_packet_header) + sizeof(detail::LogPacketHeader);
+        auto log_payload_start = reinterpret_cast<const u8*>(log_packet_header) + sizeof(impl::LogPacketHeader);
         auto log_payload_cur = log_payload_start;
 
         /* No need to check packet header's payload size, since it has already been validated. */
-        auto log_payload_size = log_packet_size - sizeof(detail::LogPacketHeader);
+        auto log_payload_size = log_packet_size - sizeof(impl::LogPacketHeader);
         if (logging_in_same_thread && (g_sink_buffer_remaining_size > 0)) {
             auto log_remaining_size = log_payload_size;
             if (log_payload_size >= g_sink_buffer_remaining_size) {
@@ -105,8 +105,8 @@ namespace ams::lm::impl {
         if (log_payload_size) {
             auto log_payload_end = log_payload_start + log_payload_size;
             while (true) {
-                const auto chunk_key = static_cast<detail::LogDataChunkKey>(PopUleb128(std::addressof(log_payload_cur), log_payload_end));
-                const auto chunk_is_text_log = chunk_key == detail::LogDataChunkKey_TextLog;
+                const auto chunk_key = static_cast<impl::LogDataChunkKey>(PopUleb128(std::addressof(log_payload_cur), log_payload_end));
+                const auto chunk_is_text_log = chunk_key == impl::LogDataChunkKey_TextLog;
                 const auto chunk_size = PopUleb128(std::addressof(log_payload_cur), log_payload_end);
                 auto left_payload_size = static_cast<size_t>(log_payload_end - log_payload_cur);
                 if (chunk_size >= left_payload_size) {

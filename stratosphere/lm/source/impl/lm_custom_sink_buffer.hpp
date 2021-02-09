@@ -46,7 +46,7 @@ namespace ams::lm::impl {
 
     CustomSinkBuffer *GetCustomSinkBuffer();
     
-    void WriteLogToCustomSink(const detail::LogPacketHeader *log_packet_header, size_t log_packet_size, u64 unk_param);
+    void WriteLogToCustomSink(const impl::LogPacketHeader *log_packet_header, size_t log_packet_size, u64 unk_param);
     size_t ReadLogFromCustomSink(void *out_log_data, size_t data_size, u64 *out_packet_drop_count);
 
 }

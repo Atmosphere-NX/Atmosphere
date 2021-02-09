@@ -15,14 +15,14 @@
  */
 #include <stratosphere.hpp>
 
-namespace ams::lm::detail {
+namespace ams::lm::impl {
 
     namespace {
 
         os::SdkMutex g_log_observer_lock;
         u8 g_packet_transmitter_buffer[0x400];
 
-        bool LogPacketTransmitterFlushFunction(const void *log_data, size_t log_data_size) {
+        bool LogPacketTransmitterFlushFunction(const u8 *log_data, size_t log_data_size) {
             /* TODO: libnx bindings. */
             return true;
         }
@@ -80,7 +80,7 @@ namespace ams::lm::detail {
             /*
             const char *process_name;
             size_t process_name_len;
-            diag::detail::GetProcessNamePointer(std::addressof(process_name), std::addressof(process_name_len));
+            diag::impl::GetProcessNamePointer(std::addressof(process_name), std::addressof(process_name_len));
             packet_transmitter.PushProcessName(process_name, process_name_len);
             */
         }

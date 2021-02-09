@@ -147,7 +147,7 @@ namespace ams::lm::impl {
                                     ON_SCOPE_EXIT { fs::CloseFile(log_file_h); };
                                     
                                     /* 8-byte binary log header, current version is 1. */
-                                    const detail::BinaryLogHeader bin_log_header = { detail::BinaryLogHeader::Magic, 1 };
+                                    const impl::BinaryLogHeader bin_log_header = { impl::BinaryLogHeader::Magic, 1 };
                                     if (R_SUCCEEDED(fs::WriteFile(log_file_h, 0, std::addressof(bin_log_header), sizeof(bin_log_header), fs::WriteOption::Flush))) {
                                         this->log_file_offset = sizeof(bin_log_header);
                                         return true;

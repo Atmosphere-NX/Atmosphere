@@ -14,8 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/diag/diag_log_observer.hpp>
+#include <stratosphere/diag/impl/diag_impl_log.hpp>
+#include <stratosphere/diag/impl/diag_impl_string.hpp>
 
-namespace ams::diag::detail {
+namespace ams::diag::impl {
 
     namespace {
 
@@ -36,7 +39,7 @@ namespace ams::diag::detail {
                         break;
                     }
 
-                    auto copy_len = std::min(static_cast<size_t>(chars_len), static_cast<size_t>(print_data->print_str_end - print_data->print_str_cur));
+                    const auto copy_len = std::min(static_cast<size_t>(chars_len), static_cast<size_t>(print_data->print_str_end - print_data->print_str_cur));
                     std::memcpy(print_data->print_str_cur, chars, copy_len);
                     chars_len -= copy_len;
                     chars += copy_len;
@@ -47,7 +50,7 @@ namespace ams::diag::detail {
                 }
                 if (!print_data->log_metadata.use_default_locale_charset) {
                     const auto cur_print_str_len = static_cast<size_t>(print_data->print_str_cur - print_data->print_str_start);
-                    auto actual_print_str_len = GetValidSizeAsUtf8String(print_data->print_str_start, cur_print_str_len);
+                    const auto actual_print_str_len = GetValidSizeAsUtf8String(print_data->print_str_start, cur_print_str_len);
                     if (actual_print_str_len < cur_print_str_len) {
                         auto print_str_cur_end = print_data->print_str_start + actual_print_str_len;
                         *print_str_cur_end = '\0';

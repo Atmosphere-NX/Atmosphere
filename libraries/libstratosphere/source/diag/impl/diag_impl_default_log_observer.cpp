@@ -14,8 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include <stratosphere/diag/impl/diag_impl_string.hpp>
 
-namespace ams::diag::detail {
+namespace ams::diag::impl {
 
     namespace {
 
@@ -68,7 +69,7 @@ namespace ams::diag::detail {
 
         const auto max_buffer_size = sizeof(g_default_log_observer_text_buffer) - used_buffer_space - (color_type != nullptr ? std::strlen(color_type) - 1 : 0);
 
-        const auto log_text_size = std::min<size_t>(max_buffer_size, log_body.text_length);
+        auto log_text_size = std::min<size_t>(max_buffer_size, log_body.text_length);
         if (log_body.text_length && (log_body.text[log_body.text_length - 1] == '\n')) {
             /* If the last character is a newline character, skip it. */
             log_text_size--;

@@ -16,7 +16,7 @@
 #pragma once
 #include <stratosphere/diag/diag_log_types.hpp>
 
-namespace ams::lm::detail {
+namespace ams::lm::impl {
 
     enum LogPacketFlags {
         LogPacketFlags_Head         = (1 << 0),

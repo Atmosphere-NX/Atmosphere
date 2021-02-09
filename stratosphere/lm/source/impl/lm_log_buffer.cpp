@@ -27,15 +27,15 @@ namespace ams::lm::impl {
             return ok;
         }
 
-        inline bool ModifyUserSystemClockInfoImpl(detail::LogDataChunkKey chunk_key, u8 *log_payload_data, size_t log_payload_size, time::PosixTime &time_ref) {
-            if(chunk_key == detail::LogDataChunkKey_UserSystemClock) {
+        inline bool ModifyUserSystemClockInfoImpl(impl::LogDataChunkKey chunk_key, u8 *log_payload_data, size_t log_payload_size, time::PosixTime &time_ref) {
+            if(chunk_key == impl::LogDataChunkKey_UserSystemClock) {
                 /* TODO: properly implement this...? */
                 reinterpret_cast<time::PosixTime*>(log_payload_data)->value += time_ref.value;
             }
             return true;
         }
 
-        bool ModifyUserSystemClockInfo(detail::LogPacketHeader *packet_header, void *log_payload_data, size_t log_payload_size, time::PosixTime &time_ref) {
+        bool ModifyUserSystemClockInfo(impl::LogPacketHeader *packet_header, void *log_payload_data, size_t log_payload_size, time::PosixTime &time_ref) {
             if (!packet_header->IsHead()) {
                 /* Only modify this field on head packets. */
                 return true;
@@ -51,7 +51,7 @@ namespace ams::lm::impl {
             auto payload_end = payload_start + log_payload_size;
             
             /* Read chunk key and size. */
-            const auto chunk_key = static_cast<detail::LogDataChunkKey>(PopUleb128(const_cast<const u8**>(std::addressof(payload_cur)), const_cast<const u8*>(payload_end)));
+            const auto chunk_key = static_cast<impl::LogDataChunkKey>(PopUleb128(const_cast<const u8**>(std::addressof(payload_cur)), const_cast<const u8*>(payload_end)));
             if (payload_cur >= payload_end) {
                 return false;
             }
@@ -71,18 +71,18 @@ namespace ams::lm::impl {
             }
             
             /* Iterate (for potential multiple packets?) and change the UserSystemClock for each value. */
-            auto packet_header = reinterpret_cast<detail::LogPacketHeader*>(log_data);
+            auto packet_header = reinterpret_cast<impl::LogPacketHeader*>(log_data);
             auto data_start = reinterpret_cast<u8*>(log_data);
             auto data_cur = data_start;
             auto data_end = data_start + log_data_size;
             auto cur_packet_header = packet_header;
-            while (static_cast<size_t>(data_end - data_start) >= sizeof(detail::LogPacketHeader)) {
+            while (static_cast<size_t>(data_end - data_start) >= sizeof(impl::LogPacketHeader)) {
                 auto payload_size = cur_packet_header->GetPayloadSize();
                 if ((static_cast<size_t>(data_end - data_cur) < payload_size) || !ModifyUserSystemClockInfo(cur_packet_header, data_cur, static_cast<size_t>(payload_size), time_ref)) {
                     break;  
                 }
 
-                cur_packet_header = reinterpret_cast<detail::LogPacketHeader*>(data_cur + payload_size);
+                cur_packet_header = reinterpret_cast<impl::LogPacketHeader*>(data_cur + payload_size);
                 if ((data_cur + payload_size) >= data_end) {
                     return true;
                 }                

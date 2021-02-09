@@ -22,11 +22,11 @@ namespace ams::lm::impl {
         NON_COPYABLE(EventLogTransmitter);
         NON_MOVEABLE(EventLogTransmitter);
         private:
-            detail::LogPacketTransmitter::FlushFunction flush_func;
+            impl::LogPacketTransmitter::FlushFunction flush_func;
             u64 log_packet_drop_count;
             os::SdkMutex log_packet_drop_count_lock;
         public:
-            EventLogTransmitter(detail::LogPacketTransmitter::FlushFunction flush_func) : flush_func(flush_func), log_packet_drop_count(0), log_packet_drop_count_lock() {}
+            EventLogTransmitter(impl::LogPacketTransmitter::FlushFunction flush_func) : flush_func(flush_func), log_packet_drop_count(0), log_packet_drop_count_lock() {}
 
             bool SendLogSessionBeginPacket(u64 process_id);
             bool SendLogSessionEndPacket(u64 process_id);
