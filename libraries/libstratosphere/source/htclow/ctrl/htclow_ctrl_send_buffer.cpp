@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htclow_ctrl_send_buffer.hpp"
+#include "htclow_ctrl_packet_factory.hpp"
 
 namespace ams::htclow::ctrl {
 
@@ -30,6 +31,7 @@ namespace ams::htclow::ctrl {
             case HtcctrlPacketType_ResumeFromTarget:
             case HtcctrlPacketType_BeaconResponse:
             case HtcctrlPacketType_InformationFromTarget:
+                return true;
             default:
                 return false;
         }
@@ -49,6 +51,52 @@ namespace ams::htclow::ctrl {
             AMS_ABORT_UNLESS(this->IsPosteriorPacket(packet_type));
             m_posterior_packet_list.push_back(*packet);
         }
+    }
+
+    void HtcctrlSendBuffer::RemovePacket(const HtcctrlPacketHeader &header) {
+        /* Get the packet type. */
+        const auto packet_type = header.packet_type;
+
+        /* Remove the front from the appropriate list. */
+        HtcctrlPacket *packet;
+        if (this->IsPriorPacket(packet_type)) {
+            packet = std::addressof(m_prior_packet_list.front());
+            m_prior_packet_list.pop_front();
+        } else {
+            AMS_ABORT_UNLESS(this->IsPosteriorPacket(packet_type));
+            packet = std::addressof(m_posterior_packet_list.front());
+            m_posterior_packet_list.pop_front();
+        }
+
+        /* Delete the packet. */
+        m_packet_factory->Delete(packet);
+    }
+
+    bool HtcctrlSendBuffer::QueryNextPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size) {
+        if (!m_prior_packet_list.empty()) {
+            this->CopyPacket(header, body, out_body_size, m_prior_packet_list.front());
+            return true;
+        } else if (!m_posterior_packet_list.empty()) {
+            this->CopyPacket(header, body, out_body_size, m_posterior_packet_list.front());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void HtcctrlSendBuffer::CopyPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size, const HtcctrlPacket &packet) {
+        /* Get the body size. */
+        const int body_size = packet.GetBodySize();
+        AMS_ASSERT(0 <= body_size && body_size <= static_cast<int>(sizeof(*body)));
+
+        /* Copy the header. */
+        std::memcpy(header, packet.GetHeader(), sizeof(*header));
+
+        /* Copy the body. */
+        std::memcpy(body, packet.GetBody(), body_size);
+
+        /* Set the output body size. */
+        *out_body_size = body_size;
     }
 
 }

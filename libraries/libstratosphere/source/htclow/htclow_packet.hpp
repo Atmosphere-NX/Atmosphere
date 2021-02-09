@@ -80,7 +80,7 @@ namespace ams::htclow {
                 return m_packet_size - sizeof(HeaderType);
             }
 
-            u8 *GetBody() {
+            u8 *GetBody() const {
                 if (this->GetBodySize() > 0) {
                     return m_header + sizeof(HeaderType);
                 } else {

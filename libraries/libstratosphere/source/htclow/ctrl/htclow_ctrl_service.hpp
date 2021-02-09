@@ -65,6 +65,12 @@ namespace ams::htclow::ctrl {
             Result ProcessReceiveBeaconQueryPacket();
             Result ProcessReceiveUnexpectedPacket();
 
+            void ProcessSendConnectPacket();
+            void ProcessSendReadyPacket();
+            void ProcessSendSuspendPacket();
+            void ProcessSendResumePacket();
+            void ProcessSendDisconnectPacket();
+
             void UpdateServiceChannels(const void *body, size_t body_size);
             void TryReadyInternal();
 
@@ -77,8 +83,13 @@ namespace ams::htclow::ctrl {
 
             void SetDriverType(impl::DriverType driver_type);
 
+            os::EventType *GetSendPacketEvent() { return m_event.GetBase(); }
+
             Result CheckReceivedHeader(const HtcctrlPacketHeader &header) const;
             Result ProcessReceivePacket(const HtcctrlPacketHeader &header, const void *body, size_t body_size);
+
+            bool QuerySendPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size);
+            void RemovePacket(const HtcctrlPacketHeader &header);
 
             Result NotifyDriverConnected();
             Result NotifyDriverDisconnected();

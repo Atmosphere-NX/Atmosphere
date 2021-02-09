@@ -20,8 +20,8 @@
 namespace ams::htclow::mux {
 
     Mux::Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm)
-        : m_packet_factory(pf), m_state_machine(sm), m_task_manager(), m_wake_event(os::EventClearMode_ManualClear),
-          m_channel_impl_map(pf, sm, std::addressof(m_task_manager), std::addressof(m_wake_event)), m_global_send_buffer(pf),
+        : m_packet_factory(pf), m_state_machine(sm), m_task_manager(), m_event(os::EventClearMode_ManualClear),
+          m_channel_impl_map(pf, sm, std::addressof(m_task_manager), std::addressof(m_event)), m_global_send_buffer(pf),
           m_mutex(), m_is_sleeping(false), m_version(ProtocolVersion)
     {
         /* ... */
@@ -98,7 +98,7 @@ namespace ams::htclow::mux {
             m_is_sleeping = true;
         } else {
             m_is_sleeping = false;
-            m_wake_event.Signal();
+            m_event.Signal();
         }
     }
 

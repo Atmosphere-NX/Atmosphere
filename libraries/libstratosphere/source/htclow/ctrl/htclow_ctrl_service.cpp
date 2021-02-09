@@ -224,6 +224,41 @@ namespace ams::htclow::ctrl {
         return htclow::ResultHtcctrlReceiveUnexpectedPacket();
     }
 
+    void HtcctrlService::ProcessSendConnectPacket() {
+        /* Set our state. */
+        const Result result = this->SetState(HtcctrlState_Connected);
+        R_ASSERT(result);
+    }
+
+    void HtcctrlService::ProcessSendReadyPacket() {
+        /* Set our state. */
+        if (m_state_machine->GetHtcctrlState() == HtcctrlState_SentReadyFromHost) {
+            const Result result = this->SetState(HtcctrlState_Ready);
+            R_ASSERT(result);
+        }
+
+        /* Update channel states. */
+        m_mux->UpdateChannelState();
+    }
+
+    void HtcctrlService::ProcessSendSuspendPacket() {
+        /* Set our state. */
+        const Result result = this->SetState(HtcctrlState_SentSuspendFromTarget);
+        R_ASSERT(result);
+    }
+
+    void HtcctrlService::ProcessSendResumePacket() {
+        /* Set our state. */
+        const Result result = this->SetState(HtcctrlState_SentResumeFromTarget);
+        R_ASSERT(result);
+    }
+
+    void HtcctrlService::ProcessSendDisconnectPacket() {
+        /* Set our state. */
+        const Result result = this->SetState(HtcctrlState_Disconnected);
+        R_ASSERT(result);
+    }
+
     void HtcctrlService::UpdateServiceChannels(const void *body, size_t body_size) {
         /* Copy the packet body to our member. */
         std::memcpy(m_service_channels_packet, body, body_size);
@@ -256,6 +291,45 @@ namespace ams::htclow::ctrl {
 
             /* Set connecting checked in state machine. */
             m_state_machine->SetConnectingChecked();
+        }
+    }
+
+    bool HtcctrlService::QuerySendPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return m_send_buffer.QueryNextPacket(header, body, out_body_size);
+    }
+
+    void HtcctrlService::RemovePacket(const HtcctrlPacketHeader &header) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Remove the packet from our buffer. */
+        m_send_buffer.RemovePacket(header);
+
+        /* Switch on the packet type. */
+        switch (header.packet_type) {
+            case HtcctrlPacketType_ConnectFromTarget:
+                this->ProcessSendConnectPacket();
+                break;
+            case HtcctrlPacketType_ReadyFromTarget:
+                this->ProcessSendReadyPacket();
+                break;
+            case HtcctrlPacketType_SuspendFromTarget:
+                this->ProcessSendSuspendPacket();
+                break;
+            case HtcctrlPacketType_ResumeFromTarget:
+                this->ProcessSendResumePacket();
+                break;
+            case HtcctrlPacketType_DisconnectFromTarget:
+                this->ProcessSendDisconnectPacket();
+                break;
+            case HtcctrlPacketType_BeaconResponse:
+            case HtcctrlPacketType_InformationFromTarget:
+                break;
+            default:
+                AMS_ABORT("Send unsupported packet 0x%04x\n", static_cast<u32>(header.packet_type));
         }
     }
 
