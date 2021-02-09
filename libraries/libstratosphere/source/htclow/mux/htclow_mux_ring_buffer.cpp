@@ -45,4 +45,50 @@ namespace ams::htclow::mux {
         return ResultSuccess();
     }
 
+    Result RingBuffer::Copy(void *dst, size_t size) {
+        /* Select buffer to discard from. */
+        void *buffer = m_is_read_only ? m_read_only_buffer : m_buffer;
+        R_UNLESS(buffer != nullptr, htclow::ResultChannelBufferHasNotEnoughData());
+
+        /* Verify that we have enough data. */
+        R_UNLESS(m_data_size >= size, htclow::ResultChannelBufferHasNotEnoughData());
+
+        /* Determine position and copy sizes. */
+        const size_t pos  = m_offset;
+        const size_t left = std::min(m_buffer_size - pos, size);
+        const size_t over = size - left;
+
+        /* Copy. */
+        if (left != 0) {
+            std::memcpy(dst, static_cast<const u8 *>(buffer) + pos, left);
+        }
+        if (over != 0) {
+            std::memcpy(static_cast<u8 *>(dst) + left, buffer, over);
+        }
+
+        /* Mark that we can discard. */
+        m_can_discard = true;
+
+        return ResultSuccess();
+    }
+
+    Result RingBuffer::Discard(size_t size) {
+        /* Select buffer to discard from. */
+        void *buffer = m_is_read_only ? m_read_only_buffer : m_buffer;
+        R_UNLESS(buffer != nullptr, htclow::ResultChannelBufferHasNotEnoughData());
+
+        /* Verify that the data we're discarding has been read. */
+        R_UNLESS(m_can_discard, htclow::ResultChannelCannotDiscard());
+
+        /* Verify that we have enough data. */
+        R_UNLESS(m_data_size >= size, htclow::ResultChannelBufferHasNotEnoughData());
+
+        /* Discard. */
+        m_offset       = (m_offset + size) % m_buffer_size;
+        m_data_size   -= size;
+        m_can_discard  = false;
+
+        return ResultSuccess();
+    }
+
 }

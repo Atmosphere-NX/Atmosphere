@@ -132,6 +132,30 @@ namespace ams::htclow::mux {
         return ResultSuccess();
     }
 
+    bool ChannelImpl::QuerySendPacket(PacketHeader *header, PacketBody *body, int *out_body_size) {
+        /* Check our send buffer. */
+        if (m_send_buffer.QueryNextPacket(header, body, out_body_size, m_next_max_data, m_total_send_size, m_share.has_value(), m_share.value_or(0))) {
+            /* Update tracking variables. */
+            if (header->packet_type == PacketType_Data) {
+                m_cur_max_data = m_next_max_data;
+            }
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void ChannelImpl::RemovePacket(const PacketHeader &header) {
+        /* Remove the packet. */
+        m_send_buffer.RemovePacket(header);
+
+        /* Check if the send buffer is now empty. */
+        if (m_send_buffer.Empty()) {
+            m_task_manager->NotifySendBufferEmpty(m_channel);
+        }
+    }
+
     void ChannelImpl::UpdateState() {
         /* Check if shutdown must be forced. */
         if (m_state_machine->IsUnsupportedServiceChannelToShutdown(m_channel)) {

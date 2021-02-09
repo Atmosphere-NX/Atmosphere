@@ -33,6 +33,11 @@ namespace ams::htclow::mux {
             PacketList m_packet_list;
         public:
             GlobalSendBuffer(PacketFactory *pf) : m_packet_factory(pf), m_packet_list() { /* ... */ }
+
+            Packet *GetNextPacket();
+
+            Result AddPacket(std::unique_ptr<Packet, PacketDeleter> ptr);
+            void RemovePacket();
     };
 
 }

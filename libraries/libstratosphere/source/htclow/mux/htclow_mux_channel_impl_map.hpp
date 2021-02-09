@@ -40,13 +40,13 @@ namespace ams::htclow::mux {
         public:
             ChannelImplMap(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);
 
+            ChannelImpl &GetChannelImpl(int index);
             ChannelImpl &GetChannelImpl(impl::ChannelInternalType channel);
 
             bool Exists(impl::ChannelInternalType channel) const {
                 return m_map.find(channel) != m_map.end();
             }
         private:
-            ChannelImpl &GetChannelImpl(int index);
         public:
             MapType &GetMap() {
                 return m_map;
