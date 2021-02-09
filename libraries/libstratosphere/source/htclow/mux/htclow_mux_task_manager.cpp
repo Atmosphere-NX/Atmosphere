@@ -34,6 +34,22 @@ namespace ams::htclow::mux {
         }
     }
 
+    void TaskManager::NotifySendReady() {
+        for (auto i = 0; i < MaxTaskCount; ++i) {
+            if (m_valid[i] && m_tasks[i].type == TaskType_Send) {
+                this->CompleteTask(i, EventTrigger_SendReady);
+            }
+        }
+    }
+
+    void TaskManager::NotifySendBufferEmpty(impl::ChannelInternalType channel) {
+        for (auto i = 0; i < MaxTaskCount; ++i) {
+            if (m_valid[i] && m_tasks[i].channel == channel && m_tasks[i].type == TaskType_Flush) {
+                this->CompleteTask(i, EventTrigger_SendBufferEmpty);
+            }
+        }
+    }
+
     void TaskManager::NotifyConnectReady() {
         for (auto i = 0; i < MaxTaskCount; ++i) {
             if (m_valid[i] && m_tasks[i].type == TaskType_Connect) {

@@ -43,7 +43,9 @@ namespace ams::htclow::mux {
             RingBuffer m_receive_buffer;
             s16 m_version;
             ChannelConfig m_config;
-            /* TODO: tracking variables. */
+            u64 m_total_send_size;
+            u64 m_next_max_data;
+            u64 m_cur_max_data;
             u64 m_offset;
             std::optional<u64> m_share;
             os::Event m_state_change_event;
@@ -54,6 +56,10 @@ namespace ams::htclow::mux {
             void SetVersion(s16 version);
 
             Result ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size);
+
+            bool QuerySendPacket(PacketHeader *header, PacketBody *body, int *out_body_size);
+
+            void RemovePacket(const PacketHeader &header);
 
             void UpdateState();
         private:

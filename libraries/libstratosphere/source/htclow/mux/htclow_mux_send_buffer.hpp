@@ -37,10 +37,22 @@ namespace ams::htclow::mux {
             s16 m_version;
             bool m_flow_control_enabled;
             size_t m_max_packet_size;
+        private:
+            bool IsPriorPacket(PacketType packet_type) const;
+
+            void MakeDataPacketHeader(PacketHeader *header, int body_size, s16 version, u64 share, u32 offset) const;
+
+            void CopyPacket(PacketHeader *header, PacketBody *body, int *out_body_size, const Packet &packet);
         public:
             SendBuffer(impl::ChannelInternalType channel, PacketFactory *pf);
 
             void SetVersion(s16 version);
+
+            bool QueryNextPacket(PacketHeader *header, PacketBody *body, int *out_body_size, u64 max_data, u64 total_send_size, bool has_share, u64 share);
+
+            void RemovePacket(const PacketHeader &header);
+
+            bool Empty();
 
             void Clear();
     };

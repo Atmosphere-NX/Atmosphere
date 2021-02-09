@@ -39,6 +39,7 @@ namespace ams::htclow {
             R_DEFINE_ERROR_RESULT(ChannelStateTransitionError,   1104);
             R_DEFINE_ERROR_RESULT(ChannelReceiveBufferEmpty,     1106);
             R_DEFINE_ERROR_RESULT(ChannelSequenceIdNotMatched,   1107);
+            R_DEFINE_ERROR_RESULT(ChannelCannotDiscard,          1108);
 
         R_DEFINE_ERROR_RANGE(DriverError, 1200, 1999);
             R_DEFINE_ERROR_RESULT(DriverOpened, 1201);

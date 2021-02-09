@@ -26,13 +26,17 @@ namespace ams::htclow::mux {
             size_t m_buffer_size;
             size_t m_data_size;
             size_t m_offset;
-            bool m_has_copied;
+            bool m_can_discard;
         public:
-            RingBuffer() : m_buffer(), m_read_only_buffer(), m_is_read_only(true), m_buffer_size(), m_data_size(), m_offset(), m_has_copied(false) { /* ... */ }
+            RingBuffer() : m_buffer(), m_read_only_buffer(), m_is_read_only(true), m_buffer_size(), m_data_size(), m_offset(), m_can_discard(false) { /* ... */ }
 
             size_t GetDataSize() { return m_data_size; }
 
             Result Write(const void *data, size_t size);
+
+            Result Copy(void *dst, size_t size);
+
+            Result Discard(size_t size);
     };
 
 }

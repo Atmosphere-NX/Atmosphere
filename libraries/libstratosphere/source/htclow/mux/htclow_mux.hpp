@@ -21,7 +21,13 @@
 
 namespace ams::htclow::mux {
 
+    enum class MuxState {
+        Normal,
+        Sleep,
+    };
+
     class Mux {
+        private:
         private:
             PacketFactory *m_packet_factory;
             ctrl::HtcctrlStateMachine *m_state_machine;
@@ -30,7 +36,7 @@ namespace ams::htclow::mux {
             ChannelImplMap m_channel_impl_map;
             GlobalSendBuffer m_global_send_buffer;
             os::SdkMutex m_mutex;
-            bool m_is_sleeping;
+            MuxState m_state;
             s16 m_version;
         public:
             Mux(PacketFactory *pf, ctrl::HtcctrlStateMachine *sm);
@@ -51,6 +57,8 @@ namespace ams::htclow::mux {
             Result CheckChannelExist(impl::ChannelInternalType channel);
 
             Result SendErrorPacket(impl::ChannelInternalType channel);
+
+            bool IsSendable(PacketType packet_type) const;
     };
 
 }
