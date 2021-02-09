@@ -14,8 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/ams/ams_environment.hpp>
 
-#define RAPIDJSON_NAMESPACE ams::rapidjson
+#define RAPIDJSON_NAMESPACE          ams::rapidjson
+#define RAPIDJSON_ASSERT(x)          AMS_ABORT_UNLESS(x)
+
+#define RAPIDJSON_MALLOC(size)       ams::MallocForRapidJson(size)
+#define RAPIDJSON_REALLOC(ptr, size) ams::ReallocForRapidJson(ptr, size)
+#define RAPIDJSON_FREE(ptr)          ams::FreeForRapidJson(ptr)
 
 #include <stratosphere/rapidjson/rapidjson.h>
 #include <stratosphere/rapidjson/encodings.h>

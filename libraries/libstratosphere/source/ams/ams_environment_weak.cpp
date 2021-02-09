@@ -25,6 +25,18 @@ namespace ams {
         return std::free(ptr);
     }
 
+    WEAK_SYMBOL void *MallocForRapidJson(size_t size) {
+        return std::malloc(size);
+    }
+
+    WEAK_SYMBOL void *ReallocForRapidJson(void *ptr, size_t size) {
+        return std::realloc(ptr, size);
+    }
+
+    WEAK_SYMBOL void FreeForRapidJson(void *ptr) {
+        return std::free(ptr);
+    }
+
 }
 
 extern "C" {
