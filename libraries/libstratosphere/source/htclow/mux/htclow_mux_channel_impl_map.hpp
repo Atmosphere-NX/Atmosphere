@@ -46,6 +46,8 @@ namespace ams::htclow::mux {
             bool Exists(impl::ChannelInternalType channel) const {
                 return m_map.find(channel) != m_map.end();
             }
+
+            Result AddChannel(impl::ChannelInternalType channel);
         private:
         public:
             MapType &GetMap() {

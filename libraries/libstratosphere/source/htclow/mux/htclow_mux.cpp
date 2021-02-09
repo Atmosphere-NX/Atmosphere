@@ -166,4 +166,27 @@ namespace ams::htclow::mux {
         }
     }
 
+    Result Mux::Open(impl::ChannelInternalType channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Check that the channel doesn't already exist. */
+        R_UNLESS(!m_channel_impl_map.Exists(channel), htclow::ResultChannelAlreadyExist());
+
+        /* Add the channel. */
+        R_TRY(m_channel_impl_map.AddChannel(channel));
+
+        /* Set the channel version. */
+        m_channel_impl_map.GetChannelImpl(channel).SetVersion(m_version);
+
+        return ResultSuccess();
+    }
+
+    os::EventType *Mux::GetTaskEvent(u32 task_id) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return m_task_manager.GetTaskEvent(task_id);
+    }
+
 }

@@ -51,6 +51,8 @@ namespace ams::htclow::mux {
         public:
             TaskManager() : m_valid() { /* ... */ }
 
+            os::EventType *GetTaskEvent(u32 task_id);
+
             void NotifyDisconnect(impl::ChannelInternalType channel);
             void NotifyReceiveData(impl::ChannelInternalType channel, size_t size);
             void NotifySendReady();

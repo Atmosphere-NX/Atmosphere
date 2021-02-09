@@ -57,8 +57,8 @@ namespace ams::htc::server::driver {
         R_TRY(m_manager->Open(GetHtclowChannel(channel, m_module_id)));
 
         /* Set the send/receive buffers. */
-        m_manager->SetReceiveBuffer(receive_buffer, receive_buffer_size);
-        m_manager->SetSendBuffer(send_buffer, send_buffer_size);
+        m_manager->SetReceiveBuffer(GetHtclowChannel(channel, m_module_id), receive_buffer, receive_buffer_size);
+        m_manager->SetSendBuffer(GetHtclowChannel(channel, m_module_id), send_buffer, send_buffer_size);
 
         return ResultSuccess();
     }
@@ -151,7 +151,7 @@ namespace ams::htc::server::driver {
         size_t received = 0;
         do {
             size_t cur_received;
-            const Result result = this->ReceiveInternal(std::addressof(cur_received), static_cast<u8 *>(dst) + received, static_cast<size_t>(src_size) - received, channel, option);
+            const Result result = this->ReceiveInternal(std::addressof(cur_received), static_cast<u8 *>(dst) + received, static_cast<size_t>(dst_size) - received, channel, option);
 
             if (R_FAILED(result)) {
                 if (htclow::ResultChannelReceiveBufferEmpty::Includes(result)) {

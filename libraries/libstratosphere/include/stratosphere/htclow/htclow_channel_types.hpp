@@ -36,6 +36,8 @@ namespace ams::htclow {
 
     struct ChannelConfig {
         bool flow_control_enabled;
+        bool handshake_enabled;
+        size_t max_packet_size;
     };
 
     constexpr bool IsStateTransitionAllowed(ChannelState from, ChannelState to) {

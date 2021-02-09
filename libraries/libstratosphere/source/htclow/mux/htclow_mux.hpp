@@ -53,6 +53,10 @@ namespace ams::htclow::mux {
 
             void UpdateChannelState();
             void UpdateMuxState();
+        public:
+            Result Open(impl::ChannelInternalType channel);
+
+            os::EventType *GetTaskEvent(u32 task_id);
         private:
             Result CheckChannelExist(impl::ChannelInternalType channel);
 

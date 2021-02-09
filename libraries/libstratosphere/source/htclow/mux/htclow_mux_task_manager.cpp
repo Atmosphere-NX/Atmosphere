@@ -18,6 +18,14 @@
 
 namespace ams::htclow::mux {
 
+    os::EventType *TaskManager::GetTaskEvent(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(m_valid[task_id]);
+
+        return std::addressof(m_tasks[task_id].event);
+    }
+
     void TaskManager::NotifyDisconnect(impl::ChannelInternalType channel) {
         for (auto i = 0; i < MaxTaskCount; ++i) {
             if (m_valid[i] && m_tasks[i].channel == channel) {

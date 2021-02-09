@@ -14,21 +14,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours.hpp>
-#include <stratosphere/htclow/htclow_module_types.hpp>
+#include <stratosphere.hpp>
+#include "htclow_packet.hpp"
 
 namespace ams::htclow {
 
-    enum class ModuleId : u8 {
-        Htcfs   = 1,
-
-        Htcmisc = 3,
-        Htcs    = 4,
-    };
-
-    struct ModuleType {
-        bool _is_initialized;
-        ModuleId _id;
+    constexpr inline const ChannelConfig DefaultChannelConfig = {
+        .flow_control_enabled = true,
+        .handshake_enabled    = true,
+        .max_packet_size      = 0xE000 + sizeof(PacketHeader),
     };
 
 }

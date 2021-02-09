@@ -43,4 +43,28 @@ namespace ams::htclow::mux {
         return this->GetChannelImpl(it->second);
     }
 
+    Result ChannelImplMap::AddChannel(impl::ChannelInternalType channel) {
+        /* Find a free storage. */
+        int idx;
+        for (idx = 0; idx < MaxChannelCount; ++idx) {
+            if (!m_storage_valid[idx]) {
+                break;
+            }
+        }
+
+        /* Validate that the storage is free. */
+        R_UNLESS(idx < MaxChannelCount, htclow::ResultOutOfResource());
+
+        /* Create the channel impl. */
+        std::construct_at(GetPointer(m_channel_storage[idx]), channel, m_packet_factory, m_state_machine, m_task_manager, m_event);
+
+        /* Mark the storage valid. */
+        m_storage_valid[idx] = true;
+
+        /* Insert into our map. */
+        m_map.insert(std::pair<const impl::ChannelInternalType, int>{channel, idx});
+
+        return ResultSuccess();
+    }
+
 }

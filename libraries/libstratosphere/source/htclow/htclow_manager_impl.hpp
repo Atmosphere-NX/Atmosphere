@@ -44,7 +44,45 @@ namespace ams::htclow {
             Result OpenDriver(impl::DriverType driver_type);
             void CloseDriver();
 
+            Result Open(impl::ChannelInternalType channel);
+            Result Close(impl::ChannelInternalType channel);
+
+            void Resume();
+            void Suspend();
+
+            Result ConnectBegin(u32 *out_task_id, impl::ChannelInternalType channel);
+            Result ConnectEnd(impl::ChannelInternalType channel, u32 task_id);
+
             void Disconnect();
+
+            Result FlushBegin(u32 *out_task_id, impl::ChannelInternalType channel);
+            Result FlushEnd(u32 task_id);
+
+            ChannelState GetChannelState(impl::ChannelInternalType channel);
+            os::EventType *GetChannelStateEvent(impl::ChannelInternalType channel);
+
+            impl::DriverType GetDriverType();
+
+            os::EventType *GetTaskEvent(u32 task_id);
+
+            void NotifyAsleep();
+            void NotifyAwake();
+
+            Result ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking);
+            Result ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id);
+
+            Result SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel);
+            Result SendEnd(u32 task_id);
+
+            void SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config);
+
+            void SetDebugDriver(driver::IDriver *driver);
+
+            void SetReceiveBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size);
+            void SetSendBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size);
+            void SetSendBufferWithData(impl::ChannelInternalType channel, const void *buf, size_t buf_size);
+
+            Result Shutdown(impl::ChannelInternalType channel);
     };
 
 }
