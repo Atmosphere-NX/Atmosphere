@@ -29,4 +29,8 @@ namespace ams {
     void *Malloc(size_t size);
     void Free(void *ptr);
 
+    void *MallocForRapidJson(size_t size);
+    void *ReallocForRapidJson(void *ptr, size_t size);
+    void FreeForRapidJson(void *ptr);
+
 }

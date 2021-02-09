@@ -110,6 +110,21 @@ namespace ams {
         AMS_ABORT("ams::Free was called");
     }
 
+    void *MallocForRapidJson(size_t size) {
+        AMS_ABORT("ams::MallocForRapidJson was called");
+    }
+
+    void *ReallocForRapidJson(void *ptr, size_t size) {
+        AMS_ABORT("ams::ReallocForRapidJson was called");
+    }
+
+    void FreeForRapidJson(void *ptr) {
+        if (ptr == nullptr) {
+            return;
+        }
+        AMS_ABORT("ams::FreeForRapidJson was called");
+    }
+
 }
 
 void *operator new(size_t size) {
