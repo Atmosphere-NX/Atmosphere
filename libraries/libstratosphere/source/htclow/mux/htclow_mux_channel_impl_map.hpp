@@ -52,8 +52,8 @@ namespace ams::htclow::mux {
                 return m_map;
             }
 
-            ChannelImpl &operator[](impl::ChannelInternalType channel) {
-                return this->GetChannelImpl(channel);
+            ChannelImpl &operator[](int index) {
+                return this->GetChannelImpl(index);
             }
     };
 

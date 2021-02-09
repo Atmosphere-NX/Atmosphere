@@ -35,7 +35,7 @@ namespace ams::htclow::mux {
         /* Set all entries in our map. */
         /* NOTE: Nintendo does this highly inefficiently... */
         for (auto &pair : m_channel_impl_map.GetMap()) {
-            m_channel_impl_map[pair.first].SetVersion(m_version);
+            m_channel_impl_map[pair.second].SetVersion(m_version);
         }
     }
 
@@ -67,10 +67,8 @@ namespace ams::htclow::mux {
         std::scoped_lock lk(m_mutex);
 
         /* Process for the channel. */
-        if (m_channel_impl_map.Exists(header.channel)) {
-            R_TRY(this->CheckChannelExist(header.channel));
-
-            return m_channel_impl_map[header.channel].ProcessReceivePacket(header, body, body_size);
+        if (auto it = m_channel_impl_map.GetMap().find(header.channel); it != m_channel_impl_map.GetMap().end()) {
+            return m_channel_impl_map[it->second].ProcessReceivePacket(header, body, body_size);
         } else {
             if (header.packet_type == PacketType_Data || header.packet_type == PacketType_MaxData) {
                 this->SendErrorPacket(header.channel);
@@ -89,7 +87,7 @@ namespace ams::htclow::mux {
         /* Iterate the map, checking for valid packet each time. */
         for (auto &pair : map) {
             /* Get the current channel impl. */
-            auto &channel_impl = m_channel_impl_map.GetChannelImpl(pair.second);
+            auto &channel_impl = m_channel_impl_map[pair.second];
 
             /* Check for an error packet. */
             /* NOTE: it's unclear why Nintendo does this every iteration of the loop... */
@@ -115,8 +113,8 @@ namespace ams::htclow::mux {
         /* Remove the packet from the appropriate source. */
         if (header.packet_type == PacketType_Error) {
             m_global_send_buffer.RemovePacket();
-        } else if (m_channel_impl_map.Exists(header.channel)) {
-            m_channel_impl_map[header.channel].RemovePacket(header);
+        } else if (auto it = m_channel_impl_map.GetMap().find(header.channel); it != m_channel_impl_map.GetMap().end()) {
+            m_channel_impl_map[it->second].RemovePacket(header);
         }
 
         /* Notify the task manager. */
@@ -130,7 +128,7 @@ namespace ams::htclow::mux {
         /* Update the state of all channels in our map. */
         /* NOTE: Nintendo does this highly inefficiently... */
         for (auto pair : m_channel_impl_map.GetMap()) {
-            m_channel_impl_map[pair.first].UpdateState();
+            m_channel_impl_map[pair.second].UpdateState();
         }
     }
 
