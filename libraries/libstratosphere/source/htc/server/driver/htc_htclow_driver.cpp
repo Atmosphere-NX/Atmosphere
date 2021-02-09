@@ -31,7 +31,7 @@ namespace ams::htc::server::driver {
     }
 
     void HtclowDriver::WaitTask(u32 task_id) {
-        os::WaitEvent(m_manager->GeTaskEvent(task_id));
+        os::WaitEvent(m_manager->GetTaskEvent(task_id));
     }
 
     void HtclowDriver::SetDisconnectionEmulationEnabled(bool en) {
