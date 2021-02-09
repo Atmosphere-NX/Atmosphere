@@ -26,9 +26,15 @@ namespace ams::htclow::ctrl {
             using PacketList = util::IntrusiveListBaseTraits<HtcctrlPacket>::ListType;
         private:
             HtcctrlPacketFactory *m_packet_factory;
-            PacketList m_packet_list;
+            PacketList m_prior_packet_list;
+            PacketList m_posterior_packet_list;
+        private:
+            bool IsPriorPacket(HtcctrlPacketType packet_type) const;
+            bool IsPosteriorPacket(HtcctrlPacketType packet_type) const;
         public:
-            HtcctrlSendBuffer(HtcctrlPacketFactory *pf) : m_packet_factory(pf), m_packet_list() { /* ... */ }
+            HtcctrlSendBuffer(HtcctrlPacketFactory *pf) : m_packet_factory(pf), m_prior_packet_list(), m_posterior_packet_list() { /* ... */ }
+
+            void AddPacket(std::unique_ptr<HtcctrlPacket, HtcctrlPacketDeleter> ptr);
     };
 
 }

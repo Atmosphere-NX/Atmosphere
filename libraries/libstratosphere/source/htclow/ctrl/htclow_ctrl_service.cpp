@@ -17,6 +17,9 @@
 #include "htclow_ctrl_service.hpp"
 #include "htclow_ctrl_state.hpp"
 #include "htclow_ctrl_state_machine.hpp"
+#include "htclow_ctrl_packet_factory.hpp"
+#include "htclow_service_channel_parser.hpp"
+#include "htclow_ctrl_service_channels.hpp"
 #include "../mux/htclow_mux.hpp"
 
 namespace ams::htclow::ctrl {
@@ -38,7 +41,7 @@ namespace ams::htclow::ctrl {
 
     HtcctrlService::HtcctrlService(HtcctrlPacketFactory *pf, HtcctrlStateMachine *sm, mux::Mux *mux)
         : m_settings_holder(), m_beacon_response(), m_1100(), m_packet_factory(pf), m_state_machine(sm), m_mux(mux), m_event(os::EventClearMode_ManualClear),
-          m_send_buffer(pf), m_mutex(), m_condvar(), m_2170(), m_version(ProtocolVersion)
+          m_send_buffer(pf), m_mutex(), m_condvar(), m_service_channels_packet(), m_version(ProtocolVersion)
     {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
@@ -110,8 +113,150 @@ namespace ams::htclow::ctrl {
     }
 
     Result HtcctrlService::ProcessReceivePacket(const HtcctrlPacketHeader &header, const void *body, size_t body_size) {
-        /* TODO */
-        AMS_ABORT("HtcctrlService::ProcessReceivePacket");
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        switch (header.packet_type) {
+            case HtcctrlPacketType_ConnectFromHost:
+                return this->ProcessReceiveConnectPacket();
+            case HtcctrlPacketType_ReadyFromHost:
+                return this->ProcessReceiveReadyPacket(body, body_size);
+            case HtcctrlPacketType_SuspendFromHost:
+                return this->ProcessReceiveSuspendPacket();
+            case HtcctrlPacketType_ResumeFromHost:
+                return this->ProcessReceiveResumePacket();
+            case HtcctrlPacketType_DisconnectFromHost:
+                return this->ProcessReceiveDisconnectPacket();
+            case HtcctrlPacketType_BeaconQuery:
+                return this->ProcessReceiveBeaconQueryPacket();
+            default:
+                return this->ProcessReceiveUnexpectedPacket();
+        }
+    }
+
+    Result HtcctrlService::ProcessReceiveConnectPacket() {
+        /* Try to transition to sent connect state. */
+        if (R_FAILED(this->SetState(HtcctrlState_SentConnectFromHost))) {
+            /* We couldn't transition to sent connect. */
+            return this->ProcessReceiveUnexpectedPacket();
+        }
+
+        /* Send a connect packet. */
+        m_send_buffer.AddPacket(m_packet_factory->MakeConnectPacket(m_beacon_response, util::Strnlen(m_beacon_response, sizeof(m_beacon_response)) + 1));
+
+        /* Signal our event. */
+        m_event.Signal();
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceiveReadyPacket(const void *body, size_t body_size) {
+        /* Update our service channels. */
+        this->UpdateServiceChannels(body, body_size);
+
+        /* Check that our version is correct. */
+        if (m_version < ProtocolVersion) {
+            return this->ProcessReceiveUnexpectedPacket();
+        }
+
+        /* Set our version. */
+        m_version = ProtocolVersion;
+        m_mux->SetVersion(m_version);
+
+        /* Set our state. */
+        if (R_FAILED(this->SetState(HtcctrlState_SentReadyFromHost))) {
+            return this->ProcessReceiveUnexpectedPacket();
+        }
+
+        /* Ready ourselves. */
+        this->TryReadyInternal();
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceiveSuspendPacket() {
+        /* Try to set our state to enter sleep. */
+        if (R_FAILED(this->SetState(HtcctrlState_EnterSleep))) {
+            /* We couldn't transition to sleep. */
+            return this->ProcessReceiveUnexpectedPacket();
+        }
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceiveResumePacket() {
+        /* If our state is sent-resume, change to readied. */
+        if (m_state_machine->GetHtcctrlState() != HtcctrlState_SentResumeFromTarget || R_FAILED(this->SetState(HtcctrlState_Ready))) {
+            /* We couldn't perform a valid resume transition. */
+            return this->ProcessReceiveUnexpectedPacket();
+        }
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceiveDisconnectPacket() {
+        /* Set our state. */
+        R_TRY(this->SetState(HtcctrlState_Disconnected));
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceiveBeaconQueryPacket() {
+        /* Send a beacon response packet. */
+        m_send_buffer.AddPacket(m_packet_factory->MakeBeaconResponsePacket(m_beacon_response, util::Strnlen(m_beacon_response, sizeof(m_beacon_response)) + 1));
+
+        /* Signal our event. */
+        m_event.Signal();
+
+        return ResultSuccess();
+    }
+
+    Result HtcctrlService::ProcessReceiveUnexpectedPacket() {
+        /* Set our state. */
+        R_TRY(this->SetState(HtcctrlState_Error));
+
+        /* Send a disconnection packet. */
+        m_send_buffer.AddPacket(m_packet_factory->MakeDisconnectPacket());
+
+        /* Signal our event. */
+        m_event.Signal();
+
+        /* Return unexpected packet error. */
+        return htclow::ResultHtcctrlReceiveUnexpectedPacket();
+    }
+
+    void HtcctrlService::UpdateServiceChannels(const void *body, size_t body_size) {
+        /* Copy the packet body to our member. */
+        std::memcpy(m_service_channels_packet, body, body_size);
+
+        /* Parse service channels. */
+        impl::ChannelInternalType channels[10];
+        int num_channels;
+        s16 version = m_version;
+        ctrl::ParseServiceChannel(std::addressof(version), channels, std::addressof(num_channels), util::size(channels), m_service_channels_packet, body_size);
+
+        /* Update version. */
+        m_version = version;
+
+        /* Notify state machine of supported channels. */
+        m_state_machine->NotifySupportedServiceChannels(channels, num_channels);
+    }
+
+    void HtcctrlService::TryReadyInternal() {
+        /* If we can send ready, do so. */
+        if (m_state_machine->IsPossibleToSendReady()) {
+            /* Print the channels. */
+            char channel_str[0x100];
+            this->PrintServiceChannels(channel_str, sizeof(channel_str));
+
+            /* Send a ready packet. */
+            m_send_buffer.AddPacket(m_packet_factory->MakeReadyPacket(channel_str, util::Strnlen(channel_str, sizeof(channel_str)) + 1));
+
+            /* Signal our event. */
+            m_event.Signal();
+
+            /* Set connecting checked in state machine. */
+            m_state_machine->SetConnectingChecked();
+        }
     }
 
     Result HtcctrlService::NotifyDriverConnected() {
@@ -166,6 +311,15 @@ namespace ams::htclow::ctrl {
 
         /* Broadcast our state transition. */
         m_condvar.Broadcast();
+    }
+
+    void HtcctrlService::PrintServiceChannels(char *dst, size_t dst_size) {
+        size_t ofs = 0;
+        ofs += util::SNPrintf(dst + ofs, dst_size - ofs, "{\r\n  \"Chan\" : [\r\n \"%d:%d:%d\"", static_cast<int>(ServiceChannels[0].module_id), ServiceChannels[0].reserved, static_cast<int>(ServiceChannels[0].channel_id));
+        for (size_t i = 1; i < util::size(ServiceChannels); ++i) {
+            ofs += util::SNPrintf(dst + ofs, dst_size - ofs, ",\r\n \"%d:%d:%d\"", static_cast<int>(ServiceChannels[i].module_id), ServiceChannels[i].reserved, static_cast<int>(ServiceChannels[i].channel_id));
+        }
+        ofs += util::SNPrintf(dst + ofs, dst_size - ofs, "\r\n],\r\n  \"Prot\" : %d\r\n}\r\n", ProtocolVersion);
     }
 
 }

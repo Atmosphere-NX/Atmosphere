@@ -50,12 +50,25 @@ namespace ams::htclow::ctrl {
             HtcctrlSendBuffer m_send_buffer;
             os::SdkMutex m_mutex;
             os::SdkConditionVariable m_condvar;
-            u8 m_2170[0x1000];
+            char m_service_channels_packet[0x1000];
             s16 m_version;
         private:
             const char *GetConnectionType(impl::DriverType driver_type) const;
 
             void UpdateBeaconResponse(const char *connection);
+
+            Result ProcessReceiveConnectPacket();
+            Result ProcessReceiveReadyPacket(const void *body, size_t body_size);
+            Result ProcessReceiveSuspendPacket();
+            Result ProcessReceiveResumePacket();
+            Result ProcessReceiveDisconnectPacket();
+            Result ProcessReceiveBeaconQueryPacket();
+            Result ProcessReceiveUnexpectedPacket();
+
+            void UpdateServiceChannels(const void *body, size_t body_size);
+            void TryReadyInternal();
+
+            void PrintServiceChannels(char *dst, size_t dst_size);
 
             Result SetState(HtcctrlState state);
             void ReflectState();

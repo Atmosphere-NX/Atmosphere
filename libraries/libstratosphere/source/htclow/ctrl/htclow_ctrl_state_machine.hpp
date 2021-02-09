@@ -64,12 +64,18 @@ namespace ams::htclow::ctrl {
             bool IsDisconnected();
             bool IsSleeping();
 
+            bool IsPossibleToSendReady();
             bool IsUnsupportedServiceChannelToShutdown(const impl::ChannelInternalType &channel);
             bool IsConnectable(const impl::ChannelInternalType &channel);
 
             void SetNotConnecting(const impl::ChannelInternalType &channel);
+            void SetConnectingChecked();
+
+            void NotifySupportedServiceChannels(const impl::ChannelInternalType *channels, int num_channels);
         private:
             void SetStateWithoutCheckInternal(HtcctrlState state);
+
+            bool AreServiceChannelsConnecting();
 
             void ClearServiceChannelStates();
     };
