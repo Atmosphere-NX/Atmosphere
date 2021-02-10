@@ -26,6 +26,89 @@ namespace ams::htclow::mux {
         return std::addressof(m_tasks[task_id].event);
     }
 
+    EventTrigger TaskManager::GetTrigger(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(m_valid[task_id]);
+
+        return m_tasks[task_id].event_trigger;
+    }
+
+    Result TaskManager::AllocateTask(u32 *out_task_id, impl::ChannelInternalType channel) {
+        /* Find a free task. */
+        u32 task_id = 0;
+        for (task_id = 0; task_id < util::size(m_tasks); ++task_id) {
+            if (!m_valid[task_id]) {
+                break;
+            }
+        }
+
+        /* Verify the task is free. */
+        R_UNLESS(!m_valid[task_id], htclow::ResultOutOfTask());
+
+        /* Mark the task as allocated. */
+        m_valid[task_id] = true;
+
+        /* Setup the task. */
+        m_tasks[task_id].channel           = channel;
+        m_tasks[task_id].has_event_trigger = false;
+        os::InitializeEvent(std::addressof(m_tasks[task_id].event), false, os::EventClearMode_ManualClear);
+
+        /* Return the task id. */
+        *out_task_id = task_id;
+        return ResultSuccess();
+    }
+
+    void TaskManager::FreeTask(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+
+        /* Invalidate the task. */
+        if (m_valid[task_id]) {
+            os::FinalizeEvent(std::addressof(m_tasks[task_id].event));
+            m_valid[task_id] = false;
+        }
+    }
+
+    void TaskManager::ConfigureConnectTask(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(m_valid[task_id]);
+
+        /* Set the task type. */
+        m_tasks[task_id].type = TaskType_Connect;
+    }
+
+    void TaskManager::ConfigureFlushTask(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(m_valid[task_id]);
+
+        /* Set the task type. */
+        m_tasks[task_id].type = TaskType_Flush;
+    }
+
+    void TaskManager::ConfigureReceiveTask(u32 task_id, size_t size) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(m_valid[task_id]);
+
+        /* Set the task type. */
+        m_tasks[task_id].type = TaskType_Receive;
+
+        /* Set the task size. */
+        m_tasks[task_id].size = size;
+    }
+
+    void TaskManager::ConfigureSendTask(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(0 <= task_id && task_id < MaxTaskCount);
+        AMS_ASSERT(m_valid[task_id]);
+
+        /* Set the task type. */
+        m_tasks[task_id].type = TaskType_Send;
+    }
+
     void TaskManager::NotifyDisconnect(impl::ChannelInternalType channel) {
         for (auto i = 0; i < MaxTaskCount; ++i) {
             if (m_valid[i] && m_tasks[i].channel == channel) {

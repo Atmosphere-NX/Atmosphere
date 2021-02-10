@@ -55,6 +55,20 @@ namespace ams::htclow::driver {
         return ResultSuccess();
     }
 
+    void DriverManager::CloseDriver() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Clear our driver type. */
+        m_driver_type = std::nullopt;
+
+        /* Close our driver. */
+        if (m_open_driver != nullptr) {
+            m_open_driver->Close();
+            m_open_driver = nullptr;
+        }
+    }
+
     impl::DriverType DriverManager::GetDriverType() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
@@ -67,6 +81,10 @@ namespace ams::htclow::driver {
         std::scoped_lock lk(m_mutex);
 
         return m_open_driver;
+    }
+
+    void DriverManager::Cancel() {
+        m_open_driver->CancelSendReceive();
     }
 
     void DriverManager::SetDebugDriver(IDriver *driver) {

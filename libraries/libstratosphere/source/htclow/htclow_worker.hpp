@@ -56,10 +56,9 @@ namespace ams::htclow {
             void SetDriver(driver::IDriver *driver);
 
             void Start();
+            void Cancel();
             void Wait();
         private:
-            void Cancel();
-
             Result ProcessReceive();
             Result ProcessSend();
 

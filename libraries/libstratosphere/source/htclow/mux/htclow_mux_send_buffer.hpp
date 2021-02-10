@@ -45,11 +45,13 @@ namespace ams::htclow::mux {
             void CopyPacket(PacketHeader *header, PacketBody *body, int *out_body_size, const Packet &packet);
         public:
             SendBuffer(impl::ChannelInternalType channel, PacketFactory *pf);
+            ~SendBuffer();
 
             void SetVersion(s16 version);
 
             bool QueryNextPacket(PacketHeader *header, PacketBody *body, int *out_body_size, u64 max_data, u64 total_send_size, bool has_share, u64 share);
 
+            void AddPacket(std::unique_ptr<Packet, PacketDeleter> ptr);
             void RemovePacket(const PacketHeader &header);
 
             void SetBuffer(void *buffer, size_t buffer_size);

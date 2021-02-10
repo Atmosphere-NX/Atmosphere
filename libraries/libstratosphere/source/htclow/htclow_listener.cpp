@@ -55,6 +55,34 @@ namespace ams::htclow {
         os::StartThread(std::addressof(m_listen_thread));
     }
 
+    void Listener::Cancel() {
+        /* Mark ourselves as cancelled. */
+        m_cancelled = true;
+
+        /* Cancel our worker. */
+        m_worker->Cancel();
+
+        /* Signal our event. */
+        m_event.Signal();
+
+        /* Cancel our driver. */
+        m_driver->CancelSendReceive();
+    }
+
+    void Listener::Wait() {
+        /* Wait for our listen thread to exit. */
+        os::WaitThread(std::addressof(m_listen_thread));
+
+        /* Destroy our listen thread. */
+        os::DestroyThread(std::addressof(m_listen_thread));
+
+        /* Clear our driver. */
+        m_driver = nullptr;
+
+        /* Mark our thread as not running. */
+        m_thread_running = false;
+    }
+
     void Listener::ListenThread() {
         /* Check pre-conditions. */
         AMS_ASSERT(m_driver != nullptr);

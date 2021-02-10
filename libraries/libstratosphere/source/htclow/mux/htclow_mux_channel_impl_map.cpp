@@ -53,7 +53,7 @@ namespace ams::htclow::mux {
         }
 
         /* Validate that the storage is free. */
-        R_UNLESS(idx < MaxChannelCount, htclow::ResultOutOfResource());
+        R_UNLESS(idx < MaxChannelCount, htclow::ResultOutOfChannel());
 
         /* Create the channel impl. */
         std::construct_at(GetPointer(m_channel_storage[idx]), channel, m_packet_factory, m_state_machine, m_task_manager, m_event);
@@ -63,6 +63,30 @@ namespace ams::htclow::mux {
 
         /* Insert into our map. */
         m_map.insert(std::pair<const impl::ChannelInternalType, int>{channel, idx});
+
+        return ResultSuccess();
+    }
+
+    Result ChannelImplMap::RemoveChannel(impl::ChannelInternalType channel) {
+        /* Find the storage. */
+        auto it = m_map.find(channel);
+        AMS_ASSERT(it != m_map.end());
+
+        /* Get the channel index. */
+        const auto index = it->second;
+        AMS_ASSERT(0 <= index && index < MaxChannelCount);
+
+        /* Get the channel impl. */
+        auto *channel_impl = GetPointer(m_channel_storage[index]);
+
+        /* Mark the storage as invalid. */
+        m_storage_valid[index] = false;
+
+        /* Erase the channel from the map. */
+        m_map.erase(channel);
+
+        /* Destroy the channel. */
+        std::destroy_at(channel_impl);
 
         return ResultSuccess();
     }

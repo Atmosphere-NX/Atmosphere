@@ -182,12 +182,70 @@ namespace ams::htclow::mux {
         return ResultSuccess();
     }
 
+    Result Mux::Close(impl::ChannelInternalType channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* If we have the channel, close it. */
+        if (auto it = m_channel_impl_map.GetMap().find(channel); it != m_channel_impl_map.GetMap().end()) {
+            /* Shut down the channel. */
+            m_channel_impl_map[it->second].ShutdownForce();
+
+            /* Remove the channel. */
+            R_ABORT_UNLESS(m_channel_impl_map.RemoveChannel(channel));
+        }
+
+        return ResultSuccess();
+    }
+
+    Result Mux::ConnectBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Find the channel. */
+        auto it = m_channel_impl_map.GetMap().find(channel);
+        R_UNLESS(it != m_channel_impl_map.GetMap().end(), htclow::ResultChannelNotExist());
+
+        /* Perform the connection. */
+        return m_channel_impl_map[it->second].DoConnectBegin(out_task_id);
+    }
+
+    Result Mux::ConnectEnd(impl::ChannelInternalType channel, u32 task_id) {
+        /* Get the trigger for the task. */
+        const auto trigger = m_task_manager.GetTrigger(task_id);
+
+        /* Free the task. */
+        m_task_manager.FreeTask(task_id);
+
+        /* Check that we didn't hit a disconnect. */
+        R_UNLESS(trigger != EventTrigger_Disconnect, htclow::ResultInvalidChannelStateDisconnected());
+
+        /* Find the channel. */
+        auto it = m_channel_impl_map.GetMap().find(channel);
+        R_UNLESS(it != m_channel_impl_map.GetMap().end(), htclow::ResultChannelNotExist());
+
+        /* Perform the disconnection. */
+        return m_channel_impl_map[it->second].DoConnectEnd();
+    }
+
+    ChannelState Mux::GetChannelState(impl::ChannelInternalType channel);
+    os::EventType *Mux::GetChannelStateEvent(impl::ChannelInternalType channel);
+
+    Result Mux::FlushBegin(u32 *out_task_id, impl::ChannelInternalType channel);
+    Result Mux::FlushEnd(u32 task_id);
+
     os::EventType *Mux::GetTaskEvent(u32 task_id) {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
 
         return m_task_manager.GetTaskEvent(task_id);
     }
+
+    Result Mux::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking);
+    Result Mux::ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id);
+
+    Result Mux::SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel);
+    Result Mux::SendEnd(u32 task_id);
 
     void Mux::SetSendBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size, size_t max_packet_size) {
         /* Lock ourselves. */
@@ -224,5 +282,7 @@ namespace ams::htclow::mux {
         /* Set the send buffer. */
         m_channel_impl_map[it->second].SetReceiveBuffer(buf, buf_size);
     }
+
+    Result Mux::Shutdown(impl::ChannelInternalType channel);
 
 }

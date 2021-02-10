@@ -57,6 +57,13 @@ namespace ams::htclow::ctrl {
         return ResultSuccess();
     }
 
+    bool HtcctrlStateMachine::IsInformationNeeded() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return !ctrl::IsDisconnected(m_state) && m_state != HtcctrlState_DriverConnected;
+    }
+
     bool HtcctrlStateMachine::IsConnected() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
@@ -147,6 +154,16 @@ namespace ams::htclow::ctrl {
 
         auto it = m_map.find(channel);
         return ctrl::IsConnected(m_state) && (it == m_map.end() || it->second.connect != ServiceChannelConnect_ConnectingChecked);
+    }
+
+    void HtcctrlStateMachine::SetConnecting(const impl::ChannelInternalType &channel) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        auto it = m_map.find(channel);
+        if (it != m_map.end() && it->second.connect != ServiceChannelConnect_ConnectingChecked) {
+            it->second.connect = ServiceChannelConnect_Connecting;
+        }
     }
 
     void HtcctrlStateMachine::SetNotConnecting(const impl::ChannelInternalType &channel) {

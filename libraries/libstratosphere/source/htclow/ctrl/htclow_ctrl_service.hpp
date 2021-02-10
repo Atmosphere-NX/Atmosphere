@@ -42,7 +42,7 @@ namespace ams::htclow::ctrl {
         private:
             SettingsHolder m_settings_holder;
             char m_beacon_response[0x1000];
-            u8 m_1100[0x1000];
+            char m_information_body[0x1000];
             HtcctrlPacketFactory *m_packet_factory;
             HtcctrlStateMachine *m_state_machine;
             mux::Mux *m_mux;
@@ -56,6 +56,9 @@ namespace ams::htclow::ctrl {
             const char *GetConnectionType(impl::DriverType driver_type) const;
 
             void UpdateBeaconResponse(const char *connection);
+            void UpdateInformationBody(const char *status);
+
+            void SendInformation();
 
             Result ProcessReceiveConnectPacket();
             Result ProcessReceiveReadyPacket(const void *body, size_t body_size);
@@ -72,9 +75,11 @@ namespace ams::htclow::ctrl {
             void ProcessSendDisconnectPacket();
 
             void UpdateServiceChannels(const void *body, size_t body_size);
-            void TryReadyInternal();
 
             void PrintServiceChannels(char *dst, size_t dst_size);
+
+            void TryReadyInternal();
+            void DisconnectInternal();
 
             Result SetState(HtcctrlState state);
             void ReflectState();
@@ -90,6 +95,15 @@ namespace ams::htclow::ctrl {
 
             bool QuerySendPacket(HtcctrlPacketHeader *header, HtcctrlPacketBody *body, int *out_body_size);
             void RemovePacket(const HtcctrlPacketHeader &header);
+
+            void TryReady();
+            void Disconnect();
+
+            void Resume();
+            void Suspend();
+
+            void NotifyAwake();
+            void NotifyAsleep();
 
             Result NotifyDriverConnected();
             Result NotifyDriverDisconnected();

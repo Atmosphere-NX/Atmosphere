@@ -17,6 +17,7 @@
 #include "htclow_mux_channel_impl.hpp"
 #include "../ctrl/htclow_ctrl_state_machine.hpp"
 #include "../htclow_default_channel_config.hpp"
+#include "../htclow_packet_factory.hpp"
 
 namespace ams::htclow::mux {
 
@@ -226,6 +227,67 @@ namespace ams::htclow::mux {
         if (m_event != nullptr) {
             m_event->Signal();
         }
+    }
+
+    Result ChannelImpl::DoConnectBegin(u32 *out_task_id) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connectable}));
+
+        /* Set ourselves as connecting. */
+        m_state_machine->SetConnecting(m_channel);
+
+        /* Allocate a task. */
+        u32 task_id;
+        R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
+
+        /* Configure the task. */
+        m_task_manager->ConfigureConnectTask(task_id);
+
+        /* If we're ready, complete the task immediately. */
+        if (m_state_machine->IsReadied()) {
+            m_task_manager->CompleteTask(task_id, EventTrigger_ConnectReady);
+        }
+
+        /* Set the output task id. */
+        *out_task_id = task_id;
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::DoConnectEnd() {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connectable}));
+
+        /* Perform handshake, if we should. */
+        if (m_config.handshake_enabled) {
+            /* Set our next max data. */
+            m_next_max_data = m_receive_buffer.GetBufferSize();
+
+            /* Make a max data packet. */
+            auto packet = m_packet_factory->MakeMaxDataPacket(m_channel, m_version, m_next_max_data);
+            R_UNLESS(packet, htclow::ResultOutOfMemory());
+
+            /* Send the packet. */
+            m_send_buffer.AddPacket(std::move(packet));
+
+            /* Signal that we have an packet to send. */
+            this->SignalSendPacketEvent();
+
+            /* Set our current max data. */
+            m_cur_max_data = m_next_max_data;
+        } else {
+            /* Set our share. */
+            m_share = m_config.initial_counter_max_data;
+
+            /* If we're not empty, signal. */
+            if (!m_send_buffer.Empty()) {
+                this->SignalSendPacketEvent();
+            }
+        }
+
+        /* Set our state as connected. */
+        this->SetState(ChannelState_Connected);
+
+        return ResultSuccess();
     }
 
     void ChannelImpl::SetSendBuffer(void *buf, size_t buf_size, size_t max_packet_size) {

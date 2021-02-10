@@ -48,6 +48,7 @@ namespace ams::htclow::mux {
             }
 
             Result AddChannel(impl::ChannelInternalType channel);
+            Result RemoveChannel(impl::ChannelInternalType channel);
         private:
         public:
             MapType &GetMap() {
