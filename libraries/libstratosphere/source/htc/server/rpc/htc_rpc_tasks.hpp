@@ -18,7 +18,25 @@
 
 namespace ams::htc::server::rpc {
 
-    constexpr inline size_t MaxTaskCount = 0x48;
+    constexpr inline size_t MaxRpcCount = 0x48;
+
+    enum class PacketCategory : s16 {
+        Request      = 0,
+        Response     = 1,
+        Notification = 2,
+    };
+
+    struct RpcPacket {
+        s16 protocol;
+        s16 version;
+        PacketCategory category;
+        u16 type;
+        s64 body_size;
+        u32 task_id;
+        u64 params[5];
+        u8 data[];
+    };
+    static_assert(sizeof(RpcPacket) == 0x40);
 
     enum class RpcTaskCancelReason {
         None = 0,

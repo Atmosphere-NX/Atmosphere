@@ -36,8 +36,8 @@ namespace ams::htc::server::rpc {
             static constexpr size_t MaxTaskSize = 0xA000;
             using TaskStorage = typename std::aligned_storage<MaxTaskSize, alignof(void *)>::type;
         private:
-            bool m_valid[MaxTaskCount];
-            TaskStorage m_storages[MaxTaskCount];
+            bool m_valid[MaxRpcCount];
+            TaskStorage m_storages[MaxRpcCount];
         private:
             template<typename T>
             ALWAYS_INLINE T *GetPointer(u32 index) {
@@ -47,7 +47,7 @@ namespace ams::htc::server::rpc {
             }
 
             ALWAYS_INLINE bool IsValid(u32 index) {
-                return index < MaxTaskCount && m_valid[index];
+                return index < MaxRpcCount && m_valid[index];
             }
         public:
             constexpr RpcTaskTable() = default;

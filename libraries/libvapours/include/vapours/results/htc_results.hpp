@@ -23,6 +23,11 @@ namespace ams::htc {
     R_DEFINE_ERROR_RESULT(ConnectionFailure,  1);
     R_DEFINE_ERROR_RESULT(NotFound,           2);
     R_DEFINE_ERROR_RESULT(NotEnoughBuffer,    3);
+
+    R_DEFINE_ERROR_RESULT(Cancelled,        101);
+
     R_DEFINE_ERROR_RESULT(Unknown,         1023);
+
+    R_DEFINE_ERROR_RESULT(OutOfRpcTask,    2102);
 
 }
