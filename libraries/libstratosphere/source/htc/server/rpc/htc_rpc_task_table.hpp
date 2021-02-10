@@ -50,7 +50,7 @@ namespace ams::htc::server::rpc {
                 return index < MaxTaskCount && m_valid[index];
             }
         public:
-            RpcTaskTable() : m_valid() { /* ... */ }
+            constexpr RpcTaskTable() = default;
 
             template<typename T> requires std::derived_from<T, Task>
             T *New(u32 index) {
@@ -74,7 +74,7 @@ namespace ams::htc::server::rpc {
             T *Get(u32 index) {
                 /* Check that the task is valid. */
                 if (!this->IsValid(index)) {
-                    return false;
+                    return nullptr;
                 }
 
                 /* Get the task pointer. */
