@@ -39,8 +39,8 @@ namespace ams::htc::server::rpc {
     };
 
     enum class HtcmiscPacketType : s16 {
-        GetMaxProtocolVersion        = 0,
-        SetProtocolVersion           = 1,
+        GetMaxProtocolVersion        =  0,
+        SetProtocolVersion           =  1,
         GetEnvironmentVariable       = 16,
         GetEnvironmentVariableLength = 17,
         SetTargetStatus              = 18,
@@ -75,6 +75,8 @@ namespace ams::htc::server::rpc {
     };
 
     class GetEnvironmentVariableTask : public HtcmiscTask {
+        public:
+            static constexpr inline HtcmiscTaskType TaskType = HtcmiscTaskType::GetEnvironmentVariable;
         private:
             char m_name[0x800];
             int m_name_size;
@@ -96,6 +98,8 @@ namespace ams::htc::server::rpc {
     };
 
     class GetEnvironmentVariableLengthTask : public HtcmiscTask {
+        public:
+            static constexpr inline HtcmiscTaskType TaskType = HtcmiscTaskType::GetEnvironmentVariableLength;
         private:
             char m_name[0x800];
             int m_name_size;
@@ -116,6 +120,8 @@ namespace ams::htc::server::rpc {
     };
 
     class RunOnHostTask : public HtcmiscTask {
+        public:
+            static constexpr inline HtcmiscTaskType TaskType = HtcmiscTaskType::RunOnHost;
         private:
             char m_command[0x2000];
             int m_command_size;
