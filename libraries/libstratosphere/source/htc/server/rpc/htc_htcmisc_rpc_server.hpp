@@ -16,10 +16,14 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "../driver/htc_i_driver.hpp"
+#include "htc_htcmisc_rpc_tasks.hpp"
 
 namespace ams::htc::server::rpc {
 
     class HtcmiscRpcServer {
+        private:
+            /* TODO: where is this value coming from, again? */
+            static constexpr size_t BufferSize = 1_KB;
         private:
             u64 m_00;
             driver::IDriver *m_driver;
@@ -28,8 +32,31 @@ namespace ams::htc::server::rpc {
             os::ThreadType m_receive_thread;
             bool m_cancelled;
             bool m_thread_running;
+            char m_receive_buffer[BufferSize];
+            char m_send_buffer[BufferSize];
+            u8 m_driver_receive_buffer[4_KB];
+            u8 m_driver_send_buffer[4_KB];
+        private:
+            static void ReceiveThreadEntry(void *arg) { static_cast<HtcmiscRpcServer *>(arg)->ReceiveThread(); }
+
+            Result ReceiveThread();
         public:
             HtcmiscRpcServer(driver::IDriver *driver, htclow::ChannelId channel);
+        public:
+            void Open();
+            void Close();
+
+            Result Start();
+            void Cancel();
+            void Wait();
+
+            int WaitAny(htclow::ChannelState state, os::EventType *event);
+        private:
+            Result ProcessSetTargetNameRequest(const char *name, size_t size, u32 task_id);
+
+            Result ReceiveHeader(HtcmiscRpcPacket *header);
+            Result ReceiveBody(char *dst, size_t size);
+            Result SendRequest(const char *src, size_t size);
     };
 
 }

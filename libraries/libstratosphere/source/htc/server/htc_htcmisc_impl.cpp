@@ -120,7 +120,46 @@ namespace ams::htc::server {
     }
 
     void HtcmiscImpl::ServerThread() {
-        AMS_ABORT("HtcmiscImpl::ServerThread");
+        /* Loop so long as we're not cancelled. */
+        while (!m_cancelled) {
+            /* Open the rpc server. */
+            m_rpc_server.Open();
+
+            /* Ensure we close, if something goes wrong. */
+            auto server_guard = SCOPE_GUARD { m_rpc_server.Close(); };
+
+            /* Wait for the rpc server. */
+            if (m_rpc_server.WaitAny(htclow::ChannelState_Connectable, m_cancel_event.GetBase()) != 0) {
+                break;
+            }
+
+            /* Start the rpc server. */
+            if (R_FAILED(m_rpc_server.Start())) {
+                break;
+            }
+
+            /* We're connected! */
+            this->SetServerConnectionEvent(true);
+            server_guard.Cancel();
+
+            /* We're connected, so we want to cleanup when we're done. */
+            ON_SCOPE_EXIT {
+                m_rpc_server.Close();
+                m_rpc_server.Cancel();
+                m_rpc_server.Wait();
+            };
+
+            /* Wait to become disconnected. */
+            if (m_rpc_server.WaitAny(htclow::ChannelState_Disconnected, m_cancel_event.GetBase()) != 0) {
+                break;
+            }
+
+            /* Set ourselves as disconnected. */
+            this->SetServerConnectionEvent(false);
+        }
+
+        /* Set ourselves as disconnected. */
+        this->SetServerConnectionEvent(false);
     }
 
     void HtcmiscImpl::SetClientConnectionEvent(bool en) {
