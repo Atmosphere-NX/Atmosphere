@@ -198,6 +198,13 @@ namespace ams::htc {
 
     }
 
+    namespace server {
+
+        void InitializePowerStateMonitor(htclow::impl::DriverType driver_type, htclow::HtclowManager *htclow_manager);
+        void LoopMonitorPowerState();
+
+    }
+
 }
 
 int main(int argc, char **argv)
@@ -246,7 +253,7 @@ int main(int argc, char **argv)
     }
 
     /* Initialize psc. */
-    //htc::server::InitializePowerStateMonitor(driver_type, htclow_manager);
+    htc::server::InitializePowerStateMonitor(driver_type, htclow_manager);
 
     /* Start all threads. */
     os::StartThread(std::addressof(htc_ipc_thread));
@@ -256,7 +263,7 @@ int main(int argc, char **argv)
     }
 
     /* Loop psc monitor. */
-    //htc::server::LoopMonitorPowerState();
+    htc::server::LoopMonitorPowerState();
 
     /* Destroy all threads. */
     for (size_t i = 0; i < htc::NumHtcsIpcThreads; ++i) {
