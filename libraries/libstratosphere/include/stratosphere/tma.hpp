@@ -16,3 +16,4 @@
 #pragma once
 
 #include <stratosphere/tma/tma_i_htc_manager.hpp>
+#include <stratosphere/tma/tma_i_htcs_manager.hpp>
