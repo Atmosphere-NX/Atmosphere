@@ -23,6 +23,7 @@ namespace ams::htclow::mux {
     enum EventTrigger : u8 {
         EventTrigger_Disconnect      =  1,
         EventTrigger_ReceiveData     =  2,
+        EventTrigger_SendComplete    =  4,
         EventTrigger_SendReady       =  5,
         EventTrigger_SendBufferEmpty = 10,
         EventTrigger_ConnectReady    = 11,

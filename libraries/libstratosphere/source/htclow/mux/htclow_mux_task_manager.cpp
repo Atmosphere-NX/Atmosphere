@@ -44,7 +44,7 @@ namespace ams::htclow::mux {
         }
 
         /* Verify the task is free. */
-        R_UNLESS(!m_valid[task_id], htclow::ResultOutOfTask());
+        R_UNLESS(task_id < util::size(m_tasks), htclow::ResultOutOfTask());
 
         /* Mark the task as allocated. */
         m_valid[task_id] = true;

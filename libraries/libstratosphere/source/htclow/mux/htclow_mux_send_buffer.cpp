@@ -131,6 +131,17 @@ namespace ams::htclow::mux {
         }
     }
 
+    size_t SendBuffer::AddData(const void *data, size_t size) {
+        /* Determine how much to actually add. */
+        size = std::min(size, m_ring_buffer.GetBufferSize() - m_ring_buffer.GetDataSize());
+
+        /* Write the data. */
+        R_ABORT_UNLESS(m_ring_buffer.Write(data, size));
+
+        /* Return the size we wrote. */
+        return size;
+    }
+
     void SendBuffer::SetBuffer(void *buffer, size_t buffer_size) {
         m_ring_buffer.Initialize(buffer, buffer_size);
     }
