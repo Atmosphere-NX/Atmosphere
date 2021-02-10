@@ -57,6 +57,8 @@ namespace ams::htclow::driver {
 
     impl::DriverType DriverManager::GetDriverType() {
         /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
         return m_driver_type.value_or(impl::DriverType::Unknown);
     }
 
