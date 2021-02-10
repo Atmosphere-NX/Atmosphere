@@ -77,11 +77,83 @@ namespace ams::htc::server {
     }
 
     void HtcmiscImpl::ClientThread() {
-        AMS_ABORT("HtcmiscImpl::ClientThread");
+        /* Loop so long as we're not cancelled. */
+        while (!m_cancelled) {
+            /* Open the rpc client. */
+            m_rpc_client.Open();
+
+            /* Ensure we close, if something goes wrong. */
+            auto client_guard = SCOPE_GUARD { m_rpc_client.Close(); };
+
+            /* Wait for the rpc client. */
+            if (m_rpc_client.WaitAny(htclow::ChannelState_Connectable, m_cancel_event.GetBase()) != 0) {
+                break;
+            }
+
+            /* Start the rpc client. */
+            if (R_FAILED(m_rpc_client.Start())) {
+                break;
+            }
+
+            /* We're connected! */
+            this->SetClientConnectionEvent(true);
+            client_guard.Cancel();
+
+            /* We're connected, so we want to cleanup when we're done. */
+            ON_SCOPE_EXIT {
+                m_rpc_client.Close();
+                m_rpc_client.Cancel();
+                m_rpc_client.Wait();
+            };
+
+            /* Wait to become disconnected. */
+            if (m_rpc_client.WaitAny(htclow::ChannelState_Disconnected, m_cancel_event.GetBase()) != 0) {
+                break;
+            }
+
+            /* Set ourselves as disconnected. */
+            this->SetClientConnectionEvent(false);
+        }
+
+        /* Set ourselves as disconnected. */
+        this->SetClientConnectionEvent(false);
     }
 
     void HtcmiscImpl::ServerThread() {
         AMS_ABORT("HtcmiscImpl::ServerThread");
+    }
+
+    void HtcmiscImpl::SetClientConnectionEvent(bool en) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_connection_mutex);
+
+        /* Update our state. */
+        if (m_client_connected != en) {
+            m_client_connected = en;
+            this->UpdateConnectionEvent();
+        }
+    }
+
+    void HtcmiscImpl::SetServerConnectionEvent(bool en) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_connection_mutex);
+
+        /* Update our state. */
+        if (m_server_connected != en) {
+            m_server_connected = en;
+            this->UpdateConnectionEvent();
+        }
+    }
+
+    void HtcmiscImpl::UpdateConnectionEvent() {
+        /* Determine if we're connected. */
+        const bool connected = m_client_connected && m_server_connected;
+
+        /* Update our state. */
+        if (m_connected != connected) {
+            m_connected = connected;
+            m_connection_event.Signal();
+        }
     }
 
 }

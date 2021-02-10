@@ -47,6 +47,11 @@ namespace ams::htc::server {
         public:
             HtcmiscImpl(htclow::HtclowManager *htclow_manager);
             ~HtcmiscImpl();
+        private:
+            void SetClientConnectionEvent(bool en);
+            void SetServerConnectionEvent(bool en);
+
+            void UpdateConnectionEvent();
         public:
             void Cancel();
             /* TODO */
