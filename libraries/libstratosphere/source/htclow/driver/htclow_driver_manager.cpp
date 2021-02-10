@@ -49,7 +49,15 @@ namespace ams::htclow::driver {
                 return htclow::ResultUnknownDriverType();
         }
 
+        /* Set the driver type. */
+        m_driver_type = driver_type;
+
         return ResultSuccess();
+    }
+
+    impl::DriverType DriverManager::GetDriverType() {
+        /* Lock ourselves. */
+        return m_driver_type.value_or(impl::DriverType::Unknown);
     }
 
     IDriver *DriverManager::GetCurrentDriver() {

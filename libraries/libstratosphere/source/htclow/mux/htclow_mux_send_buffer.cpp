@@ -115,6 +115,18 @@ namespace ams::htclow::mux {
         }
     }
 
+    void SendBuffer::SetBuffer(void *buffer, size_t buffer_size) {
+        m_ring_buffer.Initialize(buffer, buffer_size);
+    }
+
+    void SendBuffer::SetReadOnlyBuffer(const void *buffer, size_t buffer_size) {
+        m_ring_buffer.InitializeForReadOnly(buffer, buffer_size);
+    }
+
+    void SendBuffer::SetMaxPacketSize(size_t max_packet_size) {
+        m_max_packet_size = max_packet_size;
+    }
+
     bool SendBuffer::Empty() {
         return m_packet_list.empty() && m_ring_buffer.GetDataSize() == 0;
     }
