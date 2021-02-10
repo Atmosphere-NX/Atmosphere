@@ -157,8 +157,8 @@ namespace ams::htclow {
         return m_ctrl_service.NotifyAwake();
     }
 
-    Result HtclowManagerImpl::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking) {
-        return m_mux.ReceiveBegin(out_task_id, channel, blocking);
+    Result HtclowManagerImpl::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
+        return m_mux.ReceiveBegin(out_task_id, channel, size);
     }
 
     Result HtclowManagerImpl::ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id) {

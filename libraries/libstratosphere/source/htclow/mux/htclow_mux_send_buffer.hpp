@@ -54,6 +54,8 @@ namespace ams::htclow::mux {
             void AddPacket(std::unique_ptr<Packet, PacketDeleter> ptr);
             void RemovePacket(const PacketHeader &header);
 
+            size_t AddData(const void *data, size_t size);
+
             void SetBuffer(void *buffer, size_t buffer_size);
             void SetReadOnlyBuffer(const void *buffer, size_t buffer_size);
             void SetMaxPacketSize(size_t max_packet_size);

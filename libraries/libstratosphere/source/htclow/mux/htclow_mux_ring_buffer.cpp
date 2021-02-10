@@ -47,6 +47,16 @@ namespace ams::htclow::mux {
         m_can_discard = false;
     }
 
+    Result RingBuffer::Read(void *dst, size_t size) {
+        /* Copy the data. */
+        R_TRY(this->Copy(dst, size));
+
+        /* Discard. */
+        R_TRY(this->Discard(size));
+
+        return ResultSuccess();
+    }
+
     Result RingBuffer::Write(const void *data, size_t size) {
         /* Validate pre-conditions. */
         AMS_ASSERT(!m_is_read_only);

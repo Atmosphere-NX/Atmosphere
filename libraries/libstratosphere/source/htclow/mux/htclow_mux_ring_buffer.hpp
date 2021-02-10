@@ -38,6 +38,7 @@ namespace ams::htclow::mux {
             size_t GetBufferSize() { return m_buffer_size; }
             size_t GetDataSize() { return m_data_size; }
 
+            Result Read(void *dst, size_t size);
             Result Write(const void *data, size_t size);
 
             Result Copy(void *dst, size_t size);

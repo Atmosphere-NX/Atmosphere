@@ -68,7 +68,7 @@ namespace ams::htclow::mux {
 
             os::EventType *GetTaskEvent(u32 task_id);
 
-            Result ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking);
+            Result ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size);
             Result ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id);
 
             Result SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel);

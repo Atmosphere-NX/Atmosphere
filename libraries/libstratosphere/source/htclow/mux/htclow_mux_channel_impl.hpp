@@ -45,8 +45,8 @@ namespace ams::htclow::mux {
             ChannelConfig m_config;
             u64 m_offset;
             u64 m_total_send_size;
-            u64 m_next_max_data;
             u64 m_cur_max_data;
+            u64 m_prev_max_data;
             std::optional<u64> m_share;
             os::Event m_state_change_event;
             ChannelState m_state;
@@ -54,6 +54,9 @@ namespace ams::htclow::mux {
             ChannelImpl(impl::ChannelInternalType channel, PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev);
 
             void SetVersion(s16 version);
+
+            ChannelState GetChannelState() { return m_state; }
+            os::EventType *GetChannelStateEvent() { return m_state_change_event.GetBase(); }
 
             Result ProcessReceivePacket(const PacketHeader &header, const void *body, size_t body_size);
 
@@ -67,6 +70,15 @@ namespace ams::htclow::mux {
         public:
             Result DoConnectBegin(u32 *out_task_id);
             Result DoConnectEnd();
+
+            Result DoFlush(u32 *out_task_id);
+
+            Result DoReceiveBegin(u32 *out_task_id, size_t size);
+            Result DoReceiveEnd(size_t *out, void *dst, size_t dst_size);
+
+            Result DoSend(u32 *out_task_id, size_t *out, const void *src, size_t src_size);
+
+            Result DoShutdown();
 
             void SetSendBuffer(void *buf, size_t buf_size, size_t max_packet_size);
             void SetReceiveBuffer(void *buf, size_t buf_size);

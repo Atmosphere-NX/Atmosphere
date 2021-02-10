@@ -24,7 +24,7 @@ namespace ams::htclow::mux {
     ChannelImpl::ChannelImpl(impl::ChannelInternalType channel, PacketFactory *pf, ctrl::HtcctrlStateMachine *sm, TaskManager *tm, os::Event *ev)
         : m_channel(channel), m_packet_factory(pf), m_state_machine(sm), m_task_manager(tm), m_event(ev),
           m_send_buffer(m_channel, pf), m_receive_buffer(), m_version(ProtocolVersion), m_config(DefaultChannelConfig),
-          m_offset(0), m_total_send_size(0), m_next_max_data(0), m_cur_max_data(0), m_share(),
+          m_offset(0), m_total_send_size(0), m_cur_max_data(0), m_prev_max_data(0), m_share(),
           m_state_change_event(os::EventClearMode_ManualClear), m_state(ChannelState_Unconnectable)
 
     {
@@ -146,10 +146,10 @@ namespace ams::htclow::mux {
 
     bool ChannelImpl::QuerySendPacket(PacketHeader *header, PacketBody *body, int *out_body_size) {
         /* Check our send buffer. */
-        if (m_send_buffer.QueryNextPacket(header, body, out_body_size, m_next_max_data, m_total_send_size, m_share.has_value(), m_share.value_or(0))) {
+        if (m_send_buffer.QueryNextPacket(header, body, out_body_size, m_cur_max_data, m_total_send_size, m_share.has_value(), m_share.value_or(0))) {
             /* Update tracking variables. */
             if (header->packet_type == PacketType_Data) {
-                m_cur_max_data = m_next_max_data;
+                m_prev_max_data = m_cur_max_data;
             }
 
             return true;
@@ -259,11 +259,11 @@ namespace ams::htclow::mux {
 
         /* Perform handshake, if we should. */
         if (m_config.handshake_enabled) {
-            /* Set our next max data. */
-            m_next_max_data = m_receive_buffer.GetBufferSize();
+            /* Set our current max data. */
+            m_cur_max_data = m_receive_buffer.GetBufferSize();
 
             /* Make a max data packet. */
-            auto packet = m_packet_factory->MakeMaxDataPacket(m_channel, m_version, m_next_max_data);
+            auto packet = m_packet_factory->MakeMaxDataPacket(m_channel, m_version, m_cur_max_data);
             R_UNLESS(packet, htclow::ResultOutOfMemory());
 
             /* Send the packet. */
@@ -272,8 +272,8 @@ namespace ams::htclow::mux {
             /* Signal that we have an packet to send. */
             this->SignalSendPacketEvent();
 
-            /* Set our current max data. */
-            m_cur_max_data = m_next_max_data;
+            /* Set our prev max data. */
+            m_prev_max_data = m_cur_max_data;
         } else {
             /* Set our share. */
             m_share = m_config.initial_counter_max_data;
@@ -287,6 +287,141 @@ namespace ams::htclow::mux {
         /* Set our state as connected. */
         this->SetState(ChannelState_Connected);
 
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::DoFlush(u32 *out_task_id) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connected}));
+
+        /* Allocate a task. */
+        u32 task_id;
+        R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
+
+        /* Configure the task. */
+        m_task_manager->ConfigureFlushTask(task_id);
+
+        /* If we're already flushed, complete the task immediately. */
+        if (m_send_buffer.Empty()) {
+            m_task_manager->CompleteTask(task_id, EventTrigger_SendBufferEmpty);
+        }
+
+        /* Set the output task id. */
+        *out_task_id = task_id;
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::DoReceiveBegin(u32 *out_task_id, size_t size) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connected, ChannelState_Disconnected}));
+
+        /* Allocate a task. */
+        u32 task_id;
+        R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
+
+        /* Configure the task. */
+        m_task_manager->ConfigureReceiveTask(task_id, size);
+
+        /* Check if the task is already complete. */
+        if (m_receive_buffer.GetDataSize() >= size) {
+            m_task_manager->CompleteTask(task_id, EventTrigger_ReceiveData);
+        } else if (m_state == ChannelState_Disconnected) {
+            m_task_manager->CompleteTask(task_id, EventTrigger_Disconnect);
+        }
+
+        /* Set the output task id. */
+        *out_task_id = task_id;
+        return ResultSuccess();
+
+    }
+    Result ChannelImpl::DoReceiveEnd(size_t *out, void *dst, size_t dst_size) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connected, ChannelState_Disconnected}));
+
+        /* If we have nowhere to receive, we're done. */
+        if (dst_size == 0) {
+            *out = 0;
+            return ResultSuccess();
+        }
+
+        /* Get the amount of receivable data. */
+        const size_t receivable = m_receive_buffer.GetDataSize();
+        const size_t received   = std::min(dst_size, receivable);
+
+        /* Read the data. */
+        R_ABORT_UNLESS(m_receive_buffer.Read(dst, received));
+
+        /* Handle flow control, if we should. */
+        if (m_config.flow_control_enabled) {
+            /* Read our fields. */
+            const auto prev_max_data   = m_prev_max_data;
+            const auto next_max_data   = m_cur_max_data + received;
+            const auto max_packet_size = m_config.max_packet_size;
+            const auto offset          = m_offset;
+
+            /* Update our current max data. */
+            m_cur_max_data = next_max_data;
+
+            /* If we can, send a max data packet. */
+            if (prev_max_data - offset < max_packet_size + sizeof(PacketHeader)) {
+                /* Make a max data packet. */
+                auto packet = m_packet_factory->MakeMaxDataPacket(m_channel, m_version, next_max_data);
+                R_UNLESS(packet, htclow::ResultOutOfMemory());
+
+                /* Send the packet. */
+                m_send_buffer.AddPacket(std::move(packet));
+
+                /* Signal that we have an packet to send. */
+                this->SignalSendPacketEvent();
+
+                /* Set our prev max data. */
+                m_prev_max_data = m_cur_max_data;
+            }
+        }
+
+        /* Set the output size. */
+        *out = received;
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::DoSend(u32 *out_task_id, size_t *out, const void *src, size_t src_size) {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connected}));
+
+        /* Allocate a task. */
+        u32 task_id;
+        R_TRY(m_task_manager->AllocateTask(std::addressof(task_id), m_channel));
+
+        /* Send the data. */
+        const size_t sent = m_send_buffer.AddData(src, src_size);
+
+        /* Add the size to our total. */
+        m_total_send_size += sent;
+
+        /* Signal our event. */
+        this->SignalSendPacketEvent();
+
+        /* Configure the task. */
+        m_task_manager->ConfigureSendTask(task_id);
+
+        /* If we sent all the data, we're done. */
+        if (sent == src_size) {
+            m_task_manager->CompleteTask(task_id, EventTrigger_SendComplete);
+        }
+
+        /* Set the output. */
+        *out_task_id = task_id;
+        *out         = sent;
+
+        return ResultSuccess();
+    }
+
+    Result ChannelImpl::DoShutdown() {
+        /* Check our state. */
+        R_TRY(this->CheckState({ChannelState_Connected}));
+
+        /* Set our state. */
+        this->SetState(ChannelState_Disconnected);
         return ResultSuccess();
     }
 

@@ -120,9 +120,12 @@ namespace ams::htc::server::driver {
     }
 
     Result HtclowDriver::ReceiveInternal(size_t *out, void *dst, size_t dst_size, htclow::ChannelId channel, htclow::ReceiveOption option) {
+        /* Determine whether we're blocking. */
+        const bool blocking = option != htclow::ReceiveOption_NonBlocking;
+
         /* Begin receiving. */
         u32 task_id;
-        R_TRY(m_manager->ReceiveBegin(std::addressof(task_id), GetHtclowChannel(channel, m_module_id), option != htclow::ReceiveOption_NonBlocking));
+        R_TRY(m_manager->ReceiveBegin(std::addressof(task_id), GetHtclowChannel(channel, m_module_id), blocking ? 1 : 0));
 
         /* Wait for the task to complete. */
         this->WaitTask(task_id);
