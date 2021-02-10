@@ -52,6 +52,10 @@ namespace ams::htclow::mux {
 
             void RemovePacket(const PacketHeader &header);
 
+            void SetBuffer(void *buffer, size_t buffer_size);
+            void SetReadOnlyBuffer(const void *buffer, size_t buffer_size);
+            void SetMaxPacketSize(size_t max_packet_size);
+
             bool Empty();
 
             void Clear();

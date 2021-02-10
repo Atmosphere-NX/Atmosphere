@@ -18,6 +18,29 @@
 
 namespace ams::htclow::mux {
 
+    void RingBuffer::Initialize(void *buffer, size_t buffer_size) {
+        /* Validate pre-conditions. */
+        AMS_ASSERT(m_buffer == nullptr);
+        AMS_ASSERT(m_read_only_buffer == nullptr);
+
+        /* Set our fields. */
+        m_buffer       = buffer;
+        m_buffer_size  = buffer_size;
+        m_is_read_only = false;
+    }
+
+    void RingBuffer::InitializeForReadOnly(const void *buffer, size_t buffer_size) {
+        /* Validate pre-conditions. */
+        AMS_ASSERT(m_buffer == nullptr);
+        AMS_ASSERT(m_read_only_buffer == nullptr);
+
+        /* Set our fields. */
+        m_read_only_buffer = const_cast<void *>(buffer);
+        m_buffer_size      = buffer_size;
+        m_data_size        = buffer_size;
+        m_is_read_only     = true;
+    }
+
     Result RingBuffer::Write(const void *data, size_t size) {
         /* Validate pre-conditions. */
         AMS_ASSERT(!m_is_read_only);

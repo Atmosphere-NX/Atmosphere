@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htclow_manager_impl.hpp"
+#include "htclow_default_channel_config.hpp"
 
 namespace ams::htclow {
 
@@ -53,7 +54,24 @@ namespace ams::htclow {
     }
 
     void HtclowManagerImpl::CloseDriver() {
-        AMS_ABORT("HtclowManagerImpl::CloseDriver");
+        /* Close the driver, if we're open. */
+        if (m_is_driver_open) {
+            /* Cancel the driver. */
+            m_driver_manager.Cancel();
+
+            /* Stop our listener. */
+            m_listener.Cancel();
+            m_listener.Wait();
+
+            /* Close the driver. */
+            m_driver_manager.CloseDriver();
+
+            /* Set the driver type to unknown. */
+            m_ctrl_service.SetDriverType(impl::DriverType::Unknown);
+
+            /* Note the driver as closed. */
+            m_is_driver_open = false;
+        }
     }
 
     Result HtclowManagerImpl::Open(impl::ChannelInternalType channel) {
@@ -61,52 +79,70 @@ namespace ams::htclow {
     }
 
     Result HtclowManagerImpl::Close(impl::ChannelInternalType channel) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::Close");
+        return m_mux.Close(channel);
     }
 
     void HtclowManagerImpl::Resume() {
-        AMS_ABORT("HtclowManagerImpl::Resume");
+        /* Get our driver. */
+        auto *driver = m_driver_manager.GetCurrentDriver();
+
+        /* Resume our driver. */
+        driver->Resume();
+
+        /* Start the listener. */
+        m_listener.Start(driver);
+
+        /* Resume our control service. */
+        m_ctrl_service.Resume();
     }
 
     void HtclowManagerImpl::Suspend() {
-        AMS_ABORT("HtclowManagerImpl::Suspend");
+        /* Suspend our control service. */
+        m_ctrl_service.Suspend();
+
+        /* Stop our listener. */
+        m_listener.Cancel();
+        m_listener.Wait();
+
+        /* Suspend our driver. */
+        m_driver_manager.GetCurrentDriver()->Suspend();
     }
 
     Result HtclowManagerImpl::ConnectBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::ConnectBegin");
+        /* Begin connecting. */
+        R_TRY(m_mux.ConnectBegin(out_task_id, channel));
+
+        /* Try to ready ourselves. */
+        m_ctrl_service.TryReady();
+        return ResultSuccess();
     }
 
     Result HtclowManagerImpl::ConnectEnd(impl::ChannelInternalType channel, u32 task_id) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::ConnectEnd");
+        return m_mux.ConnectEnd(channel, task_id);
     }
 
     void HtclowManagerImpl::Disconnect() {
-        AMS_ABORT("HtclowManagerImpl::Disconnect");
+        return m_ctrl_service.Disconnect();
     }
 
     Result HtclowManagerImpl::FlushBegin(u32 *out_task_id, impl::ChannelInternalType channel) {
-        AMS_ABORT("HtclowManagerImpl::FlushBegin");
+        return m_mux.FlushBegin(out_task_id, channel);
     }
 
     Result HtclowManagerImpl::FlushEnd(u32 task_id) {
-        AMS_ABORT("HtclowManagerImpl::FlushEnd");
+        return m_mux.FlushEnd(task_id);
     }
 
     ChannelState HtclowManagerImpl::GetChannelState(impl::ChannelInternalType channel) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::GetChannelState");
+        return m_mux.GetChannelState(channel);
     }
 
     os::EventType *HtclowManagerImpl::GetChannelStateEvent(impl::ChannelInternalType channel) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::GetChannelStateEvent");
+        return m_mux.GetChannelStateEvent(channel);
     }
 
     impl::DriverType HtclowManagerImpl::GetDriverType() {
-        AMS_ABORT("HtclowManagerImpl::GetDriverType");
+        return m_driver_manager.GetDriverType();
     }
 
     os::EventType *HtclowManagerImpl::GetTaskEvent(u32 task_id) {
@@ -114,31 +150,27 @@ namespace ams::htclow {
     }
 
     void HtclowManagerImpl::NotifyAsleep() {
-        AMS_ABORT("HtclowManagerImpl::NotifyAsleep");
+        return m_ctrl_service.NotifyAsleep();
     }
 
     void HtclowManagerImpl::NotifyAwake() {
-        AMS_ABORT("HtclowManagerImpl::NotifyAwake");
+        return m_ctrl_service.NotifyAwake();
     }
 
     Result HtclowManagerImpl::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::ReceiveBegin");
+        return m_mux.ReceiveBegin(out_task_id, channel, blocking);
     }
 
     Result HtclowManagerImpl::ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::ReceiveEnd");
+        return m_mux.ReceiveEnd(out, dst, dst_size, channel, task_id);
     }
 
     Result HtclowManagerImpl::SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::SendBegin");
+        return m_mux.SendBegin(out_task_id, out, src, src_size, channel);
     }
 
     Result HtclowManagerImpl::SendEnd(u32 task_id) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::SendEnd");
+        return m_mux.SendEnd(task_id);
     }
 
     void HtclowManagerImpl::SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config) {
@@ -150,22 +182,19 @@ namespace ams::htclow {
     }
 
     void HtclowManagerImpl::SetReceiveBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::SetReceiveBuffer");
+        return m_mux.SetReceiveBuffer(channel, buf, buf_size);
     }
 
     void HtclowManagerImpl::SetSendBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::SetSendBuffer");
+        return m_mux.SetSendBuffer(channel, buf, buf_size, m_driver_manager.GetDriverType() == impl::DriverType::Usb ? sizeof(PacketBody) : DefaultChannelConfig.max_packet_size);
     }
 
     void HtclowManagerImpl::SetSendBufferWithData(impl::ChannelInternalType channel, const void *buf, size_t buf_size) {
-        AMS_ABORT("HtclowManagerImpl::SetSendBufferWithData");
+        return m_mux.SetSendBufferWithData(channel, buf, buf_size, m_driver_manager.GetDriverType() == impl::DriverType::Usb ? sizeof(PacketBody) : DefaultChannelConfig.max_packet_size);
     }
 
     Result HtclowManagerImpl::Shutdown(impl::ChannelInternalType channel) {
-        /* TODO: Used by HtclowDriver */
-        AMS_ABORT("HtclowManagerImpl::Shutdown");
+        return m_mux.Shutdown(channel);
     }
 
 }

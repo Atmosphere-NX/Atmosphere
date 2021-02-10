@@ -189,4 +189,40 @@ namespace ams::htclow::mux {
         return m_task_manager.GetTaskEvent(task_id);
     }
 
+    void Mux::SetSendBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size, size_t max_packet_size) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Find the channel. */
+        auto it = m_channel_impl_map.GetMap().find(channel);
+        AMS_ABORT_UNLESS(it != m_channel_impl_map.GetMap().end());
+
+        /* Set the send buffer. */
+        m_channel_impl_map[it->second].SetSendBuffer(buf, buf_size, max_packet_size);
+    }
+
+    void Mux::SetSendBufferWithData(impl::ChannelInternalType channel, const void *buf, size_t buf_size, size_t max_packet_size) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Find the channel. */
+        auto it = m_channel_impl_map.GetMap().find(channel);
+        AMS_ABORT_UNLESS(it != m_channel_impl_map.GetMap().end());
+
+        /* Set the send buffer. */
+        m_channel_impl_map[it->second].SetSendBufferWithData(buf, buf_size, max_packet_size);
+    }
+
+    void Mux::SetReceiveBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Find the channel. */
+        auto it = m_channel_impl_map.GetMap().find(channel);
+        AMS_ABORT_UNLESS(it != m_channel_impl_map.GetMap().end());
+
+        /* Set the send buffer. */
+        m_channel_impl_map[it->second].SetReceiveBuffer(buf, buf_size);
+    }
+
 }

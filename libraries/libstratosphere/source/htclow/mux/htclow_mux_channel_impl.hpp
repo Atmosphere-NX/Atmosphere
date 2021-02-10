@@ -62,6 +62,10 @@ namespace ams::htclow::mux {
             void RemovePacket(const PacketHeader &header);
 
             void UpdateState();
+        public:
+            void SetSendBuffer(void *buf, size_t buf_size, size_t max_packet_size);
+            void SetReceiveBuffer(void *buf, size_t buf_size);
+            void SetSendBufferWithData(const void *buf, size_t buf_size, size_t max_packet_size);
         private:
             void ShutdownForce();
             void SetState(ChannelState state);

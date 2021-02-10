@@ -228,4 +228,35 @@ namespace ams::htclow::mux {
         }
     }
 
+    void ChannelImpl::SetSendBuffer(void *buf, size_t buf_size, size_t max_packet_size) {
+        /* Set buffer. */
+        m_send_buffer.SetBuffer(buf, buf_size);
+
+        /* Determine true max packet size. */
+        if (m_config.flow_control_enabled) {
+            max_packet_size = std::min(max_packet_size, m_config.max_packet_size);
+        }
+
+        /* Set max packet size. */
+        m_send_buffer.SetMaxPacketSize(max_packet_size);
+    }
+
+    void ChannelImpl::SetReceiveBuffer(void *buf, size_t buf_size) {
+        /* Set the buffer. */
+        m_receive_buffer.Initialize(buf, buf_size);
+    }
+
+    void ChannelImpl::SetSendBufferWithData(const void *buf, size_t buf_size, size_t max_packet_size) {
+        /* Set buffer. */
+        m_send_buffer.SetReadOnlyBuffer(buf, buf_size);
+
+        /* Determine true max packet size. */
+        if (m_config.flow_control_enabled) {
+            max_packet_size = std::min(max_packet_size, m_config.max_packet_size);
+        }
+
+        /* Set max packet size. */
+        m_send_buffer.SetMaxPacketSize(max_packet_size);
+    }
+
 }

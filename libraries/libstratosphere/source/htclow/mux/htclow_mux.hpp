@@ -57,6 +57,10 @@ namespace ams::htclow::mux {
             Result Open(impl::ChannelInternalType channel);
 
             os::EventType *GetTaskEvent(u32 task_id);
+
+            void SetSendBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size, size_t max_packet_size);
+            void SetReceiveBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size);
+            void SetSendBufferWithData(impl::ChannelInternalType channel, const void *buf, size_t buf_size, size_t max_packet_size);
         private:
             Result CheckChannelExist(impl::ChannelInternalType channel);
 

@@ -30,6 +30,9 @@ namespace ams::htclow::mux {
         public:
             RingBuffer() : m_buffer(), m_read_only_buffer(), m_is_read_only(true), m_buffer_size(), m_data_size(), m_offset(), m_can_discard(false) { /* ... */ }
 
+            void Initialize(void *buffer, size_t buffer_size);
+            void InitializeForReadOnly(const void *buffer, size_t buffer_size);
+
             size_t GetDataSize() { return m_data_size; }
 
             Result Write(const void *data, size_t size);
