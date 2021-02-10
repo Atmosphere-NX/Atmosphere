@@ -28,6 +28,10 @@ namespace ams::htc {
 
     R_DEFINE_ERROR_RESULT(Unknown,         1023);
 
+    R_DEFINE_ERROR_RESULT(InvalidTaskId,   2003);
+    R_DEFINE_ERROR_RESULT(InvalidSize,     2011);
+
     R_DEFINE_ERROR_RESULT(OutOfRpcTask,    2102);
+    R_DEFINE_ERROR_RESULT(InvalidCategory, 2123);
 
 }

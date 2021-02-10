@@ -104,6 +104,12 @@ namespace ams::htc::server::rpc {
                 /* Mark the task as invalid. */
                 m_valid[index] = false;
             }
+
+            void Delete(u32 index) {
+                if (this->IsValid(index)) {
+                    this->Delete<Task>(index);
+                }
+            }
     };
 
 }
