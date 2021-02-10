@@ -36,6 +36,7 @@
 #include <vapours/results/fs_results.hpp>
 #include <vapours/results/gpio_results.hpp>
 #include <vapours/results/hipc_results.hpp>
+#include <vapours/results/htc_results.hpp>
 #include <vapours/results/htclow_results.hpp>
 #include <vapours/results/i2c_results.hpp>
 #include <vapours/results/kvdb_results.hpp>
