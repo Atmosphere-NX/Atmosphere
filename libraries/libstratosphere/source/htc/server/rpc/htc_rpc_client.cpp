@@ -36,12 +36,12 @@ namespace ams::htc::server::rpc {
           m_receive_thread_stack(g_receive_thread_stack),
           m_send_thread_stack(g_send_thread_stack),
           m_mutex(g_rpc_mutex),
+          m_task_table(),
           m_cancelled(false),
           m_thread_running(false)
     {
         /* Initialize all events. */
-        /* TODO: MaxTaskCount? */
-        for (size_t i = 0; i < util::size(m_5F8_events); ++i) {
+        for (size_t i = 0; i < MaxTaskCount; ++i) {
             os::InitializeEvent(std::addressof(m_5F8_events[i]), false, os::EventClearMode_AutoClear);
             os::InitializeEvent(std::addressof(m_1138_events[i]), false, os::EventClearMode_AutoClear);
         }

@@ -18,6 +18,8 @@
 
 namespace ams::htc::server::rpc {
 
+    constexpr inline size_t MaxTaskCount = 0x48;
+
     enum class RpcTaskCancelReason {
         None = 0,
         /* ... */

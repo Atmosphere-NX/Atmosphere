@@ -16,6 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 #include "../driver/htc_i_driver.hpp"
+#include "htc_rpc_task_table.hpp"
 
 namespace ams::htc::server::rpc {
 
@@ -30,13 +31,13 @@ namespace ams::htc::server::rpc {
             os::ThreadType m_send_thread;
             os::SdkMutex &m_mutex;
             /* TODO: m_task_id_free_list */
-            /* TODO: m_task_table */
-            /* TODO: m_3C0[0x48] */
+            RpcTaskTable m_task_table;
+            /* TODO: m_3C0[MaxTaskCount] */
             /* TODO: m_rpc_task_queue */
             bool m_cancelled;
             bool m_thread_running;
-            os::EventType m_5F8_events[0x48];
-            os::EventType m_1138_events[0x48];
+            os::EventType m_5F8_events[MaxTaskCount];
+            os::EventType m_1138_events[MaxTaskCount];
         public:
             RpcClient(driver::IDriver *driver, htclow::ChannelId channel);
     };
