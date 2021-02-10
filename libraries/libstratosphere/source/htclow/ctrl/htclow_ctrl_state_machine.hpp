@@ -59,6 +59,7 @@ namespace ams::htclow::ctrl {
             bool IsSleepingStatusChanged();
 
             bool IsInformationNeeded();
+            bool IsDisconnectionNeeded();
 
             bool IsConnected();
             bool IsReadied();

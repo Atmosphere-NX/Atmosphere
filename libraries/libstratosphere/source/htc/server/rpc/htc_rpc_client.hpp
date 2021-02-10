@@ -28,7 +28,7 @@ namespace ams::htc::server::rpc {
             void *m_send_thread_stack;
             os::ThreadType m_receive_thread;
             os::ThreadType m_send_thread;
-            os::SdkMutex *m_p_mutex;
+            os::SdkMutex &m_mutex;
             /* TODO: m_task_id_free_list */
             /* TODO: m_task_table */
             /* TODO: m_3C0[0x48] */

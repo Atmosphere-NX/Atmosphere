@@ -140,6 +140,7 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(10, htc, Htcmisc);
     AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcmiscReceive);
     AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcmiscSend);
+    AMS_DEFINE_SYSTEM_THREAD(10, htc, HtcObserver);
 
     AMS_DEFINE_SYSTEM_THREAD(10, tma, BridgePcieDriver);
 
