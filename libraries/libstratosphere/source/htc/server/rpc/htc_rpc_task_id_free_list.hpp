@@ -38,7 +38,7 @@ namespace ams::htc::server::rpc {
 
                 /* Get index. */
                 const auto index = m_offset;
-                m_free_count = (m_free_count + 1) % MaxRpcCount;
+                m_offset = (m_offset + 1) % MaxRpcCount;
                 --m_free_count;
 
                 /* Get the task id. */

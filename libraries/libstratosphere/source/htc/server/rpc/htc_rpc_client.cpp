@@ -53,4 +53,113 @@ namespace ams::htc::server::rpc {
         }
     }
 
+    void RpcClient::Open() {
+        R_ABORT_UNLESS(m_driver->Open(m_channel_id));
+    }
+
+    void RpcClient::Close() {
+        m_driver->Close(m_channel_id);
+    }
+
+    Result RpcClient::Start() {
+        /* Connect. */
+        R_TRY(m_driver->Connect(m_channel_id));
+
+        /* Initialize our task queue. */
+        m_task_queue.Initialize();
+
+        /* Create our threads. */
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(m_receive_thread), ReceiveThreadEntry, this, m_receive_thread_stack, ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcmiscReceive)));
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(m_send_thread),    SendThreadEntry,    this, m_send_thread_stack,    ThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtcmiscSend)));
+
+        /* Set thread name pointers. */
+        os::SetThreadNamePointer(std::addressof(m_receive_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcmiscReceive));
+        os::SetThreadNamePointer(std::addressof(m_send_thread),    AMS_GET_SYSTEM_THREAD_NAME(htc, HtcmiscSend));
+
+        /* Start threads. */
+        os::StartThread(std::addressof(m_receive_thread));
+        os::StartThread(std::addressof(m_send_thread));
+
+        /* Set initial state. */
+        m_cancelled      = false;
+        m_thread_running = true;
+
+        /* Clear events. */
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            os::ClearEvent(std::addressof(m_receive_buffer_available_events[i]));
+            os::ClearEvent(std::addressof(m_send_buffer_available_events[i]));
+        }
+
+        return ResultSuccess();
+    }
+
+    void RpcClient::Cancel() {
+        /* Set cancelled. */
+        m_cancelled = true;
+
+        /* Signal all events. */
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            os::SignalEvent(std::addressof(m_receive_buffer_available_events[i]));
+            os::SignalEvent(std::addressof(m_send_buffer_available_events[i]));
+        }
+
+        /* Cancel our queue. */
+        m_task_queue.Cancel();
+    }
+
+    void RpcClient::Wait() {
+        /* Wait for thread to not be running. */
+        if (m_thread_running) {
+            os::WaitThread(std::addressof(m_receive_thread));
+            os::WaitThread(std::addressof(m_send_thread));
+            os::DestroyThread(std::addressof(m_receive_thread));
+            os::DestroyThread(std::addressof(m_send_thread));
+        }
+        m_thread_running = false;
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Finalize the task queue. */
+        m_task_queue.Finalize();
+
+        /* Cancel all tasks. */
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            if (m_task_active[i]) {
+                /* TODO: enum member */
+                m_task_table.Get<Task>(i)->Cancel(static_cast<RpcTaskCancelReason>(2));
+            }
+        }
+    }
+
+    int RpcClient::WaitAny(htclow::ChannelState state, os::EventType *event) {
+        /* Check if we're already signaled. */
+        if (os::TryWaitEvent(event)) {
+            return 1;
+        }
+        if (m_driver->GetChannelState(m_channel_id) == state) {
+            return 0;
+        }
+
+        /* Wait. */
+        while (true) {
+            const auto idx = os::WaitAny(m_driver->GetChannelStateEvent(m_channel_id), event);
+            if (idx == 0) {
+                if (m_driver->GetChannelState(m_channel_id) == state) {
+                    return 0;
+                }
+            } else {
+                return idx;
+            }
+        }
+    }
+
+    void RpcClient::ReceiveThread() {
+        AMS_ABORT("RpcClient::ReceiveThread");
+    }
+
+    void RpcClient::SendThread() {
+        AMS_ABORT("RpcClient::SendThread");
+    }
+
 }
