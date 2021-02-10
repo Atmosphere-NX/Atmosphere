@@ -27,6 +27,9 @@ namespace ams::htc::server::rpc {
 
         constinit os::SdkMutex g_rpc_mutex;
 
+        constinit RpcTaskIdFreeList g_task_id_free_list;
+        constinit RpcTaskTable g_task_table;
+
     }
 
     RpcClient::RpcClient(driver::IDriver *driver, htclow::ChannelId channel)
@@ -36,17 +39,18 @@ namespace ams::htc::server::rpc {
           m_receive_thread_stack(g_receive_thread_stack),
           m_send_thread_stack(g_send_thread_stack),
           m_mutex(g_rpc_mutex),
-          m_task_table(),
+          m_task_id_free_list(g_task_id_free_list),
+          m_task_table(g_task_table),
+          m_task_active(),
+          m_task_queue(),
           m_cancelled(false),
           m_thread_running(false)
     {
         /* Initialize all events. */
-        for (size_t i = 0; i < MaxTaskCount; ++i) {
-            os::InitializeEvent(std::addressof(m_5F8_events[i]), false, os::EventClearMode_AutoClear);
-            os::InitializeEvent(std::addressof(m_1138_events[i]), false, os::EventClearMode_AutoClear);
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            os::InitializeEvent(std::addressof(m_receive_buffer_available_events[i]), false, os::EventClearMode_AutoClear);
+            os::InitializeEvent(std::addressof(m_send_buffer_available_events[i]), false, os::EventClearMode_AutoClear);
         }
-
-        /* TODO: Clear all of m_3C0 array to zero. */
     }
 
 }

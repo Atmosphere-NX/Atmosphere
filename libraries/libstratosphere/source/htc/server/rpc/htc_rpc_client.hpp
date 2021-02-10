@@ -17,10 +17,15 @@
 #include <stratosphere.hpp>
 #include "../driver/htc_i_driver.hpp"
 #include "htc_rpc_task_table.hpp"
+#include "htc_rpc_task_queue.hpp"
+#include "htc_rpc_task_id_free_list.hpp"
 
 namespace ams::htc::server::rpc {
 
     class RpcClient {
+        private:
+            /* TODO: where is this value coming from, again? */
+            static constexpr size_t BufferSize = 0xE400;
         private:
             u64 m_00;
             driver::IDriver *m_driver;
@@ -30,14 +35,16 @@ namespace ams::htc::server::rpc {
             os::ThreadType m_receive_thread;
             os::ThreadType m_send_thread;
             os::SdkMutex &m_mutex;
-            /* TODO: m_task_id_free_list */
-            RpcTaskTable m_task_table;
-            /* TODO: m_3C0[MaxTaskCount] */
-            /* TODO: m_rpc_task_queue */
+            RpcTaskIdFreeList &m_task_id_free_list;
+            RpcTaskTable &m_task_table;
+            bool m_task_active[MaxRpcCount];
+            RpcTaskQueue m_task_queue;
             bool m_cancelled;
             bool m_thread_running;
-            os::EventType m_5F8_events[MaxTaskCount];
-            os::EventType m_1138_events[MaxTaskCount];
+            os::EventType m_receive_buffer_available_events[MaxRpcCount];
+            os::EventType m_send_buffer_available_events[MaxRpcCount];
+            u8 m_receive_buffer[BufferSize];
+            u8 m_send_buffer[BufferSize];
         public:
             RpcClient(driver::IDriver *driver, htclow::ChannelId channel);
     };
