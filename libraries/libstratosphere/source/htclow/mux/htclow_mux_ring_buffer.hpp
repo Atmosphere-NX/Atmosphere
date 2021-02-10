@@ -33,6 +33,9 @@ namespace ams::htclow::mux {
             void Initialize(void *buffer, size_t buffer_size);
             void InitializeForReadOnly(const void *buffer, size_t buffer_size);
 
+            void Clear();
+
+            size_t GetBufferSize() { return m_buffer_size; }
             size_t GetDataSize() { return m_data_size; }
 
             Result Write(const void *data, size_t size);

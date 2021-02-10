@@ -37,6 +37,7 @@ namespace ams::htclow {
     struct ChannelConfig {
         bool flow_control_enabled;
         bool handshake_enabled;
+        u64 initial_counter_max_data;
         size_t max_packet_size;
     };
 

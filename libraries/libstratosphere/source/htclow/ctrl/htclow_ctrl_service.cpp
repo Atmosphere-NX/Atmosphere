@@ -40,7 +40,7 @@ namespace ams::htclow::ctrl {
     }
 
     HtcctrlService::HtcctrlService(HtcctrlPacketFactory *pf, HtcctrlStateMachine *sm, mux::Mux *mux)
-        : m_settings_holder(), m_beacon_response(), m_1100(), m_packet_factory(pf), m_state_machine(sm), m_mux(mux), m_event(os::EventClearMode_ManualClear),
+        : m_settings_holder(), m_beacon_response(), m_information_body(), m_packet_factory(pf), m_state_machine(sm), m_mux(mux), m_event(os::EventClearMode_ManualClear),
           m_send_buffer(pf), m_mutex(), m_condvar(), m_service_channels_packet(), m_version(ProtocolVersion)
     {
         /* Lock ourselves. */
@@ -76,6 +76,10 @@ namespace ams::htclow::ctrl {
             m_settings_holder.GetFirmwareVersion(),
             ProtocolVersion
         );
+    }
+
+    void HtcctrlService::UpdateInformationBody(const char *status) {
+        util::SNPrintf(m_information_body, sizeof(m_information_body), "{\r\n  \"Status\" : \"%s\"\r\n}\r\n", status);
     }
 
     void HtcctrlService::SetDriverType(impl::DriverType driver_type) {
@@ -330,6 +334,89 @@ namespace ams::htclow::ctrl {
                 break;
             default:
                 AMS_ABORT("Send unsupported packet 0x%04x\n", static_cast<u32>(header.packet_type));
+        }
+    }
+
+    void HtcctrlService::TryReady() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        this->TryReadyInternal();
+    }
+
+    void HtcctrlService::Disconnect() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        this->DisconnectInternal();
+    }
+
+    void HtcctrlService::Resume() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Send resume packet, if we can. */
+        if (const auto state = m_state_machine->GetHtcctrlState(); state == HtcctrlState_Sleep || state == HtcctrlState_ExitSleep) {
+            /* Send a resume packet. */
+            m_send_buffer.AddPacket(m_packet_factory->MakeResumePacket());
+
+            /* Signal our event. */
+            m_event.Signal();
+        }
+    }
+
+    void HtcctrlService::Suspend() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* If we can, perform a suspend. */
+        if (m_state_machine->GetHtcctrlState() == HtcctrlState_Ready) {
+            /* Send a suspend packet. */
+            m_send_buffer.AddPacket(m_packet_factory->MakeSuspendPacket());
+
+            /* Signal our event. */
+            m_event.Signal();
+
+            /* Wait for our state to transition. */
+            for (auto state = m_state_machine->GetHtcctrlState(); state == HtcctrlState_Ready || state == HtcctrlState_SentSuspendFromTarget; state = m_state_machine->GetHtcctrlState()) {
+                m_condvar.Wait(m_mutex);
+            }
+        } else {
+            /* Otherwise, just disconnect. */
+            this->DisconnectInternal();
+        }
+    }
+
+    void HtcctrlService::NotifyAwake() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Update our information. */
+        this->UpdateInformationBody("Awake");
+
+        /* Send information to host. */
+        this->SendInformation();
+    }
+
+    void HtcctrlService::NotifyAsleep() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Update our information. */
+        this->UpdateInformationBody("Asleep");
+
+        /* Send information to host. */
+        this->SendInformation();
+    }
+
+    void HtcctrlService::SendInformation() {
+        /* If we need information, send information. */
+        if (m_state_machine->IsInformationNeeded()) {
+            /* Send an information packet. */
+            m_send_buffer.AddPacket(m_packet_factory->MakeInformationPacket(m_information_body, util::Strnlen(m_information_body, sizeof(m_information_body)) + 1));
+
+            /* Signal our event. */
+            m_event.Signal();
         }
     }
 

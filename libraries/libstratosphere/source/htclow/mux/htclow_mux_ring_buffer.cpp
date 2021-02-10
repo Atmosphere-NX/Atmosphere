@@ -41,6 +41,12 @@ namespace ams::htclow::mux {
         m_is_read_only     = true;
     }
 
+    void RingBuffer::Clear() {
+        m_data_size   = 0;
+        m_offset      = 0;
+        m_can_discard = false;
+    }
+
     Result RingBuffer::Write(const void *data, size_t size) {
         /* Validate pre-conditions. */
         AMS_ASSERT(!m_is_read_only);

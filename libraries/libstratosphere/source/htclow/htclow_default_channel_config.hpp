@@ -20,9 +20,10 @@
 namespace ams::htclow {
 
     constexpr inline const ChannelConfig DefaultChannelConfig = {
-        .flow_control_enabled = true,
-        .handshake_enabled    = true,
-        .max_packet_size      = 0xE000 + sizeof(PacketHeader),
+        .flow_control_enabled     = true,
+        .handshake_enabled        = true,
+        .initial_counter_max_data = 0,
+        .max_packet_size          = 0xE000 + sizeof(PacketHeader),
     };
 
 }

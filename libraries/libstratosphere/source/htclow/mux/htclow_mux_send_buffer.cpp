@@ -19,6 +19,11 @@
 
 namespace ams::htclow::mux {
 
+    SendBuffer::~SendBuffer() {
+        m_ring_buffer.Clear();
+        this->Clear();
+    }
+
     bool SendBuffer::IsPriorPacket(PacketType packet_type) const {
         return packet_type == PacketType_MaxData;
     }
@@ -92,6 +97,17 @@ namespace ams::htclow::mux {
         /* Set output body size. */
         *out_body_size = data_size;
         return true;
+    }
+
+    void SendBuffer::AddPacket(std::unique_ptr<Packet, PacketDeleter> ptr) {
+        /* Get the packet. */
+        auto *packet = ptr.release();
+
+        /* Check the packet type. */
+        AMS_ABORT_UNLESS(this->IsPriorPacket(packet->GetHeader()->packet_type));
+
+        /* Add the packet. */
+        m_packet_list.push_back(*packet);
     }
 
     void SendBuffer::RemovePacket(const PacketHeader &header) {

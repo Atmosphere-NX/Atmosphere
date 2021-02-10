@@ -42,6 +42,8 @@ namespace ams::htclow {
             Listener(mem::StandardAllocator *allocator, mux::Mux *mux, ctrl::HtcctrlService *ctrl_srv, Worker *worker);
 
             void Start(driver::IDriver *driver);
+            void Cancel();
+            void Wait();
     };
 
 }

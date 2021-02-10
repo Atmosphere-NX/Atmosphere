@@ -26,7 +26,8 @@ namespace ams::htclow {
     R_DEFINE_ERROR_RESULT(ChannelAlreadyExist,        9);
     R_DEFINE_ERROR_RESULT(ChannelNotExist,           10);
 
-    R_DEFINE_ERROR_RESULT(OutOfResource,            151);
+    R_DEFINE_ERROR_RESULT(OutOfChannel, 151);
+    R_DEFINE_ERROR_RESULT(OutOfTask,    151);
 
     R_DEFINE_ERROR_RESULT(InvalidChannelState,             200);
     R_DEFINE_ERROR_RESULT(InvalidChannelStateDisconnected, 201);

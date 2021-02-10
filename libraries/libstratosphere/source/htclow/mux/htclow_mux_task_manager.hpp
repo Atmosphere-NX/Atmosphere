@@ -51,14 +51,23 @@ namespace ams::htclow::mux {
         public:
             TaskManager() : m_valid() { /* ... */ }
 
+            Result AllocateTask(u32 *out_task_id, impl::ChannelInternalType channel);
+            void FreeTask(u32 task_id);
+
             os::EventType *GetTaskEvent(u32 task_id);
+            EventTrigger GetTrigger(u32 task_id);
+
+            void ConfigureConnectTask(u32 task_id);
+            void ConfigureFlushTask(u32 task_id);
+            void ConfigureReceiveTask(u32 task_id, size_t size);
+            void ConfigureSendTask(u32 task_id);
 
             void NotifyDisconnect(impl::ChannelInternalType channel);
             void NotifyReceiveData(impl::ChannelInternalType channel, size_t size);
             void NotifySendReady();
             void NotifySendBufferEmpty(impl::ChannelInternalType channel);
             void NotifyConnectReady();
-        private:
+
             void CompleteTask(int index, EventTrigger trigger);
     };
 

@@ -58,6 +58,8 @@ namespace ams::htclow::ctrl {
             bool IsConnectedStatusChanged();
             bool IsSleepingStatusChanged();
 
+            bool IsInformationNeeded();
+
             bool IsConnected();
             bool IsReadied();
             bool IsUnconnectable();
@@ -68,6 +70,7 @@ namespace ams::htclow::ctrl {
             bool IsUnsupportedServiceChannelToShutdown(const impl::ChannelInternalType &channel);
             bool IsConnectable(const impl::ChannelInternalType &channel);
 
+            void SetConnecting(const impl::ChannelInternalType &channel);
             void SetNotConnecting(const impl::ChannelInternalType &channel);
             void SetConnectingChecked();
 
