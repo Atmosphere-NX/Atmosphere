@@ -34,7 +34,7 @@ namespace ams::boot2 {
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
         constexpr ncm::SystemProgramId AdditionalLaunchPrograms[] = {
-            ncm::SystemProgramId::Tma,         /* tma */
+            ncm::SystemProgramId::Htc,         /* htc */ /* TODO: should we do boot!use_htc_gen2, with default to on in custom settings? */
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
@@ -80,7 +80,7 @@ namespace ams::boot2 {
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
         constexpr ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::SystemProgramId::Tma,         /* tma */
+            ncm::SystemProgramId::Htc,         /* htc */
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */

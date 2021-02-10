@@ -274,7 +274,7 @@ namespace ams::usb {
 
     Result DsInterface::Finalize() {
         /* Validate that we have a service. */
-        R_ABORT_UNLESS(m_interface != nullptr);
+        AMS_ABORT_UNLESS(m_interface != nullptr);
 
         /* We must be disabled. */
         R_UNLESS(!m_client->m_is_enabled, usb::ResultResourceBusy());
