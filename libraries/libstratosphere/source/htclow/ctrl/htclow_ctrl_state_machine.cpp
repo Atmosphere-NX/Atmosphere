@@ -64,6 +64,13 @@ namespace ams::htclow::ctrl {
         return !ctrl::IsDisconnected(m_state) && m_state != HtcctrlState_DriverConnected;
     }
 
+    bool HtcctrlStateMachine::IsDisconnectionNeeded() {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        return !ctrl::IsDisconnected(m_state) && m_state != HtcctrlState_Sleep && m_state != HtcctrlState_DriverConnected;
+    }
+
     bool HtcctrlStateMachine::IsConnected() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);

@@ -351,6 +351,22 @@ namespace ams::htclow::ctrl {
         this->DisconnectInternal();
     }
 
+    void HtcctrlService::DisconnectInternal() {
+        /* Disconnect, if we need to. */
+        if (m_state_machine->IsDisconnectionNeeded()) {
+            /* Send a disconnect packet. */
+            m_send_buffer.AddPacket(m_packet_factory->MakeDisconnectPacket());
+
+            /* Signal our event. */
+            m_event.Signal();
+
+            /* Wait for us to be disconnected. */
+            while (!m_state_machine->IsDisconnected()) {
+                m_condvar.Wait(m_mutex);
+            }
+        }
+    }
+
     void HtcctrlService::Resume() {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);

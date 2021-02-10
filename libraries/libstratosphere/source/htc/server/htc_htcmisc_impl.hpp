@@ -31,16 +31,24 @@ namespace ams::htc::server {
             rpc::HtcmiscRpcServer m_rpc_server;
             os::ThreadType m_client_thread;
             os::ThreadType m_server_thread;
-            os::Event m_event_61200;
-            u8 m_61228;
-            os::Event m_event_61230;
+            os::Event m_cancel_event;
+            bool m_cancelled;
+            os::Event m_connection_event;
             bool m_client_connected;
             bool m_server_connected;
-            u8 m_6125A;
+            bool m_connected;
             os::SdkMutex m_connection_mutex;
+        private:
+            static void ClientThreadEntry(void *arg) { static_cast<HtcmiscImpl *>(arg)->ClientThread(); }
+            static void ServerThreadEntry(void *arg) { static_cast<HtcmiscImpl *>(arg)->ServerThread(); }
+
+            void ClientThread();
+            void ServerThread();
         public:
             HtcmiscImpl(htclow::HtclowManager *htclow_manager);
+            ~HtcmiscImpl();
         public:
+            void Cancel();
             /* TODO */
     };
 

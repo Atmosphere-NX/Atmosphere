@@ -23,15 +23,24 @@ namespace ams::htc::server {
         private:
             os::SystemEvent m_connect_event;
             os::SystemEvent m_disconnect_event;
-            os::Event m_event_60;
+            os::Event m_stop_event;
             os::ThreadType m_observer_thread;
             const HtcmiscImpl &m_misc_impl;
             bool m_thread_running;
             bool m_stopped;
             bool m_connected;
             bool m_is_service_available;
+            alignas(os::ThreadStackAlignment) u8 m_observer_thread_stack[os::MemoryPageSize];
         public:
             Observer(const HtcmiscImpl &misc_impl);
+        private:
+            static void ObserverThreadEntry(void *arg) { static_cast<Observer *>(arg)->ObserverThreadBody(); }
+
+            void ObserverThreadBody();
+        private:
+            Result Start();
+
+            void UpdateEvent();
     };
 
 }

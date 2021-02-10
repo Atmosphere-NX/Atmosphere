@@ -16,8 +16,16 @@
 #include <stratosphere.hpp>
 #include "htclow_mux_channel_impl.hpp"
 #include "../htclow_packet_factory.hpp"
+#include "../htclow_default_channel_config.hpp"
 
 namespace ams::htclow::mux {
+
+    SendBuffer::SendBuffer(impl::ChannelInternalType channel, PacketFactory *pf)
+        : m_channel(channel), m_packet_factory(pf), m_ring_buffer(), m_packet_list(),
+          m_version(ProtocolVersion), m_flow_control_enabled(true), m_max_packet_size(DefaultChannelConfig.max_packet_size)
+    {
+        /* ... */
+    }
 
     SendBuffer::~SendBuffer() {
         m_ring_buffer.Clear();
