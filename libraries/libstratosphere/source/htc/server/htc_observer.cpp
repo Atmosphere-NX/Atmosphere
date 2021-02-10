@@ -29,7 +29,7 @@ namespace ams::htc::server {
           m_is_service_available(false)
     {
         /* Initialize htcs library. */
-        AMS_ABORT("htcs::impl::HtcsManagerHolder::AddReference();");
+        /* TODO: AMS_ABORT("htcs::impl::HtcsManagerHolder::AddReference();"); */
 
         /* Update our event state. */
         this->UpdateEvent();
@@ -69,7 +69,48 @@ namespace ams::htc::server {
     }
 
     void Observer::ObserverThreadBody() {
-        AMS_ABORT("Observer::ObserverThreadBody");
+        /* When we're done observing, clear our state. */
+        ON_SCOPE_EXIT {
+            m_connected            = false;
+            m_is_service_available = false;
+            this->UpdateEvent();
+        };
+
+        /* Get the events we're waiting on. */
+        os::EventType * const stop_event = m_stop_event.GetBase();
+        os::EventType * const conn_event = m_misc_impl.GetConnectionEvent();
+        os::EventType * const htcs_event = nullptr /* TODO: htcs::impl::HtcsManagerHolder::GetHtcsManager()->GetServiceAvailabilityEvent() */;
+
+        /* Loop until we're asked to stop. */
+        while (!m_stopped) {
+            /* Wait for an event to be signaled. */
+            const auto index = os::WaitAny(stop_event, conn_event /*, htcs_event */);
+            switch (index) {
+                case 0:
+                    /* Stop event, just break out of the loop. */
+                    os::ClearEvent(stop_event);
+                    break;
+                case 1:
+                    /* Connection event, update our connection status. */
+                    os::ClearEvent(conn_event);
+                    m_connected = m_misc_impl.IsConnected();
+                    break;
+                case 2:
+                    /* Htcs event, update our service status. */
+                    os::ClearEvent(htcs_event);
+                    m_is_service_available = false /* TODO: htcs::impl::HtcsManagerHolder::GetHtcsManager()->IsServiceAvailable() */;
+                    break;
+                AMS_UNREACHABLE_DEFAULT_CASE();
+            }
+
+            /* If the event was our stop event, break. */
+            if (index == 0) {
+                break;
+            }
+
+            /* Update event status. */
+            this->UpdateEvent();
+        }
     }
 
 }

@@ -33,11 +33,11 @@ namespace ams::htc::server {
             os::ThreadType m_server_thread;
             os::Event m_cancel_event;
             bool m_cancelled;
-            os::Event m_connection_event;
+            mutable os::Event m_connection_event;
             bool m_client_connected;
             bool m_server_connected;
             bool m_connected;
-            os::SdkMutex m_connection_mutex;
+            mutable os::SdkMutex m_connection_mutex;
         private:
             static void ClientThreadEntry(void *arg) { static_cast<HtcmiscImpl *>(arg)->ClientThread(); }
             static void ServerThreadEntry(void *arg) { static_cast<HtcmiscImpl *>(arg)->ServerThread(); }
@@ -47,6 +47,9 @@ namespace ams::htc::server {
         public:
             HtcmiscImpl(htclow::HtclowManager *htclow_manager);
             ~HtcmiscImpl();
+
+            os::EventType *GetConnectionEvent() const;
+            bool IsConnected() const;
         private:
             void SetClientConnectionEvent(bool en);
             void SetServerConnectionEvent(bool en);

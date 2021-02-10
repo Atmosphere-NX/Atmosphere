@@ -42,6 +42,25 @@ namespace ams {
 
 using namespace ams;
 
+#define AMS_HTC_USE_FATAL_ERROR 1
+
+#if AMS_HTC_USE_FATAL_ERROR
+
+extern "C" {
+
+    /* Exception handling. */
+    alignas(16) u8 __nx_exception_stack[ams::os::MemoryPageSize];
+    u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
+    void __libnx_exception_handler(ThreadExceptionDump *ctx);
+
+}
+
+void __libnx_exception_handler(ThreadExceptionDump *ctx) {
+    ams::CrashHandler(ctx);
+}
+
+#endif
+
 namespace ams::htc {
 
     namespace {
@@ -87,6 +106,8 @@ void __appInit(void) {
 
     sm::DoWithSession([&]() {
         R_ABORT_UNLESS(setsysInitialize());
+        R_ABORT_UNLESS(setcalInitialize());
+        R_ABORT_UNLESS(pscmInitialize());
         R_ABORT_UNLESS(fsInitialize());
     });
 

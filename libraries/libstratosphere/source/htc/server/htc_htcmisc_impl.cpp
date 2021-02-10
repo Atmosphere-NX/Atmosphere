@@ -195,4 +195,15 @@ namespace ams::htc::server {
         }
     }
 
+    os::EventType *HtcmiscImpl::GetConnectionEvent() const {
+        return m_connection_event.GetBase();
+    }
+
+    bool HtcmiscImpl::IsConnected() const {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_connection_mutex);
+
+        return m_connected;
+    }
+
 }
