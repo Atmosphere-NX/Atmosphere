@@ -34,7 +34,7 @@ namespace ams::htc::server::rpc {
         s64 body_size;
         u32 task_id;
         u64 params[5];
-        u8 data[];
+        char data[];
     };
     static_assert(sizeof(RpcPacket) == 0x40);
 

@@ -43,14 +43,14 @@ namespace ams::htc::server::rpc {
             bool m_thread_running;
             os::EventType m_receive_buffer_available_events[MaxRpcCount];
             os::EventType m_send_buffer_available_events[MaxRpcCount];
-            u8 m_receive_buffer[BufferSize];
-            u8 m_send_buffer[BufferSize];
+            char m_receive_buffer[BufferSize];
+            char m_send_buffer[BufferSize];
         private:
             static void ReceiveThreadEntry(void *arg) { static_cast<RpcClient *>(arg)->ReceiveThread(); }
             static void SendThreadEntry(void *arg) { static_cast<RpcClient *>(arg)->SendThread(); }
 
-            void ReceiveThread();
-            void SendThread();
+            Result ReceiveThread();
+            Result SendThread();
         public:
             RpcClient(driver::IDriver *driver, htclow::ChannelId channel);
         public:
@@ -62,6 +62,10 @@ namespace ams::htc::server::rpc {
             void Wait();
 
             int WaitAny(htclow::ChannelState state, os::EventType *event);
+        private:
+            Result ReceiveHeader(RpcPacket *header);
+            Result ReceiveBody(char *dst, size_t size);
+            Result SendRequest(const char *src, size_t size);
     };
 
 }
