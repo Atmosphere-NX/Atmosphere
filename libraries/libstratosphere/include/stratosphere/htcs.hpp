@@ -15,3 +15,4 @@
  */
 #pragma once
 
+#include <stratosphere/htcs/htcs_types.hpp>
