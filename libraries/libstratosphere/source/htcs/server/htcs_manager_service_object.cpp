@@ -51,12 +51,12 @@ namespace ams::htcs::server {
     }
 
     Result ManagerServiceObject::RegisterProcessId(const sf::ClientProcessId &client_pid) {
-        /* NOTE: Nintend does nothing here. */
+        /* NOTE: Nintendo does nothing here. */
         return ResultSuccess();
     }
 
     Result ManagerServiceObject::MonitorManager(const sf::ClientProcessId &client_pid) {
-        /* NOTE: Nintend does nothing here. */
+        /* NOTE: Nintendo does nothing here. */
         return ResultSuccess();
     }
 

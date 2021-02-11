@@ -14,5 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
+#include "htcfs_client_impl.hpp"
 
-#include <stratosphere/htcfs/htcfs_hipc_server.hpp>
+namespace ams::htcfs {
+
+    class Client {
+        private:
+            ClientImpl m_impl;
+        public:
+            Client(htclow::HtclowManager *manager);
+    };
+
+    void InitializeClient(htclow::HtclowManager *manager);
+    void FinalizeClient();
+
+    Client &GetClient();
+
+}

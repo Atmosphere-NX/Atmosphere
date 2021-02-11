@@ -14,5 +14,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/htcfs/htcfs_hipc_server.hpp>
+namespace ams::htcfs {
+
+    class DirectoryServiceObject {
+        private:
+            s32 m_handle;
+        public:
+            explicit DirectoryServiceObject(s32 handle);
+            ~DirectoryServiceObject();
+        public:
+            Result GetEntryCount(ams::sf::Out<s64> out);
+            Result Read(ams::sf::Out<s64> out, const ams::sf::OutMapAliasArray<fs::DirectoryEntry> &out_entries);
+            Result SetPriorityForDirectory(s32 priority);
+            Result GetPriorityForDirectory(ams::sf::Out<s32> out);
+    };
+    static_assert(tma::IsIDirectoryAccessor<DirectoryServiceObject>);
+
+}
