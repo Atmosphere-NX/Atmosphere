@@ -425,6 +425,17 @@ namespace ams::htclow::mux {
         return ResultSuccess();
     }
 
+    void ChannelImpl::SetConfig(const ChannelConfig &config) {
+        /* Check our state. */
+        R_ABORT_UNLESS(this->CheckState({ChannelState_Unconnectable, ChannelState_Connectable}));
+
+        /* Set our config. */
+        m_config = config;
+
+        /* Set flow control for our send buffer. */
+        m_send_buffer.SetFlowControlEnabled(m_config.flow_control_enabled);
+    }
+
     void ChannelImpl::SetSendBuffer(void *buf, size_t buf_size, size_t max_packet_size) {
         /* Set buffer. */
         m_send_buffer.SetBuffer(buf, buf_size);

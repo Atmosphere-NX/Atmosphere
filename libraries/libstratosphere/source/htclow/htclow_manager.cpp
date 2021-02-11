@@ -96,8 +96,8 @@ namespace ams::htclow {
         return m_impl->NotifyAwake();
     }
 
-    Result HtclowManager::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking) {
-        return m_impl->ReceiveBegin(out_task_id, channel, blocking);
+    Result HtclowManager::ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
+        return m_impl->ReceiveBegin(out_task_id, channel, size);
     }
 
     Result HtclowManager::ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id) {
@@ -110,6 +110,14 @@ namespace ams::htclow {
 
     Result HtclowManager::SendEnd(u32 task_id) {
         return m_impl->SendEnd(task_id);
+    }
+
+    Result HtclowManager::WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
+        return m_impl->WaitReceiveBegin(out_task_id, channel, size);
+    }
+
+    Result HtclowManager::WaitReceiveEnd(u32 task_id) {
+        return m_impl->WaitReceiveEnd(task_id);
     }
 
     void HtclowManager::SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config) {

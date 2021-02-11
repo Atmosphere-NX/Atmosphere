@@ -56,11 +56,14 @@ namespace ams::htclow {
             void NotifyAsleep();
             void NotifyAwake();
 
-            Result ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, bool blocking);
+            Result ReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size);
             Result ReceiveEnd(size_t *out, void *dst, size_t dst_size, impl::ChannelInternalType channel, u32 task_id);
 
             Result SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel);
             Result SendEnd(u32 task_id);
+
+            Result WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size);
+            Result WaitReceiveEnd(u32 task_id);
 
             void SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config);
 

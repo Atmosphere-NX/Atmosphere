@@ -74,6 +74,9 @@ namespace ams::htclow {
             Result SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel);
             Result SendEnd(u32 task_id);
 
+            Result WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size);
+            Result WaitReceiveEnd(u32 task_id);
+
             void SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config);
 
             void SetDebugDriver(driver::IDriver *driver);

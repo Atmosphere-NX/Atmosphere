@@ -80,6 +80,8 @@ namespace ams::htclow::mux {
 
             Result DoShutdown();
 
+            void SetConfig(const ChannelConfig &config);
+
             void SetSendBuffer(void *buf, size_t buf_size, size_t max_packet_size);
             void SetReceiveBuffer(void *buf, size_t buf_size);
             void SetSendBufferWithData(const void *buf, size_t buf_size, size_t max_packet_size);

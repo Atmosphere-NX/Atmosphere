@@ -41,6 +41,11 @@ namespace ams::htclow::mux {
         m_version = version;
     }
 
+    void SendBuffer::SetFlowControlEnabled(bool en) {
+        /* Set flow control enabled. */
+        m_flow_control_enabled = en;
+    }
+
     void SendBuffer::MakeDataPacketHeader(PacketHeader *header, int body_size, s16 version, u64 share, u32 offset) const {
         /* Set all packet fields. */
         header->signature   = HtcGen2Signature;
