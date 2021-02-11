@@ -14,5 +14,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
 
-#include <stratosphere/htcfs/htcfs_hipc_server.hpp>
+namespace ams::htclow {
+
+    class HtclowManager;
+
+}
+
+namespace ams::htcfs {
+
+    void Initialize(htclow::HtclowManager *htclow_manager);
+
+    void RegisterHipcServer();
+    void LoopHipcServer();
+
+}
