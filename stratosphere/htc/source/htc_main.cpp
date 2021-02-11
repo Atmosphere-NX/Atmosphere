@@ -214,7 +214,7 @@ namespace ams::htc {
         }
 
         void HtcsIpcThreadFunction(void *arg) {
-            //htcs::server::LoopHipcServer();
+            htcs::server::LoopHipcServer();
         }
 
     }
@@ -263,8 +263,8 @@ int main(int argc, char **argv)
     os::SetThreadNamePointer(std::addressof(htcfs_ipc_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtcfsIpc));
 
     /* Initialize the htcs server. */
-    //htcs::server::Initialize();
-    //htcs::server::RegisterHipcServer();
+    htcs::server::Initialize();
+    htcs::server::RegisterHipcServer();
 
     /* Create the htcs ipc threads. */
     os::ThreadType htcs_ipc_threads[htc::NumHtcsIpcThreads];
