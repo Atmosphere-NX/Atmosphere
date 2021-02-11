@@ -16,3 +16,5 @@
 #pragma once
 
 #include <stratosphere/htcs/htcs_types.hpp>
+#include <stratosphere/htcs/impl/htcs_manager_holder.hpp>
+#include <stratosphere/htcs/impl/htcs_channel_ids.hpp>

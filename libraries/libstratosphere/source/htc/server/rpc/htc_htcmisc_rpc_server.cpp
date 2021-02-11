@@ -27,7 +27,7 @@ namespace ams::htc::server::rpc {
     }
 
     HtcmiscRpcServer::HtcmiscRpcServer(driver::IDriver *driver, htclow::ChannelId channel)
-        : m_00(0),
+        : m_allocator(nullptr),
           m_driver(driver),
           m_channel_id(channel),
           m_receive_thread_stack(g_receive_thread_stack),

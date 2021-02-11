@@ -25,7 +25,7 @@ namespace ams::htc::server::rpc {
             /* TODO: where is this value coming from, again? */
             static constexpr size_t BufferSize = 1_KB;
         private:
-            u64 m_00;
+            mem::StandardAllocator *m_allocator;
             driver::IDriver *m_driver;
             htclow::ChannelId m_channel_id;
             void *m_receive_thread_stack;

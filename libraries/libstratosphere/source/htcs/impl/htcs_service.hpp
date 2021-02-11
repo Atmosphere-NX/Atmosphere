@@ -15,17 +15,23 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htc_i_driver.hpp"
+#include "../../htc/server/driver/htc_i_driver.hpp"
+#include "../../htc/server/rpc/htc_rpc_client.hpp"
+#include "rpc/htcs_data_channel_manager.hpp"
 
-namespace ams::htc::server::driver {
+namespace ams::htcs::impl {
 
-    class DriverManager {
+    class HtcsService {
         private:
-            IDriver *m_driver;
+            mem::StandardAllocator *m_allocator;
+            htc::server::driver::IDriver *m_driver;
+            htc::server::rpc::RpcClient *m_rpc_client;
+            rpc::DataChannelManager *m_data_channel_manager;
         public:
-            DriverManager(IDriver *driver) : m_driver(driver) { /* ... */ }
-
-            IDriver *GetDriver() { return m_driver; }
+            HtcsService(mem::StandardAllocator *allocator, htc::server::driver::IDriver *drv, htc::server::rpc::RpcClient *rc, rpc::DataChannelManager *dcm)
+                : m_allocator(allocator), m_driver(drv), m_rpc_client(rc), m_data_channel_manager(dcm) { /* ... */ }
+        public:
+            /* TODO */
     };
 
 }

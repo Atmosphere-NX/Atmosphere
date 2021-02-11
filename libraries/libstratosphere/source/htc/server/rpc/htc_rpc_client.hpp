@@ -27,7 +27,7 @@ namespace ams::htc::server::rpc {
             /* TODO: where is this value coming from, again? */
             static constexpr size_t BufferSize = 0xE400;
         private:
-            u64 m_00;
+            mem::StandardAllocator *m_allocator;
             driver::IDriver *m_driver;
             htclow::ChannelId m_channel_id;
             void *m_receive_thread_stack;
@@ -53,6 +53,8 @@ namespace ams::htc::server::rpc {
             Result SendThread();
         public:
             RpcClient(driver::IDriver *driver, htclow::ChannelId channel);
+            RpcClient(mem::StandardAllocator *allocator, driver::IDriver *driver, htclow::ChannelId channel);
+            ~RpcClient();
         public:
             void Open();
             void Close();

@@ -33,7 +33,7 @@ namespace ams::htc::server::rpc {
     }
 
     RpcClient::RpcClient(driver::IDriver *driver, htclow::ChannelId channel)
-        : m_00(0),
+        : m_allocator(nullptr),
           m_driver(driver),
           m_channel_id(channel),
           m_receive_thread_stack(g_receive_thread_stack),
@@ -50,6 +50,53 @@ namespace ams::htc::server::rpc {
         for (size_t i = 0; i < MaxRpcCount; ++i) {
             os::InitializeEvent(std::addressof(m_receive_buffer_available_events[i]), false, os::EventClearMode_AutoClear);
             os::InitializeEvent(std::addressof(m_send_buffer_available_events[i]), false, os::EventClearMode_AutoClear);
+        }
+    }
+
+    RpcClient::RpcClient(mem::StandardAllocator *allocator, driver::IDriver *driver, htclow::ChannelId channel)
+        : m_allocator(allocator),
+          m_driver(driver),
+          m_channel_id(channel),
+          m_receive_thread_stack(m_allocator->Allocate(ThreadStackSize, os::ThreadStackAlignment)),
+          m_send_thread_stack(m_allocator->Allocate(ThreadStackSize, os::ThreadStackAlignment)),
+          m_mutex(g_rpc_mutex),
+          m_task_id_free_list(g_task_id_free_list),
+          m_task_table(g_task_table),
+          m_task_active(),
+          m_task_queue(),
+          m_cancelled(false),
+          m_thread_running(false)
+    {
+        /* Initialize all events. */
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            os::InitializeEvent(std::addressof(m_receive_buffer_available_events[i]), false, os::EventClearMode_AutoClear);
+            os::InitializeEvent(std::addressof(m_send_buffer_available_events[i]), false, os::EventClearMode_AutoClear);
+        }
+    }
+
+    RpcClient::~RpcClient() {
+        /* Finalize all events. */
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            os::FinalizeEvent(std::addressof(m_receive_buffer_available_events[i]));
+            os::FinalizeEvent(std::addressof(m_send_buffer_available_events[i]));
+        }
+
+        /* Free the thread stacks. */
+        if (m_allocator != nullptr) {
+            m_allocator->Free(m_receive_thread_stack);
+            m_allocator->Free(m_send_thread_stack);
+        }
+        m_receive_thread_stack = nullptr;
+        m_send_thread_stack = nullptr;
+
+        /* Free all tasks. */
+        for (u32 i = 0; i < MaxRpcCount; ++i) {
+            if (m_task_active[i]) {
+                std::scoped_lock lk(m_mutex);
+
+                m_task_table.Delete(i);
+                m_task_id_free_list.Free(i);
+            }
         }
     }
 

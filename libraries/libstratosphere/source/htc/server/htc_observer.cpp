@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htc_observer.hpp"
+#include "../../htcs/impl/htcs_manager.hpp"
 
 namespace ams::htc::server {
 
@@ -29,7 +30,7 @@ namespace ams::htc::server {
           m_is_service_available(false)
     {
         /* Initialize htcs library. */
-        /* TODO: AMS_ABORT("htcs::impl::HtcsManagerHolder::AddReference();"); */
+        htcs::impl::HtcsManagerHolder::AddReference();
 
         /* Update our event state. */
         this->UpdateEvent();
@@ -76,10 +77,13 @@ namespace ams::htc::server {
             this->UpdateEvent();
         };
 
+        /* Get the htcs manager. */
+        auto * const htcs_manager = htcs::impl::HtcsManagerHolder::GetHtcsManager();
+
         /* Get the events we're waiting on. */
         os::EventType * const stop_event = m_stop_event.GetBase();
         os::EventType * const conn_event = m_misc_impl.GetConnectionEvent();
-        os::EventType * const htcs_event = nullptr /* TODO: htcs::impl::HtcsManagerHolder::GetHtcsManager()->GetServiceAvailabilityEvent() */;
+        os::EventType * const htcs_event = htcs_manager->GetServiceAvailabilityEvent();
 
         /* Loop until we're asked to stop. */
         while (!m_stopped) {
@@ -98,7 +102,7 @@ namespace ams::htc::server {
                 case 2:
                     /* Htcs event, update our service status. */
                     os::ClearEvent(htcs_event);
-                    m_is_service_available = false /* TODO: htcs::impl::HtcsManagerHolder::GetHtcsManager()->IsServiceAvailable() */;
+                    m_is_service_available = htcs_manager->IsServiceAvailable();
                     break;
                 AMS_UNREACHABLE_DEFAULT_CASE();
             }
