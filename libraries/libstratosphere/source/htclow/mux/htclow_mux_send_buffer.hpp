@@ -48,6 +48,7 @@ namespace ams::htclow::mux {
             ~SendBuffer();
 
             void SetVersion(s16 version);
+            void SetFlowControlEnabled(bool en);
 
             bool QueryNextPacket(PacketHeader *header, PacketBody *body, int *out_body_size, u64 max_data, u64 total_send_size, bool has_share, u64 share);
 

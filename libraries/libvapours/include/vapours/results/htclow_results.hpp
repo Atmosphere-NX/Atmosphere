@@ -23,6 +23,7 @@ namespace ams::htclow {
     R_DEFINE_ERROR_RESULT(ConnectionFailure,          1);
     R_DEFINE_ERROR_RESULT(UnknownDriverType,          3);
     R_DEFINE_ERROR_RESULT(NonBlockingReceiveFailed,   5);
+    R_DEFINE_ERROR_RESULT(ChannelWaitCancelled,       8);
     R_DEFINE_ERROR_RESULT(ChannelAlreadyExist,        9);
     R_DEFINE_ERROR_RESULT(ChannelNotExist,           10);
 

@@ -74,6 +74,11 @@ namespace ams::htclow::mux {
             Result SendBegin(u32 *out_task_id, size_t *out, const void *src, size_t src_size, impl::ChannelInternalType channel);
             Result SendEnd(u32 task_id);
 
+            Result WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size);
+            Result WaitReceiveEnd(u32 task_id);
+
+            void SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config);
+
             void SetSendBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size, size_t max_packet_size);
             void SetReceiveBuffer(impl::ChannelInternalType channel, void *buf, size_t buf_size);
             void SetSendBufferWithData(impl::ChannelInternalType channel, const void *buf, size_t buf_size, size_t max_packet_size);

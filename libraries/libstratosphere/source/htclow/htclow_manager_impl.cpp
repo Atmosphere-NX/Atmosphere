@@ -173,8 +173,16 @@ namespace ams::htclow {
         return m_mux.SendEnd(task_id);
     }
 
+    Result HtclowManagerImpl::WaitReceiveBegin(u32 *out_task_id, impl::ChannelInternalType channel, size_t size) {
+        return m_mux.WaitReceiveBegin(out_task_id, channel, size);
+    }
+
+    Result HtclowManagerImpl::WaitReceiveEnd(u32 task_id) {
+        return m_mux.WaitReceiveEnd(task_id);
+    }
+
     void HtclowManagerImpl::SetConfig(impl::ChannelInternalType channel, const ChannelConfig &config) {
-        AMS_ABORT("HtclowManagerImpl::SetConfig");
+        return m_mux.SetConfig(channel, config);
     }
 
     void HtclowManagerImpl::SetDebugDriver(driver::IDriver *driver) {
