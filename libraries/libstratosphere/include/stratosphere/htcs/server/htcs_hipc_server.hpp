@@ -14,8 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
 
-#include <stratosphere/htcs/htcs_types.hpp>
-#include <stratosphere/htcs/impl/htcs_manager_holder.hpp>
-#include <stratosphere/htcs/impl/htcs_channel_ids.hpp>
-#include <stratosphere/htcs/server/htcs_hipc_server.hpp>
+namespace ams::htcs::server {
+
+    void Initialize();
+
+    void RegisterHipcServer();
+    void LoopHipcServer();
+
+}
