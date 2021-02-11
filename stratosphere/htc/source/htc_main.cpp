@@ -222,6 +222,8 @@ namespace ams::htc {
     namespace server {
 
         void InitializePowerStateMonitor(htclow::impl::DriverType driver_type, htclow::HtclowManager *htclow_manager);
+        void FinalizePowerStateMonitor();
+
         void LoopMonitorPowerState();
 
     }
@@ -297,7 +299,7 @@ int main(int argc, char **argv)
     os::DestroyThread(std::addressof(htc_ipc_thread));
 
     /* Finalize psc monitor. */
-    //htc::server::FinalizePowerStateMonitor();
+    htc::server::FinalizePowerStateMonitor();
 
     return 0;
 }
