@@ -42,6 +42,10 @@ namespace ams::htc::server {
         g_is_suspended = false;
     }
 
+    void FinalizePowerStateMonitor() {
+        R_ABORT_UNLESS(g_pm_module.Finalize());
+    }
+
     void LoopMonitorPowerState() {
         /* Get the psc module's event pointer. */
         auto *event = g_pm_module.GetEventPointer();
