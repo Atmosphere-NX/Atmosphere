@@ -104,6 +104,7 @@ namespace ams::htc::server {
                 m_rpc_client.Close();
                 m_rpc_client.Cancel();
                 m_rpc_client.Wait();
+                this->SetClientConnectionEvent(false);
             };
 
             /* Wait to become disconnected. */
@@ -111,12 +112,7 @@ namespace ams::htc::server {
                 break;
             }
 
-            /* Set ourselves as disconnected. */
-            this->SetClientConnectionEvent(false);
         }
-
-        /* Set ourselves as disconnected. */
-        this->SetClientConnectionEvent(false);
     }
 
     void HtcmiscImpl::ServerThread() {
@@ -147,6 +143,7 @@ namespace ams::htc::server {
                 m_rpc_server.Close();
                 m_rpc_server.Cancel();
                 m_rpc_server.Wait();
+                this->SetServerConnectionEvent(false);
             };
 
             /* Wait to become disconnected. */
@@ -154,12 +151,7 @@ namespace ams::htc::server {
                 break;
             }
 
-            /* Set ourselves as disconnected. */
-            this->SetServerConnectionEvent(false);
         }
-
-        /* Set ourselves as disconnected. */
-        this->SetServerConnectionEvent(false);
     }
 
     void HtcmiscImpl::SetClientConnectionEvent(bool en) {

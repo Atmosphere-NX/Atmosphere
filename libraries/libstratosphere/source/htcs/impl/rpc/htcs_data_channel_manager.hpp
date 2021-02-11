@@ -15,17 +15,20 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htc_i_driver.hpp"
+#include "../../../htclow/htclow_manager.hpp"
+#include "../../../htc/server/rpc/htc_rpc_client.hpp"
 
-namespace ams::htc::server::driver {
+namespace ams::htcs::impl::rpc {
 
-    class DriverManager {
+    class DataChannelManager {
         private:
-            IDriver *m_driver;
+            htc::server::rpc::RpcClient* m_rpc_client;
+            htclow::HtclowManager *m_htclow_manager;
+            htclow::Module m_module;
         public:
-            DriverManager(IDriver *driver) : m_driver(driver) { /* ... */ }
-
-            IDriver *GetDriver() { return m_driver; }
+            DataChannelManager(htc::server::rpc::RpcClient *client, htclow::HtclowManager *htclow_manager) : m_rpc_client(client), m_htclow_manager(htclow_manager), m_module(htclow::ModuleId::Htcs) { /* ... */ }
+        public:
+            /* TODO */
     };
 
 }

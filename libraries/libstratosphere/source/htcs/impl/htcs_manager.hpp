@@ -15,17 +15,23 @@
  */
 #pragma once
 #include <stratosphere.hpp>
-#include "htc_i_driver.hpp"
+#include "../../htclow/htclow_manager.hpp"
 
-namespace ams::htc::server::driver {
+namespace ams::htcs::impl {
 
-    class DriverManager {
+    class HtcsManagerImpl;
+
+    class HtcsManager {
         private:
-            IDriver *m_driver;
+            mem::StandardAllocator *m_allocator;
+            HtcsManagerImpl *m_impl;
         public:
-            DriverManager(IDriver *driver) : m_driver(driver) { /* ... */ }
+            HtcsManager(mem::StandardAllocator *allocator, htclow::HtclowManager *htclow_manager);
+            ~HtcsManager();
+        public:
+            os::EventType *GetServiceAvailabilityEvent();
 
-            IDriver *GetDriver() { return m_driver; }
+            bool IsServiceAvailable();
     };
 
 }

@@ -14,18 +14,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <stratosphere.hpp>
-#include "htc_i_driver.hpp"
+#include <vapours.hpp>
+#include <stratosphere/htcs/htcs_types.hpp>
 
-namespace ams::htc::server::driver {
+namespace ams::htcs::impl {
 
-    class DriverManager {
-        private:
-            IDriver *m_driver;
-        public:
-            DriverManager(IDriver *driver) : m_driver(driver) { /* ... */ }
+    class HtcsManager;
 
-            IDriver *GetDriver() { return m_driver; }
-    };
+    namespace HtcsManagerHolder {
+
+        void AddReference();
+        void Release();
+
+        HtcsManager *GetHtcsManager();
+
+    }
 
 }
