@@ -184,21 +184,19 @@ namespace ams::htc::server::rpc {
         if (os::TryWaitEvent(event)) {
             return 1;
         }
-        if (m_driver->GetChannelState(m_channel_id) == state) {
-            return 0;
-        }
 
         /* Wait. */
-        while (true) {
+        while (m_driver->GetChannelState(m_channel_id) != state) {
             const auto idx = os::WaitAny(m_driver->GetChannelStateEvent(m_channel_id), event);
-            if (idx == 0) {
-                if (m_driver->GetChannelState(m_channel_id) == state) {
-                    return 0;
-                }
-            } else {
+            if (idx != 0) {
                 return idx;
             }
+
+            /* Clear the channel state event. */
+            os::ClearEvent(m_driver->GetChannelStateEvent(m_channel_id));
         }
+
+        return 0;
     }
 
     Result RpcClient::ReceiveThread() {
