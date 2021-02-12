@@ -23,7 +23,7 @@ namespace ams::htcfs {
 
         static constexpr inline size_t NumServers           = 1;
         static constexpr inline size_t MaxSessions          = 30;
-        static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("htcfs");
+        static constexpr inline sm::ServiceName ServiceName = sm::ServiceName::Encode("file_io");
 
         struct ServerOptions {
             static constexpr size_t PointerBufferSize = 0x1000;

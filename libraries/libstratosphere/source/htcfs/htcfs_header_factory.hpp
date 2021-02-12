@@ -24,7 +24,8 @@ namespace ams::htcfs {
         public:
             HeaderFactory() : m_version() { /* ... */ }
         public:
-            /* ... */
+            s16 GetVersion() const { return m_version; }
+            void SetVersion(s16 version) { m_version = version; }
     };
 
 }
