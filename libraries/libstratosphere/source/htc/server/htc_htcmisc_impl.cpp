@@ -111,7 +111,6 @@ namespace ams::htc::server {
             if (m_rpc_client.WaitAny(htclow::ChannelState_Disconnected, m_cancel_event.GetBase()) != 0) {
                 break;
             }
-
         }
     }
 
@@ -150,7 +149,6 @@ namespace ams::htc::server {
             if (m_rpc_server.WaitAny(htclow::ChannelState_Disconnected, m_cancel_event.GetBase()) != 0) {
                 break;
             }
-
         }
     }
 

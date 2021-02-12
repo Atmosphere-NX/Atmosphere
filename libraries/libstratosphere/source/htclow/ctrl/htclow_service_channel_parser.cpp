@@ -21,6 +21,8 @@ namespace ams::htclow::ctrl {
 
     namespace {
 
+        constexpr auto JsonParseFlags = rapidjson::kParseTrailingCommasFlag | rapidjson::kParseInsituFlag;
+
         void ParseBody(s16 *out_version, const char **out_channels, int *out_num_channels, int max_channels, void *str, size_t str_size) {
             /* Create JSON handler. */
             JsonHandler json_handler(out_version, out_channels, out_num_channels, max_channels);
@@ -32,7 +34,7 @@ namespace ams::htclow::ctrl {
             rapidjson::InsituStringStream json_stream(static_cast<char *>(str));
 
             /* Parse the json. */
-            json_reader.Parse(json_stream, json_handler);
+            json_reader.Parse<JsonParseFlags>(json_stream, json_handler);
         }
 
         constexpr bool IsNumericCharacter(char c) {

@@ -32,11 +32,15 @@ namespace ams::htcfs {
             HeaderFactory m_header_factory;
             os::SdkMutex m_mutex;
             htclow::Module m_module;
-            htclow::Channel m_channel;
+            htclow::Channel m_rpc_channel;
             htclow::Channel m_data_channel;
             bool m_connected;
             os::ThreadType m_monitor_thread;
             os::Event m_event;
+        private:
+            static void ThreadEntry(void *arg) { static_cast<ClientImpl *>(arg)->ThreadBody(); }
+
+            void ThreadBody();
         public:
             ClientImpl(htclow::HtclowManager *manager);
 
@@ -48,6 +52,11 @@ namespace ams::htcfs {
             void Start();
             void Cancel();
             void Wait();
+        private:
+            int WaitAny(htclow::ChannelState state, os::EventType *event);
+
+            Result SetUpProtocol();
+            void TearDownProtocol();
     };
 
 }
