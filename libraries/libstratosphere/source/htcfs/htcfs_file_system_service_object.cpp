@@ -18,7 +18,7 @@
 
 namespace ams::htcfs {
 
-    Result FileSystemServiceObject::OpenFile(sf::Out<sf::SharedPointer<tma::IFileAccessor>> out, const tma::Path &path, bool case_sensitive) {
+    Result FileSystemServiceObject::OpenFile(sf::Out<sf::SharedPointer<tma::IFileAccessor>> out, const tma::Path &path, u32 open_mode, bool case_sensitive) {
         AMS_ABORT("FileSystemServiceObject::OpenFile");
     }
 
@@ -38,7 +38,7 @@ namespace ams::htcfs {
         AMS_ABORT("FileSystemServiceObject::GetIOType");
     }
 
-    Result FileSystemServiceObject::OpenDirectory(sf::Out<sf::SharedPointer<tma::IDirectoryAccessor>> out, const tma::Path &path, bool case_sensitive) {
+    Result FileSystemServiceObject::OpenDirectory(sf::Out<sf::SharedPointer<tma::IDirectoryAccessor>> out, const tma::Path &path, s32 open_mode, bool case_sensitive) {
         AMS_ABORT("FileSystemServiceObject::OpenDirectory");
     }
 
@@ -50,7 +50,7 @@ namespace ams::htcfs {
         AMS_ABORT("FileSystemServiceObject::CreateDirectory");
     }
 
-    Result FileSystemServiceObject::DeleteDirectory(const tma::Path &path, bool case_sensitive) {
+    Result FileSystemServiceObject::DeleteDirectory(const tma::Path &path, bool recursively, bool case_sensitive) {
         AMS_ABORT("FileSystemServiceObject::DeleteDirectory");
     }
 

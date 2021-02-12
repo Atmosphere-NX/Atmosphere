@@ -23,7 +23,7 @@ namespace ams::htcfs {
         private:
             ClientImpl m_impl;
         public:
-            Client(htclow::HtclowManager *manager);
+            Client(htclow::HtclowManager *manager) : m_impl(manager) { /* ... */ }
     };
 
     void InitializeClient(htclow::HtclowManager *manager);
