@@ -77,7 +77,10 @@ namespace ams::htcs::impl {
             }
 
             /* Start the rpc client. */
-            if (R_FAILED(m_rpc_client->Start())) {
+            const Result start_result = m_rpc_client->Start();
+            if (R_FAILED(start_result)) {
+                /* DEBUG */
+                R_ABORT_UNLESS(start_result);
                 continue;
             }
 

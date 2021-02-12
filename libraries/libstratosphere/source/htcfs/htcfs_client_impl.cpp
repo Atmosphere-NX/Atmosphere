@@ -147,7 +147,7 @@ namespace ams::htcfs {
             }
 
             /* Clear the channel state event. */
-            os::ClearEvent(channel_state_event);;
+            os::ClearEvent(channel_state_event);
         }
         return idx;
     }
