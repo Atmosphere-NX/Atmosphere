@@ -16,6 +16,7 @@
 #include <stratosphere.hpp>
 #include "htcfs_directory_service_object.hpp"
 #include "htcfs_client.hpp"
+#include "../htclow/htclow_default_channel_config.hpp"
 
 namespace ams::htcfs {
 
@@ -26,19 +27,23 @@ namespace ams::htcfs {
     }
 
     Result DirectoryServiceObject::GetEntryCount(ams::sf::Out<s64> out) {
-        AMS_ABORT("DirectoryServiceObject::GetEntryCount");
+        return htcfs::GetClient().GetEntryCount(out.GetPointer(), m_handle);
     }
 
     Result DirectoryServiceObject::Read(ams::sf::Out<s64> out, const ams::sf::OutMapAliasArray<fs::DirectoryEntry> &out_entries) {
-        AMS_ABORT("DirectoryServiceObject::Read");
+        if (out_entries.GetSize() * sizeof(fs::DirectoryEntry) >= ClientImpl::MaxPacketBodySize) {
+            return htcfs::GetClient().ReadDirectoryLarge(out.GetPointer(), out_entries.GetPointer(), out_entries.GetSize(), m_handle);
+        } else {
+            return htcfs::GetClient().ReadDirectory(out.GetPointer(), out_entries.GetPointer(), out_entries.GetSize(), m_handle);
+        }
     }
 
     Result DirectoryServiceObject::SetPriorityForDirectory(s32 priority) {
-        AMS_ABORT("DirectoryServiceObject::SetPriorityForDirectory");
+        return htcfs::GetClient().SetPriorityForDirectory(priority, m_handle);
     }
 
     Result DirectoryServiceObject::GetPriorityForDirectory(ams::sf::Out<s32> out) {
-        AMS_ABORT("DirectoryServiceObject::GetPriorityForDirectory");
+        return htcfs::GetClient().GetPriorityForDirectory(out.GetPointer(), m_handle);
     }
 
 

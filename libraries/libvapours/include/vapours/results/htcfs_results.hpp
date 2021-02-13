@@ -32,11 +32,13 @@ namespace ams::htcfs {
             R_DEFINE_ERROR_RESULT(UnexpectedResponsePacketCategory,  113);
             R_DEFINE_ERROR_RESULT(UnexpectedResponsePacketType,      114);
             R_DEFINE_ERROR_RESULT(UnexpectedResponseBodySize,        115);
+            R_DEFINE_ERROR_RESULT(UnexpectedResponseBody,            116);
 
-    R_DEFINE_ERROR_RESULT(UnknownError,               211);
-    R_DEFINE_ERROR_RESULT(UnsupportedProtocolVersion, 212);
-    R_DEFINE_ERROR_RESULT(InvalidRequest,             213);
-    R_DEFINE_ERROR_RESULT(InvalidHandle,              214);
-    R_DEFINE_ERROR_RESULT(OutOfHandle,                215);
+    R_DEFINE_ERROR_RANGE(InternalError, 200, 299);
+        R_DEFINE_ERROR_RESULT(UnknownError,               211);
+        R_DEFINE_ERROR_RESULT(UnsupportedProtocolVersion, 212);
+        R_DEFINE_ERROR_RESULT(InvalidRequest,             213);
+        R_DEFINE_ERROR_RESULT(InvalidHandle,              214);
+        R_DEFINE_ERROR_RESULT(OutOfHandle,                215);
 
 }

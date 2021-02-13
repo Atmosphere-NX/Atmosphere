@@ -16,7 +16,6 @@
 #include <stratosphere.hpp>
 #include "htcfs_client_impl.hpp"
 #include "htcfs_result.hpp"
-#include "../htclow/htclow_default_channel_config.hpp"
 
 namespace ams::htcfs {
 
@@ -409,6 +408,154 @@ namespace ams::htcfs {
 
         /* Check our operation's result. */
         R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetEntryCount(s64 *out, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetEntryCountHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set the output count. */
+        *out = response.params[2];
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::ReadDirectory(s64 *out, fs::DirectoryEntry *out_entries, size_t max_out_entries, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeReadDirectoryHeader(std::addressof(request), handle, max_out_entries);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Check that the response body size is expected. */
+        R_UNLESS(static_cast<size_t>(response.body_size) == max_out_entries * sizeof(*out_entries), htcfs::ResultUnexpectedResponseBody());
+
+        /* Check that the number of entries read is allowable. */
+        R_UNLESS(static_cast<size_t>(response.params[2]) <= max_out_entries, htcfs::ResultUnexpectedResponseBody());
+
+        /* Receive the entries. */
+        *out = response.params[2];
+        return this->ReceiveFromRpcChannel(out_entries, response.body_size);
+    }
+
+    Result ClientImpl::ReadDirectoryLarge(s64 *out, fs::DirectoryEntry *out_entries, size_t max_out_entries, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeReadDirectoryLargeHeader(std::addressof(request), handle, max_out_entries);
+
+        AMS_ABORT("TODO: Data channel setup/teardown");
+    }
+
+    Result ClientImpl::GetPriorityForDirectory(s32 *out, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetPriorityForDirectoryHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Set the output. */
+        *out = static_cast<s32>(response.params[1]);
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::SetPriorityForDirectory(s32 priority, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeSetPriorityForDirectoryHeader(std::addressof(request), handle, priority);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
 
         return ResultSuccess();
     }
