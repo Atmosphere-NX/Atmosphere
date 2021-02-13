@@ -43,5 +43,4 @@ namespace ams::htcfs {
         return GetReference(g_client_storage);
     }
 
-
 }

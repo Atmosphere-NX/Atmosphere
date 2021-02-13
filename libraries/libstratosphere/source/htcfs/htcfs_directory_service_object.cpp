@@ -15,14 +15,14 @@
  */
 #include <stratosphere.hpp>
 #include "htcfs_directory_service_object.hpp"
+#include "htcfs_client.hpp"
 
 namespace ams::htcfs {
 
     DirectoryServiceObject::DirectoryServiceObject(s32 handle) : m_handle(handle) { /* ... */ }
 
     DirectoryServiceObject::~DirectoryServiceObject() {
-        /* TODO */
-        AMS_ABORT("htcfs::GetClient().CloseDirectory(m_handle);");
+        htcfs::GetClient().CloseDirectory(m_handle);
     }
 
     Result DirectoryServiceObject::GetEntryCount(ams::sf::Out<s64> out) {

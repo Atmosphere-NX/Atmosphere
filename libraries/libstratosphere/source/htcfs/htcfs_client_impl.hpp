@@ -52,6 +52,9 @@ namespace ams::htcfs {
             void Start();
             void Cancel();
             void Wait();
+        public:
+            Result OpenDirectory(s32 *out_handle, const char *path, fs::OpenDirectoryMode mode, bool case_sensitive);
+            Result CloseDirectory(s32 handle);
         private:
             int WaitAny(htclow::ChannelState state, os::EventType *event);
 
@@ -59,15 +62,23 @@ namespace ams::htcfs {
             void TearDownProtocol();
 
             Result CheckResponseHeaderWithoutVersion(const Header &response, PacketType packet_type);
+            Result CheckResponseHeader(const Header &response, PacketType packet_type);
+            Result CheckResponseHeader(const Header &response, PacketType packet_type, s64 body_size);
 
             Result GetMaxProtocolVersion(s16 *out);
             Result SetProtocolVersion(s16 version);
+
+            Result InitializeRpcChannel();
 
             Result SendToRpcChannel(const void *src, s64 size);
             Result ReceiveFromRpcChannel(void *dst, s64 size);
 
             Result SendToHtclow(const void *src, s64 size, htclow::Channel *channel);
             Result ReceiveFromHtclow(void *dst, s64 size, htclow::Channel *channel);
+
+            Result SendRequest(const Header &request) { return this->SendRequest(request, nullptr, 0, nullptr, 0); }
+            Result SendRequest(const Header &request, const void *arg1, size_t arg1_size) { return this->SendRequest(request, arg1, arg1_size, nullptr, 0); }
+            Result SendRequest(const Header &request, const void *arg1, size_t arg1_size, const void *arg2, size_t arg2_size);
     };
 
 }

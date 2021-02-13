@@ -102,6 +102,9 @@ namespace ams::htcfs {
                 out->params[2] = param2;
                 out->params[3] = param3;
                 out->params[4] = param4;
+
+                /* Clear reserved. */
+                out->reserved = 0;
             }
 
             void MakeGetMaxProtocolVersionHeader(Header *out) {
@@ -110,6 +113,14 @@ namespace ams::htcfs {
 
             void MakeSetProtocolVersionHeader(Header *out, s16 version) {
                 return this->MakeRequestHeader(out, PacketType::SetProtocolVersion, 0, version);
+            }
+
+            void MakeOpenDirectoryHeader(Header *out, int path_len, fs::OpenDirectoryMode mode, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::OpenDirectory, path_len, static_cast<s64>(mode), case_sensitive ? 1 : 0);
+            }
+
+            void MakeCloseDirectoryHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::CloseDirectory, 0, handle);
             }
     };
 

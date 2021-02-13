@@ -29,6 +29,10 @@ namespace ams::htcfs {
 
         constinit u8 g_cache[32_KB];
 
+        ALWAYS_INLINE Result ConvertNativeResult(s64 value) {
+            return result::impl::MakeResult(value);
+        }
+
     }
 
     ClientImpl::ClientImpl(htclow::HtclowManager *manager)
@@ -188,6 +192,26 @@ namespace ams::htcfs {
         return ResultSuccess();
     }
 
+    Result ClientImpl::CheckResponseHeader(const Header &response, PacketType packet_type) {
+        /* Perform base checks. */
+        R_TRY(this->CheckResponseHeaderWithoutVersion(response, packet_type));
+
+        /* Check the version. */
+        R_UNLESS(response.version == m_header_factory.GetVersion(), htcfs::ResultUnexpectedResponseProtocolVersion());
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::CheckResponseHeader(const Header &response, PacketType packet_type, s64 body_size) {
+        /* Perform base checks. */
+        R_TRY(this->CheckResponseHeader(response, packet_type));
+
+        /* Check the body size. */
+        R_UNLESS(response.body_size == body_size, htcfs::ResultUnexpectedResponseBodySize());
+
+        return ResultSuccess();
+    }
+
     Result ClientImpl::GetMaxProtocolVersion(s16 *out) {
         /* Create space for request and response. */
         Header request, response;
@@ -279,6 +303,112 @@ namespace ams::htcfs {
 
         /* Flush. */
         R_TRY(channel->Flush());
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::InitializeRpcChannel() {
+        /* Check that we're not cancelled. */
+        R_UNLESS(!m_event.TryWait(), htcfs::ResultConnectionFailure());
+
+        /* Check that we're connected. */
+        R_UNLESS(m_connected, htcfs::ResultConnectionFailure());
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::SendRequest(const Header &request, const void *arg1, size_t arg1_size, const void *arg2, size_t arg2_size) {
+        /* Try to perform an optimized send. */
+        if (sizeof(request) + arg1_size + arg2_size < sizeof(m_packet_buffer)) {
+            /* Setup our packet buffer. */
+            std::memcpy(m_packet_buffer, std::addressof(request), sizeof(request));
+            if (arg1_size > 0) {
+                std::memcpy(m_packet_buffer + sizeof(request), arg1, arg1_size);
+            }
+            if (arg2_size > 0) {
+                std::memcpy(m_packet_buffer + sizeof(request) + arg1_size, arg2, arg2_size);
+            }
+
+            /* Send the request. */
+            R_TRY(this->SendToRpcChannel(m_packet_buffer, sizeof(request) + arg1_size + arg2_size));
+        } else {
+            /* We can't perform a single optimized send, so perform three separate sends. */
+            R_TRY(this->SendToRpcChannel(std::addressof(request), sizeof(request)));
+
+            if (arg1_size > 0) {
+                R_TRY(this->SendToRpcChannel(arg1, arg1_size));
+            }
+
+            if (arg2_size > 0) {
+                R_TRY(this->SendToRpcChannel(arg2, arg2_size));
+            }
+        }
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::OpenDirectory(s32 *out_handle, const char *path, fs::OpenDirectoryMode mode, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeOpenDirectoryHeader(std::addressof(request), path_len, mode, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set the output handle. */
+        *out_handle = static_cast<s32>(response.params[2]);
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::CloseDirectory(s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeCloseDirectoryHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
 
         return ResultSuccess();
     }

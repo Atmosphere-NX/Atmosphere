@@ -15,8 +15,36 @@
  */
 #include <stratosphere.hpp>
 #include "htcfs_file_system_service_object.hpp"
+#include "htcfs_file_service_object.hpp"
+#include "htcfs_directory_service_object.hpp"
+#include "htcfs_client.hpp"
 
 namespace ams::htcfs {
+
+    namespace {
+
+        struct DirectoryServiceObjectAllocatorTag;
+        struct FileServiceObjectAllocatorTag;
+
+        using DirectoryServiceObjectAllocator = ams::sf::ExpHeapStaticAllocator<4_KB, DirectoryServiceObjectAllocatorTag>;
+        using FileServiceObjectAllocator      = ams::sf::ExpHeapStaticAllocator<4_KB, FileServiceObjectAllocatorTag>;
+        using DirectoryServiceObjectFactory   = ams::sf::ObjectFactory<typename DirectoryServiceObjectAllocator::Policy>;
+        using FileServiceObjectFactory        = ams::sf::ObjectFactory<typename FileServiceObjectAllocator::Policy>;
+
+        class StaticAllocatorInitializer {
+            public:
+                StaticAllocatorInitializer() {
+                    DirectoryServiceObjectAllocator::Initialize(lmem::CreateOption_ThreadSafe);
+                    FileServiceObjectAllocator::Initialize(lmem::CreateOption_ThreadSafe);
+                }
+        } g_static_allocator_initializer;
+
+        constexpr bool IsValidPath(const tma::Path &path) {
+            const auto len = util::Strnlen(path.str, fs::EntryNameLengthMax + 1);
+            return 0 < len && len < static_cast<int>(fs::EntryNameLengthMax + 1);
+        }
+
+    }
 
     Result FileSystemServiceObject::OpenFile(sf::Out<sf::SharedPointer<tma::IFileAccessor>> out, const tma::Path &path, u32 open_mode, bool case_sensitive) {
         AMS_ABORT("FileSystemServiceObject::OpenFile");
@@ -39,7 +67,16 @@ namespace ams::htcfs {
     }
 
     Result FileSystemServiceObject::OpenDirectory(sf::Out<sf::SharedPointer<tma::IDirectoryAccessor>> out, const tma::Path &path, s32 open_mode, bool case_sensitive) {
-        AMS_ABORT("FileSystemServiceObject::OpenDirectory");
+        /* Check that the path is valid. */
+        R_UNLESS(IsValidPath(path), htcfs::ResultInvalidArgument());
+
+        /* Open the directory. */
+        s32 handle;
+        R_TRY(htcfs::GetClient().OpenDirectory(std::addressof(handle), path.str, static_cast<fs::OpenDirectoryMode>(open_mode), case_sensitive));
+
+        /* Set the output directory. */
+        *out = DirectoryServiceObjectFactory::CreateSharedEmplaced<tma::IDirectoryAccessor, DirectoryServiceObject>(handle);
+        return ResultSuccess();
     }
 
     Result FileSystemServiceObject::DirectoryExists(sf::Out<bool> out, const tma::Path &path, bool case_sensitive) {
