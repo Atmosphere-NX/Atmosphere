@@ -24,6 +24,9 @@ namespace ams::htcfs {
             ClientImpl m_impl;
         public:
             Client(htclow::HtclowManager *manager) : m_impl(manager) { /* ... */ }
+        public:
+            Result OpenDirectory(s32 *out_handle, const char *path, fs::OpenDirectoryMode mode, bool case_sensitive) { return m_impl.OpenDirectory(out_handle, path, mode, case_sensitive); }
+            Result CloseDirectory(s32 handle) { return m_impl.CloseDirectory(handle); }
     };
 
     void InitializeClient(htclow::HtclowManager *manager);

@@ -22,12 +22,16 @@ namespace ams::htcfs {
 
     R_DEFINE_ERROR_RESULT(InvalidArgument,   3);
 
-    R_DEFINE_ERROR_RESULT(HtclowChannelClosed, 101);
 
-    R_DEFINE_ERROR_RESULT(UnexpectedResponseProtocolId,      111);
-    R_DEFINE_ERROR_RESULT(UnexpectedResponseProtocolVersion, 112);
-    R_DEFINE_ERROR_RESULT(UnexpectedResponsePacketCategory,  113);
-    R_DEFINE_ERROR_RESULT(UnexpectedResponsePacketType,      114);
+    R_DEFINE_ERROR_RANGE(ConnectionFailure, 100, 199);
+        R_DEFINE_ERROR_RESULT(HtclowChannelClosed, 101);
+
+        R_DEFINE_ERROR_RANGE(UnexpectedResponse, 110, 119);
+            R_DEFINE_ERROR_RESULT(UnexpectedResponseProtocolId,      111);
+            R_DEFINE_ERROR_RESULT(UnexpectedResponseProtocolVersion, 112);
+            R_DEFINE_ERROR_RESULT(UnexpectedResponsePacketCategory,  113);
+            R_DEFINE_ERROR_RESULT(UnexpectedResponsePacketType,      114);
+            R_DEFINE_ERROR_RESULT(UnexpectedResponseBodySize,        115);
 
     R_DEFINE_ERROR_RESULT(UnknownError,               211);
     R_DEFINE_ERROR_RESULT(UnsupportedProtocolVersion, 212);

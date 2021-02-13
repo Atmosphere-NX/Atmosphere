@@ -819,6 +819,7 @@ namespace ams::sf::impl {
 
         /* Useful defines. */
         using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;
+        using ArgsType          = typename CommandMeta::ArgsType;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
@@ -1004,8 +1005,8 @@ namespace ams::sf::impl {
 
         /* Argument deserialization. */
         private:
-            template<size_t Index, typename T = typename std::tuple_element<Index, ArgsTypeForInvoke>::type>
-            NX_CONSTEXPR T DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
+            template<size_t Index, typename T = typename std::tuple_element<Index, ArgsType>::type>
+            NX_CONSTEXPR typename std::tuple_element<Index, ArgsTypeForInvoke>::type DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 if constexpr (Info.arg_type == ArgumentType::InData) {
                     /* New in rawdata. */
@@ -1051,8 +1052,8 @@ namespace ams::sf::impl {
                         constexpr auto Attributes = CommandMeta::BufferAttributes[Info.buffer_index];
                         if constexpr (Attributes & SfBufferAttr_In) {
                             /* TODO: AMS_ABORT_UNLESS()? N does not bother. */
-                            static_assert(std::is_reference<T>::value);
-                            static_assert(std::is_const<typename std::remove_reference<T>::type>::value);
+                            using InvokeType = typename std::tuple_element<Index, ArgsTypeForInvoke>::type;
+                            static_assert(std::same_as<InvokeType, const T &>);
                             return *reinterpret_cast<const T *>(buffers[Info.buffer_index].GetAddress());
                         } else if constexpr (Attributes & SfBufferAttr_Out) {
                             return T(buffers[Info.buffer_index]);
