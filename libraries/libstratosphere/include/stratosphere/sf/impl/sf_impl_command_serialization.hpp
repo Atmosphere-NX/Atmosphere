@@ -412,9 +412,13 @@ namespace ams::sf::impl {
         size_t out_object_index;
     };
 
+    template<typename T>
+    using DecayForCommandMetaArguments = typename std::conditional<sf::IsLargeData<typename std::decay<T>::type> && !std::is_base_of<impl::OutBaseTag, typename std::decay<T>::type>::value, T, typename std::decay<T>::type>::type;
+
     template<typename... Arguments>
     struct CommandMetaInfo {
         public:
+            using ArgsTypeForInvoke = std::tuple<DecayForCommandMetaArguments<Arguments>...>;
             using ArgsType          = std::tuple<typename std::decay<Arguments>::type...>;
 
             using InDatas    = TupleFilter<InDataFilter>::FilteredType<ArgsType>;
@@ -814,7 +818,7 @@ namespace ams::sf::impl {
             }
 
         /* Useful defines. */
-        using ArgsType = typename CommandMeta::ArgsType;
+        using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;
         using BufferArrayType = std::array<cmif::PointerAndSize, CommandMeta::NumBuffers>;
         using OutRawHolderType = OutRawHolder<CommandMeta::OutDataSize, CommandMeta::OutDataAlign>;
         using OutHandleHolderType = OutHandleHolder<CommandMeta::NumOutMoveHandles, CommandMeta::NumOutCopyHandles>;
@@ -1000,7 +1004,7 @@ namespace ams::sf::impl {
 
         /* Argument deserialization. */
         private:
-            template<size_t Index, typename T = typename std::tuple_element<Index, ArgsType>::type>
+            template<size_t Index, typename T = typename std::tuple_element<Index, ArgsTypeForInvoke>::type>
             NX_CONSTEXPR T DeserializeArgumentImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
                 constexpr auto Info = CommandMeta::ArgumentSerializationInfos[Index];
                 if constexpr (Info.arg_type == ArgumentType::InData) {
@@ -1047,6 +1051,8 @@ namespace ams::sf::impl {
                         constexpr auto Attributes = CommandMeta::BufferAttributes[Info.buffer_index];
                         if constexpr (Attributes & SfBufferAttr_In) {
                             /* TODO: AMS_ABORT_UNLESS()? N does not bother. */
+                            static_assert(std::is_reference<T>::value);
+                            static_assert(std::is_const<typename std::remove_reference<T>::type>::value);
                             return *reinterpret_cast<const T *>(buffers[Info.buffer_index].GetAddress());
                         } else if constexpr (Attributes & SfBufferAttr_Out) {
                             return T(buffers[Info.buffer_index]);
@@ -1063,12 +1069,12 @@ namespace ams::sf::impl {
             }
 
             template<size_t... Is>
-            NX_CONSTEXPR ArgsType DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
-                return ArgsType { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder)..., };
+            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArgumentsImpl(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder, std::index_sequence<Is...>) {
+                return ArgsTypeForInvoke { DeserializeArgumentImpl<Is>(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder)..., };
             }
         public:
-            NX_CONSTEXPR ArgsType DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
-                return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsType>::value>{});
+            NX_CONSTEXPR ArgsTypeForInvoke DeserializeArguments(const cmif::ServiceDispatchContext &ctx, const cmif::PointerAndSize &in_raw_data, const OutRawHolderType &out_raw_holder, const BufferArrayType &buffers, OutHandleHolderType &out_handles_holder, InOutObjectHolderType &in_out_objects_holder) {
+                return DeserializeArgumentsImpl(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder, std::make_index_sequence<std::tuple_size<ArgsTypeForInvoke>::value>{});
             }
     };
 
@@ -1118,16 +1124,16 @@ namespace ams::sf::impl {
 
         /* Decoding/Invocation. */
         {
-            typename CommandMeta::ArgsType args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder);
+            typename CommandMeta::ArgsTypeForInvoke args_tuple = ImplProcessorType::DeserializeArguments(ctx, in_raw_data, out_raw_holder, buffers, out_handles_holder, in_out_objects_holder);
 
             /* Handle in process ID holder if relevant. */
             if constexpr (CommandMeta::HasInProcessIdHolder) {
                 /* TODO: More precise value than 32? */
-                static_assert(std::tuple_size<typename CommandMeta::ArgsType>::value <= 32, "Commands must have <= 32 arguments");
+                static_assert(std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value <= 32, "Commands must have <= 32 arguments");
                 os::ProcessId process_id{ctx.request.pid};
                 #define _SF_IMPL_PROCESSOR_MARSHAL_PROCESS_ID(n) do {                                         \
-                    using ArgsType = typename CommandMeta::ArgsType;                                          \
-                    if constexpr (n < std::tuple_size<ArgsType>::value) {                                     \
+                    using ArgsTypeForInvoke = typename CommandMeta::ArgsTypeForInvoke;                        \
+                    if constexpr (n < std::tuple_size<ArgsTypeForInvoke>::value) {                            \
                         if constexpr (CommandMeta::template IsInProcessIdHolderIndex<n>) {                    \
                             R_TRY(MarshalProcessId(std::get<n>(args_tuple), process_id));                     \
                         }                                                                                     \
@@ -1149,7 +1155,7 @@ namespace ams::sf::impl {
             sf::IServiceObject * const this_ptr = ctx.srv_obj;
             const auto command_result = [this_ptr, invoke_impl, &args_tuple]<size_t ...Ix>(std::index_sequence<Ix...>) ALWAYS_INLINE_LAMBDA {
                 return invoke_impl(this_ptr, std::forward<typename std::tuple_element<Ix, TrueArgumentsTuple>::type>(std::get<Ix>(args_tuple))...);
-            }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsType>::value>());
+            }(std::make_index_sequence<std::tuple_size<typename CommandMeta::ArgsTypeForInvoke>::value>());
 
             if (R_FAILED(command_result)) {
                 cmif::PointerAndSize out_raw_data;
