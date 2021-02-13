@@ -67,7 +67,7 @@ namespace ams::htclow::mux {
 
         /* Determine position and copy sizes. */
         const size_t  pos = (m_data_size + m_offset) % m_buffer_size;
-        const size_t left = m_buffer_size - pos;
+        const size_t left = std::min(m_buffer_size - pos, size);
         const size_t over = size - left;
 
         /* Copy. */

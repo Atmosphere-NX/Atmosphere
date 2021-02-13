@@ -40,7 +40,7 @@ namespace ams::htclow {
             void Shutdown();
 
             Result Receive(s64 *out, void *dst, s64 size, ReceiveOption option);
-            Result Send(s64 *out, const void *src, s64 size, ReceiveOption option);
+            Result Send(s64 *out, const void *src, s64 size);
 
             void SetConfig(const ChannelConfig &config);
             void SetReceiveBuffer(void *buf, size_t size);

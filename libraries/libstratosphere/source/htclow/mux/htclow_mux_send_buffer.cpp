@@ -82,7 +82,7 @@ namespace ams::htclow::mux {
 
         /* Check that we have data. */
         const auto ring_buffer_data_size = m_ring_buffer.GetDataSize();
-        if (ring_buffer_data_size > 0) {
+        if (ring_buffer_data_size == 0) {
             return false;
         }
 
@@ -102,7 +102,7 @@ namespace ams::htclow::mux {
         const auto data_size = std::min(sendable_size, m_max_packet_size);
 
         /* Make data packet header. */
-        this->MakeDataPacketHeader(header, data_size, m_version, max_data, share);
+        this->MakeDataPacketHeader(header, data_size, m_version, max_data, offset);
 
         /* Copy the data. */
         R_ABORT_UNLESS(m_ring_buffer.Copy(body, data_size));

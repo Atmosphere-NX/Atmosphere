@@ -57,6 +57,17 @@ namespace ams::htcfs {
 
             Result SetUpProtocol();
             void TearDownProtocol();
+
+            Result CheckResponseHeaderWithoutVersion(const Header &response, PacketType packet_type);
+
+            Result GetMaxProtocolVersion(s16 *out);
+            Result SetProtocolVersion(s16 version);
+
+            Result SendToRpcChannel(const void *src, s64 size);
+            Result ReceiveFromRpcChannel(void *dst, s64 size);
+
+            Result SendToHtclow(const void *src, s64 size, htclow::Channel *channel);
+            Result ReceiveFromHtclow(void *dst, s64 size, htclow::Channel *channel);
     };
 
 }

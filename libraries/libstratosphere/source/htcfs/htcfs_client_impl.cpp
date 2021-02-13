@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htcfs_client_impl.hpp"
+#include "htcfs_result.hpp"
 #include "../htclow/htclow_default_channel_config.hpp"
 
 namespace ams::htcfs {
@@ -153,14 +154,133 @@ namespace ams::htcfs {
     }
 
     Result ClientImpl::SetUpProtocol() {
-        /* TODO: Actual client <-> host RPC here. */
-        m_header_factory.SetVersion(1);
+        /* Get the maximum supported protocol on the host side. */
+        s16 max_host_protocol;
+        R_TRY(this->GetMaxProtocolVersion(std::addressof(max_host_protocol)));
+
+        /* Verify that the host protocol is >= 0. */
+        R_UNLESS(max_host_protocol >= 0, htcfs::ResultUnsupportedProtocolVersion());
+
+        /* Inform the host what protocol we're using. */
+        const auto use_version = std::min(MaxProtocolVersion, max_host_protocol);
+        R_TRY(this->SetProtocolVersion(use_version));
+
+        /* Set the version in our header factory. */
+        m_header_factory.SetVersion(use_version);
         return ResultSuccess();
     }
 
     void ClientImpl::TearDownProtocol() {
         /* Set the header factory version to zero. */
         m_header_factory.SetVersion(0);
+    }
+
+    Result ClientImpl::CheckResponseHeaderWithoutVersion(const Header &response, PacketType packet_type) {
+        /* Check the protocol. */
+        R_UNLESS(response.protocol == HtcfsProtocol, htcfs::ResultUnexpectedResponseProtocolId());
+
+        /* Check the packet category. */
+        R_UNLESS(response.packet_category == PacketCategory::Response, htcfs::ResultUnexpectedResponsePacketCategory());
+
+        /* Check the type. */
+        R_UNLESS(response.packet_type == packet_type, htcfs::ResultUnexpectedResponsePacketType());
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetMaxProtocolVersion(s16 *out) {
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetMaxProtocolVersionHeader(std::addressof(request));
+
+        /* Send the request to the host. */
+        R_TRY(this->SendToRpcChannel(std::addressof(request), sizeof(request)));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeaderWithoutVersion(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Set the maximum protocol version. */
+        *out = response.params[1];
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::SetProtocolVersion(s16 version) {
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeSetProtocolVersionHeader(std::addressof(request), version);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendToRpcChannel(std::addressof(request), sizeof(request)));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeaderWithoutVersion(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::SendToRpcChannel(const void *src, s64 size) {
+        return this->SendToHtclow(src, size, std::addressof(m_rpc_channel));
+    }
+
+    Result ClientImpl::ReceiveFromRpcChannel(void *dst, s64 size) {
+        return this->ReceiveFromHtclow(dst, size, std::addressof(m_rpc_channel));
+    }
+
+    Result ClientImpl::SendToHtclow(const void *src, s64 size, htclow::Channel *channel) {
+        /* Check size. */
+        R_UNLESS(size >= 0, htcfs::ResultInvalidArgument());
+
+        /* Iteratively send. */
+        s64 sent;
+        for (s64 total = 0; total < size; total += sent) {
+            /* Send the current batch of data. */
+            R_TRY(channel->Send(std::addressof(sent), static_cast<const u8 *>(src) + total, size - total));
+
+            /* Check that we sent the right amount. */
+            R_UNLESS(sent == size - total, htcfs::ResultHtclowChannelClosed());
+        }
+
+        /* Flush. */
+        R_TRY(channel->Flush());
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::ReceiveFromHtclow(void *dst, s64 size, htclow::Channel *channel) {
+        /* Check size. */
+        R_UNLESS(size >= 0, htcfs::ResultInvalidArgument());
+
+        /* Iteratively receive. */
+        s64 received;
+        for (s64 total = 0; total < size; total += received) {
+            /* Receive the current batch of data. */
+            R_TRY(channel->Receive(std::addressof(received), static_cast<u8 *>(dst) + total, size - total, htclow::ReceiveOption_ReceiveAllData));
+
+            /* Check that we received the right amount. */
+            R_UNLESS(received == size - total, htcfs::ResultHtclowChannelClosed());
+        }
+
+        /* Flush. */
+        R_TRY(channel->Flush());
+
+        return ResultSuccess();
     }
 
 }
