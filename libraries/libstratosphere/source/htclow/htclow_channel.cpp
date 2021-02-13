@@ -114,7 +114,7 @@ namespace ams::htclow {
         return ResultSuccess();
     }
 
-    Result Channel::Send(s64 *out, const void *src, s64 size, ReceiveOption option) {
+    Result Channel::Send(s64 *out, const void *src, s64 size) {
         /* Check pre-conditions. */
         AMS_ASSERT(util::IsIntValueRepresentable<size_t>(size));
 
