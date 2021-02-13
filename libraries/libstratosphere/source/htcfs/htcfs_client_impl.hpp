@@ -82,12 +82,19 @@ namespace ams::htcfs {
             Result SendToRpcChannel(const void *src, s64 size);
             Result ReceiveFromRpcChannel(void *dst, s64 size);
 
+            Result ReceiveFromDataChannel(s64 size);
+            Result SendToDataChannel();
+
             Result SendToHtclow(const void *src, s64 size, htclow::Channel *channel);
             Result ReceiveFromHtclow(void *dst, s64 size, htclow::Channel *channel);
 
             Result SendRequest(const Header &request) { return this->SendRequest(request, nullptr, 0, nullptr, 0); }
             Result SendRequest(const Header &request, const void *arg1, size_t arg1_size) { return this->SendRequest(request, arg1, arg1_size, nullptr, 0); }
             Result SendRequest(const Header &request, const void *arg1, size_t arg1_size, const void *arg2, size_t arg2_size);
+
+            void InitializeDataChannelForReceive(void *dst, size_t size);
+            void InitializeDataChannelForSend(const void *src, size_t size);
+            void FinalizeDataChannel();
     };
 
 }

@@ -131,8 +131,8 @@ namespace ams::htcfs {
                 return this->MakeRequestHeader(out, PacketType::ReadDirectory, 0, handle, max_out_entries);
             }
 
-            void MakeReadDirectoryLargeHeader(Header *out, s32 handle, size_t max_out_entries) {
-                return this->MakeRequestHeader(out, PacketType::ReadDirectoryLarge, 0, handle, max_out_entries);
+            void MakeReadDirectoryLargeHeader(Header *out, s32 handle, size_t max_out_entries, u16 data_channel_id) {
+                return this->MakeRequestHeader(out, PacketType::ReadDirectoryLarge, 0, handle, max_out_entries, data_channel_id);
             }
 
             void MakeGetPriorityForDirectoryHeader(Header *out, s32 handle) {
