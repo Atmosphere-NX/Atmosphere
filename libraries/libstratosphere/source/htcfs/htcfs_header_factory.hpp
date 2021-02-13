@@ -122,6 +122,26 @@ namespace ams::htcfs {
             void MakeCloseDirectoryHeader(Header *out, s32 handle) {
                 return this->MakeRequestHeader(out, PacketType::CloseDirectory, 0, handle);
             }
+
+            void MakeGetEntryCountHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::GetEntryCount, 0, handle);
+            }
+
+            void MakeReadDirectoryHeader(Header *out, s32 handle, size_t max_out_entries) {
+                return this->MakeRequestHeader(out, PacketType::ReadDirectory, 0, handle, max_out_entries);
+            }
+
+            void MakeReadDirectoryLargeHeader(Header *out, s32 handle, size_t max_out_entries) {
+                return this->MakeRequestHeader(out, PacketType::ReadDirectoryLarge, 0, handle, max_out_entries);
+            }
+
+            void MakeGetPriorityForDirectoryHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::GetPriorityForDirectory, 0, handle);
+            }
+
+            void MakeSetPriorityForDirectoryHeader(Header *out, s32 handle, s32 priority) {
+                return this->MakeRequestHeader(out, PacketType::SetPriorityForDirectory, 0, handle, priority);
+            }
     };
 
 }

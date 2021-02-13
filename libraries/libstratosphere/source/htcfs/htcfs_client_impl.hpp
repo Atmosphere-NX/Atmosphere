@@ -19,14 +19,17 @@
 #include "../htclow/htclow_channel.hpp"
 #include "htcfs_cache_manager.hpp"
 #include "htcfs_header_factory.hpp"
+#include "../htclow/htclow_default_channel_config.hpp"
 
 namespace ams::htcfs {
 
     class ClientImpl {
+        public:
+            static constexpr size_t MaxPacketBodySize = htclow::DefaultChannelConfig.max_packet_size - sizeof(htclow::PacketHeader);
         private:
             u8 m_receive_buffer[0x1C040];
             u8 m_send_buffer[0x1C040];
-            u8 m_packet_buffer[0xE020];
+            u8 m_packet_buffer[MaxPacketBodySize + sizeof(htclow::PacketHeader)];
             htclow::HtclowManager *m_htclow_manager;
             CacheManager m_cache_manager;
             HeaderFactory m_header_factory;
@@ -55,6 +58,12 @@ namespace ams::htcfs {
         public:
             Result OpenDirectory(s32 *out_handle, const char *path, fs::OpenDirectoryMode mode, bool case_sensitive);
             Result CloseDirectory(s32 handle);
+
+            Result GetEntryCount(s64 *out, s32 handle);
+            Result ReadDirectory(s64 *out, fs::DirectoryEntry *out_entries, size_t max_out_entries, s32 handle);
+            Result ReadDirectoryLarge(s64 *out, fs::DirectoryEntry *out_entries, size_t max_out_entries, s32 handle);
+            Result GetPriorityForDirectory(s32 *out, s32 handle);
+            Result SetPriorityForDirectory(s32 priority, s32 handle);
         private:
             int WaitAny(htclow::ChannelState state, os::EventType *event);
 
