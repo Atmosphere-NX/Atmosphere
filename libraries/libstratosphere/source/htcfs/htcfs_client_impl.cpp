@@ -23,6 +23,7 @@ namespace ams::htcfs {
 
         /* TODO: Move to a header? */
         constexpr u16 RpcChannelId = 0;
+        constexpr u16 DataChannelId = 1;
 
         alignas(os::ThreadStackAlignment) constinit u8 g_monitor_thread_stack[os::MemoryPageSize];
 
@@ -266,6 +267,14 @@ namespace ams::htcfs {
         return this->ReceiveFromHtclow(dst, size, std::addressof(m_rpc_channel));
     }
 
+    Result ClientImpl::ReceiveFromDataChannel(s64 size) {
+        return m_data_channel.WaitReceive(size);
+    }
+
+    Result ClientImpl::SendToDataChannel() {
+        return m_data_channel.Flush();
+    }
+
     Result ClientImpl::SendToHtclow(const void *src, s64 size, htclow::Channel *channel) {
         /* Check size. */
         R_UNLESS(size >= 0, htcfs::ResultInvalidArgument());
@@ -314,6 +323,52 @@ namespace ams::htcfs {
         R_UNLESS(m_connected, htcfs::ResultConnectionFailure());
 
         return ResultSuccess();
+    }
+
+    void ClientImpl::InitializeDataChannelForReceive(void *dst, size_t size) {
+        /* Open the data channel. */
+        R_ABORT_UNLESS(m_data_channel.Open(std::addressof(m_module), DataChannelId));
+
+        /* Set our config. */
+        constexpr htclow::ChannelConfig BulkReceiveConfig = {
+            .flow_control_enabled = false,
+            .handshake_enabled    = false,
+            .max_packet_size      = 0x3E000,
+        };
+        m_data_channel.SetConfig(BulkReceiveConfig);
+
+        /* Set receive buffer. */
+        m_data_channel.SetReceiveBuffer(dst, size);
+
+        /* Connect. */
+        R_ABORT_UNLESS(m_data_channel.Connect());
+    }
+
+    void ClientImpl::InitializeDataChannelForSend(const void *src, size_t size) {
+        /* Open the data channel. */
+        R_ABORT_UNLESS(m_data_channel.Open(std::addressof(m_module), DataChannelId));
+
+        /* Check that the size is valid. */
+        AMS_ASSERT(util::IsIntValueRepresentable<s64>(size));
+
+        /* Set our config. */
+        constexpr htclow::ChannelConfig BulkSendConfig = {
+            .flow_control_enabled = false,
+            .handshake_enabled    = false,
+            .max_packet_size      = 0xE020,
+        };
+        m_data_channel.SetConfig(BulkSendConfig);
+
+        /* Set our send buffer. */
+        m_data_channel.SetSendBufferWithData(src, size);
+
+        /* Connect. */
+        R_ABORT_UNLESS(m_data_channel.Connect());
+    }
+
+    void ClientImpl::FinalizeDataChannel() {
+        /* Close our data channel. */
+        m_data_channel.Close();
     }
 
     Result ClientImpl::SendRequest(const Header &request, const void *arg1, size_t arg1_size, const void *arg2, size_t arg2_size) {
@@ -492,13 +547,46 @@ namespace ams::htcfs {
         /* Initialize our rpc channel. */
         R_TRY(this->InitializeRpcChannel());
 
+        /* Setup data channel. */
+        const bool use_data_channel = max_out_entries > 0;
+        if (use_data_channel) {
+            this->InitializeDataChannelForReceive(out_entries, max_out_entries * sizeof(*out_entries));
+        }
+        ON_SCOPE_EXIT { if (use_data_channel) { this->FinalizeDataChannel(); } };
+
         /* Create space for request and response. */
         Header request, response;
 
         /* Create header for the request. */
-        m_header_factory.MakeReadDirectoryLargeHeader(std::addressof(request), handle, max_out_entries);
+        m_header_factory.MakeReadDirectoryLargeHeader(std::addressof(request), handle, max_out_entries, DataChannelId);
 
-        AMS_ABORT("TODO: Data channel setup/teardown");
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Check that the number of entries read is allowable. */
+        R_UNLESS(static_cast<size_t>(response.params[2]) <= max_out_entries, htcfs::ResultUnexpectedResponseBody());
+
+        /* Read the entries, if there are any. */
+        if (response.params[2] > 0) {
+            R_TRY(this->ReceiveFromDataChannel(response.params[2] * sizeof(*out_entries)));
+        }
+
+        /* Set the number of output entries. */
+        *out = response.params[2];
+
+        return ResultSuccess();
     }
 
     Result ClientImpl::GetPriorityForDirectory(s32 *out, s32 handle) {

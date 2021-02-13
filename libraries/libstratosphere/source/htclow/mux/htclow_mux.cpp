@@ -305,7 +305,7 @@ namespace ams::htclow::mux {
             auto it = m_channel_impl_map.GetMap().find(channel);
             R_UNLESS(it != m_channel_impl_map.GetMap().end(), htclow::ResultChannelNotExist());
 
-            /* Perform the RECEIVE. */
+            /* Perform the receive. */
             return m_channel_impl_map[it->second].DoReceiveEnd(out, dst, dst_size);
         } else {
             *out = 0;
