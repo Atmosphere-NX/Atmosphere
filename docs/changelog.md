@@ -1,4 +1,15 @@
 # Changelog
+## 0.18.1
++ A number of minor issues were fixed, including:
+  + The new `dns.mitm` module added in 0.18.0 no longer fatal errors when receiving port=nullptr.
+    + This fixes youtube ad-blocking, and possibly other usecases.
+  + A bug was fixed that caused ams.mitm to incorrectly cache data storages.
+    + This potentially broke DLC when using romfs mods, and could have caused other issues (e.g. with custom themes, and maybe other cases).
+  + A bug was fixed in power state control module registration.
+    + This might fix a weird edge case with system module dependencies on sleep/wake, but probably nobody should notice any differences.
+  + A bug was fixed where mesosphere sometimes treated virtual core IDs as though they were physical core IDs.
+    + This had zero impact, because for Switch virtual core == physical core, but it could have affected future platforms if it had remained unresolved.
++ Several issues were fixed, and usability and stability were improved.
 ## 0.18.0
 + A new mitm module was added (`dns.mitm`).
   + This provides a highly configurable mechanism for redirecting DNS resolution requests.
