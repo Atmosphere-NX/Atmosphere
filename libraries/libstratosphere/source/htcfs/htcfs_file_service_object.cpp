@@ -15,42 +15,59 @@
  */
 #include <stratosphere.hpp>
 #include "htcfs_file_service_object.hpp"
+#include "htcfs_client.hpp"
 
 namespace ams::htcfs {
 
     FileServiceObject::FileServiceObject(s32 handle) : m_handle(handle) { /* ... */ }
 
     FileServiceObject::~FileServiceObject() {
-        /* TODO */
-        AMS_ABORT("htcfs::GetClient().CloseFile(m_handle);");
+        htcfs::GetClient().CloseFile(m_handle);
     }
 
     Result FileServiceObject::ReadFile(ams::sf::Out<s64> out, s64 offset, const ams::sf::OutNonSecureBuffer &buffer, ams::fs::ReadOption option) {
-        AMS_ABORT("FileServiceObject::ReadFile");
+        /* Validate offset. */
+        R_UNLESS(offset >= 0, htcfs::ResultInvalidArgument());
+
+        if (buffer.GetSize() >= ClientImpl::MaxPacketBodySize) {
+            return htcfs::GetClient().ReadFileLarge(out.GetPointer(), buffer.GetPointer(), m_handle, offset, buffer.GetSize(), option);
+        } else {
+            return htcfs::GetClient().ReadFile(out.GetPointer(), buffer.GetPointer(), m_handle, offset, buffer.GetSize(), option);
+        }
     }
 
     Result FileServiceObject::WriteFile(s64 offset, const ams::sf::InNonSecureBuffer &buffer, ams::fs::WriteOption option) {
-        AMS_ABORT("FileServiceObject::WriteFile");
+        /* Validate offset. */
+        R_UNLESS(offset >= 0, htcfs::ResultInvalidArgument());
+
+        if (buffer.GetSize() >= ClientImpl::MaxPacketBodySize) {
+            return htcfs::GetClient().WriteFileLarge(buffer.GetPointer(), m_handle, offset, buffer.GetSize(), option);
+        } else {
+            return htcfs::GetClient().WriteFile(buffer.GetPointer(), m_handle, offset, buffer.GetSize(), option);
+        }
     }
 
     Result FileServiceObject::GetFileSize(ams::sf::Out<s64> out) {
-        AMS_ABORT("FileServiceObject::GetFileSize");
+        return htcfs::GetClient().GetFileSize(out.GetPointer(), m_handle);
     }
 
     Result FileServiceObject::SetFileSize(s64 size) {
-        AMS_ABORT("FileServiceObject::SetFileSize");
+        /* Validate size. */
+        R_UNLESS(size >= 0, htcfs::ResultInvalidArgument());
+
+        return htcfs::GetClient().SetFileSize(size, m_handle);
     }
 
     Result FileServiceObject::FlushFile() {
-        AMS_ABORT("FileServiceObject::FlushFile");
+        return htcfs::GetClient().FlushFile(m_handle);
     }
 
     Result FileServiceObject::SetPriorityForFile(s32 priority) {
-        AMS_ABORT("FileServiceObject::SetPriorityForFile");
+        return htcfs::GetClient().SetPriorityForFile(priority, m_handle);
     }
 
     Result FileServiceObject::GetPriorityForFile(ams::sf::Out<s32> out) {
-        AMS_ABORT("FileServiceObject::GetPriorityForFile");
+        return htcfs::GetClient().GetPriorityForFile(out.GetPointer(), m_handle);
     }
 
 }

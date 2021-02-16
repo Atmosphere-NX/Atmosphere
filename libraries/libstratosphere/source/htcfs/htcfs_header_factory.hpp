@@ -115,8 +115,60 @@ namespace ams::htcfs {
                 return this->MakeRequestHeader(out, PacketType::SetProtocolVersion, 0, version);
             }
 
+            void MakeOpenFileHeader(Header *out, int path_len, fs::OpenMode mode, bool case_sensitive, s64 cache_size) {
+                return this->MakeRequestHeader(out, PacketType::OpenFile, path_len, static_cast<s64>(mode), case_sensitive ? 1 : 0, cache_size);
+            }
+
+            void MakeFileExistsHeader(Header *out, int path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::FileExists, path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeDeleteFileHeader(Header *out, int path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::DeleteFile, path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeRenameFileHeader(Header *out, int old_path_len, int new_path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::RenameFile, old_path_len + new_path_len, old_path_len, new_path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeGetEntryTypeHeader(Header *out, int path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::GetEntryType, path_len, case_sensitive ? 1 : 0);
+            }
+
             void MakeOpenDirectoryHeader(Header *out, int path_len, fs::OpenDirectoryMode mode, bool case_sensitive) {
                 return this->MakeRequestHeader(out, PacketType::OpenDirectory, path_len, static_cast<s64>(mode), case_sensitive ? 1 : 0);
+            }
+
+            void MakeDirectoryExistsHeader(Header *out, int path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::DirectoryExists, path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeCreateDirectoryHeader(Header *out, int path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::CreateDirectory, path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeDeleteDirectoryHeader(Header *out, int path_len, bool recursively, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::DeleteDirectory, path_len, recursively ? 1 : 0, case_sensitive ? 1 : 0);
+            }
+
+            void MakeRenameDirectoryHeader(Header *out, int old_path_len, int new_path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::RenameDirectory, old_path_len + new_path_len, old_path_len, new_path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeCreateFileHeader(Header *out, int path_len, s64 size, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::CreateDirectory, path_len, size, case_sensitive ? 1 : 0);
+            }
+
+            void MakeGetFileTimeStampHeader(Header *out, int path_len, bool case_sensitive) {
+                return this->MakeRequestHeader(out, PacketType::GetFileTimeStamp, path_len, case_sensitive ? 1 : 0);
+            }
+
+            void MakeGetCaseSensitivePathHeader(Header *out, int path_len) {
+                return this->MakeRequestHeader(out, PacketType::GetCaseSensitivePath, path_len);
+            }
+
+            void MakeGetDiskFreeSpaceHeader(Header *out, int path_len) {
+                return this->MakeRequestHeader(out, PacketType::GetDiskFreeSpace, path_len);
             }
 
             void MakeCloseDirectoryHeader(Header *out, s32 handle) {
@@ -141,6 +193,46 @@ namespace ams::htcfs {
 
             void MakeSetPriorityForDirectoryHeader(Header *out, s32 handle, s32 priority) {
                 return this->MakeRequestHeader(out, PacketType::SetPriorityForDirectory, 0, handle, priority);
+            }
+
+            void MakeCloseFileHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::CloseFile, 0, handle);
+            }
+
+            void MakeReadFileHeader(Header *out, s32 handle, s64 offset, s64 buffer_size) {
+                return this->MakeRequestHeader(out, PacketType::ReadFile, 0, handle, offset, buffer_size);
+            }
+
+            void MakeReadFileLargeHeader(Header *out, s32 handle, s64 offset, s64 buffer_size, u16 data_channel_id) {
+                return this->MakeRequestHeader(out, PacketType::ReadFileLarge, 0, handle, offset, buffer_size, data_channel_id);
+            }
+
+            void MakeWriteFileHeader(Header *out, s64 buffer_size, s32 handle, u32 option, s64 offset) {
+                return this->MakeRequestHeader(out, PacketType::WriteFile, buffer_size, handle, option, offset);
+            }
+
+            void MakeWriteFileLargeHeader(Header *out, s32 handle, u32 option, s64 offset, s64 buffer_size, u16 data_channel_id) {
+                return this->MakeRequestHeader(out, PacketType::WriteFileLarge, 0, handle, option, offset, buffer_size, data_channel_id);
+            }
+
+            void MakeGetFileSizeHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::GetFileSize, 0, handle);
+            }
+
+            void MakeSetFileSizeHeader(Header *out, s32 handle, s64 size) {
+                return this->MakeRequestHeader(out, PacketType::SetFileSize, 0, handle, size);
+            }
+
+            void MakeFlushFileHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::FlushFile, 0, handle);
+            }
+
+            void MakeGetPriorityForFileHeader(Header *out, s32 handle) {
+                return this->MakeRequestHeader(out, PacketType::GetPriorityForFile, 0, handle);
+            }
+
+            void MakeSetPriorityForFileHeader(Header *out, s32 handle, s32 priority) {
+                return this->MakeRequestHeader(out, PacketType::SetPriorityForFile, 0, handle, priority);
             }
     };
 

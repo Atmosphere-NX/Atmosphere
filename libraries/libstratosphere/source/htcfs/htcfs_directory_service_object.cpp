@@ -16,7 +16,6 @@
 #include <stratosphere.hpp>
 #include "htcfs_directory_service_object.hpp"
 #include "htcfs_client.hpp"
-#include "../htclow/htclow_default_channel_config.hpp"
 
 namespace ams::htcfs {
 

@@ -27,7 +27,8 @@ namespace ams::htcfs {
 
         alignas(os::ThreadStackAlignment) constinit u8 g_monitor_thread_stack[os::MemoryPageSize];
 
-        constinit u8 g_cache[32_KB];
+        constexpr size_t FileDataCacheSize = 32_KB;
+        constinit u8 g_cache[FileDataCacheSize];
 
         ALWAYS_INLINE Result ConvertNativeResult(s64 value) {
             return result::impl::MakeResult(value);
@@ -401,6 +402,191 @@ namespace ams::htcfs {
         return ResultSuccess();
     }
 
+    Result ClientImpl::OpenFile(s32 *out_handle, const char *path, fs::OpenMode mode, bool case_sensitive) {
+        /* Invalidate the cache manager. */
+        m_cache_manager.Invalidate();
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeOpenFileHeader(std::addressof(request), path_len, mode, case_sensitive, FileDataCacheSize);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type));
+
+        /* Check the response body size. */
+        R_UNLESS(response.body_size > 0,                                       htcfs::ResultUnexpectedResponseBodySize());
+        R_UNLESS(static_cast<size_t>(response.body_size) <= MaxPacketBodySize, htcfs::ResultUnexpectedResponseBodySize());
+
+        /* Receive the response body. */
+        R_TRY(this->ReceiveFromRpcChannel(m_packet_buffer, response.body_size));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set our output handle. */
+        *out_handle = response.params[2];
+
+        /* If we have data to cache, cache it. */
+        if (response.params[3]) {
+            m_cache_manager.Record(response.params[4], m_packet_buffer, response.params[2], response.body_size);
+        }
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::FileExists(bool *out, const char *path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeFileExistsHeader(std::addressof(request), path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set the output. */
+        *out = response.params[2] != 0;
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::DeleteFile(const char *path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeDeleteFileHeader(std::addressof(request), path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::RenameFile(const char *old_path, const char *new_path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto old_path_len = std::strlen(new_path);
+        const auto new_path_len = std::strlen(old_path);
+        m_header_factory.MakeRenameFileHeader(std::addressof(request), old_path_len, new_path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, old_path, old_path_len, new_path, new_path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetEntryType(fs::DirectoryEntryType *out, const char *path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeGetEntryTypeHeader(std::addressof(request), path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set the output. */
+        *out = static_cast<fs::DirectoryEntryType>(response.params[2]);
+
+        return ResultSuccess();
+    }
+
     Result ClientImpl::OpenDirectory(s32 *out_handle, const char *path, fs::OpenDirectoryMode mode, bool case_sensitive) {
         /* Lock ourselves. */
         std::scoped_lock lk(m_mutex);
@@ -432,6 +618,297 @@ namespace ams::htcfs {
 
         /* Set the output handle. */
         *out_handle = static_cast<s32>(response.params[2]);
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::DirectoryExists(bool *out, const char *path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeDirectoryExistsHeader(std::addressof(request), path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set the output. */
+        *out = response.params[2] != 0;
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::CreateDirectory(const char *path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeCreateDirectoryHeader(std::addressof(request), path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::DeleteDirectory(const char *path, bool recursively, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeDeleteDirectoryHeader(std::addressof(request), path_len, recursively, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::RenameDirectory(const char *old_path, const char *new_path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto old_path_len = std::strlen(new_path);
+        const auto new_path_len = std::strlen(old_path);
+        m_header_factory.MakeRenameDirectoryHeader(std::addressof(request), old_path_len, new_path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, old_path, old_path_len, new_path, new_path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::CreateFile(const char *path, s64 size, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeCreateFileHeader(std::addressof(request), path_len, size, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetFileTimeStamp(u64 *out_create, u64 *out_access, u64 *out_modify, const char *path, bool case_sensitive) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeGetFileTimeStampHeader(std::addressof(request), path_len, case_sensitive);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set output. */
+        *out_create = static_cast<u64>(response.params[2]);
+        *out_access = static_cast<u64>(response.params[3]);
+        *out_modify = static_cast<u64>(response.params[4]);
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetCaseSensitivePath(char *dst, size_t dst_size, const char *path) {
+        /* Sanity check the output buffer. */
+        R_UNLESS(util::IsIntValueRepresentable<s64>(dst_size), htcfs::ResultInvalidArgument());
+        R_UNLESS(dst_size > 0,                                 htcfs::ResultInvalidArgument());
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeGetCaseSensitivePathHeader(std::addressof(request), path_len);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
+        if (R_FAILED(htcfs_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return htcfs_result;
+        }
+
+        /* Check our operation's result. */
+        const auto native_result = ConvertNativeResult(response.params[1]);
+        if (R_FAILED(native_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return native_result;
+        }
+
+        /* Check the body size. */
+        R_UNLESS(response.body_size < static_cast<s64>(dst_size), htcfs::ResultUnexpectedResponseBodySize());
+
+        /* Receive the response body. */
+        R_TRY(this->ReceiveFromRpcChannel(dst, response.body_size));
+
+        /* Null-terminate the output path. */
+        dst[response.body_size] = '\x00';
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetDiskFreeSpace(s64 *out_free, s64 *out_total, s64 *out_total_free, const char *path) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        const auto path_len = std::strlen(path);
+        m_header_factory.MakeGetDiskFreeSpaceHeader(std::addressof(request), path_len);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, path, path_len));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set output. */
+        *out_free       = response.params[2];
+        *out_total      = response.params[3];
+        *out_total_free = response.params[4];
 
         return ResultSuccess();
     }
@@ -570,10 +1047,18 @@ namespace ams::htcfs {
         R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
 
         /* Check that we succeeded. */
-        R_TRY(ConvertHtcfsResult(response.params[0]));
+        const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
+        if (R_FAILED(htcfs_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return htcfs_result;
+        }
 
         /* Check our operation's result. */
-        R_TRY(ConvertNativeResult(response.params[1]));
+        const auto native_result = ConvertNativeResult(response.params[1]);
+        if (R_FAILED(native_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return native_result;
+        }
 
         /* Check that the number of entries read is allowable. */
         R_UNLESS(static_cast<size_t>(response.params[2]) <= max_out_entries, htcfs::ResultUnexpectedResponseBody());
@@ -632,6 +1117,410 @@ namespace ams::htcfs {
 
         /* Create header for the request. */
         m_header_factory.MakeSetPriorityForDirectoryHeader(std::addressof(request), handle, priority);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::CloseFile(s32 handle) {
+        /* Invalidate the cache. */
+        m_cache_manager.Invalidate(handle);
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeCloseFileHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::ReadFile(s64 *out, void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::ReadOption option) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Try to read from our cache. */
+        if (util::IsIntValueRepresentable<size_t>(offset) && util::IsIntValueRepresentable<size_t>(buffer_size)) {
+            size_t read_size;
+            if (m_cache_manager.ReadFile(std::addressof(read_size), buffer, handle, static_cast<size_t>(offset), static_cast<size_t>(buffer_size))) {
+                AMS_ASSERT(util::IsIntValueRepresentable<s64>(read_size));
+
+                *out = static_cast<s64>(read_size);
+                return ResultSuccess();
+            }
+        }
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeReadFileHeader(std::addressof(request), handle, offset, buffer_size);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
+        if (R_FAILED(htcfs_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return htcfs_result;
+        }
+
+        /* Check our operation's result. */
+        const auto native_result = ConvertNativeResult(response.params[1]);
+        if (R_FAILED(native_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return native_result;
+        }
+
+        /* Check the body size. */
+        R_UNLESS(response.body_size <= buffer_size, htcfs::ResultUnexpectedResponseBodySize());
+
+        /* Receive the file data. */
+        R_TRY(this->ReceiveFromRpcChannel(buffer, response.body_size));
+
+        /* Set the output size. */
+        *out = response.body_size;
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::ReadFileLarge(s64 *out, void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::ReadOption option) {
+        /* Check our buffer size. */
+        R_UNLESS(util::IsIntValueRepresentable<size_t>(buffer_size), htcfs::ResultInvalidArgument());
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Setup data channel. */
+        this->InitializeDataChannelForReceive(buffer, buffer_size);
+        ON_SCOPE_EXIT { this->FinalizeDataChannel(); };
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeReadFileLargeHeader(std::addressof(request), handle, offset, buffer_size, DataChannelId);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
+        if (R_FAILED(htcfs_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return htcfs_result;
+        }
+
+        /* Check our operation's result. */
+        const auto native_result = ConvertNativeResult(response.params[1]);
+        if (R_FAILED(native_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return native_result;
+        }
+
+        /* Check that the size read is allowable. */
+        R_UNLESS(response.params[2] <= buffer_size, htcfs::ResultUnexpectedResponseBodySize());
+
+        /* Read the entries, if there are any. */
+        R_TRY(this->ReceiveFromDataChannel(response.params[2]));
+
+        /* Set the number of output entries. */
+        *out = response.params[2];
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::WriteFile(const void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::WriteOption option) {
+        /* Invalidate the cache. */
+        m_cache_manager.Invalidate(handle);
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeWriteFileHeader(std::addressof(request), buffer_size, handle, option.value, offset);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, buffer, buffer_size));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::WriteFileLarge(const void *buffer, s32 handle, s64 offset, s64 buffer_size, fs::WriteOption option) {
+        /* Invalidate the cache. */
+        m_cache_manager.Invalidate(handle);
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeWriteFileLargeHeader(std::addressof(request), handle, option.value, offset, buffer_size, DataChannelId);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request, buffer, buffer_size));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Verify that the host reports ready to receive our data. */
+        if (static_cast<HtcfsResult>(response.params[0]) != HtcfsResult::Ready) {
+            return ConvertHtcfsResult(response.params[0]);
+        }
+
+        /* Verify that our send will be valid. */
+        AMS_ASSERT(util::IsIntValueRepresentable<size_t>(buffer_size));
+
+        /* Perform the send. */
+        {
+            /* Initialize data channel for our write. */
+            this->InitializeDataChannelForSend(buffer, buffer_size);
+
+            /* Ensure that we clean up our data channel. */
+            ON_SCOPE_EXIT { this->FinalizeDataChannel(); };
+
+            /* Send to our data channel. */
+            R_TRY(this->SendToDataChannel());
+        }
+
+        /* Receive the large-write response. */
+        Header write_resp;
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(write_resp), sizeof(write_resp)));
+
+        /* Check the write-response header. */
+        R_TRY(this->CheckResponseHeader(write_resp, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(write_resp.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(write_resp.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetFileSize(s64 *out, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Check if we have the file size cached. */
+        R_SUCCEED_IF(m_cache_manager.GetFileSize(out, handle));
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetFileSizeHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        /* Set the output. */
+        *out = response.params[2];
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::SetFileSize(s64 size, s32 handle) {
+        /* Invalidate the cache. */
+        m_cache_manager.Invalidate(handle);
+
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeSetFileSizeHeader(std::addressof(request), handle, size);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::FlushFile(s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeFlushFileHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Check our operation's result. */
+        R_TRY(ConvertNativeResult(response.params[1]));
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetPriorityForFile(s32 *out, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetPriorityForFileHeader(std::addressof(request), handle);
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type, 0));
+
+        /* Check that we succeeded. */
+        R_TRY(ConvertHtcfsResult(response.params[0]));
+
+        /* Set the output. */
+        *out = static_cast<s32>(response.params[1]);
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::SetPriorityForFile(s32 priority, s32 handle) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeSetPriorityForFileHeader(std::addressof(request), handle, priority);
 
         /* Send the request to the host. */
         R_TRY(this->SendRequest(request));

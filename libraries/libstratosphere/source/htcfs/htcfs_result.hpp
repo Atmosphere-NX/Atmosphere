@@ -26,6 +26,7 @@ namespace ams::htcfs {
         InvalidRequest             = 3,
         InvalidHandle              = 4,
         OutOfHandle                = 5,
+        Ready                      = 6,
     };
 
     inline Result ConvertHtcfsResult(HtcfsResult result) {
