@@ -380,7 +380,7 @@ namespace ams::mitm::fs {
 
         /* Try to get a storage from the cache. */
         {
-            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(this->client_info.program_id);
+            std::shared_ptr<fs::IStorage> cached_storage = GetStorageCacheEntry(data_id);
             if (cached_storage != nullptr) {
                 out.SetValue(MakeSharedStorage(cached_storage), target_object_id);
                 return ResultSuccess();
@@ -403,7 +403,7 @@ namespace ams::mitm::fs {
                 new_storage = std::move(layered_storage);
             }
 
-            SetStorageCacheEntry(this->client_info.program_id, &new_storage);
+            SetStorageCacheEntry(data_id, &new_storage);
             out.SetValue(MakeSharedStorage(new_storage), target_object_id);
         }
 
