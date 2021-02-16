@@ -156,7 +156,7 @@ namespace ams::htcfs {
             }
 
             void MakeCreateFileHeader(Header *out, int path_len, s64 size, bool case_sensitive) {
-                return this->MakeRequestHeader(out, PacketType::CreateDirectory, path_len, size, case_sensitive ? 1 : 0);
+                return this->MakeRequestHeader(out, PacketType::CreateFile, path_len, size, case_sensitive ? 1 : 0);
             }
 
             void MakeGetFileTimeStampHeader(Header *out, int path_len, bool case_sensitive) {
