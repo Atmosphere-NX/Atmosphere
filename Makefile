@@ -135,6 +135,7 @@ dist: dist-no-debug
 	cp exosphere/program/sc7fw/sc7fw.elf atmosphere-$(AMSVER)-debug/exosphere-sc7fw.elf
 	cp exosphere/program/rebootstub/rebootstub.elf atmosphere-$(AMSVER)-debug/exosphere-rebootstub.elf
 	cp mesosphere/kernel_ldr/kernel_ldr.elf atmosphere-$(AMSVER)-debug/kernel_ldr.elf
+	cp mesosphere/kernel/kernel.elf atmosphere-$(AMSVER)-debug/kernel.elf
 	cp stratosphere/ams_mitm/ams_mitm.elf atmosphere-$(AMSVER)-debug/ams_mitm.elf
 	cp stratosphere/boot/boot.elf atmosphere-$(AMSVER)-debug/boot.elf
 	cp stratosphere/boot2/boot2.elf atmosphere-$(AMSVER)-debug/boot2.elf
