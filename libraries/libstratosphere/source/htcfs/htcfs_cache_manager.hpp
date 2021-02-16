@@ -51,6 +51,16 @@ namespace ams::htcfs {
                 m_has_cached_handle = false;
             }
 
+            void Invalidate(s32 handle) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                if (m_has_cached_handle && m_cached_handle == handle) {
+                    /* Note that we have no handle. */
+                    m_has_cached_handle = false;
+                }
+            }
+
             void Record(s64 file_size, const void *data, s32 handle, size_t data_size) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
