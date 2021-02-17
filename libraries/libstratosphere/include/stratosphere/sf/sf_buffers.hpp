@@ -206,11 +206,11 @@ namespace ams::sf {
                 }
 
                 constexpr explicit operator Span<const T>() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
 
                 constexpr Span<const T> ToSpan() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
         };
 
@@ -238,11 +238,11 @@ namespace ams::sf {
                 }
 
                 constexpr explicit operator Span<T>() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
 
                 constexpr Span<T> ToSpan() const {
-                    return {this->GetPointer(), static_cast<ptrdiff_t>(this->GetSize())};
+                    return {this->GetPointer(), this->GetSize()};
                 }
         };
 

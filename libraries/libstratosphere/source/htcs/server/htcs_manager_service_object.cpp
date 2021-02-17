@@ -16,14 +16,13 @@
 #include <stratosphere.hpp>
 #include "htcs_manager_service_object.hpp"
 #include "htcs_socket_service_object.hpp"
+#include "htcs_service_object_allocator.hpp"
+#include "../impl/htcs_manager.hpp"
+#include "../impl/htcs_impl.hpp"
 
 namespace ams::htcs::server {
 
     namespace {
-
-        struct ServiceObjectAllocatorTag;
-        using ServiceObjectAllocator = ams::sf::ExpHeapStaticAllocator<32_KB, ServiceObjectAllocatorTag>;
-        using ServiceObjectFactory   = ams::sf::ObjectFactory<typename ServiceObjectAllocator::Policy>;
 
         class StaticAllocatorInitializer {
             public:
@@ -35,11 +34,13 @@ namespace ams::htcs::server {
     }
 
     Result ManagerServiceObject::GetPeerNameAny(sf::Out<htcs::HtcsPeerName> out) {
-        AMS_ABORT("ManagerServiceObject::GetPeerNameAny");
+        *out = impl::GetPeerNameAny();
+        return ResultSuccess();
     }
 
     Result ManagerServiceObject::GetDefaultHostName(sf::Out<htcs::HtcsPeerName> out) {
-        AMS_ABORT("ManagerServiceObject::GetDefaultHostName");
+        *out = impl::GetDefaultHostName();
+        return ResultSuccess();
     }
 
     Result ManagerServiceObject::CreateSocketOld(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out) {
@@ -47,7 +48,20 @@ namespace ams::htcs::server {
     }
 
     Result ManagerServiceObject::CreateSocket(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, bool enable_disconnection_emulation) {
-        AMS_ABORT("ManagerServiceObject::CreateSocket");
+        /* Get the htcs manager. */
+        auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
+
+        /* Create a new socket. */
+        s32 desc;
+        manager->Socket(out_err.GetPointer(), std::addressof(desc), enable_disconnection_emulation);
+
+        /* If an error occurred, we're done. */
+        R_SUCCEED_IF(*out_err != 0);
+
+        /* Create a new socket object. */
+        *out = ServiceObjectFactory::CreateSharedEmplaced<tma::ISocket, SocketServiceObject>(this, desc);
+
+        return ResultSuccess();
     }
 
     Result ManagerServiceObject::RegisterProcessId(const sf::ClientProcessId &client_pid) {
@@ -61,11 +75,19 @@ namespace ams::htcs::server {
     }
 
     Result ManagerServiceObject::StartSelect(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InMapAliasArray<s32> &read_handles, const sf::InMapAliasArray<s32> &write_handles, const sf::InMapAliasArray<s32> &exception_handles, s64 tv_sec, s64 tv_usec) {
-        AMS_ABORT("ManagerServiceObject::StartSelect");
+        /* Get the htcs manager. */
+        auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
+
+        /* Start the select. */
+        return manager->StartSelect(out_task_id.GetPointer(), out_event.GetHandlePointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), tv_sec, tv_usec);
     }
 
     Result ManagerServiceObject::EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_res, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id) {
-        AMS_ABORT("ManagerServiceObject::EndSelect");
+        /* Get the htcs manager. */
+        auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
+
+        /* End the select. */
+        return manager->EndSelect(out_err.GetPointer(), out_res.GetPointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), task_id);
     }
 
 }

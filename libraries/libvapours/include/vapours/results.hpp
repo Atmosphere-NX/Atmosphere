@@ -39,6 +39,7 @@
 #include <vapours/results/htc_results.hpp>
 #include <vapours/results/htcfs_results.hpp>
 #include <vapours/results/htclow_results.hpp>
+#include <vapours/results/htcs_results.hpp>
 #include <vapours/results/i2c_results.hpp>
 #include <vapours/results/kvdb_results.hpp>
 #include <vapours/results/loader_results.hpp>
