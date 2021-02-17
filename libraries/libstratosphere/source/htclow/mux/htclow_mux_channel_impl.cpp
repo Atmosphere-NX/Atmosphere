@@ -465,6 +465,9 @@ namespace ams::htclow::mux {
 
         /* Set max packet size. */
         m_send_buffer.SetMaxPacketSize(max_packet_size);
+
+        /* Set our total send size. */
+        m_total_send_size = buf_size;
     }
 
 }

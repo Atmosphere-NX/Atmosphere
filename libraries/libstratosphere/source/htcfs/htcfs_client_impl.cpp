@@ -429,11 +429,13 @@ namespace ams::htcfs {
         R_TRY(this->CheckResponseHeader(response, request.packet_type));
 
         /* Check the response body size. */
-        R_UNLESS(response.body_size > 0,                                       htcfs::ResultUnexpectedResponseBodySize());
+        R_UNLESS(response.body_size >= 0,                                      htcfs::ResultUnexpectedResponseBodySize());
         R_UNLESS(static_cast<size_t>(response.body_size) <= MaxPacketBodySize, htcfs::ResultUnexpectedResponseBodySize());
 
         /* Receive the response body. */
-        R_TRY(this->ReceiveFromRpcChannel(m_packet_buffer, response.body_size));
+        if (response.body_size > 0) {
+            R_TRY(this->ReceiveFromRpcChannel(m_packet_buffer, response.body_size));
+        }
 
         /* Check that we succeeded. */
         R_TRY(ConvertHtcfsResult(response.params[0]));
@@ -1332,7 +1334,7 @@ namespace ams::htcfs {
         m_header_factory.MakeWriteFileLargeHeader(std::addressof(request), handle, option.value, offset, buffer_size, DataChannelId);
 
         /* Send the request to the host. */
-        R_TRY(this->SendRequest(request, buffer, buffer_size));
+        R_TRY(this->SendRequest(request));
 
         /* Receive response from the host. */
         R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
@@ -1536,5 +1538,6 @@ namespace ams::htcfs {
 
         return ResultSuccess();
     }
+
 
 }
