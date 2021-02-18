@@ -28,14 +28,16 @@ namespace ams::htc::server::rpc {
     struct RpcTaskFunctionTraits {
         public:
             template<typename R, typename C, typename... A>
-            static std::tuple<A...> GetArgsImpl(R(C::*)(A...));
+            static std::tuple<A...> GetSetArgumentsImpl(R(C::*)(A...));
+            template<typename R, typename C, typename... A>
+            static std::tuple<A...> GetGetResultImpl(R(C::*)(A...) const);
     };
 
     template<typename T> requires IsRpcTask<T>
-    using RpcTaskArgumentsType = decltype(RpcTaskFunctionTraits::GetArgsImpl(&T::SetArguments));
+    using RpcTaskArgumentsType = decltype(RpcTaskFunctionTraits::GetSetArgumentsImpl(&T::SetArguments));
 
     template<typename T> requires IsRpcTask<T>
-    using RpcTaskResultType = decltype(RpcTaskFunctionTraits::GetArgsImpl(&T::GetResult));
+    using RpcTaskResultType = decltype(RpcTaskFunctionTraits::GetGetResultImpl(&T::GetResult));
 
     template<typename T, typename... Args>
     concept IsRpcTaskArgumentsType = IsRpcTask<T> && std::same_as<std::tuple<Args...>, RpcTaskArgumentsType<T>>;
