@@ -32,6 +32,36 @@ namespace ams::htcs::impl {
                 : m_allocator(allocator), m_driver(drv), m_rpc_client(rc), m_data_channel_manager(dcm) { /* ... */ }
         public:
             /* TODO */
+        public:
+            Result CreateSocket(s32 *out_err, s32 *out_desc, bool enable_disconnection_emulation);
+            Result DestroySocket(s32 *out_err, s32 desc);
+            Result Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address);
+            Result Bind(s32 *out_err, s32 desc, const SockAddrHtcs &address);
+            Result Listen(s32 *out_err, s32 desc, s32 backlog_count);
+            Result Receive(s32 *out_err, s64 *out_size, char *buffer, size_t size, s32 desc, s32 flags);
+            Result Send(s32 *out_err, s64 *out_size, const char *buffer, size_t size, s32 desc, s32 flags);
+            Result Shutdown(s32 *out_err, s32 desc, s32 how);
+            Result Fcntl(s32 *out_err, s32 *out_res, s32 desc, s32 command, s32 value);
+
+            Result AcceptStart(u32 *out_task_id, Handle *out_handle, s32 desc);
+            Result AcceptResults(s32 *out_err, s32 *out_desc, SockAddrHtcs *out_address, u32 task_id, s32 desc);
+
+            Result ReceiveSmallStart(u32 *out_task_id, Handle *out_handle, s64 size, s32 desc, s32 flags);
+            Result ReceiveSmallResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc);
+
+            Result SendSmallStart(u32 *out_task_id, Handle *out_handle, s32 desc, s64 size, s32 flags);
+            Result SendSmallContinue(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc);
+            Result SendSmallResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc);
+
+            Result SendStart(u32 *out_task_id, Handle *out_handle, s32 desc, s64 size, s32 flags);
+            Result SendContinue(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc);
+            Result SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc);
+
+            Result ReceiveStart(u32 *out_task_id, Handle *out_handle, s64 size, s32 desc, s32 flags);
+            Result ReceiveResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc);
+
+            Result SelectStart(u32 *out_task_id, Handle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec);
+            Result SelectEnd(s32 *out_err, s32 *out_res, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id);
     };
 
 }

@@ -131,7 +131,7 @@ namespace ams::htcs::impl {
         /* Invoke our implementation. */
         s32 err;
         s64 recv_size;
-        const Result result = m_impl->Recv(std::addressof(err), std::addressof(recv_size), buffer, size, desc, flags);
+        const Result result = m_impl->Receive(std::addressof(err), std::addressof(recv_size), buffer, size, desc, flags);
 
         /* Set output. */
         if (R_SUCCEEDED(result)) {
