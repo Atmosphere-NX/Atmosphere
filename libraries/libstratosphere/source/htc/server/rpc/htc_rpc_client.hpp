@@ -37,13 +37,13 @@ namespace ams::htc::server::rpc {
     using RpcTaskArgumentsType = decltype(RpcTaskFunctionTraits::GetSetArgumentsImpl(&T::SetArguments));
 
     template<typename T> requires IsRpcTask<T>
-    using RpcTaskResultType = decltype(RpcTaskFunctionTraits::GetGetResultImpl(&T::GetResult));
+    using RpcTaskResultsType = decltype(RpcTaskFunctionTraits::GetGetResultImpl(&T::GetResult));
 
-    template<typename T, typename... Args>
-    concept IsRpcTaskArgumentsType = IsRpcTask<T> && std::same_as<std::tuple<Args...>, RpcTaskArgumentsType<T>>;
+    template<typename T, size_t Ix> requires IsRpcTask<T>
+    using RpcTaskArgumentType = typename std::tuple_element<Ix, RpcTaskArgumentsType<T>>::type;
 
-    template<typename T, typename... Args>
-    concept IsRpcTaskResultType = IsRpcTask<T> && std::same_as<std::tuple<Args...>, RpcTaskResultType<T>>;
+    template<typename T, size_t Ix> requires IsRpcTask<T>
+    using RpcTaskResultType = typename std::tuple_element<Ix, RpcTaskResultsType<T>>::type;
 
     class RpcClient {
         private:
@@ -91,13 +91,9 @@ namespace ams::htc::server::rpc {
             Result ReceiveHeader(RpcPacket *header);
             Result ReceiveBody(char *dst, size_t size);
             Result SendRequest(const char *src, size_t size);
-        public:
-            void Wait(u32 task_id) {
-                os::WaitEvent(m_task_table.Get<Task>(task_id)->GetEvent());
-            }
-
-            template<typename T, typename... Args> requires IsRpcTaskArgumentsType<T, Args...>
-            Result Begin(u32 *out_task_id, Args... args) {
+        private:
+            template<typename T, size_t... Ix> requires IsRpcTask<T>
+            ALWAYS_INLINE Result BeginImpl(std::index_sequence<Ix...>, u32 *out_task_id, RpcTaskArgumentType<T, Ix>... args) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -138,8 +134,8 @@ namespace ams::htc::server::rpc {
                 return ResultSuccess();
             }
 
-            template<typename T, typename... Args> requires IsRpcTaskResultType<T, Args...>
-            Result End(u32 task_id, Args... args) {
+            template<typename T, size_t... Ix> requires IsRpcTask<T>
+            ALWAYS_INLINE Result EndImpl(std::index_sequence<Ix...>, u32 task_id, RpcTaskResultType<T, Ix>... args) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 
@@ -172,6 +168,20 @@ namespace ams::htc::server::rpc {
                 R_TRY(task->GetResult(args...));
 
                 return ResultSuccess();
+            }
+        public:
+            void Wait(u32 task_id) {
+                os::WaitEvent(m_task_table.Get<Task>(task_id)->GetEvent());
+            }
+
+            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskArgumentsType<T>>::value)
+            Result Begin(u32 *out_task_id, Args &&... args) {
+                return this->BeginImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskArgumentsType<T>>::value>(), out_task_id, std::forward<Args>(args)...);
+            }
+
+            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
+            Result End(u32 task_id, Args &&... args) {
+                return this->EndImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskResultsType<T>>::value>(), task_id, std::forward<Args>(args)...);
             }
     };
 

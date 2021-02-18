@@ -50,8 +50,8 @@ namespace ams::htcs::impl {
         return m_service.CreateSocket(out_err, out_desc, enable_disconnection_emulation);
     }
 
-    Result HtcsManagerImpl::DestroySocket(s32 *out_err, s32 desc) {
-        return m_service.DestroySocket(out_err, desc);
+    Result HtcsManagerImpl::DestroySocket(s32 desc) {
+        return m_service.DestroySocket(desc);
     }
 
     Result HtcsManagerImpl::Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address) {

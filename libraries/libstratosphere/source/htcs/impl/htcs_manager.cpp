@@ -58,8 +58,7 @@ namespace ams::htcs::impl {
 
     void HtcsManager::Close(s32 *out_err, s32 *out_res, s32 desc) {
         /* Invoke our implementation. */
-        s32 err;
-        const Result result = m_impl->DestroySocket(std::addressof(err), desc);
+        const Result result = m_impl->DestroySocket(desc);
 
         /* Set output. */
         *out_err  = ConvertResultToErrorCode(result);
