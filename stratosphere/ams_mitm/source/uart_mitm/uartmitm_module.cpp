@@ -17,6 +17,7 @@
 #include "../amsmitm_initialization.hpp"
 #include "uartmitm_module.hpp"
 #include "uart_mitm_service.hpp"
+#include "uart_mitm_logger.hpp"
 
 namespace ams::mitm::uart {
 
@@ -84,8 +85,12 @@ namespace ams::mitm::uart {
         /* Create mitm servers. */
         R_ABORT_UNLESS((g_server_manager.RegisterMitmServer<UartMitmService>(PortIndex_Mitm, UartMitmServiceName)));
 
+        mitm::uart::g_logger = std::make_shared<UartLogger>();
+
         /* Loop forever, servicing our services. */
         g_server_manager.LoopProcess();
+
+        mitm::uart::g_logger.reset();
     }
 
 }

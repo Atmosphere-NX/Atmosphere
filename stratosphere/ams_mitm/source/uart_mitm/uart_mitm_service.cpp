@@ -15,9 +15,8 @@
  */
 #include <stratosphere.hpp>
 #include "uart_mitm_service.hpp"
+#include "uart_mitm_logger.hpp"
 #include "../amsmitm_fs_utils.hpp"
-
-/* TODO: This should really use async fs-writing, there's a slowdown with bluetooth communications with current fs-writing. */
 
 namespace ams::mitm::uart {
 
@@ -41,7 +40,7 @@ namespace ams::mitm::uart {
         }
     }
 
-    UartPortService::UartPortService(const sm::MitmProcessInfo &cl, std::unique_ptr<::UartPortSession> s) : client_info(cl), srv(std::move(s)) {
+    UartPortService::UartPortService(const sm::MitmProcessInfo &cl, std::unique_ptr<::UartPortSession> s) : m_client_info(cl), m_srv(std::move(s)) {
         Result rc=0;
         /* Get a timestamp. */
         u64 timestamp0=0, timestamp1;
@@ -49,122 +48,66 @@ namespace ams::mitm::uart {
         timestamp1 = svcGetSystemTick();
 
         /* Setup/create the logging directory. */
-        std::snprintf(this->base_path, sizeof(this->base_path), "uart_logs/%011lu_%011lu_%016lx", timestamp0, timestamp1, static_cast<u64>(this->client_info.program_id));
+        std::snprintf(this->m_base_path, sizeof(this->m_base_path), "uart_logs/%011lu_%011lu_%016lx", timestamp0, timestamp1, static_cast<u64>(this->m_client_info.program_id));
         ams::mitm::fs::CreateAtmosphereSdDirectory("uart_logs");
-        ams::mitm::fs::CreateAtmosphereSdDirectory(this->base_path);
+        ams::mitm::fs::CreateAtmosphereSdDirectory(this->m_base_path);
 
         /* Create/initialize the text cmd_log. */
         char tmp_path[256];
-        std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->base_path, "cmd_log");
+        std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->m_base_path, "cmd_log");
         ams::mitm::fs::CreateAtmosphereSdFile(tmp_path, 0, 0);
-        this->cmdlog_pos = 0;
+        this->m_cmdlog_pos = 0;
 
         /* Initialize the Send cache-buffer. */
-        this->send_cache_buffer = static_cast<u8 *>(std::malloc(this->CacheBufferSize));
-        if (this->send_cache_buffer != nullptr) {
-            std::memset(this->send_cache_buffer, 0, this->CacheBufferSize);
+        this->m_send_cache_buffer = static_cast<u8 *>(std::malloc(this->CacheBufferSize));
+        if (this->m_send_cache_buffer != nullptr) {
+            std::memset(this->m_send_cache_buffer, 0, this->CacheBufferSize);
         }
-        this->send_cache_pos = 0;
+        this->m_send_cache_pos = 0;
 
         /* Initialize the Receive cache-buffer. */
-        this->receive_cache_buffer = static_cast<u8 *>(std::malloc(this->CacheBufferSize));
-        if (this->receive_cache_buffer != nullptr) {
-            std::memset(this->receive_cache_buffer, 0, this->CacheBufferSize);
+        this->m_receive_cache_buffer = static_cast<u8 *>(std::malloc(this->CacheBufferSize));
+        if (this->m_receive_cache_buffer != nullptr) {
+            std::memset(this->m_receive_cache_buffer, 0, this->CacheBufferSize);
         }
-        this->receive_cache_pos = 0;
+        this->m_receive_cache_pos = 0;
+
+        this->m_datalog_ready = false;
 
         /* When the above is successful, initialize the datalog. */
-        if (this->send_cache_buffer != nullptr && this->receive_cache_buffer != nullptr) {
-            std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->base_path, "btsnoop_hci.log");
+        if (this->m_send_cache_buffer != nullptr && this->m_receive_cache_buffer != nullptr) {
+            std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->m_base_path, "btsnoop_hci.log");
             ams::mitm::fs::CreateAtmosphereSdFile(tmp_path, 0, 0);
-            rc = ams::mitm::fs::OpenAtmosphereSdFile(&this->datalog_file, tmp_path, FsOpenMode_Read | FsOpenMode_Write | FsOpenMode_Append);
+            rc = ams::mitm::fs::OpenAtmosphereSdFile(&this->m_datalog_file, tmp_path, FsOpenMode_Read | FsOpenMode_Write | FsOpenMode_Append);
             /* Set datalog_ready to whether initialization was successful. */
-            this->datalog_ready = R_SUCCEEDED(rc);
+            this->m_datalog_ready = R_SUCCEEDED(rc);
         }
-        this->datalog_pos = 0;
 
-        /* Setup the btsnoop header. */
+        if (this->m_datalog_ready) {
+            std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
+            logger->InitializeDataLog(&this->m_datalog_file, &this->m_datalog_pos);
+        }
 
-        struct {
-            char id[8];
-            u32 version;
-            u32 datalink_type;
-        } btsnoop_header = { .id = "btsnoop" };
-
-        u32 version = 1;
-        u32 datalink_type = 1002; /* HCI UART (H4) */
-        ams::util::StoreBigEndian(&btsnoop_header.version, version);
-        ams::util::StoreBigEndian(&btsnoop_header.datalink_type, datalink_type);
-
-        /* Enable data-logging, required for WriteLog() to write anything. */
-        this->data_logging_enabled = true;
-
-        /* Write the btsnoop header to the datalog. */
-        this->WriteLog(&btsnoop_header, sizeof(btsnoop_header));
-
-        /* This will be re-enabled by WriteUartData once a certain command is detected. */
-        /* If you want to log all HCI traffic during system-boot initialization, you can comment out the below line, however there will be a slowdown. */
-        this->data_logging_enabled = false;
+        /* This will be enabled by WriteUartData once a certain command is detected. */
+        /* If you want to log all HCI traffic during system-boot initialization, you can change this field to true. */
+        /* When changed to true, qlaunch will hang at a black-screen during system-boot, due to the bluetooth slowdown. */
+        this->m_data_logging_enabled = false;
     }
 
     /* Append the specified string to the text cmd_log file. */
     void UartPortService::WriteCmdLog(const char *str) {
-        Result rc=0;
-        FsFile file={};
         char tmp_path[256];
-        size_t len = strlen(str);
-        std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->base_path, "cmd_log");
-        rc = ams::mitm::fs::OpenAtmosphereSdFile(&file, tmp_path, FsOpenMode_Read | FsOpenMode_Write | FsOpenMode_Append);
-        if (R_SUCCEEDED(rc)) {
-            rc = fsFileWrite(&file, this->cmdlog_pos, str, len, FsWriteOption_None);
-        }
-        if (R_SUCCEEDED(rc)) {
-            this->cmdlog_pos += len;
-        }
-        fsFileClose(&file);
-    }
-
-    /* Append the specified data to the datalog file. */
-    void UartPortService::WriteLog(const void* buffer, size_t size) {
-        /* Only write to the file if data-logging is enabled and initialized. */
-        if (this->data_logging_enabled && this->datalog_ready) {
-            if (R_SUCCEEDED(fsFileWrite(&this->datalog_file, this->datalog_pos, buffer, size, FsWriteOption_None))) {
-                this->datalog_pos += size;
-            }
-        }
-    }
-
-    /* Append the specified packet to the datalog via WriteLog. */
-    /* dir: false = Send (host->controller), true = Receive (controller->host). */
-    void UartPortService::WriteLogPacket(bool dir, const void* buffer, size_t size) {
-        struct {
-            u32 original_length;
-            u32 included_length;
-            u32 packet_flags;
-            u32 cumulative_drops;
-            s64 timestamp_microseconds;
-        } pkt_hdr = {};
-
-        u32 flags = 0;
-        if (dir) {
-            flags |= BIT(0);
-        }
-        ams::util::StoreBigEndian(&pkt_hdr.original_length, static_cast<u32>(size));
-        ams::util::StoreBigEndian(&pkt_hdr.included_length, static_cast<u32>(size));
-        ams::util::StoreBigEndian(&pkt_hdr.packet_flags, flags);
-
-        /* Currently we leave the timestamp at value 0. */
-
-        this->WriteLog(&pkt_hdr, sizeof(pkt_hdr));
-        this->WriteLog(buffer, size);
+        std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->m_base_path, "cmd_log");
+        std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
+        logger->SendTextLogData(tmp_path, &this->m_cmdlog_pos, str);
     }
 
     /* Log data from Send/Receive. */
     /* dir: false = Send (host->controller), true = Receive (controller->host). */
     void UartPortService::WriteUartData(bool dir, const void* buffer, size_t size) {
         /* Select which cache buffer/pos to use via dir. */
-        u8 *cache_buffer = !dir ? this->send_cache_buffer : this->receive_cache_buffer;
-        size_t *cache_pos = !dir ? &this->send_cache_pos : &this->receive_cache_pos;
+        u8 *cache_buffer = !dir ? this->m_send_cache_buffer : this->m_receive_cache_buffer;
+        size_t *cache_pos = !dir ? &this->m_send_cache_pos : &this->m_receive_cache_pos;
 
         /* Verify that the input size is non-zero, and within cache buffer bounds. */
         if (size && *cache_pos + size <= this->CacheBufferSize) {
@@ -217,8 +160,8 @@ namespace ams::mitm::uart {
                         /* Check for the first command used in the port which is opened last by bluetooth-sysmodule. */
                         /* This is a vendor command. */
                         /* Once detected, data-logging will be enabled. */
-                        if (!this->data_logging_enabled && hci_cmd->opcode[1] == 0xFC && hci_cmd->opcode[0] == 0x16) {
-                            this->data_logging_enabled = true;
+                        if (!this->m_data_logging_enabled && hci_cmd->opcode[1] == 0xFC && hci_cmd->opcode[0] == 0x16) {
+                            this->m_data_logging_enabled = true;
                         }
                     }
                 }
@@ -258,7 +201,11 @@ namespace ams::mitm::uart {
 
                 /* If a packet is available, log it and update the cache. */
                 if (pkt_len>0x1) {
-                    this->WriteLogPacket(dir, cache_buffer, pkt_len);
+                    /* Only write to the file if data-logging is enabled and initialized. */
+                    if (this->m_data_logging_enabled && this->m_datalog_ready) {
+                        std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
+                        logger->SendLogData(&this->m_datalog_file, &this->m_datalog_pos, dir, cache_buffer, pkt_len);
+                    }
                     (*cache_pos)-= pkt_len;
                     if (*cache_pos) {
                         std::memmove(cache_buffer, &cache_buffer[pkt_len], *cache_pos);
@@ -272,7 +219,7 @@ namespace ams::mitm::uart {
 
     /* Forward OpenPort and write to the cmd_log. */
     Result UartPortService::OpenPort(sf::Out<bool> out, u32 port, u32 baud_rate, UartFlowControlMode flow_control_mode, u32 device_variation, bool is_invert_tx, bool is_invert_rx, bool is_invert_rts, bool is_invert_cts, sf::CopyHandle send_handle, sf::CopyHandle receive_handle, u64 send_buffer_length, u64 receive_buffer_length) {
-        Result rc = uartPortSessionOpenPortFwd(this->srv.get(), reinterpret_cast<bool *>(out.GetPointer()), port, baud_rate, flow_control_mode, device_variation, is_invert_tx, is_invert_rx, is_invert_rts, is_invert_cts, send_handle.GetValue(), receive_handle.GetValue(), send_buffer_length, receive_buffer_length);
+        Result rc = uartPortSessionOpenPortFwd(this->m_srv.get(), reinterpret_cast<bool *>(out.GetPointer()), port, baud_rate, flow_control_mode, device_variation, is_invert_tx, is_invert_rx, is_invert_rts, is_invert_cts, send_handle.GetValue(), receive_handle.GetValue(), send_buffer_length, receive_buffer_length);
         svcCloseHandle(send_handle.GetValue());
         svcCloseHandle(receive_handle.GetValue());
 
@@ -284,7 +231,7 @@ namespace ams::mitm::uart {
 
     /* Forward OpenPortForDev and write to the cmd_log. */
     Result UartPortService::OpenPortForDev(sf::Out<bool> out, u32 port, u32 baud_rate, UartFlowControlMode flow_control_mode, u32 device_variation, bool is_invert_tx, bool is_invert_rx, bool is_invert_rts, bool is_invert_cts, sf::CopyHandle send_handle, sf::CopyHandle receive_handle, u64 send_buffer_length, u64 receive_buffer_length) {
-        Result rc = uartPortSessionOpenPortForDevFwd(this->srv.get(), reinterpret_cast<bool *>(out.GetPointer()), port, baud_rate, flow_control_mode, device_variation, is_invert_tx, is_invert_rx, is_invert_rts, is_invert_cts, send_handle.GetValue(), receive_handle.GetValue(), send_buffer_length, receive_buffer_length);
+        Result rc = uartPortSessionOpenPortForDevFwd(this->m_srv.get(), reinterpret_cast<bool *>(out.GetPointer()), port, baud_rate, flow_control_mode, device_variation, is_invert_tx, is_invert_rx, is_invert_rts, is_invert_cts, send_handle.GetValue(), receive_handle.GetValue(), send_buffer_length, receive_buffer_length);
         svcCloseHandle(send_handle.GetValue());
         svcCloseHandle(receive_handle.GetValue());
 
@@ -296,7 +243,7 @@ namespace ams::mitm::uart {
 
     /* Forward GetWritableLength and write to the cmd_log. */
     Result UartPortService::GetWritableLength(sf::Out<u64> out) {
-        Result rc = uartPortSessionGetWritableLength(this->srv.get(), reinterpret_cast<u64 *>(out.GetPointer()));
+        Result rc = uartPortSessionGetWritableLength(this->m_srv.get(), reinterpret_cast<u64 *>(out.GetPointer()));
 
         char str[256];
         std::snprintf(str, sizeof(str), "GetWritableLength(): rc = 0x%x, out = 0x%lx\n", rc.GetValue(), out.GetValue());
@@ -307,7 +254,7 @@ namespace ams::mitm::uart {
 
     /* Forward Send and log the data if the out_size is non-zero. */
     Result UartPortService::Send(sf::Out<u64> out_size, const sf::InAutoSelectBuffer &data) {
-        Result rc = uartPortSessionSend(this->srv.get(), data.GetPointer(), data.GetSize(), reinterpret_cast<u64 *>(out_size.GetPointer()));
+        Result rc = uartPortSessionSend(this->m_srv.get(), data.GetPointer(), data.GetSize(), reinterpret_cast<u64 *>(out_size.GetPointer()));
 
         if (R_SUCCEEDED(rc) && out_size.GetValue()) {
             this->WriteUartData(false, data.GetPointer(), out_size.GetValue());
@@ -317,7 +264,7 @@ namespace ams::mitm::uart {
 
     /* Forward GetReadableLength and write to the cmd_log. */
     Result UartPortService::GetReadableLength(sf::Out<u64> out) {
-        Result rc = uartPortSessionGetReadableLength(this->srv.get(), reinterpret_cast<u64 *>(out.GetPointer()));
+        Result rc = uartPortSessionGetReadableLength(this->m_srv.get(), reinterpret_cast<u64 *>(out.GetPointer()));
 
         char str[256];
         std::snprintf(str, sizeof(str), "GetReadableLength(): rc = 0x%x, out = 0x%lx\n", rc.GetValue(), out.GetValue());
@@ -328,7 +275,7 @@ namespace ams::mitm::uart {
 
     /* Forward Receive and log the data if the out_size is non-zero. */
     Result UartPortService::Receive(sf::Out<u64> out_size, const sf::OutAutoSelectBuffer &data) {
-        Result rc = uartPortSessionReceive(this->srv.get(), data.GetPointer(), data.GetSize(), reinterpret_cast<u64 *>(out_size.GetPointer()));
+        Result rc = uartPortSessionReceive(this->m_srv.get(), data.GetPointer(), data.GetSize(), reinterpret_cast<u64 *>(out_size.GetPointer()));
 
         if (R_SUCCEEDED(rc) && out_size.GetValue()) {
             this->WriteUartData(true, data.GetPointer(), out_size.GetValue());
@@ -338,7 +285,7 @@ namespace ams::mitm::uart {
 
     /* Forward BindPortEvent and write to the cmd_log. */
     Result UartPortService::BindPortEvent(sf::Out<bool> out, sf::OutCopyHandle out_event_handle, UartPortEventType port_event_type, s64 threshold) {
-        Result rc = uartPortSessionBindPortEventFwd(this->srv.get(), port_event_type, threshold, reinterpret_cast<bool *>(out.GetPointer()), out_event_handle.GetHandlePointer());
+        Result rc = uartPortSessionBindPortEventFwd(this->m_srv.get(), port_event_type, threshold, reinterpret_cast<bool *>(out.GetPointer()), out_event_handle.GetHandlePointer());
 
         char str[256];
         std::snprintf(str, sizeof(str), "BindPortEvent(port_event_type = 0x%x, threshold = 0x%lx): rc = 0x%x, out = %d\n", port_event_type, threshold, rc.GetValue(), out.GetValue());
@@ -348,7 +295,7 @@ namespace ams::mitm::uart {
 
     /* Forward UnbindPortEvent and write to the cmd_log. */
     Result UartPortService::UnbindPortEvent(sf::Out<bool> out, UartPortEventType port_event_type) {
-        Result rc = uartPortSessionUnbindPortEvent(this->srv.get(), port_event_type, reinterpret_cast<bool *>(out.GetPointer()));
+        Result rc = uartPortSessionUnbindPortEvent(this->m_srv.get(), port_event_type, reinterpret_cast<bool *>(out.GetPointer()));
 
         char str[256];
         std::snprintf(str, sizeof(str), "UnbindPortEvent(port_event_type = 0x%x): rc = 0x%x, out = %d\n", port_event_type, rc.GetValue(), out.GetValue());

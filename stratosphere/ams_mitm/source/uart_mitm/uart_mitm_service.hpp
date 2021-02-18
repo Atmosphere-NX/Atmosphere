@@ -16,6 +16,7 @@
 #pragma once
 #include <stratosphere.hpp>
 
+#include "uart_mitm_logger.hpp"
 #include "uart_shim.h"
 
 #define AMS_UART_IPORTSESSION_MITM_INTERFACE_INFO(C, H)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 \
@@ -39,39 +40,39 @@ namespace ams::mitm::uart {
 
     class UartPortService {
         private:
-            sm::MitmProcessInfo client_info;
-            std::unique_ptr<::UartPortSession> srv;
+            sm::MitmProcessInfo m_client_info;
+            std::unique_ptr<::UartPortSession> m_srv;
 
             static constexpr inline size_t CacheBufferSize = 0x1000;
 
-            char base_path[256];
+            char m_base_path[256];
 
-            size_t cmdlog_pos;
-            size_t datalog_pos;
+            size_t m_cmdlog_pos;
+            size_t m_datalog_pos;
 
-            bool datalog_ready;
-            bool data_logging_enabled;
+            bool m_datalog_ready;
+            bool m_data_logging_enabled;
 
-            FsFile datalog_file;
+            FsFile m_datalog_file;
 
-            u8 *send_cache_buffer;
-            u8 *receive_cache_buffer;
-            size_t send_cache_pos;
-            size_t receive_cache_pos;
+            u8 *m_send_cache_buffer;
+            u8 *m_receive_cache_buffer;
+            size_t m_send_cache_pos;
+            size_t m_receive_cache_pos;
 
             bool TryGetCurrentTimestamp(u64 *out);
             void WriteCmdLog(const char *str);
-            void WriteLog(const void* buffer, size_t size);
-            void WriteLogPacket(bool dir, const void* buffer, size_t size);
             void WriteUartData(bool dir, const void* buffer, size_t size);
         public:
             UartPortService(const sm::MitmProcessInfo &cl, std::unique_ptr<::UartPortSession> s);
 
             virtual ~UartPortService() {
-                uartPortSessionClose(this->srv.get());
-                fsFileClose(&this->datalog_file);
-                std::free(this->send_cache_buffer);
-                std::free(this->receive_cache_buffer);
+                std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
+                logger->WaitFinished();
+                uartPortSessionClose(this->m_srv.get());
+                fsFileClose(&this->m_datalog_file);
+                std::free(this->m_send_cache_buffer);
+                std::free(this->m_receive_cache_buffer);
             }
         public:
             /* Actual command API. */
