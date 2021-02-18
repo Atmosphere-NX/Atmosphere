@@ -32,7 +32,7 @@ namespace ams::htcs::impl {
             R_CATCH(htc::ResultUnknown2021)                 { return HTCS_EINTR; }
             R_CATCH(htc::ResultInvalidTaskId)               { return HTCS_EINTR; }
             R_CATCH(htc::ResultCancelled)                   { return HTCS_EINTR; }
-            R_CATCH(htc::ResultUnknown2033)                 { return HTCS_ENETDOWN; }
+            R_CATCH(htc::ResultTaskQueueNotAvailable)       { return HTCS_ENETDOWN; }
             R_CATCH(htclow::ResultConnectionFailure)        { return HTCS_ENETDOWN; }
             R_CATCH(htclow::ResultChannelNotExist)          { return HTCS_ENOTCONN; }
             R_CATCH_ALL()                                   { return HTCS_EUNKNOWN; }

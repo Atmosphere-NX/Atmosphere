@@ -39,8 +39,10 @@ namespace ams::htc::server::rpc {
     static_assert(sizeof(RpcPacket) == 0x40);
 
     enum class RpcTaskCancelReason {
-        None = 0,
-        /* ... */
+        None              = 0,
+        One               = 1,
+        Two               = 2,
+        QueueNotAvailable = 3,
     };
 
     enum class RpcTaskState {

@@ -62,6 +62,8 @@ namespace ams::htcs::impl {
 
             Result SelectStart(u32 *out_task_id, Handle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec);
             Result SelectEnd(s32 *out_err, s32 *out_res, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id);
+        private:
+            void WaitTask(u32 task_id);
     };
 
 }
