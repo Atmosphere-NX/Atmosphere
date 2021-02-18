@@ -16,12 +16,10 @@
 #pragma once
 #include <vapours/results/results_common.hpp>
 
-namespace ams::htcs {
+namespace ams::tma {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(4);
+    R_DEFINE_NAMESPACE_RESULT_MODULE(12);
 
-    R_DEFINE_ERROR_RESULT(InvalidHandle, 9);
-
-    R_DEFINE_ERROR_RESULT(InvalidSize, 2014);
+    R_DEFINE_ERROR_RESULT(Unknown, 1);
 
 }

@@ -82,12 +82,12 @@ namespace ams::htcs::server {
         return manager->StartSelect(out_task_id.GetPointer(), out_event.GetHandlePointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), tv_sec, tv_usec);
     }
 
-    Result ManagerServiceObject::EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_res, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id) {
+    Result ManagerServiceObject::EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_count, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id) {
         /* Get the htcs manager. */
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* End the select. */
-        return manager->EndSelect(out_err.GetPointer(), out_res.GetPointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), task_id);
+        return manager->EndSelect(out_err.GetPointer(), out_count.GetPointer(), read_handles.ToSpan(), write_handles.ToSpan(), exception_handles.ToSpan(), task_id);
     }
 
 }

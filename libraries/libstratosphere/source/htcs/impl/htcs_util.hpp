@@ -14,14 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <vapours/results/results_common.hpp>
+#include <stratosphere.hpp>
 
-namespace ams::htcs {
+namespace ams::htcs::impl {
 
-    R_DEFINE_NAMESPACE_RESULT_MODULE(4);
-
-    R_DEFINE_ERROR_RESULT(InvalidHandle, 9);
-
-    R_DEFINE_ERROR_RESULT(InvalidSize, 2014);
+    s32 ConvertResultToErrorCode(const Result result);
 
 }

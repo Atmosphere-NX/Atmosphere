@@ -37,7 +37,7 @@ namespace ams::htcs::server {
             Result RegisterProcessId(const sf::ClientProcessId &client_pid);
             Result MonitorManager(const sf::ClientProcessId &client_pid);
             Result StartSelect(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InMapAliasArray<s32> &read_handles, const sf::InMapAliasArray<s32> &write_handles, const sf::InMapAliasArray<s32> &exception_handles, s64 tv_sec, s64 tv_usec);
-            Result EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_res, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id);
+            Result EndSelect(sf::Out<s32> out_err, sf::Out<s32> out_count, const sf::OutMapAliasArray<s32> &read_handles, const sf::OutMapAliasArray<s32> &write_handles, const sf::OutMapAliasArray<s32> &exception_handles, u32 task_id);
     };
     static_assert(tma::IsIHtcsManager<ManagerServiceObject>);
 
