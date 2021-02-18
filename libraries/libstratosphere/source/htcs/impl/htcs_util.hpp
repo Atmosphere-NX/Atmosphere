@@ -20,4 +20,17 @@ namespace ams::htcs::impl {
 
     s32 ConvertResultToErrorCode(const Result result);
 
+    constexpr bool IsValidName(const char *name) {
+        static_assert(PeerNameBufferLength == PortNameBufferLength);
+        return util::Strnlen(name, PeerNameBufferLength) < PeerNameBufferLength;
+    }
+
+    constexpr bool IsValidName(const HtcsPeerName &name) {
+        return IsValidName(name.name);
+    }
+
+    constexpr bool IsValidName(const HtcsPortName &name) {
+        return IsValidName(name.name);
+    }
+
 }

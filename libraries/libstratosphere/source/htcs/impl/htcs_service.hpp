@@ -34,7 +34,7 @@ namespace ams::htcs::impl {
             /* TODO */
         public:
             Result CreateSocket(s32 *out_err, s32 *out_desc, bool enable_disconnection_emulation);
-            Result DestroySocket(s32 *out_err, s32 desc);
+            Result DestroySocket(s32 desc);
             Result Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address);
             Result Bind(s32 *out_err, s32 desc, const SockAddrHtcs &address);
             Result Listen(s32 *out_err, s32 desc, s32 backlog_count);
