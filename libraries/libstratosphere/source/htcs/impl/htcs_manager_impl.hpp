@@ -47,7 +47,7 @@ namespace ams::htcs::impl {
             Result Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address);
             Result Bind(s32 *out_err, s32 desc, const SockAddrHtcs &address);
             Result Listen(s32 *out_err, s32 desc, s32 backlog_count);
-            Result Recv(s32 *out_err, s64 *out_size, char *buffer, size_t size, s32 desc, s32 flags);
+            Result Receive(s32 *out_err, s64 *out_size, char *buffer, size_t size, s32 desc, s32 flags);
             Result Send(s32 *out_err, s64 *out_size, const char *buffer, size_t size, s32 desc, s32 flags);
             Result Shutdown(s32 *out_err, s32 desc, s32 how);
             Result Fcntl(s32 *out_err, s32 *out_res, s32 desc, s32 command, s32 value);

@@ -23,5 +23,7 @@ namespace ams::htcs {
     R_DEFINE_ERROR_RESULT(InvalidHandle, 9);
 
     R_DEFINE_ERROR_RESULT(InvalidSize, 2014);
+    R_DEFINE_ERROR_RESULT(Unknown2021, 2021);
+    R_DEFINE_ERROR_RESULT(Unknown2023, 2023);
 
 }
