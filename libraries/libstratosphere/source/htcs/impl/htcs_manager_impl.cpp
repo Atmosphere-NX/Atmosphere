@@ -107,7 +107,7 @@ namespace ams::htcs::impl {
         /* Continue the send. */
         s64 continue_size;
         const Result result = m_service.SendSmallContinue(std::addressof(continue_size), buffer, size, task_id, desc);
-        if (R_SUCCEEDED(result) || htcs::ResultUnknown2023::Includes(result) || htc::ResultUnknown2033::Includes(result)) {
+        if (R_SUCCEEDED(result) || htcs::ResultUnknown2023::Includes(result) || htc::ResultTaskQueueNotAvailable::Includes(result)) {
             *out_task_id = task_id;
             *out_handle  = handle;
         } else {

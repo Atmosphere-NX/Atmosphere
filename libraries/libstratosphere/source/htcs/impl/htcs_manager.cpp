@@ -220,7 +220,7 @@ namespace ams::htcs::impl {
         } else {
             if (htc::ResultCancelled::Includes(result)) {
                 *out_err = HTCS_ENETDOWN;
-            } else if (htc::ResultUnknown2033::Includes(result)) {
+            } else if (htc::ResultTaskQueueNotAvailable::Includes(result)) {
                 *out_err = HTCS_EINTR;
             } else {
                 *out_err = ConvertResultToErrorCode(result);
@@ -247,7 +247,7 @@ namespace ams::htcs::impl {
                 *out_size = -1;
             }
         } else {
-            if (htc::ResultUnknown2033::Includes(result)) {
+            if (htc::ResultTaskQueueNotAvailable::Includes(result)) {
                 *out_err = HTCS_EINTR;
             } else {
                 *out_err = ConvertResultToErrorCode(result);
@@ -279,7 +279,7 @@ namespace ams::htcs::impl {
                 *out_size = -1;
             }
         } else {
-            if (htc::ResultUnknown2033::Includes(result)) {
+            if (htc::ResultTaskQueueNotAvailable::Includes(result)) {
                 *out_err = HTCS_EINTR;
             } else {
                 *out_err = ConvertResultToErrorCode(result);
@@ -320,7 +320,7 @@ namespace ams::htcs::impl {
                 *out_size = -1;
             }
         } else {
-            if (htc::ResultUnknown2033::Includes(result)) {
+            if (htc::ResultTaskQueueNotAvailable::Includes(result)) {
                 *out_err = HTCS_EINTR;
             } else {
                 *out_err = ConvertResultToErrorCode(result);
@@ -348,7 +348,7 @@ namespace ams::htcs::impl {
                 *out_size = -1;
             }
         } else {
-            if (htc::ResultCancelled::Includes(result) || htc::ResultUnknown2033::Includes(result)) {
+            if (htc::ResultCancelled::Includes(result) || htc::ResultTaskQueueNotAvailable::Includes(result)) {
                 *out_err = 0;
             } else {
                 *out_err = ConvertResultToErrorCode(result);
