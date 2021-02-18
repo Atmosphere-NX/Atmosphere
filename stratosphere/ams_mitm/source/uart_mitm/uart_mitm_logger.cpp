@@ -138,7 +138,7 @@ namespace ams::mitm::uart {
     void UartLogger::FlushCache() {
         for (size_t i=0; i<this->m_cache_count; i++) {
             UartLogMessage *cache_msg=&this->m_cache_list[i];
-            this->WriteLogPacket(cache_msg->datalog_file, cache_msg->file_pos, cache_msg->dir, cache_msg->data, cache_msg->size);
+            this->WriteLogPacket(cache_msg->datalog_file, cache_msg->file_pos, cache_msg->timestamp, cache_msg->dir, cache_msg->data, cache_msg->size);
         }
 
         this->m_cache_count = 0;
@@ -184,7 +184,7 @@ namespace ams::mitm::uart {
 
     /* Append the specified packet to the datalog via WriteLog. */
     /* dir: false = Send (host->controller), true = Receive (controller->host). */
-    void UartLogger::WriteLogPacket(FsFile *f, size_t *datalog_pos, bool dir, const void* buffer, size_t size) {
+    void UartLogger::WriteLogPacket(FsFile *f, size_t *datalog_pos, s64 timestamp, bool dir, const void* buffer, size_t size) {
         struct {
             u32 original_length;
             u32 included_length;
@@ -200,8 +200,7 @@ namespace ams::mitm::uart {
         ams::util::StoreBigEndian(&pkt_hdr.original_length, static_cast<u32>(size));
         ams::util::StoreBigEndian(&pkt_hdr.included_length, static_cast<u32>(size));
         ams::util::StoreBigEndian(&pkt_hdr.packet_flags, flags);
-
-        /* Currently we leave the timestamp at value 0. */
+        ams::util::StoreBigEndian(&pkt_hdr.timestamp_microseconds, timestamp);
 
         this->WriteLog(f, datalog_pos, &pkt_hdr, sizeof(pkt_hdr));
         this->WriteLog(f, datalog_pos, buffer, size);
@@ -209,7 +208,7 @@ namespace ams::mitm::uart {
 
     /* Send the specified data to the Logger thread. */
     /* dir: false = Send (host->controller), true = Receive (controller->host). */
-    void UartLogger::SendLogData(FsFile *f, size_t *file_pos, bool dir, const void* buffer, size_t size) {
+    void UartLogger::SendLogData(FsFile *f, size_t *file_pos, s64 timestamp_base, s64 tick_base, bool dir, const void* buffer, size_t size) {
         /* Ignore log data which is too large. */
         if (size > this->QueueBufferSize) return;
 
@@ -220,6 +219,12 @@ namespace ams::mitm::uart {
         /* Setup the msg and send it. */
         msg->type = 1;
         msg->dir = dir;
+        if (timestamp_base) {
+            msg->timestamp = (armTicksToNs(armGetSystemTick() - tick_base) / 1000) + timestamp_base;
+        }
+        else {
+            msg->timestamp = 0;
+        }
         msg->datalog_file = f;
         msg->file_pos = file_pos;
         msg->size = size;

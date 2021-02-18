@@ -45,7 +45,14 @@ namespace ams::mitm::uart {
         /* Get a timestamp. */
         u64 timestamp0=0, timestamp1;
         this->TryGetCurrentTimestamp(&timestamp0);
-        timestamp1 = svcGetSystemTick();
+        timestamp1 = armGetSystemTick();
+
+        /* Setup the btsnoop base timestamps. */
+        this->m_timestamp_base = timestamp0;
+        if (this->m_timestamp_base) {
+            this->m_timestamp_base = 0x00E03AB44A676000 + (this->m_timestamp_base - 946684800) * 1000000;
+        }
+        this->m_tick_base = timestamp1;
 
         /* Setup/create the logging directory. */
         std::snprintf(this->m_base_path, sizeof(this->m_base_path), "uart_logs/%011lu_%011lu_%016lx", timestamp0, timestamp1, static_cast<u64>(this->m_client_info.program_id));
@@ -204,7 +211,7 @@ namespace ams::mitm::uart {
                     /* Only write to the file if data-logging is enabled and initialized. */
                     if (this->m_data_logging_enabled && this->m_datalog_ready) {
                         std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
-                        logger->SendLogData(&this->m_datalog_file, &this->m_datalog_pos, dir, cache_buffer, pkt_len);
+                        logger->SendLogData(&this->m_datalog_file, &this->m_datalog_pos, this->m_timestamp_base, this->m_tick_base, dir, cache_buffer, pkt_len);
                     }
                     (*cache_pos)-= pkt_len;
                     if (*cache_pos) {

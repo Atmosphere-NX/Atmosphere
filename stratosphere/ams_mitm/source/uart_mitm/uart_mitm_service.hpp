@@ -45,6 +45,9 @@ namespace ams::mitm::uart {
 
             static constexpr inline size_t CacheBufferSize = 0x1000;
 
+            s64 m_timestamp_base;
+            s64 m_tick_base;
+
             char m_base_path[256];
 
             size_t m_cmdlog_pos;

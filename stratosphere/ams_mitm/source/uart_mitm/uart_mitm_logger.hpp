@@ -21,6 +21,7 @@ namespace ams::mitm::uart {
     struct UartLogMessage {
         u8 type;
         bool dir;
+        s64 timestamp;
         FsFile *datalog_file;
         size_t *file_pos;
         size_t size;
@@ -57,7 +58,7 @@ namespace ams::mitm::uart {
 
             void WriteCmdLog(const char *path, const char *str, size_t *file_pos);
             void WriteLog(FsFile *f, size_t *datalog_pos, const void* buffer, size_t size);
-            void WriteLogPacket(FsFile *f, size_t *datalog_pos, bool dir, const void* buffer, size_t size);
+            void WriteLogPacket(FsFile *f, size_t *datalog_pos, s64 timestamp, bool dir, const void* buffer, size_t size);
         public:
             UartLogger();
             ~UartLogger();
@@ -66,7 +67,7 @@ namespace ams::mitm::uart {
 
             void InitializeDataLog(FsFile *f, size_t *datalog_pos);
 
-            void SendLogData(FsFile *f, size_t *file_pos, bool dir, const void* buffer, size_t size);
+            void SendLogData(FsFile *f, size_t *file_pos, s64 timestamp_base, s64 tick_base, bool dir, const void* buffer, size_t size);
             void SendTextLogData(const char *path, size_t *file_pos, const char *str);
     };
 
