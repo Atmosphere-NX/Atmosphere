@@ -67,7 +67,7 @@ namespace ams::mitm::uart {
 
             void InitializeDataLog(FsFile *f, size_t *datalog_pos);
 
-            void SendLogData(FsFile *f, size_t *file_pos, s64 timestamp_base, s64 tick_base, bool dir, const void* buffer, size_t size);
+            bool SendLogData(FsFile *f, size_t *file_pos, s64 timestamp_base, s64 tick_base, bool dir, const void* buffer, size_t size);
             void SendTextLogData(const char *path, size_t *file_pos, const char *str);
     };
 

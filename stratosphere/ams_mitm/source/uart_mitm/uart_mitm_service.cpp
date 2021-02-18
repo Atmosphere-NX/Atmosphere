@@ -211,7 +211,11 @@ namespace ams::mitm::uart {
                     /* Only write to the file if data-logging is enabled and initialized. */
                     if (this->m_data_logging_enabled && this->m_datalog_ready) {
                         std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
-                        logger->SendLogData(&this->m_datalog_file, &this->m_datalog_pos, this->m_timestamp_base, this->m_tick_base, dir, cache_buffer, pkt_len);
+                        if (!logger->SendLogData(&this->m_datalog_file, &this->m_datalog_pos, this->m_timestamp_base, this->m_tick_base, dir, cache_buffer, pkt_len)) {
+                            char str[256];
+                            std::snprintf(str, sizeof(str), "WriteUartData(): SendLogData dropped packet with size = 0x%lx\n", pkt_len);
+                            this->WriteCmdLog(str);
+                        }
                     }
                     (*cache_pos)-= pkt_len;
                     if (*cache_pos) {

@@ -208,13 +208,13 @@ namespace ams::mitm::uart {
 
     /* Send the specified data to the Logger thread. */
     /* dir: false = Send (host->controller), true = Receive (controller->host). */
-    void UartLogger::SendLogData(FsFile *f, size_t *file_pos, s64 timestamp_base, s64 tick_base, bool dir, const void* buffer, size_t size) {
+    bool UartLogger::SendLogData(FsFile *f, size_t *file_pos, s64 timestamp_base, s64 tick_base, bool dir, const void* buffer, size_t size) {
         /* Ignore log data which is too large. */
-        if (size > this->QueueBufferSize) return;
+        if (size > this->QueueBufferSize) return false;
 
         UartLogMessage *msg=nullptr;
         this->m_client_queue.Receive(reinterpret_cast<uintptr_t *>(&msg));
-        if (msg->data == nullptr) return;
+        if (msg->data == nullptr) return true;
 
         /* Setup the msg and send it. */
         msg->type = 1;
@@ -233,6 +233,7 @@ namespace ams::mitm::uart {
         this->m_finish_event.Clear();
         this->m_thread_queue.Send(reinterpret_cast<uintptr_t>(msg));
         this->m_request_event.Signal();
+        return true;
     }
 
     /* Send the specified text log to the Logger thread. */
