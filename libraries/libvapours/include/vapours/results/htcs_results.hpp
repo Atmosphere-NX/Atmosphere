@@ -22,9 +22,11 @@ namespace ams::htcs {
 
     R_DEFINE_ERROR_RESULT(InvalidHandle, 9);
 
-    R_DEFINE_ERROR_RESULT(InvalidArgument, 2001);
-    R_DEFINE_ERROR_RESULT(InvalidSize,     2014);
-    R_DEFINE_ERROR_RESULT(Cancelled,       2021);
-    R_DEFINE_ERROR_RESULT(Completed,       2023);
+    R_DEFINE_ERROR_RESULT(InvalidArgument,     2001);
+    R_DEFINE_ERROR_RESULT(InvalidServerHandle, 2003);
+    R_DEFINE_ERROR_RESULT(InvalidSize,         2014);
+    R_DEFINE_ERROR_RESULT(Cancelled,           2021);
+    R_DEFINE_ERROR_RESULT(Completed,           2023);
+    R_DEFINE_ERROR_RESULT(InvalidTask,         2103);
 
 }

@@ -35,14 +35,71 @@ namespace ams::htcs::impl::rpc {
         Select       = 12,
     };
 
-    constexpr inline const s16 ProtocolVersion = 4;
+    constexpr inline s16       HtcsProtocol   = 5;
+    constexpr inline const s16 HtcsMaxVersion = 4;
+
+    enum class HtcsPacketCategory : s16 {
+        Request      = 0,
+        Response     = 1,
+        Notification = 2,
+    };
+
+    enum class HtcsPacketType : s16 {
+        Receive      = 32,
+        Send         = 33,
+        Shutdown     = 34,
+        Close        = 35,
+        Connect      = 36,
+        Listen       = 37,
+        Accept       = 38,
+        Socket       = 39,
+        Bind         = 40,
+        Fcntl        = 41,
+        ReceiveLarge = 42,
+        SendLarge    = 43,
+        Select       = 44,
+    };
+
+    struct HtcsRpcPacket {
+        s16 protocol;
+        s16 version;
+        HtcsPacketCategory category;
+        HtcsPacketType type;
+        s64 body_size;
+        u32 task_id;
+        s64 params[5];
+        char data[];
+    };
+    static_assert(sizeof(HtcsRpcPacket) == 0x40);
+
+    constexpr inline u16 ReceiveDataChannelIdBegin = htc::server::rpc::MaxRpcCount;
+    constexpr inline u16 ReceiveDataChannelIdEnd   = ReceiveDataChannelIdBegin + htc::server::rpc::MaxRpcCount;
+    static_assert(ReceiveDataChannelIdEnd - ReceiveDataChannelIdBegin == htc::server::rpc::MaxRpcCount);
+
+    constexpr inline u16 SendDataChannelIdBegin    = ReceiveDataChannelIdEnd;
+    constexpr inline u16 SendDataChannelIdEnd      = SendDataChannelIdBegin + htc::server::rpc::MaxRpcCount;
+    static_assert(SendDataChannelIdEnd - SendDataChannelIdBegin == htc::server::rpc::MaxRpcCount);
+
+    constexpr inline u16 GetReceiveDataChannelId(u32 task_id) {
+        const u16 channel_id = task_id + ReceiveDataChannelIdBegin;
+        AMS_ASSERT(ReceiveDataChannelIdBegin <= channel_id && channel_id < ReceiveDataChannelIdEnd);
+
+        return channel_id;
+    }
+
+    constexpr inline u16 GetSendDataChannelId(u32 task_id) {
+        const u16 channel_id = task_id + SendDataChannelIdBegin;
+        AMS_ASSERT(SendDataChannelIdBegin <= channel_id && channel_id < SendDataChannelIdEnd);
+
+        return channel_id;
+    }
 
     class HtcsTask : public htc::server::rpc::Task {
         private:
             HtcsTaskType m_task_type;
             s16 m_version;
         public:
-            HtcsTask(HtcsTaskType type) : m_task_type(type), m_version(ProtocolVersion) { /* ... */ }
+            HtcsTask(HtcsTaskType type); /* Defined in socket_task.cpp, for namespacing reasons. */
 
             HtcsTaskType GetTaskType() const { return m_task_type; }
             s16 GetVersion() const { return m_version; }
@@ -116,7 +173,7 @@ namespace ams::htcs::impl::rpc {
             s32 m_handle;
             s64 m_size;
             htcs::MessageFlag m_flags;
-            void *m_buffer;
+            const void *m_buffer;
             s64 m_buffer_size;
             htcs::SocketError m_err;
             s64 m_result_size;
@@ -126,7 +183,7 @@ namespace ams::htcs::impl::rpc {
             s32 GetHandle() const { return m_handle; }
             s64 GetSize() const { return m_size; }
             htcs::MessageFlag GetFlags() const { return m_flags; }
-            void *GetBuffer() const { return m_buffer; }
+            const void *GetBuffer() const { return m_buffer; }
             s64 GetBufferSize() const { return m_buffer_size; }
 
             void SetBuffer(const void *buffer, s64 buffer_size);
@@ -305,7 +362,7 @@ namespace ams::htcs::impl::rpc {
             s32 GetValue() const { return m_value; }
         public:
             Result SetArguments(s32 handle, s32 command, s32 value);
-            void Complete(htcs::SocketError err);
+            void Complete(htcs::SocketError err, s32 res);
             Result GetResult(htcs::SocketError *out_err, s32 *out_res) const;
         public:
             virtual Result ProcessResponse(const char *data, size_t size) override;
