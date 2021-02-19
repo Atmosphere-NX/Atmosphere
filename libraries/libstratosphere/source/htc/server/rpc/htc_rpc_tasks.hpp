@@ -40,8 +40,8 @@ namespace ams::htc::server::rpc {
 
     enum class RpcTaskCancelReason {
         None              = 0,
-        One               = 1,
-        Two               = 2,
+        BySocket          = 1,
+        ClientFinalized   = 2,
         QueueNotAvailable = 3,
     };
 

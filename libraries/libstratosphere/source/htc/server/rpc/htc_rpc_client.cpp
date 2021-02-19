@@ -42,6 +42,7 @@ namespace ams::htc::server::rpc {
           m_task_id_free_list(g_task_id_free_list),
           m_task_table(g_task_table),
           m_task_active(),
+          m_is_htcs_task(),
           m_task_queue(),
           m_cancelled(false),
           m_thread_running(false)
@@ -63,6 +64,7 @@ namespace ams::htc::server::rpc {
           m_task_id_free_list(g_task_id_free_list),
           m_task_table(g_task_table),
           m_task_active(),
+          m_is_htcs_task(),
           m_task_queue(),
           m_cancelled(false),
           m_thread_running(false)
@@ -173,8 +175,7 @@ namespace ams::htc::server::rpc {
         /* Cancel all tasks. */
         for (size_t i = 0; i < MaxRpcCount; ++i) {
             if (m_task_active[i]) {
-                /* TODO: enum member */
-                m_task_table.Get<Task>(i)->Cancel(static_cast<RpcTaskCancelReason>(2));
+                m_task_table.Get<Task>(i)->Cancel(RpcTaskCancelReason::ClientFinalized);
             }
         }
     }
@@ -235,6 +236,7 @@ namespace ams::htc::server::rpc {
             /* If the task is canceled, free it. */
             if (task->GetTaskState() == RpcTaskState::Cancelled) {
                 m_task_active[header->task_id] = false;
+                m_is_htcs_task[header->task_id] = false;
                 m_task_table.Delete(header->task_id);
                 m_task_id_free_list.Free(header->task_id);
                 continue;
@@ -338,6 +340,130 @@ namespace ams::htc::server::rpc {
         R_UNLESS(sent == static_cast<s64>(size), htc::ResultInvalidSize());
 
         return ResultSuccess();
+    }
+
+    void RpcClient::CancelBySocket(s32 handle) {
+        /* Check if we need to cancel each task. */
+        for (size_t i = 0; i < MaxRpcCount; ++i) {
+            /* Lock ourselves. */
+            std::scoped_lock lk(m_mutex);
+
+            /* Check that the task is active and is an htcs task. */
+            if (!m_task_active[i] || !m_is_htcs_task[i]) {
+                continue;
+            }
+
+            /* Get the htcs task. */
+            auto *htcs_task = m_task_table.Get<htcs::impl::rpc::HtcsTask>(i);
+
+            /* Handle the case where the task handle is the one we're cancelling. */
+            if (this->GetTaskHandle(i) == handle) {
+                /* If the task is complete, free it. */
+                if (htcs_task->GetTaskState() == RpcTaskState::Completed) {
+                    m_task_active[i] = false;
+                    m_is_htcs_task[i] = false;
+                    m_task_table.Delete(i);
+                    m_task_id_free_list.Free(i);
+                } else {
+                    /* If the task is a send task, notify. */
+                    if (htcs_task->GetTaskType() == htcs::impl::rpc::HtcsTaskType::Send) {
+                        m_task_queue.Add(i, PacketCategory::Notification);
+                    }
+
+                    /* Cancel the task. */
+                    htcs_task->Cancel(RpcTaskCancelReason::BySocket);
+                }
+
+                /* The task has been cancelled, so we can move on. */
+                continue;
+            }
+
+            /* Handle the case where the task is a select task. */
+            if (htcs_task->GetTaskType() == htcs::impl::rpc::HtcsTaskType::Select) {
+                /* Get the select task. */
+                auto *select_task = m_task_table.Get<htcs::impl::rpc::SelectTask>(i);
+
+                /* Get the handle counts. */
+                const auto num_read      = select_task->GetReadHandleCount();
+                const auto num_write     = select_task->GetWriteHandleCount();
+                const auto num_exception = select_task->GetExceptionHandleCount();
+                const auto total = num_read + num_write + num_exception;
+
+                /* Get the handle array. */
+                const auto *handles = select_task->GetHandles();
+
+                /* Check each handle. */
+                for (auto handle_idx = 0; handle_idx < total; ++handle_idx) {
+                    if (handles[handle_idx] == handle) {
+                        /* If the select is complete, free it. */
+                        if (select_task->GetTaskState() == RpcTaskState::Completed) {
+                            m_task_active[i] = false;
+                            m_is_htcs_task[i] = false;
+                            m_task_table.Delete(i);
+                            m_task_id_free_list.Free(i);
+                        } else {
+                            /* Cancel the task. */
+                            select_task->Cancel(RpcTaskCancelReason::BySocket);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    s32 RpcClient::GetTaskHandle(u32 task_id) {
+        /* Check pre-conditions. */
+        AMS_ASSERT(m_task_active[task_id]);
+        AMS_ASSERT(m_is_htcs_task[task_id]);
+
+        /* Get the htcs task. */
+        auto *task = m_task_table.Get<htcs::impl::rpc::HtcsTask>(task_id);
+
+        /* Check that the task has a handle. */
+        if (!m_task_active[task_id] || !m_is_htcs_task[task_id] || task == nullptr) {
+            return -1;
+        }
+
+        /* Get the task's type. */
+        const auto type = task->GetTaskType();
+
+        /* Check that the task is new enough. */
+        if (task->GetVersion() == 3) {
+            if (type == htcs::impl::rpc::HtcsTaskType::Receive || type == htcs::impl::rpc::HtcsTaskType::Send) {
+                return -1;
+            }
+        }
+
+        /* Get the handle from the task. */
+        switch (type) {
+            case htcs::impl::rpc::HtcsTaskType::Receive:
+                return static_cast<htcs::impl::rpc::ReceiveTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Send:
+                return static_cast<htcs::impl::rpc::SendTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Shutdown:
+                return static_cast<htcs::impl::rpc::ShutdownTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Close:
+                return -1;
+            case htcs::impl::rpc::HtcsTaskType::Connect:
+                return static_cast<htcs::impl::rpc::ConnectTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Listen:
+                return static_cast<htcs::impl::rpc::ListenTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Accept:
+                return static_cast<htcs::impl::rpc::AcceptTask *>(task)->GetServerHandle();
+            case htcs::impl::rpc::HtcsTaskType::Socket:
+                return -1;
+            case htcs::impl::rpc::HtcsTaskType::Bind:
+                return static_cast<htcs::impl::rpc::BindTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Fcntl:
+                return static_cast<htcs::impl::rpc::FcntlTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::ReceiveSmall:
+                return static_cast<htcs::impl::rpc::ReceiveSmallTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::SendSmall:
+                return static_cast<htcs::impl::rpc::SendSmallTask *>(task)->GetHandle();
+            case htcs::impl::rpc::HtcsTaskType::Select:
+                return -1;
+            AMS_UNREACHABLE_DEFAULT_CASE();
+        }
     }
 
 }

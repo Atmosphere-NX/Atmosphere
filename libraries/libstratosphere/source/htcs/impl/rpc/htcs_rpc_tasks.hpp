@@ -48,6 +48,9 @@ namespace ams::htcs::impl::rpc {
             s16 GetVersion() const { return m_version; }
     };
 
+    template<typename T>
+    concept IsHtcsTask = std::derived_from<T, HtcsTask>;
+
     class HtcsSignalingTask : public HtcsTask {
         private:
             os::SystemEventType m_system_event;
@@ -72,6 +75,8 @@ namespace ams::htcs::impl::rpc {
     };
 
     class ReceiveTask : public HtcsSignalingTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Receive;
         private:
             s32 m_handle;
             s64 m_size;
@@ -81,7 +86,7 @@ namespace ams::htcs::impl::rpc {
             htcs::SocketError m_err;
             s64 m_result_size;
         public:
-            ReceiveTask() : HtcsSignalingTask(HtcsTaskType::Receive) { /* ... */ }
+            ReceiveTask() : HtcsSignalingTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             s64 GetSize() const { return m_size; }
@@ -104,6 +109,8 @@ namespace ams::htcs::impl::rpc {
     };
 
     class SendTask : public HtcsSignalingTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Send;
         private:
             os::Event m_ready_event;
             s32 m_handle;
@@ -114,7 +121,7 @@ namespace ams::htcs::impl::rpc {
             htcs::SocketError m_err;
             s64 m_result_size;
         public:
-            SendTask() : HtcsSignalingTask(HtcsTaskType::Send), m_ready_event(os::EventClearMode_ManualClear) { /* ... */ }
+            SendTask() : HtcsSignalingTask(TaskType), m_ready_event(os::EventClearMode_ManualClear) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             s64 GetSize() const { return m_size; }
@@ -138,12 +145,14 @@ namespace ams::htcs::impl::rpc {
     };
 
     class ShutdownTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Shutdown;
         private:
             s32 m_handle;
             ShutdownType m_how;
             htcs::SocketError m_err;
         public:
-            ShutdownTask() : HtcsTask(HtcsTaskType::Shutdown) { /* ... */ }
+            ShutdownTask() : HtcsTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             ShutdownType GetHow() const { return m_how; }
@@ -157,11 +166,13 @@ namespace ams::htcs::impl::rpc {
     };
 
     class CloseTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Close;
         private:
             s32 m_handle;
             htcs::SocketError m_err;
         public:
-            CloseTask() : HtcsTask(HtcsTaskType::Close) { /* ... */ }
+            CloseTask() : HtcsTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
         public:
@@ -174,13 +185,15 @@ namespace ams::htcs::impl::rpc {
     };
 
     class ConnectTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Connect;
         private:
             s32 m_handle;
             HtcsPeerName m_peer_name;
             HtcsPortName m_port_name;
             htcs::SocketError m_err;
         public:
-            ConnectTask() : HtcsTask(HtcsTaskType::Connect) { /* ... */ }
+            ConnectTask() : HtcsTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             const HtcsPeerName &GetPeerName() const { return m_peer_name; }
@@ -195,12 +208,14 @@ namespace ams::htcs::impl::rpc {
     };
 
     class ListenTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Listen;
         private:
             s32 m_handle;
             s32 m_backlog;
             htcs::SocketError m_err;
         public:
-            ListenTask() : HtcsTask(HtcsTaskType::Listen) { /* ... */ }
+            ListenTask() : HtcsTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             s32 GetBacklog() const { return m_backlog; }
@@ -214,12 +229,14 @@ namespace ams::htcs::impl::rpc {
     };
 
     class AcceptTask : public HtcsSignalingTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Accept;
         private:
             s32 m_server_handle;
             htcs::SocketError m_err;
             s32 m_desc;
         public:
-            AcceptTask() : HtcsSignalingTask(HtcsTaskType::Accept) { /* ... */ }
+            AcceptTask() : HtcsSignalingTask(TaskType) { /* ... */ }
 
             s32 GetServerHandle() const { return m_server_handle; }
         public:
@@ -232,11 +249,13 @@ namespace ams::htcs::impl::rpc {
     };
 
     class SocketTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Socket;
         private:
             htcs::SocketError m_err;
             s32 m_desc;
         public:
-            SocketTask() : HtcsTask(HtcsTaskType::Socket) { /* ... */ }
+            SocketTask() : HtcsTask(TaskType) { /* ... */ }
         public:
             Result SetArguments();
             void Complete(htcs::SocketError err, s32 desc);
@@ -247,13 +266,15 @@ namespace ams::htcs::impl::rpc {
     };
 
     class BindTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Bind;
         private:
             s32 m_handle;
             HtcsPeerName m_peer_name;
             HtcsPortName m_port_name;
             htcs::SocketError m_err;
         public:
-            BindTask() : HtcsTask(HtcsTaskType::Bind) { /* ... */ }
+            BindTask() : HtcsTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             const HtcsPeerName &GetPeerName() const { return m_peer_name; }
@@ -268,6 +289,8 @@ namespace ams::htcs::impl::rpc {
     };
 
     class FcntlTask : public HtcsTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Fcntl;
         private:
             s32 m_handle;
             s32 m_command;
@@ -275,7 +298,7 @@ namespace ams::htcs::impl::rpc {
             htcs::SocketError m_err;
             s32 m_res;
         public:
-            FcntlTask() : HtcsTask(HtcsTaskType::Fcntl) { /* ... */ }
+            FcntlTask() : HtcsTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             s32 GetCommand() const { return m_command; }
@@ -290,6 +313,8 @@ namespace ams::htcs::impl::rpc {
     };
 
     class ReceiveSmallTask : public HtcsSignalingTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::ReceiveSmall;
         private:
             s32 m_handle;
             s64 m_size;
@@ -298,7 +323,7 @@ namespace ams::htcs::impl::rpc {
             htcs::SocketError m_err;
             s64 m_result_size;
         public:
-            ReceiveSmallTask() : HtcsSignalingTask(HtcsTaskType::ReceiveSmall) { /* ... */ }
+            ReceiveSmallTask() : HtcsSignalingTask(TaskType) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             s64 GetSize() const { return m_size; }
@@ -321,6 +346,8 @@ namespace ams::htcs::impl::rpc {
     };
 
     class SendSmallTask : public HtcsSignalingTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::SendSmall;
         private:
             os::Event m_ready_event;
             s32 m_handle;
@@ -331,7 +358,7 @@ namespace ams::htcs::impl::rpc {
             htcs::SocketError m_err;
             s64 m_result_size;
         public:
-            SendSmallTask() : HtcsSignalingTask(HtcsTaskType::SendSmall), m_ready_event(os::EventClearMode_ManualClear) { /* ... */ }
+            SendSmallTask() : HtcsSignalingTask(TaskType), m_ready_event(os::EventClearMode_ManualClear) { /* ... */ }
 
             s32 GetHandle() const { return m_handle; }
             s64 GetSize() const { return m_size; }
@@ -354,6 +381,8 @@ namespace ams::htcs::impl::rpc {
     };
 
     class SelectTask : public HtcsSignalingTask {
+        public:
+            static constexpr inline HtcsTaskType TaskType = HtcsTaskType::Select;
         private:
             s32 m_handles[SocketCountMax * 3];
             s32 m_read_handle_count;
@@ -367,7 +396,7 @@ namespace ams::htcs::impl::rpc {
             s32 m_out_write_handle_count;
             s32 m_out_exception_handle_count;
         public:
-            SelectTask() : HtcsSignalingTask(HtcsTaskType::Select) { /* ... */ }
+            SelectTask() : HtcsSignalingTask(TaskType) { /* ... */ }
 
             const s32 *GetHandles() const { return m_handles; }
             s32 GetReadHandleCount() const { return m_read_handle_count; }

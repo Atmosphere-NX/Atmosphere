@@ -632,8 +632,9 @@ namespace ams::sf::impl {
         private:
             MoveHandle move_handles[NumMove];
             CopyHandle copy_handles[NumCopy];
+            bool copy_managed[NumCopy];
         public:
-            constexpr OutHandleHolder() : move_handles(), copy_handles() { /* ... */ }
+            constexpr OutHandleHolder() : move_handles(), copy_handles(), copy_managed() { /* ... */ }
 
             template<size_t Index>
             constexpr inline MoveHandle *GetMoveHandlePointer() {
@@ -647,8 +648,15 @@ namespace ams::sf::impl {
                 return &copy_handles[Index];
             }
 
-            constexpr inline void CopyTo(const HipcRequest &response, const size_t num_out_object_handles) {
-                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { response.copy_handles[n] = copy_handles[n].GetValue(); } } while (0)
+            template<size_t Index>
+            constexpr inline bool *GetCopyHandleManagedPointer() {
+                static_assert(Index < NumCopy, "Index < NumCopy");
+                return &copy_managed[Index];
+            }
+
+            constexpr inline void CopyTo(const cmif::ServiceDispatchContext &ctx, const HipcRequest &response, const size_t num_out_object_handles) {
+                ctx.handles_to_close->num_handles = 0;
+                #define _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(n) do { if constexpr (NumCopy > n) { const auto handle = copy_handles[n].GetValue(); response.copy_handles[n] = handle; if (copy_managed[n]) { ctx.handles_to_close->handles[ctx.handles_to_close->num_handles++] = handle; } } } while (0)
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(0);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(1);
                 _SF_OUT_HANDLE_HOLDER_WRITE_COPY_HANDLE(2);
@@ -1035,7 +1043,7 @@ namespace ams::sf::impl {
                     if constexpr (std::is_same<T, sf::Out<sf::MoveHandle>>::value) {
                         return T(out_handles_holder.template GetMoveHandlePointer<Info.out_move_handle_index>());
                     } else if constexpr (std::is_same<T, sf::Out<sf::CopyHandle>>::value) {
-                        return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>());
+                        return T(out_handles_holder.template GetCopyHandlePointer<Info.out_copy_handle_index>(), out_handles_holder.template GetCopyHandleManagedPointer<Info.out_copy_handle_index>());
                     } else {
                         static_assert(!std::is_same<T, T>::value, "Invalid OutHandle kind");
                     }
@@ -1179,7 +1187,7 @@ namespace ams::sf::impl {
         ImplProcessorType::SetOutBuffers(response, buffers, is_buffer_map_alias);
 
         /* Set out handles. */
-        out_handles_holder.CopyTo(response, runtime_metadata.GetOutObjectCount());
+        out_handles_holder.CopyTo(ctx, response, runtime_metadata.GetOutObjectCount());
 
         /* Set output objects. */
         #define _SF_IMPL_PROCESSOR_MARSHAL_OUT_OBJECT(n) do {                                                                                    \

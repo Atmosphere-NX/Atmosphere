@@ -118,7 +118,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the accept. */
-        return manager->AcceptStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), m_desc);
+        R_TRY(manager->AcceptStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), m_desc));
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result SocketServiceObject::AcceptResults(sf::Out<s32> out_err, sf::Out<sf::SharedPointer<tma::ISocket>> out, sf::Out<htcs::SockAddrHtcs> out_address, u32 task_id) {
@@ -143,7 +147,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the recv. */
-        return manager->RecvStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), mem_size, m_desc, flags);
+        R_TRY(manager->RecvStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), mem_size, m_desc, flags));
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result SocketServiceObject::RecvResults(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {
@@ -174,7 +182,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the large receive. */
-        return manager->RecvStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), unaligned_size_start + aligned_size + unaligned_size_end, m_desc, flags);
+        R_TRY(manager->RecvStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), unaligned_size_start + aligned_size + unaligned_size_end, m_desc, flags));
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result SocketServiceObject::SendStartOld(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event, const sf::InAutoSelectBuffer &buffer, s32 flags) {
@@ -205,7 +217,11 @@ namespace ams::htcs::server {
         const char *pointers[NumBuffers] = { reinterpret_cast<const char *>(start_buffer.GetPointer()), static_cast<const char *>(address), reinterpret_cast<const char *>(end_buffer.GetPointer()) };
         s64 sizes[NumBuffers] = { static_cast<s64>(start_buffer.GetSize()), aligned_size, static_cast<s64>(end_buffer.GetSize()) };
 
-        return manager->SendLargeStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), pointers, sizes, NumBuffers, m_desc, flags);
+        R_TRY(manager->SendLargeStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), pointers, sizes, NumBuffers, m_desc, flags));
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result SocketServiceObject::SendResults(sf::Out<s32> out_err, sf::Out<s64> out_size, u32 task_id) {
@@ -227,6 +243,9 @@ namespace ams::htcs::server {
 
         /* Set the output max size to the size. */
         *out_max_size = size;
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
         return ResultSuccess();
     }
 
@@ -249,7 +268,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the recv. */
-        return manager->StartRecv(out_task_id.GetPointer(), out_event.GetHandlePointer(), size, m_desc, flags);
+        R_TRY(manager->StartRecv(out_task_id.GetPointer(), out_event.GetHandlePointer(), size, m_desc, flags));
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result SocketServiceObject::EndRecv(sf::Out<s32> out_err, sf::Out<s64> out_size, const sf::OutAutoSelectBuffer &buffer, u32 task_id) {
@@ -270,7 +293,11 @@ namespace ams::htcs::server {
         auto *manager = impl::HtcsManagerHolder::GetHtcsManager();
 
         /* Start the send. */
-        return manager->SendStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), reinterpret_cast<const char *>(buffer.GetPointer()), buffer.GetSize(), m_desc, flags);
+        R_TRY(manager->SendStart(out_task_id.GetPointer(), out_event.GetHandlePointer(), reinterpret_cast<const char *>(buffer.GetPointer()), buffer.GetSize(), m_desc, flags));
+
+        /* Mark the output event as managed. */
+        out_event.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result SocketServiceObject::ContinueSend(sf::Out<s64> out_size, sf::Out<bool> out_wait, const sf::InNonSecureAutoSelectBuffer &buffer, u32 task_id) {

@@ -107,7 +107,7 @@ namespace ams::htcs::impl {
         /* Continue the send. */
         s64 continue_size;
         const Result result = m_service.SendSmallContinue(std::addressof(continue_size), buffer, size, task_id, desc);
-        if (R_SUCCEEDED(result) || htcs::ResultUnknown2023::Includes(result) || htc::ResultTaskQueueNotAvailable::Includes(result)) {
+        if (R_SUCCEEDED(result) || htcs::ResultCompleted::Includes(result) || htc::ResultTaskQueueNotAvailable::Includes(result)) {
             *out_task_id = task_id;
             *out_handle  = handle;
         } else {
@@ -162,12 +162,13 @@ namespace ams::htcs::impl {
         const Result result = m_service.SelectStart(std::addressof(task_id), std::addressof(handle), read_handles, write_handles, exception_handles, tv_sec, tv_usec);
 
         /* Ensure our state ends up clean. */
-        if (htcs::ResultUnknown2021::Includes(result)) {
+        if (htcs::ResultCancelled::Includes(result)) {
             os::SystemEventType event;
             os::AttachReadableHandleToSystemEvent(std::addressof(event), handle, true, os::EventClearMode_ManualClear);
 
-            s32 err, res;
-            m_service.SelectEnd(std::addressof(err), std::addressof(res), Span<int>{}, Span<int>{}, Span<int>{}, task_id);
+            s32 err;
+            bool empty;
+            m_service.SelectEnd(std::addressof(err), std::addressof(empty), Span<int>{}, Span<int>{}, Span<int>{}, task_id);
 
             os::DestroySystemEvent(std::addressof(event));
         } else {
@@ -178,8 +179,8 @@ namespace ams::htcs::impl {
         return result;
     }
 
-    Result HtcsManagerImpl::EndSelect(s32 *out_err, s32 *out_res, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
-        return m_service.SelectEnd(out_err, out_res, read_handles, write_handles, exception_handles, task_id);
+    Result HtcsManagerImpl::EndSelect(s32 *out_err, bool *out_empty, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
+        return m_service.SelectEnd(out_err, out_empty, read_handles, write_handles, exception_handles, task_id);
     }
 
 }

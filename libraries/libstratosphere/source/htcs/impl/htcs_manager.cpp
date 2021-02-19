@@ -296,7 +296,7 @@ namespace ams::htcs::impl {
         s64 size;
         R_TRY_CATCH(m_impl->ContinueSend(std::addressof(size), buffer, buffer_size, task_id, desc)) {
             R_CONVERT(htclow::ResultInvalidChannelState, tma::ResultUnknown())
-            R_CONVERT(htc::ResultUnknown2021,            tma::ResultUnknown())
+            R_CONVERT(htc::ResultTaskCancelled,          tma::ResultUnknown())
         } R_END_TRY_CATCH;
 
         /* Set output. */
@@ -359,7 +359,7 @@ namespace ams::htcs::impl {
     Result HtcsManager::StartSelect(u32 *out_task_id, Handle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec) {
         /* Invoke our implementation. */
         R_TRY_CATCH(m_impl->StartSelect(out_task_id, out_handle, read_handles, write_handles, exception_handles, tv_sec, tv_usec)) {
-            R_CONVERT(htc::ResultUnknown2021,            tma::ResultUnknown())
+            R_CONVERT(htc::ResultTaskCancelled, tma::ResultUnknown())
         } R_END_TRY_CATCH;
 
         return ResultSuccess();
@@ -367,11 +367,12 @@ namespace ams::htcs::impl {
 
     Result HtcsManager::EndSelect(s32 *out_err, s32 *out_count, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id) {
         /* Invoke our implementation. */
-        s32 err, res;
-        const Result result = m_impl->EndSelect(std::addressof(err), std::addressof(res), read_handles, write_handles, exception_handles, task_id);
+        s32 err;
+        bool empty;
+        const Result result = m_impl->EndSelect(std::addressof(err), std::addressof(empty), read_handles, write_handles, exception_handles, task_id);
 
         /* Set output. */
-        if (R_SUCCEEDED(result) && res == 0) {
+        if (R_SUCCEEDED(result) && !empty) {
             *out_err = err;
             if (err == 0) {
                 const auto num_read      = std::count_if(read_handles.begin(),      read_handles.end(),      [](int handle) { return handle != 0; });
