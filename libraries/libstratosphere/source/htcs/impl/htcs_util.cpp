@@ -29,7 +29,7 @@ namespace ams::htcs::impl {
             R_CATCH(htcs::ResultInvalidHandle)              { return HTCS_EBADF; }
             R_CATCH(htc::ResultUnknown2001)                 { return HTCS_EINVAL; }
             R_CATCH(htc::ResultUnknown2101)                 { return HTCS_EMFILE; }
-            R_CATCH(htc::ResultUnknown2021)                 { return HTCS_EINTR; }
+            R_CATCH(htc::ResultTaskCancelled)               { return HTCS_EINTR; }
             R_CATCH(htc::ResultInvalidTaskId)               { return HTCS_EINTR; }
             R_CATCH(htc::ResultCancelled)                   { return HTCS_EINTR; }
             R_CATCH(htc::ResultTaskQueueNotAvailable)       { return HTCS_ENETDOWN; }

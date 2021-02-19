@@ -31,9 +31,10 @@ namespace ams::htc::server::rpc {
 
     class RpcTaskTable {
         private:
-            /* TODO: How is this variable derived...? */
-            /* Nintendo has a value of 0xE1D8, which is deeply magic. */
-            static constexpr size_t MaxTaskSize = 0xA000;
+            /* htcs::ReceiveSmallTask/htcs::ReceiveSendTask are the largest tasks, containing an inline 0xE000 buffer. */
+            /* We allow for ~0x100 task overhead from the additional events those contain. */
+            /* NOTE: Nintnedo hardcodes a maximum size of 0xE1D8, despite SendSmallTask being 0xE098 as of latest check. */
+            static constexpr size_t MaxTaskSize = 0xE100;
             using TaskStorage = typename std::aligned_storage<MaxTaskSize, alignof(void *)>::type;
         private:
             bool m_valid[MaxRpcCount];

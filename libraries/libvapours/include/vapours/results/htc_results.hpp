@@ -31,7 +31,8 @@ namespace ams::htc {
     R_DEFINE_ERROR_RESULT(Unknown2001,           2001);
     R_DEFINE_ERROR_RESULT(InvalidTaskId,         2003);
     R_DEFINE_ERROR_RESULT(InvalidSize,           2011);
-    R_DEFINE_ERROR_RESULT(Unknown2021,           2021);
+    R_DEFINE_ERROR_RESULT(TaskCancelled,         2021);
+    R_DEFINE_ERROR_RESULT(TaskNotCompleted,      2022);
     R_DEFINE_ERROR_RESULT(TaskQueueNotAvailable, 2033);
 
     R_DEFINE_ERROR_RESULT(Unknown2101,     2101);

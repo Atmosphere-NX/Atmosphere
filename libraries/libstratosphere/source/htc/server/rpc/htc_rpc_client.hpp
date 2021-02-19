@@ -19,6 +19,7 @@
 #include "htc_rpc_task_table.hpp"
 #include "htc_rpc_task_queue.hpp"
 #include "htc_rpc_task_id_free_list.hpp"
+#include "../../../htcs/impl/rpc/htcs_rpc_tasks.hpp"
 
 namespace ams::htc::server::rpc {
 
@@ -61,6 +62,7 @@ namespace ams::htc::server::rpc {
             RpcTaskIdFreeList &m_task_id_free_list;
             RpcTaskTable &m_task_table;
             bool m_task_active[MaxRpcCount];
+            bool m_is_htcs_task[MaxRpcCount];
             RpcTaskQueue m_task_queue;
             bool m_cancelled;
             bool m_thread_running;
@@ -104,10 +106,12 @@ namespace ams::htc::server::rpc {
                 /* Create the new task. */
                 T *task = m_task_table.New<T>(task_id);
                 m_task_active[task_id] = true;
+                m_is_htcs_task[task_id] = htcs::impl::rpc::IsHtcsTask<T>;
 
                 /* Ensure we clean up the task, if we fail after this. */
                 auto task_guard = SCOPE_GUARD {
                     m_task_active[task_id] = false;
+                    m_is_htcs_task[task_id] = false;
                     m_task_table.Delete<T>(task_id);
                     m_task_id_free_list.Free(task_id);
                 };
@@ -135,6 +139,24 @@ namespace ams::htc::server::rpc {
             }
 
             template<typename T, size_t... Ix> requires IsRpcTask<T>
+            ALWAYS_INLINE Result GetResultImpl(std::index_sequence<Ix...>, u32 task_id, RpcTaskResultType<T, Ix>... args) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Get the task. */
+                T *task = m_task_table.Get<T>(task_id);
+                R_UNLESS(task != nullptr, htc::ResultInvalidTaskId());
+
+                /* Check that the task is completed. */
+                R_UNLESS(task->GetTaskState() == RpcTaskState::Completed, htc::ResultTaskNotCompleted());
+
+                /* Get the task's result. */
+                R_TRY(task->GetResult(args...));
+
+                return ResultSuccess();
+            }
+
+            template<typename T, size_t... Ix> requires IsRpcTask<T>
             ALWAYS_INLINE Result EndImpl(std::index_sequence<Ix...>, u32 task_id, RpcTaskResultType<T, Ix>... args) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
@@ -146,6 +168,7 @@ namespace ams::htc::server::rpc {
                 /* Ensure the task is freed if it needs to be, when we're done. */
                 auto task_guard = SCOPE_GUARD {
                     m_task_active[task_id] = false;
+                    m_is_htcs_task[task_id] = false;
                     m_task_table.Delete<T>(task_id);
                     m_task_id_free_list.Free(task_id);
                 };
@@ -153,10 +176,10 @@ namespace ams::htc::server::rpc {
                 /* If the task was cancelled, handle that. */
                 if (task->GetTaskState() == RpcTaskState::Cancelled) {
                     switch (task->GetTaskCancelReason()) {
-                        case RpcTaskCancelReason::One:
+                        case RpcTaskCancelReason::BySocket:
                             task_guard.Cancel();
-                            return htc::ResultUnknown2021();
-                        case RpcTaskCancelReason::Two:
+                            return htc::ResultTaskCancelled();
+                        case RpcTaskCancelReason::ClientFinalized:
                             return htc::ResultCancelled();
                         case RpcTaskCancelReason::QueueNotAvailable:
                             return htc::ResultTaskQueueNotAvailable();
@@ -169,10 +192,18 @@ namespace ams::htc::server::rpc {
 
                 return ResultSuccess();
             }
+
+            s32 GetTaskHandle(u32 task_id);
         public:
             void Wait(u32 task_id) {
                 os::WaitEvent(m_task_table.Get<Task>(task_id)->GetEvent());
             }
+
+            Handle DetachReadableHandle(u32 task_id) {
+                return os::DetachReadableHandleOfSystemEvent(m_task_table.Get<Task>(task_id)->GetSystemEvent());
+            }
+
+            void CancelBySocket(s32 handle);
 
             template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskArgumentsType<T>>::value)
             Result Begin(u32 *out_task_id, Args &&... args) {
@@ -180,8 +211,158 @@ namespace ams::htc::server::rpc {
             }
 
             template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
+            Result GetResult(u32 task_id, Args &&... args) {
+                return this->GetResultImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskResultsType<T>>::value>(), task_id, std::forward<Args>(args)...);
+            }
+
+            template<typename T, typename... Args> requires (IsRpcTask<T> && sizeof...(Args) == std::tuple_size<RpcTaskResultsType<T>>::value)
             Result End(u32 task_id, Args &&... args) {
                 return this->EndImpl<T>(std::make_index_sequence<std::tuple_size<RpcTaskResultsType<T>>::value>(), task_id, std::forward<Args>(args)...);
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            Result VerifyTaskIdWitHandle(u32 task_id, s32 handle) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Get the task. */
+                T *task = m_task_table.Get<T>(task_id);
+                R_UNLESS(task != nullptr, htc::ResultInvalidTaskId());
+
+                /* Check the task handle. */
+                R_UNLESS(task->GetHandle() == handle, htc::ResultInvalidTaskId());
+
+                return ResultSuccess();
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            Result Notify(u32 task_id) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Check that our queue is available. */
+                R_UNLESS(m_thread_running, htc::ResultTaskQueueNotAvailable());
+
+                /* Get the task. */
+                T *task = m_task_table.Get<T>(task_id);
+                R_UNLESS(task != nullptr, htc::ResultInvalidTaskId());
+
+                /* Add notification to our queue. */
+                m_task_queue.Add(task_id, PacketCategory::Notification);
+
+                return ResultSuccess();
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            void WaitNotification(u32 task_id) {
+                /* Get the task from the table, releasing our lock afterwards. */
+                T *task;
+                {
+                    /* Lock ourselves. */
+                    std::scoped_lock lk(m_mutex);
+
+                    /* Get the task. */
+                    task = m_task_table.Get<T>(task_id);
+                }
+
+                /* Wait for a notification. */
+                task->WaitNotification();
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            bool IsCancelled(u32 task_id) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Get the task. */
+                T *task = m_task_table.Get<T>(task_id);
+
+                /* Check the task state. */
+                return task != nullptr && task->GetTaskState() == RpcTaskState::Cancelled;
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            bool IsCompleted(u32 task_id) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Get the task. */
+                T *task = m_task_table.Get<T>(task_id);
+
+                /* Check the task state. */
+                return task != nullptr && task->GetTaskState() == RpcTaskState::Completed;
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            Result SendContinue(u32 task_id, const void *buffer, s64 buffer_size) {
+                /* Lock ourselves. */
+                std::scoped_lock lk(m_mutex);
+
+                /* Get the task. */
+                T *task = m_task_table.Get<T>(task_id);
+                R_UNLESS(task != nullptr, htc::ResultInvalidTaskId());
+
+                /* If the task was cancelled, handle that. */
+                if (task->GetTaskState() == RpcTaskState::Cancelled) {
+                    switch (task->GetTaskCancelReason()) {
+                        case RpcTaskCancelReason::QueueNotAvailable:
+                            return htc::ResultTaskQueueNotAvailable();
+                        default:
+                            return htc::ResultTaskCancelled();
+                    }
+                }
+
+                /* Set the task's buffer. */
+                if (buffer_size > 0) {
+                    task->SetBuffer(buffer, buffer_size);
+                    os::SignalEvent(std::addressof(m_send_buffer_available_events[task_id]));
+                }
+
+                return ResultSuccess();
+            }
+
+            template<typename T> requires IsRpcTask<T>
+            Result ReceiveContinue(u32 task_id, void *buffer, s64 buffer_size) {
+                /* Get the task's buffer, and prepare to receive. */
+                const void *result_buffer;
+                s64 result_size;
+                {
+                    /* Lock ourselves. */
+                    std::scoped_lock lk(m_mutex);
+
+                    /* Get the task. */
+                    T *task = m_task_table.Get<T>(task_id);
+                    R_UNLESS(task != nullptr, htc::ResultInvalidTaskId());
+
+                    /* If the task was cancelled, handle that. */
+                    if (task->GetTaskState() == RpcTaskState::Cancelled) {
+                        switch (task->GetTaskCancelReason()) {
+                            case RpcTaskCancelReason::QueueNotAvailable:
+                                return htc::ResultTaskQueueNotAvailable();
+                            default:
+                                return htc::ResultTaskCancelled();
+                        }
+                    }
+
+                    /* Get the result size. */
+                    result_size = task->GetResultSize();
+                    R_SUCCEED_IF(result_size == 0);
+
+                    /* Get the result buffer. */
+                    result_buffer = task->GetBuffer();
+                }
+
+                /* Wait for the receive buffer to become available. */
+                os::WaitEvent(std::addressof(m_receive_buffer_available_events[task_id]));
+
+                /* Check that we weren't cancelled. */
+                R_UNLESS(!m_cancelled, htc::ResultCancelled());
+
+                /* Copy the received data. */
+                AMS_ASSERT(0 <= result_size && result_size <= buffer_size);
+                std::memcpy(buffer, result_buffer, result_size);
+
+                return ResultSuccess();
             }
     };
 

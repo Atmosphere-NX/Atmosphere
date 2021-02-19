@@ -70,7 +70,7 @@ namespace ams::htcs::impl {
             Result EndRecv(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc);
 
             Result StartSelect(u32 *out_task_id, Handle *out_handle, Span<const int> read_handles, Span<const int> write_handles, Span<const int> exception_handles, s64 tv_sec, s64 tv_usec);
-            Result EndSelect(s32 *out_err, s32 *out_res, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id);
+            Result EndSelect(s32 *out_err, bool *out_empty, Span<int> read_handles, Span<int> write_handles, Span<int> exception_handles, u32 task_id);
     };
 
 }
