@@ -14,10 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <stratosphere.hpp>
 
-#include <stratosphere/htcs/htcs_types.hpp>
-#include <stratosphere/htcs/htcs_api.hpp>
-#include <stratosphere/htcs/htcs_socket.hpp>
-#include <stratosphere/htcs/impl/htcs_manager_holder.hpp>
-#include <stratosphere/htcs/impl/htcs_channel_ids.hpp>
-#include <stratosphere/htcs/server/htcs_hipc_server.hpp>
+namespace ams::htcs::client {
+
+    void InitializeSessionManager(tma::IHtcsManager **out_manager, tma::IHtcsManager **out_monitor);
+    void FinalizeSessionManager();
+
+}

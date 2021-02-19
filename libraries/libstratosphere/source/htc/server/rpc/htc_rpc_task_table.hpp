@@ -33,7 +33,7 @@ namespace ams::htc::server::rpc {
         private:
             /* htcs::ReceiveSmallTask/htcs::ReceiveSendTask are the largest tasks, containing an inline 0xE000 buffer. */
             /* We allow for ~0x100 task overhead from the additional events those contain. */
-            /* NOTE: Nintnedo hardcodes a maximum size of 0xE1D8, despite SendSmallTask being 0xE098 as of latest check. */
+            /* NOTE: Nintendo hardcodes a maximum size of 0xE1D8, despite SendSmallTask being 0xE098 as of latest check. */
             static constexpr size_t MaxTaskSize = 0xE100;
             using TaskStorage = typename std::aligned_storage<MaxTaskSize, alignof(void *)>::type;
         private:
