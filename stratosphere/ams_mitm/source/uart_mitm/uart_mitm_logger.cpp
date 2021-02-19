@@ -19,7 +19,7 @@
 
 namespace ams::mitm::uart {
 
-    alignas(os::ThreadStackAlignment) u8 g_logger_stack[0x4000];
+    alignas(os::ThreadStackAlignment) u8 g_logger_stack[0x1000];
 
     std::shared_ptr<UartLogger> g_logger;
 
@@ -29,9 +29,8 @@ namespace ams::mitm::uart {
             std::memset(msg, 0, sizeof(UartLogMessage));
 
             msg->data = static_cast<u8 *>(std::malloc(this->QueueBufferSize));
-            if (msg->data != nullptr) {
-                std::memset(msg->data, 0, this->QueueBufferSize);
-            }
+            AMS_ABORT_UNLESS(msg->data != nullptr);
+            std::memset(msg->data, 0, this->QueueBufferSize);
 
             this->m_client_queue.Send(reinterpret_cast<uintptr_t>(msg));
         }
@@ -214,7 +213,7 @@ namespace ams::mitm::uart {
 
         UartLogMessage *msg=nullptr;
         this->m_client_queue.Receive(reinterpret_cast<uintptr_t *>(&msg));
-        if (msg->data == nullptr) return true;
+        AMS_ABORT_UNLESS(msg->data != nullptr);
 
         /* Setup the msg and send it. */
         msg->type = 1;
@@ -243,7 +242,7 @@ namespace ams::mitm::uart {
 
         UartLogMessage *msg=nullptr;
         this->m_client_queue.Receive(reinterpret_cast<uintptr_t *>(&msg));
-        if (msg->data == nullptr) return;
+        AMS_ABORT_UNLESS(msg->data != nullptr);
 
         /* Setup the msg and send it. */
         msg->type = 2;

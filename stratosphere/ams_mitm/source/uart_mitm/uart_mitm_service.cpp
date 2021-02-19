@@ -67,28 +67,22 @@ namespace ams::mitm::uart {
 
         /* Initialize the Send cache-buffer. */
         this->m_send_cache_buffer = static_cast<u8 *>(std::malloc(this->CacheBufferSize));
-        if (this->m_send_cache_buffer != nullptr) {
-            std::memset(this->m_send_cache_buffer, 0, this->CacheBufferSize);
-        }
+        AMS_ABORT_UNLESS(this->m_send_cache_buffer != nullptr);
+        std::memset(this->m_send_cache_buffer, 0, this->CacheBufferSize);
         this->m_send_cache_pos = 0;
 
         /* Initialize the Receive cache-buffer. */
         this->m_receive_cache_buffer = static_cast<u8 *>(std::malloc(this->CacheBufferSize));
-        if (this->m_receive_cache_buffer != nullptr) {
-            std::memset(this->m_receive_cache_buffer, 0, this->CacheBufferSize);
-        }
+        AMS_ABORT_UNLESS(this->m_receive_cache_buffer != nullptr);
+        std::memset(this->m_receive_cache_buffer, 0, this->CacheBufferSize);
         this->m_receive_cache_pos = 0;
 
-        this->m_datalog_ready = false;
-
-        /* When the above is successful, initialize the datalog. */
-        if (this->m_send_cache_buffer != nullptr && this->m_receive_cache_buffer != nullptr) {
-            std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->m_base_path, "btsnoop_hci.log");
-            ams::mitm::fs::CreateAtmosphereSdFile(tmp_path, 0, 0);
-            rc = ams::mitm::fs::OpenAtmosphereSdFile(&this->m_datalog_file, tmp_path, FsOpenMode_Read | FsOpenMode_Write | FsOpenMode_Append);
-            /* Set datalog_ready to whether initialization was successful. */
-            this->m_datalog_ready = R_SUCCEEDED(rc);
-        }
+        /* Initialize the datalog. */
+        std::snprintf(tmp_path, sizeof(tmp_path), "%s/%s", this->m_base_path, "btsnoop_hci.log");
+        ams::mitm::fs::CreateAtmosphereSdFile(tmp_path, 0, 0);
+        rc = ams::mitm::fs::OpenAtmosphereSdFile(&this->m_datalog_file, tmp_path, FsOpenMode_Read | FsOpenMode_Write | FsOpenMode_Append);
+        /* Set datalog_ready to whether initialization was successful. */
+        this->m_datalog_ready = R_SUCCEEDED(rc);
 
         if (this->m_datalog_ready) {
             std::shared_ptr<UartLogger> logger = mitm::uart::g_logger;
