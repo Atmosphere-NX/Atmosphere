@@ -14,10 +14,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-
+#include <vapours.hpp>
 #include <stratosphere/htcs/htcs_types.hpp>
-#include <stratosphere/htcs/htcs_api.hpp>
-#include <stratosphere/htcs/htcs_socket.hpp>
-#include <stratosphere/htcs/impl/htcs_manager_holder.hpp>
-#include <stratosphere/htcs/impl/htcs_channel_ids.hpp>
-#include <stratosphere/htcs/server/htcs_hipc_server.hpp>
+
+namespace ams::htcs {
+
+    bool IsInitialized();
+
+    size_t GetWorkingMemorySize(int max_socket_count);
+
+    void Initialize(AllocateFunction allocate, DeallocateFunction deallocate, int num_sessions = SessionCountMax);
+    void Initialize(void *buffer, size_t buffer_size);
+
+    void InitializeForDisableDisconnectionEmulation(AllocateFunction allocate, DeallocateFunction deallocate, int num_sessions = SessionCountMax);
+    void InitializeForDisableDisconnectionEmulation(void *buffer, size_t buffer_size);
+
+    void InitializeForSystem(void *buffer, size_t buffer_size, int num_sessions);
+
+    void Finalize();
+
+}

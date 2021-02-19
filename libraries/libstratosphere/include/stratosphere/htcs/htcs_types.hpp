@@ -24,6 +24,8 @@ namespace ams::htcs {
     constexpr inline int PeerNameBufferLength = 32;
     constexpr inline int PortNameBufferLength = 32;
 
+    constexpr inline int SessionCountMax = 0x10;
+
     constexpr inline int SocketCountMax = 40;
     constexpr inline int FdSetSize      = SocketCountMax;
 
