@@ -38,3 +38,14 @@ It does so in order to enable user configuration of system settings, which are p
 dns_mitm enables intercepting requests to dns resolution services, to enable redirecting requests for specified hostnames.
 
 For documentation, see [here](../../features/dns_mitm.md).
+
+## uart_mitm
+`uart_mitm` intercepts the uart service used by bluetooth, on 7.0.0+ when enabled by [system_settings.ini](../../features/configurations.md). This allows logging bluetooth traffic.
+
+Usage of bluetooth devices will be less responsive when this is enabled.
+
+Logs are written to directory `/atmosphere/uart_logs/{PosixTime}_{TickTimestamp}_{ProgramId}`, which then contains the following:
++ `cmd_log` Text log for uart IPortSession commands, and any warning messages.
++ `btsnoop_hci.log` Bluetooth HCI log in the btsnoop format. This file is not accessible while it's the current log being used with HOS running.
+
+4 directories are created for each system-boot. btsnoop logging is disabled for the first 3, with only the 4th enabled (enabled when a certain HCI vendor command is detected).
