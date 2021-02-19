@@ -28,8 +28,8 @@ namespace ams::htcs::impl::rpc {
         public:
             DataChannelManager(htc::server::rpc::RpcClient *client, htclow::HtclowManager *htclow_manager) : m_rpc_client(client), m_htclow_manager(htclow_manager), m_module(htclow::ModuleId::Htcs) { /* ... */ }
         public:
-            Result Send(const void *buffer, s64 buffer_size, u32 task_id);
             Result Receive(void *buffer, s64 buffer_size, u32 task_id);
+            Result Send(const void *buffer, s64 buffer_size, u32 task_id);
     };
 
 }
