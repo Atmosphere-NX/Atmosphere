@@ -18,7 +18,7 @@
 
 namespace ams::htcs::client {
 
-    void InitializeSessionManager(tma::IHtcsManager **out_manager, tma::IHtcsManager **out_monitor);
+    void InitializeSessionManager(tma::IHtcsManager **out_manager, tma::IHtcsManager **out_monitor, u32 num_sessions);
     void FinalizeSessionManager();
 
 }

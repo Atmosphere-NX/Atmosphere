@@ -46,7 +46,7 @@ namespace ams::htcs {
             AMS_ASSERT(0 < num_sessions && num_sessions <= SessionCountMax);
 
             /* Initialize the manager and monitor. */
-            client::InitializeSessionManager(std::addressof(g_manager), std::addressof(g_monitor));
+            client::InitializeSessionManager(std::addressof(g_manager), std::addressof(g_monitor), num_sessions);
 
             /* Register the process. */
             const sf::ClientProcessId process_id{0};
