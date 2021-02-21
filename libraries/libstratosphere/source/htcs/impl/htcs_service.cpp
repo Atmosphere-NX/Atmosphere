@@ -259,7 +259,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::SendSmallContinue(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
         /* Verify the task. */
-        R_TRY(m_rpc_client->VerifyTaskIdWitHandle<rpc::SendSmallTask>(task_id, desc));
+        R_TRY(m_rpc_client->VerifyTaskIdWithHandle<rpc::SendSmallTask>(task_id, desc));
 
         /* Continue the task. */
         R_TRY(m_rpc_client->SendContinue<rpc::SendSmallTask>(task_id, buffer, buffer_size));
@@ -293,7 +293,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::SendContinue(s64 *out_size, const char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
         /* Verify the task. */
-        R_TRY(m_rpc_client->VerifyTaskIdWitHandle<rpc::SendTask>(task_id, desc));
+        R_TRY(m_rpc_client->VerifyTaskIdWithHandle<rpc::SendTask>(task_id, desc));
 
         /* Wait for the task to notify. */
         m_rpc_client->WaitNotification<rpc::SendTask>(task_id);
@@ -307,12 +307,14 @@ namespace ams::htcs::impl {
             R_TRY(m_data_channel_manager->Send(buffer, buffer_size, task_id));
         }
 
+        /* Set output. */
+        *out_size = buffer_size;
         return ResultSuccess();
     }
 
     Result HtcsService::SendResults(s32 *out_err, s64 *out_size, u32 task_id, s32 desc) {
         /* Verify the task. */
-        R_TRY(m_rpc_client->VerifyTaskIdWitHandle<rpc::SendTask>(task_id, desc));
+        R_TRY(m_rpc_client->VerifyTaskIdWithHandle<rpc::SendTask>(task_id, desc));
 
         /* Finish the task. */
         htcs::SocketError err;
@@ -337,7 +339,7 @@ namespace ams::htcs::impl {
 
     Result HtcsService::ReceiveResults(s32 *out_err, s64 *out_size, char *buffer, s64 buffer_size, u32 task_id, s32 desc) {
         /* Verify the task. */
-        R_TRY(m_rpc_client->VerifyTaskIdWitHandle<rpc::ReceiveTask>(task_id, desc));
+        R_TRY(m_rpc_client->VerifyTaskIdWithHandle<rpc::ReceiveTask>(task_id, desc));
 
         /* Get the result. */
         htcs::SocketError err;

@@ -70,11 +70,11 @@ namespace ams::sf::cmif {
 
             /* Boolean operators. */
             explicit constexpr operator bool() const {
-                return this->dispatch_meta != nullptr;
+                return this->srv != nullptr;
             }
 
             constexpr bool operator!() const {
-                return this->dispatch_meta == nullptr;
+                return this->srv == nullptr;
             }
 
             /* Getters. */

@@ -15,7 +15,12 @@
  */
 #include <stratosphere.hpp>
 #include "htcs_session.hpp"
+
+extern "C" {
+
 #include <switch/services/htcs.h>
+
+}
 
 namespace ams::htcs::client {
 
@@ -31,6 +36,10 @@ namespace ams::htcs::client {
                     ObjectAllocator::Initialize(lmem::CreateOption_ThreadSafe);
                 }
         } g_static_allocator_initializer;
+
+    }
+
+    namespace {
 
         class RemoteSocket {
             private:
@@ -112,6 +121,8 @@ namespace ams::htcs::client {
             ::HtcsSocket libnx_socket;
             R_TRY(::htcsCreateSocket(out_err.GetPointer(), std::addressof(libnx_socket), enable_disconnection_emulation));
 
+            R_SUCCEED_IF(*out_err != 0);
+
             *out = ObjectFactory::CreateSharedEmplaced<tma::ISocket, RemoteSocket>(libnx_socket);
             return ResultSuccess();
         }
@@ -160,7 +171,6 @@ namespace ams::htcs::client {
             return ::htcsSocketFcntl(std::addressof(m_s), out_err.GetPointer(), out_res.GetPointer(), command, value);
         }
 
-
         Result RemoteSocket::AcceptStart(sf::Out<u32> out_task_id, sf::OutCopyHandle out_event) {
             return ::htcsSocketAcceptStart(std::addressof(m_s), out_task_id.GetPointer(), out_event.GetHandlePointer());
         }
@@ -169,6 +179,8 @@ namespace ams::htcs::client {
             static_assert(sizeof(htcs::SockAddrHtcs) == sizeof(::SockAddrHtcs));
             ::HtcsSocket libnx_socket;
             R_TRY(::htcsSocketAcceptResults(std::addressof(m_s), out_err.GetPointer(), std::addressof(libnx_socket), reinterpret_cast<::SockAddrHtcs *>(out_address.GetPointer()), task_id));
+
+            R_SUCCEED_IF(*out_err != 0);
 
             *out = ObjectFactory::CreateSharedEmplaced<tma::ISocket, RemoteSocket>(libnx_socket);
             return ResultSuccess();

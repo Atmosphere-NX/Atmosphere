@@ -45,7 +45,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_desc = desc;
             } else {
                 *out_desc = -1;
@@ -77,7 +77,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_res = 0;
             } else {
                 *out_res = -1;
@@ -96,7 +96,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_res = 0;
             } else {
                 *out_res = -1;
@@ -115,7 +115,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_res = 0;
             } else {
                 *out_res = -1;
@@ -135,7 +135,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_size = recv_size;
             } else {
                 *out_size = -1;
@@ -155,7 +155,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_size = send_size;
             } else {
                 *out_size = -1;
@@ -174,7 +174,7 @@ namespace ams::htcs::impl {
         /* Set output. */
         if (R_SUCCEEDED(result)) {
             *out_err = err;
-            if (out_err == 0) {
+            if (err == 0) {
                 *out_res = 0;
             } else {
                 *out_res = -1;

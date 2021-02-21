@@ -207,7 +207,6 @@ namespace ams::htcs::client {
         error_code = 0;
 
         /* Create the socket. */
-        sf::SharedPointer<tma::ISocket> socket(nullptr);
         return this->CreateSocket(sf::SharedPointer<tma::ISocket>{nullptr}, error_code);
     }
 
@@ -579,7 +578,7 @@ namespace ams::htcs::client {
 
         /* Add the socket to the list. */
         if (m_list_count != 0) {
-            /* Ensure the list remains in sorder order. */
+            /* Ensure the list remains in sorted order. */
             s32 index;
             for (index = m_list_count - 1; index >= 0; --index) {
                 if (m_socket_list[index].m_id < id) {
@@ -687,7 +686,7 @@ namespace ams::htcs::client {
         s32 error_code = 0;
 
         /* Get socket. */
-        sf::SharedPointer<tma::ISocket> res = socket(id);
+        sf::SharedPointer<tma::ISocket> res = socket(error_code);
         if (res != nullptr) {
             /* Assign the new socket. */
             s32 index;

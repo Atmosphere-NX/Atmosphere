@@ -221,7 +221,7 @@ namespace ams::htc::server::rpc {
             }
 
             template<typename T> requires IsRpcTask<T>
-            Result VerifyTaskIdWitHandle(u32 task_id, s32 handle) {
+            Result VerifyTaskIdWithHandle(u32 task_id, s32 handle) {
                 /* Lock ourselves. */
                 std::scoped_lock lk(m_mutex);
 

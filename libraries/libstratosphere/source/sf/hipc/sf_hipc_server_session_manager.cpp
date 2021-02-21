@@ -209,6 +209,7 @@ namespace ams::sf::hipc {
             this->CloseSessionImpl(session);
             return ResultSuccess();
         }
+
         switch (GetCmifCommandType(message)) {
             case CmifCommandType_Close:
             {
