@@ -834,7 +834,11 @@ namespace ams::dmnt::cheat::impl {
             }
 
             /* Open a debug handle. */
-            R_ABORT_UNLESS_IF_NEW_PROCESS(svcDebugActiveProcess(&this->cheat_process_debug_handle, static_cast<u64>(this->cheat_process_metadata.process_id)));
+            svc::Handle debug_handle = svc::InvalidHandle;
+            R_ABORT_UNLESS_IF_NEW_PROCESS(svc::DebugActiveProcess(std::addressof(debug_handle), this->cheat_process_metadata.process_id.value));
+
+            /* Set our debug handle. */
+            this->cheat_process_debug_handle = debug_handle;
 
             /* Cancel process guard. */
             proc_guard.Cancel();
