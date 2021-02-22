@@ -41,7 +41,7 @@
   + This also substantially improves power drain when the system is shut off; consoles powered off from Atmosphere should now drain battery at the same reduced rate as original firmware.
 + A number of minor changes were made, including:
   + A number of inconsistencies in the build system were fixed.
-    + Fow those building atmosphère at home, the `boot` sysmodule will no longer rebuild every time make is invoked.
+    + For those building atmosphère at home, the `boot` sysmodule will no longer rebuild every time make is invoked.
     + This substantially improves build times during development iteration.
   + `sm` was updated to more accurately reflect how official code manages request deferral.
   + `mesosphère` was updated to more accurately reflect official kernel management of the trace buffer.
