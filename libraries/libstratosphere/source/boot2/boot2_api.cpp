@@ -34,7 +34,6 @@ namespace ams::boot2 {
         constexpr size_t NumPreSdCardLaunchPrograms = util::size(PreSdCardLaunchPrograms);
 
         constexpr ncm::SystemProgramId AdditionalLaunchPrograms[] = {
-            ncm::SystemProgramId::Htc,         /* htc */ /* TODO: should we do boot!use_htc_gen2, with default to on in custom settings? */
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
@@ -80,7 +79,6 @@ namespace ams::boot2 {
         constexpr size_t NumAdditionalLaunchPrograms = util::size(AdditionalLaunchPrograms);
 
         constexpr ncm::SystemProgramId AdditionalMaintenanceLaunchPrograms[] = {
-            ncm::SystemProgramId::Htc,         /* htc */
             ncm::SystemProgramId::Am,          /* am */
             ncm::SystemProgramId::NvServices,  /* nvservices */
             ncm::SystemProgramId::NvnFlinger,  /* nvnflinger */
@@ -186,6 +184,12 @@ namespace ams::boot2 {
             u8 force_maintenance = 1;
             settings::fwdbg::GetSettingsItemValue(&force_maintenance, sizeof(force_maintenance), "boot", "force_maintenance");
             return force_maintenance != 0;
+        }
+
+        bool IsHtcEnabled() {
+            u8 enable_htc = 1;
+            settings::fwdbg::GetSettingsItemValue(&enable_htc, sizeof(enable_htc), "atmosphere", "enable_htc");
+            return enable_htc != 0;
         }
 
         bool IsMaintenanceMode() {
@@ -378,6 +382,13 @@ namespace ams::boot2 {
 
         /* Check for and forward declare non-atmosphere mitm modules. */
         DetectAndDeclareFutureMitms();
+
+        /* Device whether to launch tma or htc. */
+        if (IsHtcEnabled()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc, ncm::StorageId::None), 0);
+        } else {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma, ncm::StorageId::None), 0);
+        }
 
         /* Launch additional programs. */
         if (maintenance) {

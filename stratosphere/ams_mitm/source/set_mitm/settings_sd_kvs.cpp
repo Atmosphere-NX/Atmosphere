@@ -362,6 +362,11 @@ namespace ams::settings::fwdbg {
             /* 0 = Disabled, 1 = Enabled */
             R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_dns_mitm_debug_log", "u8!0x0"));
 
+            /* Controls whether htc is enabled. */
+            /* TODO: Change this to default 1 when tma2 is ready for inclusion in atmosphere releases. */
+            /* 0 = Disabled, 1 = Enabled */
+            R_ABORT_UNLESS(ParseSettingsItemValue("atmosphere", "enable_htc", "u8!0x0"));
+
             /* Hbloader custom settings. */
 
             /* Controls the size of the homebrew heap when running as applet. */
