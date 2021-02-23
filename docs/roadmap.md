@@ -53,7 +53,7 @@ Please note that this is not an exhaustive list of features present in atmosphè
 
 ## mesosphere
 * **Description**: mesosphère is a reimplementation of the Horizon operating system's Kernel. It aims to provide an open-source reference for Nintendo's code.
-* **Estimated Time**: September 2020
+* **Completion Time**: September 2020
 
 ## ams-on-mariko
 * **Description**: Atmosphere cannot run as-is on Mariko hardware. A large number of changes are needed in many components. Although secure monitor support is complete in exosphere, additional work is needed on the bootloader and stratosphere sides as well. Mariko support will also require further design thought; atmosphere's debugging design heavily relies on reboot-to-payload and (more generally) the ability to perform warmboot bootrom hax at will. This is not possible on Mariko, and will require a new design/software support for whatever solution is chosen.
