@@ -31,8 +31,6 @@ namespace ams::htcs::impl {
             HtcsService(mem::StandardAllocator *allocator, htc::server::driver::IDriver *drv, htc::server::rpc::RpcClient *rc, rpc::DataChannelManager *dcm)
                 : m_allocator(allocator), m_driver(drv), m_rpc_client(rc), m_data_channel_manager(dcm) { /* ... */ }
         public:
-            /* TODO */
-        public:
             Result CreateSocket(s32 *out_err, s32 *out_desc, bool enable_disconnection_emulation);
             Result DestroySocket(s32 desc);
             Result Connect(s32 *out_err, s32 desc, const SockAddrHtcs &address);
