@@ -76,6 +76,61 @@ namespace ams::htc::server {
         m_cancel_event.Signal();
     }
 
+    void HtcmiscImpl::WaitTask(u32 task_id) {
+        return m_rpc_client.Wait(task_id);
+    }
+
+    Result HtcmiscImpl::GetEnvironmentVariable(size_t *out_size, char *dst, size_t dst_size, const char *name, size_t name_size) {
+        /* Begin the task. */
+        u32 task_id;
+        R_TRY(m_rpc_client.Begin<rpc::GetEnvironmentVariableTask>(std::addressof(task_id), name, name_size));
+
+        /* Wait for the task to complete. */
+        this->WaitTask(task_id);
+
+        /* Finish the task. */
+        R_TRY(m_rpc_client.End<rpc::GetEnvironmentVariableTask>(task_id, out_size, dst, dst_size));
+
+        return ResultSuccess();
+    }
+
+    Result HtcmiscImpl::GetEnvironmentVariableLength(size_t *out_size, const char *name, size_t name_size) {
+        /* Begin the task. */
+        u32 task_id;
+        R_TRY(m_rpc_client.Begin<rpc::GetEnvironmentVariableLengthTask>(std::addressof(task_id), name, name_size));
+
+        /* Wait for the task to complete. */
+        this->WaitTask(task_id);
+
+        /* Finish the task. */
+        R_TRY(m_rpc_client.End<rpc::GetEnvironmentVariableLengthTask>(task_id, out_size));
+
+        return ResultSuccess();
+    }
+
+    Result HtcmiscImpl::RunOnHostBegin(u32 *out_task_id, Handle *out_event, const char *args, size_t args_size) {
+        /* Begin the task. */
+        u32 task_id;
+        R_TRY(m_rpc_client.Begin<rpc::RunOnHostTask>(std::addressof(task_id), args, args_size));
+
+        /* Detach the task. */
+        *out_task_id = task_id;
+        *out_event   = m_rpc_client.DetachReadableHandle(task_id);
+
+        return ResultSuccess();
+    }
+
+    Result HtcmiscImpl::RunOnHostEnd(s32 *out_result, u32 task_id) {
+        /* Finish the task. */
+        s32 res;
+        R_TRY(m_rpc_client.End<rpc::RunOnHostTask>(task_id, std::addressof(res)));
+
+        /* Set output. */
+        *out_result = res;
+
+        return ResultSuccess();
+    }
+
     void HtcmiscImpl::ClientThread() {
         /* Loop so long as we're not cancelled. */
         while (!m_cancelled) {

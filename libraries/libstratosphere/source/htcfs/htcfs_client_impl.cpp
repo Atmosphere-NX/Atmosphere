@@ -1539,5 +1539,83 @@ namespace ams::htcfs {
         return ResultSuccess();
     }
 
+    Result ClientImpl::GetWorkingDirectory(char *dst, size_t dst_size) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetWorkingDirectoryHeader(std::addressof(request));
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
+        if (R_FAILED(htcfs_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return htcfs_result;
+        }
+
+        /* Check that the body size is valid. */
+        R_UNLESS(response.body_size < static_cast<s64>(dst_size), htcfs::ResultUnexpectedResponseBodySize());
+
+        /* Receive the response body. */
+        R_TRY(this->ReceiveFromRpcChannel(dst, response.body_size));
+
+        /* Null-terminate the response body. */
+        dst[response.body_size] = '\x00';
+
+        return ResultSuccess();
+    }
+
+    Result ClientImpl::GetWorkingDirectorySize(s32 *out) {
+        /* Lock ourselves. */
+        std::scoped_lock lk(m_mutex);
+
+        /* Initialize our rpc channel. */
+        R_TRY(this->InitializeRpcChannel());
+
+        /* Create space for request and response. */
+        Header request, response;
+
+        /* Create header for the request. */
+        m_header_factory.MakeGetWorkingDirectorySizeHeader(std::addressof(request));
+
+        /* Send the request to the host. */
+        R_TRY(this->SendRequest(request));
+
+        /* Receive response from the host. */
+        R_TRY(this->ReceiveFromRpcChannel(std::addressof(response), sizeof(response)));
+
+        /* Check the response header. */
+        R_TRY(this->CheckResponseHeader(response, request.packet_type));
+
+        /* Check that we succeeded. */
+        const auto htcfs_result = ConvertHtcfsResult(response.params[0]);
+        if (R_FAILED(htcfs_result)) {
+            R_UNLESS(response.body_size == 0, htcfs::ResultUnexpectedResponseBodySize());
+            return htcfs_result;
+        }
+
+        /* Check that the size is representable. */
+        R_UNLESS(util::IsIntValueRepresentable<s32>(response.params[1]), htcfs::ResultInvalidSize());
+
+        /* Set the output size. */
+        *out = static_cast<s32>(response.params[1]);
+
+        return ResultSuccess();
+    }
 
 }

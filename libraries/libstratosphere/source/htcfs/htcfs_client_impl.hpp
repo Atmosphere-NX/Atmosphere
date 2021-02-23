@@ -90,6 +90,9 @@ namespace ams::htcfs {
             Result FlushFile(s32 handle);
             Result GetPriorityForFile(s32 *out, s32 handle);
             Result SetPriorityForFile(s32 priority, s32 handle);
+
+            Result GetWorkingDirectory(char *dst, size_t dst_size);
+            Result GetWorkingDirectorySize(s32 *out);
         private:
             int WaitAny(htclow::ChannelState state, os::EventType *event);
 

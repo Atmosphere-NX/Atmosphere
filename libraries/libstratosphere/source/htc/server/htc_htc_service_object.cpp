@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htc_htc_service_object.hpp"
+#include "../../htcfs/htcfs_working_directory.hpp"
 
 namespace ams::htc::server {
 
@@ -29,75 +30,125 @@ namespace ams::htc::server {
     }
 
     Result HtcServiceObject::GetEnvironmentVariable(sf::Out<s32> out_size, const sf::OutBuffer &out, const sf::InBuffer &name) {
-        AMS_ABORT("HtcServiceObject::GetEnvironmentVariable");
+        /* Get the variable. */
+        size_t var_size;
+        R_TRY(m_misc_impl.GetEnvironmentVariable(std::addressof(var_size), reinterpret_cast<char *>(out.GetPointer()), out.GetSize(), reinterpret_cast<const char *>(name.GetPointer()), name.GetSize()));
+
+        /* Check the output size. */
+        R_UNLESS(util::IsIntValueRepresentable<s32>(var_size), htc::ResultUnknown());
+
+        /* Set the output size. */
+        *out_size = static_cast<s32>(var_size);
+        return ResultSuccess();
     }
 
     Result HtcServiceObject::GetEnvironmentVariableLength(sf::Out<s32> out_size, const sf::InBuffer &name) {
-        AMS_ABORT("HtcServiceObject::GetEnvironmentVariableLength");
+        /* Get the variable. */
+        size_t var_size;
+        R_TRY(m_misc_impl.GetEnvironmentVariableLength(std::addressof(var_size), reinterpret_cast<const char *>(name.GetPointer()), name.GetSize()));
+
+        /* Check the output size. */
+        R_UNLESS(util::IsIntValueRepresentable<s32>(var_size), htc::ResultUnknown());
+
+        /* Set the output size. */
+        *out_size = static_cast<s32>(var_size);
+        return ResultSuccess();
     }
 
     Result HtcServiceObject::GetHostConnectionEvent(sf::OutCopyHandle out) {
-        AMS_ABORT("HtcServiceObject::GetHostConnectionEvent");
+        /* Set the output handle. */
+        *out = m_observer.GetConnectEvent()->GetReadableHandle();
+        return ResultSuccess();
     }
 
     Result HtcServiceObject::GetHostDisconnectionEvent(sf::OutCopyHandle out) {
-        AMS_ABORT("HtcServiceObject::GetHostDisconnectionEvent");
+        /* Set the output handle. */
+        *out = m_observer.GetDisconnectEvent()->GetReadableHandle();
+        return ResultSuccess();
     }
 
     Result HtcServiceObject::GetHostConnectionEventForSystem(sf::OutCopyHandle out) {
-        AMS_ABORT("HtcServiceObject::GetHostConnectionEventForSystem");
+        /* NOTE: Nintendo presumably reserved this command in case they need it, but they haven't implemented it yet. */
+        AMS_ABORT("HostEventForSystem not implemented.");
     }
 
     Result HtcServiceObject::GetHostDisconnectionEventForSystem(sf::OutCopyHandle out) {
-        AMS_ABORT("HtcServiceObject::GetHostDisconnectionEventForSystem");
-    }
-
-    Result HtcServiceObject::GetBridgeIpAddress(const sf::OutBuffer &out) {
-        AMS_ABORT("HtcServiceObject::GetBridgeIpAddress");
-    }
-
-    Result HtcServiceObject::GetBridgePort(const sf::OutBuffer &out) {
-        AMS_ABORT("HtcServiceObject::GetBridgePort");
-    }
-
-    Result HtcServiceObject::SetCradleAttached(bool attached) {
-        AMS_ABORT("HtcServiceObject::SetCradleAttached");
-    }
-
-    Result HtcServiceObject::GetBridgeSubnetMask(const sf::OutBuffer &out) {
-        AMS_ABORT("HtcServiceObject::GetBridgeSubnetMask");
-    }
-
-    Result HtcServiceObject::GetBridgeMacAddress(const sf::OutBuffer &out) {
-        AMS_ABORT("HtcServiceObject::GetBridgeMacAddress");
+        /* NOTE: Nintendo presumably reserved this command in case they need it, but they haven't implemented it yet. */
+        AMS_ABORT("HostEventForSystem not implemented.");
     }
 
     Result HtcServiceObject::GetWorkingDirectoryPath(const sf::OutBuffer &out, s32 max_len) {
-        AMS_ABORT("HtcServiceObject::GetWorkingDirectoryPath");
+        return htcfs::GetWorkingDirectory(reinterpret_cast<char *>(out.GetPointer()), max_len);
     }
 
     Result HtcServiceObject::GetWorkingDirectoryPathSize(sf::Out<s32> out_size) {
-        AMS_ABORT("HtcServiceObject::GetWorkingDirectoryPathSize");
+        return htcfs::GetWorkingDirectorySize(out_size.GetPointer());
     }
 
     Result HtcServiceObject::RunOnHostStart(sf::Out<u32> out_id, sf::OutCopyHandle out, const sf::InBuffer &args) {
-        AMS_ABORT("HtcServiceObject::RunOnHostStart");
+        /* Begin the run on host task. */
+        R_TRY(m_misc_impl.RunOnHostBegin(out_id.GetPointer(), out.GetHandlePointer(), reinterpret_cast<const char *>(args.GetPointer()), args.GetSize()));
+
+        /* Add the task id to our set. */
+        {
+            std::scoped_lock lk(m_mutex);
+            m_set.insert(*out_id);
+        }
+
+        /* Mark the output event as managed. */
+        out.SetManaged(true);
+        return ResultSuccess();
     }
 
     Result HtcServiceObject::RunOnHostResults(sf::Out<s32> out_result, u32 id) {
-        AMS_ABORT("HtcServiceObject::RunOnHostResults");
+        /* Verify that we have the task. */
+        {
+            std::scoped_lock lk(m_mutex);
+            R_UNLESS(m_set.erase(id), htc::ResultInvalidTaskId());
+        }
+
+        /* Finish the run on host task. */
+        return m_misc_impl.RunOnHostEnd(out_result.GetPointer(), id);
+    }
+
+    Result HtcServiceObject::GetBridgeIpAddress(const sf::OutBuffer &out) {
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
+    }
+
+    Result HtcServiceObject::GetBridgePort(const sf::OutBuffer &out) {
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
+    }
+
+    Result HtcServiceObject::SetCradleAttached(bool attached) {
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
+    }
+
+    Result HtcServiceObject::GetBridgeSubnetMask(const sf::OutBuffer &out) {
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
+    }
+
+    Result HtcServiceObject::GetBridgeMacAddress(const sf::OutBuffer &out) {
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetBridgeIpAddress(const sf::InBuffer &arg) {
-        AMS_ABORT("HtcServiceObject::SetBridgeIpAddress");
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetBridgeSubnetMask(const sf::InBuffer &arg) {
-        AMS_ABORT("HtcServiceObject::SetBridgeSubnetMask");
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
     }
 
     Result HtcServiceObject::SetBridgePort(const sf::InBuffer &arg) {
-        AMS_ABORT("HtcServiceObject::SetBridgePort");
+        /* NOTE: Atmosphere does not support HostBridge, and it's unclear if we ever will. */
+        AMS_ABORT("HostBridge currently not supported.");
     }
 
 }

@@ -41,6 +41,9 @@ namespace ams::htc::server {
             Result Start();
 
             void UpdateEvent();
+        public:
+            os::SystemEvent *GetConnectEvent() { return std::addressof(m_connect_event); }
+            os::SystemEvent *GetDisconnectEvent() { return std::addressof(m_disconnect_event); }
     };
 
 }
