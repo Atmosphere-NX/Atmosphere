@@ -384,7 +384,7 @@ namespace ams::boot2 {
         DetectAndDeclareFutureMitms();
 
         /* Device whether to launch tma or htc. */
-        if (IsHtcEnabled()) {
+        if (svc::IsKernelMesosphere() && IsHtcEnabled()) {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Htc, ncm::StorageId::None), 0);
         } else {
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Tma, ncm::StorageId::None), 0);

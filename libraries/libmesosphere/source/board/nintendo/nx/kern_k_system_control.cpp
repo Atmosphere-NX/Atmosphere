@@ -397,7 +397,7 @@ namespace ams::kern::board::nintendo::nx {
         }();
 
         /* Return (possibly) adjusted size. */
-        constexpr size_t ExtraSystemMemoryForAtmosphere = 33_MB;
+        constexpr size_t ExtraSystemMemoryForAtmosphere = 40_MB;
         return base_pool_size - ExtraSystemMemoryForAtmosphere - KTraceBufferSize;
     }
 
