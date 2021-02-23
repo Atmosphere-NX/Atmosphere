@@ -43,6 +43,22 @@ namespace ams::fs {
 
     }
 
+    SdCardDetectionEventNotifier::~SdCardDetectionEventNotifier() {
+        if (this->notifier != nullptr) {
+            fsEventNotifierClose(static_cast<FsEventNotifier *>(this->notifier));
+        }
+    }
+
+    Result SdCardDetectionEventNotifier::GetEventHandle(os::SystemEvent *out_event, os::EventClearMode clear_mode) {
+        AMS_ABORT_UNLESS(this->notifier != nullptr);
+
+        ::Event event;
+        R_TRY(fsEventNotifierGetEventHandle(static_cast<FsEventNotifier *>(this->notifier), std::addressof(event), clear_mode == os::EventClearMode_AutoClear));
+
+        out_event->Attach(event.revent, true, svc::InvalidHandle, false, clear_mode);
+        return ResultSuccess();
+    }
+
     Result MountSdCard(const char *name) {
         /* Validate the mount name. */
         R_TRY(impl::CheckMountNameAllowingReserved(name));
@@ -85,6 +101,30 @@ namespace ams::fs {
 
         /* Register. */
         return fsa::Register(name, std::move(subdir_fs));
+    }
+
+    bool IsSdCardInserted() {
+        /* TODO: fs::DeviceOperator */
+        /* Open a DeviceOperator. */
+        ::FsDeviceOperator d;
+        AMS_FS_R_ABORT_UNLESS(fsOpenDeviceOperator(std::addressof(d)));
+        ON_SCOPE_EXIT { fsDeviceOperatorClose(std::addressof(d)); };
+
+        bool sd_card_inserted;
+        AMS_FS_R_ABORT_UNLESS(fsDeviceOperatorIsSdCardInserted(std::addressof(d), std::addressof(sd_card_inserted)));
+        return sd_card_inserted;
+    }
+
+    Result OpenSdCardDetectionEventNotifier(SdCardDetectionEventNotifier *out) {
+        auto internal_notifier = new (std::nothrow) FsEventNotifier;
+        AMS_ABORT_UNLESS(internal_notifier != nullptr);
+        auto session_guard = SCOPE_GUARD { delete internal_notifier; };
+
+        R_TRY(fsOpenSdCardDetectionEventNotifier(internal_notifier));
+        out->Open(static_cast<void*>(internal_notifier));
+
+        session_guard.Cancel();
+        return ResultSuccess();
     }
 
 }

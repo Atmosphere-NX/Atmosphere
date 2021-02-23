@@ -13,22 +13,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #pragma once
-#include <vapours/common.hpp>
-#include <vapours/assert.hpp>
 
-namespace ams::util {
-
-    int SNPrintf(char *dst, size_t dst_size, const char *fmt, ...);
-    int VSNPrintf(char *dst, size_t dst_size, const char *fmt, std::va_list vl);
-
-    int TSNPrintf(char *dst, size_t dst_size, const char *fmt, ...);
-    int TVSNPrintf(char *dst, size_t dst_size, const char *fmt, std::va_list vl);
-
-    using PrintFunction = void (*)(void *user_data, const char *str, int unk);
-
-    void FormatString(PrintFunction print_func, void *user_data, const char *fmt, ...);
-    void VFormatString(PrintFunction print_func, void *user_data, const char *fmt, std::va_list vl);
-
-}
+#include <stratosphere/diag/diag_log_types.hpp>

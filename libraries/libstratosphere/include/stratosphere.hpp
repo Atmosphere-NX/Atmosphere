@@ -46,6 +46,7 @@
 #include <stratosphere/cfg.hpp>
 #include <stratosphere/clkrst.hpp>
 #include <stratosphere/ddsf.hpp>
+#include <stratosphere/diag.hpp>
 #include <stratosphere/dmnt.hpp>
 #include <stratosphere/erpt.hpp>
 #include <stratosphere/err.hpp>
@@ -56,6 +57,7 @@
 #include <stratosphere/i2c.hpp>
 #include <stratosphere/kvdb.hpp>
 #include <stratosphere/ldr.hpp>
+#include <stratosphere/lm.hpp>
 #include <stratosphere/lr.hpp>
 #include <stratosphere/map.hpp>
 #include <stratosphere/ncm.hpp>
