@@ -409,13 +409,15 @@ namespace ams::sm::impl {
 
             /* Create the new service. */
             *out = INVALID_HANDLE;
-            R_TRY(svcCreatePort(out, free_service->port_h.GetPointerAndClear(), max_sessions, is_light, free_service->name.name));
+            Handle server_hnd = INVALID_HANDLE;
+            R_TRY(svcCreatePort(out, std::addressof(server_hnd), max_sessions, is_light, free_service->name.name));
 
             /* Save info. */
             free_service->name = service;
             free_service->owner_process_id = process_id;
             free_service->max_sessions = max_sessions;
             free_service->is_light = is_light;
+            *free_service->port_h.GetPointerAndClear() = server_hnd;
 
             /* This might undefer some requests. */
             TriggerResume(service);
