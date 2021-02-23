@@ -407,9 +407,15 @@ namespace ams::sm::impl {
             ServiceInfo *free_service = GetFreeServiceInfo();
             R_UNLESS(free_service != nullptr, sm::ResultOutOfServices());
 
+            /* Make sure we keep the handles clean */
+            auto handle_guard = SCOPE_GUARD { *out = INVALID_HANDLE; *(free_service->port_h.GetPointer()) = INVALID_HANDLE; };
+
             /* Create the new service. */
             *out = INVALID_HANDLE;
             R_TRY(svcCreatePort(out, free_service->port_h.GetPointerAndClear(), max_sessions, is_light, free_service->name.name));
+
+            /* We succeeded! */
+            handle_guard.Cancel();
 
             /* Save info. */
             free_service->name = service;
