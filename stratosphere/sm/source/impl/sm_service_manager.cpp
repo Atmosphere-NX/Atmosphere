@@ -23,7 +23,7 @@ namespace ams::sm::impl {
 
         /* Constexpr definitions. */
         static constexpr size_t ProcessCountMax      = 0x40;
-        static constexpr size_t ServiceCountMax      = 0x100;
+        static constexpr size_t ServiceCountMax      = 0x100 + 0x10; /* Extra 0x10 services over Nintendo for homebrew. */
         static constexpr size_t FutureMitmCountMax   = 0x20;
         static constexpr size_t AccessControlSizeMax = 0x200;
 

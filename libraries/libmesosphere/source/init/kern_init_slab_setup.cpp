@@ -60,7 +60,7 @@ namespace ams::kern::init {
         constexpr size_t SlabCountKThread               = 800;
         constexpr size_t SlabCountKEvent                = 700;
         constexpr size_t SlabCountKInterruptEvent       = 100;
-        constexpr size_t SlabCountKPort                 = 256;
+        constexpr size_t SlabCountKPort                 = 256 + 0x20 /* Extra 0x20 ports over Nintendo for homebrew. */;
         constexpr size_t SlabCountKSharedMemory         = 80;
         constexpr size_t SlabCountKTransferMemory       = 200;
         constexpr size_t SlabCountKCodeMemory           = 10;
