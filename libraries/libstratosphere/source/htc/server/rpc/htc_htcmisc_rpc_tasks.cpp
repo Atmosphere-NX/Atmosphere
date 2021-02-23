@@ -61,7 +61,7 @@ namespace ams::htc::server::rpc {
         Task::Complete();
     }
 
-    Result GetEnvironmentVariableTask::GetResult(size_t *out, char *dst, size_t size) {
+    Result GetEnvironmentVariableTask::GetResult(size_t *out, char *dst, size_t size) const {
         /* Check our task state. */
         AMS_ASSERT(this->GetTaskState() == RpcTaskState::Completed);
 
@@ -166,7 +166,7 @@ namespace ams::htc::server::rpc {
         Task::Complete();
     }
 
-    Result GetEnvironmentVariableLengthTask::GetResult(size_t *out) {
+    Result GetEnvironmentVariableLengthTask::GetResult(size_t *out) const {
         /* Check our task state. */
         AMS_ASSERT(this->GetTaskState() == RpcTaskState::Completed);
 
@@ -241,7 +241,7 @@ namespace ams::htc::server::rpc {
         Task::Complete();
     }
 
-    Result RunOnHostTask::GetResult(int *out) {
+    Result RunOnHostTask::GetResult(int *out) const {
         *out = m_host_result;
         return ResultSuccess();
     }
@@ -289,6 +289,5 @@ namespace ams::htc::server::rpc {
     os::SystemEventType *RunOnHostTask::GetSystemEvent() {
         return m_system_event.GetBase();
     }
-
 
 }

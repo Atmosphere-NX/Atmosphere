@@ -179,6 +179,14 @@ namespace ams::htcfs {
                 return this->MakeRequestHeader(out, PacketType::GetEntryCount, 0, handle);
             }
 
+            void MakeGetWorkingDirectoryHeader(Header *out) {
+                return this->MakeRequestHeader(out, PacketType::GetWorkingDirectory, 0);
+            }
+
+            void MakeGetWorkingDirectorySizeHeader(Header *out) {
+                return this->MakeRequestHeader(out, PacketType::GetWorkingDirectorySize, 0);
+            }
+
             void MakeReadDirectoryHeader(Header *out, s32 handle, size_t max_out_entries) {
                 return this->MakeRequestHeader(out, PacketType::ReadDirectory, 0, handle, max_out_entries);
             }

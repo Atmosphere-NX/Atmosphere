@@ -60,6 +60,9 @@ namespace ams::htcfs {
             Result FlushFile(s32 handle) { return ConvertToFsResult(m_impl.FlushFile(handle)); }
             Result GetPriorityForFile(s32 *out, s32 handle) { return ConvertToFsResult(m_impl.GetPriorityForFile(out, handle)); }
             Result SetPriorityForFile(s32 priority, s32 handle) { return ConvertToFsResult(m_impl.SetPriorityForFile(priority, handle)); }
+
+            Result GetWorkingDirectory(char *dst, size_t dst_size) { return ConvertToFsResult(m_impl.GetWorkingDirectory(dst, dst_size)); }
+            Result GetWorkingDirectorySize(s32 *out) { return ConvertToFsResult(m_impl.GetWorkingDirectorySize(out)); }
     };
 
     void InitializeClient(htclow::HtclowManager *manager);

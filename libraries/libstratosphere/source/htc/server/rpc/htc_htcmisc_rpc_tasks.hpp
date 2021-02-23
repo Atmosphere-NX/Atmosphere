@@ -88,7 +88,7 @@ namespace ams::htc::server::rpc {
 
             Result SetArguments(const char *args, size_t size);
             void Complete(HtcmiscResult result, const char *data, size_t size);
-            Result GetResult(size_t *out, char *dst, size_t size);
+            Result GetResult(size_t *out, char *dst, size_t size) const;
 
             const char *GetName() const { return m_name; }
             int GetNameSize() const { return m_name_size; }
@@ -110,7 +110,7 @@ namespace ams::htc::server::rpc {
 
             Result SetArguments(const char *args, size_t size);
             void Complete(HtcmiscResult result, const char *data, size_t size);
-            Result GetResult(size_t *out);
+            Result GetResult(size_t *out) const;
 
             const char *GetName() const { return m_name; }
             int GetNameSize() const { return m_name_size; }
@@ -133,7 +133,7 @@ namespace ams::htc::server::rpc {
 
             Result SetArguments(const char *args, size_t size);
             void Complete(int host_result);
-            Result GetResult(int *out);
+            Result GetResult(int *out) const;
 
             const char *GetCommand() const { return m_command; }
             int GetCommandSize() const { return m_command_size; }

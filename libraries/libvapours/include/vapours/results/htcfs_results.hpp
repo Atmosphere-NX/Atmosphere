@@ -35,6 +35,7 @@ namespace ams::htcfs {
             R_DEFINE_ERROR_RESULT(UnexpectedResponseBody,            116);
 
     R_DEFINE_ERROR_RANGE(InternalError, 200, 299);
+        R_DEFINE_ERROR_RESULT(InvalidSize,                201);
         R_DEFINE_ERROR_RESULT(UnknownError,               211);
         R_DEFINE_ERROR_RESULT(UnsupportedProtocolVersion, 212);
         R_DEFINE_ERROR_RESULT(InvalidRequest,             213);
