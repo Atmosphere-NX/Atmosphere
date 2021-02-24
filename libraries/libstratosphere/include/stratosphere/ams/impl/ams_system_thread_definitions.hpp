@@ -144,6 +144,11 @@ namespace ams::impl {
 
     AMS_DEFINE_SYSTEM_THREAD(10, tma, BridgePcieDriver);
 
+    /* DevServer/TioServer. */
+    AMS_DEFINE_SYSTEM_THREAD(21, TioServer, Main);
+    AMS_DEFINE_SYSTEM_THREAD(21, TioServer, FileServerHtcsServer);
+    AMS_DEFINE_SYSTEM_THREAD(21, TioServer, SdCardObserver);
+
 
     #undef AMS_DEFINE_SYSTEM_THREAD
 
