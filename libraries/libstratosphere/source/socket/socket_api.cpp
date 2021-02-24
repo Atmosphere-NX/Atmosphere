@@ -42,4 +42,16 @@ namespace ams::socket {
         return impl::InetNtohs(net);
     }
 
+    Result Initialize(const Config &config) {
+        return impl::Initialize(config);
+    }
+
+    Result Finalize() {
+        return impl::Finalize();
+    }
+
+    Result InitializeAllocatorForInternal(void *buffer, size_t size) {
+        return impl::InitializeAllocatorForInternal(buffer, size);
+    }
+
 }

@@ -52,6 +52,18 @@ namespace ams::htclow {
         R_DEFINE_ERROR_RANGE(DriverError, 1200, 1999);
             R_DEFINE_ERROR_RESULT(DriverOpened, 1201);
 
+            R_DEFINE_ERROR_RANGE(SocketDriverError, 1300, 1399);
+                R_DEFINE_ERROR_RESULT(SocketSocketExemptError, 1301);
+                R_DEFINE_ERROR_RESULT(SocketBindError,         1302);
+                R_DEFINE_ERROR_RESULT(SocketListenError,       1304);
+                R_DEFINE_ERROR_RESULT(SocketAcceptError,       1305);
+                R_DEFINE_ERROR_RESULT(SocketReceiveError,      1306);
+                R_DEFINE_ERROR_RESULT(SocketSendError,         1307);
+                R_DEFINE_ERROR_RESULT(SocketReceiveFromError,  1308);
+                R_DEFINE_ERROR_RESULT(SocketSendToError,       1309);
+                R_DEFINE_ERROR_RESULT(SocketSetSockOptError,   1310);
+                R_DEFINE_ERROR_RESULT(SocketGetSockNameError,  1311);
+
             R_DEFINE_ERROR_RANGE(UsbDriverError, 1400, 1499);
                 R_DEFINE_ERROR_RESULT(UsbDriverUnknownError, 1401);
                 R_DEFINE_ERROR_RESULT(UsbDriverBusyError,    1402);

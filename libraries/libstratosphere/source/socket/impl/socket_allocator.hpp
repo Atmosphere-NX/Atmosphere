@@ -18,6 +18,8 @@
 
 namespace ams::socket::impl {
 
+    constexpr inline auto MinimumHeapAlignment = 0x10;
+
     void *Alloc(size_t size);
     void *Calloc(size_t num, size_t size);
     void Free(void *ptr);

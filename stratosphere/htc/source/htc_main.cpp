@@ -200,6 +200,10 @@ namespace ams::htc {
                 return htclow::impl::DriverType::HostBridge;
             } else if (std::strstr(transport, "plainchannel")) {
                 return htclow::impl::DriverType::PlainChannel;
+            } else if (std::strstr(transport, "socket")) {
+                /* NOTE: Nintendo does not actually allow socket driver to be selected. */
+                /* Should we disallow this? Undesirable, because people will want to use docked tma. */
+                return htclow::impl::DriverType::Socket;
             } else {
                 return DefaultHtclowDriverType;
             }
@@ -230,6 +234,12 @@ namespace ams::htc {
 
 }
 
+namespace ams::htclow::driver {
+
+    void InitializeSocketApiForSocketDriver();
+
+}
+
 int main(int argc, char **argv)
 {
     /* Set thread name. */
@@ -239,6 +249,11 @@ int main(int argc, char **argv)
     /* Get and set the default driver type. */
     const auto driver_type = htc::GetHtclowDriverType();
     htclow::HtclowManagerHolder::SetDefaultDriver(driver_type);
+
+    /* If necessary, initialize the socket driver. */
+    if (driver_type == htclow::impl::DriverType::Socket) {
+        htclow::driver::InitializeSocketApiForSocketDriver();
+    }
 
     /* Initialize the htclow manager. */
     htclow::HtclowManagerHolder::AddReference();

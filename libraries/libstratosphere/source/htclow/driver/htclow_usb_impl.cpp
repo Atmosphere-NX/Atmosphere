@@ -15,6 +15,7 @@
  */
 #include <stratosphere.hpp>
 #include "htclow_usb_impl.hpp"
+#include "htclow_driver_memory_management.hpp"
 
 namespace ams::htclow::driver {
 
@@ -179,11 +180,8 @@ namespace ams::htclow::driver {
             .wBytesPerInterval  = 0x0000,
         };
 
-        constexpr size_t UsbDmaBufferSize = 0x60000;
-
-        alignas(os::MemoryPageSize) constinit u8 g_usb_receive_buffer[UsbDmaBufferSize];
-        alignas(os::MemoryPageSize) constinit u8 g_usb_send_buffer[UsbDmaBufferSize];
-        alignas(os::ThreadStackAlignment) constinit u8 g_usb_indication_thread_stack[16_KB];
+        constinit void *g_usb_receive_buffer = nullptr;
+        constinit void *g_usb_send_buffer    = nullptr;
 
         constinit UsbAvailabilityChangeCallback g_availability_change_callback = nullptr;
         constinit void *g_availability_change_param = nullptr;
@@ -346,6 +344,10 @@ namespace ams::htclow::driver {
         /* Set the interface as initialized. */
         g_usb_interface_initialized = true;
 
+        /* Get the dma buffers. */
+        g_usb_receive_buffer = GetUsbReceiveBuffer();
+        g_usb_send_buffer    = GetUsbSendBuffer();
+
         /* If we fail somewhere, finalize. */
         auto init_guard = SCOPE_GUARD { FinalizeUsbInterface(); };
 
@@ -385,7 +387,7 @@ namespace ams::htclow::driver {
         R_TRY(ConvertUsbDriverResult(InitializeDsEndpoints()));
 
         /* Create the indication thread. */
-        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_usb_indication_thread), &UsbIndicationThreadFunction, nullptr, g_usb_indication_thread_stack, sizeof(g_usb_indication_thread_stack), AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtclowUsbIndication)));
+        R_ABORT_UNLESS(os::CreateThread(std::addressof(g_usb_indication_thread), &UsbIndicationThreadFunction, nullptr, GetUsbIndicationThreadStack(), UsbIndicationThreadStackSize, AMS_GET_SYSTEM_THREAD_PRIORITY(htc, HtclowUsbIndication)));
 
         /* Set the thread name. */
         os::SetThreadNamePointer(std::addressof(g_usb_indication_thread), AMS_GET_SYSTEM_THREAD_NAME(htc, HtclowUsbIndication));

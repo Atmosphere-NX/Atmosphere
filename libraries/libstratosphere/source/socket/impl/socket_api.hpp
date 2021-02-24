@@ -20,9 +20,19 @@ namespace ams::socket::impl {
     Errno GetLastError();
     void SetLastError(Errno err);
 
+    bool HeapIsAvailable(int generation);
+    int GetHeapGeneration();
+
     u32 InetHtonl(u32 host);
     u16 InetHtons(u16 host);
     u32 InetNtohl(u32 net);
     u16 InetNtohs(u16 net);
+
+    Result Initialize(const Config &config);
+    Result Finalize();
+
+    Result InitializeAllocatorForInternal(void *buffer, size_t size);
+
+    s32 Shutdown(s32 desc, ShutdownMethod how);
 
 }

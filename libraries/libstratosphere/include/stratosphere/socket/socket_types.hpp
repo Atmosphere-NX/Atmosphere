@@ -79,6 +79,19 @@ namespace ams::socket {
         Pf_Max    = Af_Max
     };
 
+    enum class MsgFlag : s32 {
+        MsgFlag_None    = (0 << 0),
+        /* ... */
+        MsgFlag_WaitAll = (1 << 6),
+        /* ... */
+    };
+
+    enum class ShutdownMethod : u32 {
+        Shut_Rd   = 0,
+        Shut_Wr   = 1,
+        Shut_RdWr = 2,
+    };
+
     struct HostEnt {
         char *h_name;
         char **h_aliases;
@@ -98,7 +111,7 @@ namespace ams::socket {
         Ai_NumericHost = (1 <<  2),
         Ai_NumericServ = (1 <<  3),
 
-        Ai_AddrConfig = (1 << 10),
+        Ai_AddrConfig  = (1 << 10),
     };
 
     struct SockAddr {

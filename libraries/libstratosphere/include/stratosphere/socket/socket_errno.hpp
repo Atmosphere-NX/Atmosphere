@@ -19,10 +19,21 @@
 namespace ams::socket {
 
     enum class Errno : u32 {
-        ESuccess =   0,
+        ESuccess   =   0,
         /* ... */
-        ENoSpc   =  28,
+        EAgain     =  11,
+        ENoMem     =  12,
         /* ... */
+        EFault     =  14,
+        /* ... */
+        EInval     =  22,
+        /* ... */
+        ENoSpc     =  28,
+        /* ... */
+        EL3Hlt     =  46,
+        /* ... */
+        EOpNotSupp =  95,
+        ENotSup    =  EOpNotSupp,
     };
 
     enum class HErrno : s32 {
