@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stratosphere.hpp>
+#include "tio_file_server.hpp"
 
 extern "C" {
     extern u32 __start__;
@@ -61,14 +62,63 @@ void __libnx_exception_handler(ThreadExceptionDump *ctx) {
 
 #endif
 
+namespace ams::tio {
+
+    namespace {
+
+        alignas(0x40) constinit u8 g_fs_heap_buffer[64_KB];
+        alignas(0x40) constinit u8 g_htcs_buffer[1_KB];
+        lmem::HeapHandle g_fs_heap_handle;
+
+        void *AllocateForFs(size_t size) {
+            return lmem::AllocateFromExpHeap(g_fs_heap_handle, size);
+        }
+
+        void DeallocateForFs(void *p, size_t size) {
+            return lmem::FreeToExpHeap(g_fs_heap_handle, p);
+        }
+
+        void InitializeFsHeap() {
+            /* Setup fs allocator. */
+            g_fs_heap_handle = lmem::CreateExpHeap(g_fs_heap_buffer, sizeof(g_fs_heap_buffer), lmem::CreateOption_ThreadSafe);
+        }
+
+    }
+
+}
+
+void __libnx_initheap(void) {
+	void*  addr = nx_inner_heap;
+	size_t size = nx_inner_heap_size;
+
+	/* Newlib */
+	extern char* fake_heap_start;
+	extern char* fake_heap_end;
+
+	fake_heap_start = (char*)addr;
+	fake_heap_end   = (char*)addr + size;
+
+    ams::tio::InitializeFsHeap();
+}
+
 void __appInit(void) {
     hos::InitializeForStratosphere();
 
-    /* TODO */
+    /* Initialize FS heap. */
+    fs::SetAllocator(tio::AllocateForFs, tio::DeallocateForFs);
+
+    /* Disable FS auto-abort. */
+    fs::SetEnabledAutoAbort(false);
+
+    sm::DoWithSession([&]() {
+        R_ABORT_UNLESS(fsInitialize());
+    });
+
+    ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    /* TODO */
+    fsExit();
 }
 
 namespace ams {
@@ -108,6 +158,21 @@ int main(int argc, char **argv)
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(TioServer, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(TioServer, Main));
+
+    /* Initialize htcs. */
+    constexpr auto HtcsSocketCountMax = 2;
+    const size_t buffer_size = htcs::GetWorkingMemorySize(HtcsSocketCountMax);
+    AMS_ABORT_UNLESS(sizeof(tio::g_htcs_buffer) >= buffer_size);
+    htcs::InitializeForSystem(tio::g_htcs_buffer, buffer_size, HtcsSocketCountMax);
+
+    /* Initialize the file server. */
+    tio::InitializeFileServer();
+
+    /* Start the file server. */
+    tio::StartFileServer();
+
+    /* Wait for the file server to finish. */
+    tio::WaitFileServer();
 
     return 0;
 }
