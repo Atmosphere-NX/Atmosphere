@@ -21,7 +21,7 @@
 namespace ams::socket {
 
     constexpr ALWAYS_INLINE size_t AlignMss(size_t size) {
-        return util::DivideUp(size, static_cast<size_t>(1500));
+        return util::DivideUp(size, static_cast<size_t>(1500)) * static_cast<size_t>(1500);
     }
 
     class Config {
