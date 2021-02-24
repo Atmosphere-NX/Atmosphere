@@ -109,6 +109,9 @@ namespace ams::impl {
     AMS_DEFINE_SYSTEM_THREAD(21, settings, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, settings, IpcServer);
 
+    /* Bus. */
+    AMS_DEFINE_SYSTEM_THREAD(-12, uart, IpcServer);
+
     /* erpt. */
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, Main);
     AMS_DEFINE_SYSTEM_THREAD(21, erpt, IpcServer);
