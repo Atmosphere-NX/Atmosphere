@@ -50,7 +50,7 @@ namespace ams::socket::impl {
         if (!g_heap_handle) {
             socket::impl::SetLastError(Errno::EOpNotSupp);
         } else if ((ptr = lmem::AllocateFromExpHeap(g_heap_handle, size)) == nullptr) {
-            socket::impl::SetLastError(Errno::EOpNotSupp);
+            socket::impl::SetLastError(Errno::ENoMem);
         }
 
         return ptr;
@@ -66,7 +66,7 @@ namespace ams::socket::impl {
         if (!g_heap_handle) {
             socket::impl::SetLastError(Errno::EOpNotSupp);
         } else if ((ptr = lmem::AllocateFromExpHeap(g_heap_handle, size * num)) == nullptr) {
-            socket::impl::SetLastError(Errno::EOpNotSupp);
+            socket::impl::SetLastError(Errno::ENoMem);
         } else {
             std::memset(ptr, 0, size * num);
         }
@@ -210,6 +210,43 @@ namespace ams::socket::impl {
             return ResultSuccess();
         }
 
+        ALWAYS_INLINE struct sockaddr *ConvertForLibnx(SockAddr *addr) {
+            static_assert(sizeof(SockAddr) == sizeof(struct sockaddr));
+            static_assert(alignof(SockAddr) == alignof(struct sockaddr));
+            return reinterpret_cast<struct sockaddr *>(addr);
+        }
+
+        ALWAYS_INLINE const struct sockaddr *ConvertForLibnx(const SockAddr *addr) {
+            static_assert(sizeof(SockAddr) == sizeof(struct sockaddr));
+            static_assert(alignof(SockAddr) == alignof(struct sockaddr));
+            return reinterpret_cast<const struct sockaddr *>(addr);
+        }
+
+        static_assert(std::same_as<SockLenT, socklen_t>);
+
+        Errno TranslateResultToBsdErrorImpl(const Result &result) {
+            if (R_SUCCEEDED(result)) {
+                return Errno::ESuccess;
+            } else if (svc::ResultInvalidCurrentMemory::Includes(result) || svc::ResultOutOfAddressSpace::Includes(result)) {
+                return Errno::EFault;
+            } else if (sf::hipc::ResultCommunicationError::Includes(result)) {
+                return Errno::EL3Hlt;
+            } else if (sf::hipc::ResultOutOfResource::Includes(result)) {
+                return Errno::EAgain;
+            } else {
+                R_ABORT_UNLESS(result);
+                return static_cast<Errno>(-1);
+            }
+        }
+
+        ALWAYS_INLINE void TranslateResultToBsdError(Errno &bsd_error, int &result) {
+            Errno translate_error = Errno::ESuccess;
+            if ((translate_error = TranslateResultToBsdErrorImpl(static_cast<::ams::Result>(::g_bsdResult))) != Errno::ESuccess) {
+                bsd_error  = translate_error;
+                result     = -1;
+            }
+        }
+
     }
 
     Result Initialize(const Config &config) {
@@ -247,6 +284,287 @@ namespace ams::socket::impl {
 
         InitializeHeapImpl(buffer, size);
         return ResultSuccess();
+    }
+
+    ssize_t RecvFrom(s32 desc, void *buffer, size_t buffer_size, MsgFlag flags, SockAddr *out_address, SockLenT *out_addr_len) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (buffer_size == 0) {
+            return 0;
+        } else if (buffer == nullptr) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        } else if (buffer_size > std::numeric_limits<u32>::max()) {
+            socket::impl::SetLastError(Errno::EFault);
+            return -1;
+        }
+
+        /* If this is just a normal receive call, perform a normal receive. */
+        if (out_address == nullptr || out_addr_len == nullptr || *out_addr_len == 0) {
+            return impl::Recv(desc, buffer, buffer_size, flags);
+        }
+
+        /* Perform the call. */
+        socklen_t length;
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdRecvFrom(desc, buffer, buffer_size, static_cast<int>(flags), ConvertForLibnx(out_address), std::addressof(length));
+        TranslateResultToBsdError(error, result);
+
+        if (result >= 0) {
+            *out_addr_len = length;
+        } else {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    ssize_t Recv(s32 desc, void *buffer, size_t buffer_size, MsgFlag flags) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (buffer_size == 0) {
+            return 0;
+        } else if (buffer == nullptr) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        } else if (buffer_size > std::numeric_limits<u32>::max()) {
+            socket::impl::SetLastError(Errno::EFault);
+            return -1;
+        }
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdRecv(desc, buffer, buffer_size, static_cast<int>(flags));
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    ssize_t SendTo(s32 desc, const void *buffer, size_t buffer_size, MsgFlag flags, const SockAddr *address, SockLenT len) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* If this is a normal send, perform a normal send. */
+        if (address == nullptr || len == 0) {
+            return impl::Send(desc, buffer, buffer_size, flags);
+        }
+
+        /* Check input. */
+        if (buffer_size == 0) {
+            return 0;
+        } else if (buffer == nullptr) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        } else if (buffer_size > std::numeric_limits<u32>::max()) {
+            socket::impl::SetLastError(Errno::EFault);
+            return -1;
+        }
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result = ::bsdSendTo(desc, buffer, buffer_size, static_cast<int>(flags), ConvertForLibnx(address), len);
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    ssize_t Send(s32 desc, const void *buffer, size_t buffer_size, MsgFlag flags) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (buffer_size == 0) {
+            return 0;
+        } else if (buffer == nullptr) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        } else if (buffer_size > std::numeric_limits<u32>::max()) {
+            socket::impl::SetLastError(Errno::EFault);
+            return -1;
+        }
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdSend(desc, buffer, buffer_size, static_cast<int>(flags));
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 Shutdown(s32 desc, ShutdownMethod how) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdShutdown(desc, static_cast<int>(how));
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 SocketExempt(Family domain, Type type, Protocol protocol) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdSocketExempt(static_cast<int>(domain), static_cast<int>(type), static_cast<int>(protocol));
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 Accept(s32 desc, SockAddr *out_address, SockLenT *out_addr_len) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (out_address == nullptr && out_addr_len != nullptr && *out_addr_len != 0) {
+            socket::impl::SetLastError(Errno::EFault);
+            return -1;
+        }
+
+        socklen_t addrlen = static_cast<socklen_t>((out_address && out_addr_len) ? *out_addr_len : 0);
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdAccept(desc, ConvertForLibnx(out_address), std::addressof(addrlen));
+        TranslateResultToBsdError(error, result);
+
+        if (result >= 0) {
+            if (out_addr_len != nullptr) {
+                *out_addr_len = addrlen;
+            }
+        } else {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+    s32 Bind(s32 desc, const SockAddr *address, SockLenT len) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (address == nullptr || len == 0) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        }
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdBind(desc, ConvertForLibnx(address), len);
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 GetSockName(s32 desc, SockAddr *out_address, SockLenT *out_addr_len) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (out_address == nullptr || out_addr_len == nullptr || *out_addr_len == 0) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        }
+
+        /* Perform the call. */
+        socklen_t length;
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdGetSockName(desc, ConvertForLibnx(out_address), std::addressof(length));
+        TranslateResultToBsdError(error, result);
+
+        if (result >= 0) {
+            *out_addr_len = length;
+        } else {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 SetSockOpt(s32 desc, Level level, Option option_name, const void *option_value, SockLenT option_size) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Check input. */
+        if (option_value == nullptr) {
+            socket::impl::SetLastError(Errno::EInval);
+            return -1;
+        }
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdSetSockOpt(desc, static_cast<int>(level), static_cast<int>(option_name), option_value, option_size);
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 Listen(s32 desc, s32 backlog) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdListen(desc, backlog);
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
+    }
+
+    s32 Close(s32 desc) {
+        /* Check pre-conditions. */
+        AMS_ABORT_UNLESS(IsInitialized());
+
+        /* Perform the call. */
+        Errno error = Errno::ESuccess;
+        int result  = ::bsdClose(desc);
+        TranslateResultToBsdError(error, result);
+
+        if (result < 0) {
+            socket::impl::SetLastError(error);
+        }
+
+        return result;
     }
 
 }
