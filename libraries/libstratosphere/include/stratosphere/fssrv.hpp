@@ -17,6 +17,7 @@
 #pragma once
 #include <stratosphere/fssrv/sf/fssrv_sf_path.hpp>
 #include <stratosphere/fssrv/sf/fssrv_sf_ifile.hpp>
+#include <stratosphere/fssrv/sf/fssrv_sf_i_event_notifier.hpp>
 #include <stratosphere/fssrv/fssrv_path_normalizer.hpp>
 #include <stratosphere/fssrv/fssrv_nca_crypto_configuration.hpp>
 #include <stratosphere/fssrv/fssrv_memory_resource_from_standard_allocator.hpp>

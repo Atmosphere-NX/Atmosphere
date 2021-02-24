@@ -32,6 +32,7 @@
 #include <stratosphere/fs/fs_read_only_filesystem.hpp>
 #include <stratosphere/fs/fs_shared_filesystem_holder.hpp>
 #include <stratosphere/fs/fs_istorage.hpp>
+#include <stratosphere/fs/fs_i_event_notifier.hpp>
 #include <stratosphere/fs/fs_substorage.hpp>
 #include <stratosphere/fs/fs_memory_storage.hpp>
 #include <stratosphere/fs/fs_remote_storage.hpp>
