@@ -37,7 +37,7 @@ namespace ams::fs {
     }
 
     Result GetFileTimeStampRawForDebug(FileTimeStampRaw *out, const char *path) {
-        AMS_FS_R_TRY(GetFileTimeStampRawForDebug(out, path));
+        AMS_FS_R_TRY(impl::GetFileTimeStampRawForDebug(out, path));
         return ResultSuccess();
     }
 
