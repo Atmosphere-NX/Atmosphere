@@ -63,4 +63,125 @@ namespace ams::tio {
     };
     static_assert(sizeof(FileServerRequestHeader) == sizeof(FileServerResponseHeader));
 
+    struct CreateDirectoryParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct DeleteDirectoryParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct DeleteDirectoryRecursivelyParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct OpenDirectoryParam {
+        u32 path_len;
+        fs::OpenDirectoryMode open_mode;
+        char path[];
+    };
+    static_assert(sizeof(OpenDirectoryParam) == 0x8);
+
+    struct CloseDirectoryParam {
+        u64 handle;
+    };
+
+    struct RenameDirectoryParam {
+        u32 old_len;
+        u32 new_len;
+        char data[];
+    };
+
+    struct CreateFileParam {
+        s64 size;
+        u32 path_len;
+        fs::CreateOption option;
+        char path[];
+    };
+    static_assert(sizeof(CreateFileParam) == 0x10);
+
+    struct DeleteFileParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct OpenFileParam {
+        u32 path_len;
+        fs::OpenMode mode;
+        char path[];
+    };
+    static_assert(sizeof(OpenFileParam) == 0x8);
+
+    struct FlushFileParam {
+        u64 handle;
+    };
+
+    struct CloseFileParam {
+        u64 handle;
+    };
+
+    struct RenameFileParam {
+        u32 old_len;
+        u32 new_len;
+        char data[];
+    };
+
+    struct ReadFileParam {
+        u64 handle;
+        s64 offset;
+        u64 size;
+        fs::ReadOption option;
+    };
+    static_assert(sizeof(ReadFileParam) == 0x20);
+
+    struct WriteFileParam {
+        u64 handle;
+        s64 offset;
+        u64 size;
+        fs::WriteOption option;
+    };
+    static_assert(sizeof(WriteFileParam) == 0x20);
+
+    struct GetEntryTypeParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct ReadDirectoryParam {
+        u64 handle;
+        s64 count;
+    };
+
+    struct GetFileSizeParam {
+        u64 handle;
+    };
+
+    struct SetFileSizeParam {
+        u64 handle;
+        s64 size;
+    };
+
+    struct GetTotalSpaceSizeParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct GetFreeSpaceSizeParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct StatParam {
+        u32 path_len;
+        char path[];
+    };
+
+    struct ListDirectoryParam {
+        u32 path_len;
+        char path[];
+    };
+
 }
