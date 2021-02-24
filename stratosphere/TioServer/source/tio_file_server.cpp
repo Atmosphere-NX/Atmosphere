@@ -76,7 +76,7 @@ namespace ams::tio {
 
                 /* Receive the request body, if necessary. */
                 if (request->header.body_size > 0) {
-                    if (htcs::Recv(fd, request->body, request->header.body_size, htcs::HTCS_MSG_WAITALL) != sizeof(request->header.body_size)) {
+                    if (htcs::Recv(fd, request->body, request->header.body_size, htcs::HTCS_MSG_WAITALL) != request->header.body_size) {
                         break;
                     }
                 }
