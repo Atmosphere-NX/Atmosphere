@@ -14,18 +14,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include "fs_common.hpp"
+#include <vapours.hpp>
+#include <stratosphere/sf.hpp>
 
-namespace ams::fs {
+#define AMS_FSSRV_I_EVENT_NOTIFIER_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GetEventHandle, (ams::sf::OutCopyHandle out), (out))
 
-    class IEventNotifier;
-
-    Result MountSdCard(const char *name);
-
-    Result MountSdCardErrorReportDirectoryForAtmosphere(const char *name);
-
-    Result OpenSdCardDetectionEventNotifier(std::unique_ptr<IEventNotifier> *out);
-
-    bool IsSdCardInserted();
-
-}
+AMS_SF_DEFINE_INTERFACE(ams::fssrv::sf, IEventNotifier, AMS_FSSRV_I_EVENT_NOTIFIER_INTERFACE_INFO)

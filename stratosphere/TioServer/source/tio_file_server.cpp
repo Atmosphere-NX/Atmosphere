@@ -18,6 +18,7 @@
 #include "tio_file_server_packet.hpp"
 #include "tio_file_server_htcs_server.hpp"
 #include "tio_file_server_processor.hpp"
+#include "tio_sd_card_observer.hpp"
 
 namespace ams::tio {
 
@@ -36,10 +37,12 @@ namespace ams::tio {
         constexpr const char HtcsPortName[] = "iywys@$TioServer_FileServer";
 
         alignas(os::ThreadStackAlignment) u8 g_server_stack[os::MemoryPageSize];
+        alignas(os::ThreadStackAlignment) u8 g_observer_stack[os::MemoryPageSize];
         alignas(os::ThreadStackAlignment) u8 g_dispatch_stacks[NumDispatchThreads][os::MemoryPageSize];
 
         constinit FileServerHtcsServer g_file_server_htcs_server;
         constinit FileServerProcessor g_file_server_processor(g_file_server_htcs_server);
+        constinit SdCardObserver g_sd_card_observer;
 
         constinit os::ThreadType g_file_server_dispatch_threads[NumDispatchThreads];
 
@@ -50,6 +53,10 @@ namespace ams::tio {
 
         constinit uintptr_t g_free_mq_storage[NumDispatchThreads];
         constinit uintptr_t g_dispatch_mq_storage[NumDispatchThreads];
+
+        void OnSdCardInsertionChanged(bool inserted) {
+            g_file_server_processor.SetInserted(inserted);
+        }
 
         void OnFileServerHtcsSocketAccepted(int fd) {
             /* Service requests, while we can. */
@@ -110,10 +117,12 @@ namespace ams::tio {
         /* Initialize the htcs server. */
         g_file_server_htcs_server.Initialize(HtcsPortName, g_server_stack, sizeof(g_server_stack), OnFileServerHtcsSocketAccepted);
 
-        /* TODO: Initialize SD card observer. */
+        /* Initialize SD card observer. */
+        g_sd_card_observer.Initialize(g_observer_stack, sizeof(g_observer_stack));
+        g_sd_card_observer.SetCallback(OnSdCardInsertionChanged);
 
         /* Initialize the command processor. */
-        g_file_server_processor.SetInserted(false);
+        g_file_server_processor.SetInserted(g_sd_card_observer.IsSdCardInserted());
         g_file_server_processor.SetRequestBufferSize(RequestBufferSize);
 
         /* Initialize the dispatch message queues. */
