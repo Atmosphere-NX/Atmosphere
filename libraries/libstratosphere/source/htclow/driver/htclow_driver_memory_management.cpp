@@ -38,7 +38,7 @@ namespace ams::htclow::driver {
         /* Declare the memory pool. */
         alignas(RequiredAlignment) constinit u8 g_driver_memory[RequiredSize];
 
-        constexpr inline const socket::SystemConfigDefault SocketConfig(g_driver_memory, RequiredSize, SocketAllocatorSize);
+        constexpr inline const socket::SystemConfigDefault SocketConfig(g_driver_memory, RequiredSize, SocketAllocatorSize, 2);
 
     }
 

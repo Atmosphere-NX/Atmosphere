@@ -203,7 +203,15 @@ namespace ams::htc {
             } else if (std::strstr(transport, "socket")) {
                 /* NOTE: Nintendo does not actually allow socket driver to be selected. */
                 /* Should we disallow this? Undesirable, because people will want to use docked tma. */
-                return htclow::impl::DriverType::Socket;
+
+                /* TODO: Right now, SocketDriver causes a hang on init. This is because */
+                /* the socket driver requires wi-fi, but wi-fi can't happen until the system is fully up. */
+                /* The system can't initialize fully until we acknowledge power state events. */
+                /* We can't acknowledge power state events until our driver is online. */
+                /* Resolving this chicken-and-egg problem without compromising design will require thought. */
+
+                //return htclow::impl::DriverType::Socket;
+                return DefaultHtclowDriverType;
             } else {
                 return DefaultHtclowDriverType;
             }
