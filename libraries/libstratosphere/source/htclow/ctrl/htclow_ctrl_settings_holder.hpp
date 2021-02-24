@@ -20,12 +20,12 @@ namespace ams::htclow::ctrl {
 
     class SettingsHolder {
         private:
-            char m_hardware_type[0x40];
-            char m_target_name[0x40];
-            char m_serial_number[0x40];
-            char m_firmware_version[0x40];
+            char m_hardware_type[0x40]{};
+            char m_target_name[0x40]{};
+            char m_serial_number[0x40]{};
+            char m_firmware_version[0x40]{};
         public:
-            SettingsHolder() { /* ... */ }
+            constexpr SettingsHolder() = default;
 
             void LoadSettings();
 

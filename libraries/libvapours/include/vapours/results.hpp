@@ -59,6 +59,7 @@
 #include <vapours/results/settings_results.hpp>
 #include <vapours/results/sf_results.hpp>
 #include <vapours/results/sm_results.hpp>
+#include <vapours/results/socket_results.hpp>
 #include <vapours/results/spl_results.hpp>
 #include <vapours/results/svc_results.hpp>
 #include <vapours/results/time_results.hpp>

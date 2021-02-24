@@ -14,13 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
-#include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <stratosphere/socket/socket_types.hpp>
-#include <stratosphere/socket/socket_options.hpp>
-#include <stratosphere/socket/socket_errno.hpp>
-#include <stratosphere/socket/socket_constants.hpp>
-#include <stratosphere/socket/socket_config.hpp>
-#include <stratosphere/socket/socket_system_config.hpp>
-#include <stratosphere/socket/socket_api.hpp>
+#include <stratosphere.hpp>
+
+namespace ams::htclow::driver {
+
+    constexpr inline u8 TmipcVersion = 5;
+
+    struct TmipcHeader {
+        u32 service_id;
+        u32 reserved_00;
+        u16 reserved_01;
+        u8  reserved_02;
+        u8  version;
+        u32 data_len;
+        u32 reserved[4];
+    };
+    static_assert(util::is_pod<TmipcHeader>::value);
+    static_assert(sizeof(TmipcHeader) == 0x20);
+
+    s32 MakeAutoConnectIpv4RequestPacket(char *dst, size_t dst_size, const socket::SockAddrIn &sockaddr);
+    s32 MakeBeaconResponsePacket(char *dst, size_t dst_size);
+
+}

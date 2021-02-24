@@ -20,7 +20,7 @@
 namespace ams::htclow {
 
     HtclowManagerImpl::HtclowManagerImpl(mem::StandardAllocator *allocator)
-        : m_packet_factory(allocator), m_driver_manager(), m_mux(std::addressof(m_packet_factory), std::addressof(m_ctrl_state_machine)),
+        : m_packet_factory(allocator), m_driver_manager(allocator), m_mux(std::addressof(m_packet_factory), std::addressof(m_ctrl_state_machine)),
           m_ctrl_packet_factory(allocator), m_ctrl_state_machine(), m_ctrl_service(std::addressof(m_ctrl_packet_factory), std::addressof(m_ctrl_state_machine), std::addressof(m_mux)),
           m_worker(allocator, std::addressof(m_mux), std::addressof(m_ctrl_service)),
           m_listener(allocator, std::addressof(m_mux), std::addressof(m_ctrl_service), std::addressof(m_worker)),

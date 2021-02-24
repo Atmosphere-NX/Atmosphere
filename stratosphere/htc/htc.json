@@ -15,7 +15,7 @@
 	"filesystem_access":	{
 		"permissions":	"0xFFFFFFFFFFFFFFFF"
 	},
-	"service_access":	["pcie", "psc:m", "set:cal", "set:fd", "set:sys", "usb:ds", "fsp-srv"],
+	"service_access":	["pcie", "psc:m", "set:cal", "set:fd", "set:sys", "usb:ds", "fsp-srv", "bsd:s"],
 	"service_host":	["file_io", "htc", "htcs"],
 	"kernel_capabilities":	[{
 			"type":	"kernel_flags",
