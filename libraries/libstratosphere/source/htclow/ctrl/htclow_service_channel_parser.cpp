@@ -139,7 +139,7 @@ namespace ams::htclow::ctrl {
     void ParseServiceChannel(s16 *out_version, impl::ChannelInternalType *out_channels, int *out_num_channels, int max_channels, void *str, size_t str_size) {
         /* Parse the JSON. */
         const char *channel_strs[0x20];
-        int num_channels;
+        int num_channels = 0;
         ParseBody(out_version, channel_strs, std::addressof(num_channels), util::size(channel_strs), str, str_size);
 
         /* Parse the channel strings. */

@@ -43,7 +43,7 @@ namespace ams::htclow::impl {
     }
 
     constexpr ALWAYS_INLINE bool operator<(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
-        return lhs.module_id < rhs.module_id || lhs.reserved < rhs.reserved || lhs.channel_id < rhs.channel_id;
+        return std::tie(lhs.module_id, lhs.reserved, lhs.channel_id) < std::tie(rhs.module_id, rhs.reserved, rhs.channel_id);
     }
 
     constexpr ALWAYS_INLINE bool operator>(const ChannelInternalType &lhs, const ChannelInternalType &rhs) {
