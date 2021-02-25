@@ -650,7 +650,7 @@ namespace ams::tio {
                             out->size  = read_count * sizeof(fs::DirectoryEntry);
 
                             /* Set the response body size. */
-                            response_header.body_size = sizeof(out) + out->size;
+                            response_header.body_size = sizeof(*out) + out->size;
                         } else {
                             /* We have to use multiple sends. */
                             /* Lock our server. */
