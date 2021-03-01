@@ -307,6 +307,10 @@ namespace ams::boot2 {
             });
         }
 
+        bool IsUsbRequiredToMountSdCard() {
+            return hos::GetVersion() >= hos::Version_9_0_0;
+        }
+
     }
 
     /* Boot2 API. */
@@ -347,8 +351,10 @@ namespace ams::boot2 {
             /* Launch pcv. */
             LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Pcv, ncm::StorageId::BuiltInSystem), 0);
 
-            /* Launch usb. */
-            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+            /* On 9.0.0+, FS depends on the USB sysmodule having been launched in order to mount the SD card. */
+            if (IsUsbRequiredToMountSdCard()) {
+                LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+            }
         }
 
         /* Wait for the SD card required services to be ready. */
@@ -370,6 +376,11 @@ namespace ams::boot2 {
 
     void LaunchPostSdCardBootPrograms() {
         /* This code is normally run by boot2. */
+
+        /* Launch the usb system module, if we haven't already. */
+        if (!IsUsbRequiredToMountSdCard()) {
+            LaunchProgram(nullptr, ncm::ProgramLocation::Make(ncm::SystemProgramId::Usb, ncm::StorageId::BuiltInSystem), 0);
+        }
 
         /* Find out whether we are maintenance mode. */
         const bool maintenance = IsMaintenanceMode();

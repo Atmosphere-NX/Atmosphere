@@ -256,6 +256,24 @@ static int stratosphere_ini_handler(void *user, const char *section, const char 
     return 1;
 }
 
+static int system_settings_ini_handler(void *user, const char *section, const char *name, const char *value) {
+    uint32_t *flags = (uint32_t *)user;
+    if (strcmp(section, "usb") == 0) {
+        if (strcmp(name, "usb30_force_enabled") == 0) {
+            if (strcmp(value, "u8!0x1") == 0) {
+                *flags |= EXOSPHERE_FLAG_FORCE_ENABLE_USB_30;
+            } else if (strcmp(value, "u8!0x0") == 0) {
+                *flags &= ~(EXOSPHERE_FLAG_FORCE_ENABLE_USB_30);
+            }
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+    return 1;
+}
+
 static bool is_nca_present(const char *nca_name) {
     char path[0x100];
     snprintf(path, sizeof(path), "system:/contents/registered/%s.nca", nca_name);
@@ -536,6 +554,15 @@ static void nxboot_configure_exosphere(uint32_t target_firmware, unsigned int ke
 
     /* Apply lcd vendor. */
     exo_cfg.lcd_vendor = display_get_lcd_vendor();
+
+    /* Read and parse system settings.ini to determine usb 3.0 enable. */
+    char *settings_ini = calloc(1, 0x20000);
+    if (read_from_file(settings_ini, 0x1FFFF, "atmosphere/config/system_settings.ini")) {
+        if (ini_parse_string(settings_ini, system_settings_ini_handler, &exo_cfg.flags[0]) < 0) {
+            fatal_error("[NXBOOT] Failed to parse system_settings.ini!\n");
+        }
+    }
+    free(settings_ini);
 
     if ((exo_cfg.target_firmware < ATMOSPHERE_TARGET_FIRMWARE_MIN) || (exo_cfg.target_firmware > ATMOSPHERE_TARGET_FIRMWARE_MAX)) {
         fatal_error("[NXBOOT] Invalid Exosphere target firmware!\n");

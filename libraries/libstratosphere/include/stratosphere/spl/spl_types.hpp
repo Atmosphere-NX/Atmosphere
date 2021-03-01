@@ -223,26 +223,30 @@ namespace ams::spl {
         Package2Hash                  = 17,
 
         /* Extension config items for exosphere. */
-        ExosphereApiVersion     = 65000,
-        ExosphereNeedsReboot    = 65001,
-        ExosphereNeedsShutdown  = 65002,
-        ExosphereGitCommitHash  = 65003,
-        ExosphereHasRcmBugPatch = 65004,
-        ExosphereBlankProdInfo  = 65005,
-        ExosphereAllowCalWrites = 65006,
-        ExosphereEmummcType     = 65007,
-        ExospherePayloadAddress = 65008,
+        ExosphereApiVersion       = 65000,
+        ExosphereNeedsReboot      = 65001,
+        ExosphereNeedsShutdown    = 65002,
+        ExosphereGitCommitHash    = 65003,
+        ExosphereHasRcmBugPatch   = 65004,
+        ExosphereBlankProdInfo    = 65005,
+        ExosphereAllowCalWrites   = 65006,
+        ExosphereEmummcType       = 65007,
+        ExospherePayloadAddress   = 65008,
+        ExosphereLogConfiguration = 65009,
+        ExosphereForceEnableUsb30 = 65010,
     };
 
 }
 
 /* Extensions to libnx spl config item enum. */
-constexpr inline SplConfigItem SplConfigItem_ExosphereApiVersion     = static_cast<SplConfigItem>(65000);
-constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsReboot    = static_cast<SplConfigItem>(65001);
-constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsShutdown  = static_cast<SplConfigItem>(65002);
-constexpr inline SplConfigItem SplConfigItem_ExosphereGitCommitHash  = static_cast<SplConfigItem>(65003);
-constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch = static_cast<SplConfigItem>(65004);
-constexpr inline SplConfigItem SplConfigItem_ExosphereBlankProdInfo  = static_cast<SplConfigItem>(65005);
-constexpr inline SplConfigItem SplConfigItem_ExosphereAllowCalWrites = static_cast<SplConfigItem>(65006);
-constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType     = static_cast<SplConfigItem>(65007);
-constexpr inline SplConfigItem SplConfigItem_ExospherePayloadAddress = static_cast<SplConfigItem>(65008);
+constexpr inline SplConfigItem SplConfigItem_ExosphereApiVersion       = static_cast<SplConfigItem>(65000);
+constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsReboot      = static_cast<SplConfigItem>(65001);
+constexpr inline SplConfigItem SplConfigItem_ExosphereNeedsShutdown    = static_cast<SplConfigItem>(65002);
+constexpr inline SplConfigItem SplConfigItem_ExosphereGitCommitHash    = static_cast<SplConfigItem>(65003);
+constexpr inline SplConfigItem SplConfigItem_ExosphereHasRcmBugPatch   = static_cast<SplConfigItem>(65004);
+constexpr inline SplConfigItem SplConfigItem_ExosphereBlankProdInfo    = static_cast<SplConfigItem>(65005);
+constexpr inline SplConfigItem SplConfigItem_ExosphereAllowCalWrites   = static_cast<SplConfigItem>(65006);
+constexpr inline SplConfigItem SplConfigItem_ExosphereEmummcType       = static_cast<SplConfigItem>(65007);
+constexpr inline SplConfigItem SplConfigItem_ExospherePayloadAddress   = static_cast<SplConfigItem>(65008);
+constexpr inline SplConfigItem SplConfigItem_ExosphereLogConfiguration = static_cast<SplConfigItem>(65009);
+constexpr inline SplConfigItem SplConfigItem_ExosphereForceEnableUsb30 = static_cast<SplConfigItem>(65010);

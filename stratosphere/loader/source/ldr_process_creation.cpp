@@ -536,6 +536,9 @@ namespace ams::ldr {
 
                 /* Apply IPS patches. */
                 LocateAndApplyIpsPatchesToModule(nso_header->build_id, map_address, nso_size);
+
+                /* Apply embedded patches. */
+                ApplyEmbeddedPatchesToModule(nso_header->build_id, map_address, nso_size);
             }
 
             /* Set permissions. */

@@ -30,8 +30,12 @@ namespace ams::ldr {
         constexpr const char * const LoaderSdMountName = "#amsldr-sdpatch";
         static_assert(sizeof(LoaderSdMountName) <= fs::MountNameLengthMax);
 
-        os::Mutex g_ldr_sd_lock(false);
-        bool g_mounted_sd;
+        constinit os::SdkMutex g_ldr_sd_lock;
+        constinit bool g_mounted_sd;
+
+        constinit os::SdkMutex g_embedded_patch_lock;
+        constinit bool g_got_embedded_patch_settings;
+        constinit bool g_force_enable_usb30;
 
         bool EnsureSdCardMounted() {
             std::scoped_lock lk(g_ldr_sd_lock);
@@ -51,6 +55,59 @@ namespace ams::ldr {
             return (g_mounted_sd = true);
         }
 
+        bool IsUsb30ForceEnabled() {
+            std::scoped_lock lk(g_embedded_patch_lock);
+
+            if (!g_got_embedded_patch_settings) {
+                g_force_enable_usb30 = spl::IsUsb30ForceEnabled();
+                g_got_embedded_patch_settings = true;
+            }
+
+            return g_force_enable_usb30;
+        }
+
+        consteval u8 ParseNybble(char c) {
+            AMS_ASSUME(('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'));
+            if ('0' <= c && c <= '9') {
+                return c - '0' + 0x0;
+            } else if ('A' <= c && c <= 'F') {
+                return c - 'A' + 0xA;
+            } else /* if ('a' <= c && c <= 'f') */ {
+                return c - 'a' + 0xa;
+            }
+        }
+
+        consteval ro::ModuleId ParseModuleId(const char *str) {
+            /* Parse a static module id. */
+            ro::ModuleId module_id = {};
+
+            size_t ofs = 0;
+            while (str[0] != 0) {
+                AMS_ASSUME(ofs < sizeof(module_id));
+                AMS_ASSUME(str[1] != 0);
+
+                module_id.build_id[ofs] = (ParseNybble(str[0]) << 4) | (ParseNybble(str[1]) << 0);
+
+                str += 2;
+                ofs++;
+            }
+
+            return module_id;
+        }
+
+        struct EmbeddedPatchEntry {
+            uintptr_t offset;
+            const void * const data;
+            size_t size;
+        };
+
+        struct EmbeddedPatch {
+            ro::ModuleId module_id;
+            size_t num_entries;
+            const EmbeddedPatchEntry *entries;
+        };
+
+        #include "ldr_embedded_usb_patches.inc"
 
     }
 
@@ -63,6 +120,26 @@ namespace ams::ldr {
         ro::ModuleId module_id;
         std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
         ams::patcher::LocateAndApplyIpsPatchesToModule(LoaderSdMountName, NsoPatchesDirectory, NsoPatchesProtectedSize, NsoPatchesProtectedOffset, &module_id, reinterpret_cast<u8 *>(mapped_nso), mapped_size);
+    }
+
+    /* Apply embedded patches. */
+    void ApplyEmbeddedPatchesToModule(const u8 *build_id, uintptr_t mapped_nso, size_t mapped_size) {
+        /* Make module id. */
+        ro::ModuleId module_id;
+        std::memcpy(&module_id.build_id, build_id, sizeof(module_id.build_id));
+
+        if (IsUsb30ForceEnabled()) {
+            for (const auto &patch : Usb30ForceEnablePatches) {
+                if (std::memcmp(std::addressof(patch.module_id), std::addressof(module_id), sizeof(module_id)) == 0) {
+                    for (size_t i = 0; i < patch.num_entries; ++i) {
+                        const auto &entry = patch.entries[i];
+                        if (entry.offset + entry.size <= mapped_size) {
+                            std::memcpy(reinterpret_cast<void *>(mapped_nso + entry.offset), entry.data, entry.size);
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }

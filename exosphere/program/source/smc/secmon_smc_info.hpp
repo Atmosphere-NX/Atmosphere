@@ -50,6 +50,7 @@ namespace ams::secmon::smc {
         ExosphereEmummcType       = 65007,
         ExospherePayloadAddress   = 65008,
         ExosphereLogConfiguration = 65009,
+        ExosphereForceEnableUsb30 = 65010,
     };
 
     SmcResult SmcGetConfigUser(SmcArguments &args);

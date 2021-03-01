@@ -33,6 +33,7 @@
 #define EXOSPHERE_FLAG_ENABLE_USERMODE_PMU_ACCESS           (1 << 4u)
 #define EXOSPHERE_FLAG_BLANK_PRODINFO                       (1 << 5u)
 #define EXOSPHERE_FLAG_ALLOW_WRITING_TO_CAL_SYSMMC          (1 << 6u)
+#define EXOSPHERE_FLAG_FORCE_ENABLE_USB_30                  (1 << 7u)
 
 #define EXOSPHERE_LOG_FLAG_INVERTED (1 << 0u)
 
