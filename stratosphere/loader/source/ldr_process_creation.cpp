@@ -534,11 +534,11 @@ namespace ams::ldr {
                 std::memset(reinterpret_cast<void *>(map_address + ro_end),   0, nso_header->rw_dst_offset - ro_end);
                 std::memset(reinterpret_cast<void *>(map_address + rw_end), 0, nso_header->bss_size);
 
-                /* Apply IPS patches. */
-                LocateAndApplyIpsPatchesToModule(nso_header->build_id, map_address, nso_size);
-
                 /* Apply embedded patches. */
                 ApplyEmbeddedPatchesToModule(nso_header->build_id, map_address, nso_size);
+
+                /* Apply IPS patches. */
+                LocateAndApplyIpsPatchesToModule(nso_header->build_id, map_address, nso_size);
             }
 
             /* Set permissions. */
