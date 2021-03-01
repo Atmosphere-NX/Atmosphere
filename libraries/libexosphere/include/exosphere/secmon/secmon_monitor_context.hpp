@@ -29,6 +29,7 @@ namespace ams::secmon {
         SecureMonitorConfigurationFlag_EnableUserModePerformanceCounterAccess = (1u << 4),
         SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary        = (1u << 5),
         SecureMonitorConfigurationFlag_AllowWritingToCalibrationBinarySysmmc  = (1u << 6),
+        SecureMonitorConfigurationFlag_ForceEnableUsb30                       = (1u << 7),
 
         SecureMonitorConfigurationFlag_Default = SecureMonitorConfigurationFlag_IsDevelopmentFunctionEnabledForKernel,
     };
@@ -101,6 +102,7 @@ namespace ams::secmon {
         constexpr bool EnableUserModePerformanceCounterAccess() const { return (this->flags[0] & SecureMonitorConfigurationFlag_EnableUserModePerformanceCounterAccess) != 0; }
         constexpr bool ShouldUseBlankCalibrationBinary()        const { return (this->flags[0] & SecureMonitorConfigurationFlag_ShouldUseBlankCalibrationBinary)        != 0; }
         constexpr bool AllowWritingToCalibrationBinarySysmmc()  const { return (this->flags[0] & SecureMonitorConfigurationFlag_AllowWritingToCalibrationBinarySysmmc)  != 0; }
+        constexpr bool IsUsb30ForceEnabled()                    const { return (this->flags[0] & SecureMonitorConfigurationFlag_ForceEnableUsb30)                       != 0; }
 
         constexpr bool IsDevelopmentFunctionEnabled(bool for_kern) const { return for_kern ? this->IsDevelopmentFunctionEnabledForKernel() : this->IsDevelopmentFunctionEnabledForUser(); }
     };

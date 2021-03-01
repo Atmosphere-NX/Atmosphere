@@ -78,6 +78,10 @@ namespace ams::spl {
         return ::ams::spl::GetConfigBool(::ams::spl::ConfigItem::DisableProgramVerification);
     }
 
+    inline bool IsUsb30ForceEnabled() {
+        return ::ams::spl::GetConfigBool(::ams::spl::ConfigItem::ExosphereForceEnableUsb30);
+    }
+
     Result SetBootReason(BootReasonValue boot_reason);
     Result GetBootReason(BootReasonValue *out);
 

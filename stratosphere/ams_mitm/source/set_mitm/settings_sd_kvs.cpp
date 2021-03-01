@@ -310,6 +310,9 @@ namespace ams::settings::fwdbg {
             /* Disable uploading error reports to Nintendo. */
             R_ABORT_UNLESS(ParseSettingsItemValue("eupld", "upload_enabled", "u8!0x0"));
 
+            /* Enable USB 3.0 superspeed for homebrew */
+            R_ABORT_UNLESS(ParseSettingsItemValue("usb", "usb30_force_enabled", spl::IsUsb30ForceEnabled() ? "u8!0x1" : "u8!0x0"));
+
             /* Control whether RO should ease its validation of NROs. */
             /* (note: this is normally not necessary, and ips patches can be used.) */
             R_ABORT_UNLESS(ParseSettingsItemValue("ro", "ease_nro_restriction", "u8!0x1"));

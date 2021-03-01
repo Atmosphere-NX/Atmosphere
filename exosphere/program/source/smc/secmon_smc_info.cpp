@@ -286,6 +286,10 @@ namespace ams::secmon::smc {
                     /* Get the log configuration. */
                     args.r[1] = (static_cast<u64>(static_cast<u8>(secmon::GetLogPort())) << 32) | static_cast<u64>(secmon::GetLogBaudRate());
                     break;
+                case ConfigItem::ExosphereForceEnableUsb30:
+                    /* Get whether usb 3.0 should be force-enabled. */
+                    args.r[1] = GetSecmonConfiguration().IsUsb30ForceEnabled();
+                    break;
                 default:
                     return SmcResult::InvalidArgument;
             }
