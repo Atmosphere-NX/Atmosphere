@@ -14,10 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/sf.hpp>
+#include <stratosphere/os/os_common_types.hpp>
+#include <stratosphere/htc/tenv/htc_tenv_i_service.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+#define AMS_HTC_TENV_I_SERVICE_MANAGER_INTERFACE_INFO(C, H) \
+    AMS_SF_METHOD_INFO(C, H, 0, Result, GetServiceInterface, (sf::Out<sf::SharedPointer<htc::tenv::IService>> out, const sf::ClientProcessId &process_id), (out, process_id))
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+AMS_SF_DEFINE_INTERFACE(ams::htc::tenv, IServiceManager, AMS_HTC_TENV_I_SERVICE_MANAGER_INTERFACE_INFO)

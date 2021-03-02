@@ -15,9 +15,9 @@
  */
 #pragma once
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+#include <stratosphere/cs/cs_audio_server.hpp>
+#include <stratosphere/cs/cs_hid_server.hpp>
+#include <stratosphere/cs/cs_remote_video_server.hpp>
+#include <stratosphere/cs/cs_target_io_server.hpp>
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+#include <stratosphere/cs/cs_command_processor.hpp>

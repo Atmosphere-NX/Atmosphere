@@ -14,10 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/scs/scs_command_processor.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::cs {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    using CommandHeader  = scs::CommandHeader;
+    using ResponseHeader = scs::ResponseHeader;
+
+    class CommandProcessor : public scs::CommandProcessor {
+        public:
+            virtual bool ProcessCommand(const CommandHeader &header, const u8 *body, s32 socket) override;
+    };
+
+}

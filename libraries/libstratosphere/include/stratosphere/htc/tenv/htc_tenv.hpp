@@ -14,10 +14,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::htc::tenv {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    void Initialize(AllocateFunction allocate, DeallocateFunction deallocate);
+    Result RegisterDefinitionFilePath(os::ProcessId process_id, const char *path, size_t size);
+    void UnregisterDefinitionFilePath(os::ProcessId process_id);
+
+}

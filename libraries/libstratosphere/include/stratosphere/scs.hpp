@@ -15,9 +15,10 @@
  */
 #pragma once
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+#include <stratosphere/scs/scs_command_processor.hpp>
+#include <stratosphere/scs/scs_shell_server.hpp>
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+#include <stratosphere/scs/scs_shell.hpp>
+#include <stratosphere/scs/scs_tenv.hpp>
+
+#include <stratosphere/scs/scs_server_manager.hpp>

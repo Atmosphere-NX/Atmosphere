@@ -14,10 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #pragma once
+#include <vapours.hpp>
+#include <stratosphere/os.hpp>
+#include <stratosphere/ncm/ncm_ids.hpp>
 
-#include <stratosphere/htc/server/htc_htcmisc_hipc_server.hpp>
-#include <stratosphere/htc/server/htc_htcmisc_channel_ids.hpp>
+namespace ams::scs {
 
-#include <stratosphere/htc/tenv/htc_tenv_types.hpp>
-#include <stratosphere/htc/tenv/htc_tenv.hpp>
-#include <stratosphere/htc/tenv/htc_tenv_service_manager.hpp>
+    using ProcessEventHandler = void(*)(s64 command_id, s32 socket, os::ProcessId process_id);
+
+    void InitializeShell();
+
+    void RegisterCommonProcessEventHandler(ProcessEventHandler on_start, ProcessEventHandler on_exit, ProcessEventHandler on_jit_debug);
+
+    bool RegisterSocket(s32 socket);
+    void UnregisterSocket(s32 socket);
+
+    Result SubscribeProcessEvent(s32 socket, bool is_register, s64 command_id);
+
+}

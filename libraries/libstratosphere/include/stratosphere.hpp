@@ -45,6 +45,7 @@
 #include <stratosphere/capsrv.hpp>
 #include <stratosphere/cfg.hpp>
 #include <stratosphere/clkrst.hpp>
+#include <stratosphere/cs.hpp>
 #include <stratosphere/ddsf.hpp>
 #include <stratosphere/dmnt.hpp>
 #include <stratosphere/erpt.hpp>
@@ -77,6 +78,7 @@
 #include <stratosphere/regulator.hpp>
 #include <stratosphere/ro.hpp>
 #include <stratosphere/settings.hpp>
+#include <stratosphere/scs.hpp>
 #include <stratosphere/sf.hpp>
 #include <stratosphere/sm.hpp>
 #include <stratosphere/socket.hpp>

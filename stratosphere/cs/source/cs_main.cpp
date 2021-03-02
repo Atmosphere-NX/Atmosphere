@@ -65,7 +65,27 @@ namespace ams::cs {
 
     namespace {
 
-        /* TODO: Heap? */
+        alignas(os::ThreadStackAlignment) u8 g_shell_stack[4_KB];
+        alignas(os::ThreadStackAlignment) u8 g_runner_stack[4_KB];
+
+        alignas(os::MemoryPageSize) u8 g_heap_memory[32_KB];
+
+        alignas(0x40) u8 g_htcs_buffer[1_KB];
+
+        lmem::HeapHandle g_heap_handle;
+
+        void *Allocate(size_t size) {
+            void *mem = lmem::AllocateFromExpHeap(g_heap_handle, size);
+            return mem;
+        }
+
+        void Deallocate(void *p, size_t size) {
+            lmem::FreeToExpHeap(g_heap_handle, p);
+        }
+
+        void InitializeHeap() {
+            g_heap_handle = lmem::CreateExpHeap(g_heap_memory, sizeof(g_heap_memory), lmem::CreateOption_ThreadSafe);
+        }
 
     }
 
@@ -81,22 +101,32 @@ void __libnx_initheap(void) {
 
 	fake_heap_start = (char*)addr;
 	fake_heap_end   = (char*)addr + size;
+
+    cs::InitializeHeap();
 }
 
 void __appInit(void) {
     hos::InitializeForStratosphere();
 
-    /* TODO */
+    fs::SetAllocator(cs::Allocate, cs::Deallocate);
 
     sm::DoWithSession([&]() {
-        /* TODO */
+        R_ABORT_UNLESS(fsInitialize());
+        lr::Initialize();
+        R_ABORT_UNLESS(ldr::InitializeForShell());
+        R_ABORT_UNLESS(pgl::Initialize());
+        /* TODO: Other services? */
     });
 
     ams::CheckApiVersion();
 }
 
 void __appExit(void) {
-    /* TODO */
+    /* TODO: Other services? */
+    pgl::Finalize();
+    ldr::FinalizeForShell();
+    lr::Finalize();
+    fsExit();
 }
 
 namespace ams {
@@ -131,13 +161,68 @@ void __libnx_free(void *mem) {
     AMS_ABORT("__libnx_free was called");
 }
 
+namespace ams::cs {
+
+    namespace {
+
+        constinit ::ams::cs::CommandProcessor g_command_processor;
+
+        constinit ::ams::scs::ShellServer g_shell_server;
+        constinit ::ams::scs::ShellServer g_runner_server;
+
+        constinit sf::UnmanagedServiceObject<htc::tenv::IServiceManager, htc::tenv::ServiceManager> g_tenv_service_manager;
+
+    }
+
+}
+
 int main(int argc, char **argv)
 {
+    using namespace ams::cs;
+
     /* Set thread name. */
     os::SetThreadNamePointer(os::GetCurrentThread(), AMS_GET_SYSTEM_THREAD_NAME(cs, Main));
     AMS_ASSERT(os::GetThreadPriority(os::GetCurrentThread()) == AMS_GET_SYSTEM_THREAD_PRIORITY(cs, Main));
 
-    /* TODO */
+    /* Initialize htcs. */
+    constexpr auto HtcsSocketCountMax = 6;
+    const size_t buffer_size = htcs::GetWorkingMemorySize(2 * HtcsSocketCountMax);
+    AMS_ABORT_UNLESS(sizeof(g_htcs_buffer) >= buffer_size);
+    htcs::InitializeForSystem(g_htcs_buffer, buffer_size, HtcsSocketCountMax);
+
+    /* Initialize audio server. */
+    cs::InitializeAudioServer();
+
+    /* Initialize remote video server. */
+    cs::InitializeRemoteVideoServer();
+
+    /* Initialize hid server. */
+    cs::InitializeHidServer();
+
+    /* Initialize target io server. */
+    cs::InitializeTargetIoServer();
+
+    /* Initialize command processor. */
+    g_command_processor.Initialize();
+
+    /* Setup scs. */
+    scs::InitializeShell();
+
+    /* Setup target environment service. */
+    scs::InitializeTenvServiceManager();
+
+    /* Initialize the shell servers. */
+    g_shell_server.Initialize("iywys@$cs", g_shell_stack, sizeof(g_shell_stack), std::addressof(g_command_processor));
+    g_shell_server.Start();
+
+    g_runner_server.Initialize("iywys@$csForRunnerTools", g_runner_stack, sizeof(g_runner_stack), std::addressof(g_command_processor));
+    g_runner_server.Start();
+
+    /* Register htc:tenv. */
+    R_ABORT_UNLESS(scs::GetServerManager()->RegisterObjectForServer(g_tenv_service_manager.GetShared(), htc::tenv::ServiceName, scs::SessionCount[scs::Port_HtcTenv]));
+
+    /* Start the scs ipc server. */
+    scs::StartServer();
 
     return 0;
 }
